@@ -1,98 +1,111 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936315Ab3DKVCt (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 11 Apr 2013 17:02:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40036 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935153Ab3DKVCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:02:43 -0400
-Date: Thu, 11 Apr 2013 23:02:41 +0200
-From: Jan Kara <jack@suse.cz>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Beyond inotify recursive watches
-Message-ID: <20130411210241.GB9379@quack.suse.cz>
-References: <CALkWK0nRQi+vZeVR4LVzLewhR-dUZqYANRV7yH8grp-1J7=g8Q@mail.gmail.com>
- <20130405155534.GC21852@quack.suse.cz>
- <20130405161229.GC4068@ZenIV.linux.org.uk>
- <20130408093125.GA6847@quack.suse.cz>
- <CALkWK0kHGZGPsk2f_9Cd_dutNVucf=V-9qH8bsxfYr2_EU-nsw@mail.gmail.com>
- <20130410204029.GA31424@quack.suse.cz>
- <CALkWK0=kMGcPMfQWWt97Ae8JWvXDT+CGfAC-JWObF00KbYiZ_Q@mail.gmail.com>
+	id S1755785Ab3D0U4h (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sat, 27 Apr 2013 16:56:37 -0400
+Received: from [124.116.176.78] ([124.116.176.78]:2544 "HELO xaceg.cn"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
+	id S1755091Ab3D0U4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 16:56:36 -0400
+Message-ID: <20320424032957531005@xaceg.cn>
+From: =?utf-8?B?5q+P5aSp5LuFMTDlhYM=?= <test@xaceg.cn>
+To: <lintao@park.4.cn>, <linting860828@163.com>, <lintwo@ihw.com>,
+        <linuslam@163.com>, <linux-kernel@vger.kernel.org>,
+        <linw@transtekmagnetics.com>, <linwei0402@yahoo.com.cn>,
+        <linweivivy@163.com>, <linwenzhen@163.com>, <linwx@163.net>,
+        <linxi_5566@163.com>
+Subject: =?utf-8?B?5LuFMjk45YWDLOacgOaWsDExMuWxiiAyMDEy56eL5a2j5bm/?=
+	=?utf-8?B?5Lqk5Lya5Lmw5a6277yMQjJC6K+i55uY5Lmw5a6244CBdGhvbWFzbg==?=
+	=?utf-8?B?ZXQg6YeH6LSt5ZWGLOa1t+WFs+aVsOaNriznvqTlj5Hova/ku7bvvIzlsZXkvJrkubA=?=
+	=?utf-8?B?5a62ICE=?=
+Date: Sat, 24 Apr 2032 03:29:48 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALkWK0=kMGcPMfQWWt97Ae8JWvXDT+CGfAC-JWObF00KbYiZ_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="utf-8"
+X-mailer: Djjjvnfoy 5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by spinics.net id r3RKujvI032337
 
-On Thu 11-04-13 17:29:39, Ramkumar Ramachandra wrote:
-> Jan Kara wrote:
-> >   Initially, you will have to flip the flag on every directory in the
-> > subtree. But the flag is persistently stored on disk so you have to do it
-> > once when the directory is created and then each time you notice the
-> > directory has changed and the flag has been cleared.
-> 
-> How is this any better than setting up inotify recursively on the
-> directory tree?  I'll have to readdir() each directory in the tree,
-> looking for more directories to set the flag on.
-  With inotify you have to do this every time your watching application
-starts. With my scheme you have to do this only once in a lifetime because
-flags are persistent (stored on disk) once set.
+最新112届 2012秋季广交会买家，海关数据提单piers版，2008-2012年9届广交会数据。
 
-> >   I think Al is asking how do we lock kernel dentry cache so that we can
-> > safely walk up the tree and update time stamps in presence of other
-> > modifications happening to the directory tree in parallel.
-> 
-> >   It's not as much timestamp updates themselves racing against each other
-> > but rather things like moving directories in the directory tree racing with
-> > us walking up the tree and updating time stamps - in Linux, directory
-> > locking happens in top-bottom manner (like when you do lookup of a path) so
-> > when you are climbing up, one has to be careful not to introduce races.
-> 
-> Oh.  So we need to carefully code very fine-grained locking (so that
-> the entire fs isn't unusable when this recursive update is happening).
-  Yes.
+一共10个包(数据是全行业的，可以按照关键词提取出来的)： 
+1，2012春季112届广交会买家现场询盘数据库新鲜出炉，超级新鲜买家，新鲜数据，容易成单！ 
+2，购买后可以免费更新2012秋季广交会买家数据。太超值了。
+3，2012最新全球展会现场买家库(与贸发同步),共46万条数据。 (按照行业分类)
+4，2012,2011,2010年,2009年,2008年 春季+秋季广交会买家名录，103 104 105 106 107 108,109,110,111 共7届 共150.6万数据。
+5，48.68万条最新买家询盘，都带有Email，最有价值的询盘。
+6，2011最新 B2B 英文国际站60万带联络方式询盘 最有价值询盘之一.
+7，2010海关提单piers版1000万数据.
+8，2011年到香港采购的国外客人名录(香港贸发局提供)，超级重要的买家。
+9，2011年新增加的-美国B2B thomasnet 采购商名单。
+10，群发软件安装与部署服务。
 
-> >   One reason why we need things to be fs-internal is that we want to store
-> > everything permanently on disk so that e.g. if there's reboot between
-> > modification of a git tree and 'git add -u', you will still find what has
-> > changed since last time you've checked (without walking the whole tree).
-> 
-> Makes sense.  However, doesn't this mean that we have to patch every
-> filesystem separately for this feature, as opposed to just patching
-> VFS?
-  True. That's the downside of the flag being persistent. But the
-persistency is necessary for some use cases (e.g. if you'd like to speedup
-rsync with this, or if you'd like to keep cache of preparsed config files).
-Also when the flag is persistent, inodes / dentries are not pinned in
-memory which is another problem with using inotify for watching lots of
-directories.
+这些全有，共1360万 买家。
 
-> >   My concern is that if you have a directory tree where there are lots of
-> > entries in each directory, then you still have to check a lot of entries
-> > before you find what has changed because you have to scan all entries in
-> > each directory on the modified path. If there was a way to iterate only
-> > through entries in a directory which had the flag cleared, things could be
-> > considerably faster.
-> 
-> What are your thoughts on introducing a version of readdir() that only
-> lists dentries with this flag?
-  Yes, I was considering something like this. But again such list of
-entries to return would have to be stored on disk so that we don't have to
-lookup and load from disk inodes that don't have the flag set.
+ 
+要的抓紧联系QQ: 1711744329  或者立即回复邮箱: 1711744329@qq.com
+要的抓紧联系QQ: 1711744329  或者立即回复邮箱: 1711744329@qq.com
+要的抓紧联系QQ: 1711744329  或者立即回复邮箱: 1711744329@qq.com
 
-> Can you get deeper into the implementation, and point me to the parts
-> of the code to look at?  Do you have any WIP patches that I can look
-> at?
-  Well, I have patches that were working in 2.6.37 and added support for
-the feature in ext3 and ext4. But then I got stuck with the questions I
-mentioned... But people keep asking for some feature like this so from time
-to time I think it might be actually worth it to revive the patches.
+诚信为本，如果不信任本人,可以走支付宝担保交易,收到数据验证3天后再付款,这是对您最好的保障了。 
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+
+小技巧： 
+把1360万买家群发以一遍，均会有数千个回复的，这些就是非常高质量的买家。 
+使用我们送的群发软件，1-2周就可完全发完。
+
+
+
+
+
+广交会买家按产品类别分类，分为以下几类：
+1 办公设备
+2 编织及藤铁工艺品
+3 玻璃
+4 餐厨用具
+5 车辆
+6 大型机械及设备
+7 电子电气
+8 电子消费品
+9 纺织
+10 服装
+11 个人护理
+12 工程机械
+13 工具
+14 化工
+15 计算机及通讯
+16 家居用品
+17 家居装饰
+18 家具
+19 家用电器
+20 建筑及装饰材料
+21 节日用品
+22 礼品及赠品
+23 摩托车
+24 汽车配件
+25 食品
+26 陶瓷
+27 铁石
+28 玩具
+29 卫浴
+30 五金
+31 小型机械
+32 鞋
+33 休闲用品
+34 医疗
+35 浴室产品
+36 园林
+37 照明产品
+38 钟表眼镜
+39 自行车
+40 包
+
+
+新鲜数据-成单率极高
+新鲜数据-成单率极高
+新鲜数据-成单率极高
+新鲜数据-成单率极高
+新鲜数据-成单率极高
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
