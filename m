@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365AbaIJC4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 22:56:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63933 "EHLO mga01.intel.com"
+	id S1753078AbaIJC51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 22:57:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:33372 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751759AbaIJC4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 22:56:33 -0400
+	id S1752269AbaIJC4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 22:56:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,495,1406617200"; 
-   d="scan'208";a="597207273"
+   d="scan'208";a="597207306"
 From: kan.liang@intel.com
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, ak@linux.intel.com, kan.liang@intel.com,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH V5 02/16] perf, core: introduce pmu context switch callback
-Date: Sun,  7 Jan 2001 21:29:31 -0500
-Message-Id: <978920978-30191-3-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V5 09/16] perf, x86: Save/resotre LBR stack during context switch
+Date: Sun,  7 Jan 2001 21:29:38 -0500
+Message-Id: <978920978-30191-10-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <978920978-30191-1-git-send-email-kan.liang@intel.com>
 References: <978920978-30191-1-git-send-email-kan.liang@intel.com>
@@ -26,179 +26,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kan Liang <kan.liang@intel.com>
 
-The callback is invoked when process is scheduled in or out.
-It provides mechanism for later patches to save/store the LBR
-stack. For the schedule in case, the callback is invoked at
-the same place that flush branch stack callback is invoked.
-So it also can replace the flush branch stack callback. To
-avoid unnecessary overhead, the callback is enabled only when
-there are events use the LBR stack.
+When the LBR call stack is enabled, it is necessary to save/restore
+the LBR stack on context switch. The solution is saving/restoring
+the LBR stack to/from task's perf event context.
+
+The LBR stack is saved/restored only when there are events that use
+the LBR call stack. If no event uses LBR call stack, the LBR stack
+is reset when task is scheduled in.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |  7 +++++
- arch/x86/kernel/cpu/perf_event.h |  2 ++
- include/linux/perf_event.h       | 10 +++++++
- kernel/events/core.c             | 59 ++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 78 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 88 ++++++++++++++++++++++++++----
+ 1 file changed, 76 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 0646d3b..4c572e8 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1877,6 +1877,12 @@ static const struct attribute_group *x86_pmu_attr_groups[] = {
- 	NULL,
- };
- 
-+static void x86_pmu_sched_task(struct perf_event_context *ctx, bool sched_in)
-+{
-+	if (x86_pmu.sched_task)
-+		x86_pmu.sched_task(ctx, sched_in);
-+}
-+
- static void x86_pmu_flush_branch_stack(void)
- {
- 	if (x86_pmu.flush_branch_stack)
-@@ -1910,6 +1916,7 @@ static struct pmu pmu = {
- 
- 	.event_idx		= x86_pmu_event_idx,
- 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
-+	.sched_task		= x86_pmu_sched_task,
- };
- 
- void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 86c675c..0617abb 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -467,6 +467,8 @@ struct x86_pmu {
- 
- 	void		(*check_microcode)(void);
- 	void		(*flush_branch_stack)(void);
-+	void		(*sched_task)(struct perf_event_context *ctx,
-+				      bool sched_in);
- 
- 	/*
- 	 * Intel Arch Perfmon v2+
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 893a0d0..be0e870 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -263,6 +263,14 @@ struct pmu {
- 	 * flush branch stack on context-switches (needed in cpu-wide mode)
- 	 */
- 	void (*flush_branch_stack)	(void);
-+
-+	/*
-+	 * context-switches callback for CPU PMU. Other PMUs shouldn't set
-+	 * this callback
-+	 */
-+	void (*sched_task)		(struct perf_event_context *ctx,
-+					bool sched_in);
-+
- };
- 
- /**
-@@ -562,6 +570,8 @@ extern void perf_event_delayed_put(struct task_struct *task);
- extern void perf_event_print_debug(void);
- extern void perf_pmu_disable(struct pmu *pmu);
- extern void perf_pmu_enable(struct pmu *pmu);
-+extern void perf_sched_cb_disable(struct pmu *pmu);
-+extern void perf_sched_cb_enable(struct pmu *pmu);
- extern int perf_event_task_disable(void);
- extern int perf_event_task_enable(void);
- extern int perf_event_refresh(struct perf_event *event, int refresh);
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 1212cc4..15d640e 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -154,6 +154,7 @@ enum event_type_t {
- struct static_key_deferred perf_sched_events __read_mostly;
- static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
- static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
-+static DEFINE_PER_CPU(int, perf_sched_cb_usages);
- 
- static atomic_t nr_mmap_events __read_mostly;
- static atomic_t nr_comm_events __read_mostly;
-@@ -2427,6 +2428,58 @@ unlock:
- 	}
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 8c6da0f..6aabbb4 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -180,13 +180,89 @@ void intel_pmu_lbr_reset(void)
+ 		intel_pmu_lbr_reset_64();
  }
  
-+void perf_sched_cb_disable(struct pmu *pmu)
-+{
-+	this_cpu_dec(perf_sched_cb_usages);
-+}
-+
-+void perf_sched_cb_enable(struct pmu *pmu)
-+{
-+	this_cpu_inc(perf_sched_cb_usages);
-+}
-+
 +/*
-+ * This function provides the context switch callback to the lower code
-+ * layer. It is invoked ONLY when the context switch callback is enabled.
++ * TOS = most recently recorded branch
 + */
-+static void perf_pmu_sched_task(struct task_struct *prev,
-+				struct task_struct *next,
-+				bool sched_in)
++static inline u64 intel_pmu_lbr_tos(void)
 +{
-+	struct perf_cpu_context *cpuctx;
-+	struct pmu *pmu;
-+	unsigned long flags;
++	u64 tos;
 +
-+	if (prev == next)
++	rdmsrl(x86_pmu.lbr_tos, tos);
++	return tos;
++}
++
++enum {
++	LBR_NONE,
++	LBR_VALID,
++};
++
++static void __intel_pmu_lbr_restore(struct x86_perf_task_context *task_ctx)
++{
++	int i;
++	unsigned lbr_idx, mask;
++	u64 tos;
++
++	if (task_ctx->lbr_callstack_users == 0 ||
++	    task_ctx->lbr_stack_state == LBR_NONE) {
++		intel_pmu_lbr_reset();
 +		return;
++	}
 +
-+	local_irq_save(flags);
++	mask = x86_pmu.lbr_nr - 1;
++	tos = intel_pmu_lbr_tos();
++	for (i = 0; i < x86_pmu.lbr_nr; i++) {
++		lbr_idx = (tos - i) & mask;
++		wrmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
++		wrmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
++	}
++	task_ctx->lbr_stack_state = LBR_NONE;
++}
 +
-+	rcu_read_lock();
++static void __intel_pmu_lbr_save(struct x86_perf_task_context *task_ctx)
++{
++	int i;
++	unsigned lbr_idx, mask;
++	u64 tos;
 +
-+	list_for_each_entry_rcu(pmu, &pmus, entry) {
-+		if (pmu->sched_task) {
-+			cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++	if (task_ctx->lbr_callstack_users == 0) {
++		task_ctx->lbr_stack_state = LBR_NONE;
++		return;
++	}
 +
-+			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
++	mask = x86_pmu.lbr_nr - 1;
++	tos = intel_pmu_lbr_tos();
++	for (i = 0; i < x86_pmu.lbr_nr; i++) {
++		lbr_idx = (tos - i) & mask;
++		rdmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
++		rdmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
++	}
++	task_ctx->lbr_stack_state = LBR_VALID;
++}
 +
-+			perf_pmu_disable(pmu);
 +
-+			pmu->sched_task(cpuctx->task_ctx, sched_in);
-+
-+			perf_pmu_enable(pmu);
-+
-+			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
-+			/* only CPU PMU has context switch callback */
-+			break;
+ void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct x86_perf_task_context *task_ctx;
+ 
+ 	if (!x86_pmu.lbr_nr)
+ 		return;
+ 	/*
++	 * If LBR callstack feature is enabled and the stack was saved when
++	 * the task was scheduled out, restore the stack. Otherwise flush
++	 * the LBR stack.
++	 */
++	task_ctx = ctx ? ctx->task_ctx_data : NULL;
++	if (task_ctx) {
++		if (sched_in) {
++			__intel_pmu_lbr_restore(task_ctx);
++			cpuc->lbr_context = ctx;
++		} else {
++			__intel_pmu_lbr_save(task_ctx);
 +		}
 +	}
 +
-+	rcu_read_unlock();
-+
-+	local_irq_restore(flags);
-+}
-+
- #define for_each_task_context_nr(ctxn)					\
- 	for ((ctxn) = 0; (ctxn) < perf_nr_task_contexts; (ctxn)++)
- 
-@@ -2446,6 +2499,9 @@ void __perf_event_task_sched_out(struct task_struct *task,
- {
- 	int ctxn;
- 
-+	if (__get_cpu_var(perf_sched_cb_usages))
-+		perf_pmu_sched_task(task, next, false);
-+
- 	for_each_task_context_nr(ctxn)
- 		perf_event_context_sched_out(task, ctxn, next);
- 
-@@ -2703,6 +2759,9 @@ void __perf_event_task_sched_in(struct task_struct *prev,
- 	/* check for system-wide branch_stack events */
- 	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
- 		perf_branch_stack_sched_in(prev, task);
-+
-+	if (__get_cpu_var(perf_sched_cb_usages))
-+		perf_pmu_sched_task(prev, task, true);
++	/*
+ 	 * When sampling the branck stack in system-wide, it may be
+ 	 * necessary to flush the stack on context switch. This happens
+ 	 * when the branch stack does not tag its entries with the pid
+@@ -276,18 +352,6 @@ void intel_pmu_lbr_disable_all(void)
+ 		__intel_pmu_lbr_disable();
  }
  
- static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
+-/*
+- * TOS = most recently recorded branch
+- */
+-static inline u64 intel_pmu_lbr_tos(void)
+-{
+-	u64 tos;
+-
+-	rdmsrl(x86_pmu.lbr_tos, tos);
+-
+-	return tos;
+-}
+-
+ static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
+ {
+ 	unsigned long mask = x86_pmu.lbr_nr - 1;
 -- 
 1.8.3.2
 
