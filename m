@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab3FADQG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 23:16:06 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:41217 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab3FADP6 (ORCPT
+	id S1757556Ab3FAD0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 23:26:46 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:49391
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755686Ab3FAD0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 23:15:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370026725-22910-1-git-send-email-dianders@chromium.org>
-References: <1370026725-22910-1-git-send-email-dianders@chromium.org>
-From: Vikas Sajjan <vikas.sajjan@linaro.org>
-Date: Sat, 1 Jun 2013 08:45:36 +0530
-Message-ID: <CAD025yQMn=kby1agOcV06OzFfNYFDfdok58b1EDtRb=cvB-hEg@mail.gmail.com>
-Subject: Re: [PATCH] clk: samsung: Fix pll36xx_recalc_rate to handle kdiv properly
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 31 May 2013 23:26:39 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: rpurdie@rpsys.net, FlorianSchandinat@gmx.de, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, rafael.j.wysocki@intel.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH] backlight: Convert from Legacy pm ops to dev_pm_ops
+Date: Wed, 14 Nov 2040 04:02:29 -0700
+Message-Id: <2236503749-2998-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+Convert drivers/video/backlight/class to use dev_pm_ops for power
+management and remove Legacy PM ops hooks. With this change, rtc class
+registers suspend/resume callbacks via class->pm (dev_pm_ops) instead of
+Legacy class->suspend/resume. When __device_suspend() runs call-backs,
+it will find class->pm ops for the rtc class.
 
-Looks good to me.
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+Cc: Shuah Khan <shuahkhan@gmail.com>
+---
+ drivers/video/backlight/backlight.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-On 1 June 2013 00:28, Doug Anderson <dianders@chromium.org> wrote:
-> The KDIV value is often listed as unsigned but it needs to be treated
-> as a 16-bit signed value when using it in calculations.  Fix our rate
-> recalculation to do this correctly.
->
-> Before doing this, I tried setting EPLL on exynos5250 to:
->   rate, m, p, s, k = 80000000, 107, 2, 4, 43691
->
-> This rate is exactly from the table in the exynos5250 user manual.
->
-> I read this back as 80750003 with:
->   cat /sys/kernel/debug/clk/fin_pll/fout_epll/clk_rate
->
-> After this patch, it reads back as 80000003
->
->   mw 0x10020130 a06b0204
->   mw 0x10020134 0000aaab
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+index c74e7aa..0ffb251 100644
+--- a/drivers/video/backlight/backlight.c
++++ b/drivers/video/backlight/backlight.c
+@@ -208,7 +208,7 @@ static ssize_t backlight_show_actual_brightness(struct device *dev,
+ 
+ static struct class *backlight_class;
+ 
+-static int backlight_suspend(struct device *dev, pm_message_t state)
++static int backlight_suspend(struct device *dev)
+ {
+ 	struct backlight_device *bd = to_backlight_device(dev);
+ 
+@@ -236,6 +236,9 @@ static int backlight_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(backlight_class_dev_pm_ops, backlight_suspend,
++			 backlight_resume);
++
+ static void bl_device_release(struct device *dev)
+ {
+ 	struct backlight_device *bd = to_backlight_device(dev);
+@@ -414,8 +417,7 @@ static int __init backlight_class_init(void)
+ 	}
+ 
+ 	backlight_class->dev_attrs = bl_device_attributes;
+-	backlight_class->suspend = backlight_suspend;
+-	backlight_class->resume = backlight_resume;
++	backlight_class->pm = &backlight_class_dev_pm_ops;
+ 	return 0;
+ }
+ 
+-- 
+1.7.10.4
 
-
-Reviewed-by: Vikas Sajjan <vikas.sajjan@linaro.org>
-
-
-> ---
-> This patch is based upon another in-flight patch to avoid conflicts:
->   clk: samsung: Use clk->base instead of directly using clk->con0 for PLL3xxx
->   https://patchwork.kernel.org/patch/2629751/
->
->  drivers/clk/samsung/clk-pll.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/clk/samsung/clk-pll.c b/drivers/clk/samsung/clk-pll.c
-> index 01f17cf..26416bb 100644
-> --- a/drivers/clk/samsung/clk-pll.c
-> +++ b/drivers/clk/samsung/clk-pll.c
-> @@ -115,7 +115,8 @@ static unsigned long samsung_pll36xx_recalc_rate(struct clk_hw *hw,
->                                 unsigned long parent_rate)
->  {
->         struct samsung_clk_pll *pll = to_clk_pll(hw);
-> -       u32 mdiv, pdiv, sdiv, kdiv, pll_con0, pll_con1;
-> +       u32 mdiv, pdiv, sdiv, pll_con0, pll_con1;
-> +       s16 kdiv;
->         u64 fvco = parent_rate;
->
->         pll_con0 = pll_readl(pll, PLL36XX_CON0_OFFSET);
-> @@ -123,7 +124,7 @@ static unsigned long samsung_pll36xx_recalc_rate(struct clk_hw *hw,
->         mdiv = (pll_con0 >> PLL36XX_MDIV_SHIFT) & PLL36XX_MDIV_MASK;
->         pdiv = (pll_con0 >> PLL36XX_PDIV_SHIFT) & PLL36XX_PDIV_MASK;
->         sdiv = (pll_con0 >> PLL36XX_SDIV_SHIFT) & PLL36XX_SDIV_MASK;
-> -       kdiv = pll_con1 & PLL36XX_KDIV_MASK;
-> +       kdiv = (s16)(pll_con1 & PLL36XX_KDIV_MASK);
->
->         fvco *= (mdiv << 16) + kdiv;
->         do_div(fvco, (pdiv << sdiv));
-> --
-> 1.8.2.1
->
-
-
-
---
-Thanks and Regards
- Vikas Sajjan
