@@ -1,104 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaIJCvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 22:51:22 -0400
-Received: from mail-bn1on0143.outbound.protection.outlook.com ([157.56.110.143]:55104
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751501AbaIJCvU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 22:51:20 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Jyri Sarha <jsarha@ti.com>, Mark Brown <broonie@kernel.org>
-CC: "perex@perex.cz" <perex@perex.cz>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "tiwai@suse.de" <tiwai@suse.de>, "moinejf@free.fr" <moinejf@free.fr>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv3 3/3] ASoC: simple-card: binding: update binding to
- support the new style.
-Thread-Topic: [PATCHv3 3/3] ASoC: simple-card: binding: update binding to
- support the new style.
-Thread-Index: AQHPxyVImtPJK8G7w0mobWGXStMBE5v4v5wAgAAVJYCAAM7iEA==
-Date: Wed, 10 Sep 2014 02:51:16 +0000
-Message-ID: <755d5dc6d85243c0bd209aea49eef6c0@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1409711021-19277-1-git-send-email-Li.Xiubo@freescale.com>
- <1409711021-19277-4-git-send-email-Li.Xiubo@freescale.com>
- <20140909120948.GZ2601@sirena.org.uk> <540EFFC9.4050207@ti.com>
-In-Reply-To: <540EFFC9.4050207@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 033054F29A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019019)(6009001)(377454003)(479174003)(189002)(51704005)(24454002)(199003)(164054003)(77096002)(99286002)(95666004)(74316001)(107046002)(106116001)(105586002)(90102001)(108616004)(81542001)(80022001)(66066001)(97736003)(106356001)(31966008)(33646002)(21056001)(93886004)(85306004)(99396002)(86362001)(92566001)(83322001)(76576001)(54356999)(76176999)(50986999)(2656002)(87936001)(74502001)(83072002)(85852003)(74662001)(79102001)(81342001)(64706001)(20776003)(76482001)(46102001)(4396001)(77982001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0613;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1752017AbaIJC4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 22:56:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63933 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751432AbaIJC4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 22:56:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,495,1406617200"; 
+   d="scan'208";a="597207264"
+From: kan.liang@intel.com
+To: a.p.zijlstra@chello.nl, eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        acme@kernel.org, ak@linux.intel.com, kan.liang@intel.com
+Subject: [PATCH V5 00/16] perf, x86: Haswell LBR call stack support
+Date: Sun,  7 Jan 2001 21:29:29 -0500
+Message-Id: <978920978-30191-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Kan Liang <kan.liang@intel.com>
 
-> Subject: Re: [PATCHv3 3/3] ASoC: simple-card: binding: update binding to
-> support the new style.
-> 
-> On 09/09/2014 03:09 PM, Mark Brown wrote:
-> > On Wed, Sep 03, 2014 at 10:23:41AM +0800, Xiubo Li wrote:
-> >> This update patch will split the DT node into old style and new style:
-> >> The new style will will be easier to add muti DAI links from old single
-> >> DAI link DTs.
-> >
-> >> This patch will maintian compatibility with the old DTs.
-> >
-> > Is everyone happy with this new style binding?
-> >
-> 
-> If I read the diff correctly the only change in the syntax is moving the
-> bitclock-inversion and frame-inversion properties to DAI nodes also for
-> the new style bindings.
-> 
-> I am Ok with that.
-> 
-> The document does not indicate that the same properties could be also
-> placed to DAI link level like they used to, from where they would apply
-> to both DAI nodes.
-> 
+(Re-post the haswell LBR call stack patch on behalf of Yan, Zheng.
+The patch set is rebased on tip.git commit ID 8b5df2f.
+I've tested them on my Haswell platform.)
 
-I will post one new version of this patch with some very small fix, and
-I will also add this.
+For many profiling tasks we need the callgraph. For example we often
+need to see the caller of a lock or the caller of a memcpy or other
+library function to actually tune the program. Frame pointer unwinding
+is efficient and works well. But frame pointers are off by default on
+64bit code (and on modern 32bit gccs), so there are many binaries around
+that do not use frame pointers. Profiling unchanged production code is
+very useful in practice. On some CPUs frame pointer also has a high
+cost. Dwarf2 unwinding also does not always work and is extremely slow
+(upto 20% overhead).
 
-> I am Ok with this too, but this breaks the backwards compatibility,
-> which I guess is generally considered a problem. However, I doubt anyone
-> but me has yet used this part of the new syntax and I am happy to fix my
-> dts files.
-> 
-> Best regards,
-> Jyri
-> 
-> ps. I could not find the corresponding code changes in the previous
-> patch, so I assume they are coming later.
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are
+executed the last captured branch record is popped from the on-chip LBR
+registers. The LBR call stack facility provides an alternative to get
+callgraph. It has some limitations too, but should work in most cases
+and is significantly faster than dwarf. Frame pointer unwinding is still
+the best default, but LBR call stack is a good alternative when nothing
+else works.
 
-Yes, I have one patch about the new style in my local machine, for some
-reason I will post it later.
+When profiling bc(1) on Fedora 19:
+echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph fp bc -l < cmd
+If this feature is enabled, perf report output looks like:
+    50.36%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+    33.66%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+                     bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+     7.62%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                    |
+                    |--99.89%-- 0x2000186a8
+                     --0.11%-- [...]
+     6.83%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+                    |
+                    |--99.94%-- bc_add
+                    |          execute
+                    |          run_code
+                    |          yyparse
+                    |          main
+                    |          __libc_start_main
+                    |          _start
+                     --0.06%-- [...]
+     0.46%       bc  libc-2.17.so       [.] __memset_sse2
+                 |
+                 --- __memset_sse2
+                    |
+                    |--54.13%-- bc_new_num
+                    |          |
+                    |          |--51.00%-- bc_divide
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |          |--30.46%-- _bc_do_sub
+                    |          |          bc_add
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |           --18.55%-- _bc_do_add
+                    |                     bc_add
+                    |                     execute
+                    |                     run_code
+                    |                     yyparse
+                    |                     main
+                    |                     __libc_start_main
+                    |                     _start
+                    |
+                     --45.87%-- bc_divide
+                               execute
+                               run_code
+                               yyparse
+                               main
+                               __libc_start_main
+                               _start
+If this feature is disabled, perf report output looks like:
+    50.49%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+    33.57%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+     7.61%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                     0x2000186a8
+     6.88%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
+                 |
+                 --- __memcpy_ssse3_back
+The LBR call stack has following known limitations
+ - Zero length calls are not filtered out by hardware
+ - Exception handing such as setjmp/longjmp will have calls/returns not
+   match
+ - Pushing different return address onto the stack will have calls/returns
+   not match
+ - If callstack is deeper than the LBR, only the last entries are captured
 
-Thanks,
+Changes since v1
+ - split change into more patches
+ - introduce context switch callback and use it to flush LBR
+ - use the context switch callback to save/restore LBR
+ - dynamic allocate memory area for storing LBR stack, always switch the
+   memory area during context switch
+ - disable this feature by default
+ - more description in change logs
 
-BRs
-Xiubo
+Changes since v2
+ - don't use xchg to switch PMU specific data
+ - remove nr_branch_stack from struct perf_event_context
+ - simplify the save/restore LBR stack logical
+ - remove unnecessary 'has_branch_stack -> needs_branch_stack'
+   conversion
+ - more description in change logs
+
+Changes since v3
+ - remove sysfs attribute file that disable this feature
+
+Changes since v4
+ - re-organize code that save/resotre LBR stack
+ - allocate pmu specific data when it's needed
+ - update code comments
 
 
+Yan, Zheng (16):
+  perf, x86: Reduce lbr_sel_map size
+  perf, core: introduce pmu context switch callback
+  perf, x86: use context switch callback to flush LBR stack      stack
+  perf, x86: Basic Haswell LBR call stack support
+  perf, core: pmu specific data for perf task context
+  perf, core: always switch pmu specific data during context switch
+  perf, x86: allocate space for storing LBR stack
+  perf, x86: track number of events that use LBR callstack
+  perf, x86: Save/resotre LBR stack during context switch
+  perf, core: simplify need branch stack check
+  perf, core: Pass perf_sample_data to perf_callchain()
+  perf, x86: use LBR call stack to get user callchain
+  perf, x86: re-organize code that implicitly enables LBR/PEBS
+  perf, x86: enable LBR callstack when recording callchain
+  perf, x86: disable FREEZE_LBRS_ON_PMI when LBR operates in callstack  
+      mode
+  perf, x86: Discard zero length call entries in LBR call stack
+
+ arch/arm/kernel/perf_event.c               |   4 +-
+ arch/powerpc/perf/callchain.c              |   4 +-
+ arch/sparc/kernel/perf_event.c             |   4 +-
+ arch/x86/kernel/cpu/perf_event.c           | 120 +++++++----
+ arch/x86/kernel/cpu/perf_event.h           |  28 ++-
+ arch/x86/kernel/cpu/perf_event_intel.c     |  38 +---
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 316 ++++++++++++++++++++++-------
+ include/linux/perf_event.h                 |  26 ++-
+ include/uapi/linux/perf_event.h            |  49 +++--
+ kernel/events/callchain.c                  |   8 +-
+ kernel/events/core.c                       | 182 +++++++++--------
+ kernel/events/internal.h                   |   3 +-
+ 12 files changed, 528 insertions(+), 254 deletions(-)
+
+-- 
+1.8.3.2
 
