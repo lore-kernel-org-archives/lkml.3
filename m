@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265AbaE2QGT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:06:19 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:60306 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756207AbaE2QGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:06:16 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140529120734.GM17233@tucsk.piliscsaba.szeredi.hu>
-References: <27993.1401360881@warthog.procyon.org.uk>
-	<1400838223-30844-1-git-send-email-miklos@szeredi.hu>
-	<28313.1401362925@warthog.procyon.org.uk>
-	<20140529120734.GM17233@tucsk.piliscsaba.szeredi.hu>
-Date: Thu, 29 May 2014 18:06:15 +0200
-Message-ID: <CAJfpeguyE0cg+RAEwOR89=qTGnr2OZFuhZ4tmAfkMLn5-DP_wg@mail.gmail.com>
-Subject: Re: Kernel errors with overlay filesystem v22
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: David Howells <dhowells@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, Sedat Dilek <sedat.dilek@gmail.com>,
-        "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+	id S964988AbaE2QF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:05:29 -0400
+Received: from mx2.netorek.fi ([213.157.84.84]:41993 "EHLO mx2.netorek.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933164AbaE2QFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 12:05:17 -0400
+Date: Sun, 19 Feb 2006 14:20:54 -0500
+From: Maurice Volaski <mvolaski@aecom.yu.edu>
+To: drbd-user@linbit.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [DRBD-user] drbd-0.7.15 crashed doing a full sync under 2.6.13
+Message-Id: <20140529153434.6AE6914E5F3@mx2.netorek.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 2:07 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Thu, May 29, 2014 at 12:28:45PM +0100, David Howells wrote:
->>
->> This sequence of commands produces both errors:
+First posted to drbd mailing list on 2/6 with no reply. It hasn't 
+happened since, but once is enough to mean something is wrong 
+somewhere.....
 
-Fixes pushed to overlayfs.v22 (and overlayfs.current).  Will
-eventually fold these into the main overlayfs patch.
+I did a resize of all the underlying LVMs and that proceeded very
+nicely since drbd automatically recognized the new sizes and
+resize2fs automatically figured out the new size, too.
 
-Thanks,
-Miklos
+Anyway, bringing up the secondary automatically caused the primary to
+start a fully sync. The performance this time was very nice,
+averaging 50-55 MB per second across a total of 8 drbd resources, all
+syncing simultaneously. Each resource is an underlying logical volume
+and is assigned its own TCP port in drbd.conf. The primary has dual
+bonded gigabit in active load balancing mode and secondary is single
+gigabit.
+
+A total of 5600 GB has to be moved. I am estimating the resources
+were between 1/3 and 1/2 finished when the kernel panicked.
+
+The secondary, which is running the same kernel and drbd, did not
+panic. The drives in both systems are attached via LSI Logic SCSI
+cards and on the primary the driver is mptscsih; on the secondary it
+is sym53c8xx.
+
+Unfortunately, I never gotten an easy way to capture the text of a
+panic, and apparently attachments are excluded if the message exceeds
+40K, so I typed out the whole thing:
+
+ne_endio+243}
+<ffffffff8029460b.{__end_that_request_first+283}
+<ffffffff802d297c.{scsi_end_request+60}
+<ffffffff802d2d7b>{scsi_io_completion+651}
+<ffffffff802e1eb1>{sd_rw_intr+721}
+<ffffffff802d25cf>{scsi_device_unbusy+95}
+<ffffffff802cd722>{scsi_softirq+258}
+<ffffffff8013b111>{__do_softirq+113}
+<ffffffff8010ee63>{call_softirq+31}
+<ffffffff80110a55>{do_softirq+53} <ffffffff80119a0f>{do_IRQ+79}
+<ffffffff8010e20a>{ret_from_intr+0} <EOI>
+<ffffffff880bda221>{:drbd:drbd_bm_clear_bit+497}
+<ffffffff880bda21>{:drbd:drbd_bm_clear_bit+497}
+<ffffffff880ccc21>{:drbd:__drbd_set_in_sync+545}
+<ffffffff880c9140>{:drbd:got_BlockAck+96}
+<ffffffff880c9a99>{:drbd:drbd_asender+1081}
+<ffffffff880ce526>{:drbd:drbd_thread_setup+190}
+<ffffffff8010e91a>{child_rip+8}
+<ffffffff880ce460>{:drbd:drbd_thread_setup+0>
+<ffffffff8010e912>{child_rip+0}
+
+Code: 80 3b 00 7e f9 e9 89 fb ff ff e8 40 27 ef ff e9 01 fc ff ff
+console shuts up...
+   <0>Kernel panic --not syncing:Aiee, killing interrupt handler!
+
+keywords: crash, freeze, freezing, hang, hung, panic, locked up,
+scsi, thread, threads, interrupt handler, bug, race condition.
+-- 
+
+Maurice Volaski, mvolaski@aecom.yu.edu
+Computing Support, Rose F. Kennedy Center
+Albert Einstein College of Medicine of Yeshiva University
+_______________________________________________
+drbd-user mailing list
+drbd-user@lists.linbit.com
+http://lists.linbit.com/mailman/listinfo/drbd-user
+
+
