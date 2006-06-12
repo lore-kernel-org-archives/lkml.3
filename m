@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964988AbaE2QF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:05:29 -0400
-Received: from mx2.netorek.fi ([213.157.84.84]:41993 "EHLO mx2.netorek.fi"
+	id S934472AbaE2QF1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:05:27 -0400
+Received: from mx2.netorek.fi ([213.157.84.84]:42005 "EHLO mx2.netorek.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933164AbaE2QFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933233AbaE2QFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 12:05:17 -0400
-Date: Sun, 19 Feb 2006 14:20:54 -0500
+Date: Mon, 12 Jun 2006 01:06:30 -0400
 From: Maurice Volaski <mvolaski@aecom.yu.edu>
 To: drbd-user@linbit.com
 Cc: linux-kernel@vger.kernel.org
-Subject: [DRBD-user] drbd-0.7.15 crashed doing a full sync under 2.6.13
-Message-Id: <20140529153434.6AE6914E5F3@mx2.netorek.fi>
+Subject: [DRBD-user] Spontaneous access to the CDROM on two computers	simultaneously
+Message-Id: <20140529153506.961D4205B30@mx2.netorek.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First posted to drbd mailing list on 2/6 with no reply. It hasn't 
-happened since, but once is enough to mean something is wrong 
-somewhere.....
+Spontaneously and for no apparent reason, two computers displayed the 
+following message in their logs several times at the same time:
 
-I did a resize of all the underlying LVMs and that proceeded very
-nicely since drbd automatically recognized the new sizes and
-resize2fs automatically figured out the new size, too.
+[55419.446442] Buffer I/O error on device hda, logical block 0
+[55419.447381] hda: command error: status=0x51 { DriveReady 
+SeekComplete Error }
+[55419.447386] hda: command error: error=0x54 { AbortedCommand 
+LastFailedSense=0x05 }
+[55419.447389] ide: failed opcode was: unknown
+[55419.447391] end_request: I/O error, dev hda, sector 0
 
-Anyway, bringing up the secondary automatically caused the primary to
-start a fully sync. The performance this time was very nice,
-averaging 50-55 MB per second across a total of 8 drbd resources, all
-syncing simultaneously. Each resource is an underlying logical volume
-and is assigned its own TCP port in drbd.conf. The primary has dual
-bonded gigabit in active load balancing mode and secondary is single
-gigabit.
+These two amd64-based computers are running kernel 2.6.16.1 with 
+drbd-0.7.19. (drbd is a network RAID module; it sends data from one 
+computer to the other continuously, but to its own /dev/drbdx 
+devices.)
 
-A total of 5600 GB has to be moved. I am estimating the resources
-were between 1/3 and 1/2 finished when the kernel panicked.
+hda is the CDROM drive, so it appears that both computers all on 
+their own volition attempted to access their CDROM drive for no 
+reason at and the same time, nonetheless. Since neither of them has a 
+CDROM in the drive at the time, I think this error makes sense if 
+something internally caused a real attempt to do that.
 
-The secondary, which is running the same kernel and drbd, did not
-panic. The drives in both systems are attached via LSI Logic SCSI
-cards and on the primary the driver is mptscsih; on the secondary it
-is sym53c8xx.
-
-Unfortunately, I never gotten an easy way to capture the text of a
-panic, and apparently attachments are excluded if the message exceeds
-40K, so I typed out the whole thing:
-
-ne_endio+243}
-<ffffffff8029460b.{__end_that_request_first+283}
-<ffffffff802d297c.{scsi_end_request+60}
-<ffffffff802d2d7b>{scsi_io_completion+651}
-<ffffffff802e1eb1>{sd_rw_intr+721}
-<ffffffff802d25cf>{scsi_device_unbusy+95}
-<ffffffff802cd722>{scsi_softirq+258}
-<ffffffff8013b111>{__do_softirq+113}
-<ffffffff8010ee63>{call_softirq+31}
-<ffffffff80110a55>{do_softirq+53} <ffffffff80119a0f>{do_IRQ+79}
-<ffffffff8010e20a>{ret_from_intr+0} <EOI>
-<ffffffff880bda221>{:drbd:drbd_bm_clear_bit+497}
-<ffffffff880bda21>{:drbd:drbd_bm_clear_bit+497}
-<ffffffff880ccc21>{:drbd:__drbd_set_in_sync+545}
-<ffffffff880c9140>{:drbd:got_BlockAck+96}
-<ffffffff880c9a99>{:drbd:drbd_asender+1081}
-<ffffffff880ce526>{:drbd:drbd_thread_setup+190}
-<ffffffff8010e91a>{child_rip+8}
-<ffffffff880ce460>{:drbd:drbd_thread_setup+0>
-<ffffffff8010e912>{child_rip+0}
-
-Code: 80 3b 00 7e f9 e9 89 fb ff ff e8 40 27 ef ff e9 01 fc ff ff
-console shuts up...
-   <0>Kernel panic --not syncing:Aiee, killing interrupt handler!
-
-keywords: crash, freeze, freezing, hang, hung, panic, locked up,
-scsi, thread, threads, interrupt handler, bug, race condition.
+One computer is running a variety of file sharing services (netatalk, 
+samba, apache, mysql). Both of them are running heartbeat and drbd, 
+and those programs should account for the only communication between 
+two computers at the time of the messages, so I'm guessing that 
+because of that, drbd could at least theoretically triggered this 
+somehow.
 -- 
 
 Maurice Volaski, mvolaski@aecom.yu.edu
@@ -80,5 +53,6 @@ _______________________________________________
 drbd-user mailing list
 drbd-user@lists.linbit.com
 http://lists.linbit.com/mailman/listinfo/drbd-user
+
 
 
