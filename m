@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933059AbaE2QFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:05:12 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47489 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932640AbaE2QFK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:05:10 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [Patch v2 4/4] tty: serial: msm: Remove direct access to GSBI
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <A56B810D-869A-4E4F-BC29-C9B0F6CDCE79@codeaurora.org>
-Date: Thu, 29 May 2014 11:05:06 -0500
-Cc: Andy Gross <agross@codeaurora.org>, linux-kernel@vger.kernel.org,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5A73A2BD-6113-4BC0-860F-BBE6A8232585@codeaurora.org>
-References: <1398357082-5102-1-git-send-email-agross@codeaurora.org> <1398357082-5102-5-git-send-email-agross@codeaurora.org> <A56B810D-869A-4E4F-BC29-C9B0F6CDCE79@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1874)
+	id S934742AbaE2QFf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:05:35 -0400
+Received: from mx2.netorek.fi ([213.157.84.84]:41981 "EHLO mx2.netorek.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933104AbaE2QFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 12:05:17 -0400
+Date: Sat, 17 Jun 2006 14:20:28 -0400
+From: Maurice Volaski <mvolaski@aecom.yu.edu>
+To: drbd-user@linbit.com
+Cc: gentoo-user@lists.gentoo.org, linux-kernel@vger.kernel.org,
+        linux-lvm@redhat.com
+Subject: [DRBD-user] Re: Spontaneous access to the CDROM on two computers simultaneously
+Message-Id: <20140529153604.5FC52205E8A@mx2.netorek.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It happened again, but this time on just one of the two computers:
 
-On May 29, 2014, at 10:14 AM, Kumar Gala <galak@codeaurora.org> wrote:
+[20770.844282] hda: tray open
+[20770.844288] end_request: I/O error, dev hda, sector 0
+[20770.844292] Buffer I/O error on device hda, logical block 0
 
-> 
-> On Apr 24, 2014, at 11:31 AM, Andy Gross <agross@codeaurora.org> wrote:
-> 
->> This patch removes direct access of the GSBI registers.  GSBI configuration
->> should be done through the GSBI driver directly.
->> 
->> Signed-off-by: Andy Gross <agross@codeaurora.org>
->> ---
->> drivers/tty/serial/msm_serial.c |   48 ++-------------------------------------
->> drivers/tty/serial/msm_serial.h |    5 ----
->> 2 files changed, 2 insertions(+), 51 deletions(-)
-> 
-> Greg,
-> 
-> Any update on pulling this is for next?
-> 
-> - k
+Since you think LVM may be misbehaving, I changed the filter on the 
+affected computer to read
 
-I’ll send it via arm-soc as the related patches are going via that path.
+filter = [ "r|/dev/cdrom|", "r|/dev/hda|", "r|/dev/ide|" ]
 
-- k
+Ironically, that's on the computer that threw the error, so it could 
+be more evidence LVM has a problem if it is indeed the cause or 
+further evidence that it isn't involved.
+
+The kernel on this amd64-based computer is now 2.6.16.20. LVM is 
+version 2.02.05 (versions from Gentoo packages). Device mapper is 
+1.02.07 and udev is 090.) Since I'm shooting in the dark, cc'd to the 
+gentoo ml since this system is gentoo-based (2005.0 profile).
+
+
+>/ 2006-06-12 01:06:30 -0400
+>\ Maurice Volaski:
+>>  Spontaneously and for no apparent reason, two computers displayed 
+>>the following message in their logs several times at the same time:
+>>
+>  > [55419.446442] Buffer I/O error on device hda, logical block 0
+>  > [55419.447381] hda: command error: status=0x51 { DriveReady 
+>SeekComplete Error }
+>>  [55419.447386] hda: command error: error=0x54 { AbortedCommand 
+>>LastFailedSense=0x05 }
+>>  [55419.447389] ide: failed opcode was: unknown
+>>  [55419.447391] end_request: I/O error, dev hda, sector 0
+>>
+>...
+>>  drbd could at least theoretically triggered this somehow.
+>no.
+>
+>much more likely some program scanning ("discovering") devices.
+>
+>just a wild guess:
+>man lvm.conf
+>/filter
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
+Maurice Volaski, mvolaski@aecom.yu.edu
+Computing Support, Rose F. Kennedy Center
+Albert Einstein College of Medicine of Yeshiva University
+_______________________________________________
+drbd-user mailing list
+drbd-user@lists.linbit.com
+http://lists.linbit.com/mailman/listinfo/drbd-user
+
+
 
