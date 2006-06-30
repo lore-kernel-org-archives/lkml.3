@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934619AbaE2QFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:05:32 -0400
-Received: from mx2.netorek.fi ([213.157.84.84]:41987 "EHLO mx2.netorek.fi"
+	id S965114AbaE2QFa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:05:30 -0400
+Received: from mx2.netorek.fi ([213.157.84.84]:41989 "EHLO mx2.netorek.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933192AbaE2QFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933135AbaE2QFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 12:05:17 -0400
-Date: Sat, 17 Jun 2006 14:20:28 -0400
+Date: Fri, 30 Jun 2006 01:44:59 -0400
 From: Maurice Volaski <mvolaski@aecom.yu.edu>
 To: drbd-user@linbit.com
-Cc: gentoo-user@lists.gentoo.org, linux-kernel@vger.kernel.org,
-        linux-lvm@redhat.com
-Subject: [DRBD-user] Re: Spontaneous access to the CDROM on two computers simultaneously
-Message-Id: <20140529153507.B0CB514F56B@mx2.netorek.fi>
+Cc: linux-kernel@vger.kernel.org
+Subject: [DRBD-user] Kernel 2.67.17.1 is hanging I/O under AMD64 [Was Re: Kernel 2.6.17-rc5 under amd64 may be hanging I/O]
+Message-Id: <20140529153516.41697205B5D@mx2.netorek.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It happened again, but this time on just one of the two computers:
+The problem,at least I think it's the same problem, also occurs in 
+kernel 2.6.17.1.
 
-[20770.844282] hda: tray open
-[20770.844288] end_request: I/O error, dev hda, sector 0
-[20770.844292] Buffer I/O error on device hda, logical block 0
+The relevant output has been posted online at
+http://www.kennedy.aecom.yu.edu/misc/drbdstall2.htm
 
-Since you think LVM may be misbehaving, I changed the filter on the 
-affected computer to read
-
-filter = [ "r|/dev/cdrom|", "r|/dev/hda|", "r|/dev/ide|" ]
-
-Ironically, that's on the computer that threw the error, so it could 
-be more evidence LVM has a problem if it is indeed the cause or 
-further evidence that it isn't involved.
-
-The kernel on this amd64-based computer is now 2.6.16.20. LVM is 
-version 2.02.05 (versions from Gentoo packages). Device mapper is 
-1.02.07 and udev is 090.) Since I'm shooting in the dark, cc'd to the 
-gentoo ml since this system is gentoo-based (2005.0 profile).
-
-
->/ 2006-06-12 01:06:30 -0400
+>
+>/ 2006-06-08 20:34:10 -0400
 >\ Maurice Volaski:
->>  Spontaneously and for no apparent reason, two computers displayed 
->>the following message in their logs several times at the same time:
+>>  It appears that kernel 2.6.17-rc5 under amd64 may be hanging I/O
+>>  processes spontaneously at random.
 >>
->  > [55419.446442] Buffer I/O error on device hda, logical block 0
->  > [55419.447381] hda: command error: status=0x51 { DriveReady 
->SeekComplete Error }
->>  [55419.447386] hda: command error: error=0x54 { AbortedCommand 
->>LastFailedSense=0x05 }
->>  [55419.447389] ide: failed opcode was: unknown
->>  [55419.447391] end_request: I/O error, dev hda, sector 0
+>>  Our setup here uses drbd (ver. 0.7.19), which is a network RAID kernel
+>>  module, and initially I was fscking (ext3) filesystems, which are on
+>>  drbd devices, and the fsck just stopped spontaneously on the two of
+>  > them.
 >>
->...
->>  drbd could at least theoretically triggered this somehow.
->no.
+>>  Today, I tried copying a directory on the command line with cp -a on
+>>  this computer (on a drbd-managed device) and then in mid-copy I tried
+>>  to abort the process with control-C. It did not abort. I tried killing
+>>  it with kill and then with kill -9. It turns out that the process had
+>>  died, but is still left in ps.
+>>
+>>  Just by happenstance,
+>>
+>>  Anyway, I tried bringing down the peer and bringing it back up and it
+>>  stalled.
+>>
+>  > I also had an emerge sync (i.e., the Gentoo update mechanism) going
+>>  and it too got stuck, but it doesn't, or at least shouldn't affect
+>>  drbd disks, implying this is not a drbd bug, but a kernel bug.
+>>
 >
->much more likely some program scanning ("discovering") devices.
+>well. it says below that emerge hangs is drbd_al_begin_io, so it is at
+>least drbd related, too.
 >
->just a wild guess:
->man lvm.conf
->/filter
+>>  >* what are the numbers in /proc/drbd
+>>
+>>  This is how it appears long after the copy hang and I stopped and just
+>>  restarted drbd on the peer. The output from then hanging computer:
+>
+>thanks, that might help in debugging things.
+>I'll have a look, maybe I can find something in there.
+
 
 -- 
 
@@ -70,6 +70,5 @@ _______________________________________________
 drbd-user mailing list
 drbd-user@lists.linbit.com
 http://lists.linbit.com/mailman/listinfo/drbd-user
-
 
 
