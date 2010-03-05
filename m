@@ -1,112 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab3C0Gmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 02:42:39 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:62499 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab3C0Gmi (ORCPT
+	id S933378Ab3CVNjs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 09:39:48 -0400
+Received: from swissweb.swissdisk.com ([174.129.12.238]:52792 "EHLO
+	swissweb.swissdisk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933342Ab3CVNjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 02:42:38 -0400
-From: Joseph CHANG <josright123@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Matthew Leach <matthew@mattleach.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joseph CHANG <joseph_chang@davicom.com.tw>,
-        Jiri Pirko <jiri@resnulli.us>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Joseph CHANG <josright123@gmail.com>
-Subject: [PATCH 1/1] ethernet: dm9000 driver: davicom: upgrade driver
-Date: Sat,  5 Jan 1980 21:10:06 +0800
-Message-Id: <315925806-1352-1-git-send-email-josright123@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 22 Mar 2013 09:39:43 -0400
+X-Greylist: delayed 1391 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Mar 2013 09:39:43 EDT
+From: Andy Fleming <afleming@freescale.com>
+Date: Fri, 5 Mar 2010 13:48:19 -0600
+Subject: [PATCH] of_mdio: Add of_phy_attach function
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
+Message-Id: <E1UJ1fR-0004i1-Fc@swissweb.swissdisk.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing bug for DM9000B which is a DSP revision!
+of_phy_connect is useful for most systems, but some drivers will want
+finer-grained control over their PHYs, and won't want to use the
+PHY Lib state machine or interrupt handlers.
 
-Had tested to Davicom DM9000 series include DM9000E(analog),
-DM9000A(analog), DM9000B(dsp) and DM9000C(dsp) in X86 and
-ARM Embedded Linux these years.
+This mirrors phy_attach() in libphy, which is already exported.
 
-Signed-off-by: Joseph CHANG <josright123@gmail.com>
+Signed-off-by: Andy Fleming <afleming@freescale.com>
+Signed-off-by: Ben Collins <ben.c@servergy.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: devicetree-discuss@lists.ozlabs.org
 ---
- drivers/net/ethernet/davicom/dm9000.c |   12 ++++++++++--
- drivers/net/ethernet/davicom/dm9000.h |   11 ++++++++++-
- 2 files changed, 20 insertions(+), 3 deletions(-)
+ drivers/net/phy/phy_device.c |  8 +++-----
+ drivers/of/of_mdio.c         | 14 ++++++++++++++
+ include/linux/of_mdio.h      |  3 +++
+ include/linux/phy.h          |  2 ++
+ 4 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/davicom/dm9000.c b/drivers/net/ethernet/davicom/dm9000.c
-index 8cdf025..252f1da 100644
---- a/drivers/net/ethernet/davicom/dm9000.c
-+++ b/drivers/net/ethernet/davicom/dm9000.c
-@@ -47,7 +47,7 @@
- #define DM9000_PHY		0x40	/* PHY address 0x01 */
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index 3657b4a..54ba552 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -60,9 +60,6 @@ extern void mdio_bus_exit(void);
+ static LIST_HEAD(phy_fixup_list);
+ static DEFINE_MUTEX(phy_fixup_lock);
  
- #define CARDNAME	"dm9000"
--#define DRV_VERSION	"1.31"
-+#define DRV_VERSION	"1.39"
- 
+-static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+-			     u32 flags, phy_interface_t interface);
+-
  /*
-  * Transmit timeout, default 5 seconds.
-@@ -795,6 +795,8 @@ dm9000_init_dm9000(struct net_device *dev)
+  * Creates a new phy_fixup and adds it to the list
+  * @bus_id: A string which matches phydev->dev.bus_id (or PHY_ANY_ID)
+@@ -524,8 +521,8 @@ int phy_init_hw(struct phy_device *phydev)
+  *     the attaching device, and given a callback for link status
+  *     change.  The phy_device is returned to the attaching driver.
+  */
+-static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+-			     u32 flags, phy_interface_t interface)
++int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
++		      u32 flags, phy_interface_t interface)
+ {
+ 	struct device *d = &phydev->dev;
+ 	int err;
+@@ -571,6 +568,7 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
  
- 	iow(db, DM9000_GPCR, GPCR_GEP_CNTL);	/* Let GPIO0 output */
- 
-+	dm9000_phy_write(dev, 0, MII_BMCR, BMCR_RESET); /* PHY RESET */
-+
- 	ncr = (db->flags & DM9000_PLATF_EXT_PHY) ? NCR_EXT_PHY : 0;
- 
- 	/* if wol is needed, then always set NCR_WAKEEN otherwise we end
-@@ -830,6 +832,8 @@ dm9000_init_dm9000(struct net_device *dev)
- 	db->tx_pkt_cnt = 0;
- 	db->queue_pkt_len = 0;
- 	dev->trans_start = jiffies;
-+
-+	dm9000_phy_write(dev, 0, MII_DM_DSPCR, DSPCR_INIT_PARAM); /* Init */
+ 	return err;
  }
++EXPORT_SYMBOL(phy_attach_direct);
  
- /* Our watchdog timed out. Called by the networking layer */
-@@ -1502,7 +1506,11 @@ dm9000_probe(struct platform_device *pdev)
- 	db->flags |= DM9000_PLATF_SIMPLE_PHY;
- #endif
- 
--	dm9000_reset(db);
-+	/* Fixing bug on dm9000_probe, takeover dm9000_reset(db),
-+	 * Need 'NCR_MAC_LBK' bit to indeed stable our DM9000 fifo
-+	 * while probe stage */
+ /**
+  * phy_attach - attach a network device to a particular PHY device
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index 199b7f2..2b2c64c 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -198,3 +198,17 @@ struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
+ 	return IS_ERR(phy) ? NULL : phy;
+ }
+ EXPORT_SYMBOL(of_phy_connect_fixed_link);
 +
-+	iow(db, DM9000_NCR, NCR_MAC_LBK | NCR_RST);
- 
- 	/* try multiple times, DM9000 sometimes gets the read wrong */
- 	for (i = 0; i < 8; i++) {
-diff --git a/drivers/net/ethernet/davicom/dm9000.h b/drivers/net/ethernet/davicom/dm9000.h
-index 55688bd..9ce058a 100644
---- a/drivers/net/ethernet/davicom/dm9000.h
-+++ b/drivers/net/ethernet/davicom/dm9000.h
-@@ -69,7 +69,9 @@
- #define NCR_WAKEEN          (1<<6)
- #define NCR_FCOL            (1<<4)
- #define NCR_FDX             (1<<3)
--#define NCR_LBK             (3<<1)
++/* Attach a network device to a particular OF PHY device */
++struct phy_device *of_phy_attach(struct net_device *dev,
++				struct device_node *phy_np, u32 flags,
++				phy_interface_t iface)
++{
++	struct phy_device *phy = of_phy_find_device(phy_np);
 +
-+#define NCR_RESERVED        (3<<1)
-+#define NCR_MAC_LBK         (1<<1)
- #define NCR_RST	            (1<<0)
- 
- #define NSR_SPEED           (1<<7)
-@@ -167,5 +169,12 @@
- #define ISR_LNKCHNG		(1<<5)
- #define ISR_UNDERRUN		(1<<4)
- 
-+/* Davicom MII registers.
-+ */
++	if (!phy)
++		return NULL;
 +
-+#define MII_DM_DSPCR		0x1b    /* DSP Control Register */
-+
-+#define DSPCR_INIT_PARAM	0xE100	/* DSP init parameter */
-+
- #endif /* _DM9000X_H_ */
++	return phy_attach_direct(dev, phy, flags, iface) ? NULL : phy;
++}
++EXPORT_SYMBOL(of_phy_attach);
+diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
+index cdc62c9..88319da 100644
+--- a/include/linux/of_mdio.h
++++ b/include/linux/of_mdio.h
+@@ -22,6 +22,9 @@ extern struct phy_device *of_phy_connect(struct net_device *dev,
+ extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
+ 					 void (*hndlr)(struct net_device *),
+ 					 phy_interface_t iface);
++extern struct phy_device *of_phy_attach(struct net_device *dev,
++				struct device_node *phy_np, u32 flags,
++				phy_interface_t iface);
  
+ extern struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np);
+ 
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 5a94ec7..0521e72 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -508,6 +508,8 @@ int phy_device_register(struct phy_device *phy);
+ int phy_init_hw(struct phy_device *phydev);
+ struct phy_device * phy_attach(struct net_device *dev,
+ 		const char *bus_id, phy_interface_t interface);
++int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
++		      u32 flags, phy_interface_t interface);
+ struct phy_device *phy_find_first(struct mii_bus *bus);
+ int phy_connect_direct(struct net_device *dev, struct phy_device *phydev,
+ 		void (*handler)(struct net_device *),
 -- 
-1.7.1
+1.8.1.2
 
