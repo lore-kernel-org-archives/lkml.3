@@ -1,125 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933378Ab3CVNjs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 09:39:48 -0400
-Received: from swissweb.swissdisk.com ([174.129.12.238]:52792 "EHLO
+	id S1753650Ab3CVNji (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 09:39:38 -0400
+Received: from swissweb.swissdisk.com ([174.129.12.238]:52786 "EHLO
 	swissweb.swissdisk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342Ab3CVNjn (ORCPT
+	with ESMTP id S1753680Ab3CVNje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 09:39:43 -0400
-X-Greylist: delayed 1391 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Mar 2013 09:39:43 EDT
+	Fri, 22 Mar 2013 09:39:34 -0400
+X-Greylist: delayed 1382 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Mar 2013 09:39:34 EDT
 From: Andy Fleming <afleming@freescale.com>
-Date: Fri, 5 Mar 2010 13:48:19 -0600
-Subject: [PATCH] of_mdio: Add of_phy_attach function
+Date: Wed, 13 Jul 2011 08:52:04 -0500
+Subject: [PATCH] net: Add support for handling queueing in hardware
 To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Message-Id: <E1UJ1fR-0004i1-Fc@swissweb.swissdisk.com>
+Cc: netdev@vger.kernel.org
+Message-Id: <E1UJ1fR-0004hs-4l@swissweb.swissdisk.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_phy_connect is useful for most systems, but some drivers will want
-finer-grained control over their PHYs, and won't want to use the
-PHY Lib state machine or interrupt handlers.
-
-This mirrors phy_attach() in libphy, which is already exported.
+The QDisc code does a bunch of locking which is unnecessary if
+you have hardware which handles all of the queueing. Add
+support for this, and skip over all of the queueing code if
+the feature is enabled on a given device, which breaks QDisc
+support on dpaa_eth, and also coopts the FCOE feature bit.
 
 Signed-off-by: Andy Fleming <afleming@freescale.com>
 Signed-off-by: Ben Collins <ben.c@servergy.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: devicetree-discuss@lists.ozlabs.org
+Cc: netdev@vger.kernel.org
 ---
- drivers/net/phy/phy_device.c |  8 +++-----
- drivers/of/of_mdio.c         | 14 ++++++++++++++
- include/linux/of_mdio.h      |  3 +++
- include/linux/phy.h          |  2 ++
- 4 files changed, 22 insertions(+), 5 deletions(-)
+ include/linux/netdev_features.h | 2 ++
+ net/core/dev.c                  | 6 ++++++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index 3657b4a..54ba552 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -60,9 +60,6 @@ extern void mdio_bus_exit(void);
- static LIST_HEAD(phy_fixup_list);
- static DEFINE_MUTEX(phy_fixup_lock);
+diff --git a/include/linux/netdev_features.h b/include/linux/netdev_features.h
+index 3dd3934..ffb4587 100644
+--- a/include/linux/netdev_features.h
++++ b/include/linux/netdev_features.h
+@@ -56,6 +56,7 @@ enum {
+ 	NETIF_F_LOOPBACK_BIT,		/* Enable loopback */
+ 	NETIF_F_RXFCS_BIT,		/* Append FCS to skb pkt data */
+ 	NETIF_F_RXALL_BIT,		/* Receive errored frames too */
++	NETIF_F_HW_QDISC_BIT,		/* Supports hardware Qdisc */
  
--static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
--			     u32 flags, phy_interface_t interface);
--
- /*
-  * Creates a new phy_fixup and adds it to the list
-  * @bus_id: A string which matches phydev->dev.bus_id (or PHY_ANY_ID)
-@@ -524,8 +521,8 @@ int phy_init_hw(struct phy_device *phydev)
-  *     the attaching device, and given a callback for link status
-  *     change.  The phy_device is returned to the attaching driver.
-  */
--static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
--			     u32 flags, phy_interface_t interface)
-+int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
-+		      u32 flags, phy_interface_t interface)
- {
- 	struct device *d = &phydev->dev;
- 	int err;
-@@ -571,6 +568,7 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+ 	/*
+ 	 * Add your fresh new feature above and remember to update
+@@ -80,6 +81,7 @@ enum {
+ #define NETIF_F_GSO_ROBUST	__NETIF_F(GSO_ROBUST)
+ #define NETIF_F_HIGHDMA		__NETIF_F(HIGHDMA)
+ #define NETIF_F_HW_CSUM		__NETIF_F(HW_CSUM)
++#define NETIF_F_HW_QDISC	__NETIF_F(HW_QDISC)
+ #define NETIF_F_HW_VLAN_FILTER	__NETIF_F(HW_VLAN_FILTER)
+ #define NETIF_F_HW_VLAN_RX	__NETIF_F(HW_VLAN_RX)
+ #define NETIF_F_HW_VLAN_TX	__NETIF_F(HW_VLAN_TX)
+diff --git a/net/core/dev.c b/net/core/dev.c
+index dffbef7..6818b18 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2743,6 +2743,12 @@ int dev_queue_xmit(struct sk_buff *skb)
  
- 	return err;
- }
-+EXPORT_SYMBOL(phy_attach_direct);
+ 	skb_update_prio(skb);
  
- /**
-  * phy_attach - attach a network device to a particular PHY device
-diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-index 199b7f2..2b2c64c 100644
---- a/drivers/of/of_mdio.c
-+++ b/drivers/of/of_mdio.c
-@@ -198,3 +198,17 @@ struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
- 	return IS_ERR(phy) ? NULL : phy;
- }
- EXPORT_SYMBOL(of_phy_connect_fixed_link);
++	if (dev->features & NETIF_F_HW_QDISC) {
++		txq = netdev_pick_tx(dev, skb);
++		rc = dev_hard_start_xmit(skb, dev, txq);
++		goto out;
++	}
 +
-+/* Attach a network device to a particular OF PHY device */
-+struct phy_device *of_phy_attach(struct net_device *dev,
-+				struct device_node *phy_np, u32 flags,
-+				phy_interface_t iface)
-+{
-+	struct phy_device *phy = of_phy_find_device(phy_np);
-+
-+	if (!phy)
-+		return NULL;
-+
-+	return phy_attach_direct(dev, phy, flags, iface) ? NULL : phy;
-+}
-+EXPORT_SYMBOL(of_phy_attach);
-diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
-index cdc62c9..88319da 100644
---- a/include/linux/of_mdio.h
-+++ b/include/linux/of_mdio.h
-@@ -22,6 +22,9 @@ extern struct phy_device *of_phy_connect(struct net_device *dev,
- extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
- 					 void (*hndlr)(struct net_device *),
- 					 phy_interface_t iface);
-+extern struct phy_device *of_phy_attach(struct net_device *dev,
-+				struct device_node *phy_np, u32 flags,
-+				phy_interface_t iface);
+ 	txq = netdev_pick_tx(dev, skb);
+ 	q = rcu_dereference_bh(txq->qdisc);
  
- extern struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np);
- 
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index 5a94ec7..0521e72 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -508,6 +508,8 @@ int phy_device_register(struct phy_device *phy);
- int phy_init_hw(struct phy_device *phydev);
- struct phy_device * phy_attach(struct net_device *dev,
- 		const char *bus_id, phy_interface_t interface);
-+int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
-+		      u32 flags, phy_interface_t interface);
- struct phy_device *phy_find_first(struct mii_bus *bus);
- int phy_connect_direct(struct net_device *dev, struct phy_device *phydev,
- 		void (*handler)(struct net_device *),
 -- 
 1.8.1.2
 
