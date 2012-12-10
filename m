@@ -1,44 +1,62 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750910Ab3HSF3a (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Mon, 19 Aug 2013 01:29:30 -0400
-Received: from [157.55.133.105] ([157.55.133.105]:1173 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750891Ab3HSF30 convert rfc822-to-8bit (ORCPT
+	id S1754570Ab3HVW5O (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 22 Aug 2013 18:57:14 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56753 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754309Ab3HVW5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 01:29:26 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: UNSECURED LOANS @ 4.5% APPLY NOW 
-To: Recipients <13@411web.onmicrosoft.com>
-From: =?utf-8?b?IkNhc2ggQWR2YW5jZcKuIjwxM0A0MTF3ZWIub25taWNyb3NvZnQuY29tPg==?=@vger.kernel.org
-Date: Sun, 18 Aug 2013 22:28:04 -0700
-Reply-To: <m.c.a.uk@btinternet.com>
-Message-ID: <9854ae49-47e7-45c9-9dc5-812907308d30@BN1PR05MB252.namprd05.prod.outlook.com>
-X-Originating-IP: [180.215.211.19]
-X-ClientProxiedBy: BN1PR07CA021.namprd07.prod.outlook.com (10.242.217.174)
- To BN1PR05MB252.namprd05.prod.outlook.com (10.255.206.12)
-X-Forefront-PRVS: 09435FCA72
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(76576001)(81342001)(83072001)(50466002)(19580395003)(74502001)(59766001)(47446002)(43066001)(74706001)(83322001)(77096001)(81542001)(53256004)(74366001)(80976001)(4396001)(19580405001)(76482001)(33646001)(74876001)(54316002)(56816003)(66066001)(79102001)(63696002)(65816001)(81686001)(76176001)(76796001)(23676002)(69226001)(46102001)(50986001)(47736001)(74662001)(81816001)(74316001)(56776001)(42186004)(47776003)(80022001)(49866001)(54356001)(31686002)(51856001)(76786001)(47976001)(543214007)(83642002);DIR:OUT;SFP:1501;SCL:5;SRVR:BN1PR05MB252;H:[180.215.211.19];CLIP:180.215.211.19;RD:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: 411web.onmicrosoft.com
+	Thu, 22 Aug 2013 18:57:04 -0400
+Message-Id: <0fed3abba1286c59e51087efa02514d79e79ac14.1377202730.git.joshc@codeaurora.org>
+In-Reply-To: <cover.1377202730.git.joshc@codeaurora.org>
+References: <cover.1377202730.git.joshc@codeaurora.org>
+From: Josh Cartwright <joshc@codeaurora.org>
+Date: Mon, 10 Dec 2012 20:41:31 +0100
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH RFC v2 1/5] of: Add empty for_each_available_child_of_node() macro
+ definition
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good day
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-We are Merchant Cash Advance, we’re here to present you with a loan program with an affordable interest rate of 4.5%, if you are interested in getting loan, please fill out the registration form below.
+Add this empty macro definition so users can be compiled without
+excluding this macro call with preprocessor directives when CONFIG_OF
+is disabled.
 
-(1) Full name:
-(2) The loan amount required:
-(3) Duration of loan:
-(4) Country:
-(5) Phone number:
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+This patch was first introduced in December @
+http://thread.gmane.org/gmane.linux.drivers.devicetree/26315
 
-For more information contact: 
-m.c.a.uk@btinternet.com
+ include/linux/of.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Thank you
-Merchant Cash Advance®
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 1fd08ca..fefffb3 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -369,6 +369,9 @@ static inline bool of_have_populated_dt(void)
+ #define for_each_child_of_node(parent, child) \
+ 	while (0)
+ 
++#define for_each_available_child_of_node(parent, child) \
++	while (0)
++
+ static inline struct device_node *of_get_child_by_name(
+ 					const struct device_node *node,
+ 					const char *name)
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
+
