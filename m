@@ -1,124 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab3AKCFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 21:05:00 -0500
-Received: from mga14.intel.com ([143.182.124.37]:12107 "EHLO mga14.intel.com"
+	id S1755175Ab3AKCFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 21:05:23 -0500
+Received: from www.icassv.ro ([83.103.150.169]:63129 "EHLO icassv.ro"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754884Ab3AKCE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 21:04:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,447,1355126400"; 
-   d="scan'208";a="242542283"
-From: Shannon Nelson <shannon.nelson@intel.com>
-Subject: [PATCH 3/3] ixgbe: add interrupt control parameters
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, dwmw2@infradead.org, jeffrey.t.kirsher@intel.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 10 Jan 2013 18:02:44 -0800
-Message-ID: <20130111020242.15463.36498.stgit@starfish.jf.intel.com>
-In-Reply-To: <20130111020046.15463.72333.stgit@starfish.jf.intel.com>
-References: <20130111020046.15463.72333.stgit@starfish.jf.intel.com>
-User-Agent: StGIT/0.14.3
+	id S1755082Ab3AKCFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 21:05:20 -0500
+X-Greylist: delayed 100697 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jan 2013 21:05:20 EST
+Message-ID: <f96e81246992488c2c4c2e470d635ec7.squirrel@mail.icassv.ro>
+Date: Wed, 9 Jan 2013 22:52:07 +0100
+Subject: lan
+From: "GUARANTEED TRUST FUND" <info@wss-id.org>
+Reply-To: guaranteed_tf@wss-id.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MSIX is used by default in the driver, with MSI and legacy interrupt
-handling as fallbacks.  These options allow for controlling which handling
-will get used.
 
-nomsi
-nomsix
-	Disable the use of MSI and/or MSIX interrupt handling
+bra dag Sir / Madam
 
-Signed-off-by: Shannon Nelson <shannon.nelson@intel.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
----
+Behöver ett lån?
 
- drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c  |    6 ++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   15 +++++++++++++++
- 2 files changed, 21 insertions(+), 0 deletions(-)
+Om så är fallet, komma tillbaka till oss så fort som möjligt med den mängd
+som behövs för lån och varaktighet.
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-index 8c74f73..464d8cf 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-@@ -704,6 +704,9 @@ static void ixgbe_acquire_msix_vectors(struct ixgbe_adapter *adapter,
- {
- 	int err, vector_threshold;
- 
-+	if (!(adapter->flags & IXGBE_FLAG_MSIX_CAPABLE))
-+		return;
-+
- 	/* We'll want at least 2 (vector_threshold):
- 	 * 1) TxQ[0] + RxQ[0] handler
- 	 * 2) Other (Link Status Change, etc.)
-@@ -1107,6 +1110,9 @@ static void ixgbe_set_interrupt_capability(struct ixgbe_adapter *adapter)
- 	ixgbe_set_num_queues(adapter);
- 	adapter->num_q_vectors = 1;
- 
-+	if (!(adapter->flags & IXGBE_FLAG_MSI_CAPABLE))
-+		return;
-+
- 	err = pci_enable_msi(adapter->pdev);
- 	if (err) {
- 		netif_printk(adapter, hw, KERN_DEBUG, adapter->netdev,
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 9a94ca2..baa778e 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -169,6 +169,8 @@ enum {
- #endif
- 	Opt_FdirPballoc,
- 	Opt_AtrSampleRate,
-+	Opt_nomsix,
-+	Opt_nomsi,
- };
- 
- static const match_table_t tokens = {
-@@ -182,6 +184,8 @@ static const match_table_t tokens = {
- #endif
- 	{ Opt_FdirPballoc, "FdirPballoc=%u" },
- 	{ Opt_AtrSampleRate, "AtrSampleRate=%u" },
-+	{ Opt_nomsix, "nomsix" },
-+	{ Opt_nomsi, "nomsi" },
- 
- 	/* terminator token */
- 	{ 0, NULL },
-@@ -194,6 +198,8 @@ MODULE_INFO(fw_option,
- MODULE_INFO(fw_option, "nodca : Disable Direct Cache Access");
- MODULE_INFO(fw_option, "FdirPballoc=N : Flow Director packet buffer allocation level - 1, 2, or 3");
- MODULE_INFO(fw_option, "AtrSampleRate=N : Software ATR Tx packet sample rate, 0-255");
-+MODULE_INFO(fw_option, "nomsix : Disable the use of MSI-X interrupt handling");
-+MODULE_INFO(fw_option, "nomsi  : Disable the use of MSI interrupt handling");
- 
- /**
-  * ixgbe_parse_option_line - find ixgbe options
-@@ -300,6 +306,14 @@ static void ixgbe_parse_option_line(struct ixgbe_adapter *adapter,
- 				e_dev_err("Bad AtrSampleRate %d\n", value);
- 			break;
- 
-+		case Opt_nomsix:
-+			adapter->flags &= ~IXGBE_FLAG_MSIX_CAPABLE;
-+			break;
-+
-+		case Opt_nomsi:
-+			adapter->flags &= ~IXGBE_FLAG_MSI_CAPABLE;
-+			break;
-+
- 		default:
- 			goto parse_error;
- 			break;
-@@ -4722,6 +4736,7 @@ static int ixgbe_sw_init(struct ixgbe_adapter *adapter)
- 	/* Set capability flags */
- 	rss = min_t(int, IXGBE_MAX_RSS_INDICES, num_online_cpus());
- 	adapter->ring_feature[RING_F_RSS].limit = rss;
-+	adapter->flags |= (IXGBE_FLAG_MSIX_CAPABLE | IXGBE_FLAG_MSI_CAPABLE);
- 	switch (hw->mac.type) {
- 	case ixgbe_mac_82598EB:
- 		if (hw->device_id == IXGBE_DEV_ID_82598AT)
+Lånebelopp:
+Lån varaktighet:
+Syfte med lån:
+
+Vår service är en ränta på 3%.
+
+E-post: guaranteed_tf@wss-id.org.
+
+Hälsningar,
+Catherine Mores
+
+
 
