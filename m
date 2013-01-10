@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3AJVpQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 16:45:16 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37128 "EHLO hydra.sisk.pl"
+	id S1754908Ab3AJVuv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 16:50:51 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37136 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754496Ab3AJVpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 16:45:14 -0500
+	id S1753256Ab3AJVuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 16:50:50 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Myron Stowe <mstowe@redhat.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Myron Stowe <myron.stowe@redhat.com>,
-        bhelgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
-Date: Thu, 10 Jan 2013 22:50:59 +0100
-Message-ID: <2704169.6ID6mDVPAt@vostro.rjw.lan>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, eric.y.miao@gmail.com,
+        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from platform data
+Date: Thu, 10 Jan 2013 22:56:36 +0100
+Message-ID: <2426125.yN3kXlp07z@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357853063.2339.10.camel@zim.stowe>
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <CAErSpo5UD9362JVKzG4rcLJ6kKMLvMzdJ3kLRvRTSRdSqHOH9w@mail.gmail.com> <1357853063.2339.10.camel@zim.stowe>
+In-Reply-To: <20130110135852.GS13897@intel.com>
+References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com> <20130110133319.GT20956@opensource.wolfsonmicro.com> <20130110135852.GS13897@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,166 +26,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 10, 2013 02:24:23 PM Myron Stowe wrote:
-> [+cc Yinghai]
-> 
-> On Wed, 2013-01-09 at 13:44 -0700, Bjorn Helgaas wrote:
-> > [+cc Myron]
+On Thursday, January 10, 2013 03:58:52 PM Mika Westerberg wrote:
+> On Thu, Jan 10, 2013 at 01:33:19PM +0000, Mark Brown wrote:
+> > On Thu, Jan 10, 2013 at 02:18:08PM +0100, Rafael J. Wysocki wrote:
+> > > On Thursday, January 10, 2013 12:51:59 PM Mark Brown wrote:
 > > 
-> > On Wed, Jan 9, 2013 at 1:19 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > On Thursday, January 10, 2013 12:58:25 AM Jiang Liu wrote:
-> > >> Hi Rafael,
-> > >>       Thanks for your great efforts to review the patch.
-> > >>
-> > >> On 01/09/2013 08:01 AM, Rafael J. Wysocki wrote:
-> > >> > Hi,
-> > >> >
-> > >> > On Wednesday, January 09, 2013 12:52:22 AM Jiang Liu wrote:
-> > >> snip
-> > >> >>
-> > >> >> +static void acpi_pci_slot_notify_add(struct pci_dev *dev)
-> > >> >> +{
-> > >> >> +  acpi_handle handle;
-> > >> >> +  struct callback_args context;
-> > >> >> +
-> > >> >> +  if (!dev->subordinate)
-> > >> >> +          return;
-> > >> >> +
-> > >> >> +  mutex_lock(&slot_list_lock);
-> > >> >> +  handle = DEVICE_ACPI_HANDLE(&dev->dev);
-> > >> >> +  context.root_handle = acpi_find_root_bridge_handle(dev);
-> > >> >
-> > >> > There's a patch under discussion that removes this function.
-> > >> >
-> > >> > Isn't there any other way to do this?
-> > >>       I will try to find a way to get rid of calling acpi_find_root_bridge_handle,
-> > >> and it seems doable.
-> > >>
-> > >> >
-> > >> >> +  if (handle && context.root_handle) {
-> > >> >> +          context.pci_bus = dev->subordinate;
-> > >> >> +          context.user_function = register_slot;
-> > >> >> +          acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
-> > >> >
-> > >> > You can just pass 1 here I think.  Does the compiler complain?
-> > >> Thanks for reminder, the (u32) is unnecessary.
-> > >>
-> > >> >
-> > >> >> +                              register_slot, NULL, &context, NULL);
-> > >> >> +  }
-> > >> >> +  mutex_unlock(&slot_list_lock);
-> > >> >> +}
-> > >> >> +
-> > >> >> +static void acpi_pci_slot_notify_del(struct pci_dev *dev)
-> > >> >> +{
-> > >> >> +  struct acpi_pci_slot *slot, *tmp;
-> > >> >> +  struct pci_bus *bus = dev->subordinate;
-> > >> >> +
-> > >> >> +  if (!bus)
-> > >> >> +          return;
-> > >> >> +
-> > >> >> +  mutex_lock(&slot_list_lock);
-> > >> >> +  list_for_each_entry_safe(slot, tmp, &slot_list, list)
-> > >> >> +          if (slot->pci_slot && slot->pci_slot->bus == bus) {
-> > >> >> +                  list_del(&slot->list);
-> > >> >> +                  pci_destroy_slot(slot->pci_slot);
-> > >> >> +                  put_device(&bus->dev);
-> > >> >> +                  kfree(slot);
-> > >> >> +          }
-> > >> >> +  mutex_unlock(&slot_list_lock);
-> > >> >> +}
-> > >> >> +
-> > >> >> +static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
-> > >> >> +                             unsigned long event, void *data)
-> > >> >> +{
-> > >> >> +  struct device *dev = data;
-> > >> >> +
-> > >> >> +  switch (event) {
-> > >> >> +  case BUS_NOTIFY_ADD_DEVICE:
-> > >> >> +          acpi_pci_slot_notify_add(to_pci_dev(dev));
-> > >> >> +          break;
-> > >> >
-> > >> > Do I think correctly that this is going to be called for every PCI device
-> > >> > added to the system, even if it's not a bridge?
-> > >> You are right. Function acpi_pci_slot_notify_add() and acpi_pci_slot_notify_del()
-> > >> will check whether it's a bridge. If preferred, I will move the check up into
-> > >> acpi_pci_slot_notify_fn().
-> > >>
-> > >> >
-> > >> >> +  case BUS_NOTIFY_DEL_DEVICE:
-> > >> >> +          acpi_pci_slot_notify_del(to_pci_dev(dev));
-> > >> >> +          break;
-> > >> >> +  default:
-> > >> >> +          return NOTIFY_DONE;
-> > >> >> +  }
-> > >> >> +
-> > >> >> +  return NOTIFY_OK;
-> > >> >> +}
-> > >> >> +
-> > >> >> +static struct notifier_block acpi_pci_slot_notifier = {
-> > >> >> +  .notifier_call = &acpi_pci_slot_notify_fn,
-> > >> >> +};
-> > >> >> +
-> > >> >>  static int __init
-> > >> >>  acpi_pci_slot_init(void)
-> > >> >>  {
-> > >> >>    dmi_check_system(acpi_pci_slot_dmi_table);
-> > >> >>    acpi_pci_register_driver(&acpi_pci_slot_driver);
-> > >> >> +  bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
-> > >> >
-> > >> > I wonder if/why this has to be so convoluted?
-> > >> >
-> > >> > We have found a PCI bridge in the ACPI namespace, so we've created a struct
-> > >> > acpi_device for it and we've walked the namespace below it already.
-> > >> >
-> > >> > Now we're creating a struct pci_dev for it and while registering it we're
-> > >> > going to walk the namespace below the bridge again to find and register its
-> > >> > slots and that is done indirectly from a bus type notifier.
-> > >> >
-> > >> > Why can't we enumerate the slots directly upfront?
-> > >> Do you mean to create the PCI slot devices when creating the ACPI devices?
-> > >> I think there are two factors prevent us from doing that.
-> > >> The first is that the ACPI pci_slot driver could be built as a module, so
-> > >> we can't call into it from the ACPI core.
-> > >
-> > > I didn't say about calling the pci_slot driver from the ACPI core, but about
-> > > enumerating slots in a way suitable for consumption by the pci_slot driver
-> > > when it's ready.
-> > >
-> > > That said I really don't see a value in having a modular pci_slot driver.  It
-> > > is part of the hotplug infrastructure and should always be presend for this
-> > > reason, so we don't need to worry about the "pci_slot driver not present" case.
+> > > > Sounds sensible, yes - about what I'd expect.  Is it possible to match
+> > > > on CPUID or similar information (given that this is all in the SoC)
+> > > > instead of ACPI, that might be more robust I guess?
 > > 
-> > I agree that there's no value in supporting CONFIG_ACPI_PCI_SLOT=m.  I
-> > think Myron has some patches that remove that case.
+> > > This particular part may be present in different SoCs.
 > > 
-> > I'm not sure what the best way to merge them is.  We have a bunch of
-> > stuff this cycle that touches both ACPI and PCI.
+> > Right, but I'd expect you could enumerate the SoCs?  Someone might
+> > decide to change the clock configuration for future SoCs anyway.
 > 
-> Rafael:
-> 
-> The series Bjorn mentions is at https://lkml.org/lkml/2012/12/7/11  It
-> converts both the "ACPI Hot Plug PCI Controller Driver ("acpiphp")" and
-> "ACPI PCI Slot Detection Driver ("pci_slot")" sub-drivers to built-in
-> drivers (i.e. no longer supported as modules).
-> 
-> Yinghai commented back - https://lkml.org/lkml/2012/12/7/29 - indicating
-> a possible issue with such but his response was too terse for me to get
-> anything from.  Also, I've noticed that a couple of the distros, debian
-> being one, have made similar changes so I'm a little skeptical about
-> Yinghai's concerns.
-> 
-> Since you have similar thoughts - "I really don't see a value in having
-> a modular pci_slot driver" - can you foresee any issues with such?
+> Well, they can use the same LPSS block with a different CPU but then we
+> expect the ACPI IDs to change as well (so we can then make another set of
+> clocks for those).
 
-Well, I don't see what functional problems that can bring.
-
-In theory people may want to have them as modules to avoid loading them on
-systems that don't use PCI hotplug, but honestly I think that the complexity
-this causes us to deal with is not worth it.
-
-Moreover, removing the modularity may actually allow us to solve some ordering
-issues once and for good.
+Also, as I said in another message, even if the LPSS block is used, the SPI
+may not be exposed to us by the BIOS, so SoC enumeration is not sufficient
+in general.
 
 Thanks,
 Rafael
