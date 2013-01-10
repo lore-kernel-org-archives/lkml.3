@@ -1,73 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab3AJWFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 17:05:31 -0500
-Received: from casper.infradead.org ([85.118.1.10]:48455 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab3AJWF3 (ORCPT
+	id S1752388Ab3AJWHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 17:07:50 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53671 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab3AJWHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 17:05:29 -0500
-Message-ID: <50EF3B6A.70704@infradead.org>
-Date: Thu, 10 Jan 2013 14:06:34 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
+	Thu, 10 Jan 2013 17:07:49 -0500
+Message-ID: <50EF3BAF.4010200@wwwdotorg.org>
+Date: Thu, 10 Jan 2013 15:07:43 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: linux-next: Tree for Jan 10 (staging/sb105x)
-References: <20130110143241.041ef77011ef7b1f68ae5c61@canb.auug.org.au>  <50EF11B2.9090505@infradead.org> <1357851057.5141.16.camel@gandalf.local.home>
-In-Reply-To: <1357851057.5141.16.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device
+ core
+References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com> <50EF27B4.60608@wwwdotorg.org>
+In-Reply-To: <50EF27B4.60608@wwwdotorg.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/13 12:50, Steven Rostedt wrote:
-> On Thu, 2013-01-10 at 11:08 -0800, Randy Dunlap wrote:
->> On 01/09/13 19:32, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> Changes since 20130109:
->>>
+On 01/10/2013 01:42 PM, Stephen Warren wrote:
+> On 12/12/2012 01:25 PM, Linus Walleij wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
 >>
->> on x86_64, when CONFIG_PARPORT_PC is not enabled:
->>
->> drivers/built-in.o: In function `multi_init':
->> sb_pci_mp.c:(.init.text+0x15684): undefined reference to `parport_pc_probe_port'
->>
->>
->> Full randconfig file is attached.
+>> This makes the device core auto-grab the pinctrl handle and set
+>> the "default" (PINCTRL_STATE_DEFAULT) state for every device
+>> that is present in the device model right before probe. This will
+>> account for the lion's share of embedded silicon devcies.
 > 
-> Ug, so https://lkml.org/lkml/2012/12/14/250 should have been
-> CONFIG_PARPORT_PC and not just PARPORT :-P
+> There are quite a few problems with this patch, and they end up
+> completely breaking at least Tegra in next-20130110.
 > 
-> Can you try this patch:
-
-That's good.  Thanks.
-
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-
-> diff --git a/drivers/staging/sb105x/sb_pci_mp.c b/drivers/staging/sb105x/sb_pci_mp.c
-> index 131afd0c..9464f38 100644
-> --- a/drivers/staging/sb105x/sb_pci_mp.c
-> +++ b/drivers/staging/sb105x/sb_pci_mp.c
-> @@ -3054,7 +3054,7 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
->  				sbdev->nr_ports = ((portnum_hex/16)*10) + (portnum_hex % 16);
->  			}
->  			break;
-> -#ifdef CONFIG_PARPORT
-> +#ifdef CONFIG_PARPORT_PC
->  		case PCI_DEVICE_ID_MP2S1P :
->  			sbdev->nr_ports = 2;
->  
+>> diff --git a/drivers/base/pinctrl.c b/drivers/base/pinctrl.c
 > 
+>> +int pinctrl_bind_pins(struct device *dev)
+>> +{
+>> +	struct dev_pin_info *dpi;
+>> +	int ret;
+>> +
+>> +	/* Allocate a pin state container on-the-fly */
+>> +	if (!dev->pins) {
+>> +		dpi = devm_kzalloc(dev, sizeof(*dpi), GFP_KERNEL);
+>> +		if (!dpi)
+>> +			return -ENOMEM;
+>> +	} else
+>> +		dpi = dev->pins;
+>> +
+>> +	/*
+>> +	 * Check if we already have a pinctrl handle, as we may arrive here
+>> +	 * after a deferral in the state selection below
+>> +	 */
+>> +	if (!dpi->p) {
+>> +		dpi->p = devm_pinctrl_get(dev);
 > 
-> --
+> That won't succeed for a pinctrl device that has a default state in
+> order to implement hogs. This will then cause the pin controller device
+> to always defer probe and never activate. This will leave HW
+> unconfigured and/or prevent other devices from successfully calling
+> pinctrl_get().
+
+I see that an attempt was made to solve this problem, in the patch
+immediately preceding this one (at least, as applied in the pinctrl
+tree). However, that patch only addresses the case where the pin
+controller is being looked up in the map, and not the case when
+converting device tree to the map in the first place. The patch below
+solves this:
+
+diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
+index fe2d1af..fd40a11 100644
+--- a/drivers/pinctrl/devicetree.c
++++ b/drivers/pinctrl/devicetree.c
+@@ -141,6 +141,11 @@ static int dt_to_map_one_config(struct pinctrl *p,
+const char *statename,
+                pctldev = find_pinctrl_by_of_node(np_pctldev);
+                if (pctldev)
+                        break;
++               /* Do not defer probing of hogs (circular loop) */
++               if (np_pctldev == p->dev->of_node) {
++                       of_node_put(np_pctldev);
++                       return -ENODEV;
++               }
+        }
+        of_node_put(np_pctldev);
 
 
--- 
-~Randy
