@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab3AJUcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 15:32:52 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59544 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755309Ab3AJUcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 15:32:51 -0500
-Date: Thu, 10 Jan 2013 21:32:48 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Alex Deucher <alexander.deucher@amd.com>, dri-devel@lists.freedesktop.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
-Message-ID: <20130110203248.GI23008@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alex Deucher <alexdeucher@gmail.com>,
-	Alex Deucher <alexander.deucher@amd.com>,
-	dri-devel@lists.freedesktop.org,
-	lkml <linux-kernel@vger.kernel.org>
-References: <20130110093831.GA19503@liondog.tnic>
- <CADnq5_N9Dj5ZMoDaL9hp6R5wMkEf2yEL1C=66-PQ2+sLwwTm3g@mail.gmail.com>
+	id S1756020Ab3AJUij (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 15:38:39 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22298 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755020Ab3AJUii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 15:38:38 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18xDbta8my2SEHavRdacK90
+Date: Thu, 10 Jan 2013 12:38:33 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        liu chuansheng <chuansheng.liu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] hardlockup: detect hard lockups without NMIs using
+ secondary cpus
+Message-ID: <20130110203833.GE14149@atomide.com>
+References: <1357783059-13923-1-git-send-email-ccross@android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CADnq5_N9Dj5ZMoDaL9hp6R5wMkEf2yEL1C=66-PQ2+sLwwTm3g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357783059-13923-1-git-send-email-ccross@android.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 11:21:21AM -0500, Alex Deucher wrote:
-> I'm assuming you didn't also update your userspace gfx stack?
+* Colin Cross <ccross@android.com> [130109 18:05]:
+> +static void watchdog_check_hardlockup_other_cpu(void)
+> +{
+> +	int cpu;
+> +	cpumask_t cpus = watchdog_cpus;
+> +
+> +	/*
+> +	 * Test for hardlockups every 3 samples.  The sample period is
+> +	 *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly over
+> +	 *  watchdog_thresh (over by 20%).
+> +	 */
+> +	if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
+> +		return;
+> +
+> +	/* check for a hardlockup on the next cpu */
+> +	cpu = cpumask_next(smp_processor_id(), &cpus);
 
-By that you mean x.org etc, right? Or GPU microcode too? In any case, I
-haven't touched any of those deliberately, AFAICR at least.
+Hmm don't you want to check cpu_oneline_mask here and
+return if the other CPU is offline?
 
-> Does disabling the new DMA ring for ttm bo moves avoid the issue?
+> +	if (cpu >= nr_cpu_ids)
+> +		cpu = cpumask_first(&cpus);
+> +	if (cpu == smp_processor_id())
+> +		return;
 
-How do I do that?
+Regards,
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Tony
