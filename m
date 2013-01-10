@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab3AJXCl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:02:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30269 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753850Ab3AJXCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:02:40 -0500
-From: Josh Stone <jistone@redhat.com>
-To: oleg@redhat.com, srikar@linux.vnet.ibm.com
-Cc: mingo@kernel.org, peterz@infradead.org, anton@redhat.com,
-        linux-kernel@vger.kernel.org, Josh Stone <jistone@redhat.com>
-Subject: [PATCH] uprobes: Add exports for module use
-Date: Thu, 10 Jan 2013 15:01:46 -0800
-Message-Id: <1357858906-9711-1-git-send-email-jistone@redhat.com>
+	id S1754213Ab3AJXD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:03:56 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:42095 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850Ab3AJXDz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 18:03:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <2704169.6ID6mDVPAt@vostro.rjw.lan>
+References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com>
+	<CAErSpo5UD9362JVKzG4rcLJ6kKMLvMzdJ3kLRvRTSRdSqHOH9w@mail.gmail.com>
+	<1357853063.2339.10.camel@zim.stowe>
+	<2704169.6ID6mDVPAt@vostro.rjw.lan>
+Date: Thu, 10 Jan 2013 15:03:53 -0800
+X-Google-Sender-Auth: D8KSxgQnM4o9WXtXAYWwlKO8BnY
+Message-ID: <CAE9FiQXmnmFgG5jLnGyeYX7NcedGa-ztGo_CGoNjV8fFbe_esA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when
+ PCI hotplug event happens
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Myron Stowe <mstowe@redhat.com>, Jiang Liu <liuj97@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Myron Stowe <myron.stowe@redhat.com>, bhelgaas <bhelgaas@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original pull message for uprobes (commit 654443e2) noted:
+On Thu, Jan 10, 2013 at 1:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Well, I don't see what functional problems that can bring.
+>
+> In theory people may want to have them as modules to avoid loading them on
+> systems that don't use PCI hotplug, but honestly I think that the complexity
+> this causes us to deal with is not worth it.
+>
+> Moreover, removing the modularity may actually allow us to solve some ordering
+> issues once and for good.
 
-  This tree includes uprobes support in 'perf probe' - but SystemTap
-  (and other tools) can take advantage of user probe points as well.
+No, the world is not really ideal yet.
 
-In order to actually be usable in module-based tools like SystemTap, the
-interface needs to be exported.  This patch first adds the obvious
-exports for uprobe_register and uprobe_unregister.  Then it also adds
-one for task_user_regset_view, which is necessary to get the correct
-state of userspace registers.
+looks like laptops have problem with pci express cards.
 
-Signed-off-by: Josh Stone <jistone@redhat.com>
----
- kernel/events/uprobes.c | 3 +++
- kernel/ptrace.c         | 7 +++++++
- 2 files changed, 10 insertions(+)
+when pciehp is used, surprise insert/removal does not work because
+PresDect does not change properly, so no interrupt is generated.
+--- i suspects that is silicon problem.
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index dea7acf..1db8cb6 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -27,6 +27,7 @@
- #include <linux/pagemap.h>	/* read_mapping_page */
- #include <linux/slab.h>
- #include <linux/sched.h>
-+#include <linux/export.h>
- #include <linux/rmap.h>		/* anon_vma_prepare */
- #include <linux/mmu_notifier.h>	/* set_pte_at_notify */
- #include <linux/swap.h>		/* try_to_free_swap */
-@@ -873,6 +874,7 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
- 
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(uprobe_register);
- 
- /*
-  * uprobe_unregister - unregister a already registered probe.
-@@ -904,6 +906,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
- 	if (uprobe)
- 		put_uprobe(uprobe);
- }
-+EXPORT_SYMBOL_GPL(uprobe_unregister);
- 
- static struct rb_node *
- find_node_in_range(struct inode *inode, loff_t min, loff_t max)
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 1599157..24eee5d 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -673,6 +673,13 @@ static int ptrace_regset(struct task_struct *task, int req, unsigned int type,
- 					     kiov->iov_len, kiov->iov_base);
- }
- 
-+/*
-+ * This is declared in linux/regset.h and defined in machine-dependent
-+ * code.  We put the export here, near the primary machine-neutral use,
-+ * to ensure no machine forgets it.
-+ */
-+EXPORT_SYMBOL_GPL(task_user_regset_view);
-+
- #endif
- 
- int ptrace_request(struct task_struct *child, long request,
--- 
-1.7.11.7
+but when acpiphp is used, that surprise  insert/removal is working.
 
+some laptop like thinkpad, just don't give osc to kernel..
+[    0.505117]  pci0000:00: Requesting ACPI _OSC control (0x1d)
+[    0.505413]  pci0000:00: ACPI _OSC request failed (AE_SUPPORT),
+returned control mask: 0x0d
+[    0.505517] ACPI _OSC control for PCIe not granted, disabling ASPM
+
+and other laptop give that to kernel, in recent kernel will not give
+acpiphp to have that slot, because it want to hold that for pciehp.
+poor user have to pass 'pci_aspm=off" to disable _OSC for all.
+--- please check the mail that i forward to you yesterday.
+
+Anyway, we do need to let the user to have choice to use acpiphp and pciehp.
+and it should be first come and first serve policy.
+
+Thanks
+
+Yinghai
