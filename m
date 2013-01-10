@@ -1,135 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab3AJXdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:33:40 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61042 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab3AJXdi (ORCPT
+	id S1754403Ab3AJXel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:34:41 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:63075 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754032Ab3AJXej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:33:38 -0500
-X-AuditID: 9c930179-b7c7fae00000255c-d3-50ef4fd08c30
-Date: Fri, 11 Jan 2013 08:33:36 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andy Whitcroft <apw@shadowen.org>, Alexander Nyberg <alexn@dsv.su.se>
-Subject: Re: [PATCH] Fix wrong EOF compare
-Message-ID: <20130110233336.GA2470@blaptop>
-References: <1357797904-11194-1-git-send-email-minchan@kernel.org>
- <xa1ta9shm531.fsf@mina86.com>
+	Thu, 10 Jan 2013 18:34:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <xa1ta9shm531.fsf@mina86.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1586060.uJlkOEQfVW@hammer82.arch.suse.de>
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
+	<201301081747.17853.trenn@suse.de>
+	<CAE9FiQW=gT86Eo0gwPHi5iFi4sg=1SHkBohBAo2KXdoB_Ouqvw@mail.gmail.com>
+	<1586060.uJlkOEQfVW@hammer82.arch.suse.de>
+Date: Thu, 10 Jan 2013 15:34:37 -0800
+X-Google-Sender-Auth: ZNIp4QMd0anz95vbvHvPllukBEA
+Message-ID: <CAE9FiQVLVxj07TM1N6F2kmZdBYMUiS6Xz2bD-JZPtvps3a5-xw@mail.gmail.com>
+Subject: Re: [PATCH] Only reset e820 once, even with multiple memmap=exactmap params
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
+        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org,
+        horms@verge.net.au
+Content-Type: multipart/mixed; boundary=00151748e0f045c07b04d2f79f44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michal,
+--00151748e0f045c07b04d2f79f44
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Thu, Jan 10, 2013 at 04:26:58PM +0100, Michal Nazarewicz wrote:
-> On Thu, Jan 10 2013, Minchan Kim <minchan@kernel.org> wrote:
-> > getc returns "int" so EOF could be -1 but storing getc's return
-> > value to char directly makes the vaule to 255 so below condition
-> > is always false.
-> 
-> Technically, this is implementation defined and I believe on many
-> systems char is signed thus the loop will end on EOF or byte 255.
+On Wed, Jan 9, 2013 at 7:21 PM, Thomas Renninger <trenn@suse.de> wrote:
+> I still do not understand why:
+>
+> Kexec (kexec/firmware_memmap.c) is setting up the e820 map from:
+> /sys/firmware/memmap/*
+> and pass it via bootloader structures.
+> And this e820 table gets immediately voided by memmap=exactmap
+> and a new one passed via boot parameters is set up.
+> If I read this correctly, this is what happens?
 
-True. That's why there is no problem in x86.
-The problem would happens on ARM and PowerPC which defined char as unsigned
-in GCC.
+yes, kdump scripts append those memmap.
 
-> 
-> Either way, my point is the patch is correct, but the comment is not. ;)
+>
+> Can kexec simply pass the memory to use via memmap=X@Y
+> Then take the original e820 table, but not the usable entries (those
+> are coming from above memmap=X@Y).
+> That would mean that the kexec kernel takes all the
+> original ACPI, ACPI NVS, reserved, unusable (everthing but usable) entries
+> from the original e820 table and identifies the usable memory from
+> memmap boot param?
 
-Yeb. It was not elegant :(
-How about this?
+kdump scripts already do that for acpi regions, need to update it
+to append that for mmconf.
 
-The C standards allows the character type char to be singed or unsinged,
-depending on the platform and compiler. Most of systems uses signed char,
-but those based on PowerPC and ARM processors typically use unsigned char.
-This can lead to unexpected results when the variable is used to compare
-with EOF(-1).
+>
+> This would be much smarter than trying to pass the mmconf reserved
+> area and I could imagine other issues will show up if the reserved areas
+> do not match the original ones in the kexec kernel.
+>
+> If this really can be done and memmap=exactmap was only used by kexec,
+> it's logic could be redefined from "drop all e820 entries" to
+> "drop all usable e820 entries" and no further adjustings in kexec/kernel are
+> needed to get mmconf working (and other issues may be avoided before
+> they happen). Beside that ACPI reserved aread is not needed anymore to get
+> passed via memmap=X#Y by kexec.
 
-This patch fixes the problem.
+yes, we have other user for debug  like simulating user memmap for some bugs.
 
-> 
-> Of course, even better if the function just used fgets(), ie. something
-> like:
-> 
-> int read_block(char *buf, int buf_size, FILE *fin)
-> {
-> 	char *curr = buf, *const buf_end = buf + buf_size;
-> 
-> 	while (buf_end - curr > 1 && fgets(curr, buf_end - curr, fin)) {
-> 		if (*curr == '\n') /* empty line */
-> 			return curr - buf;
-> 		curr += strlen(curr);
-> 	}
-> 
-> 	return -1; /* EOF or no space left in buf. */
-> }
-> 
-> which is much shorter and does not have buffer overflow issues.
+current problem for exactmap is that we don't scan that at first.
 
-Looks better. It is bug fix + code clean up + performance enhance.
-Although it's very straightforward, I would like to separate simple
-bug fix with others so I will resend two patches.
+attached patch could help that.
 
-Thanks for the review!
+Thanks
 
-> 
-> > It happens in my ARM system so loop is not ended, then segfaulted.
-> > This patch fixes it.
-> >
-> >                 *curr = getc(fin); // *curr = 255
-> >                 if (*curr == EOF) return -1; // if ( 255 == -1)
-> >
-> > Cc: Mel Gorman <mgorman@suse.de>
-> > Cc: Andy Whitcroft <apw@shadowen.org>
-> > Cc: Alexander Nyberg <alexn@dsv.su.se>
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  Documentation/page_owner.c |    6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/Documentation/page_owner.c b/Documentation/page_owner.c
-> > index f0156e1..b777fb6 100644
-> > --- a/Documentation/page_owner.c
-> > +++ b/Documentation/page_owner.c
-> > @@ -32,12 +32,14 @@ int read_block(char *buf, FILE *fin)
-> >  {
-> >  	int ret = 0;
-> >  	int hit = 0;
-> > +	int vaule;
-> >  	char *curr = buf;
-> >  
-> >  	for (;;) {
-> > -		*curr = getc(fin);
-> > -		if (*curr == EOF) return -1;
-> > +		value = getc(fin);
-> > +		if (value == EOF) return -1;
-> >  
-> > +		*curr = value;
-> >  		ret++;
-> >  		if (*curr == '\n' && hit == 1)
-> >  			return ret - 1;
-> 
-> -- 
-> Best regards,                                         _     _
-> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+Yinghai
 
+--00151748e0f045c07b04d2f79f44
+Content-Type: application/octet-stream; name="parse_exactmap_one_time.patch"
+Content-Disposition: attachment; filename="parse_exactmap_one_time.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hbsjamlz0
 
-
-
-
--- 
-Kind regards,
-Minchan Kim
+LS0tCiBhcmNoL3g4Ni9rZXJuZWwvZTgyMC5jIHwgICAxMiArKysrKysrKysrKysKIDEgZmlsZSBj
+aGFuZ2VkLCAxMiBpbnNlcnRpb25zKCspCgpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tlcm5l
+bC9lODIwLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYva2VybmVsL2U4
+MjAuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9lODIwLmMKQEAgLTgzNSw2ICs4MzUs
+OCBAQCBzdGF0aWMgaW50IF9faW5pdCBwYXJzZV9tZW1vcHQoY2hhciAqcCkKIH0KIGVhcmx5X3Bh
+cmFtKCJtZW0iLCBwYXJzZV9tZW1vcHQpOwogCitzdGF0aWMgYm9vbCBfX2luaXRkYXRhIGV4YWN0
+bWFwX3BhcnNlZDsKKwogc3RhdGljIGludCBfX2luaXQgcGFyc2VfbWVtbWFwX29uZShjaGFyICpw
+KQogewogCWNoYXIgKm9sZHA7CkBAIC04NDQsNiArODQ2LDEwIEBAIHN0YXRpYyBpbnQgX19pbml0
+IHBhcnNlX21lbW1hcF9vbmUoY2hhcgogCQlyZXR1cm4gLUVJTlZBTDsKIAogCWlmICghc3RybmNt
+cChwLCAiZXhhY3RtYXAiLCA4KSkgeworCQlpZiAoZXhhY3RtYXBfcGFyc2VkKQorCQkJcmV0dXJu
+IDA7CisKKwkJZXhhY3RtYXBfcGFyc2VkID0gdHJ1ZTsKICNpZmRlZiBDT05GSUdfQ1JBU0hfRFVN
+UAogCQkvKgogCQkgKiBJZiB3ZSBhcmUgZG9pbmcgYSBjcmFzaCBkdW1wLCB3ZSBzdGlsbCBuZWVk
+IHRvIGtub3cKQEAgLTg3OSw2ICs4ODUsMTIgQEAgc3RhdGljIGludCBfX2luaXQgcGFyc2VfbWVt
+bWFwX29uZShjaGFyCiB9CiBzdGF0aWMgaW50IF9faW5pdCBwYXJzZV9tZW1tYXBfb3B0KGNoYXIg
+KnN0cikKIHsKKwljaGFyICpwID0gYm9vdF9jb21tYW5kX2xpbmU7CisKKwlwID0gc3Ryc3RyKHAs
+ICJleGFjdG1hcCIpOworCWlmIChwKQorCQlwYXJzZV9tZW1tYXBfb25lKCJleGFjdG1hcCIpOwor
+CiAJd2hpbGUgKHN0cikgewogCQljaGFyICprID0gc3RyY2hyKHN0ciwgJywnKTsKIAo=
+--00151748e0f045c07b04d2f79f44--
