@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab3AJXBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:01:04 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55790 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753427Ab3AJXBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:01:03 -0500
-Message-ID: <1357858846.4838.92.camel@pasglop>
-Subject: Re: [PATCH] PowerPC documentation: fixed path to the powerpc
- directory
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Thomas Waldecker <thomas.waldecker@gmail.com>
-Cc: paulus@samba.org, rob@landley.net, linuxppc-dev@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 11 Jan 2013 10:00:46 +1100
-In-Reply-To: <1357819632-30814-1-git-send-email-thomas.waldecker@gmail.com>
-References: <1357819632-30814-1-git-send-email-thomas.waldecker@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754203Ab3AJXB0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:01:26 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:49758 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035Ab3AJXBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 18:01:23 -0500
+Date: Thu, 10 Jan 2013 15:01:21 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Doug Anderson <dianders@chromium.org>
+Cc: linux-mmc@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Will Newton <will.newton@imgtec.com>, Chris Ball <cjb@laptop.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: Re: [REPOST PATCH v3 1/4] mmc: dw_mmc: Add "disable-wp" device tree
+ property
+Message-ID: <20130110230121.GA20584@quad.lixom.net>
+References: <1354251857-21587-1-git-send-email-dianders@chromium.org>
+ <1357842269-15062-1-git-send-email-dianders@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357842269-15062-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-10 at 13:07 +0100, Thomas Waldecker wrote:
-> ppc -> powerpc
-
-I think I already applied something like that in powerpc -next, can you
-dbl check ?
-
-Cheers,
-Ben.
-
-> Signed-off-by: Thomas Waldecker <thomas.waldecker@gmail.com>
-> ---
->  Documentation/powerpc/cpu_features.txt | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+On Thu, Jan 10, 2013 at 10:24:26AM -0800, Doug Anderson wrote:
+> The "disable-wp" property is used to specify that a given SD card slot
+> doesn't have a concept of write protect.  This eliminates the need for
+> special case code for SD slots that should never be write protected
+> (like a micro SD slot or a dev board).
 > 
-> diff --git a/Documentation/powerpc/cpu_features.txt b/Documentation/powerpc/cpu_features.txt
-> index ffa4183..ae09df8 100644
-> --- a/Documentation/powerpc/cpu_features.txt
-> +++ b/Documentation/powerpc/cpu_features.txt
-> @@ -11,10 +11,10 @@ split instruction and data caches, and if the CPU supports the DOZE and NAP
->  sleep modes.
->  
->  Detection of the feature set is simple. A list of processors can be found in
-> -arch/ppc/kernel/cputable.c. The PVR register is masked and compared with each
-> -value in the list. If a match is found, the cpu_features of cur_cpu_spec is
-> -assigned to the feature bitmask for this processor and a __setup_cpu function
-> -is called.
-> +arch/powerpc/kernel/cputable.c. The PVR register is masked and compared with
-> +each value in the list. If a match is found, the cpu_features of cur_cpu_spec
-> +is assigned to the feature bitmask for this processor and a __setup_cpu
-> +function is called.
->  
->  C code may test 'cur_cpu_spec[smp_processor_id()]->cpu_features' for a
->  particular feature bit. This is done in quite a few places, for example
-> @@ -51,6 +51,6 @@ should be used in the majority of cases.
->  
->  The END_FTR_SECTION macros are implemented by storing information about this
->  code in the '__ftr_fixup' ELF section. When do_cpu_ftr_fixups
-> -(arch/ppc/kernel/misc.S) is invoked, it will iterate over the records in
-> +(arch/powerpc/kernel/misc.S) is invoked, it will iterate over the records in
->  __ftr_fixup, and if the required feature is not present it will loop writing
->  nop's from each BEGIN_FTR_SECTION to END_FTR_SECTION.
+> The dw_mmc driver is special in needing to specify "disable-wp"
+> because the lack of a "wp-gpios" property means to use the special
+> purpose write protect line.  On some other mmc devices the lack of
+> "wp-gpios" means that write protect should be disabled.
+
+Hi,
+
+The previous code used the controller-common quirk field to set a
+per-controller DW_MCI_QUIRK_NO_WRITE_PROTECT. Is there really need to
+do this per-slot? And if so, please explain in the commit message why
+there is need for a brand new quirk for the same functionality.
+
+It's even uncertain if there are any systems out there that uses the
+multi-slot functionality of this driver to date, most seem to map one
+slot per controller in the first place...
 
 
+-Olof
