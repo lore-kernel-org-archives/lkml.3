@@ -1,224 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3AJWXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 17:23:18 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:47135 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907Ab3AJWXQ (ORCPT
+	id S1753324Ab3AJWYv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 17:24:51 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:25483 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907Ab3AJWYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 17:23:16 -0500
+	Thu, 10 Jan 2013 17:24:50 -0500
+Message-ID: <50EF3FAF.7070803@hp.com>
+Date: Thu, 10 Jan 2013 14:24:47 -0800
+From: Chegu Vinod <chegu_vinod@hp.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130106091026.GA17618@core.coreip.homeip.net>
-References: <1356057191-24664-1-git-send-email-shawnn@chromium.org>
-	<20130106091026.GA17618@core.coreip.homeip.net>
-Date: Thu, 10 Jan 2013 14:23:15 -0800
-X-Google-Sender-Auth: 6MQ6-mTIRYJDlXVFMrlkk6YrCcM
-Message-ID: <CALaWCOMqm4fk5sC1VrngTBn4OPbUwxpOmWeMS8ww1eaGpaUhBw@mail.gmail.com>
-Subject: Re: [PATCH v2] atkbd: Fix multi-char scancode handling on reconnect.
-From: Shawn Nematbakhsh <shawnn@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: jj@chaosbits.net, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rik van Riel <riel@redhat.com>
+CC: linux-kernel@vger.kernel.org, aquini@redhat.com, walken@google.com,
+        eric.dumazet@gmail.com, lwoodman@redhat.com, jeremy@goop.org,
+        Jan Beulich <JBeulich@novell.com>, knoel@redhat.com,
+        raghavendra.kt@linux.vnet.ibm.com, mingo@redhat.com
+Subject: Re: [PATCH 0/5] x86,smp: make ticket spinlock proportional backoff
+ w/ auto tuning
+References: <20130108172632.1126898a@annuminas.surriel.com>
+In-Reply-To: <20130108172632.1126898a@annuminas.surriel.com>
+Content-Type: multipart/mixed;
+ boundary="------------050202070902020200030106"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+This is a multi-part message in MIME format.
+--------------050202070902020200030106
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-On Sun, Jan 6, 2013 at 1:10 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Shawn,
+On 1/8/2013 2:26 PM, Rik van Riel wrote:
+<...>
+> Performance is within the margin of error of v2, so the graph
+> has not been update.
 >
-> On Thu, Dec 20, 2012 at 06:33:11PM -0800, Shawn Nematbakhsh wrote:
->> On resume from suspend there is a possibility for multi-byte scancodes
->> to be handled incorrectly. atkbd_reconnect disables the processing of
->> scancodes in software by calling atkbd_disable, but the keyboard may
->> still be active because no disconnect command was sent. Later, software
->> handling is re-enabled. If a multi-byte scancode sent from the keyboard
->> straddles the re-enable, only the latter byte(s) will be handled.
->>
->> In practice, this leads to cases where multi-byte break codes (ex. "e0
->> 4d" - break code for right-arrow) are misread as make codes ("4d" - make
->> code for numeric 6), leading to one or more unwanted, untyped characters
->> being interpreted.
->>
->> The solution implemented here involves sending command f5 (reset
->> disable) to the keyboard prior to disabling software handling of codes.
->> Later, the command to re-enable the keyboard is sent only after we are
->> prepared to handle scancodes.
+> Please let me know if you manage to break this code in any way,
+> so I can fix it...
 >
-> The core tries to avoid disturbing devices that are not keyboards, so I
-> believe we should check the device ID first and if it is keyboard, then
-> do the reset. We should also reset the internal state (emul and xl_bit)
-> when re-enabling the device.
->
-> Does the version of the patch below work for you?
->
-> Thanks.
->
-> --
-> Dmitry
 
-Thanks for the revision. This version of the patch tests good. I agree
-with your changes, it makes sense to deactivate the keyboard from both
-connect and reconnect, just in case the keyboard is able to send
-scancodes at this point.
+Attached below is some preliminary data with one of the AIM7 micro-benchmark
+workloads (i.e. high_systime). This is a kernel intensive workload which
+does tons of forks/execs etc.and stresses quite a few of the same set
+of spinlocks and semaphores.
 
---
-Shawn
+Observed a drop in performance as we go to 40way and 80 way. Wondering
+if the back off keeps increasing to such an extent that it actually starts
+to hurt given the nature of this workload ?  Also in the case of 80way
+observed quite a bit of variation from run to run...
 
->
-> Input: atkbd - fix multi-byte scancode handling on reconnect
->
-> From: Shawn Nematbakhsh <shawnn@chromium.org>
->
-> On resume from suspend there is a possibility for multi-byte scancodes
-> to be handled incorrectly. atkbd_reconnect disables the processing of
-> scancodes in software by calling atkbd_disable, but the keyboard may
-> still be active because no disconnect command was sent. Later, software
-> handling is re-enabled. If a multi-byte scancode sent from the keyboard
-> straddles the re-enable, only the latter byte(s) will be handled.
->
-> In practice, this leads to cases where multi-byte break codes (ex. "e0
-> 4d" - break code for right-arrow) are misread as make codes ("4d" - make
-> code for numeric 6), leading to one or more unwanted, untyped characters
-> being interpreted.
->
-> The solution implemented here involves sending command f5 (reset
-> disable) to the keyboard prior to disabling software handling of codes.
-> Later, the command to re-enable the keyboard is sent only after we are
-> prepared to handle scancodes.
->
-> Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  drivers/input/keyboard/atkbd.c |   72 ++++++++++++++++++++++++++++------------
->  1 file changed, 51 insertions(+), 21 deletions(-)
->
-> diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
-> index 33d0fcd..2626773 100644
-> --- a/drivers/input/keyboard/atkbd.c
-> +++ b/drivers/input/keyboard/atkbd.c
-> @@ -676,6 +676,39 @@ static inline void atkbd_disable(struct atkbd *atkbd)
->         serio_continue_rx(atkbd->ps2dev.serio);
->  }
->
-> +static int atkbd_activate(struct atkbd *atkbd)
-> +{
-> +       struct ps2dev *ps2dev = &atkbd->ps2dev;
-> +
-> +/*
-> + * Enable the keyboard to receive keystrokes.
-> + */
-> +
-> +       if (ps2_command(ps2dev, NULL, ATKBD_CMD_ENABLE)) {
-> +               dev_err(&ps2dev->serio->dev,
-> +                       "Failed to enable keyboard on %s\n",
-> +                       ps2dev->serio->phys);
-> +               return -1;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +/*
-> + * atkbd_deactivate() resets and disables the keyboard from sending
-> + * keystrokes.
-> + */
-> +
-> +static void atkbd_deactivate(struct atkbd *atkbd)
-> +{
-> +       struct ps2dev *ps2dev = &atkbd->ps2dev;
-> +
-> +       if (ps2_command(ps2dev, NULL, ATKBD_CMD_RESET_DIS))
-> +               dev_err(&ps2dev->serio->dev,
-> +                       "Failed to deactivate keyboard on %s\n",
-> +                       ps2dev->serio->phys);
-> +}
-> +
->  /*
->   * atkbd_probe() probes for an AT keyboard on a serio port.
->   */
-> @@ -731,6 +764,12 @@ static int atkbd_probe(struct atkbd *atkbd)
->                 return -1;
->         }
->
-> +/*
-> + * Make sure nothing is coming from the keyboard and disturbs our
-> + * internal state.
-> + */
-> +       atkbd_deactivate(atkbd);
-> +
->         return 0;
->  }
->
-> @@ -825,24 +864,6 @@ static int atkbd_reset_state(struct atkbd *atkbd)
->         return 0;
->  }
->
-> -static int atkbd_activate(struct atkbd *atkbd)
-> -{
-> -       struct ps2dev *ps2dev = &atkbd->ps2dev;
-> -
-> -/*
-> - * Enable the keyboard to receive keystrokes.
-> - */
-> -
-> -       if (ps2_command(ps2dev, NULL, ATKBD_CMD_ENABLE)) {
-> -               dev_err(&ps2dev->serio->dev,
-> -                       "Failed to enable keyboard on %s\n",
-> -                       ps2dev->serio->phys);
-> -               return -1;
-> -       }
-> -
-> -       return 0;
-> -}
-> -
->  /*
->   * atkbd_cleanup() restores the keyboard state so that BIOS is happy after a
->   * reboot.
-> @@ -1150,7 +1171,6 @@ static int atkbd_connect(struct serio *serio, struct serio_driver *drv)
->
->                 atkbd->set = atkbd_select_set(atkbd, atkbd_set, atkbd_extra);
->                 atkbd_reset_state(atkbd);
-> -               atkbd_activate(atkbd);
->
->         } else {
->                 atkbd->set = 2;
-> @@ -1165,6 +1185,8 @@ static int atkbd_connect(struct serio *serio, struct serio_driver *drv)
->                 goto fail3;
->
->         atkbd_enable(atkbd);
-> +       if (serio->write)
-> +               atkbd_activate(atkbd);
->
->         err = input_register_device(atkbd->dev);
->         if (err)
-> @@ -1208,8 +1230,6 @@ static int atkbd_reconnect(struct serio *serio)
->                 if (atkbd->set != atkbd_select_set(atkbd, atkbd->set, atkbd->extra))
->                         goto out;
->
-> -               atkbd_activate(atkbd);
-> -
->                 /*
->                  * Restore LED state and repeat rate. While input core
->                  * will do this for us at resume time reconnect may happen
-> @@ -1223,7 +1243,17 @@ static int atkbd_reconnect(struct serio *serio)
->
->         }
->
-> +       /*
-> +        * Reset our state machine in case reconnect happened in the middle
-> +        * of multi-byte scancode.
-> +        */
-> +       atkbd->xl_bit = 0;
-> +       atkbd->emul = 0;
-> +
->         atkbd_enable(atkbd);
-> +       if (atkbd->write)
-> +               atkbd_activate(atkbd);
-> +
->         retval = 0;
->
->   out:
+Also ran it inside a single KVM guest. There were some perf. dips but
+interestingly didn't observe the same level of drop (compared to the
+drop in the native case) as the guest size was scaled up to 40vcpu or
+80vcpu.
+
+FYI
+Vinod
+
+
+--------------050202070902020200030106
+Content-Type: text/plain; charset=windows-1252;
+ name="aim7_rik"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="aim7_rik"
+
+
+
+---
+
+Platform : 8 socket (80 Core) Westmere with 1TB RAM.
+
+Workload: AIM7-highsystime microbenchmark - 2000 users & 100 jobs per user.  
+
+Values reported are Jobs Per Minute (Higher is better).  The values
+are average of 3 runs.
+
+1) Native run:
+--------------
+
+Config 1:  3.7 kernel
+Config 2:  3.7 + Rik's 1-4 patches
+
+------------------------------------------------------------
+              20way     40way     80way
+------------------------------------------------------------
+Config 1     ~179K     ~159K     ~146K 
+------------------------------------------------------------
+Config 2     ~180K     ~134K     ~21K-43K  <- high variation!
+------------------------------------------------------------
+
+(Note: Used numactl to restrict workload to 
+            2 sockets (20way) and 4 sockets(40way))
+
+------
+
+2) KVM run : 
+------------
+
+Single guest of different sizes (No over commit, NUMA enabled in the guest).
+
+Note: This kernel intensive micro benchmark is exposes the PLE handler issue 
+      esp. for large guests. Since Raghu's PLE changes are not yet in upstream 
+      'have just run with current PLE handler & then by disabling 
+      PLE (ple_gap=0).
+
+Config 1 : Host & Guest at 3.7
+Config 2 : Host & Guest are at 3.7 + Rik's 1-4 patches
+
+--------------------------------------------------------------------------
+             20vcpu/128G      40vcpu/256G      80vcpu/512G
+            (on 2 sockets)   (on 4 sockets)   (on 8 sockets)
+--------------------------------------------------------------------------
+Config 1       ~144K             ~39K             ~10K
+--------------------------------------------------------------------------
+Config 2       ~143K             ~37.5K           ~11K
+--------------------------------------------------------------------------
+
+Config 3 : Host & Guest at 3.7 AND ple_gap=0
+Config 4 : Host & Guest are at 3.7 + Rik's 1-4 patches AND ple_gap=0
+
+--------------------------------------------------------------------------
+Config 3       ~154K            ~131K            ~116K 
+--------------------------------------------------------------------------
+Config 4       ~151K            ~130K            ~115K
+--------------------------------------------------------------------------
+
+
+(Note: Used numactl to restrict qemu to 
+            2 sockets (20way) and 4 sockets(40way))
+
+--------------050202070902020200030106--
