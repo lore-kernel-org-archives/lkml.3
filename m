@@ -1,86 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab3AJTxo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 14:53:44 -0500
-Received: from mailserver5.natinst.com ([130.164.80.5]:48430 "EHLO
-	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753303Ab3AJTxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 14:53:43 -0500
-Date: Thu, 10 Jan 2013 13:53:47 -0600
-From: Josh Cartwright <josh.cartwright@ni.com>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-Cc: mturquette@linaro.org, swarren@nvidia.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, rob.herring@calxeda.com,
-        maxime.ripard@free-electrons.com, linux@prisktech.co.nz,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH 1/7] clk: add common of_clk_init() function
-Message-ID: <20130110195347.GN19380@beefymiracle.amer.corp.natinst.com>
-References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
+	id S1755936Ab3AJT56 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 14:57:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63752 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754522Ab3AJT54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 14:57:56 -0500
+Date: Thu, 10 Jan 2013 17:48:32 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 5/5] KVM: x86: improve reexecute_instruction
+Message-ID: <20130110194832.GA2902@amt.cnet>
+References: <50EBBE54.1040007@linux.vnet.ibm.com>
+ <50EBBEEC.2060100@linux.vnet.ibm.com>
+ <20130110172657.GA24703@amt.cnet>
+ <50EF02ED.7060006@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 01/10/2013 01:53:29 PM,
-	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 01/10/2013 01:53:29 PM,
-	Serialize complete at 01/10/2013 01:53:29 PM
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Zs/RYxT/hKAHzkfQ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2013-01-10_09:2013-01-10,2013-01-10,1970-01-01 signatures=0
+In-Reply-To: <50EF02ED.7060006@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 11, 2013 at 02:05:33AM +0800, Xiao Guangrong wrote:
+> On 01/11/2013 01:26 AM, Marcelo Tosatti wrote:
+> > On Tue, Jan 08, 2013 at 02:38:36PM +0800, Xiao Guangrong wrote:
+> >> The current reexecute_instruction can not well detect the failed instruction
+> >> emulation. It allows guest to retry all the instructions except it accesses
+> >> on error pfn
+> >>
+> >> For example, some cases are nested-write-protect - if the page we want to
+> >> write is used as PDE but it chains to itself. Under this case, we should
+> >> stop the emulation and report the case to userspace
+> >>
+> >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> >> ---
+> >>  arch/x86/include/asm/kvm_host.h |    7 +++++++
+> >>  arch/x86/kvm/paging_tmpl.h      |   27 ++++++++++++++++++++-------
+> >>  arch/x86/kvm/x86.c              |    8 +++++++-
+> >>  3 files changed, 34 insertions(+), 8 deletions(-)
+> >>
+> >> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> >> index c431b33..d6ab8d2 100644
+> >> --- a/arch/x86/include/asm/kvm_host.h
+> >> +++ b/arch/x86/include/asm/kvm_host.h
+> >> @@ -502,6 +502,13 @@ struct kvm_vcpu_arch {
+> >>  		u64 msr_val;
+> >>  		struct gfn_to_hva_cache data;
+> >>  	} pv_eoi;
+> >> +
+> >> +	/*
+> >> +	 * Indicate whether the access faults on its page table in guest
+> >> +	 * which is set when fix page fault and used to detect unhandeable
+> >> +	 * instruction.
+> >> +	 */
+> >> +	bool write_fault_to_shadow_pgtable;
+> >>  };
+> >>
+> >>  struct kvm_lpage_info {
+> >> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> >> index 67b390d..df50560 100644
+> >> --- a/arch/x86/kvm/paging_tmpl.h
+> >> +++ b/arch/x86/kvm/paging_tmpl.h
+> >> @@ -497,26 +497,34 @@ out_gpte_changed:
+> >>   * created when kvm establishes shadow page table that stop kvm using large
+> >>   * page size. Do it early can avoid unnecessary #PF and emulation.
+> >>   *
+> >> + * @write_fault_to_shadow_pgtable will return true if the fault gfn is
+> >> + * currently used as its page table.
+> >> + *
+> >>   * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
+> >>   * since the PDPT is always shadowed, that means, we can not use large page
+> >>   * size to map the gfn which is used as PDPT.
+> >>   */
+> >>  static bool
+> >>  FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
+> >> -			      struct guest_walker *walker, int user_fault)
+> >> +			      struct guest_walker *walker, int user_fault,
+> >> +			      bool *write_fault_to_shadow_pgtable)
+> >>  {
+> >>  	int level;
+> >>  	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
+> >> +	bool self_changed = false;
+> >>
+> >>  	if (!(walker->pte_access & ACC_WRITE_MASK ||
+> >>  	      (!is_write_protection(vcpu) && !user_fault)))
+> >>  		return false;
+> >>
+> >> -	for (level = walker->level; level <= walker->max_level; level++)
+> >> -		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
+> >> -			return true;
+> >> +	for (level = walker->level; level <= walker->max_level; level++) {
+> >> +		gfn_t gfn = walker->gfn ^ walker->table_gfn[level - 1];
+> >> +
+> >> +		self_changed |= !(gfn & mask);
+> >> +		*write_fault_to_shadow_pgtable |= !gfn;
+> >> +	}
+> >>
+> >> -	return false;
+> >> +	return self_changed;
+> >>  }
+> >>
+> >>  /*
+> >> @@ -544,7 +552,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+> >>  	int level = PT_PAGE_TABLE_LEVEL;
+> >>  	int force_pt_level;
+> >>  	unsigned long mmu_seq;
+> >> -	bool map_writable;
+> >> +	bool map_writable, is_self_change_mapping;
+> >>
+> >>  	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
+> >>
+> >> @@ -572,9 +580,14 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+> >>  		return 0;
+> >>  	}
+> >>
+> >> +	vcpu->arch.write_fault_to_shadow_pgtable = false;
+> >> +
+> >> +	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu,
+> >> +	      &walker, user_fault, &vcpu->arch.write_fault_to_shadow_pgtable);
+> >> +
+> >>  	if (walker.level >= PT_DIRECTORY_LEVEL)
+> >>  		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
+> >> -		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
+> >> +		   || is_self_change_mapping;
+> >>  	else
+> >>  		force_pt_level = 1;
+> >>  	if (!force_pt_level) {
+> >> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >> index 6f13e03..2957012 100644
+> >> --- a/arch/x86/kvm/x86.c
+> >> +++ b/arch/x86/kvm/x86.c
+> >> @@ -4810,7 +4810,13 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t cr2)
+> >>  	 * guest to let CPU execute the instruction.
+> >>  	 */
+> >>  	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+> >> -	return true;
+> >> +
+> >> +	/*
+> >> +	 * If the access faults on its page table, it can not
+> >> +	 * be fixed by unprotecting shadow page and it should
+> >> +	 * be reported to userspace.
+> >> +	 */
+> >> +	return !vcpu->arch.write_fault_to_shadow_pgtable;
+> >>  }
+> > 
+> > This sounds wrong: only reporting emulation failure in case 
+> > of a write fault to shadow pagetable? 
+> 
+> We suppose unprotecting target-gfn can avoid emulation, the same
+> as current code. :(
 
---Zs/RYxT/hKAHzkfQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Current code treats access to non-mapped guest address as indication to
+exit reporting emulation failure.
 
-On Fri, Jan 04, 2013 at 12:30:52PM +0530, Prashant Gaikwad wrote:
-> Modify of_clk_init function so that it will determine which
-> driver to initialize based on device tree instead of each driver
-> registering to it.
->=20
-> Based on a similar patch for drivers/irqchip by Thomas Petazzoni and
-> drivers/clocksource by Stephen Warren.
->=20
-> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
-> ---
+The patch above restricts emulation failure reporting to when
+write_fault_to_shadow_pgtable = true.
 
-Prashant-
+> > The current pattern is sane:
+> > 
+> > if (condition_1 which allows reexecution is true)
+> > 	return true;
+> > 
+> > if (condition_2 which allows reexecution is true)
+> > 	return true;
+> > ...
+> > 	return false;
+> 
+> Unfortunately, the current code reports failure only when the access
+> fault on error pfn:
+> 
+>         pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
+>         if (!is_error_pfn(pfn)) {
+>                 kvm_release_pfn_clean(pfn);
+>                 return true;
+>         }
+> 
+>         return false;
+> 
+> All !is_rror_pfn returns true.
 
-Sorry for the late response, but I finally got a chance to give this
-patchset a spin on Zynq.  For patches 1 and 6:
 
-Reviewed-by: Josh Cartwright <josh.cartwright@ni.com>
-Tested-by: Josh Cartwright <josh.cartwright@ni.com>
 
-  Josh
-
---Zs/RYxT/hKAHzkfQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ7xxLAAoJEEef0niEbw+lq4gP/jTFT3AIiweW9FQaEH+RR4Tf
-LhXPfe20riXV5fUGjIwmKlcaAvFOL/hsLRS+AT9uHJJOvrtSO2uLR+UFxHt9hN8W
-V71PEBMbLiDEmgIo9w89xME3OR/cOdumZNVl4MCyUGgsHmFnZDwjNl+CG57lvYnk
-BypWXZx7Z4wjtWNWgd/ayJe1SzyPfWSpsvuJnYTQLif3NciuIsHfl/s1e/jC9Dwb
-0ON3r8VeQ/AFdq8MEENq7Fwu2bXqEoal2K9ZI1KyjiRntLcjcVThlKMEqIu8W3Hb
-TafOnOjG0akhB2dV52W1DCr63obY8duTSjpnCmC6akqJ1Pdpp8UZmWb84AZsXP4K
-im2et9rfBCskaAY8Vd/bqW4QsnPmGKsFrhXUZAf6T6rVu8PhQrjuY7v+avu+EAKX
-rwE4Fx/dlr5EFLAJXtRuUAGzO32RDR4Y4xEMH9pOIbTnW+o2dRQ3jnwMDMYIXxLZ
-AL9G+2VRCO1xgG/Cb8vUa8T4f3Eu4s8Xdp4WL2u69sIMP0W2kRMw0BCSQ9H0+c2T
-r1EbDEuQbu7rkzVK6saW2USGSQlGqpUQ0LtURirgBO2FiLXojToc79IWdzO7xDlc
-vIPCZBp2YiNueQKTWES4O2qn2oSAa5d+FHndrLZ2gQYL0WS1Ew27dwhXmYXeI9Xk
-emxG9P0JVIoWeC5FzYMq
-=PLjr
------END PGP SIGNATURE-----
-
---Zs/RYxT/hKAHzkfQ--
