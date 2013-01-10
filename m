@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab3AJVGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 16:06:18 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:62942 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754019Ab3AJVGR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 16:06:17 -0500
-X-IronPort-AV: E=Sophos;i="4.84,446,1355126400"; 
-   d="scan'208";a="19123947"
-Message-ID: <50EF2D48.2080004@codeaurora.org>
-Date: Thu, 10 Jan 2013 13:06:16 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755054Ab3AJVGc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 16:06:32 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:52515 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756136Ab3AJVGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 16:06:30 -0500
+Date: Thu, 10 Jan 2013 14:06:14 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
+Message-ID: <20130110210614.GA21836@obsidianresearch.com>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130109231758.GA27065@obsidianresearch.com>
+ <20130110071937.GG15212@avionic-0098.adnet.avionic-design.de>
+ <201301100917.19577.arnd@arndb.de>
+ <20130110102544.GA5546@avionic-0098.adnet.avionic-design.de>
+ <20130110182007.GA28004@obsidianresearch.com>
+ <20130110185505.GA22944@avionic-0098.adnet.avionic-design.de>
+ <20130110190327.GA23110@avionic-0098.adnet.avionic-design.de>
+ <20130110192417.GA18478@obsidianresearch.com>
+ <20130110202007.GA26139@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] clk: Add composite clock type
-References: <1357278706-28149-1-git-send-email-pgaikwad@nvidia.com> <50E75538.5010706@codeaurora.org> <50E794D0.7040907@nvidia.com>
-In-Reply-To: <50E794D0.7040907@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130110202007.GA26139@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/13 18:49, Prashant Gaikwad wrote:
-> On Saturday 05 January 2013 03:48 AM, Stephen Boyd wrote:
->> On 01/03/13 21:51, Prashant Gaikwad wrote:
->>> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
->>> index f0b269a..baf7608 100644
->>> --- a/drivers/clk/Makefile
->>> +++ b/drivers/clk/Makefile
->>> @@ -2,7 +2,8 @@
->>>   obj-$(CONFIG_HAVE_CLK)        += clk-devres.o
->>>   obj-$(CONFIG_CLKDEV_LOOKUP)    += clkdev.o
->>>   obj-$(CONFIG_COMMON_CLK)    += clk.o clk-fixed-rate.o clk-gate.o \
->>> -                   clk-mux.o clk-divider.o clk-fixed-factor.o
->>> +                   clk-mux.o clk-divider.o clk-fixed-factor.o \
->>> +                   clk-composite.o
->> This list is getting a little out of hand. Should we sort it
->> alphabetically and put each file on one line?
->
-> Do you want me to do it in this patch?
->
->
+On Thu, Jan 10, 2013 at 09:20:07PM +0100, Thierry Reding wrote:
 
-No.
+> > Arnd's version is good too, but you would be restricted to aligned
+> > powers of two for the bus number range in the DT, which is probably
+> > not that big a deal either?
+> 
+> Stephen suggested on IRC that we could try to keep a bit of dynamicity
+> in the allocation scheme if we create the bus mapping when the first
+> device on the bus is probed and discard the mapping if no devices are
+> found.
 
->>> +static u8 clk_composite_get_parent(struct clk_hw *hw)
->>> +{
->>> +    struct clk_composite *composite = to_clk_composite(hw);
->>> +    const struct clk_ops *mux_ops = composite->mux_ops;
->>> +    struct clk_hw *mux_hw = composite->mux_hw;
->>> +
->>> +    mux_hw->clk = hw->clk;
->> Looks like this is already done down in the register function. Why are
->> we doing it again here and in each op?
->
-> Some ops gets called during clk_init which is before clk_register
-> returns.
->
->
+You probably don't need to mess around with 'discard on empty' the
+kernel should only access bus numbers that are in the range of the
+subordinate busses of the bridges. So if you establish a mapping on a
+bus-by-bus basis at first access, it should be fine and very close to
+minimal..
 
-Hmm. Ok.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Jason
