@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab3AJXjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:39:17 -0500
-Received: from ozlabs.org ([203.10.76.45]:50406 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754032Ab3AJXjP convert rfc822-to-8bit (ORCPT
+	id S1754510Ab3AJXkt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:40:49 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:40488 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754032Ab3AJXkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:39:15 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjurbren@gmail.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        virtualization@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: [RFCv2 00/12] Introduce host-side virtio queue and CAIF Virtio.
-In-Reply-To: <CAJK669Z-bGTeQe8qJpTJP7simbSvQ8cgFZefs5QRMkmxtFYY4g@mail.gmail.com>
-References: <871ug75vp1.fsf@rustcorp.com.au> <1354718230-4486-1-git-send-email-sjur@brendeland.net> <20121206102750.GF10837@redhat.com> <877goc0wac.fsf@rustcorp.com.au> <CAJK669bP41oBhJ=MB64NS21Ag7XO5WswuTiVKCFTb96nvmyBiw@mail.gmail.com> <87pq1f2rj0.fsf@rustcorp.com.au> <87wqvl1g9s.fsf@rustcorp.com.au> <CAJK669Z-bGTeQe8qJpTJP7simbSvQ8cgFZefs5QRMkmxtFYY4g@mail.gmail.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 11 Jan 2013 10:05:11 +1030
-Message-ID: <87pq1c1uj4.fsf@rustcorp.com.au>
+	Thu, 10 Jan 2013 18:40:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1410202.K95a8u1BYT@vostro.rjw.lan>
+References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com>
+	<2704169.6ID6mDVPAt@vostro.rjw.lan>
+	<CAE9FiQXmnmFgG5jLnGyeYX7NcedGa-ztGo_CGoNjV8fFbe_esA@mail.gmail.com>
+	<1410202.K95a8u1BYT@vostro.rjw.lan>
+Date: Thu, 10 Jan 2013 15:40:45 -0800
+X-Google-Sender-Auth: _xPnYsraVuFVAqF8hT2SjBZVmPY
+Message-ID: <CAE9FiQVmDW__C3A1_JJZpCZJwYWONZpHbzitMxsHZBxotw8VBA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when
+ PCI hotplug event happens
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Myron Stowe <mstowe@redhat.com>, Jiang Liu <liuj97@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Myron Stowe <myron.stowe@redhat.com>, bhelgaas <bhelgaas@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sjur Brændeland <sjurbren@gmail.com> writes:
-> Hi Rusty,
->
-> On Thu, Jan 10, 2013 at 11:30 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> ...
->>I now have some lightly-tested code (via a userspace harness).
->
-> Great - thank you for looking into this. I will start integrating this
-> with my patches
-> when you send out a proper patch.
-
-Hi Sjur!
-
-        OK, the Internet was no help here, how do you pronounce Sjur?
-I'm guessing "shoor" rhyming with tour until I know better.
-
->> diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
->> index 8d5bddb..fd95d3e 100644
->> --- a/drivers/virtio/Kconfig
->> +++ b/drivers/virtio/Kconfig
->> @@ -5,6 +5,12 @@ config VIRTIO
->>           bus, such as CONFIG_VIRTIO_PCI, CONFIG_VIRTIO_MMIO, CONFIG_LGUEST,
->>           CONFIG_RPMSG or CONFIG_S390_GUEST.
+On Thu, Jan 10, 2013 at 3:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, January 10, 2013 03:03:53 PM Yinghai Lu wrote:
+>> On Thu, Jan 10, 2013 at 1:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > Well, I don't see what functional problems that can bring.
+>> >
+>> > In theory people may want to have them as modules to avoid loading them on
+>> > systems that don't use PCI hotplug, but honestly I think that the complexity
+>> > this causes us to deal with is not worth it.
+>> >
+>> > Moreover, removing the modularity may actually allow us to solve some ordering
+>> > issues once and for good.
 >>
->> +config VHOST
->> +       tristate
+>> No, the world is not really ideal yet.
+>>
+>> looks like laptops have problem with pci express cards.
+>>
+>> when pciehp is used, surprise insert/removal does not work because
+>> PresDect does not change properly, so no interrupt is generated.
+>> --- i suspects that is silicon problem.
+>>
+>> but when acpiphp is used, that surprise  insert/removal is working.
+>>
+>> some laptop like thinkpad, just don't give osc to kernel..
+>> [    0.505117]  pci0000:00: Requesting ACPI _OSC control (0x1d)
+>> [    0.505413]  pci0000:00: ACPI _OSC request failed (AE_SUPPORT),
+>> returned control mask: 0x0d
+>> [    0.505517] ACPI _OSC control for PCIe not granted, disabling ASPM
+>>
+>> and other laptop give that to kernel, in recent kernel will not give
+>> acpiphp to have that slot, because it want to hold that for pciehp.
+>> poor user have to pass 'pci_aspm=off" to disable _OSC for all.
+>> --- please check the mail that i forward to you yesterday.
 >
-> Inclusion of drivers/virtio from drivers/Makefile depends on VIRTIO.
-> So I guess VHOST should select VIRTIO to ensure that
-> drivers/virtio/virtio_host.c
-> is part of the build.
+> Yes, this is a bug, but I'm not sure how to fix it yet.
 
-Maybe I should move drivers/virtio/virtio_host.c to
-drivers/vhost/vringh.c; I'll look at it.
+add one command line to control it so do not claim that in osc_control?
 
-It makes sense for vhost/ to contain the host-side stuff, since it
-already exists.
-
->> +       if (*last_avail_idx == avail_idx)
->> +               return vrh->vring.num;
->> +
->> +       /* Only get avail ring entries after they have been exposed by guest. */
->> +       smp_rmb();
 >
-> We are accessing memory shared with a remote device (modem), so we probably
-> need mandatory barriers here, e.g. something like the virtio_rmb
-> defined in virtio_ring.c.
-
-Fair enough, we can put those in a header.
-
->> +               /* Append the pages into the sg. */
->> +               err = add_to_sg(&vsg, (void *)(long)acc->desc.addr,
->> +                               acc->desc.len, gfp);
+>> Anyway, we do need to let the user to have choice to use acpiphp and pciehp.
+>> and it should be first come and first serve policy.
 >
-> I would prefer not to split into pages at this point, but rather provide an
-> iterator or the original list found in the descriptor to the client.
->
-> In our case we use virtio rings to talk to a LTE-modem over shared memory.
-> The IP traffic is received over the air, interleaved and arrives in
-> the virtio driver in
-> large bursts. So virtio driver on the modem receives multiple datagrams
-> held in large contiguous buffers. Our current approach is to handle each
-> buffer as a chained descriptor list, where each datagram is kept in
-> separate chained descriptors. When the buffers are consumed on the linux
-> host, the modem will read the chained descriptors from the used-ring and
-> free the entire contiguous buffer in one operation.
+> And that's why you think they should be modules?  I disagree if so.
 
-In other words, boundaries matter?
+Yes.
 
-While the sg-in-place hack is close to optimal for TCM_VHOST, neither
-net not you can use it directly.  I'll switch to an iovec (with a
-similar use-caller-supplied-if-it-fits trick); they're smaller anyway.
+maybe we can have pci=nopciehp in command line just we pci=noaer...
 
-More code coming...
-
-Thanks,
-Rusty.
+that should handle some corner cases.
