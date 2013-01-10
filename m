@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab3AJXXJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:23:09 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:53394 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746Ab3AJXXH (ORCPT
+	id S1754253Ab3AJX1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:27:34 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:41233 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab3AJX1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:23:07 -0500
+	Thu, 10 Jan 2013 18:27:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130110230121.GA20584@quad.lixom.net>
-References: <1354251857-21587-1-git-send-email-dianders@chromium.org>
-	<1357842269-15062-1-git-send-email-dianders@chromium.org>
-	<20130110230121.GA20584@quad.lixom.net>
-Date: Thu, 10 Jan 2013 15:23:02 -0800
-Message-ID: <CAD=FV=W_++TL0+5iu=HUchGQ47q4AWxNi5sy37ysM=EMb+NFmA@mail.gmail.com>
-Subject: Re: [REPOST PATCH v3 1/4] mmc: dw_mmc: Add "disable-wp" device tree property
-From: Doug Anderson <dianders@chromium.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: linux-mmc@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        Will Newton <will.newton@imgtec.com>, Chris Ball <cjb@laptop.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+In-Reply-To: <CAA25o9TjXNCpLHAyowboAxZrnQZmNmJOevDgA-zq4kA1K-PHXQ@mail.gmail.com>
+References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+	<1357712474-27595-2-git-send-email-minchan@kernel.org>
+	<20130109161854.67412dcc.akpm@linux-foundation.org>
+	<20130110020347.GA14685@blaptop>
+	<CAA25o9TjXNCpLHAyowboAxZrnQZmNmJOevDgA-zq4kA1K-PHXQ@mail.gmail.com>
+Date: Thu, 10 Jan 2013 15:27:32 -0800
+Message-ID: <CAA25o9RzsU_pGRK6eYUs7WgEiuW_FHnimO_MXPgRH3L51sFB2w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm: prevent to add a page to swap if may_writepage is unset
+From: Luigi Semenzato <semenzato@google.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof,
+[I may have screwed up my previous message, sorry if this is a
+duplicate.  (Content-Policy reject msg: The message contains HTML
+subpart, therefore we consider it SPAM or Outlook Virus.)]
 
-Thanks for your comments.
+------------------------------------------
 
-On Thu, Jan 10, 2013 at 3:01 PM, Olof Johansson <olof@lixom.net> wrote:
->
-> The previous code used the controller-common quirk field to set a
-> per-controller DW_MCI_QUIRK_NO_WRITE_PROTECT. Is there really need to
-> do this per-slot? And if so, please explain in the commit message why
-> there is need for a brand new quirk for the same functionality.
+For what it's worth, I tested this patch on my 3.4 kernel, and it
+works as advertised.  Here's my setup.
 
-I'm happy to move back to using a per-controller quirk here--it
-simplifies the code quite a bit since it can use all of the
-preexisting quirks code.  I originally coded it up as per-slot since
-generally each slot needs its own write-protect line.  Without ever
-seeing any hardware using multiple slots per controller I can't say
-how common this would be, so it may be overkill to handle that
-situation.
+- 2 GB RAM
+- a 3 GB zram disk for swapping
+- start one "hog" process per second (each hog process mallocs and
+touches 200 MB of memory).
+- watch /proc/meminfo
 
-Note that I think of the new code as being the device-tree equivalent
-of the non-device-tree "brd->get_ro(slot_id)" function.  That function
-is per-slot.
+1. I verified that the problem still exists on my current 3.4 kernel.
+With laptop_mode = 2, hog processes are oom-killed when about 1.8-1.9
+(out of 3) GB of swap space are still left
 
-I will wait a day or two to see if others have feedback.  If I hear no
-feedback I'll send up a patch that moves this to be at the controller
-level.
+2. I double-checked that the problem does not exist with laptop_mode =
+0: hog processes are oom-killed when swap space is exhausted (with
+good approximation).
 
+3. I added the two-line patch, put back laptop_mode = 2, and verified
+that hog processes are oom-killed when swap space is exhausted, same
+as case 2.
 
-Thanks!
-
--Doug
+Let me know if I can run any more tests for you, and thanks for all
+the support so far!
