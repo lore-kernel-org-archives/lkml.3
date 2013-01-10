@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3AJWjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 17:39:05 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:34572 "EHLO
+	id S1754020Ab3AJWje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 17:39:34 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:34595 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528Ab3AJWjD (ORCPT
+	with ESMTP id S1753910Ab3AJWjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 17:39:03 -0500
-Date: Thu, 10 Jan 2013 14:39:02 -0800 (PST)
-Message-Id: <20130110.143902.2166041015759450388.davem@davemloft.net>
-To: stefanha@redhat.com
-Cc: jasowang@redhat.com, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.8-rc] tuntap: refuse to re-attach to different
- tun_struct
+	Thu, 10 Jan 2013 17:39:33 -0500
+Date: Thu, 10 Jan 2013 14:39:32 -0800 (PST)
+Message-Id: <20130110.143932.748033133604759561.davem@davemloft.net>
+To: yoshfuji@linux-ipv6.org
+Cc: r.kuntz@ipflavors.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, andi@collax.com
+Subject: Re: [PATCH 1/1] ipv6: fix the noflags test in
+ addrconf_get_prefix_route
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1357804788-19976-1-git-send-email-stefanha@redhat.com>
-References: <1357804788-19976-1-git-send-email-stefanha@redhat.com>
+In-Reply-To: <50EE9141.6020805@linux-ipv6.org>
+References: <470C14E4-2866-4C55-89A3-D6751E1587C4@ipflavors.com>
+	<50EE9141.6020805@linux-ipv6.org>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -25,20 +26,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Hajnoczi <stefanha@redhat.com>
-Date: Thu, 10 Jan 2013 08:59:48 +0100
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Date: Thu, 10 Jan 2013 19:00:33 +0900
 
-> Multiqueue tun devices support detaching a tun_file from its tun_struct
-> and re-attaching at a later point in time.  This allows users to disable
-> a specific queue temporarily.
-> 
-> ioctl(TUNSETIFF) allows the user to specify the network interface to
-> attach by name.  This means the user can attempt to attach to interface
-> "B" after detaching from interface "A".
-> 
-> The driver is not designed to support this so check we are re-attaching
-> to the right tun_struct.  Failure to do so may lead to oops.
-> 
-> Signed-off-by: Stefan Hajnoczi <stefanha@redhat.com>
+> Romain KUNTZ wrote:
+>> From e7ece201c35615c44a3cfdc10ee28ad5a5878f41 Mon Sep 17 00:00:00 2001
+>> From: Romain Kuntz <r.kuntz@ipflavors.com>
+>> Date: Wed, 9 Jan 2013 15:02:26 +0100
+>> Subject: [PATCH 1/1] ipv6: fix the noflags test in addrconf_get_prefix_route
+>> 
+>> The tests on the flags in addrconf_get_prefix_route() does no make
+>> much sense: the 'noflags' parameter contains the set of flags that
+>> must not match with the route flags, so the test must be done
+>> against 'noflags', and not against 'flags'.
+>> 
+>> Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
+ ...
+> Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 
 Applied.
