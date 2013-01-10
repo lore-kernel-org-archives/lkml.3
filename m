@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab3AJXel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:34:41 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:63075 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754032Ab3AJXej (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:34:39 -0500
+	id S1754494Ab3AJXes (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:34:48 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37231 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754421Ab3AJXeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 18:34:46 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [Alternative][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance, v2
+Date: Fri, 11 Jan 2013 00:40:30 +0100
+Message-ID: <3595317.Eh4AyqPa3o@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQXmOyWYhkc2fbjBvUqBFh7Ktf5E9X6Z8x0HguUdm8+mRw@mail.gmail.com>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <1910593.f2RrgAtJJO@vostro.rjw.lan> <CAE9FiQXmOyWYhkc2fbjBvUqBFh7Ktf5E9X6Z8x0HguUdm8+mRw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1586060.uJlkOEQfVW@hammer82.arch.suse.de>
-References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
-	<201301081747.17853.trenn@suse.de>
-	<CAE9FiQW=gT86Eo0gwPHi5iFi4sg=1SHkBohBAo2KXdoB_Ouqvw@mail.gmail.com>
-	<1586060.uJlkOEQfVW@hammer82.arch.suse.de>
-Date: Thu, 10 Jan 2013 15:34:37 -0800
-X-Google-Sender-Auth: ZNIp4QMd0anz95vbvHvPllukBEA
-Message-ID: <CAE9FiQVLVxj07TM1N6F2kmZdBYMUiS6Xz2bD-JZPtvps3a5-xw@mail.gmail.com>
-Subject: Re: [PATCH] Only reset e820 once, even with multiple memmap=exactmap params
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Renninger <trenn@suse.de>
-Cc: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
-        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
-        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org,
-        horms@verge.net.au
-Content-Type: multipart/mixed; boundary=00151748e0f045c07b04d2f79f44
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00151748e0f045c07b04d2f79f44
-Content-Type: text/plain; charset=ISO-8859-1
+On Thursday, January 10, 2013 02:54:00 PM Yinghai Lu wrote:
+> On Wed, Jan 9, 2013 at 3:06 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> 
+>  > arch/ia64/pci/pci.c        |    8 ++++++++
+>  > arch/x86/include/asm/pci.h |    3 +++
+>  >  arch/x86/pci/acpi.c        |    9 +++++++++
+>  > drivers/acpi/pci_root.c    |   18 ------------------
+>  > drivers/pci/pci-acpi.c     |   19 -------------------
+>  >  drivers/pci/probe.c        |   16 ++++++++++++++++
+>  >  include/acpi/acpi_bus.h    |    1 -
+>  >  include/linux/pci.h        |    2 ++
+>  >  8 files changed, 38 insertions(+), 38 deletions
+> ...
+> > I'll wait for comments from the others, if any, and put it into my acpi-scan
+> > branch after a couple of days.  It doesn't need to be there technically, but
+> > it's kind of related.
+> 
+> looks like you put it into acpi-scan-next instead.
+> 
+> and it does touch pci code.
+> 
+> can you put it in to acpi-scan ? so Bjorn could pull it again to pci/next.
 
-On Wed, Jan 9, 2013 at 7:21 PM, Thomas Renninger <trenn@suse.de> wrote:
-> I still do not understand why:
->
-> Kexec (kexec/firmware_memmap.c) is setting up the e820 map from:
-> /sys/firmware/memmap/*
-> and pass it via bootloader structures.
-> And this e820 table gets immediately voided by memmap=exactmap
-> and a new one passed via boot parameters is set up.
-> If I read this correctly, this is what happens?
+I will tomorrow.
 
-yes, kdump scripts append those memmap.
+Thanks,
+Rafael
 
->
-> Can kexec simply pass the memory to use via memmap=X@Y
-> Then take the original e820 table, but not the usable entries (those
-> are coming from above memmap=X@Y).
-> That would mean that the kexec kernel takes all the
-> original ACPI, ACPI NVS, reserved, unusable (everthing but usable) entries
-> from the original e820 table and identifies the usable memory from
-> memmap boot param?
 
-kdump scripts already do that for acpi regions, need to update it
-to append that for mmconf.
-
->
-> This would be much smarter than trying to pass the mmconf reserved
-> area and I could imagine other issues will show up if the reserved areas
-> do not match the original ones in the kexec kernel.
->
-> If this really can be done and memmap=exactmap was only used by kexec,
-> it's logic could be redefined from "drop all e820 entries" to
-> "drop all usable e820 entries" and no further adjustings in kexec/kernel are
-> needed to get mmconf working (and other issues may be avoided before
-> they happen). Beside that ACPI reserved aread is not needed anymore to get
-> passed via memmap=X#Y by kexec.
-
-yes, we have other user for debug  like simulating user memmap for some bugs.
-
-current problem for exactmap is that we don't scan that at first.
-
-attached patch could help that.
-
-Thanks
-
-Yinghai
-
---00151748e0f045c07b04d2f79f44
-Content-Type: application/octet-stream; name="parse_exactmap_one_time.patch"
-Content-Disposition: attachment; filename="parse_exactmap_one_time.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hbsjamlz0
-
-LS0tCiBhcmNoL3g4Ni9rZXJuZWwvZTgyMC5jIHwgICAxMiArKysrKysrKysrKysKIDEgZmlsZSBj
-aGFuZ2VkLCAxMiBpbnNlcnRpb25zKCspCgpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tlcm5l
-bC9lODIwLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYva2VybmVsL2U4
-MjAuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9lODIwLmMKQEAgLTgzNSw2ICs4MzUs
-OCBAQCBzdGF0aWMgaW50IF9faW5pdCBwYXJzZV9tZW1vcHQoY2hhciAqcCkKIH0KIGVhcmx5X3Bh
-cmFtKCJtZW0iLCBwYXJzZV9tZW1vcHQpOwogCitzdGF0aWMgYm9vbCBfX2luaXRkYXRhIGV4YWN0
-bWFwX3BhcnNlZDsKKwogc3RhdGljIGludCBfX2luaXQgcGFyc2VfbWVtbWFwX29uZShjaGFyICpw
-KQogewogCWNoYXIgKm9sZHA7CkBAIC04NDQsNiArODQ2LDEwIEBAIHN0YXRpYyBpbnQgX19pbml0
-IHBhcnNlX21lbW1hcF9vbmUoY2hhcgogCQlyZXR1cm4gLUVJTlZBTDsKIAogCWlmICghc3RybmNt
-cChwLCAiZXhhY3RtYXAiLCA4KSkgeworCQlpZiAoZXhhY3RtYXBfcGFyc2VkKQorCQkJcmV0dXJu
-IDA7CisKKwkJZXhhY3RtYXBfcGFyc2VkID0gdHJ1ZTsKICNpZmRlZiBDT05GSUdfQ1JBU0hfRFVN
-UAogCQkvKgogCQkgKiBJZiB3ZSBhcmUgZG9pbmcgYSBjcmFzaCBkdW1wLCB3ZSBzdGlsbCBuZWVk
-IHRvIGtub3cKQEAgLTg3OSw2ICs4ODUsMTIgQEAgc3RhdGljIGludCBfX2luaXQgcGFyc2VfbWVt
-bWFwX29uZShjaGFyCiB9CiBzdGF0aWMgaW50IF9faW5pdCBwYXJzZV9tZW1tYXBfb3B0KGNoYXIg
-KnN0cikKIHsKKwljaGFyICpwID0gYm9vdF9jb21tYW5kX2xpbmU7CisKKwlwID0gc3Ryc3RyKHAs
-ICJleGFjdG1hcCIpOworCWlmIChwKQorCQlwYXJzZV9tZW1tYXBfb25lKCJleGFjdG1hcCIpOwor
-CiAJd2hpbGUgKHN0cikgewogCQljaGFyICprID0gc3RyY2hyKHN0ciwgJywnKTsKIAo=
---00151748e0f045c07b04d2f79f44--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
