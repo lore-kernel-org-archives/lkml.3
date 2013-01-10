@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab3AJXHO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:07:14 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:46376 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab3AJXHM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:07:12 -0500
+	id S1754125Ab3AJXMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:12:37 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:47585 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753746Ab3AJXMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 18:12:36 -0500
+Message-ID: <50EF4AD1.4060807@linux.vnet.ibm.com>
+Date: Thu, 10 Jan 2013 15:12:17 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
-References: <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
-	<8762382z2c.fsf@xmission.com>
-	<CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
-	<87y5g4z7rp.fsf@xmission.com>
-	<CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
-	<CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
-	<20130109004340.GA12234@konrad-lan.dumpdata.com>
-	<87txqruq8p.fsf@xmission.com>
-	<CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
-	<CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
-	<20130109132409.GB18395@phenom.dumpdata.com>
-	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
-	<87d2xeul5v.fsf@xmission.com>
-	<CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
-Date: Thu, 10 Jan 2013 15:07:10 -0800
-X-Google-Sender-Auth: HF3SOz5ozaa2_FRP1KfLOt0eHyg
-Message-ID: <CAE9FiQVsbDfLOyv=D4_BLtrKpp+Ydj7pren8Cu3rNGztbj=w=w@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+To: paul.szabo@sydney.edu.au
+CC: linux-mm@kvack.org, 695182@bugs.debian.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Reproducible OOM with partial workaround
+References: <201301102158.r0ALwI4i031014@como.maths.usyd.edu.au>
+In-Reply-To: <201301102158.r0ALwI4i031014@como.maths.usyd.edu.au>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011023-9360-0000-0000-00000F0A043E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 1:15 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Jan 9, 2013 at 1:00 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> Yinghai Lu <yinghai@kernel.org> writes:
->>
->>> please check updated attached. It should address all your request.
->>
->> There is one significant bug that I can see.
->>
->> swiotlb_print_info tests no_iotlb_memory but no_iotlb_memory is set
->> after swiotlb_init_with_tlb returns.
->
-> there is another swiotlb_print_info calling from
-> pci_swiotlb_late_init
->
-> void __init pci_swiotlb_late_init(void)
-> {
->         /* An IOMMU turned us off. */
->         if (!swiotlb)
->                 swiotlb_free();
->         else {
->                 printk(KERN_INFO "PCI-DMA: "
->                        "Using software bounce buffering for IO (SWIOTLB)\n");
->                 swiotlb_print_info();
->         }
-> }
->
-> so we need that checking when swiotlb == 1, but actually we can not
-> allocate that before.
+On 01/10/2013 01:58 PM, paul.szabo@sydney.edu.au wrote:
+> I developed a workaround patch for this particular OOM demo, dropping
+> filesystem caches when about to exhaust lowmem. However, subsequently
+> I observed OOM when running many processes (as yet I do not have an
+> easy-to-reproduce demo of this); so as I suspected, the essence of the
+> problem is not with FS caches.
+> 
+> Could you please help in finding the cause of this OOM bug?
 
-Eric, so the code is right to put checking in swiotlb_print_info ?
+As was mentioned in the bug, your 32GB of physical memory only ends up
+giving ~900MB of low memory to the kernel.  Of that, around 600MB is
+used for "mem_map[]", leaving only about 300MB available to the kernel
+for *ALL* of its allocations at runtime.
 
-I'd like to post the whole patchset again and ask HPA to put them in tip/next
-to catch -v3.9 merging window.
+Your configuration has never worked.  This isn't a regression, it's
+simply something that we know never worked in Linux and it's a very hard
+problem to solve.  One Linux vendor (at least) went to a huge amount of
+trouble to develop, ship, and supported a kernel that supported large
+32-bit machines, but it was never merged upstream and work stopped on it
+when such machines became rare beasts:
 
-Thanks
+	http://lwn.net/Articles/39925/
 
-Yinghai
+I believe just about any Linux vendor would call your configuration
+"unsupported".  Just because the kernel can boot does not mean that we
+expect it to work.
+
+It's possible that some tweaks of the vm knobs (like lowmem_reserve)
+could help you here.  But, really, you don't want to run a 32-bit kernel
+on such a large machine.  Very, very few folks are running 32-bit
+kernels on these systems and you're likely to keep running in to bugs
+because this is such a rare configuration.
+
+We've been very careful to ensure that 64-bit kernels shoul basically be
+drop-in replacements for 32-bit ones.  You can keep userspace 100%
+32-bit, and just have a 64-bit kernel.
+
+If you're really set on staying 32-bit, I might have a NUMA-Q I can give
+you. ;)
+
