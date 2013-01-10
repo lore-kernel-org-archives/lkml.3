@@ -1,107 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754Ab3AJTM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 14:12:27 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:29206 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755718Ab3AJTM0 (ORCPT
+	id S1755711Ab3AJTNc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 14:13:32 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:53119 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab3AJTNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 14:12:26 -0500
-Message-ID: <1357845142.2712.11.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH V3 1/2] virtio-net: fix the set affinity bug when CPU
- IDs are not consecutive
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Wanlong Gao <gaowanlong@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>, Eric Dumazet <erdnetdev@gmail.com>,
-        <virtualization@lists.linux-foundation.org>, <netdev@vger.kernel.org>
-Date: Thu, 10 Jan 2013 19:12:22 +0000
-In-Reply-To: <87a9sh3lru.fsf@rustcorp.com.au>
-References: <1357639660-6660-1-git-send-email-gaowanlong@cn.fujitsu.com>
-	 <87k3rn2qwb.fsf@rustcorp.com.au> <50ECCDF3.9050403@cn.fujitsu.com>
-	 <87a9sh3lru.fsf@rustcorp.com.au>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jan 2013 14:13:30 -0500
+Date: Thu, 10 Jan 2013 14:18:03 -0500
+From: Matt Porter <mporter@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v3 04/16] ARM: edma: add DT and runtime PM support
+ for AM33XX
+Message-ID: <20130110191803.GN14660@beef>
+References: <1350566815-409-1-git-send-email-mporter@ti.com>
+ <1350566815-409-5-git-send-email-mporter@ti.com>
+ <508D110B.8010908@ti.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19544.003
-X-TM-AS-Result: No--25.923100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508D110B.8010908@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-10 at 11:19 +1030, Rusty Russell wrote:
-> Wanlong Gao <gaowanlong@cn.fujitsu.com> writes:
-> > On 01/09/2013 07:31 AM, Rusty Russell wrote:
-> >> Wanlong Gao <gaowanlong@cn.fujitsu.com> writes:
-> >>>   */
-> >>>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
-> >>>  {
-> >>> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
-> >>> -		  smp_processor_id();
-> >>> +	int txq = 0;
-> >>> +
-> >>> +	if (skb_rx_queue_recorded(skb))
-> >>> +		txq = skb_get_rx_queue(skb);
-> >>> +	else if ((txq = per_cpu(vq_index, smp_processor_id())) == -1)
-> >>> +		txq = 0;
-> >> 
-> >> You should use __get_cpu_var() instead of smp_processor_id() here, ie:
-> >> 
-> >>         else if ((txq = __get_cpu_var(vq_index)) == -1)
-> >> 
-> >> And AFAICT, no reason to initialize txq to 0 to start with.
-> >> 
-> >> So:
-> >> 
-> >>         int txq;
-> >> 
-> >>         if (skb_rx_queue_recorded(skb))
-> >> 		txq = skb_get_rx_queue(skb);
-> >>         else {
-> >>                 txq = __get_cpu_var(vq_index);
-> >>                 if (txq == -1)
-> >>                         txq = 0;
-> >>         }
-> >
-> > Got it, thank you.
-> >
-> >> 
-> >> Now, just to confirm, I assume this can happen even if we use vq_index,
-> >> right, because of races with virtnet_set_channels?
-> >
-> > I still can't understand this race, could you explain more? thank you.
+On Sun, Oct 28, 2012 at 04:33:39PM +0530, Sekhar Nori wrote:
+> On 10/18/2012 6:56 PM, Matt Porter wrote:
+> > Adds support for parsing the TI EDMA DT data into the required
+> > EDMA private API platform data.
+> > 
+> > Calls runtime PM API only in the DT case in order to unidle the
+> > associated hwmods on AM33XX.
 > 
-> I assume that someone can call virtnet_set_channels() while we are
-> inside virtnet_select_queue(), so they reduce dev->real_num_tx_queues,
-> causing virtnet_set_channels to do:
+> Runtime PM is supported on DaVinci now, so if that was the reason for
+> this choice, then it doesn't need to be that way.
+
+Thanks, fixed this for v4.
+
+> > 
+> > Signed-off-by: Matt Porter <mporter@ti.com>
+> > ---
+> >  arch/arm/common/edma.c                      |  255 +++++++++++++++++++++++++--
+> >  arch/arm/mach-davinci/board-da830-evm.c     |    4 +-
+> >  arch/arm/mach-davinci/board-da850-evm.c     |    8 +-
+> >  arch/arm/mach-davinci/board-dm646x-evm.c    |    4 +-
+> >  arch/arm/mach-davinci/board-omapl138-hawk.c |    8 +-
+> >  arch/arm/mach-davinci/devices-da8xx.c       |    8 +-
+> >  arch/arm/mach-davinci/devices-tnetv107x.c   |    4 +-
+> >  arch/arm/mach-davinci/dm355.c               |    4 +-
+> >  arch/arm/mach-davinci/dm365.c               |    4 +-
+> >  arch/arm/mach-davinci/dm644x.c              |    4 +-
+> >  arch/arm/mach-davinci/dm646x.c              |    4 +-
+> >  include/linux/platform_data/edma.h          |    8 +-
+> >  12 files changed, 272 insertions(+), 43 deletions(-)
+> > 
+> > diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+> > index a3d189d..6d2a590 100644
+> > --- a/arch/arm/common/edma.c
+> > +++ b/arch/arm/common/edma.c
+> > @@ -24,6 +24,13 @@
+> >  #include <linux/platform_device.h>
+> >  #include <linux/io.h>
+> >  #include <linux/slab.h>
+> > +#include <linux/edma.h>
+> > +#include <linux/err.h>
+> > +#include <linux/of_address.h>
+> > +#include <linux/of_device.h>
+> > +#include <linux/of_dma.h>
+> > +#include <linux/of_irq.h>
+> > +#include <linux/pm_runtime.h>
+> >  
+> >  #include <linux/platform_data/edma.h>
+> >  
+> > @@ -1366,31 +1373,237 @@ void edma_clear_event(unsigned channel)
+> >  EXPORT_SYMBOL(edma_clear_event);
+> >  
+> >  /*-----------------------------------------------------------------------*/
+> > +static int edma_of_read_u32_to_s8_array(const struct device_node *np,
+> > +					 const char *propname, s8 *out_values,
+> > +					 size_t sz)
+> > +{
+> > +	struct property *prop = of_find_property(np, propname, NULL);
+> > +	const __be32 *val;
+> > +
+> > +	if (!prop)
+> > +		return -EINVAL;
+> > +	if (!prop->value)
+> > +		return -ENODATA;
+> > +	if ((sz * sizeof(u32)) > prop->length)
+> > +		return -EOVERFLOW;
+> > +
+> > +	val = prop->value;
+> > +
+> > +	while (sz--)
+> > +		*out_values++ = (s8)(be32_to_cpup(val++) & 0xff);
+> > +
+> > +	/* Terminate it */
+> > +	*out_values++ = -1;
+> > +	*out_values++ = -1;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int edma_of_read_u32_to_s16_array(const struct device_node *np,
+> > +					 const char *propname, s16 *out_values,
+> > +					 size_t sz)
+> > +{
+> > +	struct property *prop = of_find_property(np, propname, NULL);
+> > +	const __be32 *val;
+> > +
+> > +	if (!prop)
+> > +		return -EINVAL;
+> > +	if (!prop->value)
+> > +		return -ENODATA;
+> > +	if ((sz * sizeof(u32)) > prop->length)
+> > +		return -EOVERFLOW;
+> > +
+> > +	val = prop->value;
+> > +
+> > +	while (sz--)
+> > +		*out_values++ = (s16)(be32_to_cpup(val++) & 0xffff);
+> > +
+> > +	/* Terminate it */
+> > +	*out_values++ = -1;
+> > +	*out_values++ = -1;
+> > +
+> > +	return 0;
+> > +}
 > 
-> 	while (unlikely(txq >= dev->real_num_tx_queues))
-> 		txq -= dev->real_num_tx_queues;
+> I think these helper functions will have some general use beyond EDMA
+> and can be kept in drivers/of/base.c. Grant/Rob need to agree though.
+
+I expect these to go away before too long as I expect to rewrite all of
+these data structures when the private edma api code is folded into
+drivers/dma/edma.c. When that happens, I would like to use some data
+structures that lend themselves to the DT property value. Given that,
+let's wait until there is another user to move these helpers to
+drivers/of/.
+
+> > diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
+> > index 95b5e10..ffcbec1 100644
+> > --- a/arch/arm/mach-davinci/board-da830-evm.c
+> > +++ b/arch/arm/mach-davinci/board-da830-evm.c
+> > @@ -512,7 +512,7 @@ static struct davinci_i2c_platform_data da830_evm_i2c_0_pdata = {
+> >   * example: Timer, GPIO, UART events etc) on da830/omap-l137 EVM, hence
+> >   * they are being reserved for codecs on the DSP side.
+> >   */
+> > -static const s16 da830_dma_rsv_chans[][2] = {
+> > +static s16 da830_dma_rsv_chans[][2] = {
 > 
-> Otherwise, when is this loop called?
+> I wonder why you had to remove const here and in other places. You seem
+> to be allocating new memory for DT case anyway. Its also not a good idea
+> to modify the passed platform data.
 
-In fact, this race can result in the TX scheduler using a queue that has
-been disabled, or other weirdness (consider what happens if
-real_num_tx_queues increases between those two uses).
+Good catch. Although I was never modifying pdata itself, at one point
+the DT parsing code was modifying pointers that were const and I removed
+the const. I've since fixed that issue since we'd like them to be const
+as you point out. As a result, I've removed all these changes from v4 so
+all those files aren't touched.
 
-virtnet_set_channels() really must disable TX temporarily:
-
-	netif_tx_lock(dev);
-	netif_device_detach(dev);
-	netif_tx_unlock(dev);
-	...
-	netif_device_attach(dev);
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+-Matt
