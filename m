@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab3AJXQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:16:29 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:59731 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab3AJXQ2 (ORCPT
+	id S1754262Ab3AJXXJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:23:09 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:53394 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753746Ab3AJXXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:16:28 -0500
+	Thu, 10 Jan 2013 18:23:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAKocOOP=V=kZ=4661YSs4b+7GLcNqzVvvhb+ONBO=LiR3txvTA@mail.gmail.com>
-References: <1357545112-17375-1-git-send-email-aik@ozlabs.ru>
-	<20130110170941.GA2556@8bytes.org>
-	<CAKocOOP=V=kZ=4661YSs4b+7GLcNqzVvvhb+ONBO=LiR3txvTA@mail.gmail.com>
-Date: Thu, 10 Jan 2013 16:16:27 -0700
-Message-ID: <CAKocOOMAfkv_a71gKhGRwTM-pZsfd8qG7VVWn22Yuv6pkcdQLQ@mail.gmail.com>
-Subject: Re: [PATCH] iommu: moving initialization earlier
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Joerg Roedel <joerg.roedel@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        Shuah Khan <shuah.khan@hp.com>
+In-Reply-To: <20130110230121.GA20584@quad.lixom.net>
+References: <1354251857-21587-1-git-send-email-dianders@chromium.org>
+	<1357842269-15062-1-git-send-email-dianders@chromium.org>
+	<20130110230121.GA20584@quad.lixom.net>
+Date: Thu, 10 Jan 2013 15:23:02 -0800
+Message-ID: <CAD=FV=W_++TL0+5iu=HUchGQ47q4AWxNi5sy37ysM=EMb+NFmA@mail.gmail.com>
+Subject: Re: [REPOST PATCH v3 1/4] mmc: dw_mmc: Add "disable-wp" device tree property
+From: Doug Anderson <dianders@chromium.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: linux-mmc@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Will Newton <will.newton@imgtec.com>, Chris Ball <cjb@laptop.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 1:40 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
-> On Thu, Jan 10, 2013 at 10:09 AM, Joerg Roedel <joro@8bytes.org> wrote:
->> On Mon, Jan 07, 2013 at 06:51:52PM +1100, Alexey Kardashevskiy wrote:
->>> The iommu_init() initializes IOMMU internal structures and data
->>> required for the IOMMU API as iommu_group_alloc().
->>> It is registered as a subsys_initcall now.
->>>
->>> One of the IOMMU users is going to be a PCI subsystem on POWER.
->>> It discovers new IOMMU tables during the PCI scan so the logical
->>> place to call iommu_group_alloc() is the moment when a new group
->>> is discovered. However PCI scan is done from subsys_initcall hook
->>> as IOMMU does so PCI hook can be (and is) called before the IOMMU one.
->>>
->>> The patch moves IOMMU subsystem initialization one step earlier
->>> to make sure that IOMMU is initialized before PCI scan begins.
->>>
->>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>
->> Applied, thanks.
+Olof,
+
+Thanks for your comments.
+
+On Thu, Jan 10, 2013 at 3:01 PM, Olof Johansson <olof@lixom.net> wrote:
 >
-> Joerg,
->
-> Could you please consider this patch for stable releases.
+> The previous code used the controller-common quirk field to set a
+> per-controller DW_MCI_QUIRK_NO_WRITE_PROTECT. Is there really need to
+> do this per-slot? And if so, please explain in the commit message why
+> there is need for a brand new quirk for the same functionality.
 
-The patch applies cleanly only on 3.6.y which is EOL. Guess I am out
-of luck with this patch.
+I'm happy to move back to using a per-controller quirk here--it
+simplifies the code quite a bit since it can use all of the
+preexisting quirks code.  I originally coded it up as per-slot since
+generally each slot needs its own write-protect line.  Without ever
+seeing any hardware using multiple slots per controller I can't say
+how common this would be, so it may be overkill to handle that
+situation.
 
--- Shuah
+Note that I think of the new code as being the device-tree equivalent
+of the non-device-tree "brd->get_ro(slot_id)" function.  That function
+is per-slot.
 
--- Shuah
+I will wait a day or two to see if others have feedback.  If I hear no
+feedback I'll send up a patch that moves this to be at the controller
+level.
+
+
+Thanks!
+
+-Doug
