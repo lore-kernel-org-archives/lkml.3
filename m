@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3AJWyF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 17:54:05 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36919 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab3AJWyD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 17:54:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <1910593.f2RrgAtJJO@vostro.rjw.lan>
-References: <1558789.gX8cmBgyDV@vostro.rjw.lan>
-	<16795012.QL1jNHE7JM@vostro.rjw.lan>
-	<CAErSpo473rZOBERaMJV74rfGZXSuBdiPtX=mXmcLmO=CRB4P_g@mail.gmail.com>
-	<1910593.f2RrgAtJJO@vostro.rjw.lan>
-Date: Thu, 10 Jan 2013 14:54:00 -0800
-X-Google-Sender-Auth: smj0cAgd5oytbH7v-6AqZ2Hx-_c
-Message-ID: <CAE9FiQXmOyWYhkc2fbjBvUqBFh7Ktf5E9X6Z8x0HguUdm8+mRw@mail.gmail.com>
-Subject: Re: [Alternative][PATCH] ACPI / PCI: Set root bridge ACPI handle in
- advance, v2
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753983Ab3AJXBE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:01:04 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55790 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753427Ab3AJXBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 18:01:03 -0500
+Message-ID: <1357858846.4838.92.camel@pasglop>
+Subject: Re: [PATCH] PowerPC documentation: fixed path to the powerpc
+ directory
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Thomas Waldecker <thomas.waldecker@gmail.com>
+Cc: paulus@samba.org, rob@landley.net, linuxppc-dev@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 11 Jan 2013 10:00:46 +1100
+In-Reply-To: <1357819632-30814-1-git-send-email-thomas.waldecker@gmail.com>
+References: <1357819632-30814-1-git-send-email-thomas.waldecker@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 3:06 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On Thu, 2013-01-10 at 13:07 +0100, Thomas Waldecker wrote:
+> ppc -> powerpc
 
- > arch/ia64/pci/pci.c        |    8 ++++++++
- > arch/x86/include/asm/pci.h |    3 +++
- >  arch/x86/pci/acpi.c        |    9 +++++++++
- > drivers/acpi/pci_root.c    |   18 ------------------
- > drivers/pci/pci-acpi.c     |   19 -------------------
- >  drivers/pci/probe.c        |   16 ++++++++++++++++
- >  include/acpi/acpi_bus.h    |    1 -
- >  include/linux/pci.h        |    2 ++
- >  8 files changed, 38 insertions(+), 38 deletions
-...
-> I'll wait for comments from the others, if any, and put it into my acpi-scan
-> branch after a couple of days.  It doesn't need to be there technically, but
-> it's kind of related.
+I think I already applied something like that in powerpc -next, can you
+dbl check ?
 
-looks like you put it into acpi-scan-next instead.
+Cheers,
+Ben.
 
-and it does touch pci code.
+> Signed-off-by: Thomas Waldecker <thomas.waldecker@gmail.com>
+> ---
+>  Documentation/powerpc/cpu_features.txt | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/Documentation/powerpc/cpu_features.txt b/Documentation/powerpc/cpu_features.txt
+> index ffa4183..ae09df8 100644
+> --- a/Documentation/powerpc/cpu_features.txt
+> +++ b/Documentation/powerpc/cpu_features.txt
+> @@ -11,10 +11,10 @@ split instruction and data caches, and if the CPU supports the DOZE and NAP
+>  sleep modes.
+>  
+>  Detection of the feature set is simple. A list of processors can be found in
+> -arch/ppc/kernel/cputable.c. The PVR register is masked and compared with each
+> -value in the list. If a match is found, the cpu_features of cur_cpu_spec is
+> -assigned to the feature bitmask for this processor and a __setup_cpu function
+> -is called.
+> +arch/powerpc/kernel/cputable.c. The PVR register is masked and compared with
+> +each value in the list. If a match is found, the cpu_features of cur_cpu_spec
+> +is assigned to the feature bitmask for this processor and a __setup_cpu
+> +function is called.
+>  
+>  C code may test 'cur_cpu_spec[smp_processor_id()]->cpu_features' for a
+>  particular feature bit. This is done in quite a few places, for example
+> @@ -51,6 +51,6 @@ should be used in the majority of cases.
+>  
+>  The END_FTR_SECTION macros are implemented by storing information about this
+>  code in the '__ftr_fixup' ELF section. When do_cpu_ftr_fixups
+> -(arch/ppc/kernel/misc.S) is invoked, it will iterate over the records in
+> +(arch/powerpc/kernel/misc.S) is invoked, it will iterate over the records in
+>  __ftr_fixup, and if the required feature is not present it will loop writing
+>  nop's from each BEGIN_FTR_SECTION to END_FTR_SECTION.
 
-can you put it in to acpi-scan ? so Bjorn could pull it again to pci/next.
 
-I like to rebase my patches on top of pci/next.
-
-Thanks
-
-Yinghai
