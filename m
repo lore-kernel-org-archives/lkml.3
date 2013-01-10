@@ -1,184 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab3AJXzt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:55:49 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:51824 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab3AJXzs (ORCPT
+	id S1755240Ab3AJX4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:56:45 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56735 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab3AJX4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:55:48 -0500
+	Thu, 10 Jan 2013 18:56:44 -0500
+Message-ID: <50EF5537.6080602@wwwdotorg.org>
+Date: Thu, 10 Jan 2013 16:56:39 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <87sj68tyt4.fsf@xmission.com>
-References: <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
-	<8762382z2c.fsf@xmission.com>
-	<CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
-	<87y5g4z7rp.fsf@xmission.com>
-	<CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
-	<CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
-	<20130109004340.GA12234@konrad-lan.dumpdata.com>
-	<87txqruq8p.fsf@xmission.com>
-	<CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
-	<CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
-	<20130109132409.GB18395@phenom.dumpdata.com>
-	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
-	<87d2xeul5v.fsf@xmission.com>
-	<CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
-	<CAE9FiQVsbDfLOyv=D4_BLtrKpp+Ydj7pren8Cu3rNGztbj=w=w@mail.gmail.com>
-	<87sj68tyt4.fsf@xmission.com>
-Date: Thu, 10 Jan 2013 15:55:46 -0800
-X-Google-Sender-Auth: qUH-7kdrRl81EhlD01VMiIe-So4
-Message-ID: <CAE9FiQXzdnunJF_3gbpQO-uBX37-9h3pzo=6ta97bANioz=d3A@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Content-Type: multipart/mixed; boundary=0015175d0782e6bdba04d2f7eae1
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 14/14] ARM: tegra: trimslice: Initialize PCIe from DT
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <1357764194-12677-15-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1357764194-12677-15-git-send-email-thierry.reding@avionic-design.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015175d0782e6bdba04d2f7eae1
-Content-Type: text/plain; charset=ISO-8859-1
+On 01/09/2013 01:43 PM, Thierry Reding wrote:
+> With the device tree support in place, probe the PCIe controller from
+> the device tree and remove the corresponding workaround in the board
+> file.
 
-On Thu, Jan 10, 2013 at 3:15 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> My biggest question was really why you didn't set no_iotlb
-> sooner.  But shrug I didn't see any real issue with the code except
-> for it being silly.
+Thierry, there are a couple things missing from this patch; I include a
+fixup for you to squash in, but also see beyond that for a problem.
 
-how about attached one?
+>  arch/arm/boot/dts/tegra20-trimslice.dts |   26 +++++++++++++++++++++-----
+>  1 file changed, 21 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/tegra20-trimslice.dts b/arch/arm/boot/dts/tegra20-trimslice.dts
+> index ebb4c17..41fc45b 100644
+> --- a/arch/arm/boot/dts/tegra20-trimslice.dts
+> +++ b/arch/arm/boot/dts/tegra20-trimslice.dts
+> @@ -303,12 +303,10 @@
+>  
+>  	pcie-controller {
+>  		status = "okay";
+> +		pex-clk-supply = <&pci_clk_reg>;
+> +		vdd-supply = <&pci_vdd_reg>;
+>  
+> -		pci@0 {
+> -			status = "okay";
+> -		};
+> -
+> -		pci@1 {
+> +		pci@1,0 {
+>  			status = "okay";
+>  		};
+>  	};
+> @@ -366,6 +364,24 @@
+>  			regulator-max-microvolt = <1800000>;
+>  			regulator-always-on;
+>  		};
+> +
+> +		pci_clk_reg: regulator@2 {
+> +			compatible = "regulator-fixed";
+> +			reg = <2>;
+> +			regulator-name = "pci_clk";
+> +			regulator-min-microvolt = <3300000>;
+> +			regulator-max-microvolt = <3300000>;
+> +			regulator-always-on;
+> +		};
+> +
+> +		pci_vdd_reg: regulator@3 {
+> +			compatible = "regulator-fixed";
+> +			reg = <3>;
+> +			regulator-name = "pci_vdd";
+> +			regulator-min-microvolt = <1050000>;
+> +			regulator-max-microvolt = <1050000>;
+> +			regulator-always-on;
+> +		};
+>  	};
+>  
+>  	sound {
+> -- 
+> 1.7.10.4
 
-removed the swiotlb_init_with_default_size(), and logic should be more clean.
+However, PCIe still doesn't work on TrimSlice; the device enumeration
+fails. The log is below:
 
-Thanks
+> [    0.790425] tegra-pcie 80003000.pcie-controller: link 0 down, retrying
+> [    0.801351] tegra-pcie 80003000.pcie-controller: PCI host bridge to bus 0000:00
+> [    0.808945] pci_bus 0000:00: root bus resource [io  0x82000000-0x8200ffff]
+> [    0.816109] pci_bus 0000:00: root bus resource [mem 0xa0000000-0xafffffff]
+> [    0.823303] pci_bus 0000:00: root bus resource [mem 0xb0000000-0xbfffffff pref]
+> [    0.830893] pci_bus 0000:00: root bus resource [bus 00-ff]
+> [    0.836728] pci 0000:00:01.0: [10de:0bf0] type 01 class 0x060000
+> [    0.843097] pci 0000:00:01.0: PME# supported from D0 D1 D2 D3hot D3cold
+> [    0.850047] PCI: bus0: Fast back to back transfers disabled
+> [    0.855853] pci 0000:00:01.0: bridge configuration invalid ([bus 00-00]), reconfiguring
+> [    0.864308] tegra-pcie 80003000.pcie-controller: AXI response decoding error, signature: 10010001
+> [    0.873489] tegra-pcie 80003000.pcie-controller:   FPCI address: fe10010000
 
-Yinghai
+^^^ For some reason, the config register access fails.
 
---0015175d0782e6bdba04d2f7eae1
-Content-Type: application/octet-stream; name="swiotlb.patch"
-Content-Disposition: attachment; filename="swiotlb.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hbsjzzzr0
+> [    0.880760] PCI: bus1: Fast back to back transfers enabled
+> [    0.886482] pci_bus 0000:01: busn_res: [bus 01-ff] end is updated to 01
+> [    0.893381] pci 0000:00:01.0: PCI bridge to [bus 01]
+> [    0.898577] PCI: enabling device 0000:00:01.0 (0140 -> 0143)
+> [    0.904535] pci 0000:00:01.0: nv_msi_ht_cap_quirk didn't locate host bridge
 
-U3ViamVjdDogW1BBVENIXSB4ODY6IERvbid0IHBhbmljIGlmIGNhbiBub3QgYWxsb2MgYnVmZmVy
-IGZvciBzd2lvdGxiCgpOb3JtYWwgYm9vdCBwYXRoIG9uIHN5c3RlbSB3aXRoIGlvbW11IHN1cHBv
-cnQ6CnN3aW90bGIgYnVmZmVyIHdpbGwgYmUgYWxsb2NhdGVkIGVhcmx5IGF0IGZpcnN0IGFuZCB0
-aGVuIHRyeSB0byBpbml0aWFsaXplCmlvbW11LCBpZiBpb21tdSBmb3IgaW50ZWwgb3IgQU1EIGNv
-dWxkIHNldHVwIHByb3Blcmx5LCBzd2lvdGxiIGJ1ZmZlcgp3aWxsIGJlIGZyZWVkLgoKVGhlIGVh
-cmx5IGFsbG9jYXRpbmcgaXMgd2l0aCBib290bWVtLCBhbmQgY291bGQgcGFuaWMgd2hlbiB3ZSB0
-cnkgdG8gdXNlCmtkdW1wIHdpdGggYnVmZmVyIGFib3ZlIDRHIG9ubHksIG9yIHdpdGggbWVtbWFw
-IHRvIGxpbWl0IG1lbSB1bmRlciA0Ry4KZm9yIGV4YW1wbGU6IG1lbW1hcD00MDk1TSQxTSB0byBy
-ZW1vdmUgbWVtb3J5IHVuZGVyIDRHLgoKQWNjb3JkaW5nIHRvIEVyaWMsIGFkZCBfbm9wYW5pYyB2
-ZXJzaW9uIGFuZCBub19pb3RsYl9tZW1vcnkgdG8gZmFpbAptYXAgc2luZ2xlIGxhdGVyIGlmIHN3
-aW90bGIgaXMgc3RpbGwgbmVlZGVkLgoKLXYyOiBkb24ndCBwYXNzIG5vcGFuaWMsIGFuZCB1c2Ug
-LUVOT01FTSByZXR1cm4gdmFsdWUgYWNjb3JkaW5nIHRvIEVyaWMuCiAgICAgcGFuaWMgZWFybHkg
-aW5zdGVhZCBvZiB1c2luZyBzd2lvdGxiX2Z1bGwgdG8gcGFuaWMuLi5hY2NvcmRpbmcgdG8gRXJp
-Yy9Lb25yYWQuCi12MzogbWFrZSBzd2lvdGxiX2luaXQgdG8gYmUgbm90cGFuaWMsIGJ1dCB3aWxs
-IGFmZmVjdDoKICAgICBhcm02NCwgaWE2NCwgcG93ZXJwYywgdGlsZSwgdW5pY29yZTMyLCB4ODYu
-CgpTdWdnZXN0ZWQtYnk6IEVyaWMgVy4gQmllZGVybWFuIDxlYmllZGVybUB4bWlzc2lvbi5jb20+
-ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KQ2M6IEtvbnJh
-ZCBSemVzenV0ZWsgV2lsayA8a29ucmFkLndpbGtAb3JhY2xlLmNvbT4KQ2M6IEpvZXJnIFJvZWRl
-bCA8am9yb0A4Ynl0ZXMub3JnPgpDYzogUmFsZiBCYWVjaGxlIDxyYWxmQGxpbnV4LW1pcHMub3Jn
-PgpDYzogSmVyZW15IEZpdHpoYXJkaW5nZSA8amVyZW15QGdvb3Aub3JnPgpDYzogS3l1bmdtaW4g
-UGFyayA8a3l1bmdtaW4ucGFya0BzYW1zdW5nLmNvbT4KQ2M6IE1hcmVrIFN6eXByb3dza2kgPG0u
-c3p5cHJvd3NraUBzYW1zdW5nLmNvbT4KQ2M6IEFybmQgQmVyZ21hbm4gPGFybmRAYXJuZGIuZGU+
-CkNjOiBBbmRyemVqIFBpZXRyYXNpZXdpY3ogPGFuZHJ6ZWoucEBzYW1zdW5nLmNvbT4KQ2M6IGxp
-bnV4LW1pcHNAbGludXgtbWlwcy5vcmcKQ2M6IHhlbi1kZXZlbEBsaXN0cy54ZW5zb3VyY2UuY29t
-CkNjOiB2aXJ0dWFsaXphdGlvbkBsaXN0cy5saW51eC1mb3VuZGF0aW9uLm9yZwoKLS0tCiBhcmNo
-L21pcHMvY2F2aXVtLW9jdGVvbi9kbWEtb2N0ZW9uLmMgfCAgICAzICstCiBkcml2ZXJzL3hlbi9z
-d2lvdGxiLXhlbi5jICAgICAgICAgICAgfCAgICA0ICsrCiBpbmNsdWRlL2xpbnV4L3N3aW90bGIu
-aCAgICAgICAgICAgICAgfCAgICAyIC0KIGxpYi9zd2lvdGxiLmMgICAgICAgICAgICAgICAgICAg
-ICAgICB8ICAgNDcgKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0KIDQgZmlsZXMg
-Y2hhbmdlZCwgMzUgaW5zZXJ0aW9ucygrKSwgMjEgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgt
-Mi42L2xpYi9zd2lvdGxiLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvbGliL3N3aW90
-bGIuYworKysgbGludXgtMi42L2xpYi9zd2lvdGxiLmMKQEAgLTEyMiwxMSArMTIyLDE4IEBAIHN0
-YXRpYyBkbWFfYWRkcl90IHN3aW90bGJfdmlydF90b19idXMoc3QKIAlyZXR1cm4gcGh5c190b19k
-bWEoaHdkZXYsIHZpcnRfdG9fcGh5cyhhZGRyZXNzKSk7CiB9CiAKK3N0YXRpYyBib29sIG5vX2lv
-dGxiX21lbW9yeTsKKwogdm9pZCBzd2lvdGxiX3ByaW50X2luZm8odm9pZCkKIHsKIAl1bnNpZ25l
-ZCBsb25nIGJ5dGVzID0gaW9fdGxiX25zbGFicyA8PCBJT19UTEJfU0hJRlQ7CiAJdW5zaWduZWQg
-Y2hhciAqdnN0YXJ0LCAqdmVuZDsKIAorCWlmIChub19pb3RsYl9tZW1vcnkpIHsKKwkJcHJfd2Fy
-bigic29mdHdhcmUgSU8gVExCOiBObyBsb3cgbWVtXG4iKTsKKwkJcmV0dXJuOworCX0KKwogCXZz
-dGFydCA9IHBoeXNfdG9fdmlydChpb190bGJfc3RhcnQpOwogCXZlbmQgPSBwaHlzX3RvX3ZpcnQo
-aW9fdGxiX2VuZCk7CiAKQEAgLTEzNiw3ICsxNDMsNyBAQCB2b2lkIHN3aW90bGJfcHJpbnRfaW5m
-byh2b2lkKQogCSAgICAgICBieXRlcyA+PiAyMCwgdnN0YXJ0LCB2ZW5kIC0gMSk7CiB9CiAKLXZv
-aWQgX19pbml0IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICp0bGIsIHVuc2lnbmVkIGxvbmcg
-bnNsYWJzLCBpbnQgdmVyYm9zZSkKK2ludCBfX2luaXQgc3dpb3RsYl9pbml0X3dpdGhfdGJsKGNo
-YXIgKnRsYiwgdW5zaWduZWQgbG9uZyBuc2xhYnMsIGludCB2ZXJib3NlKQogewogCXZvaWQgKnZf
-b3ZlcmZsb3dfYnVmZmVyOwogCXVuc2lnbmVkIGxvbmcgaSwgYnl0ZXM7CkBAIC0xNTAsOSArMTU3
-LDEwIEBAIHZvaWQgX19pbml0IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICoKIAkvKgogCSAq
-IEdldCB0aGUgb3ZlcmZsb3cgZW1lcmdlbmN5IGJ1ZmZlcgogCSAqLwotCXZfb3ZlcmZsb3dfYnVm
-ZmVyID0gYWxsb2NfYm9vdG1lbV9sb3dfcGFnZXMoUEFHRV9BTElHTihpb190bGJfb3ZlcmZsb3cp
-KTsKKwl2X292ZXJmbG93X2J1ZmZlciA9IGFsbG9jX2Jvb3RtZW1fbG93X3BhZ2VzX25vcGFuaWMo
-CisJCQkJCQlQQUdFX0FMSUdOKGlvX3RsYl9vdmVyZmxvdykpOwogCWlmICghdl9vdmVyZmxvd19i
-dWZmZXIpCi0JCXBhbmljKCJDYW5ub3QgYWxsb2NhdGUgU1dJT1RMQiBvdmVyZmxvdyBidWZmZXIh
-XG4iKTsKKwkJcmV0dXJuIC1FTk9NRU07CiAKIAlpb190bGJfb3ZlcmZsb3dfYnVmZmVyID0gX19w
-YSh2X292ZXJmbG93X2J1ZmZlcik7CiAKQEAgLTE2OSwxNSArMTc3LDE5IEBAIHZvaWQgX19pbml0
-IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICoKIAogCWlmICh2ZXJib3NlKQogCQlzd2lvdGxi
-X3ByaW50X2luZm8oKTsKKworCXJldHVybiAwOwogfQogCiAvKgogICogU3RhdGljYWxseSByZXNl
-cnZlIGJvdW5jZSBidWZmZXIgc3BhY2UgYW5kIGluaXRpYWxpemUgYm91bmNlIGJ1ZmZlciBkYXRh
-CiAgKiBzdHJ1Y3R1cmVzIGZvciB0aGUgc29mdHdhcmUgSU8gVExCIHVzZWQgdG8gaW1wbGVtZW50
-IHRoZSBETUEgQVBJLgogICovCi1zdGF0aWMgdm9pZCBfX2luaXQKLXN3aW90bGJfaW5pdF93aXRo
-X2RlZmF1bHRfc2l6ZShzaXplX3QgZGVmYXVsdF9zaXplLCBpbnQgdmVyYm9zZSkKK3ZvaWQgIF9f
-aW5pdAorc3dpb3RsYl9pbml0KGludCB2ZXJib3NlKQogeworCS8qIGRlZmF1bHQgdG8gNjRNQiAq
-LworCXNpemVfdCBkZWZhdWx0X3NpemUgPSA2NFVMPDwyMDsKIAl1bnNpZ25lZCBjaGFyICp2c3Rh
-cnQ7CiAJdW5zaWduZWQgbG9uZyBieXRlczsKIApAQCAtMTg4LDIwICsyMDAsMTYgQEAgc3dpb3Rs
-Yl9pbml0X3dpdGhfZGVmYXVsdF9zaXplKHNpemVfdCBkZQogCiAJYnl0ZXMgPSBpb190bGJfbnNs
-YWJzIDw8IElPX1RMQl9TSElGVDsKIAotCS8qCi0JICogR2V0IElPIFRMQiBtZW1vcnkgZnJvbSB0
-aGUgbG93IHBhZ2VzCi0JICovCi0JdnN0YXJ0ID0gYWxsb2NfYm9vdG1lbV9sb3dfcGFnZXMoUEFH
-RV9BTElHTihieXRlcykpOwotCWlmICghdnN0YXJ0KQotCQlwYW5pYygiQ2Fubm90IGFsbG9jYXRl
-IFNXSU9UTEIgYnVmZmVyIik7Ci0KLQlzd2lvdGxiX2luaXRfd2l0aF90YmwodnN0YXJ0LCBpb190
-bGJfbnNsYWJzLCB2ZXJib3NlKTsKLX0KKwkvKiBHZXQgSU8gVExCIG1lbW9yeSBmcm9tIHRoZSBs
-b3cgcGFnZXMgKi8KKwl2c3RhcnQgPSBhbGxvY19ib290bWVtX2xvd19wYWdlc19ub3BhbmljKFBB
-R0VfQUxJR04oYnl0ZXMpKTsKKwlpZiAodnN0YXJ0ICYmICFzd2lvdGxiX2luaXRfd2l0aF90Ymwo
-dnN0YXJ0LCBpb190bGJfbnNsYWJzLCB2ZXJib3NlKSkKKwkJcmV0dXJuOwogCi12b2lkIF9faW5p
-dAotc3dpb3RsYl9pbml0KGludCB2ZXJib3NlKQotewotCXN3aW90bGJfaW5pdF93aXRoX2RlZmF1
-bHRfc2l6ZSg2NCAqICgxPDwyMCksIHZlcmJvc2UpOwkvKiBkZWZhdWx0IHRvIDY0TUIgKi8KKwlp
-ZiAoaW9fdGxiX3N0YXJ0KQorCQlmcmVlX2Jvb3RtZW0oaW9fdGxiX3N0YXJ0LAorCQkJCSBQQUdF
-X0FMSUdOKGlvX3RsYl9uc2xhYnMgPDwgSU9fVExCX1NISUZUKSk7CisJcHJfd2FybigiQ2Fubm90
-IGFsbG9jYXRlIFNXSU9UTEIgYnVmZmVyIik7CisJbm9faW90bGJfbWVtb3J5ID0gdHJ1ZTsKIH0K
-IAogLyoKQEAgLTQwNSw2ICs0MTMsOSBAQCBwaHlzX2FkZHJfdCBzd2lvdGxiX3RibF9tYXBfc2lu
-Z2xlKHN0cnVjCiAJdW5zaWduZWQgbG9uZyBvZmZzZXRfc2xvdHM7CiAJdW5zaWduZWQgbG9uZyBt
-YXhfc2xvdHM7CiAKKwlpZiAobm9faW90bGJfbWVtb3J5KQorCQlwYW5pYygiQ2FuIG5vdCBhbGxv
-Y2F0ZSBTV0lPVExCIGJ1ZmZlciBlYXJsaWVyIGFuZCBjYW4ndCBub3cgcHJvdmlkZSB5b3Ugd2l0
-aCB0aGUgRE1BIGJvdW5jZSBidWZmZXIiKTsKKwogCW1hc2sgPSBkbWFfZ2V0X3NlZ19ib3VuZGFy
-eShod2Rldik7CiAKIAl0YmxfZG1hX2FkZHIgJj0gbWFzazsKSW5kZXg6IGxpbnV4LTIuNi9hcmNo
-L21pcHMvY2F2aXVtLW9jdGVvbi9kbWEtb2N0ZW9uLmMKPT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42
-Lm9yaWcvYXJjaC9taXBzL2Nhdml1bS1vY3Rlb24vZG1hLW9jdGVvbi5jCisrKyBsaW51eC0yLjYv
-YXJjaC9taXBzL2Nhdml1bS1vY3Rlb24vZG1hLW9jdGVvbi5jCkBAIC0zMTcsNyArMzE3LDggQEAg
-dm9pZCBfX2luaXQgcGxhdF9zd2lvdGxiX3NldHVwKHZvaWQpCiAKIAlvY3Rlb25fc3dpb3RsYiA9
-IGFsbG9jX2Jvb3RtZW1fbG93X3BhZ2VzKHN3aW90bGJzaXplKTsKIAotCXN3aW90bGJfaW5pdF93
-aXRoX3RibChvY3Rlb25fc3dpb3RsYiwgc3dpb3RsYl9uc2xhYnMsIDEpOworCWlmIChzd2lvdGxi
-X2luaXRfd2l0aF90Ymwob2N0ZW9uX3N3aW90bGIsIHN3aW90bGJfbnNsYWJzLCAxKSA9PSAtRU5P
-TUVNKQorCQlwYW5pYygiQ2Fubm90IGFsbG9jYXRlIFNXSU9UTEIgYnVmZmVyIik7CiAKIAltaXBz
-X2RtYV9tYXBfb3BzID0gJm9jdGVvbl9saW5lYXJfZG1hX21hcF9vcHMuZG1hX21hcF9vcHM7CiB9
-CkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy94ZW4vc3dpb3RsYi14ZW4uYwo9PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0t
-LSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3hlbi9zd2lvdGxiLXhlbi5jCisrKyBsaW51eC0yLjYv
-ZHJpdmVycy94ZW4vc3dpb3RsYi14ZW4uYwpAQCAtMjMxLDcgKzIzMSw5IEBAIHJldHJ5OgogCX0K
-IAlzdGFydF9kbWFfYWRkciA9IHhlbl92aXJ0X3RvX2J1cyh4ZW5faW9fdGxiX3N0YXJ0KTsKIAlp
-ZiAoZWFybHkpIHsKLQkJc3dpb3RsYl9pbml0X3dpdGhfdGJsKHhlbl9pb190bGJfc3RhcnQsIHhl
-bl9pb190bGJfbnNsYWJzLCB2ZXJib3NlKTsKKwkJaWYgKHN3aW90bGJfaW5pdF93aXRoX3RibCh4
-ZW5faW9fdGxiX3N0YXJ0LCB4ZW5faW9fdGxiX25zbGFicywKKwkJCSB2ZXJib3NlKSkKKwkJCXBh
-bmljKCJDYW5ub3QgYWxsb2NhdGUgU1dJT1RMQiBidWZmZXIiKTsKIAkJcmMgPSAwOwogCX0gZWxz
-ZQogCQlyYyA9IHN3aW90bGJfbGF0ZV9pbml0X3dpdGhfdGJsKHhlbl9pb190bGJfc3RhcnQsIHhl
-bl9pb190bGJfbnNsYWJzKTsKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L3N3aW90bGIu
-aAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9pbmNsdWRlL2xpbnV4L3N3aW90bGIuaAor
-KysgbGludXgtMi42L2luY2x1ZGUvbGludXgvc3dpb3RsYi5oCkBAIC0yMyw3ICsyMyw3IEBAIGV4
-dGVybiBpbnQgc3dpb3RsYl9mb3JjZTsKICNkZWZpbmUgSU9fVExCX1NISUZUIDExCiAKIGV4dGVy
-biB2b2lkIHN3aW90bGJfaW5pdChpbnQgdmVyYm9zZSk7Ci1leHRlcm4gdm9pZCBzd2lvdGxiX2lu
-aXRfd2l0aF90YmwoY2hhciAqdGxiLCB1bnNpZ25lZCBsb25nIG5zbGFicywgaW50IHZlcmJvc2Up
-OworaW50IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICp0bGIsIHVuc2lnbmVkIGxvbmcgbnNs
-YWJzLCBpbnQgdmVyYm9zZSk7CiBleHRlcm4gdW5zaWduZWQgbG9uZyBzd2lvdGxiX25yX3RibCh2
-b2lkKTsKIGV4dGVybiBpbnQgc3dpb3RsYl9sYXRlX2luaXRfd2l0aF90YmwoY2hhciAqdGxiLCB1
-bnNpZ25lZCBsb25nIG5zbGFicyk7CiAK
---0015175d0782e6bdba04d2f7eae1--
+With plain next-20130109, the device enumeration succeeds.
