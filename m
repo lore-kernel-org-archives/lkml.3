@@ -1,84 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3AJTbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 14:31:16 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:36041 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab3AJTbN (ORCPT
+	id S1755775Ab3AJTbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 14:31:15 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:41693 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753303Ab3AJTbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Jan 2013 14:31:13 -0500
-Date: Thu, 10 Jan 2013 14:35:47 -0500
-From: Matt Porter <mporter@ti.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v3 16/16] ARM: dts: add AM33XX SPI support
-Message-ID: <20130110193547.GQ14660@beef>
-References: <1350566815-409-1-git-send-email-mporter@ti.com>
- <1350566815-409-17-git-send-email-mporter@ti.com>
- <508D1791.1040806@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508D1791.1040806@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3D392@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A2A05C@USINDEM103.corp.hds.com>
+	<CA+8MBbKTHQJoeRVUGZr+rcXm+VwOw2vSG31Cwnrg-sc=CzLu9w@mail.gmail.com>
+	<A5ED84D3BB3A384992CBB9C77DEDA4D414A3D392@USINDEM103.corp.hds.com>
+Date: Thu, 10 Jan 2013 11:31:12 -0800
+Message-ID: <CA+8MBbLYrmY12rRaG+gTcji3EMLYT0SzEUxXHj6uGoa0ydReNg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] pstore: Avoid deadlock in panic and
+ emergency-restart path
+From: Tony Luck <tony.luck@gmail.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 05:01:29PM +0530, Sekhar Nori wrote:
-> On 10/18/2012 6:56 PM, Matt Porter wrote:
-> > Adds AM33XX SPI support for am335x-bone and am335x-evm.
-> > 
-> > Signed-off-by: Matt Porter <mporter@ti.com>
-> > ---
-> >  arch/arm/boot/dts/am335x-bone.dts |   17 +++++++++++++++
-> >  arch/arm/boot/dts/am335x-evm.dts  |    9 ++++++++
-> >  arch/arm/boot/dts/am33xx.dtsi     |   43 +++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 69 insertions(+)
-> > 
-> > diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-> > index 5510979..23edfd8 100644
-> > --- a/arch/arm/boot/dts/am335x-bone.dts
-> > +++ b/arch/arm/boot/dts/am335x-bone.dts
-> > @@ -18,6 +18,17 @@
-> >  		reg = <0x80000000 0x10000000>; /* 256 MB */
-> >  	};
-> >  
-> > +	am3358_pinmux: pinmux@44e10800 {
-> > +		spi1_pins: pinmux_spi1_pins {
-> > +			pinctrl-single,pins = <
-> > +				0x190 0x13	/* mcasp0_aclkx.spi1_sclk, OUTPUT_PULLUP | MODE3 */
-> > +				0x194 0x33	/* mcasp0_fsx.spi1_d0, INPUT_PULLUP | MODE3 */
-> > +				0x198 0x13	/* mcasp0_axr0.spi1_d1, OUTPUT_PULLUP | MODE3 */
-> > +				0x19c 0x13	/* mcasp0_ahclkr.spi1_cs0, OUTPUT_PULLUP | MODE3 */
-> > +			>;
-> 
-> Is there a single pinmux setting that provides SPI functionality on the
-> bone headers? Or this is specific to a cape you tested with?
+On Thu, Jan 10, 2013 at 10:23 AM, Seiji Aguchi <seiji.aguchi@hds.com> wrote:
+> Please apply these to your tree.
 
-No, there are two usable settings for spi1 and one setting for spi0.
-I'm dropping this from the series since it's specific to how I wired up
-the homebrew cape I use for spi testing on the Bone. I publish the
-branch where all these extra "test-specific" patches (that aren't intended
-to be merged) are at in the cover letter.  Anybody that needs context of
-how/what worked and was tested can grab them there.
+Ok. Applied and pushed to my "next" branch. Should show up in linux-next
+in the next day or two.
 
--Matt
+-Tony
