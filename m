@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab3AJXlp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:41:45 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:55381 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754385Ab3AJXlo (ORCPT
+	id S1754812Ab3AJXnH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:43:07 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39997 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754476Ab3AJXnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:41:44 -0500
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        pv-drivers@vmware.com
-Subject: [PATCH 3/6] VMCI: Fix deref before NULL-check of queuepair ptr
-Date: Thu, 10 Jan 2013 15:41:40 -0800
-Message-Id: <1357861303-25903-3-git-send-email-dtor@vmware.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1357861303-25903-1-git-send-email-dtor@vmware.com>
-References: <1357861303-25903-1-git-send-email-dtor@vmware.com>
+	Thu, 10 Jan 2013 18:43:03 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18uA6DSuqAqJxV4ZfrRL8n4
+Date: Thu, 10 Jan 2013 15:42:58 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Colin Cross <ccross@android.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        liu chuansheng <chuansheng.liu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] hardlockup: detect hard lockups without NMIs using
+ secondary cpus
+Message-ID: <20130110234258.GA15458@atomide.com>
+References: <1357783059-13923-1-git-send-email-ccross@android.com>
+ <20130110203833.GE14149@atomide.com>
+ <CAMbhsRR5azGw1-VhC4+9y7NfBPnZkBKnK34AqXdMFBsXPqdjCQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMbhsRR5azGw1-VhC4+9y7NfBPnZkBKnK34AqXdMFBsXPqdjCQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy King <acking@vmware.com>
+* Colin Cross <ccross@android.com> [130110 14:37]:
+> On Thu, Jan 10, 2013 at 12:38 PM, Tony Lindgren <tony@atomide.com> wrote:
+> >
+> > * Colin Cross <ccross@android.com> [130109 18:05]:
+> > > +static void watchdog_check_hardlockup_other_cpu(void)
+> > > +{
+> > > +     int cpu;
+> > > +     cpumask_t cpus = watchdog_cpus;
+> > > +
+> > > +     /*
+> > > +      * Test for hardlockups every 3 samples.  The sample period is
+> > > +      *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly over
+> > > +      *  watchdog_thresh (over by 20%).
+> > > +      */
+> > > +     if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
+> > > +             return;
+> > > +
+> > > +     /* check for a hardlockup on the next cpu */
+> > > +     cpu = cpumask_next(smp_processor_id(), &cpus);
+> >
+> > Hmm don't you want to check cpu_oneline_mask here and
+> > return if the other CPU is offline?
+> 
+> watchdog_cpus is effectively a local copy of cpu_online_mask, but
+> updated after the watchdog_nmi_touch in watchdog_nmi_enable.  This
+> avoids a false positive after hotplugging in a cpu when
+> cpu_online_mask is true but that cpu hasn't yet run it's first
+> hrtimer.
 
-Check for a valid queuepair ptr before trying to lock the queuepair (which will
-deref it).
+OK thanks for clarifying that.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Andy King <acking@vmware.com>
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
----
- drivers/misc/vmw_vmci/vmci_queue_pair.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/misc/vmw_vmci/vmci_queue_pair.c b/drivers/misc/vmw_vmci/vmci_queue_pair.c
-index da47e45..6417a26 100644
---- a/drivers/misc/vmw_vmci/vmci_queue_pair.c
-+++ b/drivers/misc/vmw_vmci/vmci_queue_pair.c
-@@ -3355,11 +3355,11 @@ ssize_t vmci_qpair_dequev(struct vmci_qp *qpair,
- {
- 	ssize_t result;
- 
--	qp_lock(qpair);
--
- 	if (!qpair || !iov)
- 		return VMCI_ERROR_INVALID_ARGS;
- 
-+	qp_lock(qpair);
-+
- 	do {
- 		result = qp_dequeue_locked(qpair->produce_q,
- 					   qpair->consume_q,
--- 
-1.7.4.1
-
+Tony
