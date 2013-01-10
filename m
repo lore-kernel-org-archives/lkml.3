@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab3AJUQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 15:16:00 -0500
-Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:36892 "EHLO
+	id S1756046Ab3AJUQI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 15:16:08 -0500
+Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:36913 "EHLO
 	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753217Ab3AJUP5 (ORCPT
+	by vger.kernel.org with ESMTP id S1753217Ab3AJUQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 15:15:57 -0500
+	Thu, 10 Jan 2013 15:16:06 -0500
 From: Maya Erez <merez@codeaurora.org>
 To: linux-mmc@vger.kernel.org
 Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
+        Yaniv Gardi <ygardi@codeaurora.org>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v5 2/3] mmc: allow the host controller to poll for BKOPS completion
-Date: Thu, 10 Jan 2013 22:15:20 +0200
-Message-Id: <1357848921-9596-3-git-send-email-merez@codeaurora.org>
+Subject: [PATCH v5 3/3] mmc: core: Add MMC BKOPS statistics and debugfs ability to print them
+Date: Thu, 10 Jan 2013 22:15:21 +0200
+Message-Id: <1357848921-9596-4-git-send-email-merez@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <n>
 References: <n>
@@ -21,186 +22,309 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to allow the card to perform the required BKOPS and prevent
-the need for critical BKOPS, we would like to prevent BKOPS interruption
-when possible.
-In case the controller calls mmc_suspend_host when runtime suspend is
-idle, the BKOPS operation will be interrupted. To prevent this we would
-like to prevent the runtime suspend idle until BKOPS is completed.
-This patch adds a flag to allow the controller to mark if the polling is
-required or not.
+The BKOPS statistics are used for BKOPS unit tests and APT tests
+to determine test success or failure.
+the BKOPS statistics provide the following information:
+The number of times BKOPS were issued according to it's severity level
+The number of times BKOPS were interrupted by HPI.
+The number of times the host went into suspend
 
-Signed-off-by: Maya Erez <merez@codeaurora.org>
+Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
 ---
- drivers/mmc/core/core.c  |   82 +++++++++++++++++++++++++++++++++++++++++++++-
- drivers/mmc/core/mmc.c   |    3 ++
- include/linux/mmc/card.h |    5 +++
- include/linux/mmc/core.h |    1 +
- include/linux/mmc/host.h |    2 +-
- 5 files changed, 91 insertions(+), 2 deletions(-)
+ drivers/mmc/core/bus.c     |    2 +
+ drivers/mmc/core/core.c    |   53 ++++++++++++++++++++
+ drivers/mmc/core/debugfs.c |  114 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mmc/card.h   |   12 +++++
+ include/linux/mmc/core.h   |    2 +
+ 5 files changed, 183 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/mmc/core/bus.c b/drivers/mmc/core/bus.c
+index 420cb67..47f883b 100644
+--- a/drivers/mmc/core/bus.c
++++ b/drivers/mmc/core/bus.c
+@@ -250,6 +250,8 @@ struct mmc_card *mmc_alloc_card(struct mmc_host *host, struct device_type *type)
+ 	card->dev.release = mmc_release_card;
+ 	card->dev.type = type;
+ 
++	spin_lock_init(&card->bkops_info.bkops_stats.lock);
++
+ 	return card;
+ }
+ 
 diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index c8cb98e..e22584a 100644
+index e22584a..7405243 100644
 --- a/drivers/mmc/core/core.c
 +++ b/drivers/mmc/core/core.c
-@@ -364,7 +364,15 @@ void mmc_start_bkops(struct mmc_card *card, bool from_exception)
+@@ -79,6 +79,30 @@ MODULE_PARM_DESC(
+ 	removable,
+ 	"MMC/SD cards are removable and may be removed during suspend");
+ 
++#define MMC_UPDATE_BKOPS_STATS_HPI(stats)	\
++	do {					\
++		spin_lock(&stats.lock);		\
++		if (stats.enabled)		\
++			stats.hpi++;		\
++		spin_unlock(&stats.lock);	\
++	} while (0);
++#define MMC_UPDATE_BKOPS_STATS_SUSPEND(stats)	\
++	do {					\
++		spin_lock(&stats.lock);		\
++		if (stats.enabled)		\
++			stats.suspend++;	\
++		spin_unlock(&stats.lock);	\
++	} while (0);
++#define MMC_UPDATE_STATS_BKOPS_SEVERITY_LEVEL(stats, level)		\
++	do {								\
++		if (level <= 0 || level > BKOPS_NUM_OF_SEVERITY_LEVELS)	\
++			break;						\
++		spin_lock(&stats.lock);					\
++		if (stats.enabled)					\
++			stats.bkops_level[level-1]++;			\
++		spin_unlock(&stats.lock);				\
++	} while (0);
++
+ /*
+  * Internal function. Schedule delayed work in the MMC work queue.
+  */
+@@ -255,6 +279,29 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
+ 	host->ops->request(host, mrq);
+ }
+ 
++void mmc_blk_init_bkops_statistics(struct mmc_card *card)
++{
++	int i;
++	struct mmc_bkops_stats *bkops_stats;
++
++	if (!card)
++		return;
++
++	bkops_stats = &card->bkops_info.bkops_stats;
++
++	spin_lock(&bkops_stats->lock);
++
++	for (i = 0 ; i < BKOPS_NUM_OF_SEVERITY_LEVELS ; ++i)
++		bkops_stats->bkops_level[i] = 0;
++
++	bkops_stats->suspend = 0;
++	bkops_stats->hpi = 0;
++	bkops_stats->enabled = true;
++
++	spin_unlock(&bkops_stats->lock);
++}
++EXPORT_SYMBOL(mmc_blk_init_bkops_statistics);
++
+ /**
+  * mmc_start_delayed_bkops() - Start a delayed work to check for
+  *      the need of non urgent BKOPS
+@@ -362,6 +409,8 @@ void mmc_start_bkops(struct mmc_card *card, bool from_exception)
+ 			mmc_hostname(card->host), err);
+ 		goto out;
  	}
++	MMC_UPDATE_STATS_BKOPS_SEVERITY_LEVEL(card->bkops_info.bkops_stats,
++					card->ext_csd.raw_bkops_status);
  	mmc_card_clr_need_bkops(card);
  	mmc_card_set_doing_bkops(card);
--	card->bkops_info.sectors_changed = 0;
-+
-+	if (card->host->caps2 & MMC_CAP2_POLL_FOR_BKOPS_COMP) {
-+		pr_debug("%s: %s: starting the polling thread\n",
-+			 mmc_hostname(card->host), __func__);
-+		queue_work(system_nrt_wq,
-+			   &card->bkops_info.poll_for_completion);
-+	} else {
-+		card->bkops_info.sectors_changed = 0;
-+	}
  
+@@ -762,6 +811,8 @@ int mmc_stop_bkops(struct mmc_card *card)
+ 		err = 0;
+ 	}
+ 
++	MMC_UPDATE_BKOPS_STATS_HPI(card->bkops_info.bkops_stats);
++
  out:
- 	mmc_release_host(card->host);
-@@ -372,6 +380,78 @@ out:
- EXPORT_SYMBOL(mmc_start_bkops);
+ 	return err;
+ }
+@@ -2614,6 +2665,8 @@ int mmc_suspend_host(struct mmc_host *host)
+ 				err = mmc_stop_bkops(host->card);
+ 				if (err)
+ 					goto out;
++				MMC_UPDATE_BKOPS_STATS_SUSPEND(host->
++						card->bkops_info.bkops_stats);
+ 			}
+ 			err = host->bus_ops->suspend(host);
+ 		}
+diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
+index 35c2f85..30738cb 100644
+--- a/drivers/mmc/core/debugfs.c
++++ b/drivers/mmc/core/debugfs.c
+@@ -334,6 +334,114 @@ static const struct file_operations mmc_dbg_ext_csd_fops = {
+ 	.llseek		= default_llseek,
+ };
  
- /**
-+ * mmc_bkops_completion_polling() - Poll on the card status to
-+ * wait for the non-blocking BKOPS completion
-+ * @work:	The completion polling work
-+ *
-+ * The on-going reading of the card status will prevent the card
-+ * from getting into suspend while it is in the middle of
-+ * performing BKOPS.
-+ * Since the non blocking BKOPS can be interrupted by a fetched
-+ * request we also check IF mmc_card_doing_bkops in each
-+ * iteration.
-+ */
-+void mmc_bkops_completion_polling(struct work_struct *work)
++static int mmc_bkops_stats_open(struct inode *inode, struct file *filp)
 +{
-+	struct mmc_card *card = container_of(work, struct mmc_card,
-+			bkops_info.poll_for_completion);
-+	unsigned long timeout_jiffies = jiffies +
-+		msecs_to_jiffies(BKOPS_COMPLETION_POLLING_TIMEOUT_MS);
-+	u32 status;
-+	int err;
++	struct mmc_card *card = inode->i_private;
 +
-+	/*
-+	 * Wait for the BKOPs to complete. Keep reading the status to prevent
-+	 * the host from getting into suspend
-+	 */
-+	do {
-+		mmc_claim_host(card->host);
++	filp->private_data = card;
 +
-+		if (!mmc_card_doing_bkops(card))
-+			goto out;
-+
-+		err = mmc_send_status(card, &status);
-+		if (err) {
-+			pr_err("%s: error %d requesting status\n",
-+			       mmc_hostname(card->host), err);
-+			goto out;
-+		}
-+
-+		/*
-+		 * Some cards mishandle the status bits, so make sure to check
-+		 * both the busy indication and the card state.
-+		 */
-+		if ((status & R1_READY_FOR_DATA) &&
-+		    (R1_CURRENT_STATE(status) != R1_STATE_PRG)) {
-+			pr_debug("%s: %s: completed BKOPs, exit polling\n",
-+				 mmc_hostname(card->host), __func__);
-+			mmc_card_clr_doing_bkops(card);
-+			card->bkops_info.sectors_changed = 0;
-+			goto out;
-+		}
-+
-+		mmc_release_host(card->host);
-+
-+		/*
-+		 * Sleep before checking the card status again to allow the
-+		 * card to complete the BKOPs operation
-+		 */
-+		msleep(BKOPS_COMPLETION_POLLING_INTERVAL_MS);
-+	} while (time_before(jiffies, timeout_jiffies));
-+
-+	pr_err("%s: %s: exit polling due to timeout, stop bkops\n",
-+	       mmc_hostname(card->host), __func__);
-+	err = mmc_stop_bkops(card);
-+	if (err)
-+		pr_err("%s: %s: mmc_stop_bkops failed, err=%d\n",
-+			       mmc_hostname(card->host), __func__, err);
-+
-+	return;
-+out:
-+	mmc_release_host(card->host);
++	card->bkops_info.bkops_stats.print_stats = 1;
++	return 0;
 +}
 +
-+/**
-  * mmc_start_idle_time_bkops() - check if a non urgent BKOPS is
-  * needed
-  * @work:	The idle time BKOPS work
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 2f25488..61bfb8f 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -1550,6 +1550,9 @@ int mmc_attach_mmc(struct mmc_host *host)
- 		INIT_DELAYED_WORK(&host->card->bkops_info.dw,
- 				  mmc_start_idle_time_bkops);
- 
-+		INIT_WORK(&host->card->bkops_info.poll_for_completion,
-+			  mmc_bkops_completion_polling);
++#define TEMP_BUF_SIZE 256
++static ssize_t mmc_bkops_stats_read(struct file *filp, char __user *ubuf,
++				     size_t cnt, loff_t *ppos)
++{
++	struct mmc_card *card = filp->private_data;
++	struct mmc_bkops_stats *bkops_stats;
++	int i;
++	char *temp_buf;
 +
- 		/*
- 		 * The host controller can set the time to start the BKOPS in
- 		 * order to prevent a race condition before starting BKOPS
++	if (!card)
++		return cnt;
++
++	bkops_stats = &card->bkops_info.bkops_stats;
++
++	if (!bkops_stats->print_stats)
++		return 0;
++
++	if (!bkops_stats->enabled) {
++		pr_info("%s: bkops statistics are disabled\n",
++			 mmc_hostname(card->host));
++		goto exit;
++	}
++
++	temp_buf = kmalloc(TEMP_BUF_SIZE, GFP_KERNEL);
++	if (!temp_buf)
++		goto exit;
++
++	spin_lock(&bkops_stats->lock);
++
++	memset(ubuf, 0, cnt);
++
++	snprintf(temp_buf, TEMP_BUF_SIZE, "%s: bkops statistics:\n",
++		mmc_hostname(card->host));
++	strlcat(ubuf, temp_buf, cnt);
++
++	for (i = 0 ; i < BKOPS_NUM_OF_SEVERITY_LEVELS ; ++i) {
++		snprintf(temp_buf, TEMP_BUF_SIZE,
++			 "%s: BKOPS: due to level %d: %u\n",
++		 mmc_hostname(card->host), i, bkops_stats->bkops_level[i]);
++		strlcat(ubuf, temp_buf, cnt);
++	}
++
++	snprintf(temp_buf, TEMP_BUF_SIZE,
++		 "%s: BKOPS: stopped due to HPI: %u\n",
++		 mmc_hostname(card->host), bkops_stats->hpi);
++	strlcat(ubuf, temp_buf, cnt);
++
++	snprintf(temp_buf, TEMP_BUF_SIZE,
++		 "%s: BKOPS: how many time host was suspended: %u\n",
++		 mmc_hostname(card->host), bkops_stats->suspend);
++	strlcat(ubuf, temp_buf, cnt);
++
++	spin_unlock(&bkops_stats->lock);
++
++	kfree(temp_buf);
++
++	pr_info("%s", ubuf);
++
++exit:
++	if (bkops_stats->print_stats == 1) {
++		bkops_stats->print_stats = 0;
++		return strnlen(ubuf, cnt);
++	}
++
++	return 0;
++}
++
++static ssize_t mmc_bkops_stats_write(struct file *filp,
++				      const char __user *ubuf, size_t cnt,
++				      loff_t *ppos)
++{
++	struct mmc_card *card = filp->private_data;
++	int value;
++	struct mmc_bkops_stats *bkops_stats;
++
++	if (!card)
++		return cnt;
++
++	bkops_stats = &card->bkops_info.bkops_stats;
++
++	sscanf(ubuf, "%d", &value);
++	if (value) {
++		mmc_blk_init_bkops_statistics(card);
++	} else {
++		spin_lock(&bkops_stats->lock);
++		bkops_stats->enabled = false;
++		spin_unlock(&bkops_stats->lock);
++	}
++
++	return cnt;
++}
++
++static const struct file_operations mmc_dbg_bkops_stats_fops = {
++	.open		= mmc_bkops_stats_open,
++	.read		= mmc_bkops_stats_read,
++	.write		= mmc_bkops_stats_write,
++};
++
+ void mmc_add_card_debugfs(struct mmc_card *card)
+ {
+ 	struct mmc_host	*host = card->host;
+@@ -366,6 +474,12 @@ void mmc_add_card_debugfs(struct mmc_card *card)
+ 					&mmc_dbg_ext_csd_fops))
+ 			goto err;
+ 
++	if (mmc_card_mmc(card) && (card->ext_csd.rev >= 5) &&
++	    card->ext_csd.bkops_en)
++		if (!debugfs_create_file("bkops_stats", S_IRUSR, root, card,
++					 &mmc_dbg_bkops_stats_fops))
++			goto err;
++
+ 	return;
+ 
+ err:
 diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 1676506..806a99b 100644
+index 806a99b..cffd7e9 100644
 --- a/include/linux/mmc/card.h
 +++ b/include/linux/mmc/card.h
-@@ -222,6 +222,7 @@ struct mmc_part {
+@@ -210,6 +210,16 @@ struct mmc_part {
+ #define MMC_BLK_DATA_AREA_RPMB	(1<<3)
+ };
+ 
++#define BKOPS_NUM_OF_SEVERITY_LEVELS	3
++struct mmc_bkops_stats {
++	spinlock_t		lock;
++	bool			enabled;
++	unsigned int		hpi;    /* hpi issued   */
++	unsigned int		suspend;/* card sleed issued */
++	bool			print_stats;
++	unsigned int bkops_level[BKOPS_NUM_OF_SEVERITY_LEVELS];
++};
++
+ /**
+  * struct mmc_bkops_info - BKOPS data
+  * @dw:	Idle time bkops delayed work
+@@ -222,6 +232,7 @@ struct mmc_part {
   * @size_percentage_to_queue_delayed_work: the changed
   *        percentage of sectors that should issue check for
   *        BKOPS need
-+ * @poll_for_completion:	Poll on BKOPS completion
++ * @bkops_stats: BKOPS statistics
+  * @poll_for_completion:	Poll on BKOPS completion
   * @cancel_delayed_work: A flag to indicate if the delayed work
   *        should be cancelled
-  * @sectors_changed:  number of  sectors written or
-@@ -238,6 +239,10 @@ struct mmc_bkops_info {
-  * is idle.
-  */
- #define MMC_IDLE_BKOPS_TIME_MS 200
-+	struct work_struct	poll_for_completion;
-+/* Polling timeout and interval for waiting on non-blocking BKOPs completion */
-+#define BKOPS_COMPLETION_POLLING_TIMEOUT_MS (4 * 60 * 1000) /* in ms */
-+#define BKOPS_COMPLETION_POLLING_INTERVAL_MS 1000 /* in ms */
- 	bool			cancel_delayed_work;
- 	unsigned int		sectors_changed;
+@@ -234,6 +245,7 @@ struct mmc_bkops_info {
+ 	unsigned int		delay_ms;
+ 	unsigned int		min_sectors_to_queue_delayed_work;
+ 	unsigned int		size_percentage_to_queue_delayed_work;
++	struct mmc_bkops_stats  bkops_stats;
  /*
+  * A default time for checking the need for non urgent BKOPS once mmcqd
+  * is idle.
 diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
-index c6426c6..2b7355a 100644
+index 2b7355a..1e2266b 100644
 --- a/include/linux/mmc/core.h
 +++ b/include/linux/mmc/core.h
-@@ -147,6 +147,7 @@ extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
- extern void mmc_start_bkops(struct mmc_card *card, bool from_exception);
- extern void mmc_start_delayed_bkops(struct mmc_card *card);
- extern void mmc_start_idle_time_bkops(struct work_struct *work);
-+extern void mmc_bkops_completion_polling(struct work_struct *work);
- extern int __mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int, bool);
- extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
+@@ -190,6 +190,8 @@ extern int mmc_flush_cache(struct mmc_card *);
  
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 61a10c1..6a588da 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -258,7 +258,7 @@ struct mmc_host {
- #define MMC_CAP2_HC_ERASE_SZ	(1 << 9)	/* High-capacity erase size */
- #define MMC_CAP2_CD_ACTIVE_HIGH	(1 << 10)	/* Card-detect signal active high */
- #define MMC_CAP2_RO_ACTIVE_HIGH	(1 << 11)	/* Write-protect signal active high */
--
-+#define MMC_CAP2_POLL_FOR_BKOPS_COMP (1 << 17)	/* poll for bkops completion */
- 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+ extern int mmc_detect_card_removed(struct mmc_host *host);
  
- #ifdef CONFIG_MMC_CLKGATE
++extern void mmc_blk_init_bkops_statistics(struct mmc_card *card);
++
+ /**
+  *	mmc_claim_host - exclusively claim a host
+  *	@host: mmc host to claim
 -- 
 1.7.3.3
 -- 
