@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab3AJWet (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 17:34:49 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:40202 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab3AJWer (ORCPT
+	id S1753683Ab3AJWiQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 17:38:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46875 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753583Ab3AJWiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 17:34:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130110203833.GE14149@atomide.com>
-References: <1357783059-13923-1-git-send-email-ccross@android.com>
-	<20130110203833.GE14149@atomide.com>
-Date: Thu, 10 Jan 2013 14:34:46 -0800
-X-Google-Sender-Auth: UYeNr5GEpGs5yuy0_hzrbRZoLRE
-Message-ID: <CAMbhsRR5azGw1-VhC4+9y7NfBPnZkBKnK34AqXdMFBsXPqdjCQ@mail.gmail.com>
-Subject: Re: [PATCH] hardlockup: detect hard lockups without NMIs using
- secondary cpus
-From: Colin Cross <ccross@android.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 10 Jan 2013 17:38:14 -0500
+Date: Thu, 10 Jan 2013 14:38:13 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fan Du <fan.du@windriver.com>
+Cc: <matthew@wil.cx>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs: Disable preempt when acquire i_size_seqcount write
+ lock
+Message-Id: <20130110143813.1ba2b4fd.akpm@linux-foundation.org>
+In-Reply-To: <1357702459-2718-1-git-send-email-fan.du@windriver.com>
+References: <1357702459-2718-1-git-send-email-fan.du@windriver.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 12:38 PM, Tony Lindgren <tony@atomide.com> wrote:
->
-> * Colin Cross <ccross@android.com> [130109 18:05]:
-> > +static void watchdog_check_hardlockup_other_cpu(void)
-> > +{
-> > +     int cpu;
-> > +     cpumask_t cpus = watchdog_cpus;
-> > +
-> > +     /*
-> > +      * Test for hardlockups every 3 samples.  The sample period is
-> > +      *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly over
-> > +      *  watchdog_thresh (over by 20%).
-> > +      */
-> > +     if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
-> > +             return;
-> > +
-> > +     /* check for a hardlockup on the next cpu */
-> > +     cpu = cpumask_next(smp_processor_id(), &cpus);
->
-> Hmm don't you want to check cpu_oneline_mask here and
-> return if the other CPU is offline?
+On Wed, 9 Jan 2013 11:34:19 +0800
+Fan Du <fan.du@windriver.com> wrote:
 
-watchdog_cpus is effectively a local copy of cpu_online_mask, but
-updated after the watchdog_nmi_touch in watchdog_nmi_enable.  This
-avoids a false positive after hotplugging in a cpu when
-cpu_online_mask is true but that cpu hasn't yet run it's first
-hrtimer.
+> Two rt tasks bind to one CPU core.
+> 
+> The higher priority rt task A preempts a lower priority rt task B which
+> has already taken the write seq lock, and then the higher priority
+> rt task A try to acquire read seq lock, it's doomed to lockup.
+> 
+> rt task A with lower priority: call write
+> i_size_write                                        rt task B with higher priority: call sync, and preempt task A
+>   write_seqcount_begin(&inode->i_size_seqcount);    i_size_read  
+>   inode->i_size = i_size;                             read_seqcount_begin <-- lockup here... 
+> 
 
-> > +     if (cpu >= nr_cpu_ids)
-> > +             cpu = cpumask_first(&cpus);
-> > +     if (cpu == smp_processor_id())
-> > +             return;
+Ouch.
+
+And even if the preemping task is preemptible, it will spend an entire
+timeslice pointlessly spinning, which isn't very good.
+
+> So disable preempt when acquiring every i_size_seqcount *write* lock will
+> cure the problem.
+> 
+> ...
 >
-> Regards,
->
-> Tony
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -758,9 +758,11 @@ static inline loff_t i_size_read(const struct inode *inode)
+>  static inline void i_size_write(struct inode *inode, loff_t i_size)
+>  {
+>  #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
+> +	preempt_disable();
+>  	write_seqcount_begin(&inode->i_size_seqcount);
+>  	inode->i_size = i_size;
+>  	write_seqcount_end(&inode->i_size_seqcount);
+> +	preempt_enable();
+>  #elif BITS_PER_LONG==32 && defined(CONFIG_PREEMPT)
+>  	preempt_disable();
+>  	inode->i_size = i_size;
+
+afacit all write_seqcount_begin()/read_seqretry() sites are vulnerable
+to this problem.  Would it not be better to do the preempt_disable() in
+write_seqcount_begin()?
+
+
+Possible problems:
+
+- mm/filemap_xip.c does disk I/O under write_seqcount_begin().
+
+- dev_change_name() does GFP_KERNEL allocations under write_seqcount_begin()
+
+- I didn't review u64_stats_update_begin() callers.
+
+But I think calling schedule() under preempt_disable() is OK anyway?
