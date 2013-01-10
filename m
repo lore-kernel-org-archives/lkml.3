@@ -1,169 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab3AJXxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:53:06 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:5878 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050Ab3AJXuv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:50:51 -0500
-From: Toshi Kani <toshi.kani@hp.com>
-To: rjw@sisk.pl, lenb@kernel.org, gregkh@linuxfoundation.org,
-        akpm@linux-foundation.org
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [RFC PATCH v2 04/12] cpu: Add cpu hotplug handlers
-Date: Thu, 10 Jan 2013 16:40:22 -0700
-Message-Id: <1357861230-29549-5-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
+	id S1755206Ab3AJXxo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:53:44 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37248 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755035Ab3AJXxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 18:53:42 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Myron Stowe <mstowe@redhat.com>, Jiang Liu <liuj97@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Myron Stowe <myron.stowe@redhat.com>, bhelgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
+Date: Fri, 11 Jan 2013 00:59:27 +0100
+Message-ID: <17637668.59BS4lW4dN@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQVmDW__C3A1_JJZpCZJwYWONZpHbzitMxsHZBxotw8VBA@mail.gmail.com>
+References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <1410202.K95a8u1BYT@vostro.rjw.lan> <CAE9FiQVmDW__C3A1_JJZpCZJwYWONZpHbzitMxsHZBxotw8VBA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added cpu hotplug handlers.  cpu_add_execute() onlines requested
-cpus for hot-add & online operations, and cpu_del_execute()
-offlines them for hot-delete & offline operations.  They are
-also used for rollback as well.
+On Thursday, January 10, 2013 03:40:45 PM Yinghai Lu wrote:
+> On Thu, Jan 10, 2013 at 3:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Thursday, January 10, 2013 03:03:53 PM Yinghai Lu wrote:
+> >> On Thu, Jan 10, 2013 at 1:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > Well, I don't see what functional problems that can bring.
+> >> >
+> >> > In theory people may want to have them as modules to avoid loading them on
+> >> > systems that don't use PCI hotplug, but honestly I think that the complexity
+> >> > this causes us to deal with is not worth it.
+> >> >
+> >> > Moreover, removing the modularity may actually allow us to solve some ordering
+> >> > issues once and for good.
+> >>
+> >> No, the world is not really ideal yet.
+> >>
+> >> looks like laptops have problem with pci express cards.
+> >>
+> >> when pciehp is used, surprise insert/removal does not work because
+> >> PresDect does not change properly, so no interrupt is generated.
+> >> --- i suspects that is silicon problem.
+> >>
+> >> but when acpiphp is used, that surprise  insert/removal is working.
+> >>
+> >> some laptop like thinkpad, just don't give osc to kernel..
+> >> [    0.505117]  pci0000:00: Requesting ACPI _OSC control (0x1d)
+> >> [    0.505413]  pci0000:00: ACPI _OSC request failed (AE_SUPPORT),
+> >> returned control mask: 0x0d
+> >> [    0.505517] ACPI _OSC control for PCIe not granted, disabling ASPM
+> >>
+> >> and other laptop give that to kernel, in recent kernel will not give
+> >> acpiphp to have that slot, because it want to hold that for pciehp.
+> >> poor user have to pass 'pci_aspm=off" to disable _OSC for all.
+> >> --- please check the mail that i forward to you yesterday.
+> >
+> > Yes, this is a bug, but I'm not sure how to fix it yet.
+> 
+> add one command line to control it so do not claim that in osc_control?
 
-cpu_del_validate() fails a request if cpu0 is requested to delete.
+That's one option, although not very attractive so to speak.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- drivers/base/cpu.c |  107 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 107 insertions(+)
+> >> Anyway, we do need to let the user to have choice to use acpiphp and pciehp.
+> >> and it should be first come and first serve policy.
+> >
+> > And that's why you think they should be modules?  I disagree if so.
+> 
+> Yes.
+> 
+> maybe we can have pci=nopciehp in command line just we pci=noaer...
+>
+> that should handle some corner cases.
 
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 6345294..05534ad 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -13,6 +13,8 @@
- #include <linux/gfp.h>
- #include <linux/slab.h>
- #include <linux/percpu.h>
-+#include <linux/list.h>
-+#include <linux/sys_hotplug.h>
- 
- #include "base.h"
- 
-@@ -324,10 +326,115 @@ static void __init cpu_dev_register_generic(void)
- #endif
- }
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+static int cpu_del_execute(struct shp_request *req, int rollback);
-+
-+static int cpu_add_execute(struct shp_request *req, int rollback)
-+{
-+	struct shp_device *shp_dev;
-+	u32 cpu;
-+	int ret;
-+
-+	if (rollback)
-+		return cpu_del_execute(req, 0);
-+
-+	list_for_each_entry(shp_dev, &req->dev_list, list) {
-+		if (shp_dev->class != SHP_CLS_CPU)
-+			continue;
-+
-+		cpu = shp_dev->info.cpu.cpu_id;
-+
-+		if (cpu_online(cpu))
-+			continue;
-+
-+		ret = cpu_up(cpu);
-+		if (!ret) {
-+			/* REVISIT: need a way to set a cpu dev for hot-plug */
-+			if (shp_is_online_op(req->operation))
-+				kobject_uevent(&shp_dev->device->kobj,
-+							KOBJ_ONLINE);
-+		} else {
-+			pr_err("cpu: Failed to online cpu %d\n", cpu);
-+			/* fall-thru */
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int cpu_del_validate(struct shp_request *req, int rollback)
-+{
-+	struct shp_device *shp_dev;
-+
-+	if (rollback)
-+		return 0;
-+
-+	list_for_each_entry(shp_dev, &req->dev_list, list) {
-+		if (shp_dev->class != SHP_CLS_CPU)
-+			continue;
-+
-+		/*
-+		 * cpu 0 cannot be offlined.  This check can be removed when
-+		 * cpu 0 offline is supported.
-+		 */
-+		if (shp_dev->info.cpu.cpu_id == 0)
-+			return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int cpu_del_execute(struct shp_request *req, int rollback)
-+{
-+	struct shp_device *shp_dev;
-+	u32 cpu;
-+	int ret;
-+
-+	if (rollback)
-+		return cpu_add_execute(req, 0);
-+
-+	list_for_each_entry(shp_dev, &req->dev_list, list) {
-+		if (shp_dev->class != SHP_CLS_CPU)
-+			continue;
-+
-+		cpu = shp_dev->info.cpu.cpu_id;
-+
-+		if (!cpu_online(cpu))
-+			continue;
-+
-+		ret = cpu_down(cpu);
-+		if (!ret) {
-+			/* REVISIT: need a way to set a cpu dev for hot-plug */
-+			if (shp_is_online_op(req->operation))
-+				kobject_uevent(&shp_dev->device->kobj,
-+							KOBJ_OFFLINE);
-+		} else {
-+			pr_err("cpu: Failed to offline cpu %d\n", cpu);
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static void __init cpu_shp_init(void)
-+{
-+	shp_register_handler(SHP_ADD_EXECUTE, cpu_add_execute,
-+				SHP_CPU_ADD_EXECUTE_ORDER);
-+	shp_register_handler(SHP_DEL_VALIDATE, cpu_del_validate,
-+				SHP_CPU_DEL_VALIDATE_ORDER);
-+	shp_register_handler(SHP_DEL_EXECUTE, cpu_del_execute,
-+				SHP_CPU_DEL_EXECUTE_ORDER);
-+}
-+#endif	/* CONFIG_HOTPLUG_CPU */
-+
- void __init cpu_dev_init(void)
- {
- 	if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
- 		panic("Failed to register CPU subsystem");
- 
- 	cpu_dev_register_generic();
-+#ifdef CONFIG_HOTPLUG_CPU
-+	cpu_shp_init();
-+#endif
- }
+Yes.  In any case the user should be able to say "I know better", but having
+to express that through the "right" ordering of modules is somewhat less than
+straightforward in my opinion.
+
+I need to reconsider that code again, maybe I'll figure out what can be done.
+It looks like the assumptions it was written with don't really reflect the
+reality entirely.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
