@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab3AJVuv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 16:50:51 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37136 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256Ab3AJVuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 16:50:50 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, eric.y.miao@gmail.com,
-        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from platform data
-Date: Thu, 10 Jan 2013 22:56:36 +0100
-Message-ID: <2426125.yN3kXlp07z@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130110135852.GS13897@intel.com>
-References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com> <20130110133319.GT20956@opensource.wolfsonmicro.com> <20130110135852.GS13897@intel.com>
+	id S1755044Ab3AJVx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 16:53:28 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:57843 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab3AJVx1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 16:53:27 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20130109165539.GB1045@krava.brq.redhat.com>
+References: <1357583277-4553-1-git-send-email-eranian@google.com>
+	<1357583277-4553-12-git-send-email-eranian@google.com>
+	<20130109165539.GB1045@krava.brq.redhat.com>
+Date: Thu, 10 Jan 2013 22:53:26 +0100
+Message-ID: <CABPqkBTTE=36vjMuXjiPojAYsTQfYzSk7=3Jo2WC4ryh7+gpaQ@mail.gmail.com>
+Subject: Re: [PATCH v5 11/18] perf tools: add mem access sampling core support
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 10, 2013 03:58:52 PM Mika Westerberg wrote:
-> On Thu, Jan 10, 2013 at 01:33:19PM +0000, Mark Brown wrote:
-> > On Thu, Jan 10, 2013 at 02:18:08PM +0100, Rafael J. Wysocki wrote:
-> > > On Thursday, January 10, 2013 12:51:59 PM Mark Brown wrote:
-> > 
-> > > > Sounds sensible, yes - about what I'd expect.  Is it possible to match
-> > > > on CPUID or similar information (given that this is all in the SoC)
-> > > > instead of ACPI, that might be more robust I guess?
-> > 
-> > > This particular part may be present in different SoCs.
-> > 
-> > Right, but I'd expect you could enumerate the SoCs?  Someone might
-> > decide to change the clock configuration for future SoCs anyway.
-> 
-> Well, they can use the same LPSS block with a different CPU but then we
-> expect the ACPI IDs to change as well (so we can then make another set of
-> clocks for those).
+On Wed, Jan 9, 2013 at 5:55 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Mon, Jan 07, 2013 at 07:27:50PM +0100, Stephane Eranian wrote:
+>
+> SNIP
+>
+>>
+>> +static void ip__resolve_data(struct machine *self, struct thread *thread,
+>> +                          u8 m,
+>> +                         struct addr_map_symbol *ams,
+>> +                         u64 addr)
+>> +{
+>> +     struct addr_location al;
+>> +
+>> +     memset(&al, 0, sizeof(al));
+>> +
+>> +     thread__find_addr_location(thread, self, m, MAP__VARIABLE, addr, &al,
+>> +                                NULL);
+>> +     ams->addr = addr;
+>> +     ams->al_addr = al.addr;
+>> +     ams->sym = al.sym;
+>> +     ams->map = al.map;
+>> +}
+>> +
+>> +struct mem_info *machine__resolve_mem(struct machine *self,
+>> +                                   struct thread *thr,
+>> +                                   struct perf_sample *sample,
+>> +                                   u8 cpumode)
+>> +{
+>> +     struct mem_info *mi;
+>> +
+>> +     mi = calloc(1, sizeof(struct mem_info));
+>> +     if (!mi)
+>> +             return NULL;
+>> +
+>> +     ip__resolve_ams(self, thr, &mi->iaddr, sample->ip);
+>> +     ip__resolve_data(self, thr, cpumode, &mi->daddr, sample->addr);
+>> +     mi->cost = sample->weight;
+>> +     mi->dsrc.val = sample->dsrc;
+>> +
+>> +     return mi;
+>> +}
+>> +
+>
+> The crash I report is due to the some maps could be removed
+> via map_groups__fixup_overlappings.
+>
+> Attached patch makes the code working for me, but we might
+> want to have some global unified fix for that, since this
+> is not the only place suffering for that.
+>
+> Like globaly set map->referenced in add_hist_entry or
+> hist_entry__new functions..
+>
+>
+Would something like that work for you (untested)?
 
-Also, as I said in another message, even if the LPSS block is used, the SPI
-may not be exposed to us by the BIOS, so SoC enumeration is not sufficient
-in general.
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 7034500..fc05b9f 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -274,6 +274,12 @@ static struct hist_entry *hist_entry__new(struct
+hist_entry *template)
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+                if (he->ms.map)
+                        he->ms.map->referenced = true;
++               if (he->mem_info) {
++                       if (he->mem_info->iaddr.map)
++                               he->mem_info->iaddr.map->referenced = true;
++                       if (he->mem_info->daddr.map)
++                               he->mem_info->daddr.map->referenced = true;
++               }
+                if (symbol_conf.use_callchain)
+                        callchain_init(he->callchain);
