@@ -1,118 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab3AJU0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 15:26:05 -0500
-Received: from na01-bl2-obe.ptr.protection.outlook.com ([65.55.169.31]:38311
-	"EHLO NA01-BL2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754056Ab3AJU0D convert rfc822-to-8bit (ORCPT
+	id S1756076Ab3AJU00 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 15:26:26 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38044
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755969Ab3AJU0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 15:26:03 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -1
-X-BigFish: PS-1(zz9371I542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bh8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB064;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Tomas Hozza <thozza@redhat.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "jasowang@redhat.com" <jasowang@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hashir Abdi <habdi@microsoft.com>
-Subject: RE: [PATCH 2/2] tools: hv: Use CLOEXEC when opening kvp_pool files
-Thread-Topic: [PATCH 2/2] tools: hv: Use CLOEXEC when opening kvp_pool files
-Thread-Index: AQHN7ZM03nrGs9xRR0qS3QXnXcdOT5hDBKyg
-Date: Thu, 10 Jan 2013 20:20:41 +0000
-Message-ID: <47732095346849909afa68e98cb91d51@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1357644403-11140-1-git-send-email-thozza@redhat.com>
- <1357644403-11140-2-git-send-email-thozza@redhat.com>
-In-Reply-To: <1357644403-11140-2-git-send-email-thozza@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.156.132]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Jan 2013 15:26:25 -0500
+Message-ID: <50EF23E8.1070202@kernel.dk>
+Date: Thu, 10 Jan 2013 21:26:16 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: BL2PRD0310HT005.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC101.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC101.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(13464002)(377454001)(51704002)(47446002)(56776001)(23726001)(46102001)(79102001)(33646001)(4396001)(74502001)(31966008)(54356001)(50466001)(76482001)(59766001)(77982001)(6806001)(5343635001)(47776002)(53806001)(74662001)(49866001)(47736001)(54316002)(56816002)(16676001)(44976002)(50986001)(5343655001)(46406002)(51856001)(47976001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB019;H:TK5EX14MLTC101.redmond.corp.microsoft.com;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0722981D2A
+To: Takashi Iwai <tiwai@suse.de>
+CC: Eldad Zack <eldad@fogrefinery.com>, perex@perex.cz,
+        alsa-devel@alsa-project.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Oops in sound/usb/pcm.c:match_endpoint_audioformats() in current
+ -git
+References: <50EE7A94.60409@kernel.dk> <s5hobgx72zf.wl%tiwai@suse.de> <50EEB8D2.2030702@kernel.dk> <s5hsj696tgw.wl%tiwai@suse.de> <alpine.LNX.2.00.1301102038560.1321@xoschi> <s5hehhskcya.wl%tiwai@suse.de>
+In-Reply-To: <s5hehhskcya.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2013-01-10 21:19, Takashi Iwai wrote:
+> At Thu, 10 Jan 2013 20:45:02 +0100 (CET),
+> Eldad Zack wrote:
+>>
+>>
+>> On Thu, 10 Jan 2013, Takashi Iwai wrote:
+>>
+>>> At Thu, 10 Jan 2013 13:49:22 +0100,
+>>> Jens Axboe wrote:
+>>>>
+>>>> Here it is, it's from the one introducing the audioformat lookup.
+>>>> Confirmed that 3.8-rc3 with this backed out works fine, too. So should
+>>>> be fairly confident in that result.
+>>
+>>> From: Takashi Iwai <tiwai@suse.de>
+>>> Subject: [PATCH] ALSA: usb-audio: Fix NULL dereference by access to
+>>>  non-existing substream
+>>>
+>>> The commit [0d9741c0: ALSA: usb-audio: sync ep init fix for
+>>> audioformat mismatch] introduced the correction of parameters to be
+>>> set for sync EP.  But since the new code assumes that the sync EP is
+>>> always paired with the data EP of another direction, it triggers Oops
+>>> when a device only with a single direction is used.
+>>
+>> Yes - sorry, I didn't consider this at all.
+>>
+>>> This patch adds a proper check of sync EP type and the presence of the
+>>> paired substream for avoiding the crash.
+>>>
+>>> Reported-by: Jens Axboe <axboe@kernel.dk>
+>>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>> ---
+>>>  sound/usb/pcm.c | 11 +++++++++++
+>>>  1 file changed, 11 insertions(+)
+>>>
+>>> diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
+>>> index c659310..21c0001 100644
+>>> --- a/sound/usb/pcm.c
+>>> +++ b/sound/usb/pcm.c
+>>> @@ -511,6 +511,17 @@ static int configure_sync_endpoint(struct snd_usb_substream *subs)
+>>>  	struct snd_usb_substream *sync_subs =
+>>>  		&subs->stream->substream[subs->direction ^ 1];
+>>>  
+>>> +	if (subs->sync_endpoint->type != SND_USB_ENDPOINT_TYPE_DATA ||
+>>> +	    !subs->stream) {
+>>> +		ret = snd_usb_endpoint_set_params(subs->sync_endpoint,
+>>> +						  subs->pcm_format,
+>>> +						  subs->channels,
+>>> +						  subs->period_bytes,
+>>> +						  subs->cur_rate,
+>>> +						  subs->cur_audiofmt,
+>>> +						  NULL);
+>>> +	}
+>>> +
+>>
+>> I think you want to return here, no?
+> 
+> Ah, yes, good catch.  It was dropped during rebasing and rewriting.
+> Below is the revised patch.
 
+Thanks, I'll give it a go and report back.
 
-> -----Original Message-----
-> From: Tomas Hozza [mailto:thozza@redhat.com]
-> Sent: Tuesday, January 08, 2013 6:27 AM
-> To: gregkh@linuxfoundation.org
-> Cc: KY Srinivasan; jasowang@redhat.com; Haiyang Zhang; linux-
-> kernel@vger.kernel.org; Hashir Abdi; Tomas Hozza
-> Subject: [PATCH 2/2] tools: hv: Use CLOEXEC when opening kvp_pool files
-> 
-> Use CLOEXEC flag when opening kvp_pool_x files to prevent file
-> descriptor leakage. Not using it was causing a problem when
-> SELinux was enabled.
-> 
-> Signed-off-by: Tomas Hozza <thozza@redhat.com>
-Acked-by: K. Y. Srinivasan <kys@microsoft.com
-
-> ---
->  tools/hv/hv_kvp_daemon.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-> index 6b56b75..31f839cc 100644
-> --- a/tools/hv/hv_kvp_daemon.c
-> +++ b/tools/hv/hv_kvp_daemon.c
-> @@ -151,7 +151,7 @@ static void kvp_update_file(int pool)
->  	 */
->  	kvp_acquire_lock(pool);
-> 
-> -	filep = fopen(kvp_file_info[pool].fname, "w");
-> +	filep = fopen(kvp_file_info[pool].fname, "we");
->  	if (!filep) {
->  		kvp_release_lock(pool);
->  		syslog(LOG_ERR, "Failed to open file, pool: %d", pool);
-> @@ -182,7 +182,7 @@ static void kvp_update_mem_state(int pool)
-> 
->  	kvp_acquire_lock(pool);
-> 
-> -	filep = fopen(kvp_file_info[pool].fname, "r");
-> +	filep = fopen(kvp_file_info[pool].fname, "re");
->  	if (!filep) {
->  		kvp_release_lock(pool);
->  		syslog(LOG_ERR, "Failed to open file, pool: %d", pool);
-> @@ -246,13 +246,13 @@ static int kvp_file_init(void)
->  		records_read = 0;
->  		num_blocks = 1;
->  		sprintf(fname, "/var/opt/hyperv/.kvp_pool_%d", i);
-> -		fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR |
-> S_IROTH);
-> +		fd = open(fname, O_RDWR | O_CREAT | O_CLOEXEC, S_IRUSR |
-> S_IWUSR | S_IROTH);
-> 
->  		if (fd == -1)
->  			return 1;
-> 
-> 
-> -		filep = fopen(fname, "r");
-> +		filep = fopen(fname, "re");
->  		if (!filep)
->  			return 1;
-> 
-> --
-> 1.7.11.7
-> 
-> 
-
+-- 
+Jens Axboe
 
