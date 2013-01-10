@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab3AJXus (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:50:48 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:16760 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab3AJXup (ORCPT
+	id S1755174Ab3AJXu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:50:57 -0500
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:46959 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755121Ab3AJXux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:50:45 -0500
+	Thu, 10 Jan 2013 18:50:53 -0500
 From: Toshi Kani <toshi.kani@hp.com>
 To: rjw@sisk.pl, lenb@kernel.org, gregkh@linuxfoundation.org,
         akpm@linux-foundation.org
@@ -16,9 +16,9 @@ Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
         wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [RFC PATCH v2 02/12] ACPI: Add sys_hotplug.h for system device hotplug framework
-Date: Thu, 10 Jan 2013 16:40:20 -0700
-Message-Id: <1357861230-29549-3-git-send-email-toshi.kani@hp.com>
+Subject: [RFC PATCH v2 05/12] mm: Add memory hotplug handlers
+Date: Thu, 10 Jan 2013 16:40:23 -0700
+Message-Id: <1357861230-29549-6-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
 References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
@@ -26,67 +26,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added include/acpi/sys_hotplug.h, which is ACPI-specific system
-device hotplug header and defines the order values of ACPI-specific
-handlers.
+Added memory hotplug handlers.  mm_add_execute() onlines requested
+memory ranges for hot-add & online operations, and mm_del_execute()
+offlines them for hot-delete & offline operations.  They are also
+used for rollback as well.
+
+mm_del_validate() fails a hot-delete request if a requested memory
+range is non-movable when del_movable_only is set.
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- include/acpi/sys_hotplug.h |   48 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
- create mode 100644 include/acpi/sys_hotplug.h
+ mm/memory_hotplug.c |  101 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 101 insertions(+)
 
-diff --git a/include/acpi/sys_hotplug.h b/include/acpi/sys_hotplug.h
-new file mode 100644
-index 0000000..ad80f61
---- /dev/null
-+++ b/include/acpi/sys_hotplug.h
-@@ -0,0 +1,48 @@
-+/*
-+ * sys_hotplug.h - ACPI System device hot-plug framework
-+ *
-+ * Copyright (C) 2012 Hewlett-Packard Development Company, L.P.
-+ *	Toshi Kani <toshi.kani@hp.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _ACPI_SYS_HOTPLUG_H
-+#define _ACPI_SYS_HOTPLUG_H
-+
-+#include <linux/list.h>
-+#include <linux/device.h>
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index d04ed87..ed3d829 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -29,6 +29,8 @@
+ #include <linux/suspend.h>
+ #include <linux/mm_inline.h>
+ #include <linux/firmware-map.h>
++#include <linux/module.h>
 +#include <linux/sys_hotplug.h>
+ 
+ #include <asm/tlbflush.h>
+ 
+@@ -45,6 +47,13 @@ static void generic_online_page(struct page *page);
+ 
+ static online_page_callback_t online_page_callback = generic_online_page;
+ 
++static int mm_add_execute(struct shp_request *req, int rollback);
++static int mm_del_execute(struct shp_request *req, int rollback);
 +
-+/*
-+ * System device hot-plug operation proceeds in the following order.
-+ *   Validate phase -> Execute phase -> Commit phase
-+ *
-+ * The order values below define the calling sequence of ACPI-specific
-+ * handlers for each phase in ascending order.  The order value of
-+ * platform-neutral handlers are defined in <linux/sys_hotplug.h>.
-+ */
++static int del_movable_only = 0;
++module_param(del_movable_only, int, 0644);
++MODULE_PARM_DESC(del_movable_only, "Restrict hot-remove to movable memory only");
 +
-+/* Add Validate order values */
-+#define SHP_ACPI_BUS_ADD_VALIDATE_ORDER		0	/* must be first */
+ DEFINE_MUTEX(mem_hotplug_mutex);
+ 
+ void lock_memory_hotplug(void)
+@@ -1431,3 +1440,95 @@ int remove_memory(u64 start, u64 size)
+ }
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+ EXPORT_SYMBOL_GPL(remove_memory);
 +
-+/* Add Execute order values */
-+#define SHP_ACPI_BUS_ADD_EXECUTE_ORDER		10
-+#define SHP_ACPI_RES_ADD_EXECUTE_ORDER		20
++static int mm_add_execute(struct shp_request *req, int rollback)
++{
++	struct shp_device *shp_dev;
++	struct shp_memory *shp_mem;
++	int ret;
 +
-+/* Add Commit order values */
-+#define SHP_ACPI_BUS_ADD_COMMIT_ORDER		10
++	if (rollback)
++		return mm_del_execute(req, 0);
 +
-+/* Delete Validate order values */
-+#define SHP_ACPI_BUS_DEL_VALIDATE_ORDER		0	/* must be first */
-+#define SHP_ACPI_RES_DEL_VALIDATE_ORDER		10
++	list_for_each_entry(shp_dev, &req->dev_list, list) {
++		if (shp_dev->class != SHP_CLS_MEMORY)
++			continue;
 +
-+/* Delete Execute order values */
-+#define SHP_ACPI_BUS_DEL_EXECUTE_ORDER		100
++		shp_mem = &shp_dev->info.mem;
 +
-+/* Delete Commit order values */
-+#define SHP_ACPI_BUS_DEL_COMMIT_ORDER		100
++		ret = add_memory(shp_mem->node,
++				shp_mem->start_addr, shp_mem->length);
++		if (ret)
++			return ret;
++	}
 +
-+#endif	/* _ACPI_SYS_HOTPLUG_H */
++	return 0;
++}
++
++static int mm_del_validate(struct shp_request *req, int rollback)
++{
++	struct shp_device *shp_dev;
++	struct shp_memory *shp_mem;
++	unsigned long start_pfn, nr_pages;
++
++	if (rollback || !del_movable_only)
++		return 0;
++
++	list_for_each_entry(shp_dev, &req->dev_list, list) {
++		if (shp_dev->class != SHP_CLS_MEMORY)
++			continue;
++
++		shp_mem = &shp_dev->info.mem;
++		start_pfn = shp_mem->start_addr >> PAGE_SHIFT;
++		nr_pages = PAGE_ALIGN(shp_mem->length) >> PAGE_SHIFT;
++
++		/*
++		 * Check if this memory range is removable.  This check is
++		 * enabled when del_movable_only is set.
++		 */
++		if (is_mem_section_removable(start_pfn, nr_pages)) {
++			pr_info("Memory [%#010llx-%#010llx] not removable\n",
++				shp_mem->start_addr,
++				shp_mem->start_addr + shp_mem->length-1);
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
++
++static int mm_del_execute(struct shp_request *req, int rollback)
++{
++	struct shp_device *shp_dev;
++	struct shp_memory *shp_mem;
++	int ret;
++
++	if (rollback)
++		return mm_add_execute(req, 0);
++
++	list_for_each_entry(shp_dev, &req->dev_list, list) {
++		if (shp_dev->class != SHP_CLS_MEMORY)
++			continue;
++
++		shp_mem = &shp_dev->info.mem;
++
++		ret = remove_memory(shp_mem->start_addr, shp_mem->length);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
++
++static int __init mm_shp_init(void)
++{
++	shp_register_handler(SHP_ADD_EXECUTE, mm_add_execute,
++				SHP_MEM_ADD_EXECUTE_ORDER);
++	shp_register_handler(SHP_DEL_VALIDATE, mm_del_validate,
++				SHP_MEM_DEL_VALIDATE_ORDER);
++	shp_register_handler(SHP_DEL_EXECUTE, mm_del_execute,
++				SHP_MEM_DEL_EXECUTE_ORDER);
++
++	return 0;
++}
++module_init(mm_shp_init);
