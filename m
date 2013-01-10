@@ -1,188 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab3AJT56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 14:57:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63752 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522Ab3AJT54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 14:57:56 -0500
-Date: Thu, 10 Jan 2013 17:48:32 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 5/5] KVM: x86: improve reexecute_instruction
-Message-ID: <20130110194832.GA2902@amt.cnet>
-References: <50EBBE54.1040007@linux.vnet.ibm.com>
- <50EBBEEC.2060100@linux.vnet.ibm.com>
- <20130110172657.GA24703@amt.cnet>
- <50EF02ED.7060006@linux.vnet.ibm.com>
+	id S1755963Ab3AJT6W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 14:58:22 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:39113 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755941Ab3AJT6U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 14:58:20 -0500
+Date: Thu, 10 Jan 2013 13:58:09 -0600
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org
+Subject: Re: kernel BUG at kernel/sched_rt.c:493!
+Message-ID: <20130110195809.GA3415@BohrerMBP.rgmadvisors.com>
+References: <20130105174632.GB19226@u1004.rgmadvisors.com>
+ <20130107175818.GA3411@BohrerMBP.rgmadvisors.com>
+ <20130107230218.GB3411@BohrerMBP.rgmadvisors.com>
+ <20130108143605.GB5594@home.goodmis.org>
+ <20130108150153.GA2219@BohrerMBP.rgmadvisors.com>
+ <1357791191.5841.8.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EF02ED.7060006@linux.vnet.ibm.com>
+In-Reply-To: <1357791191.5841.8.camel@marge.simpson.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed; boundary="BOKacYhQ+x31HxR3"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 02:05:33AM +0800, Xiao Guangrong wrote:
-> On 01/11/2013 01:26 AM, Marcelo Tosatti wrote:
-> > On Tue, Jan 08, 2013 at 02:38:36PM +0800, Xiao Guangrong wrote:
-> >> The current reexecute_instruction can not well detect the failed instruction
-> >> emulation. It allows guest to retry all the instructions except it accesses
-> >> on error pfn
-> >>
-> >> For example, some cases are nested-write-protect - if the page we want to
-> >> write is used as PDE but it chains to itself. Under this case, we should
-> >> stop the emulation and report the case to userspace
-> >>
-> >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> >> ---
-> >>  arch/x86/include/asm/kvm_host.h |    7 +++++++
-> >>  arch/x86/kvm/paging_tmpl.h      |   27 ++++++++++++++++++++-------
-> >>  arch/x86/kvm/x86.c              |    8 +++++++-
-> >>  3 files changed, 34 insertions(+), 8 deletions(-)
-> >>
-> >> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> >> index c431b33..d6ab8d2 100644
-> >> --- a/arch/x86/include/asm/kvm_host.h
-> >> +++ b/arch/x86/include/asm/kvm_host.h
-> >> @@ -502,6 +502,13 @@ struct kvm_vcpu_arch {
-> >>  		u64 msr_val;
-> >>  		struct gfn_to_hva_cache data;
-> >>  	} pv_eoi;
-> >> +
-> >> +	/*
-> >> +	 * Indicate whether the access faults on its page table in guest
-> >> +	 * which is set when fix page fault and used to detect unhandeable
-> >> +	 * instruction.
-> >> +	 */
-> >> +	bool write_fault_to_shadow_pgtable;
-> >>  };
-> >>
-> >>  struct kvm_lpage_info {
-> >> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> >> index 67b390d..df50560 100644
-> >> --- a/arch/x86/kvm/paging_tmpl.h
-> >> +++ b/arch/x86/kvm/paging_tmpl.h
-> >> @@ -497,26 +497,34 @@ out_gpte_changed:
-> >>   * created when kvm establishes shadow page table that stop kvm using large
-> >>   * page size. Do it early can avoid unnecessary #PF and emulation.
-> >>   *
-> >> + * @write_fault_to_shadow_pgtable will return true if the fault gfn is
-> >> + * currently used as its page table.
-> >> + *
-> >>   * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
-> >>   * since the PDPT is always shadowed, that means, we can not use large page
-> >>   * size to map the gfn which is used as PDPT.
-> >>   */
-> >>  static bool
-> >>  FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
-> >> -			      struct guest_walker *walker, int user_fault)
-> >> +			      struct guest_walker *walker, int user_fault,
-> >> +			      bool *write_fault_to_shadow_pgtable)
-> >>  {
-> >>  	int level;
-> >>  	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
-> >> +	bool self_changed = false;
-> >>
-> >>  	if (!(walker->pte_access & ACC_WRITE_MASK ||
-> >>  	      (!is_write_protection(vcpu) && !user_fault)))
-> >>  		return false;
-> >>
-> >> -	for (level = walker->level; level <= walker->max_level; level++)
-> >> -		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
-> >> -			return true;
-> >> +	for (level = walker->level; level <= walker->max_level; level++) {
-> >> +		gfn_t gfn = walker->gfn ^ walker->table_gfn[level - 1];
-> >> +
-> >> +		self_changed |= !(gfn & mask);
-> >> +		*write_fault_to_shadow_pgtable |= !gfn;
-> >> +	}
-> >>
-> >> -	return false;
-> >> +	return self_changed;
-> >>  }
-> >>
-> >>  /*
-> >> @@ -544,7 +552,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
-> >>  	int level = PT_PAGE_TABLE_LEVEL;
-> >>  	int force_pt_level;
-> >>  	unsigned long mmu_seq;
-> >> -	bool map_writable;
-> >> +	bool map_writable, is_self_change_mapping;
-> >>
-> >>  	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
-> >>
-> >> @@ -572,9 +580,14 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
-> >>  		return 0;
-> >>  	}
-> >>
-> >> +	vcpu->arch.write_fault_to_shadow_pgtable = false;
-> >> +
-> >> +	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu,
-> >> +	      &walker, user_fault, &vcpu->arch.write_fault_to_shadow_pgtable);
-> >> +
-> >>  	if (walker.level >= PT_DIRECTORY_LEVEL)
-> >>  		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
-> >> -		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
-> >> +		   || is_self_change_mapping;
-> >>  	else
-> >>  		force_pt_level = 1;
-> >>  	if (!force_pt_level) {
-> >> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> >> index 6f13e03..2957012 100644
-> >> --- a/arch/x86/kvm/x86.c
-> >> +++ b/arch/x86/kvm/x86.c
-> >> @@ -4810,7 +4810,13 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t cr2)
-> >>  	 * guest to let CPU execute the instruction.
-> >>  	 */
-> >>  	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
-> >> -	return true;
-> >> +
-> >> +	/*
-> >> +	 * If the access faults on its page table, it can not
-> >> +	 * be fixed by unprotecting shadow page and it should
-> >> +	 * be reported to userspace.
-> >> +	 */
-> >> +	return !vcpu->arch.write_fault_to_shadow_pgtable;
-> >>  }
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+
+On Thu, Jan 10, 2013 at 05:13:11AM +0100, Mike Galbraith wrote:
+> On Tue, 2013-01-08 at 09:01 -0600, Shawn Bohrer wrote: 
+> > On Tue, Jan 08, 2013 at 09:36:05AM -0500, Steven Rostedt wrote:
+> > > > 
+> > > > I've also managed to reproduce this on 3.8.0-rc2 so it appears the bug
+> > > > is still present in the latest kernel.
+> > > 
+> > > Shawn,
+> > > 
+> > > Can you send me your .config file.
 > > 
-> > This sounds wrong: only reporting emulation failure in case 
-> > of a write fault to shadow pagetable? 
+> > I've attached the 3.8.0-rc2 config that I used to reproduce this in an
+> > 8 core kvm image.  Let me know if you need anything else.
 > 
-> We suppose unprotecting target-gfn can avoid emulation, the same
-> as current code. :(
-
-Current code treats access to non-mapped guest address as indication to
-exit reporting emulation failure.
-
-The patch above restricts emulation failure reporting to when
-write_fault_to_shadow_pgtable = true.
-
-> > The current pattern is sane:
-> > 
-> > if (condition_1 which allows reexecution is true)
-> > 	return true;
-> > 
-> > if (condition_2 which allows reexecution is true)
-> > 	return true;
-> > ...
-> > 	return false;
+> I tried beating on my little Q6600 with no success.  I even tried
+> setting the entire box rt, GUI and all, nada.
 > 
-> Unfortunately, the current code reports failure only when the access
-> fault on error pfn:
-> 
->         pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
->         if (!is_error_pfn(pfn)) {
->                 kvm_release_pfn_clean(pfn);
->                 return true;
->         }
-> 
->         return false;
-> 
-> All !is_rror_pfn returns true.
+> Hm, maybe re-installing systemd..
 
+I don't know if Steve has had any success.  I can reproduce this easily
+now so I'm happy to do some debugging if anyone has some things they
+want me to try.
 
+Here is some info on my setup at the moment.  I'm using an 8 core KVM
+image now with an xfs file system.  We do use systemd if that is
+relevant.  My cpuset controller is mounted on /cgroup/cpuset and we
+use libcgroup-tools to move everything on the system that can be moved
+into /cgroup/cpuset/sysdefault/  I've also boosted all kworker threads
+to run as SCHED_FIFO with a priority of 51.  From there I just drop
+the three attached shell scripts (burn.sh, sched_domain_bug.sh and
+sched_domain_burn.sh) in /root/ and run /root/sched_domain_bug.sh as
+root.  Usually the bug triggers in less than a minute.  You may need
+to tweak my shell scripts if your setup is different but they are very
+rudimentary.
 
+In order to try digging up some more info I applied the following
+patch, and triggered the bug a few times.  The results are always
+essentially the same:
+
+---
+ kernel/sched/rt.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 418feb0..fba7f01 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -650,6 +650,8 @@ static void __disable_runtime(struct rq *rq)
+ 		 * we lend and now have to reclaim.
+ 		 */
+ 		want = rt_b->rt_runtime - rt_rq->rt_runtime;
++		printk(KERN_INFO "Initial want: %lld rt_b->rt_runtime: %llu rt_rq->rt_runtime: %llu\n",
++		       want, rt_b->rt_runtime, rt_rq->rt_runtime);
+ 
+ 		/*
+ 		 * Greedy reclaim, take back as much as we can.
+@@ -684,7 +686,12 @@ static void __disable_runtime(struct rq *rq)
+ 		 * We cannot be left wanting - that would mean some runtime
+ 		 * leaked out of the system.
+ 		 */
+-		BUG_ON(want);
++		if (want) {
++			printk(KERN_ERR "BUG triggered, want: %lld\n", want);
++			for_each_cpu(i, rd->span) {
++				print_rt_stats(NULL, i);
++			}
++		}
+ balanced:
+ 		/*
+ 		 * Disable all the borrow logic by pretending we have inf
+---
+
+Here is the output:
+
+[   81.278842] SysRq : Changing Loglevel
+[   81.279027] Loglevel set to 9
+[   83.285456] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+[   85.286452] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+[   85.289625] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+[   87.287435] Initial want: 100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 850000000
+[   87.290718] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+[   89.288469] Initial want: -50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1000000000
+[   89.291550] Initial want: 150000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 800000000
+[   89.292940] Initial want: 100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 850000000
+[   89.294082] Initial want: 100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 850000000
+[   89.295194] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+[   89.296274] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+[   90.959004] [sched_delayed] sched: RT throttling activated
+[   91.289470] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+[   91.292767] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+[   91.294037] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+[   91.295364] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+[   91.296355] BUG triggered, want: 200000000
+[   91.296355] 
+[   91.296355] rt_rq[7]:
+[   91.296355]   .rt_nr_running                 : 0
+[   91.296355]   .rt_throttled                  : 0
+[   91.296355]   .rt_time                       : 0.000000
+[   91.296355]   .rt_runtime                    : 750.000000
+[   91.307332] Initial want: -50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1000000000
+[   91.308440] Initial want: -100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1050000000
+[   91.309586] Initial want: -150000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1100000000
+[   91.310716] Initial want: -200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1150000000
+[   91.311707] BUG triggered, want: -200000000
+[   91.311707] 
+[   91.311707] rt_rq[6]:
+[   91.311707]   .rt_nr_running                 : 1
+[   91.311707]   .rt_throttled                  : 0
+[   91.311707]   .rt_time                       : 307.209987
+[   91.311707]   .rt_runtime                    : 1150.000000
+[   93.293733] Initial want: -43802666 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 993802666
+[   93.296601] Initial want: 150000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 800000000
+[   93.299600] Initial want: 100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 850000000
+[   93.301068] Initial want: 100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 850000000
+[   93.302075] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+[   93.303063] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+[   95.294857] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+[   95.298568] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+[   95.300016] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+[   95.301204] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+[   95.302161] BUG triggered, want: 200000000
+[   95.302180] 
+[   95.302180] rt_rq[7]:
+[   95.302180]   .rt_nr_running                 : 0
+[   95.302180]   .rt_throttled                  : 0
+[   95.302180]   .rt_time                       : 0.000000
+[   95.302180]   .rt_runtime                    : 750.000000
+[   95.309281] Initial want: -50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1000000000
+[   95.311185] Initial want: -100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1050000000
+[   95.312115] Initial want: -150000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1100000000
+[   95.312980] Initial want: -200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1150000000
+[   95.313107] BUG triggered, want: -200000000
+[   95.313107] 
+[   95.313107] rt_rq[6]:
+[   95.313107]   .rt_nr_running                 : 1
+[   95.313107]   .rt_throttled                  : 0
+[   95.313107]   .rt_time                       : 309.317451
+[   95.313107]   .rt_runtime                    : 1150.000000
+[   97.300908] Initial want: -43805084 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 993805084
+[   97.303466] Initial want: 150000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 800000000
+[   97.304429] Initial want: 100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 850000000
+[   97.305333] Initial want: 100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 850000000
+[   97.307685] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+[   97.308977] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+[   99.301776] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+
+Every time I've triggered this 'want' has always been 200000000, and it
+is always rt_rq[7] and rt_rq[6].  Perhaps this will point folks in the
+right direction.  If not I'll keep poking at this.
+
+Thanks,
+Shawn
+
+-- 
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
+
+--BOKacYhQ+x31HxR3
+Content-Type: application/x-sh
+Content-Disposition: attachment; filename="burn.sh"
+Content-Transfer-Encoding: quoted-printable
+
+#!/bin/bash=0A=0Awhile true; do : ; done=0A
+--BOKacYhQ+x31HxR3
+Content-Type: application/x-sh
+Content-Disposition: attachment; filename="sched_domain_burn.sh"
+Content-Transfer-Encoding: quoted-printable
+
+#!/bin/bash=0A=0Acpuset_mnt=3D"/cgroup/cpuset"=0A=0Amkdir ${cpuset_mnt}/pac=
+kage0=0Acat ${cpuset_mnt}/cpuset.mems > ${cpuset_mnt}/package0/cpuset.mems=
+=0Aecho 0,2,4,6 > ${cpuset_mnt}/package0/cpuset.cpus=0Aecho 1,3,5,7 > ${cpu=
+set_mnt}/sysdefault/cpuset.cpus=0Aecho $$ >> ${cpuset_mnt}/package0/tasks=
+=0Achrt -p -f 20 $$=0A=0Awhile true; do =0A    echo "starting burners"=0A  =
+  chrt -f 1 /root/burn.sh &=0A    sleep 2=0A    chrt -f 1 /root/burn.sh &=
+=0A    sleep 2=0A    chrt -f 1 /root/burn.sh &=0A    sleep 2=0A    chrt -f =
+1 /root/burn.sh &=0A    sleep 10=0A    CPIDS=3D$(pgrep -P $$)=0A    kill -9=
+ $CPIDS=0A    echo "burners killed"=0Adone=0A
+--BOKacYhQ+x31HxR3
+Content-Type: application/x-sh
+Content-Disposition: attachment; filename="sched_domain_bug.sh"
+Content-Transfer-Encoding: quoted-printable
+
+#!/bin/bash=0A=0Acpuset_mnt=3D"/cgroup/cpuset"=0A=0Aecho 9 > /proc/sysrq-tr=
+igger=0Aecho $$ >> ${cpuset_mnt}/sysdefault/tasks=0Achrt -p -f 20 $$=0A=0A/=
+root/sched_domain_burn.sh &=0A=0Awhile true; do=0A    echo 0 > ${cpuset_mnt=
+}/cpuset.sched_load_balance=0A    echo "toplevel domain off"=0A    sleep 2=
+=0A    echo 1 > ${cpuset_mnt}/cpuset.sched_load_balance=0A    echo "topleve=
+l domain on"=0A    sleep 2=0Adone=0A
+--BOKacYhQ+x31HxR3--
