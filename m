@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab3AJWHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 17:07:50 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53671 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab3AJWHt (ORCPT
+	id S1753050Ab3AJWSS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 17:18:18 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18263 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab3AJWSR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 17:07:49 -0500
-Message-ID: <50EF3BAF.4010200@wwwdotorg.org>
-Date: Thu, 10 Jan 2013 15:07:43 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 10 Jan 2013 17:18:17 -0500
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+Message-ID: <880965bb-90af-4a0f-9971-6bb8eb9ba2b7@default>
+Date: Thu, 10 Jan 2013 14:16:58 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device
- core
-References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com> <50EF27B4.60608@wwwdotorg.org>
-In-Reply-To: <50EF27B4.60608@wwwdotorg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: RE: [PATCHv2 8/9] zswap: add to mm/
+References: <<1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com>>
+ <<1357590280-31535-9-git-send-email-sjenning@linux.vnet.ibm.com>>
+In-Reply-To: <<1357590280-31535-9-git-send-email-sjenning@linux.vnet.ibm.com>>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 01:42 PM, Stephen Warren wrote:
-> On 12/12/2012 01:25 PM, Linus Walleij wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
->>
->> This makes the device core auto-grab the pinctrl handle and set
->> the "default" (PINCTRL_STATE_DEFAULT) state for every device
->> that is present in the device model right before probe. This will
->> account for the lion's share of embedded silicon devcies.
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: [PATCHv2 8/9] zswap: add to mm/
 > 
-> There are quite a few problems with this patch, and they end up
-> completely breaking at least Tegra in next-20130110.
+> zswap is a thin compression backend for frontswap. It receives
+> pages from frontswap and attempts to store them in a compressed
+> memory pool, resulting in an effective partial memory reclaim and
+> dramatically reduced swap device I/O.
 > 
->> diff --git a/drivers/base/pinctrl.c b/drivers/base/pinctrl.c
+> Additional, in most cases, pages can be retrieved from this
+> compressed store much more quickly than reading from tradition
+> swap devices resulting in faster performance for many workloads.
 > 
->> +int pinctrl_bind_pins(struct device *dev)
->> +{
->> +	struct dev_pin_info *dpi;
->> +	int ret;
->> +
->> +	/* Allocate a pin state container on-the-fly */
->> +	if (!dev->pins) {
->> +		dpi = devm_kzalloc(dev, sizeof(*dpi), GFP_KERNEL);
->> +		if (!dpi)
->> +			return -ENOMEM;
->> +	} else
->> +		dpi = dev->pins;
->> +
->> +	/*
->> +	 * Check if we already have a pinctrl handle, as we may arrive here
->> +	 * after a deferral in the state selection below
->> +	 */
->> +	if (!dpi->p) {
->> +		dpi->p = devm_pinctrl_get(dev);
+> This patch adds the zswap driver to mm/
 > 
-> That won't succeed for a pinctrl device that has a default state in
-> order to implement hogs. This will then cause the pin controller device
-> to always defer probe and never activate. This will leave HW
-> unconfigured and/or prevent other devices from successfully calling
-> pinctrl_get().
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-I see that an attempt was made to solve this problem, in the patch
-immediately preceding this one (at least, as applied in the pinctrl
-tree). However, that patch only addresses the case where the pin
-controller is being looked up in the map, and not the case when
-converting device tree to the map in the first place. The patch below
-solves this:
+I've implemented the equivalent of zswap_flush_*
+in zcache.  It looks much better than my earlier
+attempt at similar code to move zpages to swap.
+Nice work and thanks!
 
-diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
-index fe2d1af..fd40a11 100644
---- a/drivers/pinctrl/devicetree.c
-+++ b/drivers/pinctrl/devicetree.c
-@@ -141,6 +141,11 @@ static int dt_to_map_one_config(struct pinctrl *p,
-const char *statename,
-                pctldev = find_pinctrl_by_of_node(np_pctldev);
-                if (pctldev)
-                        break;
-+               /* Do not defer probing of hogs (circular loop) */
-+               if (np_pctldev == p->dev->of_node) {
-+                       of_node_put(np_pctldev);
-+                       return -ENODEV;
-+               }
-        }
-        of_node_put(np_pctldev);
+But... (isn't there always a "but";-)...
 
+> +/*
+> + * This limits is arbitrary for now until a better
+> + * policy can be implemented. This is so we don't
+> + * eat all of RAM decompressing pages for writeback.
+> + */
+> +#define ZSWAP_MAX_OUTSTANDING_FLUSHES 64
+> +	if (atomic_read(&zswap_outstanding_flushes) >
+> +		ZSWAP_MAX_OUTSTANDING_FLUSHES)
+> +		return;
 
+>From what I can see, zcache is in some ways more aggressive in
+some circumstances in "flushing" (zcache calls it "unuse"),
+and in some ways less aggressive.  But with significant exercise,
+I can always cause the kernel to OOM when it is under heavy
+memory pressure and the flush/unuse code is being used.
+
+Have you given any further thought to "a better policy"
+(see the comment in the snippet above)?  I'm going
+to try a smaller number than 64 to see if the OOMs
+go away, but choosing a random number for this throttling
+doesn't seem like a good plan for moving forward.
+
+Thanks,
+Dan
+
+P.S. I know you, like I, often use something kernbench-ish to
+exercise your code.  I've found that compiling a kernel,
+then switching to another kernel directory, doing a git pull,
+and compiling that kernel, causes a lot of flushes/unuses
+and the OOMs.  (This with 1GB RAM booting RHEL6 with a full GUI.)
