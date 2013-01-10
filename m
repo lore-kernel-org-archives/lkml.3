@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3AJULM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 15:11:12 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:39522
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754495Ab3AJULK (ORCPT
+	id S1755960Ab3AJULQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 15:11:16 -0500
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:26787
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754495Ab3AJULM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 15:11:10 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+	Thu, 10 Jan 2013 15:11:12 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 1
 X-BigFish: VPS1(z551bizzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1155h)
-X-WSS-ID: 0MGFEQH-01-0VW-02
+X-WSS-ID: 0MGFEQE-02-4IZ-02
 X-M-MSG: 
 From: Jacob Shin <jacob.shin@amd.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -18,12 +18,10 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        <linux-kernel@vger.kernel.org>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH RESEND 3/5] perf tools: Add breakpoint address mask to the mem event parser
-Date: Thu, 10 Jan 2013 14:10:57 -0600
-Message-ID: <1357848659-4786-4-git-send-email-jacob.shin@amd.com>
+        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH RESEND 1/5] perf: Add hardware breakpoint address mask
+Date: Thu, 10 Jan 2013 14:10:55 -0600
+Message-ID: <1357848659-4786-2-git-send-email-jacob.shin@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1357848659-4786-1-git-send-email-jacob.shin@amd.com>
 References: <1357848659-4786-1-git-send-email-jacob.shin@amd.com>
@@ -34,91 +32,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Some architectures (for us, AMD Family 16h) allow for "don't care" bit
+mask to further qualify a hardware breakpoint address, in order to
+trap on range of addresses. Update perf uapi to add bp_addr_mask field
+and define HAVE_HW_BREAKPOINT_ADDR_MASK.
 
-Allow perf tool to pass in breakpoint address mask to match an address
-range, i.e.:
-
-  $ perf stat -e mem:0x1000:w:0xf a.out
-
-Will count writes to [0x1000 ~ 0x1010)
-
-Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 ---
- tools/perf/util/parse-events.c |    3 ++-
- tools/perf/util/parse-events.h |    2 +-
- tools/perf/util/parse-events.y |   14 ++++++++++++--
- 3 files changed, 15 insertions(+), 4 deletions(-)
+ arch/Kconfig                    |    4 ++++
+ include/linux/hw_breakpoint.h   |    6 ++++++
+ include/uapi/linux/perf_event.h |    5 ++++-
+ kernel/events/hw_breakpoint.c   |    3 +++
+ 4 files changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 2d8d53be..2679e48 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -466,12 +466,13 @@ do {					\
- }
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 7f8f281..9ca606c 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -221,6 +221,10 @@ config HAVE_HW_BREAKPOINT
+ 	bool
+ 	depends on PERF_EVENTS
  
- int parse_events_add_breakpoint(struct list_head **list, int *idx,
--				void *ptr, char *type)
-+				void *ptr, char *type, void *msk)
- {
- 	struct perf_event_attr attr;
- 
- 	memset(&attr, 0, sizeof(attr));
- 	attr.bp_addr = (unsigned long) ptr;
-+	attr.bp_addr_mask = (unsigned long) msk;
- 
- 	if (parse_breakpoint_type(type, &attr))
- 		return -EINVAL;
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index b7af80b..5b7905c 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -92,7 +92,7 @@ int parse_events_add_numeric(struct list_head **list, int *idx,
- int parse_events_add_cache(struct list_head **list, int *idx,
- 			   char *type, char *op_result1, char *op_result2);
- int parse_events_add_breakpoint(struct list_head **list, int *idx,
--				void *ptr, char *type);
-+				void *ptr, char *type, void *msk);
- int parse_events_add_pmu(struct list_head **list, int *idx,
- 			 char *pmu , struct list_head *head_config);
- void parse_events__set_leader(char *name, struct list_head *list);
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 0f9914a..e8ac05d 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -254,13 +254,23 @@ PE_NAME_CACHE_TYPE
- }
- 
- event_legacy_mem:
-+PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP ':' PE_VALUE sep_dc
-+{
-+	struct parse_events_data__events *data = _data;
-+	struct list_head *list = NULL;
++config HAVE_HW_BREAKPOINT_ADDR_MASK
++       bool
++       depends on HAVE_HW_BREAKPOINT
 +
-+	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
-+					     (void *) $2, $4, (void *) $6));
-+	$$ = list;
-+}
-+|
- PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
- {
- 	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
- 	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
--					     (void *) $2, $4));
-+					     (void *) $2, $4, NULL));
- 	$$ = list;
+ config HAVE_MIXED_BREAKPOINTS_REGS
+ 	bool
+ 	depends on HAVE_HW_BREAKPOINT
+diff --git a/include/linux/hw_breakpoint.h b/include/linux/hw_breakpoint.h
+index 0464c85..9384201 100644
+--- a/include/linux/hw_breakpoint.h
++++ b/include/linux/hw_breakpoint.h
+@@ -84,6 +84,12 @@ static inline struct arch_hw_breakpoint *counter_arch_bp(struct perf_event *bp)
+ 	return &bp->hw.info;
  }
- |
-@@ -270,7 +280,7 @@ PE_PREFIX_MEM PE_VALUE sep_dc
- 	struct list_head *list = NULL;
  
- 	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
--					     (void *) $2, NULL));
-+					     (void *) $2, NULL, NULL));
- 	$$ = list;
++#ifdef CONFIG_HAVE_HW_BREAKPOINT_ADDR_MASK
++extern int arch_has_hw_breakpoint_addr_mask(void);
++#else
++static inline int arch_has_hw_breakpoint_addr_mask(void) { return 0; }
++#endif /* CONFIG_HAVE_HW_BREAKPOINT_ADDR_MASK */
++
+ #else /* !CONFIG_HAVE_HW_BREAKPOINT */
+ 
+ static inline int __init init_hw_breakpoint(void) { return 0; }
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 4f63c05..067d315 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -284,7 +284,10 @@ struct perf_event_attr {
+ 		__u64		config1; /* extension of config */
+ 	};
+ 	union {
+-		__u64		bp_len;
++		struct {
++			__u32		bp_len;
++			__u32		bp_addr_mask;
++		};
+ 		__u64		config2; /* extension of config1 */
+ 	};
+ 	__u64	branch_sample_type; /* enum perf_branch_sample_type */
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index fe8a916..6f10baa 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -612,6 +612,9 @@ static int hw_breakpoint_add(struct perf_event *bp, int flags)
+ 	if (!(flags & PERF_EF_START))
+ 		bp->hw.state = PERF_HES_STOPPED;
+ 
++	if (bp->attr.bp_addr_mask && !arch_has_hw_breakpoint_addr_mask())
++		return -EOPNOTSUPP;
++
+ 	return arch_install_hw_breakpoint(bp);
  }
  
 -- 
