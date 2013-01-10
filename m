@@ -1,73 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab3AJXda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:33:30 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37224 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742Ab3AJXd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:33:28 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Myron Stowe <mstowe@redhat.com>, Jiang Liu <liuj97@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Myron Stowe <myron.stowe@redhat.com>, bhelgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
-Date: Fri, 11 Jan 2013 00:39:12 +0100
-Message-ID: <1410202.K95a8u1BYT@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQXmnmFgG5jLnGyeYX7NcedGa-ztGo_CGoNjV8fFbe_esA@mail.gmail.com>
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <2704169.6ID6mDVPAt@vostro.rjw.lan> <CAE9FiQXmnmFgG5jLnGyeYX7NcedGa-ztGo_CGoNjV8fFbe_esA@mail.gmail.com>
+	id S1754446Ab3AJXdk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:33:40 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61042 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394Ab3AJXdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 18:33:38 -0500
+X-AuditID: 9c930179-b7c7fae00000255c-d3-50ef4fd08c30
+Date: Fri, 11 Jan 2013 08:33:36 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andy Whitcroft <apw@shadowen.org>, Alexander Nyberg <alexn@dsv.su.se>
+Subject: Re: [PATCH] Fix wrong EOF compare
+Message-ID: <20130110233336.GA2470@blaptop>
+References: <1357797904-11194-1-git-send-email-minchan@kernel.org>
+ <xa1ta9shm531.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <xa1ta9shm531.fsf@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 10, 2013 03:03:53 PM Yinghai Lu wrote:
-> On Thu, Jan 10, 2013 at 1:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Well, I don't see what functional problems that can bring.
+Hello Michal,
+
+On Thu, Jan 10, 2013 at 04:26:58PM +0100, Michal Nazarewicz wrote:
+> On Thu, Jan 10 2013, Minchan Kim <minchan@kernel.org> wrote:
+> > getc returns "int" so EOF could be -1 but storing getc's return
+> > value to char directly makes the vaule to 255 so below condition
+> > is always false.
+> 
+> Technically, this is implementation defined and I believe on many
+> systems char is signed thus the loop will end on EOF or byte 255.
+
+True. That's why there is no problem in x86.
+The problem would happens on ARM and PowerPC which defined char as unsigned
+in GCC.
+
+> 
+> Either way, my point is the patch is correct, but the comment is not. ;)
+
+Yeb. It was not elegant :(
+How about this?
+
+The C standards allows the character type char to be singed or unsinged,
+depending on the platform and compiler. Most of systems uses signed char,
+but those based on PowerPC and ARM processors typically use unsigned char.
+This can lead to unexpected results when the variable is used to compare
+with EOF(-1).
+
+This patch fixes the problem.
+
+> 
+> Of course, even better if the function just used fgets(), ie. something
+> like:
+> 
+> int read_block(char *buf, int buf_size, FILE *fin)
+> {
+> 	char *curr = buf, *const buf_end = buf + buf_size;
+> 
+> 	while (buf_end - curr > 1 && fgets(curr, buf_end - curr, fin)) {
+> 		if (*curr == '\n') /* empty line */
+> 			return curr - buf;
+> 		curr += strlen(curr);
+> 	}
+> 
+> 	return -1; /* EOF or no space left in buf. */
+> }
+> 
+> which is much shorter and does not have buffer overflow issues.
+
+Looks better. It is bug fix + code clean up + performance enhance.
+Although it's very straightforward, I would like to separate simple
+bug fix with others so I will resend two patches.
+
+Thanks for the review!
+
+> 
+> > It happens in my ARM system so loop is not ended, then segfaulted.
+> > This patch fixes it.
 > >
-> > In theory people may want to have them as modules to avoid loading them on
-> > systems that don't use PCI hotplug, but honestly I think that the complexity
-> > this causes us to deal with is not worth it.
+> >                 *curr = getc(fin); // *curr = 255
+> >                 if (*curr == EOF) return -1; // if ( 255 == -1)
 > >
-> > Moreover, removing the modularity may actually allow us to solve some ordering
-> > issues once and for good.
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > Cc: Andy Whitcroft <apw@shadowen.org>
+> > Cc: Alexander Nyberg <alexn@dsv.su.se>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  Documentation/page_owner.c |    6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/Documentation/page_owner.c b/Documentation/page_owner.c
+> > index f0156e1..b777fb6 100644
+> > --- a/Documentation/page_owner.c
+> > +++ b/Documentation/page_owner.c
+> > @@ -32,12 +32,14 @@ int read_block(char *buf, FILE *fin)
+> >  {
+> >  	int ret = 0;
+> >  	int hit = 0;
+> > +	int vaule;
+> >  	char *curr = buf;
+> >  
+> >  	for (;;) {
+> > -		*curr = getc(fin);
+> > -		if (*curr == EOF) return -1;
+> > +		value = getc(fin);
+> > +		if (value == EOF) return -1;
+> >  
+> > +		*curr = value;
+> >  		ret++;
+> >  		if (*curr == '\n' && hit == 1)
+> >  			return ret - 1;
 > 
-> No, the world is not really ideal yet.
-> 
-> looks like laptops have problem with pci express cards.
-> 
-> when pciehp is used, surprise insert/removal does not work because
-> PresDect does not change properly, so no interrupt is generated.
-> --- i suspects that is silicon problem.
-> 
-> but when acpiphp is used, that surprise  insert/removal is working.
-> 
-> some laptop like thinkpad, just don't give osc to kernel..
-> [    0.505117]  pci0000:00: Requesting ACPI _OSC control (0x1d)
-> [    0.505413]  pci0000:00: ACPI _OSC request failed (AE_SUPPORT),
-> returned control mask: 0x0d
-> [    0.505517] ACPI _OSC control for PCIe not granted, disabling ASPM
-> 
-> and other laptop give that to kernel, in recent kernel will not give
-> acpiphp to have that slot, because it want to hold that for pciehp.
-> poor user have to pass 'pci_aspm=off" to disable _OSC for all.
-> --- please check the mail that i forward to you yesterday.
+> -- 
+> Best regards,                                         _     _
+> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
 
-Yes, this is a bug, but I'm not sure how to fix it yet.
 
-> Anyway, we do need to let the user to have choice to use acpiphp and pciehp.
-> and it should be first come and first serve policy.
 
-And that's why you think they should be modules?  I disagree if so.
-
-Thanks,
-Rafael
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Kind regards,
+Minchan Kim
