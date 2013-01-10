@@ -1,183 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab3AJUSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 15:18:32 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:53874 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697Ab3AJUSb (ORCPT
+	id S1755961Ab3AJUTc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 15:19:32 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40068 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755641Ab3AJUTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 15:18:31 -0500
-Message-ID: <50EF220E.5010303@linux.vnet.ibm.com>
-Date: Fri, 11 Jan 2013 04:18:22 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Thu, 10 Jan 2013 15:19:31 -0500
+Date: Thu, 10 Jan 2013 12:18:32 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 1/1] Tiny RCU changes for 3.9
+Message-ID: <20130110201832.GV2491@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130105175059.GA15961@linux.vnet.ibm.com>
+ <20130107155810.GC11145@leaf>
+ <20130107165748.GF2525@linux.vnet.ibm.com>
+ <20130107175606.GA9962@jtriplet-mobl1>
+ <20130107221915.GA2525@linux.vnet.ibm.com>
+ <20130108042249.GB12974@leaf>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 5/5] KVM: x86: improve reexecute_instruction
-References: <50EBBE54.1040007@linux.vnet.ibm.com> <50EBBEEC.2060100@linux.vnet.ibm.com> <20130110172657.GA24703@amt.cnet> <50EF02ED.7060006@linux.vnet.ibm.com> <20130110194832.GA2902@amt.cnet>
-In-Reply-To: <20130110194832.GA2902@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130108042249.GB12974@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011020-5564-0000-0000-0000062594E6
+x-cbid: 13011020-3620-0000-0000-000000DD34BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2013 03:48 AM, Marcelo Tosatti wrote:
-> On Fri, Jan 11, 2013 at 02:05:33AM +0800, Xiao Guangrong wrote:
->> On 01/11/2013 01:26 AM, Marcelo Tosatti wrote:
->>> On Tue, Jan 08, 2013 at 02:38:36PM +0800, Xiao Guangrong wrote:
->>>> The current reexecute_instruction can not well detect the failed instruction
->>>> emulation. It allows guest to retry all the instructions except it accesses
->>>> on error pfn
->>>>
->>>> For example, some cases are nested-write-protect - if the page we want to
->>>> write is used as PDE but it chains to itself. Under this case, we should
->>>> stop the emulation and report the case to userspace
->>>>
->>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>>> ---
->>>>  arch/x86/include/asm/kvm_host.h |    7 +++++++
->>>>  arch/x86/kvm/paging_tmpl.h      |   27 ++++++++++++++++++++-------
->>>>  arch/x86/kvm/x86.c              |    8 +++++++-
->>>>  3 files changed, 34 insertions(+), 8 deletions(-)
->>>>
->>>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
->>>> index c431b33..d6ab8d2 100644
->>>> --- a/arch/x86/include/asm/kvm_host.h
->>>> +++ b/arch/x86/include/asm/kvm_host.h
->>>> @@ -502,6 +502,13 @@ struct kvm_vcpu_arch {
->>>>  		u64 msr_val;
->>>>  		struct gfn_to_hva_cache data;
->>>>  	} pv_eoi;
->>>> +
->>>> +	/*
->>>> +	 * Indicate whether the access faults on its page table in guest
->>>> +	 * which is set when fix page fault and used to detect unhandeable
->>>> +	 * instruction.
->>>> +	 */
->>>> +	bool write_fault_to_shadow_pgtable;
->>>>  };
->>>>
->>>>  struct kvm_lpage_info {
->>>> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
->>>> index 67b390d..df50560 100644
->>>> --- a/arch/x86/kvm/paging_tmpl.h
->>>> +++ b/arch/x86/kvm/paging_tmpl.h
->>>> @@ -497,26 +497,34 @@ out_gpte_changed:
->>>>   * created when kvm establishes shadow page table that stop kvm using large
->>>>   * page size. Do it early can avoid unnecessary #PF and emulation.
->>>>   *
->>>> + * @write_fault_to_shadow_pgtable will return true if the fault gfn is
->>>> + * currently used as its page table.
->>>> + *
->>>>   * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
->>>>   * since the PDPT is always shadowed, that means, we can not use large page
->>>>   * size to map the gfn which is used as PDPT.
->>>>   */
->>>>  static bool
->>>>  FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
->>>> -			      struct guest_walker *walker, int user_fault)
->>>> +			      struct guest_walker *walker, int user_fault,
->>>> +			      bool *write_fault_to_shadow_pgtable)
->>>>  {
->>>>  	int level;
->>>>  	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
->>>> +	bool self_changed = false;
->>>>
->>>>  	if (!(walker->pte_access & ACC_WRITE_MASK ||
->>>>  	      (!is_write_protection(vcpu) && !user_fault)))
->>>>  		return false;
->>>>
->>>> -	for (level = walker->level; level <= walker->max_level; level++)
->>>> -		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
->>>> -			return true;
->>>> +	for (level = walker->level; level <= walker->max_level; level++) {
->>>> +		gfn_t gfn = walker->gfn ^ walker->table_gfn[level - 1];
->>>> +
->>>> +		self_changed |= !(gfn & mask);
->>>> +		*write_fault_to_shadow_pgtable |= !gfn;
->>>> +	}
->>>>
->>>> -	return false;
->>>> +	return self_changed;
->>>>  }
->>>>
->>>>  /*
->>>> @@ -544,7 +552,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
->>>>  	int level = PT_PAGE_TABLE_LEVEL;
->>>>  	int force_pt_level;
->>>>  	unsigned long mmu_seq;
->>>> -	bool map_writable;
->>>> +	bool map_writable, is_self_change_mapping;
->>>>
->>>>  	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
->>>>
->>>> @@ -572,9 +580,14 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
->>>>  		return 0;
->>>>  	}
->>>>
->>>> +	vcpu->arch.write_fault_to_shadow_pgtable = false;
->>>> +
->>>> +	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu,
->>>> +	      &walker, user_fault, &vcpu->arch.write_fault_to_shadow_pgtable);
->>>> +
->>>>  	if (walker.level >= PT_DIRECTORY_LEVEL)
->>>>  		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
->>>> -		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
->>>> +		   || is_self_change_mapping;
->>>>  	else
->>>>  		force_pt_level = 1;
->>>>  	if (!force_pt_level) {
->>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>>> index 6f13e03..2957012 100644
->>>> --- a/arch/x86/kvm/x86.c
->>>> +++ b/arch/x86/kvm/x86.c
->>>> @@ -4810,7 +4810,13 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t cr2)
->>>>  	 * guest to let CPU execute the instruction.
->>>>  	 */
->>>>  	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
->>>> -	return true;
->>>> +
->>>> +	/*
->>>> +	 * If the access faults on its page table, it can not
->>>> +	 * be fixed by unprotecting shadow page and it should
->>>> +	 * be reported to userspace.
->>>> +	 */
->>>> +	return !vcpu->arch.write_fault_to_shadow_pgtable;
->>>>  }
->>>
->>> This sounds wrong: only reporting emulation failure in case 
->>> of a write fault to shadow pagetable? 
->>
->> We suppose unprotecting target-gfn can avoid emulation, the same
->> as current code. :(
+On Mon, Jan 07, 2013 at 08:22:50PM -0800, Josh Triplett wrote:
+> On Mon, Jan 07, 2013 at 02:19:15PM -0800, Paul E. McKenney wrote:
+> > On Mon, Jan 07, 2013 at 09:56:06AM -0800, Josh Triplett wrote:
+> > > On Mon, Jan 07, 2013 at 08:57:48AM -0800, Paul E. McKenney wrote:
+> > > > On Mon, Jan 07, 2013 at 07:58:10AM -0800, Josh Triplett wrote:
+> > > > > This patch seems reasonable to me, but the repeated use of #if
+> > > > > defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE) seems somewhat
+> > > > > annoying, and fragile if you ever decide to change the conditions.  How
+> > > > > about defining an appropriate symbol in Kconfig for stall warnings, and
+> > > > > using that?
+> > > > 
+> > > > But I only just removed the config option for SMP RCU stall warnings.  ;-)
+> > > > 
+> > > > But I must agree that "defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE)"
+> > > > is a bit obscure.  The rationale is that RCU stall warnings are
+> > > > unconditionally enabled in SMP kernels, but don't want to be in
+> > > > TINY_RCU kernels due to size constraints.  I therefore put it under
+> > > > CONFIG_RCU_TRACE, which also contains other TINY_RCU debugging-style
+> > > > options.  Would adding a comment to this effect help?
+> > > 
+> > > I understand the rationale; I just think it would become clearer if you
+> > > added an internal-only Kconfig symbol selected in both cases and change
+> > > the conditionals to use that.
+> > 
+> > My concern was that this would confuse people into thinking that the
+> > code under those #ifdefs was all the stall-warning code that there was.
+> > 
+> > I suppose this could be forestalled with a suitably clever name...
+> > CONFIG_RCU_CPU_STALL_TINY_TOO?  Better names?
 > 
-> Current code treats access to non-mapped guest address as indication to
-> exit reporting emulation failure.
-> 
-> The patch above restricts emulation failure reporting to when
-> write_fault_to_shadow_pgtable = true.
+> How about CONFIG_RCU_STALL_COMMON, with associated help text saying
+> "include the stall-detection code common to both rcutree and rcutiny"?
 
-In the patch 4:
+Sold!!!  Especially given that I am creating the commit to allow
+TREE_PREEMPT_RCU to be used on UP systems with an eye towards getting
+rid of TINY_PREEMPT_RCU.  ;-)
 
-+	/*
-+	 * If the instruction failed on the error pfn, it can not be fixed,
-+	 * report the error to userspace.
-+	 */
-+	if (is_error_noslot_pfn(pfn))
-+		return false;
-+
-+	kvm_release_pfn_clean(pfn);
-
-That means, two cases can cause failure fail:
-
-1): access on non-mapped guest address (The same as the current code)
-2): !vcpu->arch.write_fault_to_shadow_pgtable (The new case added in this patch)
-
-Hmm, or i missed something?
-
+							Thanx, Paul
 
