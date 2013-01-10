@@ -1,153 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3AJXr0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 18:47:26 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:40569 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532Ab3AJXrW (ORCPT
+	id S1754797Ab3AJXui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 18:50:38 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:16651 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546Ab3AJXug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 18:47:22 -0500
-Date: Thu, 10 Jan 2013 18:51:57 -0500
-From: Matt Porter <mporter@ti.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v3 02/16] ARM: davinci: move private EDMA API to
- arm/common
-Message-ID: <20130110235157.GU14660@beef>
-References: <1350566815-409-1-git-send-email-mporter@ti.com>
- <1350566815-409-3-git-send-email-mporter@ti.com>
- <508CEA05.8060200@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508CEA05.8060200@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 10 Jan 2013 18:50:36 -0500
+From: Toshi Kani <toshi.kani@hp.com>
+To: rjw@sisk.pl, lenb@kernel.org, gregkh@linuxfoundation.org,
+        akpm@linux-foundation.org
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, Toshi Kani <toshi.kani@hp.com>
+Subject: [RFC PATCH v2 00/12] System device hot-plug framework
+Date: Thu, 10 Jan 2013 16:40:18 -0700
+Message-Id: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 01:47:09PM +0530, Sekhar Nori wrote:
-> On 10/18/2012 6:56 PM, Matt Porter wrote:
-> > Move mach-davinci/dma.c to common/edma.c so it can be used
-> > by OMAP (specifically AM33xx) as well. This just moves the
-> > private EDMA API but does not support OMAP.
-> > 
-> > Signed-off-by: Matt Porter <mporter@ti.com>
-> > ---
-> 
-> > diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
-> > index 4c48a36..f45d591 100644
-> > --- a/arch/arm/mach-davinci/devices.c
-> > +++ b/arch/arm/mach-davinci/devices.c
-> > @@ -19,9 +19,10 @@
-> >  #include <mach/irqs.h>
-> >  #include <mach/cputype.h>
-> >  #include <mach/mux.h>
-> > -#include <mach/edma.h>
-> >  #include <linux/platform_data/mmc-davinci.h>
-> >  #include <mach/time.h>
-> > +#include <linux/platform_data/edma.h>
-> 
-> Can you please introduce a patch to clean this mixture of linux/ and
-> mach/ includes?
+This patchset is a prototype of proposed system device hot-plug framework
+for design review.  Unlike other hot-plug environments, such as USB and
+PCI, there is no common framework for system device hot-plug [1].
+Therefore, this patchset is designed to provide a common framework for
+hot-plugging and online/offline operations of system devices, such as CPU,
+Memory and Node.  While this patchset only supports ACPI-based hot-plug
+operations, the framework itself is designed to be platform-neural and
+can support other FW architectures as necessary.
 
-Yeah, are you ok with a follow on series to clean all these files? I
-don't want to make this series longer with something not dma related
-that's purely cleanup from the great header reorg of 2012.
+This patchset is based on Linus's tree (3.8-rc3).
 
-> > +
-> >  
-> >  #include "davinci.h"
-> >  #include "clock.h"
-> > @@ -141,10 +142,10 @@ static struct resource mmcsd0_resources[] = {
-> >  	},
-> >  	/* DMA channels: RX, then TX */
-> >  	{
-> > -		.start = EDMA_CTLR_CHAN(0, DAVINCI_DMA_MMCRXEVT),
-> > +		.start = EDMA_CTLR_CHAN(0, 26),
-> 
-> Instead of just replacing the event #defines with plain numbers, can you
-> introduce a mach-davinci local edma.h which can then be included in the
-> davinci platform files which refer to edma channel numbers?
+I have seen a few stability issues with 3.8-rc3 in my testing and will
+look into their solutions.
 
-Ok, so when I removed the old edma.h it was full of unused defines and
-we are left with just this one. If I introduced something like that it
-would be used in just one place here. and only for these two values.
-How about we just add a comment?
+[1] System device hot-plug frameworks for ppc and s390 are implemented
+    for specific platforms and products.
 
-> 
-> > diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
-> > index 7cd56ed..153fab8 100644
-> > --- a/arch/arm/plat-omap/Kconfig
-> > +++ b/arch/arm/plat-omap/Kconfig
-> > @@ -28,6 +28,7 @@ config ARCH_OMAP2PLUS
-> >  	select OMAP_DM_TIMER
-> >  	select PROC_DEVICETREE if PROC_FS
-> >  	select SPARSE_IRQ
-> > +	select TI_PRIV_EDMA
-> 
-> This hunk does not seem to belong to subject of this patch.
 
-Let me reword the subject/description. The idea of this logical
-chunk was to put everything in place to make it build on OMAP,
-with the expectation that the build fails without the next patch
-in the series.
+Background: System Device Initialization
+========================================
+System devices, such as CPU and memory, must be initialized during early
+boot sequence as they are the essential components to provide low-level
+services, ex. scheduling, memory allocation and interrupts, which are
+the foundations of the kernel services.  start_kernel() and kernel_init()
+manage the boot-up sequence to initialize system devices and low-level
+services in pre-defined order as shown below. 
 
-> >  	select USE_OF
-> >  	help
-> >  	  "Systems based on OMAP2, OMAP3, OMAP4 or OMAP5"
-> 
-> > diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
-> > new file mode 100644
-> > index 0000000..7396f0b3
-> > --- /dev/null
-> > +++ b/include/linux/platform_data/edma.h
-> > @@ -0,0 +1,198 @@
-> > +/*
-> > + *  TI DAVINCI dma definitions
-> > + *
-> > + *  Copyright (C) 2006-2009 Texas Instruments.
-> > + *
-> > + *  This program is free software; you can redistribute  it and/or modify it
-> > + *  under  the terms of  the GNU General  Public License as published by the
-> > + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> > + *  option) any later version.
-> > + *
-> > + *  THIS  SOFTWARE  IS PROVIDED   ``AS  IS'' AND   ANY  EXPRESS OR IMPLIED
-> > + *  WARRANTIES,   INCLUDING, BUT NOT  LIMITED  TO, THE IMPLIED WARRANTIES OF
-> > + *  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN
-> > + *  NO  EVENT  SHALL   THE AUTHOR  BE    LIABLE FOR ANY   DIRECT, INDIRECT,
-> > + *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-> > + *  NOT LIMITED   TO, PROCUREMENT OF  SUBSTITUTE GOODS  OR SERVICES; LOSS OF
-> > + *  USE, DATA,  OR PROFITS; OR  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-> > + *  ANY THEORY OF LIABILITY, WHETHER IN  CONTRACT, STRICT LIABILITY, OR TORT
-> > + *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-> > + *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-> 
-> > + *  You should have received a copy of the  GNU General Public License along
-> > + *  with this program; if not, write  to the Free Software Foundation, Inc.,
-> > + *  675 Mass Ave, Cambridge, MA 02139, USA.
-> 
-> This part can be dropped, I suppose ;-)
+  start_kernel()
+    boot_cpu_init()          // init cpu0
+    setup_arch()
+      efi_init()             // init EFI memory map
+      initmem_init()         // init NUMA
+      x86_init.paging.pagetable_init() // init page table
+      acpi_boot_init()       // parse ACPI MADT table
+        :
+  kernel_init()
+    kernel_init_freeable()
+      smp_init()             // init other CPUs
+        :
+      do_basic_setup()
+        driver_init()
+          cpu_dev_init()     // build system/cpu tree
+          memory_dev_init()  // build system/memory tree
+        do_initcalls()
+          acpi_init()        // build ACPI device tree
 
-Indeed :)
+Note that drivers are initialized at the end of the boot sequence as they
+depend on the kernel services from system devices.  Hence, while system
+devices may be exposed to sysfs with their pseudo drivers, their
+initialization may not be fully integrated into the driver structures.  
 
--Matt
+Overview of the System Device Hot-plug Framework
+================================================
+Similar to the boot-up sequence, the system device hot-plug framework
+provides a sequencer that calls all registered handlers in pre-defined
+order for hot-add and hot-delete of system devices.  It allows any modules
+initializing system devices in the boot-up sequence to participate in
+the hot-plug operations as well.  In high-level, there are two types of
+handlers, 1) FW-dependent (ex. ACPI) handlers that enumerate or eject
+system devices, and 2) system device (ex. CPU, Memory) management handlers
+that online or offline the enumerated system devices.  Online/offline
+operations are sub-set of hot-add/delete operations.  The ordering of the
+handlers are symmetric between hot-add (online) and hot-delete (offline)
+operations.
+
+        hot-add    online
+           |    ^    :    ^
+  HW Enum/ |    |    :    :
+    Eject  |    |    :    :
+           |    |    :    :
+  Online/  |    |    |    |
+  Offline  |    |    |    |
+           V    |    V    |
+             hot-del   offline
+
+The handlers may not call other handlers directly to exceed their role.
+Therefore, the role of the handlers in their modules remains consistent
+with their role at the boot-up sequence.  For instance, the ACPI module
+may not perform online or offline of system devices.
+
+System Device Hot-plug Operation
+================================
+
+Serialized Startup
+------------------
+The framework provides an interface (hp_submit_req) to request a hot-plug
+operation.  All requests are queued to and run on a single work queue.
+The framework assures that there is only a single hot-plug or online/
+offline operation running at a time.  A single request may however target
+to multiple devices.  This makes the execution context of handlers to be
+consistent with the boot-up sequence and enables code sharing.
+
+Phased Execution
+----------------
+The framework proceeds hot-plug and online/offline operations in the 
+following three phases.  The modules can register their handlers to each
+phase.  The framework also initiates a roll-back operation if any hander
+failed in the validate or execute phase.
+
+1) Validate Phase - Handlers validate if they support a given request
+without making any changes to target device(s).  They check any known
+restrictions and/or prerequisite conditions to their modules, and fail
+an unsupported request before making any changes.  For instance, the
+memory module may check if a hot-remove request is targeted to movable
+ranges.
+
+2) Execute Phase - Handlers make requested change within the scope that
+its roll-back is possible in case of a failure.  Execute handlers must
+implement their roll-back procedures.
+
+3) Commit Phase - Handlers make the final change that cannot be rolled-back.
+For instance, the ACPI module invokes _EJ0 for a hot-remove operation.
+
+System Device Management Modules
+================================
+
+CPU Handlers
+------------
+CPU handlers are provided by the CPU driver in drivers/base/cpu.c, and
+perform CPU online/offline procedures when CPU device(s) is added or
+deleted during an operation.
+
+Memory Handlers
+---------------
+Memory handlers are provided by the memory module in mm/memory_hotplug.c,
+and perform Memory online/offline procedure when memory device(s) is
+added or deleted during an operation.
+
+FW-dependent Modules
+====================
+
+ACPI Bus Handlers
+-----------------
+ACPI bus handlers are provided by the ACPI core in drivers/acpi/bus.c,
+and construct/destruct acpi_device object(s) during a hot-plug operation.
+
+ACPI Resource Handlers
+----------------------
+ACPI resource handlers are provided by the ACPI core in
+drivers/acpi/hp_resource.c, and set device resource information to
+a request during a hot-plug operation.  This device resource information
+is then consumed by the system device management modules for their
+online/offline procedure.
+
+ACPI Drivers
+------------
+ACPI drivers are called from the ACPI core during a hot-plug operation
+through the following interfaces.  ACPI drivers are not called from the
+framework directly, and remain internal to the ACPI core.  ACPI drivers
+may not initiate online/offline of a device.
+
+.add - Construct device-specific information to a given acpi_device.
+Called at boot, hot-add and sysfs bind.
+
+.remove - Destruct device-specific information to a given acpi_device.
+Called at hot-remove and sysfs unbind.
+
+.resource - Set device-specific resource information to a given hot-plug
+request.  Called at hot-add and hot-remove.
+
+---
+v2:
+ - Documented that system devices may not be initialized through the driver
+   structures.
+ - Clarified that the framework is for "system device" hotplug by changing
+   file name, prefix and documentation.
+ - Removed the use of CONFIG_HOTPLUG.
+ - Moved ACPI specific definitions to include/acpi/sys_hotplug.h.
+ - Implemented shp_unregister_handler() and added locking.
+ - Added module parameters, shp_trace and del_movable_only.
+
+---
+Toshi Kani (12):
+ Add sys_hotplug.h for system device hotplug framework
+ ACPI: Add sys_hotplug.h for system device hotplug framework
+ drivers/base: Add system device hotplug framework 
+ cpu: Add cpu hotplug handlers
+ mm: Add memory hotplug handlers
+ ACPI: Add ACPI bus hotplug handlers
+ ACPI: Add ACPI resource hotplug handler
+ ACPI: Update processor driver for hotplug framework
+ ACPI: Update memory driver for hotplug framework
+ ACPI: Update container driver for hotplug framework
+ cpu: Update sysfs cpu/online for hotplug framework
+ ACPI: Update sysfs eject for hotplug framework
+
+---
+ drivers/acpi/Makefile           |   1 +
+ drivers/acpi/acpi_memhotplug.c  | 271 ++++++++++++----------------------
+ drivers/acpi/bus.c              | 134 +++++++++++++++++
+ drivers/acpi/container.c        |  95 +++++-------
+ drivers/acpi/internal.h         |   1 +
+ drivers/acpi/processor_driver.c | 150 +++++++++----------
+ drivers/acpi/scan.c             | 122 +++-------------
+ drivers/acpi/shp_resource.c     |  86 +++++++++++
+ drivers/base/Makefile           |   1 +
+ drivers/base/cpu.c              | 147 +++++++++++++++++--
+ drivers/base/sys_hotplug.c      | 313 ++++++++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_bus.h         |   8 +-
+ include/acpi/sys_hotplug.h      |  48 ++++++
+ include/linux/sys_hotplug.h     | 181 +++++++++++++++++++++++
+ mm/memory_hotplug.c             | 101 +++++++++++++
+ 15 files changed, 1224 insertions(+), 435 deletions(-)
