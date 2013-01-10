@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab3AJUts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 15:49:48 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:39581 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398Ab3AJUtq (ORCPT
+	id S1756142Ab3AJUvB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 15:51:01 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22635 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab3AJUu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 15:49:46 -0500
-Date: Thu, 10 Jan 2013 14:49:11 -0600
-From: Nishanth Menon <nm@ti.com>
-To: Matt Porter <mporter@ti.com>
-CC: Sekhar Nori <nsekhar@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Chris Ball <cjb@laptop.org>, Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v3 16/16] ARM: dts: add AM33XX SPI support
-Message-ID: <20130110204911.GA7586@kahuna>
-References: <1350566815-409-1-git-send-email-mporter@ti.com>
- <1350566815-409-17-git-send-email-mporter@ti.com>
- <508D1791.1040806@ti.com>
- <20130110193547.GQ14660@beef>
- <20130110194653.GA32519@kahuna>
- <20130110204959.GS14660@beef>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130110204959.GS14660@beef>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 10 Jan 2013 15:50:59 -0500
+X-Authority-Analysis: v=2.0 cv=T70Ovo2Q c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=H1xujBs8l4kA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=qb5Z4fngcp4A:10 a=D19gQVrFAAAA:8 a=OSnBdXFxrkZOW3fAiGIA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357851057.5141.16.camel@gandalf.local.home>
+Subject: Re: linux-next: Tree for Jan 10 (staging/sb105x)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Thu, 10 Jan 2013 15:50:57 -0500
+In-Reply-To: <50EF11B2.9090505@infradead.org>
+References: <20130110143241.041ef77011ef7b1f68ae5c61@canb.auug.org.au>
+	 <50EF11B2.9090505@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15:49-20130110, Matt Porter wrote:
-> On Thu, Jan 10, 2013 at 01:46:53PM -0600, Nishanth Menon wrote:
-> > On 14:35-20130110, Matt Porter wrote:
-> > > On Sun, Oct 28, 2012 at 05:01:29PM +0530, Sekhar Nori wrote:
-> > > > On 10/18/2012 6:56 PM, Matt Porter wrote:
-[...]
+On Thu, 2013-01-10 at 11:08 -0800, Randy Dunlap wrote:
+> On 01/09/13 19:32, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Changes since 20130109:
+> > 
 > 
-> > > > > +				0x19c 0x13	/* mcasp0_ahclkr.spi1_cs0, OUTPUT_PULLUP | MODE3 */
-> > > > > +			>;
-> > > > 
-> > > > Is there a single pinmux setting that provides SPI functionality on the
-> > > > bone headers? Or this is specific to a cape you tested with?
-> > > 
-> > > No, there are two usable settings for spi1 and one setting for spi0.
-> > > I'm dropping this from the series since it's specific to how I wired up
-> > > the homebrew cape I use for spi testing on the Bone. I publish the
-> > > branch where all these extra "test-specific" patches (that aren't intended
-> > > to be merged) are at in the cover letter.  Anybody that needs context of
-> > > how/what worked and was tested can grab them there.
-> > Possibly dumb question:
-> > Cant we have pre-usable spi configurations?  Like spi1_configuration1_pins,
-> > spi2_configuration1_pins, spi0_configuration1_pins? If documented with
-> > P9 pin names in the bone dts, it saves a bit of effort in looking up
-> > pad offset when dealing with capes.
+> on x86_64, when CONFIG_PARPORT_PC is not enabled:
 > 
-> Yes, let's introduce these things separately. I plan to reintroduce
-> patches to fix the incorrect 1-based numbering on many of the AM33xx as
-> previous ones were dropped...and I think this makes sense on top of
-> that.
-sounds good to me.
+> drivers/built-in.o: In function `multi_init':
+> sb_pci_mp.c:(.init.text+0x15684): undefined reference to `parport_pc_probe_port'
+> 
+> 
+> Full randconfig file is attached.
 
--- 
-Regards,
-Nishanth Menon
+Ug, so https://lkml.org/lkml/2012/12/14/250 should have been
+CONFIG_PARPORT_PC and not just PARPORT :-P
+
+Can you try this patch:
+
+diff --git a/drivers/staging/sb105x/sb_pci_mp.c b/drivers/staging/sb105x/sb_pci_mp.c
+index 131afd0c..9464f38 100644
+--- a/drivers/staging/sb105x/sb_pci_mp.c
++++ b/drivers/staging/sb105x/sb_pci_mp.c
+@@ -3054,7 +3054,7 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
+ 				sbdev->nr_ports = ((portnum_hex/16)*10) + (portnum_hex % 16);
+ 			}
+ 			break;
+-#ifdef CONFIG_PARPORT
++#ifdef CONFIG_PARPORT_PC
+ 		case PCI_DEVICE_ID_MP2S1P :
+ 			sbdev->nr_ports = 2;
+ 
+
+
