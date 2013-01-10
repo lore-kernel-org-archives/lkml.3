@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab3AJWnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 17:43:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26422 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab3AJWnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 17:43:07 -0500
-Message-ID: <50EF43F8.3040403@redhat.com>
-Date: Thu, 10 Jan 2013 14:43:04 -0800
-From: Josh Stone <jistone@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753719Ab3AJWpk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 17:45:40 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:55673 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab3AJWpi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 17:45:38 -0500
 MIME-Version: 1.0
-To: Anton Arapov <anton@redhat.com>
-CC: Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Frank Eigler <fche@redhat.com>
-Subject: Re: [RFC PATCH 5/6] uprobes: add bp_vaddr argument to consumer handler
-References: <1356088596-17858-1-git-send-email-anton@redhat.com> <1356088596-17858-6-git-send-email-anton@redhat.com> <20121222163545.GE18082@redhat.com> <20121222171329.GA20691@redhat.com> <20121223154910.GA7106@redhat.com> <20130108142715.GA16849@bandura.brq.redhat.com>
-In-Reply-To: <20130108142715.GA16849@bandura.brq.redhat.com>
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <CANaxB-xupOxkyd3-tdJSeW7y+1DQzMr-3Pxnmx17Y=ocDU1VTA@mail.gmail.com>
+References: <1356690181-1796-1-git-send-email-avagin@openvz.org>
+ <1356690181-1796-3-git-send-email-avagin@openvz.org> <20121228161436.GA30459@redhat.com>
+ <CANaxB-xupOxkyd3-tdJSeW7y+1DQzMr-3Pxnmx17Y=ocDU1VTA@mail.gmail.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 10 Jan 2013 23:45:17 +0100
+Message-ID: <CAKgNAkj2BK80wx-Hki6Q1+uO+J4jefpJ9b_cs_DwpCJNgc+ioA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] signalfd: add ability to return siginfo in a raw
+ format (v2)
+To: Andrey Wagin <avagin@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, criu@openvz.org,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 06:27 AM, Anton Arapov wrote:
-> On Sun, Dec 23, 2012 at 04:49:10PM +0100, Oleg Nesterov wrote:
->> On 12/22, Oleg Nesterov wrote:
->>>> Just change regs->ip before calling ->handler().
+On Thu, Jan 10, 2013 at 10:47 AM, Andrey Wagin <avagin@gmail.com> wrote:
+> 2012/12/28 Oleg Nesterov <oleg@redhat.com>:
+>> On 12/28, Andrey Vagin wrote:
 >>>
->>> Josh, Frank, will it work for you?
+>>> signalfd should be called with the flag SFD_RAW for that.
+>>>
+>>> signalfd_siginfo is not full for siginfo with a negative si_code.
+>>> copy_siginfo_to_user() is copied a full siginfo to user-space, if
+>>> si_code is negative.  signalfd_copyinfo() doesn't do that and can't be
+>>> expanded, because it has not compatible format with siginfo_t.
+>>>
+>>> Another problem is that a constant __SI_* is removed from si_code.
+>>> It's not a problem for usual applications, because they expect
+>>> a defined type of siginfo (internal logic).
+>>> When we want to dump pending signals, we can't predict a type of
+>>> siginfo, so we should get it from kernel.
+>>>
+>>> The main idea of the raw format is that it should be enough for
+>>> restoring exactly the same siginfo for the current process.
+>>>
+>>> This functionality is required for checkpointing pending signals.
 >>
->> Wait, probably I was confused by this patch and 4/6...
+>> And this should be used along with pread().
 >>
->> To simplify, lets ignore the normal uprobes. Yes I still think that it
->> would be better to set "regs->ip = orig_return_vaddr" before calling
->> ->handler() and not pass it as an argument.
->>
->> But, probably uprobe_consumer also needs to know bp_vaddr? IOW, the
->> address of the function which we are going to return from? In this case,
->> yes, we also need another argument. And prepare_uretprobe/etc should
->> be changed to record bp_vaddr passed from handle_swbp(). And
->> uretprobe_run_handlers() should pass this bp_vaddr, not orig_return_vaddr.
->>
->> Or I am confused.
->>
->> Anton?
-> 
->   Oleg, you are absolutely right and change the ip before calling the
-> ->handle is much better then what I 'invented'.
->  
->   I'm working on v2 to address this and other issues, will post it soon.
+>> I won't argue, but perhaps we should simply postulate that pread()
+>> always dumps siginfo in raw format and avoid the new flag?
+>
+> I won't argue too:), but I think the flag is more flexiable. The flag
+> allows to get raw siginfo from read(), it may be useful not only for
+> checkpoint/restore. pread with offset = 0 is equal to read(), so the
+> interface with the flag is more clear.
 
-For uprobes, systemtap wants regs->ip to be the real breakpoint address,
-and for uretprobes we want the original return address.  With the
-utrace-based uprobes we would munge it by modifying regs->ip before
-continuing with the rest of our handler.  If uprobes now wants to
-prepare regs->ip for us in the same way, I think that's fine.
+Special casing pread() behavior for signalfd() so that SFD_RAW is not
+required seems only to make the ugliness worse...
 
-Josh
+While I appreciate the need for this API, multiplexing a queue
+selector and a positional value into what is normally a byte offset in
+pread() is really bizarre. This is ugly and I wonder if something
+better is possible, though so far I have no suggestions beyond adding
+a new system call.
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
