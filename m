@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab3AKJgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 04:36:49 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:49056 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751591Ab3AKJgq (ORCPT
+	id S1754535Ab3AKJkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 04:40:43 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50441 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591Ab3AKJkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 04:36:46 -0500
-Date: Fri, 11 Jan 2013 09:36:02 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: linux-next: manual merge of the signal tree with the arm64 tree
-Message-ID: <20130111093602.GB13405@arm.com>
-References: <20130111154617.cab6a8d1ff13a4f200969b9d@canb.auug.org.au>
+	Fri, 11 Jan 2013 04:40:41 -0500
+Message-ID: <50EFDE10.9080902@ti.com>
+Date: Fri, 11 Jan 2013 11:40:32 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130111154617.cab6a8d1ff13a4f200969b9d@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tony Lindgren <tony@atomide.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <sameo@linux.intel.com>,
+        <kishon@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 01/14] mfd: omap-usb-host: Consolidate OMAP USB-HS platform
+ data
+References: <1357836694-30788-1-git-send-email-rogerq@ti.com> <1357836694-30788-2-git-send-email-rogerq@ti.com> <20130110234537.GB15458@atomide.com>
+In-Reply-To: <20130110234537.GB15458@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Tony,
 
-On Fri, Jan 11, 2013 at 04:46:17AM +0000, Stephen Rothwell wrote:
-> Today's linux-next merge of the signal tree got a conflict in
-> arch/arm64/kernel/signal32.c between commits 068f1bb36cf1 ("arm64:
-> compat: include sa_restorer in old action from rt_sigaction") and
-> efed4d52e39f ("arm64: compat: ensure access_ok checks are performed on
-> user structures") from the arm64 tree and various commits from the signal
-> tree.
+On 01/11/2013 01:45 AM, Tony Lindgren wrote:
+> * Roger Quadros <rogerq@ti.com> [130110 08:54]:
+>> Let's have a single platform data structure for the OMAP's High-Speed
+>> USB host subsystem instead of having 3 separate ones i.e. one for
+>> board data, one for USB Host (UHH) module and one for USB-TLL module.
+>>
+>> This makes the code much simpler and avoids creating multiple copies of
+>> platform data.
 > 
-> The latter removes the code modified by the former, so I did that.
+> I can apply just this patch alone into an immutable branch that
+> we all can merge in as needed as long as we have acks for the USB
+> and MFD parts.
+> 
+> Or does this one need to be changed based on Alan's comments
+> on the EHCI lib related changes?
+> 
 
-I think the fix is fine. I'll give Al's patches a test and I can
-probably drop Will's patches.
+This does not depend on EHCI lib based changes but it depends on the
+OMAP USB Host cleanup series posted earlier.
 
-Thanks.
-
--- 
-Catalin
+regards,
+-roger
