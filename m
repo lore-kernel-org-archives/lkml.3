@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab3AKFCN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 00:02:13 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4977 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab3AKFCM (ORCPT
+	id S1753070Ab3AKFDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 00:03:40 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:42077 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3AKFDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 00:02:12 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 10 Jan 2013 21:01:55 -0800
-Message-ID: <50EF9CC4.8030600@nvidia.com>
-Date: Fri, 11 Jan 2013 10:31:56 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 11 Jan 2013 00:03:39 -0500
+Message-ID: <50EF9CDB.60901@linux.vnet.ibm.com>
+Date: Fri, 11 Jan 2013 10:32:19 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Josh Cartwright <josh.cartwright@ni.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "linux@prisktech.co.nz" <linux@prisktech.co.nz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH 1/7] clk: add common of_clk_init() function
-References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com> <20130110195347.GN19380@beefymiracle.amer.corp.natinst.com>
-In-Reply-To: <20130110195347.GN19380@beefymiracle.amer.corp.natinst.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 04/22] sched: don't need go to smaller sched domain
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-5-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1357375071-11793-5-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011105-4790-0000-0000-000006655A79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 January 2013 01:23 AM, Josh Cartwright wrote:
-> * PGP Signed by an unknown key
->
-> On Fri, Jan 04, 2013 at 12:30:52PM +0530, Prashant Gaikwad wrote:
->> Modify of_clk_init function so that it will determine which
->> driver to initialize based on device tree instead of each driver
->> registering to it.
->>
->> Based on a similar patch for drivers/irqchip by Thomas Petazzoni and
->> drivers/clocksource by Stephen Warren.
->>
->> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
->> ---
-> Prashant-
->
-> Sorry for the late response, but I finally got a chance to give this
-> patchset a spin on Zynq.  For patches 1 and 6:
->
-> Reviewed-by: Josh Cartwright <josh.cartwright@ni.com>
-> Tested-by: Josh Cartwright <josh.cartwright@ni.com>
->
->    Josh
-
-Thanks Josh!!
-
-> * Unknown Key
-> * 0x846F0FA5
+On 01/05/2013 02:07 PM, Alex Shi wrote:
+> If parent sched domain has no task allowed cpu find. neither find in
+> it's child. So, go out to save useless checking.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 3c7b09a..ecfbf8e 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3378,10 +3378,8 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>  			load_idx = sd->wake_idx;
+> 
+>  		group = find_idlest_group(sd, p, cpu, load_idx);
+> -		if (!group) {
+> -			sd = sd->child;
+> -			continue;
+> -		}
+> +		if (!group)
+> +			goto unlock;
+> 
+>  		new_cpu = find_idlest_cpu(group, p, cpu);
+> 
+Reviewed-by:Preeti U Murthy
 
