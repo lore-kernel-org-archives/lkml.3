@@ -1,106 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab3AKUmg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:42:36 -0500
-Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:12787 "EHLO
-	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753326Ab3AKUmf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:42:35 -0500
-From: Maya Erez <merez@codeaurora.org>
-To: linux-mmc@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] mmc: core: disable the cache before suspend only after stopping BKOPS
-Date: Fri, 11 Jan 2013 22:42:01 +0200
-Message-Id: <1357936936-25977-1-git-send-email-merez@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.3
-In-Reply-To: <n>
-References: <n>
+	id S1754351Ab3AKUn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:43:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62073 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753326Ab3AKUnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 15:43:25 -0500
+Date: Sat, 12 Jan 2013 02:13:17 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com,
+        aquini@redhat.com, mst@redhat.com, agl@us.ibm.com
+Subject: Re: [RFC 2/2] virtio_balloon: add auto-ballooning support
+Message-ID: <20130111204317.GB11436@amit.redhat.com>
+References: <1355861850-2702-1-git-send-email-lcapitulino@redhat.com>
+ <1355861850-2702-3-git-send-email-lcapitulino@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355861850-2702-3-git-send-email-lcapitulino@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mmc_cache_ctrl was called in runtime suspend before MMC interrupted
-BKOPS in case it is still running on the card. This caused the cache
-disable to timeout.
-Therefore, mmc_cache_ctrl has to move to mmc_suspend where we are sure
-that the card can go into suspend and there is no pending activity.
+On (Tue) 18 Dec 2012 [18:17:30], Luiz Capitulino wrote:
+> The auto-ballooning feature automatically performs balloon inflate or
+> deflate based on host and guest memory pressure. This can help to
+> avoid swapping or worse in both, host and guest.
+> 
+> Auto-ballooning has a host and a guest part. The host performs
+> automatic inflate by requesting the guest to inflate its balloon
+> when the host is facing memory pressure. The guest performs
+> automatic deflate when it's facing memory pressure itself. It's
+> expected that auto-inflate and auto-deflate will balance each
+> other over time.
+> 
+> This commit implements the guest side of auto-ballooning.
+> 
+> To perform automatic deflate, the virtio_balloon driver registers
+> a shrinker callback, which will try to deflate the guest's balloon
+> on guest memory pressure just like if it were a cache. The shrinker
+> callback is only registered if the host supports the
+> VIRTIO_BALLOON_F_AUTO_BALLOON feature bit.
 
-Signed-off-by: Maya Erez <merez@codeaurora.org>
----
- drivers/mmc/core/core.c |    7 +------
- drivers/mmc/core/mmc.c  |    8 +++++++-
- 2 files changed, 8 insertions(+), 7 deletions(-)
+I'm wondering if guest should auto-deflate even when the AUTO_BALLOON
+feature isn't supported by the host: if a guest is under pressure,
+there's no way for it to tell the host and wait for the host to
+deflate the balloon, so it may be beneficial to just go ahead and
+deflate the balloon for all hosts.
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index aaed768..b438bb2 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -2388,6 +2388,7 @@ EXPORT_SYMBOL(mmc_flush_cache);
-  * Turn the cache ON/OFF.
-  * Turning the cache OFF shall trigger flushing of the data
-  * to the non-volatile storage.
-+ * This function should be called with host claimed
-  */
- int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
- {
-@@ -2399,7 +2400,6 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
- 			mmc_card_is_removable(host))
- 		return err;
- 
--	mmc_claim_host(host);
- 	if (card && mmc_card_mmc(card) &&
- 			(card->ext_csd.cache_size > 0)) {
- 		enable = !!enable;
-@@ -2417,7 +2417,6 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
- 				card->ext_csd.cache_ctrl = enable;
- 		}
- 	}
--	mmc_release_host(host);
- 
- 	return err;
- }
-@@ -2436,10 +2435,6 @@ int mmc_suspend_host(struct mmc_host *host)
- 	cancel_delayed_work(&host->detect);
- 	mmc_flush_scheduled_work();
- 
--	err = mmc_cache_ctrl(host, 0);
--	if (err)
--		goto out;
--
- 	mmc_bus_get(host);
- 	if (host->bus_ops && !host->bus_dead) {
- 		if (host->bus_ops->suspend) {
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index e6e3911..dc17d40 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -1379,6 +1379,11 @@ static int mmc_suspend(struct mmc_host *host)
- 	BUG_ON(!host->card);
- 
- 	mmc_claim_host(host);
-+
-+	err = mmc_cache_ctrl(host, 0);
-+	if (err)
-+		goto out;
-+
- 	if (mmc_can_poweroff_notify(host->card))
- 		err = mmc_poweroff_notify(host->card, EXT_CSD_POWER_OFF_SHORT);
- 	else if (mmc_card_can_sleep(host))
-@@ -1386,8 +1391,9 @@ static int mmc_suspend(struct mmc_host *host)
- 	else if (!mmc_host_is_spi(host))
- 		err = mmc_deselect_cards(host);
- 	host->card->state &= ~(MMC_STATE_HIGHSPEED | MMC_STATE_HIGHSPEED_200);
--	mmc_release_host(host);
- 
-+out:
-+	mmc_release_host(host);
- 	return err;
- }
- 
--- 
-1.7.3.3
--- 
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
+Similarly, on the host side, management can configure a VM to either
+enable or disable auto-balloon (the auto-inflate part).  So even the
+host can do away with the feature advertisement and negotiation.
+
+Is there some use-case I'm missing where doing these actions after
+feature negotiation is beneficial?
+
+> FIXMEs
+> 
+>  o the guest kernel seems to spin when the host is performing a long
+>    auto-inflate
+
+Is this introduced by the current patches?  I'd assume it happens even
+without it -- these patches just introduce some heuristics, the
+mechanism has stayed the same.
+
+> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> ---
+>  drivers/virtio/virtio_balloon.c     | 54 +++++++++++++++++++++++++++++++++++++
+>  include/uapi/linux/virtio_balloon.h |  1 +
+>  2 files changed, 55 insertions(+)
+
+Patch looks good, just one thing:
+
+> +	/*
+> +	 * If the current balloon size is greater than the number of
+> +	 * pages being reclaimed by the kernel, deflate only the needed
+> +	 * amount. Otherwise deflate everything we have.
+> +	 */
+> +	if (nr_pages > sc->nr_to_scan) {
+> +		new_target = nr_pages - sc->nr_to_scan;
+> +	} else {
+> +		new_target = 0;
+> +	}
+
+This looks better:
+
+	new_target = 0;
+	if (nr_pages > sc->nr_to_scan) {
+		new_target = nr_pages - sc->nr_to_scan;
+	}
+
+
+Thanks,
+		Amit
