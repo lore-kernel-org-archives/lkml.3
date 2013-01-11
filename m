@@ -1,138 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238Ab3AKAjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 19:39:16 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:60770 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab3AKAjP (ORCPT
+	id S1753355Ab3AKArF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 19:47:05 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:38372 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab3AKArD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 19:39:15 -0500
-Date: Fri, 11 Jan 2013 11:39:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Greg KH <greg@kroah.com>
-Subject: linux-next: build failure after merge of the v4l-dvb tree
-Message-Id: <20130111113904.251f5fb5587446dbb10694e3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__11_Jan_2013_11_39_04_+1100_6YWA1dO9UnwYL.+4"
+	Thu, 10 Jan 2013 19:47:03 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: John Johansen <john.johansen@canonical.com>
+Cc: James Morris <jmorris@namei.org>, Casey Schaufler <casey@schaufler-ca.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <50EB7C50.3070605@schaufler-ca.com>
+	<20130108140159.83c07fa6a680e355f024970f@canb.auug.org.au>
+	<50EB9A5E.1080306@schaufler-ca.com>
+	<alpine.LRH.2.02.1301081942030.24212@tundra.namei.org>
+	<50EC8447.1000301@canonical.com>
+	<alpine.LRH.2.02.1301100028160.5423@tundra.namei.org>
+	<50EE9733.2060409@canonical.com>
+Date: Thu, 10 Jan 2013 16:46:46 -0800
+In-Reply-To: <50EE9733.2060409@canonical.com> (John Johansen's message of
+	"Thu, 10 Jan 2013 02:25:55 -0800")
+Message-ID: <87lic0sg09.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19qTkj9xEkW7jqKf1fys5rUqmRjMiscmxM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  2.9 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0352]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;John Johansen <john.johansen@canonical.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__11_Jan_2013_11_39_04_+1100_6YWA1dO9UnwYL.+4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+John Johansen <john.johansen@canonical.com> writes:
 
-Hi Mauro,
+> On 01/09/2013 05:28 AM, James Morris wrote:
+>> On Tue, 8 Jan 2013, John Johansen wrote:
+>> 
+>>>> I'd say we need to see the actual use-case for Smack and Apparmor being 
+>>>> used together, along with at least one major distro committing to support 
+>>>> this.
+>>>>
+>>>>
+>>> Ubuntu is very interested in stacking
+>> 
+>> Which modules?
+>> 
+> Well Yama which has now been special cased, and in the past there has been
+> discussion about other special case LSMs like case is proposing for module
+> loading. There has been interest around both selinux + apparmor and
+> smack + apparmor. I am not sure of all of the use cases that have lead to
+> such question but some of them have been around containers, with say
+> selinux on the host and apparmor in the container, or visa versa.
 
-After merging the v4l-dvb tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+When a distro is run in a container it is desirable to be able to run
+the distro's security policy in that container.  Ideally this will get
+addressed by being able to do some level of per user namespace stacking.
+Say selinux outside and apparmor inside a container.
 
-drivers/media/platform/sh_veu.c:1146:22: error: expected '=3D', ',', ';', '=
-asm' or '__attribute__' before 'sh_veu_probe'
-drivers/media/platform/sh_veu.c:1228:22: error: expected '=3D', ',', ';', '=
-asm' or '__attribute__' before 'sh_veu_remove'
-drivers/media/platform/sh_veu.c:1244:2: error: implicit declaration of func=
-tion '__devexit_p' [-Werror=3Dimplicit-function-declaration]
-drivers/media/platform/sh_veu.c:1244:25: error: 'sh_veu_remove' undeclared =
-here (not in a function)
-drivers/media/platform/sh_veu.c: In function 'sh_veu_init':
-drivers/media/platform/sh_veu.c:1253:45: error: 'sh_veu_probe' undeclared (=
-first use in this function)
-drivers/media/platform/sh_veu.c:1253:45: note: each undeclared identifier i=
-s reported only once for each function it appears in
-drivers/media/platform/sh_veu.c: At top level:
-drivers/media/platform/sh_veu.c:1095:20: warning: 'sh_veu_bh' defined but n=
-ot used [-Wunused-function]
-drivers/media/platform/sh_veu.c:1109:20: warning: 'sh_veu_isr' defined but =
-not used [-Wunused-function]
-drivers/media/platform/sh_veu.c: In function 'sh_veu_init':
-drivers/media/platform/sh_veu.c:1254:1: warning: control reaches end of non=
--void function [-Wreturn-type]
+I think this would take a little more work than what Casey has currently
+devised but I am hopeful an additional layer of stacking can be added
+after Casey has merged the basic layer of stacking.
 
-Caused by commit 05efa71bdc0e ("[media] media: add a VEU MEM2MEM format
-conversion and scaling driver") interacting with commit 54b956b90360
-("Remove __dev* markings from init.h") from the driver-core.current tree.
-
-I have applied the following merge fix patch which could be applied
-directly to the v4l-dvb tree (please):
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 11 Jan 2013 11:35:34 +1100
-Subject: [PATCH] [media] media: remove __dev* annotations
-
-CONFIG_HOTPLUG is always true now and the __dev* macros have meen removed.
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/media/platform/sh_veu.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/media/platform/sh_veu.c b/drivers/media/platform/sh_ve=
-u.c
-index a018676..cb54c69 100644
---- a/drivers/media/platform/sh_veu.c
-+++ b/drivers/media/platform/sh_veu.c
-@@ -1143,7 +1143,7 @@ static irqreturn_t sh_veu_isr(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
-=20
--static int __devinit sh_veu_probe(struct platform_device *pdev)
-+static int sh_veu_probe(struct platform_device *pdev)
- {
- 	struct sh_veu_dev *veu;
- 	struct resource *reg_res;
-@@ -1225,7 +1225,7 @@ einitctx:
- 	return ret;
- }
-=20
--static int __devexit sh_veu_remove(struct platform_device *pdev)
-+static int sh_veu_remove(struct platform_device *pdev)
- {
- 	struct v4l2_device *v4l2_dev =3D platform_get_drvdata(pdev);
- 	struct sh_veu_dev *veu =3D container_of(v4l2_dev,
-@@ -1241,7 +1241,7 @@ static int __devexit sh_veu_remove(struct platform_de=
-vice *pdev)
- }
-=20
- static struct platform_driver __refdata sh_veu_pdrv =3D {
--	.remove		=3D __devexit_p(sh_veu_remove),
-+	.remove		=3D sh_veu_remove,
- 	.driver		=3D {
- 		.name	=3D "sh_veu",
- 		.owner	=3D THIS_MODULE,
---=20
-1.7.10.280.gaa39
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__11_Jan_2013_11_39_04_+1100_6YWA1dO9UnwYL.+4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ718oAAoJEECxmPOUX5FEllgP/jtGzpYHnBm+ZGsmVsc9/adE
-ZT6XzhpIrtwnjZigFZdF9/oY7YP+bJCaeXV/5tMEzgspQ6hWw3D4qYqi3o06Cqwf
-q65I4B2vTvGRh4aKJdbT8DdAikNtPyYUAprNf+PExvl9fBd70bi0VAxNJOx0XUam
-jKkayYhd46ZwRHbRRn3HEZ6rPMyPmlWshHs4lbdVjaNtPNzl7eP03tXZ9Bk7vjQk
-6G/3TmWD42kmAzYXpwSmwKbe2FW7j05zVRz48ByYsS9NuMGln0gBN1Skke33Dz7b
-BDGI5h/ctdw8dVv949czsT5KvS5dJGJY5SGFuLihSWLolw6vYUxK+u8giulWK+yo
-l3UOxga65NM4LJkwTtA9eQXs6S78JpMt9gJaQwKEslGIAFIspJzqUMTebb+hfBxm
-mOqF1akfPPfw8rdJtdyGfXwB5opNxTCbXUOnNykk8ACBSQh1oBIWhJIHjDvm5zQk
-V67872V3j32oTlZSZ8sCDOLHt27LR4HpRsO+sy4f1/pq8RW7B25CagppFjgaMYx2
-j1KvbMMHULSr1cW5oNSV24Qc6YYNT99jEkFptuYkFlnKTrcyxJFUVT79ljKOMoUj
-0FIVaJh5Y+LK5bDmmK5piDHDXedEcUO5zsao/ZsZBuJfMkyTlMgwmPKPEbvd++8Z
-rXKIIa/Jtnq8A9g/g10A
-=3enB
------END PGP SIGNATURE-----
-
---Signature=_Fri__11_Jan_2013_11_39_04_+1100_6YWA1dO9UnwYL.+4--
+Eric
