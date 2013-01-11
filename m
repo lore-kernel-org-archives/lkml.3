@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab3AKJT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 04:19:56 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:51908 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920Ab3AKJTy (ORCPT
+	id S1753422Ab3AKJWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 04:22:04 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:57853 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596Ab3AKJWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 04:19:54 -0500
-Date: Fri, 11 Jan 2013 20:19:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: linux-next: please cleanup the cpuidle tree
-Message-Id: <20130111201943.f928f64c870ee5d2cedbf410@canb.auug.org.au>
-In-Reply-To: <50EFD6F4.7030903@linaro.org>
-References: <20130108092751.4bd60a67280e284369553c18@canb.auug.org.au>
-	<50EB5636.4080705@linaro.org>
-	<20130108102227.19d4102cb1ddf516ad4082d1@canb.auug.org.au>
-	<20130111115608.dffec30f37e42a8f15a3f117@canb.auug.org.au>
-	<50EFD6F4.7030903@linaro.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__11_Jan_2013_20_19_43_+1100_UjAbbOh_rKmmGYB5"
+	Fri, 11 Jan 2013 04:22:01 -0500
+X-AuditID: cbfec7f4-b7f6d6d000001620-ac-50efd9b7a997
+Message-id: <50EFD9B3.7090503@samsung.com>
+Date: Fri, 11 Jan 2013 10:21:55 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
+        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
+        thomas.abraham@linaro.org, sylvester.nawrocki@gmail.com,
+        t.figa@samsung.com, ben-linux@fluff.org,
+        broonie@opensource.wolfsonmicro.com, l.majewski@samsung.com,
+        kyungmin.park@samsung.com, grant.likely@secretlab.ca, heiko@sntech.de,
+        dianders@chromium.org, p.paneri@samsung.com
+Subject: Re: [PATCH] usb: phy: samsung: Add support to set pmu isolation
+References: <1357891738-26259-1-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1357891738-26259-1-git-send-email-gautam.vivek@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t/xa7rbb74PMLi/hNXi8q45bBYzzu9j
+	sli0rJXZgdnj8ya5AMYoLpuU1JzMstQifbsEroxXrQ+ZCk4wVdy9dIKtgbGPqYuRk0NCwETi
+	zLcFrBC2mMSFe+vZuhi5OIQEljJKvF84DywhJPCJUaKpIw7E5hXQkrjS8IsNxGYRUJVYcucw
+	I4jNJmAo0Xu0D8wWFQiQWLzkHDtEvaDEj8n3WEBsEQFtie1zJ7GCLGAWWMwisXZOC9gVwgIe
+	EhevvIRa5iGxpmMRWJxTwFPi/8/jYDazgI7E/tZpbBC2vMTmNW+ZJzAKzEKyYxaSsllIyhYw
+	Mq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAnLLzsYFx+zOsQowMGoxMOroP4+QIg1say4
+	MvcQowQHs5IIb00tUIg3JbGyKrUoP76oNCe1+BAjEwenVAOjgY9MoYdBnOLtXq1WrksCmTfP
+	/71q9DtP0FTq+0KjjJ6Sfd9YEv4JXgzaObHlRzLL3dPJNn2ZU9p/iV9lTs5b8zDpTUVGtmNk
+	rsHh2En3DR6FcwRosn20UH3btiraw1tpu7Tpz6IZJaJlexbPuL462OfSKb3OHSfkMtVf3Tt4
+	cG2WjtJMgwolluKMREMt5qLiRAD5+lnrKQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__11_Jan_2013_20_19_43_+1100_UjAbbOh_rKmmGYB5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/11/2013 09:08 AM, Vivek Gautam wrote:
+> Adding support to parse device node data in order to get
+> required properties to set pmu isolation for usb-phy.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 
-Hi Daniel,
+Thanks for addressing my all comments,
 
-On Fri, 11 Jan 2013 10:10:12 +0100 Daniel Lezcano <daniel.lezcano@linaro.or=
-g> wrote:
->
-> On 01/11/2013 01:56 AM, Stephen Rothwell wrote:
-> >=20
-> > Unfortunately, you reset your tree to be a version of the pm tree that =
-has
-> > now been rebased :-(  This is now causing more conflicts in linux-next.
-> > Maybe you should reset your tree to be the same as one of Linus' -rc
-> > releases for now.
->=20
-> Ok, done.
+Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-Thanks.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__11_Jan_2013_20_19_43_+1100_UjAbbOh_rKmmGYB5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ79kvAAoJEECxmPOUX5FEqdMP/RLIKUtgNWyAsMwuljlk/Qu6
-3zWgwNyzu/i9nSGLG4g01ER3+l7bOlryIUpHLheyZaRZnz90gVuPF6kG78QcADov
-PNoB+h9QvtCSVzR/zXxwb/rm58aNfdMsSkh+PmThno2U9QvT0yKNgK5Hytf8K3C9
-p9ypYSjUP8vH+k4VjJUP1whUSv4yx+X9+aNZb3ajUoU/PrQC1Uis5KuVxBHW1e+T
-1joz8gzDN28J3d8R8DUIpTIampTA/cCA6ZLoKZHiRTvqGk8GB2OxBl2qgirEgpqn
-8ZRQAnyXCP0wc//VWeVAgsosd+DDPiIrZoCPIKRvwi9z4rf1G4qvONRV2SVZF5Rl
-fFQ5juHyUHx7KTpU9ln7R6fuD50siXtLf/Sj2LONxgYAyMfd/3nUTjVujDHnZpVN
-gRbb2AzeInzbk9kcmPkmaep1g4Q1s5nTdbKmOw9DZTUIJU80qWBTNdvmbbGF4fFB
-pojFvM4JpFb4GVPmQGIIATSRBNklAfKp5fGDwGl0uDotvFxSzPtWmCf8axfsoNb5
-YP0cXPXcaFyHzY+VLfBeRpmPPUhohCi19ePhfNiyXgHNEVl9yduUrNgaJUbBUlhk
-rUCHJSib1trBi9ogZiVmIK7MiiDg5O548kMYWX1u16kINhzaaOSo5ZI+wwSNknsA
-2G6X/pcEQaoCHec/IWsR
-=Ef9s
------END PGP SIGNATURE-----
-
---Signature=_Fri__11_Jan_2013_20_19_43_+1100_UjAbbOh_rKmmGYB5--
