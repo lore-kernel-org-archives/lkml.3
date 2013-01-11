@@ -1,179 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082Ab3AKIDz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 03:03:55 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:38317 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753832Ab3AKIDy convert rfc822-to-8bit (ORCPT
+	id S1755158Ab3AKII3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 03:08:29 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:51316 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab3AKII1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 03:03:54 -0500
-X-IronPort-AV: E=Sophos;i="4.84,451,1355068800"; 
-   d="scan'208";a="6566354"
-Subject: Re: [PATCH v3 05/22] sched: remove domain iterations in
- fork/exec/wake
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>, Alex Shi <alex.shi@intel.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <50EF9B69.3000201@linux.vnet.ibm.com>
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
-	 <1357375071-11793-6-git-send-email-alex.shi@intel.com>
-	 <20130109182102.GC2046@e103034-lin>  <50EF9B69.3000201@linux.vnet.ibm.com>
-Date: Fri, 11 Jan 2013 16:01:56 +0800
-Message-ID: <1357891316.2860.6.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/11 16:03:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/11 16:03:15,
-	Serialize complete at 2013/01/11 16:03:15
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 11 Jan 2013 03:08:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130110005302.GZ20089@twin.jikos.cz>
+References: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
+	<1356014615-15073-7-git-send-email-zwu.kernel@gmail.com>
+	<20130110005302.GZ20089@twin.jikos.cz>
+Date: Fri, 11 Jan 2013 16:08:26 +0800
+Message-ID: <CAEH94LjTVQubY5jHv7J=jB5RXF2-f_JDZ3hGnv4U7kn6U4rrjQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND v1 06/16] vfs: add temp calculation function
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: dsterba@suse.cz
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, darrick.wong@oracle.com,
+        andi@firstfloor.org, hch@infradead.org, linuxram@linux.vnet.ibm.com,
+        wuzhy@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-01-11五的 10:26 +0530，Preeti U Murthy写道：
-> Hi Morten,Alex
-> 
-> On 01/09/2013 11:51 PM, Morten Rasmussen wrote:
-> > On Sat, Jan 05, 2013 at 08:37:34AM +0000, Alex Shi wrote:
-> >> Guess the search cpu from bottom to up in domain tree come from
-> >> commit 3dbd5342074a1e sched: multilevel sbe sbf, the purpose is
-> >> balancing over tasks on all level domains.
-> >>
-> >> This balancing cost much if there has many domain/groups in a large
-> >> system. And force spreading task among different domains may cause
-> >> performance issue due to bad locality.
-> >>
-> >> If we remove this code, we will get quick fork/exec/wake, plus better
-> >> balancing among whole system, that also reduce migrations in future
-> >> load balancing.
-> >>
-> >> This patch increases 10+% performance of hackbench on my 4 sockets
-> >> NHM and SNB machines.
-> >>
-> >> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> >> ---
-> >>  kernel/sched/fair.c | 20 +-------------------
-> >>  1 file changed, 1 insertion(+), 19 deletions(-)
-> >>
-> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> >> index ecfbf8e..895a3f4 100644
-> >> --- a/kernel/sched/fair.c
-> >> +++ b/kernel/sched/fair.c
-> >> @@ -3364,15 +3364,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
-> >>  		goto unlock;
-> >>  	}
-> >>  
-> >> -	while (sd) {
-> >> +	if (sd) {
-> >>  		int load_idx = sd->forkexec_idx;
-> >>  		struct sched_group *group;
-> >> -		int weight;
-> >> -
-> >> -		if (!(sd->flags & sd_flag)) {
-> >> -			sd = sd->child;
-> >> -			continue;
-> >> -		}
-> >>  
-> >>  		if (sd_flag & SD_BALANCE_WAKE)
-> >>  			load_idx = sd->wake_idx;
-> >> @@ -3382,18 +3376,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
-> >>  			goto unlock;
-> >>  
-> >>  		new_cpu = find_idlest_cpu(group, p, cpu);
-> >> -
-> >> -		/* Now try balancing at a lower domain level of new_cpu */
-> >> -		cpu = new_cpu;
-> >> -		weight = sd->span_weight;
-> >> -		sd = NULL;
-> >> -		for_each_domain(cpu, tmp) {
-> >> -			if (weight <= tmp->span_weight)
-> >> -				break;
-> >> -			if (tmp->flags & sd_flag)
-> >> -				sd = tmp;
-> >> -		}
-> >> -		/* while loop will break here if sd == NULL */
-> > 
-> > I agree that this should be a major optimization. I just can't figure
-> > out why the existing recursive search for an idle cpu switches to the
-> > new cpu near the end and then starts a search for an idle cpu in the new
-> > cpu's domain. Is this to handle some exotic sched domain configurations?
-> > If so, they probably wouldn't work with your optimizations.
-> 
-> Let me explain my understanding of why the recursive search is the way
-> it is.
-> 
->  _________________________  sd0
-> |                         |
-> |  ___sd1__   ___sd2__    |
-> | |        | |        |   |
-> | | sgx    | |  sga   |   |
-> | | sgy    | |  sgb   |   |
-> | |________| |________|   |
-> |_________________________|
-> 
-> What the current recursive search is doing is (assuming we start with
-> sd0-the top level sched domain whose flags are rightly set). we find
-> that sd1 is the idlest group,and a cpux1 in sgx is the idlest cpu.
-> 
-> We could have ideally stopped the search here.But the problem with this
-> is that there is a possibility that sgx is more loaded than sgy; meaning
-> the cpus in sgx are heavily imbalanced;say there are two cpus cpux1 and
-> cpux2 in sgx,where cpux2 is heavily loaded and cpux1 has recently gotten
-> idle and load balancing has not come to its rescue yet.According to the
-> search above, cpux1 is idle,but is *not the right candidate for
-> scheduling forked task,it is the right candidate for relieving the load
-> from cpux2* due to cache locality etc.
+On Thu, Jan 10, 2013 at 8:53 AM, David Sterba <dsterba@suse.cz> wrote:
+> On Thu, Dec 20, 2012 at 10:43:25PM +0800, zwu.kernel@gmail.com wrote:
+>> --- a/fs/hot_tracking.c
+>> +++ b/fs/hot_tracking.c
+>> @@ -25,6 +25,14 @@
+>>  static struct kmem_cache *hot_inode_item_cachep __read_mostly;
+>>  static struct kmem_cache *hot_range_item_cachep __read_mostly;
+>>
+>> +static u64 hot_raw_shift(u64 counter, u32 bits, bool dir)
+>> +{
+>> +     if (dir)
+>> +             return counter << bits;
+>> +     else
+>> +             return counter >> bits;
+>> +}
+>
+> I don't understand the purpose of this function, it obscures a simple
+> bitwise shift.
+The following words seem to mean that you prefer removing this
+shifting function?
 
-This corner case may occur after "[PATCH v3 03/22] sched: fix
-find_idlest_group mess logical" brought in the local sched_group bias,
-and assume balancing runs on cpux2.
-ideally,  find_idlest_group should find the real idlest(this case: sgy),
-then, this patch is reasonable.
+>
+>> +
+>>  /*
+>>   * Initialize the inode tree. Should be called for each new inode
+>>   * access or other user of the hot_inode interface.
+>> @@ -315,6 +323,72 @@ static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
+>>  }
+>>
+>>  /*
+>> + * hot_temp_calc() is responsible for distilling the six heat
+>> + * criteria down into a single temperature value for the data,
+>> + * which is an integer between 0 and HEAT_MAX_VALUE.
+>
+> I didn't find HEAT_MAX_VALUE defined anywhere.
+This micro is only used in some comments, OK, i will replace it with 255.
+>
+>> + */
+>> +static u32 hot_temp_calc(struct hot_freq_data *freq_data)
+>> +{
+>> +     u32 result = 0;
+>> +
+>> +     struct timespec ckt = current_kernel_time();
+>> +     u64 cur_time = timespec_to_ns(&ckt);
+>> +
+>> +     u32 nrr_heat = (u32)hot_raw_shift((u64)freq_data->nr_reads,
+>> +                                     NRR_MULTIPLIER_POWER, true);
+>> +     u32 nrw_heat = (u32)hot_raw_shift((u64)freq_data->nr_writes,
+>> +                                     NRW_MULTIPLIER_POWER, true);
+>
+> So many typecasts, some of them unnecessary and in connection with
+> hot_raw_shift this is hard to read and understand.
+>
+>         u32 nrr_heat = (u32)((u64)freq_data->nr_reads << NRR_MULTIPLIER_POWER);
+Do you prefer this format instead of ?
+>
+> is not much better without a comment why this is doing the right thing.
+>
+>> +
+>> +     u64 ltr_heat =
+>> +     hot_raw_shift((cur_time - timespec_to_ns(&freq_data->last_read_time)),
+>> +                     LTR_DIVIDER_POWER, false);
+>> +     u64 ltw_heat =
+>> +     hot_raw_shift((cur_time - timespec_to_ns(&freq_data->last_write_time)),
+>> +                     LTW_DIVIDER_POWER, false);
+>> +
+>> +     u64 avr_heat =
+>> +     hot_raw_shift((((u64) -1) - freq_data->avg_delta_reads),
+>> +                     AVR_DIVIDER_POWER, false);
+>> +     u64 avw_heat =
+>> +     hot_raw_shift((((u64) -1) - freq_data->avg_delta_writes),
+>> +                     AVW_DIVIDER_POWER, false);
+>> +
+>> +     /* ltr_heat is now guaranteed to be u32 safe */
+>> +     if (ltr_heat >= hot_raw_shift((u64) 1, 32, true))
+>> +             ltr_heat = 0;
+>> +     else
+>> +             ltr_heat = hot_raw_shift((u64) 1, 32, true) - ltr_heat;
+>> +
+>> +     /* ltw_heat is now guaranteed to be u32 safe */
+>> +     if (ltw_heat >= hot_raw_shift((u64) 1, 32, true))
+>> +             ltw_heat = 0;
+>> +     else
+>> +             ltw_heat = hot_raw_shift((u64) 1, 32, true) - ltw_heat;
+>> +
+>> +     /* avr_heat is now guaranteed to be u32 safe */
+>> +     if (avr_heat >= hot_raw_shift((u64) 1, 32, true))
+>> +             avr_heat = (u32) -1;
+>> +
+>> +     /* avw_heat is now guaranteed to be u32 safe */
+>> +     if (avw_heat >= hot_raw_shift((u64) 1, 32, true))
+>> +             avw_heat = (u32) -1;
+>> +
+>> +     nrr_heat = (u32)hot_raw_shift((u64)nrr_heat,
+>> +             (3 - NRR_COEFF_POWER), false);
+>> +     nrw_heat = (u32)hot_raw_shift((u64)nrw_heat,
+>> +             (3 - NRW_COEFF_POWER), false);
+>> +     ltr_heat = hot_raw_shift(ltr_heat, (3 - LTR_COEFF_POWER), false);
+>> +     ltw_heat = hot_raw_shift(ltw_heat, (3 - LTW_COEFF_POWER), false);
+>> +     avr_heat = hot_raw_shift(avr_heat, (3 - AVR_COEFF_POWER), false);
+>> +     avw_heat = hot_raw_shift(avw_heat, (3 - AVW_COEFF_POWER), false);
+>> +
+>> +     result = nrr_heat + nrw_heat + (u32) ltr_heat +
+>> +             (u32) ltw_heat + (u32) avr_heat + (u32) avw_heat;
+>
+> Reading through the function up to here I've got lost in the shifts that
+> I don't see the meaning of the resulting value and how can I interpet it
+> if I watch it change over time. What are the expected weights of the
+> number and time factors? There are more details in the documentation, but
+> the big picture is blurred by talking implementation details.
+>
+> Let's put the impl. details here and write a better user documentation
+> with a few examples to the docs. Is it possible to describe some common
+> access patterns and how they affect the temperature?
+>
+> You've been benchmarking this patchset, I'm sure you can write up a few
+> examples based on that.
+>
+>> +
+>> +     return result;
+>> +}
+>
+> david
 
-> 
-> Therefore in the next recursive search we go one step inside sd1-the
-> chosen idlest group candidate,which also happens to be the *next level
-> sched domain for cpux1-the chosen idle cpu*. It then returns sgy as the
-> idlest perhaps,if the situation happens to be better than what i have
-> described for sgx and an appropriate cpu there is chosen.
-> 
-> So in short a bird's eye view of a large sched domain to choose the cpu
-> would be very short sighted,we could end up creating imbalances within
-> lower level sched domains.To avoid this the recursive search plays safe
-> and chooses the best idle group after viewing the large sched domain in
-> detail.
-> 
-> Therefore even i feel that this patch should be implemented after
-> thorough tests.
-> 
-> 
-> 
-> > Morten
-> 
-> Regards
-> Preeti U Murthy
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
 
 -- 
-regards!
-li guang
+Regards,
 
+Zhi Yong Wu
