@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab3AKQzi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 11:55:38 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:41686 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab3AKQzh (ORCPT
+	id S1754978Ab3AKQ4X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 11:56:23 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:60558 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946Ab3AKQ4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 11:55:37 -0500
-Date: Fri, 11 Jan 2013 11:55:06 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Daniel Kiper <daniel.kiper@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
-        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>
-Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump
- implementation
-Message-ID: <20130111165506.GD25620@phenom.dumpdata.com>
-References: <50DC58C4.3000307@citrix.com>
- <874nj7qsor.fsf@xmission.com>
- <50E41973.9050705@citrix.com>
- <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
- <50E6F81D02000078000B3245@nat28.tlf.novell.com>
- <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>
- <20130104191146.GC6721@phenom.dumpdata.com>
- <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
- <20130107162018.GJ3219@phenom.dumpdata.com>
- <87ehhsqrpr.fsf@xmission.com>
+	Fri, 11 Jan 2013 11:56:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ehhsqrpr.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20130111145059.GJ25591@8bytes.org>
+References: <1357545112-17375-1-git-send-email-aik@ozlabs.ru>
+	<20130110170941.GA2556@8bytes.org>
+	<CAKocOOP=V=kZ=4661YSs4b+7GLcNqzVvvhb+ONBO=LiR3txvTA@mail.gmail.com>
+	<20130111145059.GJ25591@8bytes.org>
+Date: Fri, 11 Jan 2013 09:56:20 -0700
+Message-ID: <CAKocOOOzzpN_ZdN9owv5tb-28qtvXc9KvF7WuyZdxYrAYxnNTw@mail.gmail.com>
+Subject: Re: [PATCH] iommu: moving initialization earlier
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Joerg Roedel <joerg.roedel@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Shuah Khan <shuah.khan@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 08:16:48PM -0800, Eric W. Biederman wrote:
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
-> 
-> > On Mon, Jan 07, 2013 at 01:34:04PM +0100, Daniel Kiper wrote:
-> >> I think that new kexec hypercall function should mimics kexec syscall.
-> >> It means that all arguments passed to hypercall should have same types
-> >> if it is possible or if it is not possible then conversion should be done
-> >> in very easy way. Additionally, I think that one call of new hypercall
-> >> load function should load all needed thinks in right place and
-> >> return relevant status. Last but not least, new functionality should
-> >
-> > We are not restricted to just _one_ hypercall. And this loading
-> > thing could be similar to the micrcode hypercall - which just points
-> > to a virtual address along with the length - and says 'load me'.
-> >
-> >> be available through /dev/xen/privcmd or directly from kernel without
-> >> bigger effort.
-> >
-> > Perhaps we should have a email thread on xen-devel where we hash out
-> > some ideas. Eric, would you be OK included on this - it would make
-> > sense for this mechanism to be as future-proof as possible - and I am not
-> > sure what your plans for kexec are in the future?
-> 
-> The basic kexec interface is.
-> 
-> load ranges of virtual addresses physical addresses.
-> jump to the physical address  with identity mapped page tables.
-> 
-> There are a few flags to allow for different usage scenarios like
-> kexec on panic vs normal kexec.
+On Fri, Jan 11, 2013 at 7:50 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Thu, Jan 10, 2013 at 01:40:17PM -0700, Shuah Khan wrote:
+>> I am currently debugging IO_PAGE_FAULTS on 3.6.11 (happens on all
+>> pre-3.7 releases). I root-caused the reason 3.7 works is because in
+>> 3.7 amd iommu driver moving up the early iommu initialization from
+>> irq_remap_ops with the irq remapping feature.
+>
+> Have you investigated the reason for those IO_PAGE_FAULTS? I guess they
+> come from the USB controlers and happen between the time the IOMMU is
+> enabled and the USB controlers are taken over by the Linux kernel from
+> the BIOS.
+>
+> But I don't see why this patch can have any impact on the IO_PAGE_FAULTS
+> you are seeing.
 
-And there is nothing fancy to be done for EFI and SecureBoot? Or is
-that something that the kernel has to handle on its own (so somehow
-passing some certificates to somewhere).
+USB is one of them and SATA is another. I know with my back-port to
+split dma ops initialization and this patch Alexey sent, the problem
+goes away on 3.6.11 and I don't see the problem on 3.7. Same system,
+and two different boots. I will investigate do more investigation into
+the nature of these faults I am seeing and get back to you.
 
-> 
-> It is very very simple and very extensible.  All of the weird glue
-> happens in userspace.
-> 
-> Eric
+Thanks,
+-- Shuah
