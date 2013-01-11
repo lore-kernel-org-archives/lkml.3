@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab3AKNdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 08:33:43 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1036 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab3AKNdk (ORCPT
+	id S1755328Ab3AKNdm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 08:33:42 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17504 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409Ab3AKNdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jan 2013 08:33:40 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 11 Jan 2013 05:33:23 -0800
+	by hqnvupgp07.nvidia.com on Fri, 11 Jan 2013 05:33:30 -0800
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <swarren@wwwdotorg.org>
 CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 2/3] ARM: tegra: config: enable KEYBOARD_TEGRA
-Date: Fri, 11 Jan 2013 19:03:04 +0530
-Message-ID: <1357911185-11048-2-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH 1/3] ARM: DT: tegra: add DT entry for KBC controller
+Date: Fri, 11 Jan 2013 19:03:03 +0530
+Message-ID: <1357911185-11048-1-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1357911185-11048-1-git-send-email-ldewangan@nvidia.com>
-References: <1357911185-11048-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+NVIDIA's Tegra SoCs have the matrix keyboard controller which
+supports 16x8 type of matrix. The number of rows and columns
+are configurable.
+
+Add DT entry for KBC controller.
+
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- arch/arm/configs/tegra_defconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/tegra20.dtsi |    7 +++++++
+ arch/arm/boot/dts/tegra30.dtsi |    7 +++++++
+ 2 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index 254f31f..e350afb 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -107,6 +107,7 @@ CONFIG_BRCMFMAC=m
- CONFIG_RT2X00=y
- CONFIG_RT2800USB=m
- CONFIG_INPUT_EVDEV=y
-+CONFIG_KEYBOARD_TEGRA=y
- CONFIG_INPUT_MISC=y
- CONFIG_INPUT_MPU3050=y
- # CONFIG_LEGACY_PTYS is not set
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index fe35c72..133d00d 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -352,6 +352,13 @@
+ 		status = "disabled";
+ 	};
+ 
++	kbc {
++		compatible = "nvidia,tegra20-kbc";
++		reg = <0x7000e200 0x100>;
++		interrupts = <0 85 0x04>;
++		status = "disabled";
++	};
++
+ 	pmc {
+ 		compatible = "nvidia,tegra20-pmc";
+ 		reg = <0x7000e400 0x400>;
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index f534a50..d060e46 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -368,6 +368,13 @@
+ 		status = "disabled";
+ 	};
+ 
++	kbc {
++		compatible = "nvidia,tegra30-kbc", "nvidia,tegra20-kbc";
++		reg = <0x7000e200 0x100>;
++		interrupts = <0 85 0x04>;
++		status = "disabled";
++	};
++
+ 	pmc {
+ 		compatible = "nvidia,tegra20-pmc", "nvidia,tegra30-pmc";
+ 		reg = <0x7000e400 0x400>;
 -- 
 1.7.1.1
 
