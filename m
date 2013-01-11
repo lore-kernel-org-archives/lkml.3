@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab3AKSEq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 13:04:46 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42373 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753594Ab3AKSEo (ORCPT
+	id S1755249Ab3AKSFd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 13:05:33 -0500
+Received: from mx1.netapp.com ([216.240.18.38]:7058 "EHLO mx1.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753754Ab3AKSFa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 13:04:44 -0500
-Message-ID: <1357927480.11965.6.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: linux-next: build failure after merge of the scsi tree
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Brian King <brking@linux.vnet.ibm.com>
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wen Xiong <wenxiong@linux.vnet.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Fri, 11 Jan 2013 18:04:40 +0000
-In-Reply-To: <50F04D63.9080703@linux.vnet.ibm.com>
-References: <20130111120323.cdc06081d0fb1c498c9f1779@canb.auug.org.au>
-	 <1357889656.3065.2.camel@dabdike.int.hansenpartnership.com>
-	 <50F02F4E.4070804@linux.vnet.ibm.com>
-	 <1357918637.3065.22.camel@dabdike.int.hansenpartnership.com>
-	 <20130111160514.GA10823@kroah.com> <50F04D63.9080703@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Jan 2013 13:05:30 -0500
+X-IronPort-AV: E=Sophos;i="4.84,453,1355126400"; 
+   d="scan'208";a="234986483"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>
+Subject: [GIT PULL] Please pull one SUNRPC client bugfix
+Thread-Topic: [GIT PULL] Please pull one SUNRPC client bugfix
+Thread-Index: AQHN8CY8hxoLsn6WHkmdMo9TK4J91Q==
+Date: Fri, 11 Jan 2013 18:05:28 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91199BA38@SACEXCMBX04-PRD.hq.netapp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.118]
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <E13DB27A4B5C5A4DB7498BB51A7FB0DA@tahoe.netapp.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-11 at 11:35 -0600, Brian King wrote:
-> On 01/11/2013 10:05 AM, Greg KH wrote:
-> > On Fri, Jan 11, 2013 at 03:37:17PM +0000, James Bottomley wrote:
-> >> On Fri, 2013-01-11 at 09:27 -0600, Brian King wrote:
-> >>> It looks like this was a due to the fact that the new patches
-> >>> added __devinit tags in the same merge window the __devinit tag
-> >>> itself was getting removed.
-> >>
-> >> Not exactly.  The patch which makes them nops went into 3.8.  Now
-> >> there's a patch queued in, Gregs tree I presume, to remove them all and
-> >> the #defines which causes the compile failure.
-> >>
-> >>> As to the sparse warnings, this patch fixed the ones that
-> >>> were actual bugs in the new code, although we could have
-> >>> made that more clear in the patch description.
-> >>>
-> >>> http://marc.info/?l=linux-scsi&m=135716576204083&w=2
-> >>
-> >> Ah, thanks ... I've been on holiday for a while, so I did miss that.
-> >>
-> >>> There is one outstanding issue I am aware of which was an
-> >>> array bounds compiler warning which looks to be a misdetection
-> >>> by the compiler. Wendy and I discussed adding a BUG_ON
-> >>> to stop the compiler from complaining.
-> >>>
-> >>> Wendy - lets queue these two changes up ASAP. They should both
-> >>> be very simple changes.
-> >>
-> >> If it's a simple gcc bug, just ignore it.
-> >>
-> >> I do need you to redo the patches to remove the __dev annotations,
-> >> though.  We can't risk introducing a bisect killing compile breakage if
-> >> Greg's tree merges before mine in the next merge window.
-> > 
-> > This change should be pushed to Linus in time for 3.8-final, so there
-> > should not be any bisect issues.
-> 
-> We can do this either way.
-> 
-> James - what is your preference? Drop everything and do a resend of the
-> entire series or delta patches on top of what is currently in your tree?
+The following changes since commit d287b8750e47c1702dab0e37ac11012bb751ece0:
 
-Drop everything and resend still, I think.  There's still a rebase
-problem, because the merge failure will happen if I rebase the misc tree
-to beyond Greg's merge point and I'd rather not have to worry about it.
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs (2013-01-07 09:41:20 -0800)
 
-Thanks,
-
-James
+are available in the git repository at:
 
 
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.8-3
+
+for you to fetch changes up to 87ed50036b866db2ec2ba16b2a7aec4a2b0b7c39:
+
+  SUNRPC: Ensure we release the socket write lock if the rpc+AF8-task exits early (2013-01-08 14:30:43 -0500)
+
+----------------------------------------------------------------
+NFS client bugfixe for Linux 3.8
+
+- Fix a socket lock leak in net/sunrpc/xprt.c
+
+----------------------------------------------------------------
+Trond Myklebust (1):
+      SUNRPC: Ensure we release the socket write lock if the rpc+AF8-task exits early
+
+ net/sunrpc/sched.c +AHw-  3 +---
+ net/sunrpc/xprt.c  +AHw- 12 +-+-+-+-+-+-+-+-+-+---
+ 2 files changed, 11 insertions(+-), 4 deletions(-)
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust+AEA-netapp.com
+www.netapp.com
