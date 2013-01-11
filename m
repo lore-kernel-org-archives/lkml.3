@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab3AKW14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 17:27:56 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38215 "EHLO hydra.sisk.pl"
+	id S1755813Ab3AKWbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 17:31:42 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38227 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755100Ab3AKW1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 17:27:55 -0500
+	id S1754255Ab3AKWbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 17:31:40 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Krzysztof Mazur <krzysiek@podlesie.net>
-Cc: daniel.lezcano@linaro.org, rafael.j.wysocki@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuidle: fix number of initialized/destroyed states
-Date: Fri, 11 Jan 2013 23:33:43 +0100
-Message-ID: <1933348.QT2xbYKFLP@vostro.rjw.lan>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>, Zhang Rui <rui.zhang@intel.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Joe Perches <joe@perches.com>, Rob Landley <rob@landley.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v6 0/3] PM: Intel PowerClamp driver
+Date: Fri, 11 Jan 2013 23:37:27 +0100
+Message-ID: <11047380.k1dbzbnuXT@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357585921-3391-1-git-send-email-krzysiek@podlesie.net>
-References: <1357585921-3391-1-git-send-email-krzysiek@podlesie.net>
+In-Reply-To: <1357297965-17839-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1357297965-17839-1-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -23,55 +29,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 07, 2013 08:12:01 PM Krzysztof Mazur wrote:
-> Commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 (cpuidle: support
-> multiple drivers) changed the number of initialized state kobjects
-> in cpuidle_add_state_sysfs() from device->state_count to drv->state_count,
-> but leaved device->state_count in cpuidle_remove_state_sysfs().
-> Those two values might have different values, causing for instance
-> NULL pointer dereference in cpuidle_remove_state_sysfs().
+On Friday, January 04, 2013 03:12:42 AM Jacob Pan wrote:
+> v6 changes:
+> - clamp module parameters duration and window size, reword warning
+>   messages when input parameters are out of range.
+> 
+> We have done some experiment with idle injection on Intel platforms.
+> The idea is to use the increasingly power efficient package level
+> C-states for power capping and passive thermal control.
+> 
+> Documentation is included in the patch to explain the theory of
+> operation, performance implication, calibration, scalability, and user
+> interface. Please refer to the following file for more details.
+> 
+> Documentation/thermal/intel_powerclamp.txt
+> 
+> Arjan van de Ven created the original idea and driver, I have been
+> refining driver in hope that they can be to be useful beyond a proof
+> of concept.
+> 
+> Jacob Pan (3):
+>   tick: export nohz tick idle symbols for module use
+>   x86/nmi: export local_touch_nmi() symbol for modules
+>   PM: Introduce Intel PowerClamp Driver
+> 
+>  Documentation/thermal/intel_powerclamp.txt |  307 +++++++++++
+>  arch/x86/kernel/nmi.c                      |    1 +
+>  drivers/thermal/Kconfig                    |   10 +
+>  drivers/thermal/Makefile                   |    2 +
+>  drivers/thermal/intel_powerclamp.c         |  788 ++++++++++++++++++++++++++++
+>  kernel/time/tick-sched.c                   |    2 +
+>  6 files changed, 1110 insertions(+)
+>  create mode 100644 Documentation/thermal/intel_powerclamp.txt
+>  create mode 100644 drivers/thermal/intel_powerclamp.c
 
-Applied to the linux-next branch of the linux-pm.git tree as v3.8 material.
+I'm not seeing any more comments here, so I think this is suitable for v3.9.
 
-Thanks,
+Rui, are you going to take it or do you want me to?
+
 Rafael
 
 
-> Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-> ---
-> Hi,
-> 
-> commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92
-> (cpuidle: support multiple drivers, merged in v3.8-rc1) causes NULL pointer
-> dereference in cpuidle_remove_state_sysfs() when I plug the AC line to my
-> laptop. I'm using the acpi_idle cpuidle driver and the C4 state is
-> available only on when the system runs from battery. The problem still
-> exists in v3.8-rc2 and f243b9b46a22e5790dbbc36f574c2417af49a41.
-> 
-> I noticed that the commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92
-> (merged in v3.8-rc1) changed device->state_count to drv->state_count
-> in only one of two places, which seems to be incorrect. This patch restores
-> device->state_count in both places. It fixes the problem on my system.
-> 
-> Krzysiek
-> 
->  drivers/cpuidle/sysfs.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-> index 3409429..428754a 100644
-> --- a/drivers/cpuidle/sysfs.c
-> +++ b/drivers/cpuidle/sysfs.c
-> @@ -374,7 +374,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
->  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(device);
->  
->  	/* state statistics */
-> -	for (i = 0; i < drv->state_count; i++) {
-> +	for (i = 0; i < device->state_count; i++) {
->  		kobj = kzalloc(sizeof(struct cpuidle_state_kobj), GFP_KERNEL);
->  		if (!kobj)
->  			goto error_state;
-> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
