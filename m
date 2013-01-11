@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab3AKFpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 00:45:40 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:33144 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755115Ab3AKFov (ORCPT
+	id S1755303Ab3AKFqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 00:46:00 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:42396 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021Ab3AKFop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 00:44:51 -0500
+	Fri, 11 Jan 2013 00:44:45 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v4 13/14] spi: omap2-mcspi: add generic DMA request support to the DT binding
-Date: Fri, 11 Jan 2013 00:48:49 -0500
-Message-Id: <1357883330-5364-14-git-send-email-mporter@ti.com>
+Subject: [PATCH v4 10/14] mmc: omap_hsmmc: add generic DMA request support to the DT binding
+Date: Fri, 11 Jan 2013 00:48:46 -0500
+Message-Id: <1357883330-5364-11-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1357883330-5364-1-git-send-email-mporter@ti.com>
 References: <1357883330-5364-1-git-send-email-mporter@ti.com>
@@ -41,52 +41,51 @@ The binding definition is based on the generic DMA request binding.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- Documentation/devicetree/bindings/spi/omap-spi.txt |   28 +++++++++++++++++++-
- 1 file changed, 27 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |   25 +++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/spi/omap-spi.txt b/Documentation/devicetree/bindings/spi/omap-spi.txt
-index 938809c..3bd8eed 100644
---- a/Documentation/devicetree/bindings/spi/omap-spi.txt
-+++ b/Documentation/devicetree/bindings/spi/omap-spi.txt
-@@ -10,7 +10,18 @@ Required properties:
- 			  input. The default is D0 as input and
- 			  D1 as output.
- 
--Example:
-+Optional properties:
-+- dmas: List of DMA controller phandle and DMA request ordered
-+	pairs. One tx and one rx pair is required for each chip
-+	select.
-+- dma-names: List of DMA request names. These strings correspond
-+	1:1 with the ordered pairs in dmas. The string naming is
-+	to be "rxN" and "txN" for RX and TX requests,
-+	respectively, where N equals the chip select number.
+diff --git a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+index ed271fc..826cc51 100644
+--- a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
++++ b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+@@ -20,8 +20,28 @@ ti,dual-volt: boolean, supports dual voltage cards
+ ti,non-removable: non-removable slot (like eMMC)
+ ti,needs-special-reset: Requires a special softreset sequence
+ ti,needs-special-hs-handling: HSMMC IP needs special setting for handling High Speed
++dmas: DMA controller phandle and DMA request value ordered pair
++One tx and one rx pair is required.
++dma-names: DMA request names. These strings correspond 1:1 with
++the ordered pairs in dmas. The RX request must be "rx" and the
++TX request must be "tx".
 +
 +Examples:
 +
 +[hwmod populated DMA resources]
- 
- mcspi1: mcspi@1 {
-     #address-cells = <1>;
-@@ -20,3 +31,18 @@ mcspi1: mcspi@1 {
-     ti,spi-num-cs = <4>;
- };
- 
++
++	mmc1: mmc@0x4809c000 {
++		compatible = "ti,omap4-hsmmc";
++		reg = <0x4809c000 0x400>;
++		ti,hwmods = "mmc1";
++		ti,dual-volt;
++		bus-width = <4>;
++		vmmc-supply = <&vmmc>; /* phandle to regulator node */
++		ti,non-removable;
++	};
++
 +[generic DMA request binding]
-+
-+mcspi1: mcspi@1 {
-+    #address-cells = <1>;
-+    #size-cells = <0>;
-+    compatible = "ti,omap4-mcspi";
-+    ti,hwmods = "mcspi1";
-+    ti,spi-num-cs = <2>;
-+    dmas = <&edma 42
-+	    &edma 43
-+	    &edma 44
-+	    &edma 45>;
-+    dma-names = "tx0", "rx0", "tx1", "rx1";
-+};
-+
+ 
+-Example:
+ 	mmc1: mmc@0x4809c000 {
+ 		compatible = "ti,omap4-hsmmc";
+ 		reg = <0x4809c000 0x400>;
+@@ -30,4 +50,7 @@ Example:
+ 		bus-width = <4>;
+ 		vmmc-supply = <&vmmc>; /* phandle to regulator node */
+ 		ti,non-removable;
++		dmas = <&edma 24
++			&edma 25>;
++		dma-names = "tx", "rx";
+ 	};
 -- 
 1.7.9.5
 
