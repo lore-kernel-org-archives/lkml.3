@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab3AKMB1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 07:01:27 -0500
-Received: from mga03.intel.com ([143.182.124.21]:61230 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754913Ab3AKMBY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 07:01:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,451,1355126400"; 
-   d="scan'208";a="190137410"
-Message-ID: <1357905669.12502.2.camel@smile>
-Subject: Re: dw_dmac patches
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Date: Fri, 11 Jan 2013 14:01:09 +0200
-In-Reply-To: <20130108155423.GJ19691@intel.com>
-References: <1357563294.31620.145.camel@smile>
-	 <20130108155423.GJ19691@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	id S1754923Ab3AKMHR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 07:07:17 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:42846 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753219Ab3AKMHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 07:07:15 -0500
+X-IronPort-AV: E=Sophos;i="4.84,452,1355068800"; 
+   d="scan'208";a="6568156"
+Message-ID: <50F00041.2040305@cn.fujitsu.com>
+Date: Fri, 11 Jan 2013 20:06:25 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wu Jianguo <wujianguo@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mmots: memory-hotplug: implement register_page_bootmem_info_section
+ of sparse-vmemmap fix
+References: <20130111095658.GC7286@dhcp22.suse.cz> <20130111101745.GD7286@dhcp22.suse.cz> <20130111102924.GE7286@dhcp22.suse.cz> <20130111104759.GF7286@dhcp22.suse.cz>
+In-Reply-To: <20130111104759.GF7286@dhcp22.suse.cz>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/11 20:06:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/11 20:06:37,
+	Serialize complete at 2013/01/11 20:06:37
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-08 at 07:54 -0800, Vinod Koul wrote: 
-> On Mon, Jan 07, 2013 at 02:54:54PM +0200, Andy Shevchenko wrote:
-> > Hi, Vinod.
-> > 
-> > I noticed you missed the 3.8 merge window and I can't see any of my
-> > recent patches [1] in your next branch. So, what is your plan regarding
-> > to them?
-> Yes i missed quite a few due to my travel, but now am back :)
-> 
-> Can you please rebase below on my next and resend the below sequence. I can go
-> thru them quickly tomorrow and do the needful
+On 01/11/2013 06:47 PM, Michal Hocko wrote:
+>>
+>> Darn! And now that I am looking at the patch closer it is too x86
+>> centric so this cannot be in the generic code. I will try to cook
+>> something better. Sorry about the noise.
+>
+> It is more complicated than I thought. One would tell it's a mess.
+> The patch bellow fixes the compilation issue but I am not sure we want
+> to include memory_hotplug.h into arch/x86/mm/init_64.c. Moreover
+>
+> +void register_page_bootmem_memmap(unsigned long section_nr,
+> +				  struct page *start_page, unsigned long size)
+> +{
+> +	/* TODO */
+> +}
+>
+> for other archs would suggest that the code is not ready yet. Should
+> this rather be dropped for now?
 
-Thank you for applying part of them.
-Could you please have a look at the rest I sent as Patch v2?
+Hi Michal,
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Do you mean remove register_page_bootmem_memmap() from other
+architectures ?  Well, I think this function is called by
+register_page_bootmem_info_section(), which is a common function
+in mm/memory_hotplug.c shared by all architectures. So I don't think
+we should remove it. :)
+
+Thanks. :)
+
