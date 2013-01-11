@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab3AKVIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 16:08:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20941 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755935Ab3AKVIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 16:08:17 -0500
-Date: Fri, 11 Jan 2013 16:08:01 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
-        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump
- implementation
-Message-ID: <20130111210801.GC12019@redhat.com>
-References: <50E6F81D02000078000B3245@nat28.tlf.novell.com>
- <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>
- <20130104191146.GC6721@phenom.dumpdata.com>
- <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
- <20130107162018.GJ3219@phenom.dumpdata.com>
- <87ehhsqrpr.fsf@xmission.com>
- <20130111165506.GD25620@phenom.dumpdata.com>
- <87k3rjtqi7.fsf@xmission.com>
- <20130111205232.GC17126@redhat.com>
- <50F07E2D.6010602@zytor.com>
+	id S1755727Ab3AKVJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 16:09:46 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:53558 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754360Ab3AKVJp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 16:09:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F07E2D.6010602@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50F070D8.2080109@zytor.com>
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
+	<201301111333.49238.trenn@suse.de>
+	<CAE9FiQWPJdER++ZrkKx7cQpF0QvwBeghNjpFqK18pMNC0w20tw@mail.gmail.com>
+	<1603289.LXteBtkifD@hammer82.arch.suse.de>
+	<CAE9FiQU6RWH6cBKc9th3Eb2gCjcHfotbC1sYspQ7dU+cG=VMFA@mail.gmail.com>
+	<50F070D8.2080109@zytor.com>
+Date: Fri, 11 Jan 2013 13:09:43 -0800
+X-Google-Sender-Auth: mdmK6By8fp_M-4bOxpKE-Vd0AVw
+Message-ID: <CAE9FiQWEan4Vq-pbp6sgMWVFHwWygQ4Hq2wRsPH166+7w7L2yg@mail.gmail.com>
+Subject: Re: [PATCH] x86 e820: only void usable memory areas in
+ memmap=exactmap case
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Renninger <trenn@suse.de>,
+        MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
+        tglx@linutronix.de, khalid@gonehiking.org, horms@verge.net.au
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 01:03:41PM -0800, H. Peter Anvin wrote:
-> On 01/11/2013 12:52 PM, Vivek Goyal wrote:
-> > 
-> > Eric,
-> > 
-> > In a private conversation, David Howells suggested why not pass kernel
-> > signature in a segment to kernel and kernel can do the verification.
-> > 
-> > /sbin/kexec signature is verified by kernel at exec() time. Then
-> > /sbin/kexec just passes one signature segment (after regular segment) for
-> > each segment being loaded. The segments which don't have signature,
-> > are passed with section size 0. And signature passing behavior can be
-> > controlled by one new kexec flag.
-> > 
-> > That way /sbin/kexec does not have to worry about doing any verification
-> > by itself. In fact, I am not sure how it can do the verification when
-> > crypto libraries it will need are not signed (assuming they are not
-> > statically linked in).
-> > 
-> > What do you think about this idea?
-> > 
-> 
-> A signed /sbin/kexec would realistically have to be statically linked,
-> at least in the short term; otherwise the libraries and ld.so would need
-> verification as well.
+On Fri, Jan 11, 2013 at 12:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 01/11/2013 11:59 AM, Yinghai Lu wrote:
+>> On Fri, Jan 11, 2013 at 10:24 AM, Thomas Renninger <trenn@suse.de> wrote:
+>>>> We may need to keep exactmap intact.
+>>> Why?
+>>> Kexec/kdump should have been the only user?
+>>> If older/current kexec calls still add ACPI maps via memmap=X#Y,
+>>> they should already exist in the original e820 map and fall off or
+>>> get glued to one region if (wrongly) overlapping via sanitize_map.
+>>
+>> No, kexec/kdump is not the only user for memmap=exactmap.
+>>
+>
+> Who is using it then, since you seem to know?
 
-Yes. That's the expectation. Sign only statically linked exeutables which
-don't do any of dlopen() stuff either.
+http://forums.gentoo.org/viewtopic-t-487476-highlight-proliant.html
 
-In fact in the patch, I fail the exec() if signed executable has
-interpreter.
-
-Thanks
-Vivek
+http://forums.fedoraforum.org/archive/index.php/t-225347.html
