@@ -1,312 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3AKOIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 09:08:54 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:11764 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab3AKOIx (ORCPT
+	id S1754325Ab3AKOJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 09:09:05 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:44864 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946Ab3AKOJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 09:08:53 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Olof Johansson <olof@lixom.net>, <broonie@opensource.wolfsonmicro.com>,
-        <voice.shen@atmel.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <linux-sound@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 1/2 v2] ARM: at91/dts: add pinctrl support for SSC peripheral
-Date: Fri, 11 Jan 2013 15:08:30 +0100
-Message-ID: <1b1cd68b54156459942a98d462ba6d57c33f69cb.1357912706.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <cover.1357912706.git.nicolas.ferre@atmel.com>
-References: <cover.1357912706.git.nicolas.ferre@atmel.com>
+	Fri, 11 Jan 2013 09:09:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130111133132.GC2847@krava.brq.redhat.com>
+References: <1357583277-4553-1-git-send-email-eranian@google.com>
+	<1357583277-4553-12-git-send-email-eranian@google.com>
+	<20130109165539.GB1045@krava.brq.redhat.com>
+	<CABPqkBTTE=36vjMuXjiPojAYsTQfYzSk7=3Jo2WC4ryh7+gpaQ@mail.gmail.com>
+	<20130111133132.GC2847@krava.brq.redhat.com>
+Date: Fri, 11 Jan 2013 15:08:59 +0100
+Message-ID: <CABPqkBSQv7GiuEuD+gWDUu8Y0CXmSr5C56JG-5mNWLgTux3zKw@mail.gmail.com>
+Subject: Re: [PATCH v5 11/18] perf tools: add mem access sampling core support
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bo Shen <voice.shen@atmel.com>
+On Fri, Jan 11, 2013 at 2:31 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Thu, Jan 10, 2013 at 10:53:26PM +0100, Stephane Eranian wrote:
+>> On Wed, Jan 9, 2013 at 5:55 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>> > On Mon, Jan 07, 2013 at 07:27:50PM +0100, Stephane Eranian wrote:
+>
+> SNIP
+>
+>> >
+>> > The crash I report is due to the some maps could be removed
+>> > via map_groups__fixup_overlappings.
+>> >
+>> > Attached patch makes the code working for me, but we might
+>> > want to have some global unified fix for that, since this
+>> > is not the only place suffering for that.
+>> >
+>> > Like globaly set map->referenced in add_hist_entry or
+>> > hist_entry__new functions..
+>> >
+>> >
+>> Would something like that work for you (untested)?
+>
+> yep, works ok for me (tested)... how about branch_info? looks like
+>
+>   branch_info::from
+>   branch_info::to
+>
+> need same treatment
+>
+Yes. Will post a patch for this separately.
 
-Add pinctrl support for SSC on AT91 dtsi files.
-
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-[nicolas.ferre@atmel.com: split dtsi and driver changes]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/boot/dts/at91sam9260.dtsi | 18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9263.dtsi | 36 ++++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/at91sam9g45.dtsi | 36 ++++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/at91sam9n12.dtsi | 26 ++++++++++++++++++++++++++
- arch/arm/boot/dts/at91sam9x5.dtsi  | 32 +++++++++++++++++++++++++-------
- 5 files changed, 141 insertions(+), 7 deletions(-)
-
-diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
-index 68bccf4..cb7bcc5 100644
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@ -306,6 +306,22 @@
- 					};
- 				};
- 
-+				ssc0 {
-+					pinctrl_ssc0_tx: ssc0_tx-0 {
-+						atmel,pins =
-+							<1 16 0x1 0x0	/* PB16 periph A */
-+							 1 17 0x1 0x0	/* PB17 periph A */
-+							 1 18 0x1 0x0>;	/* PB18 periph A */
-+					};
-+
-+					pinctrl_ssc0_rx: ssc0_rx-0 {
-+						atmel,pins =
-+							<1 19 0x1 0x0	/* PB19 periph A */
-+							 1 20 0x1 0x0	/* PB20 periph A */
-+							 1 21 0x1 0x0>;	/* PB21 periph A */
-+					};
-+				};
-+
- 				pioA: gpio@fffff400 {
- 					compatible = "atmel,at91rm9200-gpio";
- 					reg = <0xfffff400 0x200>;
-@@ -450,6 +466,8 @@
- 				compatible = "atmel,at91rm9200-ssc";
- 				reg = <0xfffbc000 0x4000>;
- 				interrupts = <14 4 5>;
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
- 				status = "disabled";
- 			};
- 
-diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
-index 32ec62c..271d4de 100644
---- a/arch/arm/boot/dts/at91sam9263.dtsi
-+++ b/arch/arm/boot/dts/at91sam9263.dtsi
-@@ -271,6 +271,38 @@
- 					};
- 				};
- 
-+				ssc0 {
-+					pinctrl_ssc0_tx: ssc0_tx-0 {
-+						atmel,pins =
-+							<1 0 0x2 0x0	/* PB0 periph B */
-+							 1 1 0x2 0x0	/* PB1 periph B */
-+							 1 2 0x2 0x0>;	/* PB2 periph B */
-+					};
-+
-+					pinctrl_ssc0_rx: ssc0_rx-0 {
-+						atmel,pins =
-+							<1 3 0x2 0x0	/* PB3 periph B */
-+							 1 4 0x2 0x0	/* PB4 periph B */
-+							 1 5 0x2 0x0>;	/* PB5 periph B */
-+					};
-+				};
-+
-+				ssc1 {
-+					pinctrl_ssc1_tx: ssc1_tx-0 {
-+						atmel,pins =
-+							<1 6 0x1 0x0	/* PB6 periph A */
-+							 1 7 0x1 0x0	/* PB7 periph A */
-+							 1 8 0x1 0x0>;	/* PB8 periph A */
-+					};
-+
-+					pinctrl_ssc1_rx: ssc1_rx-0 {
-+						atmel,pins =
-+							<1 9 0x1 0x0	/* PB9 periph A */
-+							 1 10 0x1 0x0	/* PB10 periph A */
-+							 1 11 0x1 0x0>;	/* PB11 periph A */
-+					};
-+				};
-+
- 				pioA: gpio@fffff200 {
- 					compatible = "atmel,at91rm9200-gpio";
- 					reg = <0xfffff200 0x200>;
-@@ -368,6 +400,8 @@
- 				compatible = "atmel,at91rm9200-ssc";
- 				reg = <0xfff98000 0x4000>;
- 				interrupts = <16 4 5>;
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
- 				status = "disabled";
- 			};
- 
-@@ -375,6 +409,8 @@
- 				compatible = "atmel,at91rm9200-ssc";
- 				reg = <0xfff9c000 0x4000>;
- 				interrupts = <17 4 5>;
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_ssc1_tx &pinctrl_ssc1_rx>;
- 				status = "disabled";
- 			};
- 
-diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
-index 231858f..6b1d4ca 100644
---- a/arch/arm/boot/dts/at91sam9g45.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-@@ -290,6 +290,38 @@
- 					};
- 				};
- 
-+				ssc0 {
-+					pinctrl_ssc0_tx: ssc0_tx-0 {
-+						atmel,pins =
-+							<3 0 0x1 0x0	/* PD0 periph A */
-+							 3 1 0x1 0x0	/* PD1 periph A */
-+							 3 2 0x1 0x0>;	/* PD2 periph A */
-+					};
-+
-+					pinctrl_ssc0_rx: ssc0_rx-0 {
-+						atmel,pins =
-+							<3 3 0x1 0x0	/* PD3 periph A */
-+							 3 4 0x1 0x0	/* PD4 periph A */
-+							 3 5 0x1 0x0>;	/* PD5 periph A */
-+					};
-+				};
-+
-+				ssc1 {
-+					pinctrl_ssc1_tx: ssc1_tx-0 {
-+						atmel,pins =
-+							<3 10 0x1 0x0	/* PD10 periph A */
-+							 3 11 0x1 0x0	/* PD11 periph A */
-+							 3 12 0x1 0x0>;	/* PD12 periph A */
-+					};
-+
-+					pinctrl_ssc1_rx: ssc1_rx-0 {
-+						atmel,pins =
-+							<3 13 0x1 0x0	/* PD13 periph A */
-+							 3 14 0x1 0x0	/* PD14 periph A */
-+							 3 15 0x1 0x0>;	/* PD15 periph A */
-+					};
-+				};
-+
- 				pioA: gpio@fffff200 {
- 					compatible = "atmel,at91rm9200-gpio";
- 					reg = <0xfffff200 0x200>;
-@@ -425,6 +457,8 @@
- 				compatible = "atmel,at91sam9g45-ssc";
- 				reg = <0xfff9c000 0x4000>;
- 				interrupts = <16 4 5>;
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
- 				status = "disabled";
- 			};
- 
-@@ -432,6 +466,8 @@
- 				compatible = "atmel,at91sam9g45-ssc";
- 				reg = <0xfffa0000 0x4000>;
- 				interrupts = <17 4 5>;
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_ssc1_tx &pinctrl_ssc1_rx>;
- 				status = "disabled";
- 			};
- 
-diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
-index e9efb34..80e29c6 100644
---- a/arch/arm/boot/dts/at91sam9n12.dtsi
-+++ b/arch/arm/boot/dts/at91sam9n12.dtsi
-@@ -28,6 +28,7 @@
- 		tcb1 = &tcb1;
- 		i2c0 = &i2c0;
- 		i2c1 = &i2c1;
-+		ssc0 = &ssc0;
- 	};
- 	cpus {
- 		cpu@0 {
-@@ -244,6 +245,22 @@
- 					};
- 				};
- 
-+				ssc0 {
-+					pinctrl_ssc0_tx: ssc0_tx-0 {
-+						atmel,pins =
-+							<0 24 0x2 0x0	/* PA24 periph B */
-+							 0 25 0x2 0x0	/* PA25 periph B */
-+							 0 26 0x2 0x0>;	/* PA26 periph B */
-+					};
-+
-+					pinctrl_ssc0_rx: ssc0_rx-0 {
-+						atmel,pins =
-+							<0 27 0x2 0x0	/* PA27 periph B */
-+							 0 28 0x2 0x0	/* PA28 periph B */
-+							 0 29 0x2 0x0>;	/* PA29 periph B */
-+					};
-+				};
-+
- 				pioA: gpio@fffff400 {
- 					compatible = "atmel,at91sam9x5-gpio", "atmel,at91rm9200-gpio";
- 					reg = <0xfffff400 0x200>;
-@@ -294,6 +311,15 @@
- 				status = "disabled";
- 			};
- 
-+			ssc0: ssc@f0010000 {
-+				compatible = "atmel,at91sam9g45-ssc";
-+				reg = <0xf0010000 0x4000>;
-+				interrupts = <28 4 5>;
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
-+				status = "disabled";
-+			};
-+
- 			usart0: serial@f801c000 {
- 				compatible = "atmel,at91sam9260-usart";
- 				reg = <0xf801c000 0x4000>;
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index 40ac3a4..3a47cf9 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -88,13 +88,6 @@
- 				interrupts = <1 4 7>;
- 			};
- 
--			ssc0: ssc@f0010000 {
--				compatible = "atmel,at91sam9g45-ssc";
--				reg = <0xf0010000 0x4000>;
--				interrupts = <28 4 5>;
--				status = "disabled";
--			};
--
- 			tcb0: timer@f8008000 {
- 				compatible = "atmel,at91sam9x5-tcb";
- 				reg = <0xf8008000 0x100>;
-@@ -290,6 +283,22 @@
- 					};
- 				};
- 
-+				ssc0 {
-+					pinctrl_ssc0_tx: ssc0_tx-0 {
-+						atmel,pins =
-+							<0 24 0x2 0x0	/* PA24 periph B */
-+							 0 25 0x2 0x0	/* PA25 periph B */
-+							 0 26 0x2 0x0>;	/* PA26 periph B */
-+					};
-+
-+					pinctrl_ssc0_rx: ssc0_rx-0 {
-+						atmel,pins =
-+							<0 27 0x2 0x0	/* PA27 periph B */
-+							 0 28 0x2 0x0	/* PA28 periph B */
-+							 0 29 0x2 0x0>;	/* PA29 periph B */
-+					};
-+				};
-+
- 				pioA: gpio@fffff400 {
- 					compatible = "atmel,at91sam9x5-gpio", "atmel,at91rm9200-gpio";
- 					reg = <0xfffff400 0x200>;
-@@ -333,6 +342,15 @@
- 				};
- 			};
- 
-+			ssc0: ssc@f0010000 {
-+				compatible = "atmel,at91sam9g45-ssc";
-+				reg = <0xf0010000 0x4000>;
-+				interrupts = <28 4 5>;
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
-+				status = "disabled";
-+			};
-+
- 			mmc0: mmc@f0008000 {
- 				compatible = "atmel,hsmci";
- 				reg = <0xf0008000 0x600>;
--- 
-1.8.0
-
+> thanks,
+> jirka
+>
+>>
+>> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+>> index 7034500..fc05b9f 100644
+>> --- a/tools/perf/util/hist.c
+>> +++ b/tools/perf/util/hist.c
+>> @@ -274,6 +274,12 @@ static struct hist_entry *hist_entry__new(struct
+>> hist_entry *template)
+>>
+>>                 if (he->ms.map)
+>>                         he->ms.map->referenced = true;
+>> +               if (he->mem_info) {
+>> +                       if (he->mem_info->iaddr.map)
+>> +                               he->mem_info->iaddr.map->referenced = true;
+>> +                       if (he->mem_info->daddr.map)
+>> +                               he->mem_info->daddr.map->referenced = true;
+>> +               }
+>>                 if (symbol_conf.use_callchain)
+>>                         callchain_init(he->callchain);
