@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab3AKNR3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 08:17:29 -0500
-Received: from masquerade.micron.com ([137.201.242.130]:59663 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755474Ab3AKNR0 (ORCPT
+	id S1755380Ab3AKNNe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 08:13:34 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:37764 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755088Ab3AKNNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 08:17:26 -0500
-Message-ID: <50F010D8.3020901@micron.com>
-Date: Fri, 11 Jan 2013 18:47:12 +0530
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Sam Bradshaw" <sbradshaw@micron.com>,
-        "Selvan Mani (smani) [CONT - Type 2]" <smani@micron.com>
-Subject: [PATCH 3/3] mtip32xx: fix for crash when the device surprise removed
- during rebuild
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19546.007
-X-TM-AS-Result: No--12.664600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+	Fri, 11 Jan 2013 08:13:32 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com, cbouatmailru@gmail.com,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 05/18] power: ab8500_charger: Handle gpadc errors
+Date: Fri, 11 Jan 2013 13:12:53 +0000
+Message-Id: <1357909986-9262-6-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1357909986-9262-1-git-send-email-lee.jones@linaro.org>
+References: <1357909986-9262-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-When rebuild is in progress, disk->queue is yet to be created. Surprise
-removing the device will call remove()-> del_gendisk(). del_gendisk()
-expect disk->queue be not NULL. Fix is to call put_disk() when disk_queue
-is NULL.
+Gracefully handle gpadc conversion errors.
 
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Reviewed-by: Johan BJORNSTEDT <johan.bjornstedt@stericsson.com>
 ---
- drivers/block/mtip32xx/mtip32xx.c |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
+ drivers/power/ab8500_charger.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index a070a68..cfe65cf 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -3967,7 +3967,12 @@ static int mtip_block_remove(struct driver_data *dd)
- 	 * Delete our gendisk structure. This also removes the device
- 	 * from /dev
- 	 */
--	del_gendisk(dd->disk);
-+	if (dd->disk) {
-+		if (dd->disk->queue)
-+			del_gendisk(dd->disk);
-+		else
-+			put_disk(dd->disk);
-+	}
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index bbf7782e..919d156 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -160,6 +160,7 @@ struct ab8500_charger_info {
+ 	int charger_voltage;
+ 	int cv_active;
+ 	bool wd_expired;
++	int charger_current;
+ };
  
- 	spin_lock(&rssd_index_lock);
- 	ida_remove(&rssd_index_ida, dd->index);
-@@ -4001,7 +4006,13 @@ static int mtip_block_shutdown(struct driver_data *dd)
- 		"Shutting down %s ...\n", dd->disk->disk_name);
+ struct ab8500_charger_event_flags {
+@@ -2358,6 +2359,7 @@ static int ab8500_charger_ac_get_property(struct power_supply *psy,
+ 	union power_supply_propval *val)
+ {
+ 	struct ab8500_charger *di;
++	int ret;
  
- 	/* Delete our gendisk structure, and cleanup the blk queue. */
--	del_gendisk(dd->disk);
-+	if (dd->disk) {
-+		if (dd->disk->queue)
-+			del_gendisk(dd->disk);
-+		else
-+			put_disk(dd->disk);
-+	}
-+
+ 	di = to_ab8500_charger_ac_device_info(psy_to_ux500_charger(psy));
  
- 	spin_lock(&rssd_index_lock);
- 	ida_remove(&rssd_index_ida, dd->index);
+@@ -2379,7 +2381,10 @@ static int ab8500_charger_ac_get_property(struct power_supply *psy,
+ 		val->intval = di->ac.charger_connected;
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+-		di->ac.charger_voltage = ab8500_charger_get_ac_voltage(di);
++		ret = ab8500_charger_get_ac_voltage(di);
++		if (ret >= 0)
++			di->ac.charger_voltage = ret;
++		/* On error, use previous value */
+ 		val->intval = di->ac.charger_voltage * 1000;
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
+@@ -2391,7 +2396,10 @@ static int ab8500_charger_ac_get_property(struct power_supply *psy,
+ 		val->intval = di->ac.cv_active;
+ 		break;
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+-		val->intval = ab8500_charger_get_ac_current(di) * 1000;
++		ret = ab8500_charger_get_ac_current(di);
++		if (ret >= 0)
++			di->ac.charger_current = ret;
++		val->intval = di->ac.charger_current * 1000;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -2418,6 +2426,7 @@ static int ab8500_charger_usb_get_property(struct power_supply *psy,
+ 	union power_supply_propval *val)
+ {
+ 	struct ab8500_charger *di;
++	int ret;
+ 
+ 	di = to_ab8500_charger_usb_device_info(psy_to_ux500_charger(psy));
+ 
+@@ -2441,7 +2450,9 @@ static int ab8500_charger_usb_get_property(struct power_supply *psy,
+ 		val->intval = di->usb.charger_connected;
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+-		di->usb.charger_voltage = ab8500_charger_get_vbus_voltage(di);
++		ret = ab8500_charger_get_vbus_voltage(di);
++		if (ret >= 0)
++			di->usb.charger_voltage = ret;
+ 		val->intval = di->usb.charger_voltage * 1000;
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
+@@ -2453,7 +2464,10 @@ static int ab8500_charger_usb_get_property(struct power_supply *psy,
+ 		val->intval = di->usb.cv_active;
+ 		break;
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+-		val->intval = ab8500_charger_get_usb_current(di) * 1000;
++		ret = ab8500_charger_get_usb_current(di);
++		if (ret >= 0)
++			di->usb.charger_current = ret;
++		val->intval = di->usb.charger_current * 1000;
+ 		break;
+ 	case POWER_SUPPLY_PROP_CURRENT_AVG:
+ 		/*
 -- 
-1.7.1
+1.7.9.5
 
