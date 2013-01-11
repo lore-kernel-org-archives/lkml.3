@@ -1,168 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab3AKAsx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 19:48:53 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39905 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957Ab3AKAsv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 19:48:51 -0500
-Message-ID: <50EF616E.7040609@wwwdotorg.org>
-Date: Thu, 10 Jan 2013 17:48:46 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753962Ab3AKAtR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 19:49:17 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:55662 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752957Ab3AKAtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 19:49:16 -0500
+Date: Fri, 11 Jan 2013 00:49:15 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: netdev@vger.kernel.org
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: 3.8-rc2/rc3 write() blocked on CLOSE_WAIT TCP socket
+Message-ID: <20130111004915.GA15415@dcvr.yhbt.net>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <1357764194-12677-11-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1357764194-12677-11-git-send-email-thierry.reding@avionic-design.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2013 01:43 PM, Thierry Reding wrote:
-> Move the PCIe driver from arch/arm/mach-tegra into the drivers/pci/host
-> directory. The motivation is to collect various host controller drivers
-> in the same location in order to facilitate refactoring.
-> 
-> The Tegra PCIe driver has been largely rewritten, both in order to turn
-> it into a proper platform driver and to add MSI (based on code by
-> Krishna Kishore <kthota@nvidia.com>) as well as device tree support.
+The below Ruby script reproduces the issue for me with write()
+getting stuck, usually with a few iterations (sometimes up to 100).
 
-> diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
+I've reproduced this with 3.8-rc2 and rc3, even with Mel's partial
+revert patch in <20130110194212.GJ13304@suse.de> applied.
 
->  static void __init trimslice_init(void)
->  {
->  #ifdef CONFIG_TEGRA_PCI
-> -	int ret;
-> -
-> -	ret = tegra_pcie_init(true, true);
-> -	if (ret)
-> -		pr_err("tegra_pci_init() failed: %d\n", ret);
-> +	platform_device_register(&tegra_pcie_device);
+I can not reproduce this with 3.7.1+
+   stable-queue 2afd72f59c518da18853192ceeebead670ced5ea
+So this seems to be a new bug from the 3.8 cycle...
 
-That struct doesn't actually exist anywhere; only an extern definition
-is added (and that extern definition isn't removed by patch 14 either).
+Fortunately, this bug far easier for me to reproduce than the ppoll+send
+(toosleepy) failures.
 
-> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
+Both socat and ruby (Ruby 1.8, 1.9, 2.0 should all work), along with
+common shell tools (dd, sh, cat) are required for testing this:
 
-> +config PCI_TEGRA
-> +	bool "NVIDIA Tegra PCIe controller"
-> +	depends on ARCH_TEGRA_2x_SOC
+	# 100 iterations, raise/lower the number if needed
+	ruby the_script_below.rb 100
 
-Perhaps depend on ARCH_TEGRA; that will save churn once this is ported
-to Tegra30, and shouldn't cause any problems before then.
+lsof -p 15236 reveals this:
+ruby    15236   ew    5u  IPv4  23066      0t0     TCP localhost:33728->localhost:38658 (CLOSE_WAIT)
 
-> diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
+$ strace -f -p 15236
+Process 15236 attached - interrupt to quit
+write(5, "byebye!\n", 8
 
-> +#define AFI_INTR_CODE		0xb8
-> +#define  AFI_INTR_CODE_MASK	0xf
-> +#define  AFI_INTR_MASTER_ABORT	4
-> +#define  AFI_INTR_LEGACY	6
+So write() to fd=5 is blocked, but the lsof shows the socket is already
+in CLOSE_WAIT state.  I expect write() to give me -EPIPE here since
+the socat process on the reading end is long dead.
 
-Adding defines for at least some other codes here, would help further
-below ...
+This could be an issue with sk_stream_wait_memory() that Eric Dumazet
+alluded to with when I was chasing the toosleepy problem:
 
-> +static irqreturn_t tegra_pcie_isr(int irq, void *arg)
+$ cat /proc/15236/stack 
+[<ffffffff8129fb19>] release_sock+0xe5/0x11b
+[<ffffffff812a6328>] sk_stream_wait_memory+0x1f7/0x1fc
+[<ffffffff81040d3a>] autoremove_wake_function+0x0/0x2a
+[<ffffffff812d8ebf>] tcp_sendmsg+0x710/0x86d
+[<ffffffff81000e34>] __switch_to+0x235/0x3c5
+[<ffffffff81299c0d>] sock_aio_write+0x102/0x10d
+[<ffffffff810d0b66>] do_sync_write+0x88/0xc1
+[<ffffffff810d1476>] vfs_write+0xb3/0xda
+[<ffffffff81036613>] ptrace_notify+0x5d/0x76
+[<ffffffff810d158e>] sys_write+0x58/0x92
+[<ffffffff81322669>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
 
-> +	if (code == AFI_INTR_MASTER_ABORT) {
-> +		dev_dbg(pcie->dev, "%s, signature: %08x\n", err_msg[code],
-> +			signature);
-> +	} else
-> +		dev_err(pcie->dev, "%s, signature: %08x\n", err_msg[code],
-> +			signature);
-> +
-> +	if (code == 3 || code == 4 || code == 7) {
+I know many of you may not be familiar with Ruby, so I've tried to
+comment the code as much as possible.  Feel free to ask for
+clarification.
 
-... i.e. here.
+-------------------------------- 8< -------------------------------
+require 'socket'
+require 'tempfile'
+$stdout.sync = $stderr.sync = true # don't buffer any output
 
-> +		u32 fpci = afi_readl(pcie, AFI_UPPER_FPCI_ADDRESS) & 0xff;
-> +		u64 address = (u64)fpci << 32 | (signature & 0xfffffffc);
-> +		dev_dbg(pcie->dev, "  FPCI address: %10llx\n", address);
+# Read the number of iterations (first command-line argument)
+# (ARGV[0] in Ruby is argv[1] in C)
+iterations = ARGV[0].to_i
+iterations > 0 or abort "Usage: #$0 ITERATIONS (iterations should be > 0)"
 
-I'd suggest making that dev_err(), or at least something higher than
-debug, since the message indicating the error happened is dev_err(), so
-the complete details may as well be available since they're small.
+# Capture a temporary file name for using in the shell script (below)
+tmp = Tempfile.new('out')
+out = tmp.path
 
-> +static int tegra_pcie_enable_controller(struct tegra_pcie *pcie)
-> +{
-> +	unsigned int timeout;
-> +	unsigned long value;
-> +
-> +	/* enable dual controller and both ports */
-> +	value = afi_readl(pcie, AFI_PCIE_CONFIG);
-> +	value &= ~(AFI_PCIE_CONFIG_PCIEC0_DISABLE_DEVICE |
-> +		   AFI_PCIE_CONFIG_PCIEC1_DISABLE_DEVICE |
-> +		   AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_MASK);
-> +	value |= AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_DUAL;
-> +	afi_writel(pcie, value, AFI_PCIE_CONFIG);
+# This is an array of FIFO path names, we create two of them:
+fifos = []
+%w(a b).each do |name|
+  fifotmp = Tempfile.new([name, '.fifo'])
 
-Eventually, we should probably derive the port enables from the state of
-the root port DT nodes, so that we can disable some and presumably save
-a little power. Also, I notice that the nvidia,num-lanes property isn't
-implemented yet. Still, we can probably take care of this later.
+  # get the pathname from the Tempfile object
+  fifoname = fifotmp.path
+  fifos << fifoname
 
-> +static void tegra_pcie_power_off(struct tegra_pcie *pcie)
+  # This unlinks the temporary pathname so mkfifo can succeed
+  # (yes, there's a tiny race here but unlikely to ever happen).
+  fifotmp.close!
 
-> +	if (!IS_ERR_OR_NULL(pcie->pex_clk_supply)) {
+  # create the FIFO
+  system("mkfifo", fifoname) or abort "mkfifo #{fifoname} failed: #$?"
+end
 
-Hmm. I think we should make supplies mandatory; it doesn't make sense
-for regulator support to be disabled on Tegra, and where a specific
-board doesn't actually have a regulator, you're supposed to provide a
-dummy fixed regulator so the driver doesn't have to care.
+# bind to a random TCP port over loopback
+addr = "127.0.0.1"
+srv = TCPServer.new(addr, 0)
+port = srv.addr[1]
 
-The same comment obviously applies to tegra_pcie_power_on() and wherever
-regulator_get() happens.
+# Start the TCP server in a child process
+pid = fork do
+  begin
+    response = "byebye!\n"
+    n = -1 # count the client number, first client is n==0
+    while client = srv.accept # this is an accept(2) wrapper
+      n += 1
+      warn "Accepted client=#{n}"
+      begin
+        # this is select(2)
+        warn "Waiting on client=#{n} to become readable"
+        IO.select([client], nil, nil, 5) or abort "BUG: #{client} not readable"
 
-> +static int tegra_pcie_parse_dt(struct tegra_pcie *pcie)
+        # read the request, it should be "hihi"
+        warn "Reading from client=#{n}"
+        req = client.gets
+        if req =~ /hihi/
+          warn "sending infinite response to client=#{n}"
+          client.sync = true # do not buffer output
 
-> +	pcie->vdd_supply = devm_regulator_get(pcie->dev, "vdd");
-> +	if (IS_ERR(pcie->vdd_supply))
-> +		return PTR_ERR(pcie->vdd_supply);
-> +
-> +	pcie->pex_clk_supply = devm_regulator_get(pcie->dev, "pex-clk");
-> +	if (IS_ERR(pcie->pex_clk_supply))
-> +		return PTR_ERR(pcie->pex_clk_supply);
+          # just write the response in an infinite loop on the socket
+          # The client will only read 4K (see dd below), disconnect,
+          # and trigger Errno::EPIPE.
+          # This just calls write(2) in a loop
+          loop { client.write(response) }
+        else
+          warn "Client sent bad request: #{req}"
+        end
+      rescue => e
+        warn "Got #{e.class} #{e.message} error for client=#{n}"
+        # this is expected, the client will only read 4K of our infinite
+        # response and drop the socket.  We write to the fifo the
+        # client is running: "cat #{fifos[0]} &" on
+        fifo = fifos[0]
+        File.open(fifo, "w") do |fp|
+          warn "writing message to #{fifo} for client=#{n}"
+          fp.write("CLOSING #{n}")
+          warn "done writing message to #{fifo} for client=#{n}"
+        end
+      ensure
+        warn "Done dealing with client=#{n}"
+        client.close
+      end
+    end
+  ensure
+    warn "Server exiting"
+  end
+end
 
-Oh, I guess the regulator_get() calls are already strict.
+# close the server port in the main process, server is running in child
+srv.close
 
-> +static int tegra_pcie_add_port(struct tegra_pcie *pcie, struct device_node *np)
+# ensure we shut the server down at exit
+at_exit do
+  Process.kill(:TERM, pid)
+  fifos.each { |fifopath| File.unlink(fifopath) }
+  _, status = Process.waitpid2(pid)
+  puts "Server exited: #{status.inspect}"
+end
 
-> +	port = devm_kzalloc(pcie->dev, sizeof(*port), GFP_KERNEL);
-> +	if (!port)
-> +		return -ENOMEM;
-> +
-> +	INIT_LIST_HEAD(&port->list);
-> +	port->index = index;
-> +	port->pcie = pcie;
-> +
-> +	port->base = devm_request_and_ioremap(pcie->dev, &regs);
-> +	if (!port->base)
-> +		return -EADDRNOTAVAIL;
-> +
-> +	if (!tegra_pcie_port_check_link(port)) {
-> +		dev_info(pcie->dev, "link %u down, ignoring\n", port->index);
+# inline shell script here
+x = <<SH
+set -e
 
-Perhaps devm_kfree(port)? Not a big leak, but equally if you don't, it's
-an unreferenced memory block.
+# wait for the server to write "CLOSING" above
+# After enough iterations, this can get hung up on open():
+cat #{fifos[0]} > #{out} &
 
-> +		return -ENODEV;
-> +	}
-> +
-> +	list_add_tail(&port->list, &pcie->ports);
-> +
-> +	return 0;
-> +}
+(
+  # send a request to the server
+  echo hihi
+
+  # read 4K of the "byebye!" response
+  dd bs=4096 count=1 < #{fifos[1]} > /dev/null
+
+  # socat reads the stdout of the above ('hihi') and writes
+  # it to the TCP:#{addr}:#{port}, the server response goes to fifos[1],
+  # which the above dd(1) invocation reads the first 4K of.
+  # This socat is expected to error out with EPIPE here
+) | socat - TCP:#{addr}:#{port} > #{fifos[1]} || :
+
+echo "Waiting on #{fifos[0]} for client=$client"
+wait # for the cat fifo[0] above
+grep CLOSING #{out}
+> #{out}
+SH
+
+# run the above shell script, assign the client= variable to the
+# iteration number
+iterations.times do |i|
+  system("client=#{i}\n#{x}") or abort "client #{i} failed: #$?"
+end
+
+puts "All done!"
+
+-- 
+Eric Wong
