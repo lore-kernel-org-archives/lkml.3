@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3AKREV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:04:21 -0500
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:34105 "EHLO
+	id S1755362Ab3AKREX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:04:23 -0500
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:57472 "EHLO
 	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab3AKREQ (ORCPT
+	with ESMTP id S1754684Ab3AKRER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:04:16 -0500
+	Fri, 11 Jan 2013 12:04:17 -0500
 From: Doug Anderson <dianders@chromium.org>
 To: linux-mmc@vger.kernel.org
 Cc: linux-samsung-soc@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: linux-samsung-soc@vger.kernel.org,
         Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
         Doug Anderson <dianders@chromium.org>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH v4 5/5] mmc: dw_mmc: Remove DW_MCI_QUIRK_NO_WRITE_PROTECT
-Date: Fri, 11 Jan 2013 09:03:54 -0800
-Message-Id: <1357923834-31641-5-git-send-email-dianders@chromium.org>
+Subject: [PATCH v4 4/5] mmc: dw_mmc: Handle wp-gpios from device tree
+Date: Fri, 11 Jan 2013 09:03:53 -0800
+Message-Id: <1357923834-31641-4-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1357923834-31641-1-git-send-email-dianders@chromium.org>
 References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
@@ -28,61 +28,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original quirk was added in the change 'mmc: dw_mmc: add quirk to
-indicate missing write protect line'.  The original quirk was added at
-a controller level even though each slot has its own write protect (so
-the quirk should be at the slot level).  A recent change (mmc: dw_mmc:
-Add "disable-wp" device tree property) added a slot-level quirk and
-support for the quirk directly to dw_mmc.
+On some SoCs (like exynos5250) you need to use an external GPIO for
+write protect.  Add support for wp-gpios to the core dw_mmc driver
+since it could be useful across multiple SoCs.
+
+With this change I am able to make use of the write protect for the
+external SD slot on exynos5250-snow.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
 ---
-Changes in v4:
-- New for this version; addresses comments from Olof Johansson about
-  the fact that we shouldn't have both a slot and controller level
-  quirk for the same thing.
+Changes in v4: None
+Changes in v3: None
+Changes in v2:
+- Fixed return type from u32 to int
+- Return -EINVAL instead of -1
 
- drivers/mmc/host/dw_mmc.c  |    8 +-------
- include/linux/mmc/dw_mmc.h |    7 -------
- 2 files changed, 1 insertions(+), 14 deletions(-)
+ drivers/mmc/host/dw_mmc.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index df62079..60063cc 100644
+index 90f7d99..df62079 100644
 --- a/drivers/mmc/host/dw_mmc.c
 +++ b/drivers/mmc/host/dw_mmc.c
-@@ -831,13 +831,7 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
- 	struct dw_mci_board *brd = slot->host->pdata;
+@@ -34,6 +34,7 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/workqueue.h>
+ #include <linux/of.h>
++#include <linux/of_gpio.h>
  
- 	/* Use platform get_ro function, else try on board write protect */
--
--	/*
--	 * NOTE: DW_MCI_QUIRK_NO_WRITE_PROTECT will be removed in a future
--	 * patch in the series once reference to it is removed.
--	 */
--	if ((brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT) ||
--	    (slot->quirks & DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT))
-+	if (slot->quirks & DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT)
+ #include "dw_mmc.h"
+ 
+@@ -75,6 +76,7 @@ struct idmac_desc {
+  * @mmc: The mmc_host representing this slot.
+  * @host: The MMC controller this slot is using.
+  * @quirks: Slot-level quirks (DW_MCI_SLOT_QUIRK_XXX)
++ * @wp_gpio: If gpio_is_valid() we'll use this to read write protect.
+  * @ctype: Card type for this slot.
+  * @mrq: mmc_request currently being processed or waiting to be
+  *	processed, or NULL when the slot is idle.
+@@ -90,6 +92,7 @@ struct dw_mci_slot {
+ 	struct dw_mci		*host;
+ 
+ 	int			quirks;
++	int			wp_gpio;
+ 
+ 	u32			ctype;
+ 
+@@ -838,6 +841,8 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
  		read_only = 0;
  	else if (brd->get_ro)
  		read_only = brd->get_ro(slot->id);
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index de61de5..198f0fa 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -210,13 +210,6 @@ struct dw_mci_dma_ops {
- /* Unreliable card detection */
- #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
++	else if (gpio_is_valid(slot->wp_gpio))
++		read_only = gpio_get_value(slot->wp_gpio);
+ 	else
+ 		read_only =
+ 			mci_readl(slot->host, WRTPRT) & (1 << slot->id) ? 1 : 0;
+@@ -1832,6 +1837,29 @@ static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
+ 			       " as 1\n");
+ 	return bus_wd;
+ }
++
++/* find the write protect gpio for a given slot; or -1 if none specified */
++static int dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
++{
++	struct device_node *np = dw_mci_of_find_slot_node(dev, slot);
++	int gpio;
++
++	if (!np)
++		return -EINVAL;
++
++	gpio = of_get_named_gpio(np, "wp-gpios", 0);
++
++	/* Having a missing entry is valid; return silently */
++	if (!gpio_is_valid(gpio))
++		return -EINVAL;
++
++	if (devm_gpio_request(dev, gpio, "dw-mci-wp")) {
++		dev_warn(dev, "gpio [%d] request failed\n", gpio);
++		return -EINVAL;
++	}
++
++	return gpio;
++}
+ #else /* CONFIG_OF */
+ static int dw_mci_of_get_slot_quirks(struct device *dev, u8 slot)
+ {
+@@ -1845,6 +1873,10 @@ static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
+ {
+ 	return NULL;
+ }
++static int dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
++{
++	return -EINVAL;
++}
+ #endif /* CONFIG_OF */
  
--/* Write Protect detection not available */
--/*
-- * NOTE: DW_MCI_QUIRK_NO_WRITE_PROTECT will be removed in a future
-- * patch in the series once reference to it is removed.
-- */
--#define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(4)
--
- /* Slot level quirks */
- /* This slot has no write protect */
- #define DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT	BIT(0)
+ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+@@ -1962,6 +1994,8 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+ 	else
+ 		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+ 
++	slot->wp_gpio = dw_mci_of_get_wp_gpio(host->dev, slot->id);
++
+ 	mmc_add_host(mmc);
+ 
+ #if defined(CONFIG_DEBUG_FS)
 -- 
 1.7.7.3
 
