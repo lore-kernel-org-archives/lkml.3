@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab3AKOto (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 09:49:44 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40264 "EHLO mail.skyhub.de"
+	id S1754494Ab3AKOud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 09:50:33 -0500
+Received: from mga14.intel.com ([143.182.124.37]:32599 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab3AKOtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 09:49:42 -0500
-Date: Fri, 11 Jan 2013 15:49:40 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Andre Przywara <andre@andrep.de>
-Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/cpufreq: Warn user when powernow-k8 tries to
- fall back to acpi-cpufreq and it is unavailable.
-Message-ID: <20130111144940.GB21882@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-	Andre Przywara <andre@andrep.de>, rjw@sisk.pl,
-	cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+	id S1753841Ab3AKOuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 09:50:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,452,1355126400"; 
+   d="scan'208";a="190186837"
+Message-ID: <50F026B4.20906@intel.com>
+Date: Fri, 11 Jan 2013 22:50:28 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Morten Rasmussen <Morten.Rasmussen@arm.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 05/22] sched: remove domain iterations in fork/exec/wake
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-6-git-send-email-alex.shi@intel.com> <20130109182102.GC2046@e103034-lin> <50EF7D07.6080006@intel.com> <20130111100757.GH2046@e103034-lin>
+In-Reply-To: <20130111100757.GH2046@e103034-lin>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Andre.
-
-On Wed, Jan 09, 2013 at 07:09:21PM -0600, Aravind Gopalakrishnan wrote:
-> This patch is in reference to bug#:51741. (https://bugzilla.kernel.org/show_bug.cgi?id=51741)
-> powernow-k8 falls back to acpi-cpufreq if CPU is not supported. However, it states that acpi-cpufreq
-> has taken over even if acpi-cpufreq is not compiled in. This patch rewords the warning message to
-> clarify that the CPU is unsupported and prints a warning message when there is no acpi-cpufreq
-> present.
+On 01/11/2013 06:07 PM, Morten Rasmussen wrote:
+> On Fri, Jan 11, 2013 at 02:46:31AM +0000, Alex Shi wrote:
+>> On 01/10/2013 02:21 AM, Morten Rasmussen wrote:
+>>>>  		new_cpu = find_idlest_cpu(group, p, cpu);
+>>>>> -
+>>>>> -		/* Now try balancing at a lower domain level of new_cpu */
+>>>>> -		cpu = new_cpu;
+>>>>> -		weight = sd->span_weight;
+>>>>> -		sd = NULL;
+>>>>> -		for_each_domain(cpu, tmp) {
+>>>>> -			if (weight <= tmp->span_weight)
+>>>>> -				break;
+>>>>> -			if (tmp->flags & sd_flag)
+>>>>> -				sd = tmp;
+>>>>> -		}
+>>>>> -		/* while loop will break here if sd == NULL */
+>>> I agree that this should be a major optimization. I just can't figure
+>>> out why the existing recursive search for an idle cpu switches to the
+>>> new cpu near the end and then starts a search for an idle cpu in the new
+>>> cpu's domain. Is this to handle some exotic sched domain configurations?
+>>> If so, they probably wouldn't work with your optimizations.
+>>
+>> I did not find odd configuration that asking for old logical.
+>>
+>> According to Documentation/scheduler/sched-domains.txt, Maybe never.
+>> "A domain's span MUST be a superset of it child's span (this restriction
+>> could be relaxed if the need arises), and a base domain for CPU i MUST
+>> span at least i."  etc. etc.
 > 
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> ---
->  drivers/cpufreq/powernow-k8.c |   10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
+> The reason for my suspicion is the SD_OVERLAP flag, which has something
+> to do overlapping sched domains. I haven't looked into what it does or
+> how it works. I'm just wondering if this optimization will affect the
+> use of that flag.
+
+I didn't know any machine has this flag, but if just some cpu overlap,
+not stay alone without any domain, the patch won't miss eligible cpu.
 > 
-> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-> index 056faf6..6fa58b4 100644
-> --- a/drivers/cpufreq/powernow-k8.c
-> +++ b/drivers/cpufreq/powernow-k8.c
-> @@ -1256,7 +1256,15 @@ static int __cpuinit powernowk8_init(void)
->  	int rv;
->  
->  	if (static_cpu_has(X86_FEATURE_HW_PSTATE)) {
-> -		pr_warn(PFX "this CPU is not supported anymore, using acpi-cpufreq instead.\n");
-> +		pr_warn(PFX
-> +			"this CPU is not supported anymore, use acpi-cpufreq instead"
-> +			"Look for message from acpi-cpufreq to ensure it is loaded."
-> +			".\n");
-> +#ifndef CONFIG_X86_ACPI_CPUFREQ
-> +	pr_warn(PFX "acpi-cpufreq is disabled."
-> +		"Enable it in the config options to get frequency scaling.\n");
-> +	return -ENODEV;
-> +#endif
->  		request_module("acpi-cpufreq");
->  		return -ENODEV;
+> Morten
+> 
+>>
+>>
+>> -- 
+>> Thanks Alex
+>>
+> 
 
-Ok, the suggestion in that BZ is valid and something needs to be done
-for that case but I don't think that simply warning the user about it is
-enough.
-
-First of all, CONFIG_X86_POWERNOW_K8 should depend on
-CONFIG_X86_ACPI_CPUFREQ since powernow-k8.ko requests that module.
-
-Then, having that dependency out of the way, we can almost safely
-request_module("acpi-cpufreq"). However, we can also check the return
-value of that function to make sure loading went fine.
-
-And finally, we should check that acpi-cpufreq actually registered
-properly and wasn't unloaded later for some other reason which wasn't
-signalled through request_module retval.
-
-Andre, I'm not sure about the details of that last one but the first
-two are easy. Any ideas, since you've been looking at acpi-cpufreq code
-lately?
-
-Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks
+    Alex
