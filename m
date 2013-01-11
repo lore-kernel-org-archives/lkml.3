@@ -1,210 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3AKAtR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 19:49:17 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:55662 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752957Ab3AKAtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 19:49:16 -0500
-Date: Fri, 11 Jan 2013 00:49:15 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: netdev@vger.kernel.org
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: 3.8-rc2/rc3 write() blocked on CLOSE_WAIT TCP socket
-Message-ID: <20130111004915.GA15415@dcvr.yhbt.net>
+	id S1754209Ab3AKAtZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 19:49:25 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:42756 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957Ab3AKAtX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 19:49:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130110165942.GA30000@quack.suse.cz>
+References: <1349795401-6497-1-git-send-email-linkinjeon@gmail.com>
+	<20121018223058.GA19469@quack.suse.cz>
+	<CAKYAXd_91tZ=LgaoPWMVkh6KKPKt0ctfsQo9f4FS-gjf8J77eQ@mail.gmail.com>
+	<CAKYAXd_-z5OSWwwPuJUHqBOKAaayzUy77iEi=JF0v6zGbXroRQ@mail.gmail.com>
+	<CAKYAXd-Mm72cGwAoYd1ZtMFXD8WF2E3u7S23zckhoFA=h+4XhA@mail.gmail.com>
+	<20130110165942.GA30000@quack.suse.cz>
+Date: Fri, 11 Jan 2013 09:49:22 +0900
+Message-ID: <CAKYAXd9rJZsQ0_5xi82f0SCtfxN97FFvYTPRw1RYw5bRyTNK_Q@mail.gmail.com>
+Subject: Re: [PATCH 5/6] udf: implement extent caching while reading-writing
+ to a file
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below Ruby script reproduces the issue for me with write()
-getting stuck, usually with a few iterations (sometimes up to 100).
-
-I've reproduced this with 3.8-rc2 and rc3, even with Mel's partial
-revert patch in <20130110194212.GJ13304@suse.de> applied.
-
-I can not reproduce this with 3.7.1+
-   stable-queue 2afd72f59c518da18853192ceeebead670ced5ea
-So this seems to be a new bug from the 3.8 cycle...
-
-Fortunately, this bug far easier for me to reproduce than the ppoll+send
-(toosleepy) failures.
-
-Both socat and ruby (Ruby 1.8, 1.9, 2.0 should all work), along with
-common shell tools (dd, sh, cat) are required for testing this:
-
-	# 100 iterations, raise/lower the number if needed
-	ruby the_script_below.rb 100
-
-lsof -p 15236 reveals this:
-ruby    15236   ew    5u  IPv4  23066      0t0     TCP localhost:33728->localhost:38658 (CLOSE_WAIT)
-
-$ strace -f -p 15236
-Process 15236 attached - interrupt to quit
-write(5, "byebye!\n", 8
-
-So write() to fd=5 is blocked, but the lsof shows the socket is already
-in CLOSE_WAIT state.  I expect write() to give me -EPIPE here since
-the socat process on the reading end is long dead.
-
-This could be an issue with sk_stream_wait_memory() that Eric Dumazet
-alluded to with when I was chasing the toosleepy problem:
-
-$ cat /proc/15236/stack 
-[<ffffffff8129fb19>] release_sock+0xe5/0x11b
-[<ffffffff812a6328>] sk_stream_wait_memory+0x1f7/0x1fc
-[<ffffffff81040d3a>] autoremove_wake_function+0x0/0x2a
-[<ffffffff812d8ebf>] tcp_sendmsg+0x710/0x86d
-[<ffffffff81000e34>] __switch_to+0x235/0x3c5
-[<ffffffff81299c0d>] sock_aio_write+0x102/0x10d
-[<ffffffff810d0b66>] do_sync_write+0x88/0xc1
-[<ffffffff810d1476>] vfs_write+0xb3/0xda
-[<ffffffff81036613>] ptrace_notify+0x5d/0x76
-[<ffffffff810d158e>] sys_write+0x58/0x92
-[<ffffffff81322669>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-I know many of you may not be familiar with Ruby, so I've tried to
-comment the code as much as possible.  Feel free to ask for
-clarification.
-
--------------------------------- 8< -------------------------------
-require 'socket'
-require 'tempfile'
-$stdout.sync = $stderr.sync = true # don't buffer any output
-
-# Read the number of iterations (first command-line argument)
-# (ARGV[0] in Ruby is argv[1] in C)
-iterations = ARGV[0].to_i
-iterations > 0 or abort "Usage: #$0 ITERATIONS (iterations should be > 0)"
-
-# Capture a temporary file name for using in the shell script (below)
-tmp = Tempfile.new('out')
-out = tmp.path
-
-# This is an array of FIFO path names, we create two of them:
-fifos = []
-%w(a b).each do |name|
-  fifotmp = Tempfile.new([name, '.fifo'])
-
-  # get the pathname from the Tempfile object
-  fifoname = fifotmp.path
-  fifos << fifoname
-
-  # This unlinks the temporary pathname so mkfifo can succeed
-  # (yes, there's a tiny race here but unlikely to ever happen).
-  fifotmp.close!
-
-  # create the FIFO
-  system("mkfifo", fifoname) or abort "mkfifo #{fifoname} failed: #$?"
-end
-
-# bind to a random TCP port over loopback
-addr = "127.0.0.1"
-srv = TCPServer.new(addr, 0)
-port = srv.addr[1]
-
-# Start the TCP server in a child process
-pid = fork do
-  begin
-    response = "byebye!\n"
-    n = -1 # count the client number, first client is n==0
-    while client = srv.accept # this is an accept(2) wrapper
-      n += 1
-      warn "Accepted client=#{n}"
-      begin
-        # this is select(2)
-        warn "Waiting on client=#{n} to become readable"
-        IO.select([client], nil, nil, 5) or abort "BUG: #{client} not readable"
-
-        # read the request, it should be "hihi"
-        warn "Reading from client=#{n}"
-        req = client.gets
-        if req =~ /hihi/
-          warn "sending infinite response to client=#{n}"
-          client.sync = true # do not buffer output
-
-          # just write the response in an infinite loop on the socket
-          # The client will only read 4K (see dd below), disconnect,
-          # and trigger Errno::EPIPE.
-          # This just calls write(2) in a loop
-          loop { client.write(response) }
-        else
-          warn "Client sent bad request: #{req}"
-        end
-      rescue => e
-        warn "Got #{e.class} #{e.message} error for client=#{n}"
-        # this is expected, the client will only read 4K of our infinite
-        # response and drop the socket.  We write to the fifo the
-        # client is running: "cat #{fifos[0]} &" on
-        fifo = fifos[0]
-        File.open(fifo, "w") do |fp|
-          warn "writing message to #{fifo} for client=#{n}"
-          fp.write("CLOSING #{n}")
-          warn "done writing message to #{fifo} for client=#{n}"
-        end
-      ensure
-        warn "Done dealing with client=#{n}"
-        client.close
-      end
-    end
-  ensure
-    warn "Server exiting"
-  end
-end
-
-# close the server port in the main process, server is running in child
-srv.close
-
-# ensure we shut the server down at exit
-at_exit do
-  Process.kill(:TERM, pid)
-  fifos.each { |fifopath| File.unlink(fifopath) }
-  _, status = Process.waitpid2(pid)
-  puts "Server exited: #{status.inspect}"
-end
-
-# inline shell script here
-x = <<SH
-set -e
-
-# wait for the server to write "CLOSING" above
-# After enough iterations, this can get hung up on open():
-cat #{fifos[0]} > #{out} &
-
-(
-  # send a request to the server
-  echo hihi
-
-  # read 4K of the "byebye!" response
-  dd bs=4096 count=1 < #{fifos[1]} > /dev/null
-
-  # socat reads the stdout of the above ('hihi') and writes
-  # it to the TCP:#{addr}:#{port}, the server response goes to fifos[1],
-  # which the above dd(1) invocation reads the first 4K of.
-  # This socat is expected to error out with EPIPE here
-) | socat - TCP:#{addr}:#{port} > #{fifos[1]} || :
-
-echo "Waiting on #{fifos[0]} for client=$client"
-wait # for the cat fifo[0] above
-grep CLOSING #{out}
-> #{out}
-SH
-
-# run the above shell script, assign the client= variable to the
-# iteration number
-iterations.times do |i|
-  system("client=#{i}\n#{x}") or abort "client #{i} failed: #$?"
-end
-
-puts "All done!"
-
--- 
-Eric Wong
+2013/1/11, Jan Kara <jack@suse.cz>:
+> On Wed 09-01-13 15:26:43, Namjae Jeon wrote:
+>> 2012/12/13, Namjae Jeon <linkinjeon@gmail.com>:
+>> > 2012/10/19, Namjae Jeon <linkinjeon@gmail.com>:
+>> >> 2012/10/19, Jan Kara <jack@suse.cz>:
+>> >>>   Hello,
+>> >>>
+>> >>> On Wed 10-10-12 00:10:01, Namjae Jeon wrote:
+>> >>>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>> >>>>
+>> >>>> This patch implements extent caching.
+>> >>>> Instead of reading metadata everytime from file's starting position,
+>> >>>> now we read from the cached extent.
+>> >>>> This speeds up the transformation of file logical offsets to
+>> >>>> corresponding on-disk blocks.
+>> >>>   I have some mostly minor comments to the patch. But when reading
+>> >>> the
+>> >>> extent code it is just ugly and hard to follow. So I'm thinking how
+>> >>> to
+>> >>> improve that before making things even harder with the extent cache.
+>> >>> So
+>> >>> give me a few more days please.
+>> >> Hi Jan.
+>> >> Okay, I see. Thanks!
+>> >>>
+>> > Hi Jan.
+>> > Sorry for interrupt. I am still waiting for your review.
+>> > Would you check extent cache patches ?
+>> > Thanks.
+>> Hi Jan.
+>>
+>> Maybe You think you didn't convince extent cache implementation of
+>> write part in this patch.
+>> So I suggest that once, we add extent cache of read part first in case
+>> of read-only mount type.
+>> because it is real issue on 3D BD-disk playing(BD Disk is used on
+>> read-only mount type).
+>> And I will check more write part again.
+>   I'm sorry for not getting to you earlier. Yes, support for reading should
+> be easy enough and we can add support for write when I finish the extent
+> cleanup (I already have the new code written but I need to integrate it
+> with the rest of UDF code...). Can you please send the patch for read
+> support and I'll queue it for the next merge window? Thanks!
+>
+Okay, I see.
+Thanks Jan!
+> 								Honza
+> --
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+>
