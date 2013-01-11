@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab3AKR5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:57:48 -0500
-Received: from mail-la0-f74.google.com ([209.85.215.74]:55159 "EHLO
-	mail-la0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299Ab3AKR5p (ORCPT
+	id S1755044Ab3AKSBS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 13:01:18 -0500
+Received: from mail-la0-f73.google.com ([209.85.215.73]:33279 "EHLO
+	mail-la0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab3AKSBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:57:45 -0500
+	Fri, 11 Jan 2013 13:01:17 -0500
+X-Greylist: delayed 3011 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jan 2013 13:01:16 EST
 From: Doug Anderson <dianders@chromium.org>
-To: linux-i2c@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+To: linux-mmc@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org,
         Thomas Abraham <thomas.abraham@linaro.org>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Doug Anderson <dianders@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: [REPOST PATCH 2/2] i2c: pxa: Use i2c-core to get bus number now
-Date: Fri, 11 Jan 2013 09:57:07 -0800
-Message-Id: <1357927027-4857-3-git-send-email-dianders@chromium.org>
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
+        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Arun Kumar K <arun.kk@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 2/5] ARM: dts: Add disable-wp for sd card slot on smdk5250
+Date: Fri, 11 Jan 2013 09:03:51 -0800
+Message-Id: <1357923834-31641-2-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1357927027-4857-1-git-send-email-dianders@chromium.org>
-References: <1353522362-25519-2-git-send-email-dianders@chromium.org>
- <1357927027-4857-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1357923834-31641-1-git-send-email-dianders@chromium.org>
+References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
+ <1357923834-31641-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit: "i2c-core: dt: Pick i2c bus number from i2c alias if
-present" adds support for automatically picking the bus number based
-on the alias ID.  Remove the now unnecessary code from i2c-pxa that
-did the same thing.
+The next change will remove the code from the dw_mmc-exynos that added
+the DW_MCI_QUIRK_NO_WRITE_PROTECT.  Keep existing functionality of
+having no write protect pin on smdk5250 by adding the disable-wp
+property.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
 ---
- drivers/i2c/busses/i2c-pxa.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
+Changes in v4: None
+Changes in v3:
+- New for this version of the patch series.
 
-diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
-index 1034d93..8ee9fa0 100644
---- a/drivers/i2c/busses/i2c-pxa.c
-+++ b/drivers/i2c/busses/i2c-pxa.c
-@@ -1053,16 +1053,10 @@ static int i2c_pxa_probe_dt(struct platform_device *pdev, struct pxa_i2c *i2c,
- 	struct device_node *np = pdev->dev.of_node;
- 	const struct of_device_id *of_id =
- 			of_match_device(i2c_pxa_dt_ids, &pdev->dev);
--	int ret;
- 
- 	if (!of_id)
- 		return 1;
--	ret = of_alias_get_id(np, "i2c");
--	if (ret < 0) {
--		dev_err(&pdev->dev, "failed to get alias id, errno %d\n", ret);
--		return ret;
--	}
--	pdev->id = ret;
-+	pdev->id = -1;
- 	if (of_get_property(np, "mrvl,i2c-polling", NULL))
- 		i2c->use_pio = 1;
- 	if (of_get_property(np, "mrvl,i2c-fast-mode", NULL))
+ arch/arm/boot/dts/exynos5250-smdk5250.dts |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+index 942d576..75b9d83 100644
+--- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
++++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+@@ -146,6 +146,7 @@
+ 			reg = <0>;
+ 			bus-width = <4>;
+ 			samsung,cd-pinmux-gpio = <&gpc3 2 2 3 3>;
++			disable-wp;
+ 			gpios = <&gpc3 0 2 0 3>, <&gpc3 1 2 0 3>,
+ 				<&gpc3 3 2 3 3>, <&gpc3 4 2 3 3>,
+ 				<&gpc3 5 2 3 3>, <&gpc3 6 2 3 3>,
 -- 
 1.7.7.3
 
