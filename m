@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab3AKWrF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 17:47:05 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22798 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755939Ab3AKWlL (ORCPT
+	id S1755892Ab3AKWww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 17:52:52 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:48189 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754762Ab3AKWwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 17:41:11 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 03/22] PCI: Set dev_node early for pci_dev
-Date: Fri, 11 Jan 2013 14:40:30 -0800
-Message-Id: <1357944049-29620-4-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 11 Jan 2013 17:52:51 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqMNAOSW8FB5Labi/2dsb2JhbABEhVCyFIYeF3OCHgEBBScTHCMQCAMYCSUPBQ0YAyETiAcDDq5/DYdWFYtjhS4DlDWBVYEdiDGBaoUSgwk
+Date: Sat, 12 Jan 2013 09:52:47 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jeff Liu <jeff.liu@oracle.com>
+Cc: Abhijit Pawar <abhi.c.pawar@gmail.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH 1/1] fs/xfs remove obsolete simple_strto<foo>
+Message-ID: <20130111225246.GO3120@dastard>
+References: <1357740282-2377-1-git-send-email-abhi.c.pawar@gmail.com>
+ <50EFB2FE.2000307@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50EFB2FE.2000307@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise irq_desc for pci bridge with hot-added ioapic can not be on
-local node.
+On Fri, Jan 11, 2013 at 02:36:46PM +0800, Jeff Liu wrote:
+> On 01/09/2013 10:04 PM, Abhijit Pawar wrote:
+> > This patch replaces usages of obsolete simple_strtoul with kstrtoint in xfs_args and suffix_strtoul.
+> > 
+> > Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
+> > ---
+> > +			if (kstrtoint(value, 10, &dswidth))
+> > +				return EINVAL;
+> >  		} else if (!strcmp(this_char, MNTOPT_32BITINODE)) {
+> >  			mp->m_flags |= XFS_MOUNT_SMALL_INUMS;
+> >  		} else if (!strcmp(this_char, MNTOPT_64BITINODE)) {
+> > 
+> checkpatch.pl show warning if we return EINVAL as below:
+> WARNING: return of an errno should typically be -ve (return -EINVAL)
+> 
+> Can we just ignore such code style issue?
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/probe.c |    1 +
- 1 file changed, 1 insertion(+)
+Returning a positive error is not a code style issue. It's a
+correctness issue. the core of the XFS code returns positive error
+numbers as that's the way it was done on Irix (where the XFs code
+comes from). The rest of the Linux code tends to use negative values
+for error returns, and we've never converted the XFS code base to
+negative errors.
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 2dcd22d..b97dea5 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1300,6 +1300,7 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- 	dev->dev.release = pci_release_dev;
- 	pci_dev_get(dev);
- 
-+	set_dev_node(&dev->dev, pcibus_to_node(bus));
- 	dev->dev.dma_mask = &dev->dma_mask;
- 	dev->dev.dma_parms = &dev->dma_parms;
- 	dev->dev.coherent_dma_mask = 0xffffffffull;
+You should always feel free to ignore checkpatch warnings that make
+no sense. I haven't used checkpatch now for several years - I
+stopped using it when it got too noisy warning about uselesss,
+trivial things in the XFS code base....
+
+Cheers,
+
+Dave.
 -- 
-1.7.10.4
-
+Dave Chinner
+david@fromorbit.com
