@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab3AKQmM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 11:42:12 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:36884 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754747Ab3AKQmH (ORCPT
+	id S1755260Ab3AKQrl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 11:47:41 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:38059 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841Ab3AKQrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 11:42:07 -0500
+	Fri, 11 Jan 2013 11:47:39 -0500
+Date: Fri, 11 Jan 2013 08:08:13 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@elte.hu
+Cc: paul.gortmaker@windriver.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Subject: [GIT PULL rcu/urgent] Fixes for RCU regressions in 3.8
+Message-ID: <20130111160813.GA14503@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-In-Reply-To: <20130111121333.GB10751@liondog.tnic>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-11-git-send-email-yinghai@kernel.org>
-	<20130111121333.GB10751@liondog.tnic>
-Date: Fri, 11 Jan 2013 08:42:05 -0800
-X-Google-Sender-Auth: cR5DqUBqaOFG2WcJzLs-4zhDSvw
-Message-ID: <CAE9FiQUi-Fzf=HSnE+JXAkPVPDZ3YYqQr50FuUiMxv6DyDnk8A@mail.gmail.com>
-Subject: Re: [PATCH v7u1 10/31] x86, 64bit: Don't set max_pfn_mapped wrong
- value early on native path
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011116-5406-0000-0000-00000415B3C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 4:13 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Jan 03, 2013 at 04:48:30PM -0800, Yinghai Lu wrote:
->> We are not having max_pfn_mapped set correctly until init_memory_mapping.
->>
->> so don't print it initial value for 64bit
->
-> Just a minor nitpick:
->
-> "So don't print its initial value for 64bit."
+Hello, Ingo,
 
-OK.
+Paul Gortmaker found some problems with no-CBs-CPU support in 3.8
+mainline, and kindly supplied fixes.  The first problem is soft-lockup
+complaints that can occur on systems running with no-CBs CPUs that have
+long periods of time where RCU is completely idle, which can happen on
+some embedded systems.  The second problem is a documentation error
+for the "rcutree.rcu_nocb_poll" boot parameter.  In this case, Paul Gortmaker
+(rightly) noted that the need for "rcutree." was inconsistent with the
+"rcu_nocbs=<cpumap>" boot parameter.  The fix therefore to make the boot
+parameter named "rcu_nocb_poll".
 
->
-> And you don't need the newlines between each sentence.
+These problems only affect kernels built with the new CONFIG_RCU_NOCB_CPU
+kernel parameter, but still should be fixed.
 
-Just want to make it more readable.
+These fixes are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
 
->
-> Acked-by: Borislav Petkov <bp@suse.de>
+							Thanx, Paul
 
-Thanks, I add that.
+------------------>
+Paul Gortmaker (2):
+      rcu: Prevent soft-lockup complaints about no-CBs CPUs
+      rcu: Make rcu_nocb_poll an early_param instead of module_param
 
-Also, congratulation for the new job.
+ Documentation/kernel-parameters.txt |    2 +-
+ kernel/rcutree_plugin.h             |   13 ++++++++++---
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-Yinghai
