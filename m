@@ -1,221 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab3AKISn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 03:18:43 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:46212 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688Ab3AKISm (ORCPT
+	id S1755436Ab3AKIS4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 03:18:56 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:43816 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319Ab3AKISy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 03:18:42 -0500
-Message-ID: <50EFCAD9.5020402@linux.vnet.ibm.com>
-Date: Fri, 11 Jan 2013 16:18:33 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 11 Jan 2013 03:18:54 -0500
+Message-ID: <50EFCAE6.9070306@omicron.at>
+Date: Fri, 11 Jan 2013 09:18:46 +0100
+From: Christian Riesch <christian.riesch@omicron.at>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>, Tejun Heo <tj@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC PATCH 2/2] sched: simplify select_task_rq_fair() with schedule
- balance map
-References: <50EFCA29.8020801@linux.vnet.ibm.com>
-In-Reply-To: <50EFCA29.8020801@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: freddy@asix.com.tw
+CC: Ming Lei <ming.lei@canonical.com>, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, louis@asix.com.tw,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0 to gigabit
+ ethernet adapter driver
+References: <1357867046-22918-1-git-send-email-freddy@asix.com.tw> <CACVXFVMdgx1we67poF5yU5pAYRYoA9Ao1EJqQgGBaaORuARFQQ@mail.gmail.com>
+In-Reply-To: <CACVXFVMdgx1we67poF5yU5pAYRYoA9Ao1EJqQgGBaaORuARFQQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011108-1396-0000-0000-000002671CEE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since schedule balance map provide the approach to get proper sd directly,
-simplify the code of select_task_rq_fair() is possible.
+Hi,
 
-The new code is designed to reserve most of the old logical, but get rid
-of those 'for' by using the schedule balance map to locate proper sd
-directly.
+On 2013-01-11 03:45, Ming Lei wrote:
+> Cc netdev and usb lists.
+>
+>
+> On Fri, Jan 11, 2013 at 9:17 AM,  <freddy@asix.com.tw> wrote:
+>> From: Freddy Xin <freddy@asix.com.tw>
+>>
+>> This patch adds a driver for ASIX's AX88179 family of USB 3.0/2.0
+>> to gigabit ethernet adapters. It's based on the AX88xxx driver but
+>> the usb commands used to access registers for AX88179 are completely different.
+>> This driver had been verified on x86 system with AX88179/AX88178A and
+>> Sitcomm LN-032 USB dongles.
+>>
+>> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+>> ---
+>>   drivers/net/usb/Kconfig        |   18 +
+>>   drivers/net/usb/Makefile       |    1 +
+>>   drivers/net/usb/ax88179_178a.c | 1457 ++++++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 1476 insertions(+)
+>>   create mode 100644 drivers/net/usb/ax88179_178a.c
+>>
 
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- kernel/sched/fair.c |  133 +++++++++++++++++++++++++++------------------------
- 1 files changed, 70 insertions(+), 63 deletions(-)
+[...]
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6b800a1..20b6f5b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2682,100 +2682,107 @@ done:
- }
- 
- /*
-- * sched_balance_self: balance the current task (running on cpu) in domains
-- * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
-- * SD_BALANCE_EXEC.
-+ * select_task_rq_fair()
-+ *		select a proper cpu for task to run.
-  *
-- * Balance, ie. select the least loaded group.
-- *
-- * Returns the target CPU number, or the same CPU if no balancing is needed.
-- *
-- * preempt must be disabled.
-+ *	p		-- the task we are going to select cpu for
-+ *	sd_flag		-- indicate the context, WAKE, EXEC or FORK.
-+ *	wake_flag	-- we only care about WF_SYNC currently
-  */
- static int
- select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- {
--	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
-+	struct sched_domain *sd = NULL;
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	int new_cpu = cpu;
--	int want_affine = 0;
- 	int sync = wake_flags & WF_SYNC;
-+	struct sched_balance_map *sbm = NULL;
-+	int type = 0;
- 
- 	if (p->nr_cpus_allowed == 1)
- 		return prev_cpu;
- 
--	if (sd_flag & SD_BALANCE_WAKE) {
--		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
--			want_affine = 1;
--		new_cpu = prev_cpu;
--	}
-+	if (sd_flag & SD_BALANCE_EXEC)
-+		type = SBM_EXEC_TYPE;
-+	else if (sd_flag & SD_BALANCE_FORK)
-+		type = SBM_FORK_TYPE;
-+	else if (sd_flag & SD_BALANCE_WAKE)
-+		type = SBM_WAKE_TYPE;
- 
- 	rcu_read_lock();
--	for_each_domain(cpu, tmp) {
--		if (!(tmp->flags & SD_LOAD_BALANCE))
--			continue;
- 
-+	sbm = cpu_rq(cpu)->sbm;
-+	if (!sbm)
-+		goto unlock;
-+
-+	if (sd_flag & SD_BALANCE_WAKE) {
- 		/*
--		 * If both cpu and prev_cpu are part of this domain,
--		 * cpu is a valid SD_WAKE_AFFINE target.
-+		 * Tasks to be waked is special, memory it relied on
-+		 * may has already been cached on prev_cpu, and usually
-+		 * they require low latency.
-+		 *
-+		 * So firstly try to locate an idle cpu shared the cache
-+		 * with prev_cpu, it has the chance to break the load
-+		 * balance, fortunately, select_idle_sibling() will search
-+		 * from top to bottom, which help to reduce the chance in
-+		 * some cases.
- 		 */
--		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
--		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
--			affine_sd = tmp;
--			break;
--		}
-+		new_cpu = select_idle_sibling(p, prev_cpu);
-+		if (idle_cpu(new_cpu))
-+			goto unlock;
- 
--		if (tmp->flags & sd_flag)
--			sd = tmp;
--	}
-+		/*
-+		 * No idle cpu could be found in the topology of prev_cpu,
-+		 * before jump into the slow balance_path, try search again
-+		 * in the topology of current cpu if it is the affine of
-+		 * prev_cpu.
-+		 */
-+		if (!sbm->affine_map[prev_cpu] &&
-+				!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
-+			goto balance_path;
- 
--	if (affine_sd) {
--		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
--			prev_cpu = cpu;
-+		new_cpu = select_idle_sibling(p, cpu);
-+		if (!idle_cpu(new_cpu))
-+			goto balance_path;
- 
--		new_cpu = select_idle_sibling(p, prev_cpu);
--		goto unlock;
-+		/*
-+		 * Invoke wake_affine() finally since it is no doubt a
-+		 * performance killer.
-+		 */
-+		if (wake_affine(sbm->affine_map[prev_cpu], p, sync))
-+			goto unlock;
- 	}
- 
-+balance_path:
-+	new_cpu = cpu;
-+	sd = sbm->sd[type][sbm->top_level[type]];
-+
- 	while (sd) {
- 		int load_idx = sd->forkexec_idx;
--		struct sched_group *group;
--		int weight;
--
--		if (!(sd->flags & sd_flag)) {
--			sd = sd->child;
--			continue;
--		}
-+		struct sched_group *sg = NULL;
- 
- 		if (sd_flag & SD_BALANCE_WAKE)
- 			load_idx = sd->wake_idx;
- 
--		group = find_idlest_group(sd, p, cpu, load_idx);
--		if (!group) {
--			sd = sd->child;
--			continue;
--		}
-+		sg = find_idlest_group(sd, p, cpu, load_idx);
-+		if (!sg)
-+			goto next_sd;
- 
--		new_cpu = find_idlest_cpu(group, p, cpu);
--		if (new_cpu == -1 || new_cpu == cpu) {
--			/* Now try balancing at a lower domain level of cpu */
--			sd = sd->child;
--			continue;
--		}
-+		new_cpu = find_idlest_cpu(sg, p, cpu);
-+		if (new_cpu != -1)
-+			cpu = new_cpu;
-+next_sd:
-+		if (!sd->level)
-+			break;
-+
-+		sbm = cpu_rq(cpu)->sbm;
-+		if (!sbm)
-+			break;
-+
-+		sd = sbm->sd[type][sd->level - 1];
-+	};
- 
--		/* Now try balancing at a lower domain level of new_cpu */
--		cpu = new_cpu;
--		weight = sd->span_weight;
--		sd = NULL;
--		for_each_domain(cpu, tmp) {
--			if (weight <= tmp->span_weight)
--				break;
--			if (tmp->flags & sd_flag)
--				sd = tmp;
--		}
--		/* while loop will break here if sd == NULL */
--	}
- unlock:
- 	rcu_read_unlock();
- 
--- 
-1.7.4.1
+>> diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+>> new file mode 100644
+>> index 0000000..47504ea
+>> --- /dev/null
+>> +++ b/drivers/net/usb/ax88179_178a.c
+[...]
+>> +static int ax88179_read_cmd(struct usbnet *dev, u8 cmd, u16 value, u16 index,
+>> +                           u16 size, void *data)
+>> +{
+>> +       int ret;
+>> +       ret = usbnet_read_cmd(dev, cmd,
+>> +                              USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+>> +                              value, index, data, size);
+>> +
+>> +       if (ret != size && ret >= 0)
+>> +               return -EINVAL;
+>> +       return ret;
+>> +}
+>> +
+>> +static int ax88179_write_cmd(struct usbnet *dev, u8 cmd, u16 value, u16 index,
+>> +                            u16 size, void *data)
+>> +{
+>> +       return usbnet_write_cmd(dev, cmd, USB_DIR_OUT | USB_TYPE_VENDOR
+>> +                               | USB_RECIP_DEVICE, value, index, data, size);
+>> +}
+>> +
+>> +static void
+>> +ax88179_write_cmd_async(struct usbnet *dev, u8 cmd, u16 value, u16 index,
+>> +                                   u16 size, void *data)
+>> +{
+>> +       usbnet_write_cmd_async(dev, cmd,
+>> +                              USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+>> +                              value, index, data, size);
+>> +}
+>> +
+
+ax88179_read_cmd, ax88179_write_cmd, and ax88179_write_cmd_async 
+duplicate code from asix_common.c.
+
+[...]
+
+>> +static int ax88179_get_eeprom(struct net_device *net,
+>> +                             struct ethtool_eeprom *eeprom, u8 *data)
+>> +{
+>> +       struct usbnet *dev = netdev_priv(net);
+>> +       u16 *ebuf = (u16 *)data;
+>> +       int i;
+>> +
+>> +       /* Crude hack to ensure that we don't overwrite memory
+>> +        * if an odd length is supplied
+
+Have a look at asix_get_eeprom() in asix_common.c for a better 
+implementation. There is also code for programming the eeprom 
+(asix_set_eeprom in asix_common.c), can this be used for the 
+AX88179/178A as well?
+
+Regards, Christian
+
+>> +        */
+>> +       if (eeprom->len % 2)
+>> +               return -EINVAL;
+>> +
+>> +       /* ax8817x returns 2 bytes from eeprom on read */
+>> +       for (i = 0; i < eeprom->len / 2; i++) {
+>> +               if (ax88179_read_cmd(dev, AX_ACCESS_EEPROM,
+>> +                       eeprom->offset + i, 1, 2, &ebuf[i]) < 0)
+>> +                       return -EINVAL;
+>> +       }
+>> +       return 0;
+>> +}
+>> +
 
