@@ -1,106 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab3AKDpd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 22:45:33 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:52761 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab3AKDpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 22:45:32 -0500
+	id S1754840Ab3AKDp7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 22:45:59 -0500
+Received: from mga01.intel.com ([192.55.52.88]:49158 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753628Ab3AKDp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 22:45:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,449,1355126400"; 
+   d="scan'208";a="272523770"
+Message-ID: <50EF8B37.7050404@intel.com>
+Date: Fri, 11 Jan 2013 11:47:03 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130110133922.GB19858@dhcp22.suse.cz>
-References: <1357818238-11455-1-git-send-email-handai.szj@taobao.com>
-	<20130110133922.GB19858@dhcp22.suse.cz>
-Date: Fri, 11 Jan 2013 11:45:31 +0800
-Message-ID: <CAFj3OHVd1ZaM9fuNvcwE63J+vVATJWhnmCjBOWJEUjBLv13shw@mail.gmail.com>
-Subject: Re: [PATCH] memcg: modify swap accounting function to support THP
-From: Sha Zhengju <handai.szj@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Sha Zhengju <handai.szj@taobao.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Morten Rasmussen <Morten.Rasmussen@arm.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 17/22] sched: packing small tasks in wake/exec balancing
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-18-git-send-email-alex.shi@intel.com> <20130110171728.GG2046@e103034-lin>
+In-Reply-To: <20130110171728.GG2046@e103034-lin>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 9:39 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Thu 10-01-13 19:43:58, Sha Zhengju wrote:
->> From: Sha Zhengju <handai.szj@taobao.com>
->
-> THP are not swapped out because they are split before so this change
-> doesn't make much sense to me.
-
-Yes... I have been puzzled by 'nr_pages' in __mem_cgroup_uncharge_common..
-Sorry for the noise. : )
-
->
->> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+On 01/11/2013 01:17 AM, Morten Rasmussen wrote:
+> On Sat, Jan 05, 2013 at 08:37:46AM +0000, Alex Shi wrote:
+>> If the wake/exec task is small enough, utils < 12.5%, it will
+>> has the chance to be packed into a cpu which is busy but still has space to
+>> handle it.
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
 >> ---
->>  mm/memcontrol.c |   13 ++++++-------
->>  1 file changed, 6 insertions(+), 7 deletions(-)
+>>  kernel/sched/fair.c | 51 +++++++++++++++++++++++++++++++++++++++++++++------
+>>  1 file changed, 45 insertions(+), 6 deletions(-)
 >>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 3817460..674cf21 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -914,10 +914,9 @@ static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 8d0d3af..0596e81 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -3471,19 +3471,57 @@ static inline int get_sd_sched_policy(struct sched_domain *sd,
 >>  }
->>
->>  static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg,
->> -                                      bool charge)
->> +                                      int nr_pages)
->>  {
->> -     int val = (charge) ? 1 : -1;
->> -     this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_SWAP], val);
->> +     this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_SWAP], nr_pages);
->>  }
->>
->>  static unsigned long mem_cgroup_read_events(struct mem_cgroup *memcg,
->> @@ -4107,7 +4106,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype,
->>        */
->>       memcg_check_events(memcg, page);
->>       if (do_swap_account && ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT) {
->> -             mem_cgroup_swap_statistics(memcg, true);
->> +             mem_cgroup_swap_statistics(memcg, nr_pages);
->>               mem_cgroup_get(memcg);
->>       }
->>       /*
->> @@ -4238,7 +4237,7 @@ void mem_cgroup_uncharge_swap(swp_entry_t ent)
->>                */
->>               if (!mem_cgroup_is_root(memcg))
->>                       res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
->> -             mem_cgroup_swap_statistics(memcg, false);
->> +             mem_cgroup_swap_statistics(memcg, -1);
->>               mem_cgroup_put(memcg);
->>       }
->>       rcu_read_unlock();
->> @@ -4267,8 +4266,8 @@ static int mem_cgroup_move_swap_account(swp_entry_t entry,
->>       new_id = css_id(&to->css);
->>
->>       if (swap_cgroup_cmpxchg(entry, old_id, new_id) == old_id) {
->> -             mem_cgroup_swap_statistics(from, false);
->> -             mem_cgroup_swap_statistics(to, true);
->> +             mem_cgroup_swap_statistics(from, -1);
->> +             mem_cgroup_swap_statistics(to, 1);
->>               /*
->>                * This function is only called from task migration context now.
->>                * It postpones res_counter and refcount handling till the end
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> Michal Hocko
-> SUSE Labs
+>>  
+>>  /*
+>> + * find_leader_cpu - find the busiest but still has enough leisure time cpu
+>> + * among the cpus in group.
+>> + */
+>> +static int
+>> +find_leader_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+>> +{
+>> +	unsigned vacancy, min_vacancy = UINT_MAX;
+> 
+> unsigned int?
 
+yes
+> 
+>> +	int idlest = -1;
+>> +	int i;
+>> +	/* percentage the task's util */
+>> +	unsigned putil = p->se.avg.runnable_avg_sum * 100
+>> +				/ (p->se.avg.runnable_avg_period + 1);
+> 
+> Alternatively you could use se.avg.load_avg_contrib which is the same
+> ratio scaled by the task priority (se->load.weight). In the above
+> expression you don't take priority into account.
 
+sure. but this seems more directly of meaningful.
+> 
+>> +
+>> +	/* Traverse only the allowed CPUs */
+>> +	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
+>> +		struct rq *rq = cpu_rq(i);
+>> +		int nr_running = rq->nr_running > 0 ? rq->nr_running : 1;
+>> +
+>> +		/* only pack task which putil < 12.5% */
+>> +		vacancy = FULL_UTIL - (rq->util * nr_running + putil * 8);
+> 
+> I can't follow this expression.
+> 
+> The variables can have the following values:
+> FULL_UTIL  = 99
+> rq->util   = [0..99]
+> nr_running = [1..inf]
+> putil      = [0..99]
+> 
+> Why multiply rq->util by nr_running?
+> 
+> Let's take an example where rq->util = 50, nr_running = 2, and putil =
+> 10. In this case the value of putil doesn't really matter as vacancy
+> would be negative anyway since FULL_UTIL - rq->util * nr_running is -1.
+> However, with rq->util = 50 there should be plenty of spare cpu time to
+> take another task.
 
--- 
-Thanks,
-Sha
+for this example, the util is not full maybe due to it was just wake up,
+it still is possible like to run full time. So, I try to give it the
+large guess load.
+> 
+> Also, why multiply putil by 8? rq->util must be very close to 0 for
+> vacancy to be positive if putil is close to 12 (12.5%).
+
+just want to pack small util tasks, since packing is possible to hurt
+performance.
+> 
+> The vacancy variable is declared unsigned, so it will underflow instead
+> of becoming negative. Is this intentional?
+
+ops, my mistake.
+> 
+> I may be missing something, but could the expression be something like
+> the below instead?
+> 
+> Create a putil < 12.5% check before the loop. There is no reason to
+> recheck it every iteration. Then:
+> 
+> vacancy = FULL_UTIL - (rq->util + putil)
+> 
+> should be enough?
+> 
+>> +
+>> +		/* bias toward local cpu */
+>> +		if (vacancy > 0 && (i == this_cpu))
+>> +			return i;
+>> +
+>> +		if (vacancy > 0 && vacancy < min_vacancy) {
+>> +			min_vacancy = vacancy;
+>> +			idlest = i;
+> 
+> "idlest" may be a bit misleading here as you actually select busiest cpu
+> that have enough spare capacity to take the task.
+
+Um, change to leader_cpu?
+> 
+> Morten
+> 
