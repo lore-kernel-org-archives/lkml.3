@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab3AKVxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 16:53:16 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38187 "EHLO hydra.sisk.pl"
+	id S1755610Ab3AKVzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 16:55:11 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38189 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754799Ab3AKVxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 16:53:15 -0500
+	id S1754674Ab3AKVzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 16:55:09 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>
-Subject: Re: [PATCH 0/6] ACPI / PM: ACPI power management update
-Date: Fri, 11 Jan 2013 22:59:02 +0100
-Message-ID: <1522746.siPuD1toxr@vostro.rjw.lan>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ACPI: SRAT: report non-volatile memory in debug
+Date: Fri, 11 Jan 2013 23:00:56 +0100
+Message-ID: <3150570.0Bmftke3IF@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2311196.icSMDvAsYg@vostro.rjw.lan>
-References: <2311196.icSMDvAsYg@vostro.rjw.lan>
+In-Reply-To: <1357769168.1800.3.camel@buesod1.americas.hpqcorp.net>
+References: <1357769168.1800.3.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -23,32 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 04, 2013 10:58:41 PM Rafael J. Wysocki wrote:
-> Hi All,
-> 
-> There are a few changes of the ACPI power management code I've gathered
-> over the last few weeks.  Some of them are just cleanups etc., but some
-> fix (potential) problems and/or add new functionality.
-> 
-> [1/6] - Rework power states changing so that we put devices into D3hot
->         (if available) before removing power from them entirely.
-> [2/6] - Rename __acpi_bus_get_power() (for future use).
-> [3/6] - Rename state_string() (in bus.c, for future use).
-> [4/6] - Export the (current) power states of ACPI devices via sysfs.
-> [5/6] - Move device power management functions from bus.c to device_pm.c.
-> [6/6] - (Unrelated to the above) Get rid of some ugly #ifdefs in sleep.c.
-> 
-> All of them except for [1/6] have been posted already and no one has had any
-> comments.
-> 
-> Please review.
+On Wednesday, January 09, 2013 02:06:08 PM Davidlohr Bueso wrote:
+> Just as with the other memory affinity flags, report
+> non-volatile memory with ACPI debug.
 
-OK, I don't see any objections, so I'm taking it into linux-next for v3.9.
+Applied to the linux-next branch of the linux-pm.git tree as v3.9 material.
 
 Thanks,
 Rafael
 
 
+> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> ---
+>  drivers/acpi/numa.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+> index cb31298..2935d3a 100644
+> --- a/drivers/acpi/numa.c
+> +++ b/drivers/acpi/numa.c
+> @@ -116,14 +116,16 @@ acpi_table_print_srat_entry(struct acpi_subtable_header *header)
+>  			struct acpi_srat_mem_affinity *p =
+>  			    (struct acpi_srat_mem_affinity *)header;
+>  			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> -					  "SRAT Memory (0x%lx length 0x%lx) in proximity domain %d %s%s\n",
+> +					  "SRAT Memory (0x%lx length 0x%lx) in proximity domain %d %s%s%s\n",
+>  					  (unsigned long)p->base_address,
+>  					  (unsigned long)p->length,
+>  					  p->proximity_domain,
+>  					  (p->flags & ACPI_SRAT_MEM_ENABLED)?
+>  					  "enabled" : "disabled",
+>  					  (p->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE)?
+> -					  " hot-pluggable" : ""));
+> +					  " hot-pluggable" : "",
+> +					  (p->flags & ACPI_SRAT_MEM_NON_VOLATILE)?
+> +					  " non-volatile" : ""));
+>  		}
+>  #endif				/* ACPI_DEBUG_OUTPUT */
+>  		break;
+> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
