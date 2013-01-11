@@ -1,111 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab3AKUkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:40:47 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38086 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754566Ab3AKUkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:40:46 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Myron Stowe <mstowe@redhat.com>,
-        Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
-Date: Fri, 11 Jan 2013 21:46:32 +0100
-Message-ID: <5417295.floNgGijFf@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo6eB=Gn6wPBK=_KYhP=NOi26AmuJd_rS-zAw+2ERdrcew@mail.gmail.com>
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <17637668.59BS4lW4dN@vostro.rjw.lan> <CAErSpo6eB=Gn6wPBK=_KYhP=NOi26AmuJd_rS-zAw+2ERdrcew@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754080Ab3AKUmg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:42:36 -0500
+Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:12787 "EHLO
+	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753326Ab3AKUmf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 15:42:35 -0500
+From: Maya Erez <merez@codeaurora.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] mmc: core: disable the cache before suspend only after stopping BKOPS
+Date: Fri, 11 Jan 2013 22:42:01 +0200
+Message-Id: <1357936936-25977-1-git-send-email-merez@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 11, 2013 11:06:29 AM Bjorn Helgaas wrote:
-> On Thu, Jan 10, 2013 at 4:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, January 10, 2013 03:40:45 PM Yinghai Lu wrote:
-> >> On Thu, Jan 10, 2013 at 3:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Thursday, January 10, 2013 03:03:53 PM Yinghai Lu wrote:
-> >> >> On Thu, Jan 10, 2013 at 1:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> > Well, I don't see what functional problems that can bring.
-> >> >> >
-> >> >> > In theory people may want to have them as modules to avoid loading them on
-> >> >> > systems that don't use PCI hotplug, but honestly I think that the complexity
-> >> >> > this causes us to deal with is not worth it.
-> >> >> >
-> >> >> > Moreover, removing the modularity may actually allow us to solve some ordering
-> >> >> > issues once and for good.
-> >> >>
-> >> >> No, the world is not really ideal yet.
-> >> >>
-> >> >> looks like laptops have problem with pci express cards.
-> >> >>
-> >> >> when pciehp is used, surprise insert/removal does not work because
-> >> >> PresDect does not change properly, so no interrupt is generated.
-> >> >> --- i suspects that is silicon problem.
-> >> >>
-> >> >> but when acpiphp is used, that surprise  insert/removal is working.
-> >> >>
-> >> >> some laptop like thinkpad, just don't give osc to kernel..
-> >> >> [    0.505117]  pci0000:00: Requesting ACPI _OSC control (0x1d)
-> >> >> [    0.505413]  pci0000:00: ACPI _OSC request failed (AE_SUPPORT),
-> >> >> returned control mask: 0x0d
-> >> >> [    0.505517] ACPI _OSC control for PCIe not granted, disabling ASPM
-> >> >>
-> >> >> and other laptop give that to kernel, in recent kernel will not give
-> >> >> acpiphp to have that slot, because it want to hold that for pciehp.
-> >> >> poor user have to pass 'pci_aspm=off" to disable _OSC for all.
-> >> >> --- please check the mail that i forward to you yesterday.
-> >> >
-> >> > Yes, this is a bug, but I'm not sure how to fix it yet.
-> >>
-> >> add one command line to control it so do not claim that in osc_control?
-> >
-> > That's one option, although not very attractive so to speak.
-> >
-> >> >> Anyway, we do need to let the user to have choice to use acpiphp and pciehp.
-> >> >> and it should be first come and first serve policy.
-> >> >
-> >> > And that's why you think they should be modules?  I disagree if so.
-> >>
-> >> Yes.
-> >>
-> >> maybe we can have pci=nopciehp in command line just we pci=noaer...
-> >>
-> >> that should handle some corner cases.
-> >
-> > Yes.  In any case the user should be able to say "I know better", but having
-> > to express that through the "right" ordering of modules is somewhat less than
-> > straightforward in my opinion.
-> 
-> I think it's fine if a user *can* override the default ordering.
-> 
-> I am completely opposed to *requiring* a user to supply a command line
-> option or change the order of module loading just to get hotplug to
-> work.  There's no sane way to document that or communicate that
-> information to users.
+mmc_cache_ctrl was called in runtime suspend before MMC interrupted
+BKOPS in case it is still running on the card. This caused the cache
+disable to timeout.
+Therefore, mmc_cache_ctrl has to move to mmc_suspend where we are sure
+that the card can go into suspend and there is no pending activity.
 
-Well, I agree that neither of these things should be necessary, but that
-means the current code is based on incorrect assumptions.
+Signed-off-by: Maya Erez <merez@codeaurora.org>
+---
+ drivers/mmc/core/core.c |    7 +------
+ drivers/mmc/core/mmc.c  |    8 +++++++-
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
-Perhaps our mistake is to believe that once we've done the _OSC handshake,
-we are supposed not to use ACPI for hotplug events handling?  It looks like
-the general expectation of BIOS writers is that we will use ACPI regardless
-if available and we *may* use the native PCIe signaling in addition to it if
-the _OSC handshake is successful.
-
-So maybe there should be just one PCI hotplug driver that can use both
-ACPI and PCIe native events?  [The same applies to PM, but the situation is
-a bit simpler in there.]
-
-Thanks,
-Rafael
-
-
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index aaed768..b438bb2 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -2388,6 +2388,7 @@ EXPORT_SYMBOL(mmc_flush_cache);
+  * Turn the cache ON/OFF.
+  * Turning the cache OFF shall trigger flushing of the data
+  * to the non-volatile storage.
++ * This function should be called with host claimed
+  */
+ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+ {
+@@ -2399,7 +2400,6 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+ 			mmc_card_is_removable(host))
+ 		return err;
+ 
+-	mmc_claim_host(host);
+ 	if (card && mmc_card_mmc(card) &&
+ 			(card->ext_csd.cache_size > 0)) {
+ 		enable = !!enable;
+@@ -2417,7 +2417,6 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+ 				card->ext_csd.cache_ctrl = enable;
+ 		}
+ 	}
+-	mmc_release_host(host);
+ 
+ 	return err;
+ }
+@@ -2436,10 +2435,6 @@ int mmc_suspend_host(struct mmc_host *host)
+ 	cancel_delayed_work(&host->detect);
+ 	mmc_flush_scheduled_work();
+ 
+-	err = mmc_cache_ctrl(host, 0);
+-	if (err)
+-		goto out;
+-
+ 	mmc_bus_get(host);
+ 	if (host->bus_ops && !host->bus_dead) {
+ 		if (host->bus_ops->suspend) {
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index e6e3911..dc17d40 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -1379,6 +1379,11 @@ static int mmc_suspend(struct mmc_host *host)
+ 	BUG_ON(!host->card);
+ 
+ 	mmc_claim_host(host);
++
++	err = mmc_cache_ctrl(host, 0);
++	if (err)
++		goto out;
++
+ 	if (mmc_can_poweroff_notify(host->card))
+ 		err = mmc_poweroff_notify(host->card, EXT_CSD_POWER_OFF_SHORT);
+ 	else if (mmc_card_can_sleep(host))
+@@ -1386,8 +1391,9 @@ static int mmc_suspend(struct mmc_host *host)
+ 	else if (!mmc_host_is_spi(host))
+ 		err = mmc_deselect_cards(host);
+ 	host->card->state &= ~(MMC_STATE_HIGHSPEED | MMC_STATE_HIGHSPEED_200);
+-	mmc_release_host(host);
+ 
++out:
++	mmc_release_host(host);
+ 	return err;
+ }
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.3.3
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
