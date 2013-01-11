@@ -1,124 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab3AKWlW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 17:41:22 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38436 "EHLO
+	id S1756086Ab3AKWnD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 17:43:03 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38457 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755957Ab3AKWlT (ORCPT
+	with ESMTP id S1756065Ab3AKWlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 17:41:19 -0500
+	Fri, 11 Jan 2013 17:41:21 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Jiang Liu <jiang.liu@huawei.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 14/22] ACPI: update ej_event interface to take acpi_device
-Date: Fri, 11 Jan 2013 14:40:41 -0800
-Message-Id: <1357944049-29620-15-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 18/22] PCI, acpiphp: Use acpi_hp_work
+Date: Fri, 11 Jan 2013 14:40:45 -0800
+Message-Id: <1357944049-29620-19-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
 References: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Should use acpi_device pointer directly instead of use handle and
-get the device pointer again later.
+Remove local defined acpiphp_hp_work.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Len Brown <lenb@kernel.org>
+Cc: linux-acpi@vger.kernel.org
 ---
- drivers/acpi/acpi_memhotplug.c  |    2 +-
- drivers/acpi/processor_driver.c |    2 +-
- drivers/acpi/scan.c             |   14 ++++----------
- include/acpi/acpi_bus.h         |    2 +-
- 4 files changed, 7 insertions(+), 13 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   42 ++++++------------------------------
+ 1 file changed, 6 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 327ab44..eaddb7a 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -361,7 +361,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
- 			break;
- 		}
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 30467ec..82e8883 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -1197,34 +1197,6 @@ check_sub_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	return AE_OK ;
+ }
  
--		ej_event->handle = handle;
-+		ej_event->device = device;
- 		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
- 		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
- 					(void *)ej_event);
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index 0777663..a24ee43 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -733,7 +733,7 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
- 			break;
- 		}
- 
--		ej_event->handle = handle;
-+		ej_event->device = device;
- 		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
- 		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
- 					(void *)ej_event);
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 8883539..f4c6305 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -116,20 +116,14 @@ static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
- void acpi_bus_hot_remove_device(void *context)
+-struct acpiphp_hp_work {
+-	struct work_struct work;
+-	acpi_handle handle;
+-	u32 type;
+-	void *context;
+-};
+-
+-static void alloc_acpiphp_hp_work(acpi_handle handle, u32 type,
+-				  void *context,
+-				  void (*func)(struct work_struct *work))
+-{
+-	struct acpiphp_hp_work *hp_work;
+-	int ret;
+-
+-	hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
+-	if (!hp_work)
+-		return;
+-
+-	hp_work->handle = handle;
+-	hp_work->type = type;
+-	hp_work->context = context;
+-
+-	INIT_WORK(&hp_work->work, func);
+-	ret = queue_work(kacpi_hotplug_wq, &hp_work->work);
+-	if (!ret)
+-		kfree(hp_work);
+-}
+-
+ static void _handle_hotplug_event_bridge(struct work_struct *work)
  {
- 	struct acpi_eject_event *ej_event = (struct acpi_eject_event *) context;
--	struct acpi_device *device;
--	acpi_handle handle = ej_event->handle;
-+	struct acpi_device *device = ej_event->device;
-+	acpi_handle handle = device->handle;
- 	acpi_handle temp;
- 	struct acpi_object_list arg_list;
- 	union acpi_object arg;
- 	acpi_status status = AE_OK;
- 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+ 	struct acpiphp_bridge *bridge;
+@@ -1233,11 +1205,11 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
+ 				      .pointer = objname };
+ 	struct acpi_device *device;
+ 	int num_sub_bridges = 0;
+-	struct acpiphp_hp_work *hp_work;
++	struct acpi_hp_work *hp_work;
+ 	acpi_handle handle;
+ 	u32 type;
  
--	if (acpi_bus_get_device(handle, &device))
--		goto err_out;
--
--	if (!device)
--		goto err_out;
--
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 		"Hot-removing device %s...\n", dev_name(&device->dev)));
+-	hp_work = container_of(work, struct acpiphp_hp_work, work);
++	hp_work = container_of(work, struct acpi_hp_work, work);
+ 	handle = hp_work->handle;
+ 	type = hp_work->type;
  
-@@ -215,7 +209,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
- 		goto err;
- 	}
+@@ -1340,8 +1312,7 @@ static void handle_hotplug_event_bridge(acpi_handle handle, u32 type,
+ 	 * For now just re-add this work to the kacpi_hotplug_wq so we
+ 	 * don't deadlock on hotplug actions.
+ 	 */
+-	alloc_acpiphp_hp_work(handle, type, context,
+-			      _handle_hotplug_event_bridge);
++	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
+ }
  
--	ej_event->handle = acpi_device->handle;
-+	ej_event->device = acpi_device;
- 	if (acpi_device->flags.eject_pending) {
- 		/* event originated from ACPI eject notification */
- 		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-@@ -223,7 +217,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
- 	} else {
- 		/* event originated from user */
- 		ej_event->event = ACPI_OST_EC_OSPM_EJECT;
--		(void) acpi_evaluate_hotplug_ost(ej_event->handle,
-+		(void) acpi_evaluate_hotplug_ost(acpi_device->handle,
- 			ej_event->event, ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
- 	}
+ static void _handle_hotplug_event_func(struct work_struct *work)
+@@ -1350,12 +1321,12 @@ static void _handle_hotplug_event_func(struct work_struct *work)
+ 	char objname[64];
+ 	struct acpi_buffer buffer = { .length = sizeof(objname),
+ 				      .pointer = objname };
+-	struct acpiphp_hp_work *hp_work;
++	struct acpi_hp_work *hp_work;
+ 	acpi_handle handle;
+ 	u32 type;
+ 	void *context;
  
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 2246ba9..181ff2d 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -309,7 +309,7 @@ struct acpi_bus_event {
- };
+-	hp_work = container_of(work, struct acpiphp_hp_work, work);
++	hp_work = container_of(work, struct acpi_hp_work, work);
+ 	handle = hp_work->handle;
+ 	type = hp_work->type;
+ 	context = hp_work->context;
+@@ -1416,8 +1387,7 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
+ 	 * For now just re-add this work to the kacpi_hotplug_wq so we
+ 	 * don't deadlock on hotplug actions.
+ 	 */
+-	alloc_acpiphp_hp_work(handle, type, context,
+-			      _handle_hotplug_event_func);
++	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
+ }
  
- struct acpi_eject_event {
--	acpi_handle	handle;
-+	struct acpi_device	*device;
- 	u32		event;
- };
- 
+ static struct acpi_pci_driver acpi_pci_hp_driver = {
 -- 
 1.7.10.4
 
