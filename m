@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab3AKJLJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 04:11:09 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46386 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753580Ab3AKJLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 04:11:07 -0500
-Message-ID: <50EFD728.8090204@ti.com>
-Date: Fri, 11 Jan 2013 10:11:04 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH resend 2/2] Input: twl6040-vibra: Code cleanup in probe
- with devm_* conversion
-References: <1357824965-30614-1-git-send-email-peter.ujfalusi@ti.com> <1357824965-30614-3-git-send-email-peter.ujfalusi@ti.com> <20130110175421.GC2797@core.coreip.homeip.net>
-In-Reply-To: <20130110175421.GC2797@core.coreip.homeip.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	id S1755512Ab3AKJLn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 04:11:43 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:37405 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab3AKJLl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 04:11:41 -0500
+Date: Fri, 11 Jan 2013 17:11:28 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: axboe <axboe@kernel.dk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [PATCH] blkcg: Before starting a new slice, firstly count bps/iops limit in func tg_may_dispatch.
+X-Priority: 3
+X-GUID: 11D4D313-2D71-489F-8EF1-95C16127CA80
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
+Mime-Version: 1.0
+Message-ID: <201301111711251317275@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0B9Bk6I019670
 
-Hi Dmitry,
+In func tg_may_dispatch,
+>if (throtl_slice_used(td, tg, rw))
+>		throtl_start_new_slice(td, tg, rw);
+...
+>if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
+>	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait)) {
 
-On 01/10/2013 06:54 PM, Dmitry Torokhov wrote:
-> Hi Peter,
-> 
-> On Thu, Jan 10, 2013 at 02:36:05PM +0100, Peter Ujfalusi wrote:
->> Convert the probe to use devm_*. At the same time reorder the calls
->> so we will register the input device as the last step when the driver
->> is loaded.
-> 
-> If you are doing this please also use devm_input_allocate_device() and
-> devm_regulator_bulk_get().
+In funcs tg_with_in_(bps/iops)_limit, it used the slice_start to count.
+So if privious slice expired, it start a new slice.This can cause hung
+task.
 
-Now I remember: I can not switch to devm_regulator_bulk_get() unfortunately
-since when we boot with DT the code needs to reach up for the parent's dev to
-get the needed regulator. If I use devm_regulator_bulk_get() the resource will
-be bind to the parent dev and not to the vibra driver.
+The next steps can repeat this bug.
+1:echo "8:48 10240" > blkio.throttle.write_bps_devic
+2:dd if=/dev/zero of=/dev/sdd bs=1M count=1 oflag=direct
 
-> I also think it is high time to get rid of
-> dedicated work queue - cwq hasn't actually given you a separate therad
-> for a while now and if you get rid of workqueue you can get ridof entire
-> twl6040_vibra_remove().
+Using the blktrace, the messages about throttle:
+root@kernel:/mnt/programs# blktrace -d /dev/sdd -a notify -o -|blkparse -i -
+  8,48   1        0     0.000000000     0  m   N throtl / [W] new slice start=4294854679 end=4294854779 jiffies=4294854679
+  8,48   1        0     0.000000966     0  m   N throtl / [W] extend slice start=4294854679 end=4294905900 jiffies=4294854679
+  8,48   1        0     0.000002553     0  m   N throtl / [W] bio. bdisp=0 sz=524288 bps=10240 iodisp=0 iops=4294967295 queued=0/0
+  8,48   1        0     0.000004788     0  m   N throtl schedule work. delay=51200 jiffies=4294854679
+  8,48   1        0    51.304698681     0  m   N throtl dispatch nr_queued=1 read=0 write=1
+  8,48   1        0    51.304701979     0  m   N throtl / [W] new slice start=4294905984 end=4294906084 jiffies=4294905984
+  8,48   1        0    51.304703329     0  m   N throtl / [W] extend slice start=4294905984 end=4294957200 jiffies=4294905984
+  8,48   1        0    51.304705783     0  m   N throtl schedule work. delay=51200 jiffies=4294905984
+  8,48   1        0   102.632697082     0  m   N throtl dispatch nr_queued=1 read=0 write=1
+  8,48   1        0   102.632700544     0  m   N throtl / [W] new slice start=4294957312 end=4294957412 jiffies=4294957312
+  8,48   1        0   102.632701922     0  m   N throtl / [W] extend slice start=4294957312 end=4295008600 jiffies=4294957312
+  8,48   1        0   102.632704016     0  m   N throtl schedule work. delay=51200 jiffies=4294957312
+  8,48   1        0   153.960696503     0  m   N throtl dispatch nr_queued=1 read=0 write=1
+  8,48   1        0   153.960699797     0  m   N throtl / [W] new slice start=4295008640 end=4295008740 jiffies=4295008640
+  8,48   1        0   153.960701153     0  m   N throtl / [W] extend slice start=4295008640 end=4295059900 jiffies=4295008640
+  8,48   1        0   153.960703218     0  m   N throtl schedule work. delay=51200 jiffies=4295008640
+  8,48   1        0   205.288697067     0  m   N throtl dispatch nr_queued=1 read=0 write=1
+  8,48   1        0   205.288700268     0  m   N throtl / [W] new slice start=4295059968 end=4295060068 jiffies=4295059968
+  8,48   1        0   205.288701630     0  m   N throtl / [W] extend slice start=4295059968 end=4295111200 jiffies=4295059968
+  8,48   1        0   205.288703784     0  m   N throtl schedule work. delay=51200 jiffies=4295059968
+  8,48   1        0   256.616696184     0  m   N throtl dispatch nr_queued=1 read=0 write=1
+  8,48   1        0   256.616699266     0  m   N throtl / [W] new slice start=4295111296 end=4295111396 jiffies=4295111296
+  8,48   1        0   256.616700574     0  m   N throtl / [W] extend slice start=4295111296 end=4295162500 jiffies=4295111296
+  8,48   1        0   256.616702701     0  m   N throtl schedule work. delay=51200 jiffies=4295111296
 
-I agree with the rest. I'll move both twl4030/6040 vibra to use
-devm_input_allocate_device() and also I will move them to use system wide
-workqueue.
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ block/blk-throttle.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-I'm going to resend the series soon with the suggested changes.
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 3114622..9258789 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -645,6 +645,15 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+ 	}
+ 
+ 	/*
++	 * If privious slice expired,then start new slice.
++	 * But counting bps and iops limit need privious slice info
++	 * which ->slice_start.
++	 */
++	if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
++	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait))
++		if (wait)
++			*wait = 0;
++	/*
+ 	 * If previous slice expired, start a new one otherwise renew/extend
+ 	 * existing slice to make sure it is at least throtl_slice interval
+ 	 * long since now.
+@@ -656,12 +665,8 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+ 			throtl_extend_slice(td, tg, rw, jiffies + throtl_slice);
+ 	}
+ 
+-	if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
+-	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait)) {
+-		if (wait)
+-			*wait = 0;
++	if (!(bps_wait || iops_wait))
+ 		return 1;
+-	}
+ 
+ 	max_wait = max(bps_wait, iops_wait);
+ 
+-- 
+1.7.9.5
 
-Thanks,
-PÈter
+
+Jianpeng Ma
+Thanks!ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
