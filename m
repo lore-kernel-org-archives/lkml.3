@@ -1,117 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab3AKFLl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 00:11:41 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:34306 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab3AKFLk (ORCPT
+	id S1753341Ab3AKFMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 00:12:15 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:62052 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022Ab3AKFMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 00:11:40 -0500
-Message-ID: <50EF9ED1.2000909@linux.vnet.ibm.com>
-Date: Fri, 11 Jan 2013 10:40:41 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Fri, 11 Jan 2013 00:12:13 -0500
+X-AuditID: 9c930197-b7cefae0000002d7-25-50ef9f2a1c56
+Date: Fri, 11 Jan 2013 14:12:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 1/2] Add mempressure cgroup
+Message-ID: <20130111051210.GC6183@blaptop>
+References: <20130104082751.GA22227@lizard.gateway.2wire.net>
+ <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
+ <20130108084949.GD4714@blaptop>
+ <20130109221449.GA14880@lizard.fhda.edu>
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 07/22] sched: set initial load avg of new forked task
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-8-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1357375071-11793-8-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011105-5816-0000-0000-0000063399CE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130109221449.GA14880@lizard.fhda.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2013 02:07 PM, Alex Shi wrote:
-> New task has no runnable sum at its first runnable time, that make
-> burst forking just select few idle cpus to put tasks.
-> Set initial load avg of new forked task as its load weight to resolve
-> this issue.
+On Wed, Jan 09, 2013 at 02:14:49PM -0800, Anton Vorontsov wrote:
+> On Tue, Jan 08, 2013 at 05:49:49PM +0900, Minchan Kim wrote:
+> [...]
+> > Sorry still I didn't look at your implementation about cgroup part.
+> > but I had a question since long time ago.
+> > 
+> > How can we can make sure false positive about zone and NUMA?
+> > I mean DMA zone is short in system so VM notify to user and user
+> > free all memory of NORMAL zone because he can't know what pages live
+> > in any zones. NUMA is ditto.
 > 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  include/linux/sched.h |  1 +
->  kernel/sched/core.c   |  2 +-
->  kernel/sched/fair.c   | 11 +++++++++--
->  3 files changed, 11 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 206bb08..fb7aab5 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1069,6 +1069,7 @@ struct sched_domain;
->  #else
->  #define ENQUEUE_WAKING		0
->  #endif
-> +#define ENQUEUE_NEWTASK		8
-> 
->  #define DEQUEUE_SLEEP		1
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 66c1718..66ce1f1 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1705,7 +1705,7 @@ void wake_up_new_task(struct task_struct *p)
->  #endif
-> 
->  	rq = __task_rq_lock(p);
-> -	activate_task(rq, p, 0);
-> +	activate_task(rq, p, ENQUEUE_NEWTASK);
->  	p->on_rq = 1;
->  	trace_sched_wakeup_new(p, true);
->  	check_preempt_curr(rq, p, WF_FORK);
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 895a3f4..5c545e4 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1503,8 +1503,9 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
->  /* Add the load generated by se into cfs_rq's child load-average */
->  static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->  						  struct sched_entity *se,
-> -						  int wakeup)
-> +						  int flags)
->  {
-> +	int wakeup = flags & ENQUEUE_WAKEUP;
->  	/*
->  	 * We track migrations using entity decay_count <= 0, on a wake-up
->  	 * migration we use a negative decay count to track the remote decays
-> @@ -1538,6 +1539,12 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->  		update_entity_load_avg(se, 0);
->  	}
-> 
-> +	/*
-> +	 * set the initial load avg of new task same as its load
-> +	 * in order to avoid brust fork make few cpu too heavier
-> +	 */
-> +	if (flags & ENQUEUE_NEWTASK)
-> +		se->avg.load_avg_contrib = se->load.weight;
->  	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
->  	/* we force update consideration on load-balancer moves */
->  	update_cfs_rq_blocked_load(cfs_rq, !wakeup);
-> @@ -1701,7 +1708,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
->  	 * Update run-time statistics of the 'current'.
->  	 */
->  	update_curr(cfs_rq);
-> -	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
-> +	enqueue_entity_load_avg(cfs_rq, se, flags);
->  	account_entity_enqueue(cfs_rq, se);
->  	update_cfs_shares(cfs_rq);
-> 
-I had seen in my experiments, that the forked tasks with initial load to
-be 0,would adversely affect the runqueue lengths.Since the load for
-these tasks to pick up takes some time,the cpus on which the forked
-tasks are scheduled, could be candidates for "dst_cpu" many times and
-the runqueue lengths increase considerably.
+> Um, we count scans irrespective of zones or nodes, i.e. we sum all 'number
+> of scanned' and 'number of reclaimed' stats. So, it should not be a
+> problem, as I see it.
 
-This patch solves this issue by making the forked tasks contribute
-actively to the runqueue load.
+Why is it no problem? For example, let's think of normal zone reclaim.
+Page allocator try to allocate pages from NORMAL zone to DMA zone fallback
+and your logic could trigger mpc_shrinker. So process A, B, C start to
+release thier freeable memory but unfortunately, freed pages are all
+HIGHMEM pages. Why should processes release memory unnecessary?
+Is there any method for proecess to detect such situation in user level
+before releasing the freeable memory?
 
-Reviewed-by:Preeti U Murthy
+In android smart phone, until now, there was a zone - DMA so low memory
+killer didn't have a problem but these days smart phone use 2G DRAM so
+we started seeing the above problem. Your generic approach should solve
+the problem, too.
 
+> 
+> Thanks,
+> Anton
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
