@@ -1,118 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab3AKGV7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 01:21:59 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:58789 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592Ab3AKGV6 (ORCPT
+	id S1754930Ab3AKG2C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 01:28:02 -0500
+Received: from mga02.intel.com ([134.134.136.20]:40534 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754360Ab3AKG2B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 01:21:58 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 1/4] serial/arc-uart: Don't index with -ve platform_device->id
-Date: Fri, 11 Jan 2013 11:50:20 +0530
-Message-ID: <1357885223-19243-2-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1357885223-19243-1-git-send-email-vgupta@synopsys.com>
-References: <1357885223-19243-1-git-send-email-vgupta@synopsys.com>
+	Fri, 11 Jan 2013 01:28:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,449,1355126400"; 
+   d="scan'208";a="270797101"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Colin Cross <ccross@android.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH] hardlockup: detect hard lockups without NMIs using
+ secondary cpus
+Thread-Topic: [PATCH] hardlockup: detect hard lockups without NMIs using
+ secondary cpus
+Thread-Index: AQHN78Np2YJIVLMNAUOviwyW+f22bphDqdvQ
+Date: Fri, 11 Jan 2013 06:27:51 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A20129C@SHSMSX101.ccr.corp.intel.com>
+References: <1357783059-13923-1-git-send-email-ccross@android.com>
+	<27240C0AC20F114CBF8149A2696CBE4A200DD9@SHSMSX101.ccr.corp.intel.com>
+	<CAMbhsRS5S=bRWOAA_ft3josCX9kvarrqPX-sLnO02vB0NfZJ+w@mail.gmail.com>
+	<27240C0AC20F114CBF8149A2696CBE4A2010CB@SHSMSX101.ccr.corp.intel.com>
+ <CAMbhsRQC0VSbp_A00S-MOa1y_GqCywQF0rmAZt3h0N7U8HBOLg@mail.gmail.com>
+In-Reply-To: <CAMbhsRQC0VSbp_A00S-MOa1y_GqCywQF0rmAZt3h0N7U8HBOLg@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-probe routine could index into port[] with -ve index. The check in
-arc_uart_init_one() was too late.
 
-This came to light when trying to port driver to CONFIG_OF, where
-bydefault of-core code sets -ve platform dev id and in absence of
-DT serial aliases, driver would use the -ve index.
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org
----
- drivers/tty/serial/arc_uart.c |   29 +++++++++++++++--------------
- 1 files changed, 15 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/tty/serial/arc_uart.c b/drivers/tty/serial/arc_uart.c
-index 3e0b3fa..8089dc3 100644
---- a/drivers/tty/serial/arc_uart.c
-+++ b/drivers/tty/serial/arc_uart.c
-@@ -526,15 +526,11 @@ static struct uart_ops arc_serial_pops = {
- };
- 
- static int
--arc_uart_init_one(struct platform_device *pdev, struct arc_uart_port *uart)
-+arc_uart_init_one(struct platform_device *pdev, int dev_id)
- {
- 	struct resource *res, *res2;
- 	unsigned long *plat_data;
--
--	if (pdev->id < 0 || pdev->id >= CONFIG_SERIAL_ARC_NR_PORTS) {
--		dev_err(&pdev->dev, "Wrong uart platform device id.\n");
--		return -ENOENT;
--	}
-+	struct arc_uart_port *uart = &arc_uart_ports[dev_id];
- 
- 	plat_data = ((unsigned long *)(pdev->dev.platform_data));
- 	uart->baud = plat_data[0];
-@@ -557,7 +553,7 @@ arc_uart_init_one(struct platform_device *pdev, struct arc_uart_port *uart)
- 	uart->port.dev = &pdev->dev;
- 	uart->port.iotype = UPIO_MEM;
- 	uart->port.flags = UPF_BOOT_AUTOCONF;
--	uart->port.line = pdev->id;
-+	uart->port.line = dev_id;
- 	uart->port.ops = &arc_serial_pops;
- 
- 	uart->port.uartclk = plat_data[1];
-@@ -657,9 +653,14 @@ static struct __initdata console arc_early_serial_console = {
- 
- static int arc_serial_probe_earlyprintk(struct platform_device *pdev)
- {
--	arc_early_serial_console.index = pdev->id;
-+	int dev_id = pdev->id < 0 ? 0 : pdev->id;
-+	int rc;
- 
--	arc_uart_init_one(pdev, &arc_uart_ports[pdev->id]);
-+	arc_early_serial_console.index = dev_id;
-+
-+	rc = arc_uart_init_one(pdev, dev_id);
-+	if (rc)
-+		panic("early console init failed\n");
- 
- 	arc_serial_console_setup(&arc_early_serial_console, NULL);
- 
-@@ -675,18 +676,18 @@ static int arc_serial_probe_earlyprintk(struct platform_device *pdev)
- 
- static int arc_serial_probe(struct platform_device *pdev)
- {
--	struct arc_uart_port *uart;
--	int rc;
-+	int rc, dev_id;
- 
- 	if (is_early_platform_device(pdev))
- 		return arc_serial_probe_earlyprintk(pdev);
- 
--	uart = &arc_uart_ports[pdev->id];
--	rc = arc_uart_init_one(pdev, uart);
-+	dev_id = pdev->id < 0 ? 0 : pdev->id;
-+	rc = arc_uart_init_one(pdev, dev_id);
- 	if (rc)
- 		return rc;
- 
--	return uart_add_one_port(&arc_uart_driver, &uart->port);
-+	rc = uart_add_one_port(&arc_uart_driver, &arc_uart_ports[dev_id].port);
-+	return rc;
- }
- 
- static int arc_serial_remove(struct platform_device *pdev)
--- 
-1.7.4.1
-
+> -----Original Message-----
+> From: ccross@google.com [mailto:ccross@google.com] On Behalf Of Colin
+> Cross
+> Sent: Friday, January 11, 2013 2:18 PM
+> To: Liu, Chuansheng
+> Cc: linux-kernel@vger.kernel.org; Andrew Morton; Don Zickus; Ingo Molnar;
+> Thomas Gleixner; linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH] hardlockup: detect hard lockups without NMIs using
+> secondary cpus
+> 
+> On Thu, Jan 10, 2013 at 9:57 PM, Liu, Chuansheng
+> <chuansheng.liu@intel.com> wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: ccross@google.com [mailto:ccross@google.com] On Behalf Of Colin
+> >> Cross
+> >> Sent: Friday, January 11, 2013 1:34 PM
+> >> To: Liu, Chuansheng
+> >> Cc: linux-kernel@vger.kernel.org; Andrew Morton; Don Zickus; Ingo Molnar;
+> >> Thomas Gleixner; linux-arm-kernel@lists.infradead.org
+> >> Subject: Re: [PATCH] hardlockup: detect hard lockups without NMIs using
+> >> secondary cpus
+> >>
+> >> On Thu, Jan 10, 2013 at 5:39 PM, Liu, Chuansheng
+> >> <chuansheng.liu@intel.com> wrote:
+> >> >
+> >> >
+> >> >> -----Original Message-----
+> >> >> From: Colin Cross [mailto:ccross@android.com]
+> >> >> Sent: Thursday, January 10, 2013 9:58 AM
+> >> >> To: linux-kernel@vger.kernel.org
+> >> >> Cc: Andrew Morton; Don Zickus; Ingo Molnar; Thomas Gleixner; Liu,
+> >> >> Chuansheng; linux-arm-kernel@lists.infradead.org; Colin Cross
+> >> >> Subject: [PATCH] hardlockup: detect hard lockups without NMIs using
+> >> >> secondary cpus
+> >> >>
+> >> >> Emulate NMIs on systems where they are not available by using timer
+> >> >> interrupts on other cpus.  Each cpu will use its softlockup hrtimer
+> >> >> to check that the next cpu is processing hrtimer interrupts by
+> >> >> verifying that a counter is increasing.
+> >> >>
+> >> >> This patch is useful on systems where the hardlockup detector is not
+> >> >> available due to a lack of NMIs, for example most ARM SoCs.
+> >> >> Without this patch any cpu stuck with interrupts disabled can
+> >> >> cause a hardware watchdog reset with no debugging information,
+> >> >> but with this patch the kernel can detect the lockup and panic,
+> >> >> which can result in useful debugging info.
+> >> >>
+> >> >> Signed-off-by: Colin Cross <ccross@android.com>
+> >> >> +static void watchdog_check_hardlockup_other_cpu(void)
+> >> >> +{
+> >> >> +     int cpu;
+> >> >> +     cpumask_t cpus = watchdog_cpus;
+> >> >> +
+> >> >> +     /*
+> >> >> +      * Test for hardlockups every 3 samples.  The sample period is
+> >> >> +      *  watchdog_thresh * 2 / 5, so 3 samples gets us back to
+> slightly
+> >> over
+> >> >> +      *  watchdog_thresh (over by 20%).
+> >> >> +      */
+> >> >> +     if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
+> >> >> +             return;
+> >> >> +
+> > Another feeling is about __this_cpu_read(hrtimer_interrupts) % 3 != 0,
+> > It will cause the actual timeout value for hard lockup detection is not very fix,
+> or even
+> > very short.
+> > Sometimes using 3 samples can detect the lockup case, but sometimes 1
+> sample.
+> > Is it the case?
+> 
+> I'm not sure what you mean.  The mod 3 will cause every 3rd timer (12
+> seconds, assuming watchdog_thresh = 10) to check hrtimer_interrupts
+> vs. hrtimer_interrupts_saved, and then update it.  The sampling should
+> be fixed and very accurate.  It will cause a panic/warning between 12
+> and 24 seconds after a cpu stops processing timer interrupts,
+> depending on the alignment of the hrtimers between the two cpus.
+> 
+You are right, thanks.
