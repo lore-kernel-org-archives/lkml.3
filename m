@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab3AKRN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:13:59 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:41908 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab3AKRN5 (ORCPT
+	id S1755218Ab3AKRRp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:17:45 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44943 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab3AKRRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:13:57 -0500
-Date: Fri, 11 Jan 2013 09:13:43 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Simon Glass <sjg@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Roland Stigge <stigge@antcom.de>,
-        Vincent Palatin <vpalatin@chromium.org>, linux-doc@vger.kernel.org,
-        Wolfram Sang <w.sang@pengutronix.de>, Felipe Balbi <balbi@ti.com>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-input@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        devicetree-discuss@lists.ozlabs.org,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: Re: [PATCH v2] input: Extend matrix-keypad device tree binding
-Message-ID: <20130111171343.GE11224@core.coreip.homeip.net>
-References: <1357868492-16023-1-git-send-email-sjg@chromium.org>
- <50F0473F.404@wwwdotorg.org>
+	Fri, 11 Jan 2013 12:17:43 -0500
+Date: Fri, 11 Jan 2013 17:17:26 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roger Quadros <rogerq@ti.com>
+Cc: balbi@ti.com, sameo@linux.intel.com, tony@atomide.com,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kishon@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 04/14] usb: phy: nop: Handle power supply regulator for
+	the PHY
+Message-ID: <20130111171726.GI23505@n2100.arm.linux.org.uk>
+References: <1357836694-30788-1-git-send-email-rogerq@ti.com> <1357836694-30788-5-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50F0473F.404@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357836694-30788-5-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 10:09:19AM -0700, Stephen Warren wrote:
-> On 01/10/2013 06:41 PM, Simon Glass wrote:
-> > Some matrix keypad drivers can support different numbers of rows and
-> > columns. Add a generic binding for these.
-> > 
-> > Implementation note:
-> > 
-> > In order to implement this binding in the kernel, we will need to modify
-> > matrix_keypad_() to look up the number of rows and cols in
-> > the keymap. Perhaps this could be done by passing 0 for these parameters?
-> > Many of the parameters can already be set to NULL. Ick.
+On Thu, Jan 10, 2013 at 06:51:24PM +0200, Roger Quadros wrote:
+> We use "vcc" as the supply name for the PHY's power supply.
+> The power supply will be enabled during .init() and disabled
+> during .shutdown()
 > 
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  drivers/usb/otg/nop-usb-xceiv.c |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
 > 
-> Note that the Tegra bindings are based on matrix-keypad.txt, and
-> recently added the following properties:
-> 
-> > - nvidia,kbc-row-pins: The KBC pins which are configured as row. This is an
-> >   array of pin numbers which is used as rows.
-> > - nvidia,kbc-col-pins: The KBC pins which are configured as column. This is an
-> >   array of pin numbers which is used as column.
-> 
-> Those both define the number of rows/columns (indirectly via the
-> property lengths) *and* define which pins are used for the rows/columns.
-> How will this influence/interact-with any changes you're planning to the
-> core matrix keymap parsing code; would Tegra require your "new"
-> keypad,num-rows/keypad,num-columns properties even though the
-> information is redundant, or will the Tegra driver have some way of
-> passing this information to the core?
+> diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
+> index 163f972..1c6db10 100644
+> --- a/drivers/usb/otg/nop-usb-xceiv.c
+> +++ b/drivers/usb/otg/nop-usb-xceiv.c
+> @@ -33,11 +33,13 @@
+>  #include <linux/usb/nop-usb-xceiv.h>
+>  #include <linux/slab.h>
+>  #include <linux/clk.h>
+> +#include <linux/regulator/consumer.h>
+>  
+>  struct nop_usb_xceiv {
+>  	struct usb_phy		phy;
+>  	struct device		*dev;
+>  	struct clk		*clk;
+> +	struct regulator	*vcc;
+>  };
+>  
+>  static struct platform_device *pd;
+> @@ -70,6 +72,11 @@ static int nop_init(struct usb_phy *phy)
+>  {
+>  	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
+>  
+> +	if (nop->vcc) {
+> +		if (regulator_enable(nop->vcc))
+> +			dev_err(phy->dev, "Failed to enable power\n");
+> +	}
+> +
+>  	if (nop->clk)
+>  		clk_enable(nop->clk);
+>  
+> @@ -82,6 +89,11 @@ static void nop_shutdown(struct usb_phy *phy)
+>  
+>  	if (nop->clk)
+>  		clk_disable(nop->clk);
+> +
+> +	if (nop->vcc) {
+> +		if (regulator_disable(nop->vcc))
+> +			dev_err(phy->dev, "Failed to disable power\n");
+> +	}
+>  }
+>  
+>  static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
+> @@ -157,6 +169,12 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+>  		}
+>  	}
+>  
+> +	nop->vcc = devm_regulator_get(&pdev->dev, "vcc");
+> +	if (IS_ERR(nop->vcc)) {
+> +		dev_dbg(&pdev->dev, "Error getting vcc regulator\n");
+> +		nop->vcc = NULL;
+> +	}
 
-Even if we decide to move lookup of keypad,num-rows/keypad,num-columns
-into matrix-keypad code we will still allow callers to override DT data,
-like we do with platform keymaps.
+Is it really appropriate for drivers to do this kind of thing with
+pointer-returning functions (I mean, setting the pointer to NULL on
+error, rather than just using a test for IS_ERR() in the above
+locations).  You are imposing driver-local assumptions on an API.
 
-Thanks.
-
--- 
-Dmitry
+Practically it probably doesn't make much difference but given the
+amount of mistakes that we have with IS_ERR_OR_NULL()...
