@@ -1,132 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab3AKECR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 23:02:17 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50831 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab3AKECP (ORCPT
+	id S1753656Ab3AKEDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 23:03:32 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57265 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab3AKEDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 23:02:15 -0500
-Date: Fri, 11 Jan 2013 05:02:10 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-tegra@vger.kernel.org, Andrew Murray <andrew.murray@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 01/14] of/pci: Provide support for parsing PCI DT ranges
- property
-Message-ID: <20130111040210.GC28094@avionic-0098.adnet.avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <1357764194-12677-2-git-send-email-thierry.reding@avionic-design.de>
- <50EF5798.6040405@wwwdotorg.org>
+	Thu, 10 Jan 2013 23:03:31 -0500
+X-AuditID: 9c930179-b7c7fae00000255c-ca-50ef8f11cd7e
+Date: Fri, 11 Jan 2013 13:03:28 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Luigi Semenzato <semenzato@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] mm: prevent to add a page to swap if may_writepage
+ is unset
+Message-ID: <20130111040328.GA6183@blaptop>
+References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+ <1357712474-27595-2-git-send-email-minchan@kernel.org>
+ <20130109161854.67412dcc.akpm@linux-foundation.org>
+ <20130110020347.GA14685@blaptop>
+ <CAA25o9TjXNCpLHAyowboAxZrnQZmNmJOevDgA-zq4kA1K-PHXQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZmUaFz6apKcXQszQ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50EF5798.6040405@wwwdotorg.org>
+In-Reply-To: <CAA25o9TjXNCpLHAyowboAxZrnQZmNmJOevDgA-zq4kA1K-PHXQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:rdbNSXOqb5SAyGmZBPo2DBkP1lShyahJxWptRzzi1Kl
- Y0A8c1yW80sEjzW+WSxT6NrGlR4U1tryMwNje4yf5i7CqZzbiL
- 0F1zjnWxRZroRhjDL92W952VTKMleQHS3IF5FDCHsLlbhhxLuz
- G9kwP6KheeQMjYSMbh9DeVUultatPsrQf9yB0VxBM7zyWQniIC
- 32r0cb2TsGGjdpfFUvAfKoQP/TBtlejxG5ocXcW0DP7sWyFX+X
- aRySN/pCb/jCh85BjHS9cNMVBl/ghovJJmv+XCXCjyDeThEkbE
- ibKJ0sfURpAfhJ2MQ5GYh5Ye7sewBGJc0fiyJaAfA75fUvw3iu
- zh1WsINl03BzXpCHMCgaLto0CcAvaxFIZg54G4FpDQs+o4Mhva
- fD6bsu9UXEVgUJOiiA01wRMlRPkGclfU5E=
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Luigi,
 
---ZmUaFz6apKcXQszQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 10, 2013 at 03:24:21PM -0800, Luigi Semenzato wrote:
+> For what it's worth, I tested this patch on my 3.4 kernel, and it works as
+> advertised.  Here's my setup.
+> 
+> - 2 GB RAM
+> - a 3 GB zram disk for swapping
+> - start one "hog" process per second (each hog process mallocs and touches
+> 200 MB of memory).
+> - watch /proc/meminfo
+> 
+> 1. I verified that the problem still exists on my current 3.4 kernel.  With
+> laptop_mode = 2, hog processes are oom-killed when about 1.8-1.9 (out of 3)
+> GB of swap space are still left
+> 
+> 2. I double-checked that the problem does not exist with laptop_mode = 0:
+> hog processes are oom-killed when swap space is exhausted (with good
+> approximation).
+> 
+> 3. I added the two-line patch, put back laptop_mode = 2, and verified that
+> hog processes are oom-killed when swap space is exhausted, same as case 2.
+> 
+> Let me know if I can run any more tests for you, and thanks for all the
+> support so far!
 
-On Thu, Jan 10, 2013 at 05:06:48PM -0700, Stephen Warren wrote:
-> On 01/09/2013 01:43 PM, Thierry Reding wrote:
-> > From: Andrew Murray <andrew.murray@arm.com>
-> >=20
-> > DT bindings for PCI host bridges often use the ranges property to descr=
-ibe
-> > memory and IO ranges - this binding tends to be the same across archite=
-ctures
-> > yet several parsing implementations exist, e.g. arch/mips/pci/pci.c,
-> > arch/powerpc/kernel/pci-common.c, arch/sparc/kernel/pci.c and
-> > arch/microblaze/pci/pci-common.c (clone of PPC). Some of these duplicate
-> > functionality provided by drivers/of/address.c.
-> >=20
-> > This patch provides a common iterator-based parser for the ranges prope=
-rty, it
-> > is hoped this will reduce DT representation differences between archite=
-ctures
-> > and that architectures will migrate in part to this new parser.
-> ...
->=20
-> > diff --git a/drivers/of/address.c b/drivers/of/address.c
->=20
-> > +const __be32 *of_pci_process_ranges(struct device_node *node,
->=20
-> > +	while (from + np <=3D end) {
-> > +		u64 cpu_addr, size;
-> > +
-> > +		cpu_addr =3D of_translate_address(node, from + na);
-> > +		size =3D of_read_number(from + na + pna, ns);
-> > +		res->flags =3D bus->get_flags(from);
-> > +		from +=3D np;
-> > +
-> > +		if (cpu_addr =3D=3D OF_BAD_ADDR || size =3D=3D 0)
-> > +			continue;
->=20
-> Hmmm. That seems to just ignore bad entries in the ranges property. Is
-> that really the right thing to do? At least printing a diagnostic might
-> be a good idea, even if the code does just soldier on in the hope
-> everything still works.
+Thanks very much! But it seems Andrew doesn't like this version.
+I will discuss more with him and ask again with confimred version to you.
 
-That's true. However, erroring out here wouln't be useful either since a
-NULL return value is used to mark the end of the iteration and the
-caller would have to assume that no more ranges are present. Maybe
-that's better than continuing anyway, even if a message is printed.
+Thanks, again.!
 
-Alternatively, the of_pci_process_ranges() could be changed to return an
-ERR_PTR() encoded errno. This is one case where it makes a lot of sense.
-I have a feeling that Grant won't like that very much, though.
+FYI)
+After I resolves this issue, will dive into min_filelist_kbytes patch. :)
+> 
+> 
+> 
+> On Wed, Jan 9, 2013 at 6:03 PM, Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > Hi Andrew,
+> >
+> > On Wed, Jan 09, 2013 at 04:18:54PM -0800, Andrew Morton wrote:
+> > > On Wed,  9 Jan 2013 15:21:13 +0900
+> > > Minchan Kim <minchan@kernel.org> wrote:
+> > >
+> > > > Recently, Luigi reported there are lots of free swap space when
+> > > > OOM happens. It's easily reproduced on zram-over-swap, where
+> > > > many instance of memory hogs are running and laptop_mode is enabled.
+> > > >
+> > > > Luigi reported there was no problem when he disabled laptop_mode.
+> > > > The problem when I investigate problem is following as.
+> > > >
+> > > > try_to_free_pages disable may_writepage if laptop_mode is enabled.
+> > > > shrink_page_list adds lots of anon pages in swap cache by
+> > > > add_to_swap, which makes pages Dirty and rotate them to head of
+> > > > inactive LRU without pageout. If it is repeated, inactive anon LRU
+> > > > is full of Dirty and SwapCache pages.
+> > > >
+> > > > In case of that, isolate_lru_pages fails because it try to isolate
+> > > > clean page due to may_writepage == 0.
+> > > >
+> > > > The may_writepage could be 1 only if total_scanned is higher than
+> > > > writeback_threshold in do_try_to_free_pages but unfortunately,
+> > > > VM can't isolate anon pages from inactive anon lru list by
+> > > > above reason and we already reclaimed all file-backed pages.
+> > > > So it ends up OOM killing.
+> > > >
+> > > > This patch prevents to add a page to swap cache unnecessary when
+> > > > may_writepage is unset so anoymous lru list isn't full of
+> > > > Dirty/Swapcache page. So VM can isolate pages from anon lru list,
+> > > > which ends up setting may_writepage to 1 and could swap out
+> > > > anon lru pages. When OOM triggers, I confirmed swap space was full.
+> > > >
+> > > > ...
+> > > >
+> > > > --- a/mm/vmscan.c
+> > > > +++ b/mm/vmscan.c
+> > > > @@ -780,6 +780,8 @@ static unsigned long shrink_page_list(struct
+> > list_head *page_list,
+> > > >             if (PageAnon(page) && !PageSwapCache(page)) {
+> > > >                     if (!(sc->gfp_mask & __GFP_IO))
+> > > >                             goto keep_locked;
+> > > > +                   if (!sc->may_writepage)
+> > > > +                           goto keep_locked;
+> > > >                     if (!add_to_swap(page))
+> > > >                             goto activate_locked;
+> > > >                     may_enter_fs = 1;
+> > >
+> > > I'm not really getting it, and the description is rather hard to follow
+> > :(
+> >
+> > It seems I don't have a talent about description. :(
+> > I hope it would be better this year. :)
+> >
+> > >
+> > > We should be adding anon pages to swapcache even when laptop_mode is
+> > > set.  And we should be writing them to swap as well, then reclaiming
+> > > them.  The only thing laptop_mode shouild do is make the disk spin up
+> > > less frequently - that doesn't mean "not at all"!
+> >
+> > So it seems your rationale is that let's save power in only system has
+> > enough memory so let's remove may_writepage in reclaim path?
+> >
+> > If it is, I love it because I didn't see any number about power saving
+> > through reclaiming throttling(But surely there was reason to add it)
+> > and not sure it works well during long time because we have tweaked
+> > reclaim part too many.
+> >
+> > >
+> > > So something seems screwed up here and the patch looks like a
+> > > heavy-handed workaround.  Why aren't these anon pages getting written
+> > > out in laptop_mode?
+> >
+> > Don't know. It was there long time and I don't want to screw it up.
+> > If we decide paging out in reclaim path regardless of laptop_mode,
+> > it makes the problem easy without ugly workaround.
+> >
+> > Remove may_writepage? If it's too agressive, we can remove it in only
+> > direct reclaim path.
+> >
+> > >
+> > >
+> > > --
+> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > see: http://www.linux-mm.org/ .
+> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
+> > --
+> > Kind regards,
+> > Minchan Kim
+> >
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
 
-Another possibility would be to change away from an iterator-based
-approach and return an integer for the number of ranges and negative
-error code on failure while returning an allocated array of resources
-through an output parameter.
-
-Thierry
-
---ZmUaFz6apKcXQszQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ747CAAoJEN0jrNd/PrOh/bQP/0IiT1xF+Klj+SSKlmrwUhEX
-dgfuEscTyb+N1OHfVfvwDxRaRq0z2z+cwHdF/gjehUuwDkWBomvjonoPpauNs4uj
-h4Rv3wvx0skXscKOxJgNB6vNbIAnoKgzBlJ13Z20AtxdqkncdTC8ZW/dRHCuW9W8
-Cpv33q0Utl706pHpVAw/0KMlq3zrRYQz42cIYeSrMxwzaWlFAexk5HcEwem2/pUW
-1/1Y6EhHO3FAS7IhQyLnnjVWlR89Gd9DzvYeCndLnP9lXfQ2FyKm83hKq8QqGpVN
-g+54HeYMMGeQn2u4M9c+BJqUt7q8eiRnCMlZN0W02UI/9Vhq+znh6cAGGDruBXzZ
-atkaJOxM997lYzBDgZA5u8AjS9O+n35UWNpyDgKoSJ05E7SuSBh/tBJuu1XVRu4z
-ueE/HERCWFon2QodEYUk5iNvt+NDM66nrfxXh9BIOd045Al8eXdHQ4dhslLXS8Sz
-qHC3dwoNKozfIHWrq4vAat+ERW79s1WgOf/NPLwpugdn56/wGCXJEQdblEDK/6Mj
-BtgE7VlX88knrMx0i8CXeMsCJIwyZds4WhZNRJ1ao4F+e+Tjc15zDZb0geq047+j
-aCrHplrXuK9iKzWAHFmMuabYjGDyhsAKx8Ii7GACCO9CisJIz+tgT6sJZU6ypajw
-65VE+KSnz/gVtV2KSnc+
-=eyXO
------END PGP SIGNATURE-----
-
---ZmUaFz6apKcXQszQ--
+-- 
+Kind regards,
+Minchan Kim
