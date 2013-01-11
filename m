@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab3AKQFb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 11:05:31 -0500
-Received: from mail.kernel.org ([198.145.19.201]:52870 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755055Ab3AKQFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 11:05:25 -0500
-Date: Fri, 11 Jan 2013 08:05:14 -0800
-From: Greg KH <greg@kroah.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Brian King <brking@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wen Xiong <wenxiong@linux.vnet.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the scsi tree
-Message-ID: <20130111160514.GA10823@kroah.com>
-References: <20130111120323.cdc06081d0fb1c498c9f1779@canb.auug.org.au>
- <1357889656.3065.2.camel@dabdike.int.hansenpartnership.com>
- <50F02F4E.4070804@linux.vnet.ibm.com>
- <1357918637.3065.22.camel@dabdike.int.hansenpartnership.com>
+	id S1755022Ab3AKQHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 11:07:07 -0500
+Received: from georges.telenet-ops.be ([195.130.137.68]:37986 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719Ab3AKQHG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 11:07:06 -0500
+Date: Fri, 11 Jan 2013 17:07:03 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: Build regressions/improvements in v3.8-rc3
+In-Reply-To: <alpine.DEB.2.00.1301111704550.22961@ayla.of.borg>
+Message-ID: <alpine.DEB.2.00.1301111705170.23005@ayla.of.borg>
+References: <alpine.DEB.2.00.1301111704550.22961@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357918637.3065.22.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 03:37:17PM +0000, James Bottomley wrote:
-> On Fri, 2013-01-11 at 09:27 -0600, Brian King wrote:
-> > It looks like this was a due to the fact that the new patches
-> > added __devinit tags in the same merge window the __devinit tag
-> > itself was getting removed.
-> 
-> Not exactly.  The patch which makes them nops went into 3.8.  Now
-> there's a patch queued in, Gregs tree I presume, to remove them all and
-> the #defines which causes the compile failure.
-> 
-> > As to the sparse warnings, this patch fixed the ones that
-> > were actual bugs in the new code, although we could have
-> > made that more clear in the patch description.
-> > 
-> > http://marc.info/?l=linux-scsi&m=135716576204083&w=2
-> 
-> Ah, thanks ... I've been on holiday for a while, so I did miss that.
-> 
-> > There is one outstanding issue I am aware of which was an
-> > array bounds compiler warning which looks to be a misdetection
-> > by the compiler. Wendy and I discussed adding a BUG_ON
-> > to stop the compiler from complaining.
-> > 
-> > Wendy - lets queue these two changes up ASAP. They should both
-> > be very simple changes.
-> 
-> If it's a simple gcc bug, just ignore it.
-> 
-> I do need you to redo the patches to remove the __dev annotations,
-> though.  We can't risk introducing a bisect killing compile breakage if
-> Greg's tree merges before mine in the next merge window.
+On Fri, 11 Jan 2013, Geert Uytterhoeven wrote:
+> JFYI, when comparing v3.8-rc3 to v3.8-rc2[3], the summaries are:
+>   - build errors: +2/-414
 
-This change should be pushed to Linus in time for 3.8-final, so there
-should not be any bisect issues.
+  + arch/powerpc/sysdev/mpic.c: error: case label does not reduce to an integer constant:  => 890:9, 898:9, 886:9, 894:9
+  + error: No rule to make target drivers/scsi/aic7xxx/aicasm/*.[chyl]:  => N/A 
 
-thanks,
+powerpc-randconfig
 
-greg k-h
+> [1] http://kisskb.ellerman.id.au/kisskb/head/5780/ (all 117 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/5767/ (all 117 configs)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
