@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab3AKPsh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 10:48:37 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44843 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab3AKPsg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 10:48:36 -0500
-Date: Fri, 11 Jan 2013 15:47:53 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Michal Bachraty <michal.bachraty@streamunlimited.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] cpsw: Add support to read cpu MAC address
-Message-ID: <20130111154753.GB23505@n2100.arm.linux.org.uk>
-References: <1357917302-32550-1-git-send-email-michal.bachraty@streamunlimited.com>
+	id S1754416Ab3AKPwc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 10:52:32 -0500
+Received: from 8bytes.org ([85.214.48.195]:57782 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753403Ab3AKPwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 10:52:31 -0500
+Date: Fri, 11 Jan 2013 16:52:26 +0100
+From: "'Joerg Roedel'" <joro@8bytes.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'Cho KyongHo'" <pullip.cho@samsung.com>,
+        "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
+        "'Hyunwoong Kim'" <khw0178.kim@samsung.com>,
+        "'Prathyush'" <prathyush.k@samsung.com>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Subash Patel'" <supash.ramaswamy@linaro.org>
+Subject: Re: [PATCH v6 00/12] iommu/exynos: Fixes and Enhancements of System
+ MMU driver with DT
+Message-ID: <20130111155226.GK25591@8bytes.org>
+References: <003301cde30b$c584c2d0$508e4870$%cho@samsung.com>
+ <032401cde783$485ae1a0$d910a4e0$@samsung.com>
+ <20130110171844.GA2650@8bytes.org>
+ <027601cdef61$2df576a0$89e063e0$@samsung.com>
+ <20130110191207.GI25591@8bytes.org>
+ <02ae01cdef69$67d66200$37832600$@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1357917302-32550-1-git-send-email-michal.bachraty@streamunlimited.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <02ae01cdef69$67d66200$37832600$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Jan 11 16:52:28 2013
+X-DSPAM-Confidence: 0.9991
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 50f0353c22975639518738
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 04:15:02PM +0100, Michal Bachraty wrote:
-> +	if (!request_mem_region(priv->conf_res->start,
-> +			resource_size(priv->conf_res), ndev->name)) {
-> +		dev_err(priv->dev, "failed request i/o region\n");
-> +		ret = -ENXIO;
-> +		goto clean_clk_ret;
-> +	}
-> +
-> +	regs = ioremap(priv->conf_res->start,
-> +				resource_size(priv->conf_res));
-> +	if (!regs) {
-> +		dev_err(priv->dev, "unable to map i/o region\n");
-> +		goto clean_configuration_iores_ret;
-> +	}
+Hi Kukjin,
 
-In this day and age where error paths don't get any testing, and are
-frequently buggy, where we have alternative APIs which make those paths
-more reliable, I think we should do everything to make use of that.
+On Thu, Jan 10, 2013 at 11:33:41AM -0800, Kukjin Kim wrote:
+> Sure, keep going on with
+> 
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-And, to prove the point, your error paths are buggy.  Yes, you release
-the mem region correctly (well done for picking the right interface for
-that!) but the ioremap() is never cleaned up.
+Done that. Applied the patch, some manual work was necessary as the
+patch didn't apply cleanly to v3.8-rc3. Please double-check if the
+result is correct.
 
-So, any chance of converting the above to devm_request_and_ioremap() ?
+> OK, good. Let me know the name of branch when you set-up it :-)
 
-Thanks.
+I pushed the branch to
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git arm/exynos
+
+>From there you can pull it into your tree.
+
+Have fun,
+
+     Joerg
+
+
