@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab3AKWbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 17:31:42 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38227 "EHLO hydra.sisk.pl"
+	id S1755846Ab3AKWeT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 17:34:19 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38231 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754255Ab3AKWbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 17:31:40 -0500
+	id S1753998Ab3AKWeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 17:34:17 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>, Zhang Rui <rui.zhang@intel.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Joe Perches <joe@perches.com>, Rob Landley <rob@landley.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v6 0/3] PM: Intel PowerClamp driver
-Date: Fri, 11 Jan 2013 23:37:27 +0100
-Message-ID: <11047380.k1dbzbnuXT@vostro.rjw.lan>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 0/5] cpufreq: handle SW coordinated CPUs
+Date: Fri, 11 Jan 2013 23:40:04 +0100
+Message-ID: <1629581.g1KDRlRfi1@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357297965-17839-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1357297965-17839-1-git-send-email-jacob.jun.pan@linux.intel.com>
+In-Reply-To: <1353947996-26723-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1353947996-26723-1-git-send-email-fabio.baltieri@linaro.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,44 +26,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 04, 2013 03:12:42 AM Jacob Pan wrote:
-> v6 changes:
-> - clamp module parameters duration and window size, reword warning
->   messages when input parameters are out of range.
+On Monday, November 26, 2012 05:39:51 PM Fabio Baltieri wrote:
+> Hello Rafael,
 > 
-> We have done some experiment with idle injection on Intel platforms.
-> The idea is to use the increasingly power efficient package level
-> C-states for power capping and passive thermal control.
+> this patchset is a new version of the cpufreq SW coordinated CPU bug fix.
+> That's basically the v4 rebased on linux-pm's linux-next tree, split in 5
+> patches for readability and with the bug fixed also in the "conservative"
+> governor.
 > 
-> Documentation is included in the patch to explain the theory of
-> operation, performance implication, calibration, scalability, and user
-> interface. Please refer to the following file for more details.
+> Regards,
+> Fabio
 > 
-> Documentation/thermal/intel_powerclamp.txt
 > 
-> Arjan van de Ven created the original idea and driver, I have been
-> refining driver in hope that they can be to be useful beyond a proof
-> of concept.
+> Changes:
+> v5
+> - rebased/reimplemented on linux-next
+> - split hotplug code on a separate patch
+> - split ondemand/conservative specific fixes on separate patches
+> v4
+> - moved update_sampling rate code on separate patch
+> - simplified dbs_sw_coordinated_cpus
+> - reworked timer handling for code readability, now:
+>   * do_dbs_timer() [-> dbs_timer_coordinated()] -> dbs_timer_update()
+> - simplified cpu_callback cases
+> v3
+> - original submission
 > 
-> Jacob Pan (3):
->   tick: export nohz tick idle symbols for module use
->   x86/nmi: export local_touch_nmi() symbol for modules
->   PM: Introduce Intel PowerClamp Driver
 > 
->  Documentation/thermal/intel_powerclamp.txt |  307 +++++++++++
->  arch/x86/kernel/nmi.c                      |    1 +
->  drivers/thermal/Kconfig                    |   10 +
->  drivers/thermal/Makefile                   |    2 +
->  drivers/thermal/intel_powerclamp.c         |  788 ++++++++++++++++++++++++++++
->  kernel/time/tick-sched.c                   |    2 +
->  6 files changed, 1110 insertions(+)
->  create mode 100644 Documentation/thermal/intel_powerclamp.txt
->  create mode 100644 drivers/thermal/intel_powerclamp.c
+> Fabio Baltieri (4):
+>   cpufreq: star/stop cpufreq timers on cpu hotplug
+>   cpufreq: ondemand: call dbs_check_cpu only when necessary
+>   cpufreq: conservative: call dbs_check_cpu only when necessary
+>   cpufreq: ondemand: use all CPUs in update_sampling_rate
+> 
+> Rickard Andersson (1):
+>   cpufreq: handle SW coordinated CPUs
+> 
+>  drivers/cpufreq/cpufreq_conservative.c |  46 ++++++++++++--
+>  drivers/cpufreq/cpufreq_governor.c     | 106 +++++++++++++++++++++++++++++++--
+>  drivers/cpufreq/cpufreq_governor.h     |   2 +
+>  drivers/cpufreq/cpufreq_ondemand.c     |  62 +++++++++++++++----
+>  4 files changed, 193 insertions(+), 23 deletions(-)
 
-I'm not seeing any more comments here, so I think this is suitable for v3.9.
+Applied to the linux-next branch of the linux-pm.git tree as v3.9 material.
 
-Rui, are you going to take it or do you want me to?
-
+Thanks,
 Rafael
 
 
