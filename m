@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab3AKQTB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 11:19:01 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44868 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab3AKQTA (ORCPT
+	id S1754522Ab3AKQWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 11:22:20 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:14377 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753707Ab3AKQWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 11:19:00 -0500
-Date: Fri, 11 Jan 2013 16:18:28 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Chanho Min <chanho.min@lge.com>
-Cc: "'Alan Cox'" <alan@linux.intel.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] ARM: PL011: Add support for Rx DMA buffer polling
-Message-ID: <20130111161828.GD23505@n2100.arm.linux.org.uk>
-References: <006c01cdefc2$c7e1cb90$57a562b0$@min@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <006c01cdefc2$c7e1cb90$57a562b0$@min@lge.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 11 Jan 2013 11:22:18 -0500
+X-IronPort-AV: E=Sophos;i="4.84,452,1355126400"; 
+   d="scan'208";a="19479006"
+From: Subhash Jadavani <subhashj@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Subhash Jadavani <subhashj@codeaurora.org>
+Subject: [PATCH v1 1/1] block: blk-merge: don't merge the pages with non-contiguous descriptors
+Date: Fri, 11 Jan 2013 21:52:08 +0530
+Message-Id: <1357921328-30188-1-git-send-email-subhashj@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 03:13:31PM +0900, Chanho Min wrote:
-> In DMA support, Received data is not triggered until the DMA buffer is filled.
-> In order to actually use Rx DMA, We would like to suggest the use of the timer
-> for polling DMA buffer. It makes possible character-level trigger.
-> In our test, no data loss occurred at high-baudrate as compared with interrupt
-> driven (We tested with 3Mbps). We know it will be because of the increased Rx
-> buffer rather than DMA effect. but,It is very useful for high speed uart device.
-> We changes:
-> 
-> - CONFIG_SERIAL_AMBA_PL011_DMAPOLL is added to select this feature.
-> 
-> - add timer and last_residue for polling. Every polling, timer handler checks
->   the residue in the dma buffer and transfer data to the tty. Also, last_residue
->   is updated for the next polling.
-> 
-> - We use consistent DMA mappings instead of streaming DMA mappings to avoid from
->   the frequent cache operation.
-> 
-> - pl011_dma_rx_chars is modified. the pending size is recalculated because data
->   can be taken by polling.
-> 
-> - add module parameter for adjusting polling interval.
+blk_rq_map_sg() function merges the physically contiguous pages to use same
+scatter-gather node without checking if their page descriptors are
+contiguous or not.
 
-Here's the question: what is the effect of having to poll every tick on
-the overall system?
+Now when dma_map_sg() is called on the scatter gather list, it would
+take the base page pointer from each node (one by one) and iterates
+through all of the pages in same sg node by keep incrementing the base
+page pointer with the assumption that physically contiguous pages will
+have their page descriptor address contiguous which may not be true
+if SPARSEMEM config is enabled. So here we may end referring to invalid
+page descriptor.
 
-What I'm getting at is: what is the cost of that polling with DMA enabled
-over not having DMA on the receive side at all?  What is the trade-off
-vs baud rate?  Should we scale the polling interval according to baud
-rate?
+Following table shows the example of physically contiguous pages but
+their page descriptor addresses non-contiguous.
+-------------------------------------------
+| Page Descriptor    |   Physical Address |
+------------------------------------------
+| 0xc1e43fdc         |   0xdffff000       |
+| 0xc2052000         |   0xe0000000       |
+-------------------------------------------
+
+With this patch, relevant blk-merge functions will also check if the
+physically contiguous pages are having page descriptors address contiguous
+or not? If not then, these pages are separated to be in different
+scatter-gather nodes.
+
+Signed-off-by: Subhash Jadavani <subhashj@codeaurora.org>
+---
+ block/blk-merge.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index 936a110..623fca5 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -42,6 +42,9 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
+ 					goto new_segment;
+ 				if (!BIOVEC_SEG_BOUNDARY(q, bvprv, bv))
+ 					goto new_segment;
++				if ((bvprv->bv_page != bv->bv_page) &&
++				    (bvprv->bv_page + 1) != bv->bv_page)
++					goto new_segment;
+ 
+ 				seg_size += bv->bv_len;
+ 				bvprv = bv;
+@@ -126,6 +129,9 @@ __blk_segment_map_sg(struct request_queue *q, struct bio_vec *bvec,
+ 			goto new_segment;
+ 		if (!BIOVEC_SEG_BOUNDARY(q, *bvprv, bvec))
+ 			goto new_segment;
++		if ((bvprv->bv_page != bvec->bv_page) &&
++		    ((bvprv->bv_page + 1) != bvec->bv_page))
++			goto new_segment;
+ 
+ 		(*sg)->length += nbytes;
+ 	} else {
+-- 
+--
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
