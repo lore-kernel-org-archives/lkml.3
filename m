@@ -1,238 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab3AKICj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 03:02:39 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:48691 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794Ab3AKICi (ORCPT
+	id S1755082Ab3AKIDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 03:03:55 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:38317 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753832Ab3AKIDy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 03:02:38 -0500
-Date: Fri, 11 Jan 2013 03:02:34 -0500 (EST)
-From: Tomas Hozza <thozza@redhat.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: jasowang@redhat.com, Haiyang Zhang <haiyangz@microsoft.com>,
-        linux-kernel@vger.kernel.org, Hashir Abdi <habdi@microsoft.com>,
-        gregkh@linuxfoundation.org
-Message-ID: <1986454953.1148002.1357891354839.JavaMail.root@redhat.com>
-In-Reply-To: <d9ba1dfaa89f4605bdfa6fa3c71dbe68@SN2PR03MB061.namprd03.prod.outlook.com>
-Subject: Re: [PATCH 1/2] tools: hv: Fix how ifcfg-* file is created
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.34.4.165]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+	Fri, 11 Jan 2013 03:03:54 -0500
+X-IronPort-AV: E=Sophos;i="4.84,451,1355068800"; 
+   d="scan'208";a="6566354"
+Subject: Re: [PATCH v3 05/22] sched: remove domain iterations in
+ fork/exec/wake
+From: li guang <lig.fnst@cn.fujitsu.com>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>, Alex Shi <alex.shi@intel.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <50EF9B69.3000201@linux.vnet.ibm.com>
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
+	 <1357375071-11793-6-git-send-email-alex.shi@intel.com>
+	 <20130109182102.GC2046@e103034-lin>  <50EF9B69.3000201@linux.vnet.ibm.com>
+Date: Fri, 11 Jan 2013 16:01:56 +0800
+Message-ID: <1357891316.2860.6.camel@liguang.fnst.cn.fujitsu.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/11 16:03:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/11 16:03:15,
+	Serialize complete at 2013/01/11 16:03:15
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a mistake in this Patch. Sorry for this.
-I'll send corrected one ASAP after testing it!
+在 2013-01-11五的 10:26 +0530，Preeti U Murthy写道：
+> Hi Morten,Alex
+> 
+> On 01/09/2013 11:51 PM, Morten Rasmussen wrote:
+> > On Sat, Jan 05, 2013 at 08:37:34AM +0000, Alex Shi wrote:
+> >> Guess the search cpu from bottom to up in domain tree come from
+> >> commit 3dbd5342074a1e sched: multilevel sbe sbf, the purpose is
+> >> balancing over tasks on all level domains.
+> >>
+> >> This balancing cost much if there has many domain/groups in a large
+> >> system. And force spreading task among different domains may cause
+> >> performance issue due to bad locality.
+> >>
+> >> If we remove this code, we will get quick fork/exec/wake, plus better
+> >> balancing among whole system, that also reduce migrations in future
+> >> load balancing.
+> >>
+> >> This patch increases 10+% performance of hackbench on my 4 sockets
+> >> NHM and SNB machines.
+> >>
+> >> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> >> ---
+> >>  kernel/sched/fair.c | 20 +-------------------
+> >>  1 file changed, 1 insertion(+), 19 deletions(-)
+> >>
+> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> >> index ecfbf8e..895a3f4 100644
+> >> --- a/kernel/sched/fair.c
+> >> +++ b/kernel/sched/fair.c
+> >> @@ -3364,15 +3364,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+> >>  		goto unlock;
+> >>  	}
+> >>  
+> >> -	while (sd) {
+> >> +	if (sd) {
+> >>  		int load_idx = sd->forkexec_idx;
+> >>  		struct sched_group *group;
+> >> -		int weight;
+> >> -
+> >> -		if (!(sd->flags & sd_flag)) {
+> >> -			sd = sd->child;
+> >> -			continue;
+> >> -		}
+> >>  
+> >>  		if (sd_flag & SD_BALANCE_WAKE)
+> >>  			load_idx = sd->wake_idx;
+> >> @@ -3382,18 +3376,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+> >>  			goto unlock;
+> >>  
+> >>  		new_cpu = find_idlest_cpu(group, p, cpu);
+> >> -
+> >> -		/* Now try balancing at a lower domain level of new_cpu */
+> >> -		cpu = new_cpu;
+> >> -		weight = sd->span_weight;
+> >> -		sd = NULL;
+> >> -		for_each_domain(cpu, tmp) {
+> >> -			if (weight <= tmp->span_weight)
+> >> -				break;
+> >> -			if (tmp->flags & sd_flag)
+> >> -				sd = tmp;
+> >> -		}
+> >> -		/* while loop will break here if sd == NULL */
+> > 
+> > I agree that this should be a major optimization. I just can't figure
+> > out why the existing recursive search for an idle cpu switches to the
+> > new cpu near the end and then starts a search for an idle cpu in the new
+> > cpu's domain. Is this to handle some exotic sched domain configurations?
+> > If so, they probably wouldn't work with your optimizations.
+> 
+> Let me explain my understanding of why the recursive search is the way
+> it is.
+> 
+>  _________________________  sd0
+> |                         |
+> |  ___sd1__   ___sd2__    |
+> | |        | |        |   |
+> | | sgx    | |  sga   |   |
+> | | sgy    | |  sgb   |   |
+> | |________| |________|   |
+> |_________________________|
+> 
+> What the current recursive search is doing is (assuming we start with
+> sd0-the top level sched domain whose flags are rightly set). we find
+> that sd1 is the idlest group,and a cpux1 in sgx is the idlest cpu.
+> 
+> We could have ideally stopped the search here.But the problem with this
+> is that there is a possibility that sgx is more loaded than sgy; meaning
+> the cpus in sgx are heavily imbalanced;say there are two cpus cpux1 and
+> cpux2 in sgx,where cpux2 is heavily loaded and cpux1 has recently gotten
+> idle and load balancing has not come to its rescue yet.According to the
+> search above, cpux1 is idle,but is *not the right candidate for
+> scheduling forked task,it is the right candidate for relieving the load
+> from cpux2* due to cache locality etc.
 
------ Original Message -----
-> 
-> 
-> > -----Original Message-----
-> > From: Tomas Hozza [mailto:thozza@redhat.com]
-> > Sent: Tuesday, January 08, 2013 6:27 AM
-> > To: gregkh@linuxfoundation.org
-> > Cc: KY Srinivasan; jasowang@redhat.com; Haiyang Zhang; linux-
-> > kernel@vger.kernel.org; Hashir Abdi; Tomas Hozza
-> > Subject: [PATCH 1/2] tools: hv: Fix how ifcfg-* file is created
-> > 
-> > Fix for the daemon code and for hv_set_ifconfig.sh script, so
-> > that the created ifcfg-* file is consistent with initscripts
-> > documentation.
-> > 
-> > Signed-off-by: Tomas Hozza <thozza@redhat.com>
-> Acked-by: K. Y. Srinivasan <kys@microsoft.com>
-> 
-> > ---
-> >  tools/hv/hv_kvp_daemon.c    | 73
-> >  ++++++++++++++++++++++---------------------
-> > --
-> >  tools/hv/hv_set_ifconfig.sh | 22 ++++++--------
-> >  2 files changed, 44 insertions(+), 51 deletions(-)
-> > 
-> > diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-> > index d25a469..6b56b75 100644
-> > --- a/tools/hv/hv_kvp_daemon.c
-> > +++ b/tools/hv/hv_kvp_daemon.c
-> > @@ -1162,16 +1162,13 @@ static int process_ip_string(FILE *f, char
-> > *ip_string, int
-> > type)
-> >  				snprintf(str, sizeof(str), "%s", "DNS");
-> >  				break;
-> >  			}
-> > -			if (i != 0) {
-> > -				if (type != DNS) {
-> > -					snprintf(sub_str, sizeof(sub_str),
-> > -						"_%d", i++);
-> > -				} else {
-> > -					snprintf(sub_str, sizeof(sub_str),
-> > -						"%d", ++i);
-> > -				}
-> > -			} else if (type == DNS) {
-> > +
-> > +			if (type == DNS) {
-> >  				snprintf(sub_str, sizeof(sub_str), "%d", ++i);
-> > +			} else if (type == GATEWAY && i == 0) {
-> > +				++i;
-> > +			} else {
-> > +				snprintf(sub_str, sizeof(sub_str), "%d", i++);
-> >  			}
-> > 
-> > 
-> > @@ -1191,17 +1188,13 @@ static int process_ip_string(FILE *f, char
-> > *ip_string, int
-> > type)
-> >  				snprintf(str, sizeof(str), "%s",  "DNS");
-> >  				break;
-> >  			}
-> > -			if ((j != 0) || (type == DNS)) {
-> > -				if (type != DNS) {
-> > -					snprintf(sub_str, sizeof(sub_str),
-> > -						"_%d", j++);
-> > -				} else {
-> > -					snprintf(sub_str, sizeof(sub_str),
-> > -						"%d", ++i);
-> > -				}
-> > -			} else if (type == DNS) {
-> > -				snprintf(sub_str, sizeof(sub_str),
-> > -					"%d", ++i);
-> > +
-> > +			if (type == DNS) {
-> > +				snprintf(sub_str, sizeof(sub_str), "%d", ++i);
-> > +			} else if (j == 0) {
-> > +				++j;
-> > +			} else {
-> > +				snprintf(sub_str, sizeof(sub_str), "_%d", j++);
-> >  			}
-> >  		} else {
-> >  			return  HV_INVALIDARG;
-> > @@ -1244,18 +1237,19 @@ static int kvp_set_ip_info(char *if_name,
-> > struct
-> > hv_kvp_ipaddr_value *new_val)
-> >  	 * Here is the format of the ip configuration file:
-> >  	 *
-> >  	 * HWADDR=macaddr
-> > -	 * IF_NAME=interface name
-> > -	 * DHCP=yes (This is optional; if yes, DHCP is configured)
-> > +	 * DEVICE=interface name
-> > +	 * BOOTPROTO=<protocol> (where <protocol> is "dhcp" if DHCP is
-> > configured
-> > +	 *                       or "none" if no boot-time protocol
-> > should be used)
-> >  	 *
-> > -	 * IPADDR=ipaddr1
-> > -	 * IPADDR_1=ipaddr2
-> > -	 * IPADDR_x=ipaddry (where y = x + 1)
-> > +	 * IPADDR0=ipaddr1
-> > +	 * IPADDR1=ipaddr2
-> > +	 * IPADDRx=ipaddry (where y = x + 1)
-> >  	 *
-> > -	 * NETMASK=netmask1
-> > -	 * NETMASK_x=netmasky (where y = x + 1)
-> > +	 * NETMASK0=netmask1
-> > +	 * NETMASKx=netmasky (where y = x + 1)
-> >  	 *
-> >  	 * GATEWAY=ipaddr1
-> > -	 * GATEWAY_x=ipaddry (where y = x + 1)
-> > +	 * GATEWAYx=ipaddry (where y = x + 1)
-> >  	 *
-> >  	 * DNSx=ipaddrx (where first DNS address is tagged as DNS1 etc)
-> >  	 *
-> > @@ -1294,20 +1288,23 @@ static int kvp_set_ip_info(char *if_name,
-> > struct
-> > hv_kvp_ipaddr_value *new_val)
-> >  	if (error)
-> >  		goto setval_error;
-> > 
-> > -	error = kvp_write_file(file, "IF_NAME", "", if_name);
-> > +	error = kvp_write_file(file, "DEVICE", "", if_name);
-> >  	if (error)
-> >  		goto setval_error;
-> > 
-> > -	if (new_val->dhcp_enabled) {
-> > -		error = kvp_write_file(file, "DHCP", "", "yes");
-> > -		if (error)
-> > -			goto setval_error;
-> > +	if (new_val->dhcp_enabled)
-> > +		error = kvp_write_file(file, "BOOTPROTO", "", "dhcp");
-> > +	else
-> > +		error = kvp_write_file(file, "BOOTPROTO", "", "none");
-> > +
-> > +	if (error)
-> > +		goto setval_error;
-> > +
-> > +	/*
-> > +	 * We are done!.
-> > +	 */
-> > +	goto setval_done;
+This corner case may occur after "[PATCH v3 03/22] sched: fix
+find_idlest_group mess logical" brought in the local sched_group bias,
+and assume balancing runs on cpux2.
+ideally,  find_idlest_group should find the real idlest(this case: sgy),
+then, this patch is reasonable.
 
-This part is the problem. We should goto setval_done only
-if we are using DHCP. Therefore now the IPADDR, NETMASK and
-so on will not be in the generated ifcfg-* if not using DHCP!
+> 
+> Therefore in the next recursive search we go one step inside sd1-the
+> chosen idlest group candidate,which also happens to be the *next level
+> sched domain for cpux1-the chosen idle cpu*. It then returns sgy as the
+> idlest perhaps,if the situation happens to be better than what i have
+> described for sgx and an appropriate cpu there is chosen.
+> 
+> So in short a bird's eye view of a large sched domain to choose the cpu
+> would be very short sighted,we could end up creating imbalances within
+> lower level sched domains.To avoid this the recursive search plays safe
+> and chooses the best idle group after viewing the large sched domain in
+> detail.
+> 
+> Therefore even i feel that this patch should be implemented after
+> thorough tests.
+> 
+> 
+> 
+> > Morten
+> 
+> Regards
+> Preeti U Murthy
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> > 
-> > -		/*
-> > -		 * We are done!.
-> > -		 */
-> > -		goto setval_done;
-> > -	}
-> > 
-> >  	/*
-> >  	 * Write the configuration for ipaddress, netmask, gateway and
-> > diff --git a/tools/hv/hv_set_ifconfig.sh
-> > b/tools/hv/hv_set_ifconfig.sh
-> > index 3e9427e..00b66be 100755
-> > --- a/tools/hv/hv_set_ifconfig.sh
-> > +++ b/tools/hv/hv_set_ifconfig.sh
-> > @@ -20,18 +20,19 @@
-> >  # Here is the format of the ip configuration file:
-> >  #
-> >  # HWADDR=macaddr
-> > -# IF_NAME=interface name
-> > -# DHCP=yes (This is optional; if yes, DHCP is configured)
-> > +# DEVICE=interface name
-> > +# BOOTPROTO=<protocol> (where <protocol> is "dhcp" if DHCP is
-> > configured
-> > +#                       or "none" if no boot-time protocol should
-> > be used)
-> >  #
-> > -# IPADDR=ipaddr1
-> > -# IPADDR_1=ipaddr2
-> > -# IPADDR_x=ipaddry (where y = x + 1)
-> > +# IPADDR0=ipaddr1
-> > +# IPADDR1=ipaddr2
-> > +# IPADDRx=ipaddry (where y = x + 1)
-> >  #
-> > -# NETMASK=netmask1
-> > -# NETMASK_x=netmasky (where y = x + 1)
-> > +# NETMASK0=netmask1
-> > +# NETMASKx=netmasky (where y = x + 1)
-> >  #
-> >  # GATEWAY=ipaddr1
-> > -# GATEWAY_x=ipaddry (where y = x + 1)
-> > +# GATEWAYx=ipaddry (where y = x + 1)
-> >  #
-> >  # DNSx=ipaddrx (where first DNS address is tagged as DNS1 etc)
-> >  #
-> > @@ -53,11 +54,6 @@ echo "NM_CONTROLLED=no" >> $1
-> >  echo "PEERDNS=yes" >> $1
-> >  echo "ONBOOT=yes" >> $1
-> > 
-> > -dhcp=$(grep "DHCP" $1 2>/dev/null)
-> > -if [ "$dhcp" != "" ];
-> > -then
-> > -echo "BOOTPROTO=dhcp" >> $1;
-> > -fi
-> > 
-> >  cp $1 /etc/sysconfig/network-scripts/
-> > 
-> > --
-> > 1.7.11.7
-> > 
-> > 
-> 
-> 
-> 
+-- 
+regards!
+li guang
+
