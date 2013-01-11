@@ -1,220 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab3AKIzz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 03:55:55 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:32436 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab3AKIzx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 03:55:53 -0500
-From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-To: Blue Swirl <blauwirbel@gmail.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Gleb Natapov <gleb@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [Qemu-devel] [PATCH 2/2] QEMU-AER: Qemu changes to support AER
- for VFIO-PCI devices
-Thread-Topic: [Qemu-devel] [PATCH 2/2] QEMU-AER: Qemu changes to support AER
- for VFIO-PCI devices
-Thread-Index: AQHN7jI/NxaDlJRulEClJd4cCU38MphBgnuAgAJTUkA=
-Date: Fri, 11 Jan 2013 08:55:13 +0000
-Message-ID: <F9E001219150CB45BEDC82A650F360C9014976AA@G9W0717.americas.hpqcorp.net>
-References: <F9E001219150CB45BEDC82A650F360C901496034@G9W0717.americas.hpqcorp.net>
- <CAAu8pHt63J4h_c2HbwSDRxJCg4675WT7m_xmYwE69MTp_E=igg@mail.gmail.com>
-In-Reply-To: <CAAu8pHt63J4h_c2HbwSDRxJCg4675WT7m_xmYwE69MTp_E=igg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.23]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1755398Ab3AKI7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 03:59:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28094 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752260Ab3AKI7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 03:59:01 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, Stefan Hajnoczi <stefanha@redhat.com>
+Subject: [PATCH 1/2] tuntap: forbid calling TUNSETIFF when detached
+Date: Fri, 11 Jan 2013 16:50:41 +0800
+Message-Id: <1357894242-25020-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0B8tvuU019613
 
+Michael points out that even after Stefan's fix the TUNSETIFF is still allowed
+to create a new tap device. This because we only check tfile->tun but the
+tfile->detached were introduced. Fix this by failing early in tun_set_iff() if
+the file is detached. After this fix, there's no need to do the check again in
+tun_set_iff(), so this patch removes it.
 
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Stefan Hajnoczi <stefanha@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/tun.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-> -----Original Message-----
-> From: Blue Swirl [mailto:blauwirbel@gmail.com]
-> Sent: Wednesday, January 09, 2013 1:23 PM
-> To: Pandarathil, Vijaymohan R
-> Cc: Alex Williamson; Bjorn Helgaas; Gleb Natapov; linux-
-> pci@vger.kernel.org; qemu-devel@nongnu.org; kvm@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [Qemu-devel] [PATCH 2/2] QEMU-AER: Qemu changes to support AER
-> for VFIO-PCI devices
-> 
-> On Wed, Jan 9, 2013 at 6:26 AM, Pandarathil, Vijaymohan R
-> <vijaymohan.pandarathil@hp.com> wrote:
-> >         - Create eventfd per vfio device assigned to a guest and register
-> an
-> >           event handler
-> >
-> >         - This fd is passed to the vfio_pci driver through a new ioctl
-> >
-> >         - When the device encounters an error, the eventfd is signaled
-> >           and the qemu eventfd handler gets invoked.
-> >
-> >         - In the handler decide what action to take. Current action taken
-> >           is to terminate the guest.
-> >
-> > Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
-> > ---
-> >  hw/vfio_pci.c              | 56
-> ++++++++++++++++++++++++++++++++++++++++++++++
-> >  linux-headers/linux/vfio.h |  9 ++++++++
-> >  2 files changed, 65 insertions(+)
-> >
-> > diff --git a/hw/vfio_pci.c b/hw/vfio_pci.c
-> > index 28c8303..9c3c28b 100644
-> > --- a/hw/vfio_pci.c
-> > +++ b/hw/vfio_pci.c
-> > @@ -38,6 +38,7 @@
-> >  #include "qemu/error-report.h"
-> >  #include "qemu/queue.h"
-> >  #include "qemu/range.h"
-> > +#include "sysemu/sysemu.h"
-> >
-> >  /* #define DEBUG_VFIO */
-> >  #ifdef DEBUG_VFIO
-> > @@ -130,6 +131,8 @@ typedef struct VFIODevice {
-> >      QLIST_ENTRY(VFIODevice) next;
-> >      struct VFIOGroup *group;
-> >      bool reset_works;
-> > +    EventNotifier errfd;
-> > +    __u32 dev_info_flags;
-> 
-> QEMU is not kernel code, please use uint32_t.
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 99b58d8..9a46d70 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -491,8 +491,6 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+ 	err = -EINVAL;
+ 	if (rcu_dereference_protected(tfile->tun, lockdep_rtnl_is_held()))
+ 		goto out;
+-	if (tfile->detached && tun != tfile->detached)
+-		goto out;
+ 
+ 	err = -EBUSY;
+ 	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
+@@ -1546,6 +1544,9 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 	struct net_device *dev;
+ 	int err;
+ 
++	if (rcu_dereference_protected(tfile->detached, lockdep_rtnl_is_held()))
++		return -EINVAL;
++
+ 	dev = __dev_get_by_name(net, ifr->ifr_name);
+ 	if (dev) {
+ 		if (ifr->ifr_flags & IFF_TUN_EXCL)
+-- 
+1.7.1
 
-As you saw later in the code, I was using the same type in the structure 
-copied from the kernel. Will change this to uint32_t.
-
-Thanks
-
-Vijay
-
-> 
-> >  } VFIODevice;
-> >
-> >  typedef struct VFIOGroup {
-> > @@ -1805,6 +1808,8 @@ static int vfio_get_device(VFIOGroup *group, const
-> char *name, VFIODevice *vdev)
-> >      DPRINTF("Device %s flags: %u, regions: %u, irgs: %u\n", name,
-> >              dev_info.flags, dev_info.num_regions, dev_info.num_irqs);
-> >
-> > +    vdev->dev_info_flags = dev_info.flags;
-> > +
-> >      if (!(dev_info.flags & VFIO_DEVICE_FLAGS_PCI)) {
-> >          error_report("vfio: Um, this isn't a PCI device\n");
-> >          goto error;
-> > @@ -1900,6 +1905,55 @@ static void vfio_put_device(VFIODevice *vdev)
-> >      }
-> >  }
-> >
-> > +static void vfio_errfd_handler(void *opaque)
-> > +{
-> > +    VFIODevice *vdev = opaque;
-> > +
-> > +    if (!event_notifier_test_and_clear(&vdev->errfd)) {
-> > +        return;
-> > +    }
-> > +
-> > +    /*
-> > +     * TBD. Retrieve the error details and decide what action
-> > +     * needs to be taken. One of the actions could be to pass
-> > +     * the error to the guest and have the guest driver recover
-> > +     * the error. This requires that PCIe capabilities be
-> > +     * exposed to the guest. At present, we just terminate the
-> > +     * guest to contain the error.
-> > +     */
-> > +    error_report("%s(%04x:%02x:%02x.%x) "
-> > +        "Unrecoverable error detected... Terminating guest\n",
-> > +        __func__, vdev->host.domain, vdev->host.bus, vdev->host.slot,
-> > +        vdev->host.function);
-> > +
-> > +    qemu_system_shutdown_request();
-> > +    return;
-> > +}
-> > +
-> > +static void vfio_register_errfd(VFIODevice *vdev)
-> > +{
-> > +    int32_t pfd;
-> > +    int ret;
-> > +
-> > +    if (!(vdev->dev_info_flags & VFIO_DEVICE_FLAGS_AER_NOTIFY)) {
-> > +        error_report("vfio: Warning: Error notification not supported
-> for the device\n");
-> > +        return;
-> > +    }
-> > +    if (event_notifier_init(&vdev->errfd, 0)) {
-> > +        error_report("vfio: Warning: Unable to init event notifier for
-> error detection\n");
-> > +        return;
-> > +    }
-> > +    pfd = event_notifier_get_fd(&vdev->errfd);
-> > +    qemu_set_fd_handler(pfd, vfio_errfd_handler, NULL, vdev);
-> > +
-> > +    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_ERRFD, pfd);
-> > +    if (ret) {
-> > +        error_report("vfio: Warning: Failed to setup error fd: %d\n",
-> ret);
-> > +        qemu_set_fd_handler(pfd, NULL, NULL, vdev);
-> > +        event_notifier_cleanup(&vdev->errfd);
-> > +    }
-> > +    return;
-> > +}
-> >  static int vfio_initfn(PCIDevice *pdev)
-> >  {
-> >      VFIODevice *pvdev, *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
-> > @@ -2010,6 +2064,8 @@ static int vfio_initfn(PCIDevice *pdev)
-> >          }
-> >      }
-> >
-> > +    vfio_register_errfd(vdev);
-> > +
-> >      return 0;
-> >
-> >  out_teardown:
-> > diff --git a/linux-headers/linux/vfio.h b/linux-headers/linux/vfio.h
-> > index 4758d1b..0ca4eeb 100644
-> > --- a/linux-headers/linux/vfio.h
-> > +++ b/linux-headers/linux/vfio.h
-> > @@ -147,6 +147,7 @@ struct vfio_device_info {
-> >         __u32   flags;
-> >  #define VFIO_DEVICE_FLAGS_RESET        (1 << 0)        /* Device
-> supports reset */
-> >  #define VFIO_DEVICE_FLAGS_PCI  (1 << 1)        /* vfio-pci device */
-> > +#define VFIO_DEVICE_FLAGS_AER_NOTIFY (1 << 2)   /* Supports aer
-> notification */
-> >         __u32   num_regions;    /* Max region index + 1 */
-> >         __u32   num_irqs;       /* Max IRQ index + 1 */
-> 
-> These are verbatim copies of kernel headers so it's OK here.
-> 
-> >  };
-> > @@ -288,6 +289,14 @@ struct vfio_irq_set {
-> >   */
-> >  #define VFIO_DEVICE_RESET              _IO(VFIO_TYPE, VFIO_BASE + 11)
-> >
-> > +/**
-> > + * VFIO_DEVICE_SET_ERRFD - _IO(VFIO_TYPE, VFIO_BASE + 12)
-> > + *
-> > + * Pass the eventfd to the vfio-pci driver for signalling any device
-> > + * error notifications
-> > + */
-> > +#define VFIO_DEVICE_SET_ERRFD           _IO(VFIO_TYPE, VFIO_BASE + 12)
-> > +
-> >  /*
-> >   * The VFIO-PCI bus driver makes use of the following fixed region and
-> >   * IRQ index mapping.  Unimplemented regions return a size of zero.
-> > --
-> > 1.7.11.3
-> >
-> >
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
