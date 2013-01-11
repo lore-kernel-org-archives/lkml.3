@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab3AKRGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:06:39 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:51257 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755376Ab3AKRG0 (ORCPT
+	id S1755340Ab3AKRJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:09:25 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34092 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262Ab3AKRJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:06:26 -0500
-Date: Fri, 11 Jan 2013 09:06:24 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] input: twl4030-vibra: Use system workqueue
-Message-ID: <20130111170623.GD11224@core.coreip.homeip.net>
-References: <1357896483-20764-1-git-send-email-peter.ujfalusi@ti.com>
- <1357896483-20764-3-git-send-email-peter.ujfalusi@ti.com>
+	Fri, 11 Jan 2013 12:09:24 -0500
+Message-ID: <50F0473F.404@wwwdotorg.org>
+Date: Fri, 11 Jan 2013 10:09:19 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357896483-20764-3-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Simon Glass <sjg@chromium.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Roland Stigge <stigge@antcom.de>,
+        Vincent Palatin <vpalatin@chromium.org>, linux-doc@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Felipe Balbi <balbi@ti.com>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-input@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Alban Bedel <alban.bedel@avionic-design.de>,
+        devicetree-discuss@lists.ozlabs.org,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [PATCH v2] input: Extend matrix-keypad device tree binding
+References: <1357868492-16023-1-git-send-email-sjg@chromium.org>
+In-Reply-To: <1357868492-16023-1-git-send-email-sjg@chromium.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 10:28:01AM +0100, Peter Ujfalusi wrote:
-> It is time to switch to system wq instead creating a queue for the driver.
+On 01/10/2013 06:41 PM, Simon Glass wrote:
+> Some matrix keypad drivers can support different numbers of rows and
+> columns. Add a generic binding for these.
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-
-Applied, thank you.
-
-> ---
->  drivers/input/misc/twl4030-vibra.c | 19 +------------------
->  1 file changed, 1 insertion(+), 18 deletions(-)
+> Implementation note:
 > 
-> diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
-> index e2e2a26..68a5f33 100644
-> --- a/drivers/input/misc/twl4030-vibra.c
-> +++ b/drivers/input/misc/twl4030-vibra.c
-> @@ -43,7 +43,6 @@ struct vibra_info {
->  	struct device		*dev;
->  	struct input_dev	*input_dev;
->  
-> -	struct workqueue_struct *workqueue;
->  	struct work_struct	play_work;
->  
->  	bool			enabled;
-> @@ -143,19 +142,7 @@ static int vibra_play(struct input_dev *input, void *data,
->  	if (!info->speed)
->  		info->speed = effect->u.rumble.weak_magnitude >> 9;
->  	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 0 : 1;
-> -	queue_work(info->workqueue, &info->play_work);
-> -	return 0;
-> -}
-> -
-> -static int twl4030_vibra_open(struct input_dev *input)
-> -{
-> -	struct vibra_info *info = input_get_drvdata(input);
-> -
-> -	info->workqueue = create_singlethread_workqueue("vibra");
-> -	if (info->workqueue == NULL) {
-> -		dev_err(&input->dev, "couldn't create workqueue\n");
-> -		return -ENOMEM;
-> -	}
-> +	schedule_work(&info->play_work);
->  	return 0;
->  }
->  
-> @@ -164,9 +151,6 @@ static void twl4030_vibra_close(struct input_dev *input)
->  	struct vibra_info *info = input_get_drvdata(input);
->  
->  	cancel_work_sync(&info->play_work);
-> -	INIT_WORK(&info->play_work, vibra_play_work); /* cleanup */
-> -	destroy_workqueue(info->workqueue);
-> -	info->workqueue = NULL;
->  
->  	if (info->enabled)
->  		vibra_disable(info);
-> @@ -238,7 +222,6 @@ static int twl4030_vibra_probe(struct platform_device *pdev)
->  	info->input_dev->name = "twl4030:vibrator";
->  	info->input_dev->id.version = 1;
->  	info->input_dev->dev.parent = pdev->dev.parent;
-> -	info->input_dev->open = twl4030_vibra_open;
->  	info->input_dev->close = twl4030_vibra_close;
->  	__set_bit(FF_RUMBLE, info->input_dev->ffbit);
->  
-> -- 
-> 1.8.1
-> 
+> In order to implement this binding in the kernel, we will need to modify
+> matrix_keypad_() to look up the number of rows and cols in
+> the keymap. Perhaps this could be done by passing 0 for these parameters?
+> Many of the parameters can already be set to NULL. Ick.
 
--- 
-Dmitry
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+
+Note that the Tegra bindings are based on matrix-keypad.txt, and
+recently added the following properties:
+
+> - nvidia,kbc-row-pins: The KBC pins which are configured as row. This is an
+>   array of pin numbers which is used as rows.
+> - nvidia,kbc-col-pins: The KBC pins which are configured as column. This is an
+>   array of pin numbers which is used as column.
+
+Those both define the number of rows/columns (indirectly via the
+property lengths) *and* define which pins are used for the rows/columns.
+How will this influence/interact-with any changes you're planning to the
+core matrix keymap parsing code; would Tegra require your "new"
+keypad,num-rows/keypad,num-columns properties even though the
+information is redundant, or will the Tegra driver have some way of
+passing this information to the core?
