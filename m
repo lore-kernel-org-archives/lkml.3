@@ -1,236 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab3AKIx7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 03:53:59 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:43348 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab3AKIx6 (ORCPT
+	id S1755411Ab3AKIyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 03:54:09 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:20421 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754960Ab3AKIyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 03:53:58 -0500
+	Fri, 11 Jan 2013 03:54:03 -0500
+From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Gleb Natapov <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/2] QEMU-AER: Qemu changes to support AER for VFIO-PCI
+ devices
+Thread-Topic: [PATCH 2/2] QEMU-AER: Qemu changes to support AER for VFIO-PCI
+ devices
+Thread-Index: AQHN7jI/NxaDlJRulEClJd4cCU38MphBTBeAgAKIQWA=
+Date: Fri, 11 Jan 2013 08:53:02 +0000
+Message-ID: <F9E001219150CB45BEDC82A650F360C901497698@G9W0717.americas.hpqcorp.net>
+References: <F9E001219150CB45BEDC82A650F360C901496034@G9W0717.americas.hpqcorp.net>
+ <1357754873.3224.777.camel@bling.home>
+In-Reply-To: <1357754873.3224.777.camel@bling.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.23]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1357566094.10284.83.camel@gandalf.local.home>
-References: <1357207949-3349-1-git-send-email-kpark3469@gmail.com>
-	<1357207949-3349-2-git-send-email-kpark3469@gmail.com>
-	<20130103103815.GL2631@n2100.arm.linux.org.uk>
-	<CA+KhAHbmjD7zTw+wcw84Abg3V1dD=0Ea4kUpYdGENQf1UOWphw@mail.gmail.com>
-	<1357220165.10284.30.camel@gandalf.local.home>
-	<20130103141301.GQ2631@n2100.arm.linux.org.uk>
-	<1357229038.10284.46.camel@gandalf.local.home>
-	<20130103162359.GR2631@n2100.arm.linux.org.uk>
-	<1357232337.10284.67.camel@gandalf.local.home>
-	<CA+KhAHYbDU0Ajr5uPEjPxX2ECitvnK2ENOjmqjC=3G657GvG7w@mail.gmail.com>
-	<1357566094.10284.83.camel@gandalf.local.home>
-Date: Fri, 11 Jan 2013 17:53:57 +0900
-Message-ID: <CA+KhAHbOu8JxMuwajZYBAkex7pZag3oaTvz=EoLOQz5iZtUfsQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] arm: make return_address available for ARM_UNWIND
-From: Keun-O Park <kpark3469@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, fweisbec@gmail.com,
-        mingo@redhat.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, sahara <keun-o.park@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0B8sGLu019595
 
-On Mon, Jan 7, 2013 at 10:41 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> On Fri, 2013-01-04 at 17:45 +0900, Keun-O Park wrote:
->
-> > With "CFLAGS_REMOVE_unwind.o = -pg" and with CONFIG_PROVE_LOCKING
-> > turned on, I confirmed that
-> > there's no trace output like Steve mentioned.
-> > However, if I turn off CONFIG_PROVE_LOCKING, "irqsoff" and
-> > "preemptirqsoff" ftracer prints these lines :
+
+
+> -----Original Message-----
+> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> Sent: Wednesday, January 09, 2013 10:08 AM
+> To: Pandarathil, Vijaymohan R
+> Cc: Bjorn Helgaas; Gleb Natapov; kvm@vger.kernel.org; qemu-
+> devel@nongnu.org; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 2/2] QEMU-AER: Qemu changes to support AER for VFIO-PCI
+> devices
+> 
+> On Wed, 2013-01-09 at 06:26 +0000, Pandarathil, Vijaymohan R wrote:
+> > 	- Create eventfd per vfio device assigned to a guest and register an
+> >           event handler
 > >
-> > kernel_text_address <-unwind_frame
-> > core_kernel_text <-unwind_frame
-> > search_index <-unwind_frame
+> > 	- This fd is passed to the vfio_pci driver through a new ioctl
 > >
-> > While I investigated the reason, I just found out there's two function
-> > with same name, trace_hardirqs_off.
-> > One in kernel/trace/trace_irqsoff.c and another in kernel/lockdep.c.
-> > And both symbols are exported.
-> > I am wondering whether it is intentionally maintained code to
-> > manipulate ftrace and lockdep or not.
-> > I guess it's probably not.
->
-> Both the irqsoff tracer from ftrace and lockdep came from the -rt patch.
-> The two were very integrated at the time. When they were ported over to
-> mainline, they still used the same infrastructure to hook into the
-> locations of interrupts being disabled or enabled.
->
-> trace_hardirqs_on/off() is the function that is called for both lockdep
-> and ftrace's irqsoff tracer. So this was intentional. That way we didn't
-> need to have two different callers at every location. But if lockdep
-> isn't defined and ftrace irqsoff is, then ftrace would define the
-> trace_hardirqs_on/off() routines, otherwise lockdep does. (These
-> routines are within CONFIG_PROVE_LOCKING #ifdefs in
-> kernel/trace/trace_irqsoff.c)
->
-> When both lockdep and irqsoff tracer are configured, then lockdep
-> defines the trace_hardirqs_off_caller(), and calls time_hardirqs_off()
-> in trace_irqsoff.c which does the same thing as the trace_hardirqs_off()
-> does without lockdep.
->
-> I'm not sure why one would add the annotations while adding
-> PROVE_LOCKING doesn't. They both seems to use CALLER_ADDR0, but maybe
-> there's another path that uses CALLER_ADDR1 without it.
->
-> -- Steve
->
->
+> > 	- When the device encounters an error, the eventfd is signaled
+> >           and the qemu eventfd handler gets invoked.
+> >
+> > 	- In the handler decide what action to take. Current action taken
+> >           is to terminate the guest.
+> >
+> > Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+> > ---
+> >  hw/vfio_pci.c              | 56
+> ++++++++++++++++++++++++++++++++++++++++++++++
+> >  linux-headers/linux/vfio.h |  9 ++++++++
+> >  2 files changed, 65 insertions(+)
+> >
+> > diff --git a/hw/vfio_pci.c b/hw/vfio_pci.c
+> > index 28c8303..9c3c28b 100644
+> > --- a/hw/vfio_pci.c
+> > +++ b/hw/vfio_pci.c
+> > @@ -38,6 +38,7 @@
+> >  #include "qemu/error-report.h"
+> >  #include "qemu/queue.h"
+> >  #include "qemu/range.h"
+> > +#include "sysemu/sysemu.h"
+> >
+> >  /* #define DEBUG_VFIO */
+> >  #ifdef DEBUG_VFIO
+> > @@ -130,6 +131,8 @@ typedef struct VFIODevice {
+> >      QLIST_ENTRY(VFIODevice) next;
+> >      struct VFIOGroup *group;
+> >      bool reset_works;
+> > +    EventNotifier errfd;
+> 
+> Misleading name, it's an EventNotifier not an fd.
 
-Hello Steve,
+Will make the change.
 
-Much obliged for your explaining this.
-As your guess, there's another path that uses CALLER_ADDR1 without
-CONFIG_PROVE_LOCKING though both lockdep and ftrace's irqsoff tracer
-is turned on. In this case, ftrace's trace_hardirqs_on/off() would be
-called.
-And, as you said to me, if lockdep is off and ftrace's irqsoff is on,
-ftrace's trace_hardirqs_on/off() would be called.
-I think the proper way to avoid calling CALLER_ADDR1 will be calling
-trace_hardirqs_off_caller() instead of calling stop_critical_timing()
-directly in trace_hardirqs_off(). And, this will suppress the message
-outputs of unwind_frame.
-If you think this idea is okay, I will push the patch v2 to you.
-In my test result, it looks it's functionally correct.
+> 
+> > +    __u32 dev_info_flags;
+> >  } VFIODevice;
+> >
+> >  typedef struct VFIOGroup {
+> > @@ -1805,6 +1808,8 @@ static int vfio_get_device(VFIOGroup *group, const
+> char *name, VFIODevice *vdev)
+> >      DPRINTF("Device %s flags: %u, regions: %u, irgs: %u\n", name,
+> >              dev_info.flags, dev_info.num_regions, dev_info.num_irqs);
+> >
+> > +    vdev->dev_info_flags = dev_info.flags;
+> > +
+> 
+> We test the VFIO_DEVICE_FLAGS_RESET elsewhere by caching the bit into a
+> variable, why not do that here too?
 
-Thanks.
+I was wondering if there was any specific reason to cache the bit into a separate variable. Wouldn't a flags field which can contain the specific bit be more apt ?
 
--- kpark
+> 
+> >      if (!(dev_info.flags & VFIO_DEVICE_FLAGS_PCI)) {
+> >          error_report("vfio: Um, this isn't a PCI device\n");
+> >          goto error;
+> > @@ -1900,6 +1905,55 @@ static void vfio_put_device(VFIODevice *vdev)
+> >      }
+> >  }
+> >
+> > +static void vfio_errfd_handler(void *opaque)
+> > +{
+> > +    VFIODevice *vdev = opaque;
+> > +
+> > +    if (!event_notifier_test_and_clear(&vdev->errfd)) {
+> > +        return;
+> > +    }
+> > +
+> > +    /*
+> > +     * TBD. Retrieve the error details and decide what action
+> > +     * needs to be taken. One of the actions could be to pass
+> > +     * the error to the guest and have the guest driver recover
+> > +     * the error. This requires that PCIe capabilities be
+> > +     * exposed to the guest. At present, we just terminate the
+> > +     * guest to contain the error.
+> > +     */
+> > +    error_report("%s(%04x:%02x:%02x.%x) "
+> > +        "Unrecoverable error detected... Terminating guest\n",
+> > +        __func__, vdev->host.domain, vdev->host.bus, vdev->host.slot,
+> > +        vdev->host.function);
+> > +
+> > +    qemu_system_shutdown_request();
+> 
+> I would have figured hw_error
 
+Hw_error() is probably more appropriate. Will make the change.
 
-diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
-index f89515a..3552ad9 100644
---- a/arch/arm/include/asm/ftrace.h
-+++ b/arch/arm/include/asm/ftrace.h
-@@ -32,13 +32,11 @@ extern void ftrace_call_old(void);
+> 
+> > +    return;
+> > +}
+> > +
+> > +static void vfio_register_errfd(VFIODevice *vdev)
+> > +{
+> > +    int32_t pfd;
+> 
+> "pfd" is used elsewhere in vfio as "Pointer to FD", this is just a fd.
 
- #ifndef __ASSEMBLY__
+Will change.
 
--#if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND)
-+#if defined(CONFIG_FRAME_POINTER) || defined(CONFIG_ARM_UNWIND)
- /*
-  * return_address uses walk_stackframe to do it's work.  If both
-  * CONFIG_FRAME_POINTER=y and CONFIG_ARM_UNWIND=y walk_stackframe uses unwind
-- * information.  For this to work in the function tracer many functions would
-- * have to be marked with __notrace.  So for now just depend on
-- * !CONFIG_ARM_UNWIND.
-+ * information.
-  */
+> 
+> > +    int ret;
+> > +
+> > +    if (!(vdev->dev_info_flags & VFIO_DEVICE_FLAGS_AER_NOTIFY)) {
+> > +        error_report("vfio: Warning: Error notification not supported
+> for the device\n");
+> 
+> This should probably just be a debug print.
 
- void *return_address(unsigned int);
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 5bbec7b..675fd62 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -9,6 +9,9 @@ ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_ftrace.o = -pg
- CFLAGS_REMOVE_insn.o = -pg
- CFLAGS_REMOVE_patch.o = -pg
-+ifdef CONFIG_ARM_UNWIND
-+CFLAGS_REMOVE_unwind.o = -pg
-+endif
- endif
+Okay.
 
- CFLAGS_REMOVE_return_address.o = -pg
-diff --git a/arch/arm/kernel/return_address.c b/arch/arm/kernel/return_address.c
-index fafedd8..f202bc0 100644
---- a/arch/arm/kernel/return_address.c
-+++ b/arch/arm/kernel/return_address.c
-@@ -11,7 +11,7 @@
- #include <linux/export.h>
- #include <linux/ftrace.h>
+> 
+> > +        return;
+> > +    }
+> > +    if (event_notifier_init(&vdev->errfd, 0)) {
+> > +        error_report("vfio: Warning: Unable to init event notifier for
+> error detection\n");
+> > +        return;
+> > +    }
+> > +    pfd = event_notifier_get_fd(&vdev->errfd);
+> > +    qemu_set_fd_handler(pfd, vfio_errfd_handler, NULL, vdev);
+> > +
+> > +    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_ERRFD, pfd);
+> > +    if (ret) {
+> > +        error_report("vfio: Warning: Failed to setup error fd: %d\n",
+> ret);
+> > +        qemu_set_fd_handler(pfd, NULL, NULL, vdev);
+> > +        event_notifier_cleanup(&vdev->errfd);
+> > +    }
+> > +    return;
+> > +}
+> >  static int vfio_initfn(PCIDevice *pdev)
+> >  {
+> >      VFIODevice *pvdev, *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
+> > @@ -2010,6 +2064,8 @@ static int vfio_initfn(PCIDevice *pdev)
+> >          }
+> >      }
+> >
+> > +    vfio_register_errfd(vdev);
+> > +
+> 
+> No cleanup in exitfn?!  Thanks,
 
--#if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND)
-+#if defined(CONFIG_FRAME_POINTER) || defined(CONFIG_ARM_UNWIND)
- #include <linux/sched.h>
+Missed that. Will fix.
 
- #include <asm/stacktrace.h>
-@@ -57,17 +57,13 @@ void *return_address(unsigned int level)
- 		return NULL;
- }
+Vijay
 
--#else /* if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND) */
--
--#if defined(CONFIG_ARM_UNWIND)
--#warning "TODO: return_address should use unwind tables"
--#endif
-+#else /* CONFIG_FRAME_POINTER || CONFIG_ARM_UNWIND */
+> 
+> Alex
+> 
+> >      return 0;
+> >
+> >  out_teardown:
+> > diff --git a/linux-headers/linux/vfio.h b/linux-headers/linux/vfio.h
+> > index 4758d1b..0ca4eeb 100644
+> > --- a/linux-headers/linux/vfio.h
+> > +++ b/linux-headers/linux/vfio.h
+> > @@ -147,6 +147,7 @@ struct vfio_device_info {
+> >  	__u32	flags;
+> >  #define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
+> >  #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
+> > +#define VFIO_DEVICE_FLAGS_AER_NOTIFY (1 << 2)   /* Supports aer
+> notification */
+> >  	__u32	num_regions;	/* Max region index + 1 */
+> >  	__u32	num_irqs;	/* Max IRQ index + 1 */
+> >  };
+> > @@ -288,6 +289,14 @@ struct vfio_irq_set {
+> >   */
+> >  #define VFIO_DEVICE_RESET		_IO(VFIO_TYPE, VFIO_BASE + 11)
+> >
+> > +/**
+> > + * VFIO_DEVICE_SET_ERRFD - _IO(VFIO_TYPE, VFIO_BASE + 12)
+> > + *
+> > + * Pass the eventfd to the vfio-pci driver for signalling any device
+> > + * error notifications
+> > + */
+> > +#define VFIO_DEVICE_SET_ERRFD           _IO(VFIO_TYPE, VFIO_BASE + 12)
+> > +
+> >  /*
+> >   * The VFIO-PCI bus driver makes use of the following fixed region and
+> >   * IRQ index mapping.  Unimplemented regions return a size of zero.
+> 
+> 
 
- void *return_address(unsigned int level)
- {
- 	return NULL;
- }
-
--#endif /* if defined(CONFIG_FRAME_POINTER) &&
-!defined(CONFIG_ARM_UNWIND) / else */
-+#endif /* CONFIG_FRAME_POINTER || CONFIG_ARM_UNWIND */
-
- EXPORT_SYMBOL_GPL(return_address);
-diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
-index 00f79e5..aab144b 100644
---- a/arch/arm/kernel/stacktrace.c
-+++ b/arch/arm/kernel/stacktrace.c
-@@ -6,6 +6,9 @@
-
- #if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND)
- /*
-+ * If both CONFIG_FRAME_POINTER=y and CONFIG_ARM_UNWIND=y walk_stackframe uses
-+ * unwind information. So for now just depend on !CONFIG_ARM_UNWIND.
-+ *
-  * Unwind the current stack frame and store the new register values in the
-  * structure passed as argument. Unwinding is equivalent to a function return,
-  * hence the new PC value rather than LR should be used for backtrace.
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 713a2ca..6f207ed 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -483,20 +483,6 @@ inline void print_irqtrace_events(struct task_struct *curr)
- /*
-  * We are only interested in hardirq on/off events:
-  */
--void trace_hardirqs_on(void)
--{
--	if (!preempt_trace() && irq_trace())
--		stop_critical_timing(CALLER_ADDR0, CALLER_ADDR1);
--}
--EXPORT_SYMBOL(trace_hardirqs_on);
--
--void trace_hardirqs_off(void)
--{
--	if (!preempt_trace() && irq_trace())
--		start_critical_timing(CALLER_ADDR0, CALLER_ADDR1);
--}
--EXPORT_SYMBOL(trace_hardirqs_off);
--
- void trace_hardirqs_on_caller(unsigned long caller_addr)
- {
- 	if (!preempt_trace() && irq_trace())
-@@ -504,6 +490,12 @@ void trace_hardirqs_on_caller(unsigned long caller_addr)
- }
- EXPORT_SYMBOL(trace_hardirqs_on_caller);
-
-+void trace_hardirqs_on(void)
-+{
-+	trace_hardirqs_on_caller(CALLER_ADDR0);
-+}
-+EXPORT_SYMBOL(trace_hardirqs_on);
-+
- void trace_hardirqs_off_caller(unsigned long caller_addr)
- {
- 	if (!preempt_trace() && irq_trace())
-@@ -511,6 +503,12 @@ void trace_hardirqs_off_caller(unsigned long caller_addr)
- }
- EXPORT_SYMBOL(trace_hardirqs_off_caller);
-
-+void trace_hardirqs_off(void)
-+{
-+	trace_hardirqs_off_caller(CALLER_ADDR0);
-+}
-+EXPORT_SYMBOL(trace_hardirqs_off);
-+
- #endif /* CONFIG_PROVE_LOCKING */
- #endif /*  CONFIG_IRQSOFF_TRACER */
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
