@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab3AKSFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 13:05:33 -0500
-Received: from mx1.netapp.com ([216.240.18.38]:7058 "EHLO mx1.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753754Ab3AKSFa convert rfc822-to-8bit (ORCPT
+	id S1755211Ab3AKSGw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 13:06:52 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:37221 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab3AKSGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 13:05:30 -0500
-X-IronPort-AV: E=Sophos;i="4.84,453,1355126400"; 
-   d="scan'208";a="234986483"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>
-Subject: [GIT PULL] Please pull one SUNRPC client bugfix
-Thread-Topic: [GIT PULL] Please pull one SUNRPC client bugfix
-Thread-Index: AQHN8CY8hxoLsn6WHkmdMo9TK4J91Q==
-Date: Fri, 11 Jan 2013 18:05:28 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91199BA38@SACEXCMBX04-PRD.hq.netapp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.118]
-Content-Type: text/plain; charset="utf-7"
-Content-ID: <E13DB27A4B5C5A4DB7498BB51A7FB0DA@tahoe.netapp.com>
-Content-Transfer-Encoding: 8BIT
+	Fri, 11 Jan 2013 13:06:51 -0500
 MIME-Version: 1.0
+In-Reply-To: <17637668.59BS4lW4dN@vostro.rjw.lan>
+References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com>
+ <1410202.K95a8u1BYT@vostro.rjw.lan> <CAE9FiQVmDW__C3A1_JJZpCZJwYWONZpHbzitMxsHZBxotw8VBA@mail.gmail.com>
+ <17637668.59BS4lW4dN@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 11 Jan 2013 11:06:29 -0700
+Message-ID: <CAErSpo6eB=Gn6wPBK=_KYhP=NOi26AmuJd_rS-zAw+2ERdrcew@mail.gmail.com>
+Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when
+ PCI hotplug event happens
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yinghai Lu <yinghai@kernel.org>, Myron Stowe <mstowe@redhat.com>,
+        Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d287b8750e47c1702dab0e37ac11012bb751ece0:
+On Thu, Jan 10, 2013 at 4:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, January 10, 2013 03:40:45 PM Yinghai Lu wrote:
+>> On Thu, Jan 10, 2013 at 3:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Thursday, January 10, 2013 03:03:53 PM Yinghai Lu wrote:
+>> >> On Thu, Jan 10, 2013 at 1:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> > Well, I don't see what functional problems that can bring.
+>> >> >
+>> >> > In theory people may want to have them as modules to avoid loading them on
+>> >> > systems that don't use PCI hotplug, but honestly I think that the complexity
+>> >> > this causes us to deal with is not worth it.
+>> >> >
+>> >> > Moreover, removing the modularity may actually allow us to solve some ordering
+>> >> > issues once and for good.
+>> >>
+>> >> No, the world is not really ideal yet.
+>> >>
+>> >> looks like laptops have problem with pci express cards.
+>> >>
+>> >> when pciehp is used, surprise insert/removal does not work because
+>> >> PresDect does not change properly, so no interrupt is generated.
+>> >> --- i suspects that is silicon problem.
+>> >>
+>> >> but when acpiphp is used, that surprise  insert/removal is working.
+>> >>
+>> >> some laptop like thinkpad, just don't give osc to kernel..
+>> >> [    0.505117]  pci0000:00: Requesting ACPI _OSC control (0x1d)
+>> >> [    0.505413]  pci0000:00: ACPI _OSC request failed (AE_SUPPORT),
+>> >> returned control mask: 0x0d
+>> >> [    0.505517] ACPI _OSC control for PCIe not granted, disabling ASPM
+>> >>
+>> >> and other laptop give that to kernel, in recent kernel will not give
+>> >> acpiphp to have that slot, because it want to hold that for pciehp.
+>> >> poor user have to pass 'pci_aspm=off" to disable _OSC for all.
+>> >> --- please check the mail that i forward to you yesterday.
+>> >
+>> > Yes, this is a bug, but I'm not sure how to fix it yet.
+>>
+>> add one command line to control it so do not claim that in osc_control?
+>
+> That's one option, although not very attractive so to speak.
+>
+>> >> Anyway, we do need to let the user to have choice to use acpiphp and pciehp.
+>> >> and it should be first come and first serve policy.
+>> >
+>> > And that's why you think they should be modules?  I disagree if so.
+>>
+>> Yes.
+>>
+>> maybe we can have pci=nopciehp in command line just we pci=noaer...
+>>
+>> that should handle some corner cases.
+>
+> Yes.  In any case the user should be able to say "I know better", but having
+> to express that through the "right" ordering of modules is somewhat less than
+> straightforward in my opinion.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs (2013-01-07 09:41:20 -0800)
+I think it's fine if a user *can* override the default ordering.
 
-are available in the git repository at:
+I am completely opposed to *requiring* a user to supply a command line
+option or change the order of module loading just to get hotplug to
+work.  There's no sane way to document that or communicate that
+information to users.
 
-
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.8-3
-
-for you to fetch changes up to 87ed50036b866db2ec2ba16b2a7aec4a2b0b7c39:
-
-  SUNRPC: Ensure we release the socket write lock if the rpc+AF8-task exits early (2013-01-08 14:30:43 -0500)
-
-----------------------------------------------------------------
-NFS client bugfixe for Linux 3.8
-
-- Fix a socket lock leak in net/sunrpc/xprt.c
-
-----------------------------------------------------------------
-Trond Myklebust (1):
-      SUNRPC: Ensure we release the socket write lock if the rpc+AF8-task exits early
-
- net/sunrpc/sched.c +AHw-  3 +---
- net/sunrpc/xprt.c  +AHw- 12 +-+-+-+-+-+-+-+-+-+---
- 2 files changed, 11 insertions(+-), 4 deletions(-)
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust+AEA-netapp.com
-www.netapp.com
+Bjorn
