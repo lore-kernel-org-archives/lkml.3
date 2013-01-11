@@ -1,147 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab3AKO20 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 09:28:26 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:46486 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab3AKO2Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 09:28:24 -0500
+	id S1753542Ab3AKOeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 09:34:05 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:2800 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751987Ab3AKOeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 09:34:03 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Al Cooper" <alcooperx@gmail.com>
+To: ralf@linux-mips.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+cc: "Al Cooper" <alcooperx@gmail.com>
+Subject: [PATCH] mips: function tracer: Fix broken function tracing
+Date: Fri, 11 Jan 2013 09:33:30 -0500
+Message-ID: <1357914810-20656-1-git-send-email-alcooperx@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <y>
+References: <y>
 MIME-Version: 1.0
-In-Reply-To: <20130111135931.GE12715@arwen.pp.htv.fi>
-References: <1356357513-8892-1-git-send-email-gautam.vivek@samsung.com>
-	<20130110130238.GW28920@arwen.pp.htv.fi>
-	<CAFp+6iHEJvCPHbSvqYhjuTjzvkKQVuKz8f8TupqFcZ9gdvpt-A@mail.gmail.com>
-	<20130111135931.GE12715@arwen.pp.htv.fi>
-Date: Fri, 11 Jan 2013 19:58:23 +0530
-Message-ID: <CAFp+6iEvO2z=bWF7awN4vxN5W1YT0eXcpwarXoB8Mf_=BsQBpQ@mail.gmail.com>
-Subject: Re: [PATCH RFC] usb: dwc3: Remove dwc3 dependency on gadget.
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        gregkh@linuxfoundation.org, Doug Anderson <dianders@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-WSS-ID: 7CEEFDD41ZS4162332-01-01
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Function tracing is currently broken for all 32 bit MIPS platforms.
+When tracing is enabled, the kernel immediately hangs on boot.
+This is a result of commit b732d439cb43336cd6d7e804ecb2c81193ef63b0
+that changes the kernel/trace/Kconfig file so that is no longer
+forces FRAME_POINTER when FUNCTION_TRACING is enabled.
 
+MIPS frame pointers are generally considered to be useless because
+they cannot be used to unwind the stack. Unfortunately the MIPS
+function tracing code has bugs that are masked by the use of frame
+pointers. This commit fixes the bugs so that MIPS frame pointers do
+not need to be enabled.
 
-On Fri, Jan 11, 2013 at 7:29 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Fri, Jan 11, 2013 at 07:13:55PM +0530, Vivek Gautam wrote:
->> On Thu, Jan 10, 2013 at 6:32 PM, Felipe Balbi <balbi@ti.com> wrote:
->> > Hi,
->> >
->> > On Mon, Dec 24, 2012 at 07:28:33PM +0530, Vivek Gautam wrote:
->> >> DWC3 controller curretly depends on CONFIG_USB and CONFIG_USB_GADGET.
->> >> Some hardware may like to use only host feature on dwc3.
->> >> So, removing the dependency of USB_DWC3 on USB_GADGET
->> >> and further modulating the dwc3 core to enable gadget features
->> >> only with USB_GADGET.
->> >>
->> >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> >> CC: Doug Anderson <dianders@chromium.org>
->> >
->> > right, right... Eventually we need to do it, but you're only making
->> > gadget side optional. Host side should be optional too, but then you
->> > need to make sure we don't build dwc3 without gadget and host.
->> >
->>
->> Yes, true we need to make host side also optional, build dwc3 only when
->> either of host or gadget are built.
->
-> btw, make the default Dual-Role, if user/defconfig doesn't select
-> anything we want to build with all features.
->
+The bugs are a result of the odd calling sequence used to call the trace
+routine. This calling sequence is inserted into every tracable function
+when the tracing CONFIG option is enabled. This sequence is generated
+for 32bit MIPS platforms by the compiler via the "-pg" flag.
+Part of the sequence is "addiu sp,sp,-8" in the delay slot after every
+call to the trace routine "_mcount" (some legacy thing where 2 arguments
+used to be pushed on the stack). The _mcount routine is expected to
+adjust the sp by +8 before returning.
 
-Yes we can try something like this ?
+One of the bugs is that when tracing is disabled for a function, the
+"jalr _mcount" instruction is replaced with a nop, but the
+"addiu sp,sp,-8" is still executed and the stack pointer is left
+trashed. When frame pointers are enabled the problem is masked
+because any access to the stack is done through the frame
+pointer and the stack pointer is restored from the frame pointer when
+the function returns. This patch uses a branch likely instruction
+"bltzl zero, f1" instead of "nop" to disable the call because this
+instruction will not execute the "addiu sp,sp,-8" instruction in
+the delay slot. The other possible solution would be to nop out both
+the jalr and the "addiu sp,sp,-8", but this would need to be interrupt
+and SMP safe and would be much more intrusive.
 
-         if (USB || USB_GADGET)
-         menuconfig USB_DWC3
-                 tristate "DesignWare USB3 DRD Core Support"
-          ...
+A few other bugs were fixed where the _mcount routine itself did not
+always fix the sp on return.
 
-          if USB_DWC3
-          choice
-          default USB_DWC3_DUAL_ROLE_MODE
-          ...
+Signed-off-by: Al Cooper <alcooperx@gmail.com>
+---
+ arch/mips/kernel/ftrace.c |    9 ++++++++-
+ arch/mips/kernel/mcount.S |   14 ++++++++++----
+ 2 files changed, 18 insertions(+), 5 deletions(-)
 
-          config USB_DWC3_HOST_MODE
-          ...
-
-          config USB_DWC3_DEVICE_MODE
-          ...
-
-          config USB_DWC3_DUAL_ROLE_MODE
-          ...
-
-         endchoice
-
-         ..
-         ..
-         endif
-         endif
-
-
->> > Maybe make a mode selection for Host-only, Peripheral-only, Dual-Role
->> > Device ??
->> >
->>
->> True this will be good idea to use modes: host only, gadget only or dual role.
->> May be the platform glue layers can use them later to put the controller
->> in a specific mode ?
->
-> probably not as that's likely to change from board to board.
->
->> >>  int dwc3_gadget_init(struct dwc3 *dwc);
->> >>  void dwc3_gadget_exit(struct dwc3 *dwc);
->> >> +#else
->> >> +static inline int dwc3_gadget_init(struct dwc3 *dwc)
->> >> +{ return -EINVAL; }
->> >> +static inline void dwc3_gadget_exit(struct dwc3 *dwc)
->> >> +{ }
->> >> +#endif
->> >>
->> >>  #endif /* __DRIVERS_USB_DWC3_CORE_H */
->> >> diff --git a/drivers/usb/dwc3/debugfs.c b/drivers/usb/dwc3/debugfs.c
->> >> index d4a30f1..553bbaa 100644
->> >> --- a/drivers/usb/dwc3/debugfs.c
->> >> +++ b/drivers/usb/dwc3/debugfs.c
->> >> @@ -535,7 +535,8 @@ static ssize_t dwc3_testmode_write(struct file *file,
->> >>               testmode = 0;
->> >>
->> >>       spin_lock_irqsave(&dwc->lock, flags);
->> >> -     dwc3_gadget_set_test_mode(dwc, testmode);
->> >> +     if (dwc3_gadget_set_test_mode(dwc, testmode))
->> >> +             dev_dbg(dwc->dev, "host: Invalid request\n");
->> >>       spin_unlock_irqrestore(&dwc->lock, flags);
->> >>
->> >>       return count;
->> >
->> > wrong, if you don't have gadget mode, you just don't create this file.
->> >
->>
->> dwc3-core makes call to dwc3_debugfs_init() invariably depending on DEBUG_FS.
->> Will this not go ahead and create this file ?
->> I think i am missing here something.  :-(
->
-> right, you can change dwc3_debugfs_init() to take into account the fact
-> that you're a gadget/drd or host-only.
->
-> In case of host only, you stil want regdump to be available :-)
->
-
-So in dwc3_debugfs_init() we shall actually create just 'regdump' file
-in case of host only mode, otherwise keep the dwc3_debugfs_init() happy
-with creating other files too.
-Right ?
-
-
-
+diff --git a/arch/mips/kernel/ftrace.c b/arch/mips/kernel/ftrace.c
+index 6a2d758..f761130 100644
+--- a/arch/mips/kernel/ftrace.c
++++ b/arch/mips/kernel/ftrace.c
+@@ -46,6 +46,13 @@ static inline int in_kernel_space(unsigned long ip)
+ #define JUMP_RANGE_MASK ((1UL << 28) - 1)
+ 
+ #define INSN_NOP 0x00000000	/* nop */
++
++/*
++ * This branch likely instruction is used to nop the call to _mcount
++ * and skip the stack adjust instruction in the delay slot.
++ */
++#define INSN_NOP_SKIP 0x04020001	/* bltzl zero, f1 */
++
+ #define INSN_JAL(addr)	\
+ 	((unsigned int)(JAL | (((addr) >> 2) & ADDR_MASK)))
+ 
+@@ -130,7 +137,7 @@ int ftrace_make_nop(struct module *mod,
+ 	 * If ip is in kernel space, no long call, otherwise, long call is
+ 	 * needed.
+ 	 */
+-	new = in_kernel_space(ip) ? INSN_NOP : INSN_B_1F;
++	new = in_kernel_space(ip) ? INSN_NOP_SKIP : INSN_B_1F;
+ 
+ 	return ftrace_modify_code(ip, new);
+ }
+diff --git a/arch/mips/kernel/mcount.S b/arch/mips/kernel/mcount.S
+index 4c968e7..78ac3cc 100644
+--- a/arch/mips/kernel/mcount.S
++++ b/arch/mips/kernel/mcount.S
+@@ -68,10 +68,10 @@
+ NESTED(ftrace_caller, PT_SIZE, ra)
+ 	.globl _mcount
+ _mcount:
+-	b	ftrace_stub
++	b	ftrace_stub_restore_sp
+ 	 nop
+ 	lw	t1, function_trace_stop
+-	bnez	t1, ftrace_stub
++	bnez	t1, ftrace_stub_restore_sp
+ 	 nop
+ 
+ 	MCOUNT_SAVE_REGS
+@@ -96,13 +96,16 @@ ftrace_graph_call:
+ 	.globl ftrace_stub
+ ftrace_stub:
+ 	RETURN_BACK
++ftrace_stub_restore_sp:
++	PTR_ADDIU	sp, 8
++	RETURN_BACK
+ 	END(ftrace_caller)
+ 
+ #else	/* ! CONFIG_DYNAMIC_FTRACE */
+ 
+ NESTED(_mcount, PT_SIZE, ra)
+ 	lw	t1, function_trace_stop
+-	bnez	t1, ftrace_stub
++	bnez	t1, ftrace_stub_restore_sp
+ 	 nop
+ 	PTR_LA	t1, ftrace_stub
+ 	PTR_L	t2, ftrace_trace_function /* Prepare t2 for (1) */
+@@ -118,7 +121,7 @@ NESTED(_mcount, PT_SIZE, ra)
+ 	bne	t1, t3, ftrace_graph_caller
+ 	 nop
+ #endif
+-	b	ftrace_stub
++	b	ftrace_stub_restore_sp
+ 	 nop
+ 
+ static_trace:
+@@ -132,6 +135,9 @@ static_trace:
+ 	.globl ftrace_stub
+ ftrace_stub:
+ 	RETURN_BACK
++ftrace_stub_restore_sp:
++	PTR_ADDIU	sp, 8
++	RETURN_BACK
+ 	END(_mcount)
+ 
+ #endif	/* ! CONFIG_DYNAMIC_FTRACE */
 -- 
-Thanks & Regards
-Vivek
+1.7.6
+
+
