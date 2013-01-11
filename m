@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab3AKVwO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 16:52:14 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:47292 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050Ab3AKVwM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 16:52:12 -0500
-Message-ID: <50F0897E.6080607@oracle.com>
-Date: Fri, 11 Jan 2013 15:51:58 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+	id S1755648Ab3AKVxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 16:53:16 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38187 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754799Ab3AKVxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 16:53:15 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>
+Subject: Re: [PATCH 0/6] ACPI / PM: ACPI power management update
+Date: Fri, 11 Jan 2013 22:59:02 +0100
+Message-ID: <1522746.siPuD1toxr@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2311196.icSMDvAsYg@vostro.rjw.lan>
+References: <2311196.icSMDvAsYg@vostro.rjw.lan>
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
-References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com> <CA+icZUWkUrFSMzB1p+6KgVkbxn9NtpfZUHgn6wUs4r3zkrpmjA@mail.gmail.com>
-In-Reply-To: <CA+icZUWkUrFSMzB1p+6KgVkbxn9NtpfZUHgn6wUs4r3zkrpmjA@mail.gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 09:46 AM, Sedat Dilek wrote:
+On Friday, January 04, 2013 10:58:41 PM Rafael J. Wysocki wrote:
+> Hi All,
+> 
+> There are a few changes of the ACPI power management code I've gathered
+> over the last few weeks.  Some of them are just cleanups etc., but some
+> fix (potential) problems and/or add new functionality.
+> 
+> [1/6] - Rework power states changing so that we put devices into D3hot
+>         (if available) before removing power from them entirely.
+> [2/6] - Rename __acpi_bus_get_power() (for future use).
+> [3/6] - Rename state_string() (in bus.c, for future use).
+> [4/6] - Export the (current) power states of ACPI devices via sysfs.
+> [5/6] - Move device power management functions from bus.c to device_pm.c.
+> [6/6] - (Unrelated to the above) Get rid of some ugly #ifdefs in sleep.c.
+> 
+> All of them except for [1/6] have been posted already and no one has had any
+> comments.
+> 
+> Please review.
 
-> Hi Dave,
-> 
-> I am using here Ubuntu/precise AMD64 as a WUBI-installed system.
-> 
-> Not sure if WUBI [1] is a good test-candidate.
-> 
-> [ /boot/grub/grub.cfg ]
-> ...
->         set root=(loop0)
->         linux   /boot/vmlinuz-3.8.0-rc2-9-iniza-generic
-> root=UUID=001AADA61AAD9964 loop=/ubuntu/disks/root.disk ro
-> ...
-> 
-> Poops, I did it (not again) but for the first time to test your
-> loop-patchset on top of Linux v3.8-rc2 plus some important other stuff
-> (see patches/ dir in attached tarball).
-> 
-> As I did not know how to test it in a meaningful way I just run the
-> "lite" test-script from LTP [2].
-> Please, have a look at the ERRORs and failures.
+OK, I don't see any objections, so I'm taking it into linux-next for v3.9.
 
-I'd really like to know if these same testcases fail without my
-patchset. I'm going to play with ltp on loop-mounted filesystems, but I
-don't intend to play with WUBI at all.
+Thanks,
+Rafael
 
-I'd be interested if my patchset introduces regressions, but not so much
-if the same testcases fail previously.
 
-> $ egrep -i 'error|fail'
-> for-dkleikamp/tests/runltplite-results_loop-experimental.txt | grep -v
-> -i expected | wc -l
-> 210
-> 
-> In good old German tradition I have collected some interesting stuff
-> in the attached tarball ;-).
-> If something is missing - blame me.
-> Don't hesitate to ask (I have your patchset for a while on my radar).
-> 
-> Thanks!
-> 
-> Regards,
-> - Sedat -
-> 
-> [1] https://wiki.ubuntu.com/WubiGuide
-> [2] http://sourceforge.net/projects/ltp/
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
