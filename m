@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab3AKPCS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 10:02:18 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56755 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787Ab3AKPCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 10:02:15 -0500
-Message-ID: <50F0296E.2000704@imgtec.com>
-Date: Fri, 11 Jan 2013 15:02:06 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755106Ab3AKPCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 10:02:25 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:40969 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754766Ab3AKPCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 10:02:23 -0500
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        "Alexander Viro" <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v3 00/44] Meta Linux Kernel Port
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <20130111103442.b80ddbfb11ef322ed28ca3b3@canb.auug.org.au> <50EFD824.3010502@imgtec.com> <20130112000336.1f24c42237fab4fe0c305ff6@canb.auug.org.au>
-In-Reply-To: <20130112000336.1f24c42237fab4fe0c305ff6@canb.auug.org.au>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enigAEBAD9ED7F3CBF3A8415926C"
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_01_11_15_02_13
+In-Reply-To: <877gnk1ayv.fsf@rustcorp.com.au>
+References: <871ug75vp1.fsf@rustcorp.com.au>
+	<1354718230-4486-1-git-send-email-sjur@brendeland.net>
+	<20121206102750.GF10837@redhat.com>
+	<877goc0wac.fsf@rustcorp.com.au>
+	<CAJK669bP41oBhJ=MB64NS21Ag7XO5WswuTiVKCFTb96nvmyBiw@mail.gmail.com>
+	<87pq1f2rj0.fsf@rustcorp.com.au>
+	<87wqvl1g9s.fsf@rustcorp.com.au>
+	<CAJK669Z-bGTeQe8qJpTJP7simbSvQ8cgFZefs5QRMkmxtFYY4g@mail.gmail.com>
+	<87pq1c1uj4.fsf@rustcorp.com.au>
+	<877gnk1ayv.fsf@rustcorp.com.au>
+Date: Fri, 11 Jan 2013 16:02:22 +0100
+Message-ID: <CAJK669Zw1kZkJCS_Bs=emWtofj69m4XFDaNRhqY9DMdbi4MwZA@mail.gmail.com>
+Subject: Re: [RFCv2 00/12] Introduce host-side virtio queue and CAIF Virtio.
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        virtualization@lists.linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enigAEBAD9ED7F3CBF3A8415926C
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jan 11, 2013 at 7:37 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>virtio_host: host-side implementation of virtio rings (untested!)
+>
+>Getting use of virtio rings correct is tricky, and a recent patch saw
+>an implementation of in-kernel rings (as separate from userspace).
 
-Hi,
+How do you see the in-kernel API for this? I would like to see
+something similar to my previous patches, where we extend
+the virtqueue API. E.g. something like this:
 
-On 11/01/13 13:03, Stephen Rothwell wrote:
-> On Fri, 11 Jan 2013 09:15:16 +0000 James Hogan <james.hogan@imgtec.com>=
- wrote:
->>
->> On 10/01/13 23:34, Stephen Rothwell wrote:
->>> You really should not base development work on linux-next and before =
-I
->>> can include it there you will need to rebase it onto Linus' tree (or =
-some
->>> other tree that does not rebase).  Its OK to test by doing a merge wi=
-th
->>> linux-next ...
->>
->> Thanks for the info Stephen. So I suppose if the patchset depended on
->> things in -next the normal way to do it would be to merge in the
->> individual trees I needed first?
->=20
-> Yep, but please let the maintainers of those trees know that you expect=
+struct virtqueue *vring_new_virtqueueh(unsigned int index,
+				       unsigned int num,
+				       unsigned int vring_align,
+				       struct virtio_device *vdev,
+				       bool weak_barriers,
+				       void *pages,
+				       void (*notify)(struct virtqueue *),
+				       void (*callback)(struct virtqueue *),
+				       const char *name);
 
-> their tree to not be rebased.  Or, if if they aren't really dependencie=
-s
-> just conflicts, then leave the other tree out and let me and Linus fix
-> the conflicts when we merge your tree.
->=20
+int virtqueueh_get_iov(struct virtqueue *vqh,
+		       struct vringh_iov *riov,
+		       struct vringh_iov *wiov,
+		       gfp_t gfp);
 
-Okay, I've rebased the metag tree from linux-next onto the master branch
-of Al's signal tree (to get Vineet's GENERIC_SIGALTSTACK fix and
-GENERIC_SIGALTSTACK's eventual removal).
+int virtqueueh_add_iov(struct virtqueue *vqh,
+		       struct vringh_iov *riov,
+		       struct vringh_iov *wiov);
 
-git://github.com/jahogan/metag-linux.git
-branch: metag-core
-tag: metag-core-v3.1
+I guess implementation of the host-virtqueue should stay in drivers/virtio?
 
-Cheers
-James
-
-
---------------enigAEBAD9ED7F3CBF3A8415926C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ8Cl0AAoJEKHZs+irPybf2hAP/AiKST0JbqNY2uCwBakkFyIt
-iwsqU7B5RZG1R9ExEdyGE69V8PK3FS1OMt3cja5G8bppsopjzcHR1mW/r0hJ4rlu
-hZ25+yABlZUxctmxIsxXzcerNLQ/Fd7IUjpOEMlroR/7o2UooF1C0wykVgMcB0za
-B1DUQlArTtYKthYDtzMeXEHgrBWM6yRy0tbnDLZB9eJgbvxET9mL6X95tnJxwrjD
-UDA0bbOyleJa5LyGsx6+L2RCgvgbxc4Ys77PvnSU52Tzs0qdIxqhyblsiuNRPGyq
-SPC+MxvCZRrq66EG6yDLQcVhyZXLj56GvseLE2NsTqIgmzUGz7uDDIXRiM/xP7N8
-pdNBJUlKwvkR4ztbScS2oUYuzzqf7xhodCbNVM6Jdp82uLOXbrISgYiXkJ/5UDIi
-M7PQa70DKuaZtXUYaSxvIw0DH3zyQCaSg/M0y7ivfo+AuO2MHFpaZQapY6uoxKCA
-n+YIJAg07/lpw26SWqAWrKCiyHNUB4y6A1I1INOADMIbxOLzBNzVPVRuqdRysLQj
-cWozwOWQ/zA2RDoJ5cHe65CAqEyNn1DkiZR96OaCoST3X+oEahuwTV2G3E431gZa
-JBJu2lLsHlUuxgcn7PaYwo0dzLNvfHJr/nxIO2r2DAmPIhgArTmPw+GXp92g/RaY
-yMYaEhJWnMSupoG3zHi2
-=vMXK
------END PGP SIGNATURE-----
-
---------------enigAEBAD9ED7F3CBF3A8415926C--
-
+Regards,
+Sjur
