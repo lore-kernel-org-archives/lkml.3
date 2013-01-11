@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab3AKRJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:09:25 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34092 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab3AKRJY (ORCPT
+	id S1755458Ab3AKRJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:09:36 -0500
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:53770 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562Ab3AKRJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:09:24 -0500
-Message-ID: <50F0473F.404@wwwdotorg.org>
-Date: Fri, 11 Jan 2013 10:09:19 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Simon Glass <sjg@chromium.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Roland Stigge <stigge@antcom.de>,
-        Vincent Palatin <vpalatin@chromium.org>, linux-doc@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, Felipe Balbi <balbi@ti.com>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-input@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        devicetree-discuss@lists.ozlabs.org,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: Re: [PATCH v2] input: Extend matrix-keypad device tree binding
-References: <1357868492-16023-1-git-send-email-sjg@chromium.org>
-In-Reply-To: <1357868492-16023-1-git-send-email-sjg@chromium.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Jan 2013 12:09:34 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
+        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>
+Subject: [PATCH v4 3/5] mmc: dw_mmc: exynos: Remove code for wp-gpios
+Date: Fri, 11 Jan 2013 09:03:52 -0800
+Message-Id: <1357923834-31641-3-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1357923834-31641-1-git-send-email-dianders@chromium.org>
+References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
+ <1357923834-31641-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 06:41 PM, Simon Glass wrote:
-> Some matrix keypad drivers can support different numbers of rows and
-> columns. Add a generic binding for these.
-> 
-> Implementation note:
-> 
-> In order to implement this binding in the kernel, we will need to modify
-> matrix_keypad_() to look up the number of rows and cols in
-> the keymap. Perhaps this could be done by passing 0 for these parameters?
-> Many of the parameters can already be set to NULL. Ick.
+The exynos code claimed the write protect with devm_gpio_request() but
+never did anything with it.  That meant that anyone using a write
+protect GPIO would effectively be write protected all the time.
 
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+The handling for wp-gpios belongs in the main dw_mmc driver and has
+been moved there.
 
-Note that the Tegra bindings are based on matrix-keypad.txt, and
-recently added the following properties:
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+---
+Changes in v4: None
+Changes in v3:
+- Totally removed wp-gpios handling from exynos code.
 
-> - nvidia,kbc-row-pins: The KBC pins which are configured as row. This is an
->   array of pin numbers which is used as rows.
-> - nvidia,kbc-col-pins: The KBC pins which are configured as column. This is an
->   array of pin numbers which is used as column.
+Changes in v2: None
 
-Those both define the number of rows/columns (indirectly via the
-property lengths) *and* define which pins are used for the rows/columns.
-How will this influence/interact-with any changes you're planning to the
-core matrix keymap parsing code; would Tegra require your "new"
-keypad,num-rows/keypad,num-columns properties even though the
-information is redundant, or will the Tegra driver have some way of
-passing this information to the core?
+ drivers/mmc/host/dw_mmc-exynos.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+index 4d50da6..72fd0f2 100644
+--- a/drivers/mmc/host/dw_mmc-exynos.c
++++ b/drivers/mmc/host/dw_mmc-exynos.c
+@@ -175,16 +175,6 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
+ 		}
+ 	}
+ 
+-	gpio = of_get_named_gpio(slot_np, "wp-gpios", 0);
+-	if (gpio_is_valid(gpio)) {
+-		if (devm_gpio_request(host->dev, gpio, "dw-mci-wp"))
+-			dev_info(host->dev, "gpio [%d] request failed\n",
+-						gpio);
+-	} else {
+-		dev_info(host->dev, "wp gpio not available");
+-		host->pdata->quirks |= DW_MCI_QUIRK_NO_WRITE_PROTECT;
+-	}
+-
+ 	if (host->pdata->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
+ 		return 0;
+ 
+-- 
+1.7.7.3
+
