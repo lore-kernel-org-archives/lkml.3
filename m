@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab3AKD30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 22:29:26 -0500
-Received: from mga03.intel.com ([143.182.124.21]:59241 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751800Ab3AKD3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 22:29:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,447,1355126400"; 
-   d="scan'208";a="189997540"
-Message-ID: <50EF8756.6050309@intel.com>
-Date: Fri, 11 Jan 2013 11:30:30 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1753765Ab3AKDkZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 22:40:25 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:64887 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab3AKDkX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 22:40:23 -0500
+Date: Fri, 11 Jan 2013 04:40:15 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
+Message-ID: <20130111034015.GA28094@avionic-0098.adnet.avionic-design.de>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <1357764194-12677-11-git-send-email-thierry.reding@avionic-design.de>
+ <50EF54B6.6010100@wwwdotorg.org>
 MIME-Version: 1.0
-To: Morten Rasmussen <Morten.Rasmussen@arm.com>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 15/22] sched: log the cpu utilization at rq
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-16-git-send-email-alex.shi@intel.com> <20130110114044.GE2046@e103034-lin>
-In-Reply-To: <20130110114044.GE2046@e103034-lin>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
+Content-Disposition: inline
+In-Reply-To: <50EF54B6.6010100@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:6qRNFh3Yk+QQpBMJUV9DTy62+xl1OteNXh4D4LVwEaC
+ Fe2j3FiB+gDsoVnU4t7DgILomQbzwjO8qI9QBZnZYr2bnI460P
+ pHOUJLh3rrrRIaPGsbH8ceGlBMDPzkW96zpw5utSxOMVnraM5G
+ BG7etmgCptaRps0qkKbavdfjly76ZD7XFxOHmrb8sl5Tua4y4i
+ GThuvOycqQHSX4HaWcH7S0VEOBBiXu41PhLWVOwDtzy7VCACZR
+ RK4vF1Yt+/dTWCdr4oJVWfOiWTtEr7fvzycUqbTIid32FjZicN
+ mC98reXLZiWmCFWH2ZmCCMTIq1dC3W+2o74r2gy9avBnLE27A8
+ UFOU9p/nvpMHqHD8eNMRPyB0R35SuL0bU+n4u+zeUukg1g1GMT
+ rDEKg/Yv7WXtzHDY8cSk4X5kqBhJACEnhY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 07:40 PM, Morten Rasmussen wrote:
->> >  #undef P64
->> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> > index ee015b8..7bfbd69 100644
->> > --- a/kernel/sched/fair.c
->> > +++ b/kernel/sched/fair.c
->> > @@ -1495,8 +1495,12 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
->> >  
->> >  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
->> >  {
->> > +	u32 period;
->> >  	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
->> >  	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
->> > +
->> > +	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
->> > +	rq->util = rq->avg.runnable_avg_sum * 100 / period;
-> The existing tg->runnable_avg and cfs_rq->tg_runnable_contrib variables
-> both holds
-> rq->avg.runnable_avg_sum / rq->avg.runnable_avg_period scaled by
-> NICE_0_LOAD (1024). Why not use one of the existing variables instead of
-> introducing a new one?
 
-we want to a rq variable that reflect the utilization of the cpu, not of
-the tg
--- 
-Thanks Alex
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Jan 10, 2013 at 04:54:30PM -0700, Stephen Warren wrote:
+> On 01/09/2013 01:43 PM, Thierry Reding wrote:
+> > Move the PCIe driver from arch/arm/mach-tegra into the drivers/pci/host
+> > directory. The motivation is to collect various host controller drivers
+> > in the same location in order to facilitate refactoring.
+> >=20
+> > The Tegra PCIe driver has been largely rewritten, both in order to turn
+> > it into a proper platform driver and to add MSI (based on code by
+> > Krishna Kishore <kthota@nvidia.com>) as well as device tree support.
+>=20
+> This driver doesn't compile unless CONFIG_PCI_MSI is also enabled.
+> Should it select that, or contain a few ifdefs?
+>=20
+> drivers/pci/host/pci-tegra.c:900: undefined reference to `write_msi_msg'
+
+Right, it'll need #ifdefs around the arch_{setup,teardown}_msi_irq(). Or
+select PCI_MSI unconditionally. Once this is merged I was going to post
+a patch that enables PCI_MSI in tegra_defconfig anyway. But it might be
+better to keep it optional anyway since the remainder of the code copes
+with it properly.
+
+Thierry
+
+--MGYHOYXEY6WxJCY8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ74mfAAoJEN0jrNd/PrOhjbsP/2W/s/cNZbYyUEqt7o5TBlFQ
+fthSHLtiGCfJ3L+20feBFQ0gS6sQqC4uqvBPJG28g0hwXnAuJrIpzvu0JXfTH+cZ
+USPeEIV/pJBhZV15b3v53wFbNvGAAr/44nm1XEyjtmNd/HEXH4hlupBWs+xzUA+z
+cJJPtu8HaMvS67D93cj5IEDHaC6YMs12xK52/IQThOxqV50sa6bsnwqB4X99W0bj
+TdJZBnUcVpOzHc2HXcuyqzMjwlH0k8RVJLq5sBz9+mjUwkLjrHy5a8DBQ0pnOQEF
+y7BmSEpwpqMl5aHN/7zr9WM5WWlmLNN0puTc0s81Xb8bEm6HfXjbLY1YEYQbOmTb
++maRcSNKKwmp7EPun7iTHxLOFCIKqSRUe4erV8SsG1IfRPFoc3LCmznNC6He+YaQ
+bu3H3+IcgId75p6fQ883TEWHlrYbzkaAgeudmVZguDTE8UbDw23C7YDeOP0UQMT1
+PAJNLCv5vDdcG++TqBa2T5gLQ1L6mrDu1HzYq+YyLnvOu+af+6NN/UakdDg7qHy8
+yXIhG0COBPc35fM0e/3UTp2fenEpGI9nNGk01tiRXCw0uURES/F7sw0MspQ0IgxF
+Y8z8cw8cQwIVSx11+qJOIhIRFNR/IsGOViMUZsyx2g1JPvzwXP2OgcCNv6gu0bgN
+j8Lgr4VVNq943c+Y6ds4
+=nSC6
+-----END PGP SIGNATURE-----
+
+--MGYHOYXEY6WxJCY8--
