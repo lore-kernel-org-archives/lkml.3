@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab3AKXqf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 18:46:35 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:35765 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088Ab3AKXqe (ORCPT
+	id S1755806Ab3AKXqn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 18:46:43 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:60789 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755219Ab3AKXqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 18:46:34 -0500
+	Fri, 11 Jan 2013 18:46:37 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
@@ -14,10 +14,12 @@ Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
         =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         Colin Cross <ccross@google.com>,
         Android Kernel Team <kernel-team@android.com>
-Subject: [RFC][PATCH 0/3] staging: alarm-dev: Cleanups and compat_ioctl support (v2)
-Date: Fri, 11 Jan 2013 15:46:21 -0800
-Message-Id: <1357947984-15611-1-git-send-email-john.stultz@linaro.org>
+Subject: [RFC][PATCH 2/3] staging: alarm-dev: Refactor alarm-dev ioctl code in prep for compat_ioctl
+Date: Fri, 11 Jan 2013 15:46:23 -0800
+Message-Id: <1357947984-15611-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1357947984-15611-1-git-send-email-john.stultz@linaro.org>
+References: <1357947984-15611-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,39 +27,284 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the second revision at implementing compat_ioctl support for
-Android's alarm-dev driver in staging.
-
-The first patch removes the pre-Android 1.0 _OLD ioctls, per Colin's
-suggestion. Then the second patch does some refactoring to cleanup
-and separate the copying of user data from the logic, and the final
-patch adds the compat_ioctl support.
-
-I've tested this with a trivial unit test compiled for both 32bit
-and 64bit on a x86_64 kernel, and it looks ok, but closer review
-would be appreciated to make sure I didn't break anything.
-
-Additional feedback or thoughts would be welcome!
-
-thanks
--john
+Cleanup the Android alarm-dev driver's ioctl code to refactor it
+in preparation for compat_ioctl support.
 
 Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
 Cc: Arve Hjønnevåg <arve@android.com>
 Cc: Colin Cross <ccross@google.com>
 Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/alarm-dev.c |  228 +++++++++++++++++++++--------------
+ 1 file changed, 139 insertions(+), 89 deletions(-)
 
-John Stultz (3):
-  staging: alarm-dev: Drop pre Android 1.0 _OLD ioctls
-  staging: alarm-dev: Refactor alarm-dev ioctl code in prep for
-    compat_ioctl
-  staging: alarm-dev: Implement compat_ioctl support
-
- drivers/staging/android/alarm-dev.c     |  277 +++++++++++++++++++------------
- drivers/staging/android/android_alarm.h |   19 +++
- 2 files changed, 193 insertions(+), 103 deletions(-)
-
+diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
+index d423850..43af3b3 100644
+--- a/drivers/staging/android/alarm-dev.c
++++ b/drivers/staging/android/alarm-dev.c
+@@ -92,18 +92,116 @@ static void devalarm_cancel(struct devalarm *alrm)
+ 		hrtimer_cancel(&alrm->u.hrt);
+ }
+ 
++static void alarm_clear(enum android_alarm_type alarm_type)
++{
++	uint32_t alarm_type_mask = 1U << alarm_type;
++	unsigned long flags;
+ 
+-static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++	spin_lock_irqsave(&alarm_slock, flags);
++	alarm_dbg(IO, "alarm %d clear\n", alarm_type);
++	devalarm_try_to_cancel(&alarms[alarm_type]);
++	if (alarm_pending) {
++		alarm_pending &= ~alarm_type_mask;
++		if (!alarm_pending && !wait_pending)
++			__pm_relax(&alarm_wake_lock);
++	}
++	alarm_enabled &= ~alarm_type_mask;
++	spin_unlock_irqrestore(&alarm_slock, flags);
++
++}
++
++static void alarm_set(enum android_alarm_type alarm_type,
++							struct timespec *ts)
++{
++	uint32_t alarm_type_mask = 1U << alarm_type;
++	unsigned long flags;
++
++	spin_lock_irqsave(&alarm_slock, flags);
++	alarm_dbg(IO, "alarm %d set %ld.%09ld\n",
++			alarm_type, ts->tv_sec, ts->tv_nsec);
++	alarm_enabled |= alarm_type_mask;
++	devalarm_start(&alarms[alarm_type], timespec_to_ktime(*ts));
++	spin_unlock_irqrestore(&alarm_slock, flags);
++}
++
++static int alarm_wait(void)
+ {
+-	int rv = 0;
+ 	unsigned long flags;
+-	struct timespec new_alarm_time;
+-	struct timespec new_rtc_time;
+-	struct timespec tmp_time;
++	int rv = 0;
++
++	spin_lock_irqsave(&alarm_slock, flags);
++	alarm_dbg(IO, "alarm wait\n");
++	if (!alarm_pending && wait_pending) {
++		__pm_relax(&alarm_wake_lock);
++		wait_pending = 0;
++	}
++	spin_unlock_irqrestore(&alarm_slock, flags);
++
++	rv = wait_event_interruptible(alarm_wait_queue, alarm_pending);
++	if (rv)
++		return rv;
++
++	spin_lock_irqsave(&alarm_slock, flags);
++	rv = alarm_pending;
++	wait_pending = 1;
++	alarm_pending = 0;
++	spin_unlock_irqrestore(&alarm_slock, flags);
++
++	return rv;
++}
++
++static int alarm_set_rtc(struct timespec *ts)
++{
+ 	struct rtc_time new_rtc_tm;
+ 	struct rtc_device *rtc_dev;
++	unsigned long flags;
++	int rv = 0;
++
++	rtc_time_to_tm(ts->tv_sec, &new_rtc_tm);
++	rtc_dev = alarmtimer_get_rtcdev();
++	rv = do_settimeofday(ts);
++	if (rv < 0)
++		return rv;
++	if (rtc_dev)
++		rv = rtc_set_time(rtc_dev, &new_rtc_tm);
++
++	spin_lock_irqsave(&alarm_slock, flags);
++	alarm_pending |= ANDROID_ALARM_TIME_CHANGE_MASK;
++	wake_up(&alarm_wait_queue);
++	spin_unlock_irqrestore(&alarm_slock, flags);
++
++	return rv;
++}
++
++static int alarm_get_time(enum android_alarm_type alarm_type,
++							struct timespec *ts)
++{
++	int rv = 0;
++
++	switch (alarm_type) {
++	case ANDROID_ALARM_RTC_WAKEUP:
++	case ANDROID_ALARM_RTC:
++		getnstimeofday(ts);
++		break;
++	case ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP:
++	case ANDROID_ALARM_ELAPSED_REALTIME:
++		get_monotonic_boottime(ts);
++		break;
++	case ANDROID_ALARM_SYSTEMTIME:
++		ktime_get_ts(ts);
++		break;
++	default:
++		rv = -EINVAL;
++	}
++	return rv;
++}
++
++static long alarm_do_ioctl(struct file *file, unsigned int cmd,
++							struct timespec *ts)
++{
++	int rv = 0;
++	unsigned long flags;
+ 	enum android_alarm_type alarm_type = ANDROID_ALARM_IOCTL_TO_TYPE(cmd);
+-	uint32_t alarm_type_mask = 1U << alarm_type;
+ 
+ 	if (alarm_type >= ANDROID_ALARM_TYPE_COUNT)
+ 		return -EINVAL;
+@@ -126,102 +224,54 @@ static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 
+ 	switch (ANDROID_ALARM_BASE_CMD(cmd)) {
+ 	case ANDROID_ALARM_CLEAR(0):
+-		spin_lock_irqsave(&alarm_slock, flags);
+-		alarm_dbg(IO, "alarm %d clear\n", alarm_type);
+-		devalarm_try_to_cancel(&alarms[alarm_type]);
+-		if (alarm_pending) {
+-			alarm_pending &= ~alarm_type_mask;
+-			if (!alarm_pending && !wait_pending)
+-				__pm_relax(&alarm_wake_lock);
+-		}
+-		alarm_enabled &= ~alarm_type_mask;
+-		spin_unlock_irqrestore(&alarm_slock, flags);
++		alarm_clear(alarm_type);
+ 		break;
+-
+-	case ANDROID_ALARM_SET_AND_WAIT(0):
+ 	case ANDROID_ALARM_SET(0):
+-		if (copy_from_user(&new_alarm_time, (void __user *)arg,
+-		    sizeof(new_alarm_time))) {
+-			rv = -EFAULT;
+-			goto err1;
+-		}
+-		spin_lock_irqsave(&alarm_slock, flags);
+-		alarm_dbg(IO, "alarm %d set %ld.%09ld\n",
+-			  alarm_type,
+-			  new_alarm_time.tv_sec, new_alarm_time.tv_nsec);
+-		alarm_enabled |= alarm_type_mask;
+-		devalarm_start(&alarms[alarm_type],
+-			timespec_to_ktime(new_alarm_time));
+-		spin_unlock_irqrestore(&alarm_slock, flags);
+-		if (ANDROID_ALARM_BASE_CMD(cmd) !=
+-						ANDROID_ALARM_SET_AND_WAIT(0))
+-			break;
++		alarm_set(alarm_type, ts);
++		break;
++	case ANDROID_ALARM_SET_AND_WAIT(0):
++		alarm_set(alarm_type, ts);
+ 		/* fall though */
+ 	case ANDROID_ALARM_WAIT:
+-		spin_lock_irqsave(&alarm_slock, flags);
+-		alarm_dbg(IO, "alarm wait\n");
+-		if (!alarm_pending && wait_pending) {
+-			__pm_relax(&alarm_wake_lock);
+-			wait_pending = 0;
+-		}
+-		spin_unlock_irqrestore(&alarm_slock, flags);
+-		rv = wait_event_interruptible(alarm_wait_queue, alarm_pending);
+-		if (rv)
+-			goto err1;
+-		spin_lock_irqsave(&alarm_slock, flags);
+-		rv = alarm_pending;
+-		wait_pending = 1;
+-		alarm_pending = 0;
+-		spin_unlock_irqrestore(&alarm_slock, flags);
++		rv = alarm_wait();
+ 		break;
+ 	case ANDROID_ALARM_SET_RTC:
+-		if (copy_from_user(&new_rtc_time, (void __user *)arg,
+-		    sizeof(new_rtc_time))) {
+-			rv = -EFAULT;
+-			goto err1;
+-		}
+-		rtc_time_to_tm(new_rtc_time.tv_sec, &new_rtc_tm);
+-		rtc_dev = alarmtimer_get_rtcdev();
+-		rv = do_settimeofday(&new_rtc_time);
+-		if (rv < 0)
+-			goto err1;
+-		if (rtc_dev)
+-			rv = rtc_set_time(rtc_dev, &new_rtc_tm);
+-		spin_lock_irqsave(&alarm_slock, flags);
+-		alarm_pending |= ANDROID_ALARM_TIME_CHANGE_MASK;
+-		wake_up(&alarm_wait_queue);
+-		spin_unlock_irqrestore(&alarm_slock, flags);
+-		if (rv < 0)
+-			goto err1;
++		rv = alarm_set_rtc(ts);
+ 		break;
+ 	case ANDROID_ALARM_GET_TIME(0):
+-		switch (alarm_type) {
+-		case ANDROID_ALARM_RTC_WAKEUP:
+-		case ANDROID_ALARM_RTC:
+-			getnstimeofday(&tmp_time);
+-			break;
+-		case ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP:
+-		case ANDROID_ALARM_ELAPSED_REALTIME:
+-			get_monotonic_boottime(&tmp_time);
+-			break;
+-		case ANDROID_ALARM_SYSTEMTIME:
+-			ktime_get_ts(&tmp_time);
+-			break;
+-		default:
+-			rv = -EINVAL;
+-			goto err1;
+-		}
+-		if (copy_to_user((void __user *)arg, &tmp_time,
+-		    sizeof(tmp_time))) {
+-			rv = -EFAULT;
+-			goto err1;
+-		}
++		rv = alarm_get_time(alarm_type, ts);
+ 		break;
+ 
+ 	default:
+ 		rv = -EINVAL;
+ 	}
+-err1:
++	return rv;
++}
++
++static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++
++	struct timespec ts;
++	int rv;
++
++	switch (ANDROID_ALARM_BASE_CMD(cmd)) {
++	case ANDROID_ALARM_SET_AND_WAIT(0):
++	case ANDROID_ALARM_SET(0):
++	case ANDROID_ALARM_SET_RTC:
++		if (copy_from_user(&ts, (void __user *)arg, sizeof(ts)))
++			return -EFAULT;
++		break;
++	}
++
++	rv = alarm_do_ioctl(file, cmd, &ts);
++
++	switch (ANDROID_ALARM_BASE_CMD(cmd)) {
++	case ANDROID_ALARM_GET_TIME(0):
++		if (copy_to_user((void __user *)arg, &ts, sizeof(ts)))
++			return -EFAULT;
++		break;
++	}
++
+ 	return rv;
+ }
+ 
 -- 
 1.7.10.4
 
