@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082Ab3AKRlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:41:09 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:34896 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab3AKRlG (ORCPT
+	id S1754891Ab3AKRtq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:49:46 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:62175 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012Ab3AKRtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:41:06 -0500
-Date: Fri, 11 Jan 2013 12:40:54 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-Cc: viro@ZenIV.linux.org.uk, david.vrabel@citrix.com,
-        stefano.stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: oopsable race in xen-gntdev [PATCH 0/3]
-Message-ID: <20130111174053.GD26287@phenom.dumpdata.com>
-References: <20121221201824.GA31554@phenom.dumpdata.com>
- <1357167433-16874-1-git-send-email-dgdegra@tycho.nsa.gov>
+	Fri, 11 Jan 2013 12:49:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357167433-16874-1-git-send-email-dgdegra@tycho.nsa.gov>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <CAE9FiQVts6aTaRFM3aKWj46RCRiheM5gS55h=LVveaGXk_kR8g@mail.gmail.com>
+References: <CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
+	<20130109004340.GA12234@konrad-lan.dumpdata.com>
+	<87txqruq8p.fsf@xmission.com>
+	<CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
+	<CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
+	<20130109132409.GB18395@phenom.dumpdata.com>
+	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
+	<87d2xeul5v.fsf@xmission.com>
+	<CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
+	<CAE9FiQVsbDfLOyv=D4_BLtrKpp+Ydj7pren8Cu3rNGztbj=w=w@mail.gmail.com>
+	<20130111163548.GB25620@phenom.dumpdata.com>
+	<CAE9FiQVts6aTaRFM3aKWj46RCRiheM5gS55h=LVveaGXk_kR8g@mail.gmail.com>
+Date: Fri, 11 Jan 2013 09:49:43 -0800
+X-Google-Sender-Auth: 1yuNVJLC6z1_2m6wMwuC0kvpsMg
+Message-ID: <CAE9FiQVTfTisOrrQhv0vmsgA8Asaj5EUE5s93OFyTHfA+dWdfQ@mail.gmail.com>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 02, 2013 at 05:57:10PM -0500, Daniel De Graaf wrote:
-> On 12/21/2012 03:18 PM, Konrad Rzeszutek Wilk wrote:
-> > On Sat, Dec 15, 2012 at 06:12:11PM +0000, Al Viro wrote:
-> >> 	1) find_vma() is *not* safe without ->mmap_sem and its result may
-> >> very well be freed just as it's returned to caller.  IOW,
-> >> gntdev_ioctl_get_offset_for_vaddr() is racy and may end up with
-> >> dereferencing freed memory.
-> 
-> I agree, this one should be fixed by taking mmap_sem in
-> gntdev_ioctl_get_offset_for_vaddr. Iterating the grant_map list here
-> will not work under HVM, where map->vma is not filled in.
-> 
-> >> 	2) gntdev_vma_close() is putting NULL into map->vma with only
-> >> ->mmap_sem held by caller.  Things like
-> >>                 if (!map->vma)
-> >>                         continue;
-> >>                 if (map->vma->vm_start >= end)
-> >>                         continue;
-> >>                 if (map->vma->vm_end <= start)
-> >> done with just priv->lock held are racy.
-> >>
-> >> 	I'm not familiar with the code, but it looks like we need to
-> >> protect gntdev_vma_close() guts with the same spinlock and probably
-> >> hold ->mmap_sem shared around the "find_vma()+get to map->{index,count}"
-> >> in the ioctl.  Or replace the logics in ioctl with search through the
-> >> list of grant_map under the same spinlock...
-> >>
-> >> 	Comments?
-> 
-> Although I don't think the mmu notifier is ever called without mmap_sem
-> on this particular device file (we map only with VM_DONTCOPY and other
-> paths like truncate generally aren't triggered), it's probably best not
-> to rely on that behavior, so adding the spinlock in gntdev_vma_close
-> seems to be the best solution.
-> 
-> > Hey Al,
-> > 
-> > Thank you for your analysis.
+On Fri, Jan 11, 2013 at 8:52 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>> I need to check this patch out and then also test-run them on IA64, AMD-VI, Calgary-X
+>> GART and Intel VT-d to make a sanity test.
+>
+> that will be great, and please check attached two patches, or you want
+> to me update
+> for-x86-boot branch and you test that instead?
+>
+> but if you want to check memmap=4095M$1M, then will need to test on
+> newer branch.
 
-Are you OK with the patches or have comments about them? Thanks.
 
-> > 
-> > CC-ing Daniel, David and Stefano. I recall we had some priv->lock movement
-> > in the past and there is also interaction with another piece of code - 
-> > the balloon code so we better be circumspect of not blowing up.
-> > 
-> > Al, it is around holidays and folks are mostly gone - so this will take
-> > a bit of time to get sorted out.
-> 
-> While I was digging in this code, I found a related bug in
-> mn_invl_range_start: if gntdev_ioctl_unmap_grant_ref is called on
-> a range before unmapping it, the entry is removed from priv->maps and
-> the later call to mn_invl_range_start won't find it to do the unmapping.
-> This could be fixed by using find_vma, but I don't think there's a safe
-> way to do that from inside the mmu notifier, so instead I created a list
-> of these unlinked but still mapped pages.
-> 
-> The third patch is a fix to an unrelated bug that I found while testing
-> the fixes in the other two patches.
-> 
-> [PATCH 1/3] xen/gntdev: fix unsafe vma access
-> [PATCH 2/3] xen/gntdev: correctly unmap unlinked maps in mmu
-> [PATCH 3/3] xen/gntdev: remove erronous use of copy_to_user
+I updated the for-x86-boot branch.
+
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-boot
+
+Thanks
+
+Yinghai
