@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab3AKFog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 00:44:36 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:44512 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754479Ab3AKFo3 (ORCPT
+	id S1754991Ab3AKFoj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 00:44:39 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:63946 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754479Ab3AKFoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 00:44:29 -0500
+	Fri, 11 Jan 2013 00:44:37 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v4 04/14] dmaengine: edma: enable build for AM33XX
-Date: Fri, 11 Jan 2013 00:48:40 -0500
-Message-Id: <1357883330-5364-5-git-send-email-mporter@ti.com>
+Subject: [PATCH v4 07/14] dmaengine: add dma_request_slave_channel_compat()
+Date: Fri, 11 Jan 2013 00:48:43 -0500
+Message-Id: <1357883330-5364-8-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1357883330-5364-1-git-send-email-mporter@ti.com>
 References: <1357883330-5364-1-git-send-email-mporter@ti.com>
@@ -37,26 +37,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable TI EDMA option on OMAP.
+Adds a dma_request_slave_channel_compat() wrapper which accepts
+both the arguments from dma_request_channel() and
+dma_request_slave_channel(). Based on whether the driver is
+instantiated via DT, the appropriate channel request call will be
+made.
 
+This allows for a much cleaner migration of drivers to the
+dmaengine DT API as platforms continue to be mixed between those
+that boot using DT and those that do not.
+
+Suggested-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- drivers/dma/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/dmaengine.h |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index d4c1218..20ef955 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -221,7 +221,7 @@ config SIRF_DMA
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 9fd0c5b..64f9f69 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -1047,6 +1047,16 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
+ struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
+ struct dma_chan *net_dma_find_channel(void);
+ #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
++static inline struct dma_chan
++*dma_request_slave_channel_compat(dma_cap_mask_t mask, dma_filter_fn fn,
++				  void *fn_param, struct device *dev,
++				  char *name)
++{
++	if (dev->of_node)
++		return dma_request_slave_channel(dev, name);
++	else
++		return dma_request_channel(mask, fn, fn_param);
++}
  
- config TI_EDMA
- 	tristate "TI EDMA support"
--	depends on ARCH_DAVINCI
-+	depends on ARCH_DAVINCI || ARCH_OMAP
- 	select DMA_ENGINE
- 	select DMA_VIRTUAL_CHANNELS
- 	default n
+ /* --- Helper iov-locking functions --- */
+ 
 -- 
 1.7.9.5
 
