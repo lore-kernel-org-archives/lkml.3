@@ -1,286 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab3AKSuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 13:50:14 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:33081 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab3AKSuL (ORCPT
+	id S1755455Ab3AKSvx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 13:51:53 -0500
+Received: from p01c11o141.mxlogic.net ([208.65.144.64]:58445 "EHLO
+	p01c11o141.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679Ab3AKSvw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 13:50:11 -0500
+	Fri, 11 Jan 2013 13:51:52 -0500
+X-Greylist: delayed 518 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jan 2013 13:51:52 EST
+X-MXL-Hash: 50f05f4874a6d98b-24dd42bf957cc62f573aae0a452cadb599e93f10
+X-MXL-Hash: 50f056c96a3df023-1ad54585913bb104a6172466077eefcfbf39fd10
+From: Evelyn Rodriguez <erodriguez@blmfld.org>
+Subject: System Administrator
+Thread-Topic: System Administrator
+Thread-Index: Ac3wJDMlcrrD33CXRRGjKY9akhJJlg==
+Date: Fri, 11 Jan 2013 17:50:53 +0000
+Message-ID: <8389835EB245B0429F8512536FD6E18D0FCF2F92@MAIL1.ns-cams.blmfld.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [180.74.152.82]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <1355756497-15834-11-git-send-email-sasha.levin@oracle.com>
-References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com> <1355756497-15834-11-git-send-email-sasha.levin@oracle.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Fri, 11 Jan 2013 13:49:50 -0500
-Message-ID: <CA+1xoqfUHMVdFm2_S9DC=pba1tuLRvkFSG6nn-jtspNmmXzGiw@mail.gmail.com>
-Subject: Re: [PATCH 11/15] dm: use new hashtable implementation
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
-        Neil Brown <neilb@suse.de>, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-Processed-By: Rebuild v2.0-0
+X-AnalysisOut: [v=2.0 cv=LuclPAhc c=0 sm=1 p=VBUM0X39AAAA:8 a=sYMYlyAeQpdl]
+X-AnalysisOut: [rwFtYLc5Zw==:17 a=p65S6XioqvgA:10 a=1DscCKjiuysA:10 a=BLce]
+X-AnalysisOut: [EmwcHowA:10 a=8nJEP1OIZ-IA:10 a=xqWC_Br6kY4A:10 a=kmCqVXiL]
+X-AnalysisOut: [AAAA:8 a=POKwi8Bjqm4A:10]
+X-Spam: [F=0.9999960000; CM=0.999; S=0.200(2010122901)]
+X-MAIL-FROM: <erodriguez@blmfld.org>
+X-SOURCE-IP: [64.251.54.176]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
 
-On Mon, Dec 17, 2012 at 10:01 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> Switch dm to use the new hashtable implementation. This reduces the amount of
-> generic unrelated code in the dm.
->
-> This patch depends on d9b482c ("hashtable: introduce a small and naive
-> hashtable") which was merged in v3.6.
->
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  drivers/md/dm-snap.c                               | 24 +++++------------
->  drivers/md/persistent-data/dm-block-manager.c      |  1 -
->  .../persistent-data/dm-persistent-data-internal.h  | 19 --------------
->  .../md/persistent-data/dm-transaction-manager.c    | 30 +++++++---------------
->  4 files changed, 16 insertions(+), 58 deletions(-)
->  delete mode 100644 drivers/md/persistent-data/dm-persistent-data-internal.h
->
-> diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
-> index 223e7eb..4b19fa0 100644
-> --- a/drivers/md/dm-snap.c
-> +++ b/drivers/md/dm-snap.c
-> @@ -34,9 +34,7 @@ static const char dm_snapshot_merge_target_name[] = "snapshot-merge";
->   */
->  #define MIN_IOS 256
->
-> -#define DM_TRACKED_CHUNK_HASH_SIZE     16
-> -#define DM_TRACKED_CHUNK_HASH(x)       ((unsigned long)(x) & \
-> -                                        (DM_TRACKED_CHUNK_HASH_SIZE - 1))
-> +#define DM_TRACKED_CHUNK_HASH_BITS     4
->
->  struct dm_exception_table {
->         uint32_t hash_mask;
-> @@ -80,7 +78,7 @@ struct dm_snapshot {
->         /* Chunks with outstanding reads */
->         spinlock_t tracked_chunk_lock;
->         mempool_t *tracked_chunk_pool;
-> -       struct hlist_head tracked_chunk_hash[DM_TRACKED_CHUNK_HASH_SIZE];
-> +       DECLARE_HASHTABLE(tracked_chunk_hash, DM_TRACKED_CHUNK_HASH_BITS);
->
->         /* The on disk metadata handler */
->         struct dm_exception_store *store;
-> @@ -202,8 +200,7 @@ static struct dm_snap_tracked_chunk *track_chunk(struct dm_snapshot *s,
->         c->chunk = chunk;
->
->         spin_lock_irq(&s->tracked_chunk_lock);
-> -       hlist_add_head(&c->node,
-> -                      &s->tracked_chunk_hash[DM_TRACKED_CHUNK_HASH(chunk)]);
-> +       hash_add(s->tracked_chunk_hash, &c->node, chunk);
->         spin_unlock_irq(&s->tracked_chunk_lock);
->
->         return c;
-> @@ -215,7 +212,7 @@ static void stop_tracking_chunk(struct dm_snapshot *s,
->         unsigned long flags;
->
->         spin_lock_irqsave(&s->tracked_chunk_lock, flags);
-> -       hlist_del(&c->node);
-> +       hash_del(&c->node);
->         spin_unlock_irqrestore(&s->tracked_chunk_lock, flags);
->
->         mempool_free(c, s->tracked_chunk_pool);
-> @@ -229,8 +226,7 @@ static int __chunk_is_tracked(struct dm_snapshot *s, chunk_t chunk)
->
->         spin_lock_irq(&s->tracked_chunk_lock);
->
-> -       hlist_for_each_entry(c, hn,
-> -           &s->tracked_chunk_hash[DM_TRACKED_CHUNK_HASH(chunk)], node) {
-> +       hash_for_each_possible(s->tracked_chunk_hash, c, hn, node, chunk) {
->                 if (c->chunk == chunk) {
->                         found = 1;
->                         break;
-> @@ -1032,7 +1028,6 @@ static void stop_merge(struct dm_snapshot *s)
->  static int snapshot_ctr(struct dm_target *ti, unsigned int argc, char **argv)
->  {
->         struct dm_snapshot *s;
-> -       int i;
->         int r = -EINVAL;
->         char *origin_path, *cow_path;
->         unsigned args_used, num_flush_requests = 1;
-> @@ -1127,8 +1122,7 @@ static int snapshot_ctr(struct dm_target *ti, unsigned int argc, char **argv)
->                 goto bad_tracked_chunk_pool;
->         }
->
-> -       for (i = 0; i < DM_TRACKED_CHUNK_HASH_SIZE; i++)
-> -               INIT_HLIST_HEAD(&s->tracked_chunk_hash[i]);
-> +       hash_init(s->tracked_chunk_hash);
->
->         spin_lock_init(&s->tracked_chunk_lock);
->
-> @@ -1252,9 +1246,6 @@ static void __handover_exceptions(struct dm_snapshot *snap_src,
->
->  static void snapshot_dtr(struct dm_target *ti)
->  {
-> -#ifdef CONFIG_DM_DEBUG
-> -       int i;
-> -#endif
->         struct dm_snapshot *s = ti->private;
->         struct dm_snapshot *snap_src = NULL, *snap_dest = NULL;
->
-> @@ -1285,8 +1276,7 @@ static void snapshot_dtr(struct dm_target *ti)
->         smp_mb();
->
->  #ifdef CONFIG_DM_DEBUG
-> -       for (i = 0; i < DM_TRACKED_CHUNK_HASH_SIZE; i++)
-> -               BUG_ON(!hlist_empty(&s->tracked_chunk_hash[i]));
-> +       BUG_ON(!hash_empty(s->tracked_chunk_hash));
->  #endif
->
->         mempool_destroy(s->tracked_chunk_pool);
-> diff --git a/drivers/md/persistent-data/dm-block-manager.c b/drivers/md/persistent-data/dm-block-manager.c
-> index 28c3ed0..083a133 100644
-> --- a/drivers/md/persistent-data/dm-block-manager.c
-> +++ b/drivers/md/persistent-data/dm-block-manager.c
-> @@ -4,7 +4,6 @@
->   * This file is released under the GPL.
->   */
->  #include "dm-block-manager.h"
-> -#include "dm-persistent-data-internal.h"
->  #include "../dm-bufio.h"
->
->  #include <linux/crc32c.h>
-> diff --git a/drivers/md/persistent-data/dm-persistent-data-internal.h b/drivers/md/persistent-data/dm-persistent-data-internal.h
-> deleted file mode 100644
-> index c49e26f..0000000
-> --- a/drivers/md/persistent-data/dm-persistent-data-internal.h
-> +++ /dev/null
-> @@ -1,19 +0,0 @@
-> -/*
-> - * Copyright (C) 2011 Red Hat, Inc.
-> - *
-> - * This file is released under the GPL.
-> - */
-> -
-> -#ifndef _DM_PERSISTENT_DATA_INTERNAL_H
-> -#define _DM_PERSISTENT_DATA_INTERNAL_H
-> -
-> -#include "dm-block-manager.h"
-> -
-> -static inline unsigned dm_hash_block(dm_block_t b, unsigned hash_mask)
-> -{
-> -       const unsigned BIG_PRIME = 4294967291UL;
-> -
-> -       return (((unsigned) b) * BIG_PRIME) & hash_mask;
-> -}
-> -
-> -#endif /* _PERSISTENT_DATA_INTERNAL_H */
-> diff --git a/drivers/md/persistent-data/dm-transaction-manager.c b/drivers/md/persistent-data/dm-transaction-manager.c
-> index d247a35..9eb9417 100644
-> --- a/drivers/md/persistent-data/dm-transaction-manager.c
-> +++ b/drivers/md/persistent-data/dm-transaction-manager.c
-> @@ -7,11 +7,11 @@
->  #include "dm-space-map.h"
->  #include "dm-space-map-disk.h"
->  #include "dm-space-map-metadata.h"
-> -#include "dm-persistent-data-internal.h"
->
->  #include <linux/export.h>
->  #include <linux/slab.h>
->  #include <linux/device-mapper.h>
-> +#include <linux/hashtable.h>
->
->  #define DM_MSG_PREFIX "transaction manager"
->
-> @@ -25,8 +25,7 @@ struct shadow_info {
->  /*
->   * It would be nice if we scaled with the size of transaction.
->   */
-> -#define HASH_SIZE 256
-> -#define HASH_MASK (HASH_SIZE - 1)
-> +#define DM_HASH_BITS 8
->
->  struct dm_transaction_manager {
->         int is_clone;
-> @@ -36,7 +35,7 @@ struct dm_transaction_manager {
->         struct dm_space_map *sm;
->
->         spinlock_t lock;
-> -       struct hlist_head buckets[HASH_SIZE];
-> +       DECLARE_HASHTABLE(hash, DM_HASH_BITS);
->  };
->
->  /*----------------------------------------------------------------*/
-> @@ -44,12 +43,11 @@ struct dm_transaction_manager {
->  static int is_shadow(struct dm_transaction_manager *tm, dm_block_t b)
->  {
->         int r = 0;
-> -       unsigned bucket = dm_hash_block(b, HASH_MASK);
->         struct shadow_info *si;
->         struct hlist_node *n;
->
->         spin_lock(&tm->lock);
-> -       hlist_for_each_entry(si, n, tm->buckets + bucket, hlist)
-> +       hash_for_each_possible(tm->hash, si, n, hlist, b)
->                 if (si->where == b) {
->                         r = 1;
->                         break;
-> @@ -65,15 +63,13 @@ static int is_shadow(struct dm_transaction_manager *tm, dm_block_t b)
->   */
->  static void insert_shadow(struct dm_transaction_manager *tm, dm_block_t b)
->  {
-> -       unsigned bucket;
->         struct shadow_info *si;
->
->         si = kmalloc(sizeof(*si), GFP_NOIO);
->         if (si) {
->                 si->where = b;
-> -               bucket = dm_hash_block(b, HASH_MASK);
->                 spin_lock(&tm->lock);
-> -               hlist_add_head(&si->hlist, tm->buckets + bucket);
-> +               hash_add(tm->hash, &si->hlist, b);
->                 spin_unlock(&tm->lock);
->         }
->  }
-> @@ -82,18 +78,12 @@ static void wipe_shadow_table(struct dm_transaction_manager *tm)
->  {
->         struct shadow_info *si;
->         struct hlist_node *n, *tmp;
-> -       struct hlist_head *bucket;
->         int i;
->
->         spin_lock(&tm->lock);
-> -       for (i = 0; i < HASH_SIZE; i++) {
-> -               bucket = tm->buckets + i;
-> -               hlist_for_each_entry_safe(si, n, tmp, bucket, hlist)
-> -                       kfree(si);
-> -
-> -               INIT_HLIST_HEAD(bucket);
-> -       }
-> -
-> +       hash_for_each_safe(tm->hash, i, n, tmp, si, hlist)
-> +               kfree(si);
-> +       hash_init(tm->hash);
->         spin_unlock(&tm->lock);
->  }
->
-> @@ -102,7 +92,6 @@ static void wipe_shadow_table(struct dm_transaction_manager *tm)
->  static struct dm_transaction_manager *dm_tm_create(struct dm_block_manager *bm,
->                                                    struct dm_space_map *sm)
->  {
-> -       int i;
->         struct dm_transaction_manager *tm;
->
->         tm = kmalloc(sizeof(*tm), GFP_KERNEL);
-> @@ -115,8 +104,7 @@ static struct dm_transaction_manager *dm_tm_create(struct dm_block_manager *bm,
->         tm->sm = sm;
->
->         spin_lock_init(&tm->lock);
-> -       for (i = 0; i < HASH_SIZE; i++)
-> -               INIT_HLIST_HEAD(tm->buckets + i);
-> +       hash_init(tm->hash);
->
->         return tm;
->  }
-> --
-> 1.8.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+You have exceeded the storage limit on your mailbox.
+
+You will not be able to send or receive new mail until you upgrade your email quota.
+
+Copy the below link and fill the form to upgrade your account.
+http://systemadministrator-upgrade.tk
+
+System Administrator
+
+
+
+The information in this email is confidential. The contents may not be disclosed
+or used by anyone other than the intended recipient. If you are not the intended
+recipient, please delete the message and notify the sender immediately.
