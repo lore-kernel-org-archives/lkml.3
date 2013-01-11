@@ -1,105 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab3AKFeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 00:34:04 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:34437 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab3AKFeC (ORCPT
+	id S1753130Ab3AKFmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 00:42:08 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:34564 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3AKFmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 00:34:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A200DD9@SHSMSX101.ccr.corp.intel.com>
-References: <1357783059-13923-1-git-send-email-ccross@android.com>
-	<27240C0AC20F114CBF8149A2696CBE4A200DD9@SHSMSX101.ccr.corp.intel.com>
-Date: Thu, 10 Jan 2013 21:34:00 -0800
-X-Google-Sender-Auth: sCXoAsxZe0xss_ZFQ9EXuA8dP_o
-Message-ID: <CAMbhsRS5S=bRWOAA_ft3josCX9kvarrqPX-sLnO02vB0NfZJ+w@mail.gmail.com>
-Subject: Re: [PATCH] hardlockup: detect hard lockups without NMIs using
- secondary cpus
-From: Colin Cross <ccross@android.com>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Fri, 11 Jan 2013 00:42:07 -0500
+Date: Thu, 10 Jan 2013 21:38:31 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 1/2] Add mempressure cgroup
+Message-ID: <20130111053831.GA18053@lizard.gateway.2wire.net>
+References: <20130104082751.GA22227@lizard.gateway.2wire.net>
+ <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
+ <20130108084949.GD4714@blaptop>
+ <20130109221449.GA14880@lizard.fhda.edu>
+ <20130111051210.GC6183@blaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130111051210.GC6183@blaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 5:39 PM, Liu, Chuansheng
-<chuansheng.liu@intel.com> wrote:
->
->
->> -----Original Message-----
->> From: Colin Cross [mailto:ccross@android.com]
->> Sent: Thursday, January 10, 2013 9:58 AM
->> To: linux-kernel@vger.kernel.org
->> Cc: Andrew Morton; Don Zickus; Ingo Molnar; Thomas Gleixner; Liu,
->> Chuansheng; linux-arm-kernel@lists.infradead.org; Colin Cross
->> Subject: [PATCH] hardlockup: detect hard lockups without NMIs using
->> secondary cpus
->>
->> Emulate NMIs on systems where they are not available by using timer
->> interrupts on other cpus.  Each cpu will use its softlockup hrtimer
->> to check that the next cpu is processing hrtimer interrupts by
->> verifying that a counter is increasing.
->>
->> This patch is useful on systems where the hardlockup detector is not
->> available due to a lack of NMIs, for example most ARM SoCs.
->> Without this patch any cpu stuck with interrupts disabled can
->> cause a hardware watchdog reset with no debugging information,
->> but with this patch the kernel can detect the lockup and panic,
->> which can result in useful debugging info.
->>
->> Signed-off-by: Colin Cross <ccross@android.com>
->> +static void watchdog_check_hardlockup_other_cpu(void)
->> +{
->> +     int cpu;
->> +     cpumask_t cpus = watchdog_cpus;
->> +
->> +     /*
->> +      * Test for hardlockups every 3 samples.  The sample period is
->> +      *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly over
->> +      *  watchdog_thresh (over by 20%).
->> +      */
->> +     if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
->> +             return;
->> +
->> +     /* check for a hardlockup on the next cpu */
->> +     cpu = cpumask_next(smp_processor_id(), &cpus);
->> +     if (cpu >= nr_cpu_ids)
->> +             cpu = cpumask_first(&cpus);
->> +     if (cpu == smp_processor_id())
->> +             return;
->> +
->> +     smp_rmb();
->> +
->> +     if (per_cpu(watchdog_nmi_touch, cpu) == true) {
->> +             per_cpu(watchdog_nmi_touch, cpu) = false;
->> +             return;
->> +     }
->> +
->> +     if (is_hardlockup_other_cpu(cpu)) {
->> +             /* only warn once */
-> One possible case for new hotplug CPU that false hardlockup case.
-> 1/ Assume CPU1, CPU2 are online, CPU3 is being hotplug:
-> CPU3:                                            CPU2:
-> watchdog_nmi_enable()
->  per_cpu(watchdog_nmi_touch, cpu) = true;
->  cpumask_set_cpu(cpu, &watchdog_cpus);
->                                                  watchdog_check_hardlockup_other_cpu()
->                                                    per_cpu(watchdog_nmi_touch, cpu) = false; == > Here cpu is CPU3
->
-> 2/ Before CPU3's first hrtimer interrupt coming, CPU2 is been offlined.
->   Then CPU1's next CPU is CPU3. But we can not use CPU3's watchdog_nmi_touch to defense
->   false CPU3 hardlock more. When CPU1's hrtimer interrupt coming, it is possible report CPU3
->   false hard lockup.
->
-> Is it the case?
+On Fri, Jan 11, 2013 at 02:12:10PM +0900, Minchan Kim wrote:
+> On Wed, Jan 09, 2013 at 02:14:49PM -0800, Anton Vorontsov wrote:
+> > On Tue, Jan 08, 2013 at 05:49:49PM +0900, Minchan Kim wrote:
+> > [...]
+> > > Sorry still I didn't look at your implementation about cgroup part.
+> > > but I had a question since long time ago.
+> > > 
+> > > How can we can make sure false positive about zone and NUMA?
+> > > I mean DMA zone is short in system so VM notify to user and user
+> > > free all memory of NORMAL zone because he can't know what pages live
+> > > in any zones. NUMA is ditto.
+> > 
+> > Um, we count scans irrespective of zones or nodes, i.e. we sum all 'number
+> > of scanned' and 'number of reclaimed' stats. So, it should not be a
+> > problem, as I see it.
+> 
+> Why is it no problem? For example, let's think of normal zone reclaim.
+> Page allocator try to allocate pages from NORMAL zone to DMA zone fallback
+> and your logic could trigger mpc_shrinker. So process A, B, C start to
+> release thier freeable memory but unfortunately, freed pages are all
+> HIGHMEM pages. Why should processes release memory unnecessary?
+> Is there any method for proecess to detect such situation in user level
+> before releasing the freeable memory?
 
-Yes, this is the same race condition I pointed out in reply to Don
-Zickus earlier in the thread.  I think the easiest solution is to set
-per_cpu(watchdog_nmi_touch, next_cpu) = true during cpu offlining.
+Ahh. You're talking about the shrinker interface. Yes, there is no way to
+tell if the freed memory will be actually "released" (and if not, then
+yes, we released it unnecessary).
+
+But that's not only problem with NUMA or zones. Shared pages are in the
+same boat, right? An app might free some memory, but as another process
+might be still using it, we don't know whether our action helps or not.
+
+The situation is a little bit easier for the in-kernel shrinkers, since we
+have more control over pages, but still, even for the kernel shrinkers, we
+don't provide all the information (only gfpmask, which, I just looked into
+the random user, drivers/gpu/drm/ttm, sometimes is not used).
+
+So, answering your question: no, I don't know how to solve it for the
+userland. But I also don't think it's a big concern (especially if we make
+it cgroup-aware -- this would be cgroup's worry then, i.e. we might
+isolate task to only some nodes/zones, if we really care about precise
+accounting?). But I'm surely open for ideas. :)
+
+Thanks!
+
+Anton
