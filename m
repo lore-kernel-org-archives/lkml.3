@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab3AKXql (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 18:46:41 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:64681 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620Ab3AKXqh (ORCPT
+	id S1755717Ab3AKXqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 18:46:40 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:48985 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755622Ab3AKXqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 18:46:37 -0500
+	Fri, 11 Jan 2013 18:46:38 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
@@ -14,9 +14,9 @@ Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
         =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         Colin Cross <ccross@google.com>,
         Android Kernel Team <kernel-team@android.com>
-Subject: [RFC][PATCH 1/3] staging: alarm-dev: Drop pre Android 1.0 _OLD ioctls
-Date: Fri, 11 Jan 2013 15:46:22 -0800
-Message-Id: <1357947984-15611-2-git-send-email-john.stultz@linaro.org>
+Subject: [RFC][PATCH 3/3] staging: alarm-dev: Implement compat_ioctl support
+Date: Fri, 11 Jan 2013 15:46:24 -0800
+Message-Id: <1357947984-15611-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357947984-15611-1-git-send-email-john.stultz@linaro.org>
 References: <1357947984-15611-1-git-send-email-john.stultz@linaro.org>
@@ -27,14 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per Colin's comment:
-"The "support old userspace code" comment for those two ioctls has
-been there since pre-Android 1.0.  Those apis are not exposed to
-Android apps, I don't see any problem deleting them."
-
-Thus this patch removes the ANDROID_ALARM_SET_OLD and
-ANDROID_ALARM_SET_AND_WAIT_OLD ioctl compatability
-logic.
+Implement compat_ioctl support for the alarm-dev ioctl.
 
 Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
@@ -43,59 +36,98 @@ Cc: Colin Cross <ccross@google.com>
 Cc: Android Kernel Team <kernel-team@android.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/alarm-dev.c |   18 ++----------------
- 1 file changed, 2 insertions(+), 16 deletions(-)
+ drivers/staging/android/alarm-dev.c     |   35 +++++++++++++++++++++++++++++++
+ drivers/staging/android/android_alarm.h |   19 +++++++++++++++++
+ 2 files changed, 54 insertions(+)
 
 diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
-index a9b293f..d423850 100644
+index 43af3b3..ceb1c64 100644
 --- a/drivers/staging/android/alarm-dev.c
 +++ b/drivers/staging/android/alarm-dev.c
-@@ -42,10 +42,6 @@ do {									\
- 	ANDROID_ALARM_RTC_WAKEUP_MASK | \
- 	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP_MASK)
+@@ -274,6 +274,38 @@ static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
  
--/* support old userspace code */
--#define ANDROID_ALARM_SET_OLD               _IOW('a', 2, time_t) /* set alarm */
--#define ANDROID_ALARM_SET_AND_WAIT_OLD      _IOW('a', 3, time_t)
--
- static int alarm_opened;
- static DEFINE_SPINLOCK(alarm_slock);
- static struct wakeup_source alarm_wake_lock;
-@@ -142,15 +138,6 @@ static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 		spin_unlock_irqrestore(&alarm_slock, flags);
- 		break;
+ 	return rv;
+ }
++#ifdef CONFIG_COMPAT
++static long alarm_compat_ioctl(struct file *file, unsigned int cmd,
++							unsigned long arg)
++{
++
++	struct timespec ts;
++	int rv;
++
++	switch (ANDROID_ALARM_BASE_CMD(cmd)) {
++	case ANDROID_ALARM_SET_AND_WAIT_COMPAT(0):
++	case ANDROID_ALARM_SET_COMPAT(0):
++	case ANDROID_ALARM_SET_RTC_COMPAT:
++		if (compat_get_timespec(&ts, (void __user *)arg))
++			return -EFAULT;
++		/* fall through */
++	case ANDROID_ALARM_GET_TIME_COMPAT(0):
++		cmd = ANDROID_ALARM_COMPAT_TO_NORM(cmd);
++		break;
++	}
++
++	rv = alarm_do_ioctl(file, cmd, &ts);
++
++	switch (ANDROID_ALARM_BASE_CMD(cmd)) {
++	case ANDROID_ALARM_GET_TIME(0): /* NOTE: we modified cmd above */
++		if (compat_put_timespec(&ts, (void __user *)arg))
++			return -EFAULT;
++		break;
++	}
++
++	return rv;
++}
++#endif
  
--	case ANDROID_ALARM_SET_OLD:
--	case ANDROID_ALARM_SET_AND_WAIT_OLD:
--		if (get_user(new_alarm_time.tv_sec, (int __user *)arg)) {
--			rv = -EFAULT;
--			goto err1;
--		}
--		new_alarm_time.tv_nsec = 0;
--		goto from_old_alarm_set;
--
- 	case ANDROID_ALARM_SET_AND_WAIT(0):
- 	case ANDROID_ALARM_SET(0):
- 		if (copy_from_user(&new_alarm_time, (void __user *)arg,
-@@ -158,7 +145,6 @@ static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 			rv = -EFAULT;
- 			goto err1;
- 		}
--from_old_alarm_set:
- 		spin_lock_irqsave(&alarm_slock, flags);
- 		alarm_dbg(IO, "alarm %d set %ld.%09ld\n",
- 			  alarm_type,
-@@ -167,8 +153,8 @@ from_old_alarm_set:
- 		devalarm_start(&alarms[alarm_type],
- 			timespec_to_ktime(new_alarm_time));
- 		spin_unlock_irqrestore(&alarm_slock, flags);
--		if (ANDROID_ALARM_BASE_CMD(cmd) != ANDROID_ALARM_SET_AND_WAIT(0)
--		    && cmd != ANDROID_ALARM_SET_AND_WAIT_OLD)
-+		if (ANDROID_ALARM_BASE_CMD(cmd) !=
-+						ANDROID_ALARM_SET_AND_WAIT(0))
- 			break;
- 		/* fall though */
- 	case ANDROID_ALARM_WAIT:
+ static int alarm_open(struct inode *inode, struct file *file)
+ {
+@@ -355,6 +387,9 @@ static const struct file_operations alarm_fops = {
+ 	.unlocked_ioctl = alarm_ioctl,
+ 	.open = alarm_open,
+ 	.release = alarm_release,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = alarm_compat_ioctl,
++#endif
+ };
+ 
+ static struct miscdevice alarm_device = {
+diff --git a/drivers/staging/android/android_alarm.h b/drivers/staging/android/android_alarm.h
+index d0cafd6..4fd32f3 100644
+--- a/drivers/staging/android/android_alarm.h
++++ b/drivers/staging/android/android_alarm.h
+@@ -18,6 +18,7 @@
+ 
+ #include <linux/ioctl.h>
+ #include <linux/time.h>
++#include <linux/compat.h>
+ 
+ enum android_alarm_type {
+ 	/* return code bit numbers or set alarm arg */
+@@ -59,4 +60,22 @@ enum android_alarm_return_flags {
+ #define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
+ #define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
+ 
++
++#ifdef CONFIG_COMPAT
++#define ANDROID_ALARM_SET_COMPAT(type)		ALARM_IOW(2, type, \
++							struct compat_timespec)
++#define ANDROID_ALARM_SET_AND_WAIT_COMPAT(type)	ALARM_IOW(3, type, \
++							struct compat_timespec)
++#define ANDROID_ALARM_GET_TIME_COMPAT(type)	ALARM_IOW(4, type, \
++							struct compat_timespec)
++#define ANDROID_ALARM_SET_RTC_COMPAT		_IOW('a', 5, \
++							struct compat_timespec)
++#define ANDROID_ALARM_IOCTL_NR(cmd)		(_IOC_NR(cmd) & ((1<<4)-1))
++#define ANDROID_ALARM_COMPAT_TO_NORM(cmd)  \
++				ALARM_IOW(ANDROID_ALARM_IOCTL_NR(cmd), \
++					ANDROID_ALARM_IOCTL_TO_TYPE(cmd), \
++					struct timespec)
++
++#endif
++
+ #endif
 -- 
 1.7.10.4
 
