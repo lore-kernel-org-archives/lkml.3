@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab3AKBNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 20:13:17 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:49280 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab3AKBNP (ORCPT
+	id S1754032Ab3AKBPm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 20:15:42 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:57988 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab3AKBPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 20:13:15 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: John Johansen <john.johansen@canonical.com>
-Cc: James Morris <jmorris@namei.org>, Casey Schaufler <casey@schaufler-ca.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LSM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <50EB7C50.3070605@schaufler-ca.com>
-	<20130108140159.83c07fa6a680e355f024970f@canb.auug.org.au>
-	<50EB9A5E.1080306@schaufler-ca.com>
-	<alpine.LRH.2.02.1301081942030.24212@tundra.namei.org>
-	<50EC8447.1000301@canonical.com>
-	<alpine.LRH.2.02.1301100028160.5423@tundra.namei.org>
-	<50EE9733.2060409@canonical.com> <87lic0sg09.fsf@xmission.com>
-	<50EF6368.6070504@canonical.com>
-Date: Thu, 10 Jan 2013 17:13:02 -0800
-In-Reply-To: <50EF6368.6070504@canonical.com> (John Johansen's message of
-	"Thu, 10 Jan 2013 16:57:12 -0800")
-Message-ID: <87d2xcsesh.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 10 Jan 2013 20:15:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+glwXtkkYVKZtyQkLPaCFIVd2OlKibuIE=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  2.9 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0234]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;John Johansen <john.johansen@canonical.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <CAFTL4hzqqQPA1cd4uPoCd73d5rBj8cGpv=VnB6CrCpdjjwr1xw@mail.gmail.com>
+References: <CAFTL4hxWdV96dO_KCOnvc4O1zutvnW6eGZ950d+qwnCSHb9NpQ@mail.gmail.com>
+	<20121203094906.4cbfcfc0ad3f0319895a162d@canb.auug.org.au>
+	<CAFTL4hzqqQPA1cd4uPoCd73d5rBj8cGpv=VnB6CrCpdjjwr1xw@mail.gmail.com>
+Date: Fri, 11 Jan 2013 02:15:39 +0100
+Message-ID: <CAFTL4hw-WM5ur6Z-1DPMMvregEJr_CfcaeBOHV-nawh+NKi+VA@mail.gmail.com>
+Subject: Re: Request for tree inclusion
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John Johansen <john.johansen@canonical.com> writes:
+2012/12/3 Frederic Weisbecker <fweisbec@gmail.com>:
+> 2012/12/2 Stephen Rothwell <sfr@canb.auug.org.au>:
+>> Well, these are a bit late (I expected Linus to release v3.7 today), but
+>> since Ingo has not piped in over the weekend, I have added them from today
+>> after the tip tree merge.
+>
+> Yeah sorry to submit that so late. Those branches are in pending pull
+> requests to the -tip tree and I thought about relying on the
+> propagation of -tip into -next as usual. But Ingo has been very busy
+> with numa related work during this cycle. So until these branches get
+> merged in -tip, I'm short-circuiting a bit the -next step before it
+> becomes too late for the next merge window.
+>
+>>
+>> I have called them fw-cputime, fs-sched and fw-nohz respectively and
+>> listed you as the only contact in case of problems.
+>
+> Ok.
+>
+>> If these are to be
+>> long term trees included in linux-next, I would prefer that you use
+>> better branch names - otherwise, if they are just short term, please tell
+>> me to remove them when they are finished with.
+>
+> They are definitely short term. I'll tell you once these can be dropped.
+>
+> Thanks a lot!
 
->> When a distro is run in a container it is desirable to be able to run
->> the distro's security policy in that container.  Ideally this will get
->> addressed by being able to do some level of per user namespace stacking.
->> Say selinux outside and apparmor inside a container.
->> 
->> I think this would take a little more work than what Casey has currently
->> devised but I am hopeful an additional layer of stacking can be added
->> after Casey has merged the basic layer of stacking.
->> 
-> Right the general case will take more, but doing things like selinux on
-> the outside and apparmor inside are doable right now. And we are working
-> on supporting stacked apparmor policy right now so apparmor outside and
-> a different apparmor policy inside will be doable soon.
+Hi Stephen!
 
-Cool.  For stacked apparmor how are you deciding which tasks get which
-policy?  Is this based on user namespaces or something else?
+fw-cputime and fs-sched have been merged so you can now remove these
+branches from next.
 
-Eric
+But fw-nohz remains. In the meantime I have created a branch named nohz/next:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+        nohz/next
+
+This branch currently refers to fw-nohz HEAD (aka nohz/printk-v8) and
+this is also the place where I'll gather -next materials in the future
+instead of the multiple branches you're currently pulling.
+So could you please remove fw-nohz (nohz/printk-v8) as well from -next
+but include nohz/next instead?
+
+Thanks!
