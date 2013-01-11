@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab3AKOrx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 09:47:53 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:45914 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754322Ab3AKOrv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 09:47:51 -0500
-Date: Fri, 11 Jan 2013 14:47:19 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Daniel Baluta <daniel.baluta@gmail.com>
-Cc: Alexandru Copot <alex.mihai.c@gmail.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "mst@redhat.com" <mst@redhat.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] virtio: suppress kmemleak false positive
-Message-ID: <20130111144719.GE31281@arm.com>
-References: <1357912303-17026-1-git-send-email-alex.mihai.c@gmail.com>
- <20130111140231.GA31281@arm.com>
- <CAEnQRZCvNZ_1OF7Jc43Oo10ADQEMVgqdTJZG7KG7m9yNoQDBfg@mail.gmail.com>
+	id S1754433Ab3AKOto (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 09:49:44 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40264 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753341Ab3AKOtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 09:49:42 -0500
+Date: Fri, 11 Jan 2013 15:49:40 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        Andre Przywara <andre@andrep.de>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/cpufreq: Warn user when powernow-k8 tries to
+ fall back to acpi-cpufreq and it is unavailable.
+Message-ID: <20130111144940.GB21882@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+	Andre Przywara <andre@andrep.de>, rjw@sisk.pl,
+	cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAEnQRZCvNZ_1OF7Jc43Oo10ADQEMVgqdTJZG7KG7m9yNoQDBfg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 02:32:12PM +0000, Daniel Baluta wrote:
-> On Fri, Jan 11, 2013 at 4:02 PM, Catalin Marinas <catalin.marinas@arm.com>
-> wrote:
-> > On Fri, Jan 11, 2013 at 01:51:43PM +0000, Alexandru Copot wrote:
-> > > --- a/drivers/virtio/virtio_ring.c
-> > > +++ b/drivers/virtio/virtio_ring.c
-> > > @@ -23,6 +23,7 @@
-> > >  #include <linux/slab.h>
-> > >  #include <linux/module.h>
-> > >  #include <linux/hrtimer.h>
-> > > +#include <linux/kmemleak.h>
-> > >
-> > >  /* virtio guest is communicating with a virtual "device" that actually runs on
-> > >   * a host processor.  Memory barriers are used to control SMP effects. */
-> > > @@ -140,6 +141,7 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
-> > >       desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
-> > >       if (!desc)
-> > >               return -ENOMEM;
-> > > +     kmemleak_not_leak(desc);
-> >
-> > Please add a comment above this call in case people later wonder why
-> > this annotation is needed.
++ Andre.
+
+On Wed, Jan 09, 2013 at 07:09:21PM -0600, Aravind Gopalakrishnan wrote:
+> This patch is in reference to bug#:51741. (https://bugzilla.kernel.org/show_bug.cgi?id=51741)
+> powernow-k8 falls back to acpi-cpufreq if CPU is not supported. However, it states that acpi-cpufreq
+> has taken over even if acpi-cpufreq is not compiled in. This patch rewords the warning message to
+> clarify that the CPU is unsupported and prints a warning message when there is no acpi-cpufreq
+> present.
 > 
-> So, kememleak cannot handle this kind of pointer aliases?
+> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+> ---
+>  drivers/cpufreq/powernow-k8.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+> index 056faf6..6fa58b4 100644
+> --- a/drivers/cpufreq/powernow-k8.c
+> +++ b/drivers/cpufreq/powernow-k8.c
+> @@ -1256,7 +1256,15 @@ static int __cpuinit powernowk8_init(void)
+>  	int rv;
+>  
+>  	if (static_cpu_has(X86_FEATURE_HW_PSTATE)) {
+> -		pr_warn(PFX "this CPU is not supported anymore, using acpi-cpufreq instead.\n");
+> +		pr_warn(PFX
+> +			"this CPU is not supported anymore, use acpi-cpufreq instead"
+> +			"Look for message from acpi-cpufreq to ensure it is loaded."
+> +			".\n");
+> +#ifndef CONFIG_X86_ACPI_CPUFREQ
+> +	pr_warn(PFX "acpi-cpufreq is disabled."
+> +		"Enable it in the config options to get frequency scaling.\n");
+> +	return -ENODEV;
+> +#endif
+>  		request_module("acpi-cpufreq");
+>  		return -ENODEV;
 
-No. Basically it stores the allocated object start/end in an rb-tree and
-cannot cope with overlapping blocks. If we allow aliases, we could have
-some overlapping.
+Ok, the suggestion in that BZ is valid and something needs to be done
+for that case but I don't think that simply warning the user about it is
+enough.
 
-I think there was a patch in the past to add a separate rb-tree for
-aliases but I didn't particularly like it because it affected the
-performance.
+First of all, CONFIG_X86_POWERNOW_K8 should depend on
+CONFIG_X86_ACPI_CPUFREQ since powernow-k8.ko requests that module.
 
-> Also, I wonder if phys_to_virt(virt_to_phys(x)) == x holds true all the time.
+Then, having that dependency out of the way, we can almost safely
+request_module("acpi-cpufreq"). However, we can also check the return
+value of that function to make sure loading went fine.
 
-It should as long as x is a valid kernel virtual address in the logical
-(linear) mapping.
+And finally, we should check that acpi-cpufreq actually registered
+properly and wasn't unloaded later for some other reason which wasn't
+signalled through request_module retval.
+
+Andre, I'm not sure about the details of that last one but the first
+two are easy. Any ideas, since you've been looking at acpi-cpufreq code
+lately?
+
+Thanks.
 
 -- 
-Catalin
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
