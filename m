@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab3AKWlr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 17:41:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38478 "EHLO
+	id S1756126Ab3AKWlq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 17:41:46 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38489 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089Ab3AKWlY (ORCPT
+	with ESMTP id S1756096Ab3AKWlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jan 2013 17:41:24 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,88 +13,88 @@ To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Jiang Liu <jiang.liu@huawei.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 19/22] PCI, pci_root_hp: Use acpi_hp_work
-Date: Fri, 11 Jan 2013 14:40:46 -0800
-Message-Id: <1357944049-29620-20-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 21/22] PCI: add match_driver in struct pci_dev
+Date: Fri, 11 Jan 2013 14:40:48 -0800
+Message-Id: <1357944049-29620-22-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
 References: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove local copy: acpi_root_hp_work
+with that we could move out attaching driver for pci device,
+out of device_add for pci hot add path.
+
+pci_bus_attach_device() will attach driver to pci device.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>
-Cc: linux-acpi@vger.kernel.org
 ---
- drivers/acpi/pci_root.c |   34 +++-------------------------------
- 1 file changed, 3 insertions(+), 31 deletions(-)
+ drivers/pci/bus.c        |   10 ++++++++++
+ drivers/pci/pci-driver.c |    6 +++++-
+ include/linux/pci.h      |    1 +
+ 3 files changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index 8a0e2e2..e3774b2 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -685,34 +685,6 @@ int __init acpi_pci_root_init(void)
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 5f9c728..1f5916a 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -160,6 +160,15 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
  
- #define ACPI_STA_FUNCTIONING	(0x00000008)
+ void __weak pcibios_resource_survey_bus(struct pci_bus *bus) { }
  
--struct acpi_root_hp_work {
--	struct work_struct work;
--	acpi_handle handle;
--	u32 type;
--	void *context;
--};
--
--static void alloc_acpi_root_hp_work(acpi_handle handle, u32 type,
--					void *context,
--					void (*func)(struct work_struct *work))
--{
--	struct acpi_root_hp_work *hp_work;
--	int ret;
--
--	hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
--	if (!hp_work)
--		return;
--
--	hp_work->handle = handle;
--	hp_work->type = type;
--	hp_work->context = context;
--
--	INIT_WORK(&hp_work->work, func);
--	ret = queue_work(kacpi_hotplug_wq, &hp_work->work);
--	if (!ret)
--		kfree(hp_work);
--}
--
- static void handle_root_bridge_insertion(acpi_handle handle)
++static void pci_bus_attach_device(struct pci_dev *dev)
++{
++	int ret;
++
++	dev->match_driver = true;
++	ret = device_attach(&dev->dev);
++	WARN_ON(ret < 0);
++}
++
+ /**
+  * pci_bus_add_device - add a single device
+  * @dev: device to add
+@@ -181,6 +190,7 @@ int pci_bus_add_device(struct pci_dev *dev)
+ 	if (retval)
+ 		return retval;
+ 
++	pci_bus_attach_device(dev);
+ 	dev->is_added = 1;
+ 	pci_proc_attach_device(dev);
+ 	pci_create_sysfs_dev_files(dev);
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index f79cbcd..acdcc3c 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -1186,9 +1186,13 @@ pci_dev_driver(const struct pci_dev *dev)
+ static int pci_bus_match(struct device *dev, struct device_driver *drv)
  {
- 	struct acpi_device *device, *pdevice;
-@@ -770,11 +742,11 @@ static void _handle_hotplug_event_root(struct work_struct *work)
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
- 				      .pointer = objname };
--	struct acpi_root_hp_work *hp_work;
-+	struct acpi_hp_work *hp_work;
- 	acpi_handle handle;
- 	u32 type;
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+-	struct pci_driver *pci_drv = to_pci_driver(drv);
++	struct pci_driver *pci_drv;
+ 	const struct pci_device_id *found_id;
  
--	hp_work = container_of(work, struct acpi_root_hp_work, work);
-+	hp_work = container_of(work, struct acpi_hp_work, work);
- 	handle = hp_work->handle;
- 	type = hp_work->type;
++	if (!pci_dev->match_driver)
++		return 0;
++
++	pci_drv = to_pci_driver(drv);
+ 	found_id = pci_match_device(pci_drv, pci_dev);
+ 	if (found_id)
+ 		return 1;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 907b455..d73af08 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -286,6 +286,7 @@ struct pci_dev {
+ 	unsigned int	irq;
+ 	struct resource resource[DEVICE_COUNT_RESOURCE]; /* I/O and memory regions + expansion ROMs */
  
-@@ -819,7 +791,7 @@ static void _handle_hotplug_event_root(struct work_struct *work)
- static void handle_hotplug_event_root(acpi_handle handle, u32 type,
- 					void *context)
- {
--	alloc_acpi_root_hp_work(handle, type, context,
-+	alloc_acpi_hp_work(handle, type, context,
- 				_handle_hotplug_event_root);
- }
- 
++	bool match_driver;
+ 	/* These fields are used by common fixups */
+ 	unsigned int	transparent:1;	/* Transparent PCI bridge */
+ 	unsigned int	multifunction:1;/* Part of multi-function device */
 -- 
 1.7.10.4
 
