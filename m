@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab3AKJax (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 04:30:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52399 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753330Ab3AKJav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 04:30:51 -0500
-Date: Fri, 11 Jan 2013 09:30:49 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
-Message-ID: <20130111093049.GL13304@suse.de>
-References: <20130110194212.GJ13304@suse.de>
- <20130111005105.GA15023@dcvr.yhbt.net>
+	id S1754398Ab3AKJcf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 04:32:35 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40830
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751591Ab3AKJce (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 04:32:34 -0500
+Date: Fri, 11 Jan 2013 04:32:27 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Josh Stone <jistone@redhat.com>
+Cc: oleg@redhat.com, srikar@linux.vnet.ibm.com, mingo@kernel.org,
+        peterz@infradead.org, anton@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: Add exports for module use
+Message-ID: <20130111093227.GA30043@infradead.org>
+References: <1357858906-9711-1-git-send-email-jistone@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130111005105.GA15023@dcvr.yhbt.net>
+In-Reply-To: <1357858906-9711-1-git-send-email-jistone@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 12:51:05AM +0000, Eric Wong wrote:
-> Mel Gorman <mgorman@suse.de> wrote:
-> > mm: compaction: Partially revert capture of suitable high-order page
+On Thu, Jan 10, 2013 at 03:01:46PM -0800, Josh Stone wrote:
+> The original pull message for uprobes (commit 654443e2) noted:
 > 
-> <snip>
->  
-> > Reported-by: Eric Wong <normalperson@yhbt.net>
-> > Cc: stable@vger.kernel.org
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+>   This tree includes uprobes support in 'perf probe' - but SystemTap
+>   (and other tools) can take advantage of user probe points as well.
 > 
-> Thanks, my original use case and test works great after several hours!
-> 
-> Tested-by: Eric Wong <normalperson@yhbt.net>
-> 
+> In order to actually be usable in module-based tools like SystemTap, the
+> interface needs to be exported.  This patch first adds the obvious
+> exports for uprobe_register and uprobe_unregister.  Then it also adds
+> one for task_user_regset_view, which is necessary to get the correct
+> state of userspace registers.
 
-Thanks very much Eric. I've resent the patch to Andrew so it should make
-its way to mainline. It'll fail to apply to 3.7-stable but I should get
-a notification from Greg when that happens and fix it up.
+Get systemtap into the mainline kernel tree and we can talk.
 
-> Unfortunately, I also hit a new bug in 3.8 (not in 3.7.x).  based on Eric
-> Dumazet's observations, sk_stream_wait_memory may be to blame.
-> Fortunately this is easier to reproduce (I've cc-ed participants
-> on this thread already): <20130111004915.GA15415@dcvr.yhbt.net>
-
-It looks like the relevant fix for this has already been written by Eric
-Dumazet and picked up by David Miller.
-
--- 
-Mel Gorman
-SUSE Labs
