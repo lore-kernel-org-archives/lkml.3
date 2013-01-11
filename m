@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231Ab3AKJyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 04:54:54 -0500
-Received: from csamuel.org ([74.50.50.137]:34129 "EHLO csamuel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751591Ab3AKJyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 04:54:52 -0500
-Message-ID: <50EFDF15.4080606@csamuel.org>
-Date: Fri, 11 Jan 2013 20:44:53 +1100
-From: Chris Samuel <chris@csamuel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753523Ab3AKJ4D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 04:56:03 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:57404 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab3AKJz6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 04:55:58 -0500
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Rusty Russell <rusty@rustcorp.com.au>, dhowells@redhat.com
-Subject: [PATCH] MODSIGN: Warn when sign check fails due to -ENOKEY
-Content-Type: multipart/mixed;
- boundary="------------010902080901090701080407"
+In-Reply-To: <50EFD9B3.7090503@samsung.com>
+References: <1357891738-26259-1-git-send-email-gautam.vivek@samsung.com>
+	<50EFD9B3.7090503@samsung.com>
+Date: Fri, 11 Jan 2013 15:25:56 +0530
+Message-ID: <CAFp+6iENmwQPT9LhPMufNJdojjDYB=g_-6FSj=yHOjBcwx2O3w@mail.gmail.com>
+Subject: Re: [PATCH] usb: phy: samsung: Add support to set pmu isolation
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
+        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
+        thomas.abraham@linaro.org, sylvester.nawrocki@gmail.com,
+        t.figa@samsung.com, ben-linux@fluff.org,
+        broonie@opensource.wolfsonmicro.com, l.majewski@samsung.com,
+        kyungmin.park@samsung.com, grant.likely@secretlab.ca, heiko@sntech.de,
+        dianders@chromium.org, p.paneri@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010902080901090701080407
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Hi Sylwester,
 
-/* Please CC me in responses, I am not subscribed to LKML */
 
-Currently if a signature check fails on module load due to not having
-the appropriate key (-ENOKEY) and we are not doing strict checking
-there is no information provided to the user other than the lock debug
-taint warning:
+On Fri, Jan 11, 2013 at 2:51 PM, Sylwester Nawrocki
+<s.nawrocki@samsung.com> wrote:
+> On 01/11/2013 09:08 AM, Vivek Gautam wrote:
+>> Adding support to parse device node data in order to get
+>> required properties to set pmu isolation for usb-phy.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>
+> Thanks for addressing my all comments,
+>
+> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+>
 
-Disabling lock debugging due to kernel taint
+Thanks for the review and help. :-)
 
-This patch causes a single warning to be emitted to explain why the
-kernel is being tainted, before the above taint warning occurs.
 
-Module verification failed, required key not present, tainting kernel
-
-Found whilst trying to work out why all the 3.8 development kernels
-I was building and testing were warning about taints and why all modules
-were listed as forced load (F) in /proc/modules when that wasn't the
-case in the 3.5, 3.6 or 3.7 kernels I'd tried.
-
-Signed-off-by: Christopher Samuel <chris@csamuel.org>
----
-  kernel/module.c |    4 +++-
-  1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/module.c b/kernel/module.c
-index 250092c..27de534 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2443,8 +2443,10 @@ static int module_sig_check(struct load_info *info)
-  	if (err < 0 && fips_enabled)
-  		panic("Module verification failed with error %d in FIPS mode\n",
-  		      err);
--	if (err == -ENOKEY && !sig_enforce)
-+	if (err == -ENOKEY && !sig_enforce) {
-+		printk_once(KERN_DEBUG "Module verification failed, required key not 
-present, tainting kernel\n");
-  		err = 0;
-+	}
-   	return err;
-  }
 -- 
-1.7.10.4
-
-
---------------010902080901090701080407
-Content-Type: text/plain; charset=UTF-8;
- name="Attached Message Part"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="Attached Message Part"
-
-
---------------010902080901090701080407--
+Thanks & Regards
+Vivek
