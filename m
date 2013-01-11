@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3AKRJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:09:36 -0500
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:53770 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562Ab3AKRJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:09:34 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-mmc@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
-        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>
-Subject: [PATCH v4 3/5] mmc: dw_mmc: exynos: Remove code for wp-gpios
-Date: Fri, 11 Jan 2013 09:03:52 -0800
-Message-Id: <1357923834-31641-3-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1357923834-31641-1-git-send-email-dianders@chromium.org>
-References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
- <1357923834-31641-1-git-send-email-dianders@chromium.org>
+	id S1755208Ab3AKRMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:12:03 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:56824 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754262Ab3AKRMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 12:12:01 -0500
+Message-ID: <50F04787.6030206@imgtec.com>
+Date: Fri, 11 Jan 2013 17:10:31 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        "Mike Frysinger" <vapier@gentoo.org>,
+        David Howells <dhowells@redhat.com>,
+        "Hirokazu Takata" <takata@linux-m32r.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "Koichi Yasutake" <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>
+Subject: Re: [PATCH] consolidate per-arch stack overflow debugging options
+References: <20130111170043.D7CC39DC@kernel.stglabs.ibm.com>
+In-Reply-To: <20130111170043.D7CC39DC@kernel.stglabs.ibm.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_01_11_17_11_52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The exynos code claimed the write protect with devm_gpio_request() but
-never did anything with it.  That meant that anyone using a write
-protect GPIO would effectively be write protected all the time.
+On 11/01/13 17:00, Dave Hansen wrote:
+> 
+> I'm looking for some Acked-bys on this from the various arch
+> maintainers that it affects.  I'd like to send it up to Linus
+> in the next merge window.  This is part of a larger series to
+> clean up the "Kernel Hacking" menu:
+> 
+> 	https://lkml.org/lkml/2012/12/17/306
+> 
+> --
+> 
+> Several architectures have similar stack debugging config options.
+> They all pretty much do the same thing, some with slightly
+> differing help text.
+> 
+> This patch changes the architectures to instead enable a Kconfig
+> boolean, and then use that boolean in the generic Kconfig.debug
+> to present the actual menu option.  This removes a bunch of
+> duplication and adds consistency across arches.
+> 
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Hirokazu Takata <takata@linux-m32r.org>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Cc: uclinux-dist-devel@blackfin.uclinux.org
 
-The handling for wp-gpios belongs in the main dw_mmc driver and has
-been moved there.
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
----
-Changes in v4: None
-Changes in v3:
-- Totally removed wp-gpios handling from exynos code.
+(I can use this for arch/metag too).
 
-Changes in v2: None
-
- drivers/mmc/host/dw_mmc-exynos.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
-index 4d50da6..72fd0f2 100644
---- a/drivers/mmc/host/dw_mmc-exynos.c
-+++ b/drivers/mmc/host/dw_mmc-exynos.c
-@@ -175,16 +175,6 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
- 		}
- 	}
- 
--	gpio = of_get_named_gpio(slot_np, "wp-gpios", 0);
--	if (gpio_is_valid(gpio)) {
--		if (devm_gpio_request(host->dev, gpio, "dw-mci-wp"))
--			dev_info(host->dev, "gpio [%d] request failed\n",
--						gpio);
--	} else {
--		dev_info(host->dev, "wp gpio not available");
--		host->pdata->quirks |= DW_MCI_QUIRK_NO_WRITE_PROTECT;
--	}
--
- 	if (host->pdata->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
- 		return 0;
- 
--- 
-1.7.7.3
+Cheers
+James
 
