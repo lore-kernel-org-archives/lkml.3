@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab3AKI7I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 03:59:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8504 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab3AKI7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 03:59:03 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH 2/2] tuntap: fix leaking reference count
-Date: Fri, 11 Jan 2013 16:50:42 +0800
-Message-Id: <1357894242-25020-2-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1357894242-25020-1-git-send-email-jasowang@redhat.com>
-References: <1357894242-25020-1-git-send-email-jasowang@redhat.com>
+	id S1755172Ab3AKJBo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 04:01:44 -0500
+Received: from mx0a-000f0801.pphosted.com ([67.231.144.122]:43670 "EHLO
+	mx0a-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752260Ab3AKJBm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 04:01:42 -0500
+X-Greylist: delayed 1666 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jan 2013 04:01:42 EST
+From: Anil Gurumurthy <agurumur@Brocade.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Vijay Mohan Guvva <vmohan@Brocade.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Date: Fri, 11 Jan 2013 01:33:39 -0700
+Subject: RE: [patch] [SCSI] bfa: fix strncpy() limiter in bfad_start_ops()
+Thread-Topic: [patch] [SCSI] bfa: fix strncpy() limiter in bfad_start_ops()
+Thread-Index: Ac3vEd85NPaQJXt+R2KucfJY2n542gAw09kw
+Message-ID: <4D34E914CE7A004D8570F4381FDE55490B6D93F914@BRM-EXCH-3.corp.brocade.com>
+References: <20130110090620.GE23063@elgon.mountain>
+In-Reply-To: <20130110090620.GE23063@elgon.mountain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-01-11_04:2013-01-11,2013-01-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=8 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1211240000 definitions=main-1301110008
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reference count leaking of both module and sock were found:
 
-- When a detached file were closed, its sock refcnt from device were not
-  released, solving this by add the sock_put().
-- The module were hold or drop unconditionally in TUNSETPERSIST, which means we
-  if we set the persist flag for N times, we need unset it for another N
-  times. Solving this by only hold or drop an reference when there's a flag
-  change and also drop the reference count when the persist device is deleted.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Dan Carpenter
+Sent: Thursday, January 10, 2013 2:36 PM
+To: Anil Gurumurthy
+Cc: Vijay Mohan Guvva; James E.J. Bottomley; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org; kernel-janitors@vger.kernel.org
+Subject: [patch] [SCSI] bfa: fix strncpy() limiter in bfad_start_ops()
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 9a46d70..d690dc8 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -429,8 +429,10 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
- 		/* Drop read queue */
- 		skb_queue_purge(&tfile->sk.sk_receive_queue);
- 		tun_set_real_num_queues(tun);
--	} else if (tfile->detached && clean)
-+	} else if (tfile->detached && clean) {
- 		tun = tun_enable_queue(tfile);
-+		sock_put(&tfile->sk);
-+	}
+The closing parenthesis is in the wrong place so it takes the sizeof a pointer instead of the sizeof the buffer minus one.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c index e6bf126..a5f7690 100644
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -1034,7 +1034,7 @@ bfad_start_ops(struct bfad_s *bfad) {
+ 			sizeof(driver_info.host_os_patch) - 1);
  
- 	if (clean) {
- 		if (tun && tun->numqueues == 0 && tun->numdisabled == 0 &&
-@@ -481,6 +483,9 @@ static void tun_detach_all(struct net_device *dev)
- 		sock_put(&tfile->sk);
- 	}
- 	BUG_ON(tun->numdisabled != 0);
-+
-+	if (tun->flags & TUN_PERSIST)
-+		module_put(THIS_MODULE);
- }
+ 	strncpy(driver_info.os_device_name, bfad->pci_name,
+-		sizeof(driver_info.os_device_name - 1));
++		sizeof(driver_info.os_device_name) - 1);
  
- static int tun_attach(struct tun_struct *tun, struct file *file)
-@@ -1881,10 +1886,11 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 		/* Disable/Enable persist mode. Keep an extra reference to the
- 		 * module to prevent the module being unprobed.
- 		 */
--		if (arg) {
-+		if (arg && !(tun->flags & TUN_PERSIST)) {
- 			tun->flags |= TUN_PERSIST;
- 			__module_get(THIS_MODULE);
--		} else {
-+		}
-+		if (!arg && (tun->flags & TUN_PERSIST)) {
- 			tun->flags &= ~TUN_PERSIST;
- 			module_put(THIS_MODULE);
- 		}
--- 
-1.7.1
+ 	/* FCS driver info init */
+ 	spin_lock_irqsave(&bfad->bfad_lock, flags);
+--
 
+
+Looks good. Thanks for the patch, Dan.
+
+Acked-by: Anil Gurumurthy<agurumur@brocade.com>
+
+
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
