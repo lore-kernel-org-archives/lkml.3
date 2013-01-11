@@ -1,52 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab3AKHeY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 02:34:24 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41001 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753401Ab3AKHeW (ORCPT
+	id S1754592Ab3AKHie (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 02:38:34 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:46289 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab3AKHid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 02:34:22 -0500
-Message-ID: <1357889656.3065.2.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: linux-next: build failure after merge of the scsi tree
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wen Xiong <wenxiong@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Fri, 11 Jan 2013 07:34:16 +0000
-In-Reply-To: <20130111120323.cdc06081d0fb1c498c9f1779@canb.auug.org.au>
-References: <20130111120323.cdc06081d0fb1c498c9f1779@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Jan 2013 02:38:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130110005139.GW20089@twin.jikos.cz>
+References: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
+	<1356014615-15073-4-git-send-email-zwu.kernel@gmail.com>
+	<20130110005139.GW20089@twin.jikos.cz>
+Date: Fri, 11 Jan 2013 15:38:31 +0800
+Message-ID: <CAEH94Lh-a4cqhqDYh7UbsWptTuGxOJA9JywKhiEH-kZWr52Cfw@mail.gmail.com>
+Subject: Re: [PATCH RESEND v1 03/16] vfs: add I/O frequency update function
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: dsterba@suse.cz
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, darrick.wong@oracle.com,
+        andi@firstfloor.org, hch@infradead.org, linuxram@linux.vnet.ibm.com,
+        wuzhy@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-11 at 12:03 +1100, Stephen Rothwell wrote:
-> Hi James,
-> 
-> After merging the scsi tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> drivers/scsi/ipr.c:9138:22: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'ipr_enable_msix'
-> drivers/scsi/ipr.c:9165:22: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'ipr_enable_msi'
-> drivers/scsi/ipr.c:9188:23: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'name_msi_vectors'
-> drivers/scsi/ipr.c:9200:22: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'ipr_request_other_msi_irqs'
-> drivers/scsi/ipr.c: In function 'ipr_probe_ioa':
-> drivers/scsi/ipr.c:9422:4: error: implicit declaration of function 'ipr_enable_msix' [-Werror=implicit-function-declaration]
-> drivers/scsi/ipr.c:9425:4: error: implicit declaration of function 'ipr_enable_msi' [-Werror=implicit-function-declaration]
-> drivers/scsi/ipr.c:9517:3: error: implicit declaration of function 'name_msi_vectors' [-Werror=implicit-function-declaration]
-> drivers/scsi/ipr.c:9523:4: error: implicit declaration of function 'ipr_request_other_msi_irqs' [-Werror=implicit-function-declaration]
+On Thu, Jan 10, 2013 at 8:51 AM, David Sterba <dsterba@suse.cz> wrote:
+> On Thu, Dec 20, 2012 at 10:43:22PM +0800, zwu.kernel@gmail.com wrote:
+>> --- a/fs/hot_tracking.c
+>> +++ b/fs/hot_tracking.c
+>> @@ -164,6 +164,135 @@ static void hot_inode_tree_exit(struct hot_info *root)
+>>       spin_unlock(&root->lock);
+>>  }
+>>
+>> +struct hot_inode_item
+>> +*hot_inode_item_lookup(struct hot_info *root, u64 ino)
+>> +{
+>> +     struct rb_node **p = &root->hot_inode_tree.map.rb_node;
+>> +     struct rb_node *parent = NULL;
+>> +     struct hot_comm_item *ci;
+>> +     struct hot_inode_item *entry;
+>> +
+>> +     /* walk tree to find insertion point */
+>> +     spin_lock(&root->lock);
+>> +     while (*p) {
+>> +             parent = *p;
+>> +             ci = rb_entry(parent, struct hot_comm_item, rb_node);
+>> +             entry = container_of(ci, struct hot_inode_item, hot_inode);
+>> +             if (ino < entry->i_ino)
+>> +                     p = &(*p)->rb_left;
+>> +             else if (ino > entry->i_ino)
+>> +                     p = &(*p)->rb_right;
+>
+> style comment: put { } around the all if/else blocks,
+no, it will violate checkpatch.pl. If the if/else block only contains
+one line of code, we should not put {} around them.
+>
+>> +             else {
+>> +                     spin_unlock(&root->lock);
+>> +                     kref_get(&entry->hot_inode.refs);
+>
+> jumping forwards in the series, the spin_unlock and kref_get get swapped
+> later, and I think that's the right order. Otherwise there's a small
+> window where the entry does not get the reference and could be
+> potentially freed by racing kref_put, no?
+yes, good catch, thanks, done
+>
+> <lookup entry E>
+> spin_unlock(tree)
+>                      spin_lock(tree)
+>                      <lookup entry E>
+>                      kref_put(E) or via hot_inode_item_put(E) (1)
+> kref_get(E)                                                   (2)
+>
+>
+> if the reference count at (1) was 1, it's freed and (2) hits a free
+> memory. hot_inode_item_put can be called from filesystem or via seq
+> print of the respective /proc files, so I think there are chances to hit
+> the problem.
+Great.
+>
+>> +                     return entry;
+>> +             }
+>> +     }
+>> +     spin_unlock(&root->lock);
+>> +
+>> +     entry = kmem_cache_zalloc(hot_inode_item_cachep, GFP_NOFS);
+>> +     if (!entry)
+>> +             return ERR_PTR(-ENOMEM);
+>> +
+>> +     spin_lock(&root->lock);
+>> +     hot_inode_item_init(entry, ino, &root->hot_inode_tree);
+>> +     rb_link_node(&entry->hot_inode.rb_node, parent, p);
+>> +     rb_insert_color(&entry->hot_inode.rb_node,
+>> +                     &root->hot_inode_tree.map);
+>> +     spin_unlock(&root->lock);
+>> +
+>> +     kref_get(&entry->hot_inode.refs);
+>
+> Similar here, the entry is inserted into the tree but there's no
+> refcount yet. And the order of spin_unlock/kref_get remains unchanged.
+ditto
+>
+>> +     return entry;
+>> +}
+>> +EXPORT_SYMBOL_GPL(hot_inode_item_lookup);
+>> +
+>> +static struct hot_range_item
+>> +*hot_range_item_lookup(struct hot_inode_item *he,
+>> +                     loff_t start)
+>> +{
+>> +     struct rb_node **p = &he->hot_range_tree.map.rb_node;
+>> +     struct rb_node *parent = NULL;
+>> +     struct hot_comm_item *ci;
+>> +     struct hot_range_item *entry;
+>> +
+>> +     /* walk tree to find insertion point */
+>> +     spin_lock(&he->lock);
+>> +     while (*p) {
+>> +             parent = *p;
+>> +             ci = rb_entry(parent, struct hot_comm_item, rb_node);
+>> +             entry = container_of(ci, struct hot_range_item, hot_range);
+>> +             if (start < entry->start)
+>> +                     p = &(*p)->rb_left;
+>> +             else if (start > hot_range_end(entry))
+>> +                     p = &(*p)->rb_right;
+>
+> if { ...}
+> else if { ... }
+We should not put {} around them as what i explained above.
+>
+>> +             else {
+>> +                     spin_unlock(&he->lock);
+>> +                     kref_get(&entry->hot_range.refs);
+>
+> same here
+Done
+>
+>> +                     return entry;
+>> +             }
+>> +     }
+>> +     spin_unlock(&he->lock);
+>> +
+>> +     entry = kmem_cache_zalloc(hot_range_item_cachep, GFP_NOFS);
+>> +     if (!entry)
+>> +             return ERR_PTR(-ENOMEM);
+>> +
+>> +     spin_lock(&he->lock);
+>> +     hot_range_item_init(entry, start, he);
+>> +     rb_link_node(&entry->hot_range.rb_node, parent, p);
+>> +     rb_insert_color(&entry->hot_range.rb_node,
+>> +                     &he->hot_range_tree.map);
+>> +     spin_unlock(&he->lock);
+>> +
+>> +     kref_get(&entry->hot_range.refs);
+>
+> and here
+Done
+>
+>> +     return entry;
+>> +}
+>> +
+>> +/*
+>> + * This function does the actual work of updating
+>> + * the frequency numbers, whatever they turn out to be.
+>
+> Can this function be described a bit better? This comment did not help.
+OK, i will
+>
+>> + */
+>> +static void hot_rw_freq_calc(struct timespec old_atime,
+>> +             struct timespec cur_time, u64 *avg)
+>> +{
+>> +     struct timespec delta_ts;
+>> +     u64 new_delta;
+>> +
+>> +     delta_ts = timespec_sub(cur_time, old_atime);
+>> +     new_delta = timespec_to_ns(&delta_ts) >> FREQ_POWER;
+>> +
+>> +     *avg = (*avg << FREQ_POWER) - *avg + new_delta;
+>> +     *avg = *avg >> FREQ_POWER;
+>> +}
+>> +
+>> +static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
+>> +{
+>> +     struct timespec cur_time = current_kernel_time();
+>> +
+>> +     if (write) {
+>> +             freq_data->nr_writes += 1;
+>
+> The preferred style is
+>
+>                 freq_data->nr_writes++
+OK, done.
+>
+>> +             hot_rw_freq_calc(freq_data->last_write_time,
+>> +                             cur_time,
+>> +                             &freq_data->avg_delta_writes);
+>> +             freq_data->last_write_time = cur_time;
+>> +     } else {
+>> +             freq_data->nr_reads += 1;
+>
+> (...)
+>
+>> +             hot_rw_freq_calc(freq_data->last_read_time,
+>> +                             freq_data->last_read_time,
+>> +                             cur_time,
+>> +                             &freq_data->avg_delta_reads);
+>> +             freq_data->last_read_time = cur_time;
+>> +     }
+>> +}
+>> +
+>
+> david
 
-OK, fine, I'll drop all the ipr patches.  I've been waiting for a month
-for them to fix the smatch and sparse warnings.  Please resend the
-series with all the fixes.
-
-Thanks,
-
-James
 
 
+-- 
+Regards,
+
+Zhi Yong Wu
