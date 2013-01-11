@@ -1,118 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab3AKVTs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 16:19:48 -0500
-Received: from mail-gg0-f180.google.com ([209.85.161.180]:54836 "EHLO
-	mail-gg0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab3AKVTq (ORCPT
+	id S1754928Ab3AKVVU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 16:21:20 -0500
+Received: from mail-ye0-f177.google.com ([209.85.213.177]:40607 "EHLO
+	mail-ye0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753704Ab3AKVVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 16:19:46 -0500
-Date: Fri, 11 Jan 2013 02:16:12 -0300
+	Fri, 11 Jan 2013 16:21:19 -0500
+Date: Fri, 11 Jan 2013 02:17:45 -0300
 From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Stephane Eranian <eranian@google.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 06/10] perf sort: Drop ip_[lr] arguments from
- _sort__sym_cmp()
-Message-ID: <20130111051612.GE3054@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 07/10] perf sort: Check return value of strdup()
+Message-ID: <20130111051745.GF3054@ghostprotocols.net>
 References: <1356599507-14226-1-git-send-email-namhyung@kernel.org>
- <1356599507-14226-7-git-send-email-namhyung@kernel.org>
+ <1356599507-14226-8-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356599507-14226-7-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1356599507-14226-8-git-send-email-namhyung@kernel.org>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephane, can you take a look at this one and provide feedback?
-
-- Arnaldo
-
-Em Thu, Dec 27, 2012 at 06:11:43PM +0900, Namhyung Kim escreveu:
+Em Thu, Dec 27, 2012 at 06:11:44PM +0900, Namhyung Kim escreveu:
 > From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> Current _sort__sym_cmp() function is used for comparing symbols
-> between two hist entries on symbol, symbol_from and symbol_to sort
-> keys.  Those functions pass addresses of symbols but it's meaningless
-> since it gets over-written inside of the _sort__sym_cmp function to a
-> start address of the symbol.  So just get rid of them.
-> 
-> This might cause a difference than prior output for branch stacks
-> since it seems not using start address of the symbol but branch
-> address.  However AFAICS it'd be same as it gets overwritten anyway.
-> 
-> Also remove redundant part of code in sort__sym_cmp().
-> 
+> When setup_sorting() is called, 'str' is passed to strtok_r() but it's
+> not checked to have a valid pointer.  As strtok_r() accepts NULL
+> pointer on a first argument and use the third argument in that case,
+> it can cause a trouble since our third argument, tmp, is not
+> initialized.
+
+Ok, but calling exit from here? Better to check it at the callers and
+propagate the error, letting things like TUI/gui exit routines to
+execute.
+ 
 > Cc: Stephane Eranian <eranian@google.com>
 > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > ---
->  tools/perf/util/sort.c | 23 ++++++-----------------
->  1 file changed, 6 insertions(+), 17 deletions(-)
+>  tools/perf/util/sort.c | 5 +++++
+>  1 file changed, 5 insertions(+)
 > 
 > diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-> index a36051b34901..c02964cabdd0 100644
+> index c02964cabdd0..9f827e25a2b5 100644
 > --- a/tools/perf/util/sort.c
 > +++ b/tools/perf/util/sort.c
-> @@ -160,9 +160,10 @@ struct sort_entry sort_dso = {
->  
->  /* --sort symbol */
->  
-> -static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
-> -			      u64 ip_l, u64 ip_r)
-> +static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r)
+> @@ -552,6 +552,11 @@ void setup_sorting(const char * const usagestr[], const struct option *opts)
 >  {
-> +	u64 ip_l, ip_r;
+>  	char *tmp, *tok, *str = strdup(sort_order);
+>  
+> +	if (str == NULL) {
+> +		error("Not enough memory to setup sort keys");
+> +		exit(-1);
+> +	}
 > +
->  	if (!sym_l || !sym_r)
->  		return cmp_null(sym_l, sym_r);
->  
-> @@ -178,21 +179,10 @@ static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
->  static int64_t
->  sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
->  {
-> -	u64 ip_l, ip_r;
-> -
->  	if (!left->ms.sym && !right->ms.sym)
->  		return right->level - left->level;
->  
-> -	if (!left->ms.sym || !right->ms.sym)
-> -		return cmp_null(left->ms.sym, right->ms.sym);
-> -
-> -	if (left->ms.sym == right->ms.sym)
-> -		return 0;
-> -
-> -	ip_l = left->ms.sym->start;
-> -	ip_r = right->ms.sym->start;
-> -
-> -	return _sort__sym_cmp(left->ms.sym, right->ms.sym, ip_l, ip_r);
-> +	return _sort__sym_cmp(left->ms.sym, right->ms.sym);
->  }
->  
->  static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
-> @@ -380,8 +370,7 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
->  	if (!from_l->sym && !from_r->sym)
->  		return right->level - left->level;
->  
-> -	return _sort__sym_cmp(from_l->sym, from_r->sym, from_l->addr,
-> -			     from_r->addr);
-> +	return _sort__sym_cmp(from_l->sym, from_r->sym);
->  }
->  
->  static int64_t
-> @@ -393,7 +382,7 @@ sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
->  	if (!to_l->sym && !to_r->sym)
->  		return right->level - left->level;
->  
-> -	return _sort__sym_cmp(to_l->sym, to_r->sym, to_l->addr, to_r->addr);
-> +	return _sort__sym_cmp(to_l->sym, to_r->sym);
->  }
->  
->  static int hist_entry__sym_from_snprintf(struct hist_entry *self, char *bf,
+>  	for (tok = strtok_r(str, ", ", &tmp);
+>  			tok; tok = strtok_r(NULL, ", ", &tmp)) {
+>  		if (sort_dimension__add(tok) < 0) {
 > -- 
 > 1.7.11.7
