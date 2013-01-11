@@ -1,70 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab3AKA5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 19:57:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39328 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab3AKA53 (ORCPT
+	id S1753985Ab3AKBDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 20:03:32 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53079 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab3AKBDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 19:57:29 -0500
-Message-ID: <50EF6368.6070504@canonical.com>
-Date: Thu, 10 Jan 2013 16:57:12 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: James Morris <jmorris@namei.org>, Casey Schaufler <casey@schaufler-ca.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LSM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
-References: <50EB7C50.3070605@schaufler-ca.com> <20130108140159.83c07fa6a680e355f024970f@canb.auug.org.au> <50EB9A5E.1080306@schaufler-ca.com> <alpine.LRH.2.02.1301081942030.24212@tundra.namei.org> <50EC8447.1000301@canonical.com> <alpine.LRH.2.02.1301100028160.5423@tundra.namei.org> <50EE9733.2060409@canonical.com> <87lic0sg09.fsf@xmission.com>
-In-Reply-To: <87lic0sg09.fsf@xmission.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jan 2013 20:03:31 -0500
+Date: Fri, 11 Jan 2013 12:03:23 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wen Xiong <wenxiong@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>
+Subject: linux-next: build failure after merge of the scsi tree
+Message-Id: <20130111120323.cdc06081d0fb1c498c9f1779@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__11_Jan_2013_12_03_23_+1100_Fe+_lha2Y2ES2nhw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 04:46 PM, Eric W. Biederman wrote:
-> John Johansen <john.johansen@canonical.com> writes:
-> 
->> On 01/09/2013 05:28 AM, James Morris wrote:
->>> On Tue, 8 Jan 2013, John Johansen wrote:
->>>
->>>>> I'd say we need to see the actual use-case for Smack and Apparmor being 
->>>>> used together, along with at least one major distro committing to support 
->>>>> this.
->>>>>
->>>>>
->>>> Ubuntu is very interested in stacking
->>>
->>> Which modules?
->>>
->> Well Yama which has now been special cased, and in the past there has been
->> discussion about other special case LSMs like case is proposing for module
->> loading. There has been interest around both selinux + apparmor and
->> smack + apparmor. I am not sure of all of the use cases that have lead to
->> such question but some of them have been around containers, with say
->> selinux on the host and apparmor in the container, or visa versa.
-> 
-> When a distro is run in a container it is desirable to be able to run
-> the distro's security policy in that container.  Ideally this will get
-> addressed by being able to do some level of per user namespace stacking.
-> Say selinux outside and apparmor inside a container.
-> 
-> I think this would take a little more work than what Casey has currently
-> devised but I am hopeful an additional layer of stacking can be added
-> after Casey has merged the basic layer of stacking.
-> 
-Right the general case will take more, but doing things like selinux on
-the outside and apparmor inside are doable right now. And we are working
-on supporting stacked apparmor policy right now so apparmor outside and
-a different apparmor policy inside will be doable soon.
+--Signature=_Fri__11_Jan_2013_12_03_23_+1100_Fe+_lha2Y2ES2nhw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi James,
+
+After merging the scsi tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+drivers/scsi/ipr.c:9138:22: error: expected '=3D', ',', ';', 'asm' or '__at=
+tribute__' before 'ipr_enable_msix'
+drivers/scsi/ipr.c:9165:22: error: expected '=3D', ',', ';', 'asm' or '__at=
+tribute__' before 'ipr_enable_msi'
+drivers/scsi/ipr.c:9188:23: error: expected '=3D', ',', ';', 'asm' or '__at=
+tribute__' before 'name_msi_vectors'
+drivers/scsi/ipr.c:9200:22: error: expected '=3D', ',', ';', 'asm' or '__at=
+tribute__' before 'ipr_request_other_msi_irqs'
+drivers/scsi/ipr.c: In function 'ipr_probe_ioa':
+drivers/scsi/ipr.c:9422:4: error: implicit declaration of function 'ipr_ena=
+ble_msix' [-Werror=3Dimplicit-function-declaration]
+drivers/scsi/ipr.c:9425:4: error: implicit declaration of function 'ipr_ena=
+ble_msi' [-Werror=3Dimplicit-function-declaration]
+drivers/scsi/ipr.c:9517:3: error: implicit declaration of function 'name_ms=
+i_vectors' [-Werror=3Dimplicit-function-declaration]
+drivers/scsi/ipr.c:9523:4: error: implicit declaration of function 'ipr_req=
+uest_other_msi_irqs' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit 7af0de314b73 ("[SCSI] ipr: Add support for MSI-X and
+distributed completion") interacting with commit 54b956b90360 ("Remove
+__dev* markings from init.h") from the drover-core.current tree.
+
+I have added the following merge fix patch for today which could be added
+directly to the scsi tree (please).
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 11 Jan 2013 11:59:34 +1100
+Subject: [PATCH] [SCSI] ipr: remove new __dev* annotations
+
+CONFIG_HOTPLUG is always true now and the __dev* macros have been removed.
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/scsi/ipr.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+index e1ef0b1..8fe61da 100644
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -9135,7 +9135,7 @@ ipr_get_chip_info(const struct pci_device_id *dev_id)
+ 	return NULL;
+ }
+=20
+-static int __devinit ipr_enable_msix(struct ipr_ioa_cfg *ioa_cfg)
++static int ipr_enable_msix(struct ipr_ioa_cfg *ioa_cfg)
+ {
+ 	struct msix_entry entries[IPR_MAX_MSIX_VECTORS];
+ 	int i, err, vectors;
+@@ -9162,7 +9162,7 @@ static int __devinit ipr_enable_msix(struct ipr_ioa_c=
+fg *ioa_cfg)
+ 	return err;
+ }
+=20
+-static int __devinit ipr_enable_msi(struct ipr_ioa_cfg *ioa_cfg)
++static int ipr_enable_msi(struct ipr_ioa_cfg *ioa_cfg)
+ {
+ 	int i, err, vectors;
+=20
+@@ -9185,7 +9185,7 @@ static int __devinit ipr_enable_msi(struct ipr_ioa_cf=
+g *ioa_cfg)
+ 	return err;
+ }
+=20
+-static void __devinit name_msi_vectors(struct ipr_ioa_cfg *ioa_cfg)
++static void name_msi_vectors(struct ipr_ioa_cfg *ioa_cfg)
+ {
+ 	int vec_idx, n =3D sizeof(ioa_cfg->vectors_info[0].desc) - 1;
+=20
+@@ -9197,7 +9197,7 @@ static void __devinit name_msi_vectors(struct ipr_ioa=
+_cfg *ioa_cfg)
+ 	}
+ }
+=20
+-static int __devinit ipr_request_other_msi_irqs(struct ipr_ioa_cfg *ioa_cf=
+g)
++static int ipr_request_other_msi_irqs(struct ipr_ioa_cfg *ioa_cfg)
+ {
+ 	int i, rc;
+=20
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__11_Jan_2013_12_03_23_+1100_Fe+_lha2Y2ES2nhw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ72TbAAoJEECxmPOUX5FE24gP/2JZQfgl52dreBOwXjKdHAi2
+C3X9wTurRoUG1zsX2mGyXD1iGpyiW9UAJpl1bDYyECVPOf3HFJ3FLuB718gok2hw
+ozTRIabKBMyftcyWnf4P/KArK7Rrn21qHRYhcYYZ4W2wtiopvX63xKpCJbBikAPu
+pXeHhqHjRDgYPwnHXdrLs27pfUrqB4cyb1ahKeHPGMLib0VM/3zs8kLuBE8lb1Sn
+Eu5ntOffTX4tLbt7o3/GeXpkh6/VzK4dl/jVNKmb14QZ/7493itjqw96eetXkkpf
+uZ9953zzLh7HQ0cd/YgB8q3OwchWiiPnnuBlc3wA+OrGI5jOZ0wE2z2jwKr/w6sP
+YYxTs/rC2TS3LJtsgQDGK+0wNxffeC1rAf7ZjqxkLOda/3fMtij9QXSgcNWTNaKm
+E/4MTxFYxZouZl3l9QPmU4C6r5TA7TlDArnYoW98A8iRtSodiipappsNpM75KMB5
+Wp7INDYLBj2KwR/UFRpkYvFCce3w1PrYmSRw8mGPgRaTo6K4Fe4T59WqOIvDkPbV
+7WRw7rnMuPzDoPNR15e5MHevKWQ1cspg2Ucj1EoPe16S9IYYw6mz2GCX/29MQMpo
+/c+3lgaBaDJkPdGdY9H/GUmIUjafNg/v9BykvaZcCQ1ZvEdprC5XQfsEx+7dogGd
+5Ydkv/9UNw5LKOGUr4Se
+=jo6c
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__11_Jan_2013_12_03_23_+1100_Fe+_lha2Y2ES2nhw--
