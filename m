@@ -1,280 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab3AKHrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 02:47:24 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17365 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab3AKHrP (ORCPT
+	id S1755623Ab3AKHsz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 02:48:55 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51281 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755355Ab3AKHsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 02:47:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 10 Jan 2013 23:46:59 -0800
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-To: <swarren@wwwdotorg.org>, <mturquette@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-Subject: [PATCH v4 4/9] ARM: tegra: Define Tegra20 CAR binding
-Date: Fri, 11 Jan 2013 13:16:22 +0530
-Message-ID: <1357890387-23245-5-git-send-email-pgaikwad@nvidia.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1357890387-23245-1-git-send-email-pgaikwad@nvidia.com>
-References: <1357890387-23245-1-git-send-email-pgaikwad@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 11 Jan 2013 02:48:53 -0500
+Message-ID: <50EFC3DE.5070705@kernel.dk>
+Date: Fri, 11 Jan 2013 08:48:46 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Eldad Zack <eldad@fogrefinery.com>
+CC: Takashi Iwai <tiwai@suse.de>, perex@perex.cz, alsa-devel@alsa-project.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Oops in sound/usb/pcm.c:match_endpoint_audioformats() in current
+ -git
+References: <50EE7A94.60409@kernel.dk> <s5hobgx72zf.wl%tiwai@suse.de> <50EEB8D2.2030702@kernel.dk> <s5hsj696tgw.wl%tiwai@suse.de> <alpine.LNX.2.00.1301102038560.1321@xoschi>
+In-Reply-To: <alpine.LNX.2.00.1301102038560.1321@xoschi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On 2013-01-10 20:45, Eldad Zack wrote:
+> Jens, could you please send me the device's descriptors (lsusb -v)?
+> I'd like to take a closer look at this.
 
-The Tegra20 CAR (Clock And Reset) Controller controls most aspects of
-most clocks within Tegra20. The device tree binding models this as a
-single monolithic clock provider, which exports many clocks. This reduces
-the number of nodes needed in device tree to represent these clocks.
+Below.
 
-This binding is only useful for Tegra20; the set of clocks that exists on
-Tegra30 is sufficiently different to merit its own binding.
+Bus 006 Device 010: ID 22e8:dac1  
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               1.00
+  bDeviceClass            0 (Defined at Interface level)
+  bDeviceSubClass         0 
+  bDeviceProtocol         0 
+  bMaxPacketSize0        64
+  idVendor           0x22e8 
+  idProduct          0xdac1 
+  bcdDevice            3.21
+  iManufacturer           1 Cambridge Audio 
+  iProduct                2 Cambridge Audio USB Audio 1.0
+  iSerial                 3 0000
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength          128
+    bNumInterfaces          2
+    bConfigurationValue     1
+    iConfiguration          0 
+    bmAttributes         0x80
+      (Bus Powered)
+    MaxPower              500mA
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           0
+      bInterfaceClass         1 Audio
+      bInterfaceSubClass      1 Control Device
+      bInterfaceProtocol      0 
+      iInterface              2 Cambridge Audio USB Audio 1.0
+      AudioControl Interface Descriptor:
+        bLength                 9
+        bDescriptorType        36
+        bDescriptorSubtype      1 (HEADER)
+        bcdADC               1.00
+        wTotalLength           40
+        bInCollection           1
+        baInterfaceNr( 0)       1
+      AudioControl Interface Descriptor:
+        bLength                12
+        bDescriptorType        36
+        bDescriptorSubtype      2 (INPUT_TERMINAL)
+        bTerminalID             1
+        wTerminalType      0x0101 USB Streaming
+        bAssocTerminal          0
+        bNrChannels             2
+        wChannelConfig     0x0003
+          Left Front (L)
+          Right Front (R)
+        iChannelNames           0 
+        iTerminal               6 Cambridge Audio Audio 1.0 Output
+      AudioControl Interface Descriptor:
+        bLength                10
+        bDescriptorType        36
+        bDescriptorSubtype      6 (FEATURE_UNIT)
+        bUnitID                10
+        bSourceID               1
+        bControlSize            1
+        bmaControls( 0)      0x01
+          Mute Control
+        bmaControls( 1)      0x01
+          Mute Control
+        bmaControls( 2)      0x01
+          Mute Control
+        iFeature                5 Cambridge Audio USB 1.0 Audio In
+      AudioControl Interface Descriptor:
+        bLength                 9
+        bDescriptorType        36
+        bDescriptorSubtype      3 (OUTPUT_TERMINAL)
+        bTerminalID             6
+        wTerminalType      0x0301 Speaker
+        bAssocTerminal          0
+        bSourceID              10
+        iTerminal               0 
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       0
+      bNumEndpoints           0
+      bInterfaceClass         1 Audio
+      bInterfaceSubClass      2 Streaming
+      bInterfaceProtocol      0 
+      iInterface              4 Cambridge Audio USB 1.0 Audio Out
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       1
+      bNumEndpoints           2
+      bInterfaceClass         1 Audio
+      bInterfaceSubClass      2 Streaming
+      bInterfaceProtocol      0 
+      iInterface              4 Cambridge Audio USB 1.0 Audio Out
+      AudioStreaming Interface Descriptor:
+        bLength                 7
+        bDescriptorType        36
+        bDescriptorSubtype      1 (AS_GENERAL)
+        bTerminalLink           1
+        bDelay                  1 frames
+        wFormatTag              1 PCM
+      AudioStreaming Interface Descriptor:
+        bLength                20
+        bDescriptorType        36
+        bDescriptorSubtype      2 (FORMAT_TYPE)
+        bFormatType             1 (FORMAT_TYPE_I)
+        bNrChannels             2
+        bSubframeSize           3
+        bBitResolution         24
+        bSamFreqType            4 Discrete
+        tSamFreq[ 0]        44100
+        tSamFreq[ 1]        48000
+        tSamFreq[ 2]        88200
+        tSamFreq[ 3]        96000
+      Endpoint Descriptor:
+        bLength                 9
+        bDescriptorType         5
+        bEndpointAddress     0x01  EP 1 OUT
+        bmAttributes            5
+          Transfer Type            Isochronous
+          Synch Type               Asynchronous
+          Usage Type               Data
+        wMaxPacketSize     0x0246  1x 582 bytes
+        bInterval               1
+        bRefresh                0
+        bSynchAddress         129
+        AudioControl Endpoint Descriptor:
+          bLength                 7
+          bDescriptorType        37
+          bDescriptorSubtype      1 (EP_GENERAL)
+          bmAttributes         0x01
+            Sampling Frequency
+          bLockDelayUnits         2 Decoded PCM samples
+          wLockDelay              0 Decoded PCM samples
+      Endpoint Descriptor:
+        bLength                 9
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0003  1x 3 bytes
+        bInterval               1
+        bRefresh                4
+        bSynchAddress           0
+Device Status:     0x0000
+  (Bus Powered)
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Simon Glass <sjg@chromium.org>
-[pgaikwad: Added mux clk ids and sorted CAR node]
-Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
----
- .../bindings/clock/nvidia,tegra20-car.txt          |  205 ++++++++++++++++++++
- arch/arm/boot/dts/tegra20.dtsi                     |    6 +
- 2 files changed, 211 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/nvidia,tegra20-car.txt
 
-diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra20-car.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra20-car.txt
-new file mode 100644
-index 0000000..0921fac
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/nvidia,tegra20-car.txt
-@@ -0,0 +1,205 @@
-+NVIDIA Tegra20 Clock And Reset Controller
-+
-+This binding uses the common clock binding:
-+Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+The CAR (Clock And Reset) Controller on Tegra is the HW module responsible
-+for muxing and gating Tegra's clocks, and setting their rates.
-+
-+Required properties :
-+- compatible : Should be "nvidia,tegra20-car"
-+- reg : Should contain CAR registers location and length
-+- clocks : Should contain phandle and clock specifiers for two clocks:
-+  the 32 KHz "32k_in", and the board-specific oscillator "osc".
-+- #clock-cells : Should be 1.
-+  In clock consumers, this cell represents the clock ID exposed by the CAR.
-+
-+  The first 96 clocks are numbered to match the bits in the CAR's CLK_OUT_ENB
-+  registers. These IDs often match those in the CAR's RST_DEVICES registers,
-+  but not in all cases. Some bits in CLK_OUT_ENB affect multiple clocks. In
-+  this case, those clocks are assigned IDs above 95 in order to highlight
-+  this issue. Implementations that interpret these clock IDs as bit values
-+  within the CLK_OUT_ENB or RST_DEVICES registers should be careful to
-+  explicitly handle these special cases.
-+
-+  The balance of the clocks controlled by the CAR are assigned IDs of 96 and
-+  above.
-+
-+  0	cpu
-+  1	unassigned
-+  2	unassigned
-+  3	ac97
-+  4	rtc
-+  5	tmr
-+  6	uart1
-+  7	unassigned	(register bit affects uart2 and vfir)
-+  8	gpio
-+  9	sdmmc2
-+  10	unassigned	(register bit affects spdif_in and spdif_out)
-+  11	i2s1
-+  12	i2c1
-+  13	ndflash
-+  14	sdmmc1
-+  15	sdmmc4
-+  16	twc
-+  17	pwm
-+  18	i2s2
-+  19	epp
-+  20	unassigned	(register bit affects vi and vi_sensor)
-+  21	2d
-+  22	usbd
-+  23	isp
-+  24	3d
-+  25	ide
-+  26	disp2
-+  27	disp1
-+  28	host1x
-+  29	vcp
-+  30	unassigned
-+  31	cache2
-+
-+  32	mem
-+  33	ahbdma
-+  34	apbdma
-+  35	unassigned
-+  36	kbc
-+  37	stat_mon
-+  38	pmc
-+  39	fuse
-+  40	kfuse
-+  41	sbc1
-+  42	snor
-+  43	spi1
-+  44	sbc2
-+  45	xio
-+  46	sbc3
-+  47	dvc
-+  48	dsi
-+  49	unassigned	(register bit affects tvo and cve)
-+  50	mipi
-+  51	hdmi
-+  52	csi
-+  53	tvdac
-+  54	i2c2
-+  55	uart3
-+  56	unassigned
-+  57	emc
-+  58	usb2
-+  59	usb3
-+  60	mpe
-+  61	vde
-+  62	bsea
-+  63	bsev
-+
-+  64	speedo
-+  65	uart4
-+  66	uart5
-+  67	i2c3
-+  68	sbc4
-+  69	sdmmc3
-+  70	pcie
-+  71	owr
-+  72	afi
-+  73	csite
-+  74	unassigned
-+  75	avpucq
-+  76	la
-+  77	unassigned
-+  78	unassigned
-+  79	unassigned
-+  80	unassigned
-+  81	unassigned
-+  82	unassigned
-+  83	unassigned
-+  84	irama
-+  85	iramb
-+  86	iramc
-+  87	iramd
-+  88	cram2
-+  89	audio_2x	a/k/a audio_2x_sync_clk
-+  90	clk_d
-+  91	unassigned
-+  92	sus
-+  93	cdev1
-+  94	cdev2
-+  95	unassigned
-+
-+  96	uart2
-+  97	vfir
-+  98	spdif_in
-+  99	spdif_out
-+  100	vi
-+  101	vi_sensor
-+  102	tvo
-+  103	cve
-+  104	osc
-+  105	clk_32k		a/k/a clk_s
-+  106	clk_m
-+  107	sclk
-+  108	cclk
-+  109	hclk
-+  110	pclk
-+  111	blink
-+  112	pll_a
-+  113	pll_a_out0
-+  114	pll_c
-+  115	pll_c_out1
-+  116	pll_d
-+  117	pll_d_out0
-+  118	pll_e
-+  119	pll_m
-+  120	pll_m_out1
-+  121	pll_p
-+  122	pll_p_out1
-+  123	pll_p_out2
-+  124	pll_p_out3
-+  125	pll_p_out4
-+  126	pll_s
-+  127	pll_u
-+  128	pll_x
-+  129	cop		a/k/a avp
-+  130	audio		a/k/a audio_sync_clk
-+  131	pll_ref
-+  132	twd
-+
-+Example SoC include file:
-+
-+/ {
-+	tegra_car: clock {
-+		compatible = "nvidia,tegra20-car";
-+		reg = <0x60006000 0x1000>;
-+		#clock-cells = <1>;
-+	};
-+
-+	usb@c5004000 {
-+		clocks = <&tegra_car 58>; /* usb2 */
-+	};
-+};
-+
-+Example board file:
-+
-+/ {
-+	clocks {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		osc: clock@0 {
-+			compatible = "fixed-clock";
-+			reg = <0>;
-+			#clock-cells = <0>;
-+			clock-frequency = <12000000>;
-+		};
-+
-+		clk_32k: clock@1 {
-+			compatible = "fixed-clock";
-+			reg = <1>;
-+			#clock-cells = <0>;
-+			clock-frequency = <32768>;
-+		};
-+	};
-+
-+	&tegra_car {
-+		clocks = <&clk_32k> <&osc>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-index b8effa1..5b104f1 100644
---- a/arch/arm/boot/dts/tegra20.dtsi
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -123,6 +123,12 @@
- 			      0 42 0x04>;
- 	};
- 
-+	tegra_car: clock {
-+		compatible = "nvidia,tegra20-car";
-+		reg = <0x60006000 0x1000>;
-+		#clock-cells = <1>;
-+	};
-+
- 	apbdma: dma {
- 		compatible = "nvidia,tegra20-apbdma";
- 		reg = <0x6000a000 0x1200>;
 -- 
-1.7.4.1
+Jens Axboe
 
