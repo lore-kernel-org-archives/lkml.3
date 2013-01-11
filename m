@@ -1,240 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab3AKHrI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 02:47:08 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17351 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266Ab3AKHrF (ORCPT
+	id S1755138Ab3AKHuv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 02:50:51 -0500
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:57165 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626Ab3AKHuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 02:47:05 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 10 Jan 2013 23:46:11 -0800
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-To: <swarren@wwwdotorg.org>, <mturquette@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Prashant Gaikwad <pgaikwad@nvidia.com>
-Subject: [PATCH v4 3/9] arm: tegra: Move tegra_cpu_car.h to linux/clk/tegra.h
-Date: Fri, 11 Jan 2013 13:16:21 +0530
-Message-ID: <1357890387-23245-4-git-send-email-pgaikwad@nvidia.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1357890387-23245-1-git-send-email-pgaikwad@nvidia.com>
-References: <1357890387-23245-1-git-send-email-pgaikwad@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 11 Jan 2013 02:50:50 -0500
+Message-ID: <1357890644.1466.1.camel@kernel.cn.ibm.com>
+Subject: Re: oops in copy_page_rep()
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>
+Date: Fri, 11 Jan 2013 01:50:44 -0600
+In-Reply-To: <20130108174951.GG9163@redhat.com>
+References: <20130105152208.GA3386@redhat.com>
+	 <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
+	 <alpine.LNX.2.00.1301061037140.28950@eggly.anvils>
+	 <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
+	 <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
+	 <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
+	 <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com>
+	 <20130108163141.GA27555@shutemov.name>
+	 <CA+55aFzaTvF7nYxWBT-G_b=xGz+_akRAeJ=U9iHy+Y=ZPo=pbA@mail.gmail.com>
+	 <20130108173058.GA27727@shutemov.name> <20130108174951.GG9163@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tegra_cpu_car_ops struct is going to be accessed from drivers/clk/tegra.
-Move the tegra_cpu_car_ops to include/linux/clk/tegra.h.
+On Tue, 2013-01-08 at 18:49 +0100, Andrea Arcangeli wrote:
+> Hi Kirill,
+> 
+> On Tue, Jan 08, 2013 at 07:30:58PM +0200, Kirill A. Shutemov wrote:
+> > Merged patch is obviously broken: huge_pmd_set_accessed() can be called
+> > only if the pmd is under splitting.
+> 
+> Of course I assume you meant "only if the pmd is not under splitting".
+> 
+> But no, setting a bitflag like the young bit or clearing or setting
+> the numa bit won't screw with split_huge_page and it's safe even if
+> the pmd is under splitting.
+> 
+> Those bits are only checked here at the last stage of
+> split_huge_page_map after taking the PT lock:
+> 
+> 	spin_lock(&mm->page_table_lock);
+> 	pmd = page_check_address_pmd(page, mm, address,
+> 				     PAGE_CHECK_ADDRESS_PMD_SPLITTING_FLAG);
+> 	if (pmd) {
+> 		pgtable = pgtable_trans_huge_withdraw(mm);
+> 		pmd_populate(mm, &_pmd, pgtable);
+> 
+> 		haddr = address;
+> 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
+> 			pte_t *pte, entry;
+> 			BUG_ON(PageCompound(page+i));
+> 			entry = mk_pte(page + i, vma->vm_page_prot);
+> 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+> 			if (!pmd_write(*pmd))
+> 				entry = pte_wrprotect(entry);
+> 			else
+> 				BUG_ON(page_mapcount(page) != 1);
+> 			if (!pmd_young(*pmd))
+> 				entry = pte_mkold(entry);
+> 			if (pmd_numa(*pmd))
+> 				entry = pte_mknuma(entry);
+> 			pte = pte_offset_map(&_pmd, haddr);
+> 			BUG_ON(!pte_none(*pte));
+> 			set_pte_at(mm, haddr, pte, entry);
+> 			pte_unmap(pte);
+> 		}
+> 
+> If "young" or "numa" bitflags changed on the original *pmd for the
+> previous part of split_huge_page, nothing will go wrong by the time we
+> get to split_huge_page_map (the same is not true if the pfn changes!).
+> 
 
-Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
----
- arch/arm/mach-tegra/clock.c                        |    2 +-
- arch/arm/mach-tegra/cpuidle-tegra30.c              |    2 +-
- arch/arm/mach-tegra/hotplug.c                      |    2 +-
- arch/arm/mach-tegra/platsmp.c                      |    2 +-
- arch/arm/mach-tegra/pm.c                           |    2 +-
- arch/arm/mach-tegra/tegra20_clocks.c               |    2 +-
- arch/arm/mach-tegra/tegra20_clocks_data.c          |    2 +-
- arch/arm/mach-tegra/tegra30_clocks.c               |    2 +-
- arch/arm/mach-tegra/tegra30_clocks_data.c          |    2 +-
- .../tegra_cpu_car.h => include/linux/clk/tegra.h   |    6 +++---
- 10 files changed, 12 insertions(+), 12 deletions(-)
- rename arch/arm/mach-tegra/tegra_cpu_car.h => include/linux/clk/tegra.h (96%)
+But this time BUG_ON(mapcount != mapcount2) in function
+__split_huge_page will be trigged.
 
-diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
-index 867bf8b..8c0ff06 100644
---- a/arch/arm/mach-tegra/clock.c
-+++ b/arch/arm/mach-tegra/clock.c
-@@ -26,10 +26,10 @@
- #include <linux/sched.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
-+#include <linux/clk/tegra.h>
- 
- #include "board.h"
- #include "clock.h"
--#include "tegra_cpu_car.h"
- 
- /* Global data of Tegra CPU CAR ops */
- struct tegra_cpu_car_ops *tegra_cpu_car_ops;
-diff --git a/arch/arm/mach-tegra/cpuidle-tegra30.c b/arch/arm/mach-tegra/cpuidle-tegra30.c
-index 82530bd..8b50cf4 100644
---- a/arch/arm/mach-tegra/cpuidle-tegra30.c
-+++ b/arch/arm/mach-tegra/cpuidle-tegra30.c
-@@ -24,6 +24,7 @@
- #include <linux/cpuidle.h>
- #include <linux/cpu_pm.h>
- #include <linux/clockchips.h>
-+#include <linux/clk/tegra.h>
- 
- #include <asm/cpuidle.h>
- #include <asm/proc-fns.h>
-@@ -32,7 +33,6 @@
- 
- #include "pm.h"
- #include "sleep.h"
--#include "tegra_cpu_car.h"
- 
- #ifdef CONFIG_PM_SLEEP
- static int tegra30_idle_lp2(struct cpuidle_device *dev,
-diff --git a/arch/arm/mach-tegra/hotplug.c b/arch/arm/mach-tegra/hotplug.c
-index 6a27de4..a599f6e 100644
---- a/arch/arm/mach-tegra/hotplug.c
-+++ b/arch/arm/mach-tegra/hotplug.c
-@@ -10,12 +10,12 @@
-  */
- #include <linux/kernel.h>
- #include <linux/smp.h>
-+#include <linux/clk/tegra.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/smp_plat.h>
- 
- #include "sleep.h"
--#include "tegra_cpu_car.h"
- 
- static void (*tegra_hotplug_shutdown)(void);
- 
-diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-index 6867030..3ec7fc4 100644
---- a/arch/arm/mach-tegra/platsmp.c
-+++ b/arch/arm/mach-tegra/platsmp.c
-@@ -18,6 +18,7 @@
- #include <linux/jiffies.h>
- #include <linux/smp.h>
- #include <linux/io.h>
-+#include <linux/clk/tegra.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/gic.h>
-@@ -30,7 +31,6 @@
- #include "fuse.h"
- #include "flowctrl.h"
- #include "reset.h"
--#include "tegra_cpu_car.h"
- 
- #include "common.h"
- #include "iomap.h"
-diff --git a/arch/arm/mach-tegra/pm.c b/arch/arm/mach-tegra/pm.c
-index 498d70b..abfe9b9 100644
---- a/arch/arm/mach-tegra/pm.c
-+++ b/arch/arm/mach-tegra/pm.c
-@@ -24,6 +24,7 @@
- #include <linux/cpu_pm.h>
- #include <linux/clk.h>
- #include <linux/err.h>
-+#include <linux/clk/tegra.h>
- 
- #include <asm/smp_plat.h>
- #include <asm/cacheflush.h>
-@@ -36,7 +37,6 @@
- #include "reset.h"
- #include "flowctrl.h"
- #include "sleep.h"
--#include "tegra_cpu_car.h"
- 
- #define TEGRA_POWER_CPU_PWRREQ_OE	(1 << 16)  /* CPU pwr req enable */
- 
-diff --git a/arch/arm/mach-tegra/tegra20_clocks.c b/arch/arm/mach-tegra/tegra20_clocks.c
-index 4eb6bc8..1a80ff6 100644
---- a/arch/arm/mach-tegra/tegra20_clocks.c
-+++ b/arch/arm/mach-tegra/tegra20_clocks.c
-@@ -26,12 +26,12 @@
- #include <linux/io.h>
- #include <linux/clkdev.h>
- #include <linux/clk.h>
-+#include <linux/clk/tegra.h>
- 
- #include "clock.h"
- #include "fuse.h"
- #include "iomap.h"
- #include "tegra2_emc.h"
--#include "tegra_cpu_car.h"
- 
- #define RST_DEVICES			0x004
- #define RST_DEVICES_SET			0x300
-diff --git a/arch/arm/mach-tegra/tegra20_clocks_data.c b/arch/arm/mach-tegra/tegra20_clocks_data.c
-index a23a073..022cdae 100644
---- a/arch/arm/mach-tegra/tegra20_clocks_data.c
-+++ b/arch/arm/mach-tegra/tegra20_clocks_data.c
-@@ -26,12 +26,12 @@
- #include <linux/delay.h>
- #include <linux/io.h>
- #include <linux/clk.h>
-+#include <linux/clk/tegra.h>
- 
- #include "clock.h"
- #include "fuse.h"
- #include "tegra2_emc.h"
- #include "tegra20_clocks.h"
--#include "tegra_cpu_car.h"
- 
- /* Clock definitions */
- 
-diff --git a/arch/arm/mach-tegra/tegra30_clocks.c b/arch/arm/mach-tegra/tegra30_clocks.c
-index d714777..4330787 100644
---- a/arch/arm/mach-tegra/tegra30_clocks.c
-+++ b/arch/arm/mach-tegra/tegra30_clocks.c
-@@ -28,6 +28,7 @@
- #include <linux/clk.h>
- #include <linux/cpufreq.h>
- #include <linux/syscore_ops.h>
-+#include <linux/clk/tegra.h>
- 
- #include <asm/clkdev.h>
- 
-@@ -36,7 +37,6 @@
- #include "clock.h"
- #include "fuse.h"
- #include "iomap.h"
--#include "tegra_cpu_car.h"
- 
- #define USE_PLL_LOCK_BITS 0
- 
-diff --git a/arch/arm/mach-tegra/tegra30_clocks_data.c b/arch/arm/mach-tegra/tegra30_clocks_data.c
-index 741d264..9bfaa49 100644
---- a/arch/arm/mach-tegra/tegra30_clocks_data.c
-+++ b/arch/arm/mach-tegra/tegra30_clocks_data.c
-@@ -28,11 +28,11 @@
- #include <linux/io.h>
- #include <linux/clk.h>
- #include <linux/cpufreq.h>
-+#include <linux/clk/tegra.h>
- 
- #include "clock.h"
- #include "fuse.h"
- #include "tegra30_clocks.h"
--#include "tegra_cpu_car.h"
- 
- #define DEFINE_CLK_TEGRA(_name, _rate, _ops, _flags,		\
- 		   _parent_names, _parents, _parent)		\
-diff --git a/arch/arm/mach-tegra/tegra_cpu_car.h b/include/linux/clk/tegra.h
-similarity index 96%
-rename from arch/arm/mach-tegra/tegra_cpu_car.h
-rename to include/linux/clk/tegra.h
-index 9764d31..0977f2a 100644
---- a/arch/arm/mach-tegra/tegra_cpu_car.h
-+++ b/include/linux/clk/tegra.h
-@@ -14,8 +14,8 @@
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
- 
--#ifndef __MACH_TEGRA_CPU_CAR_H
--#define __MACH_TEGRA_CPU_CAR_H
-+#ifndef __LINUX_CLK_TEGRA_H_
-+#define __LINUX_CLK_TEGRA_H_
- 
- /*
-  * Tegra CPU clock and reset control ops
-@@ -121,4 +121,4 @@ static inline void tegra_cpu_clock_resume(void)
- void tegra20_cpu_car_ops_init(void);
- void tegra30_cpu_car_ops_init(void);
- 
--#endif /* __MACH_TEGRA_CPU_CAR_H */
-+#endif /* __LINUX_CLK_TEGRA_H_ */
--- 
-1.7.4.1
+> If you think this is too tricky, we could also decide to forbid
+> huge_pmd_set_accessed if the pmd is in splitting state, but I don't
+> think that flipping young/numa bits while in splitting state, can
+> cause any problem (if done correctly with PT lock + pmd_same).
+> 
+> Thanks!
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 
