@@ -1,62 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab3AKRgv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:36:51 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:27419 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab3AKRgt (ORCPT
+	id S1754921Ab3AKRhK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:37:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:45767 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3AKRhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:36:49 -0500
-Message-ID: <50F04DAF.5040104@tilera.com>
-Date: Fri, 11 Jan 2013 12:36:47 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 11 Jan 2013 12:37:08 -0500
+Date: Fri, 11 Jan 2013 12:36:52 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Olaf Hering <olaf@aepfle.de>, Jens Axboe <axboe@kernel.dk>,
+        xen-devel <xen-devel@lists.xen.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen-blkback: do not leak mode property
+Message-ID: <20130111173652.GB26287@phenom.dumpdata.com>
+References: <50D2F6FF02000078000B1BC5@nat28.tlf.novell.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>
-Subject: Re: [PATCH] consolidate per-arch stack overflow debugging options
-References: <20130111170043.D7CC39DC@kernel.stglabs.ibm.com>
-In-Reply-To: <20130111170043.D7CC39DC@kernel.stglabs.ibm.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50D2F6FF02000078000B1BC5@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/11/2013 12:00 PM, Dave Hansen wrote:
-> I'm looking for some Acked-bys on this from the various arch
-> maintainers that it affects.  I'd like to send it up to Linus
-> in the next merge window.  This is part of a larger series to
-> clean up the "Kernel Hacking" menu:
->
-> 	https://lkml.org/lkml/2012/12/17/306
->
-> --
->
-> Several architectures have similar stack debugging config options.
-> They all pretty much do the same thing, some with slightly
-> differing help text.
->
-> This patch changes the architectures to instead enable a Kconfig
-> boolean, and then use that boolean in the generic Kconfig.debug
-> to present the actual menu option.  This removes a bunch of
-> duplication and adds consistency across arches.
->
+On Thu, Dec 20, 2012 at 10:31:11AM +0000, Jan Beulich wrote:
+> "be->mode" is obtained from xenbus_read(), which does a kmalloc() for
+> the message body. The short string is never released, so do it along
+> with freeing "be" itself, and make sure the string isn't kept when
+> backend_changed() doesn't complete successfully (which made it
+> desirable to slightly re-structure that function, so that the error
+> cleanup can be done in one place).
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com> [for tile]
+applied.
+> 
+> Reported-by: Olaf Hering <olaf@aepfle.de>
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> 
+> ---
+>  drivers/block/xen-blkback/xenbus.c |   49 ++++++++++++++++++-------------------
+>  1 file changed, 24 insertions(+), 25 deletions(-)
+> 
+> --- 3.7/drivers/block/xen-blkback/xenbus.c
+> +++ 3.7-xen-blkback-mode-leak/drivers/block/xen-blkback/xenbus.c
+> @@ -366,6 +366,7 @@ static int xen_blkbk_remove(struct xenbu
+>  		be->blkif = NULL;
+>  	}
+>  
+> +	kfree(be->mode);
+>  	kfree(be);
+>  	dev_set_drvdata(&dev->dev, NULL);
+>  	return 0;
+> @@ -501,6 +502,7 @@ static void backend_changed(struct xenbu
+>  		= container_of(watch, struct backend_info, backend_watch);
+>  	struct xenbus_device *dev = be->dev;
+>  	int cdrom = 0;
+> +	unsigned long handle;
+>  	char *device_type;
+>  
+>  	DPRINTK("");
+> @@ -520,10 +522,10 @@ static void backend_changed(struct xenbu
+>  		return;
+>  	}
+>  
+> -	if ((be->major || be->minor) &&
+> -	    ((be->major != major) || (be->minor != minor))) {
+> -		pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
+> -			be->major, be->minor, major, minor);
+> +	if (be->major | be->minor) {
+> +		if (be->major != major || be->minor != minor)
+> +			pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
+> +				be->major, be->minor, major, minor);
+>  		return;
+>  	}
+>  
+> @@ -541,36 +543,33 @@ static void backend_changed(struct xenbu
+>  		kfree(device_type);
+>  	}
+>  
+> -	if (be->major == 0 && be->minor == 0) {
+> -		/* Front end dir is a number, which is used as the handle. */
+> +	/* Front end dir is a number, which is used as the handle. */
+> +	err = strict_strtoul(strrchr(dev->otherend, '/') + 1, 0, &handle);
+> +	if (err)
+> +		return;
+>  
+> -		char *p = strrchr(dev->otherend, '/') + 1;
+> -		long handle;
+> -		err = strict_strtoul(p, 0, &handle);
+> -		if (err)
+> -			return;
+> +	be->major = major;
+> +	be->minor = minor;
+>  
+> -		be->major = major;
+> -		be->minor = minor;
+> -
+> -		err = xen_vbd_create(be->blkif, handle, major, minor,
+> -				 (NULL == strchr(be->mode, 'w')), cdrom);
+> -		if (err) {
+> -			be->major = 0;
+> -			be->minor = 0;
+> -			xenbus_dev_fatal(dev, err, "creating vbd structure");
+> -			return;
+> -		}
+> +	err = xen_vbd_create(be->blkif, handle, major, minor,
+> +			     !strchr(be->mode, 'w'), cdrom);
+>  
+> +	if (err)
+> +		xenbus_dev_fatal(dev, err, "creating vbd structure");
+> +	else {
+>  		err = xenvbd_sysfs_addif(dev);
+>  		if (err) {
+>  			xen_vbd_free(&be->blkif->vbd);
+> -			be->major = 0;
+> -			be->minor = 0;
+>  			xenbus_dev_fatal(dev, err, "creating sysfs entries");
+> -			return;
+>  		}
+> +	}
+>  
+> +	if (err) {
+> +		kfree(be->mode);
+> +		be->mode = NULL;
+> +		be->major = 0;
+> +		be->minor = 0;
+> +	} else {
+>  		/* We're potentially connected now */
+>  		xen_update_blkif_status(be->blkif);
+>  	}
+> 
+> 
+> 
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+> xen-blkback: do not leak mode property
+> 
+> "be->mode" is obtained from xenbus_read(), which does a kmalloc() for
+> the message body. The short string is never released, so do it along
+> with freeing "be" itself, and make sure the string isn't kept when
+> backend_changed() doesn't complete successfully (which made it
+> desirable to slightly re-structure that function, so that the error
+> cleanup can be done in one place).
+> 
+> Reported-by: Olaf Hering <olaf@aepfle.de>
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> 
+> ---
+>  drivers/block/xen-blkback/xenbus.c |   49 ++++++++++++++++++-------------------
+>  1 file changed, 24 insertions(+), 25 deletions(-)
+> 
+> --- 3.7/drivers/block/xen-blkback/xenbus.c
+> +++ 3.7-xen-blkback-mode-leak/drivers/block/xen-blkback/xenbus.c
+> @@ -366,6 +366,7 @@ static int xen_blkbk_remove(struct xenbu
+>  		be->blkif = NULL;
+>  	}
+>  
+> +	kfree(be->mode);
+>  	kfree(be);
+>  	dev_set_drvdata(&dev->dev, NULL);
+>  	return 0;
+> @@ -501,6 +502,7 @@ static void backend_changed(struct xenbu
+>  		= container_of(watch, struct backend_info, backend_watch);
+>  	struct xenbus_device *dev = be->dev;
+>  	int cdrom = 0;
+> +	unsigned long handle;
+>  	char *device_type;
+>  
+>  	DPRINTK("");
+> @@ -520,10 +522,10 @@ static void backend_changed(struct xenbu
+>  		return;
+>  	}
+>  
+> -	if ((be->major || be->minor) &&
+> -	    ((be->major != major) || (be->minor != minor))) {
+> -		pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
+> -			be->major, be->minor, major, minor);
+> +	if (be->major | be->minor) {
+> +		if (be->major != major || be->minor != minor)
+> +			pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
+> +				be->major, be->minor, major, minor);
+>  		return;
+>  	}
+>  
+> @@ -541,36 +543,33 @@ static void backend_changed(struct xenbu
+>  		kfree(device_type);
+>  	}
+>  
+> -	if (be->major == 0 && be->minor == 0) {
+> -		/* Front end dir is a number, which is used as the handle. */
+> +	/* Front end dir is a number, which is used as the handle. */
+> +	err = strict_strtoul(strrchr(dev->otherend, '/') + 1, 0, &handle);
+> +	if (err)
+> +		return;
+>  
+> -		char *p = strrchr(dev->otherend, '/') + 1;
+> -		long handle;
+> -		err = strict_strtoul(p, 0, &handle);
+> -		if (err)
+> -			return;
+> +	be->major = major;
+> +	be->minor = minor;
+>  
+> -		be->major = major;
+> -		be->minor = minor;
+> -
+> -		err = xen_vbd_create(be->blkif, handle, major, minor,
+> -				 (NULL == strchr(be->mode, 'w')), cdrom);
+> -		if (err) {
+> -			be->major = 0;
+> -			be->minor = 0;
+> -			xenbus_dev_fatal(dev, err, "creating vbd structure");
+> -			return;
+> -		}
+> +	err = xen_vbd_create(be->blkif, handle, major, minor,
+> +			     !strchr(be->mode, 'w'), cdrom);
+>  
+> +	if (err)
+> +		xenbus_dev_fatal(dev, err, "creating vbd structure");
+> +	else {
+>  		err = xenvbd_sysfs_addif(dev);
+>  		if (err) {
+>  			xen_vbd_free(&be->blkif->vbd);
+> -			be->major = 0;
+> -			be->minor = 0;
+>  			xenbus_dev_fatal(dev, err, "creating sysfs entries");
+> -			return;
+>  		}
+> +	}
+>  
+> +	if (err) {
+> +		kfree(be->mode);
+> +		be->mode = NULL;
+> +		be->major = 0;
+> +		be->minor = 0;
+> +	} else {
+>  		/* We're potentially connected now */
+>  		xen_update_blkif_status(be->blkif);
+>  	}
 
