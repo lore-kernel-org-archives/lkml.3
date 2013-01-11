@@ -1,145 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790Ab3AKNPz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 08:15:55 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:50524 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483Ab3AKNNm (ORCPT
+	id S1755863Ab3AKNQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 08:16:14 -0500
+Received: from masquerade.micron.com ([137.201.242.130]:62442 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755150Ab3AKNQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 08:13:42 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com, cbouatmailru@gmail.com,
-        pender01 <peter.enderborg@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 11/18] power: ab8500_fg: Round capacity output
-Date: Fri, 11 Jan 2013 13:12:59 +0000
-Message-Id: <1357909986-9262-12-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1357909986-9262-1-git-send-email-lee.jones@linaro.org>
-References: <1357909986-9262-1-git-send-email-lee.jones@linaro.org>
+	Fri, 11 Jan 2013 08:16:12 -0500
+Message-ID: <50F01094.4090103@micron.com>
+Date: Fri, 11 Jan 2013 18:46:04 +0530
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Sam Bradshaw" <sbradshaw@micron.com>,
+        "Selvan Mani (smani) [CONT - Type 2]" <smani@micron.com>
+Subject: [PATCH 2/3] mtip32xx: fix for driver hang after a command timeout
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19546.007
+X-TM-AS-Result: No--8.488800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: pender01 <peter.enderborg@stericsson.com>
 
-Round the capacity values for better enduser experience.
+If an I/O command times out when a PIO command is active,
+MTIP_PF_EH_ACTIVE_BIT is not cleared. This results in I/O
+hang in the driver. Fix is to clear this bit.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: pender01 <peter.enderborg@stericsson.com>
-Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
-Tested-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
+Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+
 ---
- drivers/power/ab8500_fg.c |   28 +++++++++++++++-------------
- 1 file changed, 15 insertions(+), 13 deletions(-)
+ drivers/block/mtip32xx/mtip32xx.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
-index 7cfc48a..5e8291b 100644
---- a/drivers/power/ab8500_fg.c
-+++ b/drivers/power/ab8500_fg.c
-@@ -32,6 +32,7 @@
- #include <linux/mfd/abx500/ab8500.h>
- #include <linux/mfd/abx500/ab8500-bm.h>
- #include <linux/mfd/abx500/ab8500-gpadc.h>
-+#include <linux/kernel.h>
- 
- #define MILLI_TO_MICRO			1000
- #define FG_LSB_IN_MA			1627
-@@ -1158,7 +1159,7 @@ static int ab8500_fg_capacity_level(struct ab8500_fg *di)
- {
- 	int ret, percent;
- 
--	percent = di->bat_cap.permille / 10;
-+	percent = DIV_ROUND_CLOSEST(di->bat_cap.permille, 10);
- 
- 	if (percent <= di->bm->cap_levels->critical ||
- 		di->flags.low_bat)
-@@ -1279,6 +1280,7 @@ static void ab8500_fg_update_cap_scalers(struct ab8500_fg *di)
- static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- {
- 	bool changed = false;
-+	int percent = DIV_ROUND_CLOSEST(di->bat_cap.permille, 10);
- 
- 	di->bat_cap.level = ab8500_fg_capacity_level(di);
- 
-@@ -1310,6 +1312,7 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 		dev_dbg(di->dev, "Battery low, set capacity to 0\n");
- 		di->bat_cap.prev_percent = 0;
- 		di->bat_cap.permille = 0;
-+		percent = 0;
- 		di->bat_cap.prev_mah = 0;
- 		di->bat_cap.mah = 0;
- 		changed = true;
-@@ -1319,7 +1322,7 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 		 * and show 100% during maintenance charging (scaling).
- 		 */
- 		if (di->flags.force_full) {
--			di->bat_cap.prev_percent = di->bat_cap.permille / 10;
-+			di->bat_cap.prev_percent = percent;
- 			di->bat_cap.prev_mah = di->bat_cap.mah;
- 
- 			changed = true;
-@@ -1332,19 +1335,18 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 						di->bat_cap.prev_percent;
- 				di->bat_cap.cap_scale.disable_cap_level = 100;
- 			}
--		} else if ( di->bat_cap.prev_percent !=
--			(di->bat_cap.permille) / 10) {
-+		} else if (di->bat_cap.prev_percent != percent) {
- 			dev_dbg(di->dev,
- 				"battery reported full "
- 				"but capacity dropping: %d\n",
--				di->bat_cap.permille / 10);
--			di->bat_cap.prev_percent = di->bat_cap.permille / 10;
-+				percent);
-+			di->bat_cap.prev_percent = percent;
- 			di->bat_cap.prev_mah = di->bat_cap.mah;
- 
- 			changed = true;
- 		}
--	} else if (di->bat_cap.prev_percent != di->bat_cap.permille / 10) {
--		if (di->bat_cap.permille / 10 == 0) {
-+	} else if (di->bat_cap.prev_percent != percent) {
-+		if (percent == 0) {
- 			/*
- 			 * We will not report 0% unless we've got
- 			 * the LOW_BAT IRQ, no matter what the FG
-@@ -1354,11 +1356,11 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 			di->bat_cap.permille = 1;
- 			di->bat_cap.prev_mah = 1;
- 			di->bat_cap.mah = 1;
-+			percent = 1;
- 
- 			changed = true;
- 		} else if (!(!di->flags.charging &&
--			(di->bat_cap.permille / 10) >
--			di->bat_cap.prev_percent) || init) {
-+			percent > di->bat_cap.prev_percent) || init) {
- 			/*
- 			 * We do not allow reported capacity to go up
- 			 * unless we're charging or if we're in init
-@@ -1366,9 +1368,9 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 			dev_dbg(di->dev,
- 				"capacity changed from %d to %d (%d)\n",
- 				di->bat_cap.prev_percent,
--				di->bat_cap.permille / 10,
-+				percent,
- 				di->bat_cap.permille);
--			di->bat_cap.prev_percent = di->bat_cap.permille / 10;
-+			di->bat_cap.prev_percent = percent;
- 			di->bat_cap.prev_mah = di->bat_cap.mah;
- 
- 			changed = true;
-@@ -1376,7 +1378,7 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
- 			dev_dbg(di->dev, "capacity not allowed to go up since "
- 				"no charger is connected: %d to %d (%d)\n",
- 				di->bat_cap.prev_percent,
--				di->bat_cap.permille / 10,
-+				percent,
- 				di->bat_cap.permille);
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index b7e6631..a070a68 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -625,12 +625,13 @@ static void mtip_timeout_function(unsigned long int data)
  		}
  	}
+ 
+-	if (cmdto_cnt && !test_bit(MTIP_PF_IC_ACTIVE_BIT, &port->flags)) {
++	if (cmdto_cnt) {
+ 		print_tags(port->dd, "timed out", tagaccum, cmdto_cnt);
+-
+-		mtip_restart_port(port);
++		if (!test_bit(MTIP_PF_IC_ACTIVE_BIT, &port->flags)) {
++			mtip_restart_port(port);
++			wake_up_interruptible(&port->svc_wait);
++		}
+ 		clear_bit(MTIP_PF_EH_ACTIVE_BIT, &port->flags);
+-		wake_up_interruptible(&port->svc_wait);
+ 	}
+ 
+ 	if (port->ic_pause_timer) {
 -- 
-1.7.9.5
+1.7.1
 
