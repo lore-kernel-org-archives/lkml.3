@@ -1,156 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab3AKOQp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 09:16:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28601 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597Ab3AKOQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 09:16:44 -0500
-Message-ID: <50F01EC2.1000908@redhat.com>
-Date: Fri, 11 Jan 2013 09:16:34 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1754056Ab3AKOWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 09:22:09 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48374 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab3AKOWG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 09:22:06 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Andy Whitcroft <apw@shadowen.org>, Alexander Nyberg <alexn@dsv.su.se>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v2 1/2] Fix wrong EOF compare
+In-Reply-To: <1357871401-7075-1-git-send-email-minchan@kernel.org>
+Organization: http://mina86.com/
+References: <1357871401-7075-1-git-send-email-minchan@kernel.org>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+Date: Fri, 11 Jan 2013 15:21:55 +0100
+Message-ID: <xa1tbocvby0s.fsf@mina86.com>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Tim Abbott <tabbott@ksplice.com>
-Subject: Re: [PATCH] module, fix percpu reserved memory exhaustion
-References: <1357785669-31848-1-git-send-email-prarit@redhat.com> <87d2xc1itd.fsf@rustcorp.com.au>
-In-Reply-To: <87d2xc1itd.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Jan 11 2013, Minchan Kim <minchan@kernel.org> wrote:
+> The C standards allows the character type char to be singed or unsinged,
+> depending on the platform and compiler. Most of systems uses signed char,
+> but those based on PowerPC and ARM processors typically use unsigned char.
+> This can lead to unexpected results when the variable is used to compare
+> with EOF(-1). It happens my ARM system and this patch fixes it.
+>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Andy Whitcroft <apw@shadowen.org>
+> Cc: Alexander Nyberg <alexn@dsv.su.se>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  Documentation/page_owner.c |    7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+>
+> diff --git a/Documentation/page_owner.c b/Documentation/page_owner.c
+> index f0156e1..43dde96 100644
+> --- a/Documentation/page_owner.c
+> +++ b/Documentation/page_owner.c
+> @@ -32,12 +32,13 @@ int read_block(char *buf, FILE *fin)
+>  {
+>  	int ret =3D 0;
+>  	int hit =3D 0;
+> +	int val;
+>  	char *curr =3D buf;
+>=20=20
+>  	for (;;) {
+> -		*curr =3D getc(fin);
+> -		if (*curr =3D=3D EOF) return -1;
+> -
+> +		val =3D getc(fin);
+> +		if (val =3D=3D EOF) return -1;
+> +		*curr =3D val;
+>  		ret++;
+>  		if (*curr =3D=3D '\n' && hit =3D=3D 1)
+>  			return ret - 1;
+
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
+
+--==-=-=
+Content-Type: text/plain
 
 
-On 01/10/2013 10:48 PM, Rusty Russell wrote:
-> Prarit Bhargava <prarit@redhat.com> writes:
->> [   15.478160] kvm: Could not allocate 304 bytes percpu data
->> [   15.478174] PERCPU: allocation failed, size=304 align=32, alloc
->> from reserved chunk failed
-> ...
->> What is happening is systemd is loading an instance of the kvm module for
->> each cpu found (see commit e9bda3b).  When the module load occurs the kernel
->> currently allocates the modules percpu data area prior to checking to see
->> if the module is already loaded or is in the process of being loaded.  If
->> the module is already loaded, or finishes load, the module loading code
->> releases the current instance's module's percpu data.
-> 
-> Wow, what a cool bug!  Classic unforseen side-effect.
-> 
-> I'd prefer not to do relocations with the module_lock held: it can be
-> relatively slow.  Yet we can't do relocations before the per-cpu
-> allocation, obviously.  Did you do boot timings before and after?
+--==-=-=
+Content-Type: application/pgp-signature
 
-Heh ... I did! :)  I had a lot of concerns about moving the mutex around so I
-put in print at the end of boot to see how long the boot time actually was.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
->From stock kernel:
+iQIcBAEBAgAGBQJQ8CADAAoJECBgQBJQdR/0VJIP+QGfrRUQHb1JqdrnDZ1w/W/w
+3vgB7tW6+gbrHC84KYy0uiQHjgpzecSk7Sc7mM3SkJPi34OZIHlG9gkSD+HNRAbU
+5BO7xMTvxpwNdvW6HtECj/Q2LlqrsbwWiRL0an9SvB67cnxTqrMxl2layDOwskqF
+EE5U7XV8cxwkxFoWxqDx8RjMYwxTvqrI6O6HacpQzKKuRnk0HZYdnyzc6xWjqEuP
+f9k+y8QHBAVmqTNFDhlqHuDuREKjtXB6JdzDXH/MQXTXNosQM2+Ngme4UgAviRyp
+1mG+c8VllMAGesfohgc/VNQiJtc0RUdwjLq68tP6r67h+8BpbQx7SF+bJ3sRXSpO
+K7mLLU4qlxw/yoyK50sa+xH5FMcvjmEQCDKLzhKMIPL0CZtPvV/5djVh4Qjdrrzu
+8sjCNGoQgrqvZxE6CSjENIflzdhgEatGpEdOXi4rbOCFXvE/cgVgL4YtGfw5OFOB
+LoF18rhMrgyg4stwZrPCZx0iKULyuUzxH7LKkGy3VlH2jge9YlqqJlMDdhkym2GO
+I4IYi8LcVsKZ9zxZbpSM+PnyZ0k5a8vK0O8bJ8zlY1xA6dBMLAgjvYTpmN45w2KD
+HrLegLNdT8TUXPTAki+CJ0CzVZqupyDCCANerkoCQy3efPX8EvwGm47sXx0X9Y42
+ko/auHQbZkt3XUID+2Ho
+=k20u
+-----END PGP SIGNATURE-----
+--==-=-=--
 
-[  22.893015] PRARIT: FINAL BOOT MESSAGE
-
->From stock kernel + my patch:
-
-[  22.673214] PRARIT: FINAL BOOT MESSAGE
-
-Both kernel boots showed the problem with kvm loading.  A quick grep through my
-bootlogs of stock kernel + my patch don't show anything greater than 23.539392
-and less than 20.980321.  Those numbers are similar to the numbers from the
-stock kernel (23.569450 - 20.898321).
-
-ie) I don't think there's an increase due to calling the relocation under the
-module mutex, and if there is it is definitely lost within the noise of boot.
-
-The timing were similar.  I didn't see any huge delays, etc.  Can the
-relocations really cause a long delay?  I thought we were pretty much writing
-values to memory...
-
-[I should point out that I'm booting a 32 physical/64 logical, with 64GB of memory]
-
-> 
-> An alternative would be to put the module into the list even earlier
-> (say, just after layout_and_allocate) so we could block on concurrent
-> loads at that point.  But then we have to make sure noone looks in the
-> module too early before it's completely set up, and that's complicated
-> and error-prone too.  A separate list is kind of icky.
-
-Yeah -- that was my first attempt actually, and it got very complex very
-quickly.  I abandoned that approach in favor of moving the percpu allocations
-under the lock.  I thought that was likely the easiest approach.
-
-> 
-> We currently have PERCPU_MODULE_RESERVE set at 8k: in my 32-bit
-> allmodconfig build, there are only three modules with per-cpu data,
-> totalling 328 bytes.  So it's not reasonable to increase that number to
-> paper over this.
-
-I've been thinking about that.  The problem is that at the same time the kvm
-problem occurs I'm attempting to load a debug module that I've written to debug
-some cpu timer issues that allocates a large amount of percpu data (~.5K/cpu).
-While extending PERCPU_MODULE_RESERVE to 10k might work now, it might not work
-tomorrow if I have the need to increase the size of my log buffer.
-
-... that is ;), I prefer your and my approach of fixing this problem.
-
-> 
-> This is what a new boot state looks like (pains not to break ksplice).
-> It's two patches, but I'll just post them back to back:
-> 
-> module: add new state MODULE_STATE_UNFORMED
-> 
-> You should never look at such a module, so it's excised from all paths
-> which traverse the modules list.
-> 
-> We add the state at the end, to avoid gratuitous ABI break (ksplice).
-> 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
-<snip patch>
-
-Sure, but I'm always nervous about expanding any state machine ;).  That's just
-me though :).
-
-> 
-> module: put modules in list much earlier.
-> 
-> Prarit's excellent bug report:
->> In recent Fedora releases (F17 & F18) some users have reported seeing
->> messages similar to
->>
->> [   15.478160] kvm: Could not allocate 304 bytes percpu data
->> [   15.478174] PERCPU: allocation failed, size=304 align=32, alloc from
->> reserved chunk failed
->>
->> during system boot.  In some cases, users have also reported seeing this
->> message along with a failed load of other modules.
->>
->> What is happening is systemd is loading an instance of the kvm module for
->> each cpu found (see commit e9bda3b).  When the module load occurs the kernel
->> currently allocates the modules percpu data area prior to checking to see
->> if the module is already loaded or is in the process of being loaded.  If
->> the module is already loaded, or finishes load, the module loading code
->> releases the current instance's module's percpu data.
-> 
-> Now we have a new state MODULE_STATE_UNFORMED, we can insert the
-> module into the list (and thus guarantee its uniqueness) before we
-> allocate the per-cpu region.
-> 
-> Reported-by: Prarit Bhargava <prarit@redhat.com>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
-
-<snip patch>
-
-Tested-by: Prarit Bhargava <prarit@redhat.com>
-
-Rusty, you can change that to an Acked-by if you prefer that.  I know some
-engineers prefer one over the other.  I'll also continue doing some reboot
-testing and will email back in a few days to let you know what the timing looks
-like.
-
-Thanks!,
-
-P.
+--=-=-=--
