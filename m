@@ -1,176 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab3AKF4o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 00:56:44 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:11573 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755079Ab3AKF4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 00:56:19 -0500
-X-IronPort-AV: E=Sophos;i="4.84,450,1355068800"; 
-   d="scan'208";a="6564465"
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>, Eric Dumazet <erdnetdev@gmail.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH V4 1/2] virtio-net: fix the set affinity bug when CPU IDs are not consecutive
-Date: Fri, 11 Jan 2013 13:56:32 +0800
-Message-Id: <1357883793-15199-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/11 13:55:40,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/11 13:55:40,
-	Serialize complete at 2013/01/11 13:55:40
+	id S1755376Ab3AKF5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 00:57:32 -0500
+Received: from mga03.intel.com ([143.182.124.21]:53701 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755102Ab3AKF5b convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 00:57:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,449,1355126400"; 
+   d="scan'208";a="190032248"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Colin Cross <ccross@android.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH] hardlockup: detect hard lockups without NMIs using
+ secondary cpus
+Thread-Topic: [PATCH] hardlockup: detect hard lockups without NMIs using
+ secondary cpus
+Thread-Index: AQHN771YV2tpQQZfqUmLm5GABTxLtJhDnc8w
+Date: Fri, 11 Jan 2013 05:57:27 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A2010CB@SHSMSX101.ccr.corp.intel.com>
+References: <1357783059-13923-1-git-send-email-ccross@android.com>
+	<27240C0AC20F114CBF8149A2696CBE4A200DD9@SHSMSX101.ccr.corp.intel.com>
+ <CAMbhsRS5S=bRWOAA_ft3josCX9kvarrqPX-sLnO02vB0NfZJ+w@mail.gmail.com>
+In-Reply-To: <CAMbhsRS5S=bRWOAA_ft3josCX9kvarrqPX-sLnO02vB0NfZJ+w@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Michael mentioned, set affinity and select queue will not work very
-well when CPU IDs are not consecutive, this can happen with hot unplug.
-Fix this bug by traversal the online CPUs, and create a per cpu variable
-to find the mapping from CPU to the preferable virtual-queue.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: Eric Dumazet <erdnetdev@gmail.com>
-Cc: virtualization@lists.linux-foundation.org
-Cc: netdev@vger.kernel.org
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
----
-V3->V4:
-	move vq_index into virtnet_info	(Jason)
-	change the mapping value when not setting affinity (Jason)
-	address the comments about select_queue (Rusty)
-Not Addressed yet:
-	race between select_queue and set_channels need discuss more
-	but not the same problem with this (Rusty)
 
- drivers/net/virtio_net.c | 53 ++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 42 insertions(+), 11 deletions(-)
+> -----Original Message-----
+> From: ccross@google.com [mailto:ccross@google.com] On Behalf Of Colin
+> Cross
+> Sent: Friday, January 11, 2013 1:34 PM
+> To: Liu, Chuansheng
+> Cc: linux-kernel@vger.kernel.org; Andrew Morton; Don Zickus; Ingo Molnar;
+> Thomas Gleixner; linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH] hardlockup: detect hard lockups without NMIs using
+> secondary cpus
+> 
+> On Thu, Jan 10, 2013 at 5:39 PM, Liu, Chuansheng
+> <chuansheng.liu@intel.com> wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: Colin Cross [mailto:ccross@android.com]
+> >> Sent: Thursday, January 10, 2013 9:58 AM
+> >> To: linux-kernel@vger.kernel.org
+> >> Cc: Andrew Morton; Don Zickus; Ingo Molnar; Thomas Gleixner; Liu,
+> >> Chuansheng; linux-arm-kernel@lists.infradead.org; Colin Cross
+> >> Subject: [PATCH] hardlockup: detect hard lockups without NMIs using
+> >> secondary cpus
+> >>
+> >> Emulate NMIs on systems where they are not available by using timer
+> >> interrupts on other cpus.  Each cpu will use its softlockup hrtimer
+> >> to check that the next cpu is processing hrtimer interrupts by
+> >> verifying that a counter is increasing.
+> >>
+> >> This patch is useful on systems where the hardlockup detector is not
+> >> available due to a lack of NMIs, for example most ARM SoCs.
+> >> Without this patch any cpu stuck with interrupts disabled can
+> >> cause a hardware watchdog reset with no debugging information,
+> >> but with this patch the kernel can detect the lockup and panic,
+> >> which can result in useful debugging info.
+> >>
+> >> Signed-off-by: Colin Cross <ccross@android.com>
+> >> +static void watchdog_check_hardlockup_other_cpu(void)
+> >> +{
+> >> +     int cpu;
+> >> +     cpumask_t cpus = watchdog_cpus;
+> >> +
+> >> +     /*
+> >> +      * Test for hardlockups every 3 samples.  The sample period is
+> >> +      *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly
+> over
+> >> +      *  watchdog_thresh (over by 20%).
+> >> +      */
+> >> +     if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
+> >> +             return;
+> >> +
+Another feeling is about __this_cpu_read(hrtimer_interrupts) % 3 != 0,
+It will cause the actual timeout value for hard lockup detection is not very fix, or even
+very short.
+Sometimes using 3 samples can detect the lockup case, but sometimes 1 sample.
+Is it the case?
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index a6fcf15..ca17a58 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -123,6 +123,9 @@ struct virtnet_info {
- 
- 	/* Does the affinity hint is set for virtqueues? */
- 	bool affinity_hint_set;
-+
-+	/* Per-cpu variable to show the mapping from CPU to virtqueue */
-+	int __percpu *vq_index;
- };
- 
- struct skb_vnet_hdr {
-@@ -1016,6 +1019,7 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
- static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
- {
- 	int i;
-+	int cpu;
- 
- 	/* In multiqueue mode, when the number of cpu is equal to the number of
- 	 * queue pairs, we let the queue pairs to be private to one cpu by
-@@ -1029,16 +1033,29 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
- 			return;
- 	}
- 
--	for (i = 0; i < vi->max_queue_pairs; i++) {
--		int cpu = set ? i : -1;
--		virtqueue_set_affinity(vi->rq[i].vq, cpu);
--		virtqueue_set_affinity(vi->sq[i].vq, cpu);
--	}
-+	if (set) {
-+		i = 0;
-+		for_each_online_cpu(cpu) {
-+			virtqueue_set_affinity(vi->rq[i].vq, cpu);
-+			virtqueue_set_affinity(vi->sq[i].vq, cpu);
-+			*per_cpu_ptr(vi->vq_index, cpu) = i;
-+			i++;
-+		}
- 
--	if (set)
- 		vi->affinity_hint_set = true;
--	else
-+	} else {
-+		for(i = 0; i < vi->max_queue_pairs; i++) {
-+			virtqueue_set_affinity(vi->rq[i].vq, -1);
-+			virtqueue_set_affinity(vi->sq[i].vq, -1);
-+		}
-+
-+		i = 0;
-+		for_each_online_cpu(cpu)
-+			*per_cpu_ptr(vi->vq_index, cpu) =
-+				++i % vi->curr_queue_pairs;
-+
- 		vi->affinity_hint_set = false;
-+	}
- }
- 
- static void virtnet_get_ringparam(struct net_device *dev,
-@@ -1127,12 +1144,19 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
- 
- /* To avoid contending a lock hold by a vcpu who would exit to host, select the
-  * txq based on the processor id.
-- * TODO: handle cpu hotplug.
-  */
- static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
- {
--	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
--		  smp_processor_id();
-+	int txq;
-+	struct virtnet_info *vi = netdev_priv(dev);
-+
-+	if (skb_rx_queue_recorded(skb)) {
-+		txq = skb_get_rx_queue(skb);
-+	} else {
-+		txq = *__this_cpu_ptr(vi->vq_index);
-+		if (txq == -1)
-+			txq = 0;
-+	}
- 
- 	while (unlikely(txq >= dev->real_num_tx_queues))
- 		txq -= dev->real_num_tx_queues;
-@@ -1453,6 +1477,10 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	if (vi->stats == NULL)
- 		goto free;
- 
-+	vi->vq_index = alloc_percpu(int);
-+	if (vi->vq_index == NULL)
-+		goto free_stats;
-+
- 	mutex_init(&vi->config_lock);
- 	vi->config_enable = true;
- 	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
-@@ -1476,7 +1504,7 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
- 	err = init_vqs(vi);
- 	if (err)
--		goto free_stats;
-+		goto free_index;
- 
- 	netif_set_real_num_tx_queues(dev, 1);
- 	netif_set_real_num_rx_queues(dev, 1);
-@@ -1520,6 +1548,8 @@ free_recv_bufs:
- free_vqs:
- 	cancel_delayed_work_sync(&vi->refill);
- 	virtnet_del_vqs(vi);
-+free_index:
-+	free_percpu(vi->vq_index);
- free_stats:
- 	free_percpu(vi->stats);
- free:
-@@ -1554,6 +1584,7 @@ static void virtnet_remove(struct virtio_device *vdev)
- 
- 	flush_work(&vi->config_work);
- 
-+	free_percpu(vi->vq_index);
- 	free_percpu(vi->stats);
- 	free_netdev(vi->dev);
- }
--- 
-1.8.1
+And in NMI case, the NMI interrupt is coming at least every watchdog_thresh.
 
