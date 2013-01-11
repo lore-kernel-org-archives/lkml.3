@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab3AKRfS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:35:18 -0500
-Received: from myspam1.stec-inc.com ([210.19.18.169]:60837 "HELO
-	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754209Ab3AKRfQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:35:16 -0500
-X-Greylist: delayed 849 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jan 2013 12:35:06 EST
-X-ASG-Debug-ID: 1357924851-053ea90dcf1ac7a0001-xx1T2L
-X-Barracuda-Envelope-From: akale@stec-inc.com
-X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
-From: Amit Kale <akale@stec-inc.com>
-X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
-X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
-To: LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 12 Jan 2013 01:18:37 +0800
-Subject: Announcement: STEC EnhanceIO SSD caching software for Linux kernel
-Thread-Topic: Announcement: STEC EnhanceIO SSD caching software for Linux
- kernel
-X-ASG-Orig-Subj: Announcement: STEC EnhanceIO SSD caching software for Linux kernel
-Thread-Index: Ac3wH7FWsmw1w5/rRqCIK39YSUtHCg==
-Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755027Ab3AKRfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:35:40 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:40750 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754473Ab3AKRfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 12:35:37 -0500
+Message-ID: <50F04D63.9080703@linux.vnet.ibm.com>
+Date: Fri, 11 Jan 2013 11:35:31 -0600
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
-X-Barracuda-Start-Time: 1357924851
-X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.119569
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wen Xiong <wenxiong@linux.vnet.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the scsi tree
+References: <20130111120323.cdc06081d0fb1c498c9f1779@canb.auug.org.au> <1357889656.3065.2.camel@dabdike.int.hansenpartnership.com> <50F02F4E.4070804@linux.vnet.ibm.com> <1357918637.3065.22.camel@dabdike.int.hansenpartnership.com> <20130111160514.GA10823@kroah.com>
+In-Reply-To: <20130111160514.GA10823@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011117-9360-0000-0000-00000F13E67E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+On 01/11/2013 10:05 AM, Greg KH wrote:
+> On Fri, Jan 11, 2013 at 03:37:17PM +0000, James Bottomley wrote:
+>> On Fri, 2013-01-11 at 09:27 -0600, Brian King wrote:
+>>> It looks like this was a due to the fact that the new patches
+>>> added __devinit tags in the same merge window the __devinit tag
+>>> itself was getting removed.
+>>
+>> Not exactly.  The patch which makes them nops went into 3.8.  Now
+>> there's a patch queued in, Gregs tree I presume, to remove them all and
+>> the #defines which causes the compile failure.
+>>
+>>> As to the sparse warnings, this patch fixed the ones that
+>>> were actual bugs in the new code, although we could have
+>>> made that more clear in the patch description.
+>>>
+>>> http://marc.info/?l=linux-scsi&m=135716576204083&w=2
+>>
+>> Ah, thanks ... I've been on holiday for a while, so I did miss that.
+>>
+>>> There is one outstanding issue I am aware of which was an
+>>> array bounds compiler warning which looks to be a misdetection
+>>> by the compiler. Wendy and I discussed adding a BUG_ON
+>>> to stop the compiler from complaining.
+>>>
+>>> Wendy - lets queue these two changes up ASAP. They should both
+>>> be very simple changes.
+>>
+>> If it's a simple gcc bug, just ignore it.
+>>
+>> I do need you to redo the patches to remove the __dev annotations,
+>> though.  We can't risk introducing a bisect killing compile breakage if
+>> Greg's tree merges before mine in the next merge window.
+> 
+> This change should be pushed to Linus in time for 3.8-final, so there
+> should not be any bisect issues.
 
-STEC is happy to announce hosting of our EnhanceIO SSD caching software on github.
-We would like to invite kernel hackers to try it. We'll appreciate your valuable feedback to help us improve it to the standards of Linux kernel source code. We hope to eventually submit it for a possible inclusion in Linux kernel.
+We can do this either way.
 
-Repository location -  https://github.com/stec-inc/EnhanceIO
-License - GPL
-Source - Derived from the source base of EnhanceIO product Current state - Alpha.
-Ongoing work - Code cleanup, testing, more documentation.
+James - what is your preference? Drop everything and do a resend of the
+entire series or delta patches on top of what is currently in your tree?
 
-Do try it. If you face problems, file bugs at github or write to me.
+Thanks,
 
-First section of the README.txt file in this repository introduces EnhanceIO and is as follows
-
-----------------
-EnhanceIO driver is based on EnhanceIO SSD caching software product developed by STEC Inc. EnhanceIO was derived from Facebook's open source Flashcache project. EnhanceIO uses SSDs as cache devices for traditional rotating hard disk drives (referred to as source volumes throughout this document).
-
-EnhanceIO can work with any block device, be it an entire physical disk, an individual disk partition,  a RAIDed DAS device, a SAN volume, a device mapper volume or a software RAID (md) device.
-
-The source volume to SSD mapping is a set-associative mapping based on the source volume sector number with a default set size (aka associativity) of 512 blocks and a default block size of 4 KB.  Partial cache blocks are not used.
-The default value of 4 KB is chosen because it is the common I/O block size of most storage systems.  With these default values, each cache set is 2 MB (512 *
-4 KB).  Therefore, a 400 GB SSD will have a little less than 200,000 cache sets because a little space is used for storing the meta data on the SSD.
-
-EnhanceIO supports three caching modes: read-only, write-through, and write-back and three cache replacement policies: random, FIFO, and LRU.
-
-Read-only caching mode causes EnhanceIO to direct write IO requests only to HDD. Read IO requests are issued to HDD and the data read from HDD is stored on SSD. Subsequent Read requests for the same blocks are carried out from SSD, thus reducing their latency by a substantial amount. 
-
-In Write-through mode - reads are handled similar to Read-only mode.
-Write-through mode causes EnhanceIO to write application data to both HDD and SSD. Subsequent reads of the same data benefit because they can be served from SSD.
-
-Write-back improves write latency by writing application requested data only to SSD. This data, referred to as dirty data, is copied later to HDD asynchronously. Reads are handled similar to Read-only and Write-through modes.
-----------------
-
-Look forward to hearing from you.
-Thanks.
---
-Amit Kale
-
-PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+Brian
 
 
+-- 
+Brian King
+Power Linux I/O
+IBM Linux Technology Center
 
-This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
+
