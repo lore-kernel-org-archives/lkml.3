@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab3AKV5B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 16:57:01 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:49438 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754674Ab3AKV5A (ORCPT
+	id S1755775Ab3AKV7R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 16:59:17 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754674Ab3AKV7R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 16:57:00 -0500
-Date: Fri, 11 Jan 2013 13:56:59 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com
-Subject: Re: [PATCH 0/4] arm: vt8500: Add support for Wondermedia
- WM8750/WM8850
-Message-ID: <20130111215659.GA16521@quad.lixom.net>
-References: <1357935162-7672-1-git-send-email-linux@prisktech.co.nz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357935162-7672-1-git-send-email-linux@prisktech.co.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Jan 2013 16:59:17 -0500
+Date: Fri, 11 Jan 2013 22:59:11 +0100
+From: Richard Weinberger <richard@nod.at>
+To: Sergei Trofimovich <slyfox@gentoo.org>
+Cc: Jeff Dike <jdike@addtoit.com>,
+        Martin =?UTF-8?B?UMOkcnRlbA==?= <martin.partel@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] um: fix build failure due to mess-up of sig_info
+ protorype
+Message-ID: <20130111225911.6c3b99e4@spider.haslach.nod.at>
+In-Reply-To: <20130112005517.281f2b53@sf>
+References: <1356820651-8495-1-git-send-email-slyfox@gentoo.org>
+	<1356820651-8495-2-git-send-email-slyfox@gentoo.org>
+	<20121230104043.2090940b@spider.haslach.nod.at>
+	<20130112005517.281f2b53@sf>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am Sat, 12 Jan 2013 00:55:17 +0300
+schrieb Sergei Trofimovich <slyfox@gentoo.org>:
 
-On Sat, Jan 12, 2013 at 09:12:38AM +1300, Tony Prisk wrote:
-> The following changes since commit a49f0d1ea3ec94fc7cf33a7c36a16343b74bd565:
+> On Sun, 30 Dec 2012 10:40:43 +0100
+> Richard Weinberger <richard@nod.at> wrote:
 > 
->   Linux 3.8-rc1 (2012-12-21 17:19:00 -0800)
+> > Am Sun, 30 Dec 2012 01:37:31 +0300
+> > schrieb Sergei Trofimovich <slyfox@gentoo.org>:
+> > 
+> > > arch/um/os-Linux/signal.c:18:8: error: conflicting types for
+> > > 'sig_info' In file included
+> > > from /home/slyfox/linux-2.6/arch/um/os-Linux/signal.c:12:0:
+> > > arch/um/include/shared/as-layout.h:64:15: note: previous
+> > > declaration of 'sig_info' was here
+> > > 
+> > > Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+> > > CC: Jeff Dike <jdike@addtoit.com>
+> > > CC: Richard Weinberger <richard@nod.at>
+> > > CC: "Martin Pärtel" <martin.partel@gmail.com>
+> > > CC: Al Viro <viro@zeniv.linux.org.uk>
+> > > CC: user-mode-linux-devel@lists.sourceforge.net
+> > > CC: user-mode-linux-user@lists.sourceforge.net
+> > > CC: linux-kernel@vger.kernel.org
+> > > ---
+> > 
+> > I think both patches need to be backported to -stable.
+> > I'll add the tag and push the patches ASAP to Linus.
 > 
-> are available in the git repository at:
-> 
->   git://server.prisktech.co.nz/git/linuxwmt.git tags/armsoc-3.9
-> 
-> for you to fetch changes up to 82c8f175662873f7f7f4c78698888ee963d7d967:
-> 
->   arm: vt8500: Remove remaining mach includes (2012-12-28 21:05:19 +1300)
-> 
-> ----------------------------------------------------------------
-> arm: vt8500: Add support for WM8750/WM8850. Cleanup multiplatform changes
-> 
-> This patchset adds support for the WM8750 (ARMv6) and WM8850 (ARMv7), and
-> cleans up changes for multiplatform configuration.
-> 
-> Single platform Kconfig options are removed, along with the remaining
-> mach/includes.
-> 
-> The debug-macro.s is moved to arm/include/debug/ to allow DEBUG_LL on
-> multi-platform.
-> 
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> 
-> ----------------------------------------------------------------
-> Tony Prisk (4):
->       arm: vt8500: Add support for Wondermedia WM8750/WM8850
->       arm: vt8500: Remove single platform Kconfig options
->       arm: vt8500: Convert debug-macro.S to be multiplatform friendly
->       arm: vt8500: Remove remaining mach includes
+> Seems to have got lost.
 
-The first patch adds some Kconfig entries, and the second one removes them.
-Also, all but the first patch are really about multiplatform enablement.
+Yeah. Sorry for that. I'm currently very busy.
+This weekend I'll have some time to prepare all my patches.
 
-I suggest that you split off the last three (and rebase them to be
-independent), and apply them to a multiplatform branch for vt8500. Then the
-last one is a soc branch that goes on top of the multiplatform branch (i.e. you
-build it on top of multiplatform). That way we can pull in the multiplatform
-changes together with those for other platforms, and then take the wm8{7,8}50
-branch goes in with the other new-soc support from other platforms.
-
-Does that make sense? I'll be happy to provide more explanation if it doesn't.
-
--Olof
-
+Thanks,
+//richard
