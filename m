@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab3AKODO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 09:03:14 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:55129 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752427Ab3AKODM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 09:03:12 -0500
-Date: Fri, 11 Jan 2013 14:02:31 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Alexandru Copot <alex.mihai.c@gmail.com>
-Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "mst@redhat.com" <mst@redhat.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Baluta <dbaluta@ixiacom.com>
-Subject: Re: [PATCH] virtio: suppress kmemleak false positive
-Message-ID: <20130111140231.GA31281@arm.com>
-References: <1357912303-17026-1-git-send-email-alex.mihai.c@gmail.com>
+	id S1753878Ab3AKODZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 09:03:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9465 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753707Ab3AKODX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 09:03:23 -0500
+Date: Fri, 11 Jan 2013 15:01:36 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: oops in copy_page_rep()
+Message-ID: <20130111140136.GA11705@redhat.com>
+References: <alpine.LNX.2.00.1301061037140.28950@eggly.anvils>
+ <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
+ <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
+ <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
+ <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com>
+ <20130108163141.GA27555@shutemov.name>
+ <CA+55aFzaTvF7nYxWBT-G_b=xGz+_akRAeJ=U9iHy+Y=ZPo=pbA@mail.gmail.com>
+ <20130108173058.GA27727@shutemov.name>
+ <20130108174951.GG9163@redhat.com>
+ <1357890644.1466.1.camel@kernel.cn.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1357912303-17026-1-git-send-email-alex.mihai.c@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1357890644.1466.1.camel@kernel.cn.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 01:51:43PM +0000, Alexandru Copot wrote:
-> While doing simple IPv6 tests in KVM virtual machines,
-> (add an IPv6 address to eth0) kmemleak complains about
-> an unreferenced object:
+On Fri, Jan 11, 2013 at 01:50:44AM -0600, Simon Jeons wrote:
+> On Tue, 2013-01-08 at 18:49 +0100, Andrea Arcangeli wrote:
+> > Hi Kirill,
+> > 
+> > On Tue, Jan 08, 2013 at 07:30:58PM +0200, Kirill A. Shutemov wrote:
+> > > Merged patch is obviously broken: huge_pmd_set_accessed() can be called
+> > > only if the pmd is under splitting.
+> > 
+> > Of course I assume you meant "only if the pmd is not under splitting".
+> > 
+> > But no, setting a bitflag like the young bit or clearing or setting
+> > the numa bit won't screw with split_huge_page and it's safe even if
+> > the pmd is under splitting.
+> > 
+> > Those bits are only checked here at the last stage of
+> > split_huge_page_map after taking the PT lock:
+> > 
+> > 	spin_lock(&mm->page_table_lock);
+> > 	pmd = page_check_address_pmd(page, mm, address,
+> > 				     PAGE_CHECK_ADDRESS_PMD_SPLITTING_FLAG);
+> > 	if (pmd) {
+> > 		pgtable = pgtable_trans_huge_withdraw(mm);
+> > 		pmd_populate(mm, &_pmd, pgtable);
+> > 
+> > 		haddr = address;
+> > 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
+> > 			pte_t *pte, entry;
+> > 			BUG_ON(PageCompound(page+i));
+> > 			entry = mk_pte(page + i, vma->vm_page_prot);
+> > 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+> > 			if (!pmd_write(*pmd))
+> > 				entry = pte_wrprotect(entry);
+> > 			else
+> > 				BUG_ON(page_mapcount(page) != 1);
+> > 			if (!pmd_young(*pmd))
+> > 				entry = pte_mkold(entry);
+> > 			if (pmd_numa(*pmd))
+> > 				entry = pte_mknuma(entry);
+> > 			pte = pte_offset_map(&_pmd, haddr);
+> > 			BUG_ON(!pte_none(*pte));
+> > 			set_pte_at(mm, haddr, pte, entry);
+> > 			pte_unmap(pte);
+> > 		}
+> > 
+> > If "young" or "numa" bitflags changed on the original *pmd for the
+> > previous part of split_huge_page, nothing will go wrong by the time we
+> > get to split_huge_page_map (the same is not true if the pfn changes!).
+> > 
 > 
-> unreferenced object 0xffff88001e804120 (size 32):
->   comm "softirq", pid 0, jiffies 4294900928 (age 631.544s)
->   hex dump (first 32 bytes):
->     28 cb fd 1d 00 00 00 00 0c 00 00 00 01 00 01 00  (...............
->     02 d0 83 1d 00 00 00 00 6e 00 00 00 00 00 00 00  ........n.......
->   backtrace:
->     [<ffffffff815ed721>] kmemleak_alloc+0x21/0x50
->     [<ffffffff8111d0b0>] __kmalloc+0xe0/0x160
->     [<ffffffff81362b7c>] virtqueue_add_buf+0x1fc/0x3d0
->     [<ffffffff8140cbd3>] start_xmit+0x153/0x3a0
->     [<ffffffff8150887e>] dev_hard_start_xmit+0x21e/0x470
->     [<ffffffff815247ce>] sch_direct_xmit+0xfe/0x280
->     [<ffffffff81509014>] dev_queue_xmit+0x1f4/0x5d0
->     [<ffffffff81592e91>] ip6_finish_output2+0x101/0x450
->     [<ffffffff81595ae8>] ip6_finish_output+0x98/0x200
->     [<ffffffff81595ca1>] ip6_output+0x51/0x1b0
->     [<ffffffff815b51af>] mld_sendpack+0x19f/0x360
->     [<ffffffff815b59b4>] mld_ifc_timer_expire+0x194/0x290
->     [<ffffffff8104b794>] call_timer_fn+0x74/0xf0
->     [<ffffffff8104bb1b>] run_timer_softirq+0x18b/0x220
->     [<ffffffff81045f81>] __do_softirq+0xe1/0x1c0
->     [<ffffffff8160a4fc>] call_softirq+0x1c/0x30
-> 
-> Seems the function vring_add_indirect stores an array of
-> struct vring_desc by using virt_to_phys and kmemleak
-> doesn't track the pointer.
-> 
-> The following patch can fix this.
-> 
-> Signed-off-by: Alexandru Copot <alex.mihai.c@gmail.com>
-> CC: Daniel Baluta <dbaluta@ixiacom.com>
-> ---
->  drivers/virtio/virtio_ring.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> index ffd7e7d..e0b591b 100644
-> --- a/drivers/virtio/virtio_ring.c
-> +++ b/drivers/virtio/virtio_ring.c
-> @@ -23,6 +23,7 @@
->  #include <linux/slab.h>
->  #include <linux/module.h>
->  #include <linux/hrtimer.h>
-> +#include <linux/kmemleak.h>
->  
->  /* virtio guest is communicating with a virtual "device" that actually runs on
->   * a host processor.  Memory barriers are used to control SMP effects. */
-> @@ -140,6 +141,7 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
->  	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
->  	if (!desc)
->  		return -ENOMEM;
-> +	kmemleak_not_leak(desc);
+> But this time BUG_ON(mapcount != mapcount2) in function
+> __split_huge_page will be trigged.
 
-Please add a comment above this call in case people later wonder why
-this annotation is needed.
-
--- 
-Catalin
+"young" or "numa" bitflags in the pmd don't alter
+rmap/mapcount/pagecount/pfn or anything that could affect such BUG_ON,
+so I'm not sure why you think so.
