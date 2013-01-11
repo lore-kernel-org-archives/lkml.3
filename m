@@ -1,113 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab3AKPp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 10:45:29 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:51162 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab3AKPp1 (ORCPT
+	id S1754826Ab3AKPpi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 10:45:38 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:49078 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621Ab3AKPpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 10:45:27 -0500
-Date: Fri, 11 Jan 2013 16:45:16 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
-Message-ID: <20130111154516.GA25335@avionic-0098.adnet.avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <50EF54B6.6010100@wwwdotorg.org>
- <20130111034015.GA28094@avionic-0098.adnet.avionic-design.de>
- <201301111536.14799.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
-Content-Disposition: inline
-In-Reply-To: <201301111536.14799.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:HS11dFEem5TPKsn7vPAiOQqQgEbEL2QMbcIzRXtjUGe
- GwGInEsfKm8moqba2mWoepYRVkq8OUJISsOkf5f1Qo6wgfK/d3
- SEthdBCJ+Fa1GCsVcWgew5wHROkoo0A2h4dx6Jan8UMWZ7dqXH
- 5YTTCtw+eCB7lQpxNDCAIlHL4Jv4uaxgWbq8ew8DtTWOwPWYiX
- RYc9IUOsrynj7xP1HZhhse6kM6m9wlGyHY3WDtfzx4Q6OHzeId
- ohkYwtFUD8dl69mYQoqOK/OmrDlCCB67CNiUlIa/4bxCgVgtkd
- 6QWz7ecxDMJIzmJFzt427ACvk8gJRjvEZ8wgj3hpfMEmosEf6B
- X+icGXl78gDSjoEpc7xC1nzQXv9O/Gxc032W45/dJpJyvv5vet
- +yC8lCyEnP123BtLX3H7t6b7vwYfiTVwdZG8oGiTZf6S9IUYUX
- 9L6hb
+	Fri, 11 Jan 2013 10:45:36 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/2] ARM: ux500: Provide a link from AB8500 Pinctrl to the PRCMU
+Date: Fri, 11 Jan 2013 15:45:28 +0000
+Message-Id: <1357919129-1928-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The AB8500 Pinctrl driver uses PRCMU register addresses to
+control Pinctrl related functions. For this to happen, the
+Pinctrl driver needs the PRCMU base to work from. We can do
+that using standard Open Firmware (of_*) function calls, but
+first we need a mechanism to gain access to the PRCMU
+device node. We're going to use a Phandle in this case.
 
---BOKacYhQ+x31HxR3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/boot/dts/dbx5x0.dtsi |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-On Fri, Jan 11, 2013 at 03:36:14PM +0000, Arnd Bergmann wrote:
-> On Friday 11 January 2013, Thierry Reding wrote:
-> > Right, it'll need #ifdefs around the arch_{setup,teardown}_msi_irq(). Or
-> > select PCI_MSI unconditionally. Once this is merged I was going to post
-> > a patch that enables PCI_MSI in tegra_defconfig anyway. But it might be
-> > better to keep it optional anyway since the remainder of the code copes
-> > with it properly.
-> >=20
-> Actually, we need something better than that. You cannot define
-> arch_setup_msi_irq in a tegra specific pci host driver, because that
-> will seriously mess up other platforms in multiplatform configurations
-> by giving a link error when they also define this function, or with a
-> run-time error when they don't support it.
->=20
-> I think what we should do here is fix it the right way by adding
-> a pci host specific callback rather than an architecture specific
-> callback in drivers/pci/msi.c. There is already a default version
-> of arch_setup_msi_irqs (with s), and we can probably do the
-> same for arch_setup_msi_irq (without s) to fall back to the
-> arch version for most architectures.
-> Most architectures (at least powerpc, sparc, ia64 and x86) already
-> multiplex the msi handlers internally, but ARM does not because
-> there is only one implementation (iop33x) at the moment.
->=20
-> We can add a generix multiplex and then move architectures over to
-> use it.
+diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+index db69f3c..3381ba6 100644
+--- a/arch/arm/boot/dts/dbx5x0.dtsi
++++ b/arch/arm/boot/dts/dbx5x0.dtsi
+@@ -170,10 +170,9 @@
+ 			gpio-bank = <8>;
+ 		};
+ 
+-		pinctrl@80157000 {
+-			// This is actually the PRCMU base address
+-			reg = <0x80157000 0x2000>;
++		pinctrl {
+ 			compatible = "stericsson,nmk_pinctrl";
++			prcm = <&prcmu>;
+ 		};
+ 
+ 		usb@a03e0000 {
+@@ -190,7 +189,7 @@
+ 			interrupts = <0 25 0x4>;
+ 		};
+ 
+-		prcmu@80157000 {
++		prcmu: prcmu@80157000 {
+ 			compatible = "stericsson,db8500-prcmu";
+ 			reg = <0x80157000 0x2000>;
+ 			interrupts = <0 47 0x4>;
+-- 
+1.7.9.5
 
-I already hinted at that in one of the other subthreads. Having such a
-multiplex would also allow the driver to be built as a module. I had
-already thought about this when I was working on an earlier version of
-these patches. Basically these would be two ops attached to the host
-bridge, and the generic arch_setup_msi_irq() could then look that up
-given the struct pci_dev that is passed to it and call this new per-
-host bridge .setup_msi_irq().
-
-Thierry
-
---BOKacYhQ+x31HxR3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ8DOMAAoJEN0jrNd/PrOh29wP/R+H89h8vOojTR2fPd/RCViR
-XvX1Rz4N+RqkITzkO/mMH9iHu+RJR33V2PZxZc+pQ/OA2CCavI8cW3/ZkBBEiQMk
-d2iK7/KIdtIXfsShh89YmjYfBnqCGtLsovrlMP0rwXDEHRhvc5hO9nWCQq9OPqui
-9QpVzrbJi//9/ENf2AFrD/y/A6a5D5hsnlfkOBgVZmgHMmlrfQrTCkyRL1EpJbiZ
-vodMEBGQp0OPyz1d/qamam7EoAGlYeZcFlBupSTJlzrs4A4TiQe3TThDXG3E7t28
-5xP5oT0oAZ64RflqPQJGq4tUIcHhCiXO91AFqepoXqfmGIA1FS8g4nkIiNbcmCgw
-aH7MOei5x/3Jc6FbdiGu1iqd3Bexi6Bgl0viCk7AsnA5fEyxjmMhx6H0OFXkX49o
-rfjtjgv4Fk9UgTNaQSJY0MWFCyr9j+czowWog00Kww3+Ldzr3PDd3cRD01bIPy3J
-91IKMjRp5JhgjLVQivZHlByuhmbpsou664CLwyO6JOmg/JTXz3JkZGSHuwxIL+qu
-Mk9MuuvWsw2c9Bh8lyIIeibUS1HXWuPkA+WK+rgqe43imulvd0H7uVOJAeQS+sMJ
-xcipX2sslMSszTi9SZLIhCF6Rfq+QV5BMDkFTR+GkdlHkk1ApXAy2GFgW2Rv/Fjq
-3/j/GLc4duL6Whnhx/1H
-=5NLe
------END PGP SIGNATURE-----
-
---BOKacYhQ+x31HxR3--
