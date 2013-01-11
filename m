@@ -1,158 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab3AKII3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 03:08:29 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:51316 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab3AKII1 (ORCPT
+	id S1755268Ab3AKIP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 03:15:58 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55014 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab3AKIP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 03:08:27 -0500
+	Fri, 11 Jan 2013 03:15:57 -0500
+Message-ID: <50EFCA29.8020801@linux.vnet.ibm.com>
+Date: Fri, 11 Jan 2013 16:15:37 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130110005302.GZ20089@twin.jikos.cz>
-References: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
-	<1356014615-15073-7-git-send-email-zwu.kernel@gmail.com>
-	<20130110005302.GZ20089@twin.jikos.cz>
-Date: Fri, 11 Jan 2013 16:08:26 +0800
-Message-ID: <CAEH94LjTVQubY5jHv7J=jB5RXF2-f_JDZ3hGnv4U7kn6U4rrjQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND v1 06/16] vfs: add temp calculation function
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: dsterba@suse.cz
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, darrick.wong@oracle.com,
-        andi@firstfloor.org, hch@infradead.org, linuxram@linux.vnet.ibm.com,
-        wuzhy@linux.vnet.ibm.com
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>, Tejun Heo <tj@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011108-7014-0000-0000-0000027267A5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 8:53 AM, David Sterba <dsterba@suse.cz> wrote:
-> On Thu, Dec 20, 2012 at 10:43:25PM +0800, zwu.kernel@gmail.com wrote:
->> --- a/fs/hot_tracking.c
->> +++ b/fs/hot_tracking.c
->> @@ -25,6 +25,14 @@
->>  static struct kmem_cache *hot_inode_item_cachep __read_mostly;
->>  static struct kmem_cache *hot_range_item_cachep __read_mostly;
->>
->> +static u64 hot_raw_shift(u64 counter, u32 bits, bool dir)
->> +{
->> +     if (dir)
->> +             return counter << bits;
->> +     else
->> +             return counter >> bits;
->> +}
->
-> I don't understand the purpose of this function, it obscures a simple
-> bitwise shift.
-The following words seem to mean that you prefer removing this
-shifting function?
+This patch set is trying to simplify the select_task_rq_fair() with
+schedule balance map.
 
->
->> +
->>  /*
->>   * Initialize the inode tree. Should be called for each new inode
->>   * access or other user of the hot_inode interface.
->> @@ -315,6 +323,72 @@ static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
->>  }
->>
->>  /*
->> + * hot_temp_calc() is responsible for distilling the six heat
->> + * criteria down into a single temperature value for the data,
->> + * which is an integer between 0 and HEAT_MAX_VALUE.
->
-> I didn't find HEAT_MAX_VALUE defined anywhere.
-This micro is only used in some comments, OK, i will replace it with 255.
->
->> + */
->> +static u32 hot_temp_calc(struct hot_freq_data *freq_data)
->> +{
->> +     u32 result = 0;
->> +
->> +     struct timespec ckt = current_kernel_time();
->> +     u64 cur_time = timespec_to_ns(&ckt);
->> +
->> +     u32 nrr_heat = (u32)hot_raw_shift((u64)freq_data->nr_reads,
->> +                                     NRR_MULTIPLIER_POWER, true);
->> +     u32 nrw_heat = (u32)hot_raw_shift((u64)freq_data->nr_writes,
->> +                                     NRW_MULTIPLIER_POWER, true);
->
-> So many typecasts, some of them unnecessary and in connection with
-> hot_raw_shift this is hard to read and understand.
->
->         u32 nrr_heat = (u32)((u64)freq_data->nr_reads << NRR_MULTIPLIER_POWER);
-Do you prefer this format instead of ?
->
-> is not much better without a comment why this is doing the right thing.
->
->> +
->> +     u64 ltr_heat =
->> +     hot_raw_shift((cur_time - timespec_to_ns(&freq_data->last_read_time)),
->> +                     LTR_DIVIDER_POWER, false);
->> +     u64 ltw_heat =
->> +     hot_raw_shift((cur_time - timespec_to_ns(&freq_data->last_write_time)),
->> +                     LTW_DIVIDER_POWER, false);
->> +
->> +     u64 avr_heat =
->> +     hot_raw_shift((((u64) -1) - freq_data->avg_delta_reads),
->> +                     AVR_DIVIDER_POWER, false);
->> +     u64 avw_heat =
->> +     hot_raw_shift((((u64) -1) - freq_data->avg_delta_writes),
->> +                     AVW_DIVIDER_POWER, false);
->> +
->> +     /* ltr_heat is now guaranteed to be u32 safe */
->> +     if (ltr_heat >= hot_raw_shift((u64) 1, 32, true))
->> +             ltr_heat = 0;
->> +     else
->> +             ltr_heat = hot_raw_shift((u64) 1, 32, true) - ltr_heat;
->> +
->> +     /* ltw_heat is now guaranteed to be u32 safe */
->> +     if (ltw_heat >= hot_raw_shift((u64) 1, 32, true))
->> +             ltw_heat = 0;
->> +     else
->> +             ltw_heat = hot_raw_shift((u64) 1, 32, true) - ltw_heat;
->> +
->> +     /* avr_heat is now guaranteed to be u32 safe */
->> +     if (avr_heat >= hot_raw_shift((u64) 1, 32, true))
->> +             avr_heat = (u32) -1;
->> +
->> +     /* avw_heat is now guaranteed to be u32 safe */
->> +     if (avw_heat >= hot_raw_shift((u64) 1, 32, true))
->> +             avw_heat = (u32) -1;
->> +
->> +     nrr_heat = (u32)hot_raw_shift((u64)nrr_heat,
->> +             (3 - NRR_COEFF_POWER), false);
->> +     nrw_heat = (u32)hot_raw_shift((u64)nrw_heat,
->> +             (3 - NRW_COEFF_POWER), false);
->> +     ltr_heat = hot_raw_shift(ltr_heat, (3 - LTR_COEFF_POWER), false);
->> +     ltw_heat = hot_raw_shift(ltw_heat, (3 - LTW_COEFF_POWER), false);
->> +     avr_heat = hot_raw_shift(avr_heat, (3 - AVR_COEFF_POWER), false);
->> +     avw_heat = hot_raw_shift(avw_heat, (3 - AVW_COEFF_POWER), false);
->> +
->> +     result = nrr_heat + nrw_heat + (u32) ltr_heat +
->> +             (u32) ltw_heat + (u32) avr_heat + (u32) avw_heat;
->
-> Reading through the function up to here I've got lost in the shifts that
-> I don't see the meaning of the resulting value and how can I interpet it
-> if I watch it change over time. What are the expected weights of the
-> number and time factors? There are more details in the documentation, but
-> the big picture is blurred by talking implementation details.
->
-> Let's put the impl. details here and write a better user documentation
-> with a few examples to the docs. Is it possible to describe some common
-> access patterns and how they affect the temperature?
->
-> You've been benchmarking this patchset, I'm sure you can write up a few
-> examples based on that.
->
->> +
->> +     return result;
->> +}
->
-> david
+After get rid of the complex code and reorganize the logical, pgbench show
+the improvement.
 
+	Prev:
+		| db_size | clients |  tps  |
+		+---------+---------+-------+
+		| 22 MB   |       1 |  4437 |
+		| 22 MB   |      16 | 51351 |
+		| 22 MB   |      32 | 49959 |
+		| 7484 MB |       1 |  4078 |
+		| 7484 MB |      16 | 44681 |
+		| 7484 MB |      32 | 42463 |
+		| 15 GB   |       1 |  3992 |
+		| 15 GB   |      16 | 44107 |
+		| 15 GB   |      32 | 41797 |
 
+	Post:
+		| db_size | clients |  tps  |
+		+---------+---------+-------+
+		| 22 MB   |       1 | 11053 |		+149.11%
+		| 22 MB   |      16 | 55671 |		+8.41%
+		| 22 MB   |      32 | 52596 |		+5.28%
+		| 7483 MB |       1 |  8180 |		+100.59%
+		| 7483 MB |      16 | 48392 |		+8.31%
+		| 7483 MB |      32 | 44185 |		+0.18%
+		| 15 GB   |       1 |  8127 |		+103.58%
+		| 15 GB   |      16 | 48156 |		+9.18%
+		| 15 GB   |      32 | 43387 |		+3.8%
 
--- 
-Regards,
+Please check the patch for more details about schedule balance map, they
+currently based on linux-next 3.7.0-rc6, will rebase them to tip tree in
+follow version.
 
-Zhi Yong Wu
+Comments are very welcomed.
+
+Test with:
+	12 cpu X86 server and linux-next 3.7.0-rc6.
+
+Michael Wang (2):
+	[PATCH 1/2] sched: schedule balance map foundation
+	[PATCH 2/2] sched: simplify select_task_rq_fair() with schedule balance map
+
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ core.c  |   61 +++++++++++++++++++++++++++++
+ fair.c  |  133 +++++++++++++++++++++++++++++++++-------------------------------
+ sched.h |   28 +++++++++++++
+ 3 files changed, 159 insertions(+), 63 deletions(-)
+
