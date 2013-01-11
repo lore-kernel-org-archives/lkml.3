@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3AKEIt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 23:08:49 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:55007 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab3AKEIq (ORCPT
+	id S1754151Ab3AKERJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 23:17:09 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:48420 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070Ab3AKERH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 23:08:46 -0500
-Date: Fri, 11 Jan 2013 05:08:23 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 09/14] ARM: tegra: Move pmc.h to include/mach
-Message-ID: <20130111040823.GE28094@avionic-0098.adnet.avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <1357764194-12677-10-git-send-email-thierry.reding@avionic-design.de>
- <50EF598B.2030307@wwwdotorg.org>
+	Thu, 10 Jan 2013 23:17:07 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Daniel Kiper <daniel.kiper@oracle.com>,
+        "xen-devel\@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>,
+        "x86\@kernel.org" <x86@kernel.org>,
+        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization\@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "mingo\@redhat.com" <mingo@redhat.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        "maxim.uvarov\@oracle.com" <maxim.uvarov@oracle.com>,
+        "tglx\@linutronix.de" <tglx@linutronix.de>,
+        "vgoyal\@redhat.com" <vgoyal@redhat.com>
+References: <50DBC856.6030208@zytor.com>
+	<791b4922-078f-4adc-b3f3-0651f2266147@email.android.com>
+	<50DC58C4.3000307@citrix.com> <874nj7qsor.fsf@xmission.com>
+	<50E41973.9050705@citrix.com>
+	<20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
+	<50E6F81D02000078000B3245@nat28.tlf.novell.com>
+	<20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>
+	<20130104191146.GC6721@phenom.dumpdata.com>
+	<20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
+	<20130107162018.GJ3219@phenom.dumpdata.com>
+Date: Thu, 10 Jan 2013 20:16:48 -0800
+In-Reply-To: <20130107162018.GJ3219@phenom.dumpdata.com> (Konrad Rzeszutek
+	Wilk's message of "Mon, 7 Jan 2013 11:20:18 -0500")
+Message-ID: <87ehhsqrpr.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="o0ZfoUVt4BxPQnbU"
-Content-Disposition: inline
-In-Reply-To: <50EF598B.2030307@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:3eU7JZ1NYn/vJId/7RUbq65pU663qssUs7ZzUUr6VHu
- zcHjD1MuSj+UV+zs5xLEYWo/Q+kqA3jIQRXF0YzeKi8cEpOphY
- TUzD622mcv0OBrlFjvgYRohi3DF6MXiAPGBKoI1TrFAdPGwNGc
- ykRn3xHXZR9JttPKK5dLNQmVNBBkrHW05FLQ14bQ/Lum3rgUht
- zXM5Xtp49nNXjMnQJMD4t1EeUfVi3GzWyqAGRNCNOd/NVmRaU6
- +So/P0rNCeprj51/5eNItV/SpysKd7M6lPk5k8gZnEDWXkbpzj
- sPvQU0bKOscMsMXv2ZAO4Y+SVgRnv9li3BElspa3zBRkRgq1Bm
- ABNSWJ+rvYE7ky1a+z+m4swvFsI4S7j7GzLH5pdARNihUcjjtz
- WKX9hGP6aL2zH0hp7LCOTiu0nnESX6CcnQ=
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/mtqv7cG3fjWD66cdpwKStx+6k9agnYT8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+X-Spam-Relay-Country: 
+Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump implementation
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
 
---o0ZfoUVt4BxPQnbU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Mon, Jan 07, 2013 at 01:34:04PM +0100, Daniel Kiper wrote:
+>> I think that new kexec hypercall function should mimics kexec syscall.
+>> It means that all arguments passed to hypercall should have same types
+>> if it is possible or if it is not possible then conversion should be done
+>> in very easy way. Additionally, I think that one call of new hypercall
+>> load function should load all needed thinks in right place and
+>> return relevant status. Last but not least, new functionality should
+>
+> We are not restricted to just _one_ hypercall. And this loading
+> thing could be similar to the micrcode hypercall - which just points
+> to a virtual address along with the length - and says 'load me'.
+>
+>> be available through /dev/xen/privcmd or directly from kernel without
+>> bigger effort.
+>
+> Perhaps we should have a email thread on xen-devel where we hash out
+> some ideas. Eric, would you be OK included on this - it would make
+> sense for this mechanism to be as future-proof as possible - and I am not
+> sure what your plans for kexec are in the future?
 
-On Thu, Jan 10, 2013 at 05:15:07PM -0700, Stephen Warren wrote:
-> On 01/09/2013 01:43 PM, Thierry Reding wrote:
-> > In preparation for moving the PCIe driver into the drivers/pci/host
-> > directory, this header, which contains prototypes that are required by
-> > the PCIe driver, needs to be moved to a globally visible location.
-> >=20
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > ---
-> > Note that eventually the code in pmc.c and powergate.c should probably
-> > be split out into a separate driver. The PMC registers are also directly
-> > accessed from tegra20_clocks.c and tegra30_clocks.c, so that it might be
-> > required to provide that functionality through the new driver as well.
-> > ---
-> >  arch/arm/mach-tegra/common.c           |  2 +-
-> >  arch/arm/mach-tegra/include/mach/pmc.h | 24 ++++++++++++++++++++++++
-> >  arch/arm/mach-tegra/pmc.h              | 24 ------------------------
->=20
-> On IRC, we'd talked about putting the public functionality in
-> include/linux/tegra-pmc.h so that we wouldn't add to include/mach, which
-> would make it harder to make Tegra support ARM multi-platform. Perhaps
-> that IRC discussion happened after you posted this series?
+The basic kexec interface is.
 
-I'm not sure, it's equally possible that I just forgot. Will fix it up.
+load ranges of virtual addresses physical addresses.
+jump to the physical address  with identity mapped page tables.
 
-Thierry
+There are a few flags to allow for different usage scenarios like
+kexec on panic vs normal kexec.
 
---o0ZfoUVt4BxPQnbU
-Content-Type: application/pgp-signature
+It is very very simple and very extensible.  All of the weird glue
+happens in userspace.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ75A3AAoJEN0jrNd/PrOhUdAP/jx4poxyVjj6V33Sz/v8nlnQ
-1U4BlJxgUTOrRfu1h5bgGRRRyRszW8Umdlb8YYJzSwgivam1DMuVyylxuSbseP+T
-rokEN5r7XKpzZ4M26HGeOWZN9xi8eQyGyESUN2lPrXjtCYmVleGrOWoWMNtmGiZg
-DaA67Jn0a4bqa6IpKOgxvG5Hu7HqgaJXLW87Ht/kCvWIJPM+vkDSM76fygQYwXj1
-0h7/zX0yOJlW/yENJA/1CZzaE5CR8xmzcyB2EtmelTLhLpTi0L9rnPvbua1dKyO4
-15sQ/6VeHScjKNYh7jNQtTIdouwwLFRUbvdM9dXaxfeKuuW2fSBvci54WbApeXGI
-vmGR1iXaF1ObcxDFjBcKkS/UWyU8fU/Tx/CuXRen690wTAZt4irsb0NR8kH432BA
-QbfrBYV1b8ytLrnTvqaNMHJHCy3A1FiSJ28ywUyC8daWtWQBTbFa9M3Dh0KaOuNq
-1HdIzn7C1YzUgSUJsO5uaWNt3XOMGfJvds1RCFpqAhXvQLklfZA/Nv/Gx4uET62N
-BxMUjsqE0oiQzZ+xGnHFH6JbT9M99n7EGAZJ2BG40iUX9TWSoOEqum3zABHCPZ41
-ZbsJ5FN+MMd7scYeV5fQY0Fl+JCEbzzS4XNH7RUrl0/ulTWQgEGZ7SXdZaf3ZnDf
-aXb7TNK63K0pUTsgpniV
-=ykwn
------END PGP SIGNATURE-----
-
---o0ZfoUVt4BxPQnbU--
+Eric
