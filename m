@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3AKNr3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 08:47:29 -0500
-Received: from mail-da0-f52.google.com ([209.85.210.52]:43497 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056Ab3AKNr2 (ORCPT
+	id S1755596Ab3AKNrz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 08:47:55 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49042 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab3AKNrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 08:47:28 -0500
-Date: Fri, 11 Jan 2013 05:48:06 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Borislav Petkov <bp@alien8.de>, Adrian Byszuk <adrian.byszuk@gmail.com>,
-        Sujith Manoharan <sujith@msujith.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: BUG: kernel panic on Dell Vostro 3560 when plugging in AC adapter
-Message-ID: <20130111134806.GA19321@kroah.com>
-References: <20130109181520.GB17840@liondog.tnic>
- <50EE9F24.8010908@gmail.com>
- <20130110113511.GB23008@liondog.tnic>
- <50EECA0B.2050407@gmail.com>
- <50EEF8A9.5070406@gmail.com>
- <20719.47186.830126.689552@gargle.gargle.HOWL>
- <50EFF6B9.5090303@gmail.com>
- <20130111114648.GA10751@liondog.tnic>
- <50F00A59.70808@gmail.com>
- <20130111133020.GC10751@liondog.tnic>
+	Fri, 11 Jan 2013 08:47:53 -0500
+Date: Fri, 11 Jan 2013 14:47:12 +0100
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Cooper <Andrew.Cooper3@citrix.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump
+ implementation
+Message-ID: <20130111134712.GD5150@host-192-168-1-59.local.net-space.pl>
+References: <791b4922-078f-4adc-b3f3-0651f2266147@email.android.com>
+ <50DC58C4.3000307@citrix.com>
+ <874nj7qsor.fsf@xmission.com>
+ <50E41973.9050705@citrix.com>
+ <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
+ <50E6F81D02000078000B3245@nat28.tlf.novell.com>
+ <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>
+ <20130104191146.GC6721@phenom.dumpdata.com>
+ <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
+ <1357566584.7989.73.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130111133020.GC10751@liondog.tnic>
+In-Reply-To: <1357566584.7989.73.camel@zakaz.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 02:30:20PM +0100, Borislav Petkov wrote:
-> On Fri, Jan 11, 2013 at 01:49:29PM +0100, Adrian Byszuk wrote:
-> > I've got both of your emails. I've just tested this patch, and so far
-> > things seem to work flawlessly. So I would strongly recommend it for
-> > the stable series :-)
+On Mon, Jan 07, 2013 at 01:49:44PM +0000, Ian Campbell wrote:
+> On Mon, 2013-01-07 at 12:34 +0000, Daniel Kiper wrote:
+> > I think that new kexec hypercall function should mimics kexec syscall.
 > 
-> Ok, good.
-> 
-> @Greg,
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=3935e89505a1c3ab3f3b0c7ef0eae54124f48905
-> 
-> somehow didn't make it into the 3.7.2 lineup and we have another bug
-> report which is fixed by this patch. Can you please pick it up?
+> We want to have an interface can be used by non-Linux domains (both dom0
+> and domU) as well though, so please bear this in mind.
 
-You didn't read the header of the 3.7.2-rc1 email thread that said that
-I had not caught up on all patches that had been submitted.  This one is
-still in the queue, and should make it into the next stable release
-after this one.
+I agree, but all arguments passed to kexec syscall are quiet generic and they
+do not impose any limitations. Just look into include/linux/kexec.h.
+That is why I think that a lot of things could be taken from
+Linux kexec implementation.
 
-thanks,
-
-greg k-h
+Daniel
