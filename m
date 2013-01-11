@@ -1,63 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab3AKTM2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 14:12:28 -0500
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:44088 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab3AKTM0 (ORCPT
+	id S1754992Ab3AKTMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 14:12:53 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:63550 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab3AKTMw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 14:12:26 -0500
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: linux-scsi@vger.kernel.org
-Cc: michaelc@cs.wisc.edu, JBottomley@parallels.com,
-        linux-kernel@vger.kernel.org, kxie@chelsio.com,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        Divy La Rey <divy@chelsio.com>
-Subject: [PATCH] cxgb4i: Remove the scsi host device when removing device
-Date: Fri, 11 Jan 2013 17:12:09 -0200
-Message-Id: <1357931529-10248-1-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011119-9254-0000-0000-00000B55E8C1
+	Fri, 11 Jan 2013 14:12:52 -0500
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Subject: Re: [PATCH 2/2][V2] cpuidle - optimize the select function for the 'menu' governor
+From: Julius Werner <jwerner@google.com>
+In-Reply-To: <50CDF2A2.3090405@gmail.com>
+Date: Fri, 11 Jan 2013 11:12:49 -0800
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, rjw@sisk.pl,
+        jwerner@chromium.org, linux-pm@vger.kernel.org,
+        deepthi@linux.vnet.ibm.com, g.trinabh@gmail.com,
+        linaro-dev@lists.linaro.org, len.brown@intel.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        snanda@chromium.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <AF9BE237-8E69-4D09-BB78-EE54058EDE56@google.com>
+References: <1355493455-30665-1-git-send-email-daniel.lezcano@linaro.org> <1355493455-30665-3-git-send-email-daniel.lezcano@linaro.org> <50CDF2A2.3090405@gmail.com>
+To: Francesco Lavra <francescolavra.fl@gmail.com>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing a hotplug remove of a cxgb4 device, there are still dandling
-symlinks at /sys/class/scsi_host/hostX to the removed PCI device. The
-upper layer device may also try to send data, which may crash the
-system.
+*Ping!*
 
-The DETACH message from the lower level driver is sent to the ULD when
-the device is removed, when the scsi host should be removed from the
-system, avoiding any problems.
-
-After this patch, there are no more dangling symlinks and many attempts
-to crash the system while there is SCSI activity and removing the device
-have failed. Adding the device back again works as expected, with the
-scsi hosts showing up again.
-
-Based on a patch by Karen Xie.
-
-Cc: Karen Xie <kxie@chelsio.com>
-Cc: Divy La Rey <divy@chelsio.com>
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
----
- drivers/scsi/cxgbi/cxgb4i/cxgb4i.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-index f924b3c..3fecf35 100644
---- a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-+++ b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-@@ -1564,6 +1564,7 @@ static int t4_uld_state_change(void *handle, enum cxgb4_state state)
- 		break;
- 	case CXGB4_STATE_DETACH:
- 		pr_info("cdev 0x%p, DETACH.\n", cdev);
-+		cxgbi_device_unregister(cdev);
- 		break;
- 	default:
- 		pr_info("cdev 0x%p, unknown state %d.\n", cdev, state);
--- 
-1.7.1
-
+Happy New Year everyone. Is there any update on this? I think Francesco already pointed out how to solve the last remaining issue with this, so I hope we can now resubmit these patches and finally get them merged. Daniel?
