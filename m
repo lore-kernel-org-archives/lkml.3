@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab3AKSGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 13:06:52 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:37221 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab3AKSGv (ORCPT
+	id S1755295Ab3AKSJb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 13:09:31 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:36167 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156Ab3AKSJa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 13:06:51 -0500
+	Fri, 11 Jan 2013 13:09:30 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "anton.vorontsov@linaro.org" <anton.vorontsov@linaro.org>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [PATCH v4 0/2] pstore,efi_pstore: Avoid deadlock in non-blocking
+ paths
+Thread-Topic: [PATCH v4 0/2] pstore,efi_pstore: Avoid deadlock in
+ non-blocking paths
+Thread-Index: Ac3wJak6dWFNaYOlQSuov+JgTCKusw==
+Date: Fri, 11 Jan 2013 18:08:52 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3E17B@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <17637668.59BS4lW4dN@vostro.rjw.lan>
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com>
- <1410202.K95a8u1BYT@vostro.rjw.lan> <CAE9FiQVmDW__C3A1_JJZpCZJwYWONZpHbzitMxsHZBxotw8VBA@mail.gmail.com>
- <17637668.59BS4lW4dN@vostro.rjw.lan>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 11 Jan 2013 11:06:29 -0700
-Message-ID: <CAErSpo6eB=Gn6wPBK=_KYhP=NOi26AmuJd_rS-zAw+2ERdrcew@mail.gmail.com>
-Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when
- PCI hotplug event happens
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yinghai Lu <yinghai@kernel.org>, Myron Stowe <mstowe@redhat.com>,
-        Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-01-11_07:2013-01-11,2013-01-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1301110168
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 4:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, January 10, 2013 03:40:45 PM Yinghai Lu wrote:
->> On Thu, Jan 10, 2013 at 3:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Thursday, January 10, 2013 03:03:53 PM Yinghai Lu wrote:
->> >> On Thu, Jan 10, 2013 at 1:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> > Well, I don't see what functional problems that can bring.
->> >> >
->> >> > In theory people may want to have them as modules to avoid loading them on
->> >> > systems that don't use PCI hotplug, but honestly I think that the complexity
->> >> > this causes us to deal with is not worth it.
->> >> >
->> >> > Moreover, removing the modularity may actually allow us to solve some ordering
->> >> > issues once and for good.
->> >>
->> >> No, the world is not really ideal yet.
->> >>
->> >> looks like laptops have problem with pci express cards.
->> >>
->> >> when pciehp is used, surprise insert/removal does not work because
->> >> PresDect does not change properly, so no interrupt is generated.
->> >> --- i suspects that is silicon problem.
->> >>
->> >> but when acpiphp is used, that surprise  insert/removal is working.
->> >>
->> >> some laptop like thinkpad, just don't give osc to kernel..
->> >> [    0.505117]  pci0000:00: Requesting ACPI _OSC control (0x1d)
->> >> [    0.505413]  pci0000:00: ACPI _OSC request failed (AE_SUPPORT),
->> >> returned control mask: 0x0d
->> >> [    0.505517] ACPI _OSC control for PCIe not granted, disabling ASPM
->> >>
->> >> and other laptop give that to kernel, in recent kernel will not give
->> >> acpiphp to have that slot, because it want to hold that for pciehp.
->> >> poor user have to pass 'pci_aspm=off" to disable _OSC for all.
->> >> --- please check the mail that i forward to you yesterday.
->> >
->> > Yes, this is a bug, but I'm not sure how to fix it yet.
->>
->> add one command line to control it so do not claim that in osc_control?
->
-> That's one option, although not very attractive so to speak.
->
->> >> Anyway, we do need to let the user to have choice to use acpiphp and pciehp.
->> >> and it should be first come and first serve policy.
->> >
->> > And that's why you think they should be modules?  I disagree if so.
->>
->> Yes.
->>
->> maybe we can have pci=nopciehp in command line just we pci=noaer...
->>
->> that should handle some corner cases.
->
-> Yes.  In any case the user should be able to say "I know better", but having
-> to express that through the "right" ordering of modules is somewhat less than
-> straightforward in my opinion.
+Changelog 
+v3 -> v4
+ - Add EXPORT_SYMBOL_GPL(pstore_cannot_block_path) to build successfully
+   with CONFIG_EFI_VARS=m. (PATCH 1/2)
 
-I think it's fine if a user *can* override the default ordering.
+v2 -> v3
+ - Merge modifications of pstore part in 2/2 to 1/2.
+ - Rename pstore_is_non_blocking_path() to pstore_cannot_block_path().
 
-I am completely opposed to *requiring* a user to supply a command line
-option or change the order of module loading just to get hotplug to
-work.  There's no sane way to document that or communicate that
-information to users.
+v1 -> v2
+ - Erase a logic checking the number of online cpus.
+ - Create a patchset to fix deadlocking issue in both pstore filesystem and
+   efi_pstore driver.
+   - Introduce a function, is_non_blocking_path(), to check if pstore 
+     is in panic and emergency-restart paths (PATCH 1/2)
+   - Avoid efi_pstore_driver is blocked in non-blocking paths
+     such as nmi, panic and emergency-restart paths (PATCH 2/2)
 
-Bjorn
+[Issue]
+
+There are some paths in kernel which shouldn't be blocked, 
+like NMI, panic case after stopping cpus, emergency-restart.
+
+On the other hand, current pstore avoids blocking in a NMI path 
+but it may be blocked in other paths.
+Also, an efi_pstore driver may be blocked in all of those paths 
+because it simply takes a spin lock at writing time.
+
+If they are blocked in those paths, the system will hang up and
+it has a big impact for users.
+
+Here is an example scenario which pstore is blocked in panic path.
+
+ - cpuA grabs psinfo->buf_lock
+ - cpuB panics and calls smp_send_stop
+ - smp_send_stop sends IRQ to cpuA
+   after 1 second, cpuB gives up on cpuA and sends an NMI instead
+ - cpuA is now in an NMI handler while still holding buf_lock.
+   And then, cpuB is deadlocked by taking efi_pstore->lock again.
+
+This case may happen if a firmware has a bug and cpuA is stuck in it.
+
+[Solution]
+
+This patchset avoids that pstore and efi_pstore driver are blocked 
+in the non-blocking paths like NMI, panic, and emrgency-restart
+by introducing a function checking if they are in those paths.
+Please see each patch for detailed explanations.
+
+Seiji Aguchi (2):
+  [PATCH v4 1/2] pstore: Avoid deadlock in panic and emergency-restart path
+  [PATCH v4 2/2] efi_pstore: Avoid deadlock in non-blocking paths
+
+ drivers/firmware/efivars.c |   11 ++++++++++-
+ fs/pstore/platform.c       |   35 +++++++++++++++++++++++++++++------
+ include/linux/pstore.h     |    6 ++++++
+ 3 files changed, 45 insertions(+), 7 deletions(-)
+
