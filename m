@@ -1,68 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab3AKVVU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 16:21:20 -0500
-Received: from mail-ye0-f177.google.com ([209.85.213.177]:40607 "EHLO
-	mail-ye0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704Ab3AKVVT (ORCPT
+	id S1755332Ab3AKVbN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 16:31:13 -0500
+Received: from mail-gg0-f173.google.com ([209.85.161.173]:48638 "EHLO
+	mail-gg0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754761Ab3AKVbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 16:21:19 -0500
-Date: Fri, 11 Jan 2013 02:17:45 -0300
+	Fri, 11 Jan 2013 16:31:12 -0500
+Date: Fri, 11 Jan 2013 02:27:36 -0300
 From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 07/10] perf sort: Check return value of strdup()
-Message-ID: <20130111051745.GF3054@ghostprotocols.net>
-References: <1356599507-14226-1-git-send-email-namhyung@kernel.org>
- <1356599507-14226-8-git-send-email-namhyung@kernel.org>
+To: Greg Price <price@MIT.EDU>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] perf report: Add option to collapse undesired parts of
+ call graph
+Message-ID: <20130111052736.GG3054@ghostprotocols.net>
+References: <20121207072726.GY22203@biohazard-cafe.mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356599507-14226-8-git-send-email-namhyung@kernel.org>
+In-Reply-To: <20121207072726.GY22203@biohazard-cafe.mit.edu>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 27, 2012 at 06:11:44PM +0900, Namhyung Kim escreveu:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> When setup_sorting() is called, 'str' is passed to strtok_r() but it's
-> not checked to have a valid pointer.  As strtok_r() accepts NULL
-> pointer on a first argument and use the third argument in that case,
-> it can cause a trouble since our third argument, tmp, is not
-> initialized.
+Em Fri, Dec 07, 2012 at 02:30:44AM -0500, Greg Price escreveu:
+> If an application has an expensive function implemented with a large
+> tree of calls to helper functions, the default call-graph presentation
+> will be dominated by the many different call-chains within that
+> function.  By treating the function as a black box, we can collect the
+> call-chains leading into the function and compactly identify what to
+> blame for expensive calls.
 
-Ok, but calling exit from here? Better to check it at the callers and
-propagate the error, letting things like TUI/gui exit routines to
-execute.
+Looks like an interesting feature, will review this soon,
+
+- Arnaldo
  
-> Cc: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/sort.c | 5 +++++
->  1 file changed, 5 insertions(+)
+> For example, in this report the callers of garbage_collect() are
+> scattered across the tree:
+> $ perf report -d ruby 2>- | grep -m10 ^[^#]*[a-z]
+>     22.03%     ruby  [.] gc_mark
+>                --- gc_mark
+>                   |--59.40%-- mark_keyvalue
+>                   |          st_foreach
+>                   |          gc_mark_children
+>                   |          |--99.75%-- rb_gc_mark
+>                   |          |          rb_vm_mark
+>                   |          |          gc_mark_children
+>                   |          |          gc_marks
+>                   |          |          |--99.00%-- garbage_collect
 > 
-> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-> index c02964cabdd0..9f827e25a2b5 100644
-> --- a/tools/perf/util/sort.c
-> +++ b/tools/perf/util/sort.c
-> @@ -552,6 +552,11 @@ void setup_sorting(const char * const usagestr[], const struct option *opts)
->  {
->  	char *tmp, *tok, *str = strdup(sort_order);
+> If we make garbage_collect() a black box, its callers are coalesced:
+> $ perf report --blackbox garbage_collect -d ruby 2>- | grep -m10 ^[^#]*[a-z]
+>     72.92%     ruby  [.] garbage_collect
+>                --- garbage_collect
+>                    vm_xmalloc
+>                   |--47.08%-- ruby_xmalloc
+>                   |          st_insert2
+>                   |          rb_hash_aset
+>                   |          |--98.45%-- features_index_add
+>                   |          |          rb_provide_feature
+>                   |          |          rb_require_safe
+>                   |          |          vm_call_method
+> 
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Signed-off-by: Greg Price <price@mit.edu>
+> ---
+>  tools/perf/builtin-report.c | 17 +++++++++++++++--
+>  tools/perf/builtin-top.c    |  3 +--
+>  tools/perf/util/map.h       |  4 +++-
+>  tools/perf/util/session.c   | 29 ++++++++++++++++++-----------
+>  tools/perf/util/session.h   |  5 +++++
+>  5 files changed, 42 insertions(+), 16 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index a61725d..3bbda35 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -70,7 +70,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
+>  	if ((sort__has_parent || symbol_conf.use_callchain)
+>  	    && sample->callchain) {
+>  		err = machine__resolve_callchain(machine, evsel, al->thread,
+> -						 sample, &parent);
+> +						 sample, &parent, al);
+>  		if (err)
+>  			return err;
+>  	}
+> @@ -141,7 +141,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
 >  
-> +	if (str == NULL) {
-> +		error("Not enough memory to setup sort keys");
-> +		exit(-1);
+>  	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
+>  		err = machine__resolve_callchain(machine, evsel, al->thread,
+> -						 sample, &parent);
+> +						 sample, &parent, al);
+>  		if (err)
+>  			return err;
+>  	}
+> @@ -607,6 +607,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>  		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
+>  	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
+>  		    "alias for inverted call graph"),
+> +	OPT_STRING(0, "blackbox", &blackbox_pattern, "regex",
+> +		   "functions to treat as black boxes in call graphs, collapsing callees"),
+>  	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+>  		   "only consider symbols in these dsos"),
+>  	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+> @@ -687,6 +689,17 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>  
+>  	}
+>  
+> +	if (blackbox_pattern) {
+> +		int err = regcomp(&blackbox_regex, blackbox_pattern, REG_EXTENDED);
+> +		if (err) {
+> +			char buf[BUFSIZ];
+> +			regerror(err, &blackbox_regex, buf, sizeof(buf));
+> +			pr_err("Invalid blackbox regex: %s\n%s", blackbox_pattern, buf);
+> +			goto error;
+> +		}
+> +		have_blackbox = 1;
 > +	}
 > +
->  	for (tok = strtok_r(str, ", ", &tmp);
->  			tok; tok = strtok_r(NULL, ", ", &tmp)) {
->  		if (sort_dimension__add(tok) < 0) {
+>  	if (strcmp(report.input_name, "-") != 0)
+>  		setup_browser(true);
+>  	else {
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index ff6db80..ee969b5 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -786,8 +786,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+>  		    sample->callchain) {
+>  			err = machine__resolve_callchain(machine, evsel,
+>  							 al.thread, sample,
+> -							 &parent);
+> -
+> +							 &parent, NULL);
+>  			if (err)
+>  				return;
+>  		}
+> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+> index d2250fc..6d1b8e1 100644
+> --- a/tools/perf/util/map.h
+> +++ b/tools/perf/util/map.h
+> @@ -23,6 +23,7 @@ struct ref_reloc_sym;
+>  struct map_groups;
+>  struct machine;
+>  struct perf_evsel;
+> +struct addr_location;
+>  
+>  struct map {
+>  	union {
+> @@ -163,7 +164,8 @@ int machine__resolve_callchain(struct machine *machine,
+>  			       struct perf_evsel *evsel,
+>  			       struct thread *thread,
+>  			       struct perf_sample *sample,
+> -			       struct symbol **parent);
+> +			       struct symbol **parent,
+> +			       struct addr_location *root_al);
+>  int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
+>  				     u64 addr);
+>  
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 8cdd232..9a8798c 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -19,6 +19,10 @@
+>  #include "unwind.h"
+>  #include "vdso.h"
+>  
+> +regex_t blackbox_regex;
+> +const char *blackbox_pattern;
+> +int have_blackbox = 0;
+> +
+>  static int perf_session__open(struct perf_session *self, bool force)
+>  {
+>  	struct stat input_stat;
+> @@ -226,11 +230,10 @@ void machine__remove_thread(struct machine *self, struct thread *th)
+>  	list_add_tail(&th->node, &self->dead_threads);
+>  }
+>  
+> -static bool symbol__match_parent_regex(struct symbol *sym)
+> +static bool symbol__match_regex(struct symbol *sym, regex_t *regex)
+>  {
+> -	if (sym->name && !regexec(&parent_regex, sym->name, 0, NULL, 0))
+> +	if (sym->name && !regexec(regex, sym->name, 0, NULL, 0))
+>  		return 1;
+> -
+>  	return 0;
+>  }
+>  
+> @@ -295,8 +298,8 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
+>  static int machine__resolve_callchain_sample(struct machine *machine,
+>  					     struct thread *thread,
+>  					     struct ip_callchain *chain,
+> -					     struct symbol **parent)
+> -
+> +					     struct symbol **parent,
+> +					     struct addr_location *root_al)
+>  {
+>  	u8 cpumode = PERF_RECORD_MISC_USER;
+>  	unsigned int i;
+> @@ -347,8 +350,13 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+>  					   MAP__FUNCTION, ip, &al, NULL);
+>  		if (al.sym != NULL) {
+>  			if (sort__has_parent && !*parent &&
+> -			    symbol__match_parent_regex(al.sym))
+> +			    symbol__match_regex(al.sym, &parent_regex))
+>  				*parent = al.sym;
+> +			else if (have_blackbox && root_al &&
+> +			         symbol__match_regex(al.sym, &blackbox_regex)) {
+> +				*root_al = al;
+> +				callchain_cursor_reset(&callchain_cursor);
+> +			}
+>  			if (!symbol_conf.use_callchain)
+>  				break;
+>  		}
+> @@ -373,15 +381,15 @@ int machine__resolve_callchain(struct machine *machine,
+>  			       struct perf_evsel *evsel,
+>  			       struct thread *thread,
+>  			       struct perf_sample *sample,
+> -			       struct symbol **parent)
+> -
+> +			       struct symbol **parent,
+> +			       struct addr_location *root_al)
+>  {
+>  	int ret;
+>  
+>  	callchain_cursor_reset(&callchain_cursor);
+>  
+>  	ret = machine__resolve_callchain_sample(machine, thread,
+> -						sample->callchain, parent);
+> +	                                        sample->callchain, parent, root_al);
+>  	if (ret)
+>  		return ret;
+>  
+> @@ -1603,9 +1611,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
+>  
+>  	if (symbol_conf.use_callchain && sample->callchain) {
+>  
+> -
+>  		if (machine__resolve_callchain(machine, evsel, al.thread,
+> -					       sample, NULL) != 0) {
+> +					       sample, NULL, NULL) != 0) {
+>  			if (verbose)
+>  				error("Failed to resolve callchain. Skipping\n");
+>  			return;
+> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+> index 0eae00a..6db3e55 100644
+> --- a/tools/perf/util/session.h
+> +++ b/tools/perf/util/session.h
+> @@ -1,6 +1,7 @@
+>  #ifndef __PERF_SESSION_H
+>  #define __PERF_SESSION_H
+>  
+> +#include <regex.h>
+>  #include "hist.h"
+>  #include "event.h"
+>  #include "header.h"
+> @@ -9,6 +10,10 @@
+>  #include <linux/rbtree.h>
+>  #include <linux/perf_event.h>
+>  
+> +extern regex_t blackbox_regex;
+> +extern const char *blackbox_pattern;
+> +extern int have_blackbox;
+> +
+>  struct sample_queue;
+>  struct ip_callchain;
+>  struct thread;
 > -- 
-> 1.7.11.7
+> 1.7.11.3
