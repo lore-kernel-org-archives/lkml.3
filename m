@@ -1,243 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab3AKPxO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 10:53:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38614 "EHLO mx1.redhat.com"
+	id S1754758Ab3AKQBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 11:01:10 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:58061 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753999Ab3AKPxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 10:53:11 -0500
-Message-ID: <1357919587.3224.824.camel@bling.home>
-Subject: Re: [PATCH 2/2] QEMU-AER: Qemu changes to support AER for VFIO-PCI
- devices
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Gleb Natapov <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 11 Jan 2013 08:53:07 -0700
-In-Reply-To: <F9E001219150CB45BEDC82A650F360C901497698@G9W0717.americas.hpqcorp.net>
-References: <F9E001219150CB45BEDC82A650F360C901496034@G9W0717.americas.hpqcorp.net>
-	 <1357754873.3224.777.camel@bling.home>
-	 <F9E001219150CB45BEDC82A650F360C901497698@G9W0717.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751599Ab3AKQBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 11:01:08 -0500
+Message-ID: <50F036CF.7010109@free.fr>
+Date: Fri, 11 Jan 2013 16:59:11 +0100
+From: dAgeCKo <dagecko@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+MIME-Version: 1.0
+To: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Fwd: Linux - AMD SB950 USB Regression
+References: <50C9FCD6.6050809@free.fr> <50E6AD77.1000707@free.fr>
+In-Reply-To: <50E6AD77.1000707@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-11 at 08:53 +0000, Pandarathil, Vijaymohan R wrote:
-> 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Wednesday, January 09, 2013 10:08 AM
-> > To: Pandarathil, Vijaymohan R
-> > Cc: Bjorn Helgaas; Gleb Natapov; kvm@vger.kernel.org; qemu-
-> > devel@nongnu.org; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH 2/2] QEMU-AER: Qemu changes to support AER for VFIO-PCI
-> > devices
-> > 
-> > On Wed, 2013-01-09 at 06:26 +0000, Pandarathil, Vijaymohan R wrote:
-> > > 	- Create eventfd per vfio device assigned to a guest and register an
-> > >           event handler
-> > >
-> > > 	- This fd is passed to the vfio_pci driver through a new ioctl
-> > >
-> > > 	- When the device encounters an error, the eventfd is signaled
-> > >           and the qemu eventfd handler gets invoked.
-> > >
-> > > 	- In the handler decide what action to take. Current action taken
-> > >           is to terminate the guest.
-> > >
-> > > Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
-> > > ---
-> > >  hw/vfio_pci.c              | 56
-> > ++++++++++++++++++++++++++++++++++++++++++++++
-> > >  linux-headers/linux/vfio.h |  9 ++++++++
-> > >  2 files changed, 65 insertions(+)
-> > >
-> > > diff --git a/hw/vfio_pci.c b/hw/vfio_pci.c
-> > > index 28c8303..9c3c28b 100644
-> > > --- a/hw/vfio_pci.c
-> > > +++ b/hw/vfio_pci.c
-> > > @@ -38,6 +38,7 @@
-> > >  #include "qemu/error-report.h"
-> > >  #include "qemu/queue.h"
-> > >  #include "qemu/range.h"
-> > > +#include "sysemu/sysemu.h"
-> > >
-> > >  /* #define DEBUG_VFIO */
-> > >  #ifdef DEBUG_VFIO
-> > > @@ -130,6 +131,8 @@ typedef struct VFIODevice {
-> > >      QLIST_ENTRY(VFIODevice) next;
-> > >      struct VFIOGroup *group;
-> > >      bool reset_works;
-> > > +    EventNotifier errfd;
-> > 
-> > Misleading name, it's an EventNotifier not an fd.
-> 
-> Will make the change.
-> 
-> > 
-> > > +    __u32 dev_info_flags;
-> > >  } VFIODevice;
-> > >
-> > >  typedef struct VFIOGroup {
-> > > @@ -1805,6 +1808,8 @@ static int vfio_get_device(VFIOGroup *group, const
-> > char *name, VFIODevice *vdev)
-> > >      DPRINTF("Device %s flags: %u, regions: %u, irgs: %u\n", name,
-> > >              dev_info.flags, dev_info.num_regions, dev_info.num_irqs);
-> > >
-> > > +    vdev->dev_info_flags = dev_info.flags;
-> > > +
-> > 
-> > We test the VFIO_DEVICE_FLAGS_RESET elsewhere by caching the bit into a
-> > variable, why not do that here too?
-> 
-> I was wondering if there was any specific reason to cache the bit into
-> a separate variable. Wouldn't a flags field which can contain the
-> specific bit be more apt ?
 
-Then we have to mask it out ever time we want to reference it.  Qemu
-doesn't seem to like macros or inlines for that, so using a new variable
-keeps things neat.  Caching two fields to bools is still more space
-efficient than saving the whole thing and we can easily switch to named
-bits if we get enough to start caring about the space.  Thanks,
+Hi,
 
-Alex
- 
-> > >      if (!(dev_info.flags & VFIO_DEVICE_FLAGS_PCI)) {
-> > >          error_report("vfio: Um, this isn't a PCI device\n");
-> > >          goto error;
-> > > @@ -1900,6 +1905,55 @@ static void vfio_put_device(VFIODevice *vdev)
-> > >      }
-> > >  }
-> > >
-> > > +static void vfio_errfd_handler(void *opaque)
-> > > +{
-> > > +    VFIODevice *vdev = opaque;
-> > > +
-> > > +    if (!event_notifier_test_and_clear(&vdev->errfd)) {
-> > > +        return;
-> > > +    }
-> > > +
-> > > +    /*
-> > > +     * TBD. Retrieve the error details and decide what action
-> > > +     * needs to be taken. One of the actions could be to pass
-> > > +     * the error to the guest and have the guest driver recover
-> > > +     * the error. This requires that PCIe capabilities be
-> > > +     * exposed to the guest. At present, we just terminate the
-> > > +     * guest to contain the error.
-> > > +     */
-> > > +    error_report("%s(%04x:%02x:%02x.%x) "
-> > > +        "Unrecoverable error detected... Terminating guest\n",
-> > > +        __func__, vdev->host.domain, vdev->host.bus, vdev->host.slot,
-> > > +        vdev->host.function);
-> > > +
-> > > +    qemu_system_shutdown_request();
-> > 
-> > I would have figured hw_error
-> 
-> Hw_error() is probably more appropriate. Will make the change.
-> 
-> > 
-> > > +    return;
-> > > +}
-> > > +
-> > > +static void vfio_register_errfd(VFIODevice *vdev)
-> > > +{
-> > > +    int32_t pfd;
-> > 
-> > "pfd" is used elsewhere in vfio as "Pointer to FD", this is just a fd.
-> 
-> Will change.
-> 
-> > 
-> > > +    int ret;
-> > > +
-> > > +    if (!(vdev->dev_info_flags & VFIO_DEVICE_FLAGS_AER_NOTIFY)) {
-> > > +        error_report("vfio: Warning: Error notification not supported
-> > for the device\n");
-> > 
-> > This should probably just be a debug print.
-> 
-> Okay.
-> 
-> > 
-> > > +        return;
-> > > +    }
-> > > +    if (event_notifier_init(&vdev->errfd, 0)) {
-> > > +        error_report("vfio: Warning: Unable to init event notifier for
-> > error detection\n");
-> > > +        return;
-> > > +    }
-> > > +    pfd = event_notifier_get_fd(&vdev->errfd);
-> > > +    qemu_set_fd_handler(pfd, vfio_errfd_handler, NULL, vdev);
-> > > +
-> > > +    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_ERRFD, pfd);
-> > > +    if (ret) {
-> > > +        error_report("vfio: Warning: Failed to setup error fd: %d\n",
-> > ret);
-> > > +        qemu_set_fd_handler(pfd, NULL, NULL, vdev);
-> > > +        event_notifier_cleanup(&vdev->errfd);
-> > > +    }
-> > > +    return;
-> > > +}
-> > >  static int vfio_initfn(PCIDevice *pdev)
-> > >  {
-> > >      VFIODevice *pvdev, *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
-> > > @@ -2010,6 +2064,8 @@ static int vfio_initfn(PCIDevice *pdev)
-> > >          }
-> > >      }
-> > >
-> > > +    vfio_register_errfd(vdev);
-> > > +
-> > 
-> > No cleanup in exitfn?!  Thanks,
-> 
-> Missed that. Will fix.
-> 
-> Vijay
-> 
-> > 
-> > Alex
-> > 
-> > >      return 0;
-> > >
-> > >  out_teardown:
-> > > diff --git a/linux-headers/linux/vfio.h b/linux-headers/linux/vfio.h
-> > > index 4758d1b..0ca4eeb 100644
-> > > --- a/linux-headers/linux/vfio.h
-> > > +++ b/linux-headers/linux/vfio.h
-> > > @@ -147,6 +147,7 @@ struct vfio_device_info {
-> > >  	__u32	flags;
-> > >  #define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
-> > >  #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
-> > > +#define VFIO_DEVICE_FLAGS_AER_NOTIFY (1 << 2)   /* Supports aer
-> > notification */
-> > >  	__u32	num_regions;	/* Max region index + 1 */
-> > >  	__u32	num_irqs;	/* Max IRQ index + 1 */
-> > >  };
-> > > @@ -288,6 +289,14 @@ struct vfio_irq_set {
-> > >   */
-> > >  #define VFIO_DEVICE_RESET		_IO(VFIO_TYPE, VFIO_BASE + 11)
-> > >
-> > > +/**
-> > > + * VFIO_DEVICE_SET_ERRFD - _IO(VFIO_TYPE, VFIO_BASE + 12)
-> > > + *
-> > > + * Pass the eventfd to the vfio-pci driver for signalling any device
-> > > + * error notifications
-> > > + */
-> > > +#define VFIO_DEVICE_SET_ERRFD           _IO(VFIO_TYPE, VFIO_BASE + 12)
-> > > +
-> > >  /*
-> > >   * The VFIO-PCI bus driver makes use of the following fixed region and
-> > >   * IRQ index mapping.  Unimplemented regions return a size of zero.
-> > 
-> > 
-> 
+the bug has been resolved after a BIOS upgrade. Since the mainboard 
+constructor said me that it's impossible that the BIOS was an issue 
+since their Windows users do not face the same issue, I beleived it 
+could have come from the Linux kernel.
 
+Bye.
 
+Le 04/01/2013 11:22, dAgeCKo a écrit :
+>
+> Hello,
+>
+> Some months ago I noticed that my USB controler (and also my network
+> controler) does not work anymore on newer kernels from my debian wheezy
+> distribution.
+>
+> I then reported a bug for the former one here:
+>
+> https://bugzilla.kernel.org/show_bug.cgi?id=47791
+>
+> With some helps and time, I could locate the source of the regression,
+> that is an old commit from the year 2010 you seem to commit. Git
+> besection identified the commit as:
+>
+> git bisect bad 5c80cc78de46aef6cd5e714208da05c3f7f548f8
+>
+> Someone from the usb kernel mailing list (Alan Stern) then asked me to
+> write an email to you, in my hope the bug to be solved.
+>
+> Some informations were said on the bug tracker, but if you need any
+> other information that could help you in any manner, please let me know.
+>
+> Please note that the regression only involves USB2 ports of the
+> mainboard, not the USB3 ports.
+>
+> Regards.
+>
+> ---
+> Jean-Dominique Frattini
 
