@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab3AKUVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:21:23 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:51369 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab3AKUVW (ORCPT
+	id S1755389Ab3AKUWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:22:13 -0500
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:41288 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab3AKUWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:21:22 -0500
+	Fri, 11 Jan 2013 15:22:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+MoWDqUL4-+mRYcdP4Hk4Le=+w8NB7T723HWiLhwD2Wd-yszQ@mail.gmail.com>
-References: <CA+MoWDp7xr9LMguKYmAVcMm_nnco8Lh5KLhWD9eeZ2tc43iNSQ@mail.gmail.com>
-	<CAHdPZaOqy4wnviVJEzAKWa6JN_X0z-zWPo-N1f4gs9O-2EpJ9Q@mail.gmail.com>
-	<CA+MoWDqUL4-+mRYcdP4Hk4Le=+w8NB7T723HWiLhwD2Wd-yszQ@mail.gmail.com>
-Date: Fri, 11 Jan 2013 18:21:21 -0200
-Message-ID: <CA+MoWDp-smBmTmsjNpgB-_3FFCiqYQ0_u=LxCq5cKDyE9drYAw@mail.gmail.com>
-Subject: Re: i7-2620M: Clock always high when on battery
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Rob Landley <rob@landley.net>, andre.przywara@amd.com, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <50EF3BAF.4010200@wwwdotorg.org>
+References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com>
+	<50EF27B4.60608@wwwdotorg.org>
+	<50EF3BAF.4010200@wwwdotorg.org>
+Date: Fri, 11 Jan 2013 21:22:10 +0100
+Message-ID: <CACRpkdaHL=fj6f6a0AH0DaYzxRCen28rUv46O8yZ00gu81n1+Q@mail.gmail.com>
+Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-next@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The most strange thing is that this does not happen with Kernel
-3.4.25-rc1+... I use Fedora 17 and this happen with Fedora 17 Kernels
-and with other 3.6 or newer Kernels. But never happens with Kernel
-3.4...
+On Thu, Jan 10, 2013 at 11:07 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-On Mon, Jan 7, 2013 at 3:23 PM, Peter Senna Tschudin
-<peter.senna@gmail.com> wrote:
-> On Tue, Jan 1, 2013 at 6:30 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
->> On Tue, Jan 1, 2013 at 3:17 PM, Peter Senna Tschudin
->> <peter.senna@gmail.com> wrote:
->>> I'm not sure if I'm emailing the right people. My problem is with
->>> dynamic clock and or power management.
->>>
->>> I'm using 3.6.10-2.fc17.x86_64 but the exact same problem happen with
->>> non Fedora Kernels like 3.7.1 and 3.6.11.
->>>
->>> I'm using Toshiba R830-10P notebook with i7-2620M cpu.
->>>
->>> The problem is that when I power on the notebook without the AC
->>> adapter the clock of all cores is always very close to 2,7GHz. It was
->>> expected that without load the clock would be around 800 Mhz. This
->>> issue is causing the notebook to get hot and reduces battery life. The
->>> same problem also happens when on AC power but it is uncommon.
->>>
->>> What can I do to diagnose the problem and collect more precise details?
->>>
->>
->> would you mind trying this
->>
->> echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
->>
->> as root?
->>
->> but before cat that file to see whats the current cpu governor.
-> When I:
-> $ sudo cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-> ondemand
+> I see that an attempt was made to solve this problem, in the patch
+> immediately preceding this one (at least, as applied in the pinctrl
+> tree). However, that patch only addresses the case where the pin
+> controller is being looked up in the map, and not the case when
+> converting device tree to the map in the first place. The patch below
+> solves this:
 >
-> I'm trying to get a Bios update from Toshiba but no success yet.
->
->>
->>> Peter
->>>
->>> --
->>> Peter
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
-> --
-> Peter
+> diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
+> index fe2d1af..fd40a11 100644
+> --- a/drivers/pinctrl/devicetree.c
+> +++ b/drivers/pinctrl/devicetree.c
+> @@ -141,6 +141,11 @@ static int dt_to_map_one_config(struct pinctrl *p,
+> const char *statename,
+>                 pctldev = find_pinctrl_by_of_node(np_pctldev);
+>                 if (pctldev)
+>                         break;
+> +               /* Do not defer probing of hogs (circular loop) */
+> +               if (np_pctldev == p->dev->of_node) {
+> +                       of_node_put(np_pctldev);
+> +                       return -ENODEV;
+> +               }
+>         }
+>         of_node_put(np_pctldev);
 
+OK I've duplicated this, will send out as patch.
 
-
--- 
-Peter
+Yours,
+Linus Walleij
