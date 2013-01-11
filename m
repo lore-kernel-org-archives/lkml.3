@@ -1,116 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab3AKJLn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 04:11:43 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:37405 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab3AKJLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 04:11:41 -0500
-Date: Fri, 11 Jan 2013 17:11:28 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: axboe <axboe@kernel.dk>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: [PATCH] blkcg: Before starting a new slice, firstly count bps/iops limit in func tg_may_dispatch.
-X-Priority: 3
-X-GUID: 11D4D313-2D71-489F-8EF1-95C16127CA80
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.90[en]
-Mime-Version: 1.0
-Message-ID: <201301111711251317275@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	id S1755473Ab3AKJQI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 04:16:08 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:56801 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753217Ab3AKJQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 04:16:04 -0500
+Message-ID: <50EFD824.3010502@imgtec.com>
+Date: Fri, 11 Jan 2013 09:15:16 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH v3 00/44] Meta Linux Kernel Port
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <20130111103442.b80ddbfb11ef322ed28ca3b3@canb.auug.org.au>
+In-Reply-To: <20130111103442.b80ddbfb11ef322ed28ca3b3@canb.auug.org.au>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enig9A398C600C74AEA053665CC8"
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_01_11_09_16_01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0B9Bk6I019670
 
-In func tg_may_dispatch,
->if (throtl_slice_used(td, tg, rw))
->		throtl_start_new_slice(td, tg, rw);
-...
->if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
->	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait)) {
+--------------enig9A398C600C74AEA053665CC8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-In funcs tg_with_in_(bps/iops)_limit, it used the slice_start to count.
-So if privious slice expired, it start a new slice.This can cause hung
-task.
+On 10/01/13 23:34, Stephen Rothwell wrote:
+> You really should not base development work on linux-next and before I
+> can include it there you will need to rebase it onto Linus' tree (or so=
+me
+> other tree that does not rebase).  Its OK to test by doing a merge with=
 
-The next steps can repeat this bug.
-1:echo "8:48 10240" > blkio.throttle.write_bps_devic
-2:dd if=/dev/zero of=/dev/sdd bs=1M count=1 oflag=direct
+> linux-next ...
 
-Using the blktrace, the messages about throttle:
-root@kernel:/mnt/programs# blktrace -d /dev/sdd -a notify -o -|blkparse -i -
-  8,48   1        0     0.000000000     0  m   N throtl / [W] new slice start=4294854679 end=4294854779 jiffies=4294854679
-  8,48   1        0     0.000000966     0  m   N throtl / [W] extend slice start=4294854679 end=4294905900 jiffies=4294854679
-  8,48   1        0     0.000002553     0  m   N throtl / [W] bio. bdisp=0 sz=524288 bps=10240 iodisp=0 iops=4294967295 queued=0/0
-  8,48   1        0     0.000004788     0  m   N throtl schedule work. delay=51200 jiffies=4294854679
-  8,48   1        0    51.304698681     0  m   N throtl dispatch nr_queued=1 read=0 write=1
-  8,48   1        0    51.304701979     0  m   N throtl / [W] new slice start=4294905984 end=4294906084 jiffies=4294905984
-  8,48   1        0    51.304703329     0  m   N throtl / [W] extend slice start=4294905984 end=4294957200 jiffies=4294905984
-  8,48   1        0    51.304705783     0  m   N throtl schedule work. delay=51200 jiffies=4294905984
-  8,48   1        0   102.632697082     0  m   N throtl dispatch nr_queued=1 read=0 write=1
-  8,48   1        0   102.632700544     0  m   N throtl / [W] new slice start=4294957312 end=4294957412 jiffies=4294957312
-  8,48   1        0   102.632701922     0  m   N throtl / [W] extend slice start=4294957312 end=4295008600 jiffies=4294957312
-  8,48   1        0   102.632704016     0  m   N throtl schedule work. delay=51200 jiffies=4294957312
-  8,48   1        0   153.960696503     0  m   N throtl dispatch nr_queued=1 read=0 write=1
-  8,48   1        0   153.960699797     0  m   N throtl / [W] new slice start=4295008640 end=4295008740 jiffies=4295008640
-  8,48   1        0   153.960701153     0  m   N throtl / [W] extend slice start=4295008640 end=4295059900 jiffies=4295008640
-  8,48   1        0   153.960703218     0  m   N throtl schedule work. delay=51200 jiffies=4295008640
-  8,48   1        0   205.288697067     0  m   N throtl dispatch nr_queued=1 read=0 write=1
-  8,48   1        0   205.288700268     0  m   N throtl / [W] new slice start=4295059968 end=4295060068 jiffies=4295059968
-  8,48   1        0   205.288701630     0  m   N throtl / [W] extend slice start=4295059968 end=4295111200 jiffies=4295059968
-  8,48   1        0   205.288703784     0  m   N throtl schedule work. delay=51200 jiffies=4295059968
-  8,48   1        0   256.616696184     0  m   N throtl dispatch nr_queued=1 read=0 write=1
-  8,48   1        0   256.616699266     0  m   N throtl / [W] new slice start=4295111296 end=4295111396 jiffies=4295111296
-  8,48   1        0   256.616700574     0  m   N throtl / [W] extend slice start=4295111296 end=4295162500 jiffies=4295111296
-  8,48   1        0   256.616702701     0  m   N throtl schedule work. delay=51200 jiffies=4295111296
+Thanks for the info Stephen. So I suppose if the patchset depended on
+things in -next the normal way to do it would be to merge in the
+individual trees I needed first?
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- block/blk-throttle.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
-
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 3114622..9258789 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -645,6 +645,15 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
- 	}
- 
- 	/*
-+	 * If privious slice expired,then start new slice.
-+	 * But counting bps and iops limit need privious slice info
-+	 * which ->slice_start.
-+	 */
-+	if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
-+	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait))
-+		if (wait)
-+			*wait = 0;
-+	/*
- 	 * If previous slice expired, start a new one otherwise renew/extend
- 	 * existing slice to make sure it is at least throtl_slice interval
- 	 * long since now.
-@@ -656,12 +665,8 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
- 			throtl_extend_slice(td, tg, rw, jiffies + throtl_slice);
- 	}
- 
--	if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
--	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait)) {
--		if (wait)
--			*wait = 0;
-+	if (!(bps_wait || iops_wait))
- 		return 1;
--	}
- 
- 	max_wait = max(bps_wait, iops_wait);
- 
--- 
-1.7.9.5
+Cheers
+James
 
 
-Jianpeng Ma
-Thanks!ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--------------enig9A398C600C74AEA053665CC8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ79grAAoJEKHZs+irPybfUNIP/A3vfrCBCfUULMGteFjFOqgv
+F7EY5et8Xw9OnZemgEzayjBxeVSJMul7FiSoo+O8YNHNZt9MGamWdl2uCL2FZjgL
+KIVq6yP3yPfhXb/+i9uVn/ZJU55PV+4nFfd0Z0JYBMoJ/6sD2Lgw7VGfn4nGK7kN
+AiMAosshoP4TuJkkxpmQRV3wbXtjmd3+GMshX7y3TRZO7zhoy+FpeMKFa3/Q3b+u
+Npjfq9YWZmoVo/9oHnv7AV4dZlINmrJl335VPjxQQG1gbKg5TaXo3A7cNkD6ygBI
+BjSbwWU57ajW+R+Y8WyIQM/6sfEdXeVEcy3kNw4o0ge88qXcNdsAsCAPHS0Zs+SC
+uTFoue/6dAIgC7HUgLFZDnx9B7zn1RjeZkQ14082wZ0hP/g6hTfr7bSop0BuFW9W
+k08l4O2TV2nsXQ1gk4r9Vr1zfL2iBJUNgjXfl8dwi1IbW46Qcf/6JsTZwUImw01F
+/gdIhMCtOJet1HMmw937K2Sg4PVTbRKoKy5+O4yUnn4td1Mz9k5xLsnsfDfwU63I
+UxLu5e/m3qEciEjWRCsb/Ko1V6l4ioXfaKy7BOAOjlixTeOcSCxeyuMo1T1TE2V0
+xk7CvW/iQvukH40bgmc98AcEvIJyGve1XldDj4BzXJd6uvtHYVW2mn18RjTo7Lci
+4lg7hz20B81ZlWKdWnMr
+=Kuri
+-----END PGP SIGNATURE-----
+
+--------------enig9A398C600C74AEA053665CC8--
+
