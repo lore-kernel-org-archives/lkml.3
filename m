@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab3AKCa2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 21:30:28 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45898 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab3AKCaG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 21:30:06 -0500
-X-AuditID: 9c930179-b7c7fae00000255c-0e-50ef792a0d6f
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Andy Whitcroft <apw@shadowen.org>, Alexander Nyberg <alexn@dsv.su.se>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCH v2 2/2] Enhance read_block of page_owner.c
-Date: Fri, 11 Jan 2013 11:30:01 +0900
-Message-Id: <1357871401-7075-2-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1357871401-7075-1-git-send-email-minchan@kernel.org>
-References: <1357871401-7075-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	id S1754695Ab3AKCfL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 21:35:11 -0500
+Received: from mga14.intel.com ([143.182.124.37]:35537 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752023Ab3AKCfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 21:35:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,447,1355126400"; 
+   d="scan'208";a="242551018"
+Message-ID: <50EF7A9F.8070700@intel.com>
+Date: Fri, 11 Jan 2013 10:36:15 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Mike Galbraith <efault@gmx.de>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [PATCH] sched: Get rid of unnecessary checks from select_idle_sibling
+References: <1357714256-24373-1-git-send-email-namhyung@kernel.org> <50ED1D54.70208@intel.com> <876236rdum.fsf@sejong.aot.lge.com> <50ED2B9F.3080800@intel.com> <87k3rlpou5.fsf@sejong.aot.lge.com>
+In-Reply-To: <87k3rlpou5.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The read_block reads char one by one until meeting two newline.
-It's not good for the performance and current code isn't good shape
-for readability.
+On 01/10/2013 01:52 PM, Namhyung Kim wrote:
+> On Wed, 09 Jan 2013 16:34:39 +0800, Alex Shi wrote:
+>> On 01/09/2013 03:54 PM, Namhyung Kim wrote:
+>>> Hi Alex,
+>>>
+>>> On Wed, 09 Jan 2013 15:33:40 +0800, Alex Shi wrote:
+>>>> On 01/09/2013 02:50 PM, Namhyung Kim wrote:
+>>>>> From: Namhyung Kim <namhyung.kim@lge.com>
+>>>>>
+>>>>> AFAICS @target cpu of select_idle_sibling() is always either prev_cpu
+>>>>> or this_cpu.  So no need to check it again and the conditionals can be
+>>>>> consolidated.
+>>> [snip]
+>>>> Uh, we don't know if the target is this_cpu or previous cpu, If we just
+>>>> check the target idle status, we may miss another idle cpu. So this
+>>>> patch change the logical in this function.
+>>>
+>>> select_idle_sibling() is called only in select_task_rq_fair() if it
+>>> found a suitable affine_sd.  The default target is the 'prev_cpu' of the
+>>> task but if wake_affine() returns true it'd be (this) 'cpu'.
+>>>
+>>> I cannot see where the prev_cpu or the cpu is set to another one before
+>>> calling select_idle_sibling.
+>>
+>> The old logical will return directly whenever prev_cpu or this cpu idle,
+>> but your new logical just has one chance.
+> 
+> Sorry, I can't get your point.  Could you elaborate on it a bit more?
 
-This patch enhances speed and clean up.
+Sorry. I misunderstand this.
 
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Andy Whitcroft <apw@shadowen.org>
-Cc: Alexander Nyberg <alexn@dsv.su.se>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- Documentation/page_owner.c |   34 +++++++++++++---------------------
- 1 file changed, 13 insertions(+), 21 deletions(-)
+Acked-by: Alex Shi
 
-diff --git a/Documentation/page_owner.c b/Documentation/page_owner.c
-index 43dde96..96bf481 100644
---- a/Documentation/page_owner.c
-+++ b/Documentation/page_owner.c
-@@ -28,26 +28,17 @@ static int max_size;
- 
- struct block_list *block_head;
- 
--int read_block(char *buf, FILE *fin)
-+int read_block(char *buf, int buf_size, FILE *fin)
- {
--	int ret = 0;
--	int hit = 0;
--	int val;
--	char *curr = buf;
--
--	for (;;) {
--		val = getc(fin);
--		if (val == EOF) return -1;
--		*curr = val;
--		ret++;
--		if (*curr == '\n' && hit == 1)
--			return ret - 1;
--		else if (*curr == '\n')
--			hit = 1;
--		else
--			hit = 0;
--		curr++;
-+	char *curr = buf, *const buf_end = buf + buf_size;
-+
-+	while (buf_end - curr > 1 && fgets(curr, buf_end - curr, fin)) {
-+		if (*curr == '\n') /* empty line */
-+			return curr - buf;
-+		curr += strlen(curr);
- 	}
-+
-+	return -1; /* EOF or no space left in buf. */
- }
- 
- static int compare_txt(struct block_list *l1, struct block_list *l2)
-@@ -84,10 +75,12 @@ static void add_list(char *buf, int len)
- 	}
- }
- 
-+#define BUF_SIZE	1024
-+
- int main(int argc, char **argv)
- {
- 	FILE *fin, *fout;
--	char buf[1024];
-+	char buf[BUF_SIZE];
- 	int ret, i, count;
- 	struct block_list *list2;
- 	struct stat st;
-@@ -106,11 +99,10 @@ int main(int argc, char **argv)
- 	list = malloc(max_size * sizeof(*list));
- 
- 	for(;;) {
--		ret = read_block(buf, fin);
-+		ret = read_block(buf, BUF_SIZE, fin);
- 		if (ret < 0)
- 			break;
- 
--		buf[ret] = '\0';
- 		add_list(buf, ret);
- 	}
- 
+> 
+> Thanks,
+> Namhyung
+> 
+
+
 -- 
-1.7.9.5
-
+Thanks Alex
