@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab3AKKEL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 05:04:11 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:43776 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754014Ab3AKKEJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 05:04:09 -0500
-Date: Fri, 11 Jan 2013 10:03:57 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Al Viro <viro@ZenIV.linux.org.uk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the signal tree with the arm64 tree
-Message-ID: <20130111100357.GA12977@mudshark.cambridge.arm.com>
-References: <20130111154617.cab6a8d1ff13a4f200969b9d@canb.auug.org.au>
- <20130111093602.GB13405@arm.com>
+	id S1754804Ab3AKKGp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 05:06:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53870 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754350Ab3AKKGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 05:06:44 -0500
+Date: Fri, 11 Jan 2013 10:06:39 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Tao Ma <boyu.mt@taobao.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ext4: Fix memory leak in ext4_init_new_dir
+Message-ID: <20130111100639.GA3302@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20130111093602.GB13405@arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 09:36:02AM +0000, Catalin Marinas wrote:
-> Hi Stephen,
-> 
-> On Fri, Jan 11, 2013 at 04:46:17AM +0000, Stephen Rothwell wrote:
-> > Today's linux-next merge of the signal tree got a conflict in
-> > arch/arm64/kernel/signal32.c between commits 068f1bb36cf1 ("arm64:
-> > compat: include sa_restorer in old action from rt_sigaction") and
-> > efed4d52e39f ("arm64: compat: ensure access_ok checks are performed on
-> > user structures") from the arm64 tree and various commits from the signal
-> > tree.
-> > 
-> > The latter removes the code modified by the former, so I did that.
-> 
-> I think the fix is fine. I'll give Al's patches a test and I can
-> probably drop Will's patches.
+Commit a774f9c2 "ext4: make ext4_init_dot_dotdot for inline dir usage"
+is a preparation cleanup for later ext4 patches but there was a snag
+when moving code to the newly created ext4_init_new_dir() function.
+ext4_bread() is called twice but brelse() is only called one leading to a
+memory leak. The user-visible effect is that after a compile-orientated
+benchmark 0% of memory could be allocated as transparent huge pages.
+This patch deletes the extra call and after it is applied, 76% of memory
+could be allocated after the same test.
 
-Yup, although it looks like we need to #define __ARCH_HAS_SA_RESTORER for
-compat_sys_rt_sigaction.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ fs/ext4/namei.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-Will
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 8990165..d068885 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2368,7 +2368,6 @@ static int ext4_init_new_dir(handle_t *handle, struct inode *dir,
+ 	}
+ 
+ 	inode->i_size = EXT4_I(inode)->i_disksize = blocksize;
+-	dir_block = ext4_bread(handle, inode, 0, 1, &err);
+ 	if (!(dir_block = ext4_bread(handle, inode, 0, 1, &err))) {
+ 		if (!err) {
+ 			err = -EIO;
