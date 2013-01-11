@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab3AKLzm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 06:55:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58111 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754120Ab3AKLzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 06:55:40 -0500
-Date: Fri, 11 Jan 2013 12:55:37 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Lin Feng <linfeng@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, Wu Jianguo <wujianguo@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mmots: memory-hotplug: implement
- register_page_bootmem_info_section of sparse-vmemmap fix
-Message-ID: <20130111115537.GH7286@dhcp22.suse.cz>
-References: <20130111095658.GC7286@dhcp22.suse.cz>
- <20130111101745.GD7286@dhcp22.suse.cz>
- <20130111102924.GE7286@dhcp22.suse.cz>
- <20130111104759.GF7286@dhcp22.suse.cz>
- <50EFF2CB.8060206@cn.fujitsu.com>
+	id S1754793Ab3AKL5r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 06:57:47 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:36458 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753699Ab3AKL5p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 06:57:45 -0500
+Message-ID: <50EFFDAA.6060204@synopsys.com>
+Date: Fri, 11 Jan 2013 17:25:22 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EFF2CB.8060206@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        Alan Cox <alan@linux.intel.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 4/4] serial/arc-uart: switch to devicetree based probing
+References: <1357885223-19243-1-git-send-email-vgupta@synopsys.com> <1357885223-19243-5-git-send-email-vgupta@synopsys.com> <201301111133.43507.arnd@arndb.de>
+In-Reply-To: <201301111133.43507.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 11-01-13 19:08:59, Lin Feng wrote:
-> Hi Michal,
-> 
-> On 01/11/2013 06:47 PM, Michal Hocko wrote:
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
-> >  arch/x86/mm/init_64.c |    3 +++
-> >  include/linux/mm.h    |    2 ++
-> >  2 files changed, 5 insertions(+)
-> > 
-> > diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> > index ddd3b58..d8edf52 100644
-> > --- a/arch/x86/mm/init_64.c
-> > +++ b/arch/x86/mm/init_64.c
-> > @@ -32,6 +32,7 @@
-> >  #include <linux/memory_hotplug.h>
-> linux/memory_hotplug.h has already been included here.
+On Friday 11 January 2013 05:03 PM, Arnd Bergmann wrote:
+> On Friday 11 January 2013, Vineet Gupta wrote:
+>> * DT binding for arc-uart
+>> * With alll the bits in place we can now use DT probing.
+>>
+>> Note that there's a bit of kludge right now because earlyprintk portion
+>> of driver can't use the DT infrastrcuture to get resoures/plat_data.
+>> This requires some infrastructre changes to of_flat_ framework
+>>
+>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: linux-serial@vger.kernel.org
+>> Cc: Alan Cox <alan@linux.intel.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: devicetree-discuss@lists.ozlabs.org
+>> Cc: Rob Herring <rob.herring@calxeda.com>
+>> Cc: Rob Landley <rob@landley.net>
+>> Cc: linux-serial@vger.kernel.org
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+> Quick question about the name though: is this UART only used
+> on ARC, or is it something that synopsys licenses to other
+> parties as well? If the latter is true, we might want to 
+> add a more generic "compatible" value for those that use
+> it on another architecture.
 
-Ohh, I have missed that.
--- 
-Michal Hocko
-SUSE Labs
+It's not licensed as standalone IP - since its not a standard 8250. It is only
+(but actively) used on the internal FPGA flows from ARC days.
+
+Thx,
+Vineet
+
+> 	Arnd
+
