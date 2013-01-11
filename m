@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab3AKO6J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 09:58:09 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:48245 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab3AKO6G (ORCPT
+	id S1754666Ab3AKPCK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 10:02:10 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:35162 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787Ab3AKPCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 09:58:06 -0500
+	Fri, 11 Jan 2013 10:02:09 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] spi: Add the flag indicate to registe new device as children of master or not.
-To: Jun Chen <jun.d.chen@intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Bi Chao <chao.bi@intel.com>,
-        spi-devel-general@lists.sourceforge.net, jun.zhang@intel.com
-In-Reply-To: <1356365812.6818.24.camel@chenjun-workstation>
-References: <1355848174.1435.25.camel@chenjun-workstation> <20121218152623.GA26077@sirena.org.uk> <1355910243.1435.39.camel@chenjun-workstation> <20121219090416.GK4985@opensource.wolfsonmicro.com> <20121219162142.9E1123E0B72@localhost> <1356111592.731.4.camel@chenjun-workstation> <20121221190618.6D6D03E0C98@localhost> <1356365812.6818.24.camel@chenjun-workstation>
-Date: Fri, 11 Jan 2013 14:57:54 +0000
-Message-Id: <20130111145754.76BB53E08C3@localhost>
+Subject: Re: [PATCH 5/5] spi: fix return value check in hspi_probe().
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Cyril Roelandt <tipecaml@gmail.com>,
+        spi-devel-general@lists.sourceforge.net,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130103160455.GO7247@mwanda>
+References: <1355271894-5284-1-git-send-email-tipecaml@gmail.com> <1355271894-5284-6-git-send-email-tipecaml@gmail.com> <87txrsqf7f.wl%kuninori.morimoto.gx@renesas.com> <20121219151154.937EC3E0AD7@localhost> <20121219163914.GN5032@mwanda> <20121222095620.83E243E07FA@localhost> <20130103160455.GO7247@mwanda>
+Date: Fri, 11 Jan 2013 15:02:02 +0000
+Message-Id: <20130111150202.C25583E08C3@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Dec 2012 11:16:52 -0500, Jun Chen <jun.d.chen@intel.com> wrote:
-> On Fri, 2012-12-21 at 19:06 +0000, Grant Likely wrote:
-> > The problem is that I don't understand why this change is necessary.
-> > spi_devices should always be children of an spi_master, not siblings.
-> > What is the problem you're trying to solve with this change?
+On Thu, 3 Jan 2013 19:04:55 +0300, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Sat, Dec 22, 2012 at 09:56:20AM +0000, Grant Likely wrote:
+> > On Wed, 19 Dec 2012 19:39:14 +0300, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > > On Wed, Dec 19, 2012 at 03:11:54PM +0000, Grant Likely wrote:
+> > > > On Tue, 11 Dec 2012 16:36:27 -0800 (PST), Kuninori Morimoto <kuninori.morimoto.gx@renesas.com> wrote:
+> > > > > 
+> > > > > Hi
+> > > > > 
+> > > > > > According to its documentation, clk_get() returns a "valid IS_ERR() condition
+> > > > > > containing errno", so we should call IS_ERR() rather than a NULL check.
+> > > > > > 
+> > > > > > Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+> > > > > 
+> > > > > Acked-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+> > > > 
+> > > > Applied, thanks.
+> > > 
+> > > In another thread, we were just talking about who clk_get() can
+> > > return a NULL if !CONFIG_HAVE_CLK.  That might change to match the
+> > > documentation later...  Not sure.
 > > 
-> When spi drivers try to use the core function(spi_register_master),it
-> will trigger error,because they use the function
-> spi_match_master_to_boardinfo  to create new spi device as the children
-> of the master.
-> In the old version of spi core, the new devices are registered as
-> siblings of the spi_master. My spi driver based on the old version runs
-> normal.
+> > So what is the solution here? Will the dummy clk_get() be changed, or is
+> > there more work needed on the drivers?
+> > 
 > 
-> But after applying for this patch:
-> {
->     spi: Fix device unregistration when unregistering the bus master
->     
->     Device are added as children of the bus master's parent device, but
->     spi_unregister_master() looks for devices to unregister in the bus
->     master's children. This results in the child devices not being
->     unregistered.
->     
->     Fix this by registering devices as direct children of the bus
-> master.
-> 
-> 
-> -	spi->dev.parent = dev;
-> +	spi->dev.parent = &master->dev;
-> }
-> 
-> Then my driver will be crash.
-> Maybe I have mistake on this issue, thank for your more explanation and
-> detail replay. 
+> This driver can't function without a clk.  It should select that at
+> build time instead of testing for it at probe.  Just checking for
+> IS_ERR() will NOT cause a NULL dereference so the patch is ok in
+> that respect.  I'm not sure if this can be build without
+> CONFIG_HAVE_CLK.
 
-Sounds like you've got a driver bug. Make sure it isn't trying to use
-the spi_client parent pointer to find the device instance.
+Your suggestion is to make this driver depend on CONFIG_HAVE_CLK? I'm
+fine with that, but it doesn't sort out the core infrastructure question
+about whether it is valid for the empty clk_get() to return NULL. Nor is
+it a particularly sustainable solution (ie. if a large number of drivers
+want to do the same thing).
 
 g.
-
