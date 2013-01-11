@@ -1,52 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab3AKQ4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 11:56:23 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:60558 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab3AKQ4W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 11:56:22 -0500
+	id S1754441Ab3AKRAn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:00:43 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40949 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751543Ab3AKRAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 12:00:42 -0500
+Date: Fri, 11 Jan 2013 18:00:38 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/2] mm: mmap: annotate vm_lock_anon_vma locking properly
+ for lockdep
+Message-ID: <20130111170038.GC21882@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jiri Kosina <jkosina@suse.cz>, Rik van Riel <riel@redhat.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-mm@kvack.org
+References: <alpine.LNX.2.00.1301041317150.9143@pobox.suse.cz>
+ <alpine.LNX.2.00.1301050134420.2946@pobox.suse.cz>
+ <alpine.LNX.2.00.1301050135050.2946@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20130111145059.GJ25591@8bytes.org>
-References: <1357545112-17375-1-git-send-email-aik@ozlabs.ru>
-	<20130110170941.GA2556@8bytes.org>
-	<CAKocOOP=V=kZ=4661YSs4b+7GLcNqzVvvhb+ONBO=LiR3txvTA@mail.gmail.com>
-	<20130111145059.GJ25591@8bytes.org>
-Date: Fri, 11 Jan 2013 09:56:20 -0700
-Message-ID: <CAKocOOOzzpN_ZdN9owv5tb-28qtvXc9KvF7WuyZdxYrAYxnNTw@mail.gmail.com>
-Subject: Re: [PATCH] iommu: moving initialization earlier
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Joerg Roedel <joerg.roedel@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        Shuah Khan <shuah.khan@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1301050135050.2946@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 7:50 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Thu, Jan 10, 2013 at 01:40:17PM -0700, Shuah Khan wrote:
->> I am currently debugging IO_PAGE_FAULTS on 3.6.11 (happens on all
->> pre-3.7 releases). I root-caused the reason 3.7 works is because in
->> 3.7 amd iommu driver moving up the early iommu initialization from
->> irq_remap_ops with the irq remapping feature.
->
-> Have you investigated the reason for those IO_PAGE_FAULTS? I guess they
-> come from the USB controlers and happen between the time the IOMMU is
-> enabled and the USB controlers are taken over by the Linux kernel from
-> the BIOS.
->
-> But I don't see why this patch can have any impact on the IO_PAGE_FAULTS
-> you are seeing.
+Ok, I see this still on -rc3, also with kvm.
 
-USB is one of them and SATA is another. I know with my back-port to
-split dma ops initialization and this patch Alexey sent, the problem
-goes away on 3.6.11 and I don't see the problem on 3.7. Same system,
-and two different boots. I will investigate do more investigation into
-the nature of these faults I am seeing and get back to you.
+Will run your patches and verify them.
 
-Thanks,
--- Shuah
+Thanks.
+
+On Sat, Jan 05, 2013 at 01:35:45AM +0100, Jiri Kosina wrote:
+> Commit 5a505085f04 ("mm/rmap: Convert the struct anon_vma::mutex to an 
+> rwsem") turned anon_vma mutex to rwsem.
+> 
+> However, the properly annotated nested locking in mm_take_all_locks() has 
+> been converted from
+> 
+> 	mutex_lock_nest_lock(&anon_vma->root->mutex, &mm->mmap_sem);
+> 
+> to
+> 
+> 	down_write(&anon_vma->root->rwsem);
+> 
+> which is incomplete, and causes the false positive report from lockdep below.
+> 
+> Annotate the fact that mmap_sem is used as an outter lock to serialize taking
+> of all the anon_vma rwsems at once no matter the order, using the
+> down_write_nest_lock() primitive.
+> 
+> This patch fixes this lockdep report:
+> 
+>  =============================================
+>  [ INFO: possible recursive locking detected ]
+>  3.8.0-rc2-00036-g5f73896 #171 Not tainted
+>  ---------------------------------------------
+>  qemu-kvm/2315 is trying to acquire lock:
+>   (&anon_vma->rwsem){+.+...}, at: [<ffffffff8115d549>] mm_take_all_locks+0x149/0x1b0
+> 
+>  but task is already holding lock:
+>   (&anon_vma->rwsem){+.+...}, at: [<ffffffff8115d549>] mm_take_all_locks+0x149/0x1b0
+> 
+>  other info that might help us debug this:
+>   Possible unsafe locking scenario:
+> 
+>         CPU0
+>         ----
+>    lock(&anon_vma->rwsem);
+>    lock(&anon_vma->rwsem);
+> 
+>   *** DEADLOCK ***
+> 
+>   May be due to missing lock nesting notation
+> 
+>  4 locks held by qemu-kvm/2315:
+>   #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff81177f1c>] do_mmu_notifier_register+0xfc/0x170
+>   #1:  (mm_all_locks_mutex){+.+...}, at: [<ffffffff8115d436>] mm_take_all_locks+0x36/0x1b0
+>   #2:  (&mapping->i_mmap_mutex){+.+...}, at: [<ffffffff8115d4c9>] mm_take_all_locks+0xc9/0x1b0
+>   #3:  (&anon_vma->rwsem){+.+...}, at: [<ffffffff8115d549>] mm_take_all_locks+0x149/0x1b0
+> 
+>  stack backtrace:
+>  Pid: 2315, comm: qemu-kvm Not tainted 3.8.0-rc2-00036-g5f73896 #171
+>  Call Trace:
+>   [<ffffffff810afea2>] print_deadlock_bug+0xf2/0x100
+>   [<ffffffff810b1a76>] validate_chain+0x4f6/0x720
+>   [<ffffffff810b1ff9>] __lock_acquire+0x359/0x580
+>   [<ffffffff810b0e7d>] ? trace_hardirqs_on_caller+0x12d/0x1b0
+>   [<ffffffff810b2341>] lock_acquire+0x121/0x190
+>   [<ffffffff8115d549>] ? mm_take_all_locks+0x149/0x1b0
+>   [<ffffffff815a12bf>] down_write+0x3f/0x70
+>   [<ffffffff8115d549>] ? mm_take_all_locks+0x149/0x1b0
+>   [<ffffffff8115d549>] mm_take_all_locks+0x149/0x1b0
+>   [<ffffffff81177e88>] do_mmu_notifier_register+0x68/0x170
+>   [<ffffffff81177fae>] mmu_notifier_register+0xe/0x10
+>   [<ffffffffa04bd6ab>] kvm_create_vm+0x22b/0x330 [kvm]
+>   [<ffffffffa04bd8a8>] kvm_dev_ioctl+0xf8/0x1a0 [kvm]
+>   [<ffffffff811a45bd>] do_vfs_ioctl+0x9d/0x350
+>   [<ffffffff815ad215>] ? sysret_check+0x22/0x5d
+>   [<ffffffff811a4901>] sys_ioctl+0x91/0xb0
+>   [<ffffffff815ad1e9>] system_call_fastpath+0x16/0x1b
+> 
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  mm/mmap.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index f54b235..35730ee 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2886,7 +2886,7 @@ static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
+>  		 * The LSB of head.next can't change from under us
+>  		 * because we hold the mm_all_locks_mutex.
+>  		 */
+> -		down_write(&anon_vma->root->rwsem);
+> +		down_write_nest_lock(&anon_vma->root->rwsem, &mm->mmap_sem);
+>  		/*
+>  		 * We can safely modify head.next after taking the
+>  		 * anon_vma->root->rwsem. If some other vma in this mm shares
+> -- 
+> Jiri Kosina
+> SUSE Labs
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
