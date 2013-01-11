@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab3AKUwq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:52:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52784 "EHLO mx1.redhat.com"
+	id S1755370Ab3AKUxG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:53:06 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38102 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab3AKUwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:52:45 -0500
-Date: Fri, 11 Jan 2013 15:52:32 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
-        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump
- implementation
-Message-ID: <20130111205232.GC17126@redhat.com>
-References: <50E41973.9050705@citrix.com>
- <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
- <50E6F81D02000078000B3245@nat28.tlf.novell.com>
- <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>
- <20130104191146.GC6721@phenom.dumpdata.com>
- <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
- <20130107162018.GJ3219@phenom.dumpdata.com>
- <87ehhsqrpr.fsf@xmission.com>
- <20130111165506.GD25620@phenom.dumpdata.com>
- <87k3rjtqi7.fsf@xmission.com>
+	id S1754886Ab3AKUxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 15:53:04 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH 1/16] ACPI: Separate adding ACPI device objects from probing ACPI drivers
+Date: Fri, 11 Jan 2013 21:58:50 +0100
+Message-ID: <6935441.WoipOdx2kz@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130111203759.GC13897@intel.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <2859994.arbXorpfaz@vostro.rjw.lan> <20130111203759.GC13897@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87k3rjtqi7.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 12:26:56PM -0800, Eric W. Biederman wrote:
+On Friday, January 11, 2013 10:37:59 PM Mika Westerberg wrote:
+> On Fri, Jan 11, 2013 at 09:31:43PM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Subject: ACPI / scan: Fix check of device_attach() return value.
+> > 
+> > Since device_attach() returns 1 on success and 0 on failure,
+> > the check against its return value in acpi_bus_device_attach()
+> > should be reveresed.  Make it so.
+> 
+> Not sure if it matters but it returns 0 if no device was bound to a driver
+> and -ENODEV in case of error. If we only want to terminate in case of
+> error, following might be better.
+> 
+> 	} else if (device_attach(&device->dev) < 0) {
 
-[..]
-> Recently there is a desire to figure out how to /sbin/kexec support
-> signed kernel images.  What will probably happen is to have a specially
-> trusted userspace application perform the verification.  Sort of like
-> dom0 for the linux userspace.  A few other ideas have been batted around
-> but none that have stuck.
+Yes, this check will be better.
 
-[ CC David Howells ]
+Which means that the patch is actually yours, so I've just added the changelog. :-)
 
-Eric,
+Thanks,
+Rafael
 
-In a private conversation, David Howells suggested why not pass kernel
-signature in a segment to kernel and kernel can do the verification.
 
-/sbin/kexec signature is verified by kernel at exec() time. Then
-/sbin/kexec just passes one signature segment (after regular segment) for
-each segment being loaded. The segments which don't have signature,
-are passed with section size 0. And signature passing behavior can be
-controlled by one new kexec flag.
+---
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: ACPI / scan: Fix check of device_attach() return value.
 
-That way /sbin/kexec does not have to worry about doing any verification
-by itself. In fact, I am not sure how it can do the verification when
-crypto libraries it will need are not signed (assuming they are not
-statically linked in).
+Since device_attach() returns 1 on success (a driver has been bound
+to the device), the check against its return value in
+acpi_bus_device_attach() should modified to take that into accout.
+Make it so.
 
-What do you think about this idea?
+[rjw: Subject and changelog.]
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/acpi/scan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks
-Vivek
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -1598,7 +1598,7 @@ static acpi_status acpi_bus_device_attac
+ 	if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
+ 		/* This is a known good platform device. */
+ 		acpi_create_platform_device(device);
+-	} else if (device_attach(&device->dev)) {
++	} else if (device_attach(&device->dev) < 0) {
+ 		status = AE_CTRL_DEPTH;
+ 	}
+ 	return status;
+
