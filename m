@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab3AKT5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 14:57:18 -0500
-Received: from mga14.intel.com ([143.182.124.37]:18518 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753510Ab3AKT5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 14:57:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,453,1355126400"; 
-   d="scan'208";a="242901929"
-Date: Fri, 11 Jan 2013 22:00:46 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH 1/16] ACPI: Separate adding ACPI device objects from
- probing ACPI drivers
-Message-ID: <20130111200046.GB13897@intel.com>
-References: <8498184.VilrUmatxI@vostro.rjw.lan>
- <4082842.31rfDviYHK@vostro.rjw.lan>
- <1855256.SyhOJGYMIh@vostro.rjw.lan>
- <23002897.6xbQGtPaGy@vostro.rjw.lan>
+	id S1754807Ab3AKT7l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 14:59:41 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:56777 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753826Ab3AKT7j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 14:59:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <23002897.6xbQGtPaGy@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1603289.LXteBtkifD@hammer82.arch.suse.de>
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
+	<201301111333.49238.trenn@suse.de>
+	<CAE9FiQWPJdER++ZrkKx7cQpF0QvwBeghNjpFqK18pMNC0w20tw@mail.gmail.com>
+	<1603289.LXteBtkifD@hammer82.arch.suse.de>
+Date: Fri, 11 Jan 2013 11:59:37 -0800
+X-Google-Sender-Auth: S9BlaXZWXg7w9CxlFoTLkuNtfDY
+Message-ID: <CAE9FiQU6RWH6cBKc9th3Eb2gCjcHfotbC1sYspQ7dU+cG=VMFA@mail.gmail.com>
+Subject: Re: [PATCH] x86 e820: only void usable memory areas in
+ memmap=exactmap case
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
+        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org,
+        horms@verge.net.au
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry to jump in late but I noticed one problem with this series while
-testing).
+On Fri, Jan 11, 2013 at 10:24 AM, Thomas Renninger <trenn@suse.de> wrote:
+>> We may need to keep exactmap intact.
+> Why?
+> Kexec/kdump should have been the only user?
+> If older/current kexec calls still add ACPI maps via memmap=X#Y,
+> they should already exist in the original e820 map and fall off or
+> get glued to one region if (wrongly) overlapping via sanitize_map.
 
-On Thu, Dec 20, 2012 at 02:47:47AM +0100, Rafael J. Wysocki wrote:
-> +static acpi_status acpi_bus_probe_start(acpi_handle handle, u32 lvl,
-> +					void *context, void **not_used)
-> +{
-> +	struct acpi_bus_ops *ops = context;
-> +	acpi_status status = AE_OK;
-> +	struct acpi_device *device;
-> +	unsigned long long sta_not_used;
-> +	int type_not_used;
-> +
-> +	/*
-> +	 * Ignore errors ignored by acpi_bus_check_add() to avoid terminating
-> +	 * namespace walks prematurely.
-> +	 */
-> +	if (acpi_bus_type_and_status(handle, &type_not_used, &sta_not_used))
-> +		return AE_OK;
-> +
-> +	if (acpi_bus_get_device(handle, &device))
-> +		return AE_CTRL_DEPTH;
-> +
-> +	if (ops->acpi_op_add) {
-> +		if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
-> +			/* This is a known good platform device. */
-> +			acpi_create_platform_device(device);
-> +		} else if (device_attach(&device->dev)) {
+No, kexec/kdump is not the only user for memmap=exactmap.
 
-device_attach() returns 1 if it succeeds to attach device to a driver. In
-that case we should continue and not return AE_CTRL_DEPTH, right?
+Thanks
 
-> +			status = AE_CTRL_DEPTH;
-> +		}
-> +	} else if (ops->acpi_op_start) {
-> +		if (ACPI_FAILURE(acpi_start_single_object(device)))
-> +			status = AE_CTRL_DEPTH;
-> +	}
-> +	return status;
-> +}
+Yinghai
