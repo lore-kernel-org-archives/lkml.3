@@ -1,61 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab3AKUMr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:12:47 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:43278 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012Ab3AKUMn (ORCPT
+	id S1755533Ab3AKUMh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:12:37 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:64025 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562Ab3AKUMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:12:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <50EF27B4.60608@wwwdotorg.org>
-References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com>
-	<50EF27B4.60608@wwwdotorg.org>
-Date: Fri, 11 Jan 2013 21:12:43 +0100
-Message-ID: <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com>
-Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-next@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 Jan 2013 15:12:33 -0500
+From: Tony Prisk <linux@prisktech.co.nz>
+To: olof@lixom.net
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH 4/4] arm: vt8500: Remove remaining mach includes
+Date: Sat, 12 Jan 2013 09:12:42 +1300
+Message-Id: <1357935162-7672-5-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1357935162-7672-1-git-send-email-linux@prisktech.co.nz>
+References: <1357935162-7672-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 9:42 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 12/12/2012 01:25 PM, Linus Walleij wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
->>
->> This makes the device core auto-grab the pinctrl handle and set
->> the "default" (PINCTRL_STATE_DEFAULT) state for every device
->> that is present in the device model right before probe. This will
->> account for the lion's share of embedded silicon devcies.
->
-> There are quite a few problems with this patch, and they end up
-> completely breaking at least Tegra in next-20130110.
+Remove the last two mach-vt8500/include/mach headers as they are
+no longer required with multiplatform-only configuration.
 
-But I have not put this patch into linux-next.
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+ arch/arm/mach-vt8500/include/mach/timex.h      |   26 -----------------
+ arch/arm/mach-vt8500/include/mach/uncompress.h |   37 ------------------------
+ 2 files changed, 63 deletions(-)
+ delete mode 100644 arch/arm/mach-vt8500/include/mach/timex.h
+ delete mode 100644 arch/arm/mach-vt8500/include/mach/uncompress.h
 
-I was still waiting for Greg to ACK it...
+diff --git a/arch/arm/mach-vt8500/include/mach/timex.h b/arch/arm/mach-vt8500/include/mach/timex.h
+deleted file mode 100644
+index 8487e4c..0000000
+--- a/arch/arm/mach-vt8500/include/mach/timex.h
++++ /dev/null
+@@ -1,26 +0,0 @@
+-/*
+- *  arch/arm/mach-vt8500/include/mach/timex.h
+- *
+- *  Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#ifndef MACH_TIMEX_H
+-#define MACH_TIMEX_H
+-
+-#define CLOCK_TICK_RATE		(3000000)
+-
+-#endif /* MACH_TIMEX_H */
+diff --git a/arch/arm/mach-vt8500/include/mach/uncompress.h b/arch/arm/mach-vt8500/include/mach/uncompress.h
+deleted file mode 100644
+index e6e81fd..0000000
+--- a/arch/arm/mach-vt8500/include/mach/uncompress.h
++++ /dev/null
+@@ -1,37 +0,0 @@
+-/* arch/arm/mach-vt8500/include/mach/uncompress.h
+- *
+- * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
+- *
+- * Based on arch/arm/mach-dove/include/mach/uncompress.h
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#define UART0_PHYS	0xd8200000
+-#define UART0_ADDR(x)	*(volatile unsigned char *)(UART0_PHYS + x)
+-
+-static void putc(const char c)
+-{
+-	while (UART0_ADDR(0x1c) & 0x2)
+-		/* Tx busy, wait and poll */;
+-
+-	UART0_ADDR(0) = c;
+-}
+-
+-static void flush(void)
+-{
+-}
+-
+-/*
+- * nothing to do
+- */
+-#define arch_decomp_setup()
+-#define arch_decomp_wdog()
+-- 
+1.7.9.5
 
-Apparently it was included in a pull request to the SH tree or something,
-Simon can you remove these patches for now, this patch needs to
-be elaborated on in the pinctrl tree first.
-
-Yours,
-Linus Walleij
