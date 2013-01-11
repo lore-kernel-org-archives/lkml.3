@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab3AKCfL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 21:35:11 -0500
-Received: from mga14.intel.com ([143.182.124.37]:35537 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab3AKCfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 21:35:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,447,1355126400"; 
-   d="scan'208";a="242551018"
-Message-ID: <50EF7A9F.8070700@intel.com>
-Date: Fri, 11 Jan 2013 10:36:15 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1754784Ab3AKCiO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 21:38:14 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:47269 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab3AKCiM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 21:38:12 -0500
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Mike Galbraith <efault@gmx.de>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [PATCH] sched: Get rid of unnecessary checks from select_idle_sibling
-References: <1357714256-24373-1-git-send-email-namhyung@kernel.org> <50ED1D54.70208@intel.com> <876236rdum.fsf@sejong.aot.lge.com> <50ED2B9F.3080800@intel.com> <87k3rlpou5.fsf@sejong.aot.lge.com>
-In-Reply-To: <87k3rlpou5.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 10 Jan 2013 18:37:50 -0800
+X-Google-Sender-Auth: 5NhJSYgAESERK5VexDulQenS4ZQ
+Message-ID: <CAB=NE6Xd6ATWO_1zOcg97sXcnabKBHjrHFetbfGRbDL-x1gqxw@mail.gmail.com>
+Subject: rel-html: HTML5 release page for compat-drivers, maybe kernel.org and others
+To: Konstantin Ryabitsev <mricon@kernel.org>, backports@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 01:52 PM, Namhyung Kim wrote:
-> On Wed, 09 Jan 2013 16:34:39 +0800, Alex Shi wrote:
->> On 01/09/2013 03:54 PM, Namhyung Kim wrote:
->>> Hi Alex,
->>>
->>> On Wed, 09 Jan 2013 15:33:40 +0800, Alex Shi wrote:
->>>> On 01/09/2013 02:50 PM, Namhyung Kim wrote:
->>>>> From: Namhyung Kim <namhyung.kim@lge.com>
->>>>>
->>>>> AFAICS @target cpu of select_idle_sibling() is always either prev_cpu
->>>>> or this_cpu.  So no need to check it again and the conditionals can be
->>>>> consolidated.
->>> [snip]
->>>> Uh, we don't know if the target is this_cpu or previous cpu, If we just
->>>> check the target idle status, we may miss another idle cpu. So this
->>>> patch change the logical in this function.
->>>
->>> select_idle_sibling() is called only in select_task_rq_fair() if it
->>> found a suitable affine_sd.  The default target is the 'prev_cpu' of the
->>> task but if wake_affine() returns true it'd be (this) 'cpu'.
->>>
->>> I cannot see where the prev_cpu or the cpu is set to another one before
->>> calling select_idle_sibling.
->>
->> The old logical will return directly whenever prev_cpu or this cpu idle,
->> but your new logical just has one chance.
-> 
-> Sorry, I can't get your point.  Could you elaborate on it a bit more?
+The last step from the compat-wireless --> compat-drivers name change
+was to produce a release page for it. I was asked to see if I could
+come up with something generic that perhaps could be used by other
+projects. I've created a Python release script called rel-html [0] to
+generate a simple HTML5 page based on the initializr project for a
+base HTML5 template [0]. It currently supports generating new shiny
+simple HTML5 pages for compat-drivers and kernel.org. Whether or not
+its used for other projects is obviously an option for each project to
+choose but hope its simple enough for others to embrace if they so
+wish.
 
-Sorry. I misunderstand this.
+It works by allowing a project to add a simple configuration file and
+a few hints on where to find releases.
 
-Acked-by: Alex Shi
+Example for kernel.org:
 
-> 
-> Thanks,
-> Namhyung
-> 
+https://raw.github.com/mcgrof/rel-html/master/rel-html.cfg
 
+Example for compat-drivers:
 
--- 
-Thanks Alex
+https://raw.github.com/mcgrof/rel-html/master/projects/compat-drivers.cfg
+
+It currently relies on both the kernel.org and compat-drivers release
+model and only refers to releases if each release has respective
+ChangeLog and a signature file. Testing releases do not require
+ChangeLogs. Right now it does require manual configuration file
+updates if a new release is made but to figure out a way to make it
+autodetect the latest release is something I'd prefer address with the
+community.
+
+To generate a page and see what it spits out you can run and point
+your browser to the index.html file:
+
+# For kernel.org:
+mcgrof@frijol ~/devel/rel-html (git::master)$ ./rel-html.py  > html/index.html
+
+# For compat-drivers:
+mcgrof@frijol ~/devel/rel-html (git::master)$ ./rel-html.py -f
+projects/compat-drivers.cfg > html/index.html
+
+Konstantin, let me know if this works for a compat-driver release
+page. I also welcome feedback from others for considerations for other
+projects and of course I welcome patches.
+
+[0] https://github.com/mcgrof/rel-html
+[1] http://www.initializr.com/
+
+  Luis
