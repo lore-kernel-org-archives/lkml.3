@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab3AKW0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 17:26:49 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38212 "EHLO hydra.sisk.pl"
+	id S1755752Ab3AKW14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 17:27:56 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38215 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754762Ab3AKW0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 17:26:48 -0500
+	id S1755100Ab3AKW1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 17:27:55 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-pm@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 0/1] Delete legacy power trace API
-Date: Fri, 11 Jan 2013 23:32:34 +0100
-Message-ID: <1919783.ReCP0b2FdU@vostro.rjw.lan>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+Cc: daniel.lezcano@linaro.org, rafael.j.wysocki@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpuidle: fix number of initialized/destroyed states
+Date: Fri, 11 Jan 2013 23:33:43 +0100
+Message-ID: <1933348.QT2xbYKFLP@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357350544-32704-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1357350544-32704-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1357585921-3391-1-git-send-email-krzysiek@podlesie.net>
+References: <1357585921-3391-1-git-send-email-krzysiek@podlesie.net>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -24,39 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 04, 2013 08:49:03 PM Paul Gortmaker wrote:
-> The actual deletion is mind-numbingly simple; and if you go by the
-> comments in the code, it is well overdue.  However, in discussions
-> with Frederic, he suggested to me that those comments might have
-> been overly optimistic, and that there may still be people out
-> there who are still unknowingly using this dead API.
-> 
-> So, that is the crux of the RFC component -- to check whether the
-> comments saying "delete by v3.1" can be taken at face value, or
-> whether they were overly optimistic, and hence this stuff is still
-> actively used even though it is overdue for deletion.
+On Monday, January 07, 2013 08:12:01 PM Krzysztof Mazur wrote:
+> Commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 (cpuidle: support
+> multiple drivers) changed the number of initialized state kobjects
+> in cpuidle_add_state_sysfs() from device->state_count to drv->state_count,
+> but leaved device->state_count in cpuidle_remove_state_sysfs().
+> Those two values might have different values, causing for instance
+> NULL pointer dereference in cpuidle_remove_state_sysfs().
 
-Applied to the linux-next branch of the linux-pm.git tree as v3.9 material.
+Applied to the linux-next branch of the linux-pm.git tree as v3.8 material.
 
 Thanks,
 Rafael
 
 
+> Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
 > ---
+> Hi,
 > 
-> Paul Gortmaker (1):
->   tracing: remove deprecated power trace API
+> commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92
+> (cpuidle: support multiple drivers, merged in v3.8-rc1) causes NULL pointer
+> dereference in cpuidle_remove_state_sysfs() when I plug the AC line to my
+> laptop. I'm using the acpi_idle cpuidle driver and the C4 state is
+> available only on when the system runs from battery. The problem still
+> exists in v3.8-rc2 and f243b9b46a22e5790dbbc36f574c2417af49a41.
 > 
->  Documentation/trace/events-power.txt | 27 +----------
->  arch/arm/mach-omap2/pm34xx.c         |  2 -
->  arch/x86/kernel/process.c            |  6 ---
->  drivers/cpufreq/cpufreq.c            |  1 -
->  drivers/cpuidle/cpuidle.c            |  2 -
->  include/trace/events/power.h         | 92 ------------------------------------
->  kernel/trace/Kconfig                 | 15 ------
->  kernel/trace/power-traces.c          |  3 --
->  8 files changed, 1 insertion(+), 147 deletions(-)
+> I noticed that the commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92
+> (merged in v3.8-rc1) changed device->state_count to drv->state_count
+> in only one of two places, which seems to be incorrect. This patch restores
+> device->state_count in both places. It fixes the problem on my system.
 > 
+> Krzysiek
+> 
+>  drivers/cpuidle/sysfs.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+> index 3409429..428754a 100644
+> --- a/drivers/cpuidle/sysfs.c
+> +++ b/drivers/cpuidle/sysfs.c
+> @@ -374,7 +374,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
+>  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(device);
+>  
+>  	/* state statistics */
+> -	for (i = 0; i < drv->state_count; i++) {
+> +	for (i = 0; i < device->state_count; i++) {
+>  		kobj = kzalloc(sizeof(struct cpuidle_state_kobj), GFP_KERNEL);
+>  		if (!kobj)
+>  			goto error_state;
 > 
 -- 
 I speak only for myself.
