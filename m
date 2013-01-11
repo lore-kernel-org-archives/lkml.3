@@ -1,96 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab3AKQZq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 11:25:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44521 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753754Ab3AKQZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 11:25:44 -0500
-Subject: Re: [PATCH V5 26/30] gfs2: Convert aio_read/write ops to
- read/write_iter
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        cluster-devel@redhat.com
-In-Reply-To: <50EED160.9090102@oracle.com>
-References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
-	 <1357761525-22718-27-git-send-email-dave.kleikamp@oracle.com>
-	 <1357812655.2760.9.camel@menhir>  <50EED160.9090102@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Fri, 11 Jan 2013 16:24:22 +0000
-Message-ID: <1357921462.2716.29.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754926Ab3AKQdW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 11:33:22 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44895 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab3AKQdU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 11:33:20 -0500
+Date: Fri, 11 Jan 2013 16:32:55 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, sameo@linux.intel.com,
+        tony@atomide.com, gregkh@linuxfoundation.org,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, kishon@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 07/14] usb: ehci-omap: Instantiate PHY devices if
+	required
+Message-ID: <20130111163255.GF23505@n2100.arm.linux.org.uk>
+References: <Pine.LNX.4.44L0.1301111019340.1730-100000@iolanthe.rowland.org> <50F037C9.40306@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F037C9.40306@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, 2013-01-10 at 08:34 -0600, Dave Kleikamp wrote:
-> On 01/10/2013 04:10 AM, Steven Whitehouse wrote:
-> > Hi,
-> > 
-> > On Wed, 2013-01-09 at 13:58 -0600, Dave Kleikamp wrote:
-> >> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-> >> Cc: Steven Whitehouse <swhiteho@redhat.com>
-> >> Cc: cluster-devel@redhat.com
-> >> ---
-> >>  fs/gfs2/file.c | 21 ++++++++++-----------
-> >>  1 file changed, 10 insertions(+), 11 deletions(-)
-> >>
-> >> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-> >> index 991ab2d..63af1a6 100644
-> >> --- a/fs/gfs2/file.c
-> >> +++ b/fs/gfs2/file.c
-> >> @@ -655,10 +655,9 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
-> >>  }
-> >>  
-> >>  /**
-> >> - * gfs2_file_aio_write - Perform a write to a file
-> >> + * gfs2_file_write_iter - Perform a write to a file
-> >>   * @iocb: The io context
-> >> - * @iov: The data to write
-> >> - * @nr_segs: Number of @iov segments
-> >> + * @iter: The data to write
-> >>   * @pos: The file position
-> >>   *
-> >>   * We have to do a lock/unlock here to refresh the inode size for
-> >> @@ -668,11 +667,11 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
-> >>   *
-> >>   */
-> >>  
-> >> -static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
-> >> -				   unsigned long nr_segs, loff_t pos)
-> >> +static ssize_t gfs2_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
-> >> +				    loff_t pos)
-> >>  {
-> >>  	struct file *file = iocb->ki_filp;
-> >> -	size_t writesize = iov_length(iov, nr_segs);
-> >> +	size_t writesize = iov_iter_count(iter);
-> > 
-> > Hmm, I had a vague memory that we'd agreed to call this iov_iter_length
-> > rather than iov_iter_count in order to keep the existing naming and to
-> > make it sound more like what it is (the length of the data) as opposed
-> > to the number of individual buffers to be written.
+On Fri, Jan 11, 2013 at 06:03:21PM +0200, Roger Quadros wrote:
+> diff --git a/include/linux/platform_data/usb-omap.h
+> b/include/linux/platform_data/usb-omap.h
+> index d63eb7d..927b8a1 100644
+> --- a/include/linux/platform_data/usb-omap.h
+> +++ b/include/linux/platform_data/usb-omap.h
+> @@ -38,6 +38,12 @@ enum usbhs_omap_port_mode {
+>  	OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM
+>  };
 > 
-> I had originally agreed, thinking it would be a better name, but then I
-> realized that iov_iter_count() has been defined that way since 2.6.24
-> and I didn't want to introduce any more change in this patchset than
-> necessary since it's already pretty extensive.
-> 
-Ok, that makes sense to me,
+> +struct usbhs_phy_config {
+> +	char *name;		/* binds to device driver */
 
-Steve.
-
-> > Not that it is desperately important, but just to flag it up in case it
-> > got forgotten at some stage,
-> > 
-> > Steve.
-> > 
-> > 
-
-
+You may wish to consider making this const.
