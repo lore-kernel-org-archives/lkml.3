@@ -1,103 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab3AKF5c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 00:57:32 -0500
-Received: from mga03.intel.com ([143.182.124.21]:53701 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755102Ab3AKF5b convert rfc822-to-8bit (ORCPT
+	id S1755300Ab3AKGDl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 01:03:41 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:49435 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755102Ab3AKGDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 00:57:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,449,1355126400"; 
-   d="scan'208";a="190032248"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Colin Cross <ccross@android.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH] hardlockup: detect hard lockups without NMIs using
- secondary cpus
-Thread-Topic: [PATCH] hardlockup: detect hard lockups without NMIs using
- secondary cpus
-Thread-Index: AQHN771YV2tpQQZfqUmLm5GABTxLtJhDnc8w
-Date: Fri, 11 Jan 2013 05:57:27 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A2010CB@SHSMSX101.ccr.corp.intel.com>
-References: <1357783059-13923-1-git-send-email-ccross@android.com>
-	<27240C0AC20F114CBF8149A2696CBE4A200DD9@SHSMSX101.ccr.corp.intel.com>
- <CAMbhsRS5S=bRWOAA_ft3josCX9kvarrqPX-sLnO02vB0NfZJ+w@mail.gmail.com>
-In-Reply-To: <CAMbhsRS5S=bRWOAA_ft3josCX9kvarrqPX-sLnO02vB0NfZJ+w@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 11 Jan 2013 01:03:40 -0500
+Message-ID: <1357884213.5716.35.camel@marge.simpson.net>
+Subject: Re: kernel BUG at kernel/sched_rt.c:493!
+From: Mike Galbraith <bitbucket@online.de>
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org
+Date: Fri, 11 Jan 2013 07:03:33 +0100
+In-Reply-To: <1357881760.5716.31.camel@marge.simpson.net>
+References: <20130105174632.GB19226@u1004.rgmadvisors.com>
+	 <20130107175818.GA3411@BohrerMBP.rgmadvisors.com>
+	 <20130107230218.GB3411@BohrerMBP.rgmadvisors.com>
+	 <20130108143605.GB5594@home.goodmis.org>
+	 <20130108150153.GA2219@BohrerMBP.rgmadvisors.com>
+	 <1357791191.5841.8.camel@marge.simpson.net>
+	 <20130110195809.GA3415@BohrerMBP.rgmadvisors.com>
+	 <1357881760.5716.31.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:0p25vfenQS09NRQAP8lfPehJpJQSK4LHlmeFlRrdWDQ
+ CjRAKDWlzGRjkJAe59t4Q/+6oqp6QQOUURNv23auBnAxy+cO1F
+ r37X/xQ8ff3ZWiPbEPXwfuhe5vsZlxJhzRP6gduLMA2NYjClOB
+ 2vYXG16fgupqM5mH7HZ265ly1OXoajTCCCWOIiaRjxiI8I6pSq
+ scTQ94JgFhQyvpGUtkYtuUF2preqPIao5B9IOXifzQCp1C+6oH
+ wB0Rypl9aANaV0TUwxOllPI74kHflGGDZ7CM+7Av1tdeb8n19y
+ 3Duqreg9w0XgCPcIj+ugucyxzE6R2mFZEK3wh8OoGyC6cLyh35
+ jSyPZRUc5HpVrYOxsvHy9ns20WX//EsRB2w+pT5ij2y8XsvLV0
+ MPsNej4I65Wjw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: ccross@google.com [mailto:ccross@google.com] On Behalf Of Colin
-> Cross
-> Sent: Friday, January 11, 2013 1:34 PM
-> To: Liu, Chuansheng
-> Cc: linux-kernel@vger.kernel.org; Andrew Morton; Don Zickus; Ingo Molnar;
-> Thomas Gleixner; linux-arm-kernel@lists.infradead.org
-> Subject: Re: [PATCH] hardlockup: detect hard lockups without NMIs using
-> secondary cpus
+On Fri, 2013-01-11 at 06:22 +0100, Mike Galbraith wrote: 
+> On Thu, 2013-01-10 at 13:58 -0600, Shawn Bohrer wrote:
 > 
-> On Thu, Jan 10, 2013 at 5:39 PM, Liu, Chuansheng
-> <chuansheng.liu@intel.com> wrote:
-> >
-> >
-> >> -----Original Message-----
-> >> From: Colin Cross [mailto:ccross@android.com]
-> >> Sent: Thursday, January 10, 2013 9:58 AM
-> >> To: linux-kernel@vger.kernel.org
-> >> Cc: Andrew Morton; Don Zickus; Ingo Molnar; Thomas Gleixner; Liu,
-> >> Chuansheng; linux-arm-kernel@lists.infradead.org; Colin Cross
-> >> Subject: [PATCH] hardlockup: detect hard lockups without NMIs using
-> >> secondary cpus
-> >>
-> >> Emulate NMIs on systems where they are not available by using timer
-> >> interrupts on other cpus.  Each cpu will use its softlockup hrtimer
-> >> to check that the next cpu is processing hrtimer interrupts by
-> >> verifying that a counter is increasing.
-> >>
-> >> This patch is useful on systems where the hardlockup detector is not
-> >> available due to a lack of NMIs, for example most ARM SoCs.
-> >> Without this patch any cpu stuck with interrupts disabled can
-> >> cause a hardware watchdog reset with no debugging information,
-> >> but with this patch the kernel can detect the lockup and panic,
-> >> which can result in useful debugging info.
-> >>
-> >> Signed-off-by: Colin Cross <ccross@android.com>
-> >> +static void watchdog_check_hardlockup_other_cpu(void)
-> >> +{
-> >> +     int cpu;
-> >> +     cpumask_t cpus = watchdog_cpus;
-> >> +
-> >> +     /*
-> >> +      * Test for hardlockups every 3 samples.  The sample period is
-> >> +      *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly
-> over
-> >> +      *  watchdog_thresh (over by 20%).
-> >> +      */
-> >> +     if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
-> >> +             return;
-> >> +
-Another feeling is about __this_cpu_read(hrtimer_interrupts) % 3 != 0,
-It will cause the actual timeout value for hard lockup detection is not very fix, or even
-very short.
-Sometimes using 3 samples can detect the lockup case, but sometimes 1 sample.
-Is it the case?
+> > Here is the output:
+> > 
+> > [   81.278842] SysRq : Changing Loglevel
+> > [   81.279027] Loglevel set to 9
+> > [   83.285456] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+> > [   85.286452] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+> > [   85.289625] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+> > [   87.287435] Initial want: 100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 850000000
+> > [   87.290718] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+> > [   89.288469] Initial want: -50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1000000000
+> > [   89.291550] Initial want: 150000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 800000000
+> > [   89.292940] Initial want: 100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 850000000
+> > [   89.294082] Initial want: 100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 850000000
+> > [   89.295194] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+> > [   89.296274] Initial want: 50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 900000000
+> > [   90.959004] [sched_delayed] sched: RT throttling activated
+> > [   91.289470] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+> > [   91.292767] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+> > [   91.294037] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+> > [   91.295364] Initial want: 200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 750000000
+> > [   91.296355] BUG triggered, want: 200000000
+> > [   91.296355] 
+> > [   91.296355] rt_rq[7]:
+> > [   91.296355]   .rt_nr_running                 : 0
+> > [   91.296355]   .rt_throttled                  : 0
+> > [   91.296355]   .rt_time                       : 0.000000
+> > [   91.296355]   .rt_runtime                    : 750.000000
+> > [   91.307332] Initial want: -50000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1000000000
+> > [   91.308440] Initial want: -100000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1050000000
+> > [   91.309586] Initial want: -150000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1100000000
+> > [   91.310716] Initial want: -200000000 rt_b->rt_runtime: 950000000 rt_rq->rt_runtime: 1150000000
+> > [   91.311707] BUG triggered, want: -200000000
+> > [   91.311707] 
+> > [   91.311707] rt_rq[6]:
+> > [   91.311707]   .rt_nr_running                 : 1
+> > [   91.311707]   .rt_throttled                  : 0
+> > [   91.311707]   .rt_time                       : 307.209987
+> > [   91.311707]   .rt_runtime                    : 1150.000000
+> 
+> That makes about as much sense as my crash did.  There is no leak, but
+> cpu found nada.  So rd/span is changing on us?
 
-And in NMI case, the NMI interrupt is coming at least every watchdog_thresh.
+So I looked at the locking (yet again), and (for the umpteenth time) see
+no way in the world that can happen.  Hrmph.
+
+-Mike
 
