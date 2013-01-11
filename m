@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab3AKUnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:43:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18720 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755299Ab3AKUnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:43:43 -0500
-Date: Fri, 11 Jan 2013 15:43:18 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
-        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump
- implementation
-Message-ID: <20130111204317.GB17126@redhat.com>
-References: <50E41973.9050705@citrix.com>
- <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
- <50E6F81D02000078000B3245@nat28.tlf.novell.com>
- <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>
- <20130104191146.GC6721@phenom.dumpdata.com>
- <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
- <20130107162018.GJ3219@phenom.dumpdata.com>
- <87ehhsqrpr.fsf@xmission.com>
- <20130111165506.GD25620@phenom.dumpdata.com>
- <50F07588.90902@zytor.com>
+	id S1754302Ab3AKUpX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:45:23 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:38971 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab3AKUpV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 15:45:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F07588.90902@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <9702060.jEbHySsCv0@avalon>
+References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com>
+	<50EF27B4.60608@wwwdotorg.org>
+	<CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com>
+	<9702060.jEbHySsCv0@avalon>
+Date: Fri, 11 Jan 2013 21:45:21 +0100
+Message-ID: <CACRpkdbFH6RCEEnXO=A9FVa0B5rtE9RkjXz9Hhy+w7NvwcBCgg@mail.gmail.com>
+Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Simon Horman <horms@verge.net.au>, Stephen Warren <swarren@wwwdotorg.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-next@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 12:26:48PM -0800, H. Peter Anvin wrote:
-> >
-> >And there is nothing fancy to be done for EFI and SecureBoot? Or is
-> >that something that the kernel has to handle on its own (so somehow
-> >passing some certificates to somewhere).
-> >
-> 
-> For EFI, no... other than passing the EFI parameters, which
-> apparently is *not* currently done (David Woodhouse is working on
-> it.)  Secure boot is still a work in progress.
+On Fri, Jan 11, 2013 at 9:36 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
 
-For secureboot, as a first step in that direction, I just wrote some code
-to sign elf executable and be able to verify it in kernel upon exec(). I
-am soon planning to post RFC code (most likely next week).
+> I've sent several patch series for the SH PFC (Pin Function Controller) to the
+> linux-sh mailing list. One of the series included pinctrl core patches for
+> easier testing, but I made it clear that they should *not* be pushed to
+> mainline through the SH tree.
 
-Hopefully we will be able to sign statically signed /sbin/kexec, give
-it extra capability (upon signature verification) to be able to call
-sys_exec().
+No big deal, what fun is linux-next if we don't break it ;-)
 
-Thanks
-Vivek
+Yours,
+Linus Walleij
