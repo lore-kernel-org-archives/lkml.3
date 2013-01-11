@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab3AKVJq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 16:09:46 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:53558 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab3AKVJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 16:09:45 -0500
+	id S1754473Ab3AKVPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 16:15:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52208 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753467Ab3AKVPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 16:15:21 -0500
+Message-ID: <50F080C6.5070206@zytor.com>
+Date: Fri, 11 Jan 2013 13:14:46 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <50F070D8.2080109@zytor.com>
-References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
-	<201301111333.49238.trenn@suse.de>
-	<CAE9FiQWPJdER++ZrkKx7cQpF0QvwBeghNjpFqK18pMNC0w20tw@mail.gmail.com>
-	<1603289.LXteBtkifD@hammer82.arch.suse.de>
-	<CAE9FiQU6RWH6cBKc9th3Eb2gCjcHfotbC1sYspQ7dU+cG=VMFA@mail.gmail.com>
-	<50F070D8.2080109@zytor.com>
-Date: Fri, 11 Jan 2013 13:09:43 -0800
-X-Google-Sender-Auth: mdmK6By8fp_M-4bOxpKE-Vd0AVw
-Message-ID: <CAE9FiQWEan4Vq-pbp6sgMWVFHwWygQ4Hq2wRsPH166+7w7L2yg@mail.gmail.com>
-Subject: Re: [PATCH] x86 e820: only void usable memory areas in
- memmap=exactmap case
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Renninger <trenn@suse.de>,
-        MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
-        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
-        tglx@linutronix.de, khalid@gonehiking.org, horms@verge.net.au
-Content-Type: text/plain; charset=ISO-8859-1
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
+        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump implementation
+References: <50E6F81D02000078000B3245@nat28.tlf.novell.com> <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl> <20130104191146.GC6721@phenom.dumpdata.com> <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl> <20130107162018.GJ3219@phenom.dumpdata.com> <87ehhsqrpr.fsf@xmission.com> <20130111165506.GD25620@phenom.dumpdata.com> <87k3rjtqi7.fsf@xmission.com> <20130111205232.GC17126@redhat.com> <50F07E2D.6010602@zytor.com> <20130111210801.GC12019@redhat.com>
+In-Reply-To: <20130111210801.GC12019@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 12:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 01/11/2013 11:59 AM, Yinghai Lu wrote:
->> On Fri, Jan 11, 2013 at 10:24 AM, Thomas Renninger <trenn@suse.de> wrote:
->>>> We may need to keep exactmap intact.
->>> Why?
->>> Kexec/kdump should have been the only user?
->>> If older/current kexec calls still add ACPI maps via memmap=X#Y,
->>> they should already exist in the original e820 map and fall off or
->>> get glued to one region if (wrongly) overlapping via sanitize_map.
+On 01/11/2013 01:08 PM, Vivek Goyal wrote:
 >>
->> No, kexec/kdump is not the only user for memmap=exactmap.
->>
+>> A signed /sbin/kexec would realistically have to be statically linked,
+>> at least in the short term; otherwise the libraries and ld.so would need
+>> verification as well.
 >
-> Who is using it then, since you seem to know?
+> Yes. That's the expectation. Sign only statically linked exeutables which
+> don't do any of dlopen() stuff either.
+>
+> In fact in the patch, I fail the exec() if signed executable has
+> interpreter.
+>
 
-http://forums.gentoo.org/viewtopic-t-487476-highlight-proliant.html
+As I said, though (and possibly not for kexec, that depends): in the 
+long term we probably want a way to be able to sign all kinds binaries 
+in the system.
 
-http://forums.fedoraforum.org/archive/index.php/t-225347.html
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
