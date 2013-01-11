@@ -1,179 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab3AKEfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 23:35:09 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:63631 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab3AKEfG (ORCPT
+	id S1754322Ab3AKEna (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 23:43:30 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56368 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753590Ab3AKEn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 23:35:06 -0500
-Date: Fri, 11 Jan 2013 05:34:37 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 12/14] ARM: tegra: tec: Add PCIe support
-Message-ID: <20130111043437.GF28094@avionic-0098.adnet.avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <1357764194-12677-13-git-send-email-thierry.reding@avionic-design.de>
- <50EF5B46.8010806@wwwdotorg.org>
+	Thu, 10 Jan 2013 23:43:29 -0500
+X-AuditID: 9c930179-b7c7fae00000255c-ea-50ef986f0404
+Date: Fri, 11 Jan 2013 13:43:27 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 2/2] mm: forcely swapout when we are out of page cache
+Message-ID: <20130111044327.GB6183@blaptop>
+References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+ <1357712474-27595-3-git-send-email-minchan@kernel.org>
+ <20130109162602.53a60e77.akpm@linux-foundation.org>
+ <20130110022306.GB14685@blaptop>
+ <20130110135828.c88bcaf1.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rMWmSaSbD7nr+du9"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50EF5B46.8010806@wwwdotorg.org>
+In-Reply-To: <20130110135828.c88bcaf1.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:A5+W3kpVegZlxSWPfiegsoZGSZMjVnH9syNx6Zlq/V8
- iX7wcM6NMAv0PtTHz3IyOu+P8GXyVoD1i5aTPzDU9zXhE7yQiq
- 2hmpNMtyMCvr5puM/xQUOFlwBpMy3yY11zHfapf6NqqJWPz/oh
- ZwelzJGdkXNn45FtReJg8VogbzNt7CHLu7PffJ8iL4MZvTUU5t
- jWczQ+IFDNqpcTWVjghoAnBq2gonxBm+xi5zsWaiPS56/Iw/6s
- V4+HRgJT/OJ6+Brn5z3HJdPyitgLSFVlJfxciZipuuVdzE9QBm
- HMnPLqTliQzV5rlOVJ7yjlnatYoxoyfo/2IZkhqQIyp8FpEeMg
- ddAdD8DAxM8Pdes/iYGLnQjpM9ziiR+YATkpjSiFGt+/3HH5Do
- X+AHQOB9YqYCRTNO5Iwm9q7gDQyZjyXnDpoJZMU3aaEeOP6T97
- 1guDy
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andrew,
 
---rMWmSaSbD7nr+du9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 10, 2013 at 01:58:28PM -0800, Andrew Morton wrote:
+> On Thu, 10 Jan 2013 11:23:06 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > > I have a feeling that laptop mode has bitrotted and these patches are
+> > > kinda hacking around as-yet-not-understood failures...
+> > 
+> > Absolutely, this patch is last guard for unexpectable behavior.
+> > As I mentioned in cover-letter, Luigi's problem could be solved either [1/2]
+> > or [2/2] but I wanted to add this as last resort in case of unexpected
+> > emergency. But you're right. It's not good to hide the problem like this path
+> > so let's drop [2/2].
+> > 
+> > Also, I absolutely agree it has bitrotted so for correcting it, we need a
+> > volunteer who have to inverstigate power saveing experiment with long time.
+> > So [1/2] would be band-aid until that.
+> 
+> I'm inclined to hold off on 1/2 as well, really.
 
-On Thu, Jan 10, 2013 at 05:22:30PM -0700, Stephen Warren wrote:
-> On 01/09/2013 01:43 PM, Thierry Reding wrote:
-> > Enable the first PCIe root port which is connected to an FPGA on the
-> > Tamonten Evaluation Carrier and add device nodes for each of the PCI
-> > endpoints available in the standard configuration.
->=20
-> > diff --git a/arch/arm/boot/dts/tegra20-tec.dts b/arch/arm/boot/dts/tegr=
-a20-tec.dts
->=20
-> > +	pcie-controller {
-> > +		vdd-supply =3D <&pci_vdd_reg>;
-> > +		pex-clk-supply =3D <&pci_clk_reg>;
-> > +		status =3D "okay";
->=20
-> Sorry this is also really picky. I'd prefer properties that exist in
-> /include/d files and are overidden here to appear first, followed by new
-> properties. In other words, move the status property to be first. I
-> believe/hope all the other (Tegra) .dts files follow this convention.
+Then, what's your plan?
 
-Okay, I'll fix that.
+It's real bug since f80c067[mm: zone_reclaim: make isolate_lru_page() filter-aware]
+was introduced. Some portable device could use laptop_mode to save batter power.
+AFAIK, the usecase was trial of ChromeOS and Luigi reported this problem although
+they decided to disable laptop_mode due to other reason which laptop_mode burns out
+power for a very long time in their some workload.
 
-> > +		pci@1,0 {
-> > +			bus-range =3D <0x01 0x0a>;
-> > +			status =3D "okay";
-> > +
-> > +			pci@0,0 {
-> > +				reg =3D <0x010000 0 0 0 0>;
->=20
-> Hmm. The unit address in that node name doesn't match the address in the
-> reg property, although I suppose there's nothing we can do about it
-> since those formats are both defined by the standard PCI binding?
+Another problem of laptop_mode isn't aware of in-memory swap, like zram.
+So unconditionally, prevent to swap out. :( Yeb. it's another story to be fixed.
 
-That's the standard encoding for unit addresses for PCI devices. The
-first cell in the reg property encodes bus/device/function (amongst
-other things) and the node name is supposed to be pci@<dev>,<fn>.
+If you hate this version, how about this?
+This version does following as.
 
-> What do the numbers "0,0" represent here; device/function? Is the same
-> true for the "0,0" in the child nodes?
+1. get_scan_count forces only file-backed pages reclaiming if may_writepage is false.
+   It prevents unnecessary CPU consumption and LRU churing with anon pages.
+2. If memory reclaim suffers(ie, below DEF_PRIORITY - 2), may_writepage would be true
+   in only direct reclaim path.
 
-Yes, exactly.
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 73b64a3..695b907 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -550,6 +550,8 @@ static inline int zone_is_oom_locked(const struct zone *zone)
+  */
+ #define DEF_PRIORITY 12
+ 
++#define HARD_TO_RECLAIM_PRIO (DEF_PRIORITY - 2)
++
+ /* Maximum number of zones on a zonelist */
+ #define MAX_ZONES_PER_ZONELIST (MAX_NUMNODES * MAX_NR_ZONES)
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index ff869d2..4c63bda 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -814,7 +814,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			 */
+ 			if (page_is_file_cache(page) &&
+ 					(!current_is_kswapd() ||
+-					 sc->priority >= DEF_PRIORITY - 2)) {
++					 sc->priority >= HARD_TO_RECLAIM_PRIO)) {
+ 				/*
+ 				 * Immediately reclaim when written back.
+ 				 * Similar in principal to deactivate_page()
+@@ -1683,8 +1683,11 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 	if (!global_reclaim(sc))
+ 		force_scan = true;
+ 
+-	/* If we have no swap space, do not bother scanning anon pages. */
+-	if (!sc->may_swap || (nr_swap_pages <= 0)) {
++	/*
++	 * If we have no swap space or may_writepage is false,
++	 * do not bother scanning anon pages.
++	 */
++	if (!sc->may_swap || !sc->may_writepage || (nr_swap_pages <= 0)) {
+ 		scan_balance = SCAN_FILE;
+ 		goto out;
+ 	}
+@@ -1879,7 +1882,7 @@ static bool in_reclaim_compaction(struct scan_control *sc)
+ {
+ 	if (IS_ENABLED(CONFIG_COMPACTION) && sc->order &&
+ 			(sc->order > PAGE_ALLOC_COSTLY_ORDER ||
+-			 sc->priority < DEF_PRIORITY - 2))
++			 sc->priority < HARD_TO_RECLAIM_PRIO))
+ 		return true;
+ 
+ 	return false;
+@@ -2215,9 +2218,16 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 			sc->may_writepage = 1;
+ 		}
+ 
++		/*
++		 * This is a safety belt to prevent OOM kill through reclaiming
++		 * pages with sacrificing the power.
++		 */
++		if (sc->priority < HARD_TO_RECLAIM_PRIO)
++			sc->may_writepage = 1;
++
+ 		/* Take a nap, wait for some writeback to complete */
+ 		if (!sc->hibernation_mode && sc->nr_scanned &&
+-		    sc->priority < DEF_PRIORITY - 2) {
++		    sc->priority < HARD_TO_RECLAIM_PRIO) {
+ 			struct zone *preferred_zone;
+ 
+ 			first_zones_zonelist(zonelist, gfp_zone(sc->gfp_mask),
+@@ -2824,7 +2834,7 @@ loop_again:
+ 		 * OK, kswapd is getting into trouble.  Take a nap, then take
+ 		 * another pass across the zones.
+ 		 */
+-		if (total_scanned && (sc.priority < DEF_PRIORITY - 2)) {
++		if (total_scanned && (sc.priority < HARD_TO_RECLAIM_PRIO)) {
+ 			if (has_under_min_watermark_zone)
+ 				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
+ 			else if (unbalanced_zone)
 
-> > +				bus-range =3D <0x02 0x0a>;
-> > +
-> > +				compatible =3D "plda,pcie";
->=20
-> Are there DT binding documents for all these devices; plda,pcie,
-> ad,pcie, ad,pcie-test, etc.?
+> 
+> The point of laptop_mode isn't to save power btw - it is to minimise
+> the frequency with which the disk drive is spun up.  By deferring and
+> then batching writeout operations, basically.
 
-No. To be honest I don't quite know how to handle this. For the PLDA
-things aren't so bad since it has a proper PCI ID, but the other cores
-don't since they are custom IP or taken from opencores.org and made
-available via PCIe. We're still in the process of obtaining our own PCI
-vendor ID so that these can be properly assigned.
+I don't get it. Why should we minimise such frequency?
+It's for saving the power to increase batter life.
+As I real all document about laptop_mode, they all said about the power
+or battery life saving.
 
-Also, as you have guessed, most of these are not required. I just wanted
-to include them here for completeness (and maybe reference in case
-somebody else, myself included, needs a working example to base other
-work on).
+1. Documentation/laptops/laptop-mode.txt
+2. http://linux.die.net/man/8/laptop_mode
+3. http://samwel.tk/laptop_mode/
+3. http://www.thinkwiki.org/wiki/Laptop-mode 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-> > +				pci@4,0 {
-> > +					reg =3D <0x022000 0 0 0 0>;
-> > +					bus-range =3D <0x07 0x07>;
-> > +
-> > +					compatible =3D "ad,pcie";
-> > +					device_type =3D "pci";
-> > +
-> > +					#address-cells =3D <3>;
-> > +					#size-cells =3D <2>;
-> > +
-> > +					pci@0,0 {
-> > +						compatible =3D "opencores,uart";
-> > +						reg =3D <0x070000 0 0 0 0>;
-> > +					};
-> > +				};
->=20
-> Do you need to include a node for the UART; I can see you need to for
-> the SPI/I2C controllers so you can instantiate the appropriate devices
-> on non-probe-able buses, but I think you can just let regular PCI device
-> probing find the UART, Ethernet MAC, etc., can't you?
-
-Yes, that's correct. Only SPI and I2C actually require these nodes. I'm
-not sure if the PCI binding requires all nodes to be present or not.
-Other examples I've seen (e.g. arch/x86/platform/ce4100/falconfalls.dts)
-contain nodes for everything, most of which don't seem to be necessary
-for things to work.
-
-One other thing that I've seen is the usage of the more standard pci*
-values for the compatible property. None of them are very descriptive
-which is why I used a vendor,device type of value instead.
-
-Going over the PCI binding again, however, it looks like there's no
-requirement to make the node name pci@dev,fn and pci can be anything.
-Making it uart@0,0 and then adjusting the compatible value to be as the
-binding requires could be an option. In that case I suppose even the
-bindings documentation shouldn't be necessary.
-
-That doesn't cover the nodes where non-standard properties are needed
-(I2C and SPI), which do need binding documents. I wouldn't know how to
-name them, though. I'm not sure going with the current convention would
-be any good since it'll be hard to find the right document if you have
-to look it up by matching vendor and device IDs or PCI class.
-
-Thierry
-
---rMWmSaSbD7nr+du9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ75ZdAAoJEN0jrNd/PrOhqLwP/jlhfvEttlemxr+BN6dQq33Q
-pnmmTFXKC8nV+Igo9yTlUWOxvIdz/9kLvgC3YdqT8VLJbZvPKAXDp/RyJ6tYn4LV
-VckkcH1ssxUjeYnyff5i+8x0pjP4XwS0EKubZPXYgl934SWZr0h6N8yzQFJ8zX3W
-vydrJj0iHgzmQEsnjZ7WG6WhwclAFz6e5bUe2Ra5R6yCPqIpKD9ceLp7gcVpFYt9
-BFrg60uBZp5wq0/zyPmwrylugQZZBrSdhwAiMcIpEygLpRyOw27L/5vxfzAQ4kd5
-8MB9PEKRTTsFkiFf/xuDdCJ3ppVdxZ0/aEyVwucH/D42cAb7SbzHkk8LHDE7auDX
-i42yG9GEYjzZkVQ+cIG45zz8Ke6VZzwMVzunuvWLUqyDAR9dIk+5G+S2V+yhq4yv
-hJ+QIfwmcu0SZbCLpHpq9UiqDaGPRB907jyq1NdMJMTHz4rrUagesPNzZJH2ApRc
-P9HDWubUjYI/4CLOsTpNShoJAMWq6p9vyQmzQoepubAEcdV7Kx0H7kZJdpM+x3Kp
-ty7r5sM9wdU+Eogn4jB2HUXBmr4Z5napV+ZlD2siGtq4N2yScw1a7K+QzEsKsM2s
-A+36wmjuOy3zzwvBd+XrCgivF1gU7qgG2B+BkQtHjRORqtDT4WpAAPyCMyURkjFH
-hRYo3V/CcibTyNeadZh5
-=rtWB
------END PGP SIGNATURE-----
-
---rMWmSaSbD7nr+du9--
+-- 
+Kind regards,
+Minchan Kim
