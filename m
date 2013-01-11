@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab3AKUMh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:12:37 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:64025 "EHLO
+	id S1755462Ab3AKUMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:12:36 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:51081 "EHLO
 	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562Ab3AKUMd (ORCPT
+	with ESMTP id S1754351Ab3AKUMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jan 2013 15:12:33 -0500
 From: Tony Prisk <linux@prisktech.co.nz>
@@ -13,9 +13,9 @@ Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
         linux-kernel@vger.kernel.org,
         vt8500-wm8505-linux-kernel@googlegroups.com,
         Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 4/4] arm: vt8500: Remove remaining mach includes
-Date: Sat, 12 Jan 2013 09:12:42 +1300
-Message-Id: <1357935162-7672-5-git-send-email-linux@prisktech.co.nz>
+Subject: [PATCH 2/4] arm: vt8500: Remove single platform Kconfig options
+Date: Sat, 12 Jan 2013 09:12:40 +1300
+Message-Id: <1357935162-7672-3-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1357935162-7672-1-git-send-email-linux@prisktech.co.nz>
 References: <1357935162-7672-1-git-send-email-linux@prisktech.co.nz>
@@ -23,92 +23,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the last two mach-vt8500/include/mach headers as they are
-no longer required with multiplatform-only configuration.
+This patch completes the move of arch-vt8500 to multiplatform only.
+
+The remaining single-image Kconfig options are removed from
+arch/arm/Kconfig and the options in arch/arm/mach-vt8500/Kconfig
+are updated.
 
 Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- arch/arm/mach-vt8500/include/mach/timex.h      |   26 -----------------
- arch/arm/mach-vt8500/include/mach/uncompress.h |   37 ------------------------
- 2 files changed, 63 deletions(-)
- delete mode 100644 arch/arm/mach-vt8500/include/mach/timex.h
- delete mode 100644 arch/arm/mach-vt8500/include/mach/uncompress.h
+ arch/arm/Kconfig             |   21 ---------------------
+ arch/arm/mach-vt8500/Kconfig |   13 +++----------
+ 2 files changed, 3 insertions(+), 31 deletions(-)
 
-diff --git a/arch/arm/mach-vt8500/include/mach/timex.h b/arch/arm/mach-vt8500/include/mach/timex.h
-deleted file mode 100644
-index 8487e4c..0000000
---- a/arch/arm/mach-vt8500/include/mach/timex.h
-+++ /dev/null
-@@ -1,26 +0,0 @@
--/*
-- *  arch/arm/mach-vt8500/include/mach/timex.h
-- *
-- *  Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-- */
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index fbb9492..76efd43 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -950,27 +950,6 @@ config ARCH_OMAP
+ 	help
+ 	  Support for TI's OMAP platform (OMAP1/2/3/4).
+ 
+-config ARCH_VT8500_SINGLE
+-	bool "VIA/WonderMedia 85xx"
+-	select ARCH_VT8500
+-	select COMMON_CLK
+-	select CPU_ARM926T
+-	select MULTI_IRQ_HANDLER
+-	select SPARSE_IRQ
+-	select USE_OF
+-	help
+-	  Support for VIA/WonderMedia VT8500/WM85xx System-on-Chip.
 -
--#ifndef MACH_TIMEX_H
--#define MACH_TIMEX_H
+-config ARCH_WM8750_SINGLE
+-	bool "WonderMedia WM8750/WM8850"
+-	select ARCH_VT8500
+-	select COMMON_CLK
+-	select MULTI_IRQ_HANDLER
+-	select SPARSE_IRQ
+-	select USE_OF
+-	help
+-	  Support for WonderMedia WM8750/WM8850 System-on-Chip.
 -
--#define CLOCK_TICK_RATE		(3000000)
+ endchoice
+ 
+ menu "Multiple platform selection"
+diff --git a/arch/arm/mach-vt8500/Kconfig b/arch/arm/mach-vt8500/Kconfig
+index d67c7fa..f466b58 100644
+--- a/arch/arm/mach-vt8500/Kconfig
++++ b/arch/arm/mach-vt8500/Kconfig
+@@ -8,9 +8,8 @@ config ARCH_VT8500
+ 	select HAVE_CLK
+ 
+ config ARCH_WM8505
+-	bool "VIA/WonderMedia 85xx" if !ARCH_VT8500_SINGLE
++	bool "VIA/WonderMedia 85xx"
+ 	depends on ARCH_MULTI_V5
+-	default ARCH_VT8500_SINGLE
+ 	select ARCH_VT8500
+ 	select CPU_ARM926T
+ 	help
+@@ -18,7 +17,7 @@ config ARCH_WM8505
+ 
+ config ARCH_WM8750
+ 	bool "WonderMedia WM8750"
+-	depends on ARCH_MULTI_V6 || ARCH_WM8750_SINGLE
++	depends on ARCH_MULTI_V6
+ 	select ARCH_VT8500
+ 	select CPU_V6
+ 	help
+@@ -26,14 +25,8 @@ config ARCH_WM8750
+ 
+ config ARCH_WM8850
+ 	bool "WonderMedia WM8850"
+-	depends on ARCH_MULTI_V7 || ARCH_WM8750_SINGLE
++	depends on ARCH_MULTI_V7
+ 	select ARCH_VT8500
+ 	select CPU_V7
+ 	help
+ 	  Support for WonderMedia WM8850 System-on-Chip.
 -
--#endif /* MACH_TIMEX_H */
-diff --git a/arch/arm/mach-vt8500/include/mach/uncompress.h b/arch/arm/mach-vt8500/include/mach/uncompress.h
-deleted file mode 100644
-index e6e81fd..0000000
---- a/arch/arm/mach-vt8500/include/mach/uncompress.h
-+++ /dev/null
-@@ -1,37 +0,0 @@
--/* arch/arm/mach-vt8500/include/mach/uncompress.h
-- *
-- * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
-- *
-- * Based on arch/arm/mach-dove/include/mach/uncompress.h
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#define UART0_PHYS	0xd8200000
--#define UART0_ADDR(x)	*(volatile unsigned char *)(UART0_PHYS + x)
--
--static void putc(const char c)
--{
--	while (UART0_ADDR(0x1c) & 0x2)
--		/* Tx busy, wait and poll */;
--
--	UART0_ADDR(0) = c;
--}
--
--static void flush(void)
--{
--}
--
--/*
-- * nothing to do
-- */
--#define arch_decomp_setup()
--#define arch_decomp_wdog()
+-# ensure that ARCH_WM8850 is on if ARCH_WM8750 is off
+-config ARCH_WM8850_AUTO
+-      def_bool y
+-      depends on ARCH_WM8750_SINGLE && !ARCH_WM8750
+-      select ARCH_WM8850
 -- 
 1.7.9.5
 
