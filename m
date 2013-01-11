@@ -1,184 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab3AKMLA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 07:11:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39258 "EHLO mx1.redhat.com"
+	id S1755294Ab3AKMMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 07:12:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58763 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752469Ab3AKMK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 07:10:59 -0500
-Date: Fri, 11 Jan 2013 13:10:30 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH -tip] sched/rt: Fix locality of threaded interrupt handlers
-Message-ID: <6b08a3c5c16284fd0221c2b564d451b4b9dcbf18.1357896654.git.agordeev@redhat.com>
+	id S1755179Ab3AKMM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 07:12:28 -0500
+Date: Fri, 11 Jan 2013 13:12:26 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wu Jianguo <wujianguo@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mmots: memory-hotplug: implement
+ register_page_bootmem_info_section of sparse-vmemmap fix
+Message-ID: <20130111121226.GI7286@dhcp22.suse.cz>
+References: <20130111095658.GC7286@dhcp22.suse.cz>
+ <20130111101745.GD7286@dhcp22.suse.cz>
+ <20130111102924.GE7286@dhcp22.suse.cz>
+ <20130111104759.GF7286@dhcp22.suse.cz>
+ <50F00041.2040305@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <50F00041.2040305@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a interrupt affinity mask targets multiple CPUs, the
-RT scheduler selects a runqueue for RT task corresponding
-to a threaded interrupt handler without consideration of
-where the interrupt is actually gets delivered. It leads
-to a suboptimal condition when a hardware interrupt handler
-executes on one CPU while the threaded interrupt handler
-executes on another CPU.
+On Fri 11-01-13 20:06:25, Tang Chen wrote:
+> On 01/11/2013 06:47 PM, Michal Hocko wrote:
+> >>
+> >>Darn! And now that I am looking at the patch closer it is too x86
+> >>centric so this cannot be in the generic code. I will try to cook
+> >>something better. Sorry about the noise.
+> >
+> >It is more complicated than I thought. One would tell it's a mess.
+> >The patch bellow fixes the compilation issue but I am not sure we want
+> >to include memory_hotplug.h into arch/x86/mm/init_64.c. Moreover
+> >
+> >+void register_page_bootmem_memmap(unsigned long section_nr,
+> >+				  struct page *start_page, unsigned long size)
+> >+{
+> >+	/* TODO */
+> >+}
+> >
+> >for other archs would suggest that the code is not ready yet. Should
+> >this rather be dropped for now?
+> 
+> Hi Michal,
+> 
+> Do you mean remove register_page_bootmem_memmap() from other
+> architectures ?
 
-This fix alters the behaviour of threaded handler wake-ups
-by getting priority to a CPU where the hardware interrupt
-handler is executing. As result, most of the time both
-halves of interrupt handling are kept local.
-
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- include/linux/sched.h |    2 ++
- kernel/irq/handle.c   |    2 +-
- kernel/sched/core.c   |    5 +++++
- kernel/sched/rt.c     |   27 +++++++++++++++++++--------
- 4 files changed, 27 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 206bb08..cd9cb42 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1061,6 +1061,7 @@ struct sched_domain;
- #define WF_SYNC		0x01		/* waker goes to sleep after wakup */
- #define WF_FORK		0x02		/* child wakeup after fork */
- #define WF_MIGRATED	0x04		/* internal use, task got migrated */
-+#define WF_INTR		0x08		/* threaded handler wakeup from intr */
- 
- #define ENQUEUE_WAKEUP		1
- #define ENQUEUE_HEAD		2
-@@ -2207,6 +2208,7 @@ extern void xtime_update(unsigned long ticks);
- 
- extern int wake_up_state(struct task_struct *tsk, unsigned int state);
- extern int wake_up_process(struct task_struct *tsk);
-+extern int wake_up_handler(struct task_struct *tsk);
- extern void wake_up_new_task(struct task_struct *tsk);
- #ifdef CONFIG_SMP
-  extern void kick_process(struct task_struct *tsk);
-diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-index 131ca17..79456b1 100644
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -126,7 +126,7 @@ static void irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
- 	 */
- 	atomic_inc(&desc->threads_active);
- 
--	wake_up_process(action->thread);
-+	wake_up_handler(action->thread);
- }
- 
- irqreturn_t
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 257002c..869e555 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1527,6 +1527,11 @@ int wake_up_process(struct task_struct *p)
- }
- EXPORT_SYMBOL(wake_up_process);
- 
-+int wake_up_handler(struct task_struct *p)
-+{
-+	return try_to_wake_up(p, TASK_ALL, WF_INTR);
-+}
-+
- int wake_up_state(struct task_struct *p, unsigned int state)
- {
- 	return try_to_wake_up(p, state, 0);
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 418feb0..9faff31 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1234,7 +1234,7 @@ static void yield_task_rt(struct rq *rq)
- }
- 
- #ifdef CONFIG_SMP
--static int find_lowest_rq(struct task_struct *task);
-+static int find_lowest_rq(struct task_struct *task, bool prefer_this_cpu);
- 
- static int
- select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
-@@ -1242,6 +1242,7 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- 	struct task_struct *curr;
- 	struct rq *rq;
- 	int cpu;
-+	bool prefer_this_cpu = flags & WF_INTR;
- 
- 	cpu = task_cpu(p);
- 
-@@ -1258,6 +1259,11 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- 	curr = ACCESS_ONCE(rq->curr); /* unlocked access */
- 
- 	/*
-+	 * If this RT task is a threaded interrupt handler, then
-+	 * it is being awaken from the hardware interrupt handler.
-+	 * In this case try to keep hardware and threaded interrupt
-+	 * handlers as close as possible and wake it up on this CPU.
-+	 *
- 	 * If the current task on @p's runqueue is an RT task, then
- 	 * try to see if we can wake this RT task up on another
- 	 * runqueue. Otherwise simply start this RT task
-@@ -1279,11 +1285,12 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- 	 * This test is optimistic, if we get it wrong the load-balancer
- 	 * will have to sort it out.
- 	 */
--	if (curr && unlikely(rt_task(curr)) &&
--	    (curr->nr_cpus_allowed < 2 ||
--	     curr->prio <= p->prio) &&
--	    (p->nr_cpus_allowed > 1)) {
--		int target = find_lowest_rq(p);
-+	if (prefer_this_cpu ||
-+	    (curr && unlikely(rt_task(curr)) &&
-+	     (curr->nr_cpus_allowed < 2 ||
-+	      curr->prio <= p->prio) &&
-+	     (p->nr_cpus_allowed > 1))) {
-+		int target = find_lowest_rq(p, prefer_this_cpu);
- 
- 		if (target != -1)
- 			cpu = target;
-@@ -1473,7 +1480,7 @@ next_idx:
- 
- static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
- 
--static int find_lowest_rq(struct task_struct *task)
-+static int find_lowest_rq(struct task_struct *task, bool prefer_this_cpu)
- {
- 	struct sched_domain *sd;
- 	struct cpumask *lowest_mask = __get_cpu_var(local_cpu_mask);
-@@ -1495,9 +1502,13 @@ static int find_lowest_rq(struct task_struct *task)
- 	 * lowest priority tasks in the system.  Now we want to elect
- 	 * the best one based on our affinity and topology.
- 	 *
-+	 * If asked explicitly, try to pick up this cpu.
-+	 *
- 	 * We prioritize the last cpu that the task executed on since
- 	 * it is most likely cache-hot in that location.
- 	 */
-+	if (prefer_this_cpu && cpumask_test_cpu(this_cpu, lowest_mask))
-+		return this_cpu;
- 	if (cpumask_test_cpu(cpu, lowest_mask))
- 		return cpu;
- 
-@@ -1555,7 +1566,7 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
- 	int cpu;
- 
- 	for (tries = 0; tries < RT_MAX_TRIES; tries++) {
--		cpu = find_lowest_rq(task);
-+		cpu = find_lowest_rq(task, false);
- 
- 		if ((cpu == -1) || (cpu == rq->cpu))
- 			break;
--- 
-1.7.7.6
-
+No I meant the patch to be dropped until it gets implementation for
+other architectures or the users of the function would be explicit about
+archs which are supported. What happens if the implementation is empty
+will the generic code work properly? From my very limitted understanding
+of the code it won't.
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Michal Hocko
+SUSE Labs
