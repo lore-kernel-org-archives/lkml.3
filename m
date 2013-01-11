@@ -1,108 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab3AKCyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 21:54:37 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24769 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab3AKCyg (ORCPT
+	id S1753568Ab3AKDZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 22:25:12 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:55893 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab3AKDZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 21:54:36 -0500
-X-Authority-Analysis: v=2.0 cv=T70Ovo2Q c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YVIWcjBVNvEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=B2Q2Fn0tczoA:10 a=ayC55rCoAAAA:8 a=m0D0claWAAAA:8 a=-90oljrv8j-shKSv9rgA:9 a=PUjeQqilurYA:10 a=E6k37eg1NvgA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357872874.5141.28.camel@gandalf.local.home>
-Subject: Re: Ftrace test failure on MIPS - Looking for insight..
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips <linux-mips@linux-mips.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 10 Jan 2013 21:54:34 -0500
-In-Reply-To: <50EF71C9.4010907@caviumnetworks.com>
-References: <50EF71C9.4010907@caviumnetworks.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jan 2013 22:25:10 -0500
+Message-ID: <50EF8614.3050408@windriver.com>
+Date: Fri, 11 Jan 2013 11:25:08 +0800
+From: Fan Du <fan.du@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <matthew@wil.cx>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs: Disable preempt when acquire i_size_seqcount write
+ lock
+References: <1357702459-2718-1-git-send-email-fan.du@windriver.com> <20130110143813.1ba2b4fd.akpm@linux-foundation.org>
+In-Reply-To: <20130110143813.1ba2b4fd.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [128.224.162.159]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-10 at 17:58 -0800, David Daney wrote:
-> Hi Steven,
-> 
-> I am trying to track down the cause of:
-> 
-> .
-> .
-> .
-> Brought up 32 CPUs
-> Testing tracer function: PASSED
-> Testing dynamic ftrace: .. filter failed count=0 ..FAILED!
-> ------------[ cut here ]------------
-> WARNING: at kernel/trace/trace.c:878 register_tracer+0x23c/0x300()
-> Modules linked in:
-> Call Trace:
-> [<ffffffff815a0578>] dump_stack+0x14/0x40
-> [<ffffffff8113e8fc>] warn_slowpath_common+0x84/0xb0
-> [<ffffffff811bd04c>] register_tracer+0x23c/0x300
-> [<ffffffff81100538>] do_one_initcall+0x110/0x178
-> [<ffffffff8159234c>] kernel_init+0x174/0x318
-> [<ffffffff81119de4>] ret_from_kernel_thread+0x14/0x1c
-> 
-> ---[ end trace 204112383c2d190e ]---
-> .
-> .
-> .
-> 
-> 
-> This is a MIPS64 kernel build from Linus' tree of today (commit 
-> 254adaa465c40151df11fc1f88f93e6e86eb61d4)
-> 
-> I think the failure is long standing (since 3.4.x at least).
-> 
-> If you have any ideas off the top of your head as to what the cause 
-> might be, I would love to hear them.
-> 
-> In any event, I will try to track down the root cause and fix it.  But 
-> if something jumped out at you, that could speed up my search for the cause.
-
-The failure is that it set the tracing filter to be DYN_FTRACE_TEST_NAME
-(which is defined as trace_selftest_dynamic_test_func) and then it
-called the function and then checked how many events were in the trace.
-But there wasn't any (count=0). For some reason dynamic function tracing
-didn't trace the function when it was called.
-
-Some reasons fro this to happen:
-
-1) tracing was some how disabled (tracing_on set to zero). But as the
-function tracer passed, I don't think this would be the case.
-
-2) the function wasn't properly set in the filter. That is, could mips
-have another name for that function? Where it wouldn't add it?
-
-3) well, just about anything :-)
-
-I could suggest adding printks in the code, and that might help you.
-Look into ftrace_set_global_filter (kernel/trace/ftrace.c) and follow
-that code. Follow it all the way to __ftrace_hash_rec_update(), and make
-sure the rec get's updated. You may add a printk right after the inc
-(although, you may also want to set a variable to not do that printk
-until the dynamic test runs).
-
-Something like this:
-
-	rec->flags++;
-	if (ok_to_printk)
-		printk("setting rec %p %pS\n", (void*)rec->ip, (void*)rec->ip);
-
-and at the start of the dynamic test have:
-
-	ok_to_printk = 1;
-	pr_info("Testing dynamic ftarce: ");
-
-You should see the record being set. If not, you know why it broke.
-
--- Steve
 
 
+On 2013年01月11日 06:38, Andrew Morton wrote:
+> On Wed, 9 Jan 2013 11:34:19 +0800
+> Fan Du<fan.du@windriver.com>  wrote:
+>
+>> Two rt tasks bind to one CPU core.
+>>
+>> The higher priority rt task A preempts a lower priority rt task B which
+>> has already taken the write seq lock, and then the higher priority
+>> rt task A try to acquire read seq lock, it's doomed to lockup.
+>>
+>> rt task A with lower priority: call write
+>> i_size_write                                        rt task B with higher priority: call sync, and preempt task A
+>>    write_seqcount_begin(&inode->i_size_seqcount);    i_size_read
+>>    inode->i_size = i_size;                             read_seqcount_begin<-- lockup here...
+>>
+>
+> Ouch.
+>
+> And even if the preemping task is preemptible, it will spend an entire
+> timeslice pointlessly spinning, which isn't very good.
+>
+>> So disable preempt when acquiring every i_size_seqcount *write* lock will
+>> cure the problem.
+>>
+>> ...
+>>
+>> --- a/include/linux/fs.h
+>> +++ b/include/linux/fs.h
+>> @@ -758,9 +758,11 @@ static inline loff_t i_size_read(const struct inode *inode)
+>>   static inline void i_size_write(struct inode *inode, loff_t i_size)
+>>   {
+>>   #if BITS_PER_LONG==32&&  defined(CONFIG_SMP)
+>> +	preempt_disable();
+>>   	write_seqcount_begin(&inode->i_size_seqcount);
+>>   	inode->i_size = i_size;
+>>   	write_seqcount_end(&inode->i_size_seqcount);
+>> +	preempt_enable();
+>>   #elif BITS_PER_LONG==32&&  defined(CONFIG_PREEMPT)
+>>   	preempt_disable();
+>>   	inode->i_size = i_size;
+>
+> afacit all write_seqcount_begin()/read_seqretry() sites are vulnerable
+> to this problem.  Would it not be better to do the preempt_disable() in
+> write_seqcount_begin()?
+
+IMHO, write_seqcount_begin/write_seqcount_end are often wrapped by mutex,
+this gives higher priority task a chance to sleep, and then lower priority task
+get cpu to unlock, so avoid the problematic scenario this patch describing.
+
+But in i_size_write case, I could only find disable preempt a good choice before
+someone else has better idea :)
+
+>
+> Possible problems:
+>
+> - mm/filemap_xip.c does disk I/O under write_seqcount_begin().
+>
+> - dev_change_name() does GFP_KERNEL allocations under write_seqcount_begin()
+>
+> - I didn't review u64_stats_update_begin() callers.
+>
+> But I think calling schedule() under preempt_disable() is OK anyway?
+>
+
+-- 
+浮沉随浪只记今朝笑
+
+--fan
