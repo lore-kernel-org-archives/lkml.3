@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab3AKOJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 09:09:05 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:44864 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab3AKOJA (ORCPT
+	id S1754125Ab3AKOJD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 09:09:03 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:11804 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753403Ab3AKOJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jan 2013 09:09:00 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Olof Johansson <olof@lixom.net>, <broonie@opensource.wolfsonmicro.com>,
+        <voice.shen@atmel.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <linux-sound@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 2/2 v2] ASoC: atmel-ssc: add pinctrl selection to driver
+Date: Fri, 11 Jan 2013 15:08:31 +0100
+Message-ID: <d1060534f9dafe4baa9bec2506815ae63455ebd6.1357912706.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <cover.1357912706.git.nicolas.ferre@atmel.com>
+References: <cover.1357912706.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <20130111133132.GC2847@krava.brq.redhat.com>
-References: <1357583277-4553-1-git-send-email-eranian@google.com>
-	<1357583277-4553-12-git-send-email-eranian@google.com>
-	<20130109165539.GB1045@krava.brq.redhat.com>
-	<CABPqkBTTE=36vjMuXjiPojAYsTQfYzSk7=3Jo2WC4ryh7+gpaQ@mail.gmail.com>
-	<20130111133132.GC2847@krava.brq.redhat.com>
-Date: Fri, 11 Jan 2013 15:08:59 +0100
-Message-ID: <CABPqkBSQv7GiuEuD+gWDUu8Y0CXmSr5C56JG-5mNWLgTux3zKw@mail.gmail.com>
-Subject: Re: [PATCH v5 11/18] perf tools: add mem access sampling core support
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 2:31 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Thu, Jan 10, 2013 at 10:53:26PM +0100, Stephane Eranian wrote:
->> On Wed, Jan 9, 2013 at 5:55 PM, Jiri Olsa <jolsa@redhat.com> wrote:
->> > On Mon, Jan 07, 2013 at 07:27:50PM +0100, Stephane Eranian wrote:
->
-> SNIP
->
->> >
->> > The crash I report is due to the some maps could be removed
->> > via map_groups__fixup_overlappings.
->> >
->> > Attached patch makes the code working for me, but we might
->> > want to have some global unified fix for that, since this
->> > is not the only place suffering for that.
->> >
->> > Like globaly set map->referenced in add_hist_entry or
->> > hist_entry__new functions..
->> >
->> >
->> Would something like that work for you (untested)?
->
-> yep, works ok for me (tested)... how about branch_info? looks like
->
->   branch_info::from
->   branch_info::to
->
-> need same treatment
->
-Yes. Will post a patch for this separately.
+From: Bo Shen <voice.shen@atmel.com>
 
-> thanks,
-> jirka
->
->>
->> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
->> index 7034500..fc05b9f 100644
->> --- a/tools/perf/util/hist.c
->> +++ b/tools/perf/util/hist.c
->> @@ -274,6 +274,12 @@ static struct hist_entry *hist_entry__new(struct
->> hist_entry *template)
->>
->>                 if (he->ms.map)
->>                         he->ms.map->referenced = true;
->> +               if (he->mem_info) {
->> +                       if (he->mem_info->iaddr.map)
->> +                               he->mem_info->iaddr.map->referenced = true;
->> +                       if (he->mem_info->daddr.map)
->> +                               he->mem_info->daddr.map->referenced = true;
->> +               }
->>                 if (symbol_conf.use_callchain)
->>                         callchain_init(he->callchain);
+Add default pinctrl selection to atmel-ssc driver. The pinctrl
+is mandatory.
+
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+[nicolas.ferre@atmel.com: split dtsi and driver changes]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/misc/atmel-ssc.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/misc/atmel-ssc.c b/drivers/misc/atmel-ssc.c
+index 158da5a..3c09cbb 100644
+--- a/drivers/misc/atmel-ssc.c
++++ b/drivers/misc/atmel-ssc.c
+@@ -19,6 +19,7 @@
+ #include <linux/module.h>
+ 
+ #include <linux/of.h>
++#include <linux/pinctrl/consumer.h>
+ 
+ /* Serialize access to ssc_list and user count */
+ static DEFINE_SPINLOCK(user_lock);
+@@ -131,6 +132,13 @@ static int ssc_probe(struct platform_device *pdev)
+ 	struct resource *regs;
+ 	struct ssc_device *ssc;
+ 	const struct atmel_ssc_platform_data *plat_dat;
++	struct pinctrl *pinctrl;
++
++	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
++	if (IS_ERR(pinctrl)) {
++		dev_err(&pdev->dev, "Failed to request pinctrl\n");
++		return PTR_ERR(pinctrl);
++	}
+ 
+ 	ssc = devm_kzalloc(&pdev->dev, sizeof(struct ssc_device), GFP_KERNEL);
+ 	if (!ssc) {
+-- 
+1.8.0
+
