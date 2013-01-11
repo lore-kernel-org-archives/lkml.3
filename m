@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab3AKB6t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 20:58:49 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:51844 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542Ab3AKB6q (ORCPT
+	id S1754604Ab3AKCA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 21:00:27 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:63656 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab3AKCA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 20:58:46 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-37-50ef71c42aa7
-Message-id: <50EF71C3.6060009@samsung.com>
-Date: Fri, 11 Jan 2013 10:58:27 +0900
+	Thu, 10 Jan 2013 21:00:26 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-9c-50ef72382e75
+Message-id: <50EF7238.1040408@samsung.com>
+Date: Fri, 11 Jan 2013 11:00:24 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
  Thunderbird/10.0.2
@@ -19,95 +19,53 @@ Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Samuel Ortiz <sameo@linux.intel.com>,
         patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/11] extcon-arizona updates
+Subject: Re: [PATCH 09/11] extcon: arizona: Support HPDET based accessory
+ identification
 References: <20130110120231.GL20956@opensource.wolfsonmicro.com>
-In-reply-to: <20130110120231.GL20956@opensource.wolfsonmicro.com>
+ <1357819462-12232-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1357819462-12232-9-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-reply-to: <1357819462-12232-9-git-send-email-broonie@opensource.wolfsonmicro.com>
 Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t8zXd0jhe8DDLqeKVtc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MtmPP2Ap+ClWc7vvN1sA4k7+LkZNDQsBE4uKrFkYIW0ziwr31
-	bF2MXBxCAssYJTb2TmSFKWr/e44ZIjGdUeL8i71MEE4Xk8THz//A2nkFtCRurW8As1kEVCVu
-	fPrODGKzAcX3v7gBNJaDQ1QgQuJXPwdEuaDEj8n3WEDCIkALft+vBBnJLHCaUaJ14juwMcIC
-	BhIH1p1lAqkREnCQ+DhfFCTMKeAo8WLNGbASZgEdif2t09ggbHmJzWveMkNcICDxbfIhsPES
-	ArISmw6AnS8h0Mwu8fTIVHaIvyQlDq64wTKBUWwWkotmIRk7C8nYBYzMqxhFUwuSC4qT0nON
-	9IoTc4tL89L1kvNzNzFCIkJ6B+OqBotDjAIcjEo8vJWa7wOEWBPLiitzDzFKcDArifCKpwGF
-	eFMSK6tSi/Lji0pzUosPMfoAXTuRWUo0OR8YrXkl8YbGBsaGhpaGZqaWpgY4hJXEeRlPPQkQ
-	EkhPLEnNTk0tSC2CGcfEwSnVwNi5grlEoK0lbvHcZnW/ZVNv9d3TZeC2jXjEw3bo2SdRW4m4
-	ffIhjLua2Kade8qp8I23UdtLNGrunc2/frbtuWa1XKZf8nunO8vMn/de7d6uGfU0wjOvRZgn
-	2+mojszhM+tEK36/WLsl4seV9cd9ZjxNeDhlkfpL48+rfXvVwsyczhwUsO9fFK7EUpyRaKjF
-	XFScCACUl1HytQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t9jQd0jhe8DDJb8l7S4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGW3HnrEV/BSqON33m62B
-	cSZ/FyMnh4SAiUT733PMELaYxIV769m6GLk4hASmM0qcf7GXCcLpYpL4+PkfI0gVr4CWxK31
-	DWA2i4CqxI1P38G62YDi+1/cAOrm4BAViJD41c8BUS4o8WPyPRaQsAjQst/3K0FGMgucZpRo
-	nfgObIywgIHEgXVnmUBqhAQcJD7OFwUJcwo4SrxYcwashFlAR2J/6zQ2CFteYvOat8wTGAVm
-	IdkwC0nZLCRlCxiZVzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx9sz6R2MqxosDjEKcDAq
-	8fBWar4PEGJNLCuuzD3EKMHBrCTCK54GFOJNSaysSi3Kjy8qzUktPsToA/T/RGYp0eR8YCrI
-	K4k3NDYxM7I0MjM2MTc2xiGsJM7LeOpJgJBAemJJanZqakFqEcw4Jg5OqQbGXt6rbep6Z49H
-	pCjU1le/MUs/PV8/89OVs3MylGSNjxx69zzjzJzl3yL2dwWtuiL9RGP9x26b3ZsFHU9HT6px
-	3vdpj9X++ALGE5+0zOovXrErXNQiMs3gyXGhU0Xrp0kUCGv3KxZVLK57cT3SeMq9s6wMfHUH
-	Wqddcux8wpjjrdZ9YMHRg5VTlViKMxINtZiLihMB+RWfVeQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsVy+t8zbV2LovcBBrfvm1tc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MZ52f2QtuMlbMPrOYuYFxMWMXIyeHhICJxIclr9kgbDGJC/fW
+	A9lcHEICyxglZje8ZYYpWrPiNztEYhGjxM5fB6GcLiaJWdtXMIFU8QpoSUw4M40dxGYRUJVo
+	ePYELM4GFN//4gbQWA4OUYEIiV/9HBDlghI/Jt9jAQmLAC34fb8SZCSzwGlGidaJ78CuExaI
+	kjjZt4UVYtcVRol3F/+xgCQ4BcIk1t37zwpiMwvoSOxvncYGYctLbF4DcTWLgIDEt8mHwBZI
+	CMhKbDrADDJHQqCZXeLPvDZ2iM8kJQ6uuMEygVFsFpKbZiEZOwvJ2AWMzKsYRVMLkguKk9Jz
+	DfWKE3OLS/PS9ZLzczcxQqJCagfjygaLQ4wCHIxKPLyVmu8DhFgTy4orcw8xSnAwK4nwiqcB
+	hXhTEiurUovy44tKc1KLDzH6AF07kVlKNDkfGLF5JfGGxgbGhoaWhmamlqYGOISVxHkZTz0J
+	EBJITyxJzU5NLUgtghnHxMEp1cCo4bOgQupTGC9TUfn8A6WPJ4lPmvy7pOZCfOLmd8lc7fIl
+	aZMn3eWuMPc7l3iLXUDD8Pm1D0aeFVdeTtq7M+b5gtlXmGY/vGEXtvDAPZ7iWubYxp8Pdq7k
+	jV8onq7gvVZJ/PEOD70vBScEmJdfifuUM8u/Iqv1YtQU8Ys3ve+vlJi01/CofOoDJZbijERD
+	Leai4kQAOWytf7cCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jAV2LovcBBvcn6Ftc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjGedn9kLbjJWzD6zmLmB
+	cTFjFyMnh4SAicSaFb/ZIWwxiQv31rN1MXJxCAksYpTY+esgO4TTxSQxa/sKJpAqXgEtiQln
+	poF1sAioSjQ8ewIWZwOK739xA6ibg0NUIELiVz8HRLmgxI/J91hAwiJAy37frwQZySxwmlGi
+	deI7sCOEBaIkTvZtYYXYdYVR4t3FfywgCU6BMIl19/6zgtjMAjoS+1unsUHY8hKb17xlnsAo
+	MAvJjllIymYhKVvAyLyKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzjmnkntYFzZYHGIUYCD
+	UYmHt1LzfYAQa2JZcWXuIUYJDmYlEV7xNKAQb0piZVVqUX58UWlOavEhRh9gCExklhJNzgem
+	g7ySeENjEzMjSyMzYxNzY2McwkrivIynngQICaQnlqRmp6YWpBbBjGPi4JRqYBRhOv6iTNZ7
+	/bn9N+p1zxfEcSQnekXrXlGdP5G9pEW14WTw2W1rzDbsSHd7az25dUvT8oS+tQpaUVv1Tb/x
+	Vtyr/C2hO9sq5x0Di6pDqpPH8zXPX8R5dZ2bP51/Wvmdu9os1l/niV/1MRT52dn45sgqF03v
+	d89LVnox7fm4R+SiW3NG4eIXvkosxRmJhlrMRcWJAHEq2ZbmAgAA
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 09:02 PM, Mark Brown wrote:
-> The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
-> 
->   Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/extcon-arizona-3.8rc3
-> 
-> for you to fetch changes up to 708f5b582ea16b60701e275fe5233ec4c57859cd:
-> 
->   mfd: wm5102: Add microphone clamp control registers (2013-01-10 11:35:42 +0000)
-> 
-> ----------------------------------------------------------------
-> extcon: arizona: Updates to arizona extcon driver
-> 
-> This patch series adds a number of new features to the arizona driver:
-> 
->  - Headphone measurements.
->  - Alternative detection mechanism for non-default system designs.
->  - Microphone clamp integration.
->  - Support for additional detection pin.
->  - MICBIAS rise time configuration.
-> 
-> There's one trivial MFD patch which is here because it depends on
-> register definitions from the new features.
-> 
-> ----------------------------------------------------------------
-> Mark Brown (11):
->       extcon: arizona: Convert to devm_input_allocate_device()
->       extcon: arizona: Remove duplicate mic ramp configuration
->       extcon: arizona: Only set GPIO if it has been requested
->       extcon: arizona: Allow configuration of MICBIAS rise time
->       extcon: arizona: Use microphone clamp function if available
->       extcon: arizona: Support use of GPIO5 as an input to jack detection
->       extcon: arizona: Enable basic headphone identification
->       extcon: arizona: Move start and stop mic functions earlier
->       extcon: arizona: Support HPDET based accessory identification
->       extcon: arizona: Support direct microphone measurement via HPDET
->       mfd: wm5102: Add microphone clamp control registers
-> 
->  drivers/extcon/extcon-arizona.c       |  634 ++++++++++++++++++++++++++++++---
->  drivers/mfd/wm5102-tables.c           |   10 +
->  include/linux/mfd/arizona/core.h      |    4 +-
->  include/linux/mfd/arizona/pdata.h     |   12 +
->  include/linux/mfd/arizona/registers.h |   48 +++
->  5 files changed, 658 insertions(+), 50 deletions(-)
+> +		}
+> +
+> +		/* OK, got both.  Now, compare... */
+Is is correct comment?
 
-Applied this patch set.
-
-You can check this on extcon git repository:
-http://git.kernel.org/?p=linux/kernel/git/chanwoo/extcon.git;a=shortlog;h=refs/heads/for-next
+> +		dev_dbg(arizona->dev, "HPDET measured %d %d\n",
+> +			info->hpdet_res[0], info->hpdet_res[1]);
+> +
 
 Thank you,
 Chanwoo Choi
-
