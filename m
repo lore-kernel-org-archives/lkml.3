@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab3AKRtq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:49:46 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:62175 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754012Ab3AKRtp (ORCPT
+	id S1754797Ab3AKRwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:52:38 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:12055 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751775Ab3AKRwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:49:45 -0500
+	Fri, 11 Jan 2013 12:52:36 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19DMojpkDKZcbwPFdt7nvVA
+Date: Fri, 11 Jan 2013 09:52:23 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Matt Porter <mporter@ti.com>
+Cc: Sekhar Nori <nsekhar@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v4 07/14] dmaengine: add
+ dma_request_slave_channel_compat()
+Message-ID: <20130111175223.GF14149@atomide.com>
+References: <1357883330-5364-1-git-send-email-mporter@ti.com>
+ <1357883330-5364-8-git-send-email-mporter@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVts6aTaRFM3aKWj46RCRiheM5gS55h=LVveaGXk_kR8g@mail.gmail.com>
-References: <CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
-	<20130109004340.GA12234@konrad-lan.dumpdata.com>
-	<87txqruq8p.fsf@xmission.com>
-	<CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
-	<CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
-	<20130109132409.GB18395@phenom.dumpdata.com>
-	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
-	<87d2xeul5v.fsf@xmission.com>
-	<CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
-	<CAE9FiQVsbDfLOyv=D4_BLtrKpp+Ydj7pren8Cu3rNGztbj=w=w@mail.gmail.com>
-	<20130111163548.GB25620@phenom.dumpdata.com>
-	<CAE9FiQVts6aTaRFM3aKWj46RCRiheM5gS55h=LVveaGXk_kR8g@mail.gmail.com>
-Date: Fri, 11 Jan 2013 09:49:43 -0800
-X-Google-Sender-Auth: 1yuNVJLC6z1_2m6wMwuC0kvpsMg
-Message-ID: <CAE9FiQVTfTisOrrQhv0vmsgA8Asaj5EUE5s93OFyTHfA+dWdfQ@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357883330-5364-8-git-send-email-mporter@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 8:52 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>
->> I need to check this patch out and then also test-run them on IA64, AMD-VI, Calgary-X
->> GART and Intel VT-d to make a sanity test.
->
-> that will be great, and please check attached two patches, or you want
-> to me update
-> for-x86-boot branch and you test that instead?
->
-> but if you want to check memmap=4095M$1M, then will need to test on
-> newer branch.
+* Matt Porter <mporter@ti.com> [130110 21:47]:
+> Adds a dma_request_slave_channel_compat() wrapper which accepts
+> both the arguments from dma_request_channel() and
+> dma_request_slave_channel(). Based on whether the driver is
+> instantiated via DT, the appropriate channel request call will be
+> made.
+> 
+> This allows for a much cleaner migration of drivers to the
+> dmaengine DT API as platforms continue to be mixed between those
+> that boot using DT and those that do not.
 
+Cool, looks like the driver changes are quite minimal after this:
 
-I updated the for-x86-boot branch.
+Acked-by: Tony Lindgren <tony@atomide.com>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-x86-boot
-
-Thanks
-
-Yinghai
+> 
+> Suggested-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  include/linux/dmaengine.h |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 9fd0c5b..64f9f69 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -1047,6 +1047,16 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
+>  struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
+>  struct dma_chan *net_dma_find_channel(void);
+>  #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
+> +static inline struct dma_chan
+> +*dma_request_slave_channel_compat(dma_cap_mask_t mask, dma_filter_fn fn,
+> +				  void *fn_param, struct device *dev,
+> +				  char *name)
+> +{
+> +	if (dev->of_node)
+> +		return dma_request_slave_channel(dev, name);
+> +	else
+> +		return dma_request_channel(mask, fn, fn_param);
+> +}
+>  
+>  /* --- Helper iov-locking functions --- */
+>  
+> -- 
+> 1.7.9.5
+> 
