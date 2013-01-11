@@ -1,150 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab3AKO4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 09:56:42 -0500
-Received: from mga14.intel.com ([143.182.124.37]:26067 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754932Ab3AKO4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 09:56:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,452,1355126400"; 
-   d="scan'208";a="242773619"
-Message-ID: <50F02823.1070909@intel.com>
-Date: Fri, 11 Jan 2013 22:56:35 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: li guang <lig.fnst@cn.fujitsu.com>
-CC: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 05/22] sched: remove domain iterations in fork/exec/wake
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>  <1357375071-11793-6-git-send-email-alex.shi@intel.com>  <20130109182102.GC2046@e103034-lin>  <50EF9B69.3000201@linux.vnet.ibm.com> <1357891316.2860.6.camel@liguang.fnst.cn.fujitsu.com>
-In-Reply-To: <1357891316.2860.6.camel@liguang.fnst.cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755343Ab3AKO4r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 09:56:47 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:55012 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab3AKO4o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 09:56:44 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-27-50f0282ba573
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
+        balbi@ti.com, kgene.kim@samsung.com, thomas.abraham@linaro.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        sylvester.nawrocki@gmail.com, dianders@chromium.org,
+        jg1.han@samsung.com, p.paneri@samsung.com
+Subject: [PATCH v6 4/4] USB: ohci-exynos: Add phy driver support
+Date: Fri, 11 Jan 2013 20:32:30 +0530
+Message-id: <1357916550-11421-5-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.6.5
+In-reply-to: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
+References: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsWyRsSkSldb40OAwc9fXBaXd81hs5hxfh+T
+	xaJlrcwOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZbyf2MRWcFO34u3ieSwNjP1qXYwcHBICJhJ7
+	twt3MXICmWISF+6tZ+ti5OIQEljKKPG9pZkdImEicWLDCTBbSGARo8Tqu4YQRZOZJG6/O8YK
+	kmAT0JVoeruLEcQWEZCVOHzlNzNIEbPAA6CijevAuoUFHCT2tc8Fa2ARUJW4N/kcWAOvgIdE
+	y605zBDbFCTe3H4GZnMKeEqs3zSTEWKzh8TCiaugegUkvk0+xALxgazEpgNguyQEHrNJPF65
+	H2qOpMTBFTdYJjAKL2BkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRGJan/z2T3sG4qsHi
+	EKMAB6MSD2+l5vsAIdbEsuLK3EOMEhzMSiK8XowfAoR4UxIrq1KL8uOLSnNSiw8x+gBdMpFZ
+	SjQ5HxgzeSXxhsYm5qbGppZGRmampjiElcR5GU89CRASSE8sSc1OTS1ILYIZx8TBKdXAKMa3
+	Qs8+o06ev/TGti1p7O1Gi3/4Ry6QELjI+Lu4ws+Ug2Hy5zsHsh4o8jd/9whmdYwM3TOt7eM5
+	7UcH7ywo6PI0Zko6tervDrWzl6Nn/9wfsvpSC6+Hj2rV9Gs7HgUfTF5sotlYu+qTm8Ca7Ave
+	92Ye+ZB2oWWh6eXKuxvDlZXP7Tz1YG3mVCWW4oxEQy3mouJEAIGtOT14AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t9jAV0tjQ8BBu8vm1pc3jWHzWLG+X1M
+	FouWtTI7MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
+	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jxfmIT
+	W8FN3Yq3i+exNDD2q3UxcnJICJhInNhwgh3CFpO4cG89G4gtJLCIUWL1XcMuRi4gezKTxO13
+	x1hBEmwCuhJNb3cxgtgiArISh6/8ZgYpYhZ4AFS0cR3YJGEBB4l97XPBGlgEVCXuTT4H1sAr
+	4CHRcmsOM8Q2BYk3t5+B2ZwCnhLrN81khNjsIbFw4irWCYy8CxgZVjGKphYkFxQnpeca6RUn
+	5haX5qXrJefnbmIEh/0z6R2MqxosDjEKcDAq8fBWar4PEGJNLCuuzD3EKMHBrCTC68X4IUCI
+	NyWxsiq1KD++qDQntfgQow/QVROZpUST84ExmVcSb2hsYm5qbGppYmFiZolDWEmcl/HUkwAh
+	gfTEktTs1NSC1CKYcUwcnFINjJP9Juz/IW/7Y/Y0U+ulhZMDudPm/A+6t+GOQ7W207mteim3
+	93w4WLp5ztnnrXnnFlbcT30t2OV4I2kygwzbPNP0DXvmCZoKMDRw3VL+/mWmwef8rl/T9297
+	dTddOnt70inW3ZfnTZ/yn8HBbfmupRplEf/CWg5UWITvlZmwWniqCpf94TB/xplKLMUZiYZa
+	zEXFiQCcrNz2qAIAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2013 04:01 PM, li guang wrote:
-> 在 2013-01-11五的 10:26 +0530，Preeti U Murthy写道：
->> Hi Morten,Alex
->>
->> On 01/09/2013 11:51 PM, Morten Rasmussen wrote:
->>> On Sat, Jan 05, 2013 at 08:37:34AM +0000, Alex Shi wrote:
->>>> Guess the search cpu from bottom to up in domain tree come from
->>>> commit 3dbd5342074a1e sched: multilevel sbe sbf, the purpose is
->>>> balancing over tasks on all level domains.
->>>>
->>>> This balancing cost much if there has many domain/groups in a large
->>>> system. And force spreading task among different domains may cause
->>>> performance issue due to bad locality.
->>>>
->>>> If we remove this code, we will get quick fork/exec/wake, plus better
->>>> balancing among whole system, that also reduce migrations in future
->>>> load balancing.
->>>>
->>>> This patch increases 10+% performance of hackbench on my 4 sockets
->>>> NHM and SNB machines.
->>>>
->>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
->>>> ---
->>>>  kernel/sched/fair.c | 20 +-------------------
->>>>  1 file changed, 1 insertion(+), 19 deletions(-)
->>>>
->>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>>> index ecfbf8e..895a3f4 100644
->>>> --- a/kernel/sched/fair.c
->>>> +++ b/kernel/sched/fair.c
->>>> @@ -3364,15 +3364,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->>>>  		goto unlock;
->>>>  	}
->>>>  
->>>> -	while (sd) {
->>>> +	if (sd) {
->>>>  		int load_idx = sd->forkexec_idx;
->>>>  		struct sched_group *group;
->>>> -		int weight;
->>>> -
->>>> -		if (!(sd->flags & sd_flag)) {
->>>> -			sd = sd->child;
->>>> -			continue;
->>>> -		}
->>>>  
->>>>  		if (sd_flag & SD_BALANCE_WAKE)
->>>>  			load_idx = sd->wake_idx;
->>>> @@ -3382,18 +3376,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->>>>  			goto unlock;
->>>>  
->>>>  		new_cpu = find_idlest_cpu(group, p, cpu);
->>>> -
->>>> -		/* Now try balancing at a lower domain level of new_cpu */
->>>> -		cpu = new_cpu;
->>>> -		weight = sd->span_weight;
->>>> -		sd = NULL;
->>>> -		for_each_domain(cpu, tmp) {
->>>> -			if (weight <= tmp->span_weight)
->>>> -				break;
->>>> -			if (tmp->flags & sd_flag)
->>>> -				sd = tmp;
->>>> -		}
->>>> -		/* while loop will break here if sd == NULL */
->>>
->>> I agree that this should be a major optimization. I just can't figure
->>> out why the existing recursive search for an idle cpu switches to the
->>> new cpu near the end and then starts a search for an idle cpu in the new
->>> cpu's domain. Is this to handle some exotic sched domain configurations?
->>> If so, they probably wouldn't work with your optimizations.
->>
->> Let me explain my understanding of why the recursive search is the way
->> it is.
->>
->>  _________________________  sd0
->> |                         |
->> |  ___sd1__   ___sd2__    |
->> | |        | |        |   |
->> | | sgx    | |  sga   |   |
->> | | sgy    | |  sgb   |   |
->> | |________| |________|   |
->> |_________________________|
->>
->> What the current recursive search is doing is (assuming we start with
->> sd0-the top level sched domain whose flags are rightly set). we find
->> that sd1 is the idlest group,and a cpux1 in sgx is the idlest cpu.
->>
->> We could have ideally stopped the search here.But the problem with this
->> is that there is a possibility that sgx is more loaded than sgy; meaning
->> the cpus in sgx are heavily imbalanced;say there are two cpus cpux1 and
->> cpux2 in sgx,where cpux2 is heavily loaded and cpux1 has recently gotten
->> idle and load balancing has not come to its rescue yet.According to the
->> search above, cpux1 is idle,but is *not the right candidate for
->> scheduling forked task,it is the right candidate for relieving the load
->> from cpux2* due to cache locality etc.
-> 
-> This corner case may occur after "[PATCH v3 03/22] sched: fix
-> find_idlest_group mess logical" brought in the local sched_group bias,
-> and assume balancing runs on cpux2.
-> ideally,  find_idlest_group should find the real idlest(this case: sgy),
-> then, this patch is reasonable.
-> 
+Adding the phy-driver to ohci-exynos. Keeping the platform data
+for continuing the smooth operation for boards which still uses it
 
-Sure. but seems it is a bit hard to go down the idlest group.
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/usb/host/ohci-exynos.c |   84 ++++++++++++++++++++++++++++++----------
+ 1 files changed, 63 insertions(+), 21 deletions(-)
 
-and the old logical is real cost too much, on my 2 socket NHM/SNB
-server, hackbench can increase 2~5% performance. and no clean
-performance on kbuild/aim7 etc.
-
+diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
+index 804fb62..1b38409 100644
+--- a/drivers/usb/host/ohci-exynos.c
++++ b/drivers/usb/host/ohci-exynos.c
+@@ -15,6 +15,7 @@
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <linux/platform_data/usb-exynos.h>
++#include <linux/usb/phy.h>
+ #include <linux/usb/samsung_usb_phy.h>
+ #include <plat/usb-phy.h>
+ 
+@@ -22,8 +23,31 @@ struct exynos_ohci_hcd {
+ 	struct device *dev;
+ 	struct usb_hcd *hcd;
+ 	struct clk *clk;
++	struct usb_phy *phy;
++	struct usb_otg *otg;
++	struct exynos4_ohci_platdata *pdata;
+ };
+ 
++static void exynos_ohci_phy_enable(struct exynos_ohci_hcd *exynos_ohci)
++{
++	struct platform_device *pdev = to_platform_device(exynos_ohci->dev);
++
++	if (exynos_ohci->phy)
++		usb_phy_init(exynos_ohci->phy);
++	else if (exynos_ohci->pdata->phy_init)
++		exynos_ohci->pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
++}
++
++static void exynos_ohci_phy_disable(struct exynos_ohci_hcd *exynos_ohci)
++{
++	struct platform_device *pdev = to_platform_device(exynos_ohci->dev);
++
++	if (exynos_ohci->phy)
++		usb_phy_shutdown(exynos_ohci->phy);
++	else if (exynos_ohci->pdata->phy_exit)
++		exynos_ohci->pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
++}
++
+ static int ohci_exynos_reset(struct usb_hcd *hcd)
+ {
+ 	return ohci_init(hcd_to_ohci(hcd));
+@@ -79,20 +103,15 @@ static u64 ohci_exynos_dma_mask = DMA_BIT_MASK(32);
+ 
+ static int exynos_ohci_probe(struct platform_device *pdev)
+ {
+-	struct exynos4_ohci_platdata *pdata;
++	struct exynos4_ohci_platdata *pdata = pdev->dev.platform_data;
+ 	struct exynos_ohci_hcd *exynos_ohci;
+ 	struct usb_hcd *hcd;
+ 	struct ohci_hcd *ohci;
+ 	struct resource *res;
++	struct usb_phy *phy;
+ 	int irq;
+ 	int err;
+ 
+-	pdata = pdev->dev.platform_data;
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "No platform data defined\n");
+-		return -EINVAL;
+-	}
+-
+ 	/*
+ 	 * Right now device-tree probed devices don't get dma_mask set.
+ 	 * Since shared usb code relies on it, set it here for now.
+@@ -108,6 +127,20 @@ static int exynos_ohci_probe(struct platform_device *pdev)
+ 	if (!exynos_ohci)
+ 		return -ENOMEM;
+ 
++	phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
++	if (IS_ERR_OR_NULL(phy)) {
++		/* Fallback to pdata */
++		if (!pdata) {
++			dev_warn(&pdev->dev, "no platform data or transceiver defined\n");
++			return -EPROBE_DEFER;
++		} else {
++			exynos_ohci->pdata = pdata;
++		}
++	} else {
++		exynos_ohci->phy = phy;
++		exynos_ohci->otg = phy->otg;
++	}
++
+ 	exynos_ohci->dev = &pdev->dev;
+ 
+ 	hcd = usb_create_hcd(&exynos_ohci_hc_driver, &pdev->dev,
+@@ -153,8 +186,11 @@ static int exynos_ohci_probe(struct platform_device *pdev)
+ 		goto fail_io;
+ 	}
+ 
+-	if (pdata->phy_init)
+-		pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
++	if (exynos_ohci->otg)
++		exynos_ohci->otg->set_host(exynos_ohci->otg,
++					&exynos_ohci->hcd->self);
++
++	exynos_ohci_phy_enable(exynos_ohci);
+ 
+ 	ohci = hcd_to_ohci(hcd);
+ 	ohci_hcd_init(ohci);
+@@ -162,13 +198,15 @@ static int exynos_ohci_probe(struct platform_device *pdev)
+ 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "Failed to add USB HCD\n");
+-		goto fail_io;
++		goto fail_add_hcd;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, exynos_ohci);
+ 
+ 	return 0;
+ 
++fail_add_hcd:
++	exynos_ohci_phy_disable(exynos_ohci);
+ fail_io:
+ 	clk_disable_unprepare(exynos_ohci->clk);
+ fail_clk:
+@@ -178,14 +216,16 @@ fail_clk:
+ 
+ static int exynos_ohci_remove(struct platform_device *pdev)
+ {
+-	struct exynos4_ohci_platdata *pdata = pdev->dev.platform_data;
+ 	struct exynos_ohci_hcd *exynos_ohci = platform_get_drvdata(pdev);
+ 	struct usb_hcd *hcd = exynos_ohci->hcd;
+ 
+ 	usb_remove_hcd(hcd);
+ 
+-	if (pdata && pdata->phy_exit)
+-		pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
++	if (exynos_ohci->otg)
++		exynos_ohci->otg->set_host(exynos_ohci->otg,
++					&exynos_ohci->hcd->self);
++
++	exynos_ohci_phy_disable(exynos_ohci);
+ 
+ 	clk_disable_unprepare(exynos_ohci->clk);
+ 
+@@ -209,8 +249,6 @@ static int exynos_ohci_suspend(struct device *dev)
+ 	struct exynos_ohci_hcd *exynos_ohci = dev_get_drvdata(dev);
+ 	struct usb_hcd *hcd = exynos_ohci->hcd;
+ 	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
+-	struct platform_device *pdev = to_platform_device(dev);
+-	struct exynos4_ohci_platdata *pdata = pdev->dev.platform_data;
+ 	unsigned long flags;
+ 	int rc = 0;
+ 
+@@ -229,8 +267,11 @@ static int exynos_ohci_suspend(struct device *dev)
+ 
+ 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+ 
+-	if (pdata && pdata->phy_exit)
+-		pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
++	if (exynos_ohci->otg)
++		exynos_ohci->otg->set_host(exynos_ohci->otg,
++					&exynos_ohci->hcd->self);
++
++	exynos_ohci_phy_disable(exynos_ohci);
+ 
+ 	clk_disable_unprepare(exynos_ohci->clk);
+ 
+@@ -244,13 +285,14 @@ static int exynos_ohci_resume(struct device *dev)
+ {
+ 	struct exynos_ohci_hcd *exynos_ohci = dev_get_drvdata(dev);
+ 	struct usb_hcd *hcd = exynos_ohci->hcd;
+-	struct platform_device *pdev = to_platform_device(dev);
+-	struct exynos4_ohci_platdata *pdata = pdev->dev.platform_data;
+ 
+ 	clk_prepare_enable(exynos_ohci->clk);
+ 
+-	if (pdata && pdata->phy_init)
+-		pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
++	if (exynos_ohci->otg)
++		exynos_ohci->otg->set_host(exynos_ohci->otg,
++					&exynos_ohci->hcd->self);
++
++	exynos_ohci_phy_enable(exynos_ohci);
+ 
+ 	ohci_resume(hcd, false);
+ 
 -- 
-Thanks
-    Alex
+1.7.6.5
+
