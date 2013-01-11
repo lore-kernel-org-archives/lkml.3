@@ -1,241 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab3AKIyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 03:54:09 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:20421 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754960Ab3AKIyD (ORCPT
+	id S1755347Ab3AKIzq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 03:55:46 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:53015 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab3AKIzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 03:54:03 -0500
-From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Gleb Natapov <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] QEMU-AER: Qemu changes to support AER for VFIO-PCI
- devices
-Thread-Topic: [PATCH 2/2] QEMU-AER: Qemu changes to support AER for VFIO-PCI
- devices
-Thread-Index: AQHN7jI/NxaDlJRulEClJd4cCU38MphBTBeAgAKIQWA=
-Date: Fri, 11 Jan 2013 08:53:02 +0000
-Message-ID: <F9E001219150CB45BEDC82A650F360C901497698@G9W0717.americas.hpqcorp.net>
-References: <F9E001219150CB45BEDC82A650F360C901496034@G9W0717.americas.hpqcorp.net>
- <1357754873.3224.777.camel@bling.home>
-In-Reply-To: <1357754873.3224.777.camel@bling.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.23]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Fri, 11 Jan 2013 03:55:45 -0500
+From: Fredrik Gustafsson <iveqy@iveqy.com>
+To: apw@canonical.com
+Cc: linux-kernel@vger.kernel.org, iveqy@iveqy.com
+Subject: [PATCH] Prevent use of unitialized variable
+Date: Fri, 11 Jan 2013 09:55:20 +0100
+Message-Id: <1357894520-3406-1-git-send-email-iveqy@iveqy.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0B8sGLu019595
 
+Run checkpatch.pl -f kernel/fork.c in commit
+ecf02a607bd801e742d7bb35c6e40f7ca15edf03
+and checkpatch.pl will try to use an uninitialized variable.
+This patch fixes that.
 
+Signed-off-by: Fredrik Gustafsson <iveqy@iveqy.com>
+---
+ scripts/checkpatch.pl |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
 
-> -----Original Message-----
-> From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> Sent: Wednesday, January 09, 2013 10:08 AM
-> To: Pandarathil, Vijaymohan R
-> Cc: Bjorn Helgaas; Gleb Natapov; kvm@vger.kernel.org; qemu-
-> devel@nongnu.org; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 2/2] QEMU-AER: Qemu changes to support AER for VFIO-PCI
-> devices
-> 
-> On Wed, 2013-01-09 at 06:26 +0000, Pandarathil, Vijaymohan R wrote:
-> > 	- Create eventfd per vfio device assigned to a guest and register an
-> >           event handler
-> >
-> > 	- This fd is passed to the vfio_pci driver through a new ioctl
-> >
-> > 	- When the device encounters an error, the eventfd is signaled
-> >           and the qemu eventfd handler gets invoked.
-> >
-> > 	- In the handler decide what action to take. Current action taken
-> >           is to terminate the guest.
-> >
-> > Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
-> > ---
-> >  hw/vfio_pci.c              | 56
-> ++++++++++++++++++++++++++++++++++++++++++++++
-> >  linux-headers/linux/vfio.h |  9 ++++++++
-> >  2 files changed, 65 insertions(+)
-> >
-> > diff --git a/hw/vfio_pci.c b/hw/vfio_pci.c
-> > index 28c8303..9c3c28b 100644
-> > --- a/hw/vfio_pci.c
-> > +++ b/hw/vfio_pci.c
-> > @@ -38,6 +38,7 @@
-> >  #include "qemu/error-report.h"
-> >  #include "qemu/queue.h"
-> >  #include "qemu/range.h"
-> > +#include "sysemu/sysemu.h"
-> >
-> >  /* #define DEBUG_VFIO */
-> >  #ifdef DEBUG_VFIO
-> > @@ -130,6 +131,8 @@ typedef struct VFIODevice {
-> >      QLIST_ENTRY(VFIODevice) next;
-> >      struct VFIOGroup *group;
-> >      bool reset_works;
-> > +    EventNotifier errfd;
-> 
-> Misleading name, it's an EventNotifier not an fd.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 4d2c7df..4e34368 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3363,14 +3363,17 @@ sub process {
+ 
+ 			my $ms_addr = $2;
+ 			my $ms_val = $7;
+-			my $ms_size = $12;
+-
+-			if ($ms_size =~ /^(0x|)0$/i) {
+-				ERROR("MEMSET",
+-				      "memset to 0's uses 0 as the 2nd argument, not the 3rd\n" . "$here\n$stat\n");
+-			} elsif ($ms_size =~ /^(0x|)1$/i) {
+-				WARN("MEMSET",
+-				     "single byte memset is suspicious. Swapped 2nd/3rd argument?\n" . "$here\n$stat\n");
++
++			if (defined $12) {
++				my $ms_size = $12;
++
++				if ($ms_size =~ /^(0x|)0$/i) {
++					ERROR("MEMSET",
++						  "memset to 0's uses 0 as the 2nd argument, not the 3rd\n" . "$here\n$stat\n");
++				} elsif ($ms_size =~ /^(0x|)1$/i) {
++					WARN("MEMSET",
++						 "single byte memset is suspicious. Swapped 2nd/3rd argument?\n" . "$here\n$stat\n");
++				}
+ 			}
+ 		}
+ 
+-- 
+1.7.2.5
 
-Will make the change.
-
-> 
-> > +    __u32 dev_info_flags;
-> >  } VFIODevice;
-> >
-> >  typedef struct VFIOGroup {
-> > @@ -1805,6 +1808,8 @@ static int vfio_get_device(VFIOGroup *group, const
-> char *name, VFIODevice *vdev)
-> >      DPRINTF("Device %s flags: %u, regions: %u, irgs: %u\n", name,
-> >              dev_info.flags, dev_info.num_regions, dev_info.num_irqs);
-> >
-> > +    vdev->dev_info_flags = dev_info.flags;
-> > +
-> 
-> We test the VFIO_DEVICE_FLAGS_RESET elsewhere by caching the bit into a
-> variable, why not do that here too?
-
-I was wondering if there was any specific reason to cache the bit into a separate variable. Wouldn't a flags field which can contain the specific bit be more apt ?
-
-> 
-> >      if (!(dev_info.flags & VFIO_DEVICE_FLAGS_PCI)) {
-> >          error_report("vfio: Um, this isn't a PCI device\n");
-> >          goto error;
-> > @@ -1900,6 +1905,55 @@ static void vfio_put_device(VFIODevice *vdev)
-> >      }
-> >  }
-> >
-> > +static void vfio_errfd_handler(void *opaque)
-> > +{
-> > +    VFIODevice *vdev = opaque;
-> > +
-> > +    if (!event_notifier_test_and_clear(&vdev->errfd)) {
-> > +        return;
-> > +    }
-> > +
-> > +    /*
-> > +     * TBD. Retrieve the error details and decide what action
-> > +     * needs to be taken. One of the actions could be to pass
-> > +     * the error to the guest and have the guest driver recover
-> > +     * the error. This requires that PCIe capabilities be
-> > +     * exposed to the guest. At present, we just terminate the
-> > +     * guest to contain the error.
-> > +     */
-> > +    error_report("%s(%04x:%02x:%02x.%x) "
-> > +        "Unrecoverable error detected... Terminating guest\n",
-> > +        __func__, vdev->host.domain, vdev->host.bus, vdev->host.slot,
-> > +        vdev->host.function);
-> > +
-> > +    qemu_system_shutdown_request();
-> 
-> I would have figured hw_error
-
-Hw_error() is probably more appropriate. Will make the change.
-
-> 
-> > +    return;
-> > +}
-> > +
-> > +static void vfio_register_errfd(VFIODevice *vdev)
-> > +{
-> > +    int32_t pfd;
-> 
-> "pfd" is used elsewhere in vfio as "Pointer to FD", this is just a fd.
-
-Will change.
-
-> 
-> > +    int ret;
-> > +
-> > +    if (!(vdev->dev_info_flags & VFIO_DEVICE_FLAGS_AER_NOTIFY)) {
-> > +        error_report("vfio: Warning: Error notification not supported
-> for the device\n");
-> 
-> This should probably just be a debug print.
-
-Okay.
-
-> 
-> > +        return;
-> > +    }
-> > +    if (event_notifier_init(&vdev->errfd, 0)) {
-> > +        error_report("vfio: Warning: Unable to init event notifier for
-> error detection\n");
-> > +        return;
-> > +    }
-> > +    pfd = event_notifier_get_fd(&vdev->errfd);
-> > +    qemu_set_fd_handler(pfd, vfio_errfd_handler, NULL, vdev);
-> > +
-> > +    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_ERRFD, pfd);
-> > +    if (ret) {
-> > +        error_report("vfio: Warning: Failed to setup error fd: %d\n",
-> ret);
-> > +        qemu_set_fd_handler(pfd, NULL, NULL, vdev);
-> > +        event_notifier_cleanup(&vdev->errfd);
-> > +    }
-> > +    return;
-> > +}
-> >  static int vfio_initfn(PCIDevice *pdev)
-> >  {
-> >      VFIODevice *pvdev, *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
-> > @@ -2010,6 +2064,8 @@ static int vfio_initfn(PCIDevice *pdev)
-> >          }
-> >      }
-> >
-> > +    vfio_register_errfd(vdev);
-> > +
-> 
-> No cleanup in exitfn?!  Thanks,
-
-Missed that. Will fix.
-
-Vijay
-
-> 
-> Alex
-> 
-> >      return 0;
-> >
-> >  out_teardown:
-> > diff --git a/linux-headers/linux/vfio.h b/linux-headers/linux/vfio.h
-> > index 4758d1b..0ca4eeb 100644
-> > --- a/linux-headers/linux/vfio.h
-> > +++ b/linux-headers/linux/vfio.h
-> > @@ -147,6 +147,7 @@ struct vfio_device_info {
-> >  	__u32	flags;
-> >  #define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
-> >  #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
-> > +#define VFIO_DEVICE_FLAGS_AER_NOTIFY (1 << 2)   /* Supports aer
-> notification */
-> >  	__u32	num_regions;	/* Max region index + 1 */
-> >  	__u32	num_irqs;	/* Max IRQ index + 1 */
-> >  };
-> > @@ -288,6 +289,14 @@ struct vfio_irq_set {
-> >   */
-> >  #define VFIO_DEVICE_RESET		_IO(VFIO_TYPE, VFIO_BASE + 11)
-> >
-> > +/**
-> > + * VFIO_DEVICE_SET_ERRFD - _IO(VFIO_TYPE, VFIO_BASE + 12)
-> > + *
-> > + * Pass the eventfd to the vfio-pci driver for signalling any device
-> > + * error notifications
-> > + */
-> > +#define VFIO_DEVICE_SET_ERRFD           _IO(VFIO_TYPE, VFIO_BASE + 12)
-> > +
-> >  /*
-> >   * The VFIO-PCI bus driver makes use of the following fixed region and
-> >   * IRQ index mapping.  Unimplemented regions return a size of zero.
-> 
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
