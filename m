@@ -1,98 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab3AKDZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 22:25:12 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:55893 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab3AKDZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 22:25:10 -0500
-Message-ID: <50EF8614.3050408@windriver.com>
-Date: Fri, 11 Jan 2013 11:25:08 +0800
-From: Fan Du <fan.du@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1754475Ab3AKDZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 22:25:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:21967 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753387Ab3AKDZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 22:25:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,447,1355126400"; 
+   d="scan'208";a="275633922"
+Message-ID: <50EF8683.7040404@intel.com>
+Date: Fri, 11 Jan 2013 11:26:59 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <matthew@wil.cx>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs: Disable preempt when acquire i_size_seqcount write
- lock
-References: <1357702459-2718-1-git-send-email-fan.du@windriver.com> <20130110143813.1ba2b4fd.akpm@linux-foundation.org>
-In-Reply-To: <20130110143813.1ba2b4fd.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.224.162.159]
+To: Morten Rasmussen <Morten.Rasmussen@arm.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 11/22] sched: consider runnable load average in effective_load
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-12-git-send-email-alex.shi@intel.com> <20130110112817.GD2046@e103034-lin>
+In-Reply-To: <20130110112817.GD2046@e103034-lin>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 2013年01月11日 06:38, Andrew Morton wrote:
-> On Wed, 9 Jan 2013 11:34:19 +0800
-> Fan Du<fan.du@windriver.com>  wrote:
->
->> Two rt tasks bind to one CPU core.
+On 01/10/2013 07:28 PM, Morten Rasmussen wrote:
+> On Sat, Jan 05, 2013 at 08:37:40AM +0000, Alex Shi wrote:
+>> effective_load calculates the load change as seen from the
+>> root_task_group. It needs to multiple cfs_rq's tg_runnable_contrib
+>> when we turn to runnable load average balance.
 >>
->> The higher priority rt task A preempts a lower priority rt task B which
->> has already taken the write seq lock, and then the higher priority
->> rt task A try to acquire read seq lock, it's doomed to lockup.
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> ---
+>>  kernel/sched/fair.c | 11 ++++++++---
+>>  1 file changed, 8 insertions(+), 3 deletions(-)
 >>
->> rt task A with lower priority: call write
->> i_size_write                                        rt task B with higher priority: call sync, and preempt task A
->>    write_seqcount_begin(&inode->i_size_seqcount);    i_size_read
->>    inode->i_size = i_size;                             read_seqcount_begin<-- lockup here...
->>
->
-> Ouch.
->
-> And even if the preemping task is preemptible, it will spend an entire
-> timeslice pointlessly spinning, which isn't very good.
->
->> So disable preempt when acquiring every i_size_seqcount *write* lock will
->> cure the problem.
->>
->> ...
->>
->> --- a/include/linux/fs.h
->> +++ b/include/linux/fs.h
->> @@ -758,9 +758,11 @@ static inline loff_t i_size_read(const struct inode *inode)
->>   static inline void i_size_write(struct inode *inode, loff_t i_size)
->>   {
->>   #if BITS_PER_LONG==32&&  defined(CONFIG_SMP)
->> +	preempt_disable();
->>   	write_seqcount_begin(&inode->i_size_seqcount);
->>   	inode->i_size = i_size;
->>   	write_seqcount_end(&inode->i_size_seqcount);
->> +	preempt_enable();
->>   #elif BITS_PER_LONG==32&&  defined(CONFIG_PREEMPT)
->>   	preempt_disable();
->>   	inode->i_size = i_size;
->
-> afacit all write_seqcount_begin()/read_seqretry() sites are vulnerable
-> to this problem.  Would it not be better to do the preempt_disable() in
-> write_seqcount_begin()?
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index cab62aa..247d6a8 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -2982,7 +2982,8 @@ static void task_waking_fair(struct task_struct *p)
+>>  
+>>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>>  /*
+>> - * effective_load() calculates the load change as seen from the root_task_group
+>> + * effective_load() calculates the runnable load average change as seen from
+>> + * the root_task_group
+>>   *
+>>   * Adding load to a group doesn't make a group heavier, but can cause movement
+>>   * of group shares between cpus. Assuming the shares were perfectly aligned one
+>> @@ -3030,13 +3031,17 @@ static void task_waking_fair(struct task_struct *p)
+>>   * Therefore the effective change in loads on CPU 0 would be 5/56 (3/8 - 2/7)
+>>   * times the weight of the group. The effect on CPU 1 would be -4/56 (4/8 -
+>>   * 4/7) times the weight of the group.
+>> + *
+>> + * After get effective_load of the load moving, will multiple the cpu own
+>> + * cfs_rq's runnable contrib of root_task_group.
+>>   */
+>>  static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+>>  {
+>>  	struct sched_entity *se = tg->se[cpu];
+>>  
+>>  	if (!tg->parent)	/* the trivial, non-cgroup case */
+>> -		return wl;
+>> +		return wl * tg->cfs_rq[cpu]->tg_runnable_contrib
+>> +						>> NICE_0_SHIFT;
+> 
+> Why do we need to scale the load of the task (wl) by runnable_contrib
+> when the task is in the root task group? Wouldn't the load change still
+> just be wl?
+> 
 
-IMHO, write_seqcount_begin/write_seqcount_end are often wrapped by mutex,
-this gives higher priority task a chance to sleep, and then lower priority task
-get cpu to unlock, so avoid the problematic scenario this patch describing.
+Here, wl is the load weight, runnable_contrib engaged the runnable time.
+>>  
+>>  	for_each_sched_entity(se) {
+>>  		long w, W;
+>> @@ -3084,7 +3089,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+>>  		wg = 0;
+>>  	}
+>>  
+>> -	return wl;
+>> +	return wl * tg->cfs_rq[cpu]->tg_runnable_contrib >> NICE_0_SHIFT;
+> 
+> I believe that effective_load() is only used in wake_affine() to compare
+> load scenarios of the same task group. Since the task group is the same
+> the effective load is scaled by the same factor and should not make any
+> difference?
+> 
+> Also, in wake_affine() the result of effective_load() is added with
+> target_load() which is load.weight of the cpu and not a tracked load
+> based on runnable_avg_*/contrib?
+> 
+> Finally, you have not scaled the result of effective_load() in the
+> function used when FAIR_GROUP_SCHED is disabled. Should that be scaled
+> too?
 
-But in i_size_write case, I could only find disable preempt a good choice before
-someone else has better idea :)
+it should be, thanks reminder.
 
->
-> Possible problems:
->
-> - mm/filemap_xip.c does disk I/O under write_seqcount_begin().
->
-> - dev_change_name() does GFP_KERNEL allocations under write_seqcount_begin()
->
-> - I didn't review u64_stats_update_begin() callers.
->
-> But I think calling schedule() under preempt_disable() is OK anyway?
->
+the wake up is not good for burst wakeup benchmark. I am thinking to
+rewrite this part.
 
--- 
-浮沉随浪只记今朝笑
-
---fan
