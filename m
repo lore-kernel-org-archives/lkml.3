@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab3AKUZJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:25:09 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:38811 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754736Ab3AKUZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:25:08 -0500
-Date: Fri, 11 Jan 2013 21:25:01 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org, zeus@gnu.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: srat: harsh hot-pluggable memory check?
-Message-ID: <20130111202501.GL30577@one.firstfloor.org>
-References: <1357846907.7523.17.camel@buesod1.americas.hpqcorp.net> <20130110200223.GH30577@one.firstfloor.org> <1357935230.7523.32.camel@buesod1.americas.hpqcorp.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357935230.7523.32.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.4.2.2i
+	id S1755630Ab3AKUZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:25:59 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38068 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755341Ab3AKUZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 15:25:58 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH 1/16] ACPI: Separate adding ACPI device objects from probing ACPI drivers
+Date: Fri, 11 Jan 2013 21:31:43 +0100
+Message-ID: <2859994.arbXorpfaz@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130111200046.GB13897@intel.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <23002897.6xbQGtPaGy@vostro.rjw.lan> <20130111200046.GB13897@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 12:13:50PM -0800, Davidlohr Bueso wrote:
-> On Thu, 2013-01-10 at 21:02 +0100, Andi Kleen wrote:
-> > > This only mentions that the system supports hot-plugging, and IMHO if the
-> > > user decides not to use CONFIG_MEMORY_HOTPLUG, it shouldn't be considered an error.
-> > > Therefore would it be ok to drop the check? Or am I missing something?
-> > 
-> > The very strict checks were originally implemented because various early
-> > BIOS had largely fictional SRATs, and trusting them blindly caused
-> > boot failures or a lot of wasted memory for unnecessary hotplug zones. 
-> > The wasted memory was mainly a problem with the old memory hotplug
-> > implementation that pre-allocated memmaps, that's not a problem anymore.
-> > However there may be still some other failure cases.
-> > 
+On Friday, January 11, 2013 10:00:46 PM Mika Westerberg wrote:
+> (Sorry to jump in late but I noticed one problem with this series while
+> testing).
 > 
-> Would you be willing to take a patch that drops this check then? Or do
-> you see any other scenario where it would still be valid?
+> On Thu, Dec 20, 2012 at 02:47:47AM +0100, Rafael J. Wysocki wrote:
+> > +static acpi_status acpi_bus_probe_start(acpi_handle handle, u32 lvl,
+> > +					void *context, void **not_used)
+> > +{
+> > +	struct acpi_bus_ops *ops = context;
+> > +	acpi_status status = AE_OK;
+> > +	struct acpi_device *device;
+> > +	unsigned long long sta_not_used;
+> > +	int type_not_used;
+> > +
+> > +	/*
+> > +	 * Ignore errors ignored by acpi_bus_check_add() to avoid terminating
+> > +	 * namespace walks prematurely.
+> > +	 */
+> > +	if (acpi_bus_type_and_status(handle, &type_not_used, &sta_not_used))
+> > +		return AE_OK;
+> > +
+> > +	if (acpi_bus_get_device(handle, &device))
+> > +		return AE_CTRL_DEPTH;
+> > +
+> > +	if (ops->acpi_op_add) {
+> > +		if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
+> > +			/* This is a known good platform device. */
+> > +			acpi_create_platform_device(device);
+> > +		} else if (device_attach(&device->dev)) {
+> 
+> device_attach() returns 1 if it succeeds to attach device to a driver. In
+> that case we should continue and not return AE_CTRL_DEPTH, right?
 
-I don't maintain this code. 
+That's correct.  The check is reversed, so we need the appended patch on top
+of linux-pm.git/acpi-scan.
 
-Personally I would be vary to any changes in this area, unless you
-can very clearly demonstrate that the change cannot break any old
-system.
+Thanks,
+Rafael
 
--Andi
+
+---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI / scan: Fix check of device_attach() return value.
+
+Since device_attach() returns 1 on success and 0 on failure,
+the check against its return value in acpi_bus_device_attach()
+should be reveresed.  Make it so.
+
+Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/scan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -1598,7 +1598,7 @@ static acpi_status acpi_bus_device_attac
+ 	if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
+ 		/* This is a known good platform device. */
+ 		acpi_create_platform_device(device);
+-	} else if (device_attach(&device->dev)) {
++	} else if (!device_attach(&device->dev)) {
+ 		status = AE_CTRL_DEPTH;
+ 	}
+ 	return status;
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
