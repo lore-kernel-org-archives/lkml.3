@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab3AKVvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 16:51:49 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38184 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754594Ab3AKVvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 16:51:46 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/12] ACPI: Rework the handling of power resources
-Date: Fri, 11 Jan 2013 22:57:33 +0100
-Message-ID: <16771896.0qvD1a7278@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1418767.4KIZOTK1lk@vostro.rjw.lan>
-References: <1418767.4KIZOTK1lk@vostro.rjw.lan>
+	id S1755720Ab3AKVwO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 16:52:14 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47292 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755050Ab3AKVwM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 16:52:12 -0500
+Message-ID: <50F0897E.6080607@oracle.com>
+Date: Fri, 11 Jan 2013 15:51:58 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: sedat.dilek@gmail.com
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>
+Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
+References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com> <CA+icZUWkUrFSMzB1p+6KgVkbxn9NtpfZUHgn6wUs4r3zkrpmjA@mail.gmail.com>
+In-Reply-To: <CA+icZUWkUrFSMzB1p+6KgVkbxn9NtpfZUHgn6wUs4r3zkrpmjA@mail.gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 04, 2013 12:16:48 AM Rafael J. Wysocki wrote:
-> Hi All,
-> 
-> There are some problems with our handling of ACPI power resources that have
-> accumulated over time or have never been addressed.
-> 
-> First of all, the interface represented by
-> acpi_power_resource_[un]register_device() doesn't really work as it should,
-> so it needs to be redesigned (details in the changelog of patch [1/12]).
-> 
-> Second, power resources really have to be treated in a special way by the
-> ACPI namespace scanning code, because they may need to be ready to use as
-> soon as they are discovered.  Moreover, the are represented by struct
-> acpi_device objects, so that they appear in sysfs along with "regular" ACPI
-> device nodes, they really don't represent devices, so they need special
-> configuration treatment in some cases.  This special casing is obnoxiously
-> present in scan.c, but if we accept the fact that power resources really are
-> a special case, things can be simplified quite a bit (patch [3/12] with some
-> preparations in [2/12]).
-> 
-> If the above changes are made, then it turns out that the entire
-> acpi_power_driver structure is not necessary any more and we don't need the
-> device power states of power resources for anything (patches [4-5/12]).
-> 
-> Moreover, ACPI power resources are supposed to be ordered.  Namely, they have
-> an attribute defining the order in which they are supposed to turned on and
-> off.  Currently, though, we don't take that attribute into accound, although
-> we obviously should do that.  After the previous changes that may be
-> implemented at a relatively low cost (patch [6-7/12]).
-> 
-> Patches [8-9/12] move code around and clean it up in preparation for patch
-> [10/12], which consolidates the way in which power resources lists are
-> extracted from the output of _PRW and _PR[0-3].
-> 
-> Patch [11/12] improves the handling of power resource initialization errors
-> and patch [12/12] causes the system level attribute of wakeup power resources
-> to be taken into account during device setup.
-> 
-> All patches are on top of the git branch at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git linux-next
-> 
-> Tested on HP nx6325 (and other boxes where ACPI power resources aren't used).
+On 01/10/2013 09:46 AM, Sedat Dilek wrote:
 
-There has been a week without a single comment, so I gather the thing is
-not controversial at all.  I'll put it into linux-next for v3.9, then.
+> Hi Dave,
+> 
+> I am using here Ubuntu/precise AMD64 as a WUBI-installed system.
+> 
+> Not sure if WUBI [1] is a good test-candidate.
+> 
+> [ /boot/grub/grub.cfg ]
+> ...
+>         set root=(loop0)
+>         linux   /boot/vmlinuz-3.8.0-rc2-9-iniza-generic
+> root=UUID=001AADA61AAD9964 loop=/ubuntu/disks/root.disk ro
+> ...
+> 
+> Poops, I did it (not again) but for the first time to test your
+> loop-patchset on top of Linux v3.8-rc2 plus some important other stuff
+> (see patches/ dir in attached tarball).
+> 
+> As I did not know how to test it in a meaningful way I just run the
+> "lite" test-script from LTP [2].
+> Please, have a look at the ERRORs and failures.
 
-Thanks,
-Rafael
+I'd really like to know if these same testcases fail without my
+patchset. I'm going to play with ltp on loop-mounted filesystems, but I
+don't intend to play with WUBI at all.
 
+I'd be interested if my patchset introduces regressions, but not so much
+if the same testcases fail previously.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> $ egrep -i 'error|fail'
+> for-dkleikamp/tests/runltplite-results_loop-experimental.txt | grep -v
+> -i expected | wc -l
+> 210
+> 
+> In good old German tradition I have collected some interesting stuff
+> in the attached tarball ;-).
+> If something is missing - blame me.
+> Don't hesitate to ask (I have your patchset for a while on my radar).
+> 
+> Thanks!
+> 
+> Regards,
+> - Sedat -
+> 
+> [1] https://wiki.ubuntu.com/WubiGuide
+> [2] http://sourceforge.net/projects/ltp/
