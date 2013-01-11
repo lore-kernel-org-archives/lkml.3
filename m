@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab3AKRDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:03:16 -0500
-Received: from fieldses.org ([174.143.236.118]:35942 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754077Ab3AKRDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:03:14 -0500
-Date: Fri, 11 Jan 2013 12:03:12 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [Devel] [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
-Message-ID: <20130111170312.GF17909@fieldses.org>
-References: <20121206153204.30693.11408.stgit@localhost.localdomain>
- <20121206153447.30693.54128.stgit@localhost.localdomain>
- <20121210202842.GB17350@fieldses.org>
- <50C73C60.8060405@parallels.com>
- <50C73F58.1080005@parallels.com>
- <20121211145621.GA3336@fieldses.org>
- <50C74C14.8030807@parallels.com>
- <20121211152036.GB3336@fieldses.org>
- <20121211153527.GC3336@fieldses.org>
- <50F0283A.6040509@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50F0283A.6040509@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755300Ab3AKREV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:04:21 -0500
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:34105 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab3AKREQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 12:04:16 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
+        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH v4 5/5] mmc: dw_mmc: Remove DW_MCI_QUIRK_NO_WRITE_PROTECT
+Date: Fri, 11 Jan 2013 09:03:54 -0800
+Message-Id: <1357923834-31641-5-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1357923834-31641-1-git-send-email-dianders@chromium.org>
+References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
+ <1357923834-31641-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 06:56:58PM +0400, Stanislav Kinsbursky wrote:
-> 11.12.2012 19:35, J. Bruce Fields пишет:
-> >On Tue, Dec 11, 2012 at 10:20:36AM -0500, J. Bruce Fields wrote:
-> >>On Tue, Dec 11, 2012 at 07:07:00PM +0400, Stanislav Kinsbursky wrote:
-> >>>I don't really understand, how  mountd's root can be wrong. I.e.
-> >>>its' always right as I see it. NFSd kthreads have to swap/use
-> >>>relative path/whatever to communicate with proper mountd.
-> >>>Or I'm missing something?
-> >>
-> >>Ugh, I see the problem: I thought svc_export_request was called at the
-> >>time mountd does the read, but instead its done at the time nfsd does
-> >>the upcall.
-> >>
-> >>I suspect that's wrong, and we really want this done in the context of
-> >>the mountd process when it does the read call.  If d_path is called
-> >>there then we have no problem.
-> >
-> >Right, so I'd be happier if we could modify sunrpc_cache_pipe_upcall to
-> >skip calling cache_request and instead delay that until cache_read().  I
-> >think that should be possible.
-> >
-> 
-> So, Bruce, what we going to do (or what you want me to do) with the rest of NFSd changes?
-> I.e. how I should solve this d_path() problem?
-> I.e. I don't understand what did you mean by "I'd be happier if we could modify sunrpc_cache_pipe_upcall to
-> skip calling cache_request and instead delay that until cache_read()".
-> Could you give me a hint?
+The original quirk was added in the change 'mmc: dw_mmc: add quirk to
+indicate missing write protect line'.  The original quirk was added at
+a controller level even though each slot has its own write protect (so
+the quirk should be at the slot level).  A recent change (mmc: dw_mmc:
+Add "disable-wp" device tree property) added a slot-level quirk and
+support for the quirk directly to dw_mmc.
 
-Definitely.  So normally the way these upcalls happen are:
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v4:
+- New for this version; addresses comments from Olof Johansson about
+  the fact that we shouldn't have both a slot and controller level
+  quirk for the same thing.
 
-	1. the kernel does a cache lookup, finds no matching item, and
-	   calls sunrpc_cache_pipe_upcall().
-	2. sunrpc_cache_pipe_upcall() formats the upcall: it allocates a
-	   struct cache_request crq and fills crq->buf with the upcall
-	   data by calling the cache's ->cache_request() method.
-	3. Then rpc.mountd realizes there's data available in
-	   /proc/net/rpc/nfsd.fh/content, so it does a read on that file.
-	4. cache_read copies the formatted upcall from crq->buf to
-	   to userspace.
+ drivers/mmc/host/dw_mmc.c  |    8 +-------
+ include/linux/mmc/dw_mmc.h |    7 -------
+ 2 files changed, 1 insertions(+), 14 deletions(-)
 
-So all I'm suggesting is that instead of calling ->cache_request() at
-step 2, we do it at step 4.
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index df62079..60063cc 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -831,13 +831,7 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
+ 	struct dw_mci_board *brd = slot->host->pdata;
+ 
+ 	/* Use platform get_ro function, else try on board write protect */
+-
+-	/*
+-	 * NOTE: DW_MCI_QUIRK_NO_WRITE_PROTECT will be removed in a future
+-	 * patch in the series once reference to it is removed.
+-	 */
+-	if ((brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT) ||
+-	    (slot->quirks & DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT))
++	if (slot->quirks & DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT)
+ 		read_only = 0;
+ 	else if (brd->get_ro)
+ 		read_only = brd->get_ro(slot->id);
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index de61de5..198f0fa 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -210,13 +210,6 @@ struct dw_mci_dma_ops {
+ /* Unreliable card detection */
+ #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
+ 
+-/* Write Protect detection not available */
+-/*
+- * NOTE: DW_MCI_QUIRK_NO_WRITE_PROTECT will be removed in a future
+- * patch in the series once reference to it is removed.
+- */
+-#define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(4)
+-
+ /* Slot level quirks */
+ /* This slot has no write protect */
+ #define DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT	BIT(0)
+-- 
+1.7.7.3
 
-Then cache_request will be called from rpc.mountd's read.  So we'll know
-which container rpc.mountd is in.
-
-Does that make sense?
-
---b.
