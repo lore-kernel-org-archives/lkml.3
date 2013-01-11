@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3AKUI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:08:56 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:50801 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781Ab3AKUIn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:08:43 -0500
-Date: Fri, 11 Jan 2013 12:08:39 -0800
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, chavey@google.com
-Subject: Re: [PATCHSET] block: improve tracepoints
-Message-ID: <20130111200839.GR20454@htj.dyndns.org>
-References: <1357749908-16562-1-git-send-email-tj@kernel.org>
+	id S1754638Ab3AKULo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:11:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55310 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753385Ab3AKULn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 15:11:43 -0500
+Message-ID: <50F071F1.6090600@redhat.com>
+Date: Fri, 11 Jan 2013 15:11:29 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357749908-16562-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Rafael Aquini <aquini@redhat.com>, linux-kernel@vger.kernel.org,
+        walken@google.com, eric.dumazet@gmail.com, lwoodman@redhat.com,
+        jeremy@goop.org, Jan Beulich <JBeulich@novell.com>, knoel@redhat.com,
+        chegu_vinod@hp.com, mingo@redhat.com
+Subject: Re: [PATCH 0/5] x86,smp: make ticket spinlock proportional backoff
+ w/ auto tuning
+References: <20130108172632.1126898a@annuminas.surriel.com> <50ED679B.9020306@linux.vnet.ibm.com> <20130110022722.GA1636@x61.redhat.com> <20130110173603.GA31549@linux.vnet.ibm.com>
+In-Reply-To: <20130110173603.GA31549@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 08:45:03AM -0800, Tejun Heo wrote:
-> Hello, Jens.
-> 
-> This patchset fixes/improves bio_complete TP so that block layer
-> proper triggers for all completing bios instead of stackign drivers
-> triggering them manually and adds more buffer / block / writeback TPs.
-> These improve visibility in general and are already in use in google.
-> 
-> This patchset contains the following five patches.
-> 
->  0001-block-add-missing-block_bio_complete-tracepoint.patch
->  0002-block-add-req-to-bio_-front-back-_merge-tracepoints.patch
->  0003-buffer-make-touch_buffer-an-exported-function.patch
->  0004-block-add-block_touch_buffer-tracepoint.patch
->  0005-writeback-add-more-tracepoints.patch
+On 01/10/2013 12:36 PM, Raghavendra K T wrote:
+> * Rafael Aquini <aquini@redhat.com> [2013-01-10 00:27:23]:
+>
+>> On Wed, Jan 09, 2013 at 06:20:35PM +0530, Raghavendra K T wrote:
+>>> I ran kernbench on 32 core (mx3850) machine with 3.8-rc2 base.
+>>> x base_3.8rc2
+>>> + rik_backoff
+>>>      N           Min           Max        Median           Avg        Stddev
+>>> x   8       222.977        231.16       227.735       227.388     3.1512986
+>>> +   8        218.75       232.347      229.1035     228.25425     4.2730225
+>>> No difference proven at 95.0% confidence
+>>
+>> I got similar results on smaller systems (1 socket, dual-cores and quad-cores)
+>> when running Rik's latest series, no big difference for good nor for worse,
+>> but I also think Rik's work is meant to address bigger systems with more cores
+>> contending for any given spinlock.
+>
+> I was able to do the test on same 32 core machine with
+> 4 guests (8GB RAM, 32 vcpu).
+> Here are the results
+>
+> base = 3.8-rc2
+> patched =  base + Rik V3 backoff series [patch 1-4]
 
-Jens, I botched the dirty_buffer TP.  Please ignore this patchset.
-Will post updated revision soon.
+I believe I understand why this is happening.
 
-Thanks.
+Modern Intel and AMD CPUs have a feature called Pause Loop Exiting (PLE)
+and Pause Filter (PF), respectively.  This feature is used to trap to
+the host when the guest is spinning on a spinlock.
+
+This allows the host to run something else, and having the spinner
+temporarily yield the CPU.  Effectively, this causes the KVM code
+to already do some limited amount of spinlock backoff code, in the
+host.
+
+Adding more backoff code in the guest can lead to wild delays in
+acquiring locks, and generally bad performance.
+
+I suspect that when running in a virtual machine, we should limit
+the delay factor to something much smaller, since the host will take
+care of most of the backoff for us.
+
+Maybe a maximum delay value of ~10 would do the trick for KVM
+guests.
+
+We should be able to get this right by placing the value for the
+maximum delay in a __read_mostly section and setting it to something
+small from an init function when we detect we are running in a
+virtual machine.
+
+Let me cook up, and test, a patch that does that...
 
 -- 
-tejun
+All rights reversed
