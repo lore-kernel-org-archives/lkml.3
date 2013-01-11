@@ -1,168 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab3AKQvA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 11:51:00 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:42212 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753704Ab3AKQu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 11:50:58 -0500
-Date: Fri, 11 Jan 2013 17:50:54 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Andre Przywara <andre@andrep.de>, rjw@sisk.pl, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Andreas <linuxuser330250@gmx.net>
-Subject: Re: [PATCH] drivers/cpufreq: Warn user when powernow-k8 tries to
- fall back to acpi-cpufreq and it is unavailable.
-Message-ID: <20130111165054.GD10751@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-	Andre Przywara <andre@andrep.de>, rjw@sisk.pl,
-	cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-	linux-kernel@vger.kernel.org, Andreas <linuxuser330250@gmx.net>
-References: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20130111144940.GB21882@liondog.tnic>
+	id S1754876Ab3AKQwG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 11:52:06 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:40703 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3AKQwF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 11:52:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130111144940.GB21882@liondog.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130111163548.GB25620@phenom.dumpdata.com>
+References: <CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
+	<20130109004340.GA12234@konrad-lan.dumpdata.com>
+	<87txqruq8p.fsf@xmission.com>
+	<CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
+	<CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
+	<20130109132409.GB18395@phenom.dumpdata.com>
+	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
+	<87d2xeul5v.fsf@xmission.com>
+	<CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
+	<CAE9FiQVsbDfLOyv=D4_BLtrKpp+Ydj7pren8Cu3rNGztbj=w=w@mail.gmail.com>
+	<20130111163548.GB25620@phenom.dumpdata.com>
+Date: Fri, 11 Jan 2013 08:52:02 -0800
+X-Google-Sender-Auth: ok9B__V5ckHXusHgnOvrs96kEj0
+Message-ID: <CAE9FiQVts6aTaRFM3aKWj46RCRiheM5gS55h=LVveaGXk_kR8g@mail.gmail.com>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Content-Type: multipart/mixed; boundary=0015175d07825ecf3c04d3061d7b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding bugreporter from BZ to CC.
+--0015175d07825ecf3c04d3061d7b
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Fri, Jan 11, 2013 at 03:49:40PM +0100, Borislav Petkov wrote:
-> + Andre.
-> 
-> On Wed, Jan 09, 2013 at 07:09:21PM -0600, Aravind Gopalakrishnan wrote:
-> > This patch is in reference to bug#:51741. (https://bugzilla.kernel.org/show_bug.cgi?id=51741)
-> > powernow-k8 falls back to acpi-cpufreq if CPU is not supported. However, it states that acpi-cpufreq
-> > has taken over even if acpi-cpufreq is not compiled in. This patch rewords the warning message to
-> > clarify that the CPU is unsupported and prints a warning message when there is no acpi-cpufreq
-> > present.
-> > 
-> > Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> > ---
-> >  drivers/cpufreq/powernow-k8.c |   10 +++++++++-
-> >  1 file changed, 9 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-> > index 056faf6..6fa58b4 100644
-> > --- a/drivers/cpufreq/powernow-k8.c
-> > +++ b/drivers/cpufreq/powernow-k8.c
-> > @@ -1256,7 +1256,15 @@ static int __cpuinit powernowk8_init(void)
-> >  	int rv;
-> >  
-> >  	if (static_cpu_has(X86_FEATURE_HW_PSTATE)) {
-> > -		pr_warn(PFX "this CPU is not supported anymore, using acpi-cpufreq instead.\n");
-> > +		pr_warn(PFX
-> > +			"this CPU is not supported anymore, use acpi-cpufreq instead"
-> > +			"Look for message from acpi-cpufreq to ensure it is loaded."
-> > +			".\n");
-> > +#ifndef CONFIG_X86_ACPI_CPUFREQ
-> > +	pr_warn(PFX "acpi-cpufreq is disabled."
-> > +		"Enable it in the config options to get frequency scaling.\n");
-> > +	return -ENODEV;
-> > +#endif
-> >  		request_module("acpi-cpufreq");
-> >  		return -ENODEV;
-> 
-> Ok, the suggestion in that BZ is valid and something needs to be done
-> for that case but I don't think that simply warning the user about it is
-> enough.
-> 
-> First of all, CONFIG_X86_POWERNOW_K8 should depend on
-> CONFIG_X86_ACPI_CPUFREQ since powernow-k8.ko requests that module.
-> 
-> Then, having that dependency out of the way, we can almost safely
-> request_module("acpi-cpufreq"). However, we can also check the return
-> value of that function to make sure loading went fine.
-> 
-> And finally, we should check that acpi-cpufreq actually registered
-> properly and wasn't unloaded later for some other reason which wasn't
-> signalled through request_module retval.
-> 
-> Andre, I'm not sure about the details of that last one but the first
-> two are easy. Any ideas, since you've been looking at acpi-cpufreq code
-> lately?
+On Fri, Jan 11, 2013 at 8:35 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Thu, Jan 10, 2013 at 03:07:10PM -0800, Yinghai Lu wrote:
+>
+> I'm the frontline maintainer of swiotlb and related stuff so if you want to follow
+> the proper protocol you should wait until I give you my Ack.
 
-Ok,
+Sure.
 
-this turned out to be not that hard, here's what I came up with. I
-haven't checked the case where acpi-cpufreq and powernow-k8 are built in
-and what happens then.
+>
+> I need to check this patch out and then also test-run them on IA64, AMD-VI, Calgary-X
+> GART and Intel VT-d to make a sanity test.
 
-This still doesn't deal with pathological situations when acpi-cpufreq
-f*cks up loading later and errors out. For that, we probably need to
-export some cpufreq internals like cpufreq_driver and look at its ->name
-member and decide whether it is properly set. I'm not sure that is
-really warranted though...
+that will be great, and please check attached two patches, or you want
+to me update
+for-x86-boot branch and you test that instead?
 
-In the meantime, here's a first stab at it, which should cover the major
-holes.
+but if you want to check memmap=4095M$1M, then will need to test on
+newer branch.
 
---
-From: Borislav Petkov <bp@suse.de>
-Date: Fri, 11 Jan 2013 17:36:58 +0100
-Subject: [PATCH] powernow-k8: Robustify loading of acpi-cpufreq
+>
+> However, this particular patch can go outside the mega-patchset you have. So you
+> could post the mega-patchset to hpa without this being in it and just mention
+> that there is this extra one that Konrad is handling.
 
-Andreas says in https://bugzilla.kernel.org/show_bug.cgi?id=51741 that
-with his Gentoo config, acpi-cpufreq wasn't enabled and powernow-k8
-couldn't handoff properly to acpi-cpufreq leading to running without
-P-state support (i.e., cores are constantly in P0).
+Just want to put them together, so in case backporting guys could find
+them easier.
 
-To alleaviate that, we need to make powernow-k8 depend on acpi-cpufreq
-so that acpi-cpufreq is always present as a module and is thus loadable.
-Also, request_module waits until acpi-cpufreq is loaded so we check its
-retval whether the loading succeeded or not. If not, we warn the user so
-that she can take precaution and fix the situation.
+Thanks
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- drivers/cpufreq/Kconfig.x86   | 2 +-
- drivers/cpufreq/powernow-k8.c | 8 ++++++--
- 2 files changed, 7 insertions(+), 3 deletions(-)
+Yinghai
 
-diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
-index 934854ae5eb4..7227cd734042 100644
---- a/drivers/cpufreq/Kconfig.x86
-+++ b/drivers/cpufreq/Kconfig.x86
-@@ -106,7 +106,7 @@ config X86_POWERNOW_K7_ACPI
- config X86_POWERNOW_K8
- 	tristate "AMD Opteron/Athlon64 PowerNow!"
- 	select CPU_FREQ_TABLE
--	depends on ACPI && ACPI_PROCESSOR
-+	depends on ACPI && ACPI_PROCESSOR && X86_ACPI_CPUFREQ
- 	help
- 	  This adds the CPUFreq driver for K8/early Opteron/Athlon64 processors.
- 	  Support for K10 and newer processors is now in acpi-cpufreq.
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index 056faf6af1a9..1adbe86d0d3b 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1256,8 +1256,12 @@ static int __cpuinit powernowk8_init(void)
- 	int rv;
- 
- 	if (static_cpu_has(X86_FEATURE_HW_PSTATE)) {
--		pr_warn(PFX "this CPU is not supported anymore, using acpi-cpufreq instead.\n");
--		request_module("acpi-cpufreq");
-+		pr_warn(PFX "This CPU is now supported by acpi-cpufreq, loading it.\n");
-+
-+		if (request_module("acpi-cpufreq"))
-+			pr_warn(PFX "Error loading acpi-cpufreq, make sure you "
-+				"have it enabled, else you won't have any "
-+				"Pstates support on this CPU!\n");
- 		return -ENODEV;
- 	}
- 
--- 
-1.8.1.rc3
+--0015175d07825ecf3c04d3061d7b
+Content-Type: application/octet-stream; name="alloc_low_page_nopanic.patch"
+Content-Disposition: attachment; filename="alloc_low_page_nopanic.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hbtkaqu50
 
--- 
-Regards/Gruss,
-    Boris.
+U3ViamVjdDogW1BBVENIXSBtbTogQWRkIGFsbG9jX2Jvb3RtZW1fbG93X3BhZ2VzX25vcGFuaWMo
+KQoKV2UgZG9uJ3QgbmVlZCB0byBwYW5pYyBpbiBzb21lIGNhc2UsIGxpa2UgZm9yIHN3aW90bGIg
+cHJlYWxsb2NhdGluZy4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVs
+Lm9yZz4KCi0tLQogaW5jbHVkZS9saW51eC9ib290bWVtLmggfCAgICA1ICsrKysrCiBtbS9ib290
+bWVtLmMgICAgICAgICAgICB8ICAgIDggKysrKysrKysKIG1tL25vYm9vdG1lbS5jICAgICAgICAg
+IHwgICAgOCArKysrKysrKwogMyBmaWxlcyBjaGFuZ2VkLCAyMSBpbnNlcnRpb25zKCspCgpJbmRl
+eDogbGludXgtMi42L2luY2x1ZGUvbGludXgvYm9vdG1lbS5oCj09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4
+LTIuNi5vcmlnL2luY2x1ZGUvbGludXgvYm9vdG1lbS5oCisrKyBsaW51eC0yLjYvaW5jbHVkZS9s
+aW51eC9ib290bWVtLmgKQEAgLTk5LDYgKzk5LDkgQEAgdm9pZCAqX19fYWxsb2NfYm9vdG1lbV9u
+b2RlX25vcGFuaWMocGdfZAogZXh0ZXJuIHZvaWQgKl9fYWxsb2NfYm9vdG1lbV9sb3codW5zaWdu
+ZWQgbG9uZyBzaXplLAogCQkJCSB1bnNpZ25lZCBsb25nIGFsaWduLAogCQkJCSB1bnNpZ25lZCBs
+b25nIGdvYWwpOwordm9pZCAqX19hbGxvY19ib290bWVtX2xvd19ub3BhbmljKHVuc2lnbmVkIGxv
+bmcgc2l6ZSwKKwkJCQkgdW5zaWduZWQgbG9uZyBhbGlnbiwKKwkJCQkgdW5zaWduZWQgbG9uZyBn
+b2FsKTsKIGV4dGVybiB2b2lkICpfX2FsbG9jX2Jvb3RtZW1fbG93X25vZGUocGdfZGF0YV90ICpw
+Z2RhdCwKIAkJCQkgICAgICB1bnNpZ25lZCBsb25nIHNpemUsCiAJCQkJICAgICAgdW5zaWduZWQg
+bG9uZyBhbGlnbiwKQEAgLTEzMiw2ICsxMzUsOCBAQCBleHRlcm4gdm9pZCAqX19hbGxvY19ib290
+bWVtX2xvd19ub2RlKHBnCiAKICNkZWZpbmUgYWxsb2NfYm9vdG1lbV9sb3coeCkgXAogCV9fYWxs
+b2NfYm9vdG1lbV9sb3coeCwgU01QX0NBQ0hFX0JZVEVTLCAwKQorI2RlZmluZSBhbGxvY19ib290
+bWVtX2xvd19wYWdlc19ub3BhbmljKHgpIFwKKwlfX2FsbG9jX2Jvb3RtZW1fbG93X25vcGFuaWMo
+eCwgUEFHRV9TSVpFLCAwKQogI2RlZmluZSBhbGxvY19ib290bWVtX2xvd19wYWdlcyh4KSBcCiAJ
+X19hbGxvY19ib290bWVtX2xvdyh4LCBQQUdFX1NJWkUsIDApCiAjZGVmaW5lIGFsbG9jX2Jvb3Rt
+ZW1fbG93X3BhZ2VzX25vZGUocGdkYXQsIHgpIFwKSW5kZXg6IGxpbnV4LTIuNi9tbS9ib290bWVt
+LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvbW0vYm9vdG1lbS5jCisrKyBsaW51eC0y
+LjYvbW0vYm9vdG1lbS5jCkBAIC04MjEsNiArODIxLDE0IEBAIHZvaWQgKiBfX2luaXQgX19hbGxv
+Y19ib290bWVtX2xvdyh1bnNpZ24KIAlyZXR1cm4gX19fYWxsb2NfYm9vdG1lbShzaXplLCBhbGln
+biwgZ29hbCwgQVJDSF9MT1dfQUREUkVTU19MSU1JVCk7CiB9CiAKK3ZvaWQgKiBfX2luaXQgX19h
+bGxvY19ib290bWVtX2xvd19ub3BhbmljKHVuc2lnbmVkIGxvbmcgc2l6ZSwKKwkJCQkJICB1bnNp
+Z25lZCBsb25nIGFsaWduLAorCQkJCQkgIHVuc2lnbmVkIGxvbmcgZ29hbCkKK3sKKwlyZXR1cm4g
+X19fYWxsb2NfYm9vdG1lbV9ub3BhbmljKHNpemUsIGFsaWduLCBnb2FsLAorCQkJCQlBUkNIX0xP
+V19BRERSRVNTX0xJTUlUKTsKK30KKwogLyoqCiAgKiBfX2FsbG9jX2Jvb3RtZW1fbG93X25vZGUg
+LSBhbGxvY2F0ZSBsb3cgYm9vdCBtZW1vcnkgZnJvbSBhIHNwZWNpZmljIG5vZGUKICAqIEBwZ2Rh
+dDogbm9kZSB0byBhbGxvY2F0ZSBmcm9tCkluZGV4OiBsaW51eC0yLjYvbW0vbm9ib290bWVtLmMK
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvbW0vbm9ib290bWVtLmMKKysrIGxpbnV4LTIu
+Ni9tbS9ub2Jvb3RtZW0uYwpAQCAtMzkxLDYgKzM5MSwxNCBAQCB2b2lkICogX19pbml0IF9fYWxs
+b2NfYm9vdG1lbV9sb3codW5zaWduCiAJcmV0dXJuIF9fX2FsbG9jX2Jvb3RtZW0oc2l6ZSwgYWxp
+Z24sIGdvYWwsIEFSQ0hfTE9XX0FERFJFU1NfTElNSVQpOwogfQogCit2b2lkICogX19pbml0IF9f
+YWxsb2NfYm9vdG1lbV9sb3dfbm9wYW5pYyh1bnNpZ25lZCBsb25nIHNpemUsCisJCQkJCSAgdW5z
+aWduZWQgbG9uZyBhbGlnbiwKKwkJCQkJICB1bnNpZ25lZCBsb25nIGdvYWwpCit7CisJcmV0dXJu
+IF9fX2FsbG9jX2Jvb3RtZW1fbm9wYW5pYyhzaXplLCBhbGlnbiwgZ29hbCwKKwkJCQkJQVJDSF9M
+T1dfQUREUkVTU19MSU1JVCk7Cit9CisKIC8qKgogICogX19hbGxvY19ib290bWVtX2xvd19ub2Rl
+IC0gYWxsb2NhdGUgbG93IGJvb3QgbWVtb3J5IGZyb20gYSBzcGVjaWZpYyBub2RlCiAgKiBAcGdk
+YXQ6IG5vZGUgdG8gYWxsb2NhdGUgZnJvbQo=
+--0015175d07825ecf3c04d3061d7b
+Content-Type: application/octet-stream; name="swiotlb.patch"
+Content-Disposition: attachment; filename="swiotlb.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hbtkb9wn1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+U3ViamVjdDogW1BBVENIXSB4ODY6IERvbid0IHBhbmljIGlmIGNhbiBub3QgYWxsb2MgYnVmZmVy
+IGZvciBzd2lvdGxiCgpOb3JtYWwgYm9vdCBwYXRoIG9uIHN5c3RlbSB3aXRoIGlvbW11IHN1cHBv
+cnQ6CnN3aW90bGIgYnVmZmVyIHdpbGwgYmUgYWxsb2NhdGVkIGVhcmx5IGF0IGZpcnN0IGFuZCB0
+aGVuIHRyeSB0byBpbml0aWFsaXplCmlvbW11LCBpZiBpb21tdSBmb3IgaW50ZWwgb3IgQU1EIGNv
+dWxkIHNldHVwIHByb3Blcmx5LCBzd2lvdGxiIGJ1ZmZlcgp3aWxsIGJlIGZyZWVkLgoKVGhlIGVh
+cmx5IGFsbG9jYXRpbmcgaXMgd2l0aCBib290bWVtLCBhbmQgY291bGQgcGFuaWMgd2hlbiB3ZSB0
+cnkgdG8gdXNlCmtkdW1wIHdpdGggYnVmZmVyIGFib3ZlIDRHIG9ubHksIG9yIHdpdGggbWVtbWFw
+IHRvIGxpbWl0IG1lbSB1bmRlciA0Ry4KZm9yIGV4YW1wbGU6IG1lbW1hcD00MDk1TSQxTSB0byBy
+ZW1vdmUgbWVtb3J5IHVuZGVyIDRHLgoKQWNjb3JkaW5nIHRvIEVyaWMsIGFkZCBfbm9wYW5pYyB2
+ZXJzaW9uIGFuZCBub19pb3RsYl9tZW1vcnkgdG8gZmFpbAptYXAgc2luZ2xlIGxhdGVyIGlmIHN3
+aW90bGIgaXMgc3RpbGwgbmVlZGVkLgoKLXYyOiBkb24ndCBwYXNzIG5vcGFuaWMsIGFuZCB1c2Ug
+LUVOT01FTSByZXR1cm4gdmFsdWUgYWNjb3JkaW5nIHRvIEVyaWMuCiAgICAgcGFuaWMgZWFybHkg
+aW5zdGVhZCBvZiB1c2luZyBzd2lvdGxiX2Z1bGwgdG8gcGFuaWMuLi5hY2NvcmRpbmcgdG8gRXJp
+Yy9Lb25yYWQuCi12MzogbWFrZSBzd2lvdGxiX2luaXQgdG8gYmUgbm90cGFuaWMsIGJ1dCB3aWxs
+IGFmZmVjdDoKICAgICBhcm02NCwgaWE2NCwgcG93ZXJwYywgdGlsZSwgdW5pY29yZTMyLCB4ODYu
+CgpTdWdnZXN0ZWQtYnk6IEVyaWMgVy4gQmllZGVybWFuIDxlYmllZGVybUB4bWlzc2lvbi5jb20+
+ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KQ2M6IEtvbnJh
+ZCBSemVzenV0ZWsgV2lsayA8a29ucmFkLndpbGtAb3JhY2xlLmNvbT4KQ2M6IEpvZXJnIFJvZWRl
+bCA8am9yb0A4Ynl0ZXMub3JnPgpDYzogUmFsZiBCYWVjaGxlIDxyYWxmQGxpbnV4LW1pcHMub3Jn
+PgpDYzogSmVyZW15IEZpdHpoYXJkaW5nZSA8amVyZW15QGdvb3Aub3JnPgpDYzogS3l1bmdtaW4g
+UGFyayA8a3l1bmdtaW4ucGFya0BzYW1zdW5nLmNvbT4KQ2M6IE1hcmVrIFN6eXByb3dza2kgPG0u
+c3p5cHJvd3NraUBzYW1zdW5nLmNvbT4KQ2M6IEFybmQgQmVyZ21hbm4gPGFybmRAYXJuZGIuZGU+
+CkNjOiBBbmRyemVqIFBpZXRyYXNpZXdpY3ogPGFuZHJ6ZWoucEBzYW1zdW5nLmNvbT4KQ2M6IGxp
+bnV4LW1pcHNAbGludXgtbWlwcy5vcmcKQ2M6IHhlbi1kZXZlbEBsaXN0cy54ZW5zb3VyY2UuY29t
+CkNjOiB2aXJ0dWFsaXphdGlvbkBsaXN0cy5saW51eC1mb3VuZGF0aW9uLm9yZwoKLS0tCiBhcmNo
+L21pcHMvY2F2aXVtLW9jdGVvbi9kbWEtb2N0ZW9uLmMgfCAgICAzICstCiBkcml2ZXJzL3hlbi9z
+d2lvdGxiLXhlbi5jICAgICAgICAgICAgfCAgICA0ICsrCiBpbmNsdWRlL2xpbnV4L3N3aW90bGIu
+aCAgICAgICAgICAgICAgfCAgICAyIC0KIGxpYi9zd2lvdGxiLmMgICAgICAgICAgICAgICAgICAg
+ICAgICB8ICAgNDcgKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0KIDQgZmlsZXMg
+Y2hhbmdlZCwgMzUgaW5zZXJ0aW9ucygrKSwgMjEgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgt
+Mi42L2xpYi9zd2lvdGxiLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvbGliL3N3aW90
+bGIuYworKysgbGludXgtMi42L2xpYi9zd2lvdGxiLmMKQEAgLTEyMiwxMSArMTIyLDE4IEBAIHN0
+YXRpYyBkbWFfYWRkcl90IHN3aW90bGJfdmlydF90b19idXMoc3QKIAlyZXR1cm4gcGh5c190b19k
+bWEoaHdkZXYsIHZpcnRfdG9fcGh5cyhhZGRyZXNzKSk7CiB9CiAKK3N0YXRpYyBib29sIG5vX2lv
+dGxiX21lbW9yeTsKKwogdm9pZCBzd2lvdGxiX3ByaW50X2luZm8odm9pZCkKIHsKIAl1bnNpZ25l
+ZCBsb25nIGJ5dGVzID0gaW9fdGxiX25zbGFicyA8PCBJT19UTEJfU0hJRlQ7CiAJdW5zaWduZWQg
+Y2hhciAqdnN0YXJ0LCAqdmVuZDsKIAorCWlmIChub19pb3RsYl9tZW1vcnkpIHsKKwkJcHJfd2Fy
+bigic29mdHdhcmUgSU8gVExCOiBObyBsb3cgbWVtXG4iKTsKKwkJcmV0dXJuOworCX0KKwogCXZz
+dGFydCA9IHBoeXNfdG9fdmlydChpb190bGJfc3RhcnQpOwogCXZlbmQgPSBwaHlzX3RvX3ZpcnQo
+aW9fdGxiX2VuZCk7CiAKQEAgLTEzNiw3ICsxNDMsNyBAQCB2b2lkIHN3aW90bGJfcHJpbnRfaW5m
+byh2b2lkKQogCSAgICAgICBieXRlcyA+PiAyMCwgdnN0YXJ0LCB2ZW5kIC0gMSk7CiB9CiAKLXZv
+aWQgX19pbml0IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICp0bGIsIHVuc2lnbmVkIGxvbmcg
+bnNsYWJzLCBpbnQgdmVyYm9zZSkKK2ludCBfX2luaXQgc3dpb3RsYl9pbml0X3dpdGhfdGJsKGNo
+YXIgKnRsYiwgdW5zaWduZWQgbG9uZyBuc2xhYnMsIGludCB2ZXJib3NlKQogewogCXZvaWQgKnZf
+b3ZlcmZsb3dfYnVmZmVyOwogCXVuc2lnbmVkIGxvbmcgaSwgYnl0ZXM7CkBAIC0xNTAsOSArMTU3
+LDEwIEBAIHZvaWQgX19pbml0IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICoKIAkvKgogCSAq
+IEdldCB0aGUgb3ZlcmZsb3cgZW1lcmdlbmN5IGJ1ZmZlcgogCSAqLwotCXZfb3ZlcmZsb3dfYnVm
+ZmVyID0gYWxsb2NfYm9vdG1lbV9sb3dfcGFnZXMoUEFHRV9BTElHTihpb190bGJfb3ZlcmZsb3cp
+KTsKKwl2X292ZXJmbG93X2J1ZmZlciA9IGFsbG9jX2Jvb3RtZW1fbG93X3BhZ2VzX25vcGFuaWMo
+CisJCQkJCQlQQUdFX0FMSUdOKGlvX3RsYl9vdmVyZmxvdykpOwogCWlmICghdl9vdmVyZmxvd19i
+dWZmZXIpCi0JCXBhbmljKCJDYW5ub3QgYWxsb2NhdGUgU1dJT1RMQiBvdmVyZmxvdyBidWZmZXIh
+XG4iKTsKKwkJcmV0dXJuIC1FTk9NRU07CiAKIAlpb190bGJfb3ZlcmZsb3dfYnVmZmVyID0gX19w
+YSh2X292ZXJmbG93X2J1ZmZlcik7CiAKQEAgLTE2OSwxNSArMTc3LDE5IEBAIHZvaWQgX19pbml0
+IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICoKIAogCWlmICh2ZXJib3NlKQogCQlzd2lvdGxi
+X3ByaW50X2luZm8oKTsKKworCXJldHVybiAwOwogfQogCiAvKgogICogU3RhdGljYWxseSByZXNl
+cnZlIGJvdW5jZSBidWZmZXIgc3BhY2UgYW5kIGluaXRpYWxpemUgYm91bmNlIGJ1ZmZlciBkYXRh
+CiAgKiBzdHJ1Y3R1cmVzIGZvciB0aGUgc29mdHdhcmUgSU8gVExCIHVzZWQgdG8gaW1wbGVtZW50
+IHRoZSBETUEgQVBJLgogICovCi1zdGF0aWMgdm9pZCBfX2luaXQKLXN3aW90bGJfaW5pdF93aXRo
+X2RlZmF1bHRfc2l6ZShzaXplX3QgZGVmYXVsdF9zaXplLCBpbnQgdmVyYm9zZSkKK3ZvaWQgIF9f
+aW5pdAorc3dpb3RsYl9pbml0KGludCB2ZXJib3NlKQogeworCS8qIGRlZmF1bHQgdG8gNjRNQiAq
+LworCXNpemVfdCBkZWZhdWx0X3NpemUgPSA2NFVMPDwyMDsKIAl1bnNpZ25lZCBjaGFyICp2c3Rh
+cnQ7CiAJdW5zaWduZWQgbG9uZyBieXRlczsKIApAQCAtMTg4LDIwICsyMDAsMTYgQEAgc3dpb3Rs
+Yl9pbml0X3dpdGhfZGVmYXVsdF9zaXplKHNpemVfdCBkZQogCiAJYnl0ZXMgPSBpb190bGJfbnNs
+YWJzIDw8IElPX1RMQl9TSElGVDsKIAotCS8qCi0JICogR2V0IElPIFRMQiBtZW1vcnkgZnJvbSB0
+aGUgbG93IHBhZ2VzCi0JICovCi0JdnN0YXJ0ID0gYWxsb2NfYm9vdG1lbV9sb3dfcGFnZXMoUEFH
+RV9BTElHTihieXRlcykpOwotCWlmICghdnN0YXJ0KQotCQlwYW5pYygiQ2Fubm90IGFsbG9jYXRl
+IFNXSU9UTEIgYnVmZmVyIik7Ci0KLQlzd2lvdGxiX2luaXRfd2l0aF90YmwodnN0YXJ0LCBpb190
+bGJfbnNsYWJzLCB2ZXJib3NlKTsKLX0KKwkvKiBHZXQgSU8gVExCIG1lbW9yeSBmcm9tIHRoZSBs
+b3cgcGFnZXMgKi8KKwl2c3RhcnQgPSBhbGxvY19ib290bWVtX2xvd19wYWdlc19ub3BhbmljKFBB
+R0VfQUxJR04oYnl0ZXMpKTsKKwlpZiAodnN0YXJ0ICYmICFzd2lvdGxiX2luaXRfd2l0aF90Ymwo
+dnN0YXJ0LCBpb190bGJfbnNsYWJzLCB2ZXJib3NlKSkKKwkJcmV0dXJuOwogCi12b2lkIF9faW5p
+dAotc3dpb3RsYl9pbml0KGludCB2ZXJib3NlKQotewotCXN3aW90bGJfaW5pdF93aXRoX2RlZmF1
+bHRfc2l6ZSg2NCAqICgxPDwyMCksIHZlcmJvc2UpOwkvKiBkZWZhdWx0IHRvIDY0TUIgKi8KKwlp
+ZiAoaW9fdGxiX3N0YXJ0KQorCQlmcmVlX2Jvb3RtZW0oaW9fdGxiX3N0YXJ0LAorCQkJCSBQQUdF
+X0FMSUdOKGlvX3RsYl9uc2xhYnMgPDwgSU9fVExCX1NISUZUKSk7CisJcHJfd2FybigiQ2Fubm90
+IGFsbG9jYXRlIFNXSU9UTEIgYnVmZmVyIik7CisJbm9faW90bGJfbWVtb3J5ID0gdHJ1ZTsKIH0K
+IAogLyoKQEAgLTQwNSw2ICs0MTMsOSBAQCBwaHlzX2FkZHJfdCBzd2lvdGxiX3RibF9tYXBfc2lu
+Z2xlKHN0cnVjCiAJdW5zaWduZWQgbG9uZyBvZmZzZXRfc2xvdHM7CiAJdW5zaWduZWQgbG9uZyBt
+YXhfc2xvdHM7CiAKKwlpZiAobm9faW90bGJfbWVtb3J5KQorCQlwYW5pYygiQ2FuIG5vdCBhbGxv
+Y2F0ZSBTV0lPVExCIGJ1ZmZlciBlYXJsaWVyIGFuZCBjYW4ndCBub3cgcHJvdmlkZSB5b3Ugd2l0
+aCB0aGUgRE1BIGJvdW5jZSBidWZmZXIiKTsKKwogCW1hc2sgPSBkbWFfZ2V0X3NlZ19ib3VuZGFy
+eShod2Rldik7CiAKIAl0YmxfZG1hX2FkZHIgJj0gbWFzazsKSW5kZXg6IGxpbnV4LTIuNi9hcmNo
+L21pcHMvY2F2aXVtLW9jdGVvbi9kbWEtb2N0ZW9uLmMKPT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42
+Lm9yaWcvYXJjaC9taXBzL2Nhdml1bS1vY3Rlb24vZG1hLW9jdGVvbi5jCisrKyBsaW51eC0yLjYv
+YXJjaC9taXBzL2Nhdml1bS1vY3Rlb24vZG1hLW9jdGVvbi5jCkBAIC0zMTcsNyArMzE3LDggQEAg
+dm9pZCBfX2luaXQgcGxhdF9zd2lvdGxiX3NldHVwKHZvaWQpCiAKIAlvY3Rlb25fc3dpb3RsYiA9
+IGFsbG9jX2Jvb3RtZW1fbG93X3BhZ2VzKHN3aW90bGJzaXplKTsKIAotCXN3aW90bGJfaW5pdF93
+aXRoX3RibChvY3Rlb25fc3dpb3RsYiwgc3dpb3RsYl9uc2xhYnMsIDEpOworCWlmIChzd2lvdGxi
+X2luaXRfd2l0aF90Ymwob2N0ZW9uX3N3aW90bGIsIHN3aW90bGJfbnNsYWJzLCAxKSA9PSAtRU5P
+TUVNKQorCQlwYW5pYygiQ2Fubm90IGFsbG9jYXRlIFNXSU9UTEIgYnVmZmVyIik7CiAKIAltaXBz
+X2RtYV9tYXBfb3BzID0gJm9jdGVvbl9saW5lYXJfZG1hX21hcF9vcHMuZG1hX21hcF9vcHM7CiB9
+CkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy94ZW4vc3dpb3RsYi14ZW4uYwo9PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0t
+LSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3hlbi9zd2lvdGxiLXhlbi5jCisrKyBsaW51eC0yLjYv
+ZHJpdmVycy94ZW4vc3dpb3RsYi14ZW4uYwpAQCAtMjMxLDcgKzIzMSw5IEBAIHJldHJ5OgogCX0K
+IAlzdGFydF9kbWFfYWRkciA9IHhlbl92aXJ0X3RvX2J1cyh4ZW5faW9fdGxiX3N0YXJ0KTsKIAlp
+ZiAoZWFybHkpIHsKLQkJc3dpb3RsYl9pbml0X3dpdGhfdGJsKHhlbl9pb190bGJfc3RhcnQsIHhl
+bl9pb190bGJfbnNsYWJzLCB2ZXJib3NlKTsKKwkJaWYgKHN3aW90bGJfaW5pdF93aXRoX3RibCh4
+ZW5faW9fdGxiX3N0YXJ0LCB4ZW5faW9fdGxiX25zbGFicywKKwkJCSB2ZXJib3NlKSkKKwkJCXBh
+bmljKCJDYW5ub3QgYWxsb2NhdGUgU1dJT1RMQiBidWZmZXIiKTsKIAkJcmMgPSAwOwogCX0gZWxz
+ZQogCQlyYyA9IHN3aW90bGJfbGF0ZV9pbml0X3dpdGhfdGJsKHhlbl9pb190bGJfc3RhcnQsIHhl
+bl9pb190bGJfbnNsYWJzKTsKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L3N3aW90bGIu
+aAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9pbmNsdWRlL2xpbnV4L3N3aW90bGIuaAor
+KysgbGludXgtMi42L2luY2x1ZGUvbGludXgvc3dpb3RsYi5oCkBAIC0yMyw3ICsyMyw3IEBAIGV4
+dGVybiBpbnQgc3dpb3RsYl9mb3JjZTsKICNkZWZpbmUgSU9fVExCX1NISUZUIDExCiAKIGV4dGVy
+biB2b2lkIHN3aW90bGJfaW5pdChpbnQgdmVyYm9zZSk7Ci1leHRlcm4gdm9pZCBzd2lvdGxiX2lu
+aXRfd2l0aF90YmwoY2hhciAqdGxiLCB1bnNpZ25lZCBsb25nIG5zbGFicywgaW50IHZlcmJvc2Up
+OworaW50IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICp0bGIsIHVuc2lnbmVkIGxvbmcgbnNs
+YWJzLCBpbnQgdmVyYm9zZSk7CiBleHRlcm4gdW5zaWduZWQgbG9uZyBzd2lvdGxiX25yX3RibCh2
+b2lkKTsKIGV4dGVybiBpbnQgc3dpb3RsYl9sYXRlX2luaXRfd2l0aF90YmwoY2hhciAqdGxiLCB1
+bnNpZ25lZCBsb25nIG5zbGFicyk7CiAK
+--0015175d07825ecf3c04d3061d7b--
