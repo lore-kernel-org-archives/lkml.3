@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab3AKFmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 00:42:08 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:34564 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab3AKFmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 00:42:07 -0500
-Date: Thu, 10 Jan 2013 21:38:31 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-Message-ID: <20130111053831.GA18053@lizard.gateway.2wire.net>
-References: <20130104082751.GA22227@lizard.gateway.2wire.net>
- <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
- <20130108084949.GD4714@blaptop>
- <20130109221449.GA14880@lizard.fhda.edu>
- <20130111051210.GC6183@blaptop>
+	id S1753289Ab3AKFnT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 00:43:19 -0500
+Received: from mga14.intel.com ([143.182.124.37]:33709 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200Ab3AKFnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 00:43:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,449,1355126400"; 
+   d="scan'208";a="242594846"
+Message-ID: <50EFA6B5.2060306@intel.com>
+Date: Fri, 11 Jan 2013 13:44:21 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130111051210.GC6183@blaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 07/22] sched: set initial load avg of new forked task
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-8-git-send-email-alex.shi@intel.com> <50EF9ED1.2000909@linux.vnet.ibm.com>
+In-Reply-To: <50EF9ED1.2000909@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 02:12:10PM +0900, Minchan Kim wrote:
-> On Wed, Jan 09, 2013 at 02:14:49PM -0800, Anton Vorontsov wrote:
-> > On Tue, Jan 08, 2013 at 05:49:49PM +0900, Minchan Kim wrote:
-> > [...]
-> > > Sorry still I didn't look at your implementation about cgroup part.
-> > > but I had a question since long time ago.
-> > > 
-> > > How can we can make sure false positive about zone and NUMA?
-> > > I mean DMA zone is short in system so VM notify to user and user
-> > > free all memory of NORMAL zone because he can't know what pages live
-> > > in any zones. NUMA is ditto.
-> > 
-> > Um, we count scans irrespective of zones or nodes, i.e. we sum all 'number
-> > of scanned' and 'number of reclaimed' stats. So, it should not be a
-> > problem, as I see it.
+On 01/11/2013 01:10 PM, Preeti U Murthy wrote:
+>> >  	update_curr(cfs_rq);
+>> > -	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
+>> > +	enqueue_entity_load_avg(cfs_rq, se, flags);
+>> >  	account_entity_enqueue(cfs_rq, se);
+>> >  	update_cfs_shares(cfs_rq);
+>> > 
+> I had seen in my experiments, that the forked tasks with initial load to
+> be 0,would adversely affect the runqueue lengths.Since the load for
+> these tasks to pick up takes some time,the cpus on which the forked
+> tasks are scheduled, could be candidates for "dst_cpu" many times and
+> the runqueue lengths increase considerably.
 > 
-> Why is it no problem? For example, let's think of normal zone reclaim.
-> Page allocator try to allocate pages from NORMAL zone to DMA zone fallback
-> and your logic could trigger mpc_shrinker. So process A, B, C start to
-> release thier freeable memory but unfortunately, freed pages are all
-> HIGHMEM pages. Why should processes release memory unnecessary?
-> Is there any method for proecess to detect such situation in user level
-> before releasing the freeable memory?
+> This patch solves this issue by making the forked tasks contribute
+> actively to the runqueue load.
+> 
+> Reviewed-by:Preeti U Murthy
+> 
 
-Ahh. You're talking about the shrinker interface. Yes, there is no way to
-tell if the freed memory will be actually "released" (and if not, then
-yes, we released it unnecessary).
+Thanks for review, Preeti! :)
 
-But that's not only problem with NUMA or zones. Shared pages are in the
-same boat, right? An app might free some memory, but as another process
-might be still using it, we don't know whether our action helps or not.
 
-The situation is a little bit easier for the in-kernel shrinkers, since we
-have more control over pages, but still, even for the kernel shrinkers, we
-don't provide all the information (only gfpmask, which, I just looked into
-the random user, drivers/gpu/drm/ttm, sometimes is not used).
-
-So, answering your question: no, I don't know how to solve it for the
-userland. But I also don't think it's a big concern (especially if we make
-it cgroup-aware -- this would be cgroup's worry then, i.e. we might
-isolate task to only some nodes/zones, if we really care about precise
-accounting?). But I'm surely open for ideas. :)
-
-Thanks!
-
-Anton
+-- 
+Thanks Alex
