@@ -1,112 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab3AKG32 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 01:29:28 -0500
-Received: from mail-ia0-f181.google.com ([209.85.210.181]:51493 "EHLO
-	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261Ab3AKG30 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 01:29:26 -0500
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Michael Neuling <mikey@neuling.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] powerpc: added DSCR support to ptrace
-Date: Fri, 11 Jan 2013 17:29:09 +1100
-Message-Id: <1357885749-14042-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754638Ab3AKGaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 01:30:52 -0500
+Received: from mga11.intel.com ([192.55.52.93]:42438 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751522Ab3AKGau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 01:30:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,449,1355126400"; 
+   d="scan'208";a="272556576"
+Message-ID: <50EFB1DB.7090804@intel.com>
+Date: Fri, 11 Jan 2013 14:31:55 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, namhyung@kernel.org,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        preeti@linux.vnet.ibm.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load
+ and cpu_avg_load_per_task
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-10-git-send-email-alex.shi@intel.com> <50E7EAB1.6020302@intel.com> <50E92DC3.4050906@intel.com> <CA+55aFxbS-u1Zfwg2oKOmHq6FBF+dRRhrdssqc9PpC_gXoV3+g@mail.gmail.com>
+In-Reply-To: <CA+55aFxbS-u1Zfwg2oKOmHq6FBF+dRRhrdssqc9PpC_gXoV3+g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DSCR (aka Data Stream Control Register) is supported on some
-server PowerPC chips and allow some control over the prefetch
-of data streams.
+On 01/07/2013 02:31 AM, Linus Torvalds wrote:
+> On Sat, Jan 5, 2013 at 11:54 PM, Alex Shi <alex.shi@intel.com> wrote:
+>>
+>> I just looked into the aim9 benchmark, in this case it forks 2000 tasks,
+>> after all tasks ready, aim9 give a signal than all tasks burst waking up
+>> and run until all finished.
+>> Since each of tasks are finished very quickly, a imbalanced empty cpu
+>> may goes to sleep till a regular balancing give it some new tasks. That
+>> causes the performance dropping. cause more idle entering.
+> 
+> Sounds like for AIM (and possibly for other really bursty loads), we
+> might want to do some load-balancing at wakeup time by *just* looking
+> at the number of running tasks, rather than at the load average. Hmm?
+> 
+> The load average is fundamentally always going to run behind a bit,
+> and while you want to use it for long-term balancing, a short-term you
+> might want to do just a "if we have a huge amount of runnable
+> processes, do a load balancing *now*". Where "huge amount" should
+> probably be relative to the long-term load balancing (ie comparing the
+> number of runnable processes on this CPU right *now* with the load
+> average over the last second or so would show a clear spike, and a
+> reason for quick action).
+> 
 
-The kernel already supports DSCR value per thread but there is also
-a need in a ability to change it from an external process for
-the specific pid.
+Sorry for response late!
 
-The patch adds new register index PT_DSCR (index=44) which can be
-set/get by:
-  ptrace(PTRACE_POKEUSER, traced_process, PT_DSCR << 3, dscr);
-  dscr = ptrace(PTRACE_PEEKUSER, traced_process, PT_DSCR << 3, NULL);
+Just written a patch following your suggestion, but no clear improvement for this case.
+I also tried change the burst checking interval, also no clear help.
 
-The patch does not increase PT_REGS_COUNT as the pt_regs struct has not
-been changed.
+If I totally give up runnable load in periodic balancing, the performance can recover 60%
+of lose.
 
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+I will try to optimize wake up balancing in weekend.
+
+Nice weekend!
+Alex
+
 ---
- arch/powerpc/include/uapi/asm/ptrace.h |    1 +
- arch/powerpc/kernel/ptrace.c           |   29 +++++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+)
+>From 8f6f7317568a7bd8497e7a6e8d9afcc2b4e93a7e Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Wed, 9 Jan 2013 23:16:57 +0800
+Subject: [PATCH] sched: use instant load weight in burst regular load balance
 
-diff --git a/arch/powerpc/include/uapi/asm/ptrace.h b/arch/powerpc/include/uapi/asm/ptrace.h
-index ee67a2b..5a4863c 100644
---- a/arch/powerpc/include/uapi/asm/ptrace.h
-+++ b/arch/powerpc/include/uapi/asm/ptrace.h
-@@ -108,6 +108,7 @@ struct pt_regs {
- #define PT_DAR	41
- #define PT_DSISR 42
- #define PT_RESULT 43
-+#define PT_DSCR 44
- #define PT_REGS_COUNT 44
+Runnable load tracking needs much time to accumulate the runnable
+load, so when system burst wake up many sleep tasks, it needs more time
+balance them well. This patch try to catch such scenario and use instant
+load instead of runnable load to do balance.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ include/linux/sched.h |  1 +
+ kernel/sched/debug.c  |  1 +
+ kernel/sched/fair.c   | 55 +++++++++++++++++++++++++++++++++++++++++++++++----
+ kernel/sysctl.c       |  7 +++++++
+ 4 files changed, 60 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index b0354a5..f6cf1b5 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2032,6 +2032,7 @@ extern unsigned int sysctl_sched_latency;
+ extern unsigned int sysctl_sched_min_granularity;
+ extern unsigned int sysctl_sched_wakeup_granularity;
+ extern unsigned int sysctl_sched_child_runs_first;
++extern unsigned int sysctl_sched_burst_check_ms;
  
- #define PT_FPR0	48	/* each FP reg occupies 2 slots in this space */
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index d4afccc..245c1b6 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -179,6 +179,30 @@ static int set_user_msr(struct task_struct *task, unsigned long msr)
+ enum sched_tunable_scaling {
+ 	SCHED_TUNABLESCALING_NONE,
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index e4035f7..d06fc3c 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -380,6 +380,7 @@ static int sched_debug_show(struct seq_file *m, void *v)
+ 	PN(sysctl_sched_latency);
+ 	PN(sysctl_sched_min_granularity);
+ 	PN(sysctl_sched_wakeup_granularity);
++	PN(sysctl_sched_burst_check_ms);
+ 	P(sysctl_sched_child_runs_first);
+ 	P(sysctl_sched_features);
+ #undef PN
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 604d0ee..875e7af 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4032,6 +4032,7 @@ struct lb_env {
+ 	unsigned int		loop_max;
+ 	int			power_lb;  /* if power balance needed */
+ 	int			perf_lb;   /* if performance balance needed */
++	int			has_burst;
+ };
+ 
+ /*
+@@ -4729,6 +4730,37 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
  	return 0;
  }
  
-+#ifdef CONFIG_PPC64
-+static unsigned long get_user_dscr(struct task_struct *task)
++DEFINE_PER_CPU(unsigned long, next_check);
++DEFINE_PER_CPU(unsigned int, last_running);
++
++/* do burst check no less than this interval */
++unsigned int sysctl_sched_burst_check_ms = 1000UL;
++
++/**
++ * check_burst - check if tasks bursts up on this cpu.
++ * @env: The load balancing environment.
++ */
++static void check_burst(struct lb_env *env)
 +{
-+	return task->thread.dscr;
++	int cpu;
++	unsigned int curr_running, prev_running, interval;
++
++	cpu = env->dst_cpu;
++	curr_running = cpu_rq(cpu)->nr_running;
++	prev_running = per_cpu(last_running, cpu);
++	interval = sysctl_sched_burst_check_ms;
++
++	per_cpu(last_running, cpu) = curr_running;
++
++	if (time_after_eq(jiffies, per_cpu(next_check, cpu))) {
++		per_cpu(next_check, cpu) = jiffies + msecs_to_jiffies(interval);
++		/* find a pike from last balance on the cpu  */
++		if (curr_running  >  2 + (prev_running << 2))
++			env->has_burst = 1;
++	}
++	env->has_burst = 0;
 +}
 +
-+static int set_user_dscr(struct task_struct *task, unsigned long dscr)
-+{
-+	task->thread.dscr = dscr;
-+	task->thread.dscr_inherit = 1;
-+	return 0;
-+}
-+#else
-+static unsigned long get_user_dscr(struct task_struct *task)
-+{
-+	return -EIO;
-+}
-+
-+static int set_user_dscr(struct task_struct *task, unsigned long dscr)
-+{
-+	return -EIO;
-+}
-+#endif
-+
- /*
-  * We prevent mucking around with the reserved area of trap
-  * which are used internally by the kernel.
-@@ -200,6 +224,9 @@ unsigned long ptrace_get_reg(struct task_struct *task, int regno)
- 	if (regno == PT_MSR)
- 		return get_user_msr(task);
+ /**
+  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
+  * @env: The load balancing environment.
+@@ -4770,9 +4802,15 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 				balance_cpu = i;
+ 			}
  
-+	if (regno == PT_DSCR)
-+		return get_user_dscr(task);
+-			load = target_load(i, load_idx);
++			if (env->has_burst)
++				load = rq->load.weight;
++			else
++				load = target_load(i, load_idx);
+ 		} else {
+-			load = source_load(i, load_idx);
++			if (env->has_burst)
++				load = rq->load.weight;
++			else
++				load = source_load(i, load_idx);
+ 			if (load > max_cpu_load)
+ 				max_cpu_load = load;
+ 			if (min_cpu_load > load)
+@@ -4786,7 +4824,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 
+ 		sgs->group_load += load;
+ 		sgs->sum_nr_running += nr_running;
+-		sgs->sum_weighted_load += weighted_cpuload(i);
++		if (env->has_burst)
++			sgs->sum_weighted_load += cpu_rq(i)->load.weight;
++		else
++			sgs->sum_weighted_load += weighted_cpuload(i);
+ 
+ 		/* accumulate the maximum potential util */
+ 		if (!nr_running)
+@@ -5164,6 +5205,8 @@ find_busiest_group(struct lb_env *env, int *balance)
+ 
+ 	memset(&sds, 0, sizeof(sds));
+ 
++	check_burst(env);
 +
- 	if (regno < (sizeof(struct pt_regs) / sizeof(unsigned long)))
- 		return ((unsigned long *)task->thread.regs)[regno];
+ 	/*
+ 	 * Compute the various statistics relavent for load balancing at
+ 	 * this level.
+@@ -5270,7 +5313,10 @@ static struct rq *find_busiest_queue(struct lb_env *env,
+ 			continue;
  
-@@ -218,6 +245,8 @@ int ptrace_put_reg(struct task_struct *task, int regno, unsigned long data)
- 		return set_user_msr(task, data);
- 	if (regno == PT_TRAP)
- 		return set_user_trap(task, data);
-+	if (regno == PT_DSCR)
-+		return set_user_dscr(task, data);
+ 		rq = cpu_rq(i);
+-		wl = weighted_cpuload(i);
++		if (env->has_burst)
++			wl = rq->load.weight;
++		else
++			wl = weighted_cpuload(i);
  
- 	if (regno <= PT_MAX_PUT_REG) {
- 		((unsigned long *)task->thread.regs)[regno] = data;
+ 		/*
+ 		 * When comparing with imbalance, use weighted_cpuload()
+@@ -5352,6 +5398,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		.cpus		= cpus,
+ 		.power_lb	= 1,
+ 		.perf_lb	= 0,
++		.has_burst	= 0,
+ 	};
+ 
+ 	cpumask_copy(cpus, cpu_active_mask);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c88878d..25262b8 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -350,6 +350,13 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
++	{
++		.procname	= "sched_burst_check_ms",
++		.data		= &sysctl_sched_burst_check_ms,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
+ #endif /* CONFIG_SMP */
+ #ifdef CONFIG_NUMA_BALANCING
+ 	{
 -- 
-1.7.10.4
+1.7.12
+
+>            Linus
+> 
 
