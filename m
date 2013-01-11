@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab3AKJG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 04:06:29 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:61382 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab3AKJGZ (ORCPT
+	id S1755449Ab3AKJK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 04:10:29 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:61342 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753580Ab3AKJKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 04:06:25 -0500
-Message-ID: <50EFD5C3.7020406@huawei.com>
-Date: Fri, 11 Jan 2013 17:05:07 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 11 Jan 2013 04:10:17 -0500
+Message-ID: <50EFD6F4.7030903@linaro.org>
+Date: Fri, 11 Jan 2013 10:10:12 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <paul@paulmenage.org>, <glommer@parallels.com>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <peterz@infradead.org>, <mhocko@suse.cz>, <bsingharora@gmail.com>,
-        <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET] cpuset: decouple cpuset locking from cgroup core,
- take#2
-References: <1357248967-24959-1-git-send-email-tj@kernel.org> <50E93554.3070102@huawei.com> <20130107164453.GH3926@htj.dyndns.org> <50EB76DF.5070508@huawei.com> <20130109185724.GP3926@htj.dyndns.org>
-In-Reply-To: <20130109185724.GP3926@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: linux-next: please cleanup the cpuidle tree
+References: <20130108092751.4bd60a67280e284369553c18@canb.auug.org.au> <50EB5636.4080705@linaro.org> <20130108102227.19d4102cb1ddf516ad4082d1@canb.auug.org.au> <20130111115608.dffec30f37e42a8f15a3f117@canb.auug.org.au>
+In-Reply-To: <20130111115608.dffec30f37e42a8f15a3f117@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/10 2:57, Tejun Heo wrote:
-> Hello, Li.
+On 01/11/2013 01:56 AM, Stephen Rothwell wrote:
+> Hi Daniel,
 > 
-> On Tue, Jan 08, 2013 at 09:31:11AM +0800, Li Zefan wrote:
->> I don't think Paul's still maintaining cpusets. Normally it's Andrew
->> that picks up cpuset patches. It's fine you route it through cgroup
->> tree.
+> On Tue, 8 Jan 2013 10:22:27 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> On Tue, 08 Jan 2013 00:11:50 +0100 Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+>>>
+>>> On 01/07/2013 11:27 PM, Stephen Rothwell wrote:
+>>>>
+>>>> All the commits in the cpuidle tree have been included upstream before
+>>>> v3.6-rc1.  They were rewritten before being merged upstream and so are
+>>>> now causing merge conflicts in linux-next.  Could you please reset the
+>>>> head of your tree
+>>>> (git://git.linaro.org/people/dlezcano/cpuidle-next.git#cpuidle-next) to
+>>>> be somewhere in the tree that yours is merged into (pm or Linus').
+>>>
+>>> Sure. I believe it is done now.
+>>
+>> Yep, thanks.
 > 
-> Can you please take over the cpuset maintainership then?  I think you
-> would be the one most familiar with the code base at this point.
-> 
+> Unfortunately, you reset your tree to be a version of the pm tree that has
+> now been rebased :-(  This is now causing more conflicts in linux-next.
+> Maybe you should reset your tree to be the same as one of Linus' -rc
+> releases for now.
 
-Sure, I'll send a patch to update MAINTAINERS.
+Ok, done.
+
+Thanks
+  -- Daniel
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
