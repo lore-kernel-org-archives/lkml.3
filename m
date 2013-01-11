@@ -1,102 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab3AKPi1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 10:38:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38898 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab3AKPi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 10:38:26 -0500
-Date: Fri, 11 Jan 2013 16:38:23 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wu Jianguo <wujianguo@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mmots: memory-hotplug: implement
- register_page_bootmem_info_section of sparse-vmemmap fix
-Message-ID: <20130111153823.GK7286@dhcp22.suse.cz>
-References: <20130111095658.GC7286@dhcp22.suse.cz>
- <20130111101745.GD7286@dhcp22.suse.cz>
- <20130111102924.GE7286@dhcp22.suse.cz>
- <20130111104759.GF7286@dhcp22.suse.cz>
- <50F00041.2040305@cn.fujitsu.com>
- <20130111121226.GI7286@dhcp22.suse.cz>
- <50F007C9.10606@cn.fujitsu.com>
+	id S1754445Ab3AKPp3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 10:45:29 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:51162 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab3AKPp1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 10:45:27 -0500
+Date: Fri, 11 Jan 2013 16:45:16 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
+Message-ID: <20130111154516.GA25335@avionic-0098.adnet.avionic-design.de>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <50EF54B6.6010100@wwwdotorg.org>
+ <20130111034015.GA28094@avionic-0098.adnet.avionic-design.de>
+ <201301111536.14799.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
 Content-Disposition: inline
-In-Reply-To: <50F007C9.10606@cn.fujitsu.com>
+In-Reply-To: <201301111536.14799.arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:HS11dFEem5TPKsn7vPAiOQqQgEbEL2QMbcIzRXtjUGe
+ GwGInEsfKm8moqba2mWoepYRVkq8OUJISsOkf5f1Qo6wgfK/d3
+ SEthdBCJ+Fa1GCsVcWgew5wHROkoo0A2h4dx6Jan8UMWZ7dqXH
+ 5YTTCtw+eCB7lQpxNDCAIlHL4Jv4uaxgWbq8ew8DtTWOwPWYiX
+ RYc9IUOsrynj7xP1HZhhse6kM6m9wlGyHY3WDtfzx4Q6OHzeId
+ ohkYwtFUD8dl69mYQoqOK/OmrDlCCB67CNiUlIa/4bxCgVgtkd
+ 6QWz7ecxDMJIzmJFzt427ACvk8gJRjvEZ8wgj3hpfMEmosEf6B
+ X+icGXl78gDSjoEpc7xC1nzQXv9O/Gxc032W45/dJpJyvv5vet
+ +yC8lCyEnP123BtLX3H7t6b7vwYfiTVwdZG8oGiTZf6S9IUYUX
+ 9L6hb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 11-01-13 20:38:33, Tang Chen wrote:
-> On 01/11/2013 08:12 PM, Michal Hocko wrote:
-> >On Fri 11-01-13 20:06:25, Tang Chen wrote:
-> >>On 01/11/2013 06:47 PM, Michal Hocko wrote:
-> >>>>
-> >>>>Darn! And now that I am looking at the patch closer it is too x86
-> >>>>centric so this cannot be in the generic code. I will try to cook
-> >>>>something better. Sorry about the noise.
-> >>>
-> >>>It is more complicated than I thought. One would tell it's a mess.
-> >>>The patch bellow fixes the compilation issue but I am not sure we want
-> >>>to include memory_hotplug.h into arch/x86/mm/init_64.c. Moreover
-> >>>
-> >>>+void register_page_bootmem_memmap(unsigned long section_nr,
-> >>>+				  struct page *start_page, unsigned long size)
-> >>>+{
-> >>>+	/* TODO */
-> >>>+}
-> >>>
-> >>>for other archs would suggest that the code is not ready yet. Should
-> >>>this rather be dropped for now?
-> >>
-> >>Hi Michal,
-> >>
-> >>Do you mean remove register_page_bootmem_memmap() from other
-> >>architectures ?
-> >
-> >No I meant the patch to be dropped until it gets implementation for
-> >other architectures or the users of the function would be explicit about
-> >archs which are supported. What happens if the implementation is empty
-> >will the generic code work properly? From my very limitted understanding
-> >of the code it won't.
-> 
-> Hi Michal,
-> 
-> Hum, I see. Thank you for your remind. :)
-> register_page_bootmem_info_section() will be different in other
-> architectures if register_page_bootmem_memmap() is empty.
 
-Not sure I understand what "different" means here but I suspect it would
-be buggy. Is that correct?
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I think we can post a patch to make register_page_bootmem_info_section()
-> the same as before, and we just implement the x86 version first. So that
-> it will have no harm to other architectures.
+On Fri, Jan 11, 2013 at 03:36:14PM +0000, Arnd Bergmann wrote:
+> On Friday 11 January 2013, Thierry Reding wrote:
+> > Right, it'll need #ifdefs around the arch_{setup,teardown}_msi_irq(). Or
+> > select PCI_MSI unconditionally. Once this is merged I was going to post
+> > a patch that enables PCI_MSI in tegra_defconfig anyway. But it might be
+> > better to keep it optional anyway since the remainder of the code copes
+> > with it properly.
+> >=20
+> Actually, we need something better than that. You cannot define
+> arch_setup_msi_irq in a tegra specific pci host driver, because that
+> will seriously mess up other platforms in multiplatform configurations
+> by giving a link error when they also define this function, or with a
+> run-time error when they don't support it.
+>=20
+> I think what we should do here is fix it the right way by adding
+> a pci host specific callback rather than an architecture specific
+> callback in drivers/pci/msi.c. There is already a default version
+> of arch_setup_msi_irqs (with s), and we can probably do the
+> same for arch_setup_msi_irq (without s) to fall back to the
+> arch version for most architectures.
+> Most architectures (at least powerpc, sparc, ia64 and x86) already
+> multiplex the msi handlers internally, but ARM does not because
+> there is only one implementation (iop33x) at the moment.
+>=20
+> We can add a generix multiplex and then move architectures over to
+> use it.
 
-I haven't followed the previous versions of the patch - I have noticed
-this being broken only because it failed during my automatic build
-testing when merging new mmots tree into mm git tree. I have no
-objections for further patches of course but this one seems to be buggy
-so it should be dropped until a fixed version is available.
+I already hinted at that in one of the other subthreads. Having such a
+multiplex would also allow the driver to be built as a module. I had
+already thought about this when I was working on an earlier version of
+these patches. Basically these would be two ops attached to the host
+bridge, and the generic arch_setup_msi_irq() could then look that up
+given the struct pci_dev that is passed to it and call this new per-
+host bridge .setup_msi_irq().
 
-> How do you think ?
-> 
-> Thanks. :)
-> 
-> >
-> 
+Thierry
 
--- 
-Michal Hocko
-SUSE Labs
+--BOKacYhQ+x31HxR3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ8DOMAAoJEN0jrNd/PrOh29wP/R+H89h8vOojTR2fPd/RCViR
+XvX1Rz4N+RqkITzkO/mMH9iHu+RJR33V2PZxZc+pQ/OA2CCavI8cW3/ZkBBEiQMk
+d2iK7/KIdtIXfsShh89YmjYfBnqCGtLsovrlMP0rwXDEHRhvc5hO9nWCQq9OPqui
+9QpVzrbJi//9/ENf2AFrD/y/A6a5D5hsnlfkOBgVZmgHMmlrfQrTCkyRL1EpJbiZ
+vodMEBGQp0OPyz1d/qamam7EoAGlYeZcFlBupSTJlzrs4A4TiQe3TThDXG3E7t28
+5xP5oT0oAZ64RflqPQJGq4tUIcHhCiXO91AFqepoXqfmGIA1FS8g4nkIiNbcmCgw
+aH7MOei5x/3Jc6FbdiGu1iqd3Bexi6Bgl0viCk7AsnA5fEyxjmMhx6H0OFXkX49o
+rfjtjgv4Fk9UgTNaQSJY0MWFCyr9j+czowWog00Kww3+Ldzr3PDd3cRD01bIPy3J
+91IKMjRp5JhgjLVQivZHlByuhmbpsou664CLwyO6JOmg/JTXz3JkZGSHuwxIL+qu
+Mk9MuuvWsw2c9Bh8lyIIeibUS1HXWuPkA+WK+rgqe43imulvd0H7uVOJAeQS+sMJ
+xcipX2sslMSszTi9SZLIhCF6Rfq+QV5BMDkFTR+GkdlHkk1ApXAy2GFgW2Rv/Fjq
+3/j/GLc4duL6Whnhx/1H
+=5NLe
+-----END PGP SIGNATURE-----
+
+--BOKacYhQ+x31HxR3--
