@@ -1,105 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab3AKVTd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 16:19:33 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38145 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab3AKVTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 16:19:31 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: lenb@kernel.org, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH v2 02/12] ACPI: Add sys_hotplug.h for system device hotplug framework
-Date: Fri, 11 Jan 2013 22:25:18 +0100
-Message-ID: <2024927.lMzqqbDSpI@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357861230-29549-3-git-send-email-toshi.kani@hp.com>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <1357861230-29549-3-git-send-email-toshi.kani@hp.com>
+	id S1755450Ab3AKVTs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 16:19:48 -0500
+Received: from mail-gg0-f180.google.com ([209.85.161.180]:54836 "EHLO
+	mail-gg0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215Ab3AKVTq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 16:19:46 -0500
+Date: Fri, 11 Jan 2013 02:16:12 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Stephane Eranian <eranian@google.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 06/10] perf sort: Drop ip_[lr] arguments from
+ _sort__sym_cmp()
+Message-ID: <20130111051612.GE3054@ghostprotocols.net>
+References: <1356599507-14226-1-git-send-email-namhyung@kernel.org>
+ <1356599507-14226-7-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356599507-14226-7-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 10, 2013 04:40:20 PM Toshi Kani wrote:
-> Added include/acpi/sys_hotplug.h, which is ACPI-specific system
-> device hotplug header and defines the order values of ACPI-specific
-> handlers.
+Stephane, can you take a look at this one and provide feedback?
+
+- Arnaldo
+
+Em Thu, Dec 27, 2012 at 06:11:43PM +0900, Namhyung Kim escreveu:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> Current _sort__sym_cmp() function is used for comparing symbols
+> between two hist entries on symbol, symbol_from and symbol_to sort
+> keys.  Those functions pass addresses of symbols but it's meaningless
+> since it gets over-written inside of the _sort__sym_cmp function to a
+> start address of the symbol.  So just get rid of them.
+> 
+> This might cause a difference than prior output for branch stacks
+> since it seems not using start address of the symbol but branch
+> address.  However AFAICS it'd be same as it gets overwritten anyway.
+> 
+> Also remove redundant part of code in sort__sym_cmp().
+> 
+> Cc: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > ---
->  include/acpi/sys_hotplug.h |   48 ++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 48 insertions(+)
->  create mode 100644 include/acpi/sys_hotplug.h
+>  tools/perf/util/sort.c | 23 ++++++-----------------
+>  1 file changed, 6 insertions(+), 17 deletions(-)
 > 
-> diff --git a/include/acpi/sys_hotplug.h b/include/acpi/sys_hotplug.h
-> new file mode 100644
-> index 0000000..ad80f61
-> --- /dev/null
-> +++ b/include/acpi/sys_hotplug.h
-> @@ -0,0 +1,48 @@
-> +/*
-> + * sys_hotplug.h - ACPI System device hot-plug framework
-> + *
-> + * Copyright (C) 2012 Hewlett-Packard Development Company, L.P.
-> + *	Toshi Kani <toshi.kani@hp.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
+> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> index a36051b34901..c02964cabdd0 100644
+> --- a/tools/perf/util/sort.c
+> +++ b/tools/perf/util/sort.c
+> @@ -160,9 +160,10 @@ struct sort_entry sort_dso = {
+>  
+>  /* --sort symbol */
+>  
+> -static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
+> -			      u64 ip_l, u64 ip_r)
+> +static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r)
+>  {
+> +	u64 ip_l, ip_r;
 > +
-> +#ifndef _ACPI_SYS_HOTPLUG_H
-> +#define _ACPI_SYS_HOTPLUG_H
-> +
-> +#include <linux/list.h>
-> +#include <linux/device.h>
-> +#include <linux/sys_hotplug.h>
-> +
-> +/*
-> + * System device hot-plug operation proceeds in the following order.
-> + *   Validate phase -> Execute phase -> Commit phase
-> + *
-> + * The order values below define the calling sequence of ACPI-specific
-> + * handlers for each phase in ascending order.  The order value of
-> + * platform-neutral handlers are defined in <linux/sys_hotplug.h>.
-> + */
-> +
-> +/* Add Validate order values */
-> +#define SHP_ACPI_BUS_ADD_VALIDATE_ORDER		0	/* must be first */
-> +
-> +/* Add Execute order values */
-> +#define SHP_ACPI_BUS_ADD_EXECUTE_ORDER		10
-> +#define SHP_ACPI_RES_ADD_EXECUTE_ORDER		20
-> +
-> +/* Add Commit order values */
-> +#define SHP_ACPI_BUS_ADD_COMMIT_ORDER		10
-> +
-> +/* Delete Validate order values */
-> +#define SHP_ACPI_BUS_DEL_VALIDATE_ORDER		0	/* must be first */
-> +#define SHP_ACPI_RES_DEL_VALIDATE_ORDER		10
-> +
-> +/* Delete Execute order values */
-> +#define SHP_ACPI_BUS_DEL_EXECUTE_ORDER		100
-> +
-> +/* Delete Commit order values */
-> +#define SHP_ACPI_BUS_DEL_COMMIT_ORDER		100
-> +
-> +#endif	/* _ACPI_SYS_HOTPLUG_H */
-> --
-
-Why did you use the particular values above?
-
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>  	if (!sym_l || !sym_r)
+>  		return cmp_null(sym_l, sym_r);
+>  
+> @@ -178,21 +179,10 @@ static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
+>  static int64_t
+>  sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
+>  {
+> -	u64 ip_l, ip_r;
+> -
+>  	if (!left->ms.sym && !right->ms.sym)
+>  		return right->level - left->level;
+>  
+> -	if (!left->ms.sym || !right->ms.sym)
+> -		return cmp_null(left->ms.sym, right->ms.sym);
+> -
+> -	if (left->ms.sym == right->ms.sym)
+> -		return 0;
+> -
+> -	ip_l = left->ms.sym->start;
+> -	ip_r = right->ms.sym->start;
+> -
+> -	return _sort__sym_cmp(left->ms.sym, right->ms.sym, ip_l, ip_r);
+> +	return _sort__sym_cmp(left->ms.sym, right->ms.sym);
+>  }
+>  
+>  static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
+> @@ -380,8 +370,7 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
+>  	if (!from_l->sym && !from_r->sym)
+>  		return right->level - left->level;
+>  
+> -	return _sort__sym_cmp(from_l->sym, from_r->sym, from_l->addr,
+> -			     from_r->addr);
+> +	return _sort__sym_cmp(from_l->sym, from_r->sym);
+>  }
+>  
+>  static int64_t
+> @@ -393,7 +382,7 @@ sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
+>  	if (!to_l->sym && !to_r->sym)
+>  		return right->level - left->level;
+>  
+> -	return _sort__sym_cmp(to_l->sym, to_r->sym, to_l->addr, to_r->addr);
+> +	return _sort__sym_cmp(to_l->sym, to_r->sym);
+>  }
+>  
+>  static int hist_entry__sym_from_snprintf(struct hist_entry *self, char *bf,
+> -- 
+> 1.7.11.7
