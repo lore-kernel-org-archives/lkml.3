@@ -1,245 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab3AKO41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 09:56:27 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:54994 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754819Ab3AKO4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 09:56:23 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-f0-50f0281510c4
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        balbi@ti.com, kgene.kim@samsung.com, thomas.abraham@linaro.org,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        sylvester.nawrocki@gmail.com, dianders@chromium.org,
-        jg1.han@samsung.com, p.paneri@samsung.com
-Subject: [PATCH v6 3/4] USB: ehci-s5p: Add phy driver support
-Date: Fri, 11 Jan 2013 20:32:29 +0530
-Message-id: <1357916550-11421-4-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
-References: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsWyRsSkTldU40OAwfsWQ4vLu+awWcw4v4/J
-	YtGyVmYHZo/Pm+QCGKO4bFJSczLLUov07RK4Mu5+nMNYcEKn4u315YwNjI2qXYwcHBICJhIb
-	1iV0MXICmWISF+6tZ+ti5OIQEljKKLF65zEWiISJxI6zc9khEosYJTbPfMsM4UxmkvjSuo0Z
-	pIpNQFei6e0uRhBbREBW4vCV32BFzAIPmCRub1zHDpIQFrCVeLS3nw3EZhFQlZg0bzVYnFfA
-	Q2LXiSfsEOsUJN7cfgY2lFPAU2L9pplgQ4WAahZOXMUK0Ssg8W3yIRaIF2QlNh0A2yUhcJ9N
-	YkFjLzPEHEmJgytusExgFF7AyLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzAwT/97Jr2D
-	cVWDxSFGAQ5GJR7eSs33AUKsiWXFlbmHGCU4mJVEeL0YPwQI8aYkVlalFuXHF5XmpBYfYvQB
-	umQis5Rocj4wavJK4g2NTcxNjU0tjYzMTE1xCCuJ8zKeehIgJJCeWJKanZpakFoEM46Jg1Oq
-	gZHPseTWv5AVnB7lbJ8vOW64Kvnpp9AU9rSwc82qKnqCPJyf31l86rDXuqLdbvXP+tCDwocM
-	krXPy40+Mu9j7n+ZYBdv83bL+W0NudsLN71weWXqlP8j/rPeqYrHW7imrl6w5MIVvbTrnsm7
-	LjAYnrBe6Msyx7uv+e3XrHe1WzwmCBZeFgq/tk+JpTgj0VCLuag4EQBzKEyLeQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t9jAV1RjQ8BBnOuylhc3jWHzWLG+X1M
-	FouWtTI7MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
-	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hx9+Mc
-	xoITOhVvry9nbGBsVO1i5OSQEDCR2HF2LjuELSZx4d56ti5GLg4hgUWMEptnvmWGcCYzSXxp
-	3cYMUsUmoCvR9HYXI4gtIiArcfjKb7AiZoEHTBK3N64DGyUsYCvxaG8/G4jNIqAqMWnearA4
-	r4CHxK4TT6DWKUi8uf0MbCingKfE+k0zwYYKAdUsnLiKdQIj7wJGhlWMoqkFyQXFSem5RnrF
-	ibnFpXnpesn5uZsYwYH/THoH46oGi0OMAhyMSjy8lZrvA4RYE8uKK3MPMUpwMCuJ8HoxfggQ
-	4k1JrKxKLcqPLyrNSS0+xOgDdNVEZinR5HxgVOaVxBsam5ibGptamliYmFniEFYS52U89SRA
-	SCA9sSQ1OzW1ILUIZhwTB6dUA6NOLadc+z75lXILH/fp1zh2RB2029/VHPKSkalva/jS1pTg
-	vedsjjcdPy+4Odan25P7xpyec10CFTPuLvn+Oe70BCm3hC0lXgtOLqoTcY79V5yy+vGsc1lJ
-	wgKZMenWikc79Xmtel/bMHK/nzNB8PvD8/Fpokcc1C5+e+DRtuXu19sGEeHsukosxRmJhlrM
-	RcWJAHgvhs2pAgAA
-X-CFilter-Loop: Reflected
+	id S1755269Ab3AKO4m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 09:56:42 -0500
+Received: from mga14.intel.com ([143.182.124.37]:26067 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754932Ab3AKO4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 09:56:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,452,1355126400"; 
+   d="scan'208";a="242773619"
+Message-ID: <50F02823.1070909@intel.com>
+Date: Fri, 11 Jan 2013 22:56:35 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: li guang <lig.fnst@cn.fujitsu.com>
+CC: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 05/22] sched: remove domain iterations in fork/exec/wake
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>  <1357375071-11793-6-git-send-email-alex.shi@intel.com>  <20130109182102.GC2046@e103034-lin>  <50EF9B69.3000201@linux.vnet.ibm.com> <1357891316.2860.6.camel@liguang.fnst.cn.fujitsu.com>
+In-Reply-To: <1357891316.2860.6.camel@liguang.fnst.cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding the phy driver to ehci-s5p. Keeping the platform data
-for continuing the smooth operation for boards which still uses it
+On 01/11/2013 04:01 PM, li guang wrote:
+> 在 2013-01-11五的 10:26 +0530，Preeti U Murthy写道：
+>> Hi Morten,Alex
+>>
+>> On 01/09/2013 11:51 PM, Morten Rasmussen wrote:
+>>> On Sat, Jan 05, 2013 at 08:37:34AM +0000, Alex Shi wrote:
+>>>> Guess the search cpu from bottom to up in domain tree come from
+>>>> commit 3dbd5342074a1e sched: multilevel sbe sbf, the purpose is
+>>>> balancing over tasks on all level domains.
+>>>>
+>>>> This balancing cost much if there has many domain/groups in a large
+>>>> system. And force spreading task among different domains may cause
+>>>> performance issue due to bad locality.
+>>>>
+>>>> If we remove this code, we will get quick fork/exec/wake, plus better
+>>>> balancing among whole system, that also reduce migrations in future
+>>>> load balancing.
+>>>>
+>>>> This patch increases 10+% performance of hackbench on my 4 sockets
+>>>> NHM and SNB machines.
+>>>>
+>>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>>>> ---
+>>>>  kernel/sched/fair.c | 20 +-------------------
+>>>>  1 file changed, 1 insertion(+), 19 deletions(-)
+>>>>
+>>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>>> index ecfbf8e..895a3f4 100644
+>>>> --- a/kernel/sched/fair.c
+>>>> +++ b/kernel/sched/fair.c
+>>>> @@ -3364,15 +3364,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>>>>  		goto unlock;
+>>>>  	}
+>>>>  
+>>>> -	while (sd) {
+>>>> +	if (sd) {
+>>>>  		int load_idx = sd->forkexec_idx;
+>>>>  		struct sched_group *group;
+>>>> -		int weight;
+>>>> -
+>>>> -		if (!(sd->flags & sd_flag)) {
+>>>> -			sd = sd->child;
+>>>> -			continue;
+>>>> -		}
+>>>>  
+>>>>  		if (sd_flag & SD_BALANCE_WAKE)
+>>>>  			load_idx = sd->wake_idx;
+>>>> @@ -3382,18 +3376,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>>>>  			goto unlock;
+>>>>  
+>>>>  		new_cpu = find_idlest_cpu(group, p, cpu);
+>>>> -
+>>>> -		/* Now try balancing at a lower domain level of new_cpu */
+>>>> -		cpu = new_cpu;
+>>>> -		weight = sd->span_weight;
+>>>> -		sd = NULL;
+>>>> -		for_each_domain(cpu, tmp) {
+>>>> -			if (weight <= tmp->span_weight)
+>>>> -				break;
+>>>> -			if (tmp->flags & sd_flag)
+>>>> -				sd = tmp;
+>>>> -		}
+>>>> -		/* while loop will break here if sd == NULL */
+>>>
+>>> I agree that this should be a major optimization. I just can't figure
+>>> out why the existing recursive search for an idle cpu switches to the
+>>> new cpu near the end and then starts a search for an idle cpu in the new
+>>> cpu's domain. Is this to handle some exotic sched domain configurations?
+>>> If so, they probably wouldn't work with your optimizations.
+>>
+>> Let me explain my understanding of why the recursive search is the way
+>> it is.
+>>
+>>  _________________________  sd0
+>> |                         |
+>> |  ___sd1__   ___sd2__    |
+>> | |        | |        |   |
+>> | | sgx    | |  sga   |   |
+>> | | sgy    | |  sgb   |   |
+>> | |________| |________|   |
+>> |_________________________|
+>>
+>> What the current recursive search is doing is (assuming we start with
+>> sd0-the top level sched domain whose flags are rightly set). we find
+>> that sd1 is the idlest group,and a cpux1 in sgx is the idlest cpu.
+>>
+>> We could have ideally stopped the search here.But the problem with this
+>> is that there is a possibility that sgx is more loaded than sgy; meaning
+>> the cpus in sgx are heavily imbalanced;say there are two cpus cpux1 and
+>> cpux2 in sgx,where cpux2 is heavily loaded and cpux1 has recently gotten
+>> idle and load balancing has not come to its rescue yet.According to the
+>> search above, cpux1 is idle,but is *not the right candidate for
+>> scheduling forked task,it is the right candidate for relieving the load
+>> from cpux2* due to cache locality etc.
+> 
+> This corner case may occur after "[PATCH v3 03/22] sched: fix
+> find_idlest_group mess logical" brought in the local sched_group bias,
+> and assume balancing runs on cpux2.
+> ideally,  find_idlest_group should find the real idlest(this case: sgy),
+> then, this patch is reasonable.
+> 
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/usb/host/ehci-s5p.c |   80 +++++++++++++++++++++++++++++++-----------
- 1 files changed, 59 insertions(+), 21 deletions(-)
+Sure. but seems it is a bit hard to go down the idlest group.
 
-diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
-index 46ca5ef..d603e6e 100644
---- a/drivers/usb/host/ehci-s5p.c
-+++ b/drivers/usb/host/ehci-s5p.c
-@@ -17,6 +17,7 @@
- #include <linux/platform_device.h>
- #include <linux/of_gpio.h>
- #include <linux/platform_data/usb-ehci-s5p.h>
-+#include <linux/usb/phy.h>
- #include <linux/usb/samsung_usb_phy.h>
- #include <plat/usb-phy.h>
- 
-@@ -33,6 +34,9 @@ struct s5p_ehci_hcd {
- 	struct device *dev;
- 	struct usb_hcd *hcd;
- 	struct clk *clk;
-+	struct usb_phy *phy;
-+	struct usb_otg *otg;
-+	struct s5p_ehci_platdata *pdata;
- };
- 
- static const struct hc_driver s5p_ehci_hc_driver = {
-@@ -66,6 +70,26 @@ static const struct hc_driver s5p_ehci_hc_driver = {
- 	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
- };
- 
-+static void s5p_ehci_phy_enable(struct s5p_ehci_hcd *s5p_ehci)
-+{
-+	struct platform_device *pdev = to_platform_device(s5p_ehci->dev);
-+
-+	if (s5p_ehci->phy)
-+		usb_phy_init(s5p_ehci->phy);
-+	else if (s5p_ehci->pdata->phy_init)
-+		s5p_ehci->pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
-+}
-+
-+static void s5p_ehci_phy_disable(struct s5p_ehci_hcd *s5p_ehci)
-+{
-+	struct platform_device *pdev = to_platform_device(s5p_ehci->dev);
-+
-+	if (s5p_ehci->phy)
-+		usb_phy_shutdown(s5p_ehci->phy);
-+	else if (s5p_ehci->pdata->phy_exit)
-+		s5p_ehci->pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
-+}
-+
- static void s5p_setup_vbus_gpio(struct platform_device *pdev)
- {
- 	int err;
-@@ -88,20 +112,15 @@ static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
- 
- static int s5p_ehci_probe(struct platform_device *pdev)
- {
--	struct s5p_ehci_platdata *pdata;
-+	struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
- 	struct s5p_ehci_hcd *s5p_ehci;
- 	struct usb_hcd *hcd;
- 	struct ehci_hcd *ehci;
- 	struct resource *res;
-+	struct usb_phy *phy;
- 	int irq;
- 	int err;
- 
--	pdata = pdev->dev.platform_data;
--	if (!pdata) {
--		dev_err(&pdev->dev, "No platform data defined\n");
--		return -EINVAL;
--	}
--
- 	/*
- 	 * Right now device-tree probed devices don't get dma_mask set.
- 	 * Since shared usb code relies on it, set it here for now.
-@@ -119,6 +138,20 @@ static int s5p_ehci_probe(struct platform_device *pdev)
- 	if (!s5p_ehci)
- 		return -ENOMEM;
- 
-+	phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
-+	if (IS_ERR_OR_NULL(phy)) {
-+		/* Fallback to pdata */
-+		if (!pdata) {
-+			dev_warn(&pdev->dev, "no platform data or transceiver defined\n");
-+			return -EPROBE_DEFER;
-+		} else {
-+			s5p_ehci->pdata = pdata;
-+		}
-+	} else {
-+		s5p_ehci->phy = phy;
-+		s5p_ehci->otg = phy->otg;
-+	}
-+
- 	s5p_ehci->dev = &pdev->dev;
- 
- 	hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
-@@ -164,8 +197,10 @@ static int s5p_ehci_probe(struct platform_device *pdev)
- 		goto fail_io;
- 	}
- 
--	if (pdata->phy_init)
--		pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
-+	if (s5p_ehci->otg)
-+		s5p_ehci->otg->set_host(s5p_ehci->otg, &s5p_ehci->hcd->self);
-+
-+	s5p_ehci_phy_enable(s5p_ehci);
- 
- 	ehci = hcd_to_ehci(hcd);
- 	ehci->caps = hcd->regs;
-@@ -176,13 +211,15 @@ static int s5p_ehci_probe(struct platform_device *pdev)
- 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (err) {
- 		dev_err(&pdev->dev, "Failed to add USB HCD\n");
--		goto fail_io;
-+		goto fail_add_hcd;
- 	}
- 
- 	platform_set_drvdata(pdev, s5p_ehci);
- 
- 	return 0;
- 
-+fail_add_hcd:
-+	s5p_ehci_phy_disable(s5p_ehci);
- fail_io:
- 	clk_disable_unprepare(s5p_ehci->clk);
- fail_clk:
-@@ -192,14 +229,15 @@ fail_clk:
- 
- static int s5p_ehci_remove(struct platform_device *pdev)
- {
--	struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
- 	struct s5p_ehci_hcd *s5p_ehci = platform_get_drvdata(pdev);
- 	struct usb_hcd *hcd = s5p_ehci->hcd;
- 
- 	usb_remove_hcd(hcd);
- 
--	if (pdata && pdata->phy_exit)
--		pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
-+	if (s5p_ehci->otg)
-+		s5p_ehci->otg->set_host(s5p_ehci->otg, &s5p_ehci->hcd->self);
-+
-+	s5p_ehci_phy_disable(s5p_ehci);
- 
- 	clk_disable_unprepare(s5p_ehci->clk);
- 
-@@ -223,14 +261,14 @@ static int s5p_ehci_suspend(struct device *dev)
- 	struct s5p_ehci_hcd *s5p_ehci = dev_get_drvdata(dev);
- 	struct usb_hcd *hcd = s5p_ehci->hcd;
- 	bool do_wakeup = device_may_wakeup(dev);
--	struct platform_device *pdev = to_platform_device(dev);
--	struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
- 	int rc;
- 
- 	rc = ehci_suspend(hcd, do_wakeup);
- 
--	if (pdata && pdata->phy_exit)
--		pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
-+	if (s5p_ehci->otg)
-+		s5p_ehci->otg->set_host(s5p_ehci->otg, &s5p_ehci->hcd->self);
-+
-+	s5p_ehci_phy_disable(s5p_ehci);
- 
- 	clk_disable_unprepare(s5p_ehci->clk);
- 
-@@ -241,13 +279,13 @@ static int s5p_ehci_resume(struct device *dev)
- {
- 	struct s5p_ehci_hcd *s5p_ehci = dev_get_drvdata(dev);
- 	struct usb_hcd *hcd = s5p_ehci->hcd;
--	struct platform_device *pdev = to_platform_device(dev);
--	struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
- 
- 	clk_prepare_enable(s5p_ehci->clk);
- 
--	if (pdata && pdata->phy_init)
--		pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
-+	if (s5p_ehci->otg)
-+		s5p_ehci->otg->set_host(s5p_ehci->otg, &s5p_ehci->hcd->self);
-+
-+	s5p_ehci_phy_enable(s5p_ehci);
- 
- 	/* DMA burst Enable */
- 	writel(EHCI_INSNREG00_ENABLE_DMA_BURST, EHCI_INSNREG00(hcd->regs));
+and the old logical is real cost too much, on my 2 socket NHM/SNB
+server, hackbench can increase 2~5% performance. and no clean
+performance on kbuild/aim7 etc.
+
 -- 
-1.7.6.5
-
+Thanks
+    Alex
