@@ -1,202 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab3AKRET (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:04:19 -0500
-Received: from mail-da0-f73.google.com ([209.85.210.73]:35456 "EHLO
-	mail-da0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab3AKREQ (ORCPT
+	id S1755437Ab3AKRE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:04:59 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:55093 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755337Ab3AKRE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:04:16 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-mmc@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
-        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Subject: [PATCH v4 1/5] mmc: dw_mmc: Add "disable-wp" device tree property
-Date: Fri, 11 Jan 2013 09:03:50 -0800
-Message-Id: <1357923834-31641-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1357842269-15062-1-git-send-email-dianders@chromium.org>
-References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
+	Fri, 11 Jan 2013 12:04:57 -0500
+Date: Fri, 11 Jan 2013 09:04:53 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] Input: twl6040-vibra: Code cleanup in probe with
+ devm_* conversion
+Message-ID: <20130111170453.GB11224@core.coreip.homeip.net>
+References: <1357896483-20764-1-git-send-email-peter.ujfalusi@ti.com>
+ <1357896483-20764-4-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357896483-20764-4-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "disable-wp" property is used to specify that a given SD card slot
-doesn't have a concept of write protect.  This eliminates the need for
-special case code for SD slots that should never be write protected
-(like a micro SD slot or a dev board).
+Hi Peter,
 
-The dw_mmc driver is special in needing to specify "disable-wp"
-because the lack of a "wp-gpios" property means to use the special
-purpose write protect line.  On some other mmc devices the lack of
-"wp-gpios" means that write protect should be disabled.
+On Fri, Jan 11, 2013 at 10:28:02AM +0100, Peter Ujfalusi wrote:
+> @@ -422,11 +413,8 @@ static int twl6040_vibra_remove(struct platform_device *pdev)
+>  {
+>  	struct vibra_info *info = platform_get_drvdata(pdev);
+>  
+> -	input_unregister_device(info->input_dev);
+> -	free_irq(info->irq, info);
+>  	regulator_bulk_free(ARRAY_SIZE(info->supplies), info->supplies);
+>  	destroy_workqueue(info->workqueue);
+> -	kfree(info);
+>  
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
----
-Changes in v4:
-- Added a comment about the fact that a future patch will remove the
-  controller-level quirk; the comments and quirk will be removed in
-  the future change "mmc: dw_mmc: Remove
-  DW_MCI_QUIRK_NO_WRITE_PROTECT".  I split the patch up this way to
-  preserve bisectability and also to keep changes logically separated.
-  I will squash if desired.
 
-Changes in v3:
-- New for this version of the patch series.  Chose "disable-wp" rather
-  than the discussed "broken-internal-wp" since it mapped more cleanly
-  to an existing quirk (and the only reason to specify that the
-  internal wp is broken is if you're disabling the write protect
-  anyway).
+I do not think we can switch to managed resources while using
+non-managed version of regulator_bulk_get, because with this patch you
+shutting down regulators (presumably making device inoperable) while
+the input device and interrupt are alive and kicking. BTW, the wq patch
+should have been before this one in the queue as again you can't
+destroy work queue while input device is active.
 
- .../devicetree/bindings/mmc/synopsis-dw-mshc.txt   |   12 +++++-
- drivers/mmc/host/dw_mmc.c                          |   41 +++++++++++++++++++-
- include/linux/mmc/dw_mmc.h                         |    9 ++++
- 3 files changed, 59 insertions(+), 3 deletions(-)
+I see 3 ways here:
 
-diff --git a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-index 06cd32d08..726fd21 100644
---- a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-+++ b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-@@ -26,8 +26,16 @@ Required Properties:
- 	* bus-width: as documented in mmc core bindings.
- 
- 	* wp-gpios: specifies the write protect gpio line. The format of the
--	  gpio specifier depends on the gpio controller. If the write-protect
--	  line is not available, this property is optional.
-+	  gpio specifier depends on the gpio controller. If a GPIO is not used
-+	  for write-protect, this property is optional.
-+
-+	* disable-wp: If the wp-gpios property isn't present then (by default)
-+	  we'd assume that the write protect is hooked up directly to the
-+	  controller's special purpose write protect line (accessible via
-+	  the WRTPRT register).  However, it's possible that we simply don't
-+	  want write protect.  In that case specify 'disable-wp'.
-+	  NOTE: This property is not required for slots known to always
-+	  connect to eMMC or SDIO cards.
- 
- Optional properties:
- 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 323c502..90f7d99 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -74,6 +74,7 @@ struct idmac_desc {
-  * struct dw_mci_slot - MMC slot state
-  * @mmc: The mmc_host representing this slot.
-  * @host: The MMC controller this slot is using.
-+ * @quirks: Slot-level quirks (DW_MCI_SLOT_QUIRK_XXX)
-  * @ctype: Card type for this slot.
-  * @mrq: mmc_request currently being processed or waiting to be
-  *	processed, or NULL when the slot is idle.
-@@ -88,6 +89,8 @@ struct dw_mci_slot {
- 	struct mmc_host		*mmc;
- 	struct dw_mci		*host;
- 
-+	int			quirks;
-+
- 	u32			ctype;
- 
- 	struct mmc_request	*mrq;
-@@ -825,7 +828,13 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
- 	struct dw_mci_board *brd = slot->host->pdata;
- 
- 	/* Use platform get_ro function, else try on board write protect */
--	if (brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT)
-+
-+	/*
-+	 * NOTE: DW_MCI_QUIRK_NO_WRITE_PROTECT will be removed in a future
-+	 * patch in the series once reference to it is removed.
-+	 */
-+	if ((brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT) ||
-+	    (slot->quirks & DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT))
- 		read_only = 0;
- 	else if (brd->get_ro)
- 		read_only = brd->get_ro(slot->id);
-@@ -1785,6 +1794,30 @@ static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
- 	return NULL;
- }
- 
-+static struct dw_mci_of_slot_quirks {
-+	char *quirk;
-+	int id;
-+} of_slot_quirks[] = {
-+	{
-+		.quirk	= "disable-wp",
-+		.id	= DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT,
-+	},
-+};
-+
-+static int dw_mci_of_get_slot_quirks(struct device *dev, u8 slot)
-+{
-+	struct device_node *np = dw_mci_of_find_slot_node(dev, slot);
-+	int quirks = 0;
-+	int idx;
-+
-+	/* get quirks */
-+	for (idx = 0; idx < ARRAY_SIZE(of_slot_quirks); idx++)
-+		if (of_get_property(np, of_slot_quirks[idx].quirk, NULL))
-+			quirks |= of_slot_quirks[idx].id;
-+
-+	return quirks;
-+}
-+
- /* find out bus-width for a given slot */
- static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
- {
-@@ -1800,6 +1833,10 @@ static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
- 	return bus_wd;
- }
- #else /* CONFIG_OF */
-+static int dw_mci_of_get_slot_quirks(struct device *dev, u8 slot)
-+{
-+	return 0;
-+}
- static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
- {
- 	return 1;
-@@ -1828,6 +1865,8 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	slot->host = host;
- 	host->slot[id] = slot;
- 
-+	slot->quirks = dw_mci_of_get_slot_quirks(host->dev, slot->id);
-+
- 	mmc->ops = &dw_mci_ops;
- 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
- 	mmc->f_max = host->bus_hz;
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index 34be4f4..de61de5 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -209,9 +209,18 @@ struct dw_mci_dma_ops {
- #define DW_MCI_QUIRK_HIGHSPEED			BIT(2)
- /* Unreliable card detection */
- #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
-+
- /* Write Protect detection not available */
-+/*
-+ * NOTE: DW_MCI_QUIRK_NO_WRITE_PROTECT will be removed in a future
-+ * patch in the series once reference to it is removed.
-+ */
- #define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(4)
- 
-+/* Slot level quirks */
-+/* This slot has no write protect */
-+#define DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT	BIT(0)
-+
- struct dma_pdata;
- 
- struct block_settings {
+1. Change regulator core to allow separate owner device from the device
+the resource is attached to.
+
+2. Create custom version of devm_regulator_bulk_get() and use it in
+twl6040.
+
+3. Keep the resources unmanaged.
+
+Unless there are many drivers like twl6040 to justify 1 I'd go with 3.
+
+Thanks.
+
 -- 
-1.7.7.3
-
+Dmitry
