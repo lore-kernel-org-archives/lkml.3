@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab3AKCA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 21:00:27 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:63656 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753594Ab3AKCA0 (ORCPT
+	id S1754758Ab3AKCBU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 21:01:20 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34002 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab3AKCBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 21:00:26 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-9c-50ef72382e75
-Message-id: <50EF7238.1040408@samsung.com>
-Date: Fri, 11 Jan 2013 11:00:24 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/11] extcon: arizona: Support HPDET based accessory
- identification
-References: <20130110120231.GL20956@opensource.wolfsonmicro.com>
- <1357819462-12232-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1357819462-12232-9-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-reply-to: <1357819462-12232-9-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsVy+t8zbV2LovcBBrfvm1tc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MZ52f2QtuMlbMPrOYuYFxMWMXIyeHhICJxIclr9kgbDGJC/fW
-	A9lcHEICyxglZje8ZYYpWrPiNztEYhGjxM5fB6GcLiaJWdtXMIFU8QpoSUw4M40dxGYRUJVo
-	ePYELM4GFN//4gbQWA4OUYEIiV/9HBDlghI/Jt9jAQmLAC34fb8SZCSzwGlGidaJ78CuExaI
-	kjjZt4UVYtcVRol3F/+xgCQ4BcIk1t37zwpiMwvoSOxvncYGYctLbF4DcTWLgIDEt8mHwBZI
-	CMhKbDrADDJHQqCZXeLPvDZ2iM8kJQ6uuMEygVFsFpKbZiEZOwvJ2AWMzKsYRVMLkguKk9Jz
-	DfWKE3OLS/PS9ZLzczcxQqJCagfjygaLQ4wCHIxKPLyVmu8DhFgTy4orcw8xSnAwK4nwiqcB
-	hXhTEiurUovy44tKc1KLDzH6AF07kVlKNDkfGLF5JfGGxgbGhoaWhmamlqYGOISVxHkZTz0J
-	EBJITyxJzU5NLUgtghnHxMEp1cCo4bOgQupTGC9TUfn8A6WPJ4lPmvy7pOZCfOLmd8lc7fIl
-	aZMn3eWuMPc7l3iLXUDD8Pm1D0aeFVdeTtq7M+b5gtlXmGY/vGEXtvDAPZ7iWubYxp8Pdq7k
-	jV8onq7gvVZJ/PEOD70vBScEmJdfifuUM8u/Iqv1YtQU8Ys3ve+vlJi01/CofOoDJZbijERD
-	Leai4kQAOWytf7cCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jAV2LovcBBvcn6Ftc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjGedn9kLbjJWzD6zmLmB
-	cTFjFyMnh4SAicSaFb/ZIWwxiQv31rN1MXJxCAksYpTY+esgO4TTxSQxa/sKJpAqXgEtiQln
-	poF1sAioSjQ8ewIWZwOK739xA6ibg0NUIELiVz8HRLmgxI/J91hAwiJAy37frwQZySxwmlGi
-	deI7sCOEBaIkTvZtYYXYdYVR4t3FfywgCU6BMIl19/6zgtjMAjoS+1unsUHY8hKb17xlnsAo
-	MAvJjllIymYhKVvAyLyKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzjmnkntYFzZYHGIUYCD
-	UYmHt1LzfYAQa2JZcWXuIUYJDmYlEV7xNKAQb0piZVVqUX58UWlOavEhRh9gCExklhJNzgem
-	g7ySeENjEzMjSyMzYxNzY2McwkrivIynngQICaQnlqRmp6YWpBbBjGPi4JRqYBRhOv6iTNZ7
-	/bn9N+p1zxfEcSQnekXrXlGdP5G9pEW14WTw2W1rzDbsSHd7az25dUvT8oS+tQpaUVv1Tb/x
-	Vtyr/C2hO9sq5x0Di6pDqpPH8zXPX8R5dZ2bP51/Wvmdu9os1l/niV/1MRT52dn45sgqF03v
-	d89LVnox7fm4R+SiW3NG4eIXvkosxRmJhlrMRcWJAHEq2ZbmAgAA
-X-CFilter-Loop: Reflected
+	Thu, 10 Jan 2013 21:01:19 -0500
+Subject: Re: 3.8-rc2/rc3 write() blocked on CLOSE_WAIT TCP socket
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: netdev@vger.kernel.org, Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20130111004915.GA15415@dcvr.yhbt.net>
+References: <20130111004915.GA15415@dcvr.yhbt.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Jan 2013 18:01:15 -0800
+Message-ID: <1357869675.27446.2962.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +		}
-> +
-> +		/* OK, got both.  Now, compare... */
-Is is correct comment?
+On Fri, 2013-01-11 at 00:49 +0000, Eric Wong wrote:
+> The below Ruby script reproduces the issue for me with write()
+> getting stuck, usually with a few iterations (sometimes up to 100).
+> 
+> I've reproduced this with 3.8-rc2 and rc3, even with Mel's partial
+> revert patch in <20130110194212.GJ13304@suse.de> applied.
+> 
+> I can not reproduce this with 3.7.1+
+>    stable-queue 2afd72f59c518da18853192ceeebead670ced5ea
+> So this seems to be a new bug from the 3.8 cycle...
+> 
+> Fortunately, this bug far easier for me to reproduce than the ppoll+send
+> (toosleepy) failures.
+> 
+> Both socat and ruby (Ruby 1.8, 1.9, 2.0 should all work), along with
+> common shell tools (dd, sh, cat) are required for testing this:
+> 
+> 	# 100 iterations, raise/lower the number if needed
+> 	ruby the_script_below.rb 100
+> 
+> lsof -p 15236 reveals this:
+> ruby    15236   ew    5u  IPv4  23066      0t0     TCP localhost:33728->localhost:38658 (CLOSE_WAIT)
 
-> +		dev_dbg(arizona->dev, "HPDET measured %d %d\n",
-> +			info->hpdet_res[0], info->hpdet_res[1]);
-> +
+Hmm, it might be commit c3ae62af8e755ea68380fb5ce682e60079a4c388
+tcp: should drop incoming frames without ACK flag set
 
-Thank you,
-Chanwoo Choi
+It seems RST should be allowed to not have ACK set.
+
+I'll send a fix, thanks !
+
+
+
+
+
