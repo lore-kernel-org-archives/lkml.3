@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab3AKR2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:28:51 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:16831 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab3AKR2u (ORCPT
+	id S1754893Ab3AKRfS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:35:18 -0500
+Received: from myspam1.stec-inc.com ([210.19.18.169]:60837 "HELO
+	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754209Ab3AKRfQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:28:50 -0500
-Date: Fri, 11 Jan 2013 12:28:44 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: Ryan Wilson <hap9@epoch.ncsc.mil>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/x86/pci/xen.c: fix a typo in comments
-Message-ID: <20130111172844.GA26287@phenom.dumpdata.com>
-References: <CABawtvNHe7f9n+BAFfCzha2WNuovxNvfQabTyWFH_5oyfAh5Xg@mail.gmail.com>
+	Fri, 11 Jan 2013 12:35:16 -0500
+X-Greylist: delayed 849 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jan 2013 12:35:06 EST
+X-ASG-Debug-ID: 1357924851-053ea90dcf1ac7a0001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Amit Kale <akale@stec-inc.com>
+X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 12 Jan 2013 01:18:37 +0800
+Subject: Announcement: STEC EnhanceIO SSD caching software for Linux kernel
+Thread-Topic: Announcement: STEC EnhanceIO SSD caching software for Linux
+ kernel
+X-ASG-Orig-Subj: Announcement: STEC EnhanceIO SSD caching software for Linux kernel
+Thread-Index: Ac3wH7FWsmw1w5/rRqCIK39YSUtHCg==
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABawtvNHe7f9n+BAFfCzha2WNuovxNvfQabTyWFH_5oyfAh5Xg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1357924851
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.119569
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 09:22:11AM +0800, Ethan Zhao wrote:
-> Konrad,
->       This patch fix a typo in comments of arch/x86/pci/xen.c
+Greetings,
 
-Hm, so somehow I don't see your SOB on the patch? Can you please
-include that.
-> 
-> Thanks,
-> Ethan.zhao@oracle.com
-> 
-> ---------------------------------------
-> commit 333a48b76d5311ae370d65dfac293ca0d839c455
-> Author: ethan.zhao <ethan.kernel@gmail.com>
-> Date:   Thu Dec 20 20:23:31 2012 -0800
-> 
->     Fix a typo in comments
-> 
-> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-> index 56ab749..8de6ced 100644
-> --- a/arch/x86/pci/xen.c
-> +++ b/arch/x86/pci/xen.c
-> @@ -2,7 +2,7 @@
->   * Xen PCI - handle PCI (INTx) and MSI infrastructure calls for PV, HVM and
->   * initial domain support. We also handle the DSDT _PRT callbacks for GSI's
->   * used in HVM and initial domain mode (PV does not parse ACPI, so it has
-> no
-> - * concept of GSIs). Under PV we hook under the pnbbios API for IRQs and
-> + * concept of GSIs). Under PV we hook under the pnpbios API for IRQs and
->   * 0xcf8 PCI configuration read/write.
->   *
->   *   Author: Ryan Wilson <hap9@epoch.ncsc.mil>
+STEC is happy to announce hosting of our EnhanceIO SSD caching software on github.
+We would like to invite kernel hackers to try it. We'll appreciate your valuable feedback to help us improve it to the standards of Linux kernel source code. We hope to eventually submit it for a possible inclusion in Linux kernel.
+
+Repository location -  https://github.com/stec-inc/EnhanceIO
+License - GPL
+Source - Derived from the source base of EnhanceIO product Current state - Alpha.
+Ongoing work - Code cleanup, testing, more documentation.
+
+Do try it. If you face problems, file bugs at github or write to me.
+
+First section of the README.txt file in this repository introduces EnhanceIO and is as follows
+
+----------------
+EnhanceIO driver is based on EnhanceIO SSD caching software product developed by STEC Inc. EnhanceIO was derived from Facebook's open source Flashcache project. EnhanceIO uses SSDs as cache devices for traditional rotating hard disk drives (referred to as source volumes throughout this document).
+
+EnhanceIO can work with any block device, be it an entire physical disk, an individual disk partition,  a RAIDed DAS device, a SAN volume, a device mapper volume or a software RAID (md) device.
+
+The source volume to SSD mapping is a set-associative mapping based on the source volume sector number with a default set size (aka associativity) of 512 blocks and a default block size of 4 KB.  Partial cache blocks are not used.
+The default value of 4 KB is chosen because it is the common I/O block size of most storage systems.  With these default values, each cache set is 2 MB (512 *
+4 KB).  Therefore, a 400 GB SSD will have a little less than 200,000 cache sets because a little space is used for storing the meta data on the SSD.
+
+EnhanceIO supports three caching modes: read-only, write-through, and write-back and three cache replacement policies: random, FIFO, and LRU.
+
+Read-only caching mode causes EnhanceIO to direct write IO requests only to HDD. Read IO requests are issued to HDD and the data read from HDD is stored on SSD. Subsequent Read requests for the same blocks are carried out from SSD, thus reducing their latency by a substantial amount. 
+
+In Write-through mode - reads are handled similar to Read-only mode.
+Write-through mode causes EnhanceIO to write application data to both HDD and SSD. Subsequent reads of the same data benefit because they can be served from SSD.
+
+Write-back improves write latency by writing application requested data only to SSD. This data, referred to as dirty data, is copied later to HDD asynchronously. Reads are handled similar to Read-only and Write-through modes.
+----------------
+
+Look forward to hearing from you.
+Thanks.
+--
+Amit Kale
+
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+
+
+
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
