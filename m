@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab3AKUeb (ORCPT <rfc822;w@1wt.eu>);
+	id S1755645Ab3AKUej (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:34:39 -0500
+Received: from mga09.intel.com ([134.134.136.24]:51252 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754780Ab3AKUeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jan 2013 15:34:31 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:49816 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab3AKUe3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:34:29 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Simon Horman <horms@verge.net.au>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
-Date: Fri, 11 Jan 2013 21:36:10 +0100
-Message-ID: <9702060.jEbHySsCv0@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.6.11-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com>
-References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com> <50EF27B4.60608@wwwdotorg.org> <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,453,1355126400"; 
+   d="scan'208";a="271089090"
+Date: Fri, 11 Jan 2013 22:37:59 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH 1/16] ACPI: Separate adding ACPI device objects from
+ probing ACPI drivers
+Message-ID: <20130111203759.GC13897@intel.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan>
+ <23002897.6xbQGtPaGy@vostro.rjw.lan>
+ <20130111200046.GB13897@intel.com>
+ <2859994.arbXorpfaz@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2859994.arbXorpfaz@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
-
-On Friday 11 January 2013 21:12:43 Linus Walleij wrote:
-> On Thu, Jan 10, 2013 at 9:42 PM, Stephen Warren wrote:
-> > On 12/12/2012 01:25 PM, Linus Walleij wrote:
-> >> From: Linus Walleij <linus.walleij@linaro.org>
-> >> 
-> >> This makes the device core auto-grab the pinctrl handle and set
-> >> the "default" (PINCTRL_STATE_DEFAULT) state for every device
-> >> that is present in the device model right before probe. This will
-> >> account for the lion's share of embedded silicon devcies.
-> > 
-> > There are quite a few problems with this patch, and they end up
-> > completely breaking at least Tegra in next-20130110.
+On Fri, Jan 11, 2013 at 09:31:43PM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: ACPI / scan: Fix check of device_attach() return value.
 > 
-> But I have not put this patch into linux-next.
-> 
-> I was still waiting for Greg to ACK it...
-> 
-> Apparently it was included in a pull request to the SH tree or something,
-> Simon can you remove these patches for now, this patch needs to
-> be elaborated on in the pinctrl tree first.
+> Since device_attach() returns 1 on success and 0 on failure,
+> the check against its return value in acpi_bus_device_attach()
+> should be reveresed.  Make it so.
 
-I've sent several patch series for the SH PFC (Pin Function Controller) to the 
-linux-sh mailing list. One of the series included pinctrl core patches for 
-easier testing, but I made it clear that they should *not* be pushed to 
-mainline through the SH tree.
+Not sure if it matters but it returns 0 if no device was bound to a driver
+and -ENODEV in case of error. If we only want to terminate in case of
+error, following might be better.
 
-Actually the whole PFC series have been found out today by Guennadi 
-Liakhovetski to be buggy. I will fix the problems and send a new version. In 
-the meantime the pinmux-pinctrl and pinmux-dt series should not be pushed to 
-mainline.
-
--- 
-Regards,
-
-Laurent Pinchart
-
+	} else if (device_attach(&device->dev) < 0) {
