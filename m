@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab3AKGMq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 01:12:46 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:16063 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab3AKGMp (ORCPT
+	id S1754375Ab3AKGNe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 01:13:34 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:44925 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab3AKGNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 01:12:45 -0500
-X-Spam-Score: -100.8
-Message-ID: <50EFAD90.5030000@asianux.com>
-Date: Fri, 11 Jan 2013 14:13:36 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 11 Jan 2013 01:13:33 -0500
+Date: Thu, 10 Jan 2013 22:09:59 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 1/2] Add mempressure cgroup
+Message-ID: <20130111060959.GA22981@lizard.gateway.2wire.net>
+References: <20130104082751.GA22227@lizard.gateway.2wire.net>
+ <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
+ <20130108084949.GD4714@blaptop>
+ <20130109221449.GA14880@lizard.fhda.edu>
+ <20130111051210.GC6183@blaptop>
+ <20130111053831.GA18053@lizard.gateway.2wire.net>
+ <20130111055614.GD6183@blaptop>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org, mchehab@redhat.com, cesarb@cesarb.net,
-        David Miller <davem@davemloft.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] MAINTAINER: sync Omar Ramirez Luna's mail to latest.
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130111055614.GD6183@blaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 11, 2013 at 02:56:15PM +0900, Minchan Kim wrote:
+[...]
+> > Ahh. You're talking about the shrinker interface. Yes, there is no way to
+> > tell if the freed memory will be actually "released" (and if not, then
+> > yes, we released it unnecessary).
+> 
+> I don't tell about actually "released" or not.
+> I assume application actually release pages but the pages would be another
+> zones, NOT targetted zone from kernel. In case of that, kernel could ask
+> continuously until target zone has enough free memory.
+[...]
+> > isolate task to only some nodes/zones, if we really care about precise
+> > accounting?). But I'm surely open for ideas. :)
+> 
+> My dumb idea is only notify to user when reclaim is triggered by
+> __GFP_HIGHMEM|__GFP_MOVABLE which is most gfp_t for application memory. :)
 
-  original mail is invalid, need use the new one.
+Ah, I see. Sure, that will help a lot. I'll try to incorporate this into
+the next iteration. But there are still unresolved accounting issues that
+I outlined, and I don't think that they are this easy to solve. :)
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- MAINTAINERS |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks!
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ae9f8b8..dcede8e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7553,7 +7553,7 @@ S:	Odd Fixes
- F:	drivers/staging/speakup/
- 
- STAGING - TI DSP BRIDGE DRIVERS
--M:	Omar Ramirez Luna <omar.ramirez@ti.com>
-+M:	Omar Ramirez Luna <omar.ramirez@copitl.com>
- S:	Odd Fixes
- F:	drivers/staging/tidspbridge/
- 
--- 
-1.7.10.4
-
--- 
-Chen Gang
-
-Asianux Corporation
+Anton
