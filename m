@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab3AKCiO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 21:38:14 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:47269 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab3AKCiM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 21:38:12 -0500
+	id S1754587Ab3AKCp1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 21:45:27 -0500
+Received: from mga11.intel.com ([192.55.52.93]:31865 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab3AKCp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 21:45:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,447,1355126400"; 
+   d="scan'208";a="275625131"
+Message-ID: <50EF7D07.6080006@intel.com>
+Date: Fri, 11 Jan 2013 10:46:31 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 10 Jan 2013 18:37:50 -0800
-X-Google-Sender-Auth: 5NhJSYgAESERK5VexDulQenS4ZQ
-Message-ID: <CAB=NE6Xd6ATWO_1zOcg97sXcnabKBHjrHFetbfGRbDL-x1gqxw@mail.gmail.com>
-Subject: rel-html: HTML5 release page for compat-drivers, maybe kernel.org and others
-To: Konstantin Ryabitsev <mricon@kernel.org>, backports@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Morten Rasmussen <Morten.Rasmussen@arm.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 05/22] sched: remove domain iterations in fork/exec/wake
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-6-git-send-email-alex.shi@intel.com> <20130109182102.GC2046@e103034-lin>
+In-Reply-To: <20130109182102.GC2046@e103034-lin>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last step from the compat-wireless --> compat-drivers name change
-was to produce a release page for it. I was asked to see if I could
-come up with something generic that perhaps could be used by other
-projects. I've created a Python release script called rel-html [0] to
-generate a simple HTML5 page based on the initializr project for a
-base HTML5 template [0]. It currently supports generating new shiny
-simple HTML5 pages for compat-drivers and kernel.org. Whether or not
-its used for other projects is obviously an option for each project to
-choose but hope its simple enough for others to embrace if they so
-wish.
+On 01/10/2013 02:21 AM, Morten Rasmussen wrote:
+>>  		new_cpu = find_idlest_cpu(group, p, cpu);
+>> > -
+>> > -		/* Now try balancing at a lower domain level of new_cpu */
+>> > -		cpu = new_cpu;
+>> > -		weight = sd->span_weight;
+>> > -		sd = NULL;
+>> > -		for_each_domain(cpu, tmp) {
+>> > -			if (weight <= tmp->span_weight)
+>> > -				break;
+>> > -			if (tmp->flags & sd_flag)
+>> > -				sd = tmp;
+>> > -		}
+>> > -		/* while loop will break here if sd == NULL */
+> I agree that this should be a major optimization. I just can't figure
+> out why the existing recursive search for an idle cpu switches to the
+> new cpu near the end and then starts a search for an idle cpu in the new
+> cpu's domain. Is this to handle some exotic sched domain configurations?
+> If so, they probably wouldn't work with your optimizations.
 
-It works by allowing a project to add a simple configuration file and
-a few hints on where to find releases.
+I did not find odd configuration that asking for old logical.
 
-Example for kernel.org:
+According to Documentation/scheduler/sched-domains.txt, Maybe never.
+"A domain's span MUST be a superset of it child's span (this restriction
+could be relaxed if the need arises), and a base domain for CPU i MUST
+span at least i."  etc. etc.
 
-https://raw.github.com/mcgrof/rel-html/master/rel-html.cfg
 
-Example for compat-drivers:
-
-https://raw.github.com/mcgrof/rel-html/master/projects/compat-drivers.cfg
-
-It currently relies on both the kernel.org and compat-drivers release
-model and only refers to releases if each release has respective
-ChangeLog and a signature file. Testing releases do not require
-ChangeLogs. Right now it does require manual configuration file
-updates if a new release is made but to figure out a way to make it
-autodetect the latest release is something I'd prefer address with the
-community.
-
-To generate a page and see what it spits out you can run and point
-your browser to the index.html file:
-
-# For kernel.org:
-mcgrof@frijol ~/devel/rel-html (git::master)$ ./rel-html.py  > html/index.html
-
-# For compat-drivers:
-mcgrof@frijol ~/devel/rel-html (git::master)$ ./rel-html.py -f
-projects/compat-drivers.cfg > html/index.html
-
-Konstantin, let me know if this works for a compat-driver release
-page. I also welcome feedback from others for considerations for other
-projects and of course I welcome patches.
-
-[0] https://github.com/mcgrof/rel-html
-[1] http://www.initializr.com/
-
-  Luis
+-- 
+Thanks Alex
