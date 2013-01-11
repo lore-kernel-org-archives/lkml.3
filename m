@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab3AKUn0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:43:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753326Ab3AKUnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:43:25 -0500
-Date: Sat, 12 Jan 2013 02:13:17 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com,
-        aquini@redhat.com, mst@redhat.com, agl@us.ibm.com
-Subject: Re: [RFC 2/2] virtio_balloon: add auto-ballooning support
-Message-ID: <20130111204317.GB11436@amit.redhat.com>
-References: <1355861850-2702-1-git-send-email-lcapitulino@redhat.com>
- <1355861850-2702-3-git-send-email-lcapitulino@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355861850-2702-3-git-send-email-lcapitulino@redhat.com>
+	id S1754408Ab3AKUnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:43:37 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32052 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754736Ab3AKUnf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 15:43:35 -0500
+X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=23BW25jA_k4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=e7Wcmqxzby8A:10 a=D19gQVrFAAAA:8 a=wmh7nHQ3qqaC0OkmsdwA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357937012.5141.39.camel@gandalf.local.home>
+Subject: Re: [PATCH -tip  0/3] Move kprobes files under the kprobes directory
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Date: Fri, 11 Jan 2013 15:43:32 -0500
+In-Reply-To: <20120928081509.3560.8860.stgit@ltc138.sdl.hitachi.co.jp>
+References: <20120928081509.3560.8860.stgit@ltc138.sdl.hitachi.co.jp>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 18 Dec 2012 [18:17:30], Luiz Capitulino wrote:
-> The auto-ballooning feature automatically performs balloon inflate or
-> deflate based on host and guest memory pressure. This can help to
-> avoid swapping or worse in both, host and guest.
+On Fri, 2012-09-28 at 17:15 +0900, Masami Hiramatsu wrote:
+> Hi,
 > 
-> Auto-ballooning has a host and a guest part. The host performs
-> automatic inflate by requesting the guest to inflate its balloon
-> when the host is facing memory pressure. The guest performs
-> automatic deflate when it's facing memory pressure itself. It's
-> expected that auto-inflate and auto-deflate will balance each
-> other over time.
+> Here are a series of patches to split ftrace-based kprobe part
+> from arch/x86/kernel/kprobes.c and to move kprobes related
+> files under arch/x86/kernel/kprobes/, according to Ingo's
+> suggestion.
+> https://lkml.org/lkml/2012/9/20/122
 > 
-> This commit implements the guest side of auto-ballooning.
+> Thank you,
+
+Hi Masami,
+
+This seems to have slipped through the cracks. Is this patch series
+still valid?
+
+-- Steve
+
 > 
-> To perform automatic deflate, the virtio_balloon driver registers
-> a shrinker callback, which will try to deflate the guest's balloon
-> on guest memory pressure just like if it were a cache. The shrinker
-> callback is only registered if the host supports the
-> VIRTIO_BALLOON_F_AUTO_BALLOON feature bit.
-
-I'm wondering if guest should auto-deflate even when the AUTO_BALLOON
-feature isn't supported by the host: if a guest is under pressure,
-there's no way for it to tell the host and wait for the host to
-deflate the balloon, so it may be beneficial to just go ahead and
-deflate the balloon for all hosts.
-
-Similarly, on the host side, management can configure a VM to either
-enable or disable auto-balloon (the auto-inflate part).  So even the
-host can do away with the feature advertisement and negotiation.
-
-Is there some use-case I'm missing where doing these actions after
-feature negotiation is beneficial?
-
-> FIXMEs
-> 
->  o the guest kernel seems to spin when the host is performing a long
->    auto-inflate
-
-Is this introduced by the current patches?  I'd assume it happens even
-without it -- these patches just introduce some heuristics, the
-mechanism has stayed the same.
-
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
 > ---
->  drivers/virtio/virtio_balloon.c     | 54 +++++++++++++++++++++++++++++++++++++
->  include/uapi/linux/virtio_balloon.h |  1 +
->  2 files changed, 55 insertions(+)
+> 
+> Masami Hiramatsu (3):
+>       ftrace: Move ARCH_SUPPORTS_FTRACE_SAVE_REGS in Kconfig
+>       kprobes/x86: Move ftrace-based kprobe code into kprobes-ftrace.c
+>       kprobes/x86: Move kprobes stuff under arch/x86/kernel/kprobes/
+> 
+> 
+>  arch/Kconfig                     |   12 
+>  arch/x86/Kconfig                 |    2 
+>  arch/x86/include/asm/ftrace.h    |    1 
+>  arch/x86/kernel/Makefile         |    3 
+>  arch/x86/kernel/kprobes-common.h |  102 ---
+>  arch/x86/kernel/kprobes-opt.c    |  512 -----------------
+>  arch/x86/kernel/kprobes.c        | 1130 --------------------------------------
+>  arch/x86/kernel/kprobes/Makefile |    7 
+>  arch/x86/kernel/kprobes/common.h |  113 ++++
+>  arch/x86/kernel/kprobes/core.c   | 1064 ++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/kprobes/ftrace.c |   93 +++
+>  arch/x86/kernel/kprobes/opt.c    |  512 +++++++++++++++++
+>  include/linux/ftrace.h           |    6 
+>  include/linux/kprobes.h          |   12 
+>  kernel/kprobes.c                 |    8 
+>  kernel/trace/Kconfig             |    8 
+>  kernel/trace/ftrace.c            |    6 
+>  kernel/trace/trace_selftest.c    |    2 
+>  18 files changed, 1824 insertions(+), 1769 deletions(-)
+>  delete mode 100644 arch/x86/kernel/kprobes-common.h
+>  delete mode 100644 arch/x86/kernel/kprobes-opt.c
+>  delete mode 100644 arch/x86/kernel/kprobes.c
+>  create mode 100644 arch/x86/kernel/kprobes/Makefile
+>  create mode 100644 arch/x86/kernel/kprobes/common.h
+>  create mode 100644 arch/x86/kernel/kprobes/core.c
+>  create mode 100644 arch/x86/kernel/kprobes/ftrace.c
+>  create mode 100644 arch/x86/kernel/kprobes/opt.c
+> 
 
-Patch looks good, just one thing:
 
-> +	/*
-> +	 * If the current balloon size is greater than the number of
-> +	 * pages being reclaimed by the kernel, deflate only the needed
-> +	 * amount. Otherwise deflate everything we have.
-> +	 */
-> +	if (nr_pages > sc->nr_to_scan) {
-> +		new_target = nr_pages - sc->nr_to_scan;
-> +	} else {
-> +		new_target = 0;
-> +	}
-
-This looks better:
-
-	new_target = 0;
-	if (nr_pages > sc->nr_to_scan) {
-		new_target = nr_pages - sc->nr_to_scan;
-	}
-
-
-Thanks,
-		Amit
