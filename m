@@ -1,52 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab3AKRSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:18:13 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:50373 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab3AKRSL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:18:11 -0500
-X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jan 2013 12:18:10 EST
+	id S1754996Ab3AKRUT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:20:19 -0500
+Received: from fieldses.org ([174.143.236.118]:49701 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753938Ab3AKRUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 12:20:17 -0500
+Date: Fri, 11 Jan 2013 12:20:15 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [Devel] [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
+Message-ID: <20130111172015.GG17909@fieldses.org>
+References: <20121206153447.30693.54128.stgit@localhost.localdomain>
+ <20121210202842.GB17350@fieldses.org>
+ <50C73C60.8060405@parallels.com>
+ <50C73F58.1080005@parallels.com>
+ <20121211145621.GA3336@fieldses.org>
+ <50C74C14.8030807@parallels.com>
+ <20121211152036.GB3336@fieldses.org>
+ <20121211153527.GC3336@fieldses.org>
+ <50F0283A.6040509@parallels.com>
+ <20130111170312.GF17909@fieldses.org>
 MIME-Version: 1.0
-In-Reply-To: <1357923834-31641-1-git-send-email-dianders@chromium.org>
-References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
-	<1357923834-31641-1-git-send-email-dianders@chromium.org>
-Date: Fri, 11 Jan 2013 17:12:45 +0000
-Message-ID: <CAFbHwiTqpmiStLuLWn=aGQmR9yL+JOtYt=EkSAPf=PnTi0W1xw@mail.gmail.com>
-Subject: Re: [PATCH v4 1/5] mmc: dw_mmc: Add "disable-wp" device tree property
-From: Will Newton <will.newton@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: linux-mmc@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
-        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130111170312.GF17909@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 5:03 PM, Doug Anderson <dianders@chromium.org> wrote:
-> The "disable-wp" property is used to specify that a given SD card slot
-> doesn't have a concept of write protect.  This eliminates the need for
-> special case code for SD slots that should never be write protected
-> (like a micro SD slot or a dev board).
->
-> The dw_mmc driver is special in needing to specify "disable-wp"
-> because the lack of a "wp-gpios" property means to use the special
-> purpose write protect line.  On some other mmc devices the lack of
-> "wp-gpios" means that write protect should be disabled.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+On Fri, Jan 11, 2013 at 12:03:12PM -0500, J. Bruce Fields wrote:
+> On Fri, Jan 11, 2013 at 06:56:58PM +0400, Stanislav Kinsbursky wrote:
+> > 11.12.2012 19:35, J. Bruce Fields пишет:
+> > >On Tue, Dec 11, 2012 at 10:20:36AM -0500, J. Bruce Fields wrote:
+> > >>On Tue, Dec 11, 2012 at 07:07:00PM +0400, Stanislav Kinsbursky wrote:
+> > >>>I don't really understand, how  mountd's root can be wrong. I.e.
+> > >>>its' always right as I see it. NFSd kthreads have to swap/use
+> > >>>relative path/whatever to communicate with proper mountd.
+> > >>>Or I'm missing something?
+> > >>
+> > >>Ugh, I see the problem: I thought svc_export_request was called at the
+> > >>time mountd does the read, but instead its done at the time nfsd does
+> > >>the upcall.
+> > >>
+> > >>I suspect that's wrong, and we really want this done in the context of
+> > >>the mountd process when it does the read call.  If d_path is called
+> > >>there then we have no problem.
+> > >
+> > >Right, so I'd be happier if we could modify sunrpc_cache_pipe_upcall to
+> > >skip calling cache_request and instead delay that until cache_read().  I
+> > >think that should be possible.
+> > >
+> > 
+> > So, Bruce, what we going to do (or what you want me to do) with the rest of NFSd changes?
+> > I.e. how I should solve this d_path() problem?
+> > I.e. I don't understand what did you mean by "I'd be happier if we could modify sunrpc_cache_pipe_upcall to
+> > skip calling cache_request and instead delay that until cache_read()".
+> > Could you give me a hint?
+> 
+> Definitely.  So normally the way these upcalls happen are:
+> 
+> 	1. the kernel does a cache lookup, finds no matching item, and
+> 	   calls sunrpc_cache_pipe_upcall().
+> 	2. sunrpc_cache_pipe_upcall() formats the upcall: it allocates a
+> 	   struct cache_request crq and fills crq->buf with the upcall
+> 	   data by calling the cache's ->cache_request() method.
+> 	3. Then rpc.mountd realizes there's data available in
+> 	   /proc/net/rpc/nfsd.fh/content, so it does a read on that file.
+> 	4. cache_read copies the formatted upcall from crq->buf to
+> 	   to userspace.
+> 
+> So all I'm suggesting is that instead of calling ->cache_request() at
+> step 2, we do it at step 4.
+> 
+> Then cache_request will be called from rpc.mountd's read.  So we'll know
+> which container rpc.mountd is in.
+> 
+> Does that make sense?
 
-This looks ok to me too.
+The following is untested, ugly, and almost certainly insufficient and
+wrong, but maybe it's a starting point:
 
-Acked-by: Will Newton <will.newton@imgtec.com>
+--b.
+
+diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+index 9f84703..f15e4c1 100644
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -744,6 +744,7 @@ struct cache_request {
+ 	char			* buf;
+ 	int			len;
+ 	int			readers;
++	void (*cache_request)(struct cache_detail *, struct cache_head *, char **, int *);
+ };
+ struct cache_reader {
+ 	struct cache_queue	q;
+@@ -785,10 +786,19 @@ static ssize_t cache_read(struct file *filp, char __user *buf, size_t count,
+ 	spin_unlock(&queue_lock);
+ 
+ 	if (rp->offset == 0 && !test_bit(CACHE_PENDING, &rq->item->flags)) {
++		char *bp;
++		int len = PAGE_SIZE;
++
+ 		err = -EAGAIN;
+ 		spin_lock(&queue_lock);
+ 		list_move(&rp->q.list, &rq->q.list);
+ 		spin_unlock(&queue_lock);
++
++		bp = rq->buf;
++		rq->cache_request(cd, rq->item, &bp, &len);
++		if (rq->len < 0)
++			goto out;
++		rq->len = PAGE_SIZE - len;
+ 	} else {
+ 		if (rp->offset + count > rq->len)
+ 			count = rq->len - rp->offset;
+@@ -1149,8 +1159,6 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h,
+ 
+ 	char *buf;
+ 	struct cache_request *crq;
+-	char *bp;
+-	int len;
+ 
+ 	if (!cache_listeners_exist(detail)) {
+ 		warn_no_listener(detail);
+@@ -1167,19 +1175,10 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h,
+ 		return -EAGAIN;
+ 	}
+ 
+-	bp = buf; len = PAGE_SIZE;
+-
+-	cache_request(detail, h, &bp, &len);
+-
+-	if (len < 0) {
+-		kfree(buf);
+-		kfree(crq);
+-		return -EAGAIN;
+-	}
++	crq->cache_request = cache_request;
+ 	crq->q.reader = 0;
+ 	crq->item = cache_get(h);
+ 	crq->buf = buf;
+-	crq->len = PAGE_SIZE - len;
+ 	crq->readers = 0;
+ 	spin_lock(&queue_lock);
+ 	list_add_tail(&crq->q.list, &detail->queue);
