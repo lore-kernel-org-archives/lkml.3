@@ -1,115 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab3AKF4T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 00:56:19 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57865 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754960Ab3AKF4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 00:56:18 -0500
-X-AuditID: 9c930197-b7cefae0000002d7-ad-50efa97f1d62
-Date: Fri, 11 Jan 2013 14:56:15 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-Message-ID: <20130111055614.GD6183@blaptop>
-References: <20130104082751.GA22227@lizard.gateway.2wire.net>
- <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
- <20130108084949.GD4714@blaptop>
- <20130109221449.GA14880@lizard.fhda.edu>
- <20130111051210.GC6183@blaptop>
- <20130111053831.GA18053@lizard.gateway.2wire.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130111053831.GA18053@lizard.gateway.2wire.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1755389Ab3AKF4X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 00:56:23 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:11573 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755345Ab3AKF4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 00:56:20 -0500
+X-IronPort-AV: E=Sophos;i="4.84,450,1355068800"; 
+   d="scan'208";a="6564466"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>, Eric Dumazet <erdnetdev@gmail.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH V4 2/2] virtio-net: reset virtqueue affinity when doing cpu hotplug
+Date: Fri, 11 Jan 2013 13:56:33 +0800
+Message-Id: <1357883793-15199-2-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1357883793-15199-1-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1357883793-15199-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/11 13:55:40,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/11 13:55:41,
+	Serialize complete at 2013/01/11 13:55:41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 09:38:31PM -0800, Anton Vorontsov wrote:
-> On Fri, Jan 11, 2013 at 02:12:10PM +0900, Minchan Kim wrote:
-> > On Wed, Jan 09, 2013 at 02:14:49PM -0800, Anton Vorontsov wrote:
-> > > On Tue, Jan 08, 2013 at 05:49:49PM +0900, Minchan Kim wrote:
-> > > [...]
-> > > > Sorry still I didn't look at your implementation about cgroup part.
-> > > > but I had a question since long time ago.
-> > > > 
-> > > > How can we can make sure false positive about zone and NUMA?
-> > > > I mean DMA zone is short in system so VM notify to user and user
-> > > > free all memory of NORMAL zone because he can't know what pages live
-> > > > in any zones. NUMA is ditto.
-> > > 
-> > > Um, we count scans irrespective of zones or nodes, i.e. we sum all 'number
-> > > of scanned' and 'number of reclaimed' stats. So, it should not be a
-> > > problem, as I see it.
-> > 
-> > Why is it no problem? For example, let's think of normal zone reclaim.
-> > Page allocator try to allocate pages from NORMAL zone to DMA zone fallback
-> > and your logic could trigger mpc_shrinker. So process A, B, C start to
-> > release thier freeable memory but unfortunately, freed pages are all
-> > HIGHMEM pages. Why should processes release memory unnecessary?
-> > Is there any method for proecess to detect such situation in user level
-> > before releasing the freeable memory?
-> 
-> Ahh. You're talking about the shrinker interface. Yes, there is no way to
-> tell if the freed memory will be actually "released" (and if not, then
-> yes, we released it unnecessary).
+Add a cpu notifier to virtio-net, so that we can reset the
+virtqueue affinity if the cpu hotplug happens. It improve
+the performance through enabling or disabling the virtqueue
+affinity after doing cpu hotplug.
 
-I don't tell about actually "released" or not.
-I assume application actually release pages but the pages would be another
-zones, NOT targetted zone from kernel. In case of that, kernel could ask
-continuously until target zone has enough free memory.
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: Eric Dumazet <erdnetdev@gmail.com>
+Cc: virtualization@lists.linux-foundation.org
+Cc: netdev@vger.kernel.org
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ drivers/net/virtio_net.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-> 
-> But that's not only problem with NUMA or zones. Shared pages are in the
-> same boat, right? An app might free some memory, but as another process
-> might be still using it, we don't know whether our action helps or not.
-
-It's not what I meant.
-
-> 
-> The situation is a little bit easier for the in-kernel shrinkers, since we
-> have more control over pages, but still, even for the kernel shrinkers, we
-> don't provide all the information (only gfpmask, which, I just looked into
-> the random user, drivers/gpu/drm/ttm, sometimes is not used).
-> 
-> So, answering your question: no, I don't know how to solve it for the
-> userland. But I also don't think it's a big concern (especially if we make
-> it cgroup-aware -- this would be cgroup's worry then, i.e. we might
-> isolate task to only some nodes/zones, if we really care about precise
-> accounting?). But I'm surely open for ideas. :)
-
-My dumb idea is only notify to user when reclaim is triggered by
-__GFP_HIGHMEM|__GFP_MOVABLE which is most gfp_t for application memory. :)
-
-
-> 
-> Thanks!
-> 
-> Anton
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index ca17a58..e0b1f25 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -26,6 +26,7 @@
+ #include <linux/scatterlist.h>
+ #include <linux/if_vlan.h>
+ #include <linux/slab.h>
++#include <linux/cpu.h>
+ 
+ static int napi_weight = 128;
+ module_param(napi_weight, int, 0444);
+@@ -126,6 +127,9 @@ struct virtnet_info {
+ 
+ 	/* Per-cpu variable to show the mapping from CPU to virtqueue */
+ 	int __percpu *vq_index;
++
++	/* CPU hot plug notifier */
++	struct notifier_block nb;
+ };
+ 
+ struct skb_vnet_hdr {
+@@ -1058,6 +1062,23 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+ 	}
+ }
+ 
++static int virtnet_cpu_callback(struct notifier_block *nfb,
++			        unsigned long action, void *hcpu)
++{
++	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
++	switch(action) {
++	case CPU_ONLINE:
++	case CPU_ONLINE_FROZEN:
++	case CPU_DEAD:
++	case CPU_DEAD_FROZEN:
++		virtnet_set_affinity(vi, true);
++		break;
++	default:
++		break;
++	}
++	return NOTIFY_OK;
++}
++
+ static void virtnet_get_ringparam(struct net_device *dev,
+ 				struct ethtool_ringparam *ring)
+ {
+@@ -1527,6 +1548,13 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 		}
+ 	}
+ 
++	vi->nb.notifier_call = &virtnet_cpu_callback;
++	err = register_hotcpu_notifier(&vi->nb);
++	if (err) {
++		pr_debug("virtio_net: registering cpu notifier failed\n");
++		goto free_recv_bufs;
++	}
++
+ 	/* Assume link up if device can't report link status,
+ 	   otherwise get link status from config. */
+ 	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_STATUS)) {
+@@ -1573,6 +1601,8 @@ static void virtnet_remove(struct virtio_device *vdev)
+ {
+ 	struct virtnet_info *vi = vdev->priv;
+ 
++	unregister_hotcpu_notifier(&vi->nb);
++
+ 	/* Prevent config work handler from accessing the device. */
+ 	mutex_lock(&vi->config_lock);
+ 	vi->config_enable = false;
 -- 
-Kind regards,
-Minchan Kim
+1.8.1
+
