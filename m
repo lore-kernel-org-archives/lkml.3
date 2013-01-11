@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab3AKJ3y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 04:29:54 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:49495 "EHLO bear.ext.ti.com"
+	id S1754258Ab3AKJax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 04:30:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52399 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753330Ab3AKJ2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 04:28:08 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/4] Input: twl4030-vibra: Convert to use devm_* in probe
-Date: Fri, 11 Jan 2013 10:28:00 +0100
-Message-ID: <1357896483-20764-2-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1357896483-20764-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1357896483-20764-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1753330Ab3AKJav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 04:30:51 -0500
+Date: Fri, 11 Jan 2013 09:30:49 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
+Message-ID: <20130111093049.GL13304@suse.de>
+References: <20130110194212.GJ13304@suse.de>
+ <20130111005105.GA15023@dcvr.yhbt.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130111005105.GA15023@dcvr.yhbt.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup to use devm_* when it is possible at probe time.
+On Fri, Jan 11, 2013 at 12:51:05AM +0000, Eric Wong wrote:
+> Mel Gorman <mgorman@suse.de> wrote:
+> > mm: compaction: Partially revert capture of suitable high-order page
+> 
+> <snip>
+>  
+> > Reported-by: Eric Wong <normalperson@yhbt.net>
+> > Cc: stable@vger.kernel.org
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> 
+> Thanks, my original use case and test works great after several hours!
+> 
+> Tested-by: Eric Wong <normalperson@yhbt.net>
+> 
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/input/misc/twl4030-vibra.c | 26 ++++----------------------
- 1 file changed, 4 insertions(+), 22 deletions(-)
+Thanks very much Eric. I've resent the patch to Andrew so it should make
+its way to mainline. It'll fail to apply to 3.7-stable but I should get
+a notification from Greg when that happens and fix it up.
 
-diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
-index 78eb6b3..e2e2a26 100644
---- a/drivers/input/misc/twl4030-vibra.c
-+++ b/drivers/input/misc/twl4030-vibra.c
-@@ -219,7 +219,7 @@ static int twl4030_vibra_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
- 	if (!info)
- 		return -ENOMEM;
- 
-@@ -227,11 +227,10 @@ static int twl4030_vibra_probe(struct platform_device *pdev)
- 	info->coexist = twl4030_vibra_check_coexist(pdata, twl4030_core_node);
- 	INIT_WORK(&info->play_work, vibra_play_work);
- 
--	info->input_dev = input_allocate_device();
-+	info->input_dev = devm_input_allocate_device(&pdev->dev);
- 	if (info->input_dev == NULL) {
- 		dev_err(&pdev->dev, "couldn't allocate input device\n");
--		ret = -ENOMEM;
--		goto err_kzalloc;
-+		return -ENOMEM;
- 	}
- 
- 	input_set_drvdata(info->input_dev, info);
-@@ -246,7 +245,7 @@ static int twl4030_vibra_probe(struct platform_device *pdev)
- 	ret = input_ff_create_memless(info->input_dev, NULL, vibra_play);
- 	if (ret < 0) {
- 		dev_dbg(&pdev->dev, "couldn't register vibrator to FF\n");
--		goto err_ialloc;
-+		return ret;
- 	}
- 
- 	ret = input_register_device(info->input_dev);
-@@ -262,28 +261,11 @@ static int twl4030_vibra_probe(struct platform_device *pdev)
- 
- err_iff:
- 	input_ff_destroy(info->input_dev);
--err_ialloc:
--	input_free_device(info->input_dev);
--err_kzalloc:
--	kfree(info);
- 	return ret;
- }
- 
--static int twl4030_vibra_remove(struct platform_device *pdev)
--{
--	struct vibra_info *info = platform_get_drvdata(pdev);
--
--	/* this also free ff-memless and calls close if needed */
--	input_unregister_device(info->input_dev);
--	kfree(info);
--	platform_set_drvdata(pdev, NULL);
--
--	return 0;
--}
--
- static struct platform_driver twl4030_vibra_driver = {
- 	.probe		= twl4030_vibra_probe,
--	.remove		= twl4030_vibra_remove,
- 	.driver		= {
- 		.name	= "twl4030-vibra",
- 		.owner	= THIS_MODULE,
+> Unfortunately, I also hit a new bug in 3.8 (not in 3.7.x).  based on Eric
+> Dumazet's observations, sk_stream_wait_memory may be to blame.
+> Fortunately this is easier to reproduce (I've cc-ed participants
+> on this thread already): <20130111004915.GA15415@dcvr.yhbt.net>
+
+It looks like the relevant fix for this has already been written by Eric
+Dumazet and picked up by David Miller.
+
 -- 
-1.8.1
-
+Mel Gorman
+SUSE Labs
