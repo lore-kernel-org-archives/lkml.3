@@ -1,111 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3AKHw7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 02:52:59 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49507 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350Ab3AKHw6 (ORCPT
+	id S1755136Ab3AKHyu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 02:54:50 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45082 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754626Ab3AKHys convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 02:52:58 -0500
-X-AuditID: 9c930197-b7cefae0000002d7-8b-50efc4d58d64
-Date: Fri, 11 Jan 2013 16:52:54 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Paul Hargrove <phhargrove@lbl.gov>
-Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] slub: assign refcount for kmalloc_caches
-Message-ID: <20130111075253.GB2346@lge.com>
-References: <CAAvDA15U=KCOujRYA5k3YkvC9Z=E6fcG5hopPUJNgULYj_MAJw@mail.gmail.com>
- <1356449082-3016-1-git-send-email-js1304@gmail.com>
- <CAAmzW4Nz6if==JjxLQGYwwQwKPDXfUbeioyPHWZQQFNu=xXUeQ@mail.gmail.com>
- <CAAvDA17eH0A_pr9siX7PTipe=Jd7WFZxR7mkUi6K0_djkH=FPA@mail.gmail.com>
+	Fri, 11 Jan 2013 02:54:48 -0500
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Porter, Matt" <mporter@ti.com>
+CC: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>
+Subject: RE: [PATCH v4 05/14] dmaengine: edma: Add TI EDMA device tree
+ binding
+Thread-Topic: [PATCH v4 05/14] dmaengine: edma: Add TI EDMA device tree
+ binding
+Thread-Index: AQHN778N3Q8yXUBs106MMySLg/IG4JhDwfDw
+Date: Fri, 11 Jan 2013 07:54:05 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EB3EBBD@DBDE01.ent.ti.com>
+References: <1357883330-5364-1-git-send-email-mporter@ti.com>
+ <1357883330-5364-6-git-send-email-mporter@ti.com>
+In-Reply-To: <1357883330-5364-6-git-send-email-mporter@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAvDA17eH0A_pr9siX7PTipe=Jd7WFZxR7mkUi6K0_djkH=FPA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 08:47:39PM -0800, Paul Hargrove wrote:
-> I just had a look at patch-3.7.2-rc1, and this change doesn't appear to
-> have made it in yet.
-> Am I missing something?
+On Fri, Jan 11, 2013 at 11:18:41, Porter, Matt wrote:
+> The binding definition is based on the generic DMA controller
+> binding.
 > 
-> -Paul
-
-I try to check it.
-Ccing to Greg.
-
-Hello, Pekka and Greg.
-
-v3.8-rcX has already fixed by another stuff, but it is not simple change.
-So I made a new patch and sent it.
-
-How this kind of patch (only for stable v3.7) go into stable tree?
-through Pekka's slab tree? or send it to Greg, directly?
-
-I don't know how to submit this kind of patch to stable tree exactly.
-Could anyone help me?
-
-Thanks.
-
-> On Tue, Dec 25, 2012 at 7:30 AM, JoonSoo Kim <js1304@gmail.com> wrote:
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  Documentation/devicetree/bindings/dma/ti-edma.txt |   51 +++++++++++++++++++++
+>  1 file changed, 51 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
 > 
-> > 2012/12/26 Joonsoo Kim <js1304@gmail.com>:
-> > > commit cce89f4f6911286500cf7be0363f46c9b0a12ce0('Move kmem_cache
-> > > refcounting to common code') moves some refcount manipulation code to
-> > > common code. Unfortunately, it also removed refcount assignment for
-> > > kmalloc_caches. So, kmalloc_caches's refcount is initially 0.
-> > > This makes errornous situation.
-> > >
-> > > Paul Hargrove report that when he create a 8-byte kmem_cache and
-> > > destory it, he encounter below message.
-> > > 'Objects remaining in kmalloc-8 on kmem_cache_close()'
-> > >
-> > > 8-byte kmem_cache merge with 8-byte kmalloc cache and refcount is
-> > > increased by one. So, resulting refcount is 1. When destory it, it hit
-> > > refcount = 0, then kmem_cache_close() is executed and error message is
-> > > printed.
-> > >
-> > > This patch assign initial refcount 1 to kmalloc_caches, so fix this
-> > > errornous situtation.
-> > >
-> > > Cc: <stable@vger.kernel.org> # v3.7
-> > > Cc: Christoph Lameter <cl@linux.com>
-> > > Reported-by: Paul Hargrove <phhargrove@lbl.gov>
-> > > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> > >
-> > > diff --git a/mm/slub.c b/mm/slub.c
-> > > index a0d6984..321afab 100644
-> > > --- a/mm/slub.c
-> > > +++ b/mm/slub.c
-> > > @@ -3279,6 +3279,7 @@ static struct kmem_cache *__init
-> > create_kmalloc_cache(const char *name,
-> > >         if (kmem_cache_open(s, flags))
-> > >                 goto panic;
-> > >
-> > > +       s->refcount = 1;
-> > >         list_add(&s->list, &slab_caches);
-> > >         return s;
-> > >
-> > > --
-> > > 1.7.9.5
-> > >
-> >
-> > I missed some explanation.
-> > In v3.8-rc1, this problem is already solved.
-> > See create_kmalloc_cache() in mm/slab_common.c.
-> > So this patch is just for v3.7 stable.
-> >
-> 
-> 
-> 
+> diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+> new file mode 100644
+> index 0000000..3344345
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+> @@ -0,0 +1,51 @@
+> +TI EDMA
+> +
+> +Required properties:
+> +- compatible : "ti,edma3"
+> +- ti,hwmods: Name of the hwmods associated to the EDMA
+> +- ti,edma-regions: Number of regions
+> +- ti,edma-slots: Number of slots
+> +- ti,edma-queue-tc-map: List of transfer control to queue mappings
+> +- ti,edma-queue-priority-map: List of queue priority mappings
+> +- ti,edma-default-queue: Default queue value
+> +
+> +Optional properties:
+> +- ti,edma-reserved-channels: List of reserved channel regions
+> +- ti,edma-reserved-slots: List of reserved slot regions
+> +- ti,edma-xbar-event-map: Crossbar event to channel map
+> +
+> +Example:
+> +
+> +edma: edma@49000000 {
+> +	#address-cells = <1>;
+> +	#size-cells = <0>;
+
+address-cells & size-cells are only required when current node is a parent 
+node & it has sibling/child nodes (that too if the child node uses "reg" 
+property).
+
+> +	reg = <0x49000000 0x10000>;
+> +	interrupt-parent = <&intc>;
+> +	interrupts = <12 13 14>;
+> +	compatible = "ti,edma3";
+> +	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
+> +	#dma-cells = <1>;
+> +	dma-channels = <64>;
+> +	ti,edma-regions = <4>;
+> +	ti,edma-slots = <256>;
+> +	ti,edma-reserved-channels = <0  2
+> +				     14 2
+> +				     26 6
+> +				     48 4
+> +				     56 8>;
+> +	ti,edma-reserved-slots = <0  2
+> +				  14 2
+> +				  26 6
+> +				  48 4
+> +				  56 8
+> +				  64 127>;
+> +	ti,edma-queue-tc-map = <0 0
+> +				1 1
+> +				2 2>;
+> +	ti,edma-queue-priority-map = <0 0
+> +				      1 1
+> +				      2 2>;
+> +	ti,edma-default-queue = <0>;
+> +	ti,edma-xbar-event-map = <1 12
+> +				  2 13>;
+> +};
 > -- 
-> Paul H. Hargrove                          PHHargrove@lbl.gov
-> Future Technologies Group
-> Computer and Data Sciences Department     Tel: +1-510-495-2352
-> Lawrence Berkeley National Laboratory     Fax: +1-510-486-6900
+> 1.7.9.5
+> 
+> _______________________________________________
+> Davinci-linux-open-source mailing list
+> Davinci-linux-open-source@linux.davincidsp.com
+> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> 
+
+
+Regards, 
+Gururaja
