@@ -1,106 +1,457 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab3AKTjz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 14:39:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48039 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753487Ab3AKTjw (ORCPT
+	id S1755466Ab3AKTkG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 14:40:06 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:16220 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253Ab3AKTjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 14:39:52 -0500
-Date: Fri, 11 Jan 2013 19:39:49 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, voice.shen@atmel.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-sound@vger.kernel.org
-Subject: Re: [PATCH 0/2 v2] at91/ssc: fixes on ASoC tree for 3.8
-Message-ID: <20130111193948.GA8677@opensource.wolfsonmicro.com>
-References: <cover.1357912706.git.nicolas.ferre@atmel.com>
- <CAOesGMhhSkrvP7X=y8qmdMKKXZ694+1+ZXY3y6HK1E85qaN5sQ@mail.gmail.com>
+	Fri, 11 Jan 2013 14:39:55 -0500
+X-IronPort-AV: E=Sophos;i="4.84,453,1355126400"; 
+   d="scan'208";a="19539760"
+Message-ID: <c86744b5cf55078902a2538d63a0b996.squirrel@www.codeaurora.org>
+In-Reply-To: <CAPDyKFo4LVUSLY9=L3qG9caZuhrmie8WdD0vcyQi88L=HAbXjg@mail.gmail.com>
+References: <1356357068-31807-2-git-send-email-merez@codeaurora.org>
+    <CAPDyKFpB0FLgQEBuDuHV3JR7tcc2AWeKe8kj5_hTudCbkTZEXQ@mail.gmail.com>
+    <3e4b6ce20e828e730dd0c0e291eb82d0.squirrel@www.codeaurora.org>
+    <CAPDyKFo4LVUSLY9=L3qG9caZuhrmie8WdD0vcyQi88L=HAbXjg@mail.gmail.com>
+Date: Fri, 11 Jan 2013 11:39:36 -0800
+Subject: Re: [PATCH v4 1/2] mmc: core: Add support for idle time BKOPS
+From: merez@codeaurora.org
+To: "Ulf Hansson" <ulf.hansson@linaro.org>
+Cc: merez@codeaurora.org, linux-mmc@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        "open list" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
-Content-Disposition: inline
-In-Reply-To: <CAOesGMhhSkrvP7X=y8qmdMKKXZ694+1+ZXY3y6HK1E85qaN5sQ@mail.gmail.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks, Ulf. Your help is appreciated.
 
---6c2NcOVqGQ03X4Wi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 10 January 2013 10:22,  <merez@codeaurora.org> wrote:
+>> Hi Ulf,
+>>
+>> See below.
+>>
+>> Thanks,
+>> Maya
+>>> Hi Maya,
+>>>
+>>> On 24 December 2012 14:51, Maya Erez <merez@codeaurora.org> wrote:
+>>>> Devices have various maintenance operations need to perform
+>>>> internally.
+>>>> In order to reduce latencies during time critical operations like read
+>>>> and write, it is better to execute maintenance operations in other
+>>>> times - when the host is not being serviced. Such operations are
+>>>> called
+>>>> Background operations (BKOPS).
+>>>> The device notifies the status of the BKOPS need by updating
+>>>> BKOPS_STATUS
+>>>> (EXT_CSD byte [246]).
+>>>>
+>>>> According to the standard a host that supports BKOPS shall check the
+>>>> status periodically and start background operations as needed, so that
+>>>> the device has enough time for its maintenance operations.
+>>>>
+>>>> This patch adds support for this periodic check of the BKOPS status.
+>>>> Since foreground operations are of higher priority than background
+>>>> operations the host will check the need for BKOPS when it is idle,
+>>>> and in case of an incoming request the BKOPS operation will be
+>>>> interrupted.
+>>>>
+>>>> When the mmcqd thread is idle, a delayed work is created to check the
+>>>> need for BKOPS. The time to start the delayed work can be set by the
+>>>> host
+>>>> controller. If this time is not set, a default time is used.
+>>>
+>>> I believe I have asked this question before; Have you considered to
+>>> use runtime PM autosuspend feature instead of adding a delayed work to
+>>> handle idle BKOPS?
+>>> Similar how sdio is doing mmc_power_save|restore, but for sd/mmc we
+>>> handle the BKOPS instead. My feeling is that it could simplify this
+>>> patch quite significantly.
+>>>
+>>> It would be interesting to hear about your view of this idea.
+>>
+>> Sorry for not responding to this idea earlier.
+>> As I am not familiar enough with runtime suspend it's hard for me to
+>> specify if this can work or not. Can you please point me to the function
+>> which handles the autosuspend that you think could be a good candidate
+>> for
+>> doing the BKOPS check.
+>> Lately we encountered many issues regarding BKOPS and had to change the
+>> implementation. I will upload a new patch soon (still with the delayed
+>> work usage) and we can continue the discussion on the new patch.
+>>
+>
+> I will take the liberty to put together a kind of a skeleton patch for
+> how we could make use of runtime PM for this kind of features that is
+> supposed to be executed in the background. You can then base your
+> patches on top of that, I think that could be a way forward.
+>
+> In the meanwhile I will continue to follow up on your Idle BKOPS patches.
+>
+>>>
+>>>> If the card raised an exception, the need for urgent BKOPS (level 2/3)
+>>>> will be checked immediately and if needed, the BKOPS will be performed
+>>>> without waiting for the next idle time.
+>>>>
+>>>> Signed-off-by: Maya Erez <merez@codeaurora.org>
+>>>>
+>>>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>>>> index 21056b9..64bbf75 100644
+>>>> --- a/drivers/mmc/card/block.c
+>>>> +++ b/drivers/mmc/card/block.c
+>>>> @@ -1473,9 +1473,15 @@ static int mmc_blk_issue_rq(struct mmc_queue
+>>>> *mq,
+>>>> struct request *req)
+>>>>         struct mmc_blk_data *md = mq->data;
+>>>>         struct mmc_card *card = md->queue.card;
+>>>>
+>>>> -       if (req && !mq->mqrq_prev->req)
+>>>> +       if (req && !mq->mqrq_prev->req) {
+>>>>                 /* claim host only for the first request */
+>>>>                 mmc_claim_host(card->host);
+>>>> +               if (card->ext_csd.bkops_en &&
+>>>> +                   card->bkops_info.started_delayed_bkops) {
+>>>> +                       card->bkops_info.started_delayed_bkops =
+>>>> false;
+>>>> +                       mmc_stop_bkops(card);
+>>>> +               }
+>>>> +       }
+>>>>
+>>>>         ret = mmc_blk_part_switch(card, md);
+>>>>         if (ret) {
+>>>> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+>>>> index fadf52e..9d0c96a 100644
+>>>> --- a/drivers/mmc/card/queue.c
+>>>> +++ b/drivers/mmc/card/queue.c
+>>>> @@ -51,6 +51,7 @@ static int mmc_queue_thread(void *d)
+>>>>  {
+>>>>         struct mmc_queue *mq = d;
+>>>>         struct request_queue *q = mq->queue;
+>>>> +       struct mmc_card *card = mq->card;
+>>>>
+>>>>         current->flags |= PF_MEMALLOC;
+>>>>
+>>>> @@ -83,6 +84,7 @@ static int mmc_queue_thread(void *d)
+>>>>                                 set_current_state(TASK_RUNNING);
+>>>>                                 break;
+>>>>                         }
+>>>> +                       mmc_start_delayed_bkops(card);
+>>>>                         up(&mq->thread_sem);
+>>>>                         schedule();
+>>>>                         down(&mq->thread_sem);
+>>>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+>>>> index aaed768..36cef94 100644
+>>>> --- a/drivers/mmc/core/core.c
+>>>> +++ b/drivers/mmc/core/core.c
+>>>> @@ -256,6 +256,33 @@ mmc_start_request(struct mmc_host *host, struct
+>>>> mmc_request *mrq)
+>>>>  }
+>>>>
+>>>>  /**
+>>>> + * mmc_start_delayed_bkops() - Start a delayed work to check for
+>>>> + *      the need of non urgent BKOPS
+>>>> + *
+>>>> + * @card: MMC card to start BKOPS on
+>>>> + */
+>>>> +void mmc_start_delayed_bkops(struct mmc_card *card)
+>>>> +{
+>>>> +       if (!card || !card->ext_csd.bkops_en ||
+>>>> mmc_card_doing_bkops(card))
+>>>> +               return;
+>>>> +
+>>>> +       pr_debug("%s: %s: queueing delayed_bkops_work\n",
+>>>> +                mmc_hostname(card->host), __func__);
+>>>> +
+>>>> +       /*
+>>>> +        * cancel_delayed_bkops_work will prevent a race condition
+>>>> between
+>>>> +        * fetching a request by the mmcqd and the delayed work, in
+>>>> case
+>>>> +        * it was removed from the queue work but not started yet
+>>>> +        */
+>>>> +       card->bkops_info.cancel_delayed_work = false;
+>>>> +       card->bkops_info.started_delayed_bkops = true;
+>>>> +       queue_delayed_work(system_nrt_wq, &card->bkops_info.dw,
+>>>> +                          msecs_to_jiffies(
+>>>> +                                  card->bkops_info.delay_ms));
+>>>> +}
+>>>> +EXPORT_SYMBOL(mmc_start_delayed_bkops);
+>>>> +
+>>>> +/**
+>>>>   *     mmc_start_bkops - start BKOPS for supported cards
+>>>>   *     @card: MMC card to start BKOPS
+>>>>   *     @form_exception: A flag to indicate if this function was
+>>>> @@ -272,25 +299,47 @@ void mmc_start_bkops(struct mmc_card *card, bool
+>>>> from_exception)
+>>>>         bool use_busy_signal;
+>>>>
+>>>>         BUG_ON(!card);
+>>>> -
+>>>> -       if (!card->ext_csd.bkops_en || mmc_card_doing_bkops(card))
+>>>> +       if (!card->ext_csd.bkops_en)
+>>>>                 return;
+>>>>
+>>>> +       mmc_claim_host(card->host);
+>>>> +
+>>>> +       if ((card->bkops_info.cancel_delayed_work) && !from_exception)
+>>>> {
+>>>> +               pr_debug("%s: %s: cancel_delayed_work was set,
+>>>> exit\n",
+>>>> +                        mmc_hostname(card->host), __func__);
+>>>> +               card->bkops_info.cancel_delayed_work = false;
+>>>> +               goto out;
+>>>> +       }
+>>>> +
+>>>> +       if (mmc_card_doing_bkops(card)) {
+>>>> +               pr_debug("%s: %s: already doing bkops, exit\n",
+>>>> +                        mmc_hostname(card->host), __func__);
+>>>> +               goto out;
+>>>> +       }
+>>>> +
+>>>>         err = mmc_read_bkops_status(card);
+>>>>         if (err) {
+>>>>                 pr_err("%s: Failed to read bkops status: %d\n",
+>>>>                        mmc_hostname(card->host), err);
+>>>> -               return;
+>>>> +               goto out;
+>>>>         }
+>>>>
+>>>>         if (!card->ext_csd.raw_bkops_status)
+>>>> -               return;
+>>>> +               goto out;
+>>>> +
+>>>> +       pr_info("%s: %s: card->ext_csd.raw_bkops_status = 0x%x\n",
+>>>> +               mmc_hostname(card->host), __func__,
+>>>> +               card->ext_csd.raw_bkops_status);
+>>>>
+>>>> +       /*
+>>>> +        * If the function was called due to exception but there is no
+>>>> need
+>>>> +        * for urgent BKOPS, BKOPs will be performed by the delayed
+>>>> BKOPs
+>>>> +        * work, before going to suspend
+>>>> +        */
+>>>>         if (card->ext_csd.raw_bkops_status < EXT_CSD_BKOPS_LEVEL_2 &&
+>>>>             from_exception)
+>>>> -               return;
+>>>> +               goto out;
+>>>>
+>>>> -       mmc_claim_host(card->host);
+>>>>         if (card->ext_csd.raw_bkops_status >= EXT_CSD_BKOPS_LEVEL_2) {
+>>>>                 timeout = MMC_BKOPS_MAX_TIMEOUT;
+>>>>                 use_busy_signal = true;
+>>>> @@ -319,6 +368,27 @@ out:
+>>>>  }
+>>>>  EXPORT_SYMBOL(mmc_start_bkops);
+>>>>
+>>>> +/**
+>>>> + * mmc_start_idle_time_bkops() - check if a non urgent BKOPS is
+>>>> + * needed
+>>>> + * @work:      The idle time BKOPS work
+>>>> + */
+>>>> +void mmc_start_idle_time_bkops(struct work_struct *work)
+>>>> +{
+>>>> +       struct mmc_card *card = container_of(work, struct mmc_card,
+>>>> +                       bkops_info.dw.work);
+>>>> +
+>>>> +       /*
+>>>> +        * Prevent a race condition between mmc_stop_bkops and the
+>>>> delayed
+>>>> +        * BKOPS work in case the delayed work is executed on another
+>>>> CPU
+>>>> +        */
+>>>> +       if (card->bkops_info.cancel_delayed_work)
+>>>> +               return;
+>>>> +
+>>>> +       mmc_start_bkops(card, false);
+>>>> +}
+>>>> +EXPORT_SYMBOL(mmc_start_idle_time_bkops);
+>>>> +
+>>>>  static void mmc_wait_done(struct mmc_request *mrq)
+>>>>  {
+>>>>         complete(&mrq->completion);
+>>>> @@ -585,6 +655,17 @@ int mmc_stop_bkops(struct mmc_card *card)
+>>>>         int err = 0;
+>>>>
+>>>>         BUG_ON(!card);
+>>>> +
+>>>> +       /*
+>>>> +        * Notify the delayed work to be cancelled, in case it was
+>>>> already
+>>>> +        * removed from the queue, but was not started yet
+>>>> +        */
+>>>> +       card->bkops_info.cancel_delayed_work = true;
+>>>> +       if (delayed_work_pending(&card->bkops_info.dw))
+>>>> +               cancel_delayed_work_sync(&card->bkops_info.dw);
+>>>> +       if (!mmc_card_doing_bkops(card))
+>>>> +               goto out;
+>>>> +
+>>>>         err = mmc_interrupt_hpi(card);
+>>>>
+>>>>         /*
+>>>> @@ -596,6 +677,7 @@ int mmc_stop_bkops(struct mmc_card *card)
+>>>>                 err = 0;
+>>>>         }
+>>>>
+>>>> +out:
+>>>>         return err;
+>>>>  }
+>>>>  EXPORT_SYMBOL(mmc_stop_bkops);
+>>>> @@ -2536,15 +2618,15 @@ int mmc_pm_notify(struct notifier_block
+>>>> *notify_block,
+>>>>         switch (mode) {
+>>>>         case PM_HIBERNATION_PREPARE:
+>>>>         case PM_SUSPEND_PREPARE:
+>>>> -               if (host->card && mmc_card_mmc(host->card) &&
+>>>> -                   mmc_card_doing_bkops(host->card)) {
+>>>> +               if (host->card && mmc_card_mmc(host->card)) {
+>>>> +                       mmc_claim_host(host);
+>>>>                         err = mmc_stop_bkops(host->card);
+>>>> +                       mmc_release_host(host);
+>>>>                         if (err) {
+>>>>                                 pr_err("%s: didn't stop bkops\n",
+>>>>                                         mmc_hostname(host));
+>>>>                                 return err;
+>>>>                         }
+>>>> -                       mmc_card_clr_doing_bkops(host->card);
+>>>>                 }
+>>>>
+>>>>                 spin_lock_irqsave(&host->lock, flags);
+>>>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+>>>> index e6e3911..f68624a 100644
+>>>> --- a/drivers/mmc/core/mmc.c
+>>>> +++ b/drivers/mmc/core/mmc.c
+>>>> @@ -1275,6 +1275,26 @@ static int mmc_init_card(struct mmc_host *host,
+>>>> u32 ocr,
+>>>>                 }
+>>>>         }
+>>>>
+>>>> +       if (!oldcard) {
+>>>> +               if (card->ext_csd.bkops_en) {
+>>>> +                       INIT_DELAYED_WORK(&card->bkops_info.dw,
+>>>> +                                         mmc_start_idle_time_bkops);
+>>>> +
+>>>> +                       /*
+>>>> +                        * Calculate the time to start the BKOPs
+>>>> checking.
+>>>> +                        * The host controller can set this time in
+>>>> order to
+>>>> +                        * prevent a race condition before starting
+>>>> BKOPs
+>>>> +                        * and going into suspend.
+>>>> +                        * If the host controller didn't set this
+>>>> time,
+>>>> +                        * a default value is used.
+>>>> +                        */
+>>>> +                       card->bkops_info.delay_ms =
+>>>> MMC_IDLE_BKOPS_TIME_MS;
+>>>> +                       if (card->bkops_info.host_delay_ms)
+>>>> +                               card->bkops_info.delay_ms =
+>>>> +
+>>>> card->bkops_info.host_delay_ms;
+>>>> +               }
+>>>> +       }
+>>>> +
+>>>>         if (!oldcard)
+>>>>                 host->card = card;
+>>>>
+>>>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+>>>> index 5c69315..ca4cf19 100644
+>>>> --- a/include/linux/mmc/card.h
+>>>> +++ b/include/linux/mmc/card.h
+>>>> @@ -210,6 +210,30 @@ struct mmc_part {
+>>>>  #define MMC_BLK_DATA_AREA_RPMB (1<<3)
+>>>>  };
+>>>>
+>>>> +/**
+>>>> + * struct mmc_bkops_info - BKOPS data
+>>>> + * @dw:        Idle time bkops delayed work
+>>>> + * @host_delay_ms:     The host controller time to start bkops
+>>>> + * @delay_ms:  The time to start the BKOPS
+>>>> + *        delayed work once MMC thread is idle
+>>>> + * @cancel_delayed_work: A flag to indicate if the delayed work
+>>>> + *        should be cancelled
+>>>> + * @started_delayed_bkops:  A flag to indicate if the delayed
+>>>> + *        work was scheduled
+>>>> + */
+>>>> +struct mmc_bkops_info {
+>>>> +       struct delayed_work     dw;
+>>>> +       unsigned int            host_delay_ms;
+>>>> +       unsigned int            delay_ms;
+>>>> +/*
+>>>> + * A default time for checking the need for non urgent BKOPS once
+>>>> mmcqd
+>>>> + * is idle.
+>>>> + */
+>>>> +#define MMC_IDLE_BKOPS_TIME_MS 2000
+>>>> +       bool                    cancel_delayed_work;
+>>>> +       bool                    started_delayed_bkops;
+>>>> +};
+>>>> +
+>>>>  /*
+>>>>   * MMC device
+>>>>   */
+>>>> @@ -278,6 +302,8 @@ struct mmc_card {
+>>>>         struct dentry           *debugfs_root;
+>>>>         struct mmc_part part[MMC_NUM_PHY_PARTITION]; /* physical
+>>>> partitions */
+>>>>         unsigned int    nr_parts;
+>>>> +
+>>>> +       struct mmc_bkops_info   bkops_info;
+>>>>  };
+>>>>
+>>>>  /*
+>>>> diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
+>>>> index 5bf7c22..c6426c6 100644
+>>>> --- a/include/linux/mmc/core.h
+>>>> +++ b/include/linux/mmc/core.h
+>>>> @@ -145,6 +145,8 @@ extern int mmc_app_cmd(struct mmc_host *, struct
+>>>> mmc_card *);
+>>>>  extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
+>>>>         struct mmc_command *, int);
+>>>>  extern void mmc_start_bkops(struct mmc_card *card, bool
+>>>> from_exception);
+>>>> +extern void mmc_start_delayed_bkops(struct mmc_card *card);
+>>>> +extern void mmc_start_idle_time_bkops(struct work_struct *work);
+>>>>  extern int __mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int,
+>>>> bool);
+>>>>  extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
+>>>>
+>>>> --
+>>>> 1.7.3.3
+>>>> --
+>>>> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a
+>>>> member
+>>>> of Code Aurora Forum, hosted by The Linux Foundation
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>> linux-kernel"
+>>>> in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>> Kind regards
+>>> Ulf Hansson
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+>>
+>
+> Kind regards
+> Ulf Hansson
+>
 
-On Fri, Jan 11, 2013 at 10:52:19AM -0800, Olof Johansson wrote:
-> On Fri, Jan 11, 2013 at 6:08 AM, Nicolas Ferre <nicolas.ferre@atmel.com> =
-wrote:
->=20
-> > This material was designed to enter Mark's fixes queue, but as discusse=
-d with
-> > Olof, we can imagine merging everything through arm-soc or split the se=
-ries (of
-> > 2 patches) and let them progress upstream separated (option that I do n=
-ot like
-> > even if I know that the consequences are not so dramatic).
-> > So please, Olof, if you feel confortable with this series, tell us what=
- you
-> > prefer and we will make our best to make this material go forward...
 
-> You're setting yourself up for awkward merges. The driver change is
-> strongly dependent on the device tree change by failing probe unless
-> the device tree update is there, while before this patch, it still
-> worked.
-
-This is partly my fault for getting grumpy about adding the bolier plate
-code without error checking - overall Linus' change to do the get in the
-core seems like the most sane approach here.
-
-> But to be honest, I don't think this is a fix, it's a feature that you
-> just didn't include in time for the merge window. I don't really see
-> them as appropriate 3.8 material at this point.
-
-Jean-Christophe has been most insistent that pinctrl support is now
-manadatory for all AT91 systems using device tree.  Unfortunately
-pinctrl support for AT91 only came in during the merge window and it
-seems like it's sadly been impossible to do what seemd like the obvious
-thing and add the pinctrl bindings to the DT prior to the merge down so
-now we've got this mess.  I believe the way the pinctrl conversion was
-done renders the audio driver non-functional without this series.
-
-> So, nack on this series. Please make the driver change non-dependent
-> on the new dtsi contents, and merge that through the ASoC tree. Then
-> the dtsi update can go through arm-soc, and later on you can make it
-> mandatory.
-
-Like I say I'm not thrilled about ignoring the return code TBH, nor am I
-thrilled with the way this has been handled overall.  That said, the
-current series does seem like the best of a bad job - as I understand it
-we need something like this in v3.8 to make the driver functional.
-
---6c2NcOVqGQ03X4Wi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ8GonAAoJELSic+t+oim9sr4P/0pLO11Ejs7DGV2RnQTWaKgp
-D+Upa5WItdyTKSkF0N25tkt5c7wvPA2WJZBrvYDGQ9zCFe0t7hbLDfG+Xa473cAo
-CjPdvd6XQjDev+GnMfLlShYDDVK6RgskV3nJnnJpC77j24S6HxQdPpf83LMqnbHF
-9B+kP0yegH69SbBCdCQfnSmhtWhXblyVW1+lHTHq0KjaJou82gK3OfnPpynnnzVs
-hOyUhATBo2jt4QWElrVzSfFW58jLET57YqUe8okVUKwp+yoXF8zuo8tI7JtrtVBg
-irjv94q+JE/PWTuGreZNxuiDQ2G7bmLchLYxb9Aej0Gs0n7HCdT9VEZGNfUYIgLJ
-pVL0pCakmaub+ge2HFmht7DjtouAyeh1nq+p7uy9duws3xUaG7DrIAeavba3/TKr
-b7o1raLfxRIGyQicfuHSXI3jWJ6YoTFIYp1PGoJBG/uaGDlGcF0Tt7YE5t1APG8F
-22e6VWE2mQ4AKG2mOqHy0EfiGtoQvrkME9Sqmw2J3aWslfVAJ9kJrY6HLJkKVbQ+
-crPOG1HL1SBL32JcQBMVvJvWAXlelyaMDsa/ZS0pGkSkVS5RuEiantSjognzjY9q
-wlAaXDgdh6m9Kd8d+C5ipBStr90925QSaF83+6qqGYJKbsxI0yl3P/hrwATHpaB0
-WwiQoMHjSYNXXGrjsCK2
-=fwOX
------END PGP SIGNATURE-----
-
---6c2NcOVqGQ03X4Wi--
