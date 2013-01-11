@@ -1,75 +1,662 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab3AKSRM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 13:17:12 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:57019 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab3AKSRJ (ORCPT
+	id S1754495Ab3AKSVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 13:21:35 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34492 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510Ab3AKSVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 13:17:09 -0500
-Date: Fri, 11 Jan 2013 13:21:46 -0500
-From: Matt Porter <mporter@ti.com>
-To: Lars Poeschel <poeschel@lemonage.de>
-Cc: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v4,03/14] ARM: edma: add AM33XX support to the private
- EDMA API
-Message-ID: <20130111182146.GZ14660@beef>
-References: <1357883330-5364-4-git-send-email-mporter@ti.com>
- <9fda86bbbec3444393fd5a2dc5135a5e@DFLE73.ent.ti.com>
+	Fri, 11 Jan 2013 13:21:34 -0500
+Date: Fri, 11 Jan 2013 13:21:24 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [PATCH V2 2/2] Xen ACPI memory hotplug
+Message-ID: <20130111182124.GB28685@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923353BB10D@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9fda86bbbec3444393fd5a2dc5135a5e@DFLE73.ent.ti.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923353BB10D@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 06:14:27PM +0000, Lars Poeschel wrote:
-> Hi Matt,
+On Wed, Jan 09, 2013 at 07:42:52AM +0000, Liu, Jinsong wrote:
+> This patch implements real Xen acpi memory hotplug driver as module.
+> When loaded, it replaces Xen stub driver.
 > 
-> On Friday 11 January 2013 at 06:48:39, Matt Porter wrote:
+> When an acpi memory device hotadd event occurs, it notifies OS and
+> invokes notification callback, adding related memory device and parsing
+> memory information, finally hypercall to xen hypervisor to add memory.
 > 
-> > diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-> > index a3d189d..1951d63 100644
-> > --- a/arch/arm/common/edma.c
-> > +++ b/arch/arm/common/edma.c
-> > @@ -24,6 +24,13 @@
-> >  #include <linux/platform_device.h>
-> >  #include <linux/io.h>
-> >  #include <linux/slab.h>
-> > +#include <linux/edma.h>
-> > +#include <linux/err.h>
-> > +#include <linux/of_address.h>
-> > +#include <linux/of_device.h>
-> > +#include <linux/of_dma.h>
-> > +#include <linux/of_irq.h>
-> > +#include <linux/pm_runtime.h>
+> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+> ---
+>  drivers/xen/Kconfig               |   11 +
+>  drivers/xen/Makefile              |    1 +
+>  drivers/xen/xen-acpi-memhotplug.c |  487 +++++++++++++++++++++++++++++++++++++
+>  include/xen/interface/platform.h  |   13 +-
+>  4 files changed, 508 insertions(+), 4 deletions(-)
+>  create mode 100644 drivers/xen/xen-acpi-memhotplug.c
 > 
-> You add the include linux/of_dma.h here, but maybe you missed to add the file 
-> itself. It is not in Linus v3.8-rc3 tree, not in the patches yours depend on 
-> listed and not in your patchset.
+> diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+> index 2986de9..b8cf899 100644
+> --- a/drivers/xen/Kconfig
+> +++ b/drivers/xen/Kconfig
+> @@ -191,6 +191,17 @@ config XEN_STUB
+>  
+>  	  To enable Xen features like cpu and memory hotplug, select Y here.
+>  
+> +config XEN_ACPI_HOTPLUG_MEMORY
+> +	tristate "Xen ACPI memory hotplug"
+> +	depends on XEN_STUB && ACPI
+> +	default n
+> +	help
+> +	  This is Xen ACPI memory hotplug.
+> +
+> +	  Currently Xen only support ACPI memory hot-add. If you want
+> +	  to hot-add memory at runtime (the hot-added memory cannot be
+> +	  removed until machine stop), select Y/M here, otherwise select N.
+> +
+>  config XEN_ACPI_PROCESSOR
+>  	tristate "Xen ACPI processor"
+>  	depends on XEN && X86 && ACPI_PROCESSOR && CPU_FREQ
+> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> index b63edd8..1605f59 100644
+> --- a/drivers/xen/Makefile
+> +++ b/drivers/xen/Makefile
+> @@ -31,6 +31,7 @@ obj-$(CONFIG_XEN_MCE_LOG)		+= mcelog.o
+>  obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
+>  obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
+>  obj-$(CONFIG_XEN_STUB)			+= xen-stub.o
+> +obj-$(CONFIG_XEN_ACPI_HOTPLUG_MEMORY)	+= xen-acpi-memhotplug.o
+>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+= xen-acpi-processor.o
+>  xen-evtchn-y				:= evtchn.o
+>  xen-gntdev-y				:= gntdev.o
+> diff --git a/drivers/xen/xen-acpi-memhotplug.c b/drivers/xen/xen-acpi-memhotplug.c
+> new file mode 100644
+> index 0000000..d207fec
+> --- /dev/null
+> +++ b/drivers/xen/xen-acpi-memhotplug.c
+> @@ -0,0 +1,487 @@
+> +/*
+> + * Copyright (C) 2012 Intel Corporation
+> + *    Author: Liu Jinsong <jinsong.liu@intel.com>
+> + *    Author: Jiang Yunhong <yunhong.jiang@intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or (at
+> + * your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+> + * NON INFRINGEMENT.  See the GNU General Public License for more
+> + * details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/types.h>
+> +#include <linux/acpi.h>
+> +#include <acpi/acpi_drivers.h>
+> +#include <xen/acpi.h>
+> +#include <xen/interface/platform.h>
+> +#include <asm/xen/hypercall.h>
+> +
+> +#define PREFIX "ACPI:xen_memory_hotplug:"
+> +
+> +struct acpi_memory_info {
+> +	struct list_head list;
+> +	u64 start_addr;		/* Memory Range start physical addr */
+> +	u64 length;		/* Memory Range length */
+> +	unsigned short caching;	/* memory cache attribute */
+> +	unsigned short write_protect;	/* memory read/write attribute */
+> +				/* copied from buffer getting from _CRS */
+> +	unsigned int enabled:1;
+> +};
+> +
+> +struct acpi_memory_device {
+> +	struct acpi_device *device;
+> +	struct list_head res_list;
+> +};
+> +
+> +static bool acpi_hotmem_initialized __read_mostly;
+> +
+> +static int xen_hotadd_memory(int pxm, struct acpi_memory_info *info)
+> +{
+> +	struct xen_platform_op op;
+> +
+> +	op.cmd = XENPF_mem_hotadd;
+> +	op.u.mem_add.spfn = info->start_addr >> PAGE_SHIFT;
+> +	op.u.mem_add.epfn = (info->start_addr + info->length) >> PAGE_SHIFT;
+> +	op.u.mem_add.pxm = pxm;
+> +
+> +	return HYPERVISOR_dom0_op(&op);
 
-of_dma.h comes in with the dependencies listed in the cover letter.
-Particularly, Vinod's dt_dmaengine branch in slave-dma.git contains Jon
-Hunter's OF DMA helpers series.
+Don't want to print out the erorrs if it failed?
 
--Matt
+Say do:
+	int rc;
+
+	..
+	rc = HYPERVSIOR_dom0_op(&op);
+
+	if (rc)
+		pr_error(PFX "Hotplug Memory Add failed on %lx->%lx, _PXM: %d, error: %d\n",
+			...
+
+?
+> +}
+> +
+> +static int xen_acpi_get_pxm(acpi_handle h)
+> +{
+> +	unsigned long long pxm;
+> +	acpi_status status;
+> +	acpi_handle handle;
+> +	acpi_handle phandle = h;
+> +
+> +	do {
+> +		handle = phandle;
+> +		status = acpi_evaluate_integer(handle, "_PXM", NULL, &pxm);
+> +		if (ACPI_SUCCESS(status))
+> +			return pxm;
+> +		status = acpi_get_parent(handle, &phandle);
+> +	} while (ACPI_SUCCESS(status));
+> +	return -1;
+
+Ugh. Why not a normal -Exxx type erorr? Say -ENXIO ?
+
+> +}
+> +
+> +static int xen_acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+> +{
+> +	int pxm, result;
+> +	int num_enabled = 0;
+> +	struct acpi_memory_info *info;
+> +
+> +	if (!mem_device)
+> +		return -EINVAL;
+> +
+> +	pxm = xen_acpi_get_pxm(mem_device->device->handle);
+> +	if (pxm < 0)
+> +		return -EINVAL;
+> +
+> +	list_for_each_entry(info, &mem_device->res_list, list) {
+> +		if (info->enabled) { /* just sanity check...*/
+> +			num_enabled++;
+> +			continue;
+> +		}
+> +
+> +		if (!info->length)
+> +			continue;
+> +
+> +		result = xen_hotadd_memory(pxm, info);
+> +		if (result)
+> +			continue;
+> +		info->enabled = 1;
+> +		num_enabled++;
+> +	}
+> +
+> +	if (!num_enabled)
+> +		return -EINVAL;
+
+Is that the correct error to be returned? I thought
+-ENODEV would be more appropiate?
+
+
+> +
+> +	return 0;
+> +}
+> +
+> +static acpi_status
+> +acpi_memory_get_resource(struct acpi_resource *resource, void *context)
+> +{
+> +	struct acpi_memory_device *mem_device = context;
+> +	struct acpi_resource_address64 address64;
+> +	struct acpi_memory_info *info, *new;
+> +	acpi_status status;
+> +
+> +	status = acpi_resource_to_address64(resource, &address64);
+> +	if (ACPI_FAILURE(status) ||
+> +	    (address64.resource_type != ACPI_MEMORY_RANGE))
+> +		return AE_OK;
+> +
+> +	list_for_each_entry(info, &mem_device->res_list, list) {
+> +		if ((info->caching == address64.info.mem.caching) &&
+> +		    (info->write_protect == address64.info.mem.write_protect) &&
+> +		    (info->start_addr + info->length == address64.minimum)) {
+> +			info->length += address64.address_length;
+> +			return AE_OK;
+> +		}
+> +	}
+> +
+> +	new = kzalloc(sizeof(struct acpi_memory_info), GFP_KERNEL);
+> +	if (!new)
+> +		return AE_ERROR;
+> +
+> +	INIT_LIST_HEAD(&new->list);
+> +	new->caching = address64.info.mem.caching;
+> +	new->write_protect = address64.info.mem.write_protect;
+> +	new->start_addr = address64.minimum;
+> +	new->length = address64.address_length;
+> +	list_add_tail(&new->list, &mem_device->res_list);
+> +
+> +	return AE_OK;
+> +}
+> +
+> +static int
+> +acpi_memory_get_device_resources(struct acpi_memory_device *mem_device)
+> +{
+> +	acpi_status status;
+> +	struct acpi_memory_info *info, *n;
+> +
+> +	if (!list_empty(&mem_device->res_list))
+> +		return 0;
+> +
+> +	status = acpi_walk_resources(mem_device->device->handle,
+> +		METHOD_NAME__CRS, acpi_memory_get_resource, mem_device);
+> +
+> +	if (ACPI_FAILURE(status)) {
+> +		list_for_each_entry_safe(info, n, &mem_device->res_list, list)
+> +			kfree(info);
+> +		INIT_LIST_HEAD(&mem_device->res_list);
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int
+> +acpi_memory_get_device(acpi_handle handle,
+> +		       struct acpi_memory_device **mem_device)
+> +{
+> +	acpi_status status;
+> +	acpi_handle phandle;
+> +	struct acpi_device *device = NULL;
+> +	struct acpi_device *pdevice = NULL;
+> +	int result;
+> +
+> +	if (!acpi_bus_get_device(handle, &device) && device)
+> +		goto end;
+> +
+> +	status = acpi_get_parent(handle, &phandle);
+> +	if (ACPI_FAILURE(status)) {
+> +		pr_warn(PREFIX "Cannot find acpi parent\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* Get the parent device */
+> +	result = acpi_bus_get_device(phandle, &pdevice);
+> +	if (result) {
+> +		pr_warn(PREFIX "Cannot get acpi bus device\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	/*
+> +	 * Now add the notified device.  This creates the acpi_device
+> +	 * and invokes .add function
+> +	 */
+> +	result = acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE);
+> +	if (result) {
+> +		pr_warn(PREFIX "Cannot add acpi bus\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +end:
+> +	*mem_device = acpi_driver_data(device);
+> +	if (!(*mem_device)) {
+> +		pr_err(PREFIX "Driver data not found\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int acpi_memory_check_device(struct acpi_memory_device *mem_device)
+> +{
+> +	unsigned long long current_status;
+> +
+> +	/* Get device present/absent information from the _STA */
+> +	if (ACPI_FAILURE(acpi_evaluate_integer(mem_device->device->handle,
+> +				"_STA", NULL, &current_status)))
+> +		return -ENODEV;
+> +	/*
+> +	 * Check for device status. Device should be
+> +	 * present/enabled/functioning.
+> +	 */
+> +	if (!((current_status & ACPI_STA_DEVICE_PRESENT)
+> +	      && (current_status & ACPI_STA_DEVICE_ENABLED)
+> +	      && (current_status & ACPI_STA_DEVICE_FUNCTIONING)))
+> +		return -ENODEV;
+> +
+> +	return 0;
+> +}
+> +
+> +static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+> +{
+> +	pr_warn(PREFIX "Xen does not support memory hotremove\n");
+
+So is this going to show in the dmesg if the user supplies the '0'  in the
+SysFS?
+
+Hmm, perhaps that should be pr_debug as the -ENOSYS is enough to tell
+the user that we don't support it.
+
+> +
+> +	return -ENOSYS;
+> +}
+> +
+> +static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+> +{
+> +	struct acpi_memory_device *mem_device;
+> +	struct acpi_device *device;
+> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+> +
+> +	switch (event) {
+> +	case ACPI_NOTIFY_BUS_CHECK:
+> +		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> +			"\nReceived BUS CHECK notification for device\n"));
+> +		/* Fall Through */
+> +	case ACPI_NOTIFY_DEVICE_CHECK:
+> +		if (event == ACPI_NOTIFY_DEVICE_CHECK)
+> +			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> +			"\nReceived DEVICE CHECK notification for device\n"));
+> +
+> +		if (acpi_memory_get_device(handle, &mem_device)) {
+> +			pr_err(PREFIX "Cannot find driver data\n");
+> +			break;
+> +		}
+> +
+> +		ost_code = ACPI_OST_SC_SUCCESS;
+> +		break;
+> +
+> +	case ACPI_NOTIFY_EJECT_REQUEST:
+> +		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> +			"\nReceived EJECT REQUEST notification for device\n"));
+> +
+> +		if (acpi_bus_get_device(handle, &device)) {
+> +			pr_err(PREFIX "Device doesn't exist\n");
+> +			break;
+> +		}
+> +		mem_device = acpi_driver_data(device);
+> +		if (!mem_device) {
+> +			pr_err(PREFIX "Driver Data is NULL\n");
+> +			break;
+> +		}
+> +
+> +		/*
+> +		 * TBD: implement acpi_memory_disable_device and invoke
+> +		 * acpi_bus_remove if Xen support hotremove in the future
+> +		 */
+> +		acpi_memory_disable_device(mem_device);
+> +		break;
+> +
+> +	default:
+> +		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> +				  "Unsupported event [0x%x]\n", event));
+> +		/* non-hotplug event; possibly handled by other handler */
+> +		return;
+> +	}
+> +
+> +	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
+> +	return;
+> +}
+> +
+> +static int xen_acpi_memory_device_add(struct acpi_device *device)
+> +{
+> +	int result;
+> +	struct acpi_memory_device *mem_device = NULL;
+> +
+> +
+> +	if (!device)
+> +		return -EINVAL;
+> +
+> +	mem_device = kzalloc(sizeof(struct acpi_memory_device), GFP_KERNEL);
+> +	if (!mem_device)
+> +		return -ENOMEM;
+> +
+> +	INIT_LIST_HEAD(&mem_device->res_list);
+> +	mem_device->device = device;
+> +	sprintf(acpi_device_name(device), "%s", ACPI_MEMORY_DEVICE_NAME);
+> +	sprintf(acpi_device_class(device), "%s", ACPI_MEMORY_DEVICE_CLASS);
+> +	device->driver_data = mem_device;
+> +
+> +	/* Get the range from the _CRS */
+> +	result = acpi_memory_get_device_resources(mem_device);
+> +	if (result) {
+> +		kfree(mem_device);
+> +		return result;
+> +	}
+> +
+> +	/*
+> +	 * Early boot code has recognized memory area by EFI/E820.
+> +	 * If DSDT shows these memory devices on boot, hotplug is not necessary
+> +	 * for them. So, it just returns until completion of this driver's
+> +	 * start up.
+
+"So it just returns until completion of this drivers's start up."
+
+Can you change that to be:
+"Return OK until this driver starts up."
+
+But then.. how can this function be called with acpi_hotmem_initialized=false?
+Is it b/c of the acpi_walk_namespace call? How about you state that:
+
+"This can be done via the acpi_walk_namespace which is called during
+early boot and acpi_hotmem_initialized is set _after_ that call
+has completed."
+
+
+
+
+> +	 */
+> +	if (!acpi_hotmem_initialized)
+> +		return 0;
+> +
+> +	if (!acpi_memory_check_device(mem_device))
+> +		result = xen_acpi_memory_enable_device(mem_device);
+> +
+> +	return result;
+> +}
+> +
+> +static int xen_acpi_memory_device_remove(struct acpi_device *device, int type)
+> +{
+> +	struct acpi_memory_device *mem_device = NULL;
+> +
+> +	if (!device || !acpi_driver_data(device))
+> +		return -EINVAL;
+> +
+> +	mem_device = acpi_driver_data(device);
+> +	kfree(mem_device);
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Helper function to check for memory device
+> + */
+> +static acpi_status is_memory_device(acpi_handle handle)
+> +{
+> +	char *hardware_id;
+> +	acpi_status status;
+> +	struct acpi_device_info *info;
+> +
+> +	status = acpi_get_object_info(handle, &info);
+> +	if (ACPI_FAILURE(status))
+> +		return status;
+> +
+> +	if (!(info->valid & ACPI_VALID_HID)) {
+> +		kfree(info);
+> +		return AE_ERROR;
+> +	}
+> +
+> +	hardware_id = info->hardware_id.string;
+> +	if ((hardware_id == NULL) ||
+> +	    (strcmp(hardware_id, ACPI_MEMORY_DEVICE_HID)))
+> +		status = AE_ERROR;
+> +
+> +	kfree(info);
+> +	return status;
+> +}
+> +
+> +static acpi_status
+> +acpi_memory_register_notify_handler(acpi_handle handle,
+> +				    u32 level, void *ctxt, void **retv)
+> +{
+> +	acpi_status status;
+> +
+> +	status = is_memory_device(handle);
+> +	if (ACPI_FAILURE(status))
+> +		return AE_OK;	/* continue */
+> +
+> +	status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+> +					     acpi_memory_device_notify, NULL);
+> +	/* continue */
+> +	return AE_OK;
+> +}
+> +
+> +static acpi_status
+> +acpi_memory_deregister_notify_handler(acpi_handle handle,
+> +				      u32 level, void *ctxt, void **retv)
+> +{
+> +	acpi_status status;
+> +
+> +	status = is_memory_device(handle);
+> +	if (ACPI_FAILURE(status))
+> +		return AE_OK;	/* continue */
+> +
+> +	status = acpi_remove_notify_handler(handle,
+> +					    ACPI_SYSTEM_NOTIFY,
+> +					    acpi_memory_device_notify);
+> +
+> +	return AE_OK;	/* continue */
+> +}
+> +
+> +static const struct acpi_device_id memory_device_ids[] = {
+> +	{ACPI_MEMORY_DEVICE_HID, 0},
+> +	{"", 0},
+> +};
+> +MODULE_DEVICE_TABLE(acpi, memory_device_ids);
+> +
+> +static struct acpi_driver xen_acpi_memory_device_driver = {
+> +	.name = "acpi_memhotplug",
+> +	.class = ACPI_MEMORY_DEVICE_CLASS,
+> +	.ids = memory_device_ids,
+> +	.ops = {
+> +		.add = xen_acpi_memory_device_add,
+> +		.remove = xen_acpi_memory_device_remove,
+> +		},
+> +};
+> +
+> +static int __init xen_acpi_memory_device_init(void)
+> +{
+> +	int result;
+> +	acpi_status status;
+> +
+> +	if (!xen_initial_domain())
+> +		return -ENODEV;
+> +
+> +	/* unregister the stub which only used to reserve driver space */
+> +	acpi_bus_unregister_driver(&xen_stub_memory_device_driver);
+> +
+> +	result = acpi_bus_register_driver(&xen_acpi_memory_device_driver);
+> +	if (result < 0)
+> +		return -ENODEV;
+
+Shouldn't we then try to re-register the stub driver?
+
+> +
+> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +				     ACPI_UINT32_MAX,
+> +				     acpi_memory_register_notify_handler,
+> +				     NULL, NULL, NULL);
+> +
+> +	if (ACPI_FAILURE(status)) {
+> +		pr_warn(PREFIX "walk_namespace failed\n");
+> +		acpi_bus_unregister_driver(&xen_acpi_memory_device_driver);
+
+Ditto here.
+
+> +		return -ENODEV;
+> +	}
+> +
+> +	acpi_hotmem_initialized = 1;
+
+s/1/true/
+
+> +	return 0;
+> +}
+> +
+> +static void __exit xen_acpi_memory_device_exit(void)
+> +{
+> +	acpi_status status;
+> +
+> +	if (!xen_initial_domain())
+> +		return;
+> +
+> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +				     ACPI_UINT32_MAX,
+> +				     acpi_memory_deregister_notify_handler,
+> +				     NULL, NULL, NULL);
+> +	if (ACPI_FAILURE(status))
+> +		pr_warn(PREFIX "walk_namespace failed\n");
+> +
+> +	acpi_bus_unregister_driver(&xen_acpi_memory_device_driver);
+> +
+> +	/*
+> +	 * stub reserve space again to prevent any chance of native
+> +	 * driver loading, though not much meaning in real life
+
+not much meaning in real life? What does that mean?
+
+> +	 */
+> +	acpi_bus_register_driver(&xen_stub_memory_device_driver);
+> +	return;
+> +}
+> +
+> +module_init(xen_acpi_memory_device_init);
+> +module_exit(xen_acpi_memory_device_exit);
+> +ACPI_MODULE_NAME("xen-acpi-memhotplug");
+> +MODULE_AUTHOR("Liu Jinsong <jinsong.liu@intel.com>");
+> +MODULE_DESCRIPTION("Xen Hotplug Mem Driver");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
+> index 5e36932..2c4fb4b 100644
+> --- a/include/xen/interface/platform.h
+> +++ b/include/xen/interface/platform.h
+> @@ -324,10 +324,14 @@ struct xenpf_cpu_ol {
+>  };
+>  DEFINE_GUEST_HANDLE_STRUCT(xenpf_cpu_ol);
+>  
+> -/*
+> - * CMD 58 and 59 are reserved for cpu hotadd and memory hotadd,
+> - * which are already occupied at Xen hypervisor side.
+> - */
+> +#define XENPF_mem_hotadd	59
+> +struct xenpf_mem_hotadd {
+> +	uint64_t spfn;
+> +	uint64_t epfn;
+> +	uint32_t pxm;
+> +	uint32_t flags;
+> +};
+> +
+>  #define XENPF_core_parking     60
+>  struct xenpf_core_parking {
+>  	/* IN variables */
+> @@ -357,6 +361,7 @@ struct xen_platform_op {
+>  		struct xenpf_set_processor_pminfo set_pminfo;
+>  		struct xenpf_pcpuinfo          pcpu_info;
+>  		struct xenpf_cpu_ol            cpu_ol;
+> +		struct xenpf_mem_hotadd        mem_add;
+>  		struct xenpf_core_parking      core_parking;
+>  		uint8_t                        pad[128];
+>  	} u;
+> -- 
+> 1.7.1
