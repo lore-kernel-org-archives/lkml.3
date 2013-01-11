@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab3AKUbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 15:31:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58985 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab3AKUbu (ORCPT
+	id S1755504Ab3AKUeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 15:34:31 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:49816 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347Ab3AKUe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 15:31:50 -0500
-Date: Fri, 11 Jan 2013 12:31:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: paul.szabo@sydney.edu.au
-Cc: 695182@bugs.debian.org, dave@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] Reproducible OOM with partial workaround
-Message-Id: <20130111123149.c3232a96.akpm@linux-foundation.org>
-In-Reply-To: <201301111151.r0BBpZt1023276@como.maths.usyd.edu.au>
-References: <20130111000119.8e9bdf5d.akpm@linux-foundation.org>
-	<201301111151.r0BBpZt1023276@como.maths.usyd.edu.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Jan 2013 15:34:29 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
+Date: Fri, 11 Jan 2013 21:36:10 +0100
+Message-ID: <9702060.jEbHySsCv0@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.6.11-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com>
+References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com> <50EF27B4.60608@wwwdotorg.org> <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jan 2013 22:51:35 +1100
-paul.szabo@sydney.edu.au wrote:
+Hi Simon,
 
-> Dear Andrew,
+On Friday 11 January 2013 21:12:43 Linus Walleij wrote:
+> On Thu, Jan 10, 2013 at 9:42 PM, Stephen Warren wrote:
+> > On 12/12/2012 01:25 PM, Linus Walleij wrote:
+> >> From: Linus Walleij <linus.walleij@linaro.org>
+> >> 
+> >> This makes the device core auto-grab the pinctrl handle and set
+> >> the "default" (PINCTRL_STATE_DEFAULT) state for every device
+> >> that is present in the device model right before probe. This will
+> >> account for the lion's share of embedded silicon devcies.
+> > 
+> > There are quite a few problems with this patch, and they end up
+> > completely breaking at least Tegra in next-20130110.
 > 
-> > Check /proc/slabinfo, see if all your lowmem got eaten up by buffer_heads.
+> But I have not put this patch into linux-next.
 > 
-> Please see below: I do not know what any of that means. This machine has
-> been running just fine, with all my users logging in here via XDMCP from
-> X-terminals, dozens logged in simultaneously. (But, I think I could make
-> it go OOM with more processes or logins.)
-
-I'm counting 107MB in slab there.  Was this dump taken when the system
-was at or near oom?
-
-Please send a copy of the oom-killer kernel message dump, if you still
-have one.
-
-> > If so, you *may* be able to work around this by setting
-> > /proc/sys/vm/dirty_ratio really low, so the system keeps a minimum
-> > amount of dirty pagecache around.  Then, with luck, if we haven't
-> > broken the buffer_heads_over_limit logic it in the past decade (we
-> > probably have), the VM should be able to reclaim those buffer_heads.
+> I was still waiting for Greg to ACK it...
 > 
-> I tried setting dirty_ratio to "funny" values, that did not seem to
-> help.
+> Apparently it was included in a pull request to the SH tree or something,
+> Simon can you remove these patches for now, this patch needs to
+> be elaborated on in the pinctrl tree first.
 
-Did you try setting it as low as possible?
+I've sent several patch series for the SH PFC (Pin Function Controller) to the 
+linux-sh mailing list. One of the series included pinctrl core patches for 
+easier testing, but I made it clear that they should *not* be pushed to 
+mainline through the SH tree.
 
-> Did you notice my patch about bdi_position_ratio(), how it was
-> plain wrong half the time (for negative x)? 
+Actually the whole PFC series have been found out today by Guennadi 
+Liakhovetski to be buggy. I will fix the problems and send a new version. In 
+the meantime the pinmux-pinctrl and pinmux-dt series should not be pushed to 
+mainline.
 
-Nope, please resend.
+-- 
+Regards,
 
-> Anyway that did not help.
-> 
-> > Alternatively, use a filesystem which doesn't attach buffer_heads to
-> > dirty pages.  xfs or btrfs, perhaps.
-> 
-> Seems there is also a problem not related to filesystem... or rather,
-> the essence does not seem to be filesystem or caches. The filesystem
-> thing now seems OK with my patch doing drop_caches.
-
-hm, if doing a regular drop_caches fixes things then that implies the
-problem is not with dirty pagecache.  Odd.
+Laurent Pinchart
 
