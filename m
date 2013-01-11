@@ -1,78 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab3AKFwx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 00:52:53 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:53647 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754888Ab3AKFww (ORCPT
+	id S1755322Ab3AKF4T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 00:56:19 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57865 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754960Ab3AKF4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 00:52:52 -0500
-Date: Fri, 11 Jan 2013 16:52:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>
-Subject: linux-next: build failure after merge of the final tree (powerpc
- tree related)
-Message-Id: <20130111165241.44a5ede6b24c997810be74e1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__11_Jan_2013_16_52_41_+1100_HYpva/npX.Lrv51c"
+	Fri, 11 Jan 2013 00:56:18 -0500
+X-AuditID: 9c930197-b7cefae0000002d7-ad-50efa97f1d62
+Date: Fri, 11 Jan 2013 14:56:15 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 1/2] Add mempressure cgroup
+Message-ID: <20130111055614.GD6183@blaptop>
+References: <20130104082751.GA22227@lizard.gateway.2wire.net>
+ <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
+ <20130108084949.GD4714@blaptop>
+ <20130109221449.GA14880@lizard.fhda.edu>
+ <20130111051210.GC6183@blaptop>
+ <20130111053831.GA18053@lizard.gateway.2wire.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130111053831.GA18053@lizard.gateway.2wire.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__11_Jan_2013_16_52_41_+1100_HYpva/npX.Lrv51c
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 10, 2013 at 09:38:31PM -0800, Anton Vorontsov wrote:
+> On Fri, Jan 11, 2013 at 02:12:10PM +0900, Minchan Kim wrote:
+> > On Wed, Jan 09, 2013 at 02:14:49PM -0800, Anton Vorontsov wrote:
+> > > On Tue, Jan 08, 2013 at 05:49:49PM +0900, Minchan Kim wrote:
+> > > [...]
+> > > > Sorry still I didn't look at your implementation about cgroup part.
+> > > > but I had a question since long time ago.
+> > > > 
+> > > > How can we can make sure false positive about zone and NUMA?
+> > > > I mean DMA zone is short in system so VM notify to user and user
+> > > > free all memory of NORMAL zone because he can't know what pages live
+> > > > in any zones. NUMA is ditto.
+> > > 
+> > > Um, we count scans irrespective of zones or nodes, i.e. we sum all 'number
+> > > of scanned' and 'number of reclaimed' stats. So, it should not be a
+> > > problem, as I see it.
+> > 
+> > Why is it no problem? For example, let's think of normal zone reclaim.
+> > Page allocator try to allocate pages from NORMAL zone to DMA zone fallback
+> > and your logic could trigger mpc_shrinker. So process A, B, C start to
+> > release thier freeable memory but unfortunately, freed pages are all
+> > HIGHMEM pages. Why should processes release memory unnecessary?
+> > Is there any method for proecess to detect such situation in user level
+> > before releasing the freeable memory?
+> 
+> Ahh. You're talking about the shrinker interface. Yes, there is no way to
+> tell if the freed memory will be actually "released" (and if not, then
+> yes, we released it unnecessary).
 
-Hi all,
+I don't tell about actually "released" or not.
+I assume application actually release pages but the pages would be another
+zones, NOT targetted zone from kernel. In case of that, kernel could ask
+continuously until target zone has enough free memory.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+> 
+> But that's not only problem with NUMA or zones. Shared pages are in the
+> same boat, right? An app might free some memory, but as another process
+> might be still using it, we don't know whether our action helps or not.
 
-arch/powerpc/kernel/kgdb.c: In function 'kgdb_arch_exit':
-arch/powerpc/kernel/kgdb.c:492:2: error: '__debugger_breakx_match' undeclar=
-ed (first use in this function)
+It's not what I meant.
 
-Caused by commit 9422de3e953d ("powerpc: Hardware breakpoints rewrite to
-handle non DABR breakpoint registers").  I applied "powerpc: Fix typo in
-breakpoint kgdb code" from Mikey for this.
+> 
+> The situation is a little bit easier for the in-kernel shrinkers, since we
+> have more control over pages, but still, even for the kernel shrinkers, we
+> don't provide all the information (only gfpmask, which, I just looked into
+> the random user, drivers/gpu/drm/ttm, sometimes is not used).
+> 
+> So, answering your question: no, I don't know how to solve it for the
+> userland. But I also don't think it's a big concern (especially if we make
+> it cgroup-aware -- this would be cgroup's worry then, i.e. we might
+> isolate task to only some nodes/zones, if we really care about precise
+> accounting?). But I'm surely open for ideas. :)
 
-arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-arch/powerpc/kernel/exceptions-64s.S:1204: Error: attempt to move .org back=
-wards
+My dumb idea is only notify to user when reclaim is triggered by
+__GFP_HIGHMEM|__GFP_MOVABLE which is most gfp_t for application memory. :)
 
-Not sure what caused that - probably a combination of patches adding code
-low down.  I have just left this broken for today.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> Thanks!
+> 
+> Anton
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
---Signature=_Fri__11_Jan_2013_16_52_41_+1100_HYpva/npX.Lrv51c
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ76ipAAoJEECxmPOUX5FE7tQQAIFdZpJ78SNjcr9cc+ia823y
-7i+bezSWLUGToKHZJ87ajVtMCpImEVCsQa2Hq1GahBlj9vQJmpkGQ79GD1bxt6wW
-behryfUSf3ORzVKseUsrXQ53FI35jSk38hL4xNqGH5sbtarZb6fPlWN4iPiFwo6k
-5QIoYo5MabgvQEHOJBNiuX2XqEdFYgHM7qZ8SMSImnAJE1MHYt/dmx6AdVFoKNXq
-JXcPPBmmnjXnK1JKst5tnti+AmGimIaHPfsf3FSj1JGApPFIovQtU5kPH2HeNz1S
-v0QY6xski27Dy9CQNkWIa4vov0ok7DJ3vqbRxCfVZWCE0G4/EHRikUclmQE8gsQq
-5xplD+oOAS0pzKMnbFxi62gBv+9tWwoSFrgjneQjHkXpoFmpS/Khn152K0XX4IH+
-4C22CF5HJvLT4MfaU7AiaafBI8GIU53tVXMTecOlPYXZiuoOmBcDvunvyFW0le9k
-bLq3YRh3H4s/cSN/jEgtyuiQUXZxSo45uv0i/xEHpVz3DMe3+KfFCTe0dIiJihIJ
-DktVGtoi+wm2TJC01hV8XammK+OxYL1pkS1CwapD+bUJls1Xctu+UzQ2L+obOdkf
-rJpf/9I2Z5xvrPPeKf8+UVVO6zQvp//Y/pgJnmjLZMZ3dcQ+00rFbx73Fu/+BCwy
-GLOceTmxfvFMH4uLUrUh
-=k6Ic
------END PGP SIGNATURE-----
-
---Signature=_Fri__11_Jan_2013_16_52_41_+1100_HYpva/npX.Lrv51c--
+-- 
+Kind regards,
+Minchan Kim
