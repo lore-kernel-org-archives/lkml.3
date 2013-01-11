@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab3AKRMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 12:12:03 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56824 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754262Ab3AKRMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 12:12:01 -0500
-Message-ID: <50F04787.6030206@imgtec.com>
-Date: Fri, 11 Jan 2013 17:10:31 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755334Ab3AKRN7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 12:13:59 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:41908 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262Ab3AKRN5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 12:13:57 -0500
+Date: Fri, 11 Jan 2013 09:13:43 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Simon Glass <sjg@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Roland Stigge <stigge@antcom.de>,
+        Vincent Palatin <vpalatin@chromium.org>, linux-doc@vger.kernel.org,
+        Wolfram Sang <w.sang@pengutronix.de>, Felipe Balbi <balbi@ti.com>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-input@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Alban Bedel <alban.bedel@avionic-design.de>,
+        devicetree-discuss@lists.ozlabs.org,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [PATCH v2] input: Extend matrix-keypad device tree binding
+Message-ID: <20130111171343.GE11224@core.coreip.homeip.net>
+References: <1357868492-16023-1-git-send-email-sjg@chromium.org>
+ <50F0473F.404@wwwdotorg.org>
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        "Mike Frysinger" <vapier@gentoo.org>,
-        David Howells <dhowells@redhat.com>,
-        "Hirokazu Takata" <takata@linux-m32r.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "Koichi Yasutake" <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>
-Subject: Re: [PATCH] consolidate per-arch stack overflow debugging options
-References: <20130111170043.D7CC39DC@kernel.stglabs.ibm.com>
-In-Reply-To: <20130111170043.D7CC39DC@kernel.stglabs.ibm.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_01_11_17_11_52
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F0473F.404@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/13 17:00, Dave Hansen wrote:
+On Fri, Jan 11, 2013 at 10:09:19AM -0700, Stephen Warren wrote:
+> On 01/10/2013 06:41 PM, Simon Glass wrote:
+> > Some matrix keypad drivers can support different numbers of rows and
+> > columns. Add a generic binding for these.
+> > 
+> > Implementation note:
+> > 
+> > In order to implement this binding in the kernel, we will need to modify
+> > matrix_keypad_() to look up the number of rows and cols in
+> > the keymap. Perhaps this could be done by passing 0 for these parameters?
+> > Many of the parameters can already be set to NULL. Ick.
 > 
-> I'm looking for some Acked-bys on this from the various arch
-> maintainers that it affects.  I'd like to send it up to Linus
-> in the next merge window.  This is part of a larger series to
-> clean up the "Kernel Hacking" menu:
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
 > 
-> 	https://lkml.org/lkml/2012/12/17/306
+> Note that the Tegra bindings are based on matrix-keypad.txt, and
+> recently added the following properties:
 > 
-> --
+> > - nvidia,kbc-row-pins: The KBC pins which are configured as row. This is an
+> >   array of pin numbers which is used as rows.
+> > - nvidia,kbc-col-pins: The KBC pins which are configured as column. This is an
+> >   array of pin numbers which is used as column.
 > 
-> Several architectures have similar stack debugging config options.
-> They all pretty much do the same thing, some with slightly
-> differing help text.
-> 
-> This patch changes the architectures to instead enable a Kconfig
-> boolean, and then use that boolean in the generic Kconfig.debug
-> to present the actual menu option.  This removes a bunch of
-> duplication and adds consistency across arches.
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Hirokazu Takata <takata@linux-m32r.org>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: uclinux-dist-devel@blackfin.uclinux.org
+> Those both define the number of rows/columns (indirectly via the
+> property lengths) *and* define which pins are used for the rows/columns.
+> How will this influence/interact-with any changes you're planning to the
+> core matrix keymap parsing code; would Tegra require your "new"
+> keypad,num-rows/keypad,num-columns properties even though the
+> information is redundant, or will the Tegra driver have some way of
+> passing this information to the core?
 
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Even if we decide to move lookup of keypad,num-rows/keypad,num-columns
+into matrix-keypad code we will still allow callers to override DT data,
+like we do with platform keymaps.
 
-(I can use this for arch/metag too).
+Thanks.
 
-Cheers
-James
-
+-- 
+Dmitry
