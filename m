@@ -1,149 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab3AKPNB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 10:13:01 -0500
-Received: from casper.infradead.org ([85.118.1.10]:50998 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab3AKPM7 (ORCPT
+	id S1754213Ab3AKPVe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 10:21:34 -0500
+Received: from mailbackup.inode.at ([213.229.60.24]:41652 "EHLO
+	mailbackup.inode.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab3AKPVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 10:12:59 -0500
-Date: Fri, 11 Jan 2013 13:12:13 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Greg KH <greg@kroah.com>
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-Message-ID: <20130111131213.4c1270b1@infradead.org>
-In-Reply-To: <20130111113904.251f5fb5587446dbb10694e3@canb.auug.org.au>
-References: <20130111113904.251f5fb5587446dbb10694e3@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/FjBe7D4ePsBges==yq0nD73"; protocol="application/pgp-signature"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 11 Jan 2013 10:21:32 -0500
+X-Greylist: delayed 311 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jan 2013 10:21:31 EST
+From: Michal Bachraty <michal.bachraty@streamunlimited.com>
+To: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk
+Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        netdev@vger.kernel.org,
+        Michal Bachraty <michal.bachraty@streamunlimited.com>
+Subject: [PATCH] cpsw: Add support to read cpu MAC address
+Date: Fri, 11 Jan 2013 16:15:02 +0100
+Message-Id: <1357917302-32550-1-git-send-email-michal.bachraty@streamunlimited.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Authenticated-Sender: michal.bachraty@streamunlimited.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/FjBe7D4ePsBges==yq0nD73
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Michal Bachraty <michal.bachraty@streamunlimited.com>
+---
+ Documentation/devicetree/bindings/net/cpsw.txt |   10 +-
+ arch/arm/boot/dts/am33xx.dtsi                  |    5 +-
+ drivers/net/ethernet/ti/cpsw.c                 |  121 +++++++++++++++++++++---
+ include/linux/platform_data/cpsw.h             |    8 ++
+ 4 files changed, 128 insertions(+), 16 deletions(-)
 
-Em Fri, 11 Jan 2013 11:39:04 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
+diff --git a/Documentation/devicetree/bindings/net/cpsw.txt b/Documentation/devicetree/bindings/net/cpsw.txt
+index dcaabe9..432122c 100644
+--- a/Documentation/devicetree/bindings/net/cpsw.txt
++++ b/Documentation/devicetree/bindings/net/cpsw.txt
+@@ -4,7 +4,7 @@ TI SoC Ethernet Switch Controller Device Tree Bindings
+ Required properties:
+ - compatible		: Should be "ti,cpsw"
+ - reg			: physical base address and size of the cpsw
+-			  registers map
++			  registers map and mac-address cpu config registers
+ - interrupts		: property with a value describing the interrupt
+ 			  number
+ - interrupt-parent	: The parent interrupt controller
+@@ -25,17 +25,23 @@ Required properties:
+ - slave_reg_ofs		: Specifies slave register offset
+ - sliver_reg_ofs	: Specifies slave sliver register offset
+ - phy_id		: Specifies slave phy id
+-- mac-address		: Specifies slave MAC address
+ 
+ Optional properties:
+ - ti,hwmods		: Must be "cpgmac0"
+ - no_bd_ram		: Must be 0 or 1
++- mac-address-source 	: Specifies source of MAC address ("user-defined-mac",
++			  "cpu-id0-mac", "cpu-id01-mac", "random-mac"). If not
++			  specified, "cpu-id0-mac" is selected
++- mac-address		: Specifies slave MAC address for "user-defined-mac"
++			  property value. When MAC address is not correct,
++			  "cpu-id01-mac" is selected
+ 
+ Note: "ti,hwmods" field is used to fetch the base address and irq
+ resources from TI, omap hwmod data base during device registration.
+ Future plan is to migrate hwmod data base contents into device tree
+ blob so that, all the required data will be used from device tree dts
+ file.
++As default, MAC address is set from CPU (MAC_ID0 register)
+ 
+ Examples:
+ 
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 47fb059..f4845a3 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -307,7 +307,8 @@
+ 			slaves = <1>;
+ 			reg = <0x4a100000 0x800
+ 				0x4a101200 0x100
+-				0x4a101000 0x100>;
++				0x4a101000 0x100
++				0x44e10630 0x0C>;
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
+ 			interrupt-parent = <&intc>;
+@@ -317,7 +318,7 @@
+ 			cpsw_emac0: slave@0 {
+ 				slave_reg_ofs = <0x208>;
+ 				sliver_reg_ofs = <0xd80>;
+-				mac-address = [ 00 00 00 00 00 00 ];
++				mac-address-source = "cpu-id0-mac";
+ 			};
+ 
+ 			davinci_mdio: mdio@4a101000 {
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index fb1a692..b777116 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -184,6 +184,13 @@ struct cpsw_sliver_regs {
+ 	u32	rx_pri_map;
+ };
+ 
++struct config_regs {
++	u32	mac_id0_lo;
++	u32	mac_id0_hi;
++	u32	mac_id1_lo;
++	u32	mac_id1_hi;
++};
++
+ struct cpsw_slave {
+ 	struct cpsw_slave_regs __iomem	*regs;
+ 	struct cpsw_sliver_regs __iomem	*sliver;
+@@ -199,12 +206,14 @@ struct cpsw_priv {
+ 	struct net_device		*ndev;
+ 	struct resource			*cpsw_res;
+ 	struct resource			*cpsw_ss_res;
++	struct resource			*conf_res;
+ 	struct napi_struct		napi;
+ 	struct device			*dev;
+ 	struct cpsw_platform_data	data;
+ 	struct cpsw_regs __iomem	*regs;
+ 	struct cpsw_ss_regs __iomem	*ss_regs;
+ 	struct cpsw_host_regs __iomem	*host_port_regs;
++	struct config_regs __iomem	*conf_regs;
+ 	u32				msg_enable;
+ 	struct net_device_stats		stats;
+ 	int				rx_packet_max;
+@@ -363,6 +372,20 @@ static void cpsw_set_slave_mac(struct cpsw_slave *slave,
+ 	__raw_writel(mac_lo(priv->mac_addr), &slave->regs->sa_lo);
+ }
+ 
++static void cpsw_get_cpu_id0_mac(struct cpsw_priv *priv)
++{
++	*((u32 *)priv->mac_addr) = __raw_readl(&priv->conf_regs->mac_id0_hi);
++	*((u16 *)(priv->mac_addr + 4)) = __raw_readw(
++						&priv->conf_regs->mac_id0_lo);
++}
++
++static void cpsw_get_cpu_id1_mac(struct cpsw_priv *priv)
++{
++	*((u32 *)priv->mac_addr) = __raw_readl(&priv->conf_regs->mac_id1_hi);
++	*((u16 *)(priv->mac_addr + 4)) = __raw_readw(
++						&priv->conf_regs->mac_id1_lo);
++}
++
+ static void _cpsw_adjust_link(struct cpsw_slave *slave,
+ 			      struct cpsw_priv *priv, bool *link)
+ {
+@@ -831,6 +854,7 @@ static int cpsw_probe_dt(struct cpsw_platform_data *data,
+ 		struct cpsw_slave_data *slave_data = data->slave_data + i;
+ 		const char *phy_id = NULL;
+ 		const void *mac_addr = NULL;
++		const char *source_mac;
+ 
+ 		if (of_property_read_string(slave_node, "phy_id", &phy_id)) {
+ 			pr_err("Missing slave[%d] phy_id property\n", i);
+@@ -855,9 +879,39 @@ static int cpsw_probe_dt(struct cpsw_platform_data *data,
+ 		}
+ 		slave_data->sliver_reg_ofs = prop;
+ 
++		/* set default mac address to CPU_ID0_MAC */
++		slave_data->mac_addr_source = CPU_ID0_MAC;
++
+ 		mac_addr = of_get_mac_address(slave_node);
+-		if (mac_addr)
+-			memcpy(slave_data->mac_addr, mac_addr, ETH_ALEN);
++		if (mac_addr) {
++			if (is_valid_ether_addr(mac_addr)) {
++				slave_data->mac_addr_source = USER_DEFINED_MAC;
++				memcpy(slave_data->mac_addr, mac_addr, ETH_ALEN);
++			} else {
++				pr_info("Bad user defined MACID.Using CPU "\
++					 "MACID0\n");
++			}
++		}
++
++		source_mac = of_get_property(slave_node, "mac-address-source",
++					     NULL);
++
++		if (source_mac) {
++			if (!strcmp(source_mac, "user-defined-mac"))
++				slave_data->mac_addr_source = USER_DEFINED_MAC;
++			else if (!strcmp(source_mac, "cpu-id0-mac"))
++				slave_data->mac_addr_source = CPU_ID0_MAC;
++			else if (!strcmp(source_mac, "cpu-id1-mac"))
++				slave_data->mac_addr_source = CPU_ID1_MAC;
++			else if (!strcmp(source_mac, "random-mac"))
++				slave_data->mac_addr_source = RANDOM_MAC;
++			else {
++				pr_err("Slave[%d] Bad mac-address-source"\
++				"proprerty value\n", i);
++				ret = -EINVAL;
++				goto error_ret;
++			}
++		}
+ 
+ 		i++;
+ 	}
+@@ -915,16 +969,6 @@ static int __devinit cpsw_probe(struct platform_device *pdev)
+ 	}
+ 	data = &priv->data;
+ 
+-	if (is_valid_ether_addr(data->slave_data[0].mac_addr)) {
+-		memcpy(priv->mac_addr, data->slave_data[0].mac_addr, ETH_ALEN);
+-		pr_info("Detected MACID = %pM", priv->mac_addr);
+-	} else {
+-		eth_random_addr(priv->mac_addr);
+-		pr_info("Random MACID = %pM", priv->mac_addr);
+-	}
+-
+-	memcpy(ndev->dev_addr, priv->mac_addr, ETH_ALEN);
+-
+ 	priv->slaves = kzalloc(sizeof(struct cpsw_slave) * data->slaves,
+ 			       GFP_KERNEL);
+ 	if (!priv->slaves) {
+@@ -986,6 +1030,54 @@ static int __devinit cpsw_probe(struct platform_device *pdev)
+ 	}
+ 	priv->ss_regs = regs;
+ 
++	/* configuration register registering*/
++	priv->conf_res = platform_get_resource(pdev, IORESOURCE_MEM, 3);
++	if (!priv->conf_res) {
++		dev_err(priv->dev, "error getting i/o resource\n");
++		ret = -ENOENT;
++		goto clean_clk_ret;
++	}
++
++	if (!request_mem_region(priv->conf_res->start,
++			resource_size(priv->conf_res), ndev->name)) {
++		dev_err(priv->dev, "failed request i/o region\n");
++		ret = -ENXIO;
++		goto clean_clk_ret;
++	}
++
++	regs = ioremap(priv->conf_res->start,
++				resource_size(priv->conf_res));
++	if (!regs) {
++		dev_err(priv->dev, "unable to map i/o region\n");
++		goto clean_configuration_iores_ret;
++	}
++	priv->conf_regs = regs;
++
++	switch (data->slave_data[0].mac_addr_source) {
++	case USER_DEFINED_MAC:
++			/* read MAC adddress from DT*/
++			memcpy(priv->mac_addr, data->slave_data[0].mac_addr, ETH_ALEN);
++			pr_info("User defined MACID = %pM", priv->mac_addr);
++			break;
++	case CPU_ID0_MAC:
++			/* read MAC adddress from CPU MACID0*/
++			cpsw_get_cpu_id0_mac(priv);
++			pr_info("CPU MACID0 = %pM\n", priv->mac_addr);
++		break;
++	case CPU_ID1_MAC:
++			/* read MAC adddress from CPU MACID1*/
++			cpsw_get_cpu_id1_mac(priv);
++			pr_info("CPU MACID1 = %pM\n", priv->mac_addr);
++		break;
++	case RANDOM_MAC:
++			/* random MAC*/
++			eth_random_addr(priv->mac_addr);
++			pr_info("Random MACID = %pM\n", priv->mac_addr);
++		break;
++	}
++
++	memcpy(ndev->dev_addr, priv->mac_addr, ETH_ALEN);
++
+ 	for_each_slave(priv, cpsw_slave_init, priv);
+ 
+ 	memset(&dma_params, 0, sizeof(dma_params));
+@@ -1099,6 +1191,9 @@ clean_dma_ret:
+ 	cpdma_ctlr_destroy(priv->dma);
+ clean_iomap_ret:
+ 	iounmap(priv->regs);
++clean_configuration_iores_ret:
++	release_mem_region(priv->conf_res->start,
++			   resource_size(priv->conf_res));
+ clean_cpsw_ss_iores_ret:
+ 	release_mem_region(priv->cpsw_ss_res->start,
+ 			   resource_size(priv->cpsw_ss_res));
+@@ -1133,6 +1228,8 @@ static int __devexit cpsw_remove(struct platform_device *pdev)
+ 			   resource_size(priv->cpsw_res));
+ 	release_mem_region(priv->cpsw_ss_res->start,
+ 			   resource_size(priv->cpsw_ss_res));
++	release_mem_region(priv->conf_res->start,
++			   resource_size(priv->conf_res));
+ 	pm_runtime_disable(&pdev->dev);
+ 	clk_put(priv->clk);
+ 	kfree(priv->slaves);
+diff --git a/include/linux/platform_data/cpsw.h b/include/linux/platform_data/cpsw.h
+index c4e23d0..ef064b0 100644
+--- a/include/linux/platform_data/cpsw.h
++++ b/include/linux/platform_data/cpsw.h
+@@ -17,12 +17,20 @@
+ 
+ #include <linux/if_ether.h>
+ 
++enum mac_address_source {
++	USER_DEFINED_MAC = 0,
++	CPU_ID0_MAC,
++	CPU_ID1_MAC,
++	RANDOM_MAC,
++};
++
+ struct cpsw_slave_data {
+ 	u32		slave_reg_ofs;
+ 	u32		sliver_reg_ofs;
+ 	const char	*phy_id;
+ 	int		phy_if;
+ 	u8		mac_addr[ETH_ALEN];
++	enum mac_address_source mac_addr_source;
+ };
+ 
+ struct cpsw_platform_data {
+-- 
+1.7.9.5
 
-> Hi Mauro,
->=20
-> After merging the v4l-dvb tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->=20
-> drivers/media/platform/sh_veu.c:1146:22: error: expected '=3D', ',', ';',=
- 'asm' or '__attribute__' before 'sh_veu_probe'
-> drivers/media/platform/sh_veu.c:1228:22: error: expected '=3D', ',', ';',=
- 'asm' or '__attribute__' before 'sh_veu_remove'
-> drivers/media/platform/sh_veu.c:1244:2: error: implicit declaration of fu=
-nction '__devexit_p' [-Werror=3Dimplicit-function-declaration]
-> drivers/media/platform/sh_veu.c:1244:25: error: 'sh_veu_remove' undeclare=
-d here (not in a function)
-> drivers/media/platform/sh_veu.c: In function 'sh_veu_init':
-> drivers/media/platform/sh_veu.c:1253:45: error: 'sh_veu_probe' undeclared=
- (first use in this function)
-> drivers/media/platform/sh_veu.c:1253:45: note: each undeclared identifier=
- is reported only once for each function it appears in
-> drivers/media/platform/sh_veu.c: At top level:
-> drivers/media/platform/sh_veu.c:1095:20: warning: 'sh_veu_bh' defined but=
- not used [-Wunused-function]
-> drivers/media/platform/sh_veu.c:1109:20: warning: 'sh_veu_isr' defined bu=
-t not used [-Wunused-function]
-> drivers/media/platform/sh_veu.c: In function 'sh_veu_init':
-> drivers/media/platform/sh_veu.c:1254:1: warning: control reaches end of n=
-on-void function [-Wreturn-type]
->=20
-> Caused by commit 05efa71bdc0e ("[media] media: add a VEU MEM2MEM format
-> conversion and scaling driver") interacting with commit 54b956b90360
-> ("Remove __dev* markings from init.h") from the driver-core.current tree.
->=20
-> I have applied the following merge fix patch which could be applied
-> directly to the v4l-dvb tree (please):
-
-Applied,
-
-Thanks!
-Mauro
-
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 11 Jan 2013 11:35:34 +1100
-> Subject: [PATCH] [media] media: remove __dev* annotations
->=20
-> CONFIG_HOTPLUG is always true now and the __dev* macros have meen removed.
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/media/platform/sh_veu.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/media/platform/sh_veu.c b/drivers/media/platform/sh_=
-veu.c
-> index a018676..cb54c69 100644
-> --- a/drivers/media/platform/sh_veu.c
-> +++ b/drivers/media/platform/sh_veu.c
-> @@ -1143,7 +1143,7 @@ static irqreturn_t sh_veu_isr(int irq, void *dev_id)
->  	return IRQ_HANDLED;
->  }
-> =20
-> -static int __devinit sh_veu_probe(struct platform_device *pdev)
-> +static int sh_veu_probe(struct platform_device *pdev)
->  {
->  	struct sh_veu_dev *veu;
->  	struct resource *reg_res;
-> @@ -1225,7 +1225,7 @@ einitctx:
->  	return ret;
->  }
-> =20
-> -static int __devexit sh_veu_remove(struct platform_device *pdev)
-> +static int sh_veu_remove(struct platform_device *pdev)
->  {
->  	struct v4l2_device *v4l2_dev =3D platform_get_drvdata(pdev);
->  	struct sh_veu_dev *veu =3D container_of(v4l2_dev,
-> @@ -1241,7 +1241,7 @@ static int __devexit sh_veu_remove(struct platform_=
-device *pdev)
->  }
-> =20
->  static struct platform_driver __refdata sh_veu_pdrv =3D {
-> -	.remove		=3D __devexit_p(sh_veu_remove),
-> +	.remove		=3D sh_veu_remove,
->  	.driver		=3D {
->  		.name	=3D "sh_veu",
->  		.owner	=3D THIS_MODULE,
-
-
-
-
-Cheers,
-Mauro
-
---Sig_/FjBe7D4ePsBges==yq0nD73
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ8CvUAAoJEGO08Bl/PELnNvQQALN8Zcs1UYjuKouSvHyavBIS
-rn0/XeGbphzj9Ht9EjQsFzO7KvB9ScEaG0+kR8FQY6HxG+vSa4+VtamW2chIxgYX
-SPViieZpKZ1p2kJinzpoa+BADEwqKudz72F/LT0rw3eEZInSmgj+BeHsDbqO5kRs
-iavdniyv3aGESDnbGIVWj0tm8KYDhT41Bqs/jc7sCKcOs3cdBv90Aktcwup6dNJI
-itONgFrpf3SNwvxR1AmSbQ9pNDtDyd2neCpAvm6Aa/vk0HEExWlyA0pLg4OQyelt
-8vBp62fU6x2MH5yQPdfRMU26ia9/xd1UsW8fz4HWr09Az7ZgctNFmWMfx1nByMHN
-+7kTLgpKSa/1yw43QFdTvbWtTDWvT8zpmFIsnM2qFcSRM4lfwAIgHgKIf0w1QQfY
-nMCJfjTGRjlkwtyGuPAlVunqoJpdn9s+tI2WwtTGJj53DuSQmw6az0oIUeIn28BI
-LOuuQt6w8zEGeHROm3LDe2zx6YTuX1sQgc2aOb8H0Hafw3VxIiht8QM8BuJW1SgS
-k/FLzhhFfBD5vWjbbXgM5pSV+EvBMymxLnFHZQBCqgU2p08hviJSr3Pq/JPqmTDh
-JMVCF98HpGJW77hLnO4t5CIT5LNdUHopiTutAzZdpgXh+52JmHLBmHGyziM4tcX4
-TfLM6VxedO1C7H+DHhy6
-=rV1u
------END PGP SIGNATURE-----
-
---Sig_/FjBe7D4ePsBges==yq0nD73--
