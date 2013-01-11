@@ -1,223 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab3AKHie (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 02:38:34 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:46289 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753456Ab3AKHid (ORCPT
+	id S1754747Ab3AKHqr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 02:46:47 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:53397 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab3AKHqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 02:38:33 -0500
+	Fri, 11 Jan 2013 02:46:46 -0500
+Message-ID: <50EFC356.10908@gmail.com>
+Date: Fri, 11 Jan 2013 13:16:30 +0530
+From: Abhijit Pawar <abhi.c.pawar@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130110005139.GW20089@twin.jikos.cz>
-References: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
-	<1356014615-15073-4-git-send-email-zwu.kernel@gmail.com>
-	<20130110005139.GW20089@twin.jikos.cz>
-Date: Fri, 11 Jan 2013 15:38:31 +0800
-Message-ID: <CAEH94Lh-a4cqhqDYh7UbsWptTuGxOJA9JywKhiEH-kZWr52Cfw@mail.gmail.com>
-Subject: Re: [PATCH RESEND v1 03/16] vfs: add I/O frequency update function
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: dsterba@suse.cz
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, darrick.wong@oracle.com,
-        andi@firstfloor.org, hch@infradead.org, linuxram@linux.vnet.ibm.com,
-        wuzhy@linux.vnet.ibm.com
+To: Jeff Liu <jeff.liu@oracle.com>
+CC: Abhijit Pawar <abhi.c.pawar@gmail.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH 1/1] fs/xfs remove obsolete simple_strto<foo>
+References: <1357740282-2377-1-git-send-email-abhi.c.pawar@gmail.com> <50EFB2FE.2000307@oracle.com>
+In-Reply-To: <50EFB2FE.2000307@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 8:51 AM, David Sterba <dsterba@suse.cz> wrote:
-> On Thu, Dec 20, 2012 at 10:43:22PM +0800, zwu.kernel@gmail.com wrote:
->> --- a/fs/hot_tracking.c
->> +++ b/fs/hot_tracking.c
->> @@ -164,6 +164,135 @@ static void hot_inode_tree_exit(struct hot_info *root)
->>       spin_unlock(&root->lock);
->>  }
+On 01/11/2013 12:06 PM, Jeff Liu wrote:
+> On 01/09/2013 10:04 PM, Abhijit Pawar wrote:
+>> This patch replaces usages of obsolete simple_strtoul with kstrtoint in xfs_args and suffix_strtoul.
 >>
->> +struct hot_inode_item
->> +*hot_inode_item_lookup(struct hot_info *root, u64 ino)
->> +{
->> +     struct rb_node **p = &root->hot_inode_tree.map.rb_node;
->> +     struct rb_node *parent = NULL;
->> +     struct hot_comm_item *ci;
->> +     struct hot_inode_item *entry;
->> +
->> +     /* walk tree to find insertion point */
->> +     spin_lock(&root->lock);
->> +     while (*p) {
->> +             parent = *p;
->> +             ci = rb_entry(parent, struct hot_comm_item, rb_node);
->> +             entry = container_of(ci, struct hot_inode_item, hot_inode);
->> +             if (ino < entry->i_ino)
->> +                     p = &(*p)->rb_left;
->> +             else if (ino > entry->i_ino)
->> +                     p = &(*p)->rb_right;
->
-> style comment: put { } around the all if/else blocks,
-no, it will violate checkpatch.pl. If the if/else block only contains
-one line of code, we should not put {} around them.
->
->> +             else {
->> +                     spin_unlock(&root->lock);
->> +                     kref_get(&entry->hot_inode.refs);
->
-> jumping forwards in the series, the spin_unlock and kref_get get swapped
-> later, and I think that's the right order. Otherwise there's a small
-> window where the entry does not get the reference and could be
-> potentially freed by racing kref_put, no?
-yes, good catch, thanks, done
->
-> <lookup entry E>
-> spin_unlock(tree)
->                      spin_lock(tree)
->                      <lookup entry E>
->                      kref_put(E) or via hot_inode_item_put(E) (1)
-> kref_get(E)                                                   (2)
->
->
-> if the reference count at (1) was 1, it's freed and (2) hits a free
-> memory. hot_inode_item_put can be called from filesystem or via seq
-> print of the respective /proc files, so I think there are chances to hit
-> the problem.
-Great.
->
->> +                     return entry;
->> +             }
->> +     }
->> +     spin_unlock(&root->lock);
->> +
->> +     entry = kmem_cache_zalloc(hot_inode_item_cachep, GFP_NOFS);
->> +     if (!entry)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     spin_lock(&root->lock);
->> +     hot_inode_item_init(entry, ino, &root->hot_inode_tree);
->> +     rb_link_node(&entry->hot_inode.rb_node, parent, p);
->> +     rb_insert_color(&entry->hot_inode.rb_node,
->> +                     &root->hot_inode_tree.map);
->> +     spin_unlock(&root->lock);
->> +
->> +     kref_get(&entry->hot_inode.refs);
->
-> Similar here, the entry is inserted into the tree but there's no
-> refcount yet. And the order of spin_unlock/kref_get remains unchanged.
-ditto
->
->> +     return entry;
->> +}
->> +EXPORT_SYMBOL_GPL(hot_inode_item_lookup);
->> +
->> +static struct hot_range_item
->> +*hot_range_item_lookup(struct hot_inode_item *he,
->> +                     loff_t start)
->> +{
->> +     struct rb_node **p = &he->hot_range_tree.map.rb_node;
->> +     struct rb_node *parent = NULL;
->> +     struct hot_comm_item *ci;
->> +     struct hot_range_item *entry;
->> +
->> +     /* walk tree to find insertion point */
->> +     spin_lock(&he->lock);
->> +     while (*p) {
->> +             parent = *p;
->> +             ci = rb_entry(parent, struct hot_comm_item, rb_node);
->> +             entry = container_of(ci, struct hot_range_item, hot_range);
->> +             if (start < entry->start)
->> +                     p = &(*p)->rb_left;
->> +             else if (start > hot_range_end(entry))
->> +                     p = &(*p)->rb_right;
->
-> if { ...}
-> else if { ... }
-We should not put {} around them as what i explained above.
->
->> +             else {
->> +                     spin_unlock(&he->lock);
->> +                     kref_get(&entry->hot_range.refs);
->
-> same here
-Done
->
->> +                     return entry;
->> +             }
->> +     }
->> +     spin_unlock(&he->lock);
->> +
->> +     entry = kmem_cache_zalloc(hot_range_item_cachep, GFP_NOFS);
->> +     if (!entry)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     spin_lock(&he->lock);
->> +     hot_range_item_init(entry, start, he);
->> +     rb_link_node(&entry->hot_range.rb_node, parent, p);
->> +     rb_insert_color(&entry->hot_range.rb_node,
->> +                     &he->hot_range_tree.map);
->> +     spin_unlock(&he->lock);
->> +
->> +     kref_get(&entry->hot_range.refs);
->
-> and here
-Done
->
->> +     return entry;
->> +}
->> +
->> +/*
->> + * This function does the actual work of updating
->> + * the frequency numbers, whatever they turn out to be.
->
-> Can this function be described a bit better? This comment did not help.
-OK, i will
->
->> + */
->> +static void hot_rw_freq_calc(struct timespec old_atime,
->> +             struct timespec cur_time, u64 *avg)
->> +{
->> +     struct timespec delta_ts;
->> +     u64 new_delta;
->> +
->> +     delta_ts = timespec_sub(cur_time, old_atime);
->> +     new_delta = timespec_to_ns(&delta_ts) >> FREQ_POWER;
->> +
->> +     *avg = (*avg << FREQ_POWER) - *avg + new_delta;
->> +     *avg = *avg >> FREQ_POWER;
->> +}
->> +
->> +static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
->> +{
->> +     struct timespec cur_time = current_kernel_time();
->> +
->> +     if (write) {
->> +             freq_data->nr_writes += 1;
->
-> The preferred style is
->
->                 freq_data->nr_writes++
-OK, done.
->
->> +             hot_rw_freq_calc(freq_data->last_write_time,
->> +                             cur_time,
->> +                             &freq_data->avg_delta_writes);
->> +             freq_data->last_write_time = cur_time;
->> +     } else {
->> +             freq_data->nr_reads += 1;
->
-> (...)
->
->> +             hot_rw_freq_calc(freq_data->last_read_time,
->> +                             freq_data->last_read_time,
->> +                             cur_time,
->> +                             &freq_data->avg_delta_reads);
->> +             freq_data->last_read_time = cur_time;
->> +     }
->> +}
->> +
->
-> david
-
+>> Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
+>> ---
+>>  fs/xfs/xfs_super.c |   29 +++++++++++++++++++----------
+>>  1 files changed, 19 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
+>> index ab8839b..c407121 100644
+>> --- a/fs/xfs/xfs_super.c
+>> +++ b/fs/xfs/xfs_super.c
+>> @@ -139,9 +139,9 @@ static const match_table_t tokens = {
+>>  
+>>  
+>>  STATIC unsigned long
+>> -suffix_strtoul(char *s, char **endp, unsigned int base)
+>> +suffix_kstrtoint(char *s, unsigned int base, int *res)
+>>  {
+>> -	int	last, shift_left_factor = 0;
+>> +	int	last, shift_left_factor = 0, _res;
+>>  	char	*value = s;
+>>  
+>>  	last = strlen(value) - 1;
+>> @@ -158,7 +158,10 @@ suffix_strtoul(char *s, char **endp, unsigned int base)
+>>  		value[last] = '\0';
+>>  	}
+>>  
+>> -	return simple_strtoul((const char *)s, endp, base) << shift_left_factor;
+>> +	if (kstrtoint(s, base, &_res))
+>> +		return -EINVAL;
+>> +	*res = _res << shift_left_factor;
+>> +	return 0;
+>>  }
+>>  
+>>  /*
+>> @@ -174,7 +177,7 @@ xfs_parseargs(
+>>  	char			*options)
+>>  {
+>>  	struct super_block	*sb = mp->m_super;
+>> -	char			*this_char, *value, *eov;
+>> +	char			*this_char, *value;
+>>  	int			dsunit = 0;
+>>  	int			dswidth = 0;
+>>  	int			iosize = 0;
+>> @@ -230,14 +233,16 @@ xfs_parseargs(
+>>  					this_char);
+>>  				return EINVAL;
+>>  			}
+>> -			mp->m_logbufs = simple_strtoul(value, &eov, 10);
+>> +			if (kstrtoint(value, 10, &mp->m_logbufs))
+>> +				return EINVAL;
+>>  		} else if (!strcmp(this_char, MNTOPT_LOGBSIZE)) {
+>>  			if (!value || !*value) {
+>>  				xfs_warn(mp, "%s option requires an argument",
+>>  					this_char);
+>>  				return EINVAL;
+>>  			}
+>> -			mp->m_logbsize = suffix_strtoul(value, &eov, 10);
+>> +			if (suffix_kstrtoint(value, 10, &mp->m_logbsize))
+>> +				return EINVAL;
+>>  		} else if (!strcmp(this_char, MNTOPT_LOGDEV)) {
+>>  			if (!value || !*value) {
+>>  				xfs_warn(mp, "%s option requires an argument",
+>> @@ -266,7 +271,8 @@ xfs_parseargs(
+>>  					this_char);
+>>  				return EINVAL;
+>>  			}
+>> -			iosize = simple_strtoul(value, &eov, 10);
+>> +			if (kstrtoint(value, 10, &iosize))
+>> +				return EINVAL;
+>>  			iosizelog = ffs(iosize) - 1;
+>>  		} else if (!strcmp(this_char, MNTOPT_ALLOCSIZE)) {
+>>  			if (!value || !*value) {
+>> @@ -274,7 +280,8 @@ xfs_parseargs(
+>>  					this_char);
+>>  				return EINVAL;
+>>  			}
+>> -			iosize = suffix_strtoul(value, &eov, 10);
+>> +			if (suffix_kstrtoint(value, 10, &iosize))
+>> +				return EINVAL;
+>>  			iosizelog = ffs(iosize) - 1;
+>>  		} else if (!strcmp(this_char, MNTOPT_GRPID) ||
+>>  			   !strcmp(this_char, MNTOPT_BSDGROUPS)) {
+>> @@ -296,14 +303,16 @@ xfs_parseargs(
+>>  					this_char);
+>>  				return EINVAL;
+>>  			}
+>> -			dsunit = simple_strtoul(value, &eov, 10);
+>> +			if (kstrtoint(value, 10, &dsunit))
+>> +				return EINVAL;
+>>  		} else if (!strcmp(this_char, MNTOPT_SWIDTH)) {
+>>  			if (!value || !*value) {
+>>  				xfs_warn(mp, "%s option requires an argument",
+>>  					this_char);
+>>  				return EINVAL;
+>>  			}
+>> -			dswidth = simple_strtoul(value, &eov, 10);
+>> +			if (kstrtoint(value, 10, &dswidth))
+>> +				return EINVAL;
+>>  		} else if (!strcmp(this_char, MNTOPT_32BITINODE)) {
+>>  			mp->m_flags |= XFS_MOUNT_SMALL_INUMS;
+>>  		} else if (!strcmp(this_char, MNTOPT_64BITINODE)) {
+>>
+> checkpatch.pl show warning if we return EINVAL as below:
+> WARNING: return of an errno should typically be -ve (return -EINVAL)
+> 
+> Can we just ignore such code style issue?
+I think we can.
+Ben?
+> 
+> Thanks,
+> -Jeff
+> 
 
 
 -- 
-Regards,
-
-Zhi Yong Wu
+-
+Abhijit
