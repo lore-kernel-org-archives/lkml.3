@@ -1,148 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab3AKVrs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 16:47:48 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38177 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754610Ab3AKVrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 16:47:45 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [Alternative][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance, v2
-Date: Fri, 11 Jan 2013 22:53:31 +0100
-Message-ID: <4001131.iQGP87KxgR@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <9771783.0zXIGEmDYn@vostro.rjw.lan>
-References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <CAE9FiQW4t17=gYC1dnyCVJUQ3rvV491uiA5U1ZjLWjraM=g9rQ@mail.gmail.com> <9771783.0zXIGEmDYn@vostro.rjw.lan>
+	id S1755581Ab3AKVtR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 16:49:17 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:56839 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab3AKVtQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 16:49:16 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Android Kernel Team <kernel-team@android.com>
+Subject: [RFC][PATCH 0/2] staging: alarm-dev: compat_ioctl support
+Date: Fri, 11 Jan 2013 13:48:36 -0800
+Message-Id: <1357940918-14941-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 10, 2013 01:05:24 AM Rafael J. Wysocki wrote:
-> On Wednesday, January 09, 2013 03:27:29 PM Yinghai Lu wrote:
-> > On Wed, Jan 9, 2013 at 3:06 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > On Wednesday, January 09, 2013 03:16:59 PM Bjorn Helgaas wrote:
-> > >> On Wed, Jan 9, 2013 at 2:33 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > >> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >> >
-> > >> > The ACPI handles of PCI root bridges need to be known to
-> > >> > acpi_bind_one(), so that it can create the appropriate
-> > >> > "firmware_node" and "physical_node" files for them, but currently
-> > >> > the way it gets to know those handles is not exactly straightforward
-> > >> > (to put it lightly).
-> > >> >
-> > >> > This is how it works, roughly:
-> > >> >
-> > >> >   1. acpi_bus_scan() finds the handle of a PCI root bridge,
-> > >> >      creates a struct acpi_device object for it and passes that
-> > >> >      object to acpi_pci_root_add().
-> > >> >
-> > >> >   2. acpi_pci_root_add() creates a struct acpi_pci_root object,
-> > >> >      populates its "device" field with its argument's address
-> > >> >      (device->handle is the ACPI handle found in step 1).
-> > >> >
-> > >> >   3. The struct acpi_pci_root object created in step 2 is passed
-> > >> >      to pci_acpi_scan_root() and used to get resources that are
-> > >> >      passed to pci_create_root_bus().
-> > >> >
-> > >> >   4. pci_create_root_bus() creates a struct pci_host_bridge object
-> > >> >      and passes its "dev" member to device_register().
-> > >> >
-> > >> >   5. platform_notify(), which for systems with ACPI is set to
-> > >> >      acpi_platform_notify(), is called.
-> > >> >
-> > >> > So far, so good.  Now it starts to be "interesting".
-> > >> >
-> > >> >   6. acpi_find_bridge_device() is used to find the ACPI handle of
-> > >> >      the given device (which is the PCI root bridge) and executes
-> > >> >      acpi_pci_find_root_bridge(), among other things, for the
-> > >> >      given device object.
-> > >> >
-> > >> >   7. acpi_pci_find_root_bridge() uses the name (sic!) of the given
-> > >> >      device object to extract the segment and bus numbers of the PCI
-> > >> >      root bridge and passes them to acpi_get_pci_rootbridge_handle().
-> > >> >
-> > >> >   8. acpi_get_pci_rootbridge_handle() browses the list of ACPI PCI
-> > >> >      root bridges and finds the one that matches the given segment
-> > >> >      and bus numbers.  Its handle is then used to initialize the
-> > >> >      ACPI handle of the PCI root bridge's device object by
-> > >> >      acpi_bind_one().  However, this is *exactly* the ACPI handle we
-> > >> >      started with in step 1.
-> > >> >
-> > >> > Needless to say, this is quite embarassing, but it may be avoided
-> > >> > thanks to commit f3fd0c8 (ACPI: Allow ACPI handles of devices to be
-> > >> > initialized in advance), which makes it possible to initialize the
-> > >> > ACPI handle of a device before passing it to device_register().
-> > >> >
-> > >> > Accordingly, add a new __weak routine, pcibios_root_bridge_prepare(),
-> > >> > defaulting to an empty implementation that can be replaced by the
-> > >> > interested architecutres (x86 and ia64 at the moment) with functions
-> > >> > that will set the root bridge's ACPI handle before its dev member is
-> > >> > passed to device_register().  Make both x86 and ia64 provide such
-> > >> > implementations of pcibios_root_bridge_prepare() and remove
-> > >> > acpi_pci_find_root_bridge() and acpi_get_pci_rootbridge_handle() that
-> > >> > aren't necessary any more.
-> > >> >
-> > >> > Included is a fix for breakage on systems with non-ACPI PCI host
-> > >> > bridges from Bjorn Helgaas.
-> > >> >
-> > >> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >>
-> > >> Looks good to me!
-> > >>
-> > >> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> > >
-> > > Thanks!
-> > >
-> > > I'll wait for comments from the others, if any, and put it into my acpi-scan
-> > > branch after a couple of days.  It doesn't need to be there technically, but
-> > > it's kind of related.
-> > 
-> > I tested it with acpi-scan and pci-root-bus-hotplug patchset, and it works well.
-> > so
-> > Acked-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> Thanks!
-> 
-> > BTW, found one left over of change about ->acpi_handle==> ACPI_HANDLE..
-> 
-> Can you please submit that patch with a proper changelog?
-> 
-> It is a mainline bug now (and a build regression for that matter), so I'd like to
-> push the fix to Linus for v3.8-rc4.
+This is a first-pass at implementing compat_ioctl support for
+Android's alarm-dev driver in staging.
 
-May I have your sign-off for the patch below at least?
+The first patch is some refactoring to cleanup and separate the
+copying of user data from the logic, and the second patch adds
+the compat_ioctl support.
 
-Rafael
+As noted in the patch, the only really squirly bit is the handling
+of ANDROID_ALARM_SET_OLD and ANDROID_ALARM_SET_AND_WAIT_OLD. These
+are present to support existing older Android applications.
+Unfortunately these cause ioctl number aliasing issues with
+the compat ioctls, so on 64bit they are only supported in the
+compat patch (since any existing android app old enough to use
+them are likely 32bit).
 
+I'd appreciate feedback from the Android devs on if this is
+an ok assumption and if it might be reasonable to establish
+some sort of a phase-out timeline for the _OLD ioctl support.
 
-> > Index: linux-2.6/drivers/acpi/glue.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/acpi/glue.c
-> > +++ linux-2.6/drivers/acpi/glue.c
-> > @@ -311,7 +311,7 @@ static int acpi_platform_notify(struct d
-> >         if (!ret) {
-> >                 struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-> > 
-> > -               acpi_get_name(dev->acpi_handle, ACPI_FULL_PATHNAME, &buffer);
-> > +               acpi_get_name(ACPI_HANDLE(dev), ACPI_FULL_PATHNAME, &buffer);
-> >                 DBG("Device %s -> %s\n", dev_name(dev), (char *)buffer.pointer);
-> >                 kfree(buffer.pointer);
-> >         } else
-> > 
-> > 
+Any other feedback or thoughts would be welcome!
 
+thanks
+-john
+
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Cc: Arve Hjønnevåg <arve@android.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+
+John Stultz (2):
+  staging: alarm-dev: Refactor alarm-dev ioctl code in prep for
+    compat_ioctl
+  staging: alarm-dev: Implement compat_ioctl support
+
+ drivers/staging/android/alarm-dev.c     |  290 +++++++++++++++++++++----------
+ drivers/staging/android/android_alarm.h |   19 ++
+ 2 files changed, 213 insertions(+), 96 deletions(-)
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.10.4
+
