@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab3AKWnD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 17:43:03 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38457 "EHLO
+	id S1756122Ab3AKWnW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 17:43:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38456 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756065Ab3AKWlV (ORCPT
+	with ESMTP id S1756061Ab3AKWlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jan 2013 17:41:21 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,114 +13,98 @@ To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Jiang Liu <jiang.liu@huawei.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 18/22] PCI, acpiphp: Use acpi_hp_work
-Date: Fri, 11 Jan 2013 14:40:45 -0800
-Message-Id: <1357944049-29620-19-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 15/22] ACPI, PCI: Simplify handle_root_bridge_removal()
+Date: Fri, 11 Jan 2013 14:40:42 -0800
+Message-Id: <1357944049-29620-16-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
 References: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove local defined acpiphp_hp_work.
+Tang Chen found handle_root_bridge_removal is very similiar to
+acpi_bus_hot_remove_device().
+Only difference is that it call trim two times.
+
+Change to handle_root_bridge_removal to call trim one time and then
+use acpi_bus_hot_remove_device.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>
-Cc: linux-acpi@vger.kernel.org
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   42 ++++++------------------------------
- 1 file changed, 6 insertions(+), 36 deletions(-)
+ drivers/acpi/pci_root.c |   49 ++++++++---------------------------------------
+ 1 file changed, 8 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 30467ec..82e8883 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -1197,34 +1197,6 @@ check_sub_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	return AE_OK ;
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index 697ec65..8a0e2e2 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -745,56 +745,23 @@ static void handle_root_bridge_insertion(acpi_handle handle)
+ 		printk(KERN_ERR "cannot add bridge to acpi list\n");
  }
  
--struct acpiphp_hp_work {
--	struct work_struct work;
--	acpi_handle handle;
--	u32 type;
--	void *context;
--};
--
--static void alloc_acpiphp_hp_work(acpi_handle handle, u32 type,
--				  void *context,
--				  void (*func)(struct work_struct *work))
+-static int acpi_root_evaluate_object(acpi_handle handle, char *cmd, int val)
 -{
--	struct acpiphp_hp_work *hp_work;
--	int ret;
+-	acpi_status status;
+-	struct acpi_object_list arg_list;
+-	union acpi_object arg;
 -
--	hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
--	if (!hp_work)
--		return;
+-	arg_list.count = 1;
+-	arg_list.pointer = &arg;
+-	arg.type = ACPI_TYPE_INTEGER;
+-	arg.integer.value = val;
 -
--	hp_work->handle = handle;
--	hp_work->type = type;
--	hp_work->context = context;
+-	status = acpi_evaluate_object(handle, cmd, &arg_list, NULL);
+-	if (ACPI_FAILURE(status)) {
+-		pr_warn("%s: %s to %d failed\n",
+-				 __func__, cmd, val);
+-		return -1;
+-	}
 -
--	INIT_WORK(&hp_work->work, func);
--	ret = queue_work(kacpi_hotplug_wq, &hp_work->work);
--	if (!ret)
--		kfree(hp_work);
+-	return 0;
 -}
 -
- static void _handle_hotplug_event_bridge(struct work_struct *work)
+ static void handle_root_bridge_removal(struct acpi_device *device)
  {
- 	struct acpiphp_bridge *bridge;
-@@ -1233,11 +1205,11 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
- 				      .pointer = objname };
- 	struct acpi_device *device;
- 	int num_sub_bridges = 0;
--	struct acpiphp_hp_work *hp_work;
-+	struct acpi_hp_work *hp_work;
- 	acpi_handle handle;
- 	u32 type;
+ 	int ret_val;
+-	u32 flags = 0;
+-	acpi_handle dummy_handle;
+-	acpi_handle handle = device->handle;
++	struct acpi_eject_event *ej_event;
++
++	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
++	if (!ej_event)
++		return;
  
--	hp_work = container_of(work, struct acpiphp_hp_work, work);
-+	hp_work = container_of(work, struct acpi_hp_work, work);
- 	handle = hp_work->handle;
- 	type = hp_work->type;
+-	if (ACPI_SUCCESS(acpi_get_handle(handle, "_EJ0", &dummy_handle)))
+-		flags |= ROOT_BRIDGE_HAS_EJ0;
+-	if (ACPI_SUCCESS(acpi_get_handle(handle, "_PS3", &dummy_handle)))
+-		flags |= ROOT_BRIDGE_HAS_PS3;
++	ej_event->device = device;
++	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
  
-@@ -1340,8 +1312,7 @@ static void handle_hotplug_event_bridge(acpi_handle handle, u32 type,
- 	 * For now just re-add this work to the kacpi_hotplug_wq so we
- 	 * don't deadlock on hotplug actions.
- 	 */
--	alloc_acpiphp_hp_work(handle, type, context,
--			      _handle_hotplug_event_bridge);
-+	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
+ 	/* remove pci devices at first */
+ 	ret_val = acpi_bus_trim(device, 0);
+ 	printk(KERN_DEBUG "acpi_bus_trim stop return %x\n", ret_val);
+ 
+-	/* remove acpi devices */
+-	ret_val = acpi_bus_trim(device, 1);
+-	printk(KERN_DEBUG "acpi_bus_trim remove return %x\n", ret_val);
+-
+-	if (flags & ROOT_BRIDGE_HAS_PS3) {
+-		acpi_status status;
+-
+-		status = acpi_evaluate_object(handle, "_PS3", NULL, NULL);
+-		if (ACPI_FAILURE(status))
+-			pr_warn("%s: _PS3 failed\n", __func__);
+-	}
+-	if (flags & ROOT_BRIDGE_HAS_EJ0)
+-		acpi_root_evaluate_object(handle, "_EJ0", 1);
++	acpi_bus_hot_remove_device(ej_event);
  }
  
- static void _handle_hotplug_event_func(struct work_struct *work)
-@@ -1350,12 +1321,12 @@ static void _handle_hotplug_event_func(struct work_struct *work)
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
- 				      .pointer = objname };
--	struct acpiphp_hp_work *hp_work;
-+	struct acpi_hp_work *hp_work;
- 	acpi_handle handle;
- 	u32 type;
- 	void *context;
- 
--	hp_work = container_of(work, struct acpiphp_hp_work, work);
-+	hp_work = container_of(work, struct acpi_hp_work, work);
- 	handle = hp_work->handle;
- 	type = hp_work->type;
- 	context = hp_work->context;
-@@ -1416,8 +1387,7 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
- 	 * For now just re-add this work to the kacpi_hotplug_wq so we
- 	 * don't deadlock on hotplug actions.
- 	 */
--	alloc_acpiphp_hp_work(handle, type, context,
--			      _handle_hotplug_event_func);
-+	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
- }
- 
- static struct acpi_pci_driver acpi_pci_hp_driver = {
+ static void _handle_hotplug_event_root(struct work_struct *work)
 -- 
 1.7.10.4
 
