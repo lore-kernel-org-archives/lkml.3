@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab3ALLuJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 06:50:09 -0500
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:11241
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751285Ab3ALLuH (ORCPT
+	id S1753255Ab3ALLzM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 06:55:12 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:43803 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab3ALLzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 06:50:07 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh87h2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Shawn Guo <shawn.guo@linaro.org>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: John Stultz <john.stultz@linaro.org>, <arm@kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH v2 1/3] clockevents: export clockevents_config_and_register for module use
-Date: Sat, 12 Jan 2013 19:50:04 +0800
-Message-ID: <1357991406-22778-2-git-send-email-shawn.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1357991406-22778-1-git-send-email-shawn.guo@linaro.org>
-References: <1357991406-22778-1-git-send-email-shawn.guo@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
+	Sat, 12 Jan 2013 06:55:10 -0500
+From: Dongjin Kim <tobetter@gmail.com>
+Cc: Dongjin Kim <tobetter@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] USB: misc: fixup smatch WARNING
+Date: Sat, 12 Jan 2013 20:54:33 +0900
+Message-Id: <1357991692-13453-1-git-send-email-tobetter@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clockevents_config_and_register is a handy helper for clockevent
-drivers, some of which might support module build, so export the symbol.
+This patch fixes the warning,
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+6a099c63650e50ebf7d1259b859a3d230aec4207 [4/10] USB: misc: Add USB3503 High-Speed Hub Controller
+
+drivers/usb/misc/usb3503.c:238 usb3503_probe() error: we previously assumed 'pdata' could be null (see line 196)
+
+Signed-off-by: Dongjin Kim <tobetter@gmail.com>
 ---
- kernel/time/clockevents.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/misc/usb3503.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 30b6de0..c6d6400 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -339,6 +339,7 @@ void clockevents_config_and_register(struct clock_event_device *dev,
- 	clockevents_config(dev, freq);
- 	clockevents_register_device(dev);
- }
-+EXPORT_SYMBOL_GPL(clockevents_config_and_register);
+diff --git a/drivers/usb/misc/usb3503.c b/drivers/usb/misc/usb3503.c
+index 796d58c..7bc2812 100644
+--- a/drivers/usb/misc/usb3503.c
++++ b/drivers/usb/misc/usb3503.c
+@@ -182,12 +182,12 @@ int usb3503_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ {
+ 	struct usb3503_platform_data *pdata = i2c->dev.platform_data;
+ 	struct usb3503 *hub;
+-	int err;
++	int err = -ENOMEM;
  
- /**
-  * clockevents_update_freq - Update frequency and reprogram a clock event device.
+ 	hub = kzalloc(sizeof(struct usb3503), GFP_KERNEL);
+ 	if (!hub) {
+ 		dev_err(&i2c->dev, "private data alloc fail\n");
+-		return -ENOMEM;
++		return err;
+ 	}
+ 
+ 	i2c_set_clientdata(i2c, hub);
+@@ -195,6 +195,7 @@ int usb3503_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 
+ 	if (!pdata) {
+ 		dev_dbg(&i2c->dev, "missing platform data\n");
++		goto err_out;
+ 	} else {
+ 		hub->gpio_intn		= pdata->gpio_intn;
+ 		hub->gpio_connect	= pdata->gpio_connect;
+@@ -209,7 +210,7 @@ int usb3503_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 			dev_err(&i2c->dev,
+ 					"unable to request GPIO %d as connect pin (%d)\n",
+ 					hub->gpio_intn, err);
+-			goto err_gpio_intn;
++			goto err_out;
+ 		}
+ 	}
+ 
+@@ -248,7 +249,7 @@ err_gpio_reset:
+ err_gpio_connect:
+ 	if (gpio_is_valid(hub->gpio_intn))
+ 		gpio_free(hub->gpio_intn);
+-err_gpio_intn:
++err_out:
+ 	kfree(hub);
+ 
+ 	return err;
 -- 
 1.7.9.5
-
 
