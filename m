@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab3ALVZh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 16:25:37 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:64062 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754322Ab3ALVZg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 16:25:36 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/0TjhforAZDkqEkk+/KXF0gUOrmpYQviU=
-Date: Sat, 12 Jan 2013 16:25:23 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, arm@kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        David Brown <davidb@codeaurora.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [PATCH v2 2/3] ARM: use clockevents_config_and_register()
- where possible
-Message-ID: <20130112212523.GD13433@titan.lakedaemon.net>
-References: <1357991406-22778-1-git-send-email-shawn.guo@linaro.org>
- <1357991406-22778-3-git-send-email-shawn.guo@linaro.org>
+	id S1754284Ab3ALV3Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 16:29:16 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:39056 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753950Ab3ALV3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 16:29:14 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v8 00/22] PCI, ACPI: pci root bus hotplug support / pci match_driver
+Date: Sat, 12 Jan 2013 22:35:01 +0100
+Message-ID: <1754034.2pZM4AiYYe@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
+References: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357991406-22778-3-git-send-email-shawn.guo@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 12, 2013 at 07:50:05PM +0800, Shawn Guo wrote:
-> The clockevent core is able to figure out the best mult and shift,
-> calculate min_delta_ns and max_delta_ns, with the necessary info passed
-> into clockevents_config_and_register().  Use this combined configure
-> and register function where possible to make the codes less error prone
-> and gain some positive diff stat.
+On Friday, January 11, 2013 02:40:27 PM Yinghai Lu wrote:
+> It includes
+> 1. preparing patches for pci root bus hotadd/hotremove support
+> 2. move root bus hotadd from acpiphp to pci_root.c
+> 3. add hot-remove support
+> 4. clean up hotadd/remove with common functions
+> 5. add acpi_hp_work to be shared with acpiphp and root-bus hotplug
+> 6. add match_driver to add pci device to device tree early but
+>    not attach driver for hotplug path.
 > 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Reviewed-by: Anton Vorontsov <cbouatmailru@gmail.com>
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Tested-by: Roland Stigge <stigge@antcom.de>
-> Acked-by: Eric Miao <eric.y.miao@gmail.com>
-> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-> Cc: David Brown <davidb@codeaurora.org>
-> Tested-by: Tony Lindgren <tony@atomide.com>
-> Acked-by: Barry Song <baohua.song@csr.com>
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> Acked-by: Tony Prisk <linux@prisktech.co.nz>
-> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-> Cc: Wan ZongShun <mcuos.com@gmail.com>
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-...
->  arch/arm/plat-orion/time.c               |    6 +-----
-...
+> based on pci/next
+> 
+> could get from
+>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-root-bus-hotplug
+> 
+> After this patchset, will send out
+> 	 for_each_host_bridge support
+> 	 for_each_dev_addon_res
+> 
+> Jiang Liu (4):
+>   PCI: Fix a device reference count leakage issue in pci_dev_present()
+>   PCI: make PCI device create/destroy logic symmetric
+>   PCI: split registration of PCI bus devices into two stages
+>   PCI: correctly detect ACPI PCI host bridge objects
+> 
+> Tang Chen (2):
+>   ACPI: Introduce a new acpi handle to determine HID match.
+>   PCI, ACPI: debug print for installation of acpi root bridge's notifier
+> 
+> Yinghai Lu (16):
+>   PCI, acpiphp: Add is_hotplug_bridge detection
+>   PCI: Add root bus children dev's res to fail list
+>   PCI: Set dev_node early for pci_dev
+>   ACPI: Separate acpi_bus_trim to support two steps.
+>   PCI, acpiphp: Separate out hot-add support of pci host bridge
+>   PCI, ACPI: Add pci_root_hp hot removal notification support.
+>   PCI, ACPI: remove acpi_root_bridge in pci_root_hp
+>   ACPI: update ej_event interface to take acpi_device
+>   ACPI, PCI: Simplify handle_root_bridge_removal()
+>   PCI, acpiphp: Don't bailout even no slots found yet.
+>   PCI, ACPI: Add alloc_acpi_hp_work()
+>   PCI, acpiphp: Use acpi_hp_work
+>   PCI, pci_root_hp: Use acpi_hp_work
+>   PCI, ACPI: Make kacpi_hotplug_wq static
+>   PCI: add match_driver in struct pci_dev
+>   PCI: move device_add out of pci_bus_add_device()
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+It looks good overall, but I have a few questions and comments.
 
-thx,
+I'll reply to the individual patches where applicable.
 
-Jason.
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
