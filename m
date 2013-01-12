@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab3ALDlG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 22:41:06 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:35890 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754213Ab3ALDlE (ORCPT
+	id S1755759Ab3ALDmV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 22:42:21 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:50411 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461Ab3ALDmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 22:41:04 -0500
-Date: Fri, 11 Jan 2013 19:37:30 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [PATCH v4 0/2] pstore,efi_pstore: Avoid deadlock in non-blocking
- paths
-Message-ID: <20130112033729.GA27214@lizard.sbx05280.losalca.wayport.net>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3E17B@USINDEM103.corp.hds.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3E17B@USINDEM103.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Jan 2013 22:42:19 -0500
+Date: Fri, 11 Jan 2013 19:42:16 -0800 (PST)
+Message-Id: <20130111.194216.884859016289350447.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: mst@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        edumazet@google.com, stefanha@redhat.com
+Subject: Re: [PATCH V2 0/3] some fixes of tuntap
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1357959574-13113-1-git-send-email-jasowang@redhat.com>
+References: <1357959574-13113-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 06:08:52PM +0000, Seiji Aguchi wrote:
-> Changelog 
-> v3 -> v4
+From: Jason Wang <jasowang@redhat.com>
+Date: Sat, 12 Jan 2013 10:59:31 +0800
 
-I am confused. Tony already applied v3, no? Do you expect me to do
-anything with these patches, or is it just an update for Tony?
+> There series fixes two issues:
+> - Don't allow calling TUNSETIFF when a file is detached which may cause kernel
+> data structure corrupt.
+> - Fix the reference count leaking of sock and module.
+> 
+> Plus a suggestion from Eric to use rtnl_dereference() instead of the open code.
+> 
+> Changes from v1:
+> - don't use rcu to dereference tfile->detached as it was already protected by
+> rtnl lock.
+> - add a patch of switching to use rtnl_dereference().
 
-Thanks,
-Anton
+All applied, thanks Jason.
