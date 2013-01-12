@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab3ALRHY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 12:07:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753510Ab3ALRHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 12:07:19 -0500
-Date: Sat, 12 Jan 2013 18:06:55 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Josh Stone <jistone@redhat.com>
-Cc: Anton Arapov <anton@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Frank Eigler <fche@redhat.com>
-Subject: Re: [RFC PATCH 5/6] uprobes: add bp_vaddr argument to consumer
-	handler
-Message-ID: <20130112170655.GA20945@redhat.com>
-References: <1356088596-17858-1-git-send-email-anton@redhat.com> <1356088596-17858-6-git-send-email-anton@redhat.com> <20121222163545.GE18082@redhat.com> <20121222171329.GA20691@redhat.com> <20121223154910.GA7106@redhat.com> <20130108142715.GA16849@bandura.brq.redhat.com> <50EF43F8.3040403@redhat.com>
+	id S1753862Ab3ALRML (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 12:12:11 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:35792 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab3ALRMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 12:12:10 -0500
+Date: Sat, 12 Jan 2013 09:12:09 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com
+Subject: Re: [PATCH 0/4] arm: vt8500: Add support for Wondermedia
+ WM8750/WM8850
+Message-ID: <20130112171209.GA24073@quad.lixom.net>
+References: <1357935162-7672-1-git-send-email-linux@prisktech.co.nz>
+ <20130111215659.GA16521@quad.lixom.net>
+ <1357960044.8515.0.camel@gitbox>
+ <1357960163.8515.3.camel@gitbox>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50EF43F8.3040403@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1357960163.8515.3.camel@gitbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10, Josh Stone wrote:
->
-> For uprobes, systemtap wants regs->ip to be the real breakpoint address,
+On Sat, Jan 12, 2013 at 04:09:23PM +1300, Tony Prisk wrote:
+> The following changes since commit
+> d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
+> 
+>   Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://server.prisktech.co.nz/git/linuxwmt.git
+> tags/vt8500-multiplatform-3.9
 
-Just to be sure this didn't escape your attention... Please note that
-this becomes true after
+Thanks, pulled in as vt8500/multiplatform.
 
-	[PATCH 2/2] uprobes: Change handle_swbp() to expose bp_vaddr to handler_chain()
-	http://marc.info/?l=linux-kernel&m=135688247630262
 
-so you should no longer use uprobe_get_swbp_addr or inst->vaddr to
-change regs->ip.
-
-> and for uretprobes we want the original return address.
-
-Yes, Anton's v2 does this.
-
-But. Don't you also need to know the address of function we are going
-to return from?
-
-Probably you do not, uprobe_consumer should know which function (but
-not vaddr) it probes, but please confirm.
-
-Oleg.
-
+-Olof
