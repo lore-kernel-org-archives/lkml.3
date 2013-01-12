@@ -1,124 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab3ALW3I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 17:29:08 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:39118 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754271Ab3ALW3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 17:29:07 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v8 06/22] PCI: split registration of PCI bus devices into two stages
-Date: Sat, 12 Jan 2013 23:34:54 +0100
-Message-ID: <3931059.ZcnvRQRmKT@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357944049-29620-7-git-send-email-yinghai@kernel.org>
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-7-git-send-email-yinghai@kernel.org>
+	id S1754541Ab3ALWa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 17:30:56 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:53007 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754351Ab3ALWaz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 17:30:55 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18ebHgr5ovI7n5RCSXSpyj0vGwJKfKmKmE=
+Date: Sat, 12 Jan 2013 17:30:50 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Dove: move CuBox led pinctrl to gpio-leds node
+Message-ID: <20130112223050.GI13433@titan.lakedaemon.net>
+References: <1356646870-2903-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130112214257.GF13433@titan.lakedaemon.net>
+ <50F1DAE7.4050508@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F1DAE7.4050508@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 11, 2013 02:40:33 PM Yinghai Lu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
+On Sat, Jan 12, 2013 at 10:51:35PM +0100, Sebastian Hesselbarth wrote:
+> On 01/12/2013 10:42 PM, Jason Cooper wrote:
+> >On Thu, Dec 27, 2012 at 11:21:10PM +0100, Sebastian Hesselbarth wrote:
+> >>gpio-leds has support for pinctrl allocation, make use of it.
+> >>
+> >>Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
+> >> ...
+> >>  &pinctrl {
+> >>-	pinctrl-0 =<&pmx_gpio_12&pmx_gpio_18>;
+> >>+	pinctrl-0 =<&pmx_gpio_12>;
+> >>  	pinctrl-names = "default";
+> >>
+> >>  	pmx_gpio_12: pmx-gpio-12 {
+> >>--
+> >>1.7.10.4
+> >
+> >I'm getting a merge conflict wit hthe above:
+> >
+> >&pinctrl {
+> ><<<<<<<  HEAD
+> >         pinctrl-0 =<&pmx_gpio_18>;
+> >=======
+> >         pinctrl-0 =<&pmx_gpio_12>;
+> >>>>>>>>ARM: Dove: move CuBox led pinctrl to gpio-leds node
+> >         pinctrl-names = "default";
+> >
+> >         pmx_gpio_18: pmx-gpio-18 {
+> >                 marvell,pins = "mpp18";
+> >                 marvell,function = "gpio";
+> >         };
+> >};
+> >
+> >Am I missing something?
 > 
-> When handling BUS_NOTIFY_ADD_DEVICE event for a PCI bridge device,
-> the notification handler can't hold reference count to the new PCI bus
-> because the device object for the new bus (pci_dev->subordinate->dev)
-> hasn't been initialized yet.
-
-It doesn't look like BUS_NOTIFY_ADD_DEVICE is used by the PCI bus type
-in the mainline.
-
-Is it in linux-next?
-
-If not, then I don't see why we need this patch.
-
-Thanks,
-Rafael
-
-
-> Split the registration of PCI bus device into two stages as below,
-> so that the event handler could hold reference count to the new PCI bus
-> when handling BUS_NOTIFY_ADD_DEVICE event.
+> Jason,
 > 
-> 1) device_initialize(&pci_dev->dev)
-> 2) device_initialize(&pci_dev->subordinate->dev)
-> 3) notify BUS_NOTIFY_ADD_DEVICE event for pci_dev
-> 4) device_add(&pci_dev->dev)
-> 5) device_add(&pci_dev->subordinate->dev)
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/bus.c    |    2 +-
->  drivers/pci/probe.c  |    4 +++-
->  drivers/pci/remove.c |   10 +++++-----
->  3 files changed, 9 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-> index 847f3ca..5f9c728 100644
-> --- a/drivers/pci/bus.c
-> +++ b/drivers/pci/bus.c
-> @@ -200,7 +200,7 @@ int pci_bus_add_child(struct pci_bus *bus)
->  	if (bus->bridge)
->  		bus->dev.parent = bus->bridge;
->  
-> -	retval = device_register(&bus->dev);
-> +	retval = device_add(&bus->dev);
->  	if (retval)
->  		return retval;
->  
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 48b35e1..dc4fde3 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -642,6 +642,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->  	 */
->  	child->dev.class = &pcibus_class;
->  	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
-> +	device_initialize(&child->dev);
->  
->  	/*
->  	 * Set up the primary, secondary and subordinate
-> @@ -1678,7 +1679,8 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  	b->dev.class = &pcibus_class;
->  	b->dev.parent = b->bridge;
->  	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
-> -	error = device_register(&b->dev);
-> +	device_initialize(&b->dev);
-> +	error = device_add(&b->dev);
->  	if (error)
->  		goto class_dev_reg_err;
->  
-> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-> index fc38c48..a1fdd0f 100644
-> --- a/drivers/pci/remove.c
-> +++ b/drivers/pci/remove.c
-> @@ -48,11 +48,11 @@ void pci_remove_bus(struct pci_bus *bus)
->  	list_del(&bus->node);
->  	pci_bus_release_busn_res(bus);
->  	up_write(&pci_bus_sem);
-> -	if (!bus->is_added)
-> -		return;
-> -
-> -	pci_remove_legacy_files(bus);
-> -	device_unregister(&bus->dev);
-> +	if (bus->is_added) {
-> +		pci_remove_legacy_files(bus);
-> +		device_del(&bus->dev);
-> +	}
-> +	put_device(&bus->dev);
->  }
->  EXPORT_SYMBOL(pci_remove_bus);
->  
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> it depends on "ARM: Dove: move CuBox led pinctrl to gpio-leds node"
+> that you applied to mvebu/fixes two days ago.
+
+Ahhh, ok, I'll include it in this pull.
+
+thx,
+
+Jason.
