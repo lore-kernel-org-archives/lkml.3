@@ -1,85 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab3ALG6p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 01:58:45 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:41452 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab3ALG6o (ORCPT
+	id S1752812Ab3ALHGw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 02:06:52 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:49302 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab3ALHGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 01:58:44 -0500
-Message-ID: <1357973915.16304.1.camel@phoenix>
-Subject: [PATCH] regulator: lp8755: Don't show unrelated messags in
- lp8755_probe error paths
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Daniel Jeong <gshark.jeong@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Sat, 12 Jan 2013 14:58:35 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Sat, 12 Jan 2013 02:06:51 -0500
+X-IronPort-AV: E=Sophos;i="4.84,456,1355126400"; 
+   d="scan'208";a="19654133"
+Message-ID: <50F10B86.6020905@codeaurora.org>
+Date: Sat, 12 Jan 2013 12:36:46 +0530
+From: Subhash Jadavani <subhashj@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Maya Erez <merez@codeaurora.org>
+CC: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mmc: core: disable the cache before suspend only after
+ stopping BKOPS
+References: <n> <1357936936-25977-1-git-send-email-merez@codeaurora.org>
+In-Reply-To: <1357936936-25977-1-git-send-email-merez@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/lp8755.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+On 1/12/2013 2:12 AM, Maya Erez wrote:
+> mmc_cache_ctrl was called in runtime suspend before MMC interrupted
+> BKOPS in case it is still running on the card. This caused the cache
+> disable to timeout.
+I guess even if the idle time bkops polling is not implemented, this 
+patch is good to have. cache control is the eMMC feature and in that 
+sense, it should have been part of MMC's bus resume (mmc_resume) rather 
+than generic mmc_suspend_host().
 
-diff --git a/drivers/regulator/lp8755.c b/drivers/regulator/lp8755.c
-index decb3ad..8c3f3f2 100644
---- a/drivers/regulator/lp8755.c
-+++ b/drivers/regulator/lp8755.c
-@@ -497,35 +497,36 @@ static int lp8755_probe(struct i2c_client *client,
- 		if (!pchip->pdata)
- 			return -ENOMEM;
- 		ret = lp8755_init_data(pchip);
--		if (ret < 0)
--			goto err_chip_init;
-+		if (ret < 0) {
-+			dev_err(&client->dev, "fail to initialize chip\n");
-+			return ret;
-+		}
- 	}
- 
- 	ret = lp8755_regulator_init(pchip);
--	if (ret < 0)
-+	if (ret < 0) {
-+		dev_err(&client->dev, "fail to initialize regulators\n");
- 		goto err_regulator;
-+	}
- 
- 	pchip->irq = client->irq;
- 	ret = lp8755_int_config(pchip);
--	if (ret < 0)
-+	if (ret < 0) {
-+		dev_err(&client->dev, "fail to irq config\n");
- 		goto err_irq;
-+	}
- 
- 	return ret;
- 
- err_irq:
--	dev_err(&client->dev, "fail to irq config\n");
--
- 	for (icnt = 0; icnt < mphase_buck[pchip->mphase].nreg; icnt++)
- 		regulator_unregister(pchip->rdev[icnt]);
- 
- err_regulator:
--	dev_err(&client->dev, "fail to initialize regulators\n");
- 	/* output disable */
- 	for (icnt = 0; icnt < 0x06; icnt++)
- 		lp8755_write(pchip, icnt, 0x00);
- 
--err_chip_init:
--	dev_err(&client->dev, "fail to initialize chip\n");
- 	return ret;
- }
- 
--- 
-1.7.9.5
+Patch as such is fine and if you agree, you may want to remove the 
+mentioning of bkops as part of commit text and may just want to mention 
+above reason as the main motivation for this patch.
 
-
+> Therefore, mmc_cache_ctrl has to move to mmc_suspend where we are sure
+> that the card can go into suspend and there is no pending activity.
+>
+> Signed-off-by: Maya Erez <merez@codeaurora.org>
+> ---
+>   drivers/mmc/core/core.c |    7 +------
+>   drivers/mmc/core/mmc.c  |    8 +++++++-
+>   2 files changed, 8 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index aaed768..b438bb2 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -2388,6 +2388,7 @@ EXPORT_SYMBOL(mmc_flush_cache);
+>    * Turn the cache ON/OFF.
+>    * Turning the cache OFF shall trigger flushing of the data
+>    * to the non-volatile storage.
+> + * This function should be called with host claimed
+>    */
+>   int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+>   {
+> @@ -2399,7 +2400,6 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+>   			mmc_card_is_removable(host))
+>   		return err;
+>   
+> -	mmc_claim_host(host);
+>   	if (card && mmc_card_mmc(card) &&
+>   			(card->ext_csd.cache_size > 0)) {
+>   		enable = !!enable;
+> @@ -2417,7 +2417,6 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+>   				card->ext_csd.cache_ctrl = enable;
+>   		}
+>   	}
+> -	mmc_release_host(host);
+>   
+>   	return err;
+>   }
+> @@ -2436,10 +2435,6 @@ int mmc_suspend_host(struct mmc_host *host)
+>   	cancel_delayed_work(&host->detect);
+>   	mmc_flush_scheduled_work();
+>   
+> -	err = mmc_cache_ctrl(host, 0);
+> -	if (err)
+> -		goto out;
+> -
+>   	mmc_bus_get(host);
+>   	if (host->bus_ops && !host->bus_dead) {
+>   		if (host->bus_ops->suspend) {
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index e6e3911..dc17d40 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -1379,6 +1379,11 @@ static int mmc_suspend(struct mmc_host *host)
+>   	BUG_ON(!host->card);
+>   
+>   	mmc_claim_host(host);
+> +
+> +	err = mmc_cache_ctrl(host, 0);
+> +	if (err)
+> +		goto out;
+> +
+>   	if (mmc_can_poweroff_notify(host->card))
+>   		err = mmc_poweroff_notify(host->card, EXT_CSD_POWER_OFF_SHORT);
+>   	else if (mmc_card_can_sleep(host))
+> @@ -1386,8 +1391,9 @@ static int mmc_suspend(struct mmc_host *host)
+>   	else if (!mmc_host_is_spi(host))
+>   		err = mmc_deselect_cards(host);
+>   	host->card->state &= ~(MMC_STATE_HIGHSPEED | MMC_STATE_HIGHSPEED_200);
+> -	mmc_release_host(host);
+>   
+> +out:
+> +	mmc_release_host(host);
+>   	return err;
+>   }
+>   
 
