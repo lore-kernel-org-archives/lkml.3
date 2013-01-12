@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3ALWE4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 17:04:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35756 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754222Ab3ALWEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 17:04:55 -0500
-Message-ID: <50F1DDE6.2020105@zytor.com>
-Date: Sat, 12 Jan 2013 14:04:22 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754544Ab3ALWWK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 17:22:10 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:64895 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351Ab3ALWWI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 17:22:08 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7u1 08/31] x86, 64bit: early #PF handler set page table
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org> <1357260531-11115-9-git-send-email-yinghai@kernel.org> <20130107155544.GD29449@x1.alien8.de> <CAE9FiQXcP9E-RXre_NKf-SU454nT9K39f1GsVVroV1TFxPgQ7g@mail.gmail.com> <20130110121922.GF23008@liondog.tnic> <CAE9FiQV9i2D319soGWyS-NwcEM2HH2gzbh_UjxmoijH0z+0mWQ@mail.gmail.com> <20130110202740.GH23008@liondog.tnic>
-In-Reply-To: <20130110202740.GH23008@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [71.227.158.139]
+In-Reply-To: <1357996822-13072-1-git-send-email-holler@ahsoftware.de>
+References: <1357996822-13072-1-git-send-email-holler@ahsoftware.de>
+Date: Sat, 12 Jan 2013 14:22:07 -0800
+Message-ID: <CAF1V4O8UUgWB1XbS=3EsirBjhP9Lp7JQ8XK8MQxbe3ZkH8pd3Q@mail.gmail.com>
+Subject: Re: [PATCH] fb: udlfb: fix hang at disconnect
+From: Bernie Thompson <bernie@plugable.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Dave Airlie <airlied@redhat.com>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 12:27 PM, Borislav Petkov wrote:
->>
->> So at that time how can the Signed-off from them?
->>
->> And there are commits in the upstream does not have Signed-off from the Author.
->
-> I certainly hope those are a very very small number, if any.
->
+Hi Alexander,
 
-There are indeed a handful, at which point the first Signed-off-by: 
-indicates that he, *based on his own first-hand knowledge* knows the 
-author is intending and allowed to release this patch under the 
-appropriate licensing term (see the Developer's Certificate of Origin 
-document for the exact details.)
+On Sat, Jan 12, 2013 at 5:20 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+> When a device was disconnected the driver may hang at waiting for urbs it never
+> will get. Fix this by using a timeout while waiting for the used semaphore.
 
-	-hpa
+The code used to be this way, but it used to cause nasty shutdown hangs:
+http://git.plugable.com/gitphp/index.php?p=udlfb&a=commitdiff&h=1dd39a65001deb5a84088dfabb788d3274fbb6b6
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Which is why the code is the way it is today.
 
+Can you say under what situations you're hitting hangs on device
+disconnect?  Have you tested extensively to confirm no shutdown hangs
+with your patch?
+
+Stepping back, there was another recent patch from the community to
+udlfb to work around issues of sleeping in the wrong context. The fix
+involved introducing another scheduled workitem. This slows everything
+down when it's in the main path, and isn't really desirable if we can
+avoid it.
+
+Another option to eliminate all these problems -- long considered but
+never implemented -- is to get rid of all semaphores and potential
+sleeps in udlfb entirely.  That would require a strategy to throttle
+rendering in some way other than by waiting in kernel (without some
+throttling strategy, the USB bus can be a bottleneck which can flood
+the system with rendered but untransmitted pixels).
+
+Options might be:
+
+1) When transfer buffers are full, keep track of dirty rectangles for
+the rest and pick up where we left off the next time we're entered
+(avoiding flooding by potentially having pixels in the dirty regions
+be written over multiple times before we get to rendering them once)
+
+2 ) If we "bet" on page-fault-based defio dirty pixel detection, we
+could allocate buffers dynamically but increase the scheduling time to
+transfer as our outstanding buffer count grows, and reduce the latency
+only when the buffer count goes down (again, pixels will be
+potentially rendered many times before being transfered once, avoiding
+flooding).
+
+Any other ideas on the specific or general case are welcome.  Also
+note that udlfb is being largely superceeded by the udl DRM driver -
+so any decisions here should also be considered in that codebase.
+
+In any case, thanks for giving the DisplayLink USB 2.0 graphics
+drivers attention - it's much appreciated!
+
+Bernie Thompson
+http://plugable.com/
