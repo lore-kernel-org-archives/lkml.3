@@ -1,40 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab3ALUfj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 15:35:39 -0500
-Received: from nm7-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.116]:29348
-	"EHLO nm7-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754438Ab3ALUfi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 15:35:38 -0500
-X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Jan 2013 15:35:38 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 510831.60139.bm@omp1026.access.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=att.net;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:To:MIME-Version:Content-Type;
-  b=D6ZcPvbB3TfDkjuPWwfftl3REnjGoVT8zVTWSb3OoFFF41Q/yTHI/iHN8Dr59qmW/jf4Y3iCD0rc2WDQZvrQCm4dKCgcKyEEk9vBvihO/EhMhQTHRONXfXptbGqjXg1mGEKQfR+kSIdhbapVrviSVqDEohafv9AtGc1PgbAIJH8=;
-X-YMail-OSG: QnM.mSYVM1ngf0x_sUEh89zUK60M7UnZMxuY_FZ_N6TbvEH
- 2mJ6ZxFrFib5UH5_NWl9G104H48PwTUEhhRoDnABRtu4qu46W6agd2tvP_XT
- 3WNLcYCI.OWCsQhe72IbN0GqRxp2idobrh2kh2RfBn3VZbZYbEeasL0vxEVp
- 6Lc.XRWf9._H5RHqnGSu1Y2n.pq3H31iDAc5zKC8ZdP2.zUZmGSOVhCuoDly
- l9GwSWwFU_2.vkV_6jIMgdS1aMfG0eLVCEBGXe_qfUq8aPkgO7RCOgmkckPK
- 6f479nF9..ALFKzTvgT7.kM0dv_qM8PueopUGSalKaJCzfu7jI8A6kLSKZVw
- rpvptg3UPCduavugyaJYDt_ZwGKYNaPtU8BnHzEd7Mqf69YRgxPdsrPL.Beu
- o2ymCXfLrdodWHwl07J_PO35rPEzHmlk9lKLenvRJkgabImn9S77cryNoPKl
- hMunTiSTG_SBiBw9bk_QT33ZABW1DQ08efnP7qoXPLNVVNX8AFnss34_soaN
- jzqMesA9C1wSBwt0tT2i7
-X-Rocket-MIMEInfo: 001.001,RG8geW91IG5lZWQgYSBMb2FuP0lmIHllcyxyZXBseSB1cyBmb3IgbW9yZSBEZXRhaWxzATABAQEB
-X-Mailer: YahooMailClassic/15.1.2 YahooMailWebService/0.8.130.494
-Message-ID: <1358022568.39766.YahooMailClassic@web181205.mail.ne1.yahoo.com>
-Date: Sat, 12 Jan 2013 12:29:28 -0800 (PST)
-From: James White <web.office_400_02@att.net>
-Reply-To: jameslendingfirm71@gmail.com
-To: undisclosed recipients:;
+	id S1754406Ab3ALUnR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 15:43:17 -0500
+Received: from trent.utfs.org ([94.185.90.103]:53173 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754059Ab3ALUnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 15:43:16 -0500
+Date: Sat, 12 Jan 2013 12:43:03 -0800 (PST)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        paulus@samba.org
+Subject: Re: 3.7-rc7: BUG: MAX_STACK_TRACE_ENTRIES too low!
+In-Reply-To: <1354092082.3054.19.camel@ThinkPad-T5421.cn.ibm.com>
+Message-ID: <alpine.DEB.2.01.1301121241340.7378@trent.utfs.org>
+References: <alpine.DEB.2.01.1211271824120.7378@trent.utfs.org>  <alpine.DEB.2.01.1211271916160.7378@trent.utfs.org> <1354092082.3054.19.camel@ThinkPad-T5421.cn.ibm.com>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do you need a Loan?If yes,reply us for more Details
+On Wed, 28 Nov 2012 at 16:41, Li Zhong wrote:
+> On Tue, 2012-11-27 at 19:22 -0800, Christian Kujau wrote:
+> > On Tue, 27 Nov 2012 at 19:06, Christian Kujau wrote:
+> > > the same thing[0] happened again in 3.7-rc7, after ~20h uptime:
+> > 
+> > I found the following on patchwork, but this seems to deal with powerpc64 
+> > only, while this PowerBook G4 of mine is powerpc32:
+> > 
+> >   http://patchwork.ozlabs.org/patch/193414/
+> > 
+> > It looks related, but then again, I fail to parse assember...
+> 
+> Hi Christian, 
+> 
+> Would you please help to try the following fix? I don't have a powerpc32
+> machine for test...
+
+The patch hasn't made it into mainline yet. Any chance that this will be 
+included in 3.8?
+
+Thanks,
+Christian.
+
+> ==============================================
+> diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
+> index 9499385..cadebfd 100644
+> --- a/arch/powerpc/kernel/entry_32.S
+> +++ b/arch/powerpc/kernel/entry_32.S
+> @@ -439,6 +439,8 @@ ret_from_fork:
+>  ret_from_kernel_thread:
+>  	REST_NVGPRS(r1)
+>  	bl	schedule_tail
+> +	li	r3,0
+> +	stw	r3,0(r1)
+>  	mtlr	r14
+>  	mr	r3,r15
+>  	PPC440EP_ERR42
+> ==============================================
+> 
+> > 
+> > Christian.
+> > 
+> > > [40007.339487] [sched_delayed] sched: RT throttling activated
+> > > [69731.388717] BUG: MAX_STACK_TRACE_ENTRIES too low!
+> > > [69731.390371] turning off the locking correctness validator.
+> > > [69731.391942] Call Trace:
+> > > [69731.393525] [c9a61c10] [c0009064] show_stack+0x70/0x1bc (unreliable)
+> > > [69731.395152] [c9a61c50] [c0077460] save_trace+0xfc/0x114
+> > > [69731.396735] [c9a61c60] [c007be20] __lock_acquire+0x1568/0x19b8
+> > > [69731.398296] [c9a61d00] [c007c2c0] lock_acquire+0x50/0x70
+> > > [69731.399857] [c9a61d20] [c0550e28] _raw_spin_lock_irq+0x5c/0x78
+> > > [69731.401419] [c9a61d40] [c054fb58] __schedule+0xd8/0x534
+> > > [69731.402972] [c9a61da0] [c0550094] _cond_resched+0x50/0x68
+> > > [69731.404527] [c9a61db0] [c0479908] dst_gc_task+0xbc/0x258
+> > > [69731.406070] [c9a61e40] [c004eeb8] process_one_work+0x1f4/0x49c
+> > > [69731.407585] [c9a61e80] [c004f644] worker_thread+0x14c/0x400
+> > > [69731.409075] [c9a61eb0] [c0057634] kthread+0xbc/0xc0
+> > > [69731.410521] [c9a61f40] [c0011ad4] ret_from_kernel_thread+0x5c/0x64
+> > > [...repeated 54 times...]
+> > > 
+> > > Anyone knows what this is about?
+> > > 
+> > > Thanks,
+> > > Christian.
+> > > 
+> > > [0] http://lkml.indiana.edu/hypermail/linux/kernel/1211.0/03025.html
+> 
+> 
+> 
+
+-- 
+BOFH excuse #258:
+
+That's easy to fix, but I can't be bothered.
