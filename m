@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab3ALWwS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 17:52:18 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:48069 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754448Ab3ALWwR (ORCPT
+	id S1754592Ab3ALXJt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 18:09:49 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:34271 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754444Ab3ALXJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 17:52:17 -0500
-Date: Sat, 12 Jan 2013 17:52:16 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Alex Riesen <raa.lkml@gmail.com>
-cc: linux-usb@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: USB device cannot be reconnected and khubd "blocked for more
- than 120 seconds"
-In-Reply-To: <CALxABCb1Z5fg4zPfTa5ka7WDjUNZSR4-n4P+fazdQLMD4F5njw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1301121748360.4723-100000@netrider.rowland.org>
+	Sat, 12 Jan 2013 18:09:47 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1358030383-15609-1-git-send-email-xose.vazquez@gmail.com>
+References: <1358030383-15609-1-git-send-email-xose.vazquez@gmail.com>
+Date: Sun, 13 Jan 2013 00:09:46 +0100
+Message-ID: <CAFLxGvxTenzaaypsUz6pYmjiyEeUtkNGDKwBNeAVFUb5ZZgonQ@mail.gmail.com>
+Subject: Re: [PATCH] linux-firmware: add MISSING file
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Xose Vazquez Perez <xose.vazquez@gmail.com>
+Cc: Daniel Drake <dsd@laptop.org>, Ulrich Kunitz <kune@deine-taler.de>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Ben Hutchings <ben@decadent.org.uk>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Jan 2013, Alex Riesen wrote:
+On Sat, Jan 12, 2013 at 11:39 PM, Xose Vazquez Perez
+<xose.vazquez@gmail.com> wrote:
+> to document the reason why a firmware is not present
+>
+> Cc: Daniel Drake <dsd@laptop.org>
+> Cc: Ulrich Kunitz <kune@deine-taler.de>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Ben Hutchings <ben@decadent.org.uk>
+> Cc: <linux-wireless@vger.kernel.org>
+> Cc: <linux-kernel@vger.kernel.org>
+> Signed-off-by: Xose Vazquez Perez <xose.vazquez@gmail.com>
+> ---
+>  MISSING | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+>  create mode 100644 MISSING
+>
+> diff --git a/MISSING b/MISSING
+> new file mode 100644
+> index 0000000..f228099
+> --- /dev/null
+> +++ b/MISSING
+> @@ -0,0 +1,20 @@
+> +             ***********
+> +             * MISSING *
+> +             ***********
+> +
+> +This file attempts to document the reason why a firmware is not present
+> +in this bundle.
 
-> On Sat, Jan 12, 2013 at 8:39 PM, Alex Riesen <raa.lkml@gmail.com> wrote:
-> > On Sat, Jan 12, 2013 at 6:37 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> >> On Sat, 12 Jan 2013, Alex Riesen wrote:
-> >>> One more detail: I usually use the "noop" elevator. That time it was
-> >>> the "deadline". And I just reproduced it easily with "deadline".
-> >>
-> >> I doubt the elevator has anything to do with this.
-> >
-> > But it looks like it does: just using the deadline elevator is a sure way
-> > to reproduce the bug. The system always recovers (sometimes after a while)
-> > with "noop".
-> 
-> And no, it does not. Not by itself, but the fact that deadline elevator was
-> compiled as module certainly helped!
-> 
-> This explains the hanging modprobe in the dmesg output (the part after device
-> connect). I still wonder, why didn't it froze at boot, mounting SATA devices
-> (the root, /var, and /home are on an SSD connected by SATA)? And why hanging
-> khubd at reboot?
-> 
-> Anyway, building the elevator in the kernel avoids the problem. Sorry for
-> not spotting this earlier.
-> 
-> Now, who would be interested to handle this kind of misconfiguration ...
+>From the user's point of view this not really helpful.
+Wouldn't a in-kernel table of known but missing firmware files make more sense?
+The kernel could write a log like "Yeah, I know this firmware but
+sadly I don't have it because of ..."
 
-So the whole thing was a false alarm?
-
-Maybe you should report to the block-layer maintainers that it's 
-possible to mess up the system by building an elevator as a module.  
-That sounds like the sort of thing they'd be interested to hear.
-
-Alan Stern
-
+-- 
+Thanks,
+//richard
