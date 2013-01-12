@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab3ALAmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 19:42:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39608 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754857Ab3ALAms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 19:42:48 -0500
-Date: Fri, 11 Jan 2013 16:42:44 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Jan 10 (staging/sb105x)
-Message-ID: <20130112004244.GA2578@kroah.com>
-References: <20130110143241.041ef77011ef7b1f68ae5c61@canb.auug.org.au>
- <50EF11B2.9090505@infradead.org>
- <1357851057.5141.16.camel@gandalf.local.home>
- <50EF3B6A.70704@infradead.org>
+	id S1755607Ab3ALAn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 19:43:59 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37946 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab3ALAn6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 19:43:58 -0500
+Message-ID: <50F0B1C8.400@wwwdotorg.org>
+Date: Fri, 11 Jan 2013 17:43:52 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EF3B6A.70704@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>, Felipe Balbi <balbi@ti.com>,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, sjg@chromium.org, olof@lixom.net,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/2] arm: tegra: Add new DT property to USB node.
+References: <50CF89AF.3000308@wwwdotorg.org> <Pine.LNX.4.44L0.1212171704060.1409-100000@iolanthe.rowland.org> <20130112001414.GA21909@kroah.com>
+In-Reply-To: <20130112001414.GA21909@kroah.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 02:06:34PM -0800, Randy Dunlap wrote:
-> On 01/10/13 12:50, Steven Rostedt wrote:
-> > On Thu, 2013-01-10 at 11:08 -0800, Randy Dunlap wrote:
-> >> On 01/09/13 19:32, Stephen Rothwell wrote:
-> >>> Hi all,
-> >>>
-> >>> Changes since 20130109:
-> >>>
-> >>
-> >> on x86_64, when CONFIG_PARPORT_PC is not enabled:
-> >>
-> >> drivers/built-in.o: In function `multi_init':
-> >> sb_pci_mp.c:(.init.text+0x15684): undefined reference to `parport_pc_probe_port'
-> >>
-> >>
-> >> Full randconfig file is attached.
-> > 
-> > Ug, so https://lkml.org/lkml/2012/12/14/250 should have been
-> > CONFIG_PARPORT_PC and not just PARPORT :-P
-> > 
-> > Can you try this patch:
+On 01/11/2013 05:14 PM, Greg KH wrote:
+> On Mon, Dec 17, 2012 at 05:04:41PM -0500, Alan Stern wrote:
+>> On Mon, 17 Dec 2012, Stephen Warren wrote:
+>>
+>>> On 12/13/2012 11:59 PM, Venu Byravarasu wrote:
+>>>> As Tegra USB host driver is using instance number for resetting
+>>>> PORT0 twice, adding a new DT property for handling this.
+>>>
+>>> Alan, Greg, Felip,e
+>>>
+>>> This series looks fine to me.
+>>>
+>>> I'd like to take all the Tegra-related USB patches through the Tegra
+>>> tree for 3.9 if possible (so I'm looking for your acks here). I believe
+>>> Venu plans to significantly clean up the EHCI/PHY driver split for
+>>> Tegra, rework the drivers, and add support for Tegra30 in addition to
+>>> Tegra20. Some of this requires changes to some Tegra board files and
+>>> device trees to maintain "git bisect" I don't know for sure yet, but I
+>>> believe that rework may also end up conflicting with other clock-related
+>>> rework that will show up for Tegra in 3.9. Are you OK with this? I'll
+>>> certainly look for your review/acks on the patches before picking them
+>>> up though.
+>>
+>> Regarding the changes to drivers/usb/host/ehci-tegra.c:
+>>
+>> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 > 
-> That's good.  Thanks.
-> 
-> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> That's fine with me as well, feel free to think that I have now dropped
+> all tegra-related patches from my queue, you can take them all :)
 
-Steven, care to send me a patch that I can apply?
+Thanks, applied to Tegra's for-3.9/usb branch.
 
-thanks,
-
-greg k-h
