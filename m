@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab3ALLHL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 06:07:11 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17286 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab3ALLHJ (ORCPT
+	id S1753173Ab3ALLMS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 06:12:18 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:39388 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab3ALLMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 06:07:09 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sat, 12 Jan 2013 03:06:46 -0800
-Message-ID: <50F143C3.3060900@nvidia.com>
-Date: Sat, 12 Jan 2013 16:36:43 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Sat, 12 Jan 2013 06:12:16 -0500
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFT 3/3] ARM: tegra: dts: seaboard: enable keyboard
-References: <1357911185-11048-1-git-send-email-ldewangan@nvidia.com> <1357911185-11048-3-git-send-email-ldewangan@nvidia.com> <50F09BC7.90607@wwwdotorg.org> <20130111232438.GN23505@n2100.arm.linux.org.uk> <50F09FCB.70809@wwwdotorg.org> <20130111233615.GO23505@n2100.arm.linux.org.uk> <50F0A2A8.3080401@wwwdotorg.org> <50F13C34.3020808@nvidia.com> <20130112104730.GQ23505@n2100.arm.linux.org.uk>
-In-Reply-To: <20130112104730.GQ23505@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUVMY76bRFgUumZy0G-FFM=80iwfSFSopHMwHRYfgKjLjA@mail.gmail.com>
+References: <20130111234813.170A620004E@hpza10.eem.corp.google.com>
+	<50F0BFAA.10902@infradead.org>
+	<20130112131713.749566c8d374cd77b1f2885e@canb.auug.org.au>
+	<1357957789.2168.11.camel@joe-AO722>
+	<CA+icZUVMY76bRFgUumZy0G-FFM=80iwfSFSopHMwHRYfgKjLjA@mail.gmail.com>
+Date: Sat, 12 Jan 2013 12:12:15 +0100
+Message-ID: <CA+icZUXVJPrV7-hPa3GNtabijXvktY6tHqKMJ3u5vm-fQV4+fg@mail.gmail.com>
+Subject: Re: mmotm 2013-01-11-15-47 uploaded (x86 asm-offsets broken)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 12 January 2013 04:17 PM, Russell King - ARM Linux wrote:
-> On Sat, Jan 12, 2013 at 04:04:28PM +0530, Laxman Dewangan wrote:
->> Going through clock driver, the clk_get() should return error pointer or
->> valid pointer, atleast not NULL.
-> No.  clk_get() will return whatever value the 'clk' pointer found in
-> the clk_lookup structure contains.  Or it will return an error pointer.
+On Sat, Jan 12, 2013 at 11:13 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Sat, Jan 12, 2013 at 3:29 AM, Joe Perches <joe@perches.com> wrote:
+>> On Sat, 2013-01-12 at 13:17 +1100, Stephen Rothwell wrote:
+>>> On Fri, 11 Jan 2013 17:43:06 -0800 Randy Dunlap <rdunlap@infradead.org> wrote:
+>>> >
+>>> > b0rked.
+>>> >
+>>> > Some (randconfig?) causes this set of errors:
+>>
+>> I guess that's when CONFIG_HZ is not an even divisor of 1000.
+>> I suppose this needs to be worked on a bit more.
+>>
+>>
 >
-> This topic has had enough discussion in the past that I'll say: go and
-> look up in the archives emails from me on this subject.  I've been very
-> clear over the years about this.
+> I remember this patch from Joe come up with a pending patch in
+> net-next.git#master [1] (I mention this as I have not seen hit it in
+> latest Linux-Next whereas this latest mmotm includes it [2]).
 >
->> Probably our clock driver is returning to NULL and hence issue is
->> becasue whole world, it  check for IS_ERR or !IS_ERR() and null clk
->> pointer treated as !IS_ERR().
-> Probably not.  As far as _drivers_ go, either the clk cookie is an error
-> (IS_ERR() is true) _OR_ it is valid to be passed back into the clock API.
-> You will find statements from me in the past to that: whatever clk_get()
-> returns which is _not_ an error must be accepted by the rest of the clk
-> API.
+> $ grep "config HZ_" kernel/Kconfig.hz
+>         config HZ_100
+>         config HZ_250
+>         config HZ_300
+>         config HZ_1000
+>
+> As I see Randy has in his kernel-config:
+>
+> # CONFIG_HZ_100 is not set
+> # CONFIG_HZ_250 is not set
+> CONFIG_HZ_300=y
+> # CONFIG_HZ_1000 is not set
+> CONFIG_HZ=300
+>
+> So there is a problem for the value "300" (only)?
+>
+> Regards,
+> - Sedat -
+>
+>
+> [1] http://git.kernel.org/?p=linux/kernel/git/davem/net-next.git;a=commitdiff;h=c10d73671ad30f54692f7f69f0e09e75d3a8926a
+> [2] http://git.cmpxchg.org/?p=linux-mmotm.git&a=search&h=HEAD&st=commit&s=softirq
+>
 
-Ok, Should we document that after clk_get(), we should check for 
-IS_ERR() only for validation. The way you explain earlier.
-Documentation does not have this.
-/**
-         struct clk *clk;
-         clk = clk_get(NULL, "my_gateable_clk");
+That is the patch by Joe in question: "jiffies conversions: Use
+compile time constants when possible" (see also [1]).
 
-         clk_prepare(clk);
-         clk_enable(clk);
-**/
+- Sedat -
 
-The clk.h explain this:
-  * Returns a struct clk corresponding to the clock producer, or
-  * valid IS_ERR() condition containing errno.
+[1] http://git.cmpxchg.org/?p=linux-mmotm.git;a=commitdiff;h=049aaaabf2476318f9a2708e3cbd2b2c937faeb0
 
-
-The IS_ERR() return false for the null pointer. So as per you, it should 
-be valid if the IS_ERR() false for returned pointer and hence NULL 
-pointer should be valid for the clock driver.
-
-Now we need to change the tegra_periph_reset_*() to accept the null pointer.
-
-
-> Drivers never dereference the returned clk, so why should they care about
-> anything other than "is it an error" given by IS_ERR().  (notice the lack
-> of question mark, that's not a question to be answered.)
-
-The issue is that information is getting passed to other part fo driver 
-where it is dereferencing the pointer. Probably we need to work on the 
-reset part also to move as part of clock driver to avoid this crash.
-
-
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
