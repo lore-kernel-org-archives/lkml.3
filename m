@@ -1,125 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab3ALMhS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 07:37:18 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:64936 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735Ab3ALMhP (ORCPT
+	id S1753210Ab3ALMme (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 07:42:34 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:38874 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab3ALMmd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 07:37:15 -0500
-Date: Sat, 12 Jan 2013 13:36:40 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
-Message-ID: <20130112123640.GA22505@avionic-0098.adnet.avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <50EF54B6.6010100@wwwdotorg.org>
- <20130111034015.GA28094@avionic-0098.adnet.avionic-design.de>
- <201301111536.14799.arnd@arndb.de>
- <20130111154516.GA25335@avionic-0098.adnet.avionic-design.de>
+	Sat, 12 Jan 2013 07:42:33 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
-Content-Disposition: inline
-In-Reply-To: <20130111154516.GA25335@avionic-0098.adnet.avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:HDjWO7sXtSujm2ddyN27s+R3XF4DALW/l3m9OFLBT3L
- Ggjb489JC7wQlgU4c8K7P2H2przfBU4GkT1VC5sUtZZtEtN3gh
- np6CP7tz2eaxRf/PcRDr2JpF9XoLfKUXawr/K5OyD2SSEEkNPu
- NKgrI/oeaKm2k/a9NCD4j3N81mIKXqeFYZWSVoaNlamvLK/yP+
- GAX3aX1Q20NFC7gmir1XPKSsmYuvESTUc1gIaW4cABrqfTtXDY
- O7XAvctJGcrFD9xavOn+IcjzGiQiKGEvUMsZ/ytBKR1eDBtQX7
- ftRe5/oYZwfgWi9McDMjYXXDnF+teZjFuykrtjOJ0kt7Z8mhyx
- gPAVOo04XxpZdUF4MaF/GI8rqcow2KtVarTbR65eKDYOdUXUjG
- RobrRGYzJJbN5Y124/B+29Yq2HujUwuV/BQO1WGkJ4JtcX3RF/
- EP+Ny
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CADpTngUE7H9K2j3yCsm+TUx+X2RJZKaSz8kKn-ehpxzx1O2=fA@mail.gmail.com>
+References: <1520620637.200975.1355955029721.JavaMail.root@elliptictech.com>
+	<1425298.zMcaSB7taE@calvin>
+	<CADpTngUE7H9K2j3yCsm+TUx+X2RJZKaSz8kKn-ehpxzx1O2=fA@mail.gmail.com>
+Date: Sat, 12 Jan 2013 13:42:31 +0100
+Message-ID: <CAKMK7uF1ZyFu5JMUH91bUWzQey2RCH1awN2GVeu5w=nXkfJrEQ@mail.gmail.com>
+Subject: Re: 3.7.X vs 3.6.11 HP Folio 9470m brightness regression?
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Fabio Coatti <fabio.coatti@gmail.com>
+Cc: Tom St Denis <tstdenis@elliptictech.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jan 12, 2013 at 12:22 PM, Fabio Coatti <fabio.coatti@gmail.com> wrote:
+> I'm seeing the same behaviour on 3.7.2; even
+> echo "NN" > brightness has no effect.
+> I've tried to look at changes between 3.6.11 and 3.7.2 but probably
+> this is beyond my skills ;)
 
---EVF5PPMfhYS0aIcm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If the regression is with the acpi_video backlight, then it's very
+likely not a bug in drm/i915. Quickest way to figure that out is to do
+a git bisect between 3.6 and 3.7, my favourite howto is:
+http://www.reactivated.net/weblog/archives/2006/01/using-git-bisect-to-find-buggy-kernel-patches/
 
-On Fri, Jan 11, 2013 at 04:45:16PM +0100, Thierry Reding wrote:
-> On Fri, Jan 11, 2013 at 03:36:14PM +0000, Arnd Bergmann wrote:
-> > On Friday 11 January 2013, Thierry Reding wrote:
-> > > Right, it'll need #ifdefs around the arch_{setup,teardown}_msi_irq().=
- Or
-> > > select PCI_MSI unconditionally. Once this is merged I was going to po=
-st
-> > > a patch that enables PCI_MSI in tegra_defconfig anyway. But it might =
-be
-> > > better to keep it optional anyway since the remainder of the code cop=
-es
-> > > with it properly.
-> > >=20
-> > Actually, we need something better than that. You cannot define
-> > arch_setup_msi_irq in a tegra specific pci host driver, because that
-> > will seriously mess up other platforms in multiplatform configurations
-> > by giving a link error when they also define this function, or with a
-> > run-time error when they don't support it.
-> >=20
-> > I think what we should do here is fix it the right way by adding
-> > a pci host specific callback rather than an architecture specific
-> > callback in drivers/pci/msi.c. There is already a default version
-> > of arch_setup_msi_irqs (with s), and we can probably do the
-> > same for arch_setup_msi_irq (without s) to fall back to the
-> > arch version for most architectures.
-> > Most architectures (at least powerpc, sparc, ia64 and x86) already
-> > multiplex the msi handlers internally, but ARM does not because
-> > there is only one implementation (iop33x) at the moment.
-> >=20
-> > We can add a generix multiplex and then move architectures over to
-> > use it.
->=20
-> I already hinted at that in one of the other subthreads. Having such a
-> multiplex would also allow the driver to be built as a module. I had
-> already thought about this when I was working on an earlier version of
-> these patches. Basically these would be two ops attached to the host
-> bridge, and the generic arch_setup_msi_irq() could then look that up
-> given the struct pci_dev that is passed to it and call this new per-
-> host bridge .setup_msi_irq().
+Cheers, Daniel
 
-struct pci_ops looks like a good place to put these. They'll be
-available from each struct pci_bus, so should be easy to call from
-arch_setup_msi_irq().
+> 2012/12/20 Fabio Coatti <fabio.coatti@gmail.com>:
+>> In data mercoledì 19 dicembre 2012 17:10:29, hai scritto:
+>>> ----- Original Message -----
+>>>
+>>> > From: "Fabio Coatti" <fabio.coatti@gmail.com>
+>>> > To: linux-kernel@vger.kernel.org
+>>> > Sent: Wednesday, 19 December, 2012 5:01:30 PM
+>>> > Subject: 3.7.X vs 3.6.11 HP Folio 9470m brightness regression?
+>>> >
+>>> > Hi,
+>>> > I'm testing kernels 3.7.X vs 3.6.11 on an HP Folio 9470m machine,
+>>> > i915
+>>> > driver for a VGA compatible controller: Intel Corporation 3rd Gen
+>>> > Core
+>>> > processor Graphics Controller (rev 09) 8086:0166
+>>> >
+>>> > With 3.6.11, the brightness can be correctly set using fn+f9/10: kde
+>>> > shows the bar and brightness changes.
+>>> >
+>>> > With 3.7.1 kde shows the percentage bar and
+>>> > /sys/class/backlight/acpi_video0/brightness is updated, but the
+>>> > screen
+>>> > brightness does not changes.
+>>>
+>>> I had a similar problem with my Dell laptop and i915/acpi...
+>>>
+>>> Is there another acpi_video? device?  In my case two showed up in 3.7
+>>> whereas in 3.6 there was one.  In 3.7 it was controlling the wrong one
+>>> apparently.
+>>
+>> Well, this seems not to be the case, I have only one acpi_video:
+>>
+>> calvin ~ # ls -l /sys/class/backlight/
+>> totale 0
+>> lrwxrwxrwx 1 root root 0 20 dic 09.20 acpi_video0 ->
+>> ../../devices/pci0000:00/0000:00:02.0/backlight/acpi_video0
+>>
+>> calvin ~ # ls -l /sys/devices/pci0000:00/0000:00:02.0/backlight
+>> totale 0
+>> drwxr-xr-x 3 root root 0 20 dic 09.20 acpi_video0
+>>
+>>
+>>
+>> --
+>> Fabio
+>
+>
+>
+> --
+> Fabio
 
-Any objections?
 
-Thierry
 
---EVF5PPMfhYS0aIcm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ8VjXAAoJEN0jrNd/PrOhFWsQAIIvLUhTrpqlNwFmzOoZiyRc
-pZzCDmOrad/vwXbThJuzn9752yAoN3YAE9tnGGlnCrc4YcptmrHZYfItYMUYZPe5
-lcLaj9M5v6lOpLZMBlUiRcKftPK/5DK3xd+wZsFUVKSewY+Pu1Jbd58AIpmPSZpA
-yOaIbme9ugbDO+TsJDQ70TLHX3wAmC+gyoSwT5JW21K4I0Ch7Ga7DpPl8XzpgGv5
-N7lNCT7fe+qkvmg8/5ONL34FPYP/qgE7mX+uxSrd2aop0PNDU9YDNmeZ4TmgLX5s
-aqFLMEivpJ/ALNbKlDqvCb2DesXKnT3fZpLFuZG4P6I881hxkU1a14ddB52zc3jH
-CJ/BLkX2r8lYUR7Z0H3FoR8/q1J/zbmEfVTobF5aC0XGUZnibs4j9YlZRUmgj7jw
-ZAHpba8/1uUt3VicgQawNF5xG2ct2qGKDj3XONHWwlpZzfvCcCVav73Uqbko8rVg
-7wkIxdEgNKeP9O9f1Z1uH6Ypg3dxWKnN4A3uq5GRUT8sORWBYytbopdO096AuCXA
-wmAYwHPLjCExTYI2M1jQuA+9WEuMJa2dF+/ofTqqUakhMERHVyjNvJNxYeC43+Jv
-8ezg3JzlLohRQ9gQJRQKQfbL0KJbEfFvzGb/9CAc9zTJPvWKmlqn5ruCouAQFyyl
-dxpC/IfYKv7nMfybBxN5
-=9Fax
------END PGP SIGNATURE-----
-
---EVF5PPMfhYS0aIcm--
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
