@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab3ALNUz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 08:20:55 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:45245 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab3ALNUy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 08:20:54 -0500
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fbdev@vger.kernel.org, Bernie Thompson <bernie@plugable.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Dave Airlie <airlied@redhat.com>,
-        Alexander Holler <holler@ahsoftware.de>, <stable@vger.kernel.org>
-Subject: [PATCH] fb: udlfb: fix hang at disconnect
-Date: Sat, 12 Jan 2013 14:20:22 +0100
-Message-Id: <1357996822-13072-1-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.7.11.7
+	id S1753585Ab3ALNVk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 08:21:40 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38760 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753210Ab3ALNVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 08:21:38 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org
+Subject: Re: [PATCH 0/5] Cpufreq Fixes for 3.9
+Date: Sat, 12 Jan 2013 14:27:25 +0100
+Message-ID: <3417394.mgXgKYU9J9@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <cover.1357967566.git.viresh.kumar@linaro.org>
+References: <cover.1357967566.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a device was disconnected the driver may hang at waiting for urbs it never
-will get. Fix this by using a timeout while waiting for the used semaphore.
+On Saturday, January 12, 2013 10:44:37 AM Viresh Kumar wrote:
+> Hi Rafael,
+> 
+> As requested, i am resending all my cpufreq fixes together. I have added correct
+> Tested-by flags.
 
-There is still a memory leak if a timeout happens, but at least the driver
-now continues his disconnect routine.
+I have dropped the previous versions and applied this series instead.
 
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
----
- drivers/video/udlfb.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+There's no need to add a Tested-by for yourself if you sign-off a patch,
+though.  Tested-by is information that somebody *in* *addition* to the
+original author has tested the patch, because we all should test the patches
+we sign-off, right?
 
-diff --git a/drivers/video/udlfb.c b/drivers/video/udlfb.c
-index 86d449e..cc4a8d1 100644
---- a/drivers/video/udlfb.c
-+++ b/drivers/video/udlfb.c
-@@ -1832,8 +1832,8 @@ static void dlfb_free_urb_list(struct dlfb_data *dev)
- 	/* keep waiting and freeing, until we've got 'em all */
- 	while (count--) {
- 
--		/* Getting interrupted means a leak, but ok at disconnect */
--		ret = down_interruptible(&dev->urbs.limit_sem);
-+		/* Timeout likely occurs at disconnect (resulting in a leak) */
-+		ret = down_timeout(&dev->urbs.limit_sem, GET_URB_TIMEOUT);
- 		if (ret)
- 			break;
- 
+Rafael
+
+
+> Viresh Kumar (5):
+>   cpufreq: Manage only online cpus
+>   cpufreq: Notify governors when cpus are hot-[un]plugged
+>   cpufreq: Don't use cpu removed during cpufreq_driver_unregister
+>   cpufreq: Simplify __cpufreq_remove_dev()
+>   cpufreq: Simplify cpufreq_add_dev()
+> 
+>  drivers/cpufreq/cpufreq.c       | 316 +++++++++++++++++-----------------------
+>  drivers/cpufreq/cpufreq_stats.c |  27 +++-
+>  drivers/cpufreq/freq_table.c    |   9 ++
+>  include/linux/cpufreq.h         |  14 +-
+>  4 files changed, 178 insertions(+), 188 deletions(-)
+> 
+> 
 -- 
-1.7.11.7
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
