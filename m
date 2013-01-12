@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab3ALXd3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 18:33:29 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:39191 "EHLO hydra.sisk.pl"
+	id S1754793Ab3ALXev (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 18:34:51 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:39195 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754448Ab3ALXd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 18:33:27 -0500
+	id S1754448Ab3ALXet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 18:34:49 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v8 13/22] PCI, ACPI: remove acpi_root_bridge in pci_root_hp
-Date: Sun, 13 Jan 2013 00:39:15 +0100
-Message-ID: <1816148.huKL0kTigm@vostro.rjw.lan>
+Subject: Re: [PATCH v8 14/22] ACPI: update ej_event interface to take acpi_device
+Date: Sun, 13 Jan 2013 00:40:37 +0100
+Message-ID: <1908840.G1WFmde11m@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357944049-29620-14-git-send-email-yinghai@kernel.org>
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-14-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1357944049-29620-15-git-send-email-yinghai@kernel.org>
+References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-15-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,206 +25,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 11, 2013 02:40:40 PM Yinghai Lu wrote:
-> Tang noticed that hotplug through container will not update acpi_root_bridge
-> list.
-> 
-> After closely checking, we don't need that for struct for tracking and
-> could use acpi_pci_root directly.
+On Friday, January 11, 2013 02:40:41 PM Yinghai Lu wrote:
+> Should use acpi_device pointer directly instead of use handle and
+> get the device pointer again later.
 
-Well, precisely, so please modify your patches [08-09/22] accordingly instead
-of adding this one.
+Looks good.
+
+I can take this one right now if you want.
 
 Thanks,
 Rafael
 
 
-> Reported-by: Tang Chen <tangchen@cn.fujitsu.com>
 > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > ---
->  drivers/acpi/pci_root.c |  109 +++++++++--------------------------------------
->  1 file changed, 20 insertions(+), 89 deletions(-)
+>  drivers/acpi/acpi_memhotplug.c  |    2 +-
+>  drivers/acpi/processor_driver.c |    2 +-
+>  drivers/acpi/scan.c             |   14 ++++----------
+>  include/acpi/acpi_bus.h         |    2 +-
+>  4 files changed, 7 insertions(+), 13 deletions(-)
 > 
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index 862abcc..697ec65 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -679,73 +679,12 @@ int __init acpi_pci_root_init(void)
->   *	only support root bridge
->   */
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index 327ab44..eaddb7a 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -361,7 +361,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+>  			break;
+>  		}
 >  
-> -static LIST_HEAD(acpi_root_bridge_list);
-> -struct acpi_root_bridge {
-> -	struct list_head list;
-> -	acpi_handle handle;
-> -	u32 flags;
-> -};
-> -
->  /* bridge flags */
->  #define ROOT_BRIDGE_HAS_EJ0	(0x00000002)
->  #define ROOT_BRIDGE_HAS_PS3	(0x00000080)
+> -		ej_event->handle = handle;
+> +		ej_event->device = device;
+>  		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+>  		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+>  					(void *)ej_event);
+> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+> index 0777663..a24ee43 100644
+> --- a/drivers/acpi/processor_driver.c
+> +++ b/drivers/acpi/processor_driver.c
+> @@ -733,7 +733,7 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+>  			break;
+>  		}
 >  
->  #define ACPI_STA_FUNCTIONING	(0x00000008)
->  
-> -static struct acpi_root_bridge *acpi_root_handle_to_bridge(acpi_handle handle)
-> -{
-> -	struct acpi_root_bridge *bridge;
-> -
-> -	list_for_each_entry(bridge, &acpi_root_bridge_list, list)
-> -		if (bridge->handle == handle)
-> -			return bridge;
-> -
-> -	return NULL;
-> -}
-> -
-> -/* allocate and initialize host bridge data structure */
-> -static void add_acpi_root_bridge(acpi_handle handle)
-> -{
-> -	struct acpi_root_bridge *bridge;
-> -	acpi_handle dummy_handle;
-> -	acpi_status status;
-> -
-> -	/* if the bridge doesn't have _STA, we assume it is always there */
-> -	status = acpi_get_handle(handle, "_STA", &dummy_handle);
-> -	if (ACPI_SUCCESS(status)) {
-> -		unsigned long long tmp;
-> -
-> -		status = acpi_evaluate_integer(handle, "_STA", NULL, &tmp);
-> -		if (ACPI_FAILURE(status)) {
-> -			printk(KERN_DEBUG "%s: _STA evaluation failure\n",
-> -						 __func__);
-> -			return;
-> -		}
-> -		if ((tmp & ACPI_STA_FUNCTIONING) == 0)
-> -			/* don't register this object */
-> -			return;
-> -	}
-> -
-> -	bridge = kzalloc(sizeof(struct acpi_root_bridge), GFP_KERNEL);
-> -	if (!bridge)
-> -		return;
-> -
-> -	bridge->handle = handle;
-> -
-> -	if (ACPI_SUCCESS(acpi_get_handle(handle, "_EJ0", &dummy_handle)))
-> -		bridge->flags |= ROOT_BRIDGE_HAS_EJ0;
-> -	if (ACPI_SUCCESS(acpi_get_handle(handle, "_PS3", &dummy_handle)))
-> -		bridge->flags |= ROOT_BRIDGE_HAS_PS3;
-> -
-> -	list_add(&bridge->list, &acpi_root_bridge_list);
-> -}
-> -
-> -static void remove_acpi_root_bridge(struct acpi_root_bridge *bridge)
-> -{
-> -	list_del(&bridge->list);
-> -	kfree(bridge);
-> -}
-> -
->  struct acpi_root_hp_work {
->  	struct work_struct work;
->  	acpi_handle handle;
-> @@ -827,28 +766,25 @@ static int acpi_root_evaluate_object(acpi_handle handle, char *cmd, int val)
->  	return 0;
->  }
->  
-> -static void handle_root_bridge_removal(acpi_handle handle,
-> -		 struct acpi_root_bridge *bridge)
-> +static void handle_root_bridge_removal(struct acpi_device *device)
+> -		ej_event->handle = handle;
+> +		ej_event->device = device;
+>  		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+>  		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+>  					(void *)ej_event);
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 8883539..f4c6305 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -116,20 +116,14 @@ static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+>  void acpi_bus_hot_remove_device(void *context)
 >  {
-> +	int ret_val;
->  	u32 flags = 0;
+>  	struct acpi_eject_event *ej_event = (struct acpi_eject_event *) context;
 > -	struct acpi_device *device;
-> +	acpi_handle dummy_handle;
+> -	acpi_handle handle = ej_event->handle;
+> +	struct acpi_device *device = ej_event->device;
 > +	acpi_handle handle = device->handle;
+>  	acpi_handle temp;
+>  	struct acpi_object_list arg_list;
+>  	union acpi_object arg;
+>  	acpi_status status = AE_OK;
+>  	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
 >  
-> -	if (bridge) {
-> -		flags = bridge->flags;
-> -		remove_acpi_root_bridge(bridge);
-> -	}
-> +	if (ACPI_SUCCESS(acpi_get_handle(handle, "_EJ0", &dummy_handle)))
-> +		flags |= ROOT_BRIDGE_HAS_EJ0;
-> +	if (ACPI_SUCCESS(acpi_get_handle(handle, "_PS3", &dummy_handle)))
-> +		flags |= ROOT_BRIDGE_HAS_PS3;
->  
-> -	if (!acpi_bus_get_device(handle, &device)) {
-> -		int ret_val;
-> +	/* remove pci devices at first */
-> +	ret_val = acpi_bus_trim(device, 0);
-> +	printk(KERN_DEBUG "acpi_bus_trim stop return %x\n", ret_val);
->  
-> -		/* remove pci devices at first */
-> -		ret_val = acpi_bus_trim(device, 0);
-> -		printk(KERN_DEBUG "acpi_bus_trim stop return %x\n", ret_val);
+> -	if (acpi_bus_get_device(handle, &device))
+> -		goto err_out;
 > -
-> -		/* remove acpi devices */
-> -		ret_val = acpi_bus_trim(device, 1);
-> -		printk(KERN_DEBUG "acpi_bus_trim remove return %x\n", ret_val);
-> -	}
-> +	/* remove acpi devices */
-> +	ret_val = acpi_bus_trim(device, 1);
-> +	printk(KERN_DEBUG "acpi_bus_trim remove return %x\n", ret_val);
->  
->  	if (flags & ROOT_BRIDGE_HAS_PS3) {
->  		acpi_status status;
-> @@ -863,7 +799,7 @@ static void handle_root_bridge_removal(acpi_handle handle,
->  
->  static void _handle_hotplug_event_root(struct work_struct *work)
->  {
-> -	struct acpi_root_bridge *bridge;
-> +	struct acpi_pci_root *root;
->  	char objname[64];
->  	struct acpi_buffer buffer = { .length = sizeof(objname),
->  				      .pointer = objname };
-> @@ -875,7 +811,7 @@ static void _handle_hotplug_event_root(struct work_struct *work)
->  	handle = hp_work->handle;
->  	type = hp_work->type;
->  
-> -	bridge = acpi_root_handle_to_bridge(handle);
-> +	root = acpi_pci_find_root(handle);
->  
->  	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
->  
-> @@ -884,10 +820,8 @@ static void _handle_hotplug_event_root(struct work_struct *work)
->  		/* bus enumerate */
->  		printk(KERN_DEBUG "%s: Bus check notify on %s\n", __func__,
->  				 objname);
-> -		if (!bridge) {
-> +		if (!root)
->  			handle_root_bridge_insertion(handle);
-> -			add_acpi_root_bridge(handle);
-> -		}
->  
->  		break;
->  
-> @@ -895,17 +829,16 @@ static void _handle_hotplug_event_root(struct work_struct *work)
->  		/* device check */
->  		printk(KERN_DEBUG "%s: Device check notify on %s\n", __func__,
->  				 objname);
-> -		if (!bridge) {
-> +		if (!root)
->  			handle_root_bridge_insertion(handle);
-> -			add_acpi_root_bridge(handle);
-> -		}
->  		break;
->  
->  	case ACPI_NOTIFY_EJECT_REQUEST:
->  		/* request device eject */
->  		printk(KERN_DEBUG "%s: Device eject notify on %s\n", __func__,
->  				 objname);
-> -		handle_root_bridge_removal(handle, bridge);
-> +		if (root)
-> +			handle_root_bridge_removal(root->device);
->  		break;
->  	default:
->  		printk(KERN_WARNING "notify_handler: unknown event type 0x%x for %s\n",
-> @@ -965,8 +898,6 @@ find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
->  		printk(KERN_DEBUG "acpi root: %s notify handler is installed\n",
->  				 objname);
->  
-> -	add_acpi_root_bridge(handle);
+> -	if (!device)
+> -		goto err_out;
 > -
->  	return AE_OK;
->  }
+>  	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>  		"Hot-removing device %s...\n", dev_name(&device->dev)));
+>  
+> @@ -215,7 +209,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
+>  		goto err;
+>  	}
+>  
+> -	ej_event->handle = acpi_device->handle;
+> +	ej_event->device = acpi_device;
+>  	if (acpi_device->flags.eject_pending) {
+>  		/* event originated from ACPI eject notification */
+>  		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+> @@ -223,7 +217,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
+>  	} else {
+>  		/* event originated from user */
+>  		ej_event->event = ACPI_OST_EC_OSPM_EJECT;
+> -		(void) acpi_evaluate_hotplug_ost(ej_event->handle,
+> +		(void) acpi_evaluate_hotplug_ost(acpi_device->handle,
+>  			ej_event->event, ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+>  	}
+>  
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index 2246ba9..181ff2d 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -309,7 +309,7 @@ struct acpi_bus_event {
+>  };
+>  
+>  struct acpi_eject_event {
+> -	acpi_handle	handle;
+> +	struct acpi_device	*device;
+>  	u32		event;
+>  };
 >  
 > 
 -- 
