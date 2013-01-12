@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab3ALC3v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 21:29:51 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:55006 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754446Ab3ALC3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 21:29:50 -0500
-Message-ID: <1357957789.2168.11.camel@joe-AO722>
-Subject: Re: mmotm 2013-01-11-15-47 uploaded (x86 asm-offsets broken)
-From: Joe Perches <joe@perches.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Date: Fri, 11 Jan 2013 18:29:49 -0800
-In-Reply-To: <20130112131713.749566c8d374cd77b1f2885e@canb.auug.org.au>
-References: <20130111234813.170A620004E@hpza10.eem.corp.google.com>
-	 <50F0BFAA.10902@infradead.org>
-	 <20130112131713.749566c8d374cd77b1f2885e@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
+	id S1755506Ab3ALCbM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 21:31:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754393Ab3ALCbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 21:31:10 -0500
+Message-ID: <50F0CAE9.2080303@redhat.com>
+Date: Sat, 12 Jan 2013 10:31:05 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Stefan Hajnoczi <stefanha@redhat.com>
+CC: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tuntap: forbid calling TUNSETIFF when detached
+References: <1357894242-25020-1-git-send-email-jasowang@redhat.com> <20130111144236.GC2310@stefanha-thinkpad.muc.redhat.com>
+In-Reply-To: <20130111144236.GC2310@stefanha-thinkpad.muc.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-01-12 at 13:17 +1100, Stephen Rothwell wrote:
-> On Fri, 11 Jan 2013 17:43:06 -0800 Randy Dunlap <rdunlap@infradead.org> wrote:
-> >
-> > b0rked.
-> > 
-> > Some (randconfig?) causes this set of errors:
+On 01/11/2013 10:42 PM, Stefan Hajnoczi wrote:
+> On Fri, Jan 11, 2013 at 04:50:41PM +0800, Jason Wang wrote:
+>> @@ -1546,6 +1544,9 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>>  	struct net_device *dev;
+>>  	int err;
+>>  
+>> +	if (rcu_dereference_protected(tfile->detached, lockdep_rtnl_is_held()))
+>> +		return -EINVAL;
+>> +
+> How come none of the other tfile->detached users call rcu_*()?
 
-I guess that's when CONFIG_HZ is not an even divisor of 1000.
-I suppose this needs to be worked on a bit more.
+Right, no need to use rcu, the access were protected by rtnl lock.
 
+Will repost.
+> Stefan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
