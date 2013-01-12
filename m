@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616Ab3ALNud (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 08:50:33 -0500
-Received: from nm5-vm7.bullet.mail.sg3.yahoo.com ([106.10.148.150]:38836 "EHLO
-	nm5-vm7.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752921Ab3ALNub convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 08:50:31 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 431739.1398.bm@omp1004.mail.sg3.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.in;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=4HxrhR8qACUacq58VuqAQT1+ZoV70vaIUblm0pNUkHTNq+Pcu1DBgX+01SIIrNrrQ7UQHVg9PbiREU4QWTtxmZSbsnJA2PlTb+w/d72wAuuju1FlroSOqvyRrcCvXJJ8kaK2SKmANcbNQJaIiKNC9mf3vNqJsaROOdvnLg1Lkcc=;
-X-YMail-OSG: k_5UjgkVM1kkNceUuKcxY65PnBhOvxgdOchq8FyEDEhuDvN
- Vx6uiAqUeBx_xsmG5mod1To1FMBojt0BQKOIiP4MS9aQIjMU.XjYHgJAuScz
- MLr3OfmAJFFvBoPO3nEH6ewGXSmB6tRxJA6d2Z1Ebuso3xvDJMnk3C9DPt7z
- c6cW5OZwBZr5uJJQ9JeXNEiTtNkWp7KpehkLGwMG2jsyAPgH.2HycVdfJvAh
- EifWI.5nx59DxLtBwKt5vcecrvl5FG66pPco55ECEhiyjDvPRXYTwc17CMmc
- CpbZkv6ED5.4XsIr2_lAArIz2IbeahEVl4Fii1Gvb2OSWlaKPZtq_l6fXLQA
- 2a8T2HX.SbYm6sJbknvC3SpNSMyrznexAQNTkPRnxYy.u1oHe67wL_pxkZvV
- 901OikpMYinuymqdHCRFW984pyX_yFUIakJ2klpTslXn8Ad3UHcMH5SMcInO
- ZvICVz74gQvVM4HfO413ZF0jBTfM08CwZregzjNSuSiogs82zpJSWSfsHg1i
- rJkxqUMS_3ZuG_FsuHvjs838l9t8chPjClKPh_vfZpjj6mMxBBp233Ri4GL1
- Z_VKxDlhEm4OwK39NxdnLPrh9hGm5cLkexGnL9x7MxDEnz6tqesdjxJYGWVa
- v5C6Lpt0-
-X-Rocket-MIMEInfo: 001.001,R3JlZXRpbmdzIGZyb20gQlVSS0lOQSBGQVNPOgpMZXQgbWUgc3RhcnQgYnkgaW50cm9kdWNlIG15c2VsZixJIGFtIE1ycyBSdXRoIFlvZGEsIEJJTEwgQU5EIEVYQ0hBTkdFIE1BTkFHRVIgKEJhbmsgb2YgQWZyaWNhKSBPdWFnYWRvdWdvdSwgQnVya2luYSBGYXNvLkkgYW0gd3JpdHRpbmcgeW91IHRoaXMgbGV0dGVyIGJhc2VkIG9uIHRoZSBsYXRlc3QgZGV2ZWxvcG1lbnQgYXQgb3VyIGJhbmsgd2hpY2ggSSB3aWxsIGxpa2UgdG8gYnJpbmcgdG8geW91ciBwZXJzb25hbCBlZGlmaWNhdGlvbi4oJDEyLDI1MG0BMAEBAQE-
-X-RocketYMMF: sumit123panwar
-X-Mailer: YahooMailClassic/15.1.2 YahooMailWebService/0.8.130.494
-Message-ID: <1357998629.62632.YahooMailClassic@web193203.mail.sg3.yahoo.com>
-Date: Sat, 12 Jan 2013 21:50:29 +0800 (SGT)
-From: Ruth Yoda <ruth_y1@qq.com>
-Reply-To: ruth_y@qq.com
-Subject: Re:Very Urgent!!!
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1753757Ab3ALO4a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 09:56:30 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58517 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3ALO42 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 09:56:28 -0500
+Date: Sun, 13 Jan 2013 01:56:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v3 00/44] Meta Linux Kernel Port
+Message-Id: <20130113015613.80043d6b51cb13cfcf8f09fe@canb.auug.org.au>
+In-Reply-To: <20130112095507.GA1738@balrog>
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
+	<20130111103442.b80ddbfb11ef322ed28ca3b3@canb.auug.org.au>
+	<50EFD824.3010502@imgtec.com>
+	<20130112000336.1f24c42237fab4fe0c305ff6@canb.auug.org.au>
+	<50F0296E.2000704@imgtec.com>
+	<20130112120957.36df3412c9d6cca089a0340a@canb.auug.org.au>
+	<20130112095507.GA1738@balrog>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sun__13_Jan_2013_01_56_13_+1100_Nl0R0yNpjdUSz8TM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings from BURKINA FASO:
-Let me start by introduce myself,I am Mrs Ruth Yoda, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification.($12,250million transfer claims).This is a legitimate transaction and I agreed to offer you 30% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested,get back to me.
- 
-Yours faithful,
-Mrs Ruth Yoda.
+--Signature=_Sun__13_Jan_2013_01_56_13_+1100_Nl0R0yNpjdUSz8TM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi James,
 
+On Sat, 12 Jan 2013 09:55:07 +0000 James Hogan <james.hogan@imgtec.com> wro=
+te:
+>
+> Would "sufficiently ready" normally mean "in a state ready to send a
+> pull request to Linus"?
+
+That is the usual criteria.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Sun__13_Jan_2013_01_56_13_+1100_Nl0R0yNpjdUSz8TM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ8XmNAAoJEECxmPOUX5FEDXgP/A5MAF5c6pl7+ghQiwhCYBnD
+rHuY38Mr6jZzfYnKOWX0piJM6Dw4M+uVU8zoNYsBWxEWxqERyvuA4vPMM3twyxk9
+mEPozpgKwNq50/wjJxvMtaOvaGuEH3Z3u29AK8ey6WJxAsjKKEm71Lb+RhxYLbDO
+xy7uy8XL2g8Ej3gbgERvKzlXGX2MkOkoiqxtU5SdKfYYWZS14ywRTezBGAlQcFsy
+jQqBJIKQhYaEgXQrvuY74R9mj98jbqr3phmj6OqEl7DEuJbRhG0Qvgt1wD1HDyDe
+RB0MQwsju+1kWktorM5aj6XZ8cAKRoNiv8VbQrKRVrL97wDlPKqjEOD1XdZ3BXZl
+f0Xa/z21MGZdjy3qt9iALLfOXSEobnf4HZ9nQHTE5wfPzcPrTHJULSTFZAXXmtD0
+YePeUQbOO5LB04z4dZ2ErTXhPfYLgYVAX0oIEh7Tr6+X3x3HVI+nsMRtO2dFsuVq
+7+9Zc2BBDmCDcwAp98iHY4kMFtzFVkmHEgi6BxEeCd0SJr6Ny9BjMvWj7snpUA33
+cUNtJGDpozRkZRfwzJd4FvfOmy4Bu3TAZYpDf+tApH/disUTl83AOdIS7E6F9sF3
+ifXgEepnC+E4DjE6r2kgoCn6fXm6i1zAIT9/Fjpnu5x80pBAQQBPZaWmqCS5PSAP
+UOHWNNd5e1JtVY8yFtxb
+=qdKe
+-----END PGP SIGNATURE-----
+
+--Signature=_Sun__13_Jan_2013_01_56_13_+1100_Nl0R0yNpjdUSz8TM--
