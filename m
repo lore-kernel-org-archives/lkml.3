@@ -1,165 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab3ALDyh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 22:54:37 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:62526 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab3ALDyg convert rfc822-to-8bit (ORCPT
+	id S1754668Ab3ALEBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 23:01:40 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:63517 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab3ALEBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 22:54:36 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Prashant Gaikwad <pgaikwad@nvidia.com>, <swarren@wwwdotorg.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1356529583-19535-1-git-send-email-pgaikwad@nvidia.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-References: <1356529583-19535-1-git-send-email-pgaikwad@nvidia.com>
-Message-ID: <20130112035431.4361.12997@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: [PATCH 1/2] clk: Add debug clk summary
-Date: Fri, 11 Jan 2013 19:54:31 -0800
+	Fri, 11 Jan 2013 23:01:39 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH 2/2] tty: cleanup checkpatch warning in pty.c
+Date: Sat, 12 Jan 2013 05:01:22 +0100
+Message-Id: <1357963283-20119-2-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1357963283-20119-1-git-send-email-dinggnu@gmail.com>
+References: <1357963283-20119-1-git-send-email-dinggnu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Prashant Gaikwad (2012-12-26 05:46:22)
-> Adds debug file "clk_summary" in /sys/kernel/debug/clk dir.
-> It helps to view all the clock registered in human-readable format.
-> 
-> For example:
->    clock                        enable_cnt  prepare_cnt  rate
-> ---------------------------------------------------------------------
->  i2s0_sync                      0           0            24000000
->  spdif_in_sync                  0           0            24000000
->     spdif_mux                   0           0            24000000
->        spdif                    0           0            24000000
->           spdif_doubler         0           0            48000000
->              spdif_div          0           0            48000000
->                 spdif_2x        0           0            48000000
->  clk_32k                        2           2            32768
->     blink_override              1           1            32768
->        blink                    1           1            32768
->  clk_m                          2           2            12000000
->     clk_out_3_mux               0           0            12000000
->        clk_out_3                0           0            12000000
->     pll_ref                     3           3            12000000
->        pll_e_mux                0           0            12000000
->           pll_e                 0           0            100000000
->              cml0               0           0            100000000
->              cml1               0           0            100000000
->              pciex              0           0            100000000
->        pll_d2                   0           0            1000000
->           pll_d2_out0           0           0            500000
->        pll_d                    0           0            1000000
->           pll_d_out0            0           0            500000
->              dsib_mux           0           0            500000
->                 dsib            0           0            500000
->              dsia               0           0            500000
-> 
-> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+spaces are used for indent in 3 places of tty/pty.c, we change it to tab.
 
-Thanks for the respin of patch #1 and for generating the JSON output
-format in patch #2.  I've taken both of these into clk-next.
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ drivers/tty/pty.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Regards,
-Mike
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index 64fcbdb..358a5fe 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -55,9 +55,9 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
+ 		set_bit(TTY_OTHER_CLOSED, &tty->flags);
+ #ifdef CONFIG_UNIX98_PTYS
+ 		if (tty->driver == ptm_driver) {
+-		        mutex_lock(&devpts_mutex);
++			mutex_lock(&devpts_mutex);
+ 			devpts_pty_kill(tty->link->driver_data);
+-		        mutex_unlock(&devpts_mutex);
++			mutex_unlock(&devpts_mutex);
+ 		}
+ #endif
+ 		tty_unlock(tty);
+@@ -661,7 +661,7 @@ static const struct tty_operations pty_unix98_ops = {
+  *	Allocate a unix98 pty master device from the ptmx driver.
+  *
+  *	Locking: tty_mutex protects the init_dev work. tty->count should
+- * 		protect the rest.
++ *		protect the rest.
+  *		allocated_ptys_lock handles the list of free pty numbers
+  */
+ 
+-- 
+1.7.10.4
 
-> ---
->  drivers/clk/clk.c |   67 +++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 67 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 56e4495e..d79c088 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -34,6 +34,67 @@ static struct dentry *rootdir;
->  static struct dentry *orphandir;
->  static int inited = 0;
->  
-> +static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
-> +{
-> +       if (!c)
-> +               return;
-> +
-> +       seq_printf(s, "%*s%-*s %-11d %-12d %-10lu",
-> +                  level * 3 + 1, "",
-> +                  30 - level * 3, c->name,
-> +                  c->enable_count, c->prepare_count, c->rate);
-> +       seq_printf(s, "\n");
-> +}
-> +
-> +static void clk_summary_show_subtree(struct seq_file *s, struct clk *c,
-> +                                    int level)
-> +{
-> +       struct clk *child;
-> +       struct hlist_node *tmp;
-> +
-> +       if (!c)
-> +               return;
-> +
-> +       clk_summary_show_one(s, c, level);
-> +
-> +       hlist_for_each_entry(child, tmp, &c->children, child_node)
-> +               clk_summary_show_subtree(s, child, level + 1);
-> +}
-> +
-> +static int clk_summary_show(struct seq_file *s, void *data)
-> +{
-> +       struct clk *c;
-> +       struct hlist_node *tmp;
-> +
-> +       seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate\n");
-> +       seq_printf(s, "---------------------------------------------------------------------\n");
-> +
-> +       mutex_lock(&prepare_lock);
-> +
-> +       hlist_for_each_entry(c, tmp, &clk_root_list, child_node)
-> +               clk_summary_show_subtree(s, c, 0);
-> +
-> +       hlist_for_each_entry(c, tmp, &clk_orphan_list, child_node)
-> +               clk_summary_show_subtree(s, c, 0);
-> +
-> +       mutex_unlock(&prepare_lock);
-> +
-> +       return 0;
-> +}
-> +
-> +
-> +static int clk_summary_open(struct inode *inode, struct file *file)
-> +{
-> +       return single_open(file, clk_summary_show, inode->i_private);
-> +}
-> +
-> +static const struct file_operations clk_summary_fops = {
-> +       .open           = clk_summary_open,
-> +       .read           = seq_read,
-> +       .llseek         = seq_lseek,
-> +       .release        = single_release,
-> +};
-> +
->  /* caller must hold prepare_lock */
->  static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
->  {
-> @@ -167,12 +228,18 @@ static int __init clk_debug_init(void)
->  {
->         struct clk *clk;
->         struct hlist_node *tmp;
-> +       struct dentry *d;
->  
->         rootdir = debugfs_create_dir("clk", NULL);
->  
->         if (!rootdir)
->                 return -ENOMEM;
->  
-> +       d = debugfs_create_file("clk_summary", S_IRUGO, rootdir, NULL,
-> +                               &clk_summary_fops);
-> +       if (!d)
-> +               return -ENOMEM;
-> +
->         orphandir = debugfs_create_dir("orphans", rootdir);
->  
->         if (!orphandir)
-> -- 
-> 1.7.4.1
