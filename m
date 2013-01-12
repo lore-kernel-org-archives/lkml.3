@@ -1,167 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab3ALAzy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 19:55:54 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:63038 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab3ALAzx (ORCPT
+	id S1755873Ab3ALBBP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 20:01:15 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:36448 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070Ab3ALBBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 19:55:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAFp+6iHYRRS3uSWnmdqBvfOgUDKKJUzMvqoj1HP2uXS=Fdaifg@mail.gmail.com>
-References: <1355841786-13307-1-git-send-email-gautam.vivek@samsung.com>
-	<1355841786-13307-3-git-send-email-gautam.vivek@samsung.com>
-	<CAD=FV=WMjqszsTQja82_uZc4Ue50TfTmSNO2yOhSMCX1w1L5Dg@mail.gmail.com>
-	<CAFp+6iHYRRS3uSWnmdqBvfOgUDKKJUzMvqoj1HP2uXS=Fdaifg@mail.gmail.com>
-Date: Fri, 11 Jan 2013 16:50:45 -0800
-Message-ID: <CAD=FV=XhMbWjCR5r=R3+zE1524NuUUvFDf2HZuCrXPmsei4BNA@mail.gmail.com>
-Subject: Re: [PATCH v5 2/4] usb: phy: samsung: Add host phy support to
- samsung-phy driver
-From: Doug Anderson <dianders@chromium.org>
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        yulgon.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
-        Praveen Paneri <p.paneri@samsung.com>, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org, jg1.han@samsung.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        balbi@ti.com, kishon@ti.com, Kukjin Kim <kgene.kim@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 Jan 2013 20:01:13 -0500
+Date: Sat, 12 Jan 2013 12:00:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        David Howells <dhowells@redhat.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH] consolidate per-arch stack overflow debugging options
+Message-Id: <20130112120053.3362ae67bf2d3b2cc6042aa4@canb.auug.org.au>
+In-Reply-To: <20130111170043.D7CC39DC@kernel.stglabs.ibm.com>
+References: <20130111170043.D7CC39DC@kernel.stglabs.ibm.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__12_Jan_2013_12_00_53_+1100_GccIWkScKcKPRPQe"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek,
+--Signature=_Sat__12_Jan_2013_12_00_53_+1100_GccIWkScKcKPRPQe
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jan 11, 2013 at 4:40 AM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
->>> +#define HOST_CTRL0_REFCLKSEL_MASK              (0x3)
->>> +#define HOST_CTRL0_REFCLKSEL_XTAL              (0x0 << 19)
->>> +#define HOST_CTRL0_REFCLKSEL_EXTL              (0x1 << 19)
->>> +#define HOST_CTRL0_REFCLKSEL_CLKCORE           (0x2 << 19)
->>> +
->>> +#define HOST_CTRL0_FSEL_MASK                   (0x7 << 16)
->>> +#define HOST_CTRL0_FSEL(_x)                    ((_x) << 16)
->>> +#define HOST_CTRL0_FSEL_CLKSEL_50M             (0x7)
->>> +#define HOST_CTRL0_FSEL_CLKSEL_24M             (0x5)
->>> +#define HOST_CTRL0_FSEL_CLKSEL_20M             (0x4)
->>> +#define HOST_CTRL0_FSEL_CLKSEL_19200K          (0x3)
->>> +#define HOST_CTRL0_FSEL_CLKSEL_12M             (0x2)
->>> +#define HOST_CTRL0_FSEL_CLKSEL_10M             (0x1)
->>> +#define HOST_CTRL0_FSEL_CLKSEL_9600K           (0x0)
->>
->> Add the shifts to the #defines and remove HOST_CTRL0_FSEL(_x).  That
->> makes it match the older phy more closely.
->>
-> Wouldn't it hamper the readability when shifts are used ??
-> I mean if we have something like this -
+Hi Dave,
+
+On Fri, 11 Jan 2013 09:00:43 -0800 Dave Hansen <dave@linux.vnet.ibm.com> wr=
+ote:
 >
-> phyhost |= HOST_CTRL0_FSEL(phyclk)
->
-> so, if we are using the shifts then
-> phyhost |= (HOST_CTRL0_FSEL_CLKSEL_24M << HOST_CTRL0_FSEL_SHIFT)
+> I'm looking for some Acked-bys on this from the various arch
+> maintainers that it affects.  I'd like to send it up to Linus
+> in the next merge window.  This is part of a larger series to
+> clean up the "Kernel Hacking" menu:
+>=20
+> 	https://lkml.org/lkml/2012/12/17/306
 
-I was actually suggesting modifying the #defines like this:
+This should be added to linux-next soon, if possible.  Either directly (if
+you have a tree I can fetch) or via some other maintainer's tree.
 
-#define HOST_CTRL0_FSEL_SHIFT 16
-#define HOST_CTRL0_FSEL_MASK                   (0x7 << HOST_CTRL0_FSEL_SHIFT)
-#define HOST_CTRL0_FSEL_CLKSEL_50M             (0x7 << HOST_CTRL0_FSEL_SHIFT)
-#define HOST_CTRL0_FSEL_CLKSEL_24M             (0x5 << HOST_CTRL0_FSEL_SHIFT)
-#define HOST_CTRL0_FSEL_CLKSEL_20M             (0x4 << HOST_CTRL0_FSEL_SHIFT)
-#define HOST_CTRL0_FSEL_CLKSEL_19200K          (0x3 << HOST_CTRL0_FSEL_SHIFT)
-#define HOST_CTRL0_FSEL_CLKSEL_12M             (0x2 << HOST_CTRL0_FSEL_SHIFT)
-#define HOST_CTRL0_FSEL_CLKSEL_10M             (0x1 << HOST_CTRL0_FSEL_SHIFT)
-#define HOST_CTRL0_FSEL_CLKSEL_9600K           (0x0 << HOST_CTRL0_FSEL_SHIFT)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-...then the code doesn't need to think about shifts, right?
+--Signature=_Sat__12_Jan_2013_12_00_53_+1100_GccIWkScKcKPRPQe
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
->>>         if (IS_ERR(ref_clk)) {
->>>                 dev_err(sphy->dev, "Failed to get reference clock\n");
->>>                 return PTR_ERR(ref_clk);
->>>         }
->>>
->>> -       switch (clk_get_rate(ref_clk)) {
->>> -       case 12 * MHZ:
->>> -               refclk_freq = PHYCLK_CLKSEL_12M;
->>> -               break;
->>> -       case 24 * MHZ:
->>> -               refclk_freq = PHYCLK_CLKSEL_24M;
->>> -               break;
->>> -       case 48 * MHZ:
->>> -               refclk_freq = PHYCLK_CLKSEL_48M;
->>> -               break;
->>> -       default:
->>> -               if (sphy->cpu_type == TYPE_S3C64XX)
->>> -                       refclk_freq = PHYCLK_CLKSEL_48M;
->>> -               else
->>> +       if (sphy->cpu_type == TYPE_EXYNOS5250) {
->>> +               /* set clock frequency for PLL */
->>> +               switch (clk_get_rate(ref_clk)) {
->>> +               case 96 * 100000:
->>
->> nit: change to 9600 * KHZ to match; below too.
->>
-> sure.
->
->>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_9600K;
->>
->> Why |= with 0?
->>
-> kept this just to keep things look similar :-). will remove this line,
+iQIcBAEBCAAGBQJQ8LXFAAoJEECxmPOUX5FEcUgQAIEgVpp0+NP6diARhjdrV7/8
+USY0TrR71zd+DghoRnWzI6s6uXw6nE0kaE2AftwjGhPh0tJnboJxNx43a7gIGWez
+PMDvGF99rBJ9MN/zgZ5M9/96WpAJ2G6Dx1OeYcHQ4rJjKoX2iK6DBwXbKmhQJYPM
+7TDCmdU2gVSAB+0sWHHC6RhOiwqiEBTEsPvGjxj84Do5spAjU01CBZeuSJdJqpoO
+/CSeDR4tBHTm/H96cDOatjuzJ2T4fRb/kSOgQg4EPj4hMf+DsIK7DVBzLvvuPy5t
+nKiTzvadZTzVoO9ReftGYm8cKB3fFzpAVu+O1jpmynwqIQmoZcr1v9Qo6ooOuLKe
+E1QZ+dId2Msr1DHtCeM/x5lyKnJjoKfk19GwV3i958LOwSd6acVGUaVMj5uSVeNW
+rlDoOYOZg27L6l7Y49Sj5omCragGbBRLjOD/w+HBK+c4SXWdLu5ZDU1jcIvqpfQO
+UffP1Uozk/hnzLYFDCkBhPH/uyu303RDHlGoR4CL7TL+8006Qm/CueV64RsQm5j1
+mtgU4VNsaEp0bv0aCj1EmqazL5FC8JtH3+wOEMzL5SCT7QiYa5VC7oKvW1Twhkx+
+aC2y0t5mwxRFd1fmdT+s0PRfalzAyntz1RMrVaOvZ/VbGHlcjCUy/E+gjcAHV68h
+ol7tTuoSngnAPz4NV3C1
+=yNZr
+-----END PGP SIGNATURE-----
 
-My comment was about keeping things similar.  Right now the 5250 code
-has the |= and the non-5250 code doesn't.  I don't care which is
-picked but the two sides of the "if" should be symmetric.
-
-See parts of the patch below.
-
->>> +                       break;
->>> +               case 10 * MHZ:
->>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_10M;
->>> +                       break;
->>> +               case 12 * MHZ:
->>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_12M;
->>> +                       break;
->>> +               case 192 * 100000:
->>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_19200K;
->>> +                       break;
->>> +               case 20 * MHZ:
->>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_20M;
->>> +                       break;
->>> +               case 50 * MHZ:
->>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_50M;
->>> +                       break;
->>> +               case 24 * MHZ:
->>> +               default:
->>> +                       /* default reference clock */
->>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_24M;
->>> +                       break;
->>> +               }
->>> +       } else {
->>> +               switch (clk_get_rate(ref_clk)) {
->>> +               case 12 * MHZ:
->>> +                       refclk_freq = PHYCLK_CLKSEL_12M;
->>> +                       break;
->>> +               case 24 * MHZ:
->>>                         refclk_freq = PHYCLK_CLKSEL_24M;
->>> -               break;
->>> +                       break;
->>> +               case 48 * MHZ:
->>> +                       refclk_freq = PHYCLK_CLKSEL_48M;
->>> +                       break;
->>> +               default:
->>> +                       if (sphy->cpu_type == TYPE_S3C64XX)
->>> +                               refclk_freq = PHYCLK_CLKSEL_48M;
->>> +                       else
->>> +                               refclk_freq = PHYCLK_CLKSEL_24M;
->>> +                       break;
->>> +               }
->>>         }
->>>         clk_put(ref_clk);
->>>
->>>         return refclk_freq;
->>>  }
-
--Doug
+--Signature=_Sat__12_Jan_2013_12_00_53_+1100_GccIWkScKcKPRPQe--
