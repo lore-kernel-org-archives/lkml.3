@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3ALQwP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 11:52:15 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:33336 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752723Ab3ALQwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 11:52:13 -0500
-Message-ID: <1358009534.2168.22.camel@joe-AO722>
-Subject: Re: mmotm 2013-01-11-15-47 uploaded (x86 asm-offsets broken)
-From: Joe Perches <joe@perches.com>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Date: Sat, 12 Jan 2013 08:52:14 -0800
-In-Reply-To: <CA+icZUVMY76bRFgUumZy0G-FFM=80iwfSFSopHMwHRYfgKjLjA@mail.gmail.com>
-References: <20130111234813.170A620004E@hpza10.eem.corp.google.com>
-	 <50F0BFAA.10902@infradead.org>
-	 <20130112131713.749566c8d374cd77b1f2885e@canb.auug.org.au>
-	 <1357957789.2168.11.camel@joe-AO722>
-	 <CA+icZUVMY76bRFgUumZy0G-FFM=80iwfSFSopHMwHRYfgKjLjA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753919Ab3ALQyx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 11:54:53 -0500
+Received: from smtp-out003.kontent.com ([81.88.40.217]:57292 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723Ab3ALQyv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 11:54:51 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: Andreas Mohr <andi@lisas.de>
+Cc: Woody Suwalski <terraluna977@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.8-rc1 - another regression on USB :-(
+Date: Sat, 12 Jan 2013 17:54:50 +0100
+Message-ID: <7097337.ncPBcd5b1z@linux-5eaq.site>
+User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20130112131602.GA32186@rhlx01.hs-esslingen.de>
+References: <20130112131602.GA32186@rhlx01.hs-esslingen.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-01-12 at 11:13 +0100, Sedat Dilek wrote:
-> On Sat, Jan 12, 2013 at 3:29 AM, Joe Perches <joe@perches.com> wrote:
-> > On Sat, 2013-01-12 at 13:17 +1100, Stephen Rothwell wrote:
-> >> On Fri, 11 Jan 2013 17:43:06 -0800 Randy Dunlap <rdunlap@infradead.org> wrote:
-> >> >
-> >> > b0rked.
-> >> >
-> >> > Some (randconfig?) causes this set of errors:
-> >
-> > I guess that's when CONFIG_HZ is not an even divisor of 1000.
-> > I suppose this needs to be worked on a bit more.
-[]
-> I remember this patch from Joe come up with a pending patch in
-> net-next.git#master
-[]
-> As I see Randy has in his kernel-config:
-> CONFIG_HZ=300
-> So there is a problem for the value "300" (only)?
+On Saturday 12 January 2013 14:16:02 Andreas Mohr wrote:
+> > Greg, Linus,
+> > It sounds insane, but after banging on the issue I have found out that 
+> > USB problem is caused (also in vanilla kernel) with a config change:
+> > USB-all built as modules - bad USB
+> > USB core built in, UHCI/EHCI modules -  semi functional - but 1Mb/s
+> > transfer
+> > USB core and UHCI EHCI built-in - bingo - no issues.
+> > 
+> > Could anybody duplicate that, or is it somehow my setup???
+> 
+> Since there was no additional reply here (needed) so far,
+> some of my (questionably relevant?) thoughts on this:
+> 
+> There's of course the EHCI vs. UHCI(/OHCI) duality
+> (EHCI host controller responsible for high speed transfers,
+> the other for 1.1 full speed, both serving the same port connectors).
+> So if the coordination between the two is a problem,
+> you might end up with merely full speed on a 2.0 port.
+> 
+> And with drivers builtin vs. module, the init sequence/timing
+> might possibly be affected - right?
 
-Basically, this problem exists whenever timeconst.h
-is necessary.
+You should try EHCI first. This has always been true, but the likeliehood
+of seeing trouble is variable. This is testable.
 
-kernel/Makefile has code to create it in kernel/
-and kernel/time.c is the only file that uses it.
+EHCI static, UHCI modular - should work
+EHCI modular, UHCI static - should fail
 
-That code will need to be removed and newly written
-somewhere so that timeconst.h could be created as
-include/linux/timeconst.h before any other compilation
-so that jiffies.h can #include it.
-
-I believe it should be akin to how version.h or
-elfconfig.h is created.
-
-Someone with stronger Makefile foo could probably do
-it quicker than I could.
+	Regards
+		Oliver
 
