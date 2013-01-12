@@ -1,63 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab3ALCyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 21:54:09 -0500
-Received: from mga11.intel.com ([192.55.52.93]:57393 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183Ab3ALCyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 21:54:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,455,1355126400"; 
-   d="scan'208";a="272946547"
-Date: Sat, 12 Jan 2013 10:54:01 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Miao Xie <miaox@cn.fujitsu.com>,
-        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, dsterba@suse.cz,
-        Christoph Hellwig <hch@infradead.org>,
-        Kamal Mostafa <kamal@canonical.com>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH V2] vfs: re-implement writeback_inodes_sb(_nr)_if_idle()
- and rename them
-Message-ID: <20130112025401.GA8948@localhost>
-References: <50D2E3DF.4010105@cn.fujitsu.com>
- <20121228143338.GW14116@twin.jikos.cz>
- <50EE560D.6040604@cn.fujitsu.com>
- <20130111201211.GA20981@quack.suse.cz>
+	id S1755736Ab3ALCyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 21:54:37 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23784 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755457Ab3ALCyg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 21:54:36 -0500
+Message-ID: <50F0D05B.5030507@oracle.com>
+Date: Sat, 12 Jan 2013 10:54:19 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130111201211.GA20981@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Abhijit Pawar <abhi.c.pawar@gmail.com>
+CC: Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 1/1] fs/xfs remove obsolete simple_strto<foo>
+References: <1357740282-2377-1-git-send-email-abhi.c.pawar@gmail.com>
+In-Reply-To: <1357740282-2377-1-git-send-email-abhi.c.pawar@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 09:12:11PM +0100, Jan Kara wrote:
-> On Thu 10-01-13 13:47:57, Miao Xie wrote:
-> > writeback_inodes_sb(_nr)_if_idle() is re-implemented by replacing down_read()
-> > with down_read_trylock() because
-> > - If ->s_umount is write locked, then the sb is not idle. That is
-> >   writeback_inodes_sb(_nr)_if_idle() needn't wait for the lock.
-> > - writeback_inodes_sb(_nr)_if_idle() grabs s_umount lock when it want to start
-> >   writeback, it may bring us deadlock problem when doing umount. In order to
-> >   fix the problem, ext4 and btrfs implemented their own writeback functions
-> >   instead of writeback_inodes_sb(_nr)_if_idle(), but it introduced the redundant
-> >   code, it is better to implement a new writeback_inodes_sb(_nr)_if_idle().
-> > 
-> > The name of these two functions is cumbersome, so rename them to
-> > try_to_writeback_inodes_sb(_nr).
-> > 
-> > This idea came from Christoph Hellwig.
-> > Some code is from the patch of Kamal Mostafa.
->   The patch looks good. Thanks! You can add:
-> Reviewed-by: Jan Kara <jack@suse.cz>
+On 01/09/2013 10:04 PM, Abhijit Pawar wrote:
+> This patch replaces usages of obsolete simple_strtoul with kstrtoint in xfs_args and suffix_strtoul.
 > 
->   BTW, since changes to filesystems are minimal, maybe Fengguang can take
-> the patch through his writeback tree? Fengguang?
-
-OK, done. The patch looks good, thanks!
-
-Fengguang
+> Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
+> ---
+>  fs/xfs/xfs_super.c |   29 +++++++++++++++++++----------
+>  1 files changed, 19 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
+> index ab8839b..c407121 100644
+> --- a/fs/xfs/xfs_super.c
+> +++ b/fs/xfs/xfs_super.c
+> @@ -139,9 +139,9 @@ static const match_table_t tokens = {
+>  
+>  
+>  STATIC unsigned long
+> -suffix_strtoul(char *s, char **endp, unsigned int base)
+> +suffix_kstrtoint(char *s, unsigned int base, int *res)
+>  {
+> -	int	last, shift_left_factor = 0;
+> +	int	last, shift_left_factor = 0, _res;
+>  	char	*value = s;
+>  
+>  	last = strlen(value) - 1;
+> @@ -158,7 +158,10 @@ suffix_strtoul(char *s, char **endp, unsigned int base)
+>  		value[last] = '\0';
+>  	}
+>  
+> -	return simple_strtoul((const char *)s, endp, base) << shift_left_factor;
+> +	if (kstrtoint(s, base, &_res))
+> +		return -EINVAL;
+> +	*res = _res << shift_left_factor;
+> +	return 0;
+>  }
+>  
+>  /*
+> @@ -174,7 +177,7 @@ xfs_parseargs(
+>  	char			*options)
+>  {
+>  	struct super_block	*sb = mp->m_super;
+> -	char			*this_char, *value, *eov;
+> +	char			*this_char, *value;
+>  	int			dsunit = 0;
+>  	int			dswidth = 0;
+>  	int			iosize = 0;
+> @@ -230,14 +233,16 @@ xfs_parseargs(
+>  					this_char);
+>  				return EINVAL;
+>  			}
+> -			mp->m_logbufs = simple_strtoul(value, &eov, 10);
+> +			if (kstrtoint(value, 10, &mp->m_logbufs))
+> +				return EINVAL;
+>  		} else if (!strcmp(this_char, MNTOPT_LOGBSIZE)) {
+>  			if (!value || !*value) {
+>  				xfs_warn(mp, "%s option requires an argument",
+>  					this_char);
+>  				return EINVAL;
+>  			}
+> -			mp->m_logbsize = suffix_strtoul(value, &eov, 10);
+> +			if (suffix_kstrtoint(value, 10, &mp->m_logbsize))
+> +				return EINVAL;
+>  		} else if (!strcmp(this_char, MNTOPT_LOGDEV)) {
+>  			if (!value || !*value) {
+>  				xfs_warn(mp, "%s option requires an argument",
+> @@ -266,7 +271,8 @@ xfs_parseargs(
+>  					this_char);
+>  				return EINVAL;
+>  			}
+> -			iosize = simple_strtoul(value, &eov, 10);
+> +			if (kstrtoint(value, 10, &iosize))
+> +				return EINVAL;
+>  			iosizelog = ffs(iosize) - 1;
+>  		} else if (!strcmp(this_char, MNTOPT_ALLOCSIZE)) {
+>  			if (!value || !*value) {
+> @@ -274,7 +280,8 @@ xfs_parseargs(
+>  					this_char);
+>  				return EINVAL;
+>  			}
+> -			iosize = suffix_strtoul(value, &eov, 10);
+> +			if (suffix_kstrtoint(value, 10, &iosize))
+> +				return EINVAL;
+>  			iosizelog = ffs(iosize) - 1;
+>  		} else if (!strcmp(this_char, MNTOPT_GRPID) ||
+>  			   !strcmp(this_char, MNTOPT_BSDGROUPS)) {
+> @@ -296,14 +303,16 @@ xfs_parseargs(
+>  					this_char);
+>  				return EINVAL;
+>  			}
+> -			dsunit = simple_strtoul(value, &eov, 10);
+> +			if (kstrtoint(value, 10, &dsunit))
+> +				return EINVAL;
+>  		} else if (!strcmp(this_char, MNTOPT_SWIDTH)) {
+>  			if (!value || !*value) {
+>  				xfs_warn(mp, "%s option requires an argument",
+>  					this_char);
+>  				return EINVAL;
+>  			}
+> -			dswidth = simple_strtoul(value, &eov, 10);
+> +			if (kstrtoint(value, 10, &dswidth))
+> +				return EINVAL;
+>  		} else if (!strcmp(this_char, MNTOPT_32BITINODE)) {
+>  			mp->m_flags |= XFS_MOUNT_SMALL_INUMS;
+>  		} else if (!strcmp(this_char, MNTOPT_64BITINODE)) {
+> 
+Reviewed-by: Jie Liu <jeff.liu@oracle.com>
