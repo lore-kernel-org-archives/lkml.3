@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab3ALDIS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 22:08:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755961Ab3ALDIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 22:08:04 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: edumazet@google.com, stefanha@redhat.com, Jason Wang <jasowang@redhat.com>
-Subject: [PATCH V2 3/3] tuntap: fix leaking reference count
-Date: Sat, 12 Jan 2013 10:59:34 +0800
-Message-Id: <1357959574-13113-4-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1357959574-13113-1-git-send-email-jasowang@redhat.com>
-References: <1357959574-13113-1-git-send-email-jasowang@redhat.com>
+	id S1755989Ab3ALDJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 22:09:10 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:54510 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755875Ab3ALDJI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 22:09:08 -0500
+Message-ID: <1357960163.8515.3.camel@gitbox>
+Subject: Re: [PATCH 0/4] arm: vt8500: Add support for Wondermedia
+ WM8750/WM8850
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Olof Johansson <olof@lixom.net>
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com
+Date: Sat, 12 Jan 2013 16:09:23 +1300
+In-Reply-To: <1357960044.8515.0.camel@gitbox>
+References: <1357935162-7672-1-git-send-email-linux@prisktech.co.nz>
+	 <20130111215659.GA16521@quad.lixom.net> <1357960044.8515.0.camel@gitbox>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reference count leaking of both module and sock were found:
+The following changes since commit
+d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
 
-- When a detached file were closed, its sock refcnt from device were not
-  released, solving this by add the sock_put().
-- The module were hold or drop unconditionally in TUNSETPERSIST, which means we
-  if we set the persist flag for N times, we need unset it for another N
-  times. Solving this by only hold or drop an reference when there's a flag
-  change and also drop the reference count when the persist device is deleted.
+  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+are available in the git repository at:
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index a36b56f..af372d0 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -428,8 +428,10 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
- 		/* Drop read queue */
- 		skb_queue_purge(&tfile->sk.sk_receive_queue);
- 		tun_set_real_num_queues(tun);
--	} else if (tfile->detached && clean)
-+	} else if (tfile->detached && clean) {
- 		tun = tun_enable_queue(tfile);
-+		sock_put(&tfile->sk);
-+	}
- 
- 	if (clean) {
- 		if (tun && tun->numqueues == 0 && tun->numdisabled == 0 &&
-@@ -478,6 +480,9 @@ static void tun_detach_all(struct net_device *dev)
- 		sock_put(&tfile->sk);
- 	}
- 	BUG_ON(tun->numdisabled != 0);
-+
-+	if (tun->flags & TUN_PERSIST)
-+		module_put(THIS_MODULE);
- }
- 
- static int tun_attach(struct tun_struct *tun, struct file *file)
-@@ -1874,10 +1879,11 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 		/* Disable/Enable persist mode. Keep an extra reference to the
- 		 * module to prevent the module being unprobed.
- 		 */
--		if (arg) {
-+		if (arg && !(tun->flags & TUN_PERSIST)) {
- 			tun->flags |= TUN_PERSIST;
- 			__module_get(THIS_MODULE);
--		} else {
-+		}
-+		if (!arg && (tun->flags & TUN_PERSIST)) {
- 			tun->flags &= ~TUN_PERSIST;
- 			module_put(THIS_MODULE);
- 		}
--- 
-1.7.1
+  git://server.prisktech.co.nz/git/linuxwmt.git
+tags/vt8500-multiplatform-3.9
+
+for you to fetch changes up to ce3f386fdf10d79eaf6ebd63bb7adbd95f08f9f0:
+
+  arm: vt8500: Remove remaining mach includes (2013-01-12 15:47:39
++1300)
+
+----------------------------------------------------------------
+arm: vt8500: Convert arch-vt8500 to multiplatform only.
+
+----------------------------------------------------------------
+Tony Prisk (3):
+      arm: vt8500: Remove single platform Kconfig options
+      arm: vt8500: Convert debug-macro.S to be multiplatform friendly
+      arm: vt8500: Remove remaining mach includes
+
+ arch/arm/Kconfig                                   |   16 ---------
+ arch/arm/Kconfig.debug                             |    8 +++++
+ .../mach/debug-macro.S => include/debug/vt8500.S}  |   24 ++++++++-----
+ arch/arm/mach-vt8500/Kconfig                       |   11 ++++--
+ arch/arm/mach-vt8500/include/mach/timex.h          |   26
+--------------
+ arch/arm/mach-vt8500/include/mach/uncompress.h     |   37
+--------------------
+ 6 files changed, 31 insertions(+), 91 deletions(-)
+ rename arch/arm/{mach-vt8500/include/mach/debug-macro.S =>
+include/debug/vt8500.S} (56%)
+ delete mode 100644 arch/arm/mach-vt8500/include/mach/timex.h
+ delete mode 100644 arch/arm/mach-vt8500/include/mach/uncompress.h
 
