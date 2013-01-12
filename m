@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab3ALABQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 19:01:16 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:53964 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843Ab3ALABP (ORCPT
+	id S1755743Ab3ALACK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 19:02:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22962 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755368Ab3ALACI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 19:01:15 -0500
-Date: Fri, 11 Jan 2013 19:00:43 -0500
-From: Frederik Deweerdt <frederik.deweerdt@xprog.eu>
-To: namhyung@kernel.org, acme@redhat.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [patch] perf: tui: Fix segfault when drawing out-of-bounds jumps
-Message-ID: <20130112000043.GC32415@ks398093.ip-192-95-24.net>
+	Fri, 11 Jan 2013 19:02:08 -0500
+Date: Sat, 12 Jan 2013 03:01:52 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Cyril Roelandt <tipecaml@gmail.com>,
+        spi-devel-general@lists.sourceforge.net,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] spi: fix return value check in hspi_probe().
+Message-ID: <20130112000152.GX7247@mwanda>
+References: <1355271894-5284-1-git-send-email-tipecaml@gmail.com>
+ <1355271894-5284-6-git-send-email-tipecaml@gmail.com>
+ <87txrsqf7f.wl%kuninori.morimoto.gx@renesas.com>
+ <20121219151154.937EC3E0AD7@localhost>
+ <20121219163914.GN5032@mwanda>
+ <20121222095620.83E243E07FA@localhost>
+ <20130103160455.GO7247@mwanda>
+ <20130111150202.C25583E08C3@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130111150202.C25583E08C3@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jan 11, 2013 at 03:02:02PM +0000, Grant Likely wrote:
+> On Thu, 3 Jan 2013 19:04:55 +0300, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > On Sat, Dec 22, 2012 at 09:56:20AM +0000, Grant Likely wrote:
+> > > On Wed, 19 Dec 2012 19:39:14 +0300, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > > > On Wed, Dec 19, 2012 at 03:11:54PM +0000, Grant Likely wrote:
+> > > > > On Tue, 11 Dec 2012 16:36:27 -0800 (PST), Kuninori Morimoto <kuninori.morimoto.gx@renesas.com> wrote:
+> > > > > > 
+> > > > > > Hi
+> > > > > > 
+> > > > > > > According to its documentation, clk_get() returns a "valid IS_ERR() condition
+> > > > > > > containing errno", so we should call IS_ERR() rather than a NULL check.
+> > > > > > > 
+> > > > > > > Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+> > > > > > 
+> > > > > > Acked-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+> > > > > 
+> > > > > Applied, thanks.
+> > > > 
+> > > > In another thread, we were just talking about who clk_get() can
+> > > > return a NULL if !CONFIG_HAVE_CLK.  That might change to match the
+> > > > documentation later...  Not sure.
+> > > 
+> > > So what is the solution here? Will the dummy clk_get() be changed, or is
+> > > there more work needed on the drivers?
+> > > 
+> > 
+> > This driver can't function without a clk.  It should select that at
+> > build time instead of testing for it at probe.  Just checking for
+> > IS_ERR() will NOT cause a NULL dereference so the patch is ok in
+> > that respect.  I'm not sure if this can be build without
+> > CONFIG_HAVE_CLK.
+> 
+> Your suggestion is to make this driver depend on CONFIG_HAVE_CLK? I'm
+> fine with that, but it doesn't sort out the core infrastructure question
+> about whether it is valid for the empty clk_get() to return NULL. Nor is
+> it a particularly sustainable solution (ie. if a large number of drivers
+> want to do the same thing).
+> 
 
-When perf.data contains out-of-symbol jumps,
-annotate_browser__mark_jump_targets() correctly avoids marking
-out-of-symbol jump targets. However, when moving the cursor on one of
-said jumps, annotate_browser__draw_current_jump() will end up with a
-bogus 'target' pointer, causing a bogus memory access when dereferencing
-'bcursor' or 'btarget'
+We've spread this conversation out across several different threads.
 
-The following patch performs the same check as mark_jump_targets()
-in order to avoid drawing the bogus jump.
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-January/139186.html
 
-Regards,
-Frederik
+Basically, drivers should use accessor functions which handle NULL
+pointers instead of dereferencing the pointer directly.
 
-Signed-off-by: Frederik Deweerdt <frederik.deweerdt@xprog.eu>
+regards,
+dan carpenter
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 5dab3ca..8b84246 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -195,8 +195,9 @@ static void annotate_browser__draw_current_jump(struct ui_browser *browser)
- 	if (strstr(sym->name, "@plt"))
- 		return;
- 
--	if (!cursor || !cursor->ins || !ins__is_jump(cursor->ins) ||
--	    !disasm_line__has_offset(cursor))
-+	if (!cursor || !cursor->ins || !ins__is_jump(cursor->ins)
-+	    || !disasm_line__has_offset(cursor)
-+	    || cursor->ops.target.offset >= symbol__size(sym))
- 		return;
- 
- 	target = ab->offsets[cursor->ops.target.offset];
