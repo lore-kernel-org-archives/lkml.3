@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab3ALKwG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 05:52:06 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:36922 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735Ab3ALKwE (ORCPT
+	id S1753265Ab3ALKwt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 05:52:49 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45371 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab3ALKws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 05:52:04 -0500
+	Sat, 12 Jan 2013 05:52:48 -0500
+Date: Sat, 12 Jan 2013 10:47:30 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFT 3/3] ARM: tegra: dts: seaboard: enable keyboard
+Message-ID: <20130112104730.GQ23505@n2100.arm.linux.org.uk>
+References: <1357911185-11048-1-git-send-email-ldewangan@nvidia.com> <1357911185-11048-3-git-send-email-ldewangan@nvidia.com> <50F09BC7.90607@wwwdotorg.org> <20130111232438.GN23505@n2100.arm.linux.org.uk> <50F09FCB.70809@wwwdotorg.org> <20130111233615.GO23505@n2100.arm.linux.org.uk> <50F0A2A8.3080401@wwwdotorg.org> <50F13C34.3020808@nvidia.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <50F0897E.6080607@oracle.com>
-References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
-	<CA+icZUWkUrFSMzB1p+6KgVkbxn9NtpfZUHgn6wUs4r3zkrpmjA@mail.gmail.com>
-	<50F0897E.6080607@oracle.com>
-Date: Sat, 12 Jan 2013 11:52:02 +0100
-Message-ID: <CA+icZUXuUswsriQL_FEJC-r57WqOVVtDfhzfM9LB5kj=ZLWS8A@mail.gmail.com>
-Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F13C34.3020808@nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 10:51 PM, Dave Kleikamp
-<dave.kleikamp@oracle.com> wrote:
-> On 01/10/2013 09:46 AM, Sedat Dilek wrote:
->
->> Hi Dave,
->>
->> I am using here Ubuntu/precise AMD64 as a WUBI-installed system.
->>
->> Not sure if WUBI [1] is a good test-candidate.
->>
->> [ /boot/grub/grub.cfg ]
->> ...
->>         set root=(loop0)
->>         linux   /boot/vmlinuz-3.8.0-rc2-9-iniza-generic
->> root=UUID=001AADA61AAD9964 loop=/ubuntu/disks/root.disk ro
->> ...
->>
->> Poops, I did it (not again) but for the first time to test your
->> loop-patchset on top of Linux v3.8-rc2 plus some important other stuff
->> (see patches/ dir in attached tarball).
->>
->> As I did not know how to test it in a meaningful way I just run the
->> "lite" test-script from LTP [2].
->> Please, have a look at the ERRORs and failures.
->
-> I'd really like to know if these same testcases fail without my
-> patchset. I'm going to play with ltp on loop-mounted filesystems, but I
-> don't intend to play with WUBI at all.
->
+On Sat, Jan 12, 2013 at 04:04:28PM +0530, Laxman Dewangan wrote:
+> Going through clock driver, the clk_get() should return error pointer or  
+> valid pointer, atleast not NULL.
 
-I am preparing now two kernels against Linux v3.8-rc3 (as your
-patchset applies cleany) with 2 important patches which I need here
-(1. mei: no proper reboot and 2. (S)ATA fix).
+No.  clk_get() will return whatever value the 'clk' pointer found in
+the clk_lookup structure contains.  Or it will return an error pointer.
 
-I will attach two tarballs for each kernel-setup and run LTP "lite"
-again (tarballs will include the results).
+This topic has had enough discussion in the past that I'll say: go and
+look up in the archives emails from me on this subject.  I've been very
+clear over the years about this.
 
-> I'd be interested if my patchset introduces regressions, but not so much
-> if the same testcases fail previously.
->
+> Probably our clock driver is returning to NULL and hence issue is  
+> becasue whole world, it  check for IS_ERR or !IS_ERR() and null clk  
+> pointer treated as !IS_ERR().
 
-Hmm, regressions is always good to test.
-As a "customer" aka tester I want to see any benefit means for most
-power-users: Do I get some speedups?
-That's the main background of my askings.
+Probably not.  As far as _drivers_ go, either the clk cookie is an error
+(IS_ERR() is true) _OR_ it is valid to be passed back into the clock API.
+You will find statements from me in the past to that: whatever clk_get()
+returns which is _not_ an error must be accepted by the rest of the clk
+API.
 
-As said here I am running Ubuntu as a WUBI-installation.
-This system is predestinated for testing loop improvements.
-So again and no sorry: How can I test reliable speed improvements?
-I remember linux-fs/linux-xfs folks have a tool could be named
-"xfstests" (note2myself: more coffee!).
-Any hints for testing appreciated!
-
-- Sedat -
-
->> $ egrep -i 'error|fail'
->> for-dkleikamp/tests/runltplite-results_loop-experimental.txt | grep -v
->> -i expected | wc -l
->> 210
->>
->> In good old German tradition I have collected some interesting stuff
->> in the attached tarball ;-).
->> If something is missing - blame me.
->> Don't hesitate to ask (I have your patchset for a while on my radar).
->>
->> Thanks!
->>
->> Regards,
->> - Sedat -
->>
->> [1] https://wiki.ubuntu.com/WubiGuide
->> [2] http://sourceforge.net/projects/ltp/
+Drivers never dereference the returned clk, so why should they care about
+anything other than "is it an error" given by IS_ERR().  (notice the lack
+of question mark, that's not a question to be answered.)
