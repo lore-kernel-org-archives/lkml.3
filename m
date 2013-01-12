@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab3ALEgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 23:36:13 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:57362 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab3ALEgM (ORCPT
+	id S1754930Ab3ALEkY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 23:40:24 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:39588 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab3ALEkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 23:36:12 -0500
-Message-ID: <1357965386.18190.1.camel@gitbox>
-Subject: [GIT PULL] clk: vt8500: Clock fixes for 3.8
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arm Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        VT8500 Mailing List 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>
-Date: Sat, 12 Jan 2013 17:36:26 +1300
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 11 Jan 2013 23:40:23 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Anton Vorontsov <anton@enomsg.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [PATCH v4 0/2] pstore,efi_pstore: Avoid deadlock in
+ non-blocking paths
+Thread-Topic: [PATCH v4 0/2] pstore,efi_pstore: Avoid deadlock in
+ non-blocking paths
+Thread-Index: Ac3wJak6dWFNaYOlQSuov+JgTCKuswAemW4AAAhiqrA=
+Date: Sat, 12 Jan 2013 04:39:58 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3E721@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3E17B@USINDEM103.corp.hds.com>
+ <20130112033729.GA27214@lizard.sbx05280.losalca.wayport.net>
+In-Reply-To: <20130112033729.GA27214@lizard.sbx05280.losalca.wayport.net>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-01-12_02:2013-01-11,2013-01-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1301110337
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0C4eRDb024381
 
-Hi Mike,
+Anton,
 
+V3 patch caused a build failure in Linux-next tree.
+So, I updated to v4 patch.
+Tony already applied the latest one.
 
-The following changes since commit
-a49f0d1ea3ec94fc7cf33a7c36a16343b74bd565:
+You don't need to do anything.
+And  I'm sorry for the confusion.
 
-  Linux 3.8-rc1 (2012-12-21 17:19:00 -0800)
+Seiji
 
-are available in the git repository at:
+<snip>
+-----Original Message-----
+From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
+Sent: Thursday, January 10, 2013 6:55 PM
+To: Luck, Tony
+Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Seiji Aguchi
+Subject: linux-next: build failure after merge of the ia64 tree
 
-  git://server.prisktech.co.nz/git/linuxwmt.git tags/clk-fixes-3.8
+Hi all,
 
-for you to fetch changes up to a3c2b58889440dcc6de92d04f09e8fcaf6bf7e2e:
+After merging the ia64 tree, today's linux-next build (x86_64_allmodconfig) failed like this:
 
-  clk: vt8500: Fix division-by-0 when requested rate=0 (2012-12-27
-13:07:23 +1300)
+ERROR: "pstore_cannot_block_path" [drivers/firmware/efivars.ko] undefined!
 
-----------------------------------------------------------------
-clk: vt8500: Clock fixes for v3.8
+Caused by commit 1a1df768ea4e ("efi_pstore: Avoid deadlock in non-blocking paths").
 
-Small series of fixes for clocks on vt8500.
+I have used the ia64 tree from next-20130110 for today.
+--
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+<snip>
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-
-----------------------------------------------------------------
-Tony Prisk (3):
-      clk: vt8500: Fix error in PLL calculations on non-exact match.
-      clk: vt8500: Fix device clock divisor calculations
-      clk: vt8500: Fix division-by-0 when requested rate=0
-
- drivers/clk/clk-vt8500.c |   28 +++++++++++++++++++++++-----
- 1 file changed, 23 insertions(+), 5 deletions(-)
-
+> -----Original Message-----
+> From: Anton Vorontsov [mailto:anton@scarybugs.org] On Behalf Of Anton Vorontsov
+> Sent: Friday, January 11, 2013 10:38 PM
+> To: Seiji Aguchi
+> Cc: linux-kernel@vger.kernel.org; Luck, Tony (tony.luck@intel.com); dzickus@redhat.com; dle-develop@lists.sourceforge.net; Satoru
+> Moriya
+> Subject: Re: [PATCH v4 0/2] pstore,efi_pstore: Avoid deadlock in non-blocking paths
+> 
+> On Fri, Jan 11, 2013 at 06:08:52PM +0000, Seiji Aguchi wrote:
+> > Changelog
+> > v3 -> v4
+> 
+> I am confused. Tony already applied v3, no? Do you expect me to do anything with these patches, or is it just an update for Tony?
+> 
+> Thanks,
+> Anton
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
