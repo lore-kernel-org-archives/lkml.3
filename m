@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3ALWhK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 17:37:10 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:59157 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754271Ab3ALWhJ (ORCPT
+	id S1754551Ab3ALWjx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 17:39:53 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:37876 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754304Ab3ALWjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 17:37:09 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+xMEAsLde9IvRDWXPMmDA41ghpRuOokWE=
-Date: Sat, 12 Jan 2013 17:37:06 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Dove: move CuBox led pinctrl to gpio-leds node
-Message-ID: <20130112223706.GL13433@titan.lakedaemon.net>
-References: <1356646870-2903-1-git-send-email-sebastian.hesselbarth@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356646870-2903-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 12 Jan 2013 17:39:52 -0500
+From: Xose Vazquez Perez <xose.vazquez@gmail.com>
+Cc: Xose Vazquez Perez <xose.vazquez@gmail.com>, Daniel Drake <dsd@laptop.org>,
+        Ulrich Kunitz <kune@deine-taler.de>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Ben Hutchings <ben@decadent.org.uk>, <linux-wireless@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] linux-firmware: add MISSING file
+Date: Sat, 12 Jan 2013 23:39:43 +0100
+Message-Id: <1358030383-15609-1-git-send-email-xose.vazquez@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 27, 2012 at 11:21:10PM +0100, Sebastian Hesselbarth wrote:
-> gpio-leds has support for pinctrl allocation, make use of it.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/boot/dts/dove-cubox.dts |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+to document the reason why a firmware is not present
 
-Applied to mvebu/dt
+Cc: Daniel Drake <dsd@laptop.org>
+Cc: Ulrich Kunitz <kune@deine-taler.de>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: <linux-wireless@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>
+Signed-off-by: Xose Vazquez Perez <xose.vazquez@gmail.com>
+---
+ MISSING | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+ create mode 100644 MISSING
 
-thx,
+diff --git a/MISSING b/MISSING
+new file mode 100644
+index 0000000..f228099
+--- /dev/null
++++ b/MISSING
+@@ -0,0 +1,20 @@
++             ***********
++             * MISSING *
++             ***********
++
++This file attempts to document the reason why a firmware is not present
++in this bundle.
++
++--------------------------------------------------------------------------
++
++Driver: zd1211rw -- ZyDAS/Atheros ZD1211/ZD1211B/AR5007UG wireless driver
++
++Trouble: Allegedly GPLv2, but no source visible. Found in hex form in the
++         vendor driver.
++
++URL: http://sf.net/projects/zd1211/files/
++
++Implication: CRITICAL, hardware undetected.
++
++--------------------------------------------------------------------------
++
+-- 
+1.7.11.7
 
-Jason.
