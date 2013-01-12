@@ -1,35 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab3ALEHZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 23:07:25 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:35588 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab3ALEHY (ORCPT
+	id S1754643Ab3ALEIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 23:08:17 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:44903 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab3ALEIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 23:07:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <9372306.uEln1VHseC@vostro.rjw.lan>
-References: <aa10abe640afed8700abf262dbfc9b9c22659b6a.1357729671.git.viresh.kumar@linaro.org>
-	<CAKohpone-pXUjuDsP7r73mP+rzSUUb1oWiu5c+NL8R_WsYoJZg@mail.gmail.com>
-	<CAAQ0ZWTvKcn5qR8_J5hx+qsxHGTJ8rSE41VD6aQhipM6c+CqTA@mail.gmail.com>
-	<9372306.uEln1VHseC@vostro.rjw.lan>
-Date: Sat, 12 Jan 2013 09:37:23 +0530
-Message-ID: <CAKohpo=mrSvh_Dyu3BJO0904nSFArrV1Asc4-8pY4CifzUqCbg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Simplify __cpufreq_remove_dev()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Shawn Guo <shawn.guo@linaro.org>, linux-pm@vger.kernel.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 Jan 2013 23:08:16 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH 1/2] tty: cleanup the panic message
+Date: Sat, 12 Jan 2013 05:01:21 +0100
+Message-Id: <1357963283-20119-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 January 2013 03:41, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Can any one of you two create a series of patches for me to take for v3.9
-> with all of the correct Tested-by and Reviewed-by etc. tags, because I've
-> already lost track of your multiple versions and threads?
+the "\n" in panic message is excess, so we remove it in tty/pty.c as what it
+is used in other places.
 
-:)
-I will.
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ drivers/tty/pty.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index be6a373..64fcbdb 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -795,7 +795,7 @@ static void __init unix98_pty_init(void)
+ 	cdev_init(&ptmx_cdev, &ptmx_fops);
+ 	if (cdev_add(&ptmx_cdev, MKDEV(TTYAUX_MAJOR, 2), 1) ||
+ 	    register_chrdev_region(MKDEV(TTYAUX_MAJOR, 2), 1, "/dev/ptmx") < 0)
+-		panic("Couldn't register /dev/ptmx driver\n");
++		panic("Couldn't register /dev/ptmx driver");
+ 	device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 2), NULL, "ptmx");
+ }
+ 
+-- 
+1.7.10.4
+
