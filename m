@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab3ALPrk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 10:47:40 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:40539 "EHLO mxout2.iskon.hr"
+	id S1753913Ab3ALQjN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 11:39:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26564 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752009Ab3ALPrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 10:47:36 -0500
-X-Remote-IP: 213.191.128.133
-Date: Sat, 12 Jan 2013 16:47:32 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+	id S1753633Ab3ALQjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 11:39:12 -0500
+Date: Sat, 12 Jan 2013 17:38:40 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Josh Stone <jistone@redhat.com>, srikar@linux.vnet.ibm.com,
+        mingo@kernel.org, peterz@infradead.org, anton@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: Add exports for module use
+Message-ID: <20130112163840.GA19987@redhat.com>
+References: <1357858906-9711-1-git-send-email-jistone@redhat.com> <20130111093227.GA30043@infradead.org>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-References: <20130111234813.170A620004E@hpza10.eem.corp.google.com>
-In-Reply-To: <20130111234813.170A620004E@hpza10.eem.corp.google.com>
-Message-ID: <50F18594.7070004@iskon.hr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-Subject: Re: mmotm 2013-01-11-15-47 (trouble starting kvm)
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20130112 #9032020, check: 20130112 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 41384 [Jan 12 2013]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130111093227.GA30043@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.01.2013 00:48, akpm@linux-foundation.org wrote:
-> A git tree which contains the memory management portion of this tree is
-> maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> by Michal Hocko.  It contains the patches which are between the
-
-The last commit I see in this tree is:
-
-commit a0d271cbfed1dd50278c6b06bead3d00ba0a88f9
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Sun Sep 30 16:47:46 2012 -0700
-
-     Linux 3.6
-
-Is it dead? Or am I doing something wrong?
-
-> A full copy of the full kernel tree with the linux-next and mmotm patches
-> already applied is available through git within an hour of the mmotm
-> release.  Individual mmotm releases are tagged.  The master branch always
-> points to the latest release, so it's constantly rebasing.
+On 01/11, Christoph Hellwig wrote:
 >
-> http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+> On Thu, Jan 10, 2013 at 03:01:46PM -0800, Josh Stone wrote:
+> > The original pull message for uprobes (commit 654443e2) noted:
+> >
+> >   This tree includes uprobes support in 'perf probe' - but SystemTap
+> >   (and other tools) can take advantage of user probe points as well.
+> >
+> > In order to actually be usable in module-based tools like SystemTap, the
+> > interface needs to be exported.  This patch first adds the obvious
+> > exports for uprobe_register and uprobe_unregister.  Then it also adds
+> > one for task_user_regset_view, which is necessary to get the correct
+> > state of userspace registers.
 >
-> This mmotm tree contains the following patches against 3.8-rc3:
-> (patches marked "*" will be included in linux-next)
->
-> * lockdep-rwsem-provide-down_write_nest_lock.patch
-> * mm-mmap-annotate-vm_lock_anon_vma-locking-properly-for-lockdep.patch
+> Get systemtap into the mainline kernel tree and we can talk.
 
-Had to revert the above two patches to start KVM (win7) successfully. 
-Otherwise it would livelock on some semaphore, it seems. Couldn't kill 
-it, ps output would stuck, even reboot didn't work (had to use SysRQ).
+I can't understand your reply.
 
--- 
-Zlatko
+Looks like, you do not like the fact that uprobes can be used by the out
+of tree modules. Why?
+
+And why, say, kprobe_register() is exported then? Afaics, it does not
+have any modular in-kernel user.
+
+As for systemtap in particular. I never used it, and probably you didn't.
+But it has a lot of users, and I know many people who find it very useful.
+
+Oleg.
+
