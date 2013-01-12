@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab3ALKNS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 05:13:18 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:49272 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab3ALKNP (ORCPT
+	id S1753292Ab3ALKTK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 05:19:10 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57224 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab3ALKTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 05:13:15 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1357957789.2168.11.camel@joe-AO722>
-References: <20130111234813.170A620004E@hpza10.eem.corp.google.com>
-	<50F0BFAA.10902@infradead.org>
-	<20130112131713.749566c8d374cd77b1f2885e@canb.auug.org.au>
-	<1357957789.2168.11.camel@joe-AO722>
-Date: Sat, 12 Jan 2013 11:13:14 +0100
-Message-ID: <CA+icZUVMY76bRFgUumZy0G-FFM=80iwfSFSopHMwHRYfgKjLjA@mail.gmail.com>
-Subject: Re: mmotm 2013-01-11-15-47 uploaded (x86 asm-offsets broken)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sat, 12 Jan 2013 05:19:09 -0500
+Message-ID: <1357985943.6796.55.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH 0/2] sched: simplify the select_task_rq_fair()
+From: Mike Galbraith <bitbucket@online.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        mingo@kernel.org, a.p.zijlstra@chello.nl
+Date: Sat, 12 Jan 2013 11:19:03 +0100
+In-Reply-To: <1357977704.6796.47.camel@marge.simpson.net>
+References: <1356588535-23251-1-git-send-email-wangyun@linux.vnet.ibm.com>
+	 <50ED384C.1030301@linux.vnet.ibm.com>
+	 <1357977704.6796.47.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:beDufREb23K70HeRsSHlldSlmDtMAR8c0JN6o+ziVdf
+ vNF8oHecSiL233oQ/CMtlke9PKuYUTjJd5C4DTEjv3DgvbI51A
+ aZeF5m08GzsF704If65Tk8QSr/tygFZugQGLqFHW09YLkt/30s
+ Vteqbkh7GctBMN6mAjSU77V8HQSZGTqnZzf5MqnD1yrxv7POg7
+ +R0BYJwh1A5qeMSNp4YGPeYqTTkWpMDMPY1PLXpHRVt0QFcqjE
+ +1oAghL+caLbVLv0DLsOzXUFLnbea5LJwWlPCF8qT82LTgTwYC
+ rYgu1VKcghYf3FrpC8PbHpYxPHDyUpTVPnl6C3HoX4oiEXBaPB
+ 4fdFqBV8NHrnnSZvcvtWZahtBOPoVSl649CNXuPbUwepQe6k2y
+ n0jOu80JzYjow==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 12, 2013 at 3:29 AM, Joe Perches <joe@perches.com> wrote:
-> On Sat, 2013-01-12 at 13:17 +1100, Stephen Rothwell wrote:
->> On Fri, 11 Jan 2013 17:43:06 -0800 Randy Dunlap <rdunlap@infradead.org> wrote:
->> >
->> > b0rked.
->> >
->> > Some (randconfig?) causes this set of errors:
->
-> I guess that's when CONFIG_HZ is not an even divisor of 1000.
-> I suppose this needs to be worked on a bit more.
->
->
 
-I remember this patch from Joe come up with a pending patch in
-net-next.git#master [1] (I mention this as I have not seen hit it in
-latest Linux-Next whereas this latest mmotm includes it [2]).
+aim7 compute
 
-$ grep "config HZ_" kernel/Kconfig.hz
-        config HZ_100
-        config HZ_250
-        config HZ_300
-        config HZ_1000
+Tasks    jobs/min  jti  jobs/min/task      real       cpu
+    1      440.41  100       440.4070     13.76      3.65
+    5     1923.81   99       384.7619     15.75     26.17
+   10     4223.00   99       422.2997     14.35     41.66
+   20     7632.24   87       381.6121     15.88     55.85
+   40    16378.38   97       409.4595     14.80    169.63
+   80    32934.78   99       411.6848     14.72    364.50
+  160    63789.47   98       398.6842     15.20    398.55
+  320   121200.00   98       378.7500     16.00    471.10
+  640   213803.75   96       334.0684     18.14    640.05
+ 1280   323334.72   93       252.6053     23.99   1106.92
+ 2560   425846.83   87       166.3464     36.43   2097.59
 
-As I see Randy has in his kernel-config:
++simplify select_task_rq_fair()
 
-# CONFIG_HZ_100 is not set
-# CONFIG_HZ_250 is not set
-CONFIG_HZ_300=y
-# CONFIG_HZ_1000 is not set
-CONFIG_HZ=300
+Tasks    jobs/min  jti  jobs/min/task      real       cpu
+    1      441.37  100       441.3693     13.73      3.71
+    5     1861.18   99       372.2359     16.28     28.87
+   10     2777.27   99       277.7269     21.82     93.90
+   20     4069.85   83       203.4923     29.78    140.40
+   40     6500.40   69       162.5101     37.29    355.66
+   80    31338.07   96       391.7259     15.47    316.10
+  160    63207.30   98       395.0456     15.34    405.22
+  320   122501.58   96       382.8174     15.83    450.57
+  640   219863.95   91       343.5374     17.64    591.74
+ 1280   333339.06   84       260.4211     23.27   1045.13
+ 2560   428315.85   79       167.3109     36.22   2075.88
 
-So there is a problem for the value "300" (only)?
-
-Regards,
-- Sedat -
+Hm, low end takes a big hit.
 
 
-[1] http://git.kernel.org/?p=linux/kernel/git/davem/net-next.git;a=commitdiff;h=c10d73671ad30f54692f7f69f0e09e75d3a8926a
-[2] http://git.cmpxchg.org/?p=linux-mmotm.git&a=search&h=HEAD&st=commit&s=softirq
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-next" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
