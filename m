@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab3ALNQG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 08:16:06 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:50027 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab3ALNQF (ORCPT
+	id S1753545Ab3ALNUz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 08:20:55 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45245 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210Ab3ALNUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 08:16:05 -0500
-Date: Sat, 12 Jan 2013 14:16:02 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Woody Suwalski <terraluna977@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.8-rc1 - another regression on USB :-(
-Message-ID: <20130112131602.GA32186@rhlx01.hs-esslingen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50E438F7.7040403@gmail.com>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 12 Jan 2013 08:20:54 -0500
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fbdev@vger.kernel.org, Bernie Thompson <bernie@plugable.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Dave Airlie <airlied@redhat.com>,
+        Alexander Holler <holler@ahsoftware.de>, <stable@vger.kernel.org>
+Subject: [PATCH] fb: udlfb: fix hang at disconnect
+Date: Sat, 12 Jan 2013 14:20:22 +0100
+Message-Id: <1357996822-13072-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When a device was disconnected the driver may hang at waiting for urbs it never
+will get. Fix this by using a timeout while waiting for the used semaphore.
 
-> Greg, Linus,
-> It sounds insane, but after banging on the issue I have found out that 
-> USB problem is caused (also in vanilla kernel) with a config change:
-> USB-all built as modules - bad USB
-> USB core built in, UHCI/EHCI modules -  semi functional - but 1Mb/s
-> transfer
-> USB core and UHCI EHCI built-in - bingo - no issues.
-> 
-> Could anybody duplicate that, or is it somehow my setup???
+There is still a memory leak if a timeout happens, but at least the driver
+now continues his disconnect routine.
 
-Since there was no additional reply here (needed) so far,
-some of my (questionably relevant?) thoughts on this:
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
+ drivers/video/udlfb.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-There's of course the EHCI vs. UHCI(/OHCI) duality
-(EHCI host controller responsible for high speed transfers,
-the other for 1.1 full speed, both serving the same port connectors).
-So if the coordination between the two is a problem,
-you might end up with merely full speed on a 2.0 port.
+diff --git a/drivers/video/udlfb.c b/drivers/video/udlfb.c
+index 86d449e..cc4a8d1 100644
+--- a/drivers/video/udlfb.c
++++ b/drivers/video/udlfb.c
+@@ -1832,8 +1832,8 @@ static void dlfb_free_urb_list(struct dlfb_data *dev)
+ 	/* keep waiting and freeing, until we've got 'em all */
+ 	while (count--) {
+ 
+-		/* Getting interrupted means a leak, but ok at disconnect */
+-		ret = down_interruptible(&dev->urbs.limit_sem);
++		/* Timeout likely occurs at disconnect (resulting in a leak) */
++		ret = down_timeout(&dev->urbs.limit_sem, GET_URB_TIMEOUT);
+ 		if (ret)
+ 			break;
+ 
+-- 
+1.7.11.7
 
-And with drivers builtin vs. module, the init sequence/timing
-might possibly be affected - right?
-Perhaps this got worsened by semi-recent driver init kernel changes?
-(AFAIR the kernel was changed to init more things in parallel,
-for faster bootup). So maybe that affected EHCI vs. UHCI coordination timing.
-
-(taking many stabs in the dark here...)
-
-
-
-I seem to have USB issues as well; for some storage devices
-I cannot gain high speed currently, while e.g. for USB sticks that works -
-and of course prior to disabling the BIOS's limit-to-1.1 setting
-(doh! oh my...) that was very understandable, but AFAIK it's still not
-reliable (maybe it's some of my local host controller troubleshooting commits...
-need to git revert them).
-Due to my woes originally being BIOS-originated I cannot provide any
-hard evidence about any 3.7.x vs. 3.8.x breakage timeframe.
-
-
-I noticed that I had PSU issues - the 5V rail was dangerously low;
-resoldering/cleaning the PSU helped.
-In your case the USB disconnects might hint at that as well - I'd
-recommend installing an lm-sensors configuration (or check at BIOS
-health page) like I did.
-I'm in the process of compiling a small but hopefully helpful
-USB troubleshooting document (voltage, EMI, ...).
-
-
-I'm usually more or less current (currently on -rc2 plus local commits).
-
-Andreas Mohr
