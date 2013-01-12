@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab3ALRZi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 12:25:38 -0500
-Received: from ares07.inai.de ([5.9.24.206]:53363 "EHLO ares07.inai.de"
+	id S1754216Ab3ALRcM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 12:32:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19571 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752991Ab3ALRZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 12:25:37 -0500
-Date: Sat, 12 Jan 2013 18:25:33 +0100 (CET)
-From: Jan Engelhardt <jengelh@inai.de>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: kconfig-frontends-3.6.0-0 released
-In-Reply-To: <201210061755.07330.yann.morin.1998@free.fr>
-Message-ID: <alpine.LNX.2.01.1301121818330.15558@nerf07.vanv.qr>
-References: <201210061755.07330.yann.morin.1998@free.fr>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1754116Ab3ALRcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 12:32:11 -0500
+Date: Sat, 12 Jan 2013 18:31:44 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: David Howells <dhowells@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Salman Qazi <sqazi@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: rwlock_t unfairness and tasklist_lock
+Message-ID: <20130112173144.GA22338@redhat.com>
+References: <CANN689HRmVTLCjNL9c=JqhWy5F5vwr=A7coo3TVKLZGSVUpQjw@mail.gmail.com> <20130109174922.GA31211@redhat.com> <CANN689FEr+vFdNekW9hm7xwji1aX4FCUQ1BS=P3FhyKiC70qjg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANN689FEr+vFdNekW9hm7xwji1aX4FCUQ1BS=P3FhyKiC70qjg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Saturday 2012-10-06 17:55, Yann E. MORIN wrote:
-
->Hello All!
+On 01/09, Michel Lespinasse wrote:
 >
->I'm pleased to announce the release of kconfig-frontends 3.6.0-0!
->Go download it there:
->    http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.6.0-0.tar.xz
+> On Wed, Jan 9, 2013 at 9:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 01/08, Michel Lespinasse wrote:
+> >> Like others before me, I have discovered how easy it is to DOS a
+> >> system by abusing the rwlock_t unfairness and causing the
+> >> tasklist_lock read side to be continuously held
+> >
+> > Yes. Plus it has perfomance problems.
+> >
+> > It should die. We still need the global lock to protect, say,
+> > init_task.tasks list, but otherwise we need the per-process locking.
+>
+> To be clear: I'm not trying to defend tasklist_lock here.
 
-Please stick to a single separator, i.e. "3.6.0.0". The dash is already
-used by distributions to mark same-source releases.
+I understand,
 
+> However,
+> given how long this has been a known issue, I think we should consider
+> attacking the problem from the lock fairness perspective first and
+> stop waiting for an eventual tasklist_lock death.
 
->And the repository can be browsed or hg-cloned from:
->  http://ymorin.is-a-geek.org/hg/kconfig-frontends
+And probably you are right,
 
-Ugh, hg. There goes any chance for contributions.
+> >> - Would there be any fundamental objection to implementing a fair
+> >> rwlock_t and dealing with the reentrancy issues in tasklist_lock ? My
+> >> proposal there would be along the lines of:
+> >
+> > I don't really understand your proposal in details, but until we kill
+> > tasklist_lock, perhaps it makes sense to implement something simple, say,
+> > write-biased rwlock and add "int task_struct->tasklist_read_lock_counter"
+> > to avoid the read-write-read deadlock.
+>
+> Right. But one complexity that has to be dealt with, is how to handle
+> reentrant uses of the tasklist_lock read side,
+> ...
+>
+> there is still the
+> possibility of an irq coming up in before the counter is incremented.
 
+Sure, I didn't try to say that it is trivial to implement
+read_lock_tasklist(), we should prevent this race.
 
-bootstrap.sh
->printf "Running libtoolize...\n"
->libtoolize --copy --force
->printf "Running aclocal...\n"
->aclocal -Wall --force
+> So to deal with that, I think we have to explicitly detect the
+> tasklist_lock uses that are in irq/softirq context and deal with these
+> differently from those in process context
 
-Not again. autoreconf has existed for so long, why are people still 
-hand-coding the boilerplate?
+I disagree. In the long term, I think that tasklist (or whatever we use
+instead) should be never used in irq/atomic context. And probably the
+per-process lock should be rw_semaphore (although it is not recursive).
 
+But until then, if we try to improve the things somehow, we should not
+complicate the code, we need something simple.
 
-configure.ac
-> By default, do not build with -Wall, unless the user asks for it
+But actually I am not sure, you can be right.
 
-There normally is no excuse for not using -Wall by default,
-save for trying to compile it with msvc.
+Oleg.
 
-
->AC_HEADER_STDC
->AC_HEADER_STDBOOL
->AC_CHECK_HEADERS([ fcntl.h limits.h locale.h ])
->AC_CHECK_HEADERS([ stdlib.h string.h sys/time.h unistd.h ])
->AC_TYPE_SIZE_T
->AC_FUNC_MALLOC
->AC_FUNC_REALLOC
->AC_FUNC_ALLOCA
->AC_CHECK_FUNCS([ bzero memmove memset ])
->AC_CHECK_FUNCS([ strcasecmp strchr strcspn strdup strncasecmp strpbrk strrchr
->strspn strtol ])
->AC_CHECK_FUNCS([ gettimeofday mkdir regcomp setlocale uname ])
-
-All of this seems pointless because you never use the results
-(HAVE_FCNTL_H, HAVE_LIMITS_H, etc.)
-
-
-ncurses has the ncurses{w,}{6,5}-config scripts that ought to be called
-to determine the locations.
