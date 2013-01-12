@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab3ALBBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 20:01:15 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:36448 "EHLO
+	id S1755877Ab3ALBKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 20:10:00 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:39973 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070Ab3ALBBN (ORCPT
+	with ESMTP id S1754845Ab3ALBJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 20:01:13 -0500
-Date: Sat, 12 Jan 2013 12:00:53 +1100
+	Fri, 11 Jan 2013 20:09:59 -0500
+Date: Sat, 12 Jan 2013 12:09:57 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH] consolidate per-arch stack overflow debugging options
-Message-Id: <20130112120053.3362ae67bf2d3b2cc6042aa4@canb.auug.org.au>
-In-Reply-To: <20130111170043.D7CC39DC@kernel.stglabs.ibm.com>
-References: <20130111170043.D7CC39DC@kernel.stglabs.ibm.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        "Alexander Viro" <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v3 00/44] Meta Linux Kernel Port
+Message-Id: <20130112120957.36df3412c9d6cca089a0340a@canb.auug.org.au>
+In-Reply-To: <50F0296E.2000704@imgtec.com>
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
+	<20130111103442.b80ddbfb11ef322ed28ca3b3@canb.auug.org.au>
+	<50EFD824.3010502@imgtec.com>
+	<20130112000336.1f24c42237fab4fe0c305ff6@canb.auug.org.au>
+	<50F0296E.2000704@imgtec.com>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Sat__12_Jan_2013_12_00_53_+1100_GccIWkScKcKPRPQe"
+ boundary="Signature=_Sat__12_Jan_2013_12_09_57_+1100_POYultyISUFo+wkQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__12_Jan_2013_12_00_53_+1100_GccIWkScKcKPRPQe
+--Signature=_Sat__12_Jan_2013_12_09_57_+1100_POYultyISUFo+wkQ
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Dave,
+Hi James,
 
-On Fri, 11 Jan 2013 09:00:43 -0800 Dave Hansen <dave@linux.vnet.ibm.com> wr=
-ote:
+On Fri, 11 Jan 2013 15:02:06 +0000 James Hogan <james.hogan@imgtec.com> wro=
+te:
 >
-> I'm looking for some Acked-bys on this from the various arch
-> maintainers that it affects.  I'd like to send it up to Linus
-> in the next merge window.  This is part of a larger series to
-> clean up the "Kernel Hacking" menu:
->=20
-> 	https://lkml.org/lkml/2012/12/17/306
+> Okay, I've rebased the metag tree from linux-next onto the master branch
+> of Al's signal tree (to get Vineet's GENERIC_SIGALTSTACK fix and
+> GENERIC_SIGALTSTACK's eventual removal).
 
-This should be added to linux-next soon, if possible.  Either directly (if
-you have a tree I can fetch) or via some other maintainer's tree.
+OK, but I hope you mentioned not rebasing to Al.
+
+> git://github.com/jahogan/metag-linux.git
+> branch: metag-core
+> tag: metag-core-v3.1
+
+When you think it is sufficiently ready (and I am guessing that it is
+getting pretty close), please send me a request to add it to linux-next.
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Sat__12_Jan_2013_12_00_53_+1100_GccIWkScKcKPRPQe
+--Signature=_Sat__12_Jan_2013_12_09_57_+1100_POYultyISUFo+wkQ
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQ8LXFAAoJEECxmPOUX5FEcUgQAIEgVpp0+NP6diARhjdrV7/8
-USY0TrR71zd+DghoRnWzI6s6uXw6nE0kaE2AftwjGhPh0tJnboJxNx43a7gIGWez
-PMDvGF99rBJ9MN/zgZ5M9/96WpAJ2G6Dx1OeYcHQ4rJjKoX2iK6DBwXbKmhQJYPM
-7TDCmdU2gVSAB+0sWHHC6RhOiwqiEBTEsPvGjxj84Do5spAjU01CBZeuSJdJqpoO
-/CSeDR4tBHTm/H96cDOatjuzJ2T4fRb/kSOgQg4EPj4hMf+DsIK7DVBzLvvuPy5t
-nKiTzvadZTzVoO9ReftGYm8cKB3fFzpAVu+O1jpmynwqIQmoZcr1v9Qo6ooOuLKe
-E1QZ+dId2Msr1DHtCeM/x5lyKnJjoKfk19GwV3i958LOwSd6acVGUaVMj5uSVeNW
-rlDoOYOZg27L6l7Y49Sj5omCragGbBRLjOD/w+HBK+c4SXWdLu5ZDU1jcIvqpfQO
-UffP1Uozk/hnzLYFDCkBhPH/uyu303RDHlGoR4CL7TL+8006Qm/CueV64RsQm5j1
-mtgU4VNsaEp0bv0aCj1EmqazL5FC8JtH3+wOEMzL5SCT7QiYa5VC7oKvW1Twhkx+
-aC2y0t5mwxRFd1fmdT+s0PRfalzAyntz1RMrVaOvZ/VbGHlcjCUy/E+gjcAHV68h
-ol7tTuoSngnAPz4NV3C1
-=yNZr
+iQIcBAEBCAAGBQJQ8LflAAoJEECxmPOUX5FE3jEP/jRXJJcnTY7KXZm8grr0N17U
+IME1m838orRa+zHtSt05KbWkGdULKaKfWq4R85ZHTKrmmE0yqbW94fkNL9Fri7c1
+8nC8qeWdg54Kvjbl5l/mYbpjyXwYAcqLRp02el7iH9C5FYRTrxJNAeUG42l4eSpo
+LDsp9sR/nvmk0/jUy2ksNNbS0U23OaQ4og0YGaFbLsg0fHS98acs/RPGPs+y/r47
+RgeCVEAu47qjbLlQE4TzM7he8YKyhg93c9udeFsNwDj/HyCpIzkQB7Quyg4V58tQ
+hJgVMTnL2vqUnzj+tVOLqAKr625MyzBnB9apROj1j9DSIrW1Ksn4gD8QfIkSQlPX
+J1hZhmUURC61Oz2p0FNAn/qdMV/uhQkQfwi1ucDN+S6p2FUzohLQ2utadCT3U4T5
+HVF36Fvb46/e0xM/ZcbqiCHF0/924MSRaAOgVAupcn3qV09yJXOPit+UgKX8kWmX
+LdDwnu3CeHKPXuM0Fsj9MYrl2mcMRVcLHMubfWADHxA4cqtu5NoylCtIFajz8cva
+aB3WKntzVt6UoQvOl+oA0YpuR1qn9JjqcSk87BI+B1VPF4RSMZ6vSLuMb5GyO8qs
+nKXeaS9XdpWQJvo2S86WN1GwR7pwir7SAU6TF8uqVqVvVYdWyjr6/hdX+1CMCvqi
+u7FqKfnm0oEImup24idn
+=+H2d
 -----END PGP SIGNATURE-----
 
---Signature=_Sat__12_Jan_2013_12_00_53_+1100_GccIWkScKcKPRPQe--
+--Signature=_Sat__12_Jan_2013_12_09_57_+1100_POYultyISUFo+wkQ--
