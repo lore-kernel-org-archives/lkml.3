@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab3ALMz2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 07:55:28 -0500
-Received: from mga02.intel.com ([134.134.136.20]:63530 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753569Ab3ALMzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 07:55:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,456,1355126400"; 
-   d="scan'208";a="271271886"
-Date: Sat, 12 Jan 2013 04:30:55 -0800
-From: Vinod Koul <vinod.koul@intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Subject: Re: [resend][PATCH 01/16] dw_dmac: call .probe after we have a
- device in place
-Message-ID: <20130112123055.GX19691@intel.com>
-References: <20130108155423.GJ19691@intel.com>
- <1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1357719435-29955-2-git-send-email-andriy.shevchenko@linux.intel.com>
- <20130109134757.GN19691@intel.com>
- <CAHp75VfFyX=Pz3xRt15n6ffP=v0pa413BFF2zHGoiQowG1kKVg@mail.gmail.com>
- <20130109153848.GT19691@intel.com>
- <CAKohpo=8PKk0VF3tpZLNYseHMv7dF-qg9iwKcC+VmPtb_8kzjg@mail.gmail.com>
+	id S1753317Ab3ALNIR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 08:08:17 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:59993 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812Ab3ALNIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 08:08:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpo=8PKk0VF3tpZLNYseHMv7dF-qg9iwKcC+VmPtb_8kzjg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <50F10278.3050309@csamuel.org>
+References: <50EEA4C4.4080103@csamuel.org>
+	<50EFDE31.90709@csamuel.org>
+	<CA+5PVA5hCuTar1F=g5vgT2Cj1ZbF7w+HcWzhATUx7wFs_kuSWw@mail.gmail.com>
+	<50F10278.3050309@csamuel.org>
+Date: Sat, 12 Jan 2013 08:08:15 -0500
+Message-ID: <CA+5PVA7YmAM__aTN=FeGDL-V2njb1-LMbg5xE7FPPNkC2oApyQ@mail.gmail.com>
+Subject: Re: MODSIGN: Modules fail signature verification with -ENOKEY
+From: Josh Boyer <jwboyer@gmail.com>
+To: Chris Samuel <chris@csamuel.org>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        dhowells@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 02:04:53PM +0530, Viresh Kumar wrote:
-> On 9 January 2013 21:08, Vinod Koul <vinod.koul@intel.com> wrote:
-> >> >>  subsys_initcall(dw_init);
-> > Viresh, Linus
-> >
-> > We had this discussion sometime back. pl022 use dma and we need DMA before SPI.
-> > So if we have pl022 as late_init and dma as device_init. If we have one  more
-> > dependency then moving dw_dmac to fs_init should help too. But arch/subsys seems
-> > overkill here?
-> 
-> We probably can't make spi late_init as they may be others waiting for
-> it to be in. And
-> so did subsys_init for dma. fs is for filesystem? then that may not be
-> logically correct too.
-well subsys_init doesnt seem to be logical for dma driver too!
+On Sat, Jan 12, 2013 at 1:28 AM, Chris Samuel <chris@csamuel.org> wrote:
+> /* Please CC, not on LKML */
+>
+> Hi Josh,
+>
+>
+> On 12/01/13 00:44, Josh Boyer wrote:
+>
+>> Check the installed modules.  A simple:
+>>
+>>      hexdump -C <path to module> | tail -n 20
+>>
+>> should be enough to tell you if the installed modules at least look like
+>> they're signed.  You should see the expected "~Module signature appended~"
+>> string.  You could also check the modules in the kernel build tree for
+>> the same thing. [...]
+>
+>
+> Good call - neither the modules in the build tree, nor the installed ones
+> are signed.   I did a "make mrproper", changed scripts/sign-file to be
+> verbose by default and rebuilt.  That confirmed that the modules are getting
+> signed, which left the possibility of make-kpkg stripping the modules after
+> compiling as an option.
 
---
-~Vinod
+Having worked through 3 different versions of the module signing code, I
+forgot that they aren't signed until you do modules_install now.  So the
+modules in the build tree won't be signed.  I misspoke on that.  The
+installed modules still should be.
+
+> Google pointed me at the likely culprit, a patch from a certain Mr Ted Ts'o
+> in 2009 to make-kpkg so that it would strip kernel modules by default.
+>
+> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=517290
+>
+> I'll file a bug against it asking for the it to not strip if
+> CONFIG_MODULE_SIG is set.
+>
+> Thanks for the pointer!
+
+Great.  Glad you figured it out.
+
+josh
