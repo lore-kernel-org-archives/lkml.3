@@ -1,36 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab3ALVY6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 16:24:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56786 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754450Ab3ALVY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 16:24:56 -0500
-Message-ID: <50F1D491.5020101@suse.cz>
-Date: Sat, 12 Jan 2013 22:24:33 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1754555Ab3ALVZh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 16:25:37 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:64062 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754322Ab3ALVZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 16:25:36 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/0TjhforAZDkqEkk+/KXF0gUOrmpYQviU=
+Date: Sat, 12 Jan 2013 16:25:23 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Wan ZongShun <mcuos.com@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, arm@kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        David Brown <davidb@codeaurora.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: Re: [PATCH v2 2/3] ARM: use clockevents_config_and_register()
+ where possible
+Message-ID: <20130112212523.GD13433@titan.lakedaemon.net>
+References: <1357991406-22778-1-git-send-email-shawn.guo@linaro.org>
+ <1357991406-22778-3-git-send-email-shawn.guo@linaro.org>
 MIME-Version: 1.0
-To: Jonathan Kliegman <kliegs@chromium.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Lindgren <tony@atomide.com>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] modpost: Add flag -f for making section mismatches fatal
-References: <1356029364-11346-1-git-send-email-kliegs@chromium.org> <87ip7f5ecu.fsf@rustcorp.com.au> <50E54A14.5010909@suse.cz> <CAPQV+nOTEfeQVwqd8zAP37qS3PrdwFQv1c0AC=nAz3UCemXhSg@mail.gmail.com>
-In-Reply-To: <CAPQV+nOTEfeQVwqd8zAP37qS3PrdwFQv1c0AC=nAz3UCemXhSg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357991406-22778-3-git-send-email-shawn.guo@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3.1.2013 22:39, Jonathan Kliegman wrote:
-> I'm not sure what you mean about configs failing.  After adding this
-> option to init/Kconfig I was able to build fine using old and new
-> configs with and without the option set.  Is there something specific
-> you'd like me to test for?
+On Sat, Jan 12, 2013 at 07:50:05PM +0800, Shawn Guo wrote:
+> The clockevent core is able to figure out the best mult and shift,
+> calculate min_delta_ns and max_delta_ns, with the necessary info passed
+> into clockevents_config_and_register().  Use this combined configure
+> and register function where possible to make the codes less error prone
+> and gain some positive diff stat.
+> 
+> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Reviewed-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Tested-by: Roland Stigge <stigge@antcom.de>
+> Acked-by: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+> Cc: David Brown <davidb@codeaurora.org>
+> Tested-by: Tony Lindgren <tony@atomide.com>
+> Acked-by: Barry Song <baohua.song@csr.com>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> Acked-by: Tony Prisk <linux@prisktech.co.nz>
+> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+> Cc: Wan ZongShun <mcuos.com@gmail.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+...
+>  arch/arm/plat-orion/time.c               |    6 +-----
+...
 
-We still have section mismatches in allmodconfig. With a Kconfig option
-to make them fatal, allmodconfig would select it and fail.
+Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-Michal
+thx,
+
+Jason.
