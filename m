@@ -1,42 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab3ALDmV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 22:42:21 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:50411 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab3ALDmT (ORCPT
+	id S1754879Ab3ALDyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 22:54:37 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62526 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab3ALDyg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 22:42:19 -0500
-Date: Fri, 11 Jan 2013 19:42:16 -0800 (PST)
-Message-Id: <20130111.194216.884859016289350447.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: mst@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        edumazet@google.com, stefanha@redhat.com
-Subject: Re: [PATCH V2 0/3] some fixes of tuntap
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1357959574-13113-1-git-send-email-jasowang@redhat.com>
-References: <1357959574-13113-1-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Jan 2013 22:54:36 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Prashant Gaikwad <pgaikwad@nvidia.com>, <swarren@wwwdotorg.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1356529583-19535-1-git-send-email-pgaikwad@nvidia.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+References: <1356529583-19535-1-git-send-email-pgaikwad@nvidia.com>
+Message-ID: <20130112035431.4361.12997@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH 1/2] clk: Add debug clk summary
+Date: Fri, 11 Jan 2013 19:54:31 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Sat, 12 Jan 2013 10:59:31 +0800
-
-> There series fixes two issues:
-> - Don't allow calling TUNSETIFF when a file is detached which may cause kernel
-> data structure corrupt.
-> - Fix the reference count leaking of sock and module.
+Quoting Prashant Gaikwad (2012-12-26 05:46:22)
+> Adds debug file "clk_summary" in /sys/kernel/debug/clk dir.
+> It helps to view all the clock registered in human-readable format.
 > 
-> Plus a suggestion from Eric to use rtnl_dereference() instead of the open code.
+> For example:
+>    clock                        enable_cnt  prepare_cnt  rate
+> ---------------------------------------------------------------------
+>  i2s0_sync                      0           0            24000000
+>  spdif_in_sync                  0           0            24000000
+>     spdif_mux                   0           0            24000000
+>        spdif                    0           0            24000000
+>           spdif_doubler         0           0            48000000
+>              spdif_div          0           0            48000000
+>                 spdif_2x        0           0            48000000
+>  clk_32k                        2           2            32768
+>     blink_override              1           1            32768
+>        blink                    1           1            32768
+>  clk_m                          2           2            12000000
+>     clk_out_3_mux               0           0            12000000
+>        clk_out_3                0           0            12000000
+>     pll_ref                     3           3            12000000
+>        pll_e_mux                0           0            12000000
+>           pll_e                 0           0            100000000
+>              cml0               0           0            100000000
+>              cml1               0           0            100000000
+>              pciex              0           0            100000000
+>        pll_d2                   0           0            1000000
+>           pll_d2_out0           0           0            500000
+>        pll_d                    0           0            1000000
+>           pll_d_out0            0           0            500000
+>              dsib_mux           0           0            500000
+>                 dsib            0           0            500000
+>              dsia               0           0            500000
 > 
-> Changes from v1:
-> - don't use rcu to dereference tfile->detached as it was already protected by
-> rtnl lock.
-> - add a patch of switching to use rtnl_dereference().
+> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 
-All applied, thanks Jason.
+Thanks for the respin of patch #1 and for generating the JSON output
+format in patch #2.  I've taken both of these into clk-next.
+
+Regards,
+Mike
+
+> ---
+>  drivers/clk/clk.c |   67 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 67 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 56e4495e..d79c088 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -34,6 +34,67 @@ static struct dentry *rootdir;
+>  static struct dentry *orphandir;
+>  static int inited = 0;
+>  
+> +static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
+> +{
+> +       if (!c)
+> +               return;
+> +
+> +       seq_printf(s, "%*s%-*s %-11d %-12d %-10lu",
+> +                  level * 3 + 1, "",
+> +                  30 - level * 3, c->name,
+> +                  c->enable_count, c->prepare_count, c->rate);
+> +       seq_printf(s, "\n");
+> +}
+> +
+> +static void clk_summary_show_subtree(struct seq_file *s, struct clk *c,
+> +                                    int level)
+> +{
+> +       struct clk *child;
+> +       struct hlist_node *tmp;
+> +
+> +       if (!c)
+> +               return;
+> +
+> +       clk_summary_show_one(s, c, level);
+> +
+> +       hlist_for_each_entry(child, tmp, &c->children, child_node)
+> +               clk_summary_show_subtree(s, child, level + 1);
+> +}
+> +
+> +static int clk_summary_show(struct seq_file *s, void *data)
+> +{
+> +       struct clk *c;
+> +       struct hlist_node *tmp;
+> +
+> +       seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate\n");
+> +       seq_printf(s, "---------------------------------------------------------------------\n");
+> +
+> +       mutex_lock(&prepare_lock);
+> +
+> +       hlist_for_each_entry(c, tmp, &clk_root_list, child_node)
+> +               clk_summary_show_subtree(s, c, 0);
+> +
+> +       hlist_for_each_entry(c, tmp, &clk_orphan_list, child_node)
+> +               clk_summary_show_subtree(s, c, 0);
+> +
+> +       mutex_unlock(&prepare_lock);
+> +
+> +       return 0;
+> +}
+> +
+> +
+> +static int clk_summary_open(struct inode *inode, struct file *file)
+> +{
+> +       return single_open(file, clk_summary_show, inode->i_private);
+> +}
+> +
+> +static const struct file_operations clk_summary_fops = {
+> +       .open           = clk_summary_open,
+> +       .read           = seq_read,
+> +       .llseek         = seq_lseek,
+> +       .release        = single_release,
+> +};
+> +
+>  /* caller must hold prepare_lock */
+>  static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
+>  {
+> @@ -167,12 +228,18 @@ static int __init clk_debug_init(void)
+>  {
+>         struct clk *clk;
+>         struct hlist_node *tmp;
+> +       struct dentry *d;
+>  
+>         rootdir = debugfs_create_dir("clk", NULL);
+>  
+>         if (!rootdir)
+>                 return -ENOMEM;
+>  
+> +       d = debugfs_create_file("clk_summary", S_IRUGO, rootdir, NULL,
+> +                               &clk_summary_fops);
+> +       if (!d)
+> +               return -ENOMEM;
+> +
+>         orphandir = debugfs_create_dir("orphans", rootdir);
+>  
+>         if (!orphandir)
+> -- 
+> 1.7.4.1
