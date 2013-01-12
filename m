@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab3ALBRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jan 2013 20:17:11 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20147 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab3ALBRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jan 2013 20:17:09 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=t-QQXLkMxoMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=LItqDF-jgyYA:10 a=JfrnYn6hAAAA:8 a=AgIYPZolaqLdBpfqN0cA:9 a=PUjeQqilurYA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357953421.5141.48.camel@gandalf.local.home>
-Subject: [PATCH] staging/sb105x: PARPORT config is not good enough must use
- PARPORT_PC
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 11 Jan 2013 20:17:01 -0500
-In-Reply-To: <20130112004244.GA2578@kroah.com>
-References: <20130110143241.041ef77011ef7b1f68ae5c61@canb.auug.org.au>
-	 <50EF11B2.9090505@infradead.org>
-	 <1357851057.5141.16.camel@gandalf.local.home>
-	 <50EF3B6A.70704@infradead.org> <20130112004244.GA2578@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756057Ab3ALBRd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jan 2013 20:17:33 -0500
+Received: from ozlabs.org ([203.10.76.45]:53486 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755944Ab3ALBRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jan 2013 20:17:30 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Josh Boyer <jwboyer@gmail.com>, Chris Samuel <chris@csamuel.org>
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com
+Subject: Re: [PATCH] MODSIGN: Warn when sign check fails due to -ENOKEY
+In-Reply-To: <CA+5PVA7F1RV3=Ynv+et=ZzOTRszop=sXY2QscuuHGO2RhLpSYg@mail.gmail.com>
+References: <50EFDF15.4080606@csamuel.org> <CA+5PVA7F1RV3=Ynv+et=ZzOTRszop=sXY2QscuuHGO2RhLpSYg@mail.gmail.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Sat, 12 Jan 2013 11:00:02 +1030
+Message-ID: <87vcb3z1it.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sb105x driver calls parport_pc_probe_port() which isn't defined if
-PARPORT_PC isn't enabled. Protecting it with CONFIG_PARPORT is not good
-enough, must protect it with CONFIG_PARPORT_PC.
+Josh Boyer <jwboyer@gmail.com> writes:
 
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
-based off of latest linux-next
+> On Fri, Jan 11, 2013 at 4:44 AM, Chris Samuel <chris@csamuel.org> wrote:
+>> /* Please CC me in responses, I am not subscribed to LKML */
+>>
+>> Currently if a signature check fails on module load due to not having
+>> the appropriate key (-ENOKEY) and we are not doing strict checking
+>> there is no information provided to the user other than the lock debug
+>> taint warning:
+>>
+>> Disabling lock debugging due to kernel taint
+>>
+>> This patch causes a single warning to be emitted to explain why the
+>> kernel is being tainted, before the above taint warning occurs.
+>>
+>> Module verification failed, required key not present, tainting kernel
+>>
+>> Found whilst trying to work out why all the 3.8 development kernels
+>> I was building and testing were warning about taints and why all modules
+>> were listed as forced load (F) in /proc/modules when that wasn't the
+>> case in the 3.5, 3.6 or 3.7 kernels I'd tried.
+>>
+>> Signed-off-by: Christopher Samuel <chris@csamuel.org>
+>> ---
+>>  kernel/module.c |    4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/module.c b/kernel/module.c
+>> index 250092c..27de534 100644
+>> --- a/kernel/module.c
+>> +++ b/kernel/module.c
+>> @@ -2443,8 +2443,10 @@ static int module_sig_check(struct load_info *info)
+>>         if (err < 0 && fips_enabled)
+>>                 panic("Module verification failed with error %d in FIPS
+>> mode\n",
+>>                       err);
+>> -       if (err == -ENOKEY && !sig_enforce)
+>> +       if (err == -ENOKEY && !sig_enforce) {
+>> +               printk_once(KERN_DEBUG "Module verification failed, required
+>> key not present, tainting kernel\n");
+>>                 err = 0;
+>> +       }
+>>         return err;
+>
+> I'd suggest putting the printk in load_module where we call the
+> add_taint_module function instead.  Also, you might want to make the
+> priority a bit higher if it's meant to be informative.  Something like
+> KERN_INFO.
 
-diff --git a/drivers/staging/sb105x/sb_pci_mp.c b/drivers/staging/sb105x/sb_pci_mp.c
-index 131afd0c..9464f38 100644
---- a/drivers/staging/sb105x/sb_pci_mp.c
-+++ b/drivers/staging/sb105x/sb_pci_mp.c
-@@ -3054,7 +3054,7 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
- 				sbdev->nr_ports = ((portnum_hex/16)*10) + (portnum_hex % 16);
- 			}
- 			break;
--#ifdef CONFIG_PARPORT
-+#ifdef CONFIG_PARPORT_PC
- 		case PCI_DEVICE_ID_MP2S1P :
- 			sbdev->nr_ports = 2;
- 
+Agreed.  KERN_NOTICE, I think: we really want to see if someone's
+inserting an unsigned module!
 
-
+Cheers,
+Rusty.
