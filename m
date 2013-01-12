@@ -1,108 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab3ALVe2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 16:34:28 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:39084 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754148Ab3ALVe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 16:34:26 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v8 05/22] PCI: make PCI device create/destroy logic symmetric
-Date: Sat, 12 Jan 2013 22:40:14 +0100
-Message-ID: <1689874.eC9grEviHZ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357944049-29620-6-git-send-email-yinghai@kernel.org>
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-6-git-send-email-yinghai@kernel.org>
+	id S1754564Ab3ALVnE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 16:43:04 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:64074 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754304Ab3ALVnC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 16:43:02 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+VjhVuFFeknYIa4OSJSuUDrFmGYLYjtaI=
+Date: Sat, 12 Jan 2013 16:42:57 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Dove: move CuBox led pinctrl to gpio-leds node
+Message-ID: <20130112214257.GF13433@titan.lakedaemon.net>
+References: <1356646870-2903-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356646870-2903-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 11, 2013 02:40:32 PM Yinghai Lu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
-> 
-> According to device model documentation, the way to create/destroy PCI
-> devices should be symmetric.
-> 
-> /**
->  * device_del - delete device from system.
->  * @dev: device.
->  *
->  * This is the first part of the device unregistration
->  * sequence. This removes the device from the lists we control
->  * from here, has it removed from the other driver model
->  * subsystems it was added to in device_add(), and removes it
->  * from the kobject hierarchy.
->  *
->  * NOTE: this should be called manually _iff_ device_add() was
->  * also called manually.
->  */
-> 
-> The rule is to either use
-> 1) device_register()/device_unregister()
-> or
-> 2) device_initialize()/device_add()/device_del()/put_device().
-> 
-> So change PCI core logic to follow the rule and get rid of the redundant
-> pci_dev_get()/pci_dev_put() pair.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> Signed-by: Yinghai Lu <yinghai@kernel.org>
+Sebastian,
 
-Signed-off-by I suppose?
-
-Apart from this:
-
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
+On Thu, Dec 27, 2012 at 11:21:10PM +0100, Sebastian Hesselbarth wrote:
+> gpio-leds has support for pinctrl allocation, make use of it.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 > ---
->  drivers/pci/probe.c  |    1 -
->  drivers/pci/remove.c |    4 ++--
->  2 files changed, 2 insertions(+), 3 deletions(-)
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/dove-cubox.dts |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index b97dea5..48b35e1 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1298,7 +1298,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
->  {
->  	device_initialize(&dev->dev);
->  	dev->dev.release = pci_release_dev;
-> -	pci_dev_get(dev);
+> diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
+> index cdee96f..bed5b62 100644
+> --- a/arch/arm/boot/dts/dove-cubox.dts
+> +++ b/arch/arm/boot/dts/dove-cubox.dts
+> @@ -17,6 +17,9 @@
 >  
->  	set_dev_node(&dev->dev, pcibus_to_node(bus));
->  	dev->dev.dma_mask = &dev->dma_mask;
-> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-> index 7c0fd92..fc38c48 100644
-> --- a/drivers/pci/remove.c
-> +++ b/drivers/pci/remove.c
-> @@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
->  	if (dev->is_added) {
->  		pci_proc_detach_device(dev);
->  		pci_remove_sysfs_dev_files(dev);
-> -		device_unregister(&dev->dev);
-> +		device_del(&dev->dev);
->  		dev->is_added = 0;
->  	}
+>  	leds {
+>  		compatible = "gpio-leds";
+> +		pinctrl-0 = <&pmx_gpio_18>;
+> +		pinctrl-names = "default";
+> +
+>  		power {
+>  			label = "Power";
+>  			gpios = <&gpio0 18 1>;
+> @@ -47,7 +50,7 @@
+>  };
 >  
-> @@ -37,7 +37,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
->  	up_write(&pci_bus_sem);
+>  &pinctrl {
+> -	pinctrl-0 = <&pmx_gpio_12 &pmx_gpio_18>;
+> +	pinctrl-0 = <&pmx_gpio_12>;
+>  	pinctrl-names = "default";
 >  
->  	pci_free_resources(dev);
-> -	pci_dev_put(dev);
-> +	put_device(&dev->dev);
->  }
->  
->  void pci_remove_bus(struct pci_bus *bus)
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>  	pmx_gpio_12: pmx-gpio-12 {
+> -- 
+> 1.7.10.4
+
+I'm getting a merge conflict wit hthe above:
+
+&pinctrl {
+<<<<<<< HEAD
+        pinctrl-0 = <&pmx_gpio_18>;
+======= 
+        pinctrl-0 = <&pmx_gpio_12>;
+>>>>>>> ARM: Dove: move CuBox led pinctrl to gpio-leds node
+        pinctrl-names = "default";
+
+        pmx_gpio_18: pmx-gpio-18 {
+                marvell,pins = "mpp18";
+                marvell,function = "gpio";
+        };
+};
+
+
+Am I missing something?
+
+thx,
+
+Jason.
