@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3ALWdd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 17:33:33 -0500
-Received: from csamuel.org ([74.50.50.137]:43865 "EHLO csamuel.org"
+	id S1754593Ab3ALWep (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 17:34:45 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:39126 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754271Ab3ALWdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 17:33:32 -0500
-Message-ID: <50F1E4A5.4000002@csamuel.org>
-Date: Sun, 13 Jan 2013 09:33:09 +1100
-From: Chris Samuel <chris@csamuel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1754444Ab3ALWeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 17:34:44 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v8 07/22] ACPI: Separate acpi_bus_trim to support two steps.
+Date: Sat, 12 Jan 2013 23:40:32 +0100
+Message-ID: <3028581.u7PNshx4kV@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1357944049-29620-8-git-send-email-yinghai@kernel.org>
+References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-8-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@gmail.com>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        dhowells@redhat.com
-Subject: Re: MODSIGN: Modules fail signature verification with -ENOKEY
-References: <50EEA4C4.4080103@csamuel.org> <50EFDE31.90709@csamuel.org> <CA+5PVA5hCuTar1F=g5vgT2Cj1ZbF7w+HcWzhATUx7wFs_kuSWw@mail.gmail.com> <50F10278.3050309@csamuel.org> <CA+5PVA7YmAM__aTN=FeGDL-V2njb1-LMbg5xE7FPPNkC2oApyQ@mail.gmail.com>
-In-Reply-To: <CA+5PVA7YmAM__aTN=FeGDL-V2njb1-LMbg5xE7FPPNkC2oApyQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/* Please CC, not on LKML */
+On Friday, January 11, 2013 02:40:34 PM Yinghai Lu wrote:
+> Current all acpi_bus_trim callers have rmdevice to 1.
+> that means it will remove all acpi devices.
+> 
+> When 0, is passed, it will keep the parent.
+> 
+> For root bus hotremove support, we need to have pci device to be
+> removed before acpi devices.
+> 
+> So try to keep all acpi devices, and only stop drivers with them.
+> 
+> This change should be safe because all current callers all have 1 passed.
 
-On 13/01/13 00:08, Josh Boyer wrote:
+I'm not sure how the chanelog is related to the patch itself.
 
-> On Sat, Jan 12, 2013 at 1:28 AM, Chris Samuel <chris@csamuel.org> wrote:
- >
- >> [...Debian kernel-build...]
->> I'll file a bug against it asking for the it to not strip if
->> CONFIG_MODULE_SIG is set.
->>
->> Thanks for the pointer!
->
-> Great.  Glad you figured it out.
+The patch modifies the behavior of acpi_bus_trim() to avoid removing all
+devices (not just the start point) for rmdevice==0, which doesn't really change
+the functionality, because all callers pass rmdevice=1 anyway.
 
-It raises a question - if we have CONFIG_MODULE_SIG should we disable 
-stripping modules in the top level Makefile as it's going to break things?
+Yes, we can make this change, but why is it necessary?
 
-The parsing for CONFIG_MODULE_SIG happens right after that for 
-INSTALL_MOD_STRIP so the stripping could be disabled with with:
+And why don't we remove the rmdevice argument from acpi_bus_trim() altogether?
 
-mod_strip_cmd = true
-export strip_cmd
+Rafael
 
-cheers,
-Chris
+
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: linux-acpi@vger.kernel.org
+> ---
+>  drivers/acpi/scan.c |    5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index e380345..db7664e 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -1669,10 +1669,7 @@ int acpi_bus_trim(struct acpi_device *start, int rmdevice)
+>  			child = parent;
+>  			parent = parent->parent;
+>  
+> -			if (level == 0)
+> -				err = acpi_bus_remove(child, rmdevice);
+> -			else
+> -				err = acpi_bus_remove(child, 1);
+> +			err = acpi_bus_remove(child, rmdevice);
+>  
+>  			continue;
+>  		}
+> 
 -- 
-  Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
