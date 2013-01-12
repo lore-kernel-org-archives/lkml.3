@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab3ALFPK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 00:15:10 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:59987 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab3ALFPF (ORCPT
+	id S1752775Ab3ALFl3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 00:41:29 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:56827 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab3ALFl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 00:15:05 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/5] cpufreq: Notify governors when cpus are hot-[un]plugged
-Date: Sat, 12 Jan 2013 10:44:39 +0530
-Message-Id: <6def83ce4bb23170d9c4fdf7a7105b90d3cb73b7.1357967566.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1357967566.git.viresh.kumar@linaro.org>
-References: <cover.1357967566.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1357967566.git.viresh.kumar@linaro.org>
-References: <cover.1357967566.git.viresh.kumar@linaro.org>
+	Sat, 12 Jan 2013 00:41:27 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH 1/4] f2fs: remove redundant call to set_blocksize in f2fs_fill_super
+Date: Sat, 12 Jan 2013 14:41:13 +0900
+Message-Id: <1357969273-9293-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because cpufreq core and governors worry only about the online cpus, if a cpu is
-hot [un]plugged, we must notify governors about it, otherwise be ready to expect
-something unexpected.
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-We already have notifiers in the form of CPUFREQ_GOV_START/CPUFREQ_GOV_STOP, we
-just need to call them now.
+Since, f2fs supports only 4KB blocksize, which is set at the beginning in
+f2fs_fill_super. So, we do not need to again check this blocksize setting
+in such case.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- drivers/cpufreq/cpufreq.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/f2fs/super.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index de99517..a0a33bd 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -751,11 +751,16 @@ static int cpufreq_add_dev_policy(unsigned int cpu,
- 				return -EBUSY;
- 			}
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 0f2b2eb..ac127fd 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -443,7 +443,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (!sbi)
+ 		return -ENOMEM;
  
-+			__cpufreq_governor(managed_policy, CPUFREQ_GOV_STOP);
-+
- 			spin_lock_irqsave(&cpufreq_driver_lock, flags);
- 			cpumask_copy(managed_policy->cpus, policy->cpus);
- 			per_cpu(cpufreq_cpu_data, cpu) = managed_policy;
- 			spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+-	/* set a temporary block size */
++	/* set a block size */
+ 	if (!sb_set_blocksize(sb, F2FS_BLKSIZE)) {
+ 		f2fs_msg(sb, KERN_ERR, "unable to set blocksize");
+ 		goto free_sbi;
+@@ -542,10 +542,6 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	INIT_LIST_HEAD(&sbi->dir_inode_list);
+ 	spin_lock_init(&sbi->dir_inode_lock);
  
-+			__cpufreq_governor(managed_policy, CPUFREQ_GOV_START);
-+			__cpufreq_governor(managed_policy, CPUFREQ_GOV_LIMITS);
-+
- 			pr_debug("CPU already managed, adding link\n");
- 			ret = sysfs_create_link(&dev->kobj,
- 						&managed_policy->kobj,
-@@ -1066,8 +1071,13 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
- 	 */
- 	if (unlikely(cpu != data->cpu)) {
- 		pr_debug("removing link\n");
-+		__cpufreq_governor(data, CPUFREQ_GOV_STOP);
- 		cpumask_clear_cpu(cpu, data->cpus);
- 		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+
-+		__cpufreq_governor(data, CPUFREQ_GOV_START);
-+		__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
-+
- 		kobj = &dev->kobj;
- 		cpufreq_cpu_put(data);
- 		unlock_policy_rwsem_write(cpu);
+-	/* init super block */
+-	if (!sb_set_blocksize(sb, sbi->blocksize))
+-		goto free_cp;
+-
+ 	init_orphan_info(sbi);
+ 
+ 	/* setup f2fs internal modules */
 -- 
-1.7.12.rc2.18.g61b472e
+1.7.9.5
 
