@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab3ALNWJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 08:22:09 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38761 "EHLO hydra.sisk.pl"
+	id S1753558Ab3ALNdx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 08:33:53 -0500
+Received: from mga14.intel.com ([143.182.124.37]:34072 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752921Ab3ALNWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 08:22:06 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: SPEAr: Fix sparse warning for cpufreq driver
-Date: Sat, 12 Jan 2013 14:27:54 +0100
-Message-ID: <2860847.JDCmaU39LZ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <6d76f8457b4eb42bcbab8e0221f90168a8fbc328.1357967480.git.viresh.kumar@linaro.org>
-References: <6d76f8457b4eb42bcbab8e0221f90168a8fbc328.1357967480.git.viresh.kumar@linaro.org>
+	id S1753232Ab3ALNdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 08:33:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,456,1355126400"; 
+   d="scan'208";a="243109570"
+Date: Sat, 12 Jan 2013 05:09:26 -0800
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
+Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [PATCHv2 00/11] patches against slave dma subsystem
+Message-ID: <20130112130926.GY19691@intel.com>
+References: <1357807986-4026-1-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357807986-4026-1-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, January 12, 2013 10:42:09 AM Viresh Kumar wrote:
-> This patch fixes following sparse warning:
+On Thu, Jan 10, 2013 at 10:52:55AM +0200, Andy Shevchenko wrote:
+> Recend to Vinod for review.
 > 
-> drivers/cpufreq/spear-cpufreq.c:33:5: warning: symbol 'spear_cpufreq_verify' was
-> not declared. Should it be static?
+> Since v1:
+>  - is_slave_xfer renamed to is_slave_direction
+>  - changelog fixed for "dma: dw_dmac: clear suspend bit during termination"
+>  - typo fixed in the changelog of "dw_dmac: backlink to dw_dma in dw_dma_chan
+>    is superfluous"
+Applied all, Thanks
 
-Applied to the linux-next branch of the linux-pm.git tree as v3.9 material.
-
-Thanks,
-Rafael
-
-
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/spear-cpufreq.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+--
+~Vinod
 > 
-> diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
-> index 4575cfe..8ff26af 100644
-> --- a/drivers/cpufreq/spear-cpufreq.c
-> +++ b/drivers/cpufreq/spear-cpufreq.c
-> @@ -30,7 +30,7 @@ static struct {
->  	u32 cnt;
->  } spear_cpufreq;
->  
-> -int spear_cpufreq_verify(struct cpufreq_policy *policy)
-> +static int spear_cpufreq_verify(struct cpufreq_policy *policy)
->  {
->  	return cpufreq_frequency_table_verify(policy, spear_cpufreq.freq_tbl);
->  }
+> Andy Shevchenko (10):
+>   dmaengine: introduce is_slave_direction function
+>   dma: at_hdmac: check direction properly for cyclic transfers
+>   dma: dw_dmac: check direction properly in dw_dma_cyclic_prep
+>   dma: ep93xx_dma: reuse is_slave_direction helper
+>   dma: ipu_idmac: reuse is_slave_direction helper
+>   dma: ste_dma40: reuse is_slave_direction helper
+>   dw_dmac: call .probe after we have a device in place
+>   dw_dmac: store direction in the custom channel structure
+>   dw_dmac: make usage of dw_dma_slave optional
+>   dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Heikki Krogerus (1):
+>   dma: dw_dmac: clear suspend bit during termination
+> 
+>  drivers/dma/at_hdmac.c      |   10 +++----
+>  drivers/dma/dw_dmac.c       |   62 ++++++++++++++++++++++++++++++-------------
+>  drivers/dma/dw_dmac_regs.h  |   17 ++++++------
+>  drivers/dma/ep93xx_dma.c    |    3 +--
+>  drivers/dma/ipu/ipu_idmac.c |    2 +-
+>  drivers/dma/ste_dma40.c     |    2 +-
+>  include/linux/dmaengine.h   |    5 ++++
+>  7 files changed, 64 insertions(+), 37 deletions(-)
+> 
+> -- 
+> 1.7.10.4
+> 
