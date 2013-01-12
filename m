@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab3ALBRd (ORCPT <rfc822;w@1wt.eu>);
+	id S1756021Ab3ALBRd (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Jan 2013 20:17:33 -0500
-Received: from ozlabs.org ([203.10.76.45]:53486 "EHLO ozlabs.org"
+Received: from ozlabs.org ([203.10.76.45]:33619 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755944Ab3ALBRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755937Ab3ALBRa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jan 2013 20:17:30 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Josh Boyer <jwboyer@gmail.com>, Chris Samuel <chris@csamuel.org>
-Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com
-Subject: Re: [PATCH] MODSIGN: Warn when sign check fails due to -ENOKEY
-In-Reply-To: <CA+5PVA7F1RV3=Ynv+et=ZzOTRszop=sXY2QscuuHGO2RhLpSYg@mail.gmail.com>
-References: <50EFDF15.4080606@csamuel.org> <CA+5PVA7F1RV3=Ynv+et=ZzOTRszop=sXY2QscuuHGO2RhLpSYg@mail.gmail.com>
+To: Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjurbren@gmail.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        virtualization@lists.linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: Re: [RFCv2 00/12] Introduce host-side virtio queue and CAIF Virtio.
+In-Reply-To: <CAJK669Zw1kZkJCS_Bs=emWtofj69m4XFDaNRhqY9DMdbi4MwZA@mail.gmail.com>
+References: <871ug75vp1.fsf@rustcorp.com.au> <1354718230-4486-1-git-send-email-sjur@brendeland.net> <20121206102750.GF10837@redhat.com> <877goc0wac.fsf@rustcorp.com.au> <CAJK669bP41oBhJ=MB64NS21Ag7XO5WswuTiVKCFTb96nvmyBiw@mail.gmail.com> <87pq1f2rj0.fsf@rustcorp.com.au> <87wqvl1g9s.fsf@rustcorp.com.au> <CAJK669Z-bGTeQe8qJpTJP7simbSvQ8cgFZefs5QRMkmxtFYY4g@mail.gmail.com> <87pq1c1uj4.fsf@rustcorp.com.au> <877gnk1ayv.fsf@rustcorp.com.au> <CAJK669Zw1kZkJCS_Bs=emWtofj69m4XFDaNRhqY9DMdbi4MwZA@mail.gmail.com>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Sat, 12 Jan 2013 11:00:02 +1030
-Message-ID: <87vcb3z1it.fsf@rustcorp.com.au>
+Date: Sat, 12 Jan 2013 10:56:16 +1030
+Message-ID: <871udr1c2f.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josh Boyer <jwboyer@gmail.com> writes:
+Sjur Brændeland <sjurbren@gmail.com> writes:
+> How do you see the in-kernel API for this? I would like to see
+> something similar to my previous patches, where we extend
+> the virtqueue API. E.g. something like this:
 
-> On Fri, Jan 11, 2013 at 4:44 AM, Chris Samuel <chris@csamuel.org> wrote:
->> /* Please CC me in responses, I am not subscribed to LKML */
->>
->> Currently if a signature check fails on module load due to not having
->> the appropriate key (-ENOKEY) and we are not doing strict checking
->> there is no information provided to the user other than the lock debug
->> taint warning:
->>
->> Disabling lock debugging due to kernel taint
->>
->> This patch causes a single warning to be emitted to explain why the
->> kernel is being tainted, before the above taint warning occurs.
->>
->> Module verification failed, required key not present, tainting kernel
->>
->> Found whilst trying to work out why all the 3.8 development kernels
->> I was building and testing were warning about taints and why all modules
->> were listed as forced load (F) in /proc/modules when that wasn't the
->> case in the 3.5, 3.6 or 3.7 kernels I'd tried.
->>
->> Signed-off-by: Christopher Samuel <chris@csamuel.org>
->> ---
->>  kernel/module.c |    4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/module.c b/kernel/module.c
->> index 250092c..27de534 100644
->> --- a/kernel/module.c
->> +++ b/kernel/module.c
->> @@ -2443,8 +2443,10 @@ static int module_sig_check(struct load_info *info)
->>         if (err < 0 && fips_enabled)
->>                 panic("Module verification failed with error %d in FIPS
->> mode\n",
->>                       err);
->> -       if (err == -ENOKEY && !sig_enforce)
->> +       if (err == -ENOKEY && !sig_enforce) {
->> +               printk_once(KERN_DEBUG "Module verification failed, required
->> key not present, tainting kernel\n");
->>                 err = 0;
->> +       }
->>         return err;
->
-> I'd suggest putting the printk in load_module where we call the
-> add_taint_module function instead.  Also, you might want to make the
-> priority a bit higher if it's meant to be informative.  Something like
-> KERN_INFO.
+> struct virtqueue *vring_new_virtqueueh(unsigned int index,
+> 				       unsigned int num,
+> 				       unsigned int vring_align,
+> 				       struct virtio_device *vdev,
+> 				       bool weak_barriers,
+> 				       void *pages,
+> 				       void (*notify)(struct virtqueue *),
+> 				       void (*callback)(struct virtqueue *),
+> 				       const char *name);
 
-Agreed.  KERN_NOTICE, I think: we really want to see if someone's
-inserting an unsigned module!
+I was just going to create _kernel variants of all the _user helpers,
+and let you drive it directly like that.
+
+If we get a second in-kernel user, we create wrappers (I'd prefer not to
+overload struct virtqueue though).
 
 Cheers,
 Rusty.
