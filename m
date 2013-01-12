@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab3ALRMe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 12:12:34 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:49658 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab3ALRMd (ORCPT
+	id S1753931Ab3ALRNL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 12:13:11 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:35030 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752126Ab3ALRNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 12:12:33 -0500
-Date: Sat, 12 Jan 2013 09:12:33 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com
-Subject: Re: [PATCH 0/4] arm: vt8500: Add support for Wondermedia
- WM8750/WM8850
-Message-ID: <20130112171233.GB24073@quad.lixom.net>
-References: <1357935162-7672-1-git-send-email-linux@prisktech.co.nz>
- <20130111215659.GA16521@quad.lixom.net>
- <1357960044.8515.0.camel@gitbox>
- <1357960163.8515.3.camel@gitbox>
- <1357960189.8515.4.camel@gitbox>
+	Sat, 12 Jan 2013 12:13:09 -0500
+Message-ID: <50F199F7.7020600@metafoo.de>
+Date: Sat, 12 Jan 2013 18:14:31 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357960189.8515.4.camel@gitbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: christophe.leroy@c-s.fr, jic23@cam.ac.uk, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, patrick.vasseur@c-s.fr
+Subject: Re: [PATCH] IIO ADC support for AD7923
+References: <201301080842.r088gKWO031124@localhost.localdomain> <20130108091414.GA28404@mail.gnudd.com>
+In-Reply-To: <20130108091414.GA28404@mail.gnudd.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 12, 2013 at 04:09:49PM +1300, Tony Prisk wrote:
-> The following changes since commit
-> ce3f386fdf10d79eaf6ebd63bb7adbd95f08f9f0:
+On 01/08/2013 10:14 AM, Alessandro Rubini wrote:
+>> +config AD7923
 > 
->   arm: vt8500: Remove remaining mach includes (2013-01-12 15:47:39
-> +1300)
+> I wonder if IIO config symbols should have IIO_ in their name, so
+> people looking at config files knows what they actually are.
+> Actually, all USB drivers have USB in their config name, which is
+> useful even if e.g. "PL2303" cannot be but USB.
 > 
-> are available in the git repository at:
-> 
->   git://server.prisktech.co.nz/git/linuxwmt.git tags/armsoc-3.9
+> On the other hand, AD7923 and all the others can well be driven by
+> something else than IIO, even if currently this is the only mainstream
+> option.
 
-Thanks, I pulled this in as vt8500/wm8x50
+No, IIO is and should be the only option for these devices. We really don't
+want to drivers for the same device in different subsystems of the kernel.
 
+The other argument is still valid though.
 
--Olof
+> Here comedi made the right choice, and all their symbols are
+> in the CONFIG_COMEDI_ name space.
+
+- lars
