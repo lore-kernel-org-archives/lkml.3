@@ -1,110 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab3AMPNj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 10:13:39 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:55190 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134Ab3AMPNi (ORCPT
+	id S1755309Ab3AMPOl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 10:14:41 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:41869 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755142Ab3AMPOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 10:13:38 -0500
-Message-ID: <50F2CF18.1010301@gmail.com>
-Date: Sun, 13 Jan 2013 23:13:28 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sun, 13 Jan 2013 10:14:39 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 4/6] PCI/acpiphp: update ACPI hotplug slot information
- when PCI hotplug happens
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <5038693.7d3RCgbghD@vostro.rjw.lan> <50ED9B03.3020606@gmail.com> <2474473.EXPaz4HMXx@vostro.rjw.lan>
-In-Reply-To: <2474473.EXPaz4HMXx@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+Date: Sun, 13 Jan 2013 16:14:38 +0100
+Message-ID: <CA+icZUVJ5hbPJvV4LMFGgD3Sto5=EV=MO9nutYdJwkiRrmpNJQ@mail.gmail.com>
+Subject: fb: Rework locking to fix lock ordering on takeover
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: multipart/mixed; boundary=bcaec51b16d5b9da9504d32cfccb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 04:23 AM, Rafael J. Wysocki wrote:
-> On Thursday, January 10, 2013 12:29:55 AM Jiang Liu wrote:
->> On 01/09/2013 08:04 AM, Rafael J. Wysocki wrote:
->>> On Wednesday, January 09, 2013 12:52:23 AM Jiang Liu wrote:
->>>> Currently the acpiphp driver fails to update hotplug slot information under
->>>> several conditions, such as:
->>>> 1) The bridge device is removed through /sys/bus/pci/devices/.../remove
->>>> 2) The bridge device is added/removed by PCI hotplug driver other than the
->>>>    acpiphp driver itself. For example, if an IO expansion box with ACPI
->>>>    hotplug slots available is hot-added by the pciehp driver, all ACPI
->>>>    hotplug slots won't be discovered by the acpiphp driver.
->>>>
->>>> So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
->>>> update ACPI hotplug slot information when PCI hotplug event happens.
->>>>
->>>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->>>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->>>> ---
->>>>  drivers/pci/hotplug/acpiphp_glue.c |   62 ++++++++++++++++++++++++++++++++++--
->>>>  1 file changed, 60 insertions(+), 2 deletions(-)
->>>>
->> snip
->>>> +static struct notifier_block acpi_pci_hp_notifier = {
->>>> +	.notifier_call = &acpi_pci_hp_notify_fn,
->>>> +};
->>>> +
->>>>  static struct acpi_pci_driver acpi_pci_hp_driver = {
->>>>  	.add =		add_bridge,
->>>>  	.remove =	remove_bridge,
->>>> @@ -1448,6 +1503,8 @@ int __init acpiphp_glue_init(void)
->>>>  	else
->>>>  		acpi_pci_register_driver(&acpi_pci_hp_driver);
->>>>  
->>>> +	bus_register_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
->>>
->>> Your previous patch adds a PCI bus notifier for a similar thing.  Why are
->>> you adding another one here?
->> Hi Rafael,
->> 	The acpiphp driver could be built as a module, and this bus notifier
->> is used to setup/tear down ACPI based PCI hotplug controllers under a PCI bridge.
->> The previous patch is to add/remove PCI slots. The PCI slot and PCI hotplug
->> controller are related but different objects, so we use two notifiers to support
->> them all.
-> 
-> I would be much happier if those notifiers were not needed.  At least, I'm not
-> sure why they need to be invoked by the driver core during device registration.
-> 
-> In my opinion it would be much better if they were called only for the devices
-> that might need them instead of all PCI devices.
-> 
-Hi Rafael,
-	The whole thing seems a little complex, and I will try my best to explain
-about it:)
-	Essentially a PCI slot is associated with a PCI bus, and a PCI bus is 
-associated with a host bridge or P2P bridge. When hot-adding/hot-removing a PCI bus,
-we need to create/destroy PCI slots associated with it. So the pci_slot and acpiphp
-drivers need to be notified when hot-adding/hot-removing a PCI bus.
-	But there's no common mechanism to get notified when PCI buses are being
-hot-added/hot-removed. So my first implementation has introduced a dedicated notifier
-chain for PCI bus addition/removal. Later with ongoing changes to the PCI core, 
-I found we could rely on the existing bus notification mechanism too, so that becomes
-the current implementation.
-	I have a proposal to unify the process for boot time and hotplug as below:
-1) Change pci_slot and acpiphp as built-in instead of modules.
-2) Get rid of acpi_pci_driver for pci_slot and acpiphp driver.
-3) Register some forms of callbacks to create/destroy hotplug controllers/slots
-   when creating/destroying PCI buses.
-3.a) Rely on the bus notification mechanism to invoke callbacks. This solution is
-     simple, but with a little overhead
-3.b) Introduce a dedicated notifier chain for PCI bus hot-adding/hot-removing.
-     This solution could get rid of the overhead, but with more code changes.
-3.c) Invoke callbacks from acpi_bus_type->setup/cleanup. This solution could
-     only support ACPI based slots, such as pci_slot and acpiphp.
-	Any recommendations?
-Regards!
-Gerry
+--bcaec51b16d5b9da9504d32cfccb
+Content-Type: text/plain; charset=UTF-8
 
-> Thanks,
-> Rafael
-> 
-> 
+Hi Andrew,
 
+your patch from [1] - as far as I followed - misses a lot of
+Reported-by#s and Tested-by#s (Boris, Jiri, etc.).
+Just one new R-b I have seen yesterday.
+
+I have the original patch from Alan plus the two follow-ups from you
+in my patch-series against v3.8-{rc2,rc3} for quite a while.
+So, please feel free to add a Tested-by.
+
+Unfortunately, your patch has introduced some (unwanted) extra chars
+like "_*" (comments only).
+I appreciate one single (new) patch like this, but please in a proper way.
+
+A disappeared/busy/not-answering maintainer is not an excuse for
+handling serious regressions (even here in this case there are fixes
+around),
+Personally, I am still missing a mei-driver fix [2] and a libata-dev fix [3].
+Both issues are not new to the maintainers.
+Not sure if shouting louder is the best strategy here.
+
+It would be great to have a place like a "board of arbitration" where
+someone can send blames.
+And I remember vaguely Rafael had a nice list of issues (w/ reference
+to patches!).
+This was a real cool helpful innoivation!
+I can't remember why Rafael stopped his nice service to the
+Linux-kernel community.
+
+Have fun!
+
+Regards,
+- Sedat -
+
+[1] https://patchwork.kernel.org/patch/1969391/
+[2] http://git.kernel.org/?p=linux/kernel/git/gregkh/char-misc.git;a=commitdiff;h=e6028db0146cf5a68dbd1508225ea49840997880
+[3] http://patchwork.ozlabs.org/patch/206897/
+
+--bcaec51b16d5b9da9504d32cfccb
+Content-Type: application/octet-stream; 
+	name="fb-Rework-locking-to-fix-lock-ordering-on-takeover-fix-comments.patch"
+Content-Disposition: attachment; 
+	filename="fb-Rework-locking-to-fix-lock-ordering-on-takeover-fix-comments.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hbwbm6np0
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvdHR5L3Z0L3Z0LmMgYi9kcml2ZXJzL3R0eS92dC92dC5jCmlu
+ZGV4IDM0N2JlZDAuLjFkYjFjOGQgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvdHR5L3Z0L3Z0LmMKKysr
+IGIvZHJpdmVycy90dHkvdnQvdnQuYwpAQCAtMzY1Myw3ICszNjUzLDcgQEAgaW50IGRvX3Rha2Vf
+b3Zlcl9jb25zb2xlKGNvbnN0IHN0cnVjdCBjb25zdyAqY3N3LCBpbnQgZmlyc3QsIGludCBsYXN0
+LCBpbnQgZGVmbHQKIAkvKgogCSAqIElmIHdlIGdldCBhbiBidXN5IGVycm9yIHdlIHN0aWxsIHdh
+bnQgdG8gYmluZCB0aGUgY29uc29sZSBkcml2ZXIKIAkgKiBhbmQgcmV0dXJuIHN1Y2Nlc3MsIGFz
+IHdlIG1heSBoYXZlIHVuYm91bmQgdGhlIGNvbnNvbGUgZHJpdmVyCi0JXyogYnV0IG5vdCB1bnJl
+Z2lzdGVyZWQgaXQuCisJICogYnV0IG5vdCB1bnJlZ2lzdGVyZWQgaXQuCiAJICovCiAJaWYgKGVy
+ciA9PSAtRUJVU1kpCiAJCWVyciA9IDA7CkBAIC0zNjc5LDcgKzM2NzksNyBAQCBpbnQgdGFrZV9v
+dmVyX2NvbnNvbGUoY29uc3Qgc3RydWN0IGNvbnN3ICpjc3csIGludCBmaXJzdCwgaW50IGxhc3Qs
+IGludCBkZWZsdCkKIAkvKgogCSAqIElmIHdlIGdldCBhbiBidXN5IGVycm9yIHdlIHN0aWxsIHdh
+bnQgdG8gYmluZCB0aGUgY29uc29sZSBkcml2ZXIKIAkgKiBhbmQgcmV0dXJuIHN1Y2Nlc3MsIGFz
+IHdlIG1heSBoYXZlIHVuYm91bmQgdGhlIGNvbnNvbGUgZHJpdmVyCi0JXyogYnV0IG5vdCB1bnJl
+Z2lzdGVyZWQgaXQuCisJICogYnV0IG5vdCB1bnJlZ2lzdGVyZWQgaXQuCiAJICovCiAJaWYgKGVy
+ciA9PSAtRUJVU1kpCiAJCWVyciA9IDA7Cg==
+--bcaec51b16d5b9da9504d32cfccb--
