@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab3AMS7z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 13:59:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49281 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755733Ab3AMS7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 13:59:54 -0500
-Date: Sun, 13 Jan 2013 19:59:16 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Anton Arapov <anton@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Josh Stone <jistone@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] uprobes: pre-filtering
-Message-ID: <20130113185916.GA25831@redhat.com>
+	id S1755897Ab3AMTQN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 14:16:13 -0500
+Received: from smtp-out002.kontent.com ([81.88.40.216]:33086 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755800Ab3AMTQL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 14:16:11 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: Alex Riesen <raa.lkml@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        linux-usb@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: USB device cannot be reconnected and khubd "blocked for more than 120 seconds"
+Date: Sun, 13 Jan 2013 20:16:11 +0100
+Message-ID: <1406914.PAZOOLqX4X@linux-5eaq.site>
+User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CALxABCYtKJD4YrPxy6p+Frim8erccp3ine7SVEV9ReoaRh1BWQ@mail.gmail.com>
+References: <CALxABCaE3=XpGmgNJs1pre11aJ8T0pntVzf_mA6_OYNzis9nvQ@mail.gmail.com> <Pine.LNX.4.44L0.1301131153520.17578-100000@netrider.rowland.org> <CALxABCYtKJD4YrPxy6p+Frim8erccp3ine7SVEV9ReoaRh1BWQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, please pull from
+On Sunday 13 January 2013 18:42:49 Alex Riesen wrote:
+> On Sun, Jan 13, 2013 at 5:56 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > On Sun, 13 Jan 2013, Alex Riesen wrote:
+> >>
+> >> Yes, almost. What about khubd hanging when machine is shutdown?
+> >
+> > What about it?  I have trouble understanding all the descriptions you
+> > have provided so far, because you talk about several different things
+> > and change your mind a lot.  Can you provide a single, simple scenario
+> > that illustrates this problem?
+> 
+> 1. Compile a kernel with deadline elevator as module
+> 2. Boot into it, make sure the elevator is selected
+>   (I used "elevator=deadline" in the kernel command line)
+> 3. Insert a FAT formatted mass storage device in an USB2 port
+>    Observe "io scheduler deadline registered"
+> 4. Pull the stick out, wait a moment, and either shutdown or just
+>    and press alt-sysrq-W:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+That makes it clear. The elevator probably has scheduled work
+which cannot finish waiting on a lock and scsi_remove_host()
+wants to flush work.
 
-Mostly pre-filtering. This needs more work and perhaps more functionality.
-In particular, perhaps dup_mmap() should remove the unwanted breakpoints.
-And we can add more ->filter() hooks to, say, speedup uprobe_register().
-Plus we can do some optimizations to avoid register_for_each_vma() in
-case when we know that all mm's were previously acked/nacked.
+This is not a USB problem. You need to involve the SCSI people.
+khubd just stops working because disconnects are processed
+in its context and the removal deadlocks.
 
-Srikar, the only patch you did not ack explicitely is 1fecb96d
-"Do not allocate current->utask unnecessary", but afaics you do not
-object.
+	Regards
+		Oliver
 
-And the patch from Josh which exports uprobe_register/unregister for modules.
-Christoph (cc'ed) doesn't like this change, but I disagree. Whatever you
-think about systemtap it is the widely used tool, and uprobes can have other
-out-of-tree users. This is like kprobes, kprobe_register() is exported but
-it doesn't have a modular in-kernel user too. I do not see why should we
-limit the usage of uprobes.
-
-
-
-Josh Stone (1):
-      uprobes: Add exports for module use
-
-Oleg Nesterov (26):
-      uprobes: Move __set_bit(UPROBE_SKIP_SSTEP) into alloc_uprobe()
-      uprobes: Kill the "uprobe != NULL" check in uprobe_unregister()
-      uprobes: Kill the pointless inode/uc checks in register/unregister
-      uprobes: Kill uprobe_consumer->filter()
-      uprobes: Introduce filter_chain()
-      uprobes: _unregister() should always do register_for_each_vma(false)
-      uprobes: _register() should always do register_for_each_vma(true)
-      uprobes: Introduce uprobe->register_rwsem
-      uprobes: Change filter_chain() to iterate ->consumers list
-      uprobes: Kill UPROBE_RUN_HANDLER flag
-      uprobes: Kill uprobe->copy_mutex
-      uprobes: Kill uprobe_events, use RB_EMPTY_ROOT() instead
-      uprobes: Introduce uprobe_is_active()
-      uprobes: Kill uprobes_mutex[], separate alloc_uprobe() and __uprobe_register()
-      uprobes: Rationalize the usage of filter_chain()
-      uprobes: Reintroduce uprobe_consumer->filter()
-      uprobes: Teach handler_chain() to filter out the probed task
-      uprobes/x86: Change __skip_sstep() to actually skip the whole insn
-      uprobes: Change handle_swbp() to expose bp_vaddr to handler_chain()
-      uprobes: Move alloc_page() from xol_add_vma() to xol_alloc_area()
-      uprobes: Fold xol_alloc_area() into get_xol_area()
-      uprobes: Turn add_utask() into get_utask()
-      uprobes: Do not play with utask in xol_get_insn_slot()
-      uprobes: Fix utask->xol_vaddr leak in pre_ssout()
-      uprobes: Do not allocate current->utask unnecessary
-      uprobes: Kill the bogus IS_ERR_VALUE(xol_vaddr) check
-
- arch/x86/kernel/uprobes.c   |    4 +-
- include/linux/uprobes.h     |   17 ++-
- kernel/events/uprobes.c     |  433 ++++++++++++++++++++++---------------------
- kernel/ptrace.c             |    6 +
- kernel/trace/trace_uprobe.c |    5 +-
- 5 files changed, 243 insertions(+), 222 deletions(-)
 
