@@ -1,80 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab3AMWGO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 17:06:14 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62751 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755655Ab3AMWGN (ORCPT
+	id S1756072Ab3AMWLv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 17:11:51 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:39590 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755671Ab3AMWLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 17:06:13 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: Jan Engelhardt <jengelh@inai.de>
-Subject: Re: kconfig-frontends-3.6.0-0 released
-Date: Sun, 13 Jan 2013 22:58:44 +0100
-User-Agent: KMail/1.13.5 (Linux/3.6.11-treguer; KDE/4.4.5; x86_64; ; )
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201210061755.07330.yann.morin.1998@free.fr> <201301131959.15246.yann.morin.1998@free.fr> <alpine.LNX.2.01.1301132204090.9693@nerf07.vanv.qr>
-In-Reply-To: <alpine.LNX.2.01.1301132204090.9693@nerf07.vanv.qr>
+	Sun, 13 Jan 2013 17:11:50 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301132258.45084.yann.morin.1998@free.fr>
+Date: Sun, 13 Jan 2013 23:11:49 +0100
+Message-ID: <CADpTngVYgS1nefgYO+fpBWkQ+XvvdE7RL1kV5cP4TLsKkU2i-Q@mail.gmail.com>
+Subject: rf kill button not working on hp folio 9470m - bisected
+From: Fabio Coatti <fabio.coatti@gmail.com>
+To: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan, All,
+Hi all,
+on my laptop (hp folio 9470m), the rfkill button works fine on 3.6.10
+and 11 (don't know about older kernels), but is not working on 3.7.X
+(latest tested is 3.7.2).
+On non working kernel, log shows the following messages:
 
-On Sunday 13 January 2013 Jan Engelhardt wrote:
-> On Sunday 2013-01-13 19:59, Yann E. MORIN wrote:
-> >> Not again. autoreconf has existed for so long, why are people still 
-> >> hand-coding the boilerplate?
-[--SNIP--]
-> >How does one autoreconf a 'foreign' package?
-> 
-> Surely, just that:
-> AM_INIT_AUTOMAKE([foreign])
+Jan 13 17:34:33 calvin kernel: atkbd serio0: Unknown key pressed
+(translated set 2, code 0xf8 on isa0060/serio0).
+Jan 13 17:34:33 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+<keycode>' to make it known.
+Jan 13 17:34:33 calvin kernel: atkbd serio0: Unknown key released
+(translated set 2, code 0xf8 on isa0060/serio0).
+Jan 13 17:34:33 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+<keycode>' to make it known.
+Jan 13 17:34:34 calvin kernel: atkbd serio0: Unknown key pressed
+(translated set 2, code 0xf8 on isa0060/serio0).
+Jan 13 17:34:34 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+<keycode>' to make it known.
+Jan 13 17:34:35 calvin kernel: atkbd serio0: Unknown key released
+(translated set 2, code 0xf8 on isa0060/serio0).
+Jan 13 17:34:35 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+<keycode>' to make it known.
 
-Aha! :-)
+On working kernels, same logs shows the following lines:
 
-Just one small nit left: autoreconf does not grok AC_CONFIG_MACRO_DIR and
-does not create it, so aclocal complains. Easily worked around, though.
+Jan 13 22:55:59 calvin kernel: atkbd serio0: Unknown key pressed
+(translated set 2, code 0xf8 on isa0060/serio0).
+Jan 13 22:55:59 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+<keycode>' to make it known.
+Jan 13 22:55:59 calvin NetworkManager[4823]: <info> WiFi now enabled
+by radio killswitch
+Jan 13 22:55:59 calvin NetworkManager[4823]: <info> (wlan0): bringing up device.
+Jan 13 22:55:59 calvin kernel: iwlwifi 0000:03:00.0: L1 Disabled; Enabling L0S
+Jan 13 22:55:59 calvin kernel: iwlwifi 0000:03:00.0: Radio type=0x2-0x1-0x0
+Jan 13 22:55:59 calvin kernel: atkbd serio0: Unknown key released
+(translated set 2, code 0xf8 on isa0060/serio0).
+Jan 13 22:55:59 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+<keycode>' to make it known.
 
-> >> >AC_HEADER_STDC
-> >> >AC_HEADER_STDBOOL
-> >> >AC_CHECK_HEADERS([ fcntl.h limits.h locale.h ])
-> >> >AC_CHECK_HEADERS([ stdlib.h string.h sys/time.h unistd.h ])
-[--SNIP--]
-> >> All of this seems pointless because you never use the results
-> >> (HAVE_FCNTL_H, HAVE_LIMITS_H, etc.)
-[--SNIP--]
-> >As I see it, the only action we could take is to bail out if any is missing.
-> >Is this what you meant?
-> 
-> You could do that, though I would simply direct users to read the compiler
-> error message. That enhances (hopefully) both their knowledge on compiling,
-> and reduces the walltime configure runs.
+I've tried to bisect the regression, and I've got this:
 
-OK, sounds reasonable.
+a57f7f9175b8ccbc9df83ac13860488913115de4 is the first bad commit
+commit a57f7f9175b8ccbc9df83ac13860488913115de4
+Author: Bob Moore <robert.moore@intel.com>
+Date: Fri Aug 17 10:55:02 2012 +0800
 
-> If I understood right, kconfig-frontends is supposed to run on non-Linux too,
-> and I have yet to see a modern platform that's missing any of the stdc
-> functions like malloc and strchr.
+ACPICA: Add Windows8/Server2012 string for _OSI method.
+This change adds a new _OSI string, "Windows 2012" for both Windows 8
+and Windows Server 2012.
+>From Microsoft document "How to Identify the Windows Version in ACPI
+by Using _OSI", July 13, 2012.
 
-Yes, this is reasonable too. I'll do that.
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 
-Thank you very much! :-)
+:040000 040000 55311ce2f9fed66501b06f93f67fa99b54d46e86
+998889c21c3b68f8072ad131b643c592a4cbe423 M drivers
 
-Regards,
-Yann E. MORIN.
+I've reverted this commit in 3.7.2 and now the rfkill button is
+working just fine, so it seems the real culprit (well, I have no
+knowledge about acpi so I say so only because reverting it fixes the
+issue)
+Please forgive me If I'm completely wrong  :)
 
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
-
+--
+Fabio
