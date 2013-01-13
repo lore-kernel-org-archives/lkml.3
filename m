@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab3AMRzp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:55:45 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34949 "EHLO
+	id S1756140Ab3AMRzn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:55:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34964 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755208Ab3AMRpZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755297Ab3AMRpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Jan 2013 12:45:25 -0500
-Message-Id: <20130113174258.990063287@decadent.org.uk>
+Message-Id: <20130113174257.700603226@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:10 +0000
+Date: Sun, 13 Jan 2013 17:43:04 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gabor Juhos <juhosg@openwrt.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 15/49] powerpc: Add missing NULL terminator to avoid boot panic on PPC40x
+        Jeff Layton <jlayton@redhat.com>,
+        Tim Perry <tdparmor-sambabugs@yahoo.com>,
+        Steve French <smfrench@gmail.com>
+Subject: [ 09/49] cifs: adjust sequence number downward after signing NT_CANCEL
+ request
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,58 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit e6449c9b2d90c1bd9a5985bf05ddebfd1631cd6b upstream.
+commit 31efee60f489c759c341454d755a9fd13de8c03d upstream.
 
-The missing NULL terminator can cause a panic on
-PPC405 boards during boot:
+When a call goes out, the signing code adjusts the sequence number
+upward by two to account for the request and the response. An NT_CANCEL
+however doesn't get a response of its own, it just hurries the server
+along to get it to respond to the original request more quickly.
+Therefore, we must adjust the sequence number back down by one after
+signing a NT_CANCEL request.
 
-  Linux/PowerPC load: console=ttyS0,115200 root=/dev/mtdblock1 rootfstype=squashfs,jffs2 noinitrd init=/etc/preinit
-  Finalizing device tree... flat tree at 0x6a5160
-  bootconsole [udbg0] enabled
-  Page fault in user mode with in_atomic() = 1 mm = (null)
-  NIP = c0275f50  MSR = fffffffe
-  Oops: Weird page fault, sig: 11 [#1]
-  PowerPC 40x Platform
-  Modules linked in:
-  NIP: c0275f50 LR: c0275f60 CTR: c0280000
-  REGS: c0275eb0 TRAP: 636f7265   Not tainted  (3.7.1)
-  MSR: fffffffe <VEC,VSX,EE,PR,FP,ME,SE,BE,IR,DR,PMM,RI> CR: c06a6190  XER: 00000001
-  TASK = c02662a8[0] 'swapper' THREAD: c0274000
-  GPR00: c0275ec0 c000c658 c027c4bf 00000000 c0275ee0 c000a0ec c020a1a8 c020a1f0
-  GPR08: c020f631 c020f404 c025f078 c025f080 c0275f10
-   Call Trace:
-   ---[ end trace 31fd0ba7d8756001 ]---
-
-  Kernel panic - not syncing: Attempted to kill the idle task!
-
-The panic happens since commit 9597abe00c1bab2aedce6b49866bf6d1e81c9eed
-(sections: fix section conflicts in arch/powerpc), however the root
-cause of this is that the NULL terminator were not added in commit
-a4f740cf33f7f6c164bbde3c0cdbcc77b0c4997c (of/flattree: Add of_flat_dt_match()
-helper function).
-
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Tim Perry <tdparmor-sambabugs@yahoo.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/platforms/40x/ppc40x_simple.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/cifs/transport.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/powerpc/platforms/40x/ppc40x_simple.c
-+++ b/arch/powerpc/platforms/40x/ppc40x_simple.c
-@@ -55,7 +55,8 @@ static const char *board[] __initdata =
- 	"amcc,haleakala",
- 	"amcc,kilauea",
- 	"amcc,makalu",
--	"est,hotfoot"
-+	"est,hotfoot",
-+	NULL
- };
+--- a/fs/cifs/transport.c
++++ b/fs/cifs/transport.c
+@@ -485,6 +485,13 @@ send_nt_cancel(struct TCP_Server_Info *s
+ 		mutex_unlock(&server->srv_mutex);
+ 		return rc;
+ 	}
++
++	/*
++	 * The response to this call was already factored into the sequence
++	 * number when the call went out, so we must adjust it back downward
++	 * after signing here.
++	 */
++	--server->sequence_number;
+ 	rc = smb_send(server, in_buf, be32_to_cpu(in_buf->smb_buf_length));
+ 	mutex_unlock(&server->srv_mutex);
  
- static int __init ppc40x_probe(void)
 
 
