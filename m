@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab3AMSOm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 13:14:42 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56697 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab3AMSOl (ORCPT
+	id S1755557Ab3AMSUa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 13:20:30 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:54809 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754803Ab3AMSU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 13:14:41 -0500
-Message-ID: <50F2F9CD.6080904@infradead.org>
-Date: Sun, 13 Jan 2013 10:15:41 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sun, 13 Jan 2013 13:20:29 -0500
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: Michal Nazarewicz <mina86@mina86.com>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andy Whitcroft <apw@shadowen.org>, Alexander Nyberg <alexn@dsv.su.se>
-Subject: Re: [PATCH v2 1/2] Fix wrong EOF compare
-References: <1357871401-7075-1-git-send-email-minchan@kernel.org> <xa1tbocvby0s.fsf@mina86.com> <1358077473.32505.10@driftwood>
-In-Reply-To: <1358077473.32505.10@driftwood>
+X-Originating-IP: [86.16.28.30]
+Date: Sun, 13 Jan 2013 19:20:27 +0100
+Message-ID: <CAEpun2ZA-JKsrtGbajBX7nOo=uacitAvnC5gSKiNJJe5bfDLSg@mail.gmail.com>
+Subject: [PATCH] usb: Crucible Technologies COMET Caller ID - pid added.
+From: Tomasz Mloduchowski <q@qdot.me>
+To: jhovold@gmail.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/13 03:44, Rob Landley wrote:
-> On 01/11/2013 08:21:55 AM, Michal Nazarewicz wrote:
->> On Fri, Jan 11 2013, Minchan Kim <minchan@kernel.org> wrote:
->> > The C standards allows the character type char to be singed or unsinged,
->> > depending on the platform and compiler. Most of systems uses signed char,
->> > but those based on PowerPC and ARM processors typically use unsigned char.
->> > This can lead to unexpected results when the variable is used to compare
->> > with EOF(-1). It happens my ARM system and this patch fixes it.
->> >
->> > Cc: Mel Gorman <mgorman@suse.de>
->> > Cc: Andy Whitcroft <apw@shadowen.org>
->> > Cc: Alexander Nyberg <alexn@dsv.su.se>
->> > Cc: Michal Nazarewicz <mina86@mina86.com>
->>
->> Acked-by: Michal Nazarewicz <mina86@mina86.com>
->>
->> > Cc: Randy Dunlap <rdunlap@infradead.org>
->> > Signed-off-by: Minchan Kim <minchan@kernel.org>
->> > ---
->> >  Documentation/page_owner.c |    7 ++++---
->> >  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> My kernel tree doesn't have Documentation/page_owner.c, where do I find this file?
+From: Tomasz Mloduchowski <q@qdot.me>
 
-It's in -mm (mmotm), so Andrew can/should merge this ...
+Simple fix to add support for Crucible Technologies COMET Caller ID
+USB decoder - a device containing FTDI USB/Serial converter chip,
+handling 1200bps CallerID messages decoded from the phone line -
+adding correct USB PID is sufficient.
 
+Tested to apply cleanly and work flawlessly against 3.6.9, 3.7.0-rc8
+and 3.8.0-rc3 on both amd64 and x86 arches.
 
--- 
-~Randy
+Signed-off-by: Tomasz Mloduchowski <q@qdot.me>
+---
+diff -ur linux-3.8-rc3.orig/drivers/usb/serial/ftdi_sio.c
+linux-3.8-rc3/drivers/usb/serial/ftdi_sio.c
+--- linux-3.8-rc3.orig/drivers/usb/serial/ftdi_sio.c    2013-01-13
+19:41:28.000000000 +0100
++++ linux-3.8-rc3/drivers/usb/serial/ftdi_sio.c 2013-01-13
+19:49:27.239874311 +0100
+@@ -875,6 +875,8 @@
+        { USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
+                .driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+        { USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
++       /* Crucible Devices */
++       { USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
+        { },                                    /* Optional parameter entry */
+        { }                                     /* Terminating entry */
+ };
+diff -ur linux-3.8-rc3.orig/drivers/usb/serial/ftdi_sio_ids.h
+linux-3.8-rc3/drivers/usb/serial/ftdi_sio_ids.h
+--- linux-3.8-rc3.orig/drivers/usb/serial/ftdi_sio_ids.h
+2013-01-13 19:41:28.000000000 +0100
++++ linux-3.8-rc3/drivers/usb/serial/ftdi_sio_ids.h     2013-01-13
+19:48:24.819996641 +0100
+@@ -1259,3 +1259,9 @@
+  * ATI command output: Cinterion MC55i
+  */
+ #define FTDI_CINTERION_MC55I_PID       0xA951
++
++/*
++ * Product: Comet Caller ID decoder
++ * Manufacturer: Crucible Technologies
++ */
++#define FTDI_CT_COMET_PID 0x8e08
