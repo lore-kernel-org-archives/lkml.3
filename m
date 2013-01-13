@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562Ab3AMGFB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 01:05:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58623 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750746Ab3AMGFA (ORCPT
+	id S1751713Ab3AMGTK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 01:19:10 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:63162 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab3AMGTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 01:05:00 -0500
-Message-ID: <1358057095.4514.75.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [add to stable] ftrace: Do not function trace inlined functions
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Sun, 13 Jan 2013 06:04:55 +0000
-In-Reply-To: <1357681121.5190.42.camel@gandalf.local.home>
-References: <1357681121.5190.42.camel@gandalf.local.home>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Y7RUhmm9ffeNFV/uNwkE"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 13 Jan 2013 01:19:08 -0500
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com, linux-mmc@vger.kernel.org,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH] mmc: vt8500: Remove erroneous __exitp in wmt_mci_driver
+Date: Sun, 13 Jan 2013 19:19:20 +1300
+Message-Id: <1358057960-24540-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With the __devinit/__devexit attributes having been removed, this
+__exitp attribute causes an unused function warning and should be
+removed as well.
 
---=-Y7RUhmm9ffeNFV/uNwkE
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+ drivers/mmc/host/wmt-sdmmc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On Tue, 2013-01-08 at 16:38 -0500, Steven Rostedt wrote:
-> Hi Greg and Ben,
->=20
-> Can you add commit 45959ee7aa645815a5ce303a0ea1e48a21e67c6a to the
-> stable trees.
+diff --git a/drivers/mmc/host/wmt-sdmmc.c b/drivers/mmc/host/wmt-sdmmc.c
+index 154f0e8..c6d0015 100644
+--- a/drivers/mmc/host/wmt-sdmmc.c
++++ b/drivers/mmc/host/wmt-sdmmc.c
+@@ -1012,7 +1012,7 @@ static const struct dev_pm_ops wmt_mci_pm = {
+ 
+ static struct platform_driver wmt_mci_driver = {
+ 	.probe = wmt_mci_probe,
+-	.remove = __exit_p(wmt_mci_remove),
++	.remove = wmt_mci_remove,
+ 	.driver = {
+ 		.name = DRIVER_NAME,
+ 		.owner = THIS_MODULE,
+-- 
+1.7.9.5
 
-Added to the queue for 3.2, thanks.
-
-Ben.
-
---=20
-Ben Hutchings
-Klipstein's 4th Law of Prototyping and Production:
-                                    A fail-safe circuit will destroy others=
-.
-
---=-Y7RUhmm9ffeNFV/uNwkE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUPJOh+e/yOyVhhEJAQqR/BAAnRal9YM9TU5RuDPMyqjK67b8F4zKR7gw
-GiXbxve2fXzFlxguSETje2ZLAvC+V7GI4dSKp9FLKdZ23UR7/VS7wqCW+1U3KYOd
-Euhj++H1nSDmyt2BeWMrmFchpVW7URELHCcmvBnrqQkP/NzDky/nQeUAJ16pxiVI
-KKm975Ruiz2X8AAOCY1rRYsrNX77p+BgOl3yOVXxLY6fmrl/dT3HDDKzI/KMD+zp
-sglVDbkcQnZ8b796wCs5i388sLwmoOap1lMoDGUA2q77Znf3+Lr4U/MNZtUhDT8h
-BnbOQaY/OmF8lvgelK34ECvs0m3lBW07/2PPesQ4nFoUPZa4qq4ioaXH/REI31o2
-sb/aTlv+WCc1lpaA4XwtwP4ir54CoJUF2e63TKeAZJw3h7tsHQD0ht+Fh/6lnRwU
-9J9yo73b0wzPR+xz7imowHf6UBNe88tqW4wq+ZE7t1EAFbeEXmemltqIds58UKoG
-5N2xa8vqsh+pCazz3SwiBJhsmT4X+07rR7EIoDZyNTNej3BQFXRouuKTjLhsJfo3
-lLVGO9x5Qw4QVjzygzo66sqA0XyRqEjXnonsbrpyprmeQdCAl4/odG3rkB+phjzE
-64zTUy1P8s9qDpAnlvfrIYf5N9fX/vXnjtSO/V5k04jnZ42UzuPV0TFKwq4mqsuK
-x3Fk2Xg0xBI=
-=4qa7
------END PGP SIGNATURE-----
-
---=-Y7RUhmm9ffeNFV/uNwkE--
