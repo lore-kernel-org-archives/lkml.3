@@ -1,211 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab3AMHth (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 02:49:37 -0500
-Received: from mail-qc0-f191.google.com ([209.85.216.191]:50238 "EHLO
-	mail-qc0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab3AMHtg convert rfc822-to-8bit (ORCPT
+	id S1751897Ab3AMIJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 03:09:29 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:53873 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab3AMIJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 02:49:36 -0500
-Path: glegroupsg2000goo.googlegroups.com!not-for-mail
-Newsgroups: fa.linux.kernel
-Date: Sat, 12 Jan 2013 23:01:02 -0800 (PST)
-In-Reply-To: <f419d12f-2594-43c3-b894-f4d4c21a3166@googlegroups.com>
-Complaints-To: groups-abuse@google.com
-Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=122.167.217.40;
- posting-account=NCRxaQoAAAD54XcIcQi1OXMFZuM4f-KP
-NNTP-Posting-Host: 122.167.217.40
-References: <fa.Y0FHvNmq3PUOPFTOjxSNqjMULHc@ifi.uio.no> <fa.brRV/ZItJPfVkucfEAnS6B1Vfow@ifi.uio.no>
- <fa.h/6oWR6kmOBuicuev7/0gdVAyU4@ifi.uio.no> <f419d12f-2594-43c3-b894-f4d4c21a3166@googlegroups.com>
-User-Agent: G2/1.0
-X-Google-Web-Client: true
-X-Google-IP: 122.167.217.40
+	Sun, 13 Jan 2013 03:09:28 -0500
+Message-ID: <50F26BE0.7020005@gmail.com>
+Date: Sun, 13 Jan 2013 16:10:08 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Message-ID: <eaf37464-ae9d-4192-9044-2b2d90906a17@googlegroups.com>
-Subject: Re: [block] allow blk_flush_policy to return REQ_FSEQ_DATA
- independent of *FLUSH
-From: Ajith Kumar <ajithb.kumar@gmail.com>
-To: fa.linux.kernel@googlegroups.com
-Cc: ajithb.kumar@gmail.com, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: antoine.trux@gmail.com
+CC: fa.linux.kernel@googlegroups.com, Johannes Weiner <hannes@saeurebad.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        clameter@sgi.com, penberg@cs.helsinki.fi
+Subject: Re: Why is the kfree() argument const?
+References: <fa.cHMztHfqJXv7vw5O0nQ8SdTrma0@ifi.uio.no> <fa.V9M+5l8C/um5KEiBtZOjbJDQmu4@ifi.uio.no> <379cc523-8f08-4c7f-ae20-20f216352a01@googlegroups.com>
+In-Reply-To: <379cc523-8f08-4c7f-ae20-20f216352a01@googlegroups.com>
+Content-Type: multipart/mixed;
+ boundary="------------030401040803020307060302"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-Re-reading the code, I see that I was wrong with the previous comment of mine.  So, in summary
+This is a multi-part message in MIME format.
+--------------030401040803020307060302
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-i) If block driver does not support FLUSH and FUA, then __generic_make_request() checks will clear BIO FLUSH and FUA flags and hence blk_insert_flush() will not be invoked.
+Hello Antoine:
 
-ii) If block driver clears FLUSH & FUA flags while IO is in flight, then there is possibility of IO missing __generic_make_request() checks and hitting issue with blk_insert_flush() being discussed here.
+  after read through the whole reply of Linus Torvalds for it
+    (the time stamp is "Wed, 16 Jan 2008 10:39:00 -0800 (PST)").
 
-iii) If block driver sets only REQ_FUA without REQ_FLUSH then __generic_make_request() checks will not clear BIO flags and hence blk_insert_flush() will be invoked which will hit the blk_insert_flush() issue being discussed here.  However, setting REQ_FUA without REQ_FLUSH is not as per documentation and it is invalid for block driver to do so.
+  at least for me, his reply is correct in details.
 
-Thanks,
-Ajith
+  although what you said is also correct,
+  it seems you misunderstanding what he said.
 
-On Wednesday, 9 January 2013 09:44:55 UTC+5:30, Ajith Kumar  wrote:
-> Hello,
-> 
-> Thanks for the response.
-> 
-> A block device driver during initialization would decide if it is capable of supporting FLUSH/FUA or not.  Suppose driver claims FLUSH/FUA support then any bio targeted at this driver with FLUSH bit set(which is commonly set by file system like XFS for doing internal logging) has a data corruption vulnerability in case of an abrupt shutdown.  So, IMO the vulnerability is not open to rare window where driver changes q->flush_flags while IO is in flight, but for a much larger window from time driver comes up and throughout it's life.
-> 
-> 
-> 
-> Thanks,
-> 
-> Ajith
-> 
-> 
-> 
-> On Wednesday, 9 January 2013 00:15:31 UTC+5:30, Tejun Heo  wrote:
-> 
-> > Hello,
-> 
-> > 
-> 
-> > 
-> 
-> > 
-> 
-> > On Tue, Jan 08, 2013 at 10:04:23AM -0800, ajithb.kumar@gmail.com wrote:
-> 
-> > 
-> 
-> > > Hi,
-> 
-> > 
-> 
-> > > Could you please provide clarity on the following.
-> 
-> > 
-> 
-> > > ">   Hmmm... yes, this can become a correctness issue if (and only if)
-> 
-> > 
-> 
-> > > >   blk_queue_flush() is called to change q->flush_flags while requests
-> 
-> > 
-> 
-> > > >   are in-flight;"
-> 
-> > 
-> 
-> > >
-> 
-> > 
-> 
-> > > Could you please clarify as to why is it a correctness issue only if
-> 
-> > 
-> 
-> > > blk_queue_flush() is used to change flush_flags when requests are in
-> 
-> > 
-> 
-> > > flight ?  As I understand, XFS does set WRITE_FLUSH_FUA flag in
-> 
-> > 
-> 
-> > > _xfs_buf_ioapply() function irrespective of whether the underlying
-> 
-> > 
-> 
-> > > device supports flush capabilities or not which will flow into
-> 
-> > 
-> 
-> > > blk_insert_flush().  Is my reading of the code correct and is there
-> 
-> > 
-> 
-> > > a general correctness issue here which potentially results in XFS
-> 
-> > 
-> 
-> > > file system corruption in case of an abrupt shutdown independent of
-> 
-> > 
-> 
-> > > q->flush_flags getting changed while request is in flight.
-> 
-> > 
-> 
-> > 
-> 
-> > 
-> 
-> > My memory is kinda fuzzy at this point but if a queue doesn't support
-> 
-> > 
-> 
-> > flush, its flush_flags should be zero and
-> 
-> > 
-> 
-> > generic_make_request_checks() will clear REQ_FLUSH|REQ_FUA from
-> 
-> > 
-> 
-> > bio->bi_rw so we never hit blk_insert_flush() and the request will be
-> 
-> > 
-> 
-> > processed as a normal IO one; however, if REQ_FLUSH goes off after a
-> 
-> > 
-> 
-> > request passed generic_make_request_checks() but before
-> 
-> > 
-> 
-> > blk_flush_policy(), it'll become null op and its data payload won't
-> 
-> > 
-> 
-> > get written out to the underlying device, which is data corruption.
-> 
-> > 
-> 
-> > 
-> 
-> > 
-> 
-> > Thanks.
-> 
-> > 
-> 
-> > 
-> 
-> > 
-> 
-> > -- 
-> 
-> > 
-> 
-> > tejun
-> 
-> > 
-> 
-> > --
-> 
-> > 
-> 
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> 
-> > 
-> 
-> > the body of a message to majordomo@vger.kernel.org
-> 
-> > 
-> 
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> > 
-> 
-> > Please read the FAQ at  http://www.tux.org/lkml/
+  all together:
+    kfree() should use 'const void *' as parameter type
+    the free() of C Library is incorrect (it use void *).
 
+
+于 2013年01月13日 03:18, antoine.trux@gmail.com 写道:
+> On Wednesday, January 16, 2008 8:39:48 PM UTC+2, Linus Torvalds wrote:
+> 
+>> "const" has *never* been about the thing not being modified. Forget all 
+>> that claptrap. C does not have such a notion.
+> 
+> I beg your pardon?!
+> 
+> C has had that very notion ever since its first standard (1989). Here is an excerpt from that standard (ISO/IEC 9899:1990, section 6.5.3):
+> 
+>     "If an attempt is made to modify an object defined with a const-qualified type through use of an lvalue with non-const-qualified type, the behavior is undefined."
+> 
+> 
+>> "const" is a pointer type issue, and is meant to make certain mis-uses 
+>> more visible at compile time. It has *no* other meaning, and anybody who 
+>> thinks it has is just setting himself up for problems.
+> 
+> 'const' is also a pointer issue, but not only - see above quote from the C Standard.
+> 
+> 
+> Defining an object 'const' can have an impact on optimization (and also on whether the object is placed in read-only memory). Here are trivial examples to illustrate:
+> 
+> <Program1>
+> 
+>     <foo1.c>
+>     void foo1(const int* pi)
+>     {
+>         *(int*)pi = 1;
+>     }
+>     </foo1.c>
+> 
+>     <main1.c>
+>     #include <stdio.h>
+>     void foo1(const int* pi);
+>     int main(void)
+>     {
+>         int i = 0;
+>         foo1(&i);
+>         printf("i = %d\n", i);
+>         return 0;
+>     }
+>     </main1.c>
+> 
+> </Program1>
+> 
+> Program1 defines 'i' non-const, and modifies it through a const pointer, by casting const away in foo1(). This is allowed - although not necessarily wise.
+> 
+> Program1 has well defined behavior: it prints "i = 1". The generated code dutifully retrieves the value of 'i' before passing it to printf().
+> 
+> 
+> <Program2>
+> 
+>     <foo2.c>
+>     void foo2(const int* pi)
+>     {
+>     }
+>     </foo2.c>
+> 
+>     <main2.c>
+>     #include <stdio.h>
+>     void foo2(const int* pi);
+>     int main(void)
+>     {
+>         const int i = 0;
+>         foo2(&i);
+>         printf("i = %d\n", i);
+>         return 0;
+>     }
+>     </main2.c>
+> 
+> </Program2>
+> 
+> Program2 defines 'i' const. A pointer to 'i' is passed to foo2(), which does not modify 'i'.
+> 
+> Program2 has well defined behavior: it prints "i = 0". When it generates code for main1.c, the compiler can assume that 'i' is not modified, because 'i' is defined const.
+> 
+> When compiling main2.c with gcc 4.4.7 with optimizations turned off (-O0), the generated code retrieves the value of 'i' before passing it to printf(). With optimizations turned on (-O3), it inlines the value of 'i', 0, in the call to printf(). Both versions have the same, correct behavior.
+> 
+> 
+> <Program3>
+> 
+>     <foo3.c>
+>     void foo3(const int* pi)
+>     {
+>         *(int*)pi = 1;
+>     }
+>     </foo3.c>
+> 
+>     <main3.c>
+>     #include <stdio.h>
+>     void foo3(const int* pi);
+>     int main(void)
+>     {
+>         const int i = 0;
+>         foo3(&i);
+>         printf("i = %d\n", i);
+>         return 0;
+>     }
+>     </main3.c>
+> 
+> </Program3>
+> 
+> Program3 defines 'i' const, and attempts to modify it through a const pointer, by casting const away in foo3().
+> 
+> On my particular system, when compiling Program3 with gcc 4.4.7 with optimizations turned off (-O0), the program prints "i = 1". With optimizations turned on (-O3), it prints "i = 0".
+> 
+> The question of which of these two behaviors is "correct" would be pointless, since Program3 has undefined behavior.
+> 
+> 
+> Antoine
+> --
+
+
+-- 
+Chen Gang
+
+Flying Transformer
+
+--------------030401040803020307060302
+Content-Type: text/x-vcard; charset=utf-8;
+ name="chen_gang_flying_transformer.vcf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="chen_gang_flying_transformer.vcf"
+
+YmVnaW46dmNhcmQNCmZuOkNoZW4gR2FuZw0Kbjo7Q2hlbiBHYW5nDQp2ZXJzaW9uOjIuMQ0K
+ZW5kOnZjYXJkDQoNCg==
+--------------030401040803020307060302--
