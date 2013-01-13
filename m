@@ -1,59 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab3AMTap (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 14:30:45 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:39359 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755765Ab3AMTan (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 14:30:43 -0500
+	id S1756029Ab3AMTz4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 14:55:56 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:39925 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755984Ab3AMTzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 14:55:54 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v8 21/22] PCI: add match_driver in struct pci_dev
+Date: Sun, 13 Jan 2013 21:01:43 +0100
+Message-ID: <3209648.ahKUqpvYlm@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <50F2D55C.4040807@gmail.com>
+References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <29539918.9ng60fkCeb@vostro.rjw.lan> <50F2D55C.4040807@gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sun, 13 Jan 2013 20:30:42 +0100
-Message-ID: <CA+icZUXCObXMqVMNLFL58fZCBzo8dv+mqa7Ue_+jVfAdaYG45A@mail.gmail.com>
-Subject: Re: [PATCH] cpuidle: fix new C-states not functional after AC disconnect
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Thomas Schlichter <thomas.schlichter@web.de>
-Cc: Linux PM List <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, daniel.lezcano@linaro.org,
-        Linux ACPI <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Sunday, January 13, 2013 11:40:12 PM Jiang Liu wrote:
+> On 01/13/2013 07:49 AM, Rafael J. Wysocki wrote:
+> > On Friday, January 11, 2013 02:40:48 PM Yinghai Lu wrote:
+> >> with that we could move out attaching driver for pci device,
+> >> out of device_add for pci hot add path.
+> >>
+> >> pci_bus_attach_device() will attach driver to pci device.
+> > 
+> > Clever, but I wonder why exactly we need to do that?
+> Hi Rafael,
+> 	To make following sequence possible,
+> 1) Create PCI device objects for hot-added PCI host bridge
+> 2) Create IOMMU devices for DMAR units belong to the hot-added PCI host bridge
+> 3) Bind and start all PCI devices connected to the PCI host bridge.
 
-I read your original LKML posting in [1].
+OK, but why exactly isn't it possible without that change?
 
-[ QUOTE ]
-Currently, Daniel Lezcano seems to be working on an intrusive change of not
-using the power_usage value at all for choosing a C-state:
+Rafael
 
-[4] https://lkml.org/lkml/2012/12/14/155
 
-As I could not find any of these patches in any git trees to be merged for
-3.8...
-[ /QUOTE ]
-
-You can find the patches at LKML ([2] and [3]) or patchwork ([4] and [5]).
-
-As a Linux-Next "customer" I know about Daniel's work for-next [5] but
-I did not found any other GIT repository of him.
-Striving through Daniel's other GIT repos I found idlestat [6] and
-powerdebug [7] tools which I want to test.
-( So, thank you for your email! )
-
-Have fun!
-
-Regards,
-- Sedat -
-
-[0] http://marc.info/?l=linux-acpi&m=135808048905350&w=2
-[1] https://lkml.org/lkml/2012/12/14/153
-[2] https://lkml.org/lkml/2012/12/14/149
-[3] https://patchwork.kernel.org/patch/1878691/
-[4] https://patchwork.kernel.org/patch/1878701/
-[5] http://git.linaro.org/gitweb?p=people/dlezcano/cpuidle-next.git
-[6] http://git.linaro.org/gitweb?p=people/dlezcano/idlestat.git;a=summary
-[7] http://git.linaro.org/gitweb?p=people/dlezcano/powerdebug.git;a=summary
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >> ---
+> >>  drivers/pci/bus.c        |   10 ++++++++++
+> >>  drivers/pci/pci-driver.c |    6 +++++-
+> >>  include/linux/pci.h      |    1 +
+> >>  3 files changed, 16 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> >> index 5f9c728..1f5916a 100644
+> >> --- a/drivers/pci/bus.c
+> >> +++ b/drivers/pci/bus.c
+> >> @@ -160,6 +160,15 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+> >>  
+> >>  void __weak pcibios_resource_survey_bus(struct pci_bus *bus) { }
+> >>  
+> >> +static void pci_bus_attach_device(struct pci_dev *dev)
+> >> +{
+> >> +	int ret;
+> >> +
+> >> +	dev->match_driver = true;
+> >> +	ret = device_attach(&dev->dev);
+> >> +	WARN_ON(ret < 0);
+> >> +}
+> >> +
+> >>  /**
+> >>   * pci_bus_add_device - add a single device
+> >>   * @dev: device to add
+> >> @@ -181,6 +190,7 @@ int pci_bus_add_device(struct pci_dev *dev)
+> >>  	if (retval)
+> >>  		return retval;
+> >>  
+> >> +	pci_bus_attach_device(dev);
+> >>  	dev->is_added = 1;
+> >>  	pci_proc_attach_device(dev);
+> >>  	pci_create_sysfs_dev_files(dev);
+> >> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> >> index f79cbcd..acdcc3c 100644
+> >> --- a/drivers/pci/pci-driver.c
+> >> +++ b/drivers/pci/pci-driver.c
+> >> @@ -1186,9 +1186,13 @@ pci_dev_driver(const struct pci_dev *dev)
+> >>  static int pci_bus_match(struct device *dev, struct device_driver *drv)
+> >>  {
+> >>  	struct pci_dev *pci_dev = to_pci_dev(dev);
+> >> -	struct pci_driver *pci_drv = to_pci_driver(drv);
+> >> +	struct pci_driver *pci_drv;
+> >>  	const struct pci_device_id *found_id;
+> >>  
+> >> +	if (!pci_dev->match_driver)
+> >> +		return 0;
+> >> +
+> >> +	pci_drv = to_pci_driver(drv);
+> >>  	found_id = pci_match_device(pci_drv, pci_dev);
+> >>  	if (found_id)
+> >>  		return 1;
+> >> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> >> index 907b455..d73af08 100644
+> >> --- a/include/linux/pci.h
+> >> +++ b/include/linux/pci.h
+> >> @@ -286,6 +286,7 @@ struct pci_dev {
+> >>  	unsigned int	irq;
+> >>  	struct resource resource[DEVICE_COUNT_RESOURCE]; /* I/O and memory regions + expansion ROMs */
+> >>  
+> >> +	bool match_driver;
+> >>  	/* These fields are used by common fixups */
+> >>  	unsigned int	transparent:1;	/* Transparent PCI bridge */
+> >>  	unsigned int	multifunction:1;/* Part of multi-function device */
+> >>
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
