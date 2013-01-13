@@ -1,89 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab3AMPOl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 10:14:41 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:41869 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142Ab3AMPOj (ORCPT
+	id S1755334Ab3AMP0C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 10:26:02 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:46267 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755193Ab3AMPZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 10:14:39 -0500
+	Sun, 13 Jan 2013 10:25:59 -0500
+Message-ID: <50F2D1FA.6000000@gmail.com>
+Date: Sun, 13 Jan 2013 23:25:46 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sun, 13 Jan 2013 16:14:38 +0100
-Message-ID: <CA+icZUVJ5hbPJvV4LMFGgD3Sto5=EV=MO9nutYdJwkiRrmpNJQ@mail.gmail.com>
-Subject: fb: Rework locking to fix lock ordering on takeover
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: multipart/mixed; boundary=bcaec51b16d5b9da9504d32cfccb
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v8 06/22] PCI: split registration of PCI bus devices into
+ two stages
+References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-7-git-send-email-yinghai@kernel.org> <3931059.ZcnvRQRmKT@vostro.rjw.lan>
+In-Reply-To: <3931059.ZcnvRQRmKT@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec51b16d5b9da9504d32cfccb
-Content-Type: text/plain; charset=UTF-8
+On 01/13/2013 06:34 AM, Rafael J. Wysocki wrote:
+> On Friday, January 11, 2013 02:40:33 PM Yinghai Lu wrote:
+>> From: Jiang Liu <jiang.liu@huawei.com>
+>>
+>> When handling BUS_NOTIFY_ADD_DEVICE event for a PCI bridge device,
+>> the notification handler can't hold reference count to the new PCI bus
+>> because the device object for the new bus (pci_dev->subordinate->dev)
+>> hasn't been initialized yet.
+> 
+> It doesn't look like BUS_NOTIFY_ADD_DEVICE is used by the PCI bus type
+> in the mainline.
+> 
+> Is it in linux-next?
+> 
+> If not, then I don't see why we need this patch.
+Hi Rafael,
+	Originally it's a preparation patch for pci_slot/acpiphp/pci_bind
+related fixups. With recent work from you to remove bind/unbind from struct
+acpi_bus_type, we have no dependency on this patch anymore.
+Regards!
+Gerry
 
-Hi Andrew,
+> 
+> Thanks,
+> Rafael
+> 
+> 
+>> Split the registration of PCI bus device into two stages as below,
+>> so that the event handler could hold reference count to the new PCI bus
+>> when handling BUS_NOTIFY_ADD_DEVICE event.
+>>
+>> 1) device_initialize(&pci_dev->dev)
+>> 2) device_initialize(&pci_dev->subordinate->dev)
+>> 3) notify BUS_NOTIFY_ADD_DEVICE event for pci_dev
+>> 4) device_add(&pci_dev->dev)
+>> 5) device_add(&pci_dev->subordinate->dev)
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  drivers/pci/bus.c    |    2 +-
+>>  drivers/pci/probe.c  |    4 +++-
+>>  drivers/pci/remove.c |   10 +++++-----
+>>  3 files changed, 9 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+>> index 847f3ca..5f9c728 100644
+>> --- a/drivers/pci/bus.c
+>> +++ b/drivers/pci/bus.c
+>> @@ -200,7 +200,7 @@ int pci_bus_add_child(struct pci_bus *bus)
+>>  	if (bus->bridge)
+>>  		bus->dev.parent = bus->bridge;
+>>  
+>> -	retval = device_register(&bus->dev);
+>> +	retval = device_add(&bus->dev);
+>>  	if (retval)
+>>  		return retval;
+>>  
+>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>> index 48b35e1..dc4fde3 100644
+>> --- a/drivers/pci/probe.c
+>> +++ b/drivers/pci/probe.c
+>> @@ -642,6 +642,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+>>  	 */
+>>  	child->dev.class = &pcibus_class;
+>>  	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
+>> +	device_initialize(&child->dev);
+>>  
+>>  	/*
+>>  	 * Set up the primary, secondary and subordinate
+>> @@ -1678,7 +1679,8 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>>  	b->dev.class = &pcibus_class;
+>>  	b->dev.parent = b->bridge;
+>>  	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
+>> -	error = device_register(&b->dev);
+>> +	device_initialize(&b->dev);
+>> +	error = device_add(&b->dev);
+>>  	if (error)
+>>  		goto class_dev_reg_err;
+>>  
+>> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+>> index fc38c48..a1fdd0f 100644
+>> --- a/drivers/pci/remove.c
+>> +++ b/drivers/pci/remove.c
+>> @@ -48,11 +48,11 @@ void pci_remove_bus(struct pci_bus *bus)
+>>  	list_del(&bus->node);
+>>  	pci_bus_release_busn_res(bus);
+>>  	up_write(&pci_bus_sem);
+>> -	if (!bus->is_added)
+>> -		return;
+>> -
+>> -	pci_remove_legacy_files(bus);
+>> -	device_unregister(&bus->dev);
+>> +	if (bus->is_added) {
+>> +		pci_remove_legacy_files(bus);
+>> +		device_del(&bus->dev);
+>> +	}
+>> +	put_device(&bus->dev);
+>>  }
+>>  EXPORT_SYMBOL(pci_remove_bus);
+>>  
+>>
 
-your patch from [1] - as far as I followed - misses a lot of
-Reported-by#s and Tested-by#s (Boris, Jiri, etc.).
-Just one new R-b I have seen yesterday.
-
-I have the original patch from Alan plus the two follow-ups from you
-in my patch-series against v3.8-{rc2,rc3} for quite a while.
-So, please feel free to add a Tested-by.
-
-Unfortunately, your patch has introduced some (unwanted) extra chars
-like "_*" (comments only).
-I appreciate one single (new) patch like this, but please in a proper way.
-
-A disappeared/busy/not-answering maintainer is not an excuse for
-handling serious regressions (even here in this case there are fixes
-around),
-Personally, I am still missing a mei-driver fix [2] and a libata-dev fix [3].
-Both issues are not new to the maintainers.
-Not sure if shouting louder is the best strategy here.
-
-It would be great to have a place like a "board of arbitration" where
-someone can send blames.
-And I remember vaguely Rafael had a nice list of issues (w/ reference
-to patches!).
-This was a real cool helpful innoivation!
-I can't remember why Rafael stopped his nice service to the
-Linux-kernel community.
-
-Have fun!
-
-Regards,
-- Sedat -
-
-[1] https://patchwork.kernel.org/patch/1969391/
-[2] http://git.kernel.org/?p=linux/kernel/git/gregkh/char-misc.git;a=commitdiff;h=e6028db0146cf5a68dbd1508225ea49840997880
-[3] http://patchwork.ozlabs.org/patch/206897/
-
---bcaec51b16d5b9da9504d32cfccb
-Content-Type: application/octet-stream; 
-	name="fb-Rework-locking-to-fix-lock-ordering-on-takeover-fix-comments.patch"
-Content-Disposition: attachment; 
-	filename="fb-Rework-locking-to-fix-lock-ordering-on-takeover-fix-comments.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hbwbm6np0
-
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvdHR5L3Z0L3Z0LmMgYi9kcml2ZXJzL3R0eS92dC92dC5jCmlu
-ZGV4IDM0N2JlZDAuLjFkYjFjOGQgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvdHR5L3Z0L3Z0LmMKKysr
-IGIvZHJpdmVycy90dHkvdnQvdnQuYwpAQCAtMzY1Myw3ICszNjUzLDcgQEAgaW50IGRvX3Rha2Vf
-b3Zlcl9jb25zb2xlKGNvbnN0IHN0cnVjdCBjb25zdyAqY3N3LCBpbnQgZmlyc3QsIGludCBsYXN0
-LCBpbnQgZGVmbHQKIAkvKgogCSAqIElmIHdlIGdldCBhbiBidXN5IGVycm9yIHdlIHN0aWxsIHdh
-bnQgdG8gYmluZCB0aGUgY29uc29sZSBkcml2ZXIKIAkgKiBhbmQgcmV0dXJuIHN1Y2Nlc3MsIGFz
-IHdlIG1heSBoYXZlIHVuYm91bmQgdGhlIGNvbnNvbGUgZHJpdmVyCi0JXyogYnV0IG5vdCB1bnJl
-Z2lzdGVyZWQgaXQuCisJICogYnV0IG5vdCB1bnJlZ2lzdGVyZWQgaXQuCiAJICovCiAJaWYgKGVy
-ciA9PSAtRUJVU1kpCiAJCWVyciA9IDA7CkBAIC0zNjc5LDcgKzM2NzksNyBAQCBpbnQgdGFrZV9v
-dmVyX2NvbnNvbGUoY29uc3Qgc3RydWN0IGNvbnN3ICpjc3csIGludCBmaXJzdCwgaW50IGxhc3Qs
-IGludCBkZWZsdCkKIAkvKgogCSAqIElmIHdlIGdldCBhbiBidXN5IGVycm9yIHdlIHN0aWxsIHdh
-bnQgdG8gYmluZCB0aGUgY29uc29sZSBkcml2ZXIKIAkgKiBhbmQgcmV0dXJuIHN1Y2Nlc3MsIGFz
-IHdlIG1heSBoYXZlIHVuYm91bmQgdGhlIGNvbnNvbGUgZHJpdmVyCi0JXyogYnV0IG5vdCB1bnJl
-Z2lzdGVyZWQgaXQuCisJICogYnV0IG5vdCB1bnJlZ2lzdGVyZWQgaXQuCiAJICovCiAJaWYgKGVy
-ciA9PSAtRUJVU1kpCiAJCWVyciA9IDA7Cg==
---bcaec51b16d5b9da9504d32cfccb--
