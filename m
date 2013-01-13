@@ -1,118 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab3AMU1Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 15:27:24 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:39954 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755392Ab3AMU1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 15:27:23 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 4/6] PCI/acpiphp: update ACPI hotplug slot information when PCI hotplug happens
-Date: Sun, 13 Jan 2013 21:33:10 +0100
-Message-ID: <8252567.ImVhDNhDoO@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <50F2CF18.1010301@gmail.com>
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <2474473.EXPaz4HMXx@vostro.rjw.lan> <50F2CF18.1010301@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756135Ab3AMUbA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 15:31:00 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:33871 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab3AMUa6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 15:30:58 -0500
+Subject: Re: [tip:x86/urgent] x86/Sandy Bridge:  reserve pages when integrated graphics is present
+X-Duff: Duff Lite, Duff Dry, Duff Dark, Lady Duff, Raspberry Duff, Duff Zero
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Content-Type: text/plain; charset=us-ascii
+From: Mathias Krause <minipli@googlemail.com>
+In-Reply-To: <20130111150030.1d39b8b8@jbarnes-desktop>
+Date: Sun, 13 Jan 2013 21:30:52 +0100
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
+        =?iso-8859-1?Q?St=E9phane_Marchesin?= <marcheu@chromium.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <75F4BEE6-CB0E-4426-B40B-697451677738@googlemail.com>
+References: <tip-a9acc5365dbda29f7be2884efb63771dc24bd815@git.kernel.org> <20130111150030.1d39b8b8@jbarnes-desktop>
+To: hpa@linux.intel.com
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 13, 2013 11:13:28 PM Jiang Liu wrote:
-> On 01/10/2013 04:23 AM, Rafael J. Wysocki wrote:
-> > On Thursday, January 10, 2013 12:29:55 AM Jiang Liu wrote:
-> >> On 01/09/2013 08:04 AM, Rafael J. Wysocki wrote:
-> >>> On Wednesday, January 09, 2013 12:52:23 AM Jiang Liu wrote:
-> >>>> Currently the acpiphp driver fails to update hotplug slot information under
-> >>>> several conditions, such as:
-> >>>> 1) The bridge device is removed through /sys/bus/pci/devices/.../remove
-> >>>> 2) The bridge device is added/removed by PCI hotplug driver other than the
-> >>>>    acpiphp driver itself. For example, if an IO expansion box with ACPI
-> >>>>    hotplug slots available is hot-added by the pciehp driver, all ACPI
-> >>>>    hotplug slots won't be discovered by the acpiphp driver.
-> >>>>
-> >>>> So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
-> >>>> update ACPI hotplug slot information when PCI hotplug event happens.
-> >>>>
-> >>>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> >>>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> >>>> ---
-> >>>>  drivers/pci/hotplug/acpiphp_glue.c |   62 ++++++++++++++++++++++++++++++++++--
-> >>>>  1 file changed, 60 insertions(+), 2 deletions(-)
-> >>>>
-> >> snip
-> >>>> +static struct notifier_block acpi_pci_hp_notifier = {
-> >>>> +	.notifier_call = &acpi_pci_hp_notify_fn,
-> >>>> +};
-> >>>> +
-> >>>>  static struct acpi_pci_driver acpi_pci_hp_driver = {
-> >>>>  	.add =		add_bridge,
-> >>>>  	.remove =	remove_bridge,
-> >>>> @@ -1448,6 +1503,8 @@ int __init acpiphp_glue_init(void)
-> >>>>  	else
-> >>>>  		acpi_pci_register_driver(&acpi_pci_hp_driver);
-> >>>>  
-> >>>> +	bus_register_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
-> >>>
-> >>> Your previous patch adds a PCI bus notifier for a similar thing.  Why are
-> >>> you adding another one here?
-> >> Hi Rafael,
-> >> 	The acpiphp driver could be built as a module, and this bus notifier
-> >> is used to setup/tear down ACPI based PCI hotplug controllers under a PCI bridge.
-> >> The previous patch is to add/remove PCI slots. The PCI slot and PCI hotplug
-> >> controller are related but different objects, so we use two notifiers to support
-> >> them all.
-> > 
-> > I would be much happier if those notifiers were not needed.  At least, I'm not
-> > sure why they need to be invoked by the driver core during device registration.
-> > 
-> > In my opinion it would be much better if they were called only for the devices
-> > that might need them instead of all PCI devices.
-> > 
-> Hi Rafael,
-> 	The whole thing seems a little complex, and I will try my best to explain
-> about it:)
-> 	Essentially a PCI slot is associated with a PCI bus, and a PCI bus is 
-> associated with a host bridge or P2P bridge. When hot-adding/hot-removing a PCI bus,
-> we need to create/destroy PCI slots associated with it. So the pci_slot and acpiphp
-> drivers need to be notified when hot-adding/hot-removing a PCI bus.
-> 	But there's no common mechanism to get notified when PCI buses are being
-> hot-added/hot-removed. So my first implementation has introduced a dedicated notifier
-> chain for PCI bus addition/removal. Later with ongoing changes to the PCI core, 
-> I found we could rely on the existing bus notification mechanism too, so that becomes
-> the current implementation.
-> 	I have a proposal to unify the process for boot time and hotplug as below:
-> 1) Change pci_slot and acpiphp as built-in instead of modules.
+Hi Peter,
 
-Sure, go ahead with that.
+Am 12.01.2013 um 00:00 schrieb Jesse Barnes <jbarnes@virtuousgeek.org>:
 
-> 2) Get rid of acpi_pci_driver for pci_slot and acpiphp driver.
+> On Fri, 11 Jan 2013 14:39:04 -0800
+> tip-bot for Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> 
+>> Commit-ID:  a9acc5365dbda29f7be2884efb63771dc24bd815
+>> Gitweb:     http://git.kernel.org/tip/a9acc5365dbda29f7be2884efb63771dc24bd815
+>> Author:     Jesse Barnes <jbarnes@virtuousgeek.org>
+>> AuthorDate: Wed, 14 Nov 2012 20:43:31 +0000
+>> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+>> CommitDate: Fri, 11 Jan 2013 14:26:38 -0800
+>> 
+>> x86/Sandy Bridge: reserve pages when integrated graphics is present
+>> 
+>> SNB graphics devices have a bug that prevent them from accessing certain
+>> memory ranges, namely anything below 1M and in the pages listed in the
+>> table.  So reserve those at boot if set detect a SNB gfx device on the
+>> CPU to avoid GPU hangs.
+>> 
+>> Stephane Marchesin had a similar patch to the page allocator awhile
+>> back, but rather than reserving pages up front, it leaked them at
+>> allocation time.
+>> 
+>> [ hpa: made a number of stylistic changes, marked arrays as static
+>>  const, and made less verbose; use "memblock=debug" for full
+>>  verbosity. ]
 
-Again, I have no objection here.  Moreover, I think we might be better off
-without the acpi_pci_driver things at all.
+That stylistic change introduced the unwanted side effect of leaving the tables in memory after __init cleanup. But that can be fixed, see below :)
 
-> 3) Register some forms of callbacks to create/destroy hotplug controllers/slots
->    when creating/destroying PCI buses.
-> 3.a) Rely on the bus notification mechanism to invoke callbacks. This solution is
->      simple, but with a little overhead
-> 3.b) Introduce a dedicated notifier chain for PCI bus hot-adding/hot-removing.
->      This solution could get rid of the overhead, but with more code changes.
-> 3.c) Invoke callbacks from acpi_bus_type->setup/cleanup. This solution could
->      only support ACPI based slots, such as pci_slot and acpiphp.
+>> 
+>> Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+>> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>> ---
+>> arch/x86/kernel/setup.c | 78 +++++++++++++++++++++++++++++++++++++++++++++++++
+>> 1 file changed, 78 insertions(+)
+>> 
+>> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+>> index 23ddd55..9dcb325 100644
+>> --- a/arch/x86/kernel/setup.c
+>> +++ b/arch/x86/kernel/setup.c
+>> @@ -610,6 +610,81 @@ static __init void reserve_ibft_region(void)
+>> 
+>> static unsigned reserve_low = CONFIG_X86_RESERVE_LOW << 10;
+>> 
+>> +static bool __init snb_gfx_workaround_needed(void)
+>> +{
+>> +	int i;
+>> +	u16 vendor, devid;
+>> +	static const u16 snb_ids[] = {
 
-As I said before, I'd prefer these notifications to be done specifically for
-PCI buses or bridges, so I'd vote for 3.b), depending on the implementation.
+__initconst is missing here
 
-Thanks,
-Rafael
+>> +		0x0102,
+>> +		0x0112,
+>> +		0x0122,
+>> +		0x0106,
+>> +		0x0116,
+>> +		0x0126,
+>> +		0x010a,
+>> +	};
+>> +
+>> +	/* Assume no if something weird is going on with PCI */
+>> +	if (!early_pci_allowed())
+>> +		return false;
+>> +
+>> +	vendor = read_pci_config_16(0, 2, 0, PCI_VENDOR_ID);
+>> +	if (vendor != 0x8086)
+>> +		return false;
+>> +
+>> +	devid = read_pci_config_16(0, 2, 0, PCI_DEVICE_ID);
+>> +	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
+>> +		if (devid == snb_ids[i])
+>> +			return true;
+>> +
+>> +	return false;
+>> +}
+>> +
+>> +/*
+>> + * Sandy Bridge graphics has trouble with certain ranges, exclude
+>> + * them from allocation.
+>> + */
+>> +static void __init trim_snb_memory(void)
+>> +{
+>> +	static const unsigned long bad_pages[] = {
+
+here, too
+
+>> +		0x20050000,
+>> +		0x20110000,
+>> +		0x20130000,
+>> +		0x20138000,
+>> +		0x40004000,
+>> +	};
+>> +	int i;
+>> +
+>> +	if (!snb_gfx_workaround_needed())
+>> +		return;
+>> +
+>> +	printk(KERN_DEBUG "reserving inaccessible SNB gfx pages\n");
+>> +
+>> +	/*
+>> +	 * Reserve all memory below the 1 MB mark that has not
+>> +	 * already been reserved.
+>> +	 */
+>> +	memblock_reserve(0, 1<<20);
+>> +	
+>> +	for (i = 0; i < ARRAY_SIZE(bad_pages); i++) {
+>> +		if (memblock_reserve(bad_pages[i], PAGE_SIZE))
+>> +			printk(KERN_WARNING "failed to reserve 0x%08lx\n",
+>> +			       bad_pages[i]);
+>> +	}
+>> +}
+>> +
+>> +/*
+>> + * Here we put platform-specific memory range workarounds, i.e.
+>> + * memory known to be corrupt or otherwise in need to be reserved on
+>> + * specific platforms.
+>> + *
+>> + * If this gets used more widely it could use a real dispatch mechanism.
+>> + */
+>> +static void __init trim_platform_memory_ranges(void)
+>> +{
+>> +	trim_snb_memory();
+>> +}
+>> +
+>> static void __init trim_bios_range(void)
+>> {
+>> 	/*
+>> @@ -630,6 +705,7 @@ static void __init trim_bios_range(void)
+>> 	 * take them out.
+>> 	 */
+>> 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
+>> +
+>> 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+>> }
+>> 
+>> @@ -908,6 +984,8 @@ void __init setup_arch(char **cmdline_p)
+>> 
+>> 	setup_real_mode();
+>> 
+>> +	trim_platform_memory_ranges();
+>> +
+>> 	init_gbpages();
+>> 
+>> 	/* max_pfn_mapped is updated here */
+>> 
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards,
+Mathias
