@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab3AMACv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 19:02:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60001 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510Ab3AMACt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 19:02:49 -0500
-Date: Sun, 13 Jan 2013 01:02:42 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Shawn Guo <shawn.guo@linaro.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <florianSchandinat@gmx.de>
-Subject: Re: [PATCH] fb: Rework locking to fix lock ordering on takeover
-Message-ID: <20130113000242.GD10630@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@suse.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Jiri Kosina <jkosina@suse.cz>, Shawn Guo <shawn.guo@linaro.org>,
-	Sasha Levin <levinsasha928@gmail.com>,
-	Cong Wang <xiyou.wangcong@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Florian Tobias Schandinat <florianSchandinat@gmx.de>
-References: <CA+1xoqe0G4rha5bDcoQQUcACYbQ8BCO7AE_JE8z5VjJLeNUdyA@mail.gmail.com>
- <CAM_iQpWLgnxQR+oYD+Dnh9NprR1-QLjXa6T+dtHUs3A-_N2wmQ@mail.gmail.com>
- <CA+1xoqf0d5ckDZ3o1-Y+qd61nvVA7EECeH20U+WjDpNVb4E=pw@mail.gmail.com>
- <20121227045301.GB17472@x1.alien8.de>
- <20121228115022.GA28009@S2101-09.ap.freescale.net>
- <20121228124026.GB12918@x1.alien8.de>
- <alpine.LRH.2.00.1301071037010.5443@twin.jikos.cz>
- <20130112183619.GC10630@liondog.tnic>
- <CA+55aFw163CwK_MmUKY7zGFeck+Rxk_xs=BDrCAFpg-xac3vmQ@mail.gmail.com>
- <20130112131323.31d2a585.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130112131323.31d2a585.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753844Ab3AMAqs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 19:46:48 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:46929 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab3AMAqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 19:46:47 -0500
+Message-ID: <1358038004.1466.4.camel@kernel.cn.ibm.com>
+Subject: Re: [PATCH] mm: wait for congestion to clear on all zones
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sat, 12 Jan 2013 18:46:44 -0600
+In-Reply-To: <50EFF6BC.4060200@iskon.hr>
+References: <50EDE41C.7090107@iskon.hr>
+	 <1357867501.6568.19.camel@kernel.cn.ibm.com> <50EFF6BC.4060200@iskon.hr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 12, 2013 at 01:13:23PM -0800, Andrew Morton wrote:
-> Florian has been taking a month or two's downtime (now expired, I
-> think) so I've been waiting for him to reappear to process this one for
-> 3.8.
+On Fri, 2013-01-11 at 12:25 +0100, Zlatko Calusic wrote:
+> On 11.01.2013 02:25, Simon Jeons wrote:
+> > On Wed, 2013-01-09 at 22:41 +0100, Zlatko Calusic wrote:
+> >> From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+> >>
+> >> Currently we take a short nap (HZ/10) and wait for congestion to clear
+> >> before taking another pass with lower priority in balance_pgdat(). But
+> >> we do that only for the highest zone that we encounter is unbalanced
+> >> and congested.
+> >>
+> >> This patch changes that to wait on all congested zones in a single
+> >> pass in the hope that it will save us some scanning that way. Also we
+> >> take a nap as soon as congested zone is encountered and sc.priority <
+> >> DEF_PRIORITY - 2 (aka kswapd in trouble).
+> > 
+> > But you still didn't explain what's the problem you meat and what
+> > scenario can get benefit from your change.
+> > 
 > 
-> Meanwhile, I guess we could put it into mainline ;) It has been in
-> -next for a month.
+> I did in my reply to Andrew. Here's the relevant part:
 > 
-> From: Alan Cox <alan@linux.intel.com>
-> Subject: fb: rework locking to fix lock ordering on takeover
+> > I have an observation that without it, under some circumstances that 
+> > are VERY HARD to repeat (many days need to pass and some stars to align
+> > to see the effect), the page cache gets hit hard, 2/3 of it evicted in
+> > a split second. And it's not even under high load! So, I'm still
+> > monitoring it, but so far the memory utilization really seems better
+> > with the patch applied (no more mysterious page cache shootdowns). 
 > 
-> Adjust the console layer to allow a take over call where the caller
-> already holds the locks.  Make the fb layer lock in order.
+> The scenario that should get benefit is everyday. I observed problems during
+> light but constant reading from disk (< 10MB/s). And sending that data
+> over the network at the same time. Think backup that compresses data on the
+> fly before pushing it over the network (so it's not very fast).
 > 
-> This is partly a band aid, the fb layer is terminally confused about the
-> locking rules it uses for its notifiers it seems.
+> The trouble is that you can't just fix up a quick benchmark and measure the
+> impact, because many days need to pass for the bug to show up in all it's beauty.
 > 
-> [akpm@linux-foundation.org: remove stray non-ascii char, tidy comment]
-> [akpm@linux-foundation.org: export do_take_over_console()]
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Is there anybody out there who'd like to comment on the patch logic? I.e. do
+> you think that waiting on every congested zone is the more correct solution
+> than waiting on only one (only the highest one, and ignoring the fact that
+> there may be other even more congested zones)?
 
-Yes, that's the one, modulo Andrew's fixes, which I've been running.
-Irregardless, I'll run this one tomorrow just in case, because it
-triggers here so easily.
+What's the benefit of waiting on every congested zone than waiting on
+only one against your scenario?
 
-Thanks.
+> 
+> Regards,
 
 -- 
-Regards/Gruss,
-    Boris.
+Simon Jeons <simon.jeons@gmail.com>
 
-Sent from a fat crate under my desk. Formatting is fine.
---
