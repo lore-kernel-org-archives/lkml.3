@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab3AMRrY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:47:24 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35156 "EHLO
+	id S1755888Ab3AMRrX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:47:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35141 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755666Ab3AMRpt (ORCPT
+	by vger.kernel.org with ESMTP id S1755632Ab3AMRpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Jan 2013 12:45:49 -0500
-Message-Id: <20130113174301.254522617@decadent.org.uk>
+Message-Id: <20130113174300.443582270@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:21 +0000
+Date: Sun, 13 Jan 2013 17:43:17 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Weston Andros Adamson <dros@netapp.com>, Tejun Heo <tj@kernel.org>,
-        Bruce Fields <bfields@fieldses.org>
-Subject: [ 26/49] SUNRPC: Ensure that we free the rpc_task after cleanups are done
+        Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 22/49] NFS: Fix access to suid/sgid executables
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,66 +28,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Weston Andros Adamson <dros@netapp.com>
 
-commit c6567ed1402c55e19b012e66a8398baec2a726f3 upstream.
+commit f8d9a897d4384b77f13781ea813156568f68b83e upstream.
 
-This patch ensures that we free the rpc_task after the cleanup callbacks
-are done in order to avoid a deadlock problem that can be triggered if
-the callback needs to wait for another workqueue item to complete.
+nfs_open_permission_mask() should only check MAY_EXEC for files that
+are opened with __FMODE_EXEC.
 
+Also fix NFSv4 access-in-open path in a similar way -- openflags must be
+used because fmode will not always have FMODE_EXEC set.
+
+This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=49101
+
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Weston Andros Adamson <dros@netapp.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Bruce Fields <bfields@fieldses.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sunrpc/sched.c |   27 +++++++++++++++++++++++----
- 1 file changed, 23 insertions(+), 4 deletions(-)
+ fs/nfs/dir.c      |   16 ++++++++++------
+ fs/nfs/nfs4proc.c |   18 +++++++++++-------
+ 2 files changed, 21 insertions(+), 13 deletions(-)
 
-diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-index d17a704..b4133bd 100644
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -934,16 +934,35 @@ struct rpc_task *rpc_new_task(const struct rpc_task_setup *setup_data)
- 	return task;
- }
- 
-+/*
-+ * rpc_free_task - release rpc task and perform cleanups
-+ *
-+ * Note that we free up the rpc_task _after_ rpc_release_calldata()
-+ * in order to work around a workqueue dependency issue.
-+ *
-+ * Tejun Heo states:
-+ * "Workqueue currently considers two work items to be the same if they're
-+ * on the same address and won't execute them concurrently - ie. it
-+ * makes a work item which is queued again while being executed wait
-+ * for the previous execution to complete.
-+ *
-+ * If a work function frees the work item, and then waits for an event
-+ * which should be performed by another work item and *that* work item
-+ * recycles the freed work item, it can create a false dependency loop.
-+ * There really is no reliable way to detect this short of verifying
-+ * every memory free."
-+ *
-+ */
- static void rpc_free_task(struct rpc_task *task)
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 32e6c53..1b2d7eb 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -2153,12 +2153,16 @@ static int nfs_open_permission_mask(int openflags)
  {
--	const struct rpc_call_ops *tk_ops = task->tk_ops;
--	void *calldata = task->tk_calldata;
-+	unsigned short tk_flags = task->tk_flags;
-+
-+	rpc_release_calldata(task->tk_ops, task->tk_calldata);
+ 	int mask = 0;
  
--	if (task->tk_flags & RPC_TASK_DYNAMIC) {
-+	if (tk_flags & RPC_TASK_DYNAMIC) {
- 		dprintk("RPC: %5u freeing task\n", task->tk_pid);
- 		mempool_free(task, rpc_task_mempool);
- 	}
--	rpc_release_calldata(tk_ops, calldata);
+-	if ((openflags & O_ACCMODE) != O_WRONLY)
+-		mask |= MAY_READ;
+-	if ((openflags & O_ACCMODE) != O_RDONLY)
+-		mask |= MAY_WRITE;
+-	if (openflags & __FMODE_EXEC)
+-		mask |= MAY_EXEC;
++	if (openflags & __FMODE_EXEC) {
++		/* ONLY check exec rights */
++		mask = MAY_EXEC;
++	} else {
++		if ((openflags & O_ACCMODE) != O_WRONLY)
++			mask |= MAY_READ;
++		if ((openflags & O_ACCMODE) != O_RDONLY)
++			mask |= MAY_WRITE;
++	}
++
+ 	return mask;
  }
  
- static void rpc_async_release(struct work_struct *work)
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 5d864fb..cf747ef 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1626,7 +1626,8 @@ static int _nfs4_recover_proc_open(struct nfs4_opendata *data)
+ 
+ static int nfs4_opendata_access(struct rpc_cred *cred,
+ 				struct nfs4_opendata *opendata,
+-				struct nfs4_state *state, fmode_t fmode)
++				struct nfs4_state *state, fmode_t fmode,
++				int openflags)
+ {
+ 	struct nfs_access_entry cache;
+ 	u32 mask;
+@@ -1638,11 +1639,14 @@ static int nfs4_opendata_access(struct rpc_cred *cred,
+ 
+ 	mask = 0;
+ 	/* don't check MAY_WRITE - a newly created file may not have
+-	 * write mode bits, but POSIX allows the creating process to write */
+-	if (fmode & FMODE_READ)
+-		mask |= MAY_READ;
+-	if (fmode & FMODE_EXEC)
+-		mask |= MAY_EXEC;
++	 * write mode bits, but POSIX allows the creating process to write.
++	 * use openflags to check for exec, because fmode won't
++	 * always have FMODE_EXEC set when file open for exec. */
++	if (openflags & __FMODE_EXEC) {
++		/* ONLY check for exec rights */
++		mask = MAY_EXEC;
++	} else if (fmode & FMODE_READ)
++		mask = MAY_READ;
+ 
+ 	cache.cred = cred;
+ 	cache.jiffies = jiffies;
+@@ -1896,7 +1900,7 @@ static int _nfs4_do_open(struct inode *dir,
+ 	if (server->caps & NFS_CAP_POSIX_LOCK)
+ 		set_bit(NFS_STATE_POSIX_LOCKS, &state->flags);
+ 
+-	status = nfs4_opendata_access(cred, opendata, state, fmode);
++	status = nfs4_opendata_access(cred, opendata, state, fmode, flags);
+ 	if (status != 0)
+ 		goto err_opendata_put;
+ 
 
 
