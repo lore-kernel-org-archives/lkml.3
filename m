@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab3AMRph (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:45:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35014 "EHLO
+	id S1756081Ab3AMRwX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:52:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35053 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754926Ab3AMRpd (ORCPT
+	by vger.kernel.org with ESMTP id S1755471Ab3AMRph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 12:45:33 -0500
-Message-Id: <20130113174306.052418287@decadent.org.uk>
+	Sun, 13 Jan 2013 12:45:37 -0500
+Message-Id: <20130113174302.884463477@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:44 +0000
+Date: Sun, 13 Jan 2013 17:43:29 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ed Cashin <ecashin@coraid.com>, Josh Boyer <jwboyer@redhat.com>
-Subject: [ 49/49] aoe: do not call bdi_init after blk_alloc_queue
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 34/49] mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,73 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ed Cashin <ecashin@coraid.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 0a41409c518083133e79015092585d68915865be upstream.
+commit 5b632fe85ec82e5c43740b52e74c66df50a37db3 upstream.
 
-blk_alloc_queue has already done a bdi_init, so do not bdi_init
-again in aoeblk_gdalloc.  The extra call causes list corruption
-in the per-CPU backing dev info stats lists.
+Commit f0425beda4d404a6e751439b562100b902ba9c98 "mac80211: retry sending
+failed BAR frames later instead of tearing down aggr" caused regression
+on rt2x00 hardware (connection hangs). This regression was fixed by
+commit be03d4a45c09ee5100d3aaaedd087f19bc20d01 "rt2x00: Don't let
+mac80211 send a BAR when an AMPDU subframe fails". But the latter
+commit caused yet another problem reported in
+https://bugzilla.kernel.org/show_bug.cgi?id=42828#c22
 
-Affected users see console WARNINGs about list_del corruption on
-percpu_counter_destroy when doing "rmmod aoe" or "aoeflush -a"
-when AoE targets have been detected and initialized by the
-system.
+After long discussion in this thread:
+http://mid.gmane.org/20121018075615.GA18212@redhat.com
+and testing various alternative solutions, which failed on one or other
+setup, we have no other good fix for the issues like just revert both
+mentioned earlier commits.
 
-The patch below applies to v3.6.11, with its v47 aoe driver.  It
-is expected to apply to all currently maintained stable kernels
-except 3.7.y.  A related but different fix has been posted for
-3.7.y.
+To do not affect other hardware which benefit from commit
+f0425beda4d404a6e751439b562100b902ba9c98, instead of reverting it,
+introduce flag that when used will restore mac80211 behaviour before
+the commit.
 
-References:
-
-  RedHat bugzilla ticket with original report
-  https://bugzilla.redhat.com/show_bug.cgi?id=853064
-
-  LKML discussion of bug and fix
-  http://thread.gmane.org/gmane.linux.kernel/1416336/focus=1416497
-
-Reported-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+[replaced link with mid.gmane.org that has message-id]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/aoe/aoe.h    |    2 +-
- drivers/block/aoe/aoeblk.c |    5 -----
- 2 files changed, 1 insertions(+), 6 deletions(-)
+ include/net/mac80211.h |    5 +++++
+ net/mac80211/status.c  |    6 +++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
-index db195ab..e49ddd0 100644
---- a/drivers/block/aoe/aoe.h
-+++ b/drivers/block/aoe/aoe.h
-@@ -1,5 +1,5 @@
- /* Copyright (c) 2007 Coraid, Inc.  See COPYING for GPL terms. */
--#define VERSION "47"
-+#define VERSION "47q"
- #define AOE_MAJOR 152
- #define DEVICE_NAME "aoe"
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -1128,6 +1128,10 @@ enum sta_notify_cmd {
+  * @IEEE80211_HW_TX_AMPDU_SETUP_IN_HW: The device handles TX A-MPDU session
+  *	setup strictly in HW. mac80211 should not attempt to do this in
+  *	software.
++ *
++ * @IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL: On this hardware TX BA session
++ *	should be tear down once BAR frame will not be acked.
++ *
+  */
+ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_HAS_RATE_CONTROL			= 1<<0,
+@@ -1154,6 +1158,7 @@ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_SUPPORTS_PER_STA_GTK		= 1<<21,
+ 	IEEE80211_HW_AP_LINK_PS				= 1<<22,
+ 	IEEE80211_HW_TX_AMPDU_SETUP_IN_HW		= 1<<23,
++	IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL		= 1<<26,
+ };
  
-diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
-index 321de7b..7eca463 100644
---- a/drivers/block/aoe/aoeblk.c
-+++ b/drivers/block/aoe/aoeblk.c
-@@ -276,8 +276,6 @@ aoeblk_gdalloc(void *vp)
- 		goto err_mempool;
- 	blk_queue_make_request(d->blkq, aoeblk_make_request);
- 	d->blkq->backing_dev_info.name = "aoe";
--	if (bdi_init(&d->blkq->backing_dev_info))
--		goto err_blkq;
- 	spin_lock_irqsave(&d->lock, flags);
- 	gd->major = AOE_MAJOR;
- 	gd->first_minor = d->sysminor * AOE_PARTITIONS;
-@@ -298,9 +296,6 @@ aoeblk_gdalloc(void *vp)
- 	aoedisk_add_sysfs(d);
- 	return;
+ /**
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -429,7 +429,11 @@ void ieee80211_tx_status(struct ieee8021
+ 				       IEEE80211_BAR_CTRL_TID_INFO_MASK) >>
+ 				      IEEE80211_BAR_CTRL_TID_INFO_SHIFT;
  
--err_blkq:
--	blk_cleanup_queue(d->blkq);
--	d->blkq = NULL;
- err_mempool:
- 	mempool_destroy(d->bufpool);
- err_disk:
+-				ieee80211_set_bar_pending(sta, tid, ssn);
++				if (local->hw.flags &
++				    IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL)
++					ieee80211_stop_tx_ba_session(&sta->sta, tid);
++				else
++					ieee80211_set_bar_pending(sta, tid, ssn);
+ 			}
+ 		}
+ 
 
 
