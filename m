@@ -1,207 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab3AMX17 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 18:27:59 -0500
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:62474 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756355Ab3AMX14 (ORCPT
+	id S1755309Ab3AMX3z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 18:29:55 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36393 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754758Ab3AMX3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 18:27:56 -0500
-Subject: [PATCH v7 4/4] PCI: shpchp: Use per-slot workqueues to avoid deadlock
-To: Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Daniel J Blueman <daniel@quora.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Date: Sun, 13 Jan 2013 16:27:53 -0700
-Message-ID: <20130113232753.7225.31932.stgit@bhelgaas.mtv.corp.google.com>
-In-Reply-To: <20130113232606.7225.94802.stgit@bhelgaas.mtv.corp.google.com>
-References: <20130113232606.7225.94802.stgit@bhelgaas.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	Sun, 13 Jan 2013 18:29:54 -0500
+Date: Mon, 14 Jan 2013 08:29:38 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>, "lrg@ti.com" <lrg@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] mfd/regulator: tps65090: add DT support and
+ suspend/resume cleanups
+Message-ID: <20130113232937.GQ5041@opensource.wolfsonmicro.com>
+References: <1356686981-4152-1-git-send-email-ldewangan@nvidia.com>
+ <50EC1046.3000701@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8HhMLSHvAouSipEr"
+Content-Disposition: inline
+In-Reply-To: <50EC1046.3000701@nvidia.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we have an SHPC-capable bridge with a second SHPC-capable bridge
-below it, pushing the upstream bridge's attention button causes a
-deadlock.
 
-The deadlock happens because we use the shpchp_wq workqueue to run
-shpchp_pushbutton_thread(), which uses shpchp_disable_slot() to remove
-devices below the upstream bridge.  When we remove the downstream bridge,
-we call shpc_remove(), the shpchp driver's .remove() method.  That calls
-flush_workqueue(shpchp_wq), which deadlocks because the
-shpchp_pushbutton_thread() work item is still running.
+--8HhMLSHvAouSipEr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This patch avoids the deadlock by creating a workqueue for every slot
-and removing the single shared workqueue.
+On Tue, Jan 08, 2013 at 05:55:42PM +0530, Laxman Dewangan wrote:
 
-Here's the call path that leads to the deadlock:
+> I am not sure that the patches are created on correct sequence for
+> adapting this in regulator subsystem and mfd subsystem.
+> Can you please review whether the changes split is fine or not?
+> Idea was to make independent patch for mfd and regulator so that
+> they can apply independently.
 
-  shpchp_queue_pushbutton_work
-    queue_work(shpchp_wq)		# shpchp_pushbutton_thread
-    ...
+The addition of pdata to the header means that they can't be applied
+independantly but that's not the end of the world.
 
-  shpchp_pushbutton_thread
-    shpchp_disable_slot
-      remove_board
-        shpchp_unconfigure_device
-          pci_stop_and_remove_bus_device
-            ...
-              shpc_remove		# shpchp driver .remove method
-                hpc_release_ctlr
-                  cleanup_slots
-                    flush_workqueue(shpchp_wq)
+--8HhMLSHvAouSipEr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This change is based on code inspection, since we don't have hardware
-with this topology.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Based-on-patch-by: Yijing Wang <wangyijing@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: stable@vger.kernel.org
----
- drivers/pci/hotplug/shpchp.h      |    2 +-
- drivers/pci/hotplug/shpchp_core.c |   26 ++++++++++++++------------
- drivers/pci/hotplug/shpchp_ctrl.c |    6 +++---
- 3 files changed, 18 insertions(+), 16 deletions(-)
+iQIcBAEBAgAGBQJQ80NHAAoJELSic+t+oim9DQQP/3BZX1kTC5bm9upkt+JSD0Er
+UDq9cSrc4Uu6z/MaY7qNiPLCfnnNk/hiyuAvxrpHq9FC6lWqeIpvns5TJKzHHkLt
+0y82TdAguHVvVn6+3xiogbN96ouIfFVEC+/Y07lZnxeQSS9NVOkeF+R1Qkz9KEUJ
+/gTdpttm4PCUb2Ch8zj93zHVaG9nktmK81MPi+zl6jFmJyiKEWBtGO/vKCNKqMPJ
+d3LR5WoH3yRwtqglBafRRYLUzeVarfCUmjB6NT16EXU3SIUzYX8XQDh71BQM8A8K
+LxiehxEZyVGao5popuxiAXbSDy6gsvslOZ84tvzr93crz0sWWYULPvi5y7CtvLTI
+/NJsQRH6TKKJxPq7TMfgz/y7MUJ4gBOFyBj4mVEcnAn5xkCGJoMJtrFNC/WlJOmk
+mulPJ3EMJMJ9q3+360ZI7vqT3gXKypxlCXl2yHKq2L95EUE8fLIhnccxz39/dB56
+r21En4THZ0GuXCYmH75AWPg/lm3mXCp7C0lAz1d+wA6M6JRgIXecfvBXhuMMSuOD
+jUoPbNYE52fXFcUeBJ0rMUlh7WZWN3/bi67juuGWO1wySrjKKBQUhZqUUS0kjgkI
+aywMq1IC0R8VHe0mx0r9wArqmNbnR6T8BZ2Df7nPQIRWWcmpSrmOCQOnxiGgloR6
+OKmfmWhLGEFi7Csta4og
+=KBIN
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/pci/hotplug/shpchp.h b/drivers/pci/hotplug/shpchp.h
-index 1b69d95..b849f995 100644
---- a/drivers/pci/hotplug/shpchp.h
-+++ b/drivers/pci/hotplug/shpchp.h
-@@ -46,7 +46,6 @@
- extern bool shpchp_poll_mode;
- extern int shpchp_poll_time;
- extern bool shpchp_debug;
--extern struct workqueue_struct *shpchp_wq;
- 
- #define dbg(format, arg...)						\
- do {									\
-@@ -90,6 +89,7 @@ struct slot {
- 	struct list_head	slot_list;
- 	struct delayed_work work;	/* work for button event */
- 	struct mutex lock;
-+	struct workqueue_struct *wq;
- 	u8 hp_slot;
- };
- 
-diff --git a/drivers/pci/hotplug/shpchp_core.c b/drivers/pci/hotplug/shpchp_core.c
-index 3774e0d..3100c52 100644
---- a/drivers/pci/hotplug/shpchp_core.c
-+++ b/drivers/pci/hotplug/shpchp_core.c
-@@ -39,7 +39,6 @@
- bool shpchp_debug;
- bool shpchp_poll_mode;
- int shpchp_poll_time;
--struct workqueue_struct *shpchp_wq;
- 
- #define DRIVER_VERSION	"0.4"
- #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
-@@ -128,6 +127,14 @@ static int init_slots(struct controller *ctrl)
- 		slot->device = ctrl->slot_device_offset + i;
- 		slot->hpc_ops = ctrl->hpc_ops;
- 		slot->number = ctrl->first_slot + (ctrl->slot_num_inc * i);
-+
-+		snprintf(name, sizeof(name), "shpchp-%d", slot->number);
-+		slot->wq = alloc_workqueue(name, 0, 0);
-+		if (!slot->wq) {
-+			retval = -ENOMEM;
-+			goto error_info;
-+		}
-+
- 		mutex_init(&slot->lock);
- 		INIT_DELAYED_WORK(&slot->work, shpchp_queue_pushbutton_work);
- 
-@@ -147,7 +154,7 @@ static int init_slots(struct controller *ctrl)
- 		if (retval) {
- 			ctrl_err(ctrl, "pci_hp_register failed with error %d\n",
- 				 retval);
--			goto error_info;
-+			goto error_slotwq;
- 		}
- 
- 		get_power_status(hotplug_slot, &info->power_status);
-@@ -159,6 +166,8 @@ static int init_slots(struct controller *ctrl)
- 	}
- 
- 	return 0;
-+error_slotwq:
-+	destroy_workqueue(slot->wq);
- error_info:
- 	kfree(info);
- error_hpslot:
-@@ -179,7 +188,7 @@ void cleanup_slots(struct controller *ctrl)
- 		slot = list_entry(tmp, struct slot, slot_list);
- 		list_del(&slot->slot_list);
- 		cancel_delayed_work(&slot->work);
--		flush_workqueue(shpchp_wq);
-+		destroy_workqueue(slot->wq);
- 		pci_hp_deregister(slot->hotplug_slot);
- 	}
- }
-@@ -362,18 +371,12 @@ static struct pci_driver shpc_driver = {
- 
- static int __init shpcd_init(void)
- {
--	int retval = 0;
--
--	shpchp_wq = alloc_workqueue("shpchp", 0, 0);
--	if (!shpchp_wq)
--		return -ENOMEM;
-+	int retval;
- 
- 	retval = pci_register_driver(&shpc_driver);
- 	dbg("%s: pci_register_driver = %d\n", __func__, retval);
- 	info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
--	if (retval) {
--		destroy_workqueue(shpchp_wq);
--	}
-+
- 	return retval;
- }
- 
-@@ -381,7 +384,6 @@ static void __exit shpcd_cleanup(void)
- {
- 	dbg("unload_shpchpd()\n");
- 	pci_unregister_driver(&shpc_driver);
--	destroy_workqueue(shpchp_wq);
- 	info(DRIVER_DESC " version: " DRIVER_VERSION " unloaded\n");
- }
- 
-diff --git a/drivers/pci/hotplug/shpchp_ctrl.c b/drivers/pci/hotplug/shpchp_ctrl.c
-index fd2cae9..5849927 100644
---- a/drivers/pci/hotplug/shpchp_ctrl.c
-+++ b/drivers/pci/hotplug/shpchp_ctrl.c
-@@ -51,7 +51,7 @@ static int queue_interrupt_event(struct slot *p_slot, u32 event_type)
- 	info->p_slot = p_slot;
- 	INIT_WORK(&info->work, interrupt_event_handler);
- 
--	queue_work(shpchp_wq, &info->work);
-+	queue_work(p_slot->wq, &info->work);
- 
- 	return 0;
- }
-@@ -453,7 +453,7 @@ void shpchp_queue_pushbutton_work(struct work_struct *work)
- 		kfree(info);
- 		goto out;
- 	}
--	queue_work(shpchp_wq, &info->work);
-+	queue_work(p_slot->wq, &info->work);
-  out:
- 	mutex_unlock(&p_slot->lock);
- }
-@@ -501,7 +501,7 @@ static void handle_button_press_event(struct slot *p_slot)
- 		p_slot->hpc_ops->green_led_blink(p_slot);
- 		p_slot->hpc_ops->set_attention_status(p_slot, 0);
- 
--		queue_delayed_work(shpchp_wq, &p_slot->work, 5*HZ);
-+		queue_delayed_work(p_slot->wq, &p_slot->work, 5*HZ);
- 		break;
- 	case BLINKINGOFF_STATE:
- 	case BLINKINGON_STATE:
-
+--8HhMLSHvAouSipEr--
