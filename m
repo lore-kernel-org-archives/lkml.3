@@ -1,41 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab3AMVXV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 16:23:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57636 "EHLO mx2.suse.de"
+	id S1755671Ab3AMV15 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 16:27:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12157 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754643Ab3AMVXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 16:23:21 -0500
-Date: Sun, 13 Jan 2013 22:23:19 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Andreas Schwab <schwab@linux-m68k.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/tags.sh: Fix regex syntax for etags
-Message-ID: <20130113212319.GA3699@pobox.suse.cz>
-References: <20121227184034.GA2982@debian.debian> <CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com> <CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com> <CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com> <CAK7N6vqw+DVSVaCXqiQBVa_d2o-rg-oA5t8+6WNaZ9Mb_iQqdw@mail.gmail.com> <87a9syhbma.fsf@xmission.com> <20121228130734.GB13224@x1.alien8.de> <Pine.LNX.4.64.1212282321370.2539@axis700.grange> <m2han5wza1.fsf_-_@igel.home> <alpine.LNX.2.00.1212290022100.32254@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1212290022100.32254@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755185Ab3AMV14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 16:27:56 -0500
+From: Tomas Hozza <thozza@redhat.com>
+To: gregkh@linuxfoundation.org, kys@microsoft.com
+Cc: jasowang@redhat.com, haiyangz@microsoft.com, linux-kernel@vger.kernel.org,
+        habdi@microsoft.com, Tomas Hozza <thozza@redhat.com>
+Subject: [PATCH] tools: hv: Fix how ifcfg-* file is created
+Date: Sun, 13 Jan 2013 22:27:40 +0100
+Message-Id: <1358112460-32744-1-git-send-email-thozza@redhat.com>
+In-Reply-To: <1986454953.1148002.1357891354839.JavaMail.root@redhat.com>
+References: <1986454953.1148002.1357891354839.JavaMail.root@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 29, 2012 at 12:22:44AM +0100, Jesper Juhl wrote:
-> On Sat, 29 Dec 2012, Andreas Schwab wrote:
-> 
-> > Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-> > ---
-> >  scripts/tags.sh | 50 +++++++++++++++++++++++++-------------------------
-> >  1 file changed, 25 insertions(+), 25 deletions(-)
-[...] 
-> This works for me. Thanks.
-> 
-> Tested-by: Jesper Juhl <jj@chaosbits.net>
+Fix for the daemon code and for hv_set_ifconfig.sh script, so
+that the created ifcfg-* file is consistent with initscripts
+documentation.
 
-Applied to kbuild.git#misc, thanks.
+Signed-off-by: Tomas Hozza <thozza@redhat.com>
+---
+ tools/hv/hv_kvp_daemon.c    | 59 ++++++++++++++++++++++-----------------------
+ tools/hv/hv_set_ifconfig.sh | 22 +++++++----------
+ 2 files changed, 38 insertions(+), 43 deletions(-)
 
-Michal
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index d25a469..e6fe8d5 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -1162,16 +1162,13 @@ static int process_ip_string(FILE *f, char *ip_string, int type)
+ 				snprintf(str, sizeof(str), "%s", "DNS");
+ 				break;
+ 			}
+-			if (i != 0) {
+-				if (type != DNS) {
+-					snprintf(sub_str, sizeof(sub_str),
+-						"_%d", i++);
+-				} else {
+-					snprintf(sub_str, sizeof(sub_str),
+-						"%d", ++i);
+-				}
+-			} else if (type == DNS) {
++
++			if (type == DNS) {
+ 				snprintf(sub_str, sizeof(sub_str), "%d", ++i);
++			} else if (type == GATEWAY && i == 0) {
++				++i;
++			} else {
++				snprintf(sub_str, sizeof(sub_str), "%d", i++);
+ 			}
+ 
+ 
+@@ -1191,17 +1188,13 @@ static int process_ip_string(FILE *f, char *ip_string, int type)
+ 				snprintf(str, sizeof(str), "%s",  "DNS");
+ 				break;
+ 			}
+-			if ((j != 0) || (type == DNS)) {
+-				if (type != DNS) {
+-					snprintf(sub_str, sizeof(sub_str),
+-						"_%d", j++);
+-				} else {
+-					snprintf(sub_str, sizeof(sub_str),
+-						"%d", ++i);
+-				}
+-			} else if (type == DNS) {
+-				snprintf(sub_str, sizeof(sub_str),
+-					"%d", ++i);
++
++			if (type == DNS) {
++				snprintf(sub_str, sizeof(sub_str), "%d", ++i);
++			} else if (j == 0) {
++				++j;
++			} else {
++				snprintf(sub_str, sizeof(sub_str), "_%d", j++);
+ 			}
+ 		} else {
+ 			return  HV_INVALIDARG;
+@@ -1244,18 +1237,19 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
+ 	 * Here is the format of the ip configuration file:
+ 	 *
+ 	 * HWADDR=macaddr
+-	 * IF_NAME=interface name
+-	 * DHCP=yes (This is optional; if yes, DHCP is configured)
++	 * DEVICE=interface name
++	 * BOOTPROTO=<protocol> (where <protocol> is "dhcp" if DHCP is configured
++	 *                       or "none" if no boot-time protocol should be used)
+ 	 *
+-	 * IPADDR=ipaddr1
+-	 * IPADDR_1=ipaddr2
+-	 * IPADDR_x=ipaddry (where y = x + 1)
++	 * IPADDR0=ipaddr1
++	 * IPADDR1=ipaddr2
++	 * IPADDRx=ipaddry (where y = x + 1)
+ 	 *
+-	 * NETMASK=netmask1
+-	 * NETMASK_x=netmasky (where y = x + 1)
++	 * NETMASK0=netmask1
++	 * NETMASKx=netmasky (where y = x + 1)
+ 	 *
+ 	 * GATEWAY=ipaddr1
+-	 * GATEWAY_x=ipaddry (where y = x + 1)
++	 * GATEWAYx=ipaddry (where y = x + 1)
+ 	 *
+ 	 * DNSx=ipaddrx (where first DNS address is tagged as DNS1 etc)
+ 	 *
+@@ -1294,12 +1288,12 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
+ 	if (error)
+ 		goto setval_error;
+ 
+-	error = kvp_write_file(file, "IF_NAME", "", if_name);
++	error = kvp_write_file(file, "DEVICE", "", if_name);
+ 	if (error)
+ 		goto setval_error;
+ 
+ 	if (new_val->dhcp_enabled) {
+-		error = kvp_write_file(file, "DHCP", "", "yes");
++		error = kvp_write_file(file, "BOOTPROTO", "", "dhcp");
+ 		if (error)
+ 			goto setval_error;
+ 
+@@ -1307,6 +1301,11 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
+ 		 * We are done!.
+ 		 */
+ 		goto setval_done;
++
++	} else {
++		error = kvp_write_file(file, "BOOTPROTO", "", "none");
++		if (error)
++			goto setval_error;
+ 	}
+ 
+ 	/*
+diff --git a/tools/hv/hv_set_ifconfig.sh b/tools/hv/hv_set_ifconfig.sh
+index 3e9427e..00b66be 100755
+--- a/tools/hv/hv_set_ifconfig.sh
++++ b/tools/hv/hv_set_ifconfig.sh
+@@ -20,18 +20,19 @@
+ # Here is the format of the ip configuration file:
+ #
+ # HWADDR=macaddr
+-# IF_NAME=interface name
+-# DHCP=yes (This is optional; if yes, DHCP is configured)
++# DEVICE=interface name
++# BOOTPROTO=<protocol> (where <protocol> is "dhcp" if DHCP is configured
++#                       or "none" if no boot-time protocol should be used)
+ #
+-# IPADDR=ipaddr1
+-# IPADDR_1=ipaddr2
+-# IPADDR_x=ipaddry (where y = x + 1)
++# IPADDR0=ipaddr1
++# IPADDR1=ipaddr2
++# IPADDRx=ipaddry (where y = x + 1)
+ #
+-# NETMASK=netmask1
+-# NETMASK_x=netmasky (where y = x + 1)
++# NETMASK0=netmask1
++# NETMASKx=netmasky (where y = x + 1)
+ #
+ # GATEWAY=ipaddr1
+-# GATEWAY_x=ipaddry (where y = x + 1)
++# GATEWAYx=ipaddry (where y = x + 1)
+ #
+ # DNSx=ipaddrx (where first DNS address is tagged as DNS1 etc)
+ #
+@@ -53,11 +54,6 @@ echo "NM_CONTROLLED=no" >> $1
+ echo "PEERDNS=yes" >> $1
+ echo "ONBOOT=yes" >> $1
+ 
+-dhcp=$(grep "DHCP" $1 2>/dev/null)
+-if [ "$dhcp" != "" ];
+-then
+-echo "BOOTPROTO=dhcp" >> $1;
+-fi
+ 
+ cp $1 /etc/sysconfig/network-scripts/
+ 
+-- 
+1.7.11.7
+
