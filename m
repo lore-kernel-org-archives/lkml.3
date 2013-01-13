@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab3AMRth (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:49:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35030 "EHLO
+	id S1756006Ab3AMRuF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:50:05 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35052 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755436Ab3AMRpk (ORCPT
+	by vger.kernel.org with ESMTP id S1755473Ab3AMRpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 12:45:40 -0500
-Message-Id: <20130113174303.752401921@decadent.org.uk>
+	Sun, 13 Jan 2013 12:45:38 -0500
+Message-Id: <20130113174302.248363034@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:33 +0000
+Date: Sun, 13 Jan 2013 17:43:26 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 38/49] inet: Fix kmemleak in tcp_v4/6_syn_recv_sock and  dccp_v4/6_request_recv_sock
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>, Jan Kara <jack@suse.cz>
+Subject: [ 31/49] udf: dont increment lenExtents while writing to a hole
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,170 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-[ Upstream commit e337e24d6624e74a558aa69071e112a65f7b5758 ]
+commit fb719c59bdb4fca86ee1fd1f42ab3735ca12b6b2 upstream.
 
-If in either of the above functions inet_csk_route_child_sock() or
-__inet_inherit_port() fails, the newsk will not be freed:
+Incrementing lenExtents even while writing to a hole is bad
+for performance as calls to udf_discard_prealloc and
+udf_truncate_tail_extent would not return from start if
+isize != lenExtents
 
-unreferenced object 0xffff88022e8a92c0 (size 1592):
-  comm "softirq", pid 0, jiffies 4294946244 (age 726.160s)
-  hex dump (first 32 bytes):
-    0a 01 01 01 0a 01 01 02 00 00 00 00 a7 cc 16 00  ................
-    02 00 03 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff8153d190>] kmemleak_alloc+0x21/0x3e
-    [<ffffffff810ab3e7>] kmem_cache_alloc+0xb5/0xc5
-    [<ffffffff8149b65b>] sk_prot_alloc.isra.53+0x2b/0xcd
-    [<ffffffff8149b784>] sk_clone_lock+0x16/0x21e
-    [<ffffffff814d711a>] inet_csk_clone_lock+0x10/0x7b
-    [<ffffffff814ebbc3>] tcp_create_openreq_child+0x21/0x481
-    [<ffffffff814e8fa5>] tcp_v4_syn_recv_sock+0x3a/0x23b
-    [<ffffffff814ec5ba>] tcp_check_req+0x29f/0x416
-    [<ffffffff814e8e10>] tcp_v4_do_rcv+0x161/0x2bc
-    [<ffffffff814eb917>] tcp_v4_rcv+0x6c9/0x701
-    [<ffffffff814cea9f>] ip_local_deliver_finish+0x70/0xc4
-    [<ffffffff814cec20>] ip_local_deliver+0x4e/0x7f
-    [<ffffffff814ce9f8>] ip_rcv_finish+0x1fc/0x233
-    [<ffffffff814cee68>] ip_rcv+0x217/0x267
-    [<ffffffff814a7bbe>] __netif_receive_skb+0x49e/0x553
-    [<ffffffff814a7cc3>] netif_receive_skb+0x50/0x82
-
-This happens, because sk_clone_lock initializes sk_refcnt to 2, and thus
-a single sock_put() is not enough to free the memory. Additionally, things
-like xfrm, memcg, cookie_values,... may have been initialized.
-We have to free them properly.
-
-This is fixed by forcing a call to tcp_done(), ending up in
-inet_csk_destroy_sock, doing the final sock_put(). tcp_done() is necessary,
-because it ends up doing all the cleanup on xfrm, memcg, cookie_values,
-xfrm,...
-
-Before calling tcp_done, we have to set the socket to SOCK_DEAD, to
-force it entering inet_csk_destroy_sock. To avoid the warning in
-inet_csk_destroy_sock, inet_num has to be set to 0.
-As inet_csk_destroy_sock does a dec on orphan_count, we first have to
-increase it.
-
-Calling tcp_done() allows us to remove the calls to
-tcp_clear_xmit_timer() and tcp_cleanup_congestion_control().
-
-A similar approach is taken for dccp by calling dccp_done().
-
-This is in the kernel since 093d282321 (tproxy: fix hash locking issue
-when using port redirection in __inet_inherit_port()), thus since
-version >= 2.6.37.
-
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/inet_connection_sock.h |  1 +
- net/dccp/ipv4.c                    |  4 ++--
- net/dccp/ipv6.c                    |  3 ++-
- net/ipv4/inet_connection_sock.c    | 16 ++++++++++++++++
- net/ipv4/tcp_ipv4.c                |  5 ++---
- net/ipv6/tcp_ipv6.c                |  3 ++-
- 6 files changed, 25 insertions(+), 7 deletions(-)
+ fs/udf/inode.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/inet_connection_sock.h b/include/net/inet_connection_sock.h
-index e6db62e..ca2755f 100644
---- a/include/net/inet_connection_sock.h
-+++ b/include/net/inet_connection_sock.h
-@@ -317,6 +317,7 @@ extern void inet_csk_reqsk_queue_prune(struct sock *parent,
- 				       const unsigned long max_rto);
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -581,6 +581,7 @@ static struct buffer_head *inode_getblk(
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
+ 	int goal = 0, pgoal = iinfo->i_location.logicalBlockNum;
+ 	int lastblock = 0;
++	bool isBeyondEOF;
  
- extern void inet_csk_destroy_sock(struct sock *sk);
-+extern void inet_csk_prepare_forced_close(struct sock *sk);
+ 	prev_epos.offset = udf_file_entry_alloc_offset(inode);
+ 	prev_epos.block = iinfo->i_location;
+@@ -659,7 +660,7 @@ static struct buffer_head *inode_getblk(
+ 	/* Are we beyond EOF? */
+ 	if (etype == -1) {
+ 		int ret;
+-
++		isBeyondEOF = 1;
+ 		if (count) {
+ 			if (c)
+ 				laarr[0] = laarr[1];
+@@ -702,6 +703,7 @@ static struct buffer_head *inode_getblk(
+ 		endnum = c + 1;
+ 		lastblock = 1;
+ 	} else {
++		isBeyondEOF = 0;
+ 		endnum = startnum = ((count > 2) ? 2 : count);
  
- /*
-  * LISTEN is a special case for poll..
-diff --git a/net/dccp/ipv4.c b/net/dccp/ipv4.c
-index 3f4e541..72416c8 100644
---- a/net/dccp/ipv4.c
-+++ b/net/dccp/ipv4.c
-@@ -434,8 +434,8 @@ exit:
- 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
- 	return NULL;
- put_and_exit:
--	bh_unlock_sock(newsk);
--	sock_put(newsk);
-+	inet_csk_prepare_forced_close(newsk);
-+	dccp_done(newsk);
- 	goto exit;
- }
- 
-diff --git a/net/dccp/ipv6.c b/net/dccp/ipv6.c
-index 17ee85c..592b78c 100644
---- a/net/dccp/ipv6.c
-+++ b/net/dccp/ipv6.c
-@@ -609,7 +609,8 @@ static struct sock *dccp_v6_request_recv_sock(struct sock *sk,
- 	newinet->inet_rcv_saddr = LOOPBACK4_IPV6;
- 
- 	if (__inet_inherit_port(sk, newsk) < 0) {
--		sock_put(newsk);
-+		inet_csk_prepare_forced_close(newsk);
-+		dccp_done(newsk);
- 		goto out;
+ 		/* if the current extent is in position 0,
+@@ -749,7 +751,8 @@ static struct buffer_head *inode_getblk(
+ 			*err = -ENOSPC;
+ 			return NULL;
+ 		}
+-		iinfo->i_lenExtents += inode->i_sb->s_blocksize;
++		if (isBeyondEOF)
++			iinfo->i_lenExtents += inode->i_sb->s_blocksize;
  	}
- 	__inet6_hash(newsk, NULL);
-diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
-index c14d88a..907ef2c 100644
---- a/net/ipv4/inet_connection_sock.c
-+++ b/net/ipv4/inet_connection_sock.c
-@@ -647,6 +647,22 @@ void inet_csk_destroy_sock(struct sock *sk)
- }
- EXPORT_SYMBOL(inet_csk_destroy_sock);
  
-+/* This function allows to force a closure of a socket after the call to
-+ * tcp/dccp_create_openreq_child().
-+ */
-+void inet_csk_prepare_forced_close(struct sock *sk)
-+{
-+	/* sk_clone_lock locked the socket and set refcnt to 2 */
-+	bh_unlock_sock(sk);
-+	sock_put(sk);
-+
-+	/* The below has to be done to allow calling inet_csk_destroy_sock */
-+	sock_set_flag(sk, SOCK_DEAD);
-+	percpu_counter_inc(sk->sk_prot->orphan_count);
-+	inet_sk(sk)->inet_num = 0;
-+}
-+EXPORT_SYMBOL(inet_csk_prepare_forced_close);
-+
- int inet_csk_listen_start(struct sock *sk, const int nr_table_entries)
- {
- 	struct inet_sock *inet = inet_sk(sk);
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 58c09a0..a97c9ad 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1520,9 +1520,8 @@ exit:
- 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
- 	return NULL;
- put_and_exit:
--	tcp_clear_xmit_timers(newsk);
--	bh_unlock_sock(newsk);
--	sock_put(newsk);
-+	inet_csk_prepare_forced_close(newsk);
-+	tcp_done(newsk);
- 	goto exit;
- }
- EXPORT_SYMBOL(tcp_v4_syn_recv_sock);
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index ccab3c8..db10805 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1524,7 +1524,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
- #endif
- 
- 	if (__inet_inherit_port(sk, newsk) < 0) {
--		sock_put(newsk);
-+		inet_csk_prepare_forced_close(newsk);
-+		tcp_done(newsk);
- 		goto out;
- 	}
- 	__inet6_hash(newsk, NULL);
+ 	/* if the extent the requsted block is located in contains multiple
 
 
