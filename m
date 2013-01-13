@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab3AMXSo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 18:18:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58059 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756142Ab3AMXSm (ORCPT
+	id S1756308Ab3AMX1g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 18:27:36 -0500
+Received: from mail-ye0-f201.google.com ([209.85.213.201]:45351 "EHLO
+	mail-ye0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756194Ab3AMX1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 18:18:42 -0500
-Date: Mon, 14 Jan 2013 08:18:37 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andrey Smirnov <andrew.smirnov@gmail.com>
-Cc: andrey.smirnov@convergeddevices.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] [regmap] [RESEND] Add "no-bus" option for regmap API
-Message-ID: <20130113231836.GJ5041@opensource.wolfsonmicro.com>
-References: <1358024054-9895-1-git-send-email-andrew.smirnov@gmail.com>
- <1358024054-9895-4-git-send-email-andrew.smirnov@gmail.com>
+	Sun, 13 Jan 2013 18:27:35 -0500
+Subject: [PATCH v7 0/4] PCI: pciehp, shpchp deadlock fixes
+To: Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, Daniel J Blueman <daniel@quora.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Date: Sun, 13 Jan 2013 16:27:32 -0700
+Message-ID: <20130113232606.7225.94802.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YZVh52eu0Ophig4D"
-Content-Disposition: inline
-In-Reply-To: <1358024054-9895-4-git-send-email-andrew.smirnov@gmail.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is v7 of Yijing Wang's pciehp deadlock fix.  Here's the history of
+previous postings:
 
---YZVh52eu0Ophig4D
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+    RFC Oct 31 2012
+    v2  Nov  9 2012  use slot name, not device name
+    v3  Nov 12 2012  create workqueues in pcie_init_slot(), pciehp-%u format
+    v4  Nov 13 2012  use alloc_workqueue(name, 0, 0) again
+    v5  Jan  9 2013  fix similar problem in shpchp
+    v6  Jan 10 2013  add pciehp backtrace from Daniel 
 
-On Sat, Jan 12, 2013 at 12:54:14PM -0800, Andrey Smirnov wrote:
+This v7 series is functionally identical to v6.  In v7, I split the single
+shpchp patch into three:
 
-> +	bool cache_registers;
-> +
+    PCI: shpchp: Make shpchp_wq non-ordered
+    PCI: shpchp: Handle push button event asynchronously
+    PCI: shpchp: Use per-slot workqueues to avoid deadlock
 
-I'm afraid I don't quite understand this...
+The first fixes what appears to be an error in e24dcbef93 ("shpchp: update
+workqueue usage").  I split this out so Tejun could easily review it by itself.
 
-> -	if (!map->cache_bypass && map->format.format_write) {
-> +	if (!map->cache_bypass && map->cache_registers) {
->  		ret = regcache_write(map, reg, val);
+I split the second out because it corresponds to a pciehp bugfix, 486b10b9f4
+("PCI: pciehp: Handle push button event asynchronously"), that also affects
+shpchp.
 
-...I think it's mostly to service this check here, but looking at the
-code I can't quite think why the code is doing what it's doing - I
-suspect we should just remove the check for format_write() here.  I
-think it was there to support potential bulk writes from the cache code
-(which we don't do yet) but we're not actually doing those and it's not
-clear that this should be doing that anyway.
+The "PCI: shpchp: Use per-slot workqueues to avoid deadlock" that remains
+then corresponds exactly to Yijing's original pciehp deadlock fix.
 
->  	int ret;
-> +	void *context = (map->bus) ? map : map->bus_context;
-> +
+I also rewrote the changelogs.
 
-Can you please make this a static inline regmap_map_get_context() or
-something?  The same thing appears in quite a few places and the terery
-operator isn't great at the best of times.
+I propose to push the entire series for inclusion in v3.8, since it
+fixes an easy-to-cause deadlock with Thunderbolt adapters.
 
-Otherwise this looks good, thanks a lot for doing this.
+---
 
---YZVh52eu0Ophig4D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Bjorn Helgaas (3):
+      PCI: shpchp: Make shpchp_wq non-ordered
+      PCI: shpchp: Handle push button event asynchronously
+      PCI: shpchp: Use per-slot workqueues to avoid deadlock
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Yijing Wang (1):
+      PCI: pciehp: Use per-slot workqueues to avoid deadlock
 
-iQIcBAEBAgAGBQJQ80DEAAoJELSic+t+oim9Y7MP/i6oE7xwLcbnPPS/Dv1fNd0U
-BvYDhQiO8NIcW29L/Dv3dkUF5sE1y40YGbZqXsg1zqJ/7jUk1wYyneUXYMSGwu0P
-lyRdqJ2+jnTjZf0C59+jxFXVapCzltdJfhPmNGvVQ+TRursciSx2D5cEXqHemQJy
-FKQbK+YFgSFVxgdvLk/VugrN/7mNu81pJkxw469udO+zJP5kV8r35ivFEjj+1paO
-iWdfasnYzceeGn5RZqW5Q0j9JzimTsePAhZWkU7MIGwsQdsoPnt1UbtXGpxVW7cn
-w5Un3iKsHnn65Odv2QgFA9bNFHI+prKslVFrcw6kS/4zqcE/U1+n/aMTlt346Lbw
-yx5YF1nP/8c9WrNWq2TuDuDVGnPkdAvK/VJdsMGApr+Sc0CwI40tu3HxH7I1YoZ/
-xJP1fkn5vSfHxaweuyb+4GJLwqsB0jYJ5CqyifkqthUiN6xfBlbMuhOIP327tf14
-yo3wTzwl/PsHKPtFdqyo/NgKbhBdt6WFPWf+LbiTmCFpklefgCPyXeafUcBvrgEu
-g5gprQ7eQxSrmDGjVFvbCzStzWRGbFpczEozd7z9LiEIFlK2t9jYoWt12qrs5s5R
-HFx2z55UIwCCd8/j8F5SGTMNQt/h0HZsaZNFa3rzFLgUGROOmNPvpuoeC5ES+OQc
-wzn77WGxUCK0A09NgAYo
-=x1XJ
------END PGP SIGNATURE-----
 
---YZVh52eu0Ophig4D--
+ drivers/pci/hotplug/pciehp.h      |    2 +-
+ drivers/pci/hotplug/pciehp_core.c |   11 ++---------
+ drivers/pci/hotplug/pciehp_ctrl.c |    8 ++++----
+ drivers/pci/hotplug/pciehp_hpc.c  |   11 ++++++++++-
+ drivers/pci/hotplug/shpchp.h      |    3 +--
+ drivers/pci/hotplug/shpchp_core.c |   36 ++++++++++++++----------------------
+ drivers/pci/hotplug/shpchp_ctrl.c |    6 +++---
+ 7 files changed, 35 insertions(+), 42 deletions(-)
