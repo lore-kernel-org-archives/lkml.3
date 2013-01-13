@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab3AMRpu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:45:50 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35152 "EHLO
+	id S1755922Ab3AMRrY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:47:24 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35156 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755658Ab3AMRps (ORCPT
+	by vger.kernel.org with ESMTP id S1755666Ab3AMRpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 12:45:48 -0500
-Message-Id: <20130113174300.648063303@decadent.org.uk>
+	Sun, 13 Jan 2013 12:45:49 -0500
+Message-Id: <20130113174301.254522617@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:18 +0000
+Date: Sun, 13 Jan 2013 17:43:21 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        =?ISO-8859-15?q?Michel=20D=C3=A4nzer?= <michel@daenzer.net>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 23/49] drm/nouveau: fix init with agpgart-uninorth
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Weston Andros Adamson <dros@netapp.com>, Tejun Heo <tj@kernel.org>,
+        Bruce Fields <bfields@fieldses.org>
+Subject: [ 26/49] SUNRPC: Ensure that we free the rpc_task after cleanups are done
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,38 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit eda85d6ad490923152544fba0473798b6cc0edf6 upstream.
+commit c6567ed1402c55e19b012e66a8398baec2a726f3 upstream.
 
-Check that the AGP aperture can be mapped. This follows a similar change
-done for Radeon (commit 365048ff, drm/radeon: AGP memory is only I/O if
-the aperture can be mapped by the CPU.).
+This patch ensures that we free the rpc_task after the cleanup callbacks
+are done in order to avoid a deadlock problem that can be triggered if
+the callback needs to wait for another workqueue item to complete.
 
-The patch fixes the following error seen on G5 iMac:
-
-	nouveau E[     DRM] failed to create kernel channel, -12
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=58806
-Reviewed-by: Michel Dänzer <michel@daenzer.net>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Weston Andros Adamson <dros@netapp.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Bruce Fields <bfields@fieldses.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/nouveau/nouveau_bo.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sunrpc/sched.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_bo.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
-@@ -940,7 +940,7 @@ nouveau_ttm_io_mem_reserve(struct ttm_bo
- 		if (dev_priv->gart_info.type == NOUVEAU_GART_AGP) {
- 			mem->bus.offset = mem->start << PAGE_SHIFT;
- 			mem->bus.base = dev_priv->gart_info.aper_base;
--			mem->bus.is_iomem = true;
-+			mem->bus.is_iomem = !dev->agp->cant_use_aperture;
- 		}
- #endif
- 		break;
+diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
+index d17a704..b4133bd 100644
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -934,16 +934,35 @@ struct rpc_task *rpc_new_task(const struct rpc_task_setup *setup_data)
+ 	return task;
+ }
+ 
++/*
++ * rpc_free_task - release rpc task and perform cleanups
++ *
++ * Note that we free up the rpc_task _after_ rpc_release_calldata()
++ * in order to work around a workqueue dependency issue.
++ *
++ * Tejun Heo states:
++ * "Workqueue currently considers two work items to be the same if they're
++ * on the same address and won't execute them concurrently - ie. it
++ * makes a work item which is queued again while being executed wait
++ * for the previous execution to complete.
++ *
++ * If a work function frees the work item, and then waits for an event
++ * which should be performed by another work item and *that* work item
++ * recycles the freed work item, it can create a false dependency loop.
++ * There really is no reliable way to detect this short of verifying
++ * every memory free."
++ *
++ */
+ static void rpc_free_task(struct rpc_task *task)
+ {
+-	const struct rpc_call_ops *tk_ops = task->tk_ops;
+-	void *calldata = task->tk_calldata;
++	unsigned short tk_flags = task->tk_flags;
++
++	rpc_release_calldata(task->tk_ops, task->tk_calldata);
+ 
+-	if (task->tk_flags & RPC_TASK_DYNAMIC) {
++	if (tk_flags & RPC_TASK_DYNAMIC) {
+ 		dprintk("RPC: %5u freeing task\n", task->tk_pid);
+ 		mempool_free(task, rpc_task_mempool);
+ 	}
+-	rpc_release_calldata(tk_ops, calldata);
+ }
+ 
+ static void rpc_async_release(struct work_struct *work)
 
 
