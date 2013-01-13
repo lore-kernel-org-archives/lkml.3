@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab3AMRxs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:53:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34982 "EHLO
+	id S1756133Ab3AMRxr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:53:47 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34972 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755347Ab3AMRp1 (ORCPT
+	by vger.kernel.org with ESMTP id S1754593Ab3AMRp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Jan 2013 12:45:27 -0500
-Message-Id: <20130113174258.756399429@decadent.org.uk>
+Message-Id: <20130113174256.260437966@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:09 +0000
+Date: Sun, 13 Jan 2013 17:42:57 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shan Hai <shan.hai@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 14/49] powerpc/vdso: Remove redundant locking in update_vsyscall_tz()
+        Krzysztof Mazur <krzysiek@podlesie.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 02/49] i915: ensure that VGA plane is disabled
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,66 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Krzysztof Mazur <krzysiek@podlesie.net>
 
-commit ce73ec6db47af84d1466402781ae0872a9e7873c upstream.
+commit 0fde901f1ddd2ce0e380a6444f1fb7ca555859e9 upstream.
 
-The locking in update_vsyscall_tz() is not only unnecessary because the vdso
-code copies the data unproteced in __kernel_gettimeofday() but also
-introduces a hard to reproduce race condition between update_vsyscall()
-and update_vsyscall_tz(), which causes user space process to loop
-forever in vdso code.
+Some broken systems (like HP nc6120) in some cases, usually after LID
+close/open, enable VGA plane, making display unusable (black screen on LVDS,
+some strange mode on VGA output). We used to disable VGA plane only once at
+startup. Now we also check, if VGA plane is still disabled while changing
+mode, and fix that if something changed it.
 
-The following patch removes the locking from update_vsyscall_tz().
-
-Locking is not only unnecessary because the vdso code copies the data
-unprotected in __kernel_gettimeofday() but also erroneous because updating
-the tb_update_count is not atomic and introduces a hard to reproduce race
-condition between update_vsyscall() and update_vsyscall_tz(), which further
-causes user space process to loop forever in vdso code.
-
-The below scenario describes the race condition,
-x==0	Boot CPU			other CPU
-	proc_P: x==0
-	    timer interrupt
-		update_vsyscall
-x==1		    x++;sync		settimeofday
-					    update_vsyscall_tz
-x==2						x++;sync
-x==3		    sync;x++
-						sync;x++
-	proc_P: x==3 (loops until x becomes even)
-
-Because the ++ operator would be implemented as three instructions and not
-atomic on powerpc.
-
-A similar change was made for x86 in commit 6c260d58634
-("x86: vdso: Remove bogus locking in update_vsyscall_tz")
-
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=57434
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: intel_modeset_setup_hw_state() does not
+ exist, so call i915_redisable_vga() directly from intel_lid_notify()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/time.c |    5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index b3b1435..6f6b1cc 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -770,13 +770,8 @@ void update_vsyscall_old(struct timespec *wall_time, struct timespec *wtm,
- 
- void update_vsyscall_tz(void)
- {
--	/* Make userspace gettimeofday spin until we're done. */
--	++vdso_data->tb_update_count;
--	smp_mb();
- 	vdso_data->tz_minuteswest = sys_tz.tz_minuteswest;
- 	vdso_data->tz_dsttime = sys_tz.tz_dsttime;
--	smp_mb();
--	++vdso_data->tb_update_count;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8898,6 +8898,23 @@ static void i915_disable_vga(struct drm_
+ 	POSTING_READ(vga_reg);
  }
  
- static void __init clocksource_init(void)
++void i915_redisable_vga(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	u32 vga_reg;
++
++	if (HAS_PCH_SPLIT(dev))
++		vga_reg = CPU_VGACNTRL;
++	else
++		vga_reg = VGACNTRL;
++
++	if (I915_READ(vga_reg) != VGA_DISP_DISABLE) {
++		DRM_DEBUG_KMS("Something enabled VGA plane, disabling it\n");
++		I915_WRITE(vga_reg, VGA_DISP_DISABLE);
++		POSTING_READ(vga_reg);
++	}
++}
++
+ void intel_modeset_init(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1305,6 +1305,7 @@ static inline void intel_unregister_dsm_
+ #endif /* CONFIG_ACPI */
+ 
+ /* modesetting */
++extern void i915_redisable_vga(struct drm_device *dev);
+ extern void intel_modeset_init(struct drm_device *dev);
+ extern void intel_modeset_gem_init(struct drm_device *dev);
+ extern void intel_modeset_cleanup(struct drm_device *dev);
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -535,6 +535,7 @@ static int intel_lid_notify(struct notif
+ 
+ 	mutex_lock(&dev->mode_config.mutex);
+ 	drm_helper_resume_force_mode(dev);
++	i915_redisable_vga(dev);
+ 	mutex_unlock(&dev->mode_config.mutex);
+ 
+ 	return NOTIFY_OK;
 
 
