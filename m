@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab3AMRuA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:50:00 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35060 "EHLO
+	id S1755948Ab3AMRt7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:49:59 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35039 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755484Ab3AMRpi (ORCPT
+	by vger.kernel.org with ESMTP id S1755455Ab3AMRpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 12:45:38 -0500
-Message-Id: <20130113174302.664507224@decadent.org.uk>
+	Sun, 13 Jan 2013 12:45:39 -0500
+Message-Id: <20130113174305.640122629@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:28 +0000
+Date: Sun, 13 Jan 2013 17:43:42 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andreas Hartmann <andihartmann@01019freenet.de>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 33/49] rt2x00: Dont let mac80211 send a BAR when an AMPDU subframe fails
+        Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 47/49] RDMA/nes: Fix for terminate timer crash
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,58 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Hartmann <andihartmann@01019freenet.de>
+From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
 
-commit be03d4a45c09ee5100d3aaaedd087f19bc20d01f upstream.
+commit 7bfcfa51c35cdd2d37e0d70fc11790642dd11fb3 upstream.
 
-There are connection stalls or very poor throughputs with rt2800
-hardware using 802.11n in AP mode since patch "mac80211: retry sending
-failed BAR frames later instead of tearing down aggr"[1][2].
+The terminate timer needs to be initialized just once.
 
-Since rt2800 hardware is not able to correctly report the tx status of
-BAR frames, this patch removes as workaround the existing error handling
-on AP side, which lets mac80211 send a BAR when an AMPDU subframe fails.
-
-As a result, most wifi clients (aside from Intel STAs on Windows)
-instead will timeout now the reorder buffer and request the lost frame
-again.
-
-The correct solution would be, to tear down BA session on AP side.
-
-This patch was born on the basis of "[RFT] rt2x00: Tear down BA
-session on QoS frame failure"[3].
-
-Thanks to Helmut Schaa for his support!
-
-[1] http://thread.gmane.org/gmane.linux.kernel.wireless.general/83297/focus=83304
-[2] http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=commit;h=f0425beda4d404a6e751439b562100b902ba9c98
-[3] http://thread.gmane.org/gmane.linux.drivers.rt2x00.user/569
-
-Signed-off-by: Andreas Hartmann <andihartmann@01019freenet.de>
-Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2x00dev.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/infiniband/hw/nes/nes.h       |    1 +
+ drivers/infiniband/hw/nes/nes_hw.c    |    9 ++-------
+ drivers/infiniband/hw/nes/nes_verbs.c |    4 +++-
+ 3 files changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
-index 90cc5e7..dd87d41 100644
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -391,9 +391,10 @@ void rt2x00lib_txdone(struct queue_entry *entry,
- 		tx_info->flags |= IEEE80211_TX_STAT_AMPDU;
- 		tx_info->status.ampdu_len = 1;
- 		tx_info->status.ampdu_ack_len = success ? 1 : 0;
--
--		if (!success)
--			tx_info->flags |= IEEE80211_TX_STAT_AMPDU_NO_BACK;
-+		/*
-+		 * TODO: Need to tear down BA session here
-+		 * if not successful.
-+		 */
+diff --git a/drivers/infiniband/hw/nes/nes.h b/drivers/infiniband/hw/nes/nes.h
+index 5cac29e..33cc589 100644
+--- a/drivers/infiniband/hw/nes/nes.h
++++ b/drivers/infiniband/hw/nes/nes.h
+@@ -532,6 +532,7 @@ void nes_iwarp_ce_handler(struct nes_device *, struct nes_hw_cq *);
+ int nes_destroy_cqp(struct nes_device *);
+ int nes_nic_cm_xmit(struct sk_buff *, struct net_device *);
+ void nes_recheck_link_status(struct work_struct *work);
++void nes_terminate_timeout(unsigned long context);
+ 
+ /* nes_nic.c */
+ struct net_device *nes_netdev_init(struct nes_device *, void __iomem *);
+diff --git a/drivers/infiniband/hw/nes/nes_hw.c b/drivers/infiniband/hw/nes/nes_hw.c
+index fe7965e..67647e2 100644
+--- a/drivers/infiniband/hw/nes/nes_hw.c
++++ b/drivers/infiniband/hw/nes/nes_hw.c
+@@ -75,7 +75,6 @@ static void nes_process_iwarp_aeqe(struct nes_device *nesdev,
+ static void process_critical_error(struct nes_device *nesdev);
+ static void nes_process_mac_intr(struct nes_device *nesdev, u32 mac_number);
+ static unsigned int nes_reset_adapter_ne020(struct nes_device *nesdev, u8 *OneG_Mode);
+-static void nes_terminate_timeout(unsigned long context);
+ static void nes_terminate_start_timer(struct nes_qp *nesqp);
+ 
+ #ifdef CONFIG_INFINIBAND_NES_DEBUG
+@@ -3520,7 +3519,7 @@ static void nes_terminate_received(struct nes_device *nesdev,
+ }
+ 
+ /* Timeout routine in case terminate fails to complete */
+-static void nes_terminate_timeout(unsigned long context)
++void nes_terminate_timeout(unsigned long context)
+ {
+ 	struct nes_qp *nesqp = (struct nes_qp *)(unsigned long)context;
+ 
+@@ -3530,11 +3529,7 @@ static void nes_terminate_timeout(unsigned long context)
+ /* Set a timer in case hw cannot complete the terminate sequence */
+ static void nes_terminate_start_timer(struct nes_qp *nesqp)
+ {
+-	init_timer(&nesqp->terminate_timer);
+-	nesqp->terminate_timer.function = nes_terminate_timeout;
+-	nesqp->terminate_timer.expires = jiffies + HZ;
+-	nesqp->terminate_timer.data = (unsigned long)nesqp;
+-	add_timer(&nesqp->terminate_timer);
++	mod_timer(&nesqp->terminate_timer, (jiffies + HZ));
+ }
+ 
+ /**
+diff --git a/drivers/infiniband/hw/nes/nes_verbs.c b/drivers/infiniband/hw/nes/nes_verbs.c
+index cd0ecb2..c47ec25 100644
+--- a/drivers/infiniband/hw/nes/nes_verbs.c
++++ b/drivers/infiniband/hw/nes/nes_verbs.c
+@@ -1404,6 +1404,9 @@ static struct ib_qp *nes_create_qp(struct ib_pd *ibpd,
  	}
  
- 	if (rate_flags & IEEE80211_TX_RC_USE_RTS_CTS) {
+ 	nesqp->sig_all = (init_attr->sq_sig_type == IB_SIGNAL_ALL_WR);
++	init_timer(&nesqp->terminate_timer);
++	nesqp->terminate_timer.function = nes_terminate_timeout;
++	nesqp->terminate_timer.data = (unsigned long)nesqp;
+ 
+ 	/* update the QP table */
+ 	nesdev->nesadapter->qp_table[nesqp->hwqp.qp_id-NES_FIRST_QPN] = nesqp;
+@@ -1413,7 +1416,6 @@ static struct ib_qp *nes_create_qp(struct ib_pd *ibpd,
+ 	return &nesqp->ibqp;
+ }
+ 
+-
+ /**
+  * nes_clean_cq
+  */
 
 
