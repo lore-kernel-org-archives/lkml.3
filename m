@@ -1,90 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab3AMUuX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 15:50:23 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:55756 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab3AMUuW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 15:50:22 -0500
-Message-ID: <50F31CB9.4010905@linaro.org>
-Date: Sun, 13 Jan 2013 21:44:41 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756204Ab3AMUvD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 15:51:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56641 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755216Ab3AMUvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 15:51:01 -0500
+Message-ID: <50F31E2C.3050104@suse.cz>
+Date: Sun, 13 Jan 2013 21:50:52 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: Thomas Schlichter <thomas.schlichter@web.de>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] cpuidle: fix new C-states not functional after AC disconnect
-References: <CA+icZUXCObXMqVMNLFL58fZCBzo8dv+mqa7Ue_+jVfAdaYG45A@mail.gmail.com> <CA+icZUUUjQTVunewhv+wEsrvyD4FsG9riHa8MRrZdMufyttA4w@mail.gmail.com>
-In-Reply-To: <CA+icZUUUjQTVunewhv+wEsrvyD4FsG9riHa8MRrZdMufyttA4w@mail.gmail.com>
+To: Tiana Rakotovao Andriamahefa <rkmahefa@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts: kconfig: qconf.cc: fix a compiliation error
+ when using make xconfig
+References: <1358047720-10358-1-git-send-email-rkmahefa@gmail.com>
+In-Reply-To: <1358047720-10358-1-git-send-email-rkmahefa@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2013 09:36 PM, Sedat Dilek wrote:
-> 0001: Refreshed 1-2 as v3 against Linux v3.8-rc3.
-> 0002: v2 of 2-2 applied cleanly after 1-2 was refreshed!
+On 13.1.2013 04:28, Tiana Rakotovao Andriamahefa wrote:
+> When using make xconfig, the following compilation error appears :
+>    /usr/include/qt3/qvaluelist.h:427:13: error: ‘ptrdiff_t’ does not name a type
+> Including stddef.h in scripts/kconfig/qconf.cc permits to avoid this error.
 
-Hi Sedat,
+This is a bug in the Qt header. Is Qt3 still maintained?
 
-for the moment, you should use only the 1/2 because 2/2 (which is an
-optimization) is wrong.
-
-Regards.
-
-  -- Daniel
-
-> Have fun!
-> 
-> - Sedat -
-> 
-> On Sun, Jan 13, 2013 at 8:30 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> Hi Thomas,
->>
->> I read your original LKML posting in [1].
->>
->> [ QUOTE ]
->> Currently, Daniel Lezcano seems to be working on an intrusive change of not
->> using the power_usage value at all for choosing a C-state:
->>
->> [4] https://lkml.org/lkml/2012/12/14/155
->>
->> As I could not find any of these patches in any git trees to be merged for
->> 3.8...
->> [ /QUOTE ]
->>
->> You can find the patches at LKML ([2] and [3]) or patchwork ([4] and [5]).
->>
->> As a Linux-Next "customer" I know about Daniel's work for-next [5] but
->> I did not found any other GIT repository of him.
->> Striving through Daniel's other GIT repos I found idlestat [6] and
->> powerdebug [7] tools which I want to test.
->> ( So, thank you for your email! )
->>
->> Have fun!
->>
->> Regards,
->> - Sedat -
->>
->> [0] http://marc.info/?l=linux-acpi&m=135808048905350&w=2
->> [1] https://lkml.org/lkml/2012/12/14/153
->> [2] https://lkml.org/lkml/2012/12/14/149
->> [3] https://patchwork.kernel.org/patch/1878691/
->> [4] https://patchwork.kernel.org/patch/1878701/
->> [5] http://git.linaro.org/gitweb?p=people/dlezcano/cpuidle-next.git
->> [6] http://git.linaro.org/gitweb?p=people/dlezcano/idlestat.git;a=summary
->> [7] http://git.linaro.org/gitweb?p=people/dlezcano/powerdebug.git;a=summary
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Michal
