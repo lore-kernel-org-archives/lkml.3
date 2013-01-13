@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab3AMPdE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 10:33:04 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:52764 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755019Ab3AMPdC (ORCPT
+	id S1755328Ab3AMPk0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 10:40:26 -0500
+Received: from mail-da0-f45.google.com ([209.85.210.45]:64759 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755061Ab3AMPkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 10:33:02 -0500
-Message-ID: <50F2D3A3.6080602@gmail.com>
-Date: Sun, 13 Jan 2013 23:32:51 +0800
+	Sun, 13 Jan 2013 10:40:24 -0500
+Message-ID: <50F2D55C.4040807@gmail.com>
+Date: Sun, 13 Jan 2013 23:40:12 +0800
 From: Jiang Liu <liuj97@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
@@ -17,93 +17,101 @@ CC: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v8 11/22] PCI: correctly detect ACPI PCI host bridge objects
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-12-git-send-email-yinghai@kernel.org> <2669837.JomPNBOLKK@vostro.rjw.lan>
-In-Reply-To: <2669837.JomPNBOLKK@vostro.rjw.lan>
+Subject: Re: [PATCH v8 21/22] PCI: add match_driver in struct pci_dev
+References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-22-git-send-email-yinghai@kernel.org> <29539918.9ng60fkCeb@vostro.rjw.lan>
+In-Reply-To: <29539918.9ng60fkCeb@vostro.rjw.lan>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2013 07:34 AM, Rafael J. Wysocki wrote:
-> On Friday, January 11, 2013 02:40:38 PM Yinghai Lu wrote:
->> From: Jiang Liu <jiang.liu@huawei.com>
+On 01/13/2013 07:49 AM, Rafael J. Wysocki wrote:
+> On Friday, January 11, 2013 02:40:48 PM Yinghai Lu wrote:
+>> with that we could move out attaching driver for pci device,
+>> out of device_add for pci hot add path.
 >>
->> The code in pci_root_hp.c depends on function acpi_is_root_bridge()
->> to check whether an ACPI object is a PCI host bridge or not.
->> If an ACPI device hasn't been created for the ACPI object yet,
->> function acpi_is_root_bridge() will return false even if the object
->> is a PCI host bridge object. That behavior will cause two issues:
->> 1) No ACPI notification handler installed for PCI host bridges absent
->>    at startup, so hotplug events for those bridges won't be handled.
->> 2) rescan_root_bridge() can't reenumerate offlined PCI host bridges
->>    because the ACPI devices have been already destroyed.
->>
->> So use acpi_match_object_info_ids() to correctly detect PCI host bridges.
->>
->> -v2: update to use acpi_match_object_info_ids() from Tang Chen  - Yinghai
->> -v3: drop the PNP0A008, according to Bjorn.
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: Len Brown <lenb@kernel.org>
->> Cc: linux-acpi@vger.kernel.org
->> ---
->>  drivers/acpi/pci_root.c |   19 ++++++++++++++++++-
->>  1 file changed, 18 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
->> index 5ae36d8..d30fb94 100644
->> --- a/drivers/acpi/pci_root.c
->> +++ b/drivers/acpi/pci_root.c
->> @@ -923,6 +923,23 @@ static void handle_hotplug_event_root(acpi_handle handle, u32 type,
->>  				_handle_hotplug_event_root);
->>  }
->>  
->> +static bool acpi_is_root_bridge_object(acpi_handle handle)
->> +{
->> +	struct acpi_device_info *info = NULL;
->> +	acpi_status status;
->> +	bool ret;
->> +
->> +	status = acpi_get_object_info(handle, &info);
->> +	if (ACPI_FAILURE(status))
->> +		return false;
->> +
->> +	ret = !acpi_match_object_info_ids(info, root_device_ids);
->> +
+>> pci_bus_attach_device() will attach driver to pci device.
 > 
-> Well, I kind of don't understand why don't we check info->flags
-> against ACPI_PCI_ROOT_BRIDGE that acpi_get_object_info() sets for us if it
-> finds a PCI root bridge?
+> Clever, but I wonder why exactly we need to do that?
 Hi Rafael,
-	Thanks for reminder, we should test ACPI_PCI_ROOT_BRIDGE flag
-instead of a redundant calling to acpi_match_object_info_ids(). To be honest,
-I don't know the existence of ACPI_PCI_ROOT_BRIDGE flag before:(
+	To make following sequence possible,
+1) Create PCI device objects for hot-added PCI host bridge
+2) Create IOMMU devices for DMAR units belong to the hot-added PCI host bridge
+3) Bind and start all PCI devices connected to the PCI host bridge.
+
+Regards!
+Gerry
 
 > 
->> +	kfree(info);
->> +
->> +	return ret;
->> +}
->> +
->>  static acpi_status __init
->>  find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
->>  {
->> @@ -931,7 +948,7 @@ find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
->>  				      .pointer = objname };
->>  	int *count = (int *)context;
->>  
->> -	if (!acpi_is_root_bridge(handle))
->> +	if (!acpi_is_root_bridge_object(handle))
->>  		return AE_OK;
->>  
->>  	(*count)++;
->>
-> 
-> Thanks,
 > Rafael
 > 
 > 
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  drivers/pci/bus.c        |   10 ++++++++++
+>>  drivers/pci/pci-driver.c |    6 +++++-
+>>  include/linux/pci.h      |    1 +
+>>  3 files changed, 16 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+>> index 5f9c728..1f5916a 100644
+>> --- a/drivers/pci/bus.c
+>> +++ b/drivers/pci/bus.c
+>> @@ -160,6 +160,15 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+>>  
+>>  void __weak pcibios_resource_survey_bus(struct pci_bus *bus) { }
+>>  
+>> +static void pci_bus_attach_device(struct pci_dev *dev)
+>> +{
+>> +	int ret;
+>> +
+>> +	dev->match_driver = true;
+>> +	ret = device_attach(&dev->dev);
+>> +	WARN_ON(ret < 0);
+>> +}
+>> +
+>>  /**
+>>   * pci_bus_add_device - add a single device
+>>   * @dev: device to add
+>> @@ -181,6 +190,7 @@ int pci_bus_add_device(struct pci_dev *dev)
+>>  	if (retval)
+>>  		return retval;
+>>  
+>> +	pci_bus_attach_device(dev);
+>>  	dev->is_added = 1;
+>>  	pci_proc_attach_device(dev);
+>>  	pci_create_sysfs_dev_files(dev);
+>> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+>> index f79cbcd..acdcc3c 100644
+>> --- a/drivers/pci/pci-driver.c
+>> +++ b/drivers/pci/pci-driver.c
+>> @@ -1186,9 +1186,13 @@ pci_dev_driver(const struct pci_dev *dev)
+>>  static int pci_bus_match(struct device *dev, struct device_driver *drv)
+>>  {
+>>  	struct pci_dev *pci_dev = to_pci_dev(dev);
+>> -	struct pci_driver *pci_drv = to_pci_driver(drv);
+>> +	struct pci_driver *pci_drv;
+>>  	const struct pci_device_id *found_id;
+>>  
+>> +	if (!pci_dev->match_driver)
+>> +		return 0;
+>> +
+>> +	pci_drv = to_pci_driver(drv);
+>>  	found_id = pci_match_device(pci_drv, pci_dev);
+>>  	if (found_id)
+>>  		return 1;
+>> diff --git a/include/linux/pci.h b/include/linux/pci.h
+>> index 907b455..d73af08 100644
+>> --- a/include/linux/pci.h
+>> +++ b/include/linux/pci.h
+>> @@ -286,6 +286,7 @@ struct pci_dev {
+>>  	unsigned int	irq;
+>>  	struct resource resource[DEVICE_COUNT_RESOURCE]; /* I/O and memory regions + expansion ROMs */
+>>  
+>> +	bool match_driver;
+>>  	/* These fields are used by common fixups */
+>>  	unsigned int	transparent:1;	/* Transparent PCI bridge */
+>>  	unsigned int	multifunction:1;/* Part of multi-function device */
+>>
 
