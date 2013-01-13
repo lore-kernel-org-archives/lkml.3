@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081Ab3AMRwX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:52:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35053 "EHLO
+	id S1756107Ab3AMRws (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:52:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35028 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755471Ab3AMRph (ORCPT
+	by vger.kernel.org with ESMTP id S1755426Ab3AMRpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 12:45:37 -0500
-Message-Id: <20130113174302.884463477@decadent.org.uk>
+	Sun, 13 Jan 2013 12:45:36 -0500
+Message-Id: <20130113174305.208403344@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:29 +0000
+Date: Sun, 13 Jan 2013 17:43:40 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 34/49] mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
+        Jianpeng Ma <majianpeng@gmail.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 45/49] [SCSI] mvsas: Fix oops when ata commond timeout.
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,74 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Jianpeng Ma <majianpeng@gmail.com>
 
-commit 5b632fe85ec82e5c43740b52e74c66df50a37db3 upstream.
+commit 95ab000388974d8ffef8257306b4be6e8778b768 upstream.
 
-Commit f0425beda4d404a6e751439b562100b902ba9c98 "mac80211: retry sending
-failed BAR frames later instead of tearing down aggr" caused regression
-on rt2x00 hardware (connection hangs). This regression was fixed by
-commit be03d4a45c09ee5100d3aaaedd087f19bc20d01 "rt2x00: Don't let
-mac80211 send a BAR when an AMPDU subframe fails". But the latter
-commit caused yet another problem reported in
-https://bugzilla.kernel.org/show_bug.cgi?id=42828#c22
+Kernel message follows:
 
-After long discussion in this thread:
-http://mid.gmane.org/20121018075615.GA18212@redhat.com
-and testing various alternative solutions, which failed on one or other
-setup, we have no other good fix for the issues like just revert both
-mentioned earlier commits.
+[  511.712011] sd 11:0:0:0: [sdf] command ffff8800a4e81400 timed out
+[  511.712022] sas: Enter sas_scsi_recover_host busy: 1 failed: 1
+[  511.712024] sas: trying to find task 0xffff8800a4d24c80
+[  511.712026] sas: sas_scsi_find_task: aborting task 0xffff8800a4d24c80
+[  511.712029] drivers/scsi/mvsas/mv_sas.c 1631:mvs_abort_task()
+mvi=ffff8800b5300000 task=ffff8800a4d24c80 slot=ffff8800b5325038
+slot_idx=x0
+[  511.712035] BUG: unable to handle kernel NULL pointer dereference at
+0000000000000058
+[  511.712040] IP: [<ffffffff815f8c0c>] _raw_spin_lock_irqsave+0xc/0x30
+[  511.712047] PGD 0
+[  511.712049] Oops: 0002 [#1] SMP
+[  511.712052] Modules linked in: mvsas libsas scsi_transport_sas
+raid456 async_pq async_xor xor async_memcpy async_raid6_recov raid6_pq
+async_tx [last unloaded: mvsas]
+[  511.712062] CPU 3
+[  511.712066] Pid: 7322, comm: scsi_eh_11 Not tainted 3.5.0+ #106 To Be
+Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M.
+[  511.712068] RIP: 0010:[<ffffffff815f8c0c>]  [<ffffffff815f8c0c>]
+_raw_spin_lock_irqsave+0xc/0x30
+[  511.712073] RSP: 0018:ffff880098d3bcb0  EFLAGS: 00010086
+[  511.712074] RAX: 0000000000000286 RBX: 0000000000000058 RCX:
+00000000000000c3
+[  511.712076] RDX: 0000000000000100 RSI: 0000000000000046 RDI:
+0000000000000058
+[  511.712078] RBP: ffff880098d3bcb0 R08: 000000000000000a R09:
+0000000000000000
+[  511.712080] R10: 00000000000004e8 R11: 00000000000004e7 R12:
+ffff8800a4d24c80
+[  511.712082] R13: 0000000000000050 R14: ffff8800b5325038 R15:
+ffff8800a4eafe00
+[  511.712084] FS:  0000000000000000(0000) GS:ffff8800bdb80000(0000)
+knlGS:0000000000000000
+[  511.712086] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  511.712088] CR2: 0000000000000058 CR3: 00000000a4ce6000 CR4:
+00000000000407e0
+[  511.712090] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[  511.712091] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[  511.712093] Process scsi_eh_11 (pid: 7322, threadinfo
+ffff880098d3a000, task ffff8800a61dde40)
+[  511.712095] Stack:
+[  511.712096]  ffff880098d3bce0 ffffffff81060683 ffff880000000000
+0000000000000000
+[  511.712099]  ffff8800a4d24c80 ffff8800b5300000 ffff880098d3bcf0
+ffffffffa0076a88
+[  511.712102]  ffff880098d3bd50 ffffffffa0079bb5 ffff880000000000
+ffff880000000018
+[  511.712106] Call Trace:
+[  511.712110]  [<ffffffff81060683>] complete+0x23/0x60
+[  511.712115]  [<ffffffffa0076a88>] mvs_tmf_timedout+0x18/0x20 [mvsas]
+[  511.712119]  [<ffffffffa0079bb5>] mvs_slot_complete+0x765/0x7d0
+[mvsas]
+[  511.712125]  [<ffffffffa005a17d>] sas_scsi_recover_host+0x55d/0xdb0
+[libsas]
+[  511.712128]  [<ffffffff8106d600>] ? idle_balance+0xe0/0x130
+[  511.712133]  [<ffffffff813b150c>] scsi_error_handler+0xcc/0x470
+[  511.712136]  [<ffffffff815f7ad0>] ? __schedule+0x370/0x730
+[  511.712139]  [<ffffffff8105f728>] ? __wake_up_common+0x58/0x90
+[  511.712142]  [<ffffffff813b1440>] ? scsi_eh_get_sense+0x110/0x110
+[  511.712146]  [<ffffffff810571be>] kthread+0x8e/0xa0
+[  511.712150]  [<ffffffff816015f4>] kernel_thread_helper+0x4/0x10
+[  511.712153]  [<ffffffff81057130>] ? flush_kthread_work+0x120/0x120
+[  511.712156]  [<ffffffff816015f0>] ? gs_change+0xb/0xb
+[  511.712157] Code: 8a 00 01 00 00 89 d0 f0 66 0f b1 0f 66 39 d0 0f 94
+c0 0f b6 c0 5d c3 0f 1f 84 00 00 00 00 00 55 48 89 e5 9c 58 fa ba 00 01
+00 00 <f0> 66 0f c1 17 0f b6 ce 38 d1 74 11 0f 1f 84 00 00 00 00 00 f3
+[  511.712191] RIP  [<ffffffff815f8c0c>] _raw_spin_lock_irqsave+0xc/0x30
+[  511.712194]  RSP <ffff880098d3bcb0>
+[  511.712196] CR2: 0000000000000058
+[  511.712198] ---[ end trace a781c7b1e65db92c ]---
 
-To do not affect other hardware which benefit from commit
-f0425beda4d404a6e751439b562100b902ba9c98, instead of reverting it,
-introduce flag that when used will restore mac80211 behaviour before
-the commit.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-[replaced link with mid.gmane.org that has message-id]
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/mac80211.h |    5 +++++
- net/mac80211/status.c  |    6 +++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ drivers/scsi/mvsas/mv_sas.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -1128,6 +1128,10 @@ enum sta_notify_cmd {
-  * @IEEE80211_HW_TX_AMPDU_SETUP_IN_HW: The device handles TX A-MPDU session
-  *	setup strictly in HW. mac80211 should not attempt to do this in
-  *	software.
-+ *
-+ * @IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL: On this hardware TX BA session
-+ *	should be tear down once BAR frame will not be acked.
-+ *
-  */
- enum ieee80211_hw_flags {
- 	IEEE80211_HW_HAS_RATE_CONTROL			= 1<<0,
-@@ -1154,6 +1158,7 @@ enum ieee80211_hw_flags {
- 	IEEE80211_HW_SUPPORTS_PER_STA_GTK		= 1<<21,
- 	IEEE80211_HW_AP_LINK_PS				= 1<<22,
- 	IEEE80211_HW_TX_AMPDU_SETUP_IN_HW		= 1<<23,
-+	IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL		= 1<<26,
- };
- 
- /**
---- a/net/mac80211/status.c
-+++ b/net/mac80211/status.c
-@@ -429,7 +429,11 @@ void ieee80211_tx_status(struct ieee8021
- 				       IEEE80211_BAR_CTRL_TID_INFO_MASK) >>
- 				      IEEE80211_BAR_CTRL_TID_INFO_SHIFT;
- 
--				ieee80211_set_bar_pending(sta, tid, ssn);
-+				if (local->hw.flags &
-+				    IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL)
-+					ieee80211_stop_tx_ba_session(&sta->sta, tid);
-+				else
-+					ieee80211_set_bar_pending(sta, tid, ssn);
- 			}
- 		}
- 
+diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
+index 4539d59..a3776d6 100644
+--- a/drivers/scsi/mvsas/mv_sas.c
++++ b/drivers/scsi/mvsas/mv_sas.c
+@@ -1629,7 +1629,7 @@ int mvs_abort_task(struct sas_task *task)
+ 			mv_dprintk("mvs_abort_task() mvi=%p task=%p "
+ 				   "slot=%p slot_idx=x%x\n",
+ 				   mvi, task, slot, slot_idx);
+-			mvs_tmf_timedout((unsigned long)task);
++			task->task_state_flags |= SAS_TASK_STATE_ABORTED;
+ 			mvs_slot_task_free(mvi, task, slot, slot_idx);
+ 			rc = TMF_RESP_FUNC_COMPLETE;
+ 			goto out;
 
 
