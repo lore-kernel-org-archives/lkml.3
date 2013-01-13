@@ -1,185 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab3AMV15 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 16:27:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755185Ab3AMV14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 16:27:56 -0500
-From: Tomas Hozza <thozza@redhat.com>
-To: gregkh@linuxfoundation.org, kys@microsoft.com
-Cc: jasowang@redhat.com, haiyangz@microsoft.com, linux-kernel@vger.kernel.org,
-        habdi@microsoft.com, Tomas Hozza <thozza@redhat.com>
-Subject: [PATCH] tools: hv: Fix how ifcfg-* file is created
-Date: Sun, 13 Jan 2013 22:27:40 +0100
-Message-Id: <1358112460-32744-1-git-send-email-thozza@redhat.com>
-In-Reply-To: <1986454953.1148002.1357891354839.JavaMail.root@redhat.com>
-References: <1986454953.1148002.1357891354839.JavaMail.root@redhat.com>
+	id S1756028Ab3AMVdA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 16:33:00 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:35048 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753698Ab3AMVc6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 16:32:58 -0500
+Message-ID: <50F33615.2080502@qdot.me>
+Date: Sun, 13 Jan 2013 23:32:53 +0100
+From: Tomasz Mloduchowski <q@qdot.me>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121113 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: jhovold@gmail.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: Crucible Technologies COMET Caller ID - pid added -
+ v2
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for the daemon code and for hv_set_ifconfig.sh script, so
-that the created ifcfg-* file is consistent with initscripts
-documentation.
+From: Tomasz Mloduchowski <q@qdot.me>
 
-Signed-off-by: Tomas Hozza <thozza@redhat.com>
+Simple fix to add support for Crucible Technologies COMET Caller ID
+USB decoder - a device containing FTDI USB/Serial converter chip,
+handling 1200bps CallerID messages decoded from the phone line -
+adding correct USB PID is sufficient.
+
+Tested to apply cleanly and work flawlessly against 3.6.9, 3.7.0-rc8
+and 3.8.0-rc3 on both amd64 and x86 arches.
+
+Signed-off-by: Tomasz Mloduchowski <q@qdot.me>
 ---
- tools/hv/hv_kvp_daemon.c    | 59 ++++++++++++++++++++++-----------------------
- tools/hv/hv_set_ifconfig.sh | 22 +++++++----------
- 2 files changed, 38 insertions(+), 43 deletions(-)
-
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index d25a469..e6fe8d5 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -1162,16 +1162,13 @@ static int process_ip_string(FILE *f, char *ip_string, int type)
- 				snprintf(str, sizeof(str), "%s", "DNS");
- 				break;
- 			}
--			if (i != 0) {
--				if (type != DNS) {
--					snprintf(sub_str, sizeof(sub_str),
--						"_%d", i++);
--				} else {
--					snprintf(sub_str, sizeof(sub_str),
--						"%d", ++i);
--				}
--			} else if (type == DNS) {
+diff -ur linux-3.8-rc3.orig/drivers/usb/serial/ftdi_sio.c linux-3.8-rc3/drivers/usb/serial/ftdi_sio.c
+--- linux-3.8-rc3.orig/drivers/usb/serial/ftdi_sio.c	2013-01-13 19:41:28.000000000 +0100
++++ linux-3.8-rc3/drivers/usb/serial/ftdi_sio.c	2013-01-13 19:49:27.239874311 +0100
+@@ -875,6 +875,8 @@
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
++	/* Crucible Devices */
++	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+diff -ur linux-3.8-rc3.orig/drivers/usb/serial/ftdi_sio_ids.h linux-3.8-rc3/drivers/usb/serial/ftdi_sio_ids.h
+--- linux-3.8-rc3.orig/drivers/usb/serial/ftdi_sio_ids.h	2013-01-13 19:41:28.000000000 +0100
++++ linux-3.8-rc3/drivers/usb/serial/ftdi_sio_ids.h	2013-01-13 23:28:44.964087761 +0100
+@@ -1259,3 +1259,9 @@
+  * ATI command output: Cinterion MC55i
+  */
+ #define FTDI_CINTERION_MC55I_PID	0xA951
 +
-+			if (type == DNS) {
- 				snprintf(sub_str, sizeof(sub_str), "%d", ++i);
-+			} else if (type == GATEWAY && i == 0) {
-+				++i;
-+			} else {
-+				snprintf(sub_str, sizeof(sub_str), "%d", i++);
- 			}
- 
- 
-@@ -1191,17 +1188,13 @@ static int process_ip_string(FILE *f, char *ip_string, int type)
- 				snprintf(str, sizeof(str), "%s",  "DNS");
- 				break;
- 			}
--			if ((j != 0) || (type == DNS)) {
--				if (type != DNS) {
--					snprintf(sub_str, sizeof(sub_str),
--						"_%d", j++);
--				} else {
--					snprintf(sub_str, sizeof(sub_str),
--						"%d", ++i);
--				}
--			} else if (type == DNS) {
--				snprintf(sub_str, sizeof(sub_str),
--					"%d", ++i);
-+
-+			if (type == DNS) {
-+				snprintf(sub_str, sizeof(sub_str), "%d", ++i);
-+			} else if (j == 0) {
-+				++j;
-+			} else {
-+				snprintf(sub_str, sizeof(sub_str), "_%d", j++);
- 			}
- 		} else {
- 			return  HV_INVALIDARG;
-@@ -1244,18 +1237,19 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
- 	 * Here is the format of the ip configuration file:
- 	 *
- 	 * HWADDR=macaddr
--	 * IF_NAME=interface name
--	 * DHCP=yes (This is optional; if yes, DHCP is configured)
-+	 * DEVICE=interface name
-+	 * BOOTPROTO=<protocol> (where <protocol> is "dhcp" if DHCP is configured
-+	 *                       or "none" if no boot-time protocol should be used)
- 	 *
--	 * IPADDR=ipaddr1
--	 * IPADDR_1=ipaddr2
--	 * IPADDR_x=ipaddry (where y = x + 1)
-+	 * IPADDR0=ipaddr1
-+	 * IPADDR1=ipaddr2
-+	 * IPADDRx=ipaddry (where y = x + 1)
- 	 *
--	 * NETMASK=netmask1
--	 * NETMASK_x=netmasky (where y = x + 1)
-+	 * NETMASK0=netmask1
-+	 * NETMASKx=netmasky (where y = x + 1)
- 	 *
- 	 * GATEWAY=ipaddr1
--	 * GATEWAY_x=ipaddry (where y = x + 1)
-+	 * GATEWAYx=ipaddry (where y = x + 1)
- 	 *
- 	 * DNSx=ipaddrx (where first DNS address is tagged as DNS1 etc)
- 	 *
-@@ -1294,12 +1288,12 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
- 	if (error)
- 		goto setval_error;
- 
--	error = kvp_write_file(file, "IF_NAME", "", if_name);
-+	error = kvp_write_file(file, "DEVICE", "", if_name);
- 	if (error)
- 		goto setval_error;
- 
- 	if (new_val->dhcp_enabled) {
--		error = kvp_write_file(file, "DHCP", "", "yes");
-+		error = kvp_write_file(file, "BOOTPROTO", "", "dhcp");
- 		if (error)
- 			goto setval_error;
- 
-@@ -1307,6 +1301,11 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
- 		 * We are done!.
- 		 */
- 		goto setval_done;
-+
-+	} else {
-+		error = kvp_write_file(file, "BOOTPROTO", "", "none");
-+		if (error)
-+			goto setval_error;
- 	}
- 
- 	/*
-diff --git a/tools/hv/hv_set_ifconfig.sh b/tools/hv/hv_set_ifconfig.sh
-index 3e9427e..00b66be 100755
---- a/tools/hv/hv_set_ifconfig.sh
-+++ b/tools/hv/hv_set_ifconfig.sh
-@@ -20,18 +20,19 @@
- # Here is the format of the ip configuration file:
- #
- # HWADDR=macaddr
--# IF_NAME=interface name
--# DHCP=yes (This is optional; if yes, DHCP is configured)
-+# DEVICE=interface name
-+# BOOTPROTO=<protocol> (where <protocol> is "dhcp" if DHCP is configured
-+#                       or "none" if no boot-time protocol should be used)
- #
--# IPADDR=ipaddr1
--# IPADDR_1=ipaddr2
--# IPADDR_x=ipaddry (where y = x + 1)
-+# IPADDR0=ipaddr1
-+# IPADDR1=ipaddr2
-+# IPADDRx=ipaddry (where y = x + 1)
- #
--# NETMASK=netmask1
--# NETMASK_x=netmasky (where y = x + 1)
-+# NETMASK0=netmask1
-+# NETMASKx=netmasky (where y = x + 1)
- #
- # GATEWAY=ipaddr1
--# GATEWAY_x=ipaddry (where y = x + 1)
-+# GATEWAYx=ipaddry (where y = x + 1)
- #
- # DNSx=ipaddrx (where first DNS address is tagged as DNS1 etc)
- #
-@@ -53,11 +54,6 @@ echo "NM_CONTROLLED=no" >> $1
- echo "PEERDNS=yes" >> $1
- echo "ONBOOT=yes" >> $1
- 
--dhcp=$(grep "DHCP" $1 2>/dev/null)
--if [ "$dhcp" != "" ];
--then
--echo "BOOTPROTO=dhcp" >> $1;
--fi
- 
- cp $1 /etc/sysconfig/network-scripts/
- 
--- 
-1.7.11.7
-
++/*
++ * Product: Comet Caller ID decoder
++ * Manufacturer: Crucible Technologies
++ */
++#define FTDI_CT_COMET_PID	0x8e08
