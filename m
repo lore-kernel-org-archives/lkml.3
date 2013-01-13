@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab3AMRt7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:49:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35039 "EHLO
+	id S1755928Ab3AMRt4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:49:56 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35055 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755455Ab3AMRpj (ORCPT
+	by vger.kernel.org with ESMTP id S1755475Ab3AMRpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Jan 2013 12:45:39 -0500
-Message-Id: <20130113174305.640122629@decadent.org.uk>
+Message-Id: <20130113174303.540401219@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:42 +0000
+Date: Sun, 13 Jan 2013 17:43:32 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 47/49] RDMA/nes: Fix for terminate timer crash
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 37/49] sparc: huge_ptep_set_* functions need to call  set_huge_pte_at()
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,88 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-commit 7bfcfa51c35cdd2d37e0d70fc11790642dd11fb3 upstream.
+[ Upstream commit 6cb9c3697585c47977c42c5cc1b9fc49247ac530 ]
 
-The terminate timer needs to be initialized just once.
+Modifying the huge pte's requires that all the underlying pte's be
+modified.
 
-Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Version 2: added missing flush_tlb_page()
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/hw/nes/nes.h       |    1 +
- drivers/infiniband/hw/nes/nes_hw.c    |    9 ++-------
- drivers/infiniband/hw/nes/nes_verbs.c |    4 +++-
- 3 files changed, 6 insertions(+), 8 deletions(-)
+ arch/sparc/include/asm/hugetlb.h | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/infiniband/hw/nes/nes.h b/drivers/infiniband/hw/nes/nes.h
-index 5cac29e..33cc589 100644
---- a/drivers/infiniband/hw/nes/nes.h
-+++ b/drivers/infiniband/hw/nes/nes.h
-@@ -532,6 +532,7 @@ void nes_iwarp_ce_handler(struct nes_device *, struct nes_hw_cq *);
- int nes_destroy_cqp(struct nes_device *);
- int nes_nic_cm_xmit(struct sk_buff *, struct net_device *);
- void nes_recheck_link_status(struct work_struct *work);
-+void nes_terminate_timeout(unsigned long context);
- 
- /* nes_nic.c */
- struct net_device *nes_netdev_init(struct nes_device *, void __iomem *);
-diff --git a/drivers/infiniband/hw/nes/nes_hw.c b/drivers/infiniband/hw/nes/nes_hw.c
-index fe7965e..67647e2 100644
---- a/drivers/infiniband/hw/nes/nes_hw.c
-+++ b/drivers/infiniband/hw/nes/nes_hw.c
-@@ -75,7 +75,6 @@ static void nes_process_iwarp_aeqe(struct nes_device *nesdev,
- static void process_critical_error(struct nes_device *nesdev);
- static void nes_process_mac_intr(struct nes_device *nesdev, u32 mac_number);
- static unsigned int nes_reset_adapter_ne020(struct nes_device *nesdev, u8 *OneG_Mode);
--static void nes_terminate_timeout(unsigned long context);
- static void nes_terminate_start_timer(struct nes_qp *nesqp);
- 
- #ifdef CONFIG_INFINIBAND_NES_DEBUG
-@@ -3520,7 +3519,7 @@ static void nes_terminate_received(struct nes_device *nesdev,
- }
- 
- /* Timeout routine in case terminate fails to complete */
--static void nes_terminate_timeout(unsigned long context)
-+void nes_terminate_timeout(unsigned long context)
+diff --git a/arch/sparc/include/asm/hugetlb.h b/arch/sparc/include/asm/hugetlb.h
+index 1770610..f368cef 100644
+--- a/arch/sparc/include/asm/hugetlb.h
++++ b/arch/sparc/include/asm/hugetlb.h
+@@ -58,14 +58,20 @@ static inline pte_t huge_pte_wrprotect(pte_t pte)
+ static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
+ 					   unsigned long addr, pte_t *ptep)
  {
- 	struct nes_qp *nesqp = (struct nes_qp *)(unsigned long)context;
+-	ptep_set_wrprotect(mm, addr, ptep);
++	pte_t old_pte = *ptep;
++	set_huge_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
+ }
  
-@@ -3530,11 +3529,7 @@ static void nes_terminate_timeout(unsigned long context)
- /* Set a timer in case hw cannot complete the terminate sequence */
- static void nes_terminate_start_timer(struct nes_qp *nesqp)
+ static inline int huge_ptep_set_access_flags(struct vm_area_struct *vma,
+ 					     unsigned long addr, pte_t *ptep,
+ 					     pte_t pte, int dirty)
  {
--	init_timer(&nesqp->terminate_timer);
--	nesqp->terminate_timer.function = nes_terminate_timeout;
--	nesqp->terminate_timer.expires = jiffies + HZ;
--	nesqp->terminate_timer.data = (unsigned long)nesqp;
--	add_timer(&nesqp->terminate_timer);
-+	mod_timer(&nesqp->terminate_timer, (jiffies + HZ));
+-	return ptep_set_access_flags(vma, addr, ptep, pte, dirty);
++	int changed = !pte_same(*ptep, pte);
++	if (changed) {
++		set_huge_pte_at(vma->vm_mm, addr, ptep, pte);
++		flush_tlb_page(vma, addr);
++	}
++	return changed;
  }
  
- /**
-diff --git a/drivers/infiniband/hw/nes/nes_verbs.c b/drivers/infiniband/hw/nes/nes_verbs.c
-index cd0ecb2..c47ec25 100644
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -1404,6 +1404,9 @@ static struct ib_qp *nes_create_qp(struct ib_pd *ibpd,
- 	}
- 
- 	nesqp->sig_all = (init_attr->sq_sig_type == IB_SIGNAL_ALL_WR);
-+	init_timer(&nesqp->terminate_timer);
-+	nesqp->terminate_timer.function = nes_terminate_timeout;
-+	nesqp->terminate_timer.data = (unsigned long)nesqp;
- 
- 	/* update the QP table */
- 	nesdev->nesadapter->qp_table[nesqp->hwqp.qp_id-NES_FIRST_QPN] = nesqp;
-@@ -1413,7 +1416,6 @@ static struct ib_qp *nes_create_qp(struct ib_pd *ibpd,
- 	return &nesqp->ibqp;
- }
- 
--
- /**
-  * nes_clean_cq
-  */
+ static inline pte_t huge_ptep_get(pte_t *ptep)
 
 
