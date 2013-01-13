@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab3AMRxt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:53:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34979 "EHLO
+	id S1756149Ab3AMRxs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:53:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34982 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755344Ab3AMRp1 (ORCPT
+	by vger.kernel.org with ESMTP id S1755347Ab3AMRp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Jan 2013 12:45:27 -0500
-Message-Id: <20130113174255.968441684@decadent.org.uk>
+Message-Id: <20130113174258.756399429@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:42:56 +0000
+Date: Sun, 13 Jan 2013 17:43:09 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Forrest Liu <forrestl@synology.com>, "Theodore Tso" <tytso@mit.edu>,
-        Ashish Sangwan <ashishsangwan2@gmail.com>
-Subject: [ 01/49] ext4: fix extent tree corruption caused by hole punch
+        Shan Hai <shan.hai@windriver.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 14/49] powerpc/vdso: Remove redundant locking in update_vsyscall_tz()
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,79 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Forrest Liu <forrestl@synology.com>
+From: Shan Hai <shan.hai@windriver.com>
 
-commit c36575e663e302dbaa4d16b9c72d2c9a913a9aef upstream.
+commit ce73ec6db47af84d1466402781ae0872a9e7873c upstream.
 
-When depth of extent tree is greater than 1, logical start value of
-interior node is not correctly updated in ext4_ext_rm_idx.
+The locking in update_vsyscall_tz() is not only unnecessary because the vdso
+code copies the data unproteced in __kernel_gettimeofday() but also
+introduces a hard to reproduce race condition between update_vsyscall()
+and update_vsyscall_tz(), which causes user space process to loop
+forever in vdso code.
 
-Signed-off-by: Forrest Liu <forrestl@synology.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Ashish Sangwan <ashishsangwan2@gmail.com>
+The following patch removes the locking from update_vsyscall_tz().
+
+Locking is not only unnecessary because the vdso code copies the data
+unprotected in __kernel_gettimeofday() but also erroneous because updating
+the tb_update_count is not atomic and introduces a hard to reproduce race
+condition between update_vsyscall() and update_vsyscall_tz(), which further
+causes user space process to loop forever in vdso code.
+
+The below scenario describes the race condition,
+x==0	Boot CPU			other CPU
+	proc_P: x==0
+	    timer interrupt
+		update_vsyscall
+x==1		    x++;sync		settimeofday
+					    update_vsyscall_tz
+x==2						x++;sync
+x==3		    sync;x++
+						sync;x++
+	proc_P: x==3 (loops until x becomes even)
+
+Because the ++ operator would be implemented as three instructions and not
+atomic on powerpc.
+
+A similar change was made for x86 in commit 6c260d58634
+("x86: vdso: Remove bogus locking in update_vsyscall_tz")
+
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/extents.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ arch/powerpc/kernel/time.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 26af228..5ae1674 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2226,13 +2226,14 @@ errout:
-  * removes index from the index block.
-  */
- static int ext4_ext_rm_idx(handle_t *handle, struct inode *inode,
--			struct ext4_ext_path *path)
-+			struct ext4_ext_path *path, int depth)
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index b3b1435..6f6b1cc 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -770,13 +770,8 @@ void update_vsyscall_old(struct timespec *wall_time, struct timespec *wtm,
+ 
+ void update_vsyscall_tz(void)
  {
- 	int err;
- 	ext4_fsblk_t leaf;
- 
- 	/* free index block */
--	path--;
-+	depth--;
-+	path = path + depth;
- 	leaf = ext4_idx_pblock(path->p_idx);
- 	if (unlikely(path->p_hdr->eh_entries == 0)) {
- 		EXT4_ERROR_INODE(inode, "path->p_hdr->eh_entries == 0");
-@@ -2257,6 +2258,19 @@ static int ext4_ext_rm_idx(handle_t *handle, struct inode *inode,
- 
- 	ext4_free_blocks(handle, inode, NULL, leaf, 1,
- 			 EXT4_FREE_BLOCKS_METADATA | EXT4_FREE_BLOCKS_FORGET);
-+
-+	while (--depth >= 0) {
-+		if (path->p_idx != EXT_FIRST_INDEX(path->p_hdr))
-+			break;
-+		path--;
-+		err = ext4_ext_get_access(handle, inode, path);
-+		if (err)
-+			break;
-+		path->p_idx->ei_block = (path+1)->p_idx->ei_block;
-+		err = ext4_ext_dirty(handle, inode, path);
-+		if (err)
-+			break;
-+	}
- 	return err;
+-	/* Make userspace gettimeofday spin until we're done. */
+-	++vdso_data->tb_update_count;
+-	smp_mb();
+ 	vdso_data->tz_minuteswest = sys_tz.tz_minuteswest;
+ 	vdso_data->tz_dsttime = sys_tz.tz_dsttime;
+-	smp_mb();
+-	++vdso_data->tb_update_count;
  }
  
-@@ -2599,7 +2613,7 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
- 	/* if this leaf is free, then we should
- 	 * remove it from index block above */
- 	if (err == 0 && eh->eh_entries == 0 && path[depth].p_bh != NULL)
--		err = ext4_ext_rm_idx(handle, inode, path + depth);
-+		err = ext4_ext_rm_idx(handle, inode, path, depth);
- 
- out:
- 	return err;
-@@ -2802,7 +2816,7 @@ again:
- 				/* index is empty, remove it;
- 				 * handle must be already prepared by the
- 				 * truncatei_leaf() */
--				err = ext4_ext_rm_idx(handle, inode, path + i);
-+				err = ext4_ext_rm_idx(handle, inode, path, i);
- 			}
- 			/* root level has p_bh == NULL, brelse() eats this */
- 			brelse(path[i].p_bh);
+ static void __init clocksource_init(void)
 
 
