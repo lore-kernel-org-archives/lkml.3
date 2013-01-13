@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab3AMSMz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 13:12:55 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:38562 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526Ab3AMSMx (ORCPT
+	id S1755488Ab3AMSOm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 13:14:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56697 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754175Ab3AMSOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 13:12:53 -0500
-Date: Sun, 13 Jan 2013 10:12:45 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: paul.mckenney@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Build error on kernel/rcutree.c
-Message-ID: <20130113181245.GK3384@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAOMZO5ASEY6iHQ1UekR88vWZPutsJdiEuGkpsC2Civ6ezi2NGg@mail.gmail.com>
+	Sun, 13 Jan 2013 13:14:41 -0500
+Message-ID: <50F2F9CD.6080904@infradead.org>
+Date: Sun, 13 Jan 2013 10:15:41 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5ASEY6iHQ1UekR88vWZPutsJdiEuGkpsC2Civ6ezi2NGg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011318-7282-0000-0000-000013195DB1
+To: Rob Landley <rob@landley.net>
+CC: Michal Nazarewicz <mina86@mina86.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andy Whitcroft <apw@shadowen.org>, Alexander Nyberg <alexn@dsv.su.se>
+Subject: Re: [PATCH v2 1/2] Fix wrong EOF compare
+References: <1357871401-7075-1-git-send-email-minchan@kernel.org> <xa1tbocvby0s.fsf@mina86.com> <1358077473.32505.10@driftwood>
+In-Reply-To: <1358077473.32505.10@driftwood>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 13, 2013 at 04:03:24PM -0200, Fabio Estevam wrote:
-> Hi Paul,
+On 01/13/13 03:44, Rob Landley wrote:
+> On 01/11/2013 08:21:55 AM, Michal Nazarewicz wrote:
+>> On Fri, Jan 11 2013, Minchan Kim <minchan@kernel.org> wrote:
+>> > The C standards allows the character type char to be singed or unsinged,
+>> > depending on the platform and compiler. Most of systems uses signed char,
+>> > but those based on PowerPC and ARM processors typically use unsigned char.
+>> > This can lead to unexpected results when the variable is used to compare
+>> > with EOF(-1). It happens my ARM system and this patch fixes it.
+>> >
+>> > Cc: Mel Gorman <mgorman@suse.de>
+>> > Cc: Andy Whitcroft <apw@shadowen.org>
+>> > Cc: Alexander Nyberg <alexn@dsv.su.se>
+>> > Cc: Michal Nazarewicz <mina86@mina86.com>
+>>
+>> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+>>
+>> > Cc: Randy Dunlap <rdunlap@infradead.org>
+>> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+>> > ---
+>> >  Documentation/page_owner.c |    7 ++++---
+>> >  1 file changed, 4 insertions(+), 3 deletions(-)
 > 
-> When building ARM imx_v4_v5_defconfig the following error shows up on
-> linux-next 20130111:
-> 
-> kernel/rcutree.c:808:2: error: implicit declaration of function
-> 'rcu_jiffies_till_stall_check' [-Werror=implicit-function-declaration]
-> kernel/rcutree.c:941:6: error: 'rcu_cpu_stall_suppress' undeclared
-> (first use in this function)
-> 
-> Is this a known issue?
+> My kernel tree doesn't have Documentation/page_owner.c, where do I find this file?
 
-Yes, the fix is in -rcu and should make it to -next soon.
+It's in -mm (mmotm), so Andrew can/should merge this ...
 
-In the meantime, you can work around the problem by avoiding selecting
-CONFIG_TREE_PREEMPT_RCU=y on SMP=n builds -- use CONFIG_TINY_PREEMPT_RCU
-instead.
 
-							Thanx, Paul
-
+-- 
+~Randy
