@@ -1,25 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab3AMEOJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 23:14:09 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57893 "EHLO
+	id S1751356Ab3AMFeq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 00:34:46 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58411 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754583Ab3AMEOH (ORCPT
+	by vger.kernel.org with ESMTP id S1750851Ab3AMFep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 23:14:07 -0500
-Message-ID: <1358050431.4514.57.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)
+	Sun, 13 Jan 2013 00:34:45 -0500
+Message-ID: <1358055265.4514.67.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: Oops on aoe module removal
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Date: Sun, 13 Jan 2013 04:13:51 +0000
-In-Reply-To: <1357174163.10284.8.camel@gandalf.local.home>
-References: <20130102190920.GD29452@charite.de>
-	 <20130102205630.GA5594@home.goodmis.org>
-	 <20130102212948.GA25701@linux.vnet.ibm.com>
-	 <1357174163.10284.8.camel@gandalf.local.home>
+To: Ed Cashin <ecashin@coraid.com>
+Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Josh Boyer <jwboyer@redhat.com>,
+        "mitko@banksoft-bg.com" <mitko@banksoft-bg.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-team@fedoraproject.org" <kernel-team@fedoraproject.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Sun, 13 Jan 2013 05:34:25 +0000
+In-Reply-To: <A7C5A7B8-6494-4D9D-B052-5C623E066985@coraid.com>
+References: <20130103132556.GA13290@hansolo.jdub.homelinux.org>
+	 <587E85C3-7395-4BC1-B31B-426572B5080C@coraid.com>
+	 <50E5910E.7060606@kernel.dk> <50E591CD.40802@kernel.dk>
+	 <D2D8353E-8DE1-44A2-BB7F-3FE1E2E794FB@coraid.com>
+	 <50E5A51C.3030800@kernel.dk>
+	 <32456405-00CA-43EC-A17A-28452C217A7F@coraid.com>
+	 <ffc5cf0d1e3273770b65bc7de4a4851e@coraid.com> <50E5DFE4.5020007@kernel.dk>
+	 <EE162567-A6C8-4C4E-B96F-5366C8DDDCB1@coraid.com>
+	 <6333449B-1F90-4772-A04A-79E123A8A20D@coraid.com>
+	 <A7C5A7B8-6494-4D9D-B052-5C623E066985@coraid.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-2uGM+KPxiV04/f+BddX/"
+	protocol="application/pgp-signature"; boundary="=-OFZ9Y7LbVNmb9Abd8U8G"
 X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
@@ -30,37 +41,57 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-2uGM+KPxiV04/f+BddX/
+--=-OFZ9Y7LbVNmb9Abd8U8G
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2013-01-02 at 19:49 -0500, Steven Rostedt wrote:
-> On Wed, 2013-01-02 at 13:29 -0800, Paul E. McKenney wrote:
-> > On Wed, Jan 02, 2013 at 03:56:30PM -0500, Steven Rostedt wrote:
-> > > On Wed, Jan 02, 2013 at 08:09:20PM +0100, Ralf Hildebrandt wrote:
-> > > > This happened of a virtual guest (Linux mail 3.2.0-35-virtual #55-U=
-buntu SMP Wed Dec 5 18:02:05 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux)
-> > >=20
-> > > 3.2 is rather old and this looks to be a stock Ubuntu kernel. May wan=
-t
-> > > to file a Bugzilla (or whatever they call it) with them.
-> > >=20
-> > > >=20
-> > > > Jan  2 13:24:08 mail kernel: [3531872.484283] INFO: rcu_bh detected=
- stall on CPU 3 (t=3D0 jiffies)
-> > >=20
-> > > 0 jiffies?
+On Thu, 2013-01-03 at 15:20 -0600, Ed Cashin wrote:
+> On Jan 3, 2013, at 3:50 PM, Ed Cashin wrote:
+[...]
+> > Kernels with aoe v47 can use the patch I just posted.
 > >=20
-> > One possibility is that they are missing commit a10d206e (rcu: Fix
-> > day-one dyntick-idle stall-warning bug), at least assuming that
-> > CONFIG_PREEMPT=3Dn.  This went into 3.6, IIRC.
+> > I'm going to go through the stable kernels and check, but I believe ker=
+nels after
+> > v47 but before commit 0a41409c5180 should apply the fix in 0a41409c5180=
+:
+> >=20
+> >  commit 0a41409c518083133e79015092585d68915865be
+> >  Author: Ed Cashin <ecashin@coraid.com>
+> >  Date:   Mon Dec 17 16:03:58 2012 -0800
+> >=20
+> >      aoe: remove vestigial request queue allocation
 >=20
-> If that does fix the issue, we probably should send that off to Ben for
-> inclusion into 3.2 stable.
+> ...
+>=20
+> OK.  Looks like 3.7.1 has aoe v50, exhibits the behavior in question, and=
+ needs
+> the above-mentioned commit 0a41409c5180 from Linus' tree as a fix.
+>=20
+> The 3.6.11 kernel has aoe v47, so it and earlier stable kernels can use t=
+he patch
+> I posted in this thread.
+>=20
+> I'm sending this to stable@vger.kernel.org to ask Greg, Ben, and other st=
+able
+> maintainers (where's the list of stable kernel maintainers?) ...
 
-If I read the Ubuntu changelog correctly, Ralf's machine is running a
-version based on 3.2.34, which already has this change (I applied it in
-3.2.32).
+There is Willy Tarreau looking after 2.6.32.y, Paul Gortmaker with
+2.6.34.y and unofficially Herton Ronaldo Krzesinski with 3.5.7.y.
+All stable maintainers should be reading stable@vger.kernel.org anyway.
+
+> Should I send git-generated patches to stable@vger.kernel.org based on ea=
+ch
+> linux-stable/linux-3.x,y branch?  There are only two cases, really: 3.7.y=
+ and others.
+> I suppose 3.7.y can cherry pick from the mainline.
+>
+> What's the best way to do this?
+
+Given that aoe is basically unchanged between Linux 2.6.32 and 3.6 I
+agree that the one patch should be sufficient.  However your previous
+patch was lacking a signoff or much of a commit message, so please do
+re-post it with those.  The commit message should include a reference to
+the corresponding mainline commit as you identified above.
 
 Ben.
 
@@ -70,26 +101,26 @@ Klipstein's 4th Law of Prototyping and Production:
                                     A fail-safe circuit will destroy others=
 .
 
---=-2uGM+KPxiV04/f+BddX/
+--=-OFZ9Y7LbVNmb9Abd8U8G
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUPI0f+e/yOyVhhEJAQq8QxAAtlj2De1+fN2ZPSBFpya8ng7TSAwPigNO
-b0XfYYJgJoCPdS4NxmwRRTUtF1ZQpHhYWK9aAh/lPEYHhCsqq7tdZG5+ZevKmLLi
-wvPeH69ec26+biVJQbIcfNzap2MumRbA74jkKWpWicwphcVRxEDf0Xi7wtmnlkex
-rIDY6Jtw/3bHS5Dh2b67QIsRN+SDLnwFuUmqMP6UuY5m1X5LfnnVZ4k47hWha8AU
-CbA52vXmIdXFSiGdMrGEGpuICaiE4fhdIITvp+o1IjDhd59moUwIsVE0zBtb4nTr
-PO3kFxlvS+M3by/tzt2vyxrtQHUNecLergruDErsIdwIF8Z74ImOEyIkQ75Us6Pz
-xmD6l9igQIZKawYwVmOzDh5k9i5udk4moY7K9cRDvl03tzpWfcZZKtVPE9G+uCnf
-aY75ywAFsBJDPnt5Nmt1YxEE6MkoLDswrOtYAt4YwPBQdF58O7Q2MDLjxUnqzlmD
-29/Av/Z5WhXQplSbIRYHh9v93VtBpoFGJL6Y47gKKsFugz0sRIG0q8YgyPnMWOQn
-Y0xQGZFVxbK3+u22h5uRdmWNsKbMRqB+Q6V/LrnRFITaWLz1Gf8rdEMCrbaRjo3t
-h9XXm9rVhboYK5qbI0MNkFVzlly9+J0xR9h0A94atjzHekdCyPK755/0VJaaMUDr
-mSmTMoA3Vv4=
-=BdDG
+iQIVAwUAUPJHYee/yOyVhhEJAQonCA/9H0FkAo2TN7K4yjBZKs5QhJ1eddqybvnM
+//aBzFOm9oQgTVeT7eVhVA9dDPsCe0cS9XsaKKBJOeB0EeGN4hZsiuwOP5hec37U
+wiqL5vZdJF1tzQlaqA3l81GQL9V25MSr0ArN1vvgmkJUuOzjCkPPgDgwQNg/5zTa
+Va2bl4ydncEI6KV2PbXar+Fgp+HdLG+wsF0SqEONB0neYYQmpoVnUauO3wW4J8a4
+fp+56BpEoW1yTaj1MmswgNtdGB1uqWQO2PPnAy4vciLmOeuDYC2jeOoRZeZRpM/n
+edBW65YIqHX0IRdwhidTHTizOQJfvZPxxldouuJThrBwPmkkg69SmA1rPETmY+w5
+hHmPkO0QdTGaBYHylLEBJNc6HZdWsYKNZx7llPzw8Hvh8Ft+wMXCmhJ+161F1Fr/
+D3RJiwx6NODth8sSq1jDkM6yWm+rE7lQnjyJm6dIwDQ9klTuY6/UP0IU2tbMm6BX
+zCLM+qFOO8y/w/oPeX2maA8I5CUNFkDDV6QN4p0dKg+piq+5HQ+kmbo9zyTU89QN
+nDk7dJ6P+WCgVLnRNDNvGAoOWleOXT9wS/OIhBl18Yu60e5EpZN5GRRPmYr/b9WZ
+1A0xBBTjcdvWXGlh+KAiQq6SXUtCNGaUJ4Ea1DFfk8dyqy3/Ce2V20M1s/7ynnpI
+KdIQzlGotOs=
+=DVX4
 -----END PGP SIGNATURE-----
 
---=-2uGM+KPxiV04/f+BddX/--
+--=-OFZ9Y7LbVNmb9Abd8U8G--
