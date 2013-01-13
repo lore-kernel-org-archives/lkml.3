@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab3AMRvY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:51:24 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35063 "EHLO
+	id S1755513Ab3AMRph (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:45:37 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35014 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755491Ab3AMRpi (ORCPT
+	by vger.kernel.org with ESMTP id S1754926Ab3AMRpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 12:45:38 -0500
-Message-Id: <20130113174304.558398551@decadent.org.uk>
+	Sun, 13 Jan 2013 12:45:33 -0500
+Message-Id: <20130113174306.052418287@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:37 +0000
+Date: Sun, 13 Jan 2013 17:43:44 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        Vijay Subramanian <subramanian.vijay@gmail.com>,
-        Kiran Kumar Kella <kkiran@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 42/49] tcp: refine SYN handling in tcp_validate_incoming
+        Ed Cashin <ecashin@coraid.com>, Josh Boyer <jwboyer@redhat.com>
+Subject: [ 49/49] aoe: do not call bdi_init after blk_alloc_queue
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,53 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Ed Cashin <ecashin@coraid.com>
 
-[ Upstream commit e371589917011efe6ff8c7dfb4e9e81934ac5855 ]
+commit 0a41409c518083133e79015092585d68915865be upstream.
 
-Followup of commit 0c24604b68fc (tcp: implement RFC 5961 4.2)
+blk_alloc_queue has already done a bdi_init, so do not bdi_init
+again in aoeblk_gdalloc.  The extra call causes list corruption
+in the per-CPU backing dev info stats lists.
 
-As reported by Vijay Subramanian, we should send a challenge ACK
-instead of a dup ack if a SYN flag is set on a packet received out of
-window.
+Affected users see console WARNINGs about list_del corruption on
+percpu_counter_destroy when doing "rmmod aoe" or "aoeflush -a"
+when AoE targets have been detected and initialized by the
+system.
 
-This permits the ratelimiting to work as intended, and to increase
-correct SNMP counters.
+The patch below applies to v3.6.11, with its v47 aoe driver.  It
+is expected to apply to all currently maintained stable kernels
+except 3.7.y.  A related but different fix has been posted for
+3.7.y.
 
-Suggested-by: Vijay Subramanian <subramanian.vijay@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Vijay Subramanian <subramanian.vijay@gmail.com>
-Cc: Kiran Kumar Kella <kkiran@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+References:
+
+  RedHat bugzilla ticket with original report
+  https://bugzilla.redhat.com/show_bug.cgi?id=853064
+
+  LKML discussion of bug and fix
+  http://thread.gmane.org/gmane.linux.kernel/1416336/focus=1416497
+
+Reported-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/tcp_input.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/block/aoe/aoe.h    |    2 +-
+ drivers/block/aoe/aoeblk.c |    5 -----
+ 2 files changed, 1 insertions(+), 6 deletions(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 0b9d8d4..de434bc 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5289,8 +5289,11 @@ static bool tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
- 		 * an acknowledgment should be sent in reply (unless the RST
- 		 * bit is set, if so drop the segment and return)".
- 		 */
--		if (!th->rst)
-+		if (!th->rst) {
-+			if (th->syn)
-+				goto syn_challenge;
- 			tcp_send_dupack(sk, skb);
-+		}
- 		goto discard;
- 	}
+diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
+index db195ab..e49ddd0 100644
+--- a/drivers/block/aoe/aoe.h
++++ b/drivers/block/aoe/aoe.h
+@@ -1,5 +1,5 @@
+ /* Copyright (c) 2007 Coraid, Inc.  See COPYING for GPL terms. */
+-#define VERSION "47"
++#define VERSION "47q"
+ #define AOE_MAJOR 152
+ #define DEVICE_NAME "aoe"
  
-@@ -5320,6 +5323,7 @@ static bool tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
- 	 * RFC 5691 4.2 : Send a challenge ack
- 	 */
- 	if (th->syn) {
-+syn_challenge:
- 		if (syn_inerr)
- 			TCP_INC_STATS_BH(sock_net(sk), TCP_MIB_INERRS);
- 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPSYNCHALLENGE);
+diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
+index 321de7b..7eca463 100644
+--- a/drivers/block/aoe/aoeblk.c
++++ b/drivers/block/aoe/aoeblk.c
+@@ -276,8 +276,6 @@ aoeblk_gdalloc(void *vp)
+ 		goto err_mempool;
+ 	blk_queue_make_request(d->blkq, aoeblk_make_request);
+ 	d->blkq->backing_dev_info.name = "aoe";
+-	if (bdi_init(&d->blkq->backing_dev_info))
+-		goto err_blkq;
+ 	spin_lock_irqsave(&d->lock, flags);
+ 	gd->major = AOE_MAJOR;
+ 	gd->first_minor = d->sysminor * AOE_PARTITIONS;
+@@ -298,9 +296,6 @@ aoeblk_gdalloc(void *vp)
+ 	aoedisk_add_sysfs(d);
+ 	return;
+ 
+-err_blkq:
+-	blk_cleanup_queue(d->blkq);
+-	d->blkq = NULL;
+ err_mempool:
+ 	mempool_destroy(d->bufpool);
+ err_disk:
 
 
