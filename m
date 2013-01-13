@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab3AMMYs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 07:24:48 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:55366 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754761Ab3AMMYq (ORCPT
+	id S1754846Ab3AMMaA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 07:30:00 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:60110 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754722Ab3AMM37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 07:24:46 -0500
-Message-ID: <50F2A77E.1090900@ahsoftware.de>
-Date: Sun, 13 Jan 2013 13:24:30 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Bernie Thompson <bernie@plugable.com>
-CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Dave Airlie <airlied@redhat.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] fb: udlfb: fix hang at disconnect
-References: <1357996822-13072-1-git-send-email-holler@ahsoftware.de> <CAF1V4O8UUgWB1XbS=3EsirBjhP9Lp7JQ8XK8MQxbe3ZkH8pd3Q@mail.gmail.com> <50F2A310.5010006@ahsoftware.de>
-In-Reply-To: <50F2A310.5010006@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 13 Jan 2013 07:29:59 -0500
+Message-ID: <29967FDF21E24227AD4EC1DE00AC4044@VIU9IM6TKCWEEDX>
+From: "zhaoyilong" <registcn@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: Opening DEBUG in compressed/head.S,then kernel crashed
+Date: Sun, 13 Jan 2013 20:29:17 +0800
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+X-RFC2646: Format=Flowed; Original
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.01.2013 13:05, schrieb Alexander Holler:
-> Am 12.01.2013 23:22, schrieb Bernie Thompson:
+    When I open the macro DEBUG in the front of  file 
+arch/arm/boot/decompressed/head.S,the kernel runs and stops at"Uncompressing 
+Linux... done, booting the kernel."
+CONFIG_DEBUG_ICEDCC is closed by default, so I am sure  the code runs tothe 
+following branch:
+...........
+...........
+...........
+.macro kputc,val
+mov r0, \val
+bl putc
+.endm
 
-> I didn't test it extensively, but without the patch the driver isn't
-> usable here. Maybe my previous patch which moves damages to a workqueue
+.macro kphex,val,len
+mov r0, \val
+mov r1, #\len
+bl phex
+.endm
 
-To add some more explanations, I'm currently only testing it with a 
-statically linked udlfb (for fbcon) as that is what I'm mainly using the 
-device for (with otherwise headless boxes). When udlfb is a module, I 
-don't see those "schedule while atomic" messages (I don't know why), but 
-having a console only after the modules got loaded isn't always an option.
+.macro debug_reloc_start
+#ifdef DEBUG
+kputc #'\n'
+kphex r6, 8 /* processor id */
+kputc #':'
+kphex r7, 8 /* architecture id */
+...........
+...........
+...........
 
-Regards,
+Problem is happened in a context like this:
 
-Alexander
+    I have a board use cpu S5PV210,and an ok kernel provide by the factory 
+anda  kernel download from kernel.org which carshed after printing "starting
+kernel..." to dnw.
+    To debug this,I want to test the macro kputc provided in this file¡ª¡ª 
+using ok kernel.
+I add a line "kputc #'a' " after the tag ".text", then make error says 
+"undefined reference to `putc' ",it seems that compiler cant find "putc" 
+used in
+the definition of macro ¡°kputc¡±.
+    This is an ok kernel,so I cant say the serial port is not open¡ª¡ªcan 
+this mean "putc" is defined already?.
+
+So I open DEBUG hoping to see debugging info by kernel itself,but it stops 
+at"Uncompressing Linux... done, booting the kernel."
+Opening DEBUG will lead to the call of ¡°kputc #'\n' ¡± in the code above 
+which will also call putc!
+
+Here,my questions comes:
+
+1¡¢Why the error "  undefined reference to `putc'  " disappeared?
+2¡¢Why it stops at"Uncompressing Linux... done, booting the kernel."?
+3¡¢Can this error ( undefined reference to `putc'  ) mean the serial port is 
+not open? Where is it defined ?
+Is it refer to the C function or just an assembly macro£¿ 
+
+
