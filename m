@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3AMRpZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:45:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34925 "EHLO
+	id S1755870Ab3AMR4g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:56:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34956 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754593Ab3AMRpS (ORCPT
+	by vger.kernel.org with ESMTP id S1755213Ab3AMRpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 12:45:18 -0500
-Message-Id: <20130113174259.392401812@decadent.org.uk>
+	Sun, 13 Jan 2013 12:45:24 -0500
+Message-Id: <20130113174257.120720127@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:12 +0000
+Date: Sun, 13 Jan 2013 17:43:01 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?ISO-8859-15?q?Albrecht=20Dre=C3=9F?= <albrecht.dress@arcor.de>
-Subject: [ 17/49] drm/radeon: add connector table for Mac G4 Silver
+        Michael Tokarev <mjt@tls.msk.ru>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 06/49] ext4: do not try to write superblock on ro remount w/o journal
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,104 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Michael Tokarev <mjt@tls.msk.ru>
 
-commit cafa59b9011a7790be4ddd5979419259844a165d upstream.
+commit d096ad0f79a782935d2e06ae8fb235e8c5397775 upstream.
 
-Apple cards do not provide data tables in the vbios
-so we have to hard code the connector parameters
-in the driver.
+When a journal-less ext4 filesystem is mounted on a read-only block
+device (blockdev --setro will do), each remount (for other, unrelated,
+flags, like suid=>nosuid etc) results in a series of scary messages
+from kernel telling about I/O errors on the device.
 
-Reported-by: Albrecht Dreß <albrecht.dress@arcor.de>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This is becauese of the following code ext4_remount():
+
+       if (sbi->s_journal == NULL)
+                ext4_commit_super(sb, 1);
+
+at the end of remount procedure, which forces writing (flushing) of
+a superblock regardless whenever it is dirty or not, if the filesystem
+is readonly or not, and whenever the device itself is readonly or not.
+
+We only need call ext4_commit_super when the file system had been
+previously mounted read/write.
+
+Thanks to Eric Sandeen for help in diagnosing this issue.
+
+Signed-off-By: Michael Tokarev <mjt@tls.msk.ru>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |   51 +++++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/radeon_mode.h    |    3 +-
- 2 files changed, 53 insertions(+), 1 deletion(-)
+ fs/ext4/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_combios.c b/drivers/gpu/drm/radeon/radeon_combios.c
-index 4af8912..33a56a0 100644
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -1548,6 +1548,9 @@ bool radeon_get_legacy_connector_info_from_table(struct drm_device *dev)
- 			   of_machine_is_compatible("PowerBook6,7")) {
- 			/* ibook */
- 			rdev->mode_info.connector_table = CT_IBOOK;
-+		} else if (of_machine_is_compatible("PowerMac3,5")) {
-+			/* PowerMac G4 Silver radeon 7500 */
-+			rdev->mode_info.connector_table = CT_MAC_G4_SILVER;
- 		} else if (of_machine_is_compatible("PowerMac4,4")) {
- 			/* emac */
- 			rdev->mode_info.connector_table = CT_EMAC;
-@@ -2212,6 +2215,54 @@ bool radeon_get_legacy_connector_info_from_table(struct drm_device *dev)
- 					    CONNECTOR_OBJECT_ID_SVIDEO,
- 					    &hpd);
- 		break;
-+	case CT_MAC_G4_SILVER:
-+		DRM_INFO("Connector Table: %d (mac g4 silver)\n",
-+			 rdev->mode_info.connector_table);
-+		/* DVI-I - tv dac, int tmds */
-+		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_DVI, 0, 0);
-+		hpd.hpd = RADEON_HPD_1; /* ??? */
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_DFP1_SUPPORT,
-+								0),
-+					  ATOM_DEVICE_DFP1_SUPPORT);
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_CRT2_SUPPORT,
-+								2),
-+					  ATOM_DEVICE_CRT2_SUPPORT);
-+		radeon_add_legacy_connector(dev, 0,
-+					    ATOM_DEVICE_DFP1_SUPPORT |
-+					    ATOM_DEVICE_CRT2_SUPPORT,
-+					    DRM_MODE_CONNECTOR_DVII, &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_SINGLE_LINK_DVI_I,
-+					    &hpd);
-+		/* VGA - primary dac */
-+		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_VGA, 0, 0);
-+		hpd.hpd = RADEON_HPD_NONE;
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_CRT1_SUPPORT,
-+								1),
-+					  ATOM_DEVICE_CRT1_SUPPORT);
-+		radeon_add_legacy_connector(dev, 1, ATOM_DEVICE_CRT1_SUPPORT,
-+					    DRM_MODE_CONNECTOR_VGA, &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_VGA,
-+					    &hpd);
-+		/* TV - TV DAC */
-+		ddc_i2c.valid = false;
-+		hpd.hpd = RADEON_HPD_NONE;
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_TV1_SUPPORT,
-+								2),
-+					  ATOM_DEVICE_TV1_SUPPORT);
-+		radeon_add_legacy_connector(dev, 2, ATOM_DEVICE_TV1_SUPPORT,
-+					    DRM_MODE_CONNECTOR_SVIDEO,
-+					    &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_SVIDEO,
-+					    &hpd);
-+		break;
- 	default:
- 		DRM_INFO("Connector table: %d (invalid)\n",
- 			 rdev->mode_info.connector_table);
-diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
-index d818b50..ed8a0fa 100644
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -209,7 +209,8 @@ enum radeon_connector_table {
- 	CT_RN50_POWER,
- 	CT_MAC_X800,
- 	CT_MAC_G5_9600,
--	CT_SAM440EP
-+	CT_SAM440EP,
-+	CT_MAC_G4_SILVER
- };
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 4969167..183ae34 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4729,7 +4729,7 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+ 	}
  
- enum radeon_dvo_chip {
+ 	ext4_setup_system_zone(sb);
+-	if (sbi->s_journal == NULL)
++	if (sbi->s_journal == NULL && !(old_sb_flags & MS_RDONLY))
+ 		ext4_commit_super(sb, 1);
+ 
+ #ifdef CONFIG_QUOTA
 
 
