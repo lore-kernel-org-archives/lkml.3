@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab3AMRt4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:49:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35055 "EHLO
+	id S1756059Ab3AMRvb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:51:31 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35034 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755475Ab3AMRpj (ORCPT
+	by vger.kernel.org with ESMTP id S1755449Ab3AMRph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 12:45:39 -0500
-Message-Id: <20130113174303.540401219@decadent.org.uk>
+	Sun, 13 Jan 2013 12:45:37 -0500
+Message-Id: <20130113174303.320089125@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:32 +0000
+Date: Sun, 13 Jan 2013 17:43:31 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 37/49] sparc: huge_ptep_set_* functions need to call  set_huge_pte_at()
+        Steven Rostedt <srostedt@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 36/49] ftrace: Do not function trace inlined functions
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,50 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-[ Upstream commit 6cb9c3697585c47977c42c5cc1b9fc49247ac530 ]
+commit 45959ee7aa645815a5ce303a0ea1e48a21e67c6a upstream.
 
-Modifying the huge pte's requires that all the underlying pte's be
-modified.
+When gcc inlines a function, it does not mark it with the mcount
+prologue, which in turn means that inlined functions are not traced
+by the function tracer. But if CONFIG_OPTIMIZE_INLINING is set, then
+gcc is allowed not to inline a function that is marked inline.
 
-Version 2: added missing flush_tlb_page()
+Depending on the options and the compiler, a function may or may
+not be traced by the function tracer, depending on whether gcc
+decides to inline a function or not. This has caused several
+problems in the pass becaues gcc is not always consistent with
+what it decides to inline between different gcc versions.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Some places should not be traced (like paravirt native_* functions)
+and these are mostly marked as inline. When gcc decides not to
+inline the function, and if that function should not be traced, then
+the ftrace function tracer will suddenly break when it use to work
+fine. This becomes even harder to debug when different versions of
+gcc will not inline that function, making the same kernel and config
+work for some gcc versions and not work for others.
+
+By making all functions marked inline to not be traced will remove
+the ambiguity that gcc adds when it comes to tracing functions marked
+inline. All gcc versions will be consistent with what functions are
+traced and having volatile working code will be removed.
+
+Note, only the inline macro when CONFIG_OPTIMIZE_INLINING is set needs
+to have notrace added, as the attribute __always_inline will force
+the function to be inlined and then not traced.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/include/asm/hugetlb.h | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ include/linux/compiler-gcc.h |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/sparc/include/asm/hugetlb.h b/arch/sparc/include/asm/hugetlb.h
-index 1770610..f368cef 100644
---- a/arch/sparc/include/asm/hugetlb.h
-+++ b/arch/sparc/include/asm/hugetlb.h
-@@ -58,14 +58,20 @@ static inline pte_t huge_pte_wrprotect(pte_t pte)
- static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
- 					   unsigned long addr, pte_t *ptep)
- {
--	ptep_set_wrprotect(mm, addr, ptep);
-+	pte_t old_pte = *ptep;
-+	set_huge_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
- }
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index 59e4028..3fd17c2 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -50,6 +50,11 @@
+ # define inline		inline		__attribute__((always_inline))
+ # define __inline__	__inline__	__attribute__((always_inline))
+ # define __inline	__inline	__attribute__((always_inline))
++#else
++/* A lot of inline functions can cause havoc with function tracing */
++# define inline		inline		notrace
++# define __inline__	__inline__	notrace
++# define __inline	__inline	notrace
+ #endif
  
- static inline int huge_ptep_set_access_flags(struct vm_area_struct *vma,
- 					     unsigned long addr, pte_t *ptep,
- 					     pte_t pte, int dirty)
- {
--	return ptep_set_access_flags(vma, addr, ptep, pte, dirty);
-+	int changed = !pte_same(*ptep, pte);
-+	if (changed) {
-+		set_huge_pte_at(vma->vm_mm, addr, ptep, pte);
-+		flush_tlb_page(vma, addr);
-+	}
-+	return changed;
- }
- 
- static inline pte_t huge_ptep_get(pte_t *ptep)
+ #define __deprecated			__attribute__((deprecated))
 
 
