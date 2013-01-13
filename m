@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab3AMRpn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:45:43 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35049 "EHLO
+	id S1755803Ab3AMRs6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:48:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35044 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755467Ab3AMRpi (ORCPT
+	by vger.kernel.org with ESMTP id S1755464Ab3AMRpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 12:45:38 -0500
-Message-Id: <20130113174303.100420898@decadent.org.uk>
+	Sun, 13 Jan 2013 12:45:41 -0500
+Message-Id: <20130113174304.365770214@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:30 +0000
+Date: Sun, 13 Jan 2013 17:43:36 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 35/49] Revert: "rt2x00: Dont let mac80211 send a BAR when an AMPDU
- subframe fails"
+        Eric Dumazet <edumazet@google.com>,
+        Kiran Kumar Kella <kkiran@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 41/49] tcp: implement RFC 5961 4.2
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,60 +29,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit ab9d6e4ffe192427ce9e93d4f927b0faaa8a941e upstream.
+[ Upstream commit 0c24604b68fc7810d429d6c3657b6f148270e528 ]
 
-This revert:
+Implement the RFC 5691 mitigation against Blind
+Reset attack using SYN bit.
 
-commit be03d4a45c09ee5100d3aaaedd087f19bc20d01f
-Author: Andreas Hartmann <andihartmann@01019freenet.de>
-Date:   Tue Apr 17 00:25:28 2012 +0200
+Section 4.2 of RFC 5961 advises to send a Challenge ACK and drop
+incoming packet, instead of resetting the session.
 
-    rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails
+Add a new SNMP counter to count number of challenge acks sent
+in response to SYN packets.
+(netstat -s | grep TCPSYNChallenge)
 
-To fix problem workaround by above commit use
-IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL flag (see change log for
-"mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL" patch).
+Remove obsolete TCPAbortOnSyn, since we no longer abort a TCP session
+because of a SYN flag.
 
-Resolve: https://bugzilla.kernel.org/show_bug.cgi?id=42828
-Bisected-by: Francisco Pina Martins <f.pinamartins@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Kiran Kumar Kella <kkiran@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c |    3 ++-
- drivers/net/wireless/rt2x00/rt2x00dev.c |    7 +++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ include/linux/snmp.h |  2 +-
+ net/ipv4/proc.c      |  2 +-
+ net/ipv4/tcp_input.c | 32 +++++++++++++++-----------------
+ 3 files changed, 17 insertions(+), 19 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -4208,7 +4208,8 @@ int rt2800_probe_hw_mode(struct rt2x00_d
- 	    IEEE80211_HW_SIGNAL_DBM |
- 	    IEEE80211_HW_SUPPORTS_PS |
- 	    IEEE80211_HW_PS_NULLFUNC_STACK |
--	    IEEE80211_HW_AMPDU_AGGREGATION;
-+	    IEEE80211_HW_AMPDU_AGGREGATION |
-+	    IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL;
- 	/*
- 	 * Don't set IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING for USB devices
- 	 * unless we are capable of sending the buffered frames out after the
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -387,10 +387,9 @@ void rt2x00lib_txdone(struct queue_entry
- 		tx_info->flags |= IEEE80211_TX_STAT_AMPDU;
- 		tx_info->status.ampdu_len = 1;
- 		tx_info->status.ampdu_ack_len = success ? 1 : 0;
--		/*
--		 * TODO: Need to tear down BA session here
--		 * if not successful.
--		 */
-+
-+		if (!success)
-+			tx_info->flags |= IEEE80211_TX_STAT_AMPDU_NO_BACK;
+diff --git a/include/linux/snmp.h b/include/linux/snmp.h
+index 6e310bb..64f5ca7 100644
+--- a/include/linux/snmp.h
++++ b/include/linux/snmp.h
+@@ -209,7 +209,6 @@ enum
+ 	LINUX_MIB_TCPDSACKOFOSENT,		/* TCPDSACKOfoSent */
+ 	LINUX_MIB_TCPDSACKRECV,			/* TCPDSACKRecv */
+ 	LINUX_MIB_TCPDSACKOFORECV,		/* TCPDSACKOfoRecv */
+-	LINUX_MIB_TCPABORTONSYN,		/* TCPAbortOnSyn */
+ 	LINUX_MIB_TCPABORTONDATA,		/* TCPAbortOnData */
+ 	LINUX_MIB_TCPABORTONCLOSE,		/* TCPAbortOnClose */
+ 	LINUX_MIB_TCPABORTONMEMORY,		/* TCPAbortOnMemory */
+@@ -234,6 +233,7 @@ enum
+ 	LINUX_MIB_TCPREQQFULLDOCOOKIES,		/* TCPReqQFullDoCookies */
+ 	LINUX_MIB_TCPREQQFULLDROP,		/* TCPReqQFullDrop */
+ 	LINUX_MIB_TCPCHALLENGEACK,		/* TCPChallengeACK */
++	LINUX_MIB_TCPSYNCHALLENGE,		/* TCPSYNChallenge */
+ 	__LINUX_MIB_MAX
+ };
+ 
+diff --git a/net/ipv4/proc.c b/net/ipv4/proc.c
+index f46c478..f7fdbe9 100644
+--- a/net/ipv4/proc.c
++++ b/net/ipv4/proc.c
+@@ -233,7 +233,6 @@ static const struct snmp_mib snmp4_net_list[] = {
+ 	SNMP_MIB_ITEM("TCPDSACKOfoSent", LINUX_MIB_TCPDSACKOFOSENT),
+ 	SNMP_MIB_ITEM("TCPDSACKRecv", LINUX_MIB_TCPDSACKRECV),
+ 	SNMP_MIB_ITEM("TCPDSACKOfoRecv", LINUX_MIB_TCPDSACKOFORECV),
+-	SNMP_MIB_ITEM("TCPAbortOnSyn", LINUX_MIB_TCPABORTONSYN),
+ 	SNMP_MIB_ITEM("TCPAbortOnData", LINUX_MIB_TCPABORTONDATA),
+ 	SNMP_MIB_ITEM("TCPAbortOnClose", LINUX_MIB_TCPABORTONCLOSE),
+ 	SNMP_MIB_ITEM("TCPAbortOnMemory", LINUX_MIB_TCPABORTONMEMORY),
+@@ -258,6 +257,7 @@ static const struct snmp_mib snmp4_net_list[] = {
+ 	SNMP_MIB_ITEM("TCPReqQFullDoCookies", LINUX_MIB_TCPREQQFULLDOCOOKIES),
+ 	SNMP_MIB_ITEM("TCPReqQFullDrop", LINUX_MIB_TCPREQQFULLDROP),
+ 	SNMP_MIB_ITEM("TCPChallengeACK", LINUX_MIB_TCPCHALLENGEACK),
++	SNMP_MIB_ITEM("TCPSYNChallenge", LINUX_MIB_TCPSYNCHALLENGE),
+ 	SNMP_MIB_SENTINEL
+ };
+ 
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index a0d3b88..0b9d8d4 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -5263,8 +5263,8 @@ static void tcp_send_challenge_ack(struct sock *sk)
+ /* Does PAWS and seqno based validation of an incoming segment, flags will
+  * play significant role here.
+  */
+-static int tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
+-			      const struct tcphdr *th, int syn_inerr)
++static bool tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
++				  const struct tcphdr *th, int syn_inerr)
+ {
+ 	const u8 *hash_location;
+ 	struct tcp_sock *tp = tcp_sk(sk);
+@@ -5316,20 +5316,22 @@ static int tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
+ 
+ 	/* step 3: check security and precedence [ignored] */
+ 
+-	/* step 4: Check for a SYN in window. */
+-	if (th->syn && !before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt)) {
++	/* step 4: Check for a SYN
++	 * RFC 5691 4.2 : Send a challenge ack
++	 */
++	if (th->syn) {
+ 		if (syn_inerr)
+ 			TCP_INC_STATS_BH(sock_net(sk), TCP_MIB_INERRS);
+-		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPABORTONSYN);
+-		tcp_reset(sk);
+-		return -1;
++		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPSYNCHALLENGE);
++		tcp_send_challenge_ack(sk);
++		goto discard;
  	}
  
- 	if (rate_flags & IEEE80211_TX_RC_USE_RTS_CTS) {
+-	return 1;
++	return true;
+ 
+ discard:
+ 	__kfree_skb(skb);
+-	return 0;
++	return false;
+ }
+ 
+ /*
+@@ -5359,7 +5361,6 @@ int tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
+ 			const struct tcphdr *th, unsigned int len)
+ {
+ 	struct tcp_sock *tp = tcp_sk(sk);
+-	int res;
+ 
+ 	/*
+ 	 *	Header prediction.
+@@ -5539,9 +5540,8 @@ slow_path:
+ 	 *	Standard slow path.
+ 	 */
+ 
+-	res = tcp_validate_incoming(sk, skb, th, 1);
+-	if (res <= 0)
+-		return -res;
++	if (!tcp_validate_incoming(sk, skb, th, 1))
++		return 0;
+ 
+ step5:
+ 	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
+@@ -5851,7 +5851,6 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb,
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	struct inet_connection_sock *icsk = inet_csk(sk);
+ 	int queued = 0;
+-	int res;
+ 
+ 	tp->rx_opt.saw_tstamp = 0;
+ 
+@@ -5906,9 +5905,8 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb,
+ 		return 0;
+ 	}
+ 
+-	res = tcp_validate_incoming(sk, skb, th, 0);
+-	if (res <= 0)
+-		return -res;
++	if (!tcp_validate_incoming(sk, skb, th, 0))
++		return 0;
+ 
+ 	/* step 5: check the ACK field */
+ 	if (th->ack) {
 
 
