@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab3AMRq3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:46:29 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35130 "EHLO
+	id S1755871Ab3AMRq1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:46:27 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35144 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755647Ab3AMRpu (ORCPT
+	by vger.kernel.org with ESMTP id S1755710Ab3AMRpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Jan 2013 12:45:50 -0500
-Message-Id: <20130113174301.441051924@decadent.org.uk>
+Message-Id: <20130113174301.050077064@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:22 +0000
+Date: Sun, 13 Jan 2013 17:43:20 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 27/49] ACPI / scan: Do not use dummy HID for system bus ACPI nodes
+        Xi Wang <xi.wang@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 25/49] nfs: fix null checking in nfs_get_option_str()
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,34 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit 4f5f64cf0cc916220aaa055992e31195470cfe37 upstream.
+commit e25fbe380c4e3c09afa98bcdcd9d3921443adab8 upstream.
 
-At one point acpi_device_set_id() checks if acpi_device_hid(device)
-returns NULL, but that never happens, so system bus devices with an
-empty list of PNP IDs are given the dummy HID ("device") instead of
-the "system bus HID" ("LNXSYBUS").  Fix the code to use the right
-check.
+The following null pointer check is broken.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+	*option = match_strdup(args);
+	return !option;
+
+The pointer `option' must be non-null, and thus `!option' is always false.
+Use `!*option' instead.
+
+The bug was introduced in commit c5cb09b6f8 ("Cleanup: Factor out some
+cut-and-paste code.").
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/scan.c |    2 +-
+ fs/nfs/super.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 53502d1..c88be6c 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -1346,7 +1346,7 @@ static void acpi_device_set_id(struct acpi_device *device)
- 			acpi_add_id(device, ACPI_DOCK_HID);
- 		else if (!acpi_ibm_smbus_match(device))
- 			acpi_add_id(device, ACPI_SMBUS_IBM_HID);
--		else if (!acpi_device_hid(device) &&
-+		else if (list_empty(&device->pnp.ids) &&
- 			 ACPI_IS_ROOT_DEVICE(device->parent)) {
- 			acpi_add_id(device, ACPI_BUS_HID); /* \_SB, LNXSYBUS */
- 			strcpy(device->pnp.device_name, ACPI_BUS_DEVICE_NAME);
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index c25cadf8..2e7e8c8 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -1152,7 +1152,7 @@ static int nfs_get_option_str(substring_t args[], char **option)
+ {
+ 	kfree(*option);
+ 	*option = match_strdup(args);
+-	return !option;
++	return !*option;
+ }
+ 
+ static int nfs_get_option_ul(substring_t args[], unsigned long *option)
 
 
