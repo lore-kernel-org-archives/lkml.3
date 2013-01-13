@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab3AMRq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:46:27 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35144 "EHLO
+	id S1755828Ab3AMRqZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:46:25 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35180 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755710Ab3AMRpu (ORCPT
+	by vger.kernel.org with ESMTP id S1755706Ab3AMRpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Jan 2013 12:45:50 -0500
-Message-Id: <20130113174301.050077064@decadent.org.uk>
+Message-Id: <20130113174300.852671306@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:20 +0000
+Date: Sun, 13 Jan 2013 17:43:19 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Xi Wang <xi.wang@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 25/49] nfs: fix null checking in nfs_get_option_str()
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+        Juergen Beisert <jbe@pengutronix.de>,
+        Lauri Hintsala <lauri.hintsala@bluegiga.net>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 24/49] video: mxsfb: fix crash when unblanking the display
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,40 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Lothar Waßmann <LW@KARO-electronics.de>
 
-commit e25fbe380c4e3c09afa98bcdcd9d3921443adab8 upstream.
+commit 6c1ecba8d84841277d68140ef485335d5be28485 upstream.
 
-The following null pointer check is broken.
+The VDCTRL4 register does not provide the MXS SET/CLR/TOGGLE feature.
+The write in mxsfb_disable_controller() sets the data_cnt for the LCD
+DMA to 0 which obviously means the max. count for the LCD DMA and
+leads to overwriting arbitrary memory when the display is unblanked.
 
-	*option = match_strdup(args);
-	return !option;
-
-The pointer `option' must be non-null, and thus `!option' is always false.
-Use `!*option' instead.
-
-The bug was introduced in commit c5cb09b6f8 ("Cleanup: Factor out some
-cut-and-paste code.").
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+Acked-by: Juergen Beisert <jbe@pengutronix.de>
+Tested-by: Lauri Hintsala <lauri.hintsala@bluegiga.net>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/mxsfb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index c25cadf8..2e7e8c8 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -1152,7 +1152,7 @@ static int nfs_get_option_str(substring_t args[], char **option)
- {
- 	kfree(*option);
- 	*option = match_strdup(args);
--	return !option;
-+	return !*option;
- }
+--- a/drivers/video/mxsfb.c
++++ b/drivers/video/mxsfb.c
+@@ -366,7 +366,8 @@ static void mxsfb_disable_controller(str
+ 		loop--;
+ 	}
  
- static int nfs_get_option_ul(substring_t args[], unsigned long *option)
+-	writel(VDCTRL4_SYNC_SIGNALS_ON, host->base + LCDC_VDCTRL4 + REG_CLR);
++	reg = readl(host->base + LCDC_VDCTRL4);
++	writel(reg & ~VDCTRL4_SYNC_SIGNALS_ON, host->base + LCDC_VDCTRL4);
+ 
+ 	clk_disable(host->clk);
+ 
 
 
