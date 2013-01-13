@@ -1,144 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab3AMMeu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 07:34:50 -0500
-Received: from mout.web.de ([212.227.15.3]:59411 "EHLO mout.web.de"
+	id S1755006Ab3AMM47 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 07:56:59 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:52778 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754722Ab3AMMer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 07:34:47 -0500
-From: Thomas Schlichter <thomas.schlichter@web.de>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Andreas =?ISO-8859-1?Q?M=FCller?= <goo@stapelspeicher.org>,
-        Julius Werner <jwerner@chromium.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cpuidle: fix new C-states not functional after AC disconnect
-Date: Sun, 13 Jan 2013 13:34:41 +0100
-Message-ID: <2099093.cPXO6Nhn9v@netbook>
-User-Agent: KMail/4.9.3 (Linux/3.8.0-rc3-00076-g5c635b3-dirty; KDE/4.9.3; i686; ; )
+	id S1754780Ab3AMM45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 07:56:57 -0500
+Date: Sun, 13 Jan 2013 13:56:53 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+Subject: Re: [PATCH v7u1 21/31] x86, kexec: only set ident mapping for ram.
+Message-ID: <20130113125653.GA17200@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org,
+	Alexander Duyck <alexander.h.duyck@intel.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-22-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="nextPart1794952.WA51hkzRQo"
-Content-Transfer-Encoding: 7Bit
-X-Provags-ID: V02:K0:wVf5p2VCd295vyzkFzk+4zQEcYzz0S+AEhrvOc3FCFs
- MORirKyvdAk4q/3SSiOkle57CeIsRNN8W/Y+904ghbKsf9ERWU
- TG86fbgr6aGyNKZn38teAATmppSz3mEMaMa0J1e5qr/FDPBcNG
- rsa/Hn48Uz9j03lhpDkOELlWLEZ5aeHswZfm7LfKi7G/1e3Z56
- Y45EdgimnZ4Rv+IqT1q624pkoWUlf8ZcTBmxhL9uW0=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1357260531-11115-22-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On Thu, Jan 03, 2013 at 04:48:41PM -0800, Yinghai Lu wrote:
+> We should not set mapping for all under max_pfn.
 
---nextPart1794952.WA51hkzRQo
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+"We should not establish mappings for all memory under max_pfn."
 
-Hi,
+> That causes same problem that is fixed by
 
-there is a long-standing regression about new C-states not working after 
-disconnecting AC power from a laptop if the cpuidle driver "acpi-idle" is 
-used. It was reported here:
+"Otherwise, it causes the same ..."
 
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=42870  (March 5th 2012)
-[2] https://bugzilla.kernel.org/show_bug.cgi?id=43349  (June 7th 2012)
-[3] https://lkml.org/lkml/2012/10/16/518   (October 19th 2012)
+> 
+> 	x86, mm: Only direct map addresses that are marked as E820_RAM
 
-In [1] Andreas proposed a patch that initialized the missing power_usage 
-values from within acpi_idle in the same way as cpuidle does.
-In [2] I proposed a patch to use the power values provided by ACPI to 
-initialize the power_usage variables.
-In [3] Julius proposed a patch to call the initialization function 
-set_power_states()  not only once, but always when the C-states change.
+You could add this patch's commit id since it is in tip:x86/mm2 and it
+shouldn't change: 66520ebc2df3.
 
-Currently, Daniel Lezcano seems to be working on an intrusive change of not 
-using the power_usage value at all for choosing a C-state:
+Ditto for patch 09/31, "x86, 64bit: #PF handler set page to cover 2M only".
 
-[4] https://lkml.org/lkml/2012/12/14/155
+> 
+> This patch expose pfn_mapped array, and only set ident mapping for ranges
 
-As I could not find any of these patches in any git trees to be merged for 
-3.8, I propose an other, least intrusive patch for the time being. It is 
-attached an initializes _all_ power_usage values in the first place.
+	     exposes the...		       sets
 
-As this is a real power consumption regression since 3.2, I really ask you to 
-apply anything and push it to stable, too!
+> in that array.
+> 
+> This patch rely on new ident_mapping_init that could handle existing
 
-Kind regards,
-Thomas Schlichter
---nextPart1794952.WA51hkzRQo
-Content-Disposition: inline; filename="0001-Get-power-info-before-updating-the-C-states.patch"
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/x-patch; charset="utf-8"; name="0001-Get-power-info-before-updating-the-C-states.patch"
+	     relies on the new
 
->From 5296fec02cfadf10daf6395ad6b55075381b2439 Mon Sep 17 00:00:00 2001
-From: Thomas Schlichter <thomas.schlichter@web.de>
-Date: Sun, 2 Sep 2012 14:35:34 +0200
-Subject: [PATCH 1/2] Get power info before updating the C-states
+> pgd/pud between different calling.
 
-acpi_processor_get_power_info() has to be called before
-acpi_processor_setup_cpuidle_states() to have the latest
-information available. This fixes the missing C-state information
-after AC-->DC transition.
+			    calls.
 
-Signed-off-by: Thomas Schlichter <thomas.schlichter@web.de>
----
- drivers/acpi/processor_idle.c |    1 +
- 1 file changed, 1 insertion(+)
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Alexander Duyck <alexander.h.duyck@intel.com>
 
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index f1a5da4..17ed60b 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1149,6 +1149,7 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
- 		}
- 
- 		/* Populate Updated C-state information */
-+		acpi_processor_get_power_info(pr);
- 		acpi_processor_setup_cpuidle_states(pr);
- 
- 		/* Enable all cpuidle devices */
+[ … ]
+
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index ab26a158b5a8..d704b369fd70 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -300,8 +300,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+>         return nr_range;
+>  }
+>  
+> -static struct range pfn_mapped[E820_X_MAX];
+> -static int nr_pfn_mapped;
+
+This could use a comment saying that this is an array of all mapped
+memory ranges or something like that.
+
+> +struct range pfn_mapped[E820_X_MAX];
+> +int nr_pfn_mapped;
+>  
+>  static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
+>  {
+
+Thanks.
+
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
---nextPart1794952.WA51hkzRQo
-Content-Disposition: inline; filename="0002-cpuidle-Initialize-power_usage-for-all-C-states.patch"
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/x-patch; charset="utf-8"; name="0002-cpuidle-Initialize-power_usage-for-all-C-states.patch"
-
->From 5c635b3530d4f9b41811f7dde12e0d6f5f7dcc54 Mon Sep 17 00:00:00 2001
-From: Thomas Schlichter <thomas.schlichter@web.de>
-Date: Sat, 12 Jan 2013 15:30:43 +0100
-Subject: [PATCH 2/2] cpuidle: Initialize power_usage for all C-states
-
-By now, only the power_usage values of currently available C-states are
-initialized in the function set_power_states(). But if the number of C-states
-increases later (e.g. when using acpi_idle and unplugging the AC power from the
-laptop) the power_usage values of the new C-states stay uninitialized.
-
-Fix this by initializing all CPUIDLE_STATE_MAX C-stages in the first place.
-
-Signed-off-by: Thomas Schlichter <thomas.schlichter@web.de>
----
- drivers/cpuidle/driver.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
-index c2b281a..960d98d 100644
---- a/drivers/cpuidle/driver.c
-+++ b/drivers/cpuidle/driver.c
-@@ -37,7 +37,7 @@ static void set_power_states(struct cpuidle_driver *drv)
- 	 * an power value of -1.  So we use -2, -3, etc, for other
- 	 * c-states.
- 	 */
--	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++)
-+	for (i = CPUIDLE_DRIVER_STATE_START; i < CPUIDLE_STATE_MAX; i++)
- 		drv->states[i].power_usage = -1 - i;
- }
- 
--- 
-1.7.10.4
-
---nextPart1794952.WA51hkzRQo--
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
