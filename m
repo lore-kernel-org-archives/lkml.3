@@ -1,145 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab3ALXtI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 18:49:08 -0500
-Received: from mail-vc0-f185.google.com ([209.85.220.185]:58803 "EHLO
-	mail-vc0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3ALXtH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 18:49:07 -0500
-X-Greylist: delayed 13512 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Jan 2013 18:49:07 EST
-Path: glegroupsg2000goo.googlegroups.com!not-for-mail
-Newsgroups: fa.linux.kernel
-Date: Sat, 12 Jan 2013 11:18:37 -0800 (PST)
-In-Reply-To: <fa.V9M+5l8C/um5KEiBtZOjbJDQmu4@ifi.uio.no>
-Complaints-To: groups-abuse@google.com
-Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=62.78.219.110;
- posting-account=c1Za3QoAAADh7LA0dx1TrG4Qhbl1XnpS
-NNTP-Posting-Host: 62.78.219.110
-References: <fa.cHMztHfqJXv7vw5O0nQ8SdTrma0@ifi.uio.no> <fa.V9M+5l8C/um5KEiBtZOjbJDQmu4@ifi.uio.no>
-User-Agent: G2/1.0
-X-Google-Web-Client: true
-X-Google-IP: 62.78.219.110
+	id S1752703Ab3AMACv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 19:02:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60001 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751510Ab3AMACt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 19:02:49 -0500
+Date: Sun, 13 Jan 2013 01:02:42 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Shawn Guo <shawn.guo@linaro.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Florian Tobias Schandinat <florianSchandinat@gmx.de>
+Subject: Re: [PATCH] fb: Rework locking to fix lock ordering on takeover
+Message-ID: <20130113000242.GD10630@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@suse.de>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Jiri Kosina <jkosina@suse.cz>, Shawn Guo <shawn.guo@linaro.org>,
+	Sasha Levin <levinsasha928@gmail.com>,
+	Cong Wang <xiyou.wangcong@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Florian Tobias Schandinat <florianSchandinat@gmx.de>
+References: <CA+1xoqe0G4rha5bDcoQQUcACYbQ8BCO7AE_JE8z5VjJLeNUdyA@mail.gmail.com>
+ <CAM_iQpWLgnxQR+oYD+Dnh9NprR1-QLjXa6T+dtHUs3A-_N2wmQ@mail.gmail.com>
+ <CA+1xoqf0d5ckDZ3o1-Y+qd61nvVA7EECeH20U+WjDpNVb4E=pw@mail.gmail.com>
+ <20121227045301.GB17472@x1.alien8.de>
+ <20121228115022.GA28009@S2101-09.ap.freescale.net>
+ <20121228124026.GB12918@x1.alien8.de>
+ <alpine.LRH.2.00.1301071037010.5443@twin.jikos.cz>
+ <20130112183619.GC10630@liondog.tnic>
+ <CA+55aFw163CwK_MmUKY7zGFeck+Rxk_xs=BDrCAFpg-xac3vmQ@mail.gmail.com>
+ <20130112131323.31d2a585.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Message-ID: <379cc523-8f08-4c7f-ae20-20f216352a01@googlegroups.com>
-Subject: Re: Why is the kfree() argument const?
-From: antoine.trux@gmail.com
-To: fa.linux.kernel@googlegroups.com
-Cc: Johannes Weiner <hannes@saeurebad.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        clameter@sgi.com, penberg@cs.helsinki.fi
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130112131323.31d2a585.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 16, 2008 8:39:48 PM UTC+2, Linus Torvalds wrote:
+On Sat, Jan 12, 2013 at 01:13:23PM -0800, Andrew Morton wrote:
+> Florian has been taking a month or two's downtime (now expired, I
+> think) so I've been waiting for him to reappear to process this one for
+> 3.8.
+> 
+> Meanwhile, I guess we could put it into mainline ;) It has been in
+> -next for a month.
+> 
+> From: Alan Cox <alan@linux.intel.com>
+> Subject: fb: rework locking to fix lock ordering on takeover
+> 
+> Adjust the console layer to allow a take over call where the caller
+> already holds the locks.  Make the fb layer lock in order.
+> 
+> This is partly a band aid, the fb layer is terminally confused about the
+> locking rules it uses for its notifiers it seems.
+> 
+> [akpm@linux-foundation.org: remove stray non-ascii char, tidy comment]
+> [akpm@linux-foundation.org: export do_take_over_console()]
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-> "const" has *never* been about the thing not being modified. Forget all 
-> that claptrap. C does not have such a notion.
+Yes, that's the one, modulo Andrew's fixes, which I've been running.
+Irregardless, I'll run this one tomorrow just in case, because it
+triggers here so easily.
 
-I beg your pardon?!
+Thanks.
 
-C has had that very notion ever since its first standard (1989). Here is an excerpt from that standard (ISO/IEC 9899:1990, section 6.5.3):
+-- 
+Regards/Gruss,
+    Boris.
 
-    "If an attempt is made to modify an object defined with a const-qualified type through use of an lvalue with non-const-qualified type, the behavior is undefined."
-
-
-> "const" is a pointer type issue, and is meant to make certain mis-uses 
-> more visible at compile time. It has *no* other meaning, and anybody who 
-> thinks it has is just setting himself up for problems.
-
-'const' is also a pointer issue, but not only - see above quote from the C Standard.
-
-
-Defining an object 'const' can have an impact on optimization (and also on whether the object is placed in read-only memory). Here are trivial examples to illustrate:
-
-<Program1>
-
-    <foo1.c>
-    void foo1(const int* pi)
-    {
-        *(int*)pi = 1;
-    }
-    </foo1.c>
-
-    <main1.c>
-    #include <stdio.h>
-    void foo1(const int* pi);
-    int main(void)
-    {
-        int i = 0;
-        foo1(&i);
-        printf("i = %d\n", i);
-        return 0;
-    }
-    </main1.c>
-
-</Program1>
-
-Program1 defines 'i' non-const, and modifies it through a const pointer, by casting const away in foo1(). This is allowed - although not necessarily wise.
-
-Program1 has well defined behavior: it prints "i = 1". The generated code dutifully retrieves the value of 'i' before passing it to printf().
-
-
-<Program2>
-
-    <foo2.c>
-    void foo2(const int* pi)
-    {
-    }
-    </foo2.c>
-
-    <main2.c>
-    #include <stdio.h>
-    void foo2(const int* pi);
-    int main(void)
-    {
-        const int i = 0;
-        foo2(&i);
-        printf("i = %d\n", i);
-        return 0;
-    }
-    </main2.c>
-
-</Program2>
-
-Program2 defines 'i' const. A pointer to 'i' is passed to foo2(), which does not modify 'i'.
-
-Program2 has well defined behavior: it prints "i = 0". When it generates code for main1.c, the compiler can assume that 'i' is not modified, because 'i' is defined const.
-
-When compiling main2.c with gcc 4.4.7 with optimizations turned off (-O0), the generated code retrieves the value of 'i' before passing it to printf(). With optimizations turned on (-O3), it inlines the value of 'i', 0, in the call to printf(). Both versions have the same, correct behavior.
-
-
-<Program3>
-
-    <foo3.c>
-    void foo3(const int* pi)
-    {
-        *(int*)pi = 1;
-    }
-    </foo3.c>
-
-    <main3.c>
-    #include <stdio.h>
-    void foo3(const int* pi);
-    int main(void)
-    {
-        const int i = 0;
-        foo3(&i);
-        printf("i = %d\n", i);
-        return 0;
-    }
-    </main3.c>
-
-</Program3>
-
-Program3 defines 'i' const, and attempts to modify it through a const pointer, by casting const away in foo3().
-
-On my particular system, when compiling Program3 with gcc 4.4.7 with optimizations turned off (-O0), the program prints "i = 1". With optimizations turned on (-O3), it prints "i = 0".
-
-The question of which of these two behaviors is "correct" would be pointless, since Program3 has undefined behavior.
-
-
-Antoine
+Sent from a fat crate under my desk. Formatting is fine.
+--
