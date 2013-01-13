@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab3AMRuF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:50:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35052 "EHLO
+	id S1755976Ab3AMRuD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:50:03 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35024 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755473Ab3AMRpi (ORCPT
+	by vger.kernel.org with ESMTP id S1755421Ab3AMRpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Jan 2013 12:45:38 -0500
-Message-Id: <20130113174302.248363034@decadent.org.uk>
+Message-Id: <20130113174305.836348981@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:26 +0000
+Date: Sun, 13 Jan 2013 17:43:43 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>, Jan Kara <jack@suse.cz>
-Subject: [ 31/49] udf: dont increment lenExtents while writing to a hole
+        Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 48/49] ACPI : do not use Lid and Sleep button for S5 wakeup
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,59 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit fb719c59bdb4fca86ee1fd1f42ab3735ca12b6b2 upstream.
+commit b7e383046c2c7c13ad928cd7407eafff758ddd4b upstream.
 
-Incrementing lenExtents even while writing to a hole is bad
-for performance as calls to udf_discard_prealloc and
-udf_truncate_tail_extent would not return from start if
-isize != lenExtents
+When system enters power off, the _PSW of Lid device is enabled.
+But this may cause the system to reboot instead of power off.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+A proper way to fix this is to always disable lid wakeup capability for S5.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=35262
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/udf/inode.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/acpi/scan.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -581,6 +581,7 @@ static struct buffer_head *inode_getblk(
- 	struct udf_inode_info *iinfo = UDF_I(inode);
- 	int goal = 0, pgoal = iinfo->i_location.logicalBlockNum;
- 	int lastblock = 0;
-+	bool isBeyondEOF;
- 
- 	prev_epos.offset = udf_file_entry_alloc_offset(inode);
- 	prev_epos.block = iinfo->i_location;
-@@ -659,7 +660,7 @@ static struct buffer_head *inode_getblk(
- 	/* Are we beyond EOF? */
- 	if (etype == -1) {
- 		int ret;
--
-+		isBeyondEOF = 1;
- 		if (count) {
- 			if (c)
- 				laarr[0] = laarr[1];
-@@ -702,6 +703,7 @@ static struct buffer_head *inode_getblk(
- 		endnum = c + 1;
- 		lastblock = 1;
- 	} else {
-+		isBeyondEOF = 0;
- 		endnum = startnum = ((count > 2) ? 2 : count);
- 
- 		/* if the current extent is in position 0,
-@@ -749,7 +751,8 @@ static struct buffer_head *inode_getblk(
- 			*err = -ENOSPC;
- 			return NULL;
- 		}
--		iinfo->i_lenExtents += inode->i_sb->s_blocksize;
-+		if (isBeyondEOF)
-+			iinfo->i_lenExtents += inode->i_sb->s_blocksize;
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index d0b38ab..bd523bf 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -917,8 +917,8 @@ acpi_bus_extract_wakeup_device_power_package(acpi_handle handle,
+ static void acpi_bus_set_run_wake_flags(struct acpi_device *device)
+ {
+ 	struct acpi_device_id button_device_ids[] = {
+-		{"PNP0C0D", 0},
+ 		{"PNP0C0C", 0},
++		{"PNP0C0D", 0},
+ 		{"PNP0C0E", 0},
+ 		{"", 0},
+ 	};
+@@ -930,6 +930,11 @@ static void acpi_bus_set_run_wake_flags(struct acpi_device *device)
+ 	/* Power button, Lid switch always enable wakeup */
+ 	if (!acpi_match_device_ids(device, button_device_ids)) {
+ 		device->wakeup.flags.run_wake = 1;
++		if (!acpi_match_device_ids(device, &button_device_ids[1])) {
++			/* Do not use Lid/sleep button for S5 wakeup */
++			if (device->wakeup.sleep_state == ACPI_STATE_S5)
++				device->wakeup.sleep_state = ACPI_STATE_S4;
++		}
+ 		device_set_wakeup_capable(&device->dev, true);
+ 		return;
  	}
- 
- 	/* if the extent the requsted block is located in contains multiple
 
 
