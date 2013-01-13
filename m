@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab3AMCJb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 21:09:31 -0500
-Received: from mout.gmx.net ([212.227.17.20]:60978 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754863Ab3AMCJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 21:09:28 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/N/KBnYozNkH3DDw5pVQrn223ZMjt6450HViVLTc
-	Fgci10V83uP2y/
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Peter Huewe <peterhuewe@gmx.de>,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] staging/comedi/ni_daq_700: Convert to module_comedi_pcmcia_driver
-Date: Sun, 13 Jan 2013 03:11:12 +0100
-Message-Id: <1358043073-12328-7-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1358043073-12328-1-git-send-email-peterhuewe@gmx.de>
-References: <1358043073-12328-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1754419Ab3AMCdK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 21:33:10 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:34955 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab3AMCdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 21:33:08 -0500
+From: Tiana Rakotovao Andriamahefa <rkmahefa@gmail.com>
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tiana Rakotovao Andriamahefa <rkmahefa@gmail.com>
+Subject: [PATCH] scripts: kconfig: qconf.cc: fix a compiliation error when using make xconfig
+Date: Sun, 13 Jan 2013 03:28:40 +0000
+Message-Id: <1358047720-10358-1-git-send-email-rkmahefa@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the boring init/exit functions with the new
-module_comedi_pcmcia_driver macro.
+When using make xconfig, the following compilation error appears :
+   /usr/include/qt3/qvaluelist.h:427:13: error: ‘ptrdiff_t’ does not name a type
+Including stddef.h in scripts/kconfig/qconf.cc permits to avoid this error.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Tiana Rakotovao Andriamahefa <rkmahefa@gmail.com>
 ---
- drivers/staging/comedi/drivers/ni_daq_700.c |   25 +------------------------
- 1 files changed, 1 insertions(+), 24 deletions(-)
+ scripts/kconfig/qconf.cc |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/comedi/drivers/ni_daq_700.c b/drivers/staging/comedi/drivers/ni_daq_700.c
-index 68d7c6a..ff0e199 100644
---- a/drivers/staging/comedi/drivers/ni_daq_700.c
-+++ b/drivers/staging/comedi/drivers/ni_daq_700.c
-@@ -334,30 +334,7 @@ static struct pcmcia_driver daq700_cs_driver = {
- 	.id_table	= daq700_cs_ids,
- };
+diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
+index df274fe..1500c38 100644
+--- a/scripts/kconfig/qconf.cc
++++ b/scripts/kconfig/qconf.cc
+@@ -6,6 +6,7 @@
+ #include <qglobal.h>
  
--static int __init daq700_cs_init(void)
--{
--	int ret;
--
--	ret = comedi_driver_register(&daq700_driver);
--	if (ret < 0)
--		return ret;
--
--	ret = pcmcia_register_driver(&daq700_cs_driver);
--	if (ret < 0) {
--		comedi_driver_unregister(&daq700_driver);
--		return ret;
--	}
--
--	return 0;
--}
--module_init(daq700_cs_init);
--
--static void __exit daq700_cs_exit(void)
--{
--	pcmcia_unregister_driver(&daq700_cs_driver);
--	comedi_driver_unregister(&daq700_driver);
--}
--module_exit(daq700_cs_exit);
-+module_comedi_pcmcia_driver(daq700_driver, daq700_cs_driver);
- 
- MODULE_AUTHOR("Fred Brooks <nsaspook@nsaspook.com>");
- MODULE_DESCRIPTION(
+ #if QT_VERSION < 0x040000
++#include <stddef.h>
+ #include <qmainwindow.h>
+ #include <qvbox.h>
+ #include <qvaluelist.h>
 -- 
-1.7.8.6
+1.7.10.4
 
