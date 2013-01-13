@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab3AMRs6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:48:58 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35044 "EHLO
+	id S1755901Ab3AMRtA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:49:00 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35077 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755464Ab3AMRpl (ORCPT
+	by vger.kernel.org with ESMTP id S1755533Ab3AMRpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Jan 2013 12:45:41 -0500
-Message-Id: <20130113174304.365770214@decadent.org.uk>
+Message-Id: <20130113174302.044390376@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:36 +0000
+Date: Sun, 13 Jan 2013 17:43:25 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        Kiran Kumar Kella <kkiran@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 41/49] tcp: implement RFC 5961 4.2
+        Tony Prisk <linux@prisktech.co.nz>, Edgar Toernig <froese@gmx.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 30/49] drivers/rtc/rtc-vt8500.c: fix handling of data passed in struct
+ rtc_time
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,157 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Tony Prisk <linux@prisktech.co.nz>
 
-[ Upstream commit 0c24604b68fc7810d429d6c3657b6f148270e528 ]
+commit 2f90b68309683f2c5765a1b04ca23d71e51f1494 upstream.
 
-Implement the RFC 5691 mitigation against Blind
-Reset attack using SYN bit.
+tm_mon is 0..11, whereas vt8500 expects 1..12 for the month field,
+causing invalid date errors for January, and causing the day field to
+roll over incorrectly.
 
-Section 4.2 of RFC 5961 advises to send a Challenge ACK and drop
-incoming packet, instead of resetting the session.
+The century flag is only handled in vt8500_rtc_read_time, but not set in
+vt8500_rtc_set_time.  This patch corrects the behaviour of the century
+flag.
 
-Add a new SNMP counter to count number of challenge acks sent
-in response to SYN packets.
-(netstat -s | grep TCPSYNChallenge)
-
-Remove obsolete TCPAbortOnSyn, since we no longer abort a TCP session
-because of a SYN flag.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Kiran Kumar Kella <kkiran@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Edgar Toernig <froese@gmx.de>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/snmp.h |  2 +-
- net/ipv4/proc.c      |  2 +-
- net/ipv4/tcp_input.c | 32 +++++++++++++++-----------------
- 3 files changed, 17 insertions(+), 19 deletions(-)
+ drivers/rtc/rtc-vt8500.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/snmp.h b/include/linux/snmp.h
-index 6e310bb..64f5ca7 100644
---- a/include/linux/snmp.h
-+++ b/include/linux/snmp.h
-@@ -209,7 +209,6 @@ enum
- 	LINUX_MIB_TCPDSACKOFOSENT,		/* TCPDSACKOfoSent */
- 	LINUX_MIB_TCPDSACKRECV,			/* TCPDSACKRecv */
- 	LINUX_MIB_TCPDSACKOFORECV,		/* TCPDSACKOfoRecv */
--	LINUX_MIB_TCPABORTONSYN,		/* TCPAbortOnSyn */
- 	LINUX_MIB_TCPABORTONDATA,		/* TCPAbortOnData */
- 	LINUX_MIB_TCPABORTONCLOSE,		/* TCPAbortOnClose */
- 	LINUX_MIB_TCPABORTONMEMORY,		/* TCPAbortOnMemory */
-@@ -234,6 +233,7 @@ enum
- 	LINUX_MIB_TCPREQQFULLDOCOOKIES,		/* TCPReqQFullDoCookies */
- 	LINUX_MIB_TCPREQQFULLDROP,		/* TCPReqQFullDrop */
- 	LINUX_MIB_TCPCHALLENGEACK,		/* TCPChallengeACK */
-+	LINUX_MIB_TCPSYNCHALLENGE,		/* TCPSYNChallenge */
- 	__LINUX_MIB_MAX
- };
- 
-diff --git a/net/ipv4/proc.c b/net/ipv4/proc.c
-index f46c478..f7fdbe9 100644
---- a/net/ipv4/proc.c
-+++ b/net/ipv4/proc.c
-@@ -233,7 +233,6 @@ static const struct snmp_mib snmp4_net_list[] = {
- 	SNMP_MIB_ITEM("TCPDSACKOfoSent", LINUX_MIB_TCPDSACKOFOSENT),
- 	SNMP_MIB_ITEM("TCPDSACKRecv", LINUX_MIB_TCPDSACKRECV),
- 	SNMP_MIB_ITEM("TCPDSACKOfoRecv", LINUX_MIB_TCPDSACKOFORECV),
--	SNMP_MIB_ITEM("TCPAbortOnSyn", LINUX_MIB_TCPABORTONSYN),
- 	SNMP_MIB_ITEM("TCPAbortOnData", LINUX_MIB_TCPABORTONDATA),
- 	SNMP_MIB_ITEM("TCPAbortOnClose", LINUX_MIB_TCPABORTONCLOSE),
- 	SNMP_MIB_ITEM("TCPAbortOnMemory", LINUX_MIB_TCPABORTONMEMORY),
-@@ -258,6 +257,7 @@ static const struct snmp_mib snmp4_net_list[] = {
- 	SNMP_MIB_ITEM("TCPReqQFullDoCookies", LINUX_MIB_TCPREQQFULLDOCOOKIES),
- 	SNMP_MIB_ITEM("TCPReqQFullDrop", LINUX_MIB_TCPREQQFULLDROP),
- 	SNMP_MIB_ITEM("TCPChallengeACK", LINUX_MIB_TCPCHALLENGEACK),
-+	SNMP_MIB_ITEM("TCPSYNChallenge", LINUX_MIB_TCPSYNCHALLENGE),
- 	SNMP_MIB_SENTINEL
- };
- 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index a0d3b88..0b9d8d4 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5263,8 +5263,8 @@ static void tcp_send_challenge_ack(struct sock *sk)
- /* Does PAWS and seqno based validation of an incoming segment, flags will
-  * play significant role here.
-  */
--static int tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
--			      const struct tcphdr *th, int syn_inerr)
-+static bool tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
-+				  const struct tcphdr *th, int syn_inerr)
- {
- 	const u8 *hash_location;
- 	struct tcp_sock *tp = tcp_sk(sk);
-@@ -5316,20 +5316,22 @@ static int tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
- 
- 	/* step 3: check security and precedence [ignored] */
- 
--	/* step 4: Check for a SYN in window. */
--	if (th->syn && !before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt)) {
-+	/* step 4: Check for a SYN
-+	 * RFC 5691 4.2 : Send a challenge ack
-+	 */
-+	if (th->syn) {
- 		if (syn_inerr)
- 			TCP_INC_STATS_BH(sock_net(sk), TCP_MIB_INERRS);
--		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPABORTONSYN);
--		tcp_reset(sk);
--		return -1;
-+		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPSYNCHALLENGE);
-+		tcp_send_challenge_ack(sk);
-+		goto discard;
+diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
+index 737addf..00c930f 100644
+--- a/drivers/rtc/rtc-vt8500.c
++++ b/drivers/rtc/rtc-vt8500.c
+@@ -119,7 +119,7 @@ static int vt8500_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	tm->tm_min = bcd2bin((time & TIME_MIN_MASK) >> TIME_MIN_S);
+ 	tm->tm_hour = bcd2bin((time & TIME_HOUR_MASK) >> TIME_HOUR_S);
+ 	tm->tm_mday = bcd2bin(date & DATE_DAY_MASK);
+-	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S);
++	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S) - 1;
+ 	tm->tm_year = bcd2bin((date & DATE_YEAR_MASK) >> DATE_YEAR_S)
+ 			+ ((date >> DATE_CENTURY_S) & 1 ? 200 : 100);
+ 	tm->tm_wday = (time & TIME_DOW_MASK) >> TIME_DOW_S;
+@@ -138,8 +138,9 @@ static int vt8500_rtc_set_time(struct device *dev, struct rtc_time *tm)
  	}
  
--	return 1;
-+	return true;
- 
- discard:
- 	__kfree_skb(skb);
--	return 0;
-+	return false;
- }
- 
- /*
-@@ -5359,7 +5361,6 @@ int tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
- 			const struct tcphdr *th, unsigned int len)
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
--	int res;
- 
- 	/*
- 	 *	Header prediction.
-@@ -5539,9 +5540,8 @@ slow_path:
- 	 *	Standard slow path.
- 	 */
- 
--	res = tcp_validate_incoming(sk, skb, th, 1);
--	if (res <= 0)
--		return -res;
-+	if (!tcp_validate_incoming(sk, skb, th, 1))
-+		return 0;
- 
- step5:
- 	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
-@@ -5851,7 +5851,6 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb,
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	struct inet_connection_sock *icsk = inet_csk(sk);
- 	int queued = 0;
--	int res;
- 
- 	tp->rx_opt.saw_tstamp = 0;
- 
-@@ -5906,9 +5905,8 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb,
- 		return 0;
- 	}
- 
--	res = tcp_validate_incoming(sk, skb, th, 0);
--	if (res <= 0)
--		return -res;
-+	if (!tcp_validate_incoming(sk, skb, th, 0))
-+		return 0;
- 
- 	/* step 5: check the ACK field */
- 	if (th->ack) {
+ 	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
+-		| (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
+-		| (bin2bcd(tm->tm_mday)),
++		| (bin2bcd(tm->tm_mon + 1) << DATE_MONTH_S)
++		| (bin2bcd(tm->tm_mday))
++		| ((tm->tm_year >= 200) << DATE_CENTURY_S),
+ 		vt8500_rtc->regbase + VT8500_RTC_DS);
+ 	writel((bin2bcd(tm->tm_wday) << TIME_DOW_S)
+ 		| (bin2bcd(tm->tm_hour) << TIME_HOUR_S)
 
 
