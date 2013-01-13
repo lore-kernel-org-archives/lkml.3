@@ -1,120 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3AMOwa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 09:52:30 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:50896 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab3AMOw1 convert rfc822-to-8bit (ORCPT
+	id S1755291Ab3AMPNj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 10:13:39 -0500
+Received: from mail-da0-f54.google.com ([209.85.210.54]:55190 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab3AMPNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 09:52:27 -0500
+	Sun, 13 Jan 2013 10:13:38 -0500
+Message-ID: <50F2CF18.1010301@gmail.com>
+Date: Sun, 13 Jan 2013 23:13:28 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1358084972.3065.18.camel@dabdike.int.hansenpartnership.com>
-References: <1358073890-3610-1-git-send-email-geert@linux-m68k.org>
-	<1358073890-3610-8-git-send-email-geert@linux-m68k.org>
-	<1358077001.3065.14.camel@dabdike.int.hansenpartnership.com>
-	<CAMuHMdVvRmNZS_L8-kYm4VGexD3h=nW4wC266cu7VAxJFx+-oA@mail.gmail.com>
-	<1358084972.3065.18.camel@dabdike.int.hansenpartnership.com>
-Date: Sun, 13 Jan 2013 15:52:25 +0100
-X-Google-Sender-Auth: CuOgz545ri-IFHLLcc4EvfyYOWg
-Message-ID: <CAMuHMdVETGzkf3nu+AohYN=gUjH3nmodxiLhi0Vrdo=SYKiokA@mail.gmail.com>
-Subject: Re: [PATCH 8/9] parisc: Provide dma_mmap_coherent() and dma_get_sgtable()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-parisc@vger.kernel.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 4/6] PCI/acpiphp: update ACPI hotplug slot information
+ when PCI hotplug happens
+References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <5038693.7d3RCgbghD@vostro.rjw.lan> <50ED9B03.3020606@gmail.com> <2474473.EXPaz4HMXx@vostro.rjw.lan>
+In-Reply-To: <2474473.EXPaz4HMXx@vostro.rjw.lan>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 13, 2013 at 2:49 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Sun, 2013-01-13 at 14:12 +0100, Geert Uytterhoeven wrote:
->> On Sun, Jan 13, 2013 at 12:36 PM, James Bottomley
->> <James.Bottomley@hansenpartnership.com> wrote:
->> > On Sun, 2013-01-13 at 11:44 +0100, Geert Uytterhoeven wrote:
->> >> parisc/allmodconfig:
->> >>
->> >> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
->> >> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
->> >> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
->> >> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
->> >>
->> >> For architectures using dma_map_ops, dma_mmap_coherent() and
->> >> dma_get_sgtable() are provided in <asm-generic/dma-mapping-common.h>.
->> >>
->> >> Parisc does not use dma_map_ops, hence it should implement them as inline
->> >> stubs using dma_common_mmap() and dma_common_get_sgtable().
->> >>
->> >> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> >> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
->> >> Cc: linux-parisc@vger.kernel.org
->> >> ---
->> >>  arch/parisc/include/asm/dma-mapping.h |   10 ++++++++++
->> >>  1 files changed, 10 insertions(+), 0 deletions(-)
->> >>
->> >> diff --git a/arch/parisc/include/asm/dma-mapping.h b/arch/parisc/include/asm/dma-mapping.h
->> >> index 467bbd5..1fac0bf 100644
->> >> --- a/arch/parisc/include/asm/dma-mapping.h
->> >> +++ b/arch/parisc/include/asm/dma-mapping.h
->> >> @@ -238,4 +238,14 @@ void * sba_get_iommu(struct parisc_device *dev);
->> >>  /* At the moment, we panic on error for IOMMU resource exaustion */
->> >>  #define dma_mapping_error(dev, x)    0
->> >>
->> >> +/* drivers/base/dma-mapping.c */
->> >> +extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
->> >> +                        void *cpu_addr, dma_addr_t dma_addr, size_t size);
->> >> +extern int dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
->> >> +                               void *cpu_addr, dma_addr_t dma_addr,
->> >> +                               size_t size);
->> >> +
->> >> +#define dma_mmap_coherent(d, v, c, h, s) dma_common_mmap(d, v, c, h, s)
->> >> +#define dma_get_sgtable(d, t, v, h, s) dma_common_get_sgtable(d, t, v, h, s)
->> >
->> > What is the documentation around these functions?  The name sounds
->> > suspiciously like you want a mapping of a buffer coherent between kernel
->> > and user space, which doesn't seem possible for us given the API.  We're
->> > a VIPT architecture, so the only way we can do this is to have the
->> > actual vma user space address be congruent with cpu_addr.  How do we do
->> > that if the vma and kernel addresses are already fixed?
->>
->> I was already afraid of this when seeing the "coherent" in the naming...
->
-> Afraid of what, that the interface won't actually work for VIPT or that
-> we need special functions?
+On 01/10/2013 04:23 AM, Rafael J. Wysocki wrote:
+> On Thursday, January 10, 2013 12:29:55 AM Jiang Liu wrote:
+>> On 01/09/2013 08:04 AM, Rafael J. Wysocki wrote:
+>>> On Wednesday, January 09, 2013 12:52:23 AM Jiang Liu wrote:
+>>>> Currently the acpiphp driver fails to update hotplug slot information under
+>>>> several conditions, such as:
+>>>> 1) The bridge device is removed through /sys/bus/pci/devices/.../remove
+>>>> 2) The bridge device is added/removed by PCI hotplug driver other than the
+>>>>    acpiphp driver itself. For example, if an IO expansion box with ACPI
+>>>>    hotplug slots available is hot-added by the pciehp driver, all ACPI
+>>>>    hotplug slots won't be discovered by the acpiphp driver.
+>>>>
+>>>> So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
+>>>> update ACPI hotplug slot information when PCI hotplug event happens.
+>>>>
+>>>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>>>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>>>> ---
+>>>>  drivers/pci/hotplug/acpiphp_glue.c |   62 ++++++++++++++++++++++++++++++++++--
+>>>>  1 file changed, 60 insertions(+), 2 deletions(-)
+>>>>
+>> snip
+>>>> +static struct notifier_block acpi_pci_hp_notifier = {
+>>>> +	.notifier_call = &acpi_pci_hp_notify_fn,
+>>>> +};
+>>>> +
+>>>>  static struct acpi_pci_driver acpi_pci_hp_driver = {
+>>>>  	.add =		add_bridge,
+>>>>  	.remove =	remove_bridge,
+>>>> @@ -1448,6 +1503,8 @@ int __init acpiphp_glue_init(void)
+>>>>  	else
+>>>>  		acpi_pci_register_driver(&acpi_pci_hp_driver);
+>>>>  
+>>>> +	bus_register_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
+>>>
+>>> Your previous patch adds a PCI bus notifier for a similar thing.  Why are
+>>> you adding another one here?
+>> Hi Rafael,
+>> 	The acpiphp driver could be built as a module, and this bus notifier
+>> is used to setup/tear down ACPI based PCI hotplug controllers under a PCI bridge.
+>> The previous patch is to add/remove PCI slots. The PCI slot and PCI hotplug
+>> controller are related but different objects, so we use two notifiers to support
+>> them all.
+> 
+> I would be much happier if those notifiers were not needed.  At least, I'm not
+> sure why they need to be invoked by the driver core during device registration.
+> 
+> In my opinion it would be much better if they were called only for the devices
+> that might need them instead of all PCI devices.
+> 
+Hi Rafael,
+	The whole thing seems a little complex, and I will try my best to explain
+about it:)
+	Essentially a PCI slot is associated with a PCI bus, and a PCI bus is 
+associated with a host bridge or P2P bridge. When hot-adding/hot-removing a PCI bus,
+we need to create/destroy PCI slots associated with it. So the pci_slot and acpiphp
+drivers need to be notified when hot-adding/hot-removing a PCI bus.
+	But there's no common mechanism to get notified when PCI buses are being
+hot-added/hot-removed. So my first implementation has introduced a dedicated notifier
+chain for PCI bus addition/removal. Later with ongoing changes to the PCI core, 
+I found we could rely on the existing bus notification mechanism too, so that becomes
+the current implementation.
+	I have a proposal to unify the process for boot time and hotplug as below:
+1) Change pci_slot and acpiphp as built-in instead of modules.
+2) Get rid of acpi_pci_driver for pci_slot and acpiphp driver.
+3) Register some forms of callbacks to create/destroy hotplug controllers/slots
+   when creating/destroying PCI buses.
+3.a) Rely on the bus notification mechanism to invoke callbacks. This solution is
+     simple, but with a little overhead
+3.b) Introduce a dedicated notifier chain for PCI bus hot-adding/hot-removing.
+     This solution could get rid of the overhead, but with more code changes.
+3.c) Invoke callbacks from acpi_bus_type->setup/cleanup. This solution could
+     only support ACPI based slots, such as pci_slot and acpiphp.
+	Any recommendations?
+Regards!
+Gerry
 
-That it wouldn't work on parisc.
+> Thanks,
+> Rafael
+> 
+> 
 
-> We won't be the only ones: MIPS at least will have this issue.
-
-MIPS uses <asm-generic/dma-mapping-common.h>, BUT has some ugly
-#ifdefery in sound/core/pcm_native.c:snd_pcm_lib_default_mmap().
-
-BTW, does current ALSA mmap() work on parisc?
-
-> But I would like to clear up whether we can actually use this on PA or
-> not.
->
->> > In other words, either the interface is unusable by parisc, or the
->> > common code definitely won't work for us.
->>
->> So you probably want a static inline function that returns -EINVAL for now?
->
-> Yes, that should work (provided the consumers handle the return code
-> correctly).
-
-OK. Let's wait (for Marek's documentation) and see whether we can fix it
-for real in 3.8, or have to resort to -EINVAL.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
