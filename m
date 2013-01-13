@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab3AMRzn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:55:43 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34964 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755297Ab3AMRpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755300Ab3AMRpZ (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 13 Jan 2013 12:45:25 -0500
-Message-Id: <20130113174257.700603226@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34925 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754593Ab3AMRpS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 12:45:18 -0500
+Message-Id: <20130113174259.392401812@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:04 +0000
+Date: Sun, 13 Jan 2013 17:43:12 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>,
-        Tim Perry <tdparmor-sambabugs@yahoo.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [ 09/49] cifs: adjust sequence number downward after signing NT_CANCEL
- request
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?ISO-8859-15?q?Albrecht=20Dre=C3=9F?= <albrecht.dress@arcor.de>
+Subject: [ 17/49] drm/radeon: add connector table for Mac G4 Silver
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,41 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 31efee60f489c759c341454d755a9fd13de8c03d upstream.
+commit cafa59b9011a7790be4ddd5979419259844a165d upstream.
 
-When a call goes out, the signing code adjusts the sequence number
-upward by two to account for the request and the response. An NT_CANCEL
-however doesn't get a response of its own, it just hurries the server
-along to get it to respond to the original request more quickly.
-Therefore, we must adjust the sequence number back down by one after
-signing a NT_CANCEL request.
+Apple cards do not provide data tables in the vbios
+so we have to hard code the connector parameters
+in the driver.
 
-Reported-by: Tim Perry <tdparmor-sambabugs@yahoo.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
-[bwh: Backported to 3.2: adjust filename]
+Reported-by: Albrecht Dreß <albrecht.dress@arcor.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/cifs/transport.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/gpu/drm/radeon/radeon_combios.c |   51 +++++++++++++++++++++++++++++++
+ drivers/gpu/drm/radeon/radeon_mode.h    |    3 +-
+ 2 files changed, 53 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/transport.c
-+++ b/fs/cifs/transport.c
-@@ -485,6 +485,13 @@ send_nt_cancel(struct TCP_Server_Info *s
- 		mutex_unlock(&server->srv_mutex);
- 		return rc;
- 	}
-+
-+	/*
-+	 * The response to this call was already factored into the sequence
-+	 * number when the call went out, so we must adjust it back downward
-+	 * after signing here.
-+	 */
-+	--server->sequence_number;
- 	rc = smb_send(server, in_buf, be32_to_cpu(in_buf->smb_buf_length));
- 	mutex_unlock(&server->srv_mutex);
+diff --git a/drivers/gpu/drm/radeon/radeon_combios.c b/drivers/gpu/drm/radeon/radeon_combios.c
+index 4af8912..33a56a0 100644
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -1548,6 +1548,9 @@ bool radeon_get_legacy_connector_info_from_table(struct drm_device *dev)
+ 			   of_machine_is_compatible("PowerBook6,7")) {
+ 			/* ibook */
+ 			rdev->mode_info.connector_table = CT_IBOOK;
++		} else if (of_machine_is_compatible("PowerMac3,5")) {
++			/* PowerMac G4 Silver radeon 7500 */
++			rdev->mode_info.connector_table = CT_MAC_G4_SILVER;
+ 		} else if (of_machine_is_compatible("PowerMac4,4")) {
+ 			/* emac */
+ 			rdev->mode_info.connector_table = CT_EMAC;
+@@ -2212,6 +2215,54 @@ bool radeon_get_legacy_connector_info_from_table(struct drm_device *dev)
+ 					    CONNECTOR_OBJECT_ID_SVIDEO,
+ 					    &hpd);
+ 		break;
++	case CT_MAC_G4_SILVER:
++		DRM_INFO("Connector Table: %d (mac g4 silver)\n",
++			 rdev->mode_info.connector_table);
++		/* DVI-I - tv dac, int tmds */
++		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_DVI, 0, 0);
++		hpd.hpd = RADEON_HPD_1; /* ??? */
++		radeon_add_legacy_encoder(dev,
++					  radeon_get_encoder_enum(dev,
++								ATOM_DEVICE_DFP1_SUPPORT,
++								0),
++					  ATOM_DEVICE_DFP1_SUPPORT);
++		radeon_add_legacy_encoder(dev,
++					  radeon_get_encoder_enum(dev,
++								ATOM_DEVICE_CRT2_SUPPORT,
++								2),
++					  ATOM_DEVICE_CRT2_SUPPORT);
++		radeon_add_legacy_connector(dev, 0,
++					    ATOM_DEVICE_DFP1_SUPPORT |
++					    ATOM_DEVICE_CRT2_SUPPORT,
++					    DRM_MODE_CONNECTOR_DVII, &ddc_i2c,
++					    CONNECTOR_OBJECT_ID_SINGLE_LINK_DVI_I,
++					    &hpd);
++		/* VGA - primary dac */
++		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_VGA, 0, 0);
++		hpd.hpd = RADEON_HPD_NONE;
++		radeon_add_legacy_encoder(dev,
++					  radeon_get_encoder_enum(dev,
++								ATOM_DEVICE_CRT1_SUPPORT,
++								1),
++					  ATOM_DEVICE_CRT1_SUPPORT);
++		radeon_add_legacy_connector(dev, 1, ATOM_DEVICE_CRT1_SUPPORT,
++					    DRM_MODE_CONNECTOR_VGA, &ddc_i2c,
++					    CONNECTOR_OBJECT_ID_VGA,
++					    &hpd);
++		/* TV - TV DAC */
++		ddc_i2c.valid = false;
++		hpd.hpd = RADEON_HPD_NONE;
++		radeon_add_legacy_encoder(dev,
++					  radeon_get_encoder_enum(dev,
++								ATOM_DEVICE_TV1_SUPPORT,
++								2),
++					  ATOM_DEVICE_TV1_SUPPORT);
++		radeon_add_legacy_connector(dev, 2, ATOM_DEVICE_TV1_SUPPORT,
++					    DRM_MODE_CONNECTOR_SVIDEO,
++					    &ddc_i2c,
++					    CONNECTOR_OBJECT_ID_SVIDEO,
++					    &hpd);
++		break;
+ 	default:
+ 		DRM_INFO("Connector table: %d (invalid)\n",
+ 			 rdev->mode_info.connector_table);
+diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
+index d818b50..ed8a0fa 100644
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -209,7 +209,8 @@ enum radeon_connector_table {
+ 	CT_RN50_POWER,
+ 	CT_MAC_X800,
+ 	CT_MAC_G5_9600,
+-	CT_SAM440EP
++	CT_SAM440EP,
++	CT_MAC_G4_SILVER
+ };
  
+ enum radeon_dvo_chip {
 
 
