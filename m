@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab3AMRtA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:49:00 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35077 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755533Ab3AMRpl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755589Ab3AMRpl (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 13 Jan 2013 12:45:41 -0500
-Message-Id: <20130113174302.044390376@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35011 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754900Ab3AMRpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 12:45:33 -0500
+Message-Id: <20130113174258.140361658@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:25 +0000
+Date: Sun, 13 Jan 2013 17:43:06 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tony Prisk <linux@prisktech.co.nz>, Edgar Toernig <froese@gmx.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 30/49] drivers/rtc/rtc-vt8500.c: fix handling of data passed in struct
- rtc_time
+        Tomasz Guszkowski <tsg@o2.pl>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 11/49] p54usb: add USB ID for T-Com Sinus 154 data II
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,51 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Prisk <linux@prisktech.co.nz>
+From: Tomasz Guszkowski <tsg@o2.pl>
 
-commit 2f90b68309683f2c5765a1b04ca23d71e51f1494 upstream.
+commit 3194b7fcdf6caea338b5d2c72d76fed80437649c upstream.
 
-tm_mon is 0..11, whereas vt8500 expects 1..12 for the month field,
-causing invalid date errors for January, and causing the day field to
-roll over incorrectly.
+Added USB ID for T-Com Sinus 154 data II.
 
-The century flag is only handled in vt8500_rtc_read_time, but not set in
-vt8500_rtc_set_time.  This patch corrects the behaviour of the century
-flag.
-
-Signed-off-by: Edgar Toernig <froese@gmx.de>
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tomasz Guszkowski <tsg@o2.pl>
+Acked-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/rtc/rtc-vt8500.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/wireless/p54/p54usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
-index 737addf..00c930f 100644
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -119,7 +119,7 @@ static int vt8500_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 	tm->tm_min = bcd2bin((time & TIME_MIN_MASK) >> TIME_MIN_S);
- 	tm->tm_hour = bcd2bin((time & TIME_HOUR_MASK) >> TIME_HOUR_S);
- 	tm->tm_mday = bcd2bin(date & DATE_DAY_MASK);
--	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S);
-+	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S) - 1;
- 	tm->tm_year = bcd2bin((date & DATE_YEAR_MASK) >> DATE_YEAR_S)
- 			+ ((date >> DATE_CENTURY_S) & 1 ? 200 : 100);
- 	tm->tm_wday = (time & TIME_DOW_MASK) >> TIME_DOW_S;
-@@ -138,8 +138,9 @@ static int vt8500_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	}
- 
- 	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
--		| (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
--		| (bin2bcd(tm->tm_mday)),
-+		| (bin2bcd(tm->tm_mon + 1) << DATE_MONTH_S)
-+		| (bin2bcd(tm->tm_mday))
-+		| ((tm->tm_year >= 200) << DATE_CENTURY_S),
- 		vt8500_rtc->regbase + VT8500_RTC_DS);
- 	writel((bin2bcd(tm->tm_wday) << TIME_DOW_S)
- 		| (bin2bcd(tm->tm_hour) << TIME_HOUR_S)
+diff --git a/drivers/net/wireless/p54/p54usb.c b/drivers/net/wireless/p54/p54usb.c
+index e71c702..64b944b 100644
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -82,6 +82,7 @@ static struct usb_device_id p54u_table[] = {
+ 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
+ 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
+ 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
++	{USB_DEVICE(0x083a, 0x4503)},	/* T-Com Sinus 154 data II */
+ 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
+ 	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
+ 	{USB_DEVICE(0x083a, 0xf503)},	/* Accton FD7050E ver 1010ec  */
 
 
