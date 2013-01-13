@@ -1,49 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab3AMB1W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jan 2013 20:27:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64295 "EHLO mx1.redhat.com"
+	id S1754285Ab3AMCIm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jan 2013 21:08:42 -0500
+Received: from mout.gmx.net ([212.227.15.18]:62384 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781Ab3AMB1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jan 2013 20:27:21 -0500
-Date: Sat, 12 Jan 2013 20:27:17 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: airlied@redhat.com
-Subject: radeon causing sleeping function called from invalid context
-Message-ID: <20130113012717.GA2673@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, airlied@redhat.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753844Ab3AMCIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jan 2013 21:08:41 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX186DbcUcio6eV/Hzcn/Q/c/OfNGMr6anqTylJY6vy
+	4IBoFDQFatgjs/
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        Mori Hess <fmhess@users.sourceforge.net>,
+        Peter Huewe <peterhuewe@gmx.de>,
+        YAMANE Toshiaki <yamanetoshi@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/8] staging/comedi: Add macro for registering a comedi PCMCIA driver
+Date: Sun, 13 Jan 2013 03:11:06 +0100
+Message-Id: <1358043073-12328-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUG: sleeping function called from invalid context at mm/slub.c:925
-in_atomic(): 1, irqs_disabled(): 0, pid: 566, name: Xorg
-INFO: lockdep is turned off.
-Pid: 566, comm: Xorg Not tainted 3.8.0-rc3+ #49
-Call Trace:
- [<ffffffff81087ad1>] __might_sleep+0x141/0x200
- [<ffffffff8119eddb>] kmem_cache_alloc_trace+0x4b/0x2a0
- [<ffffffffa0083fb3>] ttm_bo_move_accel_cleanup+0x1d3/0x330 [ttm]
- [<ffffffffa00c5418>] radeon_move_blit.isra.4+0xf8/0x160 [radeon]
- [<ffffffffa00c5db0>] radeon_bo_move+0xb0/0x1f0 [radeon]
- [<ffffffffa00820ed>] ttm_bo_handle_move_mem+0x27d/0x5d0 [ttm]
- [<ffffffff8108dd51>] ? get_parent_ip+0x11/0x50
- [<ffffffffa0083307>] ttm_bo_move_buffer+0x127/0x140 [ttm]
- [<ffffffffa008717d>] ? ttm_eu_list_ref_sub+0x3d/0x60 [ttm]
- [<ffffffffa00833c2>] ttm_bo_validate+0xa2/0x120 [ttm]
- [<ffffffffa00c6f45>] radeon_bo_list_validate+0x75/0x90 [radeon]
- [<ffffffffa00dca22>] radeon_cs_ioctl+0x582/0x950 [radeon]
- [<ffffffffa002e573>] drm_ioctl+0x4d3/0x580 [drm]
- [<ffffffffa00dc4a0>] ? radeon_cs_finish_pages+0xf0/0xf0 [radeon]
- [<ffffffff811c49f9>] do_vfs_ioctl+0x99/0x5a0
- [<ffffffff812cd3d7>] ? file_has_perm+0x97/0xb0
- [<ffffffff81103715>] ? rcu_eqs_exit+0x65/0xb0
- [<ffffffff811c4f91>] sys_ioctl+0x91/0xb0
- [<ffffffff81695ad4>] tracesys+0xdd/0xe2
+This patch introduces a new macro 'module_comedi_pcmcia_driver'
+for comedi PCMCIA drivers which do not do anything special in module
+init/exit. This eliminates a lot of boilerplate.
+
+Adapted from 'module_comedi_pci_driver'
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/comedi/comedidev.h |   22 ++++++++++++++++++++++
+ drivers/staging/comedi/drivers.c   |   34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index 692e1e6..ccb22dd 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -41,6 +41,9 @@
+ #include <linux/io.h>
+ #include <linux/timer.h>
+ #include <linux/pci.h>
++#include <pcmcia/cistpl.h>
++#include <pcmcia/cisreg.h>
++#include <pcmcia/ds.h>
+ #include <linux/usb.h>
+ 
+ #include "comedi.h"
+@@ -342,6 +345,25 @@ void comedi_pci_driver_unregister(struct comedi_driver *, struct pci_driver *);
+ 	module_driver(__comedi_driver, comedi_pci_driver_register, \
+ 			comedi_pci_driver_unregister, &(__pci_driver))
+ 
++int comedi_pcmcia_driver_register(struct comedi_driver *,
++					struct pcmcia_driver *);
++void comedi_pcmcia_driver_unregister(struct comedi_driver *,
++					struct pcmcia_driver *);
++
++/**
++ * module_comedi_pcmcia_driver() - Helper macro for registering a comedi PCMCIA driver
++ * @__comedi_driver: comedi_driver struct
++ * @__pcmcia_driver: pcmcia_driver struct
++ *
++ * Helper macro for comedi PCMCIA drivers which do not do anything special
++ * in module init/exit. This eliminates a lot of boilerplate. Each
++ * module may only use this macro once, and calling it replaces
++ * module_init() and module_exit()
++ */
++#define module_comedi_pcmcia_driver(__comedi_driver, __pcmcia_driver) \
++	module_driver(__comedi_driver, comedi_pcmcia_driver_register, \
++			comedi_pcmcia_driver_unregister, &(__pcmcia_driver))
++
+ struct usb_driver;
+ 
+ int comedi_usb_driver_register(struct comedi_driver *, struct usb_driver *);
+diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+index 50cf498..17a9e35 100644
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -24,6 +24,9 @@
+ #include <linux/device.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
++#include <pcmcia/cistpl.h>
++#include <pcmcia/cisreg.h>
++#include <pcmcia/ds.h>
+ #include <linux/usb.h>
+ #include <linux/errno.h>
+ #include <linux/kconfig.h>
+@@ -958,6 +961,37 @@ void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
+ }
+ EXPORT_SYMBOL_GPL(comedi_pci_driver_unregister);
+ 
++int comedi_pcmcia_driver_register(struct comedi_driver *comedi_driver,
++		struct pcmcia_driver *pcmcia_driver)
++{
++	int ret;
++
++	ret = comedi_driver_register(comedi_driver);
++	if (ret < 0)
++		return ret;
++
++	/* FIXME: Remove this test after auditing all comedi pci drivers */
++	if (!pcmcia_driver->name)
++		pcmcia_driver->name = comedi_driver->driver_name;
++
++	ret = pcmcia_register_driver(pcmcia_driver);
++	if (ret < 0) {
++		comedi_driver_unregister(comedi_driver);
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_register);
++
++void comedi_pcmcia_driver_unregister(struct comedi_driver *comedi_driver,
++		struct pcmcia_driver *pcmcia_driver)
++{
++	pcmcia_unregister_driver(pcmcia_driver);
++	comedi_driver_unregister(comedi_driver);
++}
++EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_unregister);
++
+ #if IS_ENABLED(CONFIG_USB)
+ 
+ int comedi_usb_driver_register(struct comedi_driver *comedi_driver,
+-- 
+1.7.8.6
 
