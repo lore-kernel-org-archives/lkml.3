@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab3AMRzl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 12:55:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34952 "EHLO
+	id S1756170Ab3AMRzp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 12:55:45 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34949 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755242Ab3AMRpZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755208Ab3AMRpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Jan 2013 12:45:25 -0500
-Message-Id: <20130113174258.324392745@decadent.org.uk>
+Message-Id: <20130113174258.990063287@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 13 Jan 2013 17:43:07 +0000
+Date: Sun, 13 Jan 2013 17:43:10 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 12/49] ath9k_hw: Fix RX gain initvals for AR9485
+        Gabor Juhos <juhosg@openwrt.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 15/49] powerpc: Add missing NULL terminator to avoid boot panic on PPC40x
 In-Reply-To: <20130113174255.736888844@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,35 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit a796a1dd5da9645ad77aa687d1a890ecd63ab5a6 upstream.
+commit e6449c9b2d90c1bd9a5985bf05ddebfd1631cd6b upstream.
 
-Populate iniModesRxGain with the correct initvals
-array for AR9485 v1.1
+The missing NULL terminator can cause a panic on
+PPC405 boards during boot:
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - INIT_INI_ARRAY takes additional size and columns arguments]
+  Linux/PowerPC load: console=ttyS0,115200 root=/dev/mtdblock1 rootfstype=squashfs,jffs2 noinitrd init=/etc/preinit
+  Finalizing device tree... flat tree at 0x6a5160
+  bootconsole [udbg0] enabled
+  Page fault in user mode with in_atomic() = 1 mm = (null)
+  NIP = c0275f50  MSR = fffffffe
+  Oops: Weird page fault, sig: 11 [#1]
+  PowerPC 40x Platform
+  Modules linked in:
+  NIP: c0275f50 LR: c0275f60 CTR: c0280000
+  REGS: c0275eb0 TRAP: 636f7265   Not tainted  (3.7.1)
+  MSR: fffffffe <VEC,VSX,EE,PR,FP,ME,SE,BE,IR,DR,PMM,RI> CR: c06a6190  XER: 00000001
+  TASK = c02662a8[0] 'swapper' THREAD: c0274000
+  GPR00: c0275ec0 c000c658 c027c4bf 00000000 c0275ee0 c000a0ec c020a1a8 c020a1f0
+  GPR08: c020f631 c020f404 c025f078 c025f080 c0275f10
+   Call Trace:
+   ---[ end trace 31fd0ba7d8756001 ]---
+
+  Kernel panic - not syncing: Attempted to kill the idle task!
+
+The panic happens since commit 9597abe00c1bab2aedce6b49866bf6d1e81c9eed
+(sections: fix section conflicts in arch/powerpc), however the root
+cause of this is that the NULL terminator were not added in commit
+a4f740cf33f7f6c164bbde3c0cdbcc77b0c4997c (of/flattree: Add of_flat_dt_match()
+helper function).
+
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ath/ath9k/ar9003_hw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/40x/ppc40x_simple.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_hw.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
-@@ -701,8 +701,8 @@ static void ar9003_rx_gain_table_mode0(s
- 				2);
- 	else if (AR_SREV_9485_11(ah))
- 		INIT_INI_ARRAY(&ah->iniModesRxGain,
--				ar9485Common_wo_xlna_rx_gain_1_1,
--				ARRAY_SIZE(ar9485Common_wo_xlna_rx_gain_1_1),
-+			       ar9485_common_rx_gain_1_1,
-+			       ARRAY_SIZE(ar9485_common_rx_gain_1_1),
- 				2);
- 	else if (AR_SREV_9580(ah))
- 		INIT_INI_ARRAY(&ah->iniModesRxGain,
+--- a/arch/powerpc/platforms/40x/ppc40x_simple.c
++++ b/arch/powerpc/platforms/40x/ppc40x_simple.c
+@@ -55,7 +55,8 @@ static const char *board[] __initdata =
+ 	"amcc,haleakala",
+ 	"amcc,kilauea",
+ 	"amcc,makalu",
+-	"est,hotfoot"
++	"est,hotfoot",
++	NULL
+ };
+ 
+ static int __init ppc40x_probe(void)
 
 
