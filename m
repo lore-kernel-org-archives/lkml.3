@@ -1,46 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758234Ab3ANS6H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:58:07 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:58870 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756094Ab3ANS5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:57:51 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Chas Williams <chas@cmf.nrl.navy.mil>,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] atm: fore200e.c: fix uninitialized variable
-Date: Mon, 14 Jan 2013 18:57:43 +0000
-Message-Id: <1358189864-28735-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.4.5
+	id S1757438Ab3ANTAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 14:00:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41407 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754929Ab3ANTAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 14:00:11 -0500
+Date: Mon, 14 Jan 2013 20:00:08 +0100
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        chavey@google.com, fengguang.wu@intel.com, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH] writeback: mark sysctl vm.block_dump for removal
+Message-ID: <20130114190008.GM6597@quack.suse.cz>
+References: <1357938397-5413-1-git-send-email-tj@kernel.org>
+ <20130114140227.GB2441@kernel.dk>
+ <20130114174318.GD27942@mtj.dyndns.org>
+ <20130114182203.GE27942@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130114182203.GE27942@mtj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the variable err is uninitialized if all the macros in the function are
-disabled.
+On Mon 14-01-13 10:22:03, Tejun Heo wrote:
+> vm.block_dump is nasty in that it dumps IO traces directly to printk.
+> It isn't scalable and can easily lead to looping behavior - IO
+> generating kernel message which in turn genreates log IO, ad
+> infinitum.
+> 
+> Now that proper tracepoints are in place, vm.block_dump isn't
+> necessary.  Generate a warning if used so that it can be removed down
+> the road.
+  Looks good. Maybe we could extend the message to ask people to let us know
+if they see the message? If someone is using it we shouldn't really remove
+it.
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- drivers/atm/fore200e.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/atm/fore200e.c b/drivers/atm/fore200e.c
-index 204814e..d4725fc 100644
---- a/drivers/atm/fore200e.c
-+++ b/drivers/atm/fore200e.c
-@@ -2780,7 +2780,7 @@ static struct pci_driver fore200e_pca_driver = {
- 
- static int __init fore200e_module_init(void)
- {
--	int err;
-+	int err = 0;
- 
- 	printk(FORE200E "FORE Systems 200E-series ATM driver - version " FORE200E_VERSION "\n");
- 
+								Honza
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+>  include/linux/writeback.h |    3 +++
+>  kernel/sysctl.c           |    2 +-
+>  mm/page-writeback.c       |   14 ++++++++++++++
+>  3 files changed, 18 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> index b82a83a..678ee6d 100644
+> --- a/include/linux/writeback.h
+> +++ b/include/linux/writeback.h
+> @@ -143,6 +143,9 @@ extern int dirty_ratio_handler(struct ctl_table *table, int write,
+>  extern int dirty_bytes_handler(struct ctl_table *table, int write,
+>  		void __user *buffer, size_t *lenp,
+>  		loff_t *ppos);
+> +extern int block_dump_handler(struct ctl_table *table, int write,
+> +		void __user *buffer, size_t *lenp,
+> +		loff_t *ppos);
+>  
+>  struct ctl_table;
+>  int dirty_writeback_centisecs_handler(struct ctl_table *, int,
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index c88878d..9e7f7b5 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -1288,7 +1288,7 @@ static struct ctl_table vm_table[] = {
+>  		.data		= &block_dump,
+>  		.maxlen		= sizeof(block_dump),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_dointvec,
+> +		.proc_handler	= block_dump_handler,
+>  		.extra1		= &zero,
+>  	},
+>  	{
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 6f42712..5548bef 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -390,6 +390,20 @@ int dirty_bytes_handler(struct ctl_table *table, int write,
+>  	return ret;
+>  }
+>  
+> +int block_dump_handler(struct ctl_table *table, int write,
+> +		       void __user *buffer, size_t *lenp, loff_t *ppos)
+> +{
+> +	static bool warned = false;
+> +	int ret;
+> +
+> +	ret = proc_dointvec(table, write, buffer, lenp, ppos);
+> +	if (!warned && block_dump) {
+> +		pr_warning("sysctl: vm.block_dump is scheduled for removal. Please use tracepoints instead.\n");
+> +		warned = true;
+> +	}
+> +	return ret;
+> +}
+> +
+>  static unsigned long wp_next_time(unsigned long cur_time)
+>  {
+>  	cur_time += VM_COMPLETIONS_PERIOD_LEN;
 -- 
-1.7.9.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
