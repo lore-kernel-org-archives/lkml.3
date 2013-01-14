@@ -1,144 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab3ANPMl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 10:12:41 -0500
-Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:32792 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755761Ab3ANPMj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 10:12:39 -0500
-Date: Mon, 14 Jan 2013 15:53:22 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Grant Likely <glikely@secretlab.ca>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Michal Marek <mmarek@suse.cz>, Jon Loeliger <jdl@jdl.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Simon Glass <sjg@chromium.org>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Stephen Warren <swarren@nvidia.com>
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH V7] kbuild: create a rule to run the pre-processor on
- *.dts files
-Message-ID: <20130114145322.GG31527@game.jcrosoft.org>
-References: <1357152215-5845-1-git-send-email-swarren@wwwdotorg.org>
+	id S1756792Ab3ANPPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 10:15:47 -0500
+Received: from mga01.intel.com ([192.55.52.88]:51976 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756461Ab3ANPPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 10:15:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,468,1355126400"; 
+   d="asc'?scan'208";a="276659674"
+Date: Mon, 14 Jan 2013 17:16:41 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-mips@linux-mips.org, Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: 3.8-rc1 build failure with MIPS/SPARSEMEM
+Message-ID: <20130114151641.GA17996@otc-wbsnb-06>
+References: <20121222122757.GB6847@blackmetal.musicnaut.iki.fi>
+ <20121226003434.GA27760@otc-wbsnb-06>
+ <20121227121607.GA7097@blackmetal.musicnaut.iki.fi>
+ <20121230103850.GA5424@otc-wbsnb-06>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
 Content-Disposition: inline
-In-Reply-To: <1357152215-5845-1-git-send-email-swarren@wwwdotorg.org>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 2035345558717639501
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <20121230103850.GA5424@otc-wbsnb-06>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11:43 Wed 02 Jan     , Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> Create cmd_dtc_cpp to run the C pre-processor on *.dts file before
-> passing them to dtc for final compilation. This allows the use of #define
-> and #include within the .dts file.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Best Regards,
-J.
-> ---
-> Grant, back in mid-November, you said you'd make a decision on this in
-> the next couple of days, but I think this got overlooked.
-> 
-> v7: Build *.dtb from *.dts not src/*.dts.
-> v6: No change.
-> v5:
-> * Update Documentation/kbuild for the new command and rule.
-> v4:
-> * Use -x assembler-with-cpp so pre-defined macros are set up so that
->   #included header files know to only use cpp syntax, not C syntax.
-> * Define __DTS__ for similar reasons.
-> * use $(CPP) not $(CC) -E, and use $(cpp_flags).
-> * Save the pre-processed results so they can be easily inspected when
->   debugging build issues.
-> * The use of -x assembler-with-cpp causes cpp to recognize directives in
->   column 1 only. Hence, there's no need to escape property names that
->   begin with #. Hence, there's no need for separate skeleton.dtsi and
->   skeleton.dtsip. Maintain a separate file extension and build rule so that
->   CPP-usage is opt-in. In particular, when using CPP, #include must be used
->   rather than /include/ so that dependencies work.
-> v3: Pass "-x c" not "-xc" to cpp.
-> v2: Place make %.dtb: %.dtsp rule into Makefile.lib.
-> ---
->  Documentation/kbuild/makefiles.txt |   23 +++++++++++++++++++++++
->  scripts/Makefile.lib               |    9 +++++++++
->  2 files changed, 32 insertions(+)
-> 
-> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-> index 14c3f4f..5198b74 100644
-> --- a/Documentation/kbuild/makefiles.txt
-> +++ b/Documentation/kbuild/makefiles.txt
-> @@ -1186,6 +1186,29 @@ When kbuild executes, the following steps are followed (roughly):
->  		clean-files += *.dtb
->  		DTC_FLAGS ?= -p 1024
->  
-> +    dtc_cpp
-> +	This is just like dtc as describe above, except that the C pre-
-> +	processor is invoked upon the .dtsp file before compiling the result
-> +	with dtc.
-> +
-> +	In order for build dependencies to work, all files compiled using
-> +	dtc_cpp must use the C pre-processor's #include functionality and not
-> +	dtc's /include/ functionality.
-> +
-> +	Using the C pre-processor allows use of #define to create named
-> +	constants. In turn, the #defines will typically appear in a header
-> +	file, which may be shared with regular C code. Since the dtc language
-> +	represents a data structure rather than code in C syntax, similar
-> +	restrictions are placed on a header file included by a device tree
-> +	file as for a header file included by an assembly language file.
-> +	In particular, the C pre-processor is passed -x assembler-with-cpp,
-> +	which sets macro __ASSEMBLY__. __DTS__ is also set. These allow header
-> +	files to restrict their content to that compatible with device tree
-> +	source.
-> +
-> +	A central rule exists to create $(obj)/%.dtb from $(src)/%.dtsp;
-> +	architecture Makefiles do no need to explicitly write out that rule.
-> +
->  --- 6.8 Custom kbuild commands
->  
->  	When kbuild is executing with KBUILD_VERBOSE=0, then only a shorthand
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index bdf42fd..2c2a302 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -269,6 +269,15 @@ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile
->  $(obj)/%.dtb: $(src)/%.dts FORCE
->  	$(call if_changed_dep,dtc)
->  
-> +dtc-tmp = $(subst $(comma),_,$(dot-target).dts)
-> +
-> +quiet_cmd_dtc_cpp = DTC+CPP $@
-> +cmd_dtc_cpp = $(CPP) $(cpp_flags) -D__DTS__ -x assembler-with-cpp -o $(dtc-tmp) $< ; \
-> +	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $(dtc-tmp)
-> +
-> +$(obj)/%.dtb: $(src)/%.dtsp FORCE
-> +	$(call if_changed_dep,dtc_cpp)
-> +
->  # Bzip2
->  # ---------------------------------------------------------------------------
->  
-> -- 
-> 1.7.10.4
-> 
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Sun, Dec 30, 2012 at 12:38:50PM +0200, Kirill A. Shutemov wrote:
+> On Thu, Dec 27, 2012 at 02:16:07PM +0200, Aaro Koskinen wrote:
+> > Hi,
+> >=20
+> > On Wed, Dec 26, 2012 at 02:34:35AM +0200, Kirill A. Shutemov wrote:
+> > > On MIPS if SPARSEMEM is enabled we've got this:
+> > >=20
+> > > In file included from /home/kas/git/public/linux/arch/mips/include/as=
+m/pgtable.h:552,
+> > >                  from include/linux/mm.h:44,
+> > >                  from arch/mips/kernel/asm-offsets.c:14:
+> > > include/asm-generic/pgtable.h: In function =E2=80=98my_zero_pfn=E2=80=
+=99:
+> > > include/asm-generic/pgtable.h:466: error: implicit declaration of fun=
+ction =E2=80=98page_to_section=E2=80=99
+> > > In file included from arch/mips/kernel/asm-offsets.c:14:
+> > > include/linux/mm.h: At top level:
+> > > include/linux/mm.h:738: error: conflicting types for =E2=80=98page_to=
+_section=E2=80=99
+> > > include/asm-generic/pgtable.h:466: note: previous implicit declaratio=
+n of =E2=80=98page_to_section=E2=80=99 was here
+> > >=20
+> > > Due header files inter-dependencies, the only way I see to fix it is
+> > > convert my_zero_pfn() for __HAVE_COLOR_ZERO_PAGE to macros.
+> > >=20
+> > > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> >=20
+> > Thanks, this works.
+> >=20
+> > Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+>=20
+> Andrew, could you take the patch?
+
+ping?
+
+--=20
+ Kirill A. Shutemov
+
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ9CFZAAoJEAd+omnVudOMbdUP/24tVWl2QDuay6OFsj6muPt+
+fyeM0Rjl+vwOi3UaIz5Xhckf7mVJEE1P/xMkxL2GLf8anJL4fRxrYDE30phPOuOz
+YRQ4xGEDzjmfHNLQJgzgUdbcM03RwNazwteFYOHh67/Ag8CkPDUEqWgd/cmDjeKy
+Q/DFpxuqrVmgRQ0Mekei5vMGDd/k05piDgGzglsORTcAKxmFTH8R7XA8TtX7VzyN
+xI1+TA1hnGbS2lYJVNsoB1Q7FQUSHri06RtBzC8lbk5NDqrrNdilKqwZomuCPwuz
+9Qbaiht0+LoVbipPylAspJpJ+wNMCLE7UpGsfwB326Y/io/1lW9D4UAWgYzIVcNw
+o48a9v7C8GA0K5VWQg6Ps2t8FsRPsDDIE0asTp6w3yLhrwlvgl46kD5wVlXQDww9
+C0CKqV4UYLkyhmK6vHsoH9E9+pgsg420Xd9B7bPmoMOQVshtor9PyMnqNT500v3W
+feefsvorH+gDacvIzpHVd685dgi2EcGrNFv3St+qOlMUUJ7STBP8+WF7J8SpTY7/
+4OqTyavnLuAwYoQ7fri5S7pBITAPLCrcBe4oIKWFY9d5l6hsCokeMka8en1LBimA
+fGaI9i9dOim+aCKbMrCj4Lg18HIxJ45pAfoGnuvoRasslyFW8NhkIClQVI/gbmUq
+LFUita7qoobzjt4YCPG7
+=M1Vh
+-----END PGP SIGNATURE-----
+
+--TB36FDmn/VVEgNH/--
