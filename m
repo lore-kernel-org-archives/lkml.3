@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab3ANQKF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 11:10:05 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:43119 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757209Ab3ANQKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 11:10:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAFbHwiTafLhK-uJKjUX4_yLC+27OOUnC2JxYM9-3rHZkPx7s5Q@mail.gmail.com>
-References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
-	<1357923834-31641-1-git-send-email-dianders@chromium.org>
-	<1357923834-31641-5-git-send-email-dianders@chromium.org>
-	<CAFbHwiTafLhK-uJKjUX4_yLC+27OOUnC2JxYM9-3rHZkPx7s5Q@mail.gmail.com>
-Date: Mon, 14 Jan 2013 08:09:56 -0800
-Message-ID: <CAD=FV=XEfydu-0oD-Vc_uwqt6qRU9Fs9ROgta3FugSEmPp7nFA@mail.gmail.com>
-Subject: Re: [PATCH v4 5/5] mmc: dw_mmc: Remove DW_MCI_QUIRK_NO_WRITE_PROTECT
-From: Doug Anderson <dianders@chromium.org>
-To: Will Newton <will.newton@gmail.com>
-Cc: linux-mmc@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
-        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
+	id S1757305Ab3ANQOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 11:14:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39352 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756460Ab3ANQOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 11:14:15 -0500
+Date: Mon, 14 Jan 2013 08:14:12 -0800
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>
+Subject: Re: [PATCH] mfd, TWL4030: TWL4030 need select REGMAP_I2C
+Message-ID: <20130114161412.GB14721@kroah.com>
+References: <1356358796.1688.3.camel@cliu38-desktop-build>
+ <50E162F8.8030403@ti.com>
+ <27240C0AC20F114CBF8149A2696CBE4A203154@SHSMSX101.ccr.corp.intel.com>
+ <50F3CF9B.8010608@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F3CF9B.8010608@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will,
+On Mon, Jan 14, 2013 at 10:27:55AM +0100, Peter Ujfalusi wrote:
+> Hi Liu,
+> 
+> On 01/14/2013 03:18 AM, Liu, Chuansheng wrote:
+> > Hi maintainers,
+> > 
+> > Could you help to push this patch?
+> > Every time syncing the latest code, always meet this build error.
+> > Sorry to disturb.
+> 
+> First of all I'm sorry for this, since this is my mistake to not update the
+> Kconfig file at the same time.
+> AFAIK Samuel is really busy with Intel stuff (might be worth pinging him
+> within Intel), but I'm sure he is going to do everything he can to resolve this.
+> We can ask Greg to take this further as well. Whichever is going to be the faster.
 
-On Mon, Jan 14, 2013 at 2:47 AM, Will Newton <will.newton@gmail.com> wrote:
-> These changes look ok to me. I don't know if patch 4 made it to the
-> list, I only got a copy via the cc and the only archive I can find of
-> linux-mmc (gmane) seems to be missing a lot of messages besides this
-> one.
+Hm, I'm not taking mfd patches lately, but if needed, I can, just let me
+know.
 
-It seems to have made it onto patchwork, in any case.  Here's the link:
-    https://patchwork.kernel.org/patch/1966771/
+thanks,
 
-The whole bundle of all 5 patches at v4 is here:
-    http://patchwork.kernel.org/bundle/dianders/mmc_wp/
-
-
-> So for the dw_mmc parts:
->
-> Acked-by: Will Newton <will.newton@imgtec.com>
-
-Thank you for your review and your ack.  :)
-
--Doug
+greg k-h
