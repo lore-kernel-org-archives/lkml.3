@@ -1,186 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756972Ab3ANOMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:12:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53232 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756503Ab3ANOMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:12:05 -0500
-Date: Mon, 14 Jan 2013 15:11:53 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH v2 -tip] sched/rt: Fix locality of threaded interrupt handlers
-Message-ID: <20130114141152.GB7048@dhcp-26-207.brq.redhat.com>
-References: <6b08a3c5c16284fd0221c2b564d451b4b9dcbf18.1357896654.git.agordeev@redhat.com>
- <alpine.LFD.2.02.1301141217300.7475@ionos>
+	id S1756935Ab3ANOOF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:14:05 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:60742 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055Ab3ANOOD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 09:14:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1301141217300.7475@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 14 Jan 2013 15:14:02 +0100
+Message-ID: <CABPqkBStWUyv_vwb9jgWe0hirMNe=J1g_V7z69piajr1pTPt=g@mail.gmail.com>
+Subject: [BUG] perf record: --uid=x fails
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a interrupt affinity mask targets multiple CPUs, the
-RT scheduler selects a runqueue for RT task corresponding
-to a threaded interrupt handler without consideration of
-where the interrupt is actually gets delivered. It leads
-to a suboptimal condition when a hardware interrupt handler
-executes on one CPU while the threaded interrupt handler
-executes on another CPU.
+Hi,
 
-This fix alters the behaviour of threaded handler wake-ups
-by getting priority to a CPU where the hardware interrupt
-handler is executing. As result, most of the time both
-halves of interrupt handling are kept local.
+I was trying to use the --uid option of perf record but it fails for
+me no matter
+what I tried. Looks like the goal of this option is to measure ALL the processes
+owned by the specified uid. Each process is measured in per-thread mode.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- include/linux/sched.h |    2 ++
- kernel/irq/handle.c   |    2 +-
- kernel/sched/core.c   |    5 +++++
- kernel/sched/rt.c     |   27 +++++++++++++++++++--------
- 4 files changed, 27 insertions(+), 9 deletions(-)
+However for me it failed on all my attempts when running with 3.8.0-rc3 on
+Ubuntu Quantal.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 206bb08..1d59efa 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1061,6 +1061,7 @@ struct sched_domain;
- #define WF_SYNC		0x01		/* waker goes to sleep after wakup */
- #define WF_FORK		0x02		/* child wakeup after fork */
- #define WF_MIGRATED	0x04		/* internal use, task got migrated */
-+#define WF_LOCAL	0x08		/* try to wake up locally */
- 
- #define ENQUEUE_WAKEUP		1
- #define ENQUEUE_HEAD		2
-@@ -2207,6 +2208,7 @@ extern void xtime_update(unsigned long ticks);
- 
- extern int wake_up_state(struct task_struct *tsk, unsigned int state);
- extern int wake_up_process(struct task_struct *tsk);
-+extern int wake_up_local(struct task_struct *tsk);
- extern void wake_up_new_task(struct task_struct *tsk);
- #ifdef CONFIG_SMP
-  extern void kick_process(struct task_struct *tsk);
-diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-index 131ca17..fe97d0c 100644
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -126,7 +126,7 @@ static void irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
- 	 */
- 	atomic_inc(&desc->threads_active);
- 
--	wake_up_process(action->thread);
-+	wake_up_local(action->thread);
- }
- 
- irqreturn_t
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 257002c..38413f6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1527,6 +1527,11 @@ int wake_up_process(struct task_struct *p)
- }
- EXPORT_SYMBOL(wake_up_process);
- 
-+int wake_up_local(struct task_struct *p)
-+{
-+	return try_to_wake_up(p, TASK_ALL, WF_LOCAL);
-+}
-+
- int wake_up_state(struct task_struct *p, unsigned int state)
- {
- 	return try_to_wake_up(p, state, 0);
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 418feb0..de16e16 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1234,7 +1234,7 @@ static void yield_task_rt(struct rq *rq)
- }
- 
- #ifdef CONFIG_SMP
--static int find_lowest_rq(struct task_struct *task);
-+static int find_lowest_rq(struct task_struct *task, bool prefer_this_cpu);
- 
- static int
- select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
-@@ -1242,6 +1242,7 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- 	struct task_struct *curr;
- 	struct rq *rq;
- 	int cpu;
-+	bool prefer_this_cpu = flags & WF_LOCAL;
- 
- 	cpu = task_cpu(p);
- 
-@@ -1258,6 +1259,11 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- 	curr = ACCESS_ONCE(rq->curr); /* unlocked access */
- 
- 	/*
-+	 * If this RT task is a threaded interrupt handler, then
-+	 * it is being awaken from the hardware interrupt handler.
-+	 * In this case try to keep hardware and threaded interrupt
-+	 * handlers as close as possible and wake it up on this CPU.
-+	 *
- 	 * If the current task on @p's runqueue is an RT task, then
- 	 * try to see if we can wake this RT task up on another
- 	 * runqueue. Otherwise simply start this RT task
-@@ -1279,11 +1285,12 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- 	 * This test is optimistic, if we get it wrong the load-balancer
- 	 * will have to sort it out.
- 	 */
--	if (curr && unlikely(rt_task(curr)) &&
--	    (curr->nr_cpus_allowed < 2 ||
--	     curr->prio <= p->prio) &&
--	    (p->nr_cpus_allowed > 1)) {
--		int target = find_lowest_rq(p);
-+	if (prefer_this_cpu ||
-+	    (curr && unlikely(rt_task(curr)) &&
-+	     (curr->nr_cpus_allowed < 2 ||
-+	      curr->prio <= p->prio) &&
-+	     (p->nr_cpus_allowed > 1))) {
-+		int target = find_lowest_rq(p, prefer_this_cpu);
- 
- 		if (target != -1)
- 			cpu = target;
-@@ -1473,7 +1480,7 @@ next_idx:
- 
- static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
- 
--static int find_lowest_rq(struct task_struct *task)
-+static int find_lowest_rq(struct task_struct *task, bool prefer_this_cpu)
- {
- 	struct sched_domain *sd;
- 	struct cpumask *lowest_mask = __get_cpu_var(local_cpu_mask);
-@@ -1495,9 +1502,13 @@ static int find_lowest_rq(struct task_struct *task)
- 	 * lowest priority tasks in the system.  Now we want to elect
- 	 * the best one based on our affinity and topology.
- 	 *
-+	 * If asked explicitly, try to pick up this cpu.
-+	 *
- 	 * We prioritize the last cpu that the task executed on since
- 	 * it is most likely cache-hot in that location.
- 	 */
-+	if (prefer_this_cpu && cpumask_test_cpu(this_cpu, lowest_mask))
-+		return this_cpu;
- 	if (cpumask_test_cpu(cpu, lowest_mask))
- 		return cpu;
- 
-@@ -1555,7 +1566,7 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
- 	int cpu;
- 
- 	for (tries = 0; tries < RT_MAX_TRIES; tries++) {
--		cpu = find_lowest_rq(task);
-+		cpu = find_lowest_rq(task, false);
- 
- 		if ((cpu == -1) || (cpu == rq->cpu))
- 			break;
--- 
-1.7.7.6
+$ perf record --uid=eranian sleep 4
+Error:
+Permission error - are you root?
+Consider tweaking /proc/sys/kernel/perf_event_paranoid:
+ -1 - Not paranoid at all
+  0 - Disallow raw tracepoint access for unpriv
+  1 - Disallow cpu events for unpriv
+  2 - Disallow kernel profiling for unpriv
+sleep: Terminated
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+You don't want to be root to run this command.  Should not require
+to measure the processes I own. So the error message is confusing
+here.
+
+After some debugging, I came to the conclusion that this command
+fails when it hits the sshd daemon:
+
+eranian   2439  0.0  0.0 110424  1968 ?        S    15:07   0:00 sshd:
+eranian@pts/2
+root      2301  0.0  0.0 110424  4420 ?        Ss   15:07   0:00 sshd:
+eranian [priv]
+
+I mean the sshd process owned by me. It is owned by me but I cannot attached
+an event to it. I get EACCES and I suspect it's because of missing
+ptrace privilege.
+The sshd binary is obviously not setuid. So there is something else preventing
+ptrace. In fact, even strace -p 2349 fails. Looked online and there
+were a couple
+of mentions to the Yama security model and the ptrace_scope sysctl
+control. I tried
+that and it did not help.
+
+So looks to me that something is broken somewhere. If the kernel
+restrictions are
+normal, then I think perf record should warn that it has to skip the
+sshd process and
+continue with the other processes owned by me. That  seems more useful than the
+current situation. But I may be missing something here. If so please
+explain to me.
+
+Thanks.
