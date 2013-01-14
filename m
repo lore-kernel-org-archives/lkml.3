@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab3ANXfD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 18:35:03 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:34570 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279Ab3ANXfB convert rfc822-to-8bit (ORCPT
+	id S1756740Ab3ANXhi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 18:37:38 -0500
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:51432 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679Ab3ANXhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 18:35:01 -0500
-Content-Type: text/plain; charset="utf-8"
+	Mon, 14 Jan 2013 18:37:36 -0500
+Message-Id: <201301142338.AA04488@capsicum.lab.ntt.co.jp>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Date: Tue, 15 Jan 2013 08:38:09 +0900
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: slava@dubeyko.com, splavgm@gmail.com, linux-nilfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nilfs2: fix very long mount time issue
+In-Reply-To: <20130114150041.d57e5e03.akpm@linux-foundation.org>
+References: <20130114150041.d57e5e03.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Rob Herring <robherring2@gmail.com>,
-        Denis Efremov <yefremov.denis@gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <50E99120.7080608@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-References: <1357482103-14116-1-git-send-email-yefremov.denis@gmail.com>
- <50E99120.7080608@gmail.com>
-Message-ID: <20130114233455.23734.83658@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: [PATCH] clk: remove exported function from __init section
-Date: Mon, 14 Jan 2013 15:34:55 -0800
+X-Mailer: AL-Mail32 Version 1.13
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Rob Herring (2013-01-06 06:58:40)
-> On 01/06/2013 08:21 AM, Denis Efremov wrote:
-> > The symbol of_fixed_clk_setup is exported and annotated __init.
-> > This looks like section mismatch.
-> > Fix this by removing the __init annotation of of_fixed_clk_setup.
-> > 
-> > Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
-> 
-> Mike should take this.
-> 
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
+>On Sun, 13 Jan 2013 16:07:23 +0900 (JST)
+>Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp> wrote:
 >
+>> On Sat, 12 Jan 2013 19:34:48 +0400, Vyacheslav Dubeyko wrote:
+>> > From: Vyacheslav Dubeyko <slava@dubeyko.com>
+>> > Subject: [PATCH] nilfs2: fix very long mount time issue
+>> > 
+>> > DESCRIPTION:
+>> > It exists situation when GC can work in background alone without any other filesystem activity during significant 
+time. The nilfs_clean_segments() method calls nilfs_segctor_construct() that updates superblocks in the case of 
+NILFS_SC_SUPER_ROOT and THE_NILFS_DISCONTINUED flags are set. But when GC is working alone the nilfs_clean_segments() is 
+called with unset THE_NILFS_DISCONTINUED flag. As a result, the update of superblocks doesn't occurred all this time and 
+in the case of SPOR superblocks keep very old values of last super root placement.
+>> > 
+>> > SYMPTOMS:
+>> > Trying to mount a NILFS2 volume after SPOR in such environment ends with very long mounting time (it can achieve 
+about several hours in some cases).
+>> > 
+>> > REPRODUCING PATH:
+>> > 1. It needs to use external USB HDD, disable automount and doesn't make any additional filesystem activity on the 
+NILFS2 volume.
+>> > 2. Generate temporary file with size about 100 - 500 GB (for example, dd if=/dev/zero of=<file_name> bs=1073741824 
+count=200). The size of file defines duration of GC working.
+>> > 3. Then it needs to delete file.
+>> > 4. Start GC manually by means of command "nilfs-clean -p 0". When you start GC by means of such way then, at the end, 
+superblocks is updated by once. So, for simulation of SPOR, it needs to wait sometime (15 - 40 minutes) and simply switch 
+off USB HDD manually.
+>> > 5. Switch on USB HDD again and try to mount NILFS2 volume. As a result, NILFS2 volume will mount during very long 
+time.
+>> > 
+>> > REPRODUCIBILITY: 100%
+>> > 
+>> > FIX:
+>> > This patch adds checking that superblocks need to update and set THE_NILFS_DISCONTINUED flag before 
+nilfs_clean_segments() call.
+>> > 
+>> > Reported-by: Sergey Alexandrov <splavgm@gmail.com>
+>> > Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+>> > Tested-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+>> 
+>> Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+>> 
+>> Thanks, Vyacheslav.  I confirmed the issue and could reproduce it.
+>> Your patch fixed it.
+>> 
+>> Andrew, please apply.
+>
+>I added a Cc:stable so the fix will be backported into earlier kernels.
+>40 minutes mount time is pretty bad!
 
-Thanks for catching this Denis.  Taken into clk-next.
+Yup, I agree.
 
-Regards,
-Mike
- 
-> > ---
-> >  drivers/clk/clk-fixed-rate.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
-> > index af78ed6..a53b53b 100644
-> > --- a/drivers/clk/clk-fixed-rate.c
-> > +++ b/drivers/clk/clk-fixed-rate.c
-> > @@ -85,7 +85,7 @@ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
-> >  /**
-> >   * of_fixed_clk_setup() - Setup function for simple fixed rate clock
-> >   */
-> > -void __init of_fixed_clk_setup(struct device_node *node)
-> > +void of_fixed_clk_setup(struct device_node *node)
-> >  {
-> >       struct clk *clk;
-> >       const char *clk_name = node->name;
-> >
+Thanks.
+
+Ryusuke Konishi
+
