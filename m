@@ -1,61 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758606Ab3ANUFe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:05:34 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:35096 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756803Ab3ANUFd (ORCPT
+	id S1758620Ab3ANUFs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:05:48 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:33866 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758609Ab3ANUFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:05:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <50F46304.3010108@zytor.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-23-git-send-email-yinghai@kernel.org>
-	<20130113214132.GB17200@liondog.tnic>
-	<CAE9FiQVQRAOtw7kiPJO3xszJx9uPFjgK82PjbvTyqzJgujdicw@mail.gmail.com>
-	<50F4452D.2060000@zytor.com>
-	<CAE9FiQXkgoLKp3ZnOcM9gLDJNGNxUE8WSRXiQy1G_v5Os5_v2A@mail.gmail.com>
-	<50F455A3.4070706@zytor.com>
-	<CAE9FiQUtbpo0njyPjPED=esKKnSdFs9ry4pFjG1y0LvHxkqV4w@mail.gmail.com>
-	<50F46304.3010108@zytor.com>
-Date: Mon, 14 Jan 2013 12:05:32 -0800
-X-Google-Sender-Auth: m_FwxNpw0bdOcLP7CEkcG54w-JE
-Message-ID: <CAE9FiQU_8ngBbXbwrqC1SaR3fScoDNvO_nKOhDYBV_bjOzjwJg@mail.gmail.com>
-Subject: Re: [PATCH v7u1 22/31] x86, boot: add fields to support load bzImage
- and ramdisk above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Gokul Caushik <caushik1@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 14 Jan 2013 15:05:46 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] documentation: devicetree: Fix typo within Documentation/devicetree
+To: Masanari Iida <standby24x7@gmail.com>, rob.herring@calxeda.com,
+        devicetree-discuss@lists.ozlabs.org, rob@landley.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+In-Reply-To: <1358144096-24678-1-git-send-email-standby24x7@gmail.com>
+References: <1358144096-24678-1-git-send-email-standby24x7@gmail.com>
+Date: Mon, 14 Jan 2013 20:05:40 +0000
+Message-Id: <20130114200540.9B5BE3E2458@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 11:56 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 01/14/2013 11:50 AM, Yinghai Lu wrote:
->> On Mon, Jan 14, 2013 at 10:59 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> No, there were other fields that were also left uninitialized, per your
->>> analysis from last year.  I don't remember the details, but I seem to
->>> recall they included the EFI and graphics-related fields.
->>>
->>> So yes, just zero them all out.
->>
->> ?
->>
->
-> Yep.
+On Mon, 14 Jan 2013 15:14:56 +0900, Masanari Iida <standby24x7@gmail.com> wrote:
+> Correct spelling typos within Documentation/devicetree
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-ok, will rebase -v7 branch this afternoon, and ask you and Borislav to
-check if i missed anything.
+Applied, thanks.
 
-hope can send out v7u2 tomorrow ...
+g.
+
+> ---
+>  Documentation/devicetree/bindings/arm/atmel-aic.txt                | 2 +-
+>  Documentation/devicetree/bindings/arm/exynos/power_domain.txt      | 2 +-
+>  Documentation/devicetree/bindings/arm/gic.txt                      | 4 ++--
+>  Documentation/devicetree/bindings/arm/omap/omap.txt                | 6 +++---
+>  Documentation/devicetree/bindings/i2c/samsung-i2c.txt              | 2 +-
+>  Documentation/devicetree/bindings/mips/cavium/dma-engine.txt       | 2 +-
+>  Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt           | 6 +++---
+>  Documentation/devicetree/bindings/mmc/samsung-sdhci.txt            | 2 +-
+>  Documentation/devicetree/bindings/powerpc/fsl/srio.txt             | 4 ++--
+>  Documentation/devicetree/bindings/regulator/tps62360-regulator.txt | 4 ++--
+>  Documentation/devicetree/bindings/rtc/s3c-rtc.txt                  | 2 +-
+>  Documentation/devicetree/bindings/watchdog/samsung-wdt.txt         | 2 +-
+>  12 files changed, 19 insertions(+), 19 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/atmel-aic.txt b/Documentation/devicetree/bindings/arm/atmel-aic.txt
+> index 19078bf..ad03121 100644
+> --- a/Documentation/devicetree/bindings/arm/atmel-aic.txt
+> +++ b/Documentation/devicetree/bindings/arm/atmel-aic.txt
+> @@ -4,7 +4,7 @@ Required properties:
+>  - compatible: Should be "atmel,<chip>-aic"
+>  - interrupt-controller: Identifies the node as an interrupt controller.
+>  - interrupt-parent: For single AIC system, it is an empty property.
+> -- #interrupt-cells: The number of cells to define the interrupts. It sould be 3.
+> +- #interrupt-cells: The number of cells to define the interrupts. It should be 3.
+>    The first cell is the IRQ number (aka "Peripheral IDentifier" on datasheet).
+>    The second cell is used to specify flags:
+>      bits[3:0] trigger type and level flags:
+> diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+> index 6528e21..3fb457b 100644
+> --- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+> +++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+> @@ -4,7 +4,7 @@ Exynos processors include support for multiple power domains which are used
+>  to gate power to one or more peripherals on the processor.
+>  
+>  Required Properties:
+> -- compatiable: should be one of the following.
+> +- compatible: should be one of the following.
+>      * samsung,exynos4210-pd - for exynos4210 type power domain.
+>  - reg: physical base address of the controller and length of memory mapped
+>      region.
+> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+> index 62eb8df..3dfb0c0 100644
+> --- a/Documentation/devicetree/bindings/arm/gic.txt
+> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+> @@ -42,7 +42,7 @@ Main node required properties:
+>  
+>  Optional
+>  - interrupts	: Interrupt source of the parent interrupt controller on
+> -  secondary GICs, or VGIC maintainance interrupt on primary GIC (see
+> +  secondary GICs, or VGIC maintenance interrupt on primary GIC (see
+>    below).
+>  
+>  - cpu-offset	: per-cpu offset within the distributor and cpu interface
+> @@ -74,7 +74,7 @@ Required properties:
+>    virtual interface control register base and size. The 2nd additional
+>    region is the GIC virtual cpu interface register base and size.
+>  
+> -- interrupts : VGIC maintainance interrupt.
+> +- interrupts : VGIC maintenance interrupt.
+>  
+>  Example:
+>  
+> diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
+> index d0051a7..f8288ea 100644
+> --- a/Documentation/devicetree/bindings/arm/omap/omap.txt
+> +++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
+> @@ -39,16 +39,16 @@ Boards:
+>  - OMAP3 Tobi with Overo : Commercial expansion board with daughter board
+>    compatible = "ti,omap3-tobi", "ti,omap3-overo", "ti,omap3"
+>  
+> -- OMAP4 SDP : Software Developement Board
+> +- OMAP4 SDP : Software Development Board
+>    compatible = "ti,omap4-sdp", "ti,omap4430"
+>  
+>  - OMAP4 PandaBoard : Low cost community board
+>    compatible = "ti,omap4-panda", "ti,omap4430"
+>  
+> -- OMAP3 EVM : Software Developement Board for OMAP35x, AM/DM37x
+> +- OMAP3 EVM : Software Development Board for OMAP35x, AM/DM37x
+>    compatible = "ti,omap3-evm", "ti,omap3"
+>  
+> -- AM335X EVM : Software Developement Board for AM335x
+> +- AM335X EVM : Software Development Board for AM335x
+>    compatible = "ti,am335x-evm", "ti,am33xx", "ti,omap3"
+>  
+>  - AM335X Bone : Low cost community board
+> diff --git a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
+> index b6cb5a1..ccdf9c9 100644
+> --- a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
+> +++ b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
+> @@ -18,7 +18,7 @@ Optional properties:
+>      The gpio specifier depends on the gpio controller. Required in all
+>      cases except for "samsung,s3c2440-hdmiphy-i2c" whose input/output
+>      lines are permanently wired to the respective client
+> -  - samsung,i2c-slave-addr: Slave address in multi-master enviroment. If not
+> +  - samsung,i2c-slave-addr: Slave address in multi-master environment. If not
+>      specified, default value is 0.
+>    - samsung,i2c-max-bus-freq: Desired frequency in Hz of the bus. If not
+>      specified, the default value in Hz is 100000.
+> diff --git a/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt b/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
+> index cb4291e..a5bdff4 100644
+> --- a/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
+> +++ b/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
+> @@ -1,7 +1,7 @@
+>  * DMA Engine.
+>  
+>  The Octeon DMA Engine transfers between the Boot Bus and main memory.
+> -The DMA Engine will be refered to by phandle by any device that is
+> +The DMA Engine will be referred to by phandle by any device that is
+>  connected to it.
+>  
+>  Properties:
+> diff --git a/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt
+> index 7927689..898b222 100644
+> --- a/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt
+> +++ b/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt
+> @@ -11,11 +11,11 @@ Required Properties:
+>  
+>  * compatible: should be
+>  	- "samsung,exynos4210-dw-mshc": for controllers with Samsung Exynos4210
+> -	  specific extentions.
+> +	  specific extensions.
+>  	- "samsung,exynos4412-dw-mshc": for controllers with Samsung Exynos4412
+> -	  specific extentions.
+> +	  specific extensions.
+>  	- "samsung,exynos5250-dw-mshc": for controllers with Samsung Exynos5250
+> -	  specific extentions.
+> +	  specific extensions.
+>  
+>  * samsung,dw-mshc-ciu-div: Specifies the divider value for the card interface
+>    unit (ciu) clock. This property is applicable only for Exynos5 SoC's and
+> diff --git a/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt b/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
+> index 630a7d7..43acfdf 100644
+> --- a/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
+> +++ b/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
+> @@ -49,5 +49,5 @@ Example:
+>  	};
+>  
+>  	Note: This example shows both SoC specific and board specific properties
+> -	in a single device node. The properties can be actually be seperated
+> +	in a single device node. The properties can be actually be separated
+>  	into SoC specific node and board specific node.
+> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/srio.txt b/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
+> index b039bcb..07abf0f 100644
+> --- a/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
+> +++ b/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
+> @@ -8,9 +8,9 @@ Properties:
+>  	Definition: Must include "fsl,srio" for IP blocks with IP Block
+>  	Revision Register (SRIO IPBRR1) Major ID equal to 0x01c0.
+>  
+> -	Optionally, a compatiable string of "fsl,srio-vX.Y" where X is Major
+> +	Optionally, a compatible string of "fsl,srio-vX.Y" where X is Major
+>  	version in IP Block Revision Register and Y is Minor version.  If this
+> -	compatiable is provided it should be ordered before "fsl,srio".
+> +	compatible is provided it should be ordered before "fsl,srio".
+>  
+>     - reg
+>  	Usage: required
+> diff --git a/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt b/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
+> index c8ca6b8..1b20c3d 100644
+> --- a/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
+> +++ b/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
+> @@ -17,9 +17,9 @@ Optional properties:
+>  - ti,vsel1-gpio: Gpio for controlling VSEL1 line.
+>    If this property is missing, then assume that there is no GPIO
+>    for vsel1 control.
+> -- ti,vsel0-state-high: Inital state of vsel0 input is high.
+> +- ti,vsel0-state-high: Initial state of vsel0 input is high.
+>    If this property is missing, then assume the state as low (0).
+> -- ti,vsel1-state-high: Inital state of vsel1 input is high.
+> +- ti,vsel1-state-high: Initial state of vsel1 input is high.
+>    If this property is missing, then assume the state as low (0).
+>  
+>  Any property defined as part of the core regulator binding, defined in
+> diff --git a/Documentation/devicetree/bindings/rtc/s3c-rtc.txt b/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
+> index 90ec45f..7ac7259 100644
+> --- a/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
+> +++ b/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
+> @@ -7,7 +7,7 @@ Required properties:
+>  - reg: physical base address of the controller and length of memory mapped
+>    region.
+>  - interrupts: Two interrupt numbers to the cpu should be specified. First
+> -  interrupt number is the rtc alarm interupt and second interrupt number
+> +  interrupt number is the rtc alarm interrupt and second interrupt number
+>    is the rtc tick interrupt. The number of cells representing a interrupt
+>    depends on the parent interrupt controller.
+>  
+> diff --git a/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt b/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt
+> index 79ead82..ce0d8e7 100644
+> --- a/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt
+> +++ b/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt
+> @@ -2,7 +2,7 @@
+>  
+>  The Samsung's Watchdog controller is used for resuming system operation
+>  after a preset amount of time during which the WDT reset event has not
+> -occured.
+> +occurred.
+>  
+>  Required properties:
+>  - compatible : should be "samsung,s3c2410-wdt"
+> -- 
+> 1.8.1.336.g94702dd
+> 
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
