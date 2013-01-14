@@ -1,113 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab3ANMGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 07:06:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5616 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756103Ab3ANMGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 07:06:32 -0500
-Date: Mon, 14 Jan 2013 10:05:01 -0200
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com,
-        aquini@redhat.com, mst@redhat.com, agl@us.ibm.com
-Subject: Re: [RFC 2/2] virtio_balloon: add auto-ballooning support
-Message-ID: <20130114100501.603ce8a4@doriath.home>
-In-Reply-To: <20130111204317.GB11436@amit.redhat.com>
-References: <1355861850-2702-1-git-send-email-lcapitulino@redhat.com>
-	<1355861850-2702-3-git-send-email-lcapitulino@redhat.com>
-	<20130111204317.GB11436@amit.redhat.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756224Ab3ANMMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 07:12:52 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:39877 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755676Ab3ANMMv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 07:12:51 -0500
+Date: Mon, 14 Jan 2013 12:12:47 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "nico@linaro.org" <nico@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>
+Subject: Re: [PATCHv2 1/4] clockevents: Add generic timer broadcast receiver
+Message-ID: <20130114121247.GD7990@e106331-lin.cambridge.arm.com>
+References: <1357742770-15028-1-git-send-email-mark.rutland@arm.com>
+ <1357742770-15028-2-git-send-email-mark.rutland@arm.com>
+ <alpine.LFD.2.02.1301141204421.7475@ionos>
+ <20130114112951.GC7990@e106331-lin.cambridge.arm.com>
+ <alpine.LFD.2.02.1301141247020.7475@ionos>
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1301141247020.7475@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 14 Jan 2013 12:12:48.0168 (UTC) FILETIME=[779CC280:01CDF250]
+X-MC-Unique: 113011412124925401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Jan 2013 02:13:17 +0530
-Amit Shah <amit.shah@redhat.com> wrote:
-
-> On (Tue) 18 Dec 2012 [18:17:30], Luiz Capitulino wrote:
-> > The auto-ballooning feature automatically performs balloon inflate or
-> > deflate based on host and guest memory pressure. This can help to
-> > avoid swapping or worse in both, host and guest.
+On Mon, Jan 14, 2013 at 11:50:55AM +0000, Thomas Gleixner wrote:
+> On Mon, 14 Jan 2013, Mark Rutland wrote:
+> 
+> > On Mon, Jan 14, 2013 at 11:06:31AM +0000, Thomas Gleixner wrote:
+> > > On Wed, 9 Jan 2013, Mark Rutland wrote:
+> > > > +#ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+> > > > +extern int tick_receive_broadcast(void);
+> > > > +#else
+> > > > +static inline int tick_receive_broadcast(void)
+> > > > +{
+> > > > +	return 0;
+> > > > +}
+> > > 
+> > > What's the inline function for? If an arch does not have broadcasting
+> > > support it should not have a receive broadcast function call either.
 > > 
-> > Auto-ballooning has a host and a guest part. The host performs
-> > automatic inflate by requesting the guest to inflate its balloon
-> > when the host is facing memory pressure. The guest performs
-> > automatic deflate when it's facing memory pressure itself. It's
-> > expected that auto-inflate and auto-deflate will balance each
-> > other over time.
+> > That was how this was originally structured [1], but Santosh suggested this
+> > would break the build for !GENERIC_CLOCKEVENTS_BROADCAST [1]. It means that the
+> > arch-specific receive path (i.e. IPI handler) doesn't have to be #ifdef'd,
+> > which makes it less ugly.
+> 
+> Hmm. If you want to keep the IPI around unconditionally the inline
+> makes some sense, though the question is whether keeping an unused IPI
+> around makes sense in the first place. I'd rather see a warning that
+> an unexpected IPI happened than a silent inline function being called.
+
+How about I add a warning (e.g. "Impossible timer broadcast received.") and
+return -EOPNOTSUPP when !GENERIC_CLOCKEVENTS_BROADCAST?
+
+> > > Is anything going to use the return value?
 > > 
-> > This commit implements the guest side of auto-ballooning.
-> > 
-> > To perform automatic deflate, the virtio_balloon driver registers
-> > a shrinker callback, which will try to deflate the guest's balloon
-> > on guest memory pressure just like if it were a cache. The shrinker
-> > callback is only registered if the host supports the
-> > VIRTIO_BALLOON_F_AUTO_BALLOON feature bit.
+> > I'd added this after looking at the x86 lapic timers, where interrupts might
+> > remain pending over a kexec, and lapic interrupts come up before timers are
+> > registered. The return value is useful for shutting down the timer in that case
+> > (see x86's local_apic_timer_interrupt).
 > 
-> I'm wondering if guest should auto-deflate even when the AUTO_BALLOON
-> feature isn't supported by the host: if a guest is under pressure,
-> there's no way for it to tell the host and wait for the host to
-> deflate the balloon, so it may be beneficial to just go ahead and
-> deflate the balloon for all hosts.
+> Right, though then you need to check for evt->event_handler as well.
 
-I see two problems with this. First, this will automagically override
-balloon changes done by the user; and second, if we don't have the
-auto-inflate part and if the host starts facing memory pressure, VMs
-may start getting OOM.
+I thought this previously also [1], but I couldn't find any path such that a
+tick_cpu_device would have an evtdev without an event_handler. We always set the
+handler before setting evtdev, and alway wipe evtdev before wiping the handler.
 
-> Similarly, on the host side, management can configure a VM to either
-> enable or disable auto-balloon (the auto-inflate part).  So even the
-> host can do away with the feature advertisement and negotiation.
-> 
-> Is there some use-case I'm missing where doing these actions after
-> feature negotiation is beneficial?
-> 
-> > FIXMEs
-> > 
-> >  o the guest kernel seems to spin when the host is performing a long
-> >    auto-inflate
-> 
-> Is this introduced by the current patches?  I'd assume it happens even
-> without it -- these patches just introduce some heuristics, the
-> mechanism has stayed the same.
+Have I missed something?
 
-Good point, I'll check that.
-
-> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-> > ---
-> >  drivers/virtio/virtio_balloon.c     | 54 +++++++++++++++++++++++++++++++++++++
-> >  include/uapi/linux/virtio_balloon.h |  1 +
-> >  2 files changed, 55 insertions(+)
-> 
-> Patch looks good, just one thing:
-> 
-> > +	/*
-> > +	 * If the current balloon size is greater than the number of
-> > +	 * pages being reclaimed by the kernel, deflate only the needed
-> > +	 * amount. Otherwise deflate everything we have.
-> > +	 */
-> > +	if (nr_pages > sc->nr_to_scan) {
-> > +		new_target = nr_pages - sc->nr_to_scan;
-> > +	} else {
-> > +		new_target = 0;
-> > +	}
-> 
-> This looks better:
-> 
-> 	new_target = 0;
-> 	if (nr_pages > sc->nr_to_scan) {
-> 		new_target = nr_pages - sc->nr_to_scan;
-> 	}
-
-Ok.
-
-> 
-> 
 > Thanks,
-> 		Amit
 > 
+> 	tglx
+> 
+
+Thanks,
+Mark.
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2012-December/138092.html
 
