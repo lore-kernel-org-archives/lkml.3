@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab3ANXoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 18:44:16 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:53140 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757089Ab3ANXoO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 18:44:14 -0500
+	id S1757332Ab3ANXpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 18:45:13 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:40815 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757089Ab3ANXpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 18:45:10 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>
+Subject: Re: [PATCH 0/5] ACPI: Rework acpi_bus_trim()
+Date: Tue, 15 Jan 2013 00:51 +0100
+Message-ID: <2049836.kZAJsepFIG@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQUbQVdxDxD68ktZhFuJYs861-aFEXjTOgee1ueEous2eQ@mail.gmail.com>
+References: <3885603.ydrrB7OEKf@vostro.rjw.lan> <CAE9FiQUbQVdxDxD68ktZhFuJYs861-aFEXjTOgee1ueEous2eQ@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXyTvW0P4Adbr2x+RP3X-b3Qj8E53uxWrnDe964MgZepg@mail.gmail.com>
-References: <CA+icZUXyTvW0P4Adbr2x+RP3X-b3Qj8E53uxWrnDe964MgZepg@mail.gmail.com>
-Date: Tue, 15 Jan 2013 00:44:13 +0100
-Message-ID: <CA+icZUXHksmiZYVU+gTyi+j9q9e1b5R9ZJ2RxUTeWKiey2PRuA@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix BUG on madvise early failure
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>, Shaohua Li <shli@fusionio.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 10:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> Hi,
->
-> this patch is for Linux-Next - more exactly next-20130114.
-> Can you please enhance the subject-line of your patch next time.
->
-> Your patch fixes the issue I have reported a few hours ago in [1].
->
-> [ TESTCASE ]
->
-> "madvise02" from Linux Test Project (LTP) see [2]
->
-> $ cd /opt/ltp/testcases/bin/
->
-> $ sudo ./madvise02
-> [ OUTPUT ]
-> madvise02    1  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22):
-> Invalid argument
-> madvise02    2  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22):
-> Invalid argument
-> madvise02    3  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22):
-> Invalid argument
-> madvise02    4  TPASS  :  failed as expected: TEST_ERRNO=ENOMEM(12):
-> Cannot allocate memory
-> madvise02    5  TFAIL  :  madvise succeeded unexpectedly
->
-> [ /TESTCASE ]
->
-> Please feel free and add a...
->
->      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
->
-> Thanks!
->
-> Regards,
-> - Sedat -
->
-> [1] http://marc.info/?l=linux-mm&m=135818843710244&w=2
-> [2] http://sourceforge.net/projects/ltp/
+On Monday, January 14, 2013 02:21:38 PM Yinghai Lu wrote:
+> On Mon, Jan 14, 2013 at 1:33 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > The next three patches actually rework acpi_bus_trim() in three steps:
+> >
+> > [3/5] Drop the second argument of acpi_bus_trim() (all callers pass 1 in there
+> >       anyway.
+> > [4/5] Reimplement acpi_bus_trim() using acpi_walk_namespace().
+> > [3/5] Make acpi_bus_trim() carry out two passes as described above.
+> >
+> > I'm aware of the fact that this will conflict with the patches that Yinghai
+> > posted a few days ago, but in my opinion the changes here are prerequisite for
+> > the Yinghai's patchset.
+> 
+> Sure, I will drop my change to acpi_bus_trim() and update one
+> reference accordingly.
+> 
+> Acked-by: for those 5 patches.
 
-You happen to know how I get more verbose-debug outputs?
+Thanks!
 
-You have...
+> So you will put those patches in acpi-scan, and Bjorn will pull that
+> again to pci tree?
 
-[   57.320031] kernel BUG at block/blk-core.c:2981!
-[   57.320031] invalid opcode: 0000 [#3] PREEMPT SMP DEBUG_PAGEALLOC
+I'm going to put them into acpi-scan some time later this week, but I'd like
+them to go through linux-next first to catch teething problems, if any.
 
-Me has...
+I can't speak for Bjorn, though.  I suppose he will pull them if you ask him to.
 
-[ 1263.965989] Kernel BUG at ffffffff81328b2b [verbose debug info unavailable]
-[ 1263.966022] invalid opcode: 0000 [#1] SMP
+Thanks,
+Rafael
 
-CONFIG_DEBUG_PAGEALLOC=y ?
 
-Block-specific debug settings?
-
-$ egrep -i 'block|blk' .config | egrep -i 'debug|dbg'
-# CONFIG_DEBUG_BLK_CGROUP is not set
-# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
-
-- Sedat -
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
