@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab3ANIiI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 03:38:08 -0500
-Received: from ra.se.axis.com ([195.60.68.13]:54993 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752606Ab3ANIiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 03:38:06 -0500
-Date: Mon, 14 Jan 2013 09:38:02 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-cris-kernel@axis.com
-Subject: Re: [PATCH 4/9] cris: Provide dma_mmap_coherent() and
- dma_get_sgtable()
-Message-ID: <20130114083802.GA23529@axis.com>
-References: <1358073890-3610-1-git-send-email-geert@linux-m68k.org>
- <1358073890-3610-4-git-send-email-geert@linux-m68k.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1755732Ab3ANIiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 03:38:07 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:37543 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab3ANIiF convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Mon, 14 Jan 2013 03:38:05 -0500
+Message-Id: <50F3D1F702000078000B52FB@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Mon, 14 Jan 2013 08:37:59 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ondrej Zary" <linux@rainbow-software.org>
+Cc: <dmitry.torokhov@gmail.com>, <hpa@linux.intel.com>,
+        "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>
+Subject: Re: your patch "x86, 8042: Enable A20 using KBC to fix S3
+ resume on some MSI laptops"
+References: <50F3CAFD02000078000B52BE@nat28.tlf.novell.com>
+ <201301140929.38462.linux@rainbow-software.org>
+In-Reply-To: <201301140929.38462.linux@rainbow-software.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1358073890-3610-4-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 13, 2013 at 11:44:45AM +0100, Geert Uytterhoeven wrote:
-> cris/allmodconfig:
+>>> On 14.01.13 at 09:29, Ondrej Zary <linux@rainbow-software.org> wrote:
+> On Monday 14 January 2013, Jan Beulich wrote:
+>> Ondrej,
+>>
+>> I see two problems with this patch: For one, on a system without
+>> i8042 the code at the place it got inserted ought to incur a stall of
+>> 1s (50us * I8042_CTL_TIMEOUT [10000] * 2). I believe that this
+>> code should not be run before i8042_controller_check() completed
+>> successfully, but at the very least the second call to
+>> i8042_command() should be conditional upon the first being
+>> successful (effectively halving the stall).
 > 
-> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
-> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
-> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
-> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
-> 
-> For architectures using dma_map_ops, dma_mmap_coherent() and
-> dma_get_sgtable() are provided in <asm-generic/dma-mapping-common.h>.
-> 
-> Cris does not use dma_map_ops, hence it should implement them as inline
-> stubs using dma_common_mmap() and dma_common_get_sgtable().
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: linux-cris-kernel@axis.com
+> I believe that all PnP-capable systems without 8042 will exit with -ENODEV 
+> after x86_platform.i8042_detect().
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+How that, with default_i8042_detect() being just "return 1;"?
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+> Old non-PnP systems usually have 8042.
+
+Sure.
+
+>> Second, considering that enabling A20 (even if just in a fake way),
+>> is a core system operation, I don't think it belongs into a driver
+>> that is only optionally present in the kernel.
+> 
+> The first version of this patch added A20 enabling to early init code. But 
+> that could be dangerous as it was run before any 8042 detection, possibly 
+> breaking systems without 8042. I haven't found a better place for this.
+
+I realize that the change would be more intrusive, but imo that's
+not an excuse for not doing it properly.
+
+Jan
+
