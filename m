@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3ANR0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 12:26:43 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:40852 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756782Ab3ANR0m (ORCPT
+	id S1757999Ab3ANR33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 12:29:29 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46293 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756679Ab3ANR32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 12:26:42 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Tiejun Chen <tiejun.chen@windriver.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] powerpc: kernel/kgdb.c: fix memory leakage
-Date: Mon, 14 Jan 2013 17:26:32 +0000
-Message-Id: <1358184395-31418-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.4.5
+	Mon, 14 Jan 2013 12:29:28 -0500
+Date: Mon, 14 Jan 2013 17:23:46 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Cong Ding <dinggnu@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: kernel/perf_event_cpu.c: fix error null pointer
+	dereference check
+Message-ID: <20130114172346.GK23505@n2100.arm.linux.org.uk>
+References: <1358183933-29160-1-git-send-email-dinggnu@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358183933-29160-1-git-send-email-dinggnu@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the variable backup_current_thread_info isn't freed before existing the
-function.
+On Mon, Jan 14, 2013 at 05:18:53PM +0000, Cong Ding wrote:
+> the pointer cpu_pmu is used without null pointer dereference check, and is
+> checked after the using of it, so we move the null pointer check to before the
+> first use.
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- arch/powerpc/kernel/kgdb.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+The NULL pointer check is not necessary.  cpu_pmu_init() is called
+after cpu_pmu has already been dereferenced by its caller:
 
-diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
-index 8747447..5ca82cd 100644
---- a/arch/powerpc/kernel/kgdb.c
-+++ b/arch/powerpc/kernel/kgdb.c
-@@ -154,12 +154,12 @@ static int kgdb_handle_breakpoint(struct pt_regs *regs)
- static int kgdb_singlestep(struct pt_regs *regs)
- {
- 	struct thread_info *thread_info, *exception_thread_info;
--	struct thread_info *backup_current_thread_info = \
--		(struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
-+	struct thread_info *backup_current_thread_info;
- 
- 	if (user_mode(regs))
- 		return 0;
- 
-+	backup_current_thread_info = (struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
- 	/*
- 	 * On Book E and perhaps other processors, singlestep is handled on
- 	 * the critical exception stack.  This causes current_thread_info()
-@@ -185,6 +185,7 @@ static int kgdb_singlestep(struct pt_regs *regs)
- 		/* Restore current_thread_info lastly. */
- 		memcpy(exception_thread_info, backup_current_thread_info, sizeof *thread_info);
- 
-+	kfree(backup_current_thread_info);
- 	return 1;
- }
- 
--- 
-1.7.9.5
+        cpu_pmu = pmu;
+        cpu_pmu->plat_device = pdev;
+        cpu_pmu_init(cpu_pmu);
 
+So...
+
+> -	/* Ensure the PMU has sane values out of reset. */
+> -	if (cpu_pmu && cpu_pmu->reset)
+
+Just replace this with:
+	if (cpu_pmu->reset)
