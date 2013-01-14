@@ -1,43 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab3ANKhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 05:37:08 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:41214 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab3ANKhH (ORCPT
+	id S1756432Ab3ANKnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 05:43:39 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19942 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756109Ab3ANKnh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 05:37:07 -0500
+	Mon, 14 Jan 2013 05:43:37 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 14 Jan 2013 02:43:31 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "robherring2@gmail.com" <robherring2@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Mon, 14 Jan 2013 11:43:30 +0100
+Subject: Re: [PATCH 4/4] ARM: tegra: Set SCU base address dynamically from DT
+Thread-Topic: [PATCH 4/4] ARM: tegra: Set SCU base address dynamically from
+ DT
+Thread-Index: Ac3yQ/9+Oot/FTQWSaKmTO/ZwDeyaQ==
+Message-ID: <20130114.124330.851549576173829665.hdoyu@nvidia.com>
+References: <1355725087-11363-1-git-send-email-hdoyu@nvidia.com><1355725087-11363-4-git-send-email-hdoyu@nvidia.com><50CF258E.2080207@gmail.com>
+In-Reply-To: <50CF258E.2080207@gmail.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-From: Bora Erbas <bora.erbas@gmail.com>
-Date: Mon, 14 Jan 2013 12:36:45 +0200
-Message-ID: <CABGFC5_V1MKmN_2DyZpNo+zStEMLZ_Md1EhGP_eA-K5QzT-iug@mail.gmail.com>
-Subject: kernel module not installing on debug kernel: lockdep_init_map
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Rob Herring <robherring2@gmail.com> wrote @ Mon, 17 Dec 2012 15:00:46 +0100:
 
-We have some kernel modules that are working on Centos 5.x.
-Now we are in the process of porting them to Centos 6.x.
+> On 12/17/2012 12:18 AM, Hiroshi Doyu wrote:
+> > Set Snoop Control Unit(SCU) register base address dynamically from DT.
+> > 
+> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > ---
+> >  arch/arm/mach-tegra/platsmp.c |   23 ++++++++++++++++++++---
+> >  1 file changed, 20 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
+> > index 1b926df..45c0b79 100644
+> > --- a/arch/arm/mach-tegra/platsmp.c
+> > +++ b/arch/arm/mach-tegra/platsmp.c
+> > @@ -18,6 +18,8 @@
+> >  #include <linux/jiffies.h>
+> >  #include <linux/smp.h>
+> >  #include <linux/io.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_address.h>
+> >  
+> >  #include <asm/cacheflush.h>
+> >  #include <asm/hardware/gic.h>
+> > @@ -36,7 +38,7 @@
+> >  
+> >  extern void tegra_secondary_startup(void);
+> >  
+> > -static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
+> > +static void __iomem *scu_base;
+> >  
+> >  #define EVP_CPU_RESET_VECTOR \
+> >  	(IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE) + 0x100)
+> > @@ -143,14 +145,28 @@ done:
+> >  	return status;
+> >  }
+> >  
+> > +static const struct of_device_id cortex_a9_scu_match[] __initconst = {
+> > +	{ .compatible = "arm,cortex-a9-scu", },
+> > +	{}
+> > +};
+> > +
+> >  /*
+> >   * Initialise the CPU possible map early - this describes the CPUs
+> >   * which may be present or become present in the system.
+> >   */
+> >  static void __init tegra_smp_init_cpus(void)
+> >  {
+> > -	unsigned int i, ncores = scu_get_core_count(scu_base);
+> > +	struct device_node *np;
+> > +	unsigned int i, ncores = 1;
+> > +
+> > +	np = of_find_matching_node(NULL, cortex_a9_scu_match);
+> > +	if (!np)
+> > +		return;
+> > +	scu_base = of_iomap(np, 0);
+> 
+> Did you actually test this? Unless something changed, ioremap does not
+> work this early. The only reason to have it mapped this early is to get
+> the core count, but that doesn't work on A15 or A7. So we really need to
+> get core count/mask in a standard way. At least some work to get core
+> count from DT went into 3.8.
+> 
+> BTW, you can get the scu address on the A9 by reading cp15 register:
+> 
+> 	/* Get SCU base */
+> 	asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (base));
+> 
+> It's still probably good to have the DT node, but the reg property can
+> be optional in this case.
+> 
+> We need to move away from having the DT matching code within the
+> platforms. This should all be moved to the scu code in a scu_of_init
+> function that could be called from common code.
 
-After the initial tests we have observed some freezes with the Centos
-6.x while using our modules.
-So we decided to utilize the debug kernel during the porting phase.
+If we can get SCU base address from CP15, do we still need SCU entry
+in DT? If not, the following would be the only API to get SCU base?
 
-However, the module is not installing with the error "Unknown symbol
-lockdep_init_map".
-I am using the below kernel:
-kernel-debug-2.6.32-279.2.1.el6.x86_64.rpm
+>From 9bbecb50759f39d9c762977145407ea4f8a4d5ac Mon Sep 17 00:00:00 2001
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+Date: Mon, 14 Jan 2013 12:35:33 +0200
+Subject: [PATCH 1/1] ARM: Add API to detect SCU base address from CP15
 
-I believe this is not related with the distribution and rather with
-the kernel itself, thus I am posting here.
-Please correct me if I'm wrong.
+Add API to detect SCU base address from CP15.
 
-Is there a workaround for this? Any pointers are appreciated.
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+---
+ arch/arm/include/asm/smp_scu.h |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-Thanks in advance.
-
-Regards.
+diff --git a/arch/arm/include/asm/smp_scu.h b/arch/arm/include/asm/smp_scu.h
+index 4eb6d00..6015ede 100644
+--- a/arch/arm/include/asm/smp_scu.h
++++ b/arch/arm/include/asm/smp_scu.h
+@@ -6,6 +6,20 @@
+ #define SCU_PM_POWEROFF	3
+ 
+ #ifndef __ASSEMBLER__
++static inline phys_addr_t scu_get_base(void)
++{
++	phys_addr_t pa;
++	unsigned long part_number = read_cpuid_part_number();
++
++	switch (part_number) {
++	case ARM_CPU_PART_CORTEX_A9:
++		/* Get SCU physical base */
++		asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (pa));
++		return pa;
++	default:
++		return 0;
++	}
++}
+ unsigned int scu_get_core_count(void __iomem *);
+ void scu_enable(void __iomem *);
+ int scu_power_mode(void __iomem *, unsigned int);
+-- 
+1.7.9.5
