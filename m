@@ -1,57 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab3ANRBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 12:01:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41017 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756635Ab3ANRBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 12:01:35 -0500
-Date: Mon, 14 Jan 2013 09:01:34 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        stable@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Unique commit-id for "mm: compaction: [P,p]artially revert
- capture of suitable high-order page"
-Message-ID: <20130114170134.GA26655@kroah.com>
-References: <CA+icZUW5kryOCpX96CkaS=5uX61FmiYE0mh7y6F0eT9Bh8eUGw@mail.gmail.com>
- <20130114103612.GO13304@suse.de>
- <CA+icZUUReY7LPjnF1xTjD-aJSYYqgo9tF9K8T8--r_HjRwgCHA@mail.gmail.com>
- <20130114130911.GQ13304@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130114130911.GQ13304@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757574Ab3ANRCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 12:02:08 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:37946 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756635Ab3ANRCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 12:02:06 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf: move get_term_dimensions from top to util.c
+Date: Mon, 14 Jan 2013 10:02:01 -0700
+Message-Id: <1358182921-89998-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 01:09:11PM +0000, Mel Gorman wrote:
-> On Mon, Jan 14, 2013 at 12:27:20PM +0100, Sedat Dilek wrote:
-> > On Mon, Jan 14, 2013 at 11:36 AM, Mel Gorman <mgorman@suse.de> wrote:
-> > > On Sun, Jan 13, 2013 at 05:12:45PM +0100, Sedat Dilek wrote:
-> > >> Hi Linus,
-> > >>
-> > >> I see two different commit-id for an identical patch (only subject
-> > >> line differs).
-> > >> [1] seems to be applied directly and [2] came with a merge of akpm-fixes.
-> > >> What is in case of backports for -stable kernels?
-> > >
-> > > I do not expect it to matter. I was going to use
-> > > 8fb74b9fb2b182d54beee592350d9ea1f325917a as the commit ID whenever I got
-> > > the complaint mail from Greg's tools about a 3.7 merge failure. The 3.7.2
-> > > backport looks like this.
-> > >
-> > 
-> > Oh cool and thanks!
-> > Are you planning to resend this backport-patch to the lists w/ a "3.7"
-> > (or for-3.7) in the commit-subject?
-> > 
-> 
-> Yes, when I get the reject mail from Greg's tools.
+It is used by util/help.c so it should be a lib function and included
+in libperf.a. Code move only.
+---
+ tools/perf/builtin-top.c |   22 ----------------------
+ tools/perf/perf.h        |    4 ----
+ tools/perf/util/util.c   |   22 ++++++++++++++++++++++
+ tools/perf/util/util.h   |    3 +++
+ 4 files changed, 25 insertions(+), 26 deletions(-)
 
-You should have that rejection email now :)
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c9ff395..471efaa 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -68,28 +68,6 @@
+ #include <linux/unistd.h>
+ #include <linux/types.h>
+ 
+-void get_term_dimensions(struct winsize *ws)
+-{
+-	char *s = getenv("LINES");
+-
+-	if (s != NULL) {
+-		ws->ws_row = atoi(s);
+-		s = getenv("COLUMNS");
+-		if (s != NULL) {
+-			ws->ws_col = atoi(s);
+-			if (ws->ws_row && ws->ws_col)
+-				return;
+-		}
+-	}
+-#ifdef TIOCGWINSZ
+-	if (ioctl(1, TIOCGWINSZ, ws) == 0 &&
+-	    ws->ws_row && ws->ws_col)
+-		return;
+-#endif
+-	ws->ws_row = 25;
+-	ws->ws_col = 80;
+-}
+-
+ static void perf_top__update_print_entries(struct perf_top *top)
+ {
+ 	if (top->print_entries > 9)
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 2c340e7..ec1eace 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -1,10 +1,6 @@
+ #ifndef _PERF_PERF_H
+ #define _PERF_PERF_H
+ 
+-struct winsize;
+-
+-void get_term_dimensions(struct winsize *ws);
+-
+ #include <asm/unistd.h>
+ 
+ #if defined(__i386__)
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 5906e84..1e32d8b 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -218,3 +218,25 @@ void dump_stack(void)
+ #else
+ void dump_stack(void) {}
+ #endif
++
++void get_term_dimensions(struct winsize *ws)
++{
++	char *s = getenv("LINES");
++
++	if (s != NULL) {
++		ws->ws_row = atoi(s);
++		s = getenv("COLUMNS");
++		if (s != NULL) {
++			ws->ws_col = atoi(s);
++			if (ws->ws_row && ws->ws_col)
++				return;
++		}
++	}
++#ifdef TIOCGWINSZ
++	if (ioctl(1, TIOCGWINSZ, ws) == 0 &&
++	    ws->ws_row && ws->ws_col)
++		return;
++#endif
++	ws->ws_row = 25;
++	ws->ws_col = 80;
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index c233091..ec5de5e 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -271,4 +271,7 @@ void dump_stack(void);
+ 
+ extern unsigned int page_size;
+ 
++struct winsize;
++void get_term_dimensions(struct winsize *ws);
++
+ #endif
+-- 
+1.7.10.1
 
