@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab3ANSE1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:04:27 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51444 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756687Ab3ANSE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:04:26 -0500
-Date: Mon, 14 Jan 2013 19:04:23 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7u1 24/31] x86, boot: Not need to check setup_header
- version for setup_data
-Message-ID: <20130114180423.GA6213@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jan Kiszka <jan.kiszka@web.de>,
-	Jason Wessel <jason.wessel@windriver.com>,
-	linux-kernel@vger.kernel.org
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
- <1357260531-11115-25-git-send-email-yinghai@kernel.org>
- <20130114112619.GG1228@liondog.tnic>
- <50F44260.5030305@zytor.com>
+	id S1757622Ab3ANSEa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:04:30 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59135 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757357Ab3ANSE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 13:04:28 -0500
+Date: Mon, 14 Jan 2013 13:04:27 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Jens Axboe <axboe@kernel.dk>, USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: USB device cannot be reconnected and khubd "blocked for more
+ than 120 seconds"
+In-Reply-To: <CA+55aFxV40V2WvNtJY3EC0F-B9wPk8CV2o1TTTyoF4CoWH7rhQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1301141302380.1782-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50F44260.5030305@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 09:37:36AM -0800, H. Peter Anvin wrote:
-> No, this is a case of cargo-cult programming. I asked Yinghai to
-> remove it.
->
-> It is cargo-cult programming because the value of boot_params.hdr
-> comes from the kernel itself, so all you're doing is telling you the
-> boot protocol version associated with the kernel itself, which we
-> already know.
+On Mon, 14 Jan 2013, Linus Torvalds wrote:
 
-LOOL. Great.
+> > - from view of driver, introducing async_synchronize_full() after
+> > do_one_initcall() inside do_init_module() is like a sync probe
+> > for drivers built as module, and cause this kind of deadlock easily.
+> >
+> > So could we revert the commit and fix the previous problems just
+> > case by case? or other better fix?
+> 
+> There's no way in hell we take a "fix things one by one" approach.
+> It's not going to work. And your suggestion seems to not do async
+> discovery of devices in general, which is a *much* worse fix than
+> anything else. It's just crazy.
+> 
+> But there are other approaches we might take. We might move the call to
+> 
+>     async_synchronize_full();
+> 
+> to other places. For example, maybe we're better off doing it at
+> block/char device open instead?
 
-> If we find a bootloader that does that incorrectly (e.g. if kexec
-> were to blindly copy struct boot_params from the older kernel...
-> which ironically would be better than the current situation) then
-> the right thing to do would be to have a central place which scrub
-> out the fields and just force them to zero rather than putting a
-> bunch of tests all over the place.
+How about skipping that call if the current thread is one of the async 
+helpers?  Is it possible to detect when that happens?
 
-Ok, I didn't realize that.
+Or maybe such a check should go inside async_synchronize_full() itself.
 
-And besides, nothing stops a silly boot loader from adjusting
-boot_params.hdr.version so that the check - or any check for that matter
-- passes, AFAICT.
+Alan Stern
 
-See, this is exactly the reason why I'm trying to explain to Yinghai
-why it is a Good Thing to document stuff like that at least in commit
-messages.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
