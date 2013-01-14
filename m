@@ -1,130 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab3ANHRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 02:17:44 -0500
-Received: from mga01.intel.com ([192.55.52.88]:29262 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755291Ab3ANHRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 02:17:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,466,1355126400"; 
-   d="scan'208";a="273403105"
-Message-ID: <50F3B140.2030003@intel.com>
-Date: Mon, 14 Jan 2013 15:18:24 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755667Ab3ANH1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 02:27:42 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:58629 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab3ANH1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 02:27:38 -0500
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v5 3/4] block: implement runtime pm strategy
-References: <1341547472-6863-1-git-send-email-ming.m.lin@intel.com>  <1341547472-6863-4-git-send-email-ming.m.lin@intel.com>  <1341550812.3023.3.camel@dabdike.hilton.com>  <1341554872.3628.30.camel@minggr> <1341561953.3023.31.camel@dabdike.hilton.com>
-In-Reply-To: <1341561953.3023.31.camel@dabdike.hilton.com>
+In-Reply-To: <CACRpkdbVPeva08nL_FP7qw0MeKLz6h40kPHAz_W95ZBGraOnpg@mail.gmail.com>
+References: <50efad8d.84fc440a.589e.ffff9546SMTPIN_ADDED_BROKEN@mx.google.com>
+	<CACRpkdYSaFsastx-WWC7sBu8NteAc2hCDZMz4-yMc8+=2dyBVw@mail.gmail.com>
+	<50f107aa.894e420a.596a.ffffe3f6SMTPIN_ADDED_BROKEN@mx.google.com>
+	<CACRpkdaJd48WOzP_iURATb=c+V6==2-AB2Y9oFyh=E3oe1eT0Q@mail.gmail.com>
+	<20130114002608.GV23505@n2100.arm.linux.org.uk>
+	<CACRpkdbVPeva08nL_FP7qw0MeKLz6h40kPHAz_W95ZBGraOnpg@mail.gmail.com>
+Date: Mon, 14 Jan 2013 16:27:37 +0900
+X-Google-Sender-Auth: OkjukcVi71fMM5bHATlUvs2DK88
+Message-ID: <CAOAMb1BgcvBb6KHaZbwbh0rq8r1WfAtdCeZJexfaYoOwGfU7Sg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: PL011: Add support for Rx DMA buffer polling
+From: Chanho Min <chanho.min@lge.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed LinMing@intel
-
-Hi James,
-
-Sorry for the late reply, as I'm just picking up this work and thought
-this may still need some discussion/clarification. Please see below.
-
-On 07/06/2012 04:05 PM, James Bottomley wrote:
-> On Fri, 2012-07-06 at 14:07 +0800, Lin Ming wrote:
->> On Fri, 2012-07-06 at 09:00 +0400, James Bottomley wrote:
->>> On Fri, 2012-07-06 at 12:04 +0800, Lin Ming wrote:
->>>> When a request is added:
->>>>     If device is suspended or is suspending and the request is not a
->>>>     PM request, resume the device.
->>>>
->>>> When a request finishes:
->>>>     Call pm_runtime_mark_last_busy().
->>>>
->>>> When pick a request:
->>>>     If device is resuming/suspending, then only PM request is allowed to go.
->>>>     Return NULL for other cases.
->>>
->>> This is a complete reinvention of the quiesce state, just with new names
->>> and moved up to block in part ... why do we have to have two separate
->>> systems for stopping a device and sending special commands when the
->>> device is suspended, why not just one?
+On Mon, Jan 14, 2013 at 3:46 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Jan 14, 2013 at 1:26 AM, Russell King - ARM Linux
+>> What you describe above is exactly the problem I see on the Versatile
+>> platform with it's PL080 and PL011.  I made the comment that this setup
+>> can't work properly as it stands.  And I don't think that setting a
+>> timer which fires every jiffy count is really a solution to the problem.
+>> That's an expensive way of having a per-jiffy callback for something
+>> that's probably going to remain idle most of the time.
+>
+> OK then that's what we can expect from an unmodified PL011.
+>
+>> Not only that, but a 1 jiffy timeout even for slower baud rates is
+>> just utterly silly.
 >>
->> Yes, there are some duplicates with scsi layer quiesce state.
->> I'd like to do the cleanup.
-> 
-> The mechanism is pretty much identical:  For quiesce you set the sdev
-> state to SDEV_QUIESCE and then send in special requests with REQ_PREEMPT
-> to bypass the suspend.  In your additional scheme you set a queue flag
-> RPM_SUSPENDED by a pm specific set of callbacks and you only then accept
-> requests with REQ_PM.  I don't see any difference in actual effect
-> (well, except that quiesce can be done on a non-empty queue, but that's
-> a simple flag difference).
+>> The point of using DMA is to move the workload off the CPU onto hardware,
+>> so that the CPU can go off and do other stuff.  If it's having to poll
+>> it once every jiffy, then...
+>
+> Agreed.
 
-My understanding of quiesce state is that, it is used by scsi driver to
-say: hold on for a moment, no more FS requests, I need to do some
-housekeeping work for the device and when I'm done, I'll put it back to
-normal state.
+I agree also. So We hope to suggest a way to reduce such cost.
+Rx DMA is required for the fast baud only. PIO is sufficient for the
+slow baud rate.
+So this feature is optional for the specific port.
+1 jiffy timeout is experimental and adjustable. Even 100ms, It will be
+better than
+remain in the DMA buffer. Also, the polling interval can be adjusted
+according to
+baud rate as Russel mentioned.
 
-The housekeeping work will generally involve executing some commands for
-the device using scsi_execute, as all requests originated from
-scsi_execute are of type REQ_PREEMPT. But it is not for suspending the
-device.
+> Chanho, have you considered just leaving RX DMA undefined
+> and only use DMA for TX?
 
-While for runtime suspended state, we can't say: everybody quiet, I'm
-gonna sleep, so I'll ignore all of your requests. Instead, we keep track
-of the device's activity, and once we have learned that it is not being
-used by anyone, we put it into a low power state. And if there is any
-requests arrived for it due to whatever user, we will need to resume it
-to process the request.
+No, We need RX DMA to reduce data loss rather than TX DMA.
 
-So I think they are different, serves for different purposes.
+>> The solution I came up with on Versatile was to just not enable
+>> receive DMA - at all.
 
-> 
-> What I don't want to see is duplicated mechanisms.  If you want to make
-> a general quiesce mechanism in block instead of SCSI, I'm fine with
-> that, but I want to see our current quiesce mechanism moved to it first
-> since that demonstrates you got it right.  If you don't want to do that,
-> then just use the existing mechanism in SCSI.
-> 
-> Now that I look at it, your q->nr_pending is an inexact duplicate of
-> sdev->device_busy as well.  Again, no objection to moving this to block,
-> but if you then make SCSI use it for sdev->device_busy, you'll get a
-> very fast indication of whether you got this right or not, which is an
-> excellent reason for unifying.
+We just want to use this HW function even if SW support is needed.
+Anyway, It was very useful for megabyte rate chips.
 
-The nr_pending is the counter of how many requests are in the device's
-request queue, while the device_busy is how many commands are being
-processed by the device, and they can be different as Alan Stern has put
-it here:
-http://www.spinics.net/lists/linux-scsi/msg60497.html
-
-And I think we still need device_busy in scsi layer, for the case when
-the scsi prepare phase decides to defer the request(due to no memory or
-whatever), we will have 1 request in the queue while no commands are
-being processed by the device. And we need to keep track of such
-information in order to decide if we need restart the queue when we
-return BLKPREP_DEFER in function scsi_prep_return:
-
-        case BLKPREP_DEFER:
-                /*
-                 * If we defer, the blk_peek_request() returns NULL, but the
-                 * queue must be restarted, so we schedule a callback to happen
-                 * shortly.
-                 */
-                if (sdev->device_busy == 0)
-                        blk_delay_queue(q, SCSI_QUEUE_DELAY);
-                break;
-
-So I think we still need device_busy.
-
-OK, this is my understanding, they may be wrong, so please let me know
-what do you think, thanks.
-
--Aaron
-
+Thanks
+Chanho
