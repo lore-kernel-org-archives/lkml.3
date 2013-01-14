@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab3ANRqO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 12:46:14 -0500
-Received: from lihas.de ([87.106.212.181]:56532 "EHLO mx.lihas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756495Ab3ANRqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 12:46:13 -0500
-X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jan 2013 12:46:12 EST
-Date: Mon, 14 Jan 2013 18:36:31 +0100
-From: Christian Recktenwald <cre@lihas.de>
-To: linux-kernel@vger.kernel.org
-Subject: linux-firmware/Makefile - rm: cannot remove
- `/lib/firmware/{WHENCE,LICENSE.*,LICENCE.*}': No such file or directory
-Message-ID: <20130114173631.GA16331@curtis.s.lihas.de>
-Reply-To: Christian Recktenwald <cre@lihas.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-Organization: Adrian Reyer LinuxHaus Stuttgart
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757722Ab3ANRqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 12:46:53 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:36246 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756519Ab3ANRqw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 12:46:52 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf: dso_load - move name malloc to when needed
+Date: Mon, 14 Jan 2013 10:46:47 -0700
+Message-Id: <1358185607-90799-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checked out commit 65a5163b8bb77bd7759efa3ca780867fcaed89b0
+memory is currently leaked on some paths.
 
-Makefile looks like:
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/util/symbol.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-  ...
-  install:
-		  mkdir -p $(DESTDIR)$(FIRMWAREDIR)
-		  cp -r * $(DESTDIR)$(FIRMWAREDIR)
-		  rm -f $(DESTDIR)/usbdux/*dux $(DESTDIR)/*/*.asm
-		  rm $(DESTDIR)$(FIRMWAREDIR)/{WHENCE,LICENSE.*,LICENCE.*}
-
-last one breaks. AFAIK {WHENCE,LICENSE.*,LICENCE.*} would 
-be a bash-ism. 
-
-Replacing by:
-		rm $(DESTDIR)$(FIRMWAREDIR)/WHENCE 
-		rm $(DESTDIR)$(FIRMWAREDIR)/LICENCE.*
-		rm $(DESTDIR)$(FIRMWAREDIR)/LICENSE.*
-or
-	    /bin/bash -c "rm -f $(DESTDIR)$(FIRMWAREDIR)/{WHENCE,LICENSE.*,LICENCE.*}"
-helps.
-
-make: GNU Make 3.81
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 61edfd0..e9c0c3a 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -775,10 +775,6 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	else
+ 		machine = NULL;
+ 
+-	name = malloc(PATH_MAX);
+-	if (!name)
+-		return -1;
+-
+ 	dso->adjust_symbols = 0;
+ 
+ 	if (strncmp(dso->name, "/tmp/perf-", 10) == 0) {
+@@ -802,6 +798,10 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	if (machine)
+ 		root_dir = machine->root_dir;
+ 
++	name = malloc(PATH_MAX);
++	if (!name)
++		return -1;
++
+ 	/* Iterate over candidate debug images.
+ 	 * Keep track of "interesting" ones (those which have a symtab, dynsym,
+ 	 * and/or opd section) for processing.
 -- 
-LiHAS - Adrian Reyer - Hessenwiesenstraße 10 - D-70565 Stuttgart
-Fon: +49 (7 11) 78 28 50 90 - Fax:  +49 (7 11) 78 28 50 91
-Mail: cre@lihas.de - Web: http://lihas.de
-Linux, Netzwerke, Consulting & Support - USt-ID: DE 227 816 626 Stuttgart
+1.7.10.1
+
