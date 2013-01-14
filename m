@@ -1,185 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab3ANSTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:19:37 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:39089 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776Ab3ANSTg (ORCPT
+	id S1757893Ab3ANSWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:22:11 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:36430 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757524Ab3ANSWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:19:36 -0500
+	Mon, 14 Jan 2013 13:22:10 -0500
+Date: Mon, 14 Jan 2013 10:22:03 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, chavey@google.com, fengguang.wu@intel.com,
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH] writeback: mark sysctl vm.block_dump for removal
+Message-ID: <20130114182203.GE27942@mtj.dyndns.org>
+References: <1357938397-5413-1-git-send-email-tj@kernel.org>
+ <20130114140227.GB2441@kernel.dk>
+ <20130114174318.GD27942@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1358185998-5997-1-git-send-email-dinggnu@gmail.com>
-References: <1358185998-5997-1-git-send-email-dinggnu@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 14 Jan 2013 11:19:15 -0700
-Message-ID: <CAErSpo6AfLBGZpdByuUeqbD5pUc1o-YD-EyVekOgWP5m6Yv-pw@mail.gmail.com>
-Subject: Re: [PATCH] ia64: sn/pci/pcibr/pcibr_reg.c: check null pointer dereference
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Jes Sorensen <jes@sgi.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-altix@sgi.com,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130114174318.GD27942@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 10:53 AM, Cong Ding <dinggnu@gmail.com> wrote:
-> we should ensure the pointer is not null before the first use, rather than
-> after it.
+vm.block_dump is nasty in that it dumps IO traces directly to printk.
+It isn't scalable and can easily lead to looping behavior - IO
+generating kernel message which in turn genreates log IO, ad
+infinitum.
 
-These changes look technically correct, but the whole pcibr_reg.c file
-is ridiculously defensive programming.
+Now that proper tracepoints are in place, vm.block_dump isn't
+necessary.  Generate a warning if used so that it can be removed down
+the road.
 
-For example, the first two hunks are for pcireg_control_bit_clr() and
-pcireg_control_bit_set().  These functions are called only from
-pcibr_bus_fixup(), and it's impossible for it to pass a null pointer.
-It would be better to just remove the null pointer checks completely.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/writeback.h |    3 +++
+ kernel/sysctl.c           |    2 +-
+ mm/page-writeback.c       |   14 ++++++++++++++
+ 3 files changed, 18 insertions(+), 1 deletion(-)
 
-The panics in pcibr_reg.c are dubious, too.  That sort of check
-belongs higher up, e.g., in pcibr_bus_fixup() where we set up
-pcibus_info->pbi_buscommon.bs_base in the first place.
-
-Bjorn
-
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> ---
->  arch/ia64/sn/pci/pcibr/pcibr_reg.c |   29 +++++++++++------------------
->  1 file changed, 11 insertions(+), 18 deletions(-)
->
-> diff --git a/arch/ia64/sn/pci/pcibr/pcibr_reg.c b/arch/ia64/sn/pci/pcibr/pcibr_reg.c
-> index 8b8bbd5..b33ee60 100644
-> --- a/arch/ia64/sn/pci/pcibr/pcibr_reg.c
-> +++ b/arch/ia64/sn/pci/pcibr/pcibr_reg.c
-> @@ -25,9 +25,8 @@ union br_ptr {
->   */
->  void pcireg_control_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
-> -
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         __sn_clrq_relaxed(&ptr->tio.cp_control, bits);
-> @@ -45,9 +44,8 @@ void pcireg_control_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
->
->  void pcireg_control_bit_set(struct pcibus_info *pcibus_info, u64 bits)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
-> -
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         __sn_setq_relaxed(&ptr->tio.cp_control, bits);
-> @@ -68,10 +66,10 @@ void pcireg_control_bit_set(struct pcibus_info *pcibus_info, u64 bits)
->   */
->  u64 pcireg_tflush_get(struct pcibus_info *pcibus_info)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->         u64 ret = 0;
->
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         ret = __sn_readq_relaxed(&ptr->tio.cp_tflush);
-> @@ -98,10 +96,10 @@ u64 pcireg_tflush_get(struct pcibus_info *pcibus_info)
->   */
->  u64 pcireg_intr_status_get(struct pcibus_info * pcibus_info)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->         u64 ret = 0;
->
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         ret = __sn_readq_relaxed(&ptr->tio.cp_int_status);
-> @@ -123,9 +121,8 @@ u64 pcireg_intr_status_get(struct pcibus_info * pcibus_info)
->   */
->  void pcireg_intr_enable_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
-> -
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         __sn_clrq_relaxed(&ptr->tio.cp_int_enable, bits);
-> @@ -143,9 +140,8 @@ void pcireg_intr_enable_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
->
->  void pcireg_intr_enable_bit_set(struct pcibus_info *pcibus_info, u64 bits)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
-> -
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         __sn_setq_relaxed(&ptr->tio.cp_int_enable, bits);
-> @@ -167,9 +163,8 @@ void pcireg_intr_enable_bit_set(struct pcibus_info *pcibus_info, u64 bits)
->  void pcireg_intr_addr_addr_set(struct pcibus_info *pcibus_info, int int_n,
->                                u64 addr)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
-> -
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         __sn_clrq_relaxed(&ptr->tio.cp_int_addr[int_n],
-> @@ -196,9 +191,8 @@ void pcireg_intr_addr_addr_set(struct pcibus_info *pcibus_info, int int_n,
->   */
->  void pcireg_force_intr_set(struct pcibus_info *pcibus_info, int int_n)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
-> -
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         writeq(1, &ptr->tio.cp_force_pin[int_n]);
-> @@ -219,10 +213,10 @@ void pcireg_force_intr_set(struct pcibus_info *pcibus_info, int int_n)
->   */
->  u64 pcireg_wrb_flush_get(struct pcibus_info *pcibus_info, int device)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->         u64 ret = 0;
->
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         ret =
-> @@ -244,9 +238,8 @@ u64 pcireg_wrb_flush_get(struct pcibus_info *pcibus_info, int device)
->  void pcireg_int_ate_set(struct pcibus_info *pcibus_info, int ate_index,
->                         u64 val)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
-> -
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         writeq(val, &ptr->tio.cp_int_ate_ram[ate_index]);
-> @@ -264,10 +257,10 @@ void pcireg_int_ate_set(struct pcibus_info *pcibus_info, int ate_index,
->
->  u64 __iomem *pcireg_int_ate_addr(struct pcibus_info *pcibus_info, int ate_index)
->  {
-> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->         u64 __iomem *ret = NULL;
->
->         if (pcibus_info) {
-> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
->                 switch (pcibus_info->pbi_bridge_type) {
->                 case PCIBR_BRIDGETYPE_TIOCP:
->                         ret = &ptr->tio.cp_int_ate_ram[ate_index];
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index b82a83a..678ee6d 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -143,6 +143,9 @@ extern int dirty_ratio_handler(struct ctl_table *table, int write,
+ extern int dirty_bytes_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *lenp,
+ 		loff_t *ppos);
++extern int block_dump_handler(struct ctl_table *table, int write,
++		void __user *buffer, size_t *lenp,
++		loff_t *ppos);
+ 
+ struct ctl_table;
+ int dirty_writeback_centisecs_handler(struct ctl_table *, int,
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c88878d..9e7f7b5 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1288,7 +1288,7 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &block_dump,
+ 		.maxlen		= sizeof(block_dump),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= block_dump_handler,
+ 		.extra1		= &zero,
+ 	},
+ 	{
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 6f42712..5548bef 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -390,6 +390,20 @@ int dirty_bytes_handler(struct ctl_table *table, int write,
+ 	return ret;
+ }
+ 
++int block_dump_handler(struct ctl_table *table, int write,
++		       void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	static bool warned = false;
++	int ret;
++
++	ret = proc_dointvec(table, write, buffer, lenp, ppos);
++	if (!warned && block_dump) {
++		pr_warning("sysctl: vm.block_dump is scheduled for removal. Please use tracepoints instead.\n");
++		warned = true;
++	}
++	return ret;
++}
++
+ static unsigned long wp_next_time(unsigned long cur_time)
+ {
+ 	cur_time += VM_COMPLETIONS_PERIOD_LEN;
