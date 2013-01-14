@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581Ab3ANKqy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 05:46:54 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:61641 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073Ab3ANKqv (ORCPT
+	id S1756614Ab3ANKrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 05:47:07 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:52699 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756073Ab3ANKrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 05:46:51 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 0/4] gpio: introduce descriptor-based interface
-Date: Mon, 14 Jan 2013 10:46:12 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        gnurou@gmail.com, linux-m68k@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org
-References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <201301101008.45091.arnd@arndb.de> <50F3DC2B.6000603@nvidia.com>
-In-Reply-To: <50F3DC2B.6000603@nvidia.com>
+	Mon, 14 Jan 2013 05:47:05 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301141046.12976.arnd@arndb.de>
-X-Provags-ID: V02:K0:ajd6tcuv8jgSuvGSBsZ63Ii6EPr9CJmCpMf4u7PwK+j
- yn0QmALdn1q9ct2rKPheEwIm7ulJ9VN4J3TfBfUpulOz/zzCzJ
- U7kYrH+fA/JLpH7UyydKh2cYXWN4xBAOVTgbBMw2s40vAii+g0
- ehmTayhy57xEAXDZ3z5LNUI8bly+fq+8qRYJBAJEdq/VcnrsC3
- veZ04iXCa8xX9GkHqNI9NiCgX08VZXhoyBPz1oVC1j0xura0Ie
- /hFnTwA1ZlSlFbUeHats/hU4SBjo5CRxfgs5BN7/krjR0r/oq9
- U0N9YRvn3piWKCQt/Ee3bk7WJbM+hFK8ahtBvWVAjmf1DzYiGG
- I9xdwNtshQyOhC09wfX8=
+In-Reply-To: <1357923834-31641-5-git-send-email-dianders@chromium.org>
+References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
+	<1357923834-31641-1-git-send-email-dianders@chromium.org>
+	<1357923834-31641-5-git-send-email-dianders@chromium.org>
+Date: Mon, 14 Jan 2013 10:47:02 +0000
+Message-ID: <CAFbHwiTafLhK-uJKjUX4_yLC+27OOUnC2JxYM9-3rHZkPx7s5Q@mail.gmail.com>
+Subject: Re: [PATCH v4 5/5] mmc: dw_mmc: Remove DW_MCI_QUIRK_NO_WRITE_PROTECT
+From: Will Newton <will.newton@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: linux-mmc@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
+        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 January 2013, Alex Courbot wrote:
-> On 01/10/2013 07:08 PM, Arnd Bergmann wrote:
-> > I found two that provide the generic gpio interfaces when gpiolib
-> > is disabled, but use gpiolib otherwise for the same hardware,
-> > arch/m68k/include/asm/mcfgpio.h and arch/blackfin/include/asm/gpio.h.
-> > I would assume that we can simply remove the non-gpiolib shortcut
-> > here at cost of a small overhead.
-> 
-> I performed a search on my side too (checking configurations options 
-> which select GENERIC_GPIO but not ARCH_REQUIRE_GPIOLIB) and found the 
-> same list. This takes some time btw - many platforms use this combo to 
-> make GPIO support optional. Can I ask how you figured out these two archs?
+On Fri, Jan 11, 2013 at 5:03 PM, Doug Anderson <dianders@chromium.org> wrote:
+> The original quirk was added in the change 'mmc: dw_mmc: add quirk to
+> indicate missing write protect line'.  The original quirk was added at
+> a controller level even though each slot has its own write protect (so
+> the quirk should be at the slot level).  A recent change (mmc: dw_mmc:
+> Add "disable-wp" device tree property) added a slot-level quirk and
+> support for the quirk directly to dw_mmc.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes in v4:
+> - New for this version; addresses comments from Olof Johansson about
+>   the fact that we shouldn't have both a slot and controller level
+>   quirk for the same thing.
+>
+>  drivers/mmc/host/dw_mmc.c  |    8 +-------
+>  include/linux/mmc/dw_mmc.h |    7 -------
+>  2 files changed, 1 insertions(+), 14 deletions(-)
 
-I basically grepped for GENERIC_GPIO and looked at
-the individual implementations.
+Hi Doug,
 
-> > Then there are a bunch that use gpiolib but have a nontrivial
-> > implementation of gpio_get_value and other functions. I'm not sure
-> > if these are a problematic with your code.
-> 
-> AFAICT these all implement an inline path that bypasses GPIOlib when the 
-> GPIO number is known at compile time, for faster bitbanging I presume. 
-> It should be totally harmless to keep them. Unfortunately, I don't think 
-> it would be possible to have a similar trick using handlers.
+These changes look ok to me. I don't know if patch 4 made it to the
+list, I only got a copy via the cc and the only archive I can find of
+linux-mmc (gmane) seems to be missing a lot of messages besides this
+one.
 
-Right, makes sense.
+So for the dw_mmc parts:
 
-	Arnd
+Acked-by: Will Newton <will.newton@imgtec.com>
