@@ -1,87 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187Ab3ANWLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 17:11:48 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:51565 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756964Ab3ANWLr (ORCPT
+	id S1757725Ab3ANWMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 17:12:41 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:33271 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756744Ab3ANWMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 17:11:47 -0500
+	Mon, 14 Jan 2013 17:12:40 -0500
+Message-ID: <50F482D1.4090301@gmail.com>
+Date: Mon, 14 Jan 2013 14:12:33 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1357891738-26259-1-git-send-email-gautam.vivek@samsung.com>
-References: <1357891738-26259-1-git-send-email-gautam.vivek@samsung.com>
-Date: Mon, 14 Jan 2013 14:11:42 -0800
-Message-ID: <CAD=FV=Vxdjo5aOU25a-iDNDaiGZCu0+G-p5y1NifXHUJBF0AHg@mail.gmail.com>
-Subject: Re: [PATCH] usb: phy: samsung: Add support to set pmu isolation
-From: Doug Anderson <dianders@chromium.org>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, gregkh@linuxfoundation.org,
-        balbi@ti.com, Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>, t.figa@samsung.com,
-        Ben Dooks <ben-linux@fluff.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        l.majewski@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Praveen Paneri <p.paneri@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Cooper <alcooperx@gmail.com>
+CC: ralf@linux-mips.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mips: function tracer: Fix broken function tracing
+References: <1357914810-20656-1-git-send-email-alcooperx@gmail.com> <50F0454D.5060109@gmail.com> <CAOGqxeU3zZuFfL_M1u-hgjbPHgm6MrzoCK1KqpbazwKC4td4ww@mail.gmail.com>
+In-Reply-To: <CAOGqxeU3zZuFfL_M1u-hgjbPHgm6MrzoCK1KqpbazwKC4td4ww@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek,
+On 01/14/2013 01:10 PM, Alan Cooper wrote:
+> I already tried using "adddiu sp, sp, 8" and it caused the kernel to
+> randomly crash. After many hours of debugging the reason occurred to
+> me while in bed in the middle of the night. The problem is that if we
+> get an interrupt between the add 8 and the add -8 instructions, we
+> trash the existing stack.
+>
+> The problem with the 2 nop approach is that there are a series of
+> subroutines used to write each nop and these nested subroutines are
+> traceable.
 
-Sorry for being so absent from these reviews.  I'll try to look over a
-few patches today, but please don't hold up anything on account of my
-reviews.  I'm definitely a bit of an interested bystander in USB land.
- ;)
-
-In general things look pretty good here.  :)  One last comment below...
-
-On Fri, Jan 11, 2013 at 12:08 AM, Vivek Gautam
-<gautam.vivek@samsung.com> wrote:> +static int
-samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
-> +{
-> +       struct device_node *usbphy_sys;
-> +
-> +       /* Getting node for system controller interface for usb-phy */
-> +       usbphy_sys = of_get_child_by_name(sphy->dev->of_node, "usbphy-sys");
-> +       if (!usbphy_sys)
-> +               dev_warn(sphy->dev, "No sys-controller interface for usb-phy\n");
-
-Seems like you ought to return with an error here.  Calling of_iomap()
-with a NULL value seems undesirable.
-
-> +
-> +       sphy->pmuregs = of_iomap(usbphy_sys, 0);
-> +
-> +       of_node_put(usbphy_sys);
-> +
-> +       if (sphy->pmuregs == NULL) {
-> +               dev_err(sphy->dev, "Can't get usb-phy pmu control register\n");
-> +               return -ENODEV;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +/*
-> + * Set isolation here for phy.
-> + * Here 'on = true' would mean USB PHY block is isolated, hence
-> + * de-activated and vice-versa.
-> + */
-
-Thank you very much for this comment.  :)  This explains one of the
-confusions I had earlier...
+This seems like a bug.  The low-level code used to do code patching 
+probably should be CFLAGS_REMOVE_file.o = -pg
 
 
-Once you fix the one error condition above you can add my
-"Reviewed-by".  Thanks!
+> This means on the second call to these subroutines they
+> execute with only one nop and crash. I could  write  some new code
+> that wrote the 2 nops at once, but (now that I understand
+> "stop_machine") with the branch likely solution we should be able to
+> stop using "stop_machine" when we write nops to the 20-30 thousand
+> Linux functions. It looks like other platforms have stopped using
+> stop_machine.
 
--Doug
+I don't particularly object to the 'branch likely solution', but I think 
+the failures of the other approaches indicates underlying bugs in the 
+tracing code.  Those bugs should probably be fixed.
+
+David Daney
+
+
+>
+> Al
+>
+> On Fri, Jan 11, 2013 at 12:01 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+>> On 01/11/2013 06:33 AM, Al Cooper wrote:
+>>>
+>>> Function tracing is currently broken for all 32 bit MIPS platforms.
+>>> When tracing is enabled, the kernel immediately hangs on boot.
+>>> This is a result of commit b732d439cb43336cd6d7e804ecb2c81193ef63b0
+>>> that changes the kernel/trace/Kconfig file so that is no longer
+>>> forces FRAME_POINTER when FUNCTION_TRACING is enabled.
+>>>
+>>> MIPS frame pointers are generally considered to be useless because
+>>> they cannot be used to unwind the stack. Unfortunately the MIPS
+>>> function tracing code has bugs that are masked by the use of frame
+>>> pointers. This commit fixes the bugs so that MIPS frame pointers do
+>>> not need to be enabled.
+>>>
+>>> The bugs are a result of the odd calling sequence used to call the trace
+>>> routine. This calling sequence is inserted into every tracable function
+>>> when the tracing CONFIG option is enabled. This sequence is generated
+>>> for 32bit MIPS platforms by the compiler via the "-pg" flag.
+>>> Part of the sequence is "addiu sp,sp,-8" in the delay slot after every
+>>> call to the trace routine "_mcount" (some legacy thing where 2 arguments
+>>> used to be pushed on the stack). The _mcount routine is expected to
+>>> adjust the sp by +8 before returning.
+>>>
+>>> One of the bugs is that when tracing is disabled for a function, the
+>>> "jalr _mcount" instruction is replaced with a nop, but the
+>>> "addiu sp,sp,-8" is still executed and the stack pointer is left
+>>> trashed. When frame pointers are enabled the problem is masked
+>>> because any access to the stack is done through the frame
+>>> pointer and the stack pointer is restored from the frame pointer when
+>>> the function returns. This patch uses a branch likely instruction
+>>> "bltzl zero, f1" instead of "nop" to disable the call because this
+>>> instruction will not execute the "addiu sp,sp,-8" instruction in
+>>> the delay slot. The other possible solution would be to nop out both
+>>> the jalr and the "addiu sp,sp,-8", but this would need to be interrupt
+>>> and SMP safe and would be much more intrusive.
+>>
+>>
+>> I thought all CPUs were in stop_machine() when the modifications were done,
+>> so that there is no issue with multi-word instruction patching.
+>>
+>> Am I wrong about this?
+>>
+>> So really I think you can do two NOP just as easily.
+>>
+>> The only reason I bring this up is that I am not sure all 32-bit CPUs
+>> implement the 'Likely' branch variants. Also there may be an affect on the
+>> branch predictor.
+>>
+>> A third possibility would be to replace the JALR with 'ADDIU SP,SP,8' That
+>> way the following adjustment would be canceled out.  This would work well on
+>> single-issue CPUs, but the instructions may not be able to dual-issue on a
+>> multi issue machine due to data dependencies.
+>>
+>> David Daney
+>>
+>>
+>>>
+>>> A few other bugs were fixed where the _mcount routine itself did not
+>>> always fix the sp on return.
+>>>
+>>
+>
+>
+
