@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab3ANQzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 11:55:43 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:58782 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757002Ab3ANQzl convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Mon, 14 Jan 2013 11:55:41 -0500
-Message-Id: <50F4469802000078000B57EB@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Mon, 14 Jan 2013 16:55:36 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Borislav Petkov" <bp@alien8.de>, "Andre Przywara" <andre@andrep.de>,
-        "Stefan Bader" <stefan.bader@canonical.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Matthew Garrett" <mjg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] kernel 3.7+ cpufreq regression on AMD system
- running as dom0
-References: <50F42B3E.7090602@canonical.com>
- <20130114163445.GA4867@liondog.tnic>
-In-Reply-To: <20130114163445.GA4867@liondog.tnic>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1757504Ab3ANQzx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 11:55:53 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:31106 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757485Ab3ANQzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 11:55:50 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: criu@openvz.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Andrey Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=200/3=5D=20signalfd=3A=20a=20kernel=20interface=20for=20dumping/restoring=20pending=20signals=20=28v3=29?=
+Date: Mon, 14 Jan 2013 20:53:52 +0400
+Message-Id: <1358182435-19245-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.11.7
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 14.01.13 at 17:34, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Jan 14, 2013 at 04:58:54PM +0100, Stefan Bader wrote:
->> --- a/drivers/acpi/processor_perflib.c
->> +++ b/drivers/acpi/processor_perflib.c
->> @@ -340,6 +340,9 @@ static void amd_fixup_frequency(struct acpi_processor_px 
-> *px
->>         if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
->>             || boot_cpu_data.x86 == 0x11) {
->>                 rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
->> +               /* Bit 63 indicates whether contents are valid */
->> +               if (!(hi & 0x8000000))
->> +                       return;
-> 
-> I don't think that's the right change - this is fixing baremetal so that
-> it works on xen. And besides, this code was in powernow-k8 before so I'm
-> wondering why did it work then.
 
-Because the driver doesn't get loaded in that case?
+The idea is simple. We need to get the siginfo for each signal on dump,
+and then return it back on restore.
 
-Jan
+The first problem is that the kernel doesn’t report complete siginfo-s
+in user-space. In a signal handler the kernel strips SI_CODE from
+siginfo. When a siginfo is received from signalfd, it has a different
+format with fixed sizes of fields. The interface of signalfd was
+extended. If a signalfd is created with the flag SFD_RAW, it returns
+siginfo in a raw format.
+
+rt_sigqueueinfo looks suitable for restoring signals, but it can’t send
+siginfo with a positive si_code, because these codes are reserved for
+the kernel. In the real world each person has right to do anything with
+himself, so I think a process should able to send any siginfo to itself.
+
+v2: add ability to dump signals without dequeuing them.
+    pread with non-zero offset is used for this. offset encodes
+    a queue (private of shared) and a sequence number of a signal
+    in the queue. Thanks to Oleg for this idea.
+v3: minor cleanups
+
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+
+Andrey Vagin (3):
+  signal: allow to send any siginfo to itself
+  signalfd: add ability to return siginfo in a raw format (v2)
+  signalfd: add ability to read siginfo-s without dequeuing signals (v4)
+
+ fs/signalfd.c                 | 109 +++++++++++++++++++++++++++++++++++++++---
+ include/uapi/linux/signalfd.h |   6 +++
+ kernel/signal.c               |   6 ++-
+ 3 files changed, 113 insertions(+), 8 deletions(-)
+
+-- 
+1.7.11.7
 
