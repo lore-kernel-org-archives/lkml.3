@@ -1,77 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab3ANOpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:45:32 -0500
-Received: from mga14.intel.com ([143.182.124.37]:28063 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756477Ab3ANOpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:45:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,468,1355126400"; 
-   d="scan'208";a="190892201"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH 0/3] x86: enable common clk and add support for Lynxpoint clocks
-Date: Mon, 14 Jan 2013 16:46:25 +0200
-Message-Id: <1358174788-24439-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756358Ab3ANOxs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:53:48 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:40687 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755328Ab3ANOxr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 09:53:47 -0500
+MIME-Version: 1.0
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <1357624239-13938-3-git-send-email-rajagopal.venkat@linaro.org>
+References: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
+	<1357624239-13938-3-git-send-email-rajagopal.venkat@linaro.org>
+Date: Mon, 14 Jan 2013 23:48:00 +0900
+X-Google-Sender-Auth: R7uvPweda4TA2x0yxv2ZG3-VZ-8
+Message-ID: <CAJ0PZbSowAauHJgRS6eLHA3Tsy-fCJ4KBEBMo=c0QpqLZjjXrw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] PM / devfreq: account suspend/resume for stats
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Rajagopal Venkat <rajagopal.venkat@linaro.org>, jonghwa3.lee@samsung.com
+Cc: kyungmin.park@samsung.com, mturquette@linaro.org, rjw@sisk.pl,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Jan 8, 2013 at 2:50 PM, Rajagopal Venkat
+<rajagopal.venkat@linaro.org> wrote:
+> devfreq stats is not taking device suspend and resume into
+> account. Fix it.
+>
+> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
 
-The discussion that lead to this patch series starts from the below thread:
+With monitor_suspend(), we are suspending the DVFS mechanism of a
+device, not the device itself.
 
-	http://thread.gmane.org/gmane.linux.kernel/1417691
+Thus, the device may keep its frequency running and we may assume that
+the frequency is constant as the DVFS mechanism is in suspend.
 
-In summary, there is no point in adding a special case code to the drivers
-in order to pass them a fixed clock rate, but instead x86 should just
-enable common clk subsystem and take advantage of it.
+Why do you want to stop the statistics as well?
 
-This has been proposed before by Mark Brown but for some reason it has not
-merged into x86 tree.
 
-This series tries to do the same but in this time we have real users for
-the clk API.
 
-[1/3] Enables the common clk framework on x86
-[2/3] Adds Intel Lynxpoint Low Power Subsystem specific clocks as platform
-      driver.
-[3/3] Creates the platform device for the LPSS clocks driver if we find out
-      that the Lynxpoint LPSS devices are available.
+Again, as in the other patch, this is about the semantics of the
+"devfreq statistics".
 
-This series is based on Rafael's linux-pm/linux-next branch because there
-is a dependency to the ACPI scan rework by Rafael.
+It does not seem to be a problem of which is correct and which is not,
+but it seems to be a problem of which is more convenient.
 
-Please review.
+Could you please give me some cases where your semantics is more helpful?
 
-Mika Westerberg (3):
-  x86: enable common clk on x86
-  clk: x86: add support for Lynxpoint LPSS clocks
-  ACPI: create Lynxpoint clocks if LPSS devices are found during scan
 
- arch/x86/Kconfig           |    1 +
- drivers/acpi/scan.c        |   36 ++++++++++++----
- drivers/clk/Makefile       |    1 +
- drivers/clk/x86/Makefile   |    2 +
- drivers/clk/x86/clk-lpss.c |   99 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/x86/clk-lpss.h |   36 ++++++++++++++++
- drivers/clk/x86/clk-lpt.c  |   86 ++++++++++++++++++++++++++++++++++++++
- 7 files changed, 252 insertions(+), 9 deletions(-)
- create mode 100644 drivers/clk/x86/Makefile
- create mode 100644 drivers/clk/x86/clk-lpss.c
- create mode 100644 drivers/clk/x86/clk-lpss.h
- create mode 100644 drivers/clk/x86/clk-lpt.c
+
+I've been using the stat feature like this:
+
+# cat stat; run benchmark; cat stat
+and look at the differences with any ops done during "run benchmark".
+
+
+
+Cheers,
+MyungJoo.
+
+> ---
+>  drivers/devfreq/devfreq.c |   15 ++++++++++++---
+>  1 file changed, 12 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index 2843a22..4c50235 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -297,6 +297,7 @@ void devfreq_monitor_suspend(struct devfreq *devfreq)
+>                 return;
+>         }
+>
+> +       devfreq_update_status(devfreq, devfreq->previous_freq);
+>         devfreq->stop_polling = true;
+>         mutex_unlock(&devfreq->lock);
+>         cancel_delayed_work_sync(&devfreq->work);
+> @@ -313,6 +314,8 @@ EXPORT_SYMBOL(devfreq_monitor_suspend);
+>   */
+>  void devfreq_monitor_resume(struct devfreq *devfreq)
+>  {
+> +       unsigned long freq;
+> +
+>         mutex_lock(&devfreq->lock);
+>         if (!devfreq->stop_polling)
+>                 goto out;
+> @@ -321,8 +324,14 @@ void devfreq_monitor_resume(struct devfreq *devfreq)
+>                         devfreq->profile->polling_ms)
+>                 queue_delayed_work(devfreq_wq, &devfreq->work,
+>                         msecs_to_jiffies(devfreq->profile->polling_ms));
+> +
+> +       devfreq->last_stat_updated = jiffies;
+>         devfreq->stop_polling = false;
+>
+> +       if (devfreq->profile->get_cur_freq &&
+> +               !devfreq->profile->get_cur_freq(devfreq->dev.parent, &freq))
+> +               devfreq->previous_freq = freq;
+> +
+>  out:
+>         mutex_unlock(&devfreq->lock);
+>  }
+> @@ -931,11 +940,11 @@ static ssize_t show_trans_table(struct device *dev, struct device_attribute *att
+>  {
+>         struct devfreq *devfreq = to_devfreq(dev);
+>         ssize_t len;
+> -       int i, j, err;
+> +       int i, j;
+>         unsigned int max_state = devfreq->profile->max_state;
+>
+> -       err = devfreq_update_status(devfreq, devfreq->previous_freq);
+> -       if (err)
+> +       if (!devfreq->stop_polling &&
+> +                       devfreq_update_status(devfreq, devfreq->previous_freq))
+>                 return 0;
+>
+>         len = sprintf(buf, "   From  :   To\n");
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
 -- 
-1.7.10.4
-
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
