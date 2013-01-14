@@ -1,96 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3ANLT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 06:19:58 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58496 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665Ab3ANLTz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 06:19:55 -0500
-Date: Mon, 14 Jan 2013 12:19:52 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexander Gordeev <agordeev@redhat.com>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH -tip] sched/rt: Fix locality of threaded interrupt
- handlers
-In-Reply-To: <6b08a3c5c16284fd0221c2b564d451b4b9dcbf18.1357896654.git.agordeev@redhat.com>
-Message-ID: <alpine.LFD.2.02.1301141217300.7475@ionos>
-References: <6b08a3c5c16284fd0221c2b564d451b4b9dcbf18.1357896654.git.agordeev@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756720Ab3ANLUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 06:20:50 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:47582 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756281Ab3ANLUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 06:20:48 -0500
+Date: Mon, 14 Jan 2013 12:20:45 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v7u1 23/31] x86, boot: update comments about entries for
+ 64bit image
+Message-ID: <20130114112045.GF1228@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+	Matt Fleming <matt.fleming@intel.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-24-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1357260531-11115-24-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jan 2013, Alexander Gordeev wrote:
-
-> When a interrupt affinity mask targets multiple CPUs, the
-> RT scheduler selects a runqueue for RT task corresponding
-> to a threaded interrupt handler without consideration of
-> where the interrupt is actually gets delivered. It leads
-> to a suboptimal condition when a hardware interrupt handler
-> executes on one CPU while the threaded interrupt handler
-> executes on another CPU.
+On Thu, Jan 03, 2013 at 04:48:43PM -0800, Yinghai Lu wrote:
+> Now 64bit entry is fixed on 0x200, can not be changed anymore.
 > 
-> This fix alters the behaviour of threaded handler wake-ups
-> by getting priority to a CPU where the hardware interrupt
-> handler is executing. As result, most of the time both
-> halves of interrupt handling are kept local.
-
-Nice one.
- 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Update the comments to reflect that.
+> 
+> Also put info about it in boot.txt
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Matt Fleming <matt.fleming@intel.com>
 > ---
->  include/linux/sched.h |    2 ++
->  kernel/irq/handle.c   |    2 +-
->  kernel/sched/core.c   |    5 +++++
->  kernel/sched/rt.c     |   27 +++++++++++++++++++--------
->  4 files changed, 27 insertions(+), 9 deletions(-)
+>  Documentation/x86/boot.txt         |   38 ++++++++++++++++++++++++++++++++++++
+>  arch/x86/boot/compressed/head_64.S |   22 ++++++++++++---------
+>  2 files changed, 51 insertions(+), 9 deletions(-)
 > 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 206bb08..cd9cb42 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1061,6 +1061,7 @@ struct sched_domain;
->  #define WF_SYNC		0x01		/* waker goes to sleep after wakup */
->  #define WF_FORK		0x02		/* child wakeup after fork */
->  #define WF_MIGRATED	0x04		/* internal use, task got migrated */
-> +#define WF_INTR		0x08		/* threaded handler wakeup from intr */
-
-Please make this WF_LOCAL or something like that. There is no point to
-tie this functionality to interrupt threads. The scheduler does not
-care at all.
- 
->  #define ENQUEUE_WAKEUP		1
->  #define ENQUEUE_HEAD		2
-> @@ -2207,6 +2208,7 @@ extern void xtime_update(unsigned long ticks);
+> diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+> index 18ca9fb..24cc542 100644
+> --- a/Documentation/x86/boot.txt
+> +++ b/Documentation/x86/boot.txt
+> @@ -1042,6 +1042,44 @@ must have read/write permission; CS must be __BOOT_CS and DS, ES, SS
+>  must be __BOOT_DS; interrupt must be disabled; %esi must hold the base
+>  address of the struct boot_params; %ebp, %edi and %ebx must be zero.
 >  
->  extern int wake_up_state(struct task_struct *tsk, unsigned int state);
->  extern int wake_up_process(struct task_struct *tsk);
-> +extern int wake_up_handler(struct task_struct *tsk);
->  extern void wake_up_new_task(struct task_struct *tsk);
->  #ifdef CONFIG_SMP
->   extern void kick_process(struct task_struct *tsk);
-> diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-> index 131ca17..79456b1 100644
-> --- a/kernel/irq/handle.c
-> +++ b/kernel/irq/handle.c
-> @@ -126,7 +126,7 @@ static void irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
->  	 */
->  	atomic_inc(&desc->threads_active);
+> +**** 64-bit BOOT PROTOCOL
+> +
+> +For machine with 64bit cpus and 64bit kernel, we could use 64bit bootloader
+> +We need a 64-bit boot protocol.
+
+Make that:
+
+"64-bit kernels using 64-bit bootloaders use this protocol for booting."
+
+> +
+> +In 64-bit boot protocol, the first step in loading a Linux kernel
+> +should be to setup the boot parameters (struct boot_params,
+> +traditionally known as "zero page"). The memory for struct boot_params
+> +should be allocated under or above 4G and initialized to all zero.
+
+"Memory for struct boot_params may be allocated anywhere (even above
+4G). This memory must be zeroed out."
+
+Also, add a \n here.
+
+> +Then the setup header from offset 0x01f1 of kernel image on should be
+
+"Then, the setup header at offset 0x01f1 of the kernel image should be..."
+
+> +loaded into struct boot_params and examined. The end of setup header
+> +can be calculated as follow:
+
+			"follows:"
+
+> +
+> +	0x0202 + byte value at offset 0x0201
+
+What is that value at 0x201? What's its name? Maybe it is called "magic" :-)
+
+> +
+> +In addition to read/modify/write the setup header of the struct
+> +boot_params as that of 16-bit boot protocol,
+
+Hmm, do you mean:
+
+"In addition to modifying struct setup_header in boot_params as part of
+the 16-bit boot protocol, the boot loader..."
+
+
+> the boot loader should
+> +also fill the additional fields of the struct boot_params as that
+
+							remove "that"
+
+> +described in zero-page.txt.
+
+Btw, you could document the sentinel mechanism here or in zero-page.txt,
+for example.
+
+> +
+> +After setting up the struct boot_params, the boot loader can load the
+
+		s/the//
+
+> +64-bit kernel in the same way as that of 16-bit boot protocol, but
+> +kernel could be above 4G.
+
+"... the boot loader can load a 64-bit kernel the same way as with the
+16-bit boot protocol with the additional advantage that the kernel can
+be placed above the 4Gb barrier."
+
+> +
+> +In 64-bit boot protocol, the kernel is started by jumping to the
+
+"In the 64-bit... "
+
+> +64-bit kernel entry point, which is the start address of loaded
+
+no comma:
+
+"... entry point which is the start address of the loaded..."
+
+> +64-bit kernel plus 0x200.
+
+Again, what does the 0x200 value mean?
+
+> +
+> +At entry, the CPU must be in 64-bit mode with paging enabled.
+> +The range with setup_header.init_size from start address of loaded
+> +kernel and zero page and command line buffer get ident mapping;
+
+Hmm, maybe:
+
+"The ranges from the start address of the loaded kernel and with size
+setup_header.init_size, the zero page and the command line buffer are
+ident-mapped."
+
+Newline here.
+
+Then enumerate the further steps:
+
+> +a GDT must be loaded with the descriptors for selectors
+> +__BOOT_CS(0x10) and __BOOT_DS(0x18); both descriptors must be 4G flat
+> +segment; __BOOT_CS must have execute/read permission, and __BOOT_DS
+> +must have read/write permission; CS must be __BOOT_CS and DS, ES, SS
+> +must be __BOOT_DS; interrupt must be disabled; %rsi must hold the base
+> +address of the struct boot_params.
+
+"Then:
+
+* a GDT must be loaded with the descriptors for selectors
+  __BOOT_CS(0x10) and __BOOT_DS(0x18)
+
+* both descriptors must describe a 4G, flat segment
+
+* __BOOT_CS must have execute/read permissions, and __BOOT_DS must have
+  read/write permissions
+
+* CS must be __BOOT_CS and DS, ES, SS must be __BOOT_DS
+
+* interrupts must be disabled
+
+* %rsi must hold the base address of the struct boot_params."
+
+
+> +
+>  **** EFI HANDOVER PROTOCOL
 >  
-> -	wake_up_process(action->thread);
-> +	wake_up_handler(action->thread);
+>  This protocol allows boot loaders to defer initialisation to the EFI
+> diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+> index 5c80b94..aaafd4e 100644
+> --- a/arch/x86/boot/compressed/head_64.S
+> +++ b/arch/x86/boot/compressed/head_64.S
+> @@ -37,6 +37,12 @@
+>  	__HEAD
+>  	.code32
+>  ENTRY(startup_32)
+> +	/*
+> +	 * 32bit entry is 0, could not be changed!
 
-  wake_up_local() or something more generic than wake_up_handler().
+What does that mean? Did we try to change it or what?
 
-Otherwise looks good.
+> +	 * If we come here directly from a bootloader,
+> +	 * kernel(text+data+bss+brk) ramdisk, zero_page, command line
+> +	 * all need to be under 4G limit.
 
-Thanks,
+			"under the"
 
-	tglx
+> +	 */
+>  	cld
+>  	/*
+>  	 * Test KEEP_SEGMENTS flag to see if the bootloader is asking
+> @@ -182,20 +188,18 @@ ENTRY(startup_32)
+>  	lret
+>  ENDPROC(startup_32)
+>  
+> -	/*
+> -	 * Be careful here startup_64 needs to be at a predictable
+> -	 * address so I can export it in an ELF header.  Bootloaders
+> -	 * should look at the ELF header to find this address, as
+> -	 * it may change in the future.
+> -	 */
+>  	.code64
+>  	.org 0x200
+>  ENTRY(startup_64)
+>  	/*
+> +	 * 64bit entry is 0x200, could not be changed!
+
+Ah, I see what you mean:
+
+	"64-bit entry point is 0x200 and it is ABI so immutable!"
+
+Ditto for startup_32 above.
+
+>  	 * We come here either from startup_32 or directly from a
+> -	 * 64bit bootloader.  If we come here from a bootloader we depend on
+> -	 * an identity mapped page table being provied that maps our
+> -	 * entire text+data+bss and hopefully all of memory.
+> +	 * 64bit bootloader.
+> +	 * If we come here from a bootloader, kernel(text+data+bss+brk),
+> +	 * ramdisk, zero_page, command line could be above 4G.
+> +	 * We depend on an identity mapped page table being provided
+> +	 * that maps our entire kernel(text+data+bss+brk), zero page
+> +	 * and command line.
+
+Heey, this one is good! :-)
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
