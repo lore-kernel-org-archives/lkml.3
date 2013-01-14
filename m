@@ -1,117 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab3ANSly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:41:54 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:40613 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756927Ab3ANSlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:41:53 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: lenb@kernel.org, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH v2 02/12] ACPI: Add sys_hotplug.h for system device hotplug framework
-Date: Mon, 14 Jan 2013 19:47:36 +0100
-Message-ID: <3236298.SULt2IKQv6@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1358178833.14145.65.camel@misato.fc.hp.com>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <2024927.lMzqqbDSpI@vostro.rjw.lan> <1358178833.14145.65.camel@misato.fc.hp.com>
+	id S1757703Ab3ANSmo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:42:44 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:37846 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755896Ab3ANSmm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 13:42:42 -0500
+Date: Mon, 14 Jan 2013 10:42:36 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Colin Cross <ccross@google.com>, Mike Galbraith <efault@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 1/2] cgroup: remove synchronize_rcu() from
+ cgroup_attach_{task|proc}()
+Message-ID: <20130114184236.GF27942@mtj.dyndns.org>
+References: <50F3CE8E.5000402@huawei.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F3CE8E.5000402@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 14, 2013 08:53:53 AM Toshi Kani wrote:
-> On Fri, 2013-01-11 at 22:25 +0100, Rafael J. Wysocki wrote:
-> > On Thursday, January 10, 2013 04:40:20 PM Toshi Kani wrote:
-> > > Added include/acpi/sys_hotplug.h, which is ACPI-specific system
-> > > device hotplug header and defines the order values of ACPI-specific
-> > > handlers.
-> > > 
-> > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > > ---
-> > >  include/acpi/sys_hotplug.h |   48 ++++++++++++++++++++++++++++++++++++++++++++
-> > >  1 file changed, 48 insertions(+)
-> > >  create mode 100644 include/acpi/sys_hotplug.h
-> > > 
-> > > diff --git a/include/acpi/sys_hotplug.h b/include/acpi/sys_hotplug.h
-> > > new file mode 100644
-> > > index 0000000..ad80f61
-> > > --- /dev/null
-> > > +++ b/include/acpi/sys_hotplug.h
-> > > @@ -0,0 +1,48 @@
-> > > +/*
-> > > + * sys_hotplug.h - ACPI System device hot-plug framework
-> > > + *
-> > > + * Copyright (C) 2012 Hewlett-Packard Development Company, L.P.
-> > > + *	Toshi Kani <toshi.kani@hp.com>
-> > > + *
-> > > + * This program is free software; you can redistribute it and/or modify
-> > > + * it under the terms of the GNU General Public License version 2 as
-> > > + * published by the Free Software Foundation.
-> > > + */
-> > > +
-> > > +#ifndef _ACPI_SYS_HOTPLUG_H
-> > > +#define _ACPI_SYS_HOTPLUG_H
-> > > +
-> > > +#include <linux/list.h>
-> > > +#include <linux/device.h>
-> > > +#include <linux/sys_hotplug.h>
-> > > +
-> > > +/*
-> > > + * System device hot-plug operation proceeds in the following order.
-> > > + *   Validate phase -> Execute phase -> Commit phase
-> > > + *
-> > > + * The order values below define the calling sequence of ACPI-specific
-> > > + * handlers for each phase in ascending order.  The order value of
-> > > + * platform-neutral handlers are defined in <linux/sys_hotplug.h>.
-> > > + */
-> > > +
-> > > +/* Add Validate order values */
-> > > +#define SHP_ACPI_BUS_ADD_VALIDATE_ORDER		0	/* must be first */
-> > > +
-> > > +/* Add Execute order values */
-> > > +#define SHP_ACPI_BUS_ADD_EXECUTE_ORDER		10
-> > > +#define SHP_ACPI_RES_ADD_EXECUTE_ORDER		20
-> > > +
-> > > +/* Add Commit order values */
-> > > +#define SHP_ACPI_BUS_ADD_COMMIT_ORDER		10
-> > > +
-> > > +/* Delete Validate order values */
-> > > +#define SHP_ACPI_BUS_DEL_VALIDATE_ORDER		0	/* must be first */
-> > > +#define SHP_ACPI_RES_DEL_VALIDATE_ORDER		10
-> > > +
-> > > +/* Delete Execute order values */
-> > > +#define SHP_ACPI_BUS_DEL_EXECUTE_ORDER		100
-> > > +
-> > > +/* Delete Commit order values */
-> > > +#define SHP_ACPI_BUS_DEL_COMMIT_ORDER		100
-> > > +
-> > > +#endif	/* _ACPI_SYS_HOTPLUG_H */
-> > > --
-> > 
-> > Why did you use the particular values above?
+Hey, Li.
+
+On Mon, Jan 14, 2013 at 05:23:26PM +0800, Li Zefan wrote:
+> These 2 syncronize_rcu()s make attaching a task to a cgroup
+> quite slow, and it can't be ignored in some situations.
 > 
-> The ordering values above are used to define the relative order among
-> handlers.  For instance, the 100 for SHP_ACPI_BUS_DEL_EXECUTE_ORDER can
-> potentially be 21 since it is still larger than 20 for
-> SHP_MEM_DEL_EXECUTE_ORDER defined in linux/sys_hotplug.h.  I picked 100
-> so that more platform-neutral handlers can be added in between 20 and
-> 100 in future.
+> A real case from Colin Cross: Android uses cgroups heavily to
+> manage thread priorities, putting threads in a background group
+> with reduced cpu.shares when they are not visible to the user,
+> and in a foreground group when they are. Some RPCs from foreground
+> threads to background threads will temporarily move the background
+> thread into the foreground group for the duration of the RPC.
+> This results in many calls to cgroup_attach_task.
+> 
+> In cgroup_attach_task() it's task->cgroups that is protected by RCU,
+> and put_css_set() calls kfree_rcu() to free it.
+> 
+> If we remove this synchronize_rcu(), there can be threads in RCU-read
+> sections accessing their old cgroup via current->cgroups with
+> concurrent rmdir operation, but this is safe.
 
-I thought so, but I don't think it's a good idea to add gaps like this.
+Yeah, these synchronize_rcu()s are utterly confused.
+synchornize_rcu() necessarily have to come between two operations to
+guarantee that the changes made before it are visible to all rcu
+readers before proceeding beyond it.  Here, synchornize_rcu() are at
+the end of attach operations with nothing beyond it.  Duh.... its only
+effect would be delaying completion of write(2) to sysfs tasks/procs
+files until all rcu readers see the change, which is utterly
+irrelevant.  It doesn't mean anything.
 
-Thanks,
-Rafael
+Applying to cgroup/for-3.9.
 
+Thanks.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+tejun
