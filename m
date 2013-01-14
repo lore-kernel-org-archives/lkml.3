@@ -1,367 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab3ANGxZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1755513Ab3ANGx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 01:53:29 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65407 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753180Ab3ANGxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Jan 2013 01:53:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60762 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753038Ab3ANGxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 01:53:23 -0500
-Date: Mon, 14 Jan 2013 08:57:12 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, davem@davemloft.net
-Subject: Re: [PATCH V3 2/2] vhost: handle polling errors
-Message-ID: <20130114065712.GA10312@redhat.com>
-References: <1357456718-3072-1-git-send-email-jasowang@redhat.com>
- <1357456718-3072-3-git-send-email-jasowang@redhat.com>
- <20130106132201.GC18612@redhat.com>
- <50EA5139.7000904@redhat.com>
- <20130107145559.GA5901@redhat.com>
- <50EAE400.6030301@redhat.com>
- <20130113111035.GA23431@redhat.com>
- <50F37476.4070501@redhat.com>
+X-AuditID: 9c93016f-b7b54ae000000e9e-77-50f3ab61b5d2
+From: Namhyung Kim <namhyung@kernel.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 14/22] sched: add sched_policy and it's sysfs interface
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
+	<1357375071-11793-15-git-send-email-alex.shi@intel.com>
+Date: Mon, 14 Jan 2013 15:53:21 +0900
+In-Reply-To: <1357375071-11793-15-git-send-email-alex.shi@intel.com> (Alex
+	Shi's message of "Sat, 5 Jan 2013 16:37:43 +0800")
+Message-ID: <87y5fwntlq.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F37476.4070501@redhat.com>
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 10:59:02AM +0800, Jason Wang wrote:
-> On 01/13/2013 07:10 PM, Michael S. Tsirkin wrote:
-> > On Mon, Jan 07, 2013 at 11:04:32PM +0800, Jason Wang wrote:
-> >> On 01/07/2013 10:55 PM, Michael S. Tsirkin wrote:
-> >>> On Mon, Jan 07, 2013 at 12:38:17PM +0800, Jason Wang wrote:
-> >>>> On 01/06/2013 09:22 PM, Michael S. Tsirkin wrote:
-> >>>>> On Sun, Jan 06, 2013 at 03:18:38PM +0800, Jason Wang wrote:
-> >>>>>> Polling errors were ignored by vhost/vhost_net, this may lead to crash when
-> >>>>>> trying to remove vhost from waitqueue when after the polling is failed. Solve
-> >>>>>> this problem by:
-> >>>>>>
-> >>>>>> - checking the poll->wqh before trying to remove from waitqueue
-> >>>>>> - report an error when poll() returns a POLLERR in vhost_start_poll()
-> >>>>>> - report an error when vhost_start_poll() fails in
-> >>>>>>   vhost_vring_ioctl()/vhost_net_set_backend() which is used to notify the
-> >>>>>>   failure to userspace.
-> >>>>>> - report an error in the data path in vhost_net when meet polling errors.
-> >>>>>>
-> >>>>>> After those changes, we can safely drop the tx polling state in vhost_net since
-> >>>>>> it was replaced by the checking of poll->wqh.
-> >>>>>>
-> >>>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >>>>>> ---
-> >>>>>>  drivers/vhost/net.c   |   74 ++++++++++++++++--------------------------------
-> >>>>>>  drivers/vhost/vhost.c |   31 +++++++++++++++-----
-> >>>>>>  drivers/vhost/vhost.h |    2 +-
-> >>>>>>  3 files changed, 49 insertions(+), 58 deletions(-)
-> >>>>>>
-> >>>>>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> >>>>>> index d10ad6f..125c1e5 100644
-> >>>>>> --- a/drivers/vhost/net.c
-> >>>>>> +++ b/drivers/vhost/net.c
-> >>>>>> @@ -64,20 +64,10 @@ enum {
-> >>>>>>  	VHOST_NET_VQ_MAX = 2,
-> >>>>>>  };
-> >>>>>>  
-> >>>>>> -enum vhost_net_poll_state {
-> >>>>>> -	VHOST_NET_POLL_DISABLED = 0,
-> >>>>>> -	VHOST_NET_POLL_STARTED = 1,
-> >>>>>> -	VHOST_NET_POLL_STOPPED = 2,
-> >>>>>> -};
-> >>>>>> -
-> >>>>>>  struct vhost_net {
-> >>>>>>  	struct vhost_dev dev;
-> >>>>>>  	struct vhost_virtqueue vqs[VHOST_NET_VQ_MAX];
-> >>>>>>  	struct vhost_poll poll[VHOST_NET_VQ_MAX];
-> >>>>>> -	/* Tells us whether we are polling a socket for TX.
-> >>>>>> -	 * We only do this when socket buffer fills up.
-> >>>>>> -	 * Protected by tx vq lock. */
-> >>>>>> -	enum vhost_net_poll_state tx_poll_state;
-> >>>>>>  	/* Number of TX recently submitted.
-> >>>>>>  	 * Protected by tx vq lock. */
-> >>>>>>  	unsigned tx_packets;
-> >>>>>> @@ -155,24 +145,6 @@ static void copy_iovec_hdr(const struct iovec *from, struct iovec *to,
-> >>>>>>  	}
-> >>>>>>  }
-> >>>>>>  
-> >>>>>> -/* Caller must have TX VQ lock */
-> >>>>>> -static void tx_poll_stop(struct vhost_net *net)
-> >>>>>> -{
-> >>>>>> -	if (likely(net->tx_poll_state != VHOST_NET_POLL_STARTED))
-> >>>>>> -		return;
-> >>>>>> -	vhost_poll_stop(net->poll + VHOST_NET_VQ_TX);
-> >>>>>> -	net->tx_poll_state = VHOST_NET_POLL_STOPPED;
-> >>>>>> -}
-> >>>>>> -
-> >>>>>> -/* Caller must have TX VQ lock */
-> >>>>>> -static void tx_poll_start(struct vhost_net *net, struct socket *sock)
-> >>>>>> -{
-> >>>>>> -	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
-> >>>>>> -		return;
-> >>>>>> -	vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
-> >>>>>> -	net->tx_poll_state = VHOST_NET_POLL_STARTED;
-> >>>>>> -}
-> >>>>>> -
-> >>>>>>  /* In case of DMA done not in order in lower device driver for some reason.
-> >>>>>>   * upend_idx is used to track end of used idx, done_idx is used to track head
-> >>>>>>   * of used idx. Once lower device DMA done contiguously, we will signal KVM
-> >>>>>> @@ -227,6 +199,7 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
-> >>>>>>  static void handle_tx(struct vhost_net *net)
-> >>>>>>  {
-> >>>>>>  	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
-> >>>>>> +	struct vhost_poll *poll = net->poll + VHOST_NET_VQ_TX;
-> >>>>>>  	unsigned out, in, s;
-> >>>>>>  	int head;
-> >>>>>>  	struct msghdr msg = {
-> >>>>>> @@ -252,7 +225,8 @@ static void handle_tx(struct vhost_net *net)
-> >>>>>>  	wmem = atomic_read(&sock->sk->sk_wmem_alloc);
-> >>>>>>  	if (wmem >= sock->sk->sk_sndbuf) {
-> >>>>>>  		mutex_lock(&vq->mutex);
-> >>>>>> -		tx_poll_start(net, sock);
-> >>>>>> +		if (vhost_poll_start(poll, sock->file))
-> >>>>>> +			vq_err(vq, "Fail to start TX polling\n");
-> >>>>> s/Fail/Failed/
-> >>>>>
-> >>>>> A question though: how can this happen? Could you clarify please?
-> >>>>> Maybe we can find a way to prevent this error?
-> >>>> Two conditions I think this can happen:
-> >>>>
-> >>>> 1) a buggy userspace disable a queue through TUNSETQUEUE
-> >>>> 2) the net device were gone
-> >>>>
-> >>>> For 1, looks like we can delay the disabling until the refcnt goes to
-> >>>> zero. For 2 may needs more changes.
-> >>> I'd expect keeping a socket reference would prevent both issues.
-> >>> Doesn't it?
-> >> Doesn't work for 2 I think, the socket didn't hold a refcnt of the
-> >> device, so the device can go away at anytime. Although we can change
-> >> this, but it's the behaviour before multiqueue support.
-> > Hmm there's one scenario that does seem to
-> > trigger this: queue can get disabled
-> > and then poll fails.
-> >
-> > Is this the only issue?
-> 
-> Another one I think we can trigger is:
-> 
-> - start vhost thread
-> - do ip link del link dev tap0 to delete the tap device
-> 
-> In this case, the netdevice is unregistered but the file/socket still exist.
+Hi Alex,
 
-Yes but in this case poll_wait is called so apparently no issue
-with existing code? We only have an issue if poll_wait is
-not called right?
-
-Maybe the simplest fix is to invoke poll_wait before
-checking if (!tun) ?
+Just a few nitpickings..
 
 
-> >
-> >>>> Not sure it's worth to do this work,
-> >>>> maybe a warning is enough just like other failure.
-> >>> With other failures, you normally can correct the error then
-> >>> kick to have it restart. This is soomething thagt would not
-> >>> work here.
-> >> If userspace is wrote correctly, (e.g passing a fd with correct state)
-> >> it can also be corrected.
-> >>>>>>  		mutex_unlock(&vq->mutex);
-> >>>>>>  		return;
-> >>>>>>  	}
-> >>>>>> @@ -261,7 +235,7 @@ static void handle_tx(struct vhost_net *net)
-> >>>>>>  	vhost_disable_notify(&net->dev, vq);
-> >>>>>>  
-> >>>>>>  	if (wmem < sock->sk->sk_sndbuf / 2)
-> >>>>>> -		tx_poll_stop(net);
-> >>>>>> +		vhost_poll_stop(poll);
-> >>>>>>  	hdr_size = vq->vhost_hlen;
-> >>>>>>  	zcopy = vq->ubufs;
-> >>>>>>  
-> >>>>>> @@ -283,8 +257,10 @@ static void handle_tx(struct vhost_net *net)
-> >>>>>>  
-> >>>>>>  			wmem = atomic_read(&sock->sk->sk_wmem_alloc);
-> >>>>>>  			if (wmem >= sock->sk->sk_sndbuf * 3 / 4) {
-> >>>>>> -				tx_poll_start(net, sock);
-> >>>>>> -				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
-> >>>>>> +				if (vhost_poll_start(poll, sock->file))
-> >>>>>> +					vq_err(vq, "Fail to start TX polling\n");
-> >>>>>> +				else
-> >>>>>> +					set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
-> >>>>>>  				break;
-> >>>>>>  			}
-> >>>>>>  			/* If more outstanding DMAs, queue the work.
-> >>>>>> @@ -294,8 +270,10 @@ static void handle_tx(struct vhost_net *net)
-> >>>>>>  				    (vq->upend_idx - vq->done_idx) :
-> >>>>>>  				    (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
-> >>>>>>  			if (unlikely(num_pends > VHOST_MAX_PEND)) {
-> >>>>>> -				tx_poll_start(net, sock);
-> >>>>>> -				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
-> >>>>>> +				if (vhost_poll_start(poll, sock->file))
-> >>>>>> +					vq_err(vq, "Fail to start TX polling\n");
-> >>>>>> +				else
-> >>>>>> +					set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
-> >>>>>>  				break;
-> >>>>>>  			}
-> >>>>>>  			if (unlikely(vhost_enable_notify(&net->dev, vq))) {
-> >>>>>> @@ -360,7 +338,8 @@ static void handle_tx(struct vhost_net *net)
-> >>>>>>  			}
-> >>>>>>  			vhost_discard_vq_desc(vq, 1);
-> >>>>>>  			if (err == -EAGAIN || err == -ENOBUFS)
-> >>>>>> -				tx_poll_start(net, sock);
-> >>>>>> +				if (vhost_poll_start(poll, sock->file))
-> >>>>>> +					vq_err(vq, "Fail to start TX polling\n");
-> >>>>>>  			break;
-> >>>>>>  		}
-> >>>>>>  		if (err != len)
-> >>>>>> @@ -623,7 +602,6 @@ static int vhost_net_open(struct inode *inode, struct file *f)
-> >>>>>>  
-> >>>>>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
-> >>>>>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
-> >>>>>> -	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
-> >>>>>>  
-> >>>>>>  	f->private_data = n;
-> >>>>>>  
-> >>>>>> @@ -633,29 +611,25 @@ static int vhost_net_open(struct inode *inode, struct file *f)
-> >>>>>>  static void vhost_net_disable_vq(struct vhost_net *n,
-> >>>>>>  				 struct vhost_virtqueue *vq)
-> >>>>>>  {
-> >>>>>> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
-> >>>>>> +
-> >>>>>>  	if (!vq->private_data)
-> >>>>>>  		return;
-> >>>>>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
-> >>>>>> -		tx_poll_stop(n);
-> >>>>>> -		n->tx_poll_state = VHOST_NET_POLL_DISABLED;
-> >>>>>> -	} else
-> >>>>>> -		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
-> >>>>>> +	vhost_poll_stop(poll);
-> >>>>>>  }
-> >>>>>>  
-> >>>>>> -static void vhost_net_enable_vq(struct vhost_net *n,
-> >>>>>> +static int vhost_net_enable_vq(struct vhost_net *n,
-> >>>>>>  				struct vhost_virtqueue *vq)
-> >>>>>>  {
-> >>>>>>  	struct socket *sock;
-> >>>>>> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
-> >>>>>>  
-> >>>>>>  	sock = rcu_dereference_protected(vq->private_data,
-> >>>>>>  					 lockdep_is_held(&vq->mutex));
-> >>>>>>  	if (!sock)
-> >>>>>> -		return;
-> >>>>>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
-> >>>>>> -		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
-> >>>>>> -		tx_poll_start(n, sock);
-> >>>>>> -	} else
-> >>>>>> -		vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
-> >>>>>> +		return 0;
-> >>>>>> +
-> >>>>>> +	return vhost_poll_start(poll, sock->file);
-> >>>>>>  }
-> >>>>>>  
-> >>>>>>  static struct socket *vhost_net_stop_vq(struct vhost_net *n,
-> >>>>>> @@ -833,7 +807,9 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
-> >>>>>>  		r = vhost_init_used(vq);
-> >>>>>>  		if (r)
-> >>>>>>  			goto err_used;
-> >>>>>> -		vhost_net_enable_vq(n, vq);
-> >>>>>> +		r = vhost_net_enable_vq(n, vq);
-> >>>>>> +		if (r)
-> >>>>>> +			goto err_used;
-> >>>>>>  
-> >>>>>>  		oldubufs = vq->ubufs;
-> >>>>>>  		vq->ubufs = ubufs;
-> >>>>>> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> >>>>>> index 34389f7..5c7a466 100644
-> >>>>>> --- a/drivers/vhost/vhost.c
-> >>>>>> +++ b/drivers/vhost/vhost.c
-> >>>>>> @@ -77,26 +77,41 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
-> >>>>>>  	init_poll_funcptr(&poll->table, vhost_poll_func);
-> >>>>>>  	poll->mask = mask;
-> >>>>>>  	poll->dev = dev;
-> >>>>>> +	poll->wqh = NULL;
-> >>>>>>  
-> >>>>>>  	vhost_work_init(&poll->work, fn);
-> >>>>>>  }
-> >>>>>>  
-> >>>>>> +/* Stop polling a file. After this function returns, it becomes safe to drop the
-> >>>>>> + * file reference. You must also flush afterwards. */
-> >>>>>> +void vhost_poll_stop(struct vhost_poll *poll)
-> >>>>>> +{
-> >>>>>> +	if (poll->wqh) {
-> >>>>>> +		remove_wait_queue(poll->wqh, &poll->wait);
-> >>>>>> +		poll->wqh = NULL;
-> >>>>>> +	}
-> >>>>>> +}
-> >>>>>> +
-> >>>>>>  /* Start polling a file. We add ourselves to file's wait queue. The caller must
-> >>>>>>   * keep a reference to a file until after vhost_poll_stop is called. */
-> >>>>>> -void vhost_poll_start(struct vhost_poll *poll, struct file *file)
-> >>>>>> +int vhost_poll_start(struct vhost_poll *poll, struct file *file)
-> >>>>>>  {
-> >>>>>>  	unsigned long mask;
-> >>>>>> +	int ret = 0;
-> >>>>>> +
-> >>>>>> +	if (poll->wqh)
-> >>>>>> +		return -EBUSY;
-> >>>>>>  
-> >>>>> I think this should return success: we are already polling.
-> >>>>> Otherwise this would trigger a bug below I think.
-> >>>> Ok.
-> >>>>>>  	mask = file->f_op->poll(file, &poll->table);
-> >>>>>>  	if (mask)
-> >>>>>>  		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
-> >>>>>> -}
-> >>>>>>  
-> >>>>>> -/* Stop polling a file. After this function returns, it becomes safe to drop the
-> >>>>>> - * file reference. You must also flush afterwards. */
-> >>>>>> -void vhost_poll_stop(struct vhost_poll *poll)
-> >>>>>> -{
-> >>>>>> -	remove_wait_queue(poll->wqh, &poll->wait);
-> >>>>>> +	if (mask & POLLERR) {
-> >>>>>> +		ret = -EINVAL;
-> >>>>>> +		vhost_poll_stop(poll);
-> >>>>>> +	}
-> >>>>>> +
-> >>>>>> +	return ret;
-> >>>>>>  }
-> >>>>>>  
-> >>>>>>  static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
-> >>>>>> @@ -792,7 +807,7 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
-> >>>>>>  		fput(filep);
-> >>>>>>  
-> >>>>>>  	if (pollstart && vq->handle_kick)
-> >>>>>> -		vhost_poll_start(&vq->poll, vq->kick);
-> >>>>>> +		r = vhost_poll_start(&vq->poll, vq->kick);
-> >>>>>>  
-> >>>>>>  	mutex_unlock(&vq->mutex);
-> >>>>>>  
-> >>>>>> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> >>>>>> index 2639c58..17261e2 100644
-> >>>>>> --- a/drivers/vhost/vhost.h
-> >>>>>> +++ b/drivers/vhost/vhost.h
-> >>>>>> @@ -42,7 +42,7 @@ void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work);
-> >>>>>>  
-> >>>>>>  void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
-> >>>>>>  		     unsigned long mask, struct vhost_dev *dev);
-> >>>>>> -void vhost_poll_start(struct vhost_poll *poll, struct file *file);
-> >>>>>> +int vhost_poll_start(struct vhost_poll *poll, struct file *file);
-> >>>>>>  void vhost_poll_stop(struct vhost_poll *poll);
-> >>>>>>  void vhost_poll_flush(struct vhost_poll *poll);
-> >>>>>>  void vhost_poll_queue(struct vhost_poll *poll);
-> >>>>>> -- 
-> >>>>>> 1.7.1
-> >>>>> --
-> >>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> >>>>> the body of a message to majordomo@vger.kernel.org
-> >>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kvm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Sat,  5 Jan 2013 16:37:43 +0800, Alex Shi wrote:
+> This patch add the power aware scheduler knob into sysfs:
+>
+> $cat /sys/devices/system/cpu/sched_policy/available_sched_policy
+> performance powersaving balance
+> $cat /sys/devices/system/cpu/sched_policy/current_sched_policy
+> powersaving
+>
+> This means the using sched policy is 'powersaving'.
+>
+> User can change the policy by commend 'echo':
+>  echo performance > /sys/devices/system/cpu/current_sched_policy
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  Documentation/ABI/testing/sysfs-devices-system-cpu | 24 +++++++
+>  kernel/sched/fair.c                                | 76 ++++++++++++++++++++++
+>  2 files changed, 100 insertions(+)
+>
+> diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
+> index 6943133..9c9acbf 100644
+> --- a/Documentation/ABI/testing/sysfs-devices-system-cpu
+> +++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
+> @@ -53,6 +53,30 @@ Description:	Dynamic addition and removal of CPU's.  This is not hotplug
+>  		the system.  Information writtento the file to remove CPU's
+>  		is architecture specific.
+>  
+> +What:		/sys/devices/system/cpu/sched_policy/current_sched_policy
+> +		/sys/devices/system/cpu/sched_policy/available_sched_policy
+> +Date:		Oct 2012
+> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
+> +Description:	CFS scheduler policy showing and setting interface.
+> +
+> +		available_sched_policy shows there are 3 kinds of policy now:
+> +		performance, balance and powersaving.
+> +		current_sched_policy shows current scheduler policy. And user
+> +		can change the policy by writing it.
+> +
+> +		Policy decides that CFS scheduler how to distribute tasks onto
+> +		which CPU unit when tasks number less than LCPU number in system
+> +
+> +		performance: try to spread tasks onto more CPU sockets,
+> +		more CPU cores.
+> +
+> +		powersaving: try to shrink tasks onto same core or same CPU
+> +		until every LCPUs are busy.
+> +
+> +		balance:     try to shrink tasks onto same core or same CPU
+> +		until full powered CPUs are busy. This policy also consider
+> +		system performance when try to save power.
+> +
+>  What:		/sys/devices/system/cpu/cpu#/node
+>  Date:		October 2009
+>  Contact:	Linux memory management mailing list <linux-mm@kvack.org>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index f24aca6..ee015b8 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -6102,6 +6102,82 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
+>  
+>  /* The default scheduler policy is 'performance'. */
+>  int __read_mostly sched_policy = SCHED_POLICY_PERFORMANCE;
+> +
+> +#ifdef CONFIG_SYSFS
+> +static ssize_t show_available_sched_policy(struct device *dev,
+> +		struct device_attribute *attr,
+> +		char *buf)
+
+This line can be combined to the above line.
+
+
+> +{
+> +	return sprintf(buf, "performance balance powersaving\n");
+> +}
+> +
+> +static ssize_t show_current_sched_policy(struct device *dev,
+> +		struct device_attribute *attr,
+> +		char *buf)
+
+Ditto.
+
+
+> +{
+> +	if (sched_policy == SCHED_POLICY_PERFORMANCE)
+> +		return sprintf(buf, "performance\n");
+> +	else if (sched_policy == SCHED_POLICY_POWERSAVING)
+> +		return sprintf(buf, "powersaving\n");
+> +	else if (sched_policy == SCHED_POLICY_BALANCE)
+> +		return sprintf(buf, "balance\n");
+> +	return 0;
+> +}
+> +
+> +static ssize_t set_sched_policy(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t count)
+> +{
+> +	unsigned int ret = -EINVAL;
+> +	char    str_policy[16];
+> +
+> +	ret = sscanf(buf, "%15s", str_policy);
+> +	if (ret != 1)
+> +		return -EINVAL;
+> +
+> +	if (!strcmp(str_policy, "performance"))
+> +		sched_policy = SCHED_POLICY_PERFORMANCE;
+> +	else if (!strcmp(str_policy, "powersaving"))
+> +		sched_policy = SCHED_POLICY_POWERSAVING;
+> +	else if (!strcmp(str_policy, "balance"))
+> +		sched_policy = SCHED_POLICY_BALANCE;
+> +	else
+> +		return -EINVAL;
+> +
+> +	return count;
+> +}
+> +
+> +/*
+> + *  * Sysfs setup bits:
+> + *   */
+
+Unneeded asterisks.
+
+Thanks,
+Namhyung
+
+
+> +static DEVICE_ATTR(current_sched_policy, 0644, show_current_sched_policy,
+> +						set_sched_policy);
+> +
+> +static DEVICE_ATTR(available_sched_policy, 0444,
+> +		show_available_sched_policy, NULL);
+> +
+> +static struct attribute *sched_policy_default_attrs[] = {
+> +	&dev_attr_current_sched_policy.attr,
+> +	&dev_attr_available_sched_policy.attr,
+> +	NULL
+> +};
+> +static struct attribute_group sched_policy_attr_group = {
+> +	.attrs = sched_policy_default_attrs,
+> +	.name = "sched_policy",
+> +};
+> +
+> +int __init create_sysfs_sched_policy_group(struct device *dev)
+> +{
+> +	return sysfs_create_group(&dev->kobj, &sched_policy_attr_group);
+> +}
+> +
+> +static int __init sched_policy_sysfs_init(void)
+> +{
+> +	return create_sysfs_sched_policy_group(cpu_subsys.dev_root);
+> +}
+> +
+> +core_initcall(sched_policy_sysfs_init);
+> +#endif /* CONFIG_SYSFS */
+> +
+>  /*
+>   * All the scheduling class methods:
+>   */
