@@ -1,107 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab3ANU1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:27:14 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:41355 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758679Ab3ANU1L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:27:11 -0500
-Date: Mon, 14 Jan 2013 21:27:02 +0100 (CET)
-From: Eldad Zack <eldad@fogrefinery.com>
-X-X-Sender: eldad@xoschi
-To: Alex Deucher <alexdeucher@gmail.com>
-cc: Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>,
-        Paul Menzel <paulepanter@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: Regression: drm/radeon: brightness control hard system lockup
-In-Reply-To: <CADnq5_N+pHZ5ugCDp7EfdW7yZ-ABS3M-vk_xtUFmnqDzz9sBvg@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1301142108070.1351@xoschi>
-References: <alpine.LNX.2.00.1301061336180.1397@xoschi> <CADnq5_O1GDuigxwR8eXu7f1Fsb8iqrggVwYBaiOJKOR-ighYag@mail.gmail.com> <alpine.LNX.2.00.1301072206530.1617@xoschi> <CADnq5_NEQ2cCEPEGwBhX1KP0bDn7b+Q2M=Logw1fVC67ct-gEA@mail.gmail.com>
- <alpine.LNX.2.00.1301132143310.1772@xoschi> <CADnq5_N+pHZ5ugCDp7EfdW7yZ-ABS3M-vk_xtUFmnqDzz9sBvg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1758711Ab3ANUg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:36:29 -0500
+Received: from csamuel.org ([74.50.50.137]:41357 "EHLO csamuel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756237Ab3ANUg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 15:36:28 -0500
+Message-ID: <50F46C36.3060403@csamuel.org>
+Date: Tue, 15 Jan 2013 07:36:06 +1100
+From: Chris Samuel <chris@csamuel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: linux-kernel@vger.kernel.org
+CC: Rusty Russell <rusty@rustcorp.com.au>, dhowells@redhat.com,
+        Michal Marek <mmarek@suse.cz>
+Subject: [RFC] [PATCH] Disable INSTALL_MOD_STRIP when CONFIG_MODULE_SIG set
+Content-Type: multipart/mixed;
+ boundary="------------080202010405050200080402"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------080202010405050200080402
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-On Mon, 14 Jan 2013, Alex Deucher wrote:
-> On Sun, Jan 13, 2013 at 4:00 PM, Eldad Zack <eldad@fogrefinery.com> wrote:
-> >
-> > On Mon, 7 Jan 2013, Alex Deucher wrote:
-> >> On Mon, Jan 7, 2013 at 4:33 PM, Eldad Zack <eldad@fogrefinery.com> wrote:
-> >> >
-> >> > On Mon, 7 Jan 2013, Alex Deucher wrote:
-> >> >> On Sun, Jan 6, 2013 at 7:59 AM, Eldad Zack <eldad@fogrefinery.com> wrote:
-> >> >> >
-> >> >> > Hi Alex,
-> >> >> >
-> >> >> > Commit 0ecebb9e0d14e9948e0b1529883a776758117d6f "drm/radeon: switch to a
-> >> >> > finer grained reset for evergreen" introduced a hard system lockup to my
-> >> >> > setup. I found it after bisecting, and confirmed it by reverting it on
-> >> >> > the latest mainline ( 5f243b9 ).
-> >> >> >
-> >> >> > This:
-> >> >> >
-> >> >> >    echo 7 > /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0/brightness
-> >> >> >
-> >> >> > Causes a hard lock-up hard, i.e. immediate freeze, without any logs.
-> >> >> >
-> >> >> > See lspci output and kernel .config below.
-> >> >> > If there's any more info I can provide, please let me know.
-> >> >>
-> >> >> Do you normally see GPU resets when changing the backlight?  Please
-> >> >> attach your dmesg output when changing the backlight with the patch
-> >> >> reverted.
-> >> >
-> >> > I see nothing. Just to make sure, I cleared the buffer, cycled through
-> >> > 0-7 a couple of hunderd times (until the flicker annoyed), but I see no
-> >> > messages at all.
-> >> > Is there any debug config I should turn on?
-> >>
-> >> Can you try adding a printk() in evergreen_asic_reset() and see if it
-> >> is somehow getting called when you change the brightness?  When you
-> >> use the apci backlight control, the radeon driver is not involved at
-> >> all.  They only way the driver would get involved is if the acpi
-> >> backlight control somehow caused the GPU to hang and then the driver
-> >> detected the hang and attempted to reset the GPU.  I don't see any
-> >> evidence of a GPU reset in your kernel log however.  Note that the
-> >> driver also registers native backlight contol.  Does that work any
-> >> better than acpi?
-> >
-> > The native backlight controls work very well. Thanks for that, I didn't
-> > even noticed that. It has finer control over brightness too.
-> >
-> > I worked out a fix for the problem, but I think it's not a proper one.
-> > What I noticed is that evergreen_gpu_soft_reset() is only ever called
-> > once on my system, at boot.
-> > Then I realized from the dmesg that neither
-> > evergreen_gpu_soft_reset_dma() nor evergreen_gpu_soft_reset_gfx() actually
-> > do anything. Both return on the first if statements there.
-> >
-> > So as far as I can tell, the difference your patch introduced is calling
-> > evergreen_mc_stop() and evergreen_mc_resume(), which somehow puts my
-> > system in some state that ACPI brightness control leads to a lock up.
-> >
-> > BTW, I don't see a GPU reset happening at all - I also tried suspend/resume
-> > and starting an OpenGL application. Do you know how I can trigger it?
-> >
-> > To fix this, I moved the GUI_ACTIVE test before evergreen_mc_stop(), but
-> > I think it just masks the issue.
-> > Patch below (against latest HEAD) just in case.
-> >
-> 
-> Thanks for tracking this down.  The attached patch should fix the
-> issue properly.
+/* Please CC as I am not on LKML */
 
-Thanks, I just applied it and it works as expected.
+Allowing the build system to strip modules when CONFIG_MODULE_SIG is
+set makes no sense as the modules will fail signature checks and at
+best taint the kernel (and appear as if force loaded), and at worst
+cause a kernel panic if fips_enabled is set.
 
-Tested-by: Eldad Zack <eldad@fogrefinery.com>
+So we set mod_strip_cmd to be true to prevent it stripping kernel
+modules, just as happens if INSTALL_MOD_STRIP is not passed.
 
-@Paul: Thanks for the comments, will do so in the future.
+---
+  Documentation/kbuild/kbuild.txt    |    3 +++
+  Documentation/kbuild/makefiles.txt |    5 +++++
+  Makefile                           |    3 +++
+  init/Kconfig                       |    2 ++
+  4 files changed, 13 insertions(+)
 
-Cheers,
-Eldad
+diff --git a/Documentation/kbuild/kbuild.txt 
+b/Documentation/kbuild/kbuild.txt
+index 6466704..8f2fa5c 100644
+--- a/Documentation/kbuild/kbuild.txt
++++ b/Documentation/kbuild/kbuild.txt
+@@ -152,6 +152,9 @@ stripped after they are installed.  If 
+INSTALL_MOD_STRIP is '1', then
+  the default option --strip-debug will be used.  Otherwise,
+  INSTALL_MOD_STRIP value will be used as the options to the strip command.
+  +A kernel configured with cryptographically signed modules 
+(CONFIG_MODULE_SIG)
++will disable this to try and prevent the loss of the appended signatures.
++
+  INSTALL_FW_PATH
+  --------------------------------------------------
+  INSTALL_FW_PATH specifies where to install the firmware blobs.
+diff --git a/Documentation/kbuild/makefiles.txt 
+b/Documentation/kbuild/makefiles.txt
+index 14c3f4f..5b6dad8 100644
+--- a/Documentation/kbuild/makefiles.txt
++++ b/Documentation/kbuild/makefiles.txt
+@@ -1396,6 +1396,11 @@ The top Makefile exports the following variables:
+  	INSTALL_MOD_STRIP value will be used as the option(s) to the strip
+  	command.
+  +        A kernel configured with cryptographically signed modules
++	(CONFIG_MODULE_SIG) will disable this to try and prevent the loss
++	of the appended signatures.
++
++
+   === 9 Makefile language
+  diff --git a/Makefile b/Makefile
+index a1667c4..b59a39e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -724,6 +724,9 @@ MODSECKEY = ./signing_key.priv
+  MODPUBKEY = ./signing_key.x509
+  export MODPUBKEY
+  mod_sign_cmd = perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY)
++# Don't strip modules as it removes the signatures we will add.
++mod_strip_cmd = true
++export mod_strip_cmd
+  else
+  mod_sign_cmd = true
+  endif
+diff --git a/init/Kconfig b/init/Kconfig
+index 7d30240..1048f93 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1658,6 +1658,8 @@ config MODULE_SIG
+  	  debuginfo strip done by some packagers (such as rpmbuild) and
+  	  inclusion into an initramfs that wants the module size reduced.
+  +	  This option disables the INSTALL_MOD_STRIP option for make.
++
+  config MODULE_SIG_FORCE
+  	bool "Require modules to be validly signed"
+  	depends on MODULE_SIG
+-- 
+1.7.10.4
+
+
+--------------080202010405050200080402
+Content-Type: text/plain; charset=UTF-8;
+ name="Attached Message Part"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="Attached Message Part"
+
+
+--------------080202010405050200080402--
