@@ -1,81 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab3ANXhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 18:37:38 -0500
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:51432 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679Ab3ANXhg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 18:37:36 -0500
-Message-Id: <201301142338.AA04488@capsicum.lab.ntt.co.jp>
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Date: Tue, 15 Jan 2013 08:38:09 +0900
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: slava@dubeyko.com, splavgm@gmail.com, linux-nilfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nilfs2: fix very long mount time issue
-In-Reply-To: <20130114150041.d57e5e03.akpm@linux-foundation.org>
-References: <20130114150041.d57e5e03.akpm@linux-foundation.org>
+	id S1756936Ab3ANXjB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 18:39:01 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:40807 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755259Ab3ANXjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 18:39:00 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>
+Subject: Re: [PATCH 5/5] ACPI / scan: Add second pass to acpi_bus_trim()
+Date: Tue, 15 Jan 2013 00:44:49 +0100
+Message-ID: <4777669.ks8kJoa9t1@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1358205223.14145.108.camel@misato.fc.hp.com>
+References: <3885603.ydrrB7OEKf@vostro.rjw.lan> <9393976.KUs5xrSxYx@vostro.rjw.lan> <1358205223.14145.108.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-X-Mailer: AL-Mail32 Version 1.13
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Sun, 13 Jan 2013 16:07:23 +0900 (JST)
->Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp> wrote:
->
->> On Sat, 12 Jan 2013 19:34:48 +0400, Vyacheslav Dubeyko wrote:
->> > From: Vyacheslav Dubeyko <slava@dubeyko.com>
->> > Subject: [PATCH] nilfs2: fix very long mount time issue
->> > 
->> > DESCRIPTION:
->> > It exists situation when GC can work in background alone without any other filesystem activity during significant 
-time. The nilfs_clean_segments() method calls nilfs_segctor_construct() that updates superblocks in the case of 
-NILFS_SC_SUPER_ROOT and THE_NILFS_DISCONTINUED flags are set. But when GC is working alone the nilfs_clean_segments() is 
-called with unset THE_NILFS_DISCONTINUED flag. As a result, the update of superblocks doesn't occurred all this time and 
-in the case of SPOR superblocks keep very old values of last super root placement.
->> > 
->> > SYMPTOMS:
->> > Trying to mount a NILFS2 volume after SPOR in such environment ends with very long mounting time (it can achieve 
-about several hours in some cases).
->> > 
->> > REPRODUCING PATH:
->> > 1. It needs to use external USB HDD, disable automount and doesn't make any additional filesystem activity on the 
-NILFS2 volume.
->> > 2. Generate temporary file with size about 100 - 500 GB (for example, dd if=/dev/zero of=<file_name> bs=1073741824 
-count=200). The size of file defines duration of GC working.
->> > 3. Then it needs to delete file.
->> > 4. Start GC manually by means of command "nilfs-clean -p 0". When you start GC by means of such way then, at the end, 
-superblocks is updated by once. So, for simulation of SPOR, it needs to wait sometime (15 - 40 minutes) and simply switch 
-off USB HDD manually.
->> > 5. Switch on USB HDD again and try to mount NILFS2 volume. As a result, NILFS2 volume will mount during very long 
-time.
->> > 
->> > REPRODUCIBILITY: 100%
->> > 
->> > FIX:
->> > This patch adds checking that superblocks need to update and set THE_NILFS_DISCONTINUED flag before 
-nilfs_clean_segments() call.
->> > 
->> > Reported-by: Sergey Alexandrov <splavgm@gmail.com>
->> > Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
->> > Tested-by: Vyacheslav Dubeyko <slava@dubeyko.com>
->> 
->> Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
->> 
->> Thanks, Vyacheslav.  I confirmed the issue and could reproduce it.
->> Your patch fixed it.
->> 
->> Andrew, please apply.
->
->I added a Cc:stable so the fix will be backported into earlier kernels.
->40 minutes mount time is pretty bad!
+On Monday, January 14, 2013 04:13:43 PM Toshi Kani wrote:
+> On Mon, 2013-01-14 at 22:39 +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Make acpi_bus_trim() work in analogy with acpi_bus_scan() and carry
+> > out two passes such that ACPI drivers will be detached from device
+> > nodes being removed in the first pass and the device nodes themselves
+> > will be removed in the second pass.
+> > 
+> > For this purpose split the driver unregistration out of
+> > acpi_bus_remove() into a new routine, acpi_bus_device_detach(), that
+> > will be executed by acpi_bus_trim() in the additional first pass as
+> > a post-order callback.
+> > 
+> > This is necessary, because some ACPI drivers' .remove() routines
+> > unregister struct device objects associated with the ACPI device
+> > nodes being removed and that needs to happen while the ACPI
+> > device nodes are still around (for example, in case they need to be
+> > used for power management or similar things at that time).
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> I'd suggest to add some comment stating that acpi_bus_device_detach()
+> acpi_bus_remove() are post-order callbacks.  I do not think many people
+> recognize it by just looking the calls to acpi_walk_namespace().
 
-Yup, I agree.
+Yeah, good idea.
 
-Thanks.
+> Otherwise, the patchset looks good.  For the patch series:
+> Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-Ryusuke Konishi
+Thanks!
 
+Rafael
+
+
+> > ---
+> >  drivers/acpi/scan.c |   44 ++++++++++++++++++++++++++++----------------
+> >  1 file changed, 28 insertions(+), 16 deletions(-)
+> > 
+> > Index: linux-pm/drivers/acpi/scan.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/scan.c
+> > +++ linux-pm/drivers/acpi/scan.c
+> > @@ -1425,22 +1425,6 @@ static void acpi_device_set_id(struct ac
+> >  	}
+> >  }
+> >  
+> > -static acpi_status acpi_bus_remove(acpi_handle handle, u32 lvl_not_used,
+> > -				   void *not_used, void **ret_not_used)
+> > -{
+> > -	struct acpi_device *dev = NULL;
+> > -
+> > -	if (acpi_bus_get_device(handle, &dev))
+> > -		return AE_OK;
+> > -
+> > -	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
+> > -	device_release_driver(&dev->dev);
+> > -
+> > -	acpi_device_unregister(dev);
+> > -
+> > -	return AE_OK;
+> > -}
+> > -
+> >  void acpi_init_device_object(struct acpi_device *device, acpi_handle handle,
+> >  			     int type, unsigned long long sta)
+> >  {
+> > @@ -1647,8 +1631,36 @@ int acpi_bus_add(acpi_handle handle)
+> >  }
+> >  EXPORT_SYMBOL(acpi_bus_add);
+> >  
+> > +static acpi_status acpi_bus_device_detach(acpi_handle handle, u32 lvl_not_used,
+> > +					  void *not_used, void **ret_not_used)
+> > +{
+> > +	struct acpi_device *device = NULL;
+> > +
+> > +	if (!acpi_bus_get_device(handle, &device)) {
+> > +		device->removal_type = ACPI_BUS_REMOVAL_EJECT;
+> > +		device_release_driver(&device->dev);
+> > +	}
+> > +	return AE_OK;
+> > +}
+> > +
+> > +static acpi_status acpi_bus_remove(acpi_handle handle, u32 lvl_not_used,
+> > +				   void *not_used, void **ret_not_used)
+> > +{
+> > +	struct acpi_device *device = NULL;
+> > +
+> > +	if (!acpi_bus_get_device(handle, &device))
+> > +		acpi_device_unregister(device);
+> > +
+> > +	return AE_OK;
+> > +}
+> > +
+> >  int acpi_bus_trim(struct acpi_device *start)
+> >  {
+> > +	/* Detach all ACPI drivers from the device nodes being removed. */
+> > +	acpi_walk_namespace(ACPI_TYPE_ANY, start->handle, ACPI_UINT32_MAX, NULL,
+> > +			    acpi_bus_device_detach, NULL, NULL);
+> > +	acpi_bus_device_detach(start->handle, 0, NULL, NULL);
+> > +	/* Remove the device nodes. */
+> >  	acpi_walk_namespace(ACPI_TYPE_ANY, start->handle, ACPI_UINT32_MAX, NULL,
+> >  			    acpi_bus_remove, NULL, NULL);
+> >  	acpi_bus_remove(start->handle, 0, NULL, NULL);
+> > 
+> 
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
