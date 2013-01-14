@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab3ANEz3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 23:55:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60368 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754273Ab3ANEz1 (ORCPT
+	id S1751085Ab3ANFCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 00:02:30 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:64673 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab3ANFC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 23:55:27 -0500
-Date: Mon, 14 Jan 2013 13:55:18 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lrg@ti.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: linux-next: build failure after merge of the sound-asoc tree
-Message-ID: <20130114045517.GA4833@opensource.wolfsonmicro.com>
-References: <20130114120400.e04269f927629773b0570ff2@canb.auug.org.au>
+	Mon, 14 Jan 2013 00:02:29 -0500
+Date: Sun, 13 Jan 2013 21:03:14 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] char/misc changes for 3.8-rc3
+Message-ID: <20130114050314.GA8526@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130114120400.e04269f927629773b0570ff2@canb.auug.org.au>
-X-Cookie: Bridge ahead.  Pay troll.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 12:04:00PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the sound-asoc tree, today's linux-next build
-> (x86_64allmodconfig) failed like this:
+The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
 
-Applied, thanks.
+  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
 
-> As an aside, should ak4642_of_match be marked "const"?
+are available in the git repository at:
 
-Probably.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.8-rc3
+
+for you to fetch changes up to e6028db0146cf5a68dbd1508225ea49840997880:
+
+  mei: fix mismatch in mutex unlock-lock in mei_amthif_read() (2013-01-07 10:28:03 -0800)
+
+----------------------------------------------------------------
+Char/misc fix for 3.8-rc3
+
+Here is a single fix for the mei driver that resolves a reported issue.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Alexey Khoroshilov (1):
+      mei: fix mismatch in mutex unlock-lock in mei_amthif_read()
+
+ drivers/misc/mei/amthif.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
