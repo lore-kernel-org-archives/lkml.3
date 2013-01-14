@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab3ANM56 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 07:57:58 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:40459 "EHLO hydra.sisk.pl"
+	id S1756171Ab3ANNJO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 08:09:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54054 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518Ab3ANM54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 07:57:56 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Toshi Kani <toshi.kani@hp.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>
-Subject: Re: [PATCH] ACPI: remove unused acpi_op_bind and acpi_op_unbind
-Date: Mon, 14 Jan 2013 14:03:45 +0100
-Message-ID: <6680981.KaANYo3b18@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1358086602-32538-1-git-send-email-jiang.liu@huawei.com>
-References: <2326457.ZgAhayTgyl@vostro.rjw.lan> <1358086602-32538-1-git-send-email-jiang.liu@huawei.com>
+	id S1755807Ab3ANNJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 08:09:13 -0500
+Date: Mon, 14 Jan 2013 13:09:11 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        stable@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Unique commit-id for "mm: compaction: [P,p]artially revert
+ capture of suitable high-order page"
+Message-ID: <20130114130911.GQ13304@suse.de>
+References: <CA+icZUW5kryOCpX96CkaS=5uX61FmiYE0mh7y6F0eT9Bh8eUGw@mail.gmail.com>
+ <20130114103612.GO13304@suse.de>
+ <CA+icZUUReY7LPjnF1xTjD-aJSYYqgo9tF9K8T8--r_HjRwgCHA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CA+icZUUReY7LPjnF1xTjD-aJSYYqgo9tF9K8T8--r_HjRwgCHA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 13, 2013 10:16:42 PM Jiang Liu wrote:
+On Mon, Jan 14, 2013 at 12:27:20PM +0100, Sedat Dilek wrote:
+> On Mon, Jan 14, 2013 at 11:36 AM, Mel Gorman <mgorman@suse.de> wrote:
+> > On Sun, Jan 13, 2013 at 05:12:45PM +0100, Sedat Dilek wrote:
+> >> Hi Linus,
+> >>
+> >> I see two different commit-id for an identical patch (only subject
+> >> line differs).
+> >> [1] seems to be applied directly and [2] came with a merge of akpm-fixes.
+> >> What is in case of backports for -stable kernels?
+> >
+> > I do not expect it to matter. I was going to use
+> > 8fb74b9fb2b182d54beee592350d9ea1f325917a as the commit ID whenever I got
+> > the complaint mail from Greg's tools about a 3.7 merge failure. The 3.7.2
+> > backport looks like this.
+> >
 > 
-> With commit f2a33cde55a03 "ACPI: Drop ACPI device .bind() and .unbind()
-> callbacks", acpi_op_bind and acpi_op_unbind are not used any more. So
-> remove them.
-
-Applied to the linux-next branch of the linux-pm.git tree as v3.9 material.
-
-Please CC ACPI patches to linux-acpi@vger.kernel.org in the future, though,
-that makes it much easier to handle them for me.
-
-Thanks,
-Rafael
-
-
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> ---
->  include/acpi/acpi_bus.h |    2 --
->  1 file changed, 2 deletions(-)
+> Oh cool and thanks!
+> Are you planning to resend this backport-patch to the lists w/ a "3.7"
+> (or for-3.7) in the commit-subject?
 > 
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index 6e9a73e..ef539eb 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -91,8 +91,6 @@ struct acpi_device;
->  typedef int (*acpi_op_add) (struct acpi_device * device);
->  typedef int (*acpi_op_remove) (struct acpi_device * device, int type);
->  typedef int (*acpi_op_start) (struct acpi_device * device);
-> -typedef int (*acpi_op_bind) (struct acpi_device * device);
-> -typedef int (*acpi_op_unbind) (struct acpi_device * device);
->  typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
->  
->  struct acpi_device_ops {
-> 
+
+Yes, when I get the reject mail from Greg's tools.
+
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Mel Gorman
+SUSE Labs
