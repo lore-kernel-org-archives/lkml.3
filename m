@@ -1,54 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab3ANSEa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:04:30 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:59135 "HELO
+	id S1756891Ab3ANSNf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:13:35 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59142 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757357Ab3ANSE2 (ORCPT
+	with SMTP id S1756718Ab3ANSNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:04:28 -0500
-Date: Mon, 14 Jan 2013 13:04:27 -0500 (EST)
+	Mon, 14 Jan 2013 13:13:33 -0500
+Date: Mon, 14 Jan 2013 13:13:32 -0500 (EST)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Jens Axboe <axboe@kernel.dk>, USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: USB device cannot be reconnected and khubd "blocked for more
- than 120 seconds"
-In-Reply-To: <CA+55aFxV40V2WvNtJY3EC0F-B9wPk8CV2o1TTTyoF4CoWH7rhQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1301141302380.1782-100000@iolanthe.rowland.org>
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v6 3/4] block: implement runtime pm strategy
+In-Reply-To: <20130114030302.GA15280@aaronlu.sh.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1301141306560.1782-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013, Linus Torvalds wrote:
+On Mon, 14 Jan 2013, Aaron Lu wrote:
 
-> > - from view of driver, introducing async_synchronize_full() after
-> > do_one_initcall() inside do_init_module() is like a sync probe
-> > for drivers built as module, and cause this kind of deadlock easily.
-> >
-> > So could we revert the commit and fix the previous problems just
-> > case by case? or other better fix?
+> On Tue, Jan 08, 2013 at 10:22:45AM -0500, Alan Stern wrote:
+> > Just as importantly, all of the public routines added in patch 2/4 to
+> > blk-core.c should have kerneldoc explaining how and where to use them.  
+> > In particular, the kerneldoc for blk_pm_runtime_init() has to mention
+> > that the block runtime PM implementation works only for drivers that
+> > use request structures for their I/O; it doesn't work for drivers that
+> > use bio's directly.
 > 
-> There's no way in hell we take a "fix things one by one" approach.
-> It's not going to work. And your suggestion seems to not do async
-> discovery of devices in general, which is a *much* worse fix than
-> anything else. It's just crazy.
-> 
-> But there are other approaches we might take. We might move the call to
-> 
->     async_synchronize_full();
-> 
-> to other places. For example, maybe we're better off doing it at
-> block/char device open instead?
+> How about the following description for them?
 
-How about skipping that call if the current thread is one of the async 
-helpers?  Is it possible to detect when that happens?
+Overall this is very good.
 
-Or maybe such a check should go inside async_synchronize_full() itself.
+> /**
+>  * blk_pm_runtime_init - Block layer runtime PM initialization routine
+>  * @q: the queue of the device
+>  * @dev: the device the queue belongs to
+>  *
+>  * Description:
+>  *    Initialize runtime PM related fields for @q and start auto suspend
+>  *    for @dev. Drivers that want to take advantage of request based runtime
+>  *    PM should call this function after @dev has been initialized, and its
+>  *    request queue @q has been allocated, and runtime PM for it is not
+>  *    ready yet(either disabled/forbidden or its usage count >= 0).
+>  *
+>  *    The block layer runtime PM is request based, so only works for drivers
+>  *    that use request as their IO unit instead of those directly use bio's.
+>  */
+> 
+> /**
+>  * blk_pre_runtime_suspend - Pre runtime suspend check
+>  * @q: the queue of the device
+>  *
+>  * Description:
+>  *    This function will check if runtime suspend is allowed for the device
+>  *    by examining if there are any requests pending in the queue. If there
+>  *    are requests pending, the device can not be runtime suspended; otherwise,
+>  *    the queue's status will be updated to SUSPENDING and the driver can
+>  *    proceed to suspend the device.
+>  *
+>  *    For the not allowed case, we mark last busy for the device so that
+>  *    runtime PM core will try to autosuspend it some time later.
+>  *
+>  *    This function should be called in the device's runtime suspend callback,
+>  *    before its runtime suspend function is called.
+
+This doesn't quite make sense, because the runtime_suspend callback 
+_is_ the runtime-suspend function.  How about "... should be called 
+near the start of the device's runtime_suspend callback."?
+
+A similar comment applies to the other functions.
+
+>  *
+>  * Return:
+>  *    0		- OK to runtime suspend the device
+>  *    -EBUSY	- Device should not be runtime suspended
+>  */
+> 
+> /**
+>  * blk_post_runtime_suspend - Post runtime suspend processing
+>  * @q: the queue of the device
+>  * @err: return value of the device's runtime suspend function
+>  *
+>  * Description:
+>  *    Update the queue's runtime status according to the return value of the
+>  *    device's runtime suspend function.
+>  *
+>  *    This function should be called in the device's runtime suspend callback,
+>  *    after its runtime suspend function is called.
+>  */
+> 
+> /**
+>  * blk_pre_runtime_resume - Pre runtime resume processing
+>  * @q: the queue of the device
+>  *
+>  * Description:
+>  *    Update the queue's runtime status to RESUMING in preparation for the
+>  *    runtime resume of the device.
+>  *
+>  *    This function should be called in the device's runtime resume callback,
+>  *    before its runtime resume function is called.
+>  */
+> 
+> /**
+>  * blk_post_runtime_resume - Post runtime resume processing
+>  * @q: the queue of the device
+>  * @err: return value of the device's runtime resume function
+>  *
+>  * Description:
+>  *    Update the queue's runtime status according to the return value of the
+>  *    device's runtime resume function. If it is successfully resumed, process
+>  *    the requests that are queued into the device's queue when it is resuming
+>  *    and then mark last busy and initiate autosuspend for it.
+>  *
+>  *    This function should be called in the device's runtime resume callback,
+>  *    after its runtime resume function is called.
+>  */
+> 
+> Please feel free to suggest, thanks.
+
+I would hypenate some of these words, such as "runtime-PM-related
+fields" or "request-based runtime PM".  Also, "runtime_suspend" and 
+"runtime_resume" generally should have either a '_' or a '-'.
+
+But that's a very minor point; your descriptions are quite good.
 
 Alan Stern
 
