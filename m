@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab3ANJs4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 04:48:56 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56784 "EHLO multi.imgtec.com"
+	id S1756763Ab3ANJtH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 04:49:07 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57316 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755986Ab3ANJsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 04:48:53 -0500
-Message-ID: <50F3D481.4000806@imgtec.com>
-Date: Mon, 14 Jan 2013 09:48:49 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756750Ab3ANJtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 04:49:01 -0500
+Message-ID: <50F3D47D.1020103@ti.com>
+Date: Mon, 14 Jan 2013 11:48:45 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tglx@linutronix.de>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: early init dt for earlyprintk (was Re: [RFC PATCH v1 25/31] ARC:
- [plat-arcfpga] Hooking up platform to ARC UART)
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-26-git-send-email-vgupta@synopsys.com> <201211071416.08012.arnd@arndb.de> <50F3B54D.7010801@synopsys.com>
-In-Reply-To: <50F3B54D.7010801@synopsys.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-15"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Alan Stern <stern@rowland.harvard.edu>, <sameo@linux.intel.com>,
+        <tony@atomide.com>, <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, <kishon@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 07/14] usb: ehci-omap: Instantiate PHY devices if required
+References: <Pine.LNX.4.44L0.1301111019340.1730-100000@iolanthe.rowland.org> <50F037C9.40306@ti.com> <20130111163255.GF23505@n2100.arm.linux.org.uk>
+In-Reply-To: <20130111163255.GF23505@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_01_14_09_48_52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vineet
+On 01/11/2013 06:32 PM, Russell King - ARM Linux wrote:
+> On Fri, Jan 11, 2013 at 06:03:21PM +0200, Roger Quadros wrote:
+>> diff --git a/include/linux/platform_data/usb-omap.h
+>> b/include/linux/platform_data/usb-omap.h
+>> index d63eb7d..927b8a1 100644
+>> --- a/include/linux/platform_data/usb-omap.h
+>> +++ b/include/linux/platform_data/usb-omap.h
+>> @@ -38,6 +38,12 @@ enum usbhs_omap_port_mode {
+>>  	OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM
+>>  };
+>>
+>> +struct usbhs_phy_config {
+>> +	char *name;		/* binds to device driver */
+> 
+> You may wish to consider making this const.
+> 
+OK.
 
-On 14/01/13 07:35, Vineet Gupta wrote:
-> 2. We really need a Documentation/dt-for-new-linux-arches.txt, as the existing
-> refs - while very helpful - fail to mention subtleties such as you absolutely need
-> a intc instance and a default irq domain ..... before the driver can start using
-> the DT.
-
-Sounds like a good idea. I'm curious about what you say about default
-IRQ domains though. Do you mean irq_set_default_host? In what way is
-that required to use DT?
-
-Cheers
-James
-
+--
+cheers,
+-roger
