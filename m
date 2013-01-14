@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab3ANIiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 03:38:07 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:37543 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab3ANIiF convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Mon, 14 Jan 2013 03:38:05 -0500
-Message-Id: <50F3D1F702000078000B52FB@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Mon, 14 Jan 2013 08:37:59 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ondrej Zary" <linux@rainbow-software.org>
-Cc: <dmitry.torokhov@gmail.com>, <hpa@linux.intel.com>,
-        "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>
-Subject: Re: your patch "x86, 8042: Enable A20 using KBC to fix S3
- resume on some MSI laptops"
-References: <50F3CAFD02000078000B52BE@nat28.tlf.novell.com>
- <201301140929.38462.linux@rainbow-software.org>
-In-Reply-To: <201301140929.38462.linux@rainbow-software.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756428Ab3ANIjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 03:39:32 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46310 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756405Ab3ANIjb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 03:39:31 -0500
+X-AuditID: 9c93016f-b7b54ae000000e9e-2b-50f3c441b0f8
+From: Namhyung Kim <namhyung@kernel.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 22/22] sched: lazy powersaving balance
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
+	<1357375071-11793-23-git-send-email-alex.shi@intel.com>
+Date: Mon, 14 Jan 2013 17:39:29 +0900
+In-Reply-To: <1357375071-11793-23-git-send-email-alex.shi@intel.com> (Alex
+	Shi's message of "Sat, 5 Jan 2013 16:37:51 +0800")
+Message-ID: <877gngnoou.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 14.01.13 at 09:29, Ondrej Zary <linux@rainbow-software.org> wrote:
-> On Monday 14 January 2013, Jan Beulich wrote:
->> Ondrej,
->>
->> I see two problems with this patch: For one, on a system without
->> i8042 the code at the place it got inserted ought to incur a stall of
->> 1s (50us * I8042_CTL_TIMEOUT [10000] * 2). I believe that this
->> code should not be run before i8042_controller_check() completed
->> successfully, but at the very least the second call to
->> i8042_command() should be conditional upon the first being
->> successful (effectively halving the stall).
-> 
-> I believe that all PnP-capable systems without 8042 will exit with -ENODEV 
-> after x86_platform.i8042_detect().
+On Sat,  5 Jan 2013 16:37:51 +0800, Alex Shi wrote:
+> +	/*
+> +	 * The situtatoin isn't egligible for performance balance. If this_cpu
 
-How that, with default_i8042_detect() being just "return 1;"?
+s/situtatoin/situation/
 
-> Old non-PnP systems usually have 8042.
+s/egligible/eligible/
 
-Sure.
+> +	 * is not egligible or the timing is not suitable for lazy powersaving
 
->> Second, considering that enabling A20 (even if just in a fake way),
->> is a core system operation, I don't think it belongs into a driver
->> that is only optionally present in the kernel.
-> 
-> The first version of this patch added A20 enabling to early init code. But 
-> that could be dangerous as it was run before any 8042 detection, possibly 
-> breaking systems without 8042. I haven't found a better place for this.
+Thanks,
+Namhyung
 
-I realize that the change would be more intrusive, but imo that's
-not an excuse for not doing it properly.
 
-Jan
-
+> +	 * balance, we will stop both powersaving and performance balance.
+> +	 */
