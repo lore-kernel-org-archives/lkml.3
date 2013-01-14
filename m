@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab3ANCfI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 21:35:08 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33401 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755240Ab3ANCfF (ORCPT
+	id S1755436Ab3ANCjg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 21:39:36 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:35721 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752862Ab3ANCjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 21:35:05 -0500
-Date: Mon, 14 Jan 2013 02:34:39 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Subject: Re: [RFC-v2 1/7] capebus: Core capebus support
-Message-ID: <20130114023439.GB4928@sirena.org.uk>
-References: <1351783952-11804-1-git-send-email-panto@antoniou-consulting.com>
- <1351783952-11804-2-git-send-email-panto@antoniou-consulting.com>
+	Sun, 13 Jan 2013 21:39:35 -0500
+Date: Sun, 13 Jan 2013 21:39:34 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Oliver Neukum <oliver@neukum.org>
+cc: Alex Riesen <raa.lkml@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: USB device cannot be reconnected and khubd "blocked for more
+ than 120 seconds"
+In-Reply-To: <1406914.PAZOOLqX4X@linux-5eaq.site>
+Message-ID: <Pine.LNX.4.44L0.1301132125530.25830-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351783952-11804-2-git-send-email-panto@antoniou-consulting.com>
-X-Cookie: Smile!  You're on Candid Camera.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 05:32:26PM +0200, Pantelis Antoniou wrote:
-> Introducing capebus; a bus that allows small boards (capes) to connect
-> to a complex SoC using simple expansion connectors.
-> 
-> Up to now to support these kind of boards, one had to hack the board files,
-> and do all sort of gymnastics to handle all the different cases of
-> conflict resolution.
+On Sun, 13 Jan 2013, Oliver Neukum wrote:
 
-Would it be possible to split out the DT support from the underlying
-bus?  Looking at the code it seems like we're relying on DT for a lot of
-the functionality when it comes to mapping devices into the system but
-that doesn't really meet what I'm looking for.  One of the use cases I
-have is supporting modules which can be used with multiple systems so I
-really want to be able to just define the modules once and then have a
-layer in the subsystem which remaps the connections onto the actual
-hardware.
+> On Sunday 13 January 2013 18:42:49 Alex Riesen wrote:
+> > On Sun, Jan 13, 2013 at 5:56 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > > On Sun, 13 Jan 2013, Alex Riesen wrote:
+> > >>
+> > >> Yes, almost. What about khubd hanging when machine is shutdown?
+> > >
+> > > What about it?  I have trouble understanding all the descriptions you
+> > > have provided so far, because you talk about several different things
+> > > and change your mind a lot.  Can you provide a single, simple scenario
+> > > that illustrates this problem?
+> > 
+> > 1. Compile a kernel with deadline elevator as module
+> > 2. Boot into it, make sure the elevator is selected
+> >   (I used "elevator=deadline" in the kernel command line)
+> > 3. Insert a FAT formatted mass storage device in an USB2 port
+> >    Observe "io scheduler deadline registered"
+> > 4. Pull the stick out, wait a moment, and either shutdown or just
+> >    and press alt-sysrq-W:
+
+Indeed.  I just tried booting into a kernel that has the deadline
+elevator built-in, not a module.  Even then, when I specified
+"elevator=deadline" on the boot command line, the system hung up
+partway through booting.  Hard to tell exactly where, because it
+occurred shortly after the switching from VGA to the framebuffer
+driver, so the screen was completely blank.
+
+When I get a chance, I'll try it on another machine where I can use a 
+serial console.
+
+> That makes it clear. The elevator probably has scheduled work
+> which cannot finish waiting on a lock and scsi_remove_host()
+> wants to flush work.
+
+What is the work and why can't it finish?  Or rather, how can we 
+figure these things out?  According to what Alex wrote, the blocked 
+task doesn't show up in the Alt-SysRq-W listing.
+
+And don't forget that the listing shows scsi_remove_host() blocks
+waiting to acquire the host's scan_mutex.  Not waiting for work to be
+flushed.  This casts doubt on your explanation.
+
+> This is not a USB problem. You need to involve the SCSI people.
+> khubd just stops working because disconnects are processed
+> in its context and the removal deadlocks.
+
+The why whould building the deadline elevator as a module make any
+difference?  Or does it make a difference?
+
+Alex, if the elevator is made static instead, do you still see the same 
+behavior when the USB drive is removed?
+
+Also, are there any mounted filesystems on the drive when you unplug
+it?
+
+Alan Stern
+
