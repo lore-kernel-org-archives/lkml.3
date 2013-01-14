@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581Ab3ANM3a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 07:29:30 -0500
-Received: from co202.xi-lite.net ([149.6.83.202]:41513 "EHLO co202.xi-lite.net"
+	id S1756595Ab3ANMbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 07:31:31 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:40442 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756316Ab3ANM33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 07:29:29 -0500
-Message-ID: <50F3FA09.3080405@parrot.com>
-Date: Mon, 14 Jan 2013 13:28:57 +0100
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
+	id S1756388Ab3ANMb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 07:31:29 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the pm tree
+Date: Mon, 14 Jan 2013 13:37:19 +0100
+Message-ID: <1519070.xb1StfSez8@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130114110311.a399f92e5e4ec730b380eaf4@canb.auug.org.au>
+References: <20130114110311.a399f92e5e4ec730b380eaf4@canb.auug.org.au>
 MIME-Version: 1.0
-To: Huang Shijie <b32955@freescale.com>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>
-Subject: Re: [PATCH] mtd: apply tPROG delay for ONFI nand's page program
-References: <1358147853-31826-1-git-send-email-b32955@freescale.com>
-In-Reply-To: <1358147853-31826-1-git-send-email-b32955@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Huang Shijie a écrit :
-> With some latest Micron's onfi nand(such as MT29F64G08CBABAWP),
-> I find that if we do not apply the tPROG delay as the datasheet tells us,
-> the page program may fails. You will read out the all 0xff from this page
-> in this case.
+Hi,
+
+On Monday, January 14, 2013 11:03:11 AM Stephen Rothwell wrote:
+> Hi Rafael,
 > 
-> This patch adds the tPROG delay for page program when it is an onfi nand.
+> After merging the pm tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> Signed-off-by: Huang Shijie <b32955@freescale.com>
-> ---
->  drivers/mtd/nand/nand_base.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+> In file included from init/main.c:25:0:
+> include/linux/acpi.h:549:46: error: unknown type name 'acpi_handle'
+> include/linux/acpi.h:551:49: error: unknown type name 'acpi_handle'
 > 
-> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-> index 8323ac9..b628dd5 100644
-> --- a/drivers/mtd/nand/nand_base.c
-> +++ b/drivers/mtd/nand/nand_base.c
-> @@ -841,6 +841,10 @@ static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
->  	 */
->  	ndelay(100);
->  
-> +	/* Apply the tPROG delay for ONFI nand program. */
-> +	if (chip->onfi_version && state == FL_WRITING)
-> +		udelay(le16_to_cpu(chip->onfi_params.t_prog));
-> +
->  	if ((state == FL_ERASING) && (chip->options & NAND_IS_AND))
->  		chip->cmdfunc(mtd, NAND_CMD_STATUS_MULTI, -1, -1);
->  	else
-It looks wrong : why should be wait tPROG before using status command to monitor
-program end ?
+> and many more.
+> 
+> Caused by commit c9b147cd9648 ("ACPI / PM: Rework the handling of devices
+> depending on power resources").  Please check with and without CONFIG
+> options that affect patches ...
+> 
+> I have used the pm tree from next-20130111 for today.
 
-tPROG is the Page program time (Measured from the falling edge of SR[6] to the
-rising edge of SR[6]), but because we monitor SR[6] with status command, we
-already wait for that time.
+Thanks for the report and sorry for the breakage.  Should be fixed now.
 
-Are you sure that it is not a bug in your nand driver with status command ?
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
 
-Matthieu
