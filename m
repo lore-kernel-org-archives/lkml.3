@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072Ab3ANOPP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:15:15 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:32950 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756756Ab3ANOPN (ORCPT
+	id S1756865Ab3ANOR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:17:29 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58989 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999Ab3ANOR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:15:13 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: mvebu: Don't free chip label memory
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-In-Reply-To: <1358160800-12185-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1358160800-12185-1-git-send-email-thierry.reding@avionic-design.de>
-Date: Mon, 14 Jan 2013 14:15:04 +0000
-Message-Id: <20130114141504.C91503E232D@localhost>
+	Mon, 14 Jan 2013 09:17:28 -0500
+Date: Mon, 14 Jan 2013 15:17:26 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mark Rutland <mark.rutland@arm.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "nico@linaro.org" <nico@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>
+Subject: Re: [PATCHv2 1/4] clockevents: Add generic timer broadcast
+ receiver
+In-Reply-To: <20130114121247.GD7990@e106331-lin.cambridge.arm.com>
+Message-ID: <alpine.LFD.2.02.1301141318460.7475@ionos>
+References: <1357742770-15028-1-git-send-email-mark.rutland@arm.com> <1357742770-15028-2-git-send-email-mark.rutland@arm.com> <alpine.LFD.2.02.1301141204421.7475@ionos> <20130114112951.GC7990@e106331-lin.cambridge.arm.com> <alpine.LFD.2.02.1301141247020.7475@ionos>
+ <20130114121247.GD7990@e106331-lin.cambridge.arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013 11:53:20 +0100, Thierry Reding <thierry.reding@avionic-design.de> wrote:
-> The gpio_chip.label field is a const char * and assigned the value of a
-> call to dev_name(). Memory obtained from dev_name() should not be freed
-> by drivers.
+On Mon, 14 Jan 2013, Mark Rutland wrote:
+> On Mon, Jan 14, 2013 at 11:50:55AM +0000, Thomas Gleixner wrote:
+> > On Mon, 14 Jan 2013, Mark Rutland wrote:
+> > 
+> > > On Mon, Jan 14, 2013 at 11:06:31AM +0000, Thomas Gleixner wrote:
+> > > > On Wed, 9 Jan 2013, Mark Rutland wrote:
+> > > > > +#ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+> > > > > +extern int tick_receive_broadcast(void);
+> > > > > +#else
+> > > > > +static inline int tick_receive_broadcast(void)
+> > > > > +{
+> > > > > +	return 0;
+> > > > > +}
+> > > > 
+> > > > What's the inline function for? If an arch does not have broadcasting
+> > > > support it should not have a receive broadcast function call either.
+> > > 
+> > > That was how this was originally structured [1], but Santosh suggested this
+> > > would break the build for !GENERIC_CLOCKEVENTS_BROADCAST [1]. It means that the
+> > > arch-specific receive path (i.e. IPI handler) doesn't have to be #ifdef'd,
+> > > which makes it less ugly.
+> > 
+> > Hmm. If you want to keep the IPI around unconditionally the inline
+> > makes some sense, though the question is whether keeping an unused IPI
+> > around makes sense in the first place. I'd rather see a warning that
+> > an unexpected IPI happened than a silent inline function being called.
 > 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> How about I add a warning (e.g. "Impossible timer broadcast received.") and
+> return -EOPNOTSUPP when !GENERIC_CLOCKEVENTS_BROADCAST?
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+You still need to do something with the return value in the arch IPI
+code, right?
 
-Linus, can you put this in your fixes branch?
+> > > > Is anything going to use the return value?
+> > > 
+> > > I'd added this after looking at the x86 lapic timers, where interrupts might
+> > > remain pending over a kexec, and lapic interrupts come up before timers are
+> > > registered. The return value is useful for shutting down the timer in that case
+> > > (see x86's local_apic_timer_interrupt).
+> > 
+> > Right, though then you need to check for evt->event_handler as well.
+> 
+> I thought this previously also [1], but I couldn't find any path such that a
+> tick_cpu_device would have an evtdev without an event_handler. We always set the
+> handler before setting evtdev, and alway wipe evtdev before wiping the handler.
+> 
+> Have I missed something?
+
+That's an x86 specific issue. Though we could try and make that
+functionality completely generic.
 
 Thanks,
-g.
 
-> ---
->  drivers/gpio/gpio-mvebu.c | 6 ------
->  1 file changed, 6 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
-> index 7d9bd94..6819d63 100644
-> --- a/drivers/gpio/gpio-mvebu.c
-> +++ b/drivers/gpio/gpio-mvebu.c
-> @@ -547,7 +547,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
->  	mvchip->membase = devm_request_and_ioremap(&pdev->dev, res);
->  	if (! mvchip->membase) {
->  		dev_err(&pdev->dev, "Cannot ioremap\n");
-> -		kfree(mvchip->chip.label);
->  		return -ENOMEM;
->  	}
->  
-> @@ -557,14 +556,12 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
->  		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
->  		if (! res) {
->  			dev_err(&pdev->dev, "Cannot get memory resource\n");
-> -			kfree(mvchip->chip.label);
->  			return -ENODEV;
->  		}
->  
->  		mvchip->percpu_membase = devm_request_and_ioremap(&pdev->dev, res);
->  		if (! mvchip->percpu_membase) {
->  			dev_err(&pdev->dev, "Cannot ioremap\n");
-> -			kfree(mvchip->chip.label);
->  			return -ENOMEM;
->  		}
->  	}
-> @@ -625,7 +622,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
->  	mvchip->irqbase = irq_alloc_descs(-1, 0, ngpios, -1);
->  	if (mvchip->irqbase < 0) {
->  		dev_err(&pdev->dev, "no irqs\n");
-> -		kfree(mvchip->chip.label);
->  		return -ENOMEM;
->  	}
->  
-> @@ -633,7 +629,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
->  				    mvchip->membase, handle_level_irq);
->  	if (! gc) {
->  		dev_err(&pdev->dev, "Cannot allocate generic irq_chip\n");
-> -		kfree(mvchip->chip.label);
->  		return -ENOMEM;
->  	}
->  
-> @@ -668,7 +663,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
->  		irq_remove_generic_chip(gc, IRQ_MSK(ngpios), IRQ_NOREQUEST,
->  					IRQ_LEVEL | IRQ_NOPROBE);
->  		kfree(gc);
-> -		kfree(mvchip->chip.label);
->  		return -ENODEV;
->  	}
->  
-> -- 
-> 1.8.1
-> 
+	tglx
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
