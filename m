@@ -1,156 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757551Ab3ANQ4q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 11:56:46 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:11771 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757386Ab3ANQzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 11:55:50 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH 3/3] signalfd: add ability to read siginfo-s without dequeuing signals (v4)
-Date: Mon, 14 Jan 2013 20:53:55 +0400
-Message-Id: <1358182435-19245-4-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1358182435-19245-1-git-send-email-avagin@openvz.org>
-References: <1358182435-19245-1-git-send-email-avagin@openvz.org>
+	id S1757563Ab3ANQ5N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 11:57:13 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46249 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756471Ab3ANQ5M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 11:57:12 -0500
+Date: Mon, 14 Jan 2013 16:55:51 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFT 3/3] ARM: tegra: dts: seaboard: enable keyboard
+Message-ID: <20130114165551.GJ23505@n2100.arm.linux.org.uk>
+References: <1357911185-11048-1-git-send-email-ldewangan@nvidia.com> <1357911185-11048-3-git-send-email-ldewangan@nvidia.com> <50F09BC7.90607@wwwdotorg.org> <20130111232438.GN23505@n2100.arm.linux.org.uk> <50F09FCB.70809@wwwdotorg.org> <20130111233615.GO23505@n2100.arm.linux.org.uk> <50F0A2A8.3080401@wwwdotorg.org> <50F13C34.3020808@nvidia.com> <50F43640.7060308@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F43640.7060308@wwwdotorg.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pread(fd, buf, size, pos) with non-zero pos returns siginfo-s
-without dequeuing signals.
+On Mon, Jan 14, 2013 at 09:45:52AM -0700, Stephen Warren wrote:
+> On 01/12/2013 03:34 AM, Laxman Dewangan wrote:
+> ...
+> > Which is the tree on which Prashant changes are applied. I can debug
+> > from that tree.
+> 
+> git://nv-tegra.nvidia.com/user/swarren/linux-2.6 test-ccf-rework-v4
+> 
+> But as I said in some other email in response to Prashant, I'll go and
+> find out why the clk driver is returning NULL.
 
-A sequence number and a queue are encoded in pos.
+Exactly - the rule is, the rest of the clk API should accept as valid
+anything which clk_get() produces _for that implementation_ which
+IS_ERR() is not equal to 1.
 
-pos = seq + SFD_*_OFFSET
+What that means is:
+- if a platform's clk_get() never returns NULL, then the rest of the clk
+  API need not test for that value.
 
-seq is a sequence number of a signal in a queue.
+  (If a NULL pointer is passed to one of the clk API functions, crashing
+  _is_ _okay_.  Consider what memset(NULL, 0, 4096) would do from the
+  kernel - it doesn't test for a NULL pointer just because it can - it
+  crashes so you can debug why it was passed a NULL pointer.)
 
-SFD_PER_THREAD_QUEUE_OFFSET - read signals from a per-thread queue.
-SFD_SHARED_QUEUE_OFFSET - read signals from a shared (process wide) queue.
+- if a platform's clk_get() does return NULL, then the rest of the clk
+  API is expected to deal with a NULL pointer in a way that does _not_
+  result in the system crashing.
 
-This functionality is required for checkpointing pending signals.
+Or, to put it another way:
 
-v2: llseek() can't be used here, because peek_offset/f_pos/whatever
-has to be shared with all processes which have this file opened.
+	clk = clk_get(...);
+	if (IS_ERR(clk))
+		return PTR_ERR(clk);
 
-Suppose that the task forks after sys_signalfd(). Now if parent or child
-do llseek this affects them both. This is insane because signalfd is
-"strange" to say at least, fork/dup/etc inherits signalfd_ctx but not
-the" source" of the data. // Oleg Nesterov
+	clk_foo(clk);
 
-v3,v4: minor cleanups
+for all possible return values of clk_get() that an implementation
+_actually_ _intentionally_ returns[*] should never cause an oops.
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Andrey Vagin <avagin@openvz.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- fs/signalfd.c                 | 45 ++++++++++++++++++++++++++++++++++++++++++-
- include/uapi/linux/signalfd.h |  5 +++++
- 2 files changed, 49 insertions(+), 1 deletion(-)
-
-diff --git a/fs/signalfd.c b/fs/signalfd.c
-index 4439a81..1eb9b87 100644
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -51,6 +51,44 @@ struct signalfd_ctx {
- 	sigset_t sigmask;
- };
- 
-+static ssize_t signalfd_peek(struct signalfd_ctx *ctx,
-+				siginfo_t *info, loff_t *ppos)
-+{
-+	struct sigpending *pending;
-+	struct sigqueue *q;
-+	loff_t seq;
-+	int ret = 0;
-+
-+	if (*ppos >= SFD_SHARED_QUEUE_OFFSET) {
-+		pending = &current->signal->shared_pending;
-+		seq = *ppos - SFD_SHARED_QUEUE_OFFSET;
-+	} else if (*ppos >= SFD_PER_THREAD_QUEUE_OFFSET) {
-+		pending = &current->pending;
-+		seq = *ppos - SFD_PER_THREAD_QUEUE_OFFSET;
-+	} else
-+		return -EINVAL;
-+
-+	spin_lock_irq(&current->sighand->siglock);
-+
-+	list_for_each_entry(q, &pending->list, list) {
-+		if (sigismember(&ctx->sigmask, q->info.si_signo))
-+			continue;
-+
-+		if (seq-- == 0) {
-+			copy_siginfo(info, &q->info);
-+			ret = info->si_signo;
-+			break;
-+		}
-+	}
-+
-+	spin_unlock_irq(&current->sighand->siglock);
-+
-+	if (ret)
-+		(*ppos)++;
-+
-+	return ret;
-+}
-+
- static int signalfd_release(struct inode *inode, struct file *file)
- {
- 	kfree(file->private_data);
-@@ -248,7 +286,11 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
- 
- 	siginfo = (struct signalfd_siginfo __user *) buf;
- 	do {
--		ret = signalfd_dequeue(ctx, &info, nonblock);
-+		if (*ppos == 0)
-+			ret = signalfd_dequeue(ctx, &info, nonblock);
-+		else
-+			ret = signalfd_peek(ctx, &info, ppos);
-+
- 		if (unlikely(ret <= 0))
- 			break;
- 
-@@ -338,6 +380,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
- 		}
- 
- 		file->f_flags |= flags & SFD_RAW;
-+		file->f_mode |= FMODE_PREAD;
- 
- 		fd_install(ufd, file);
- 	} else {
-diff --git a/include/uapi/linux/signalfd.h b/include/uapi/linux/signalfd.h
-index bc31849..0953785 100644
---- a/include/uapi/linux/signalfd.h
-+++ b/include/uapi/linux/signalfd.h
-@@ -17,6 +17,11 @@
- #define SFD_NONBLOCK O_NONBLOCK
- #define SFD_RAW O_DIRECT
- 
-+/* Read signals from a shared (process wide) queue */
-+#define SFD_SHARED_QUEUE_OFFSET (1LL << 62)
-+/* Read signals from a per-thread queue */
-+#define SFD_PER_THREAD_QUEUE_OFFSET 1
-+
- struct signalfd_siginfo {
- 	__u32 ssi_signo;
- 	__s32 ssi_errno;
--- 
-1.7.11.7
-
+[*] - bugs excluded.  No bugs were squashed in the creation of this email.
