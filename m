@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab3ANDEs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 22:04:48 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:33030 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab3ANDEr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 22:04:47 -0500
-From: Cruz Julian Bishop <cruzjbishop@gmail.com>
-To: apw@canonical.com
-Cc: linux-kernel@vger.kernel.org, Cruz Julian Bishop <cruzjbishop@gmail.com>
-Subject: [PATCH] scripts: checkpatch.pl: Fix misused memset detection
-Date: Mon, 14 Jan 2013 13:04:39 +1000
-Message-Id: <1358132679-12235-1-git-send-email-cruzjbishop@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755778Ab3ANDNq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 22:13:46 -0500
+Received: from mga14.intel.com ([143.182.124.37]:54051 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755136Ab3ANDNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 22:13:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,465,1355126400"; 
+   d="scan'208";a="243412551"
+Date: Mon, 14 Jan 2013 11:14:23 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v6 0/4] block layer runtime pm
+Message-ID: <20130114031422.GB15280@aaronlu.sh.intel.com>
+References: <50EBCBC3.4070606@intel.com>
+ <Pine.LNX.4.44L0.1301081024300.1535-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1301081024300.1535-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, checking memset declarations would generate
-a lot of errors saying that $ms_size was not defined.
+On Tue, Jan 08, 2013 at 10:27:54AM -0500, Alan Stern wrote:
+> On Tue, 8 Jan 2013, Aaron Lu wrote:
+> 
+> > So this also reminds me that as long as CONFIG_PM_RUNTIME is selected,
+> > the blk_pm_add/put/peek_request functions will be in the block IO path.
+> > Shall we introduce a new config option to selectively build block
+> > runtime PM functionality? something like CONFIG_BLK_PM_RUNTIME perhaps?
+> > 
+> > Just some condition checks in those functions, not sure if it is worth a
+> > new config though. Please suggest, thanks.
+> 
+> I don't think it is needed.  The new routines will be very quick when 
+> blk_pm_runtime_init() hasn't been called, once you add back the checks 
+> for the queue's device.
 
-This commit fixes that.
+Is it necessary to also add the q->dev check in the following case?
 
-Signed-off-by: Cruz Julian Bishop <cruzjbishop@gmail.com>
----
- scripts/checkpatch.pl |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+static void blk_pm_requeue_request(struct request *rq)
+{
+	if (rq->q->dev && !(rq->cmd_flags & REQ_PM))
+		rq->q->nr_pending--;
+}
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 519a2d9..0b927ab 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3377,8 +3377,8 @@ sub process {
- 		    $stat =~ /^\+(?:.*?)\bmemset\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\,\s*$FuncArg\s*\)/s) {
- 
- 			my $ms_addr = $2;
--			my $ms_val = $7;
--			my $ms_size = $12;
-+			my $ms_val = $8;
-+			my $ms_size = $14;
- 
- 			if ($ms_size =~ /^(0x|)0$/i) {
- 				ERROR("MEMSET",
--- 
-1.7.10.4
+So that we do not have a meanlingless value of nr_pending for those
+drivers that don't use block runtime PM, and this also has the benefit
+of making those drivers return early.
+
+Thanks,
+Aaron
 
