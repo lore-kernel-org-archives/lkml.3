@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671Ab3ANFMD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 00:12:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46567 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab3ANFMB (ORCPT
+	id S1751371Ab3ANFNa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 00:13:30 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:51686 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab3ANFNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 00:12:01 -0500
-Date: Sun, 13 Jan 2013 21:11:28 -0800
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Message-ID: <tip-ab3cd8670e0b3fcde7f029e1503ed3c5138e9571@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        minipli@googlemail.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        minipli@googlemail.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <75F4BEE6-CB0E-4426-B40B-697451677738@googlemail.com>
-References: <75F4BEE6-CB0E-4426-B40B-697451677738@googlemail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/Sandy Bridge:
-  mark arrays in __init functions as __initconst
-Git-Commit-ID: ab3cd8670e0b3fcde7f029e1503ed3c5138e9571
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 13 Jan 2013 21:11:35 -0800 (PST)
+	Mon, 14 Jan 2013 00:13:30 -0500
+Message-ID: <1358140429.25452.1.camel@gitbox>
+Subject: Re: [Bulk] [PATCH] timer: vt8500: Move timer code to
+ drivers/clocksource
+From: Tony Prisk <linux@prisktech.co.nz>
+To: vt8500-wm8505-linux-kernel@googlegroups.com
+Cc: Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, arm@kernel.org
+Date: Mon, 14 Jan 2013 18:13:49 +1300
+In-Reply-To: <1358140171-25390-2-git-send-email-linux@prisktech.co.nz>
+References: <1358140171-25390-1-git-send-email-linux@prisktech.co.nz>
+	 <1358140171-25390-2-git-send-email-linux@prisktech.co.nz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ab3cd8670e0b3fcde7f029e1503ed3c5138e9571
-Gitweb:     http://git.kernel.org/tip/ab3cd8670e0b3fcde7f029e1503ed3c5138e9571
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Sun, 13 Jan 2013 20:36:39 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sun, 13 Jan 2013 20:36:39 -0800
+On Mon, 2013-01-14 at 18:09 +1300, Tony Prisk wrote:
+> This patch moves arch-vt8500/timer.c into drivers/clocksource and
+> updates the necessary Kconfig/Makefile options.
+> 
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> ---
+>  arch/arm/mach-vt8500/Kconfig       |    1 +
+>  arch/arm/mach-vt8500/Makefile      |    2 +-
+>  arch/arm/mach-vt8500/common.h      |    1 -
+>  arch/arm/mach-vt8500/timer.c       |  184 ------------------------------------
+>  arch/arm/mach-vt8500/vt8500.c      |    1 +
+>  drivers/clocksource/Kconfig        |    3 +
+>  drivers/clocksource/Makefile       |    1 +
+>  drivers/clocksource/vt8500_timer.c |  184 ++++++++++++++++++++++++++++++++++++
+>  include/linux/vt8500_timer.h       |   22 +++++
+>  9 files changed, 213 insertions(+), 186 deletions(-)
+>  delete mode 100644 arch/arm/mach-vt8500/timer.c
+>  create mode 100644 drivers/clocksource/vt8500_timer.c
+>  create mode 100644 include/linux/vt8500_timer.h
 
-x86/Sandy Bridge: mark arrays in __init functions as __initconst
+Darn.. forgot the -m again. I'll await your feedback regarding the
+basing of the patch first (and any other feedback), then I'll redo it
+with the correct stats.
 
-Mark static arrays as __initconst so they get removed when the init
-sections are flushed.
+Regards
+Tony P
 
-Reported-by: Mathias Krause <minipli@googlemail.com>
-Link: http://lkml.kernel.org/r/75F4BEE6-CB0E-4426-B40B-697451677738@googlemail.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/setup.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 9dcb325..18182d1 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -614,7 +614,7 @@ static bool __init snb_gfx_workaround_needed(void)
- {
- 	int i;
- 	u16 vendor, devid;
--	static const u16 snb_ids[] = {
-+	static const __initconst u16 snb_ids[] = {
- 		0x0102,
- 		0x0112,
- 		0x0122,
-@@ -646,7 +646,7 @@ static bool __init snb_gfx_workaround_needed(void)
-  */
- static void __init trim_snb_memory(void)
- {
--	static const unsigned long bad_pages[] = {
-+	static const __initconst unsigned long bad_pages[] = {
- 		0x20050000,
- 		0x20110000,
- 		0x20130000,
