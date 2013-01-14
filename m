@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab3ANIkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 03:40:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50297 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755652Ab3ANIkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 03:40:03 -0500
+	id S1756472Ab3ANIoy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 03:44:54 -0500
+Received: from mga14.intel.com ([143.182.124.37]:37967 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755927Ab3ANIox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 03:44:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,466,1355126400"; 
+   d="scan'208";a="243481096"
+Message-ID: <50F3C5C2.8070003@intel.com>
+Date: Mon, 14 Jan 2013 16:45:54 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <2305064.Ot4klciZAj@linux-5eaq.site>
-References: <CALxABCaE3=XpGmgNJs1pre11aJ8T0pntVzf_mA6_OYNzis9nvQ@mail.gmail.com>
-	<CALxABCYtKJD4YrPxy6p+Frim8erccp3ine7SVEV9ReoaRh1BWQ@mail.gmail.com>
-	<CACVXFVPMH-CHGw2EVwgYK5ozn1NAygT0f9=Df4vhSJmYYOZBMw@mail.gmail.com>
-	<2305064.Ot4klciZAj@linux-5eaq.site>
-Date: Mon, 14 Jan 2013 16:40:00 +0800
-Message-ID: <CACVXFVMjf4HX7u4crzDsG7ix7sT0Mc=qT9s-X=tMf=VOKGs3ag@mail.gmail.com>
-Subject: Re: USB device cannot be reconnected and khubd "blocked for more than
- 120 seconds"
-From: Ming Lei <ming.lei@canonical.com>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: Alex Riesen <raa.lkml@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Jens Axboe <axboe@kernel.dk>, linux-usb@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 22/22] sched: lazy powersaving balance
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-23-git-send-email-alex.shi@intel.com> <877gngnoou.fsf@sejong.aot.lge.com>
+In-Reply-To: <877gngnoou.fsf@sejong.aot.lge.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 4:22 PM, Oliver Neukum <oliver@neukum.org> wrote:
->
-> OK, your trace is totally different. If your hangs are related, as is likely,
-> my explanation goes out of the window.
+On 01/14/2013 04:39 PM, Namhyung Kim wrote:
+> On Sat,  5 Jan 2013 16:37:51 +0800, Alex Shi wrote:
+>> +	/*
+>> +	 * The situtatoin isn't egligible for performance balance. If this_cpu
+> 
+> s/situtatoin/situation/
+> 
+> s/egligible/eligible/
+> 
 
-If I run 'shutdown' after unplugging usb storage device, another hang trace
-same with Alex's can be triggered too, so it should be one same problem.
+Thanks a lot!
+>> +	 * is not egligible or the timing is not suitable for lazy powersaving
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+>> +	 * balance, we will stop both powersaving and performance balance.
+>> +	 */
 
-Thanks,
---
-Ming Lei
+
+-- 
+Thanks Alex
