@@ -1,122 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab3ANRCI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 12:02:08 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37946 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756635Ab3ANRCG (ORCPT
+	id S1756285Ab3ANRFj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 12:05:39 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:43851 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755335Ab3ANRFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 12:02:06 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf: move get_term_dimensions from top to util.c
-Date: Mon, 14 Jan 2013 10:02:01 -0700
-Message-Id: <1358182921-89998-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Mon, 14 Jan 2013 12:05:38 -0500
+From: Mark Rutland <mark.rutland@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, tglx@linutronix.de, nico@linaro.org,
+        Will.Deacon@arm.com, Marc.Zyngier@arm.com, john.stultz@linaro.org,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCHv3 0/4] clockevents: decouple broadcast mechanism from drivers
+Date: Mon, 14 Jan 2013 17:05:20 +0000
+Message-Id: <1358183124-28461-1-git-send-email-mark.rutland@arm.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 14 Jan 2013 17:05:28.0662 (UTC) FILETIME=[5A7B7F60:01CDF279]
+X-MC-Unique: 113011417053202701
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r0EH5fmw001312
 
-It is used by util/help.c so it should be a lib function and included
-in libperf.a. Code move only.
----
- tools/perf/builtin-top.c |   22 ----------------------
- tools/perf/perf.h        |    4 ----
- tools/perf/util/util.c   |   22 ++++++++++++++++++++++
- tools/perf/util/util.h   |    3 +++
- 4 files changed, 25 insertions(+), 26 deletions(-)
+This is an updated version of the series I posted earlier this month:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-January/140528.html
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index c9ff395..471efaa 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -68,28 +68,6 @@
- #include <linux/unistd.h>
- #include <linux/types.h>
- 
--void get_term_dimensions(struct winsize *ws)
--{
--	char *s = getenv("LINES");
--
--	if (s != NULL) {
--		ws->ws_row = atoi(s);
--		s = getenv("COLUMNS");
--		if (s != NULL) {
--			ws->ws_col = atoi(s);
--			if (ws->ws_row && ws->ws_col)
--				return;
--		}
--	}
--#ifdef TIOCGWINSZ
--	if (ioctl(1, TIOCGWINSZ, ws) == 0 &&
--	    ws->ws_row && ws->ws_col)
--		return;
--#endif
--	ws->ws_row = 25;
--	ws->ws_col = 80;
--}
--
- static void perf_top__update_print_entries(struct perf_top *top)
- {
- 	if (top->print_entries > 9)
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 2c340e7..ec1eace 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -1,10 +1,6 @@
- #ifndef _PERF_PERF_H
- #define _PERF_PERF_H
- 
--struct winsize;
--
--void get_term_dimensions(struct winsize *ws);
--
- #include <asm/unistd.h>
- 
- #if defined(__i386__)
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 5906e84..1e32d8b 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -218,3 +218,25 @@ void dump_stack(void)
- #else
- void dump_stack(void) {}
- #endif
-+
-+void get_term_dimensions(struct winsize *ws)
-+{
-+	char *s = getenv("LINES");
-+
-+	if (s != NULL) {
-+		ws->ws_row = atoi(s);
-+		s = getenv("COLUMNS");
-+		if (s != NULL) {
-+			ws->ws_col = atoi(s);
-+			if (ws->ws_row && ws->ws_col)
-+				return;
-+		}
-+	}
-+#ifdef TIOCGWINSZ
-+	if (ioctl(1, TIOCGWINSZ, ws) == 0 &&
-+	    ws->ws_row && ws->ws_col)
-+		return;
-+#endif
-+	ws->ws_row = 25;
-+	ws->ws_col = 80;
-+}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index c233091..ec5de5e 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -271,4 +271,7 @@ void dump_stack(void);
- 
- extern unsigned int page_size;
- 
-+struct winsize;
-+void get_term_dimensions(struct winsize *ws);
-+
- #endif
--- 
-1.7.10.1
+The core patches can be found at:
+git://linux-arm.org/linux-mr.git tags/timer-broadcast-v3-core
+
+And the full series can be found at:
+git://linux-arm.org/linux-mr.git tags/timer-broadcast-v3-arm
+
+Changes since v2:
+* Add evt->event_handler check in tick_receive_broadcast
+* Remove tick_receive_broadcast stub for !GENERIC_CLOCKEVENTS_BROADCAST
+* #ifdef IPI_TIMER handler for unexpected IPI warning
+* Reorder patches (generic first, then arm implementation)
+Changes since v1:
+* Drop removal of guards in smp.c
+* Removed useless evt->evt_handler check in tick_receive_broadcast
+* Fix up tick_receive_broadcast when !GENERIC_CLOCKEVENTS_BROADCAST
+* Fix checkpatch issues (multi-line strings)
+
+Thanks to Stephen Boyd, Santosh Shilimkar, and Thomas Gleixner for their
+commments.
+
+In some SMP systems, cpu-local timers may stop delivering interrupts
+when in low power states, or not all CPUs may have local timers. To
+support these systems we have a mechanism for broadcasting timer ticks
+to other CPUs. This mechanism relies on the struct
+clock_event_device::broadcast function pointer, which is a
+driver-specific mechanism for broadcasting ticks to other CPUs.
+
+As the broadcast mechanism is architecture-specific, placing the
+broadcast function on struct clock_event_device ties each driver to a
+single architecture. Additionally the driver or architecture backend
+must handle the routing of broadcast ticks to the correct
+clock_event_device, leading to duplication of the list of active
+clock_event_devices.
+
+These patches introduce a generic mechanism for handling the receipt of
+timer broadcasts, and an optional architecture-specific broadcast
+function which allows drivers to be decoupled from a particular
+architecture will retaining support for timer tick broadcasts. These
+mechanisms are wired up for the arm port, and have been boot-tested on a
+pandaboard.
+
+Thanks,
+Mark.
+
+Mark Rutland (4):
+  clockevents: Add generic timer broadcast receiver
+  clockevents: Add generic timer broadcast function
+  arm: Use generic timer broadcast receiver
+  arm: Add generic timer broadcast support
+
+ arch/arm/Kconfig             |    1 +
+ arch/arm/kernel/smp.c        |   13 ++++---------
+ include/linux/clockchips.h   |    9 +++++++++
+ kernel/time/Kconfig          |    4 ++++
+ kernel/time/tick-broadcast.c |   28 ++++++++++++++++++++++++++++
+ 5 files changed, 46 insertions(+), 9 deletions(-)
+
 
