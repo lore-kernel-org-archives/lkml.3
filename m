@@ -1,202 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab3ANCQK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 21:16:10 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:60807 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab3ANCQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 21:16:09 -0500
-Date: Mon, 14 Jan 2013 10:15:58 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: "Vivek Goyal" <vgoyal@redhat.com>, axboe <axboe@kernel.dk>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, tj <tj@kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: Re: Re: [PATCH] blkcg: Before starting a new slice, firstly count bps/iops limit in func tg_may_dispatch.
-References: <201301111711251317275@gmail.com> <50F0211D.7040209@kernel.dk>, 
-	<20130111191726.GB12019@redhat.com>
-X-Priority: 3
-X-GUID: 105F3796-C15A-44FE-B2D0-F3987158F182
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.90[en]
-Mime-Version: 1.0
-Message-ID: <201301141015538278161@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	id S1755501Ab3ANCQq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 21:16:46 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:49923 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752951Ab3ANCQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 21:16:45 -0500
+Date: Mon, 14 Jan 2013 02:16:42 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1301140215060.8853@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0E2GPrE030101
 
->On Fri, Jan 11, 2013 at 03:26:37PM +0100, Jens Axboe wrote:
->> On 2013-01-11 10:11, majianpeng wrote:
->> > In func tg_may_dispatch,
->> >> if (throtl_slice_used(td, tg, rw))
->> >> 		throtl_start_new_slice(td, tg, rw);
->> > ...
->> >> if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
->> >> 	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait)) {
->> > 
->> > In funcs tg_with_in_(bps/iops)_limit, it used the slice_start to count.
->> > So if privious slice expired, it start a new slice.This can cause hung
->> > task.
->> > 
->> > The next steps can repeat this bug.
->> > 1:echo "8:48 10240" > blkio.throttle.write_bps_devic
->> > 2:dd if=/dev/zero of=/dev/sdd bs=1M count=1 oflag=direct
->> > 
->> > Using the blktrace, the messages about throttle:
->> > root@kernel:/mnt/programs# blktrace -d /dev/sdd -a notify -o -|blkparse -i -
->> >   8,48   1        0     0.000000000     0  m   N throtl / [W] new slice start=4294854679 end=4294854779 jiffies=4294854679
->> >   8,48   1        0     0.000000966     0  m   N throtl / [W] extend slice start=4294854679 end=4294905900 jiffies=4294854679
->> >   8,48   1        0     0.000002553     0  m   N throtl / [W] bio. bdisp=0 sz=524288 bps=10240 iodisp=0 iops=4294967295 queued=0/0
->> >   8,48   1        0     0.000004788     0  m   N throtl schedule work. delay=51200 jiffies=4294854679
->> >   8,48   1        0    51.304698681     0  m   N throtl dispatch nr_queued=1 read=0 write=1
->> >   8,48   1        0    51.304701979     0  m   N throtl / [W] new slice start=4294905984 end=4294906084 jiffies=4294905984
->> >   8,48   1        0    51.304703329     0  m   N throtl / [W] extend slice start=4294905984 end=4294957200 jiffies=4294905984
->> >   8,48   1        0    51.304705783     0  m   N throtl schedule work. delay=51200 jiffies=4294905984
->> >   8,48   1        0   102.632697082     0  m   N throtl dispatch nr_queued=1 read=0 write=1
->> >   8,48   1        0   102.632700544     0  m   N throtl / [W] new slice start=4294957312 end=4294957412 jiffies=4294957312
->> >   8,48   1        0   102.632701922     0  m   N throtl / [W] extend slice start=4294957312 end=4295008600 jiffies=4294957312
->> >   8,48   1        0   102.632704016     0  m   N throtl schedule work. delay=51200 jiffies=4294957312
->> >   8,48   1        0   153.960696503     0  m   N throtl dispatch nr_queued=1 read=0 write=1
->> >   8,48   1        0   153.960699797     0  m   N throtl / [W] new slice start=4295008640 end=4295008740 jiffies=4295008640
->> >   8,48   1        0   153.960701153     0  m   N throtl / [W] extend slice start=4295008640 end=4295059900 jiffies=4295008640
->> >   8,48   1        0   153.960703218     0  m   N throtl schedule work. delay=51200 jiffies=4295008640
->> >   8,48   1        0   205.288697067     0  m   N throtl dispatch nr_queued=1 read=0 write=1
->> >   8,48   1        0   205.288700268     0  m   N throtl / [W] new slice start=4295059968 end=4295060068 jiffies=4295059968
->> >   8,48   1        0   205.288701630     0  m   N throtl / [W] extend slice start=4295059968 end=4295111200 jiffies=4295059968
->> >   8,48   1        0   205.288703784     0  m   N throtl schedule work. delay=51200 jiffies=4295059968
->> >   8,48   1        0   256.616696184     0  m   N throtl dispatch nr_queued=1 read=0 write=1
->> >   8,48   1        0   256.616699266     0  m   N throtl / [W] new slice start=4295111296 end=4295111396 jiffies=4295111296
->> >   8,48   1        0   256.616700574     0  m   N throtl / [W] extend slice start=4295111296 end=4295162500 jiffies=4295111296
->> >   8,48   1        0   256.616702701     0  m   N throtl schedule work. delay=51200 jiffies=4295111296
->> > 
->> > Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
->> > ---
->> >  block/blk-throttle.c |   15 ++++++++++-----
->> >  1 file changed, 10 insertions(+), 5 deletions(-)
->> > 
->> > diff --git a/block/blk-throttle.c b/block/blk-throttle.c
->> > index 3114622..9258789 100644
->> > --- a/block/blk-throttle.c
->> > +++ b/block/blk-throttle.c
->> > @@ -645,6 +645,15 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
->> >  	}
->> >  
->> >  	/*
->> > +	 * If privious slice expired,then start new slice.
->> > +	 * But counting bps and iops limit need privious slice info
->> > +	 * which ->slice_start.
->> > +	 */
->> > +	if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
->> > +	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait))
->> > +		if (wait)
->> > +			*wait = 0;
->> > +	/*
->> >  	 * If previous slice expired, start a new one otherwise renew/extend
->> >  	 * existing slice to make sure it is at least throtl_slice interval
->> >  	 * long since now.
->> > @@ -656,12 +665,8 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
->> >  			throtl_extend_slice(td, tg, rw, jiffies + throtl_slice);
->> >  	}
->> >  
->> > -	if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
->> > -	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait)) {
->> > -		if (wait)
->> > -			*wait = 0;
->> > +	if (!(bps_wait || iops_wait))
->> >  		return 1;
->> > -	}
->> >  
->> >  	max_wait = max(bps_wait, iops_wait);
->> 
->> Looks pretty sane to me. Vivek?
->
->Hi Jens,
->
->This fix will introduce other side affects. And that is when an group
->has been idle for few seconds and a new IO gets queued in, we will
->not start a new slice and allow dispatch equivalent of those idle
->seconds before we throttle the group. So keeping group idle will
->become an incentive.
->
->I have attached a patch which might work better. majianpeng, can
->you please give it a try.
->
->Having said that it is strange that workqueue thread is triggering
->so late. Looking at timestamp of traces attached.
->
->We scheduled a delayed work. Following is trace.
->
->8,48   1        0    51.304705783     0  m   N throtl schedule work. delay=51200 jiffies=4294905984
->
->Now a worker should execute after 51.2 seconds (delay=51200).
->
->8,48   1        0   102.632697082     0  m   N throtl dispatch nr_queued=1 read=0 write=1
->
->But worker executed at delay of 51.328 seconds (102.632 - 51.304). That
->is a delay of around 128 jiffies (51.328 - 51.2). That kind of seems odd.
->AFAIK, workers are fairly quick to execute after expiry. And it is 
->because of this excessive delay that we think slice has expired. 
->
->May be it is something new. CCing Tejun, if he has seen anything like this
->and may be it is a known issue.
->
->Even if it is a worker thread issue, I think applying below patch makes
->sense.
->
->Thanks
->Vivek
->
->
->blk-throttle: Do not start a new slice if IO is pending
->
->It might happen that we queue an IO (because it overshot the rate)
->and then wait for certain jiffies to pass. We will set slice_end
->accordingly and wait for that time to elapse and worker thread will
->kick in, again evaluate whether group can dispatch or not. Now it
->might happen that current time is after slice_end and
->tg_may_dispatch() will start a new slice.
->
->This will result in IO not being dispatched and be put back on
->wait again. And this will repeat, resulting in hang.
->
->Do not start a new slice if an IO is pending in that group in
->the direction being queired. Instead extend the slice. New slice
->is supposed to start when a group has not been doing IO for some
->time and a new IO shows up. In that case we want do discard
->history and start a new slice.
->
->Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
->---
-> block/blk-throttle.c |    8 +++++++-
-> 1 file changed, 7 insertions(+), 1 deletion(-)
->
->Index: linux-2.6/block/blk-throttle.c
->===================================================================
->--- linux-2.6.orig/block/blk-throttle.c	2012-10-18 01:52:28.000000000 -0400
->+++ linux-2.6/block/blk-throttle.c	2013-01-14 03:40:41.355731375 -0500
->@@ -648,8 +648,14 @@ static bool tg_may_dispatch(struct throt
-> 	 * If previous slice expired, start a new one otherwise renew/extend
-> 	 * existing slice to make sure it is at least throtl_slice interval
-> 	 * long since now.
->+	 *
->+	 * Start a new slice only if there is no bio queued in that direction.
->+	 * That bio is waiting to be dispatched and slice needs to be
->+	 * extended. It might happen that bio waited to be dispatched but
->+	 * workqueue execution got little late it might restart a new slice
->+	 * instead of taking all the waited time into account.
-> 	 */
->-	if (throtl_slice_used(td, tg, rw))
->+	if (throtl_slice_used(td, tg, rw) && !tg->nr_queued[rw])
-> 		throtl_start_new_slice(td, tg, rw);
-> 	else {
-> 		if (time_before(tg->slice_end[rw], jiffies + throtl_slice))
-Hi vivek,
-	Your patch is ok.But i had a question:
-What's condition tg->nr_queued[rw] = 0, but bio is not null?
 
-Thanks!
-Jianpengÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hi Linus,
+
+Nothing too astounding,
+
+nouveau: bunch of regression fixes and oops fixes
+radeon: UMS fixes , rn50 fix, dma fix
+udl: fix EDID retrieval for large EDIDs.
+
+Dave.
+
+The following changes since commit 82ba789f48de669fd0bbc84c326f07571d078572:
+
+  Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel (2013-01-11 07:52:48 +1000)
+
+are available in the git repository at:
+
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 7b4cf994e4c6ba48872bb25253cc393b7fb74c82:
+
+  udldrmfb: udl_get_edid: drop unneeded i-- (2013-01-14 08:45:27 +1000)
+
+----------------------------------------------------------------
+Aleksi Torhamo (2):
+      drm/nouveau/clock: fix support for more than 2 monitors on nve0
+      drm/nvc0/fb: fix crash when different mutex is used to protect same list
+
+Ben Skeggs (2):
+      drm/nouveau/devinit: ensure legacy vga control is enabled during post
+      drm/nouveau: do not forcibly power on lvds panels
+
+Dave Airlie (2):
+      Merge branch 'drm-nouveau-fixes' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-next
+      Merge branch 'drm-fixes-3.8' of git://people.freedesktop.org/~agd5f/linux into drm-next
+
+Hans de Goede (3):
+      udldrmfb: Fix EDID not working with monitors with EDID extension blocks
+      udldrmfb: udl_get_edid: usb_control_msg buffer must not be on the stack
+      udldrmfb: udl_get_edid: drop unneeded i--
+
+Ilija Hadzic (3):
+      drm/radeon: fix NULL pointer dereference in UMS mode
+      drm/radeon: fix a bogus kfree
+      drm/radeon: fix error path in kpage allocation
+
+Jerome Glisse (2):
+      radeon/kms: force rn50 chip to always report connected on analog output
+      radeon/kms: fix dma relocation checking
+
+Marcin Slusarz (7):
+      drm/nouveau: add locking around instobj list operations
+      drm/nouveau/vm: fix memory corruption when pgt allocation fails
+      drm/nouveau: don't return freed object from nouveau_handle_create
+      drm/nouveau: fix nouveau_client allocation failure path
+      drm/nouveau: fix blank LVDS screen regression on pre-nv50 cards
+      drm/nv17-50: restore fence buffer on resume
+      drm/nv50/disp: fix selection of bios script for analog outputs
+
+ drivers/gpu/drm/nouveau/core/core/client.c         |  4 +-
+ drivers/gpu/drm/nouveau/core/core/handle.c         |  5 ++-
+ drivers/gpu/drm/nouveau/core/engine/disp/nv50.c    | 46 ++++++++++++----------
+ drivers/gpu/drm/nouveau/core/include/core/client.h |  3 ++
+ .../gpu/drm/nouveau/core/include/subdev/bios/pll.h |  2 +
+ drivers/gpu/drm/nouveau/core/subdev/bios/init.c    |  1 -
+ drivers/gpu/drm/nouveau/core/subdev/clock/nvc0.c   |  2 +
+ drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c      |  6 +--
+ drivers/gpu/drm/nouveau/core/subdev/instmem/base.c | 35 ++++++++++++----
+ drivers/gpu/drm/nouveau/core/subdev/vm/base.c      |  4 +-
+ drivers/gpu/drm/nouveau/nouveau_connector.c        | 30 ++++++++++++--
+ drivers/gpu/drm/nouveau/nouveau_display.c          |  9 -----
+ drivers/gpu/drm/nouveau/nouveau_drm.c              |  7 +++-
+ drivers/gpu/drm/nouveau/nouveau_fence.h            |  1 +
+ drivers/gpu/drm/nouveau/nv04_dfp.c                 |  2 +-
+ drivers/gpu/drm/nouveau/nv10_fence.c               |  8 ++++
+ drivers/gpu/drm/nouveau/nv50_fence.c               |  1 +
+ drivers/gpu/drm/radeon/r600_cs.c                   | 12 +++---
+ drivers/gpu/drm/radeon/radeon_cs.c                 |  9 +++--
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c    |  8 ++++
+ drivers/gpu/drm/udl/udl_connector.c                | 17 +++++++-
+ 21 files changed, 149 insertions(+), 63 deletions(-)
