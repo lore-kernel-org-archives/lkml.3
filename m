@@ -1,427 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758772Ab3ANU4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:56:19 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:55629 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757503Ab3ANU4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:56:18 -0500
-Date: Mon, 14 Jan 2013 21:56:04 +0100
-From: Cong Ding <dinggnu@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-altix@sgi.com, linux-ia64@vger.kernel.org,
+	id S1758779Ab3ANU6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:58:21 -0500
+Received: from mout.gmx.net ([212.227.17.20]:57473 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757950Ab3ANU6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 15:58:19 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19mJ4stHHNmR6h/vAPMTU2y3Dkd4QyJM3KCCH9r9D
+	0hWT/KLcZQbYEA
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        Mori Hess <fmhess@users.sourceforge.net>,
+        Peter Huewe <peterhuewe@gmx.de>,
+        YAMANE Toshiaki <yamanetoshi@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ia64: sn/pci/pcibr/pcibr_reg.c: remove unnecessary check
- null pointer
-Message-ID: <20130114205604.GA7066@gmail.com>
-References: <1358185998-5997-1-git-send-email-dinggnu@gmail.com>
- <CAErSpo6AfLBGZpdByuUeqbD5pUc1o-YD-EyVekOgWP5m6Yv-pw@mail.gmail.com>
- <20130114184706.GA3383@gmail.com>
- <CAErSpo5zhQijO_-GfFnRt3zaWgcuC7F1uaGi+eEBoxnyczdZvg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo5zhQijO_-GfFnRt3zaWgcuC7F1uaGi+eEBoxnyczdZvg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH 1/8 v2] staging/comedi: Add macro for registering a comedi PCMCIA driver
+Date: Mon, 14 Jan 2013 22:00:48 +0100
+Message-Id: <1358197255-17542-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00207A6CBADD1@AUSP01VMBX24.collaborationhost.net>
+References: <ADE657CA350FB648AAC2C43247A983F00207A6CBADD1@AUSP01VMBX24.collaborationhost.net>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At first, all the null pointer checks are after the pointer is dereferenced in
-the same function. The followings are evidences of all the unnecessary null
-pointer checks.
+This patch introduces a new macro 'module_comedi_pcmcia_driver'
+for comedi PCMCIA drivers which do not do anything special in module
+init/exit. This eliminates a lot of boilerplate.
 
-These functions pcireg_control_bit_clr and pcireg_control_bit_set are called
-only from pcibr_bus_fixup() in pcibr_provider.c, and it's impossible for it to
-pass a null pointer due to null pointer check.
+Adapted from 'module_comedi_pci_driver'
 
-The function pcireg_tflush_get is called only from ate_write() (ate_write()
-is called by pcibr_ate_free()) in pcibr_ate.c, and it's impossible for it to
-pass a null pointer due to pointer dereference before the calling.
-
-The functions pcireg_intr_status_get, pcireg_intr_enable_bit_clr and
-pcireg_force_intr_set get the parameter from
-pcidev_info->pdi_host_pcidev_info->pdi_pcibus_info, which is impossible to be
-null because the pcidev_info is from sn_irq_info->irq_pciioinfo and the
-irq_pciioinfo is checked in file irq.c and msi_sn.c.
-
-The functions pcireg_intr_enable_bit_set and pcireg_intr_addr_addr_set are
-called after pcireg_intr_enable_bit_clr, so there are also impossible to be
-null.
-
-The function pcireg_wrb_flush_get get the parameter from sn_dma_flush() in
-file pcibr_dma.c, where the parameter common->sfdl_pcibus_info is passed. The
-common->sfdl_pcibus_info is guaranteed to be not null by function
-pcibr_bus_fixup() in file pcibr_provider.c.
-
-The functions pcireg_int_ate_set and pcireg_int_ate_addr are similar as
-pcireg_int_ate_set.
-
-
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- arch/ia64/sn/pci/pcibr/pcibr_reg.c |  271 ++++++++++++++++--------------------
- 1 files changed, 120 insertions(+), 151 deletions(-)
+v2:
+Removed unnecessary stuff. Thanks Hartley&Ian
 
-diff --git a/arch/ia64/sn/pci/pcibr/pcibr_reg.c b/arch/ia64/sn/pci/pcibr/pcibr_reg.c
-index 8b8bbd5..ae16be3c 100644
---- a/arch/ia64/sn/pci/pcibr/pcibr_reg.c
-+++ b/arch/ia64/sn/pci/pcibr/pcibr_reg.c
-@@ -27,19 +27,16 @@ void pcireg_control_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
- {
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+ drivers/staging/comedi/comedidev.h |   21 +++++++++++++++++++++
+ drivers/staging/comedi/drivers.c   |   32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index 34a85d3..d0248ed 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -316,6 +316,27 @@ void comedi_pci_driver_unregister(struct comedi_driver *, struct pci_driver *);
+ 	module_driver(__comedi_driver, comedi_pci_driver_register, \
+ 			comedi_pci_driver_unregister, &(__pci_driver))
  
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			__sn_clrq_relaxed(&ptr->tio.cp_control, bits);
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			__sn_clrq_relaxed(&ptr->pic.p_wid_control, bits);
--			break;
--		default:
--			panic
--			    ("pcireg_control_bit_clr: unknown bridgetype bridge 0x%p",
--			     ptr);
--		}
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		__sn_clrq_relaxed(&ptr->tio.cp_control, bits);
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		__sn_clrq_relaxed(&ptr->pic.p_wid_control, bits);
-+		break;
-+	default:
-+		panic("pcireg_control_bit_clr: unknown bridgetype bridge 0x%p",
-+				ptr);
- 	}
- }
- 
-@@ -47,19 +44,16 @@ void pcireg_control_bit_set(struct pcibus_info *pcibus_info, u64 bits)
- {
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			__sn_setq_relaxed(&ptr->tio.cp_control, bits);
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			__sn_setq_relaxed(&ptr->pic.p_wid_control, bits);
--			break;
--		default:
--			panic
--			    ("pcireg_control_bit_set: unknown bridgetype bridge 0x%p",
--			     ptr);
--		}
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		__sn_setq_relaxed(&ptr->tio.cp_control, bits);
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		__sn_setq_relaxed(&ptr->pic.p_wid_control, bits);
-+		break;
-+	default:
-+		panic("pcireg_control_bit_set: unknown bridgetype bridge 0x%p",
-+				ptr);
- 	}
- }
- 
-@@ -71,19 +65,16 @@ u64 pcireg_tflush_get(struct pcibus_info *pcibus_info)
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 	u64 ret = 0;
- 
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			ret = __sn_readq_relaxed(&ptr->tio.cp_tflush);
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			ret = __sn_readq_relaxed(&ptr->pic.p_wid_tflush);
--			break;
--		default:
--			panic
--			    ("pcireg_tflush_get: unknown bridgetype bridge 0x%p",
--			     ptr);
--		}
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		ret = __sn_readq_relaxed(&ptr->tio.cp_tflush);
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		ret = __sn_readq_relaxed(&ptr->pic.p_wid_tflush);
-+		break;
-+	default:
-+		panic("pcireg_tflush_get: unknown bridgetype bridge 0x%p",
-+				ptr);
- 	}
- 
- 	/* Read of the Target Flush should always return zero */
-@@ -96,24 +87,21 @@ u64 pcireg_tflush_get(struct pcibus_info *pcibus_info)
- /*
-  * Interrupt Status Register Access -- Read Only		    0000_0100
-  */
--u64 pcireg_intr_status_get(struct pcibus_info * pcibus_info)
-+u64 pcireg_intr_status_get(struct pcibus_info *pcibus_info)
- {
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 	u64 ret = 0;
- 
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			ret = __sn_readq_relaxed(&ptr->tio.cp_int_status);
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			ret = __sn_readq_relaxed(&ptr->pic.p_int_status);
--			break;
--		default:
--			panic
--			    ("pcireg_intr_status_get: unknown bridgetype bridge 0x%p",
--			     ptr);
--		}
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		ret = __sn_readq_relaxed(&ptr->tio.cp_int_status);
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		ret = __sn_readq_relaxed(&ptr->pic.p_int_status);
-+		break;
-+	default:
-+		panic("pcireg_intr_status_get: unknown bridgetype bridge 0x%p",
-+				ptr);
- 	}
- 	return ret;
- }
-@@ -125,19 +113,16 @@ void pcireg_intr_enable_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
- {
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			__sn_clrq_relaxed(&ptr->tio.cp_int_enable, bits);
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			__sn_clrq_relaxed(&ptr->pic.p_int_enable, bits);
--			break;
--		default:
--			panic
--			    ("pcireg_intr_enable_bit_clr: unknown bridgetype bridge 0x%p",
--			     ptr);
--		}
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		__sn_clrq_relaxed(&ptr->tio.cp_int_enable, bits);
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		__sn_clrq_relaxed(&ptr->pic.p_int_enable, bits);
-+		break;
-+	default:
-+		panic("pcireg_intr_enable_bit_clr: unknown bridgetype bridge 0x%p",
-+				ptr);
- 	}
- }
- 
-@@ -145,19 +130,16 @@ void pcireg_intr_enable_bit_set(struct pcibus_info *pcibus_info, u64 bits)
- {
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			__sn_setq_relaxed(&ptr->tio.cp_int_enable, bits);
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			__sn_setq_relaxed(&ptr->pic.p_int_enable, bits);
--			break;
--		default:
--			panic
--			    ("pcireg_intr_enable_bit_set: unknown bridgetype bridge 0x%p",
--			     ptr);
--		}
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		__sn_setq_relaxed(&ptr->tio.cp_int_enable, bits);
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		__sn_setq_relaxed(&ptr->pic.p_int_enable, bits);
-+		break;
-+	default:
-+		panic("pcireg_intr_enable_bit_set: unknown bridgetype bridge 0x%p",
-+				ptr);
- 	}
- }
- 
-@@ -169,25 +151,22 @@ void pcireg_intr_addr_addr_set(struct pcibus_info *pcibus_info, int int_n,
- {
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			__sn_clrq_relaxed(&ptr->tio.cp_int_addr[int_n],
--			    TIOCP_HOST_INTR_ADDR);
--			__sn_setq_relaxed(&ptr->tio.cp_int_addr[int_n],
--			    (addr & TIOCP_HOST_INTR_ADDR));
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			__sn_clrq_relaxed(&ptr->pic.p_int_addr[int_n],
--			    PIC_HOST_INTR_ADDR);
--			__sn_setq_relaxed(&ptr->pic.p_int_addr[int_n],
--			    (addr & PIC_HOST_INTR_ADDR));
--			break;
--		default:
--			panic
--			    ("pcireg_intr_addr_addr_get: unknown bridgetype bridge 0x%p",
--			     ptr);
--		}
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		__sn_clrq_relaxed(&ptr->tio.cp_int_addr[int_n],
-+		    TIOCP_HOST_INTR_ADDR);
-+		__sn_setq_relaxed(&ptr->tio.cp_int_addr[int_n],
-+		    (addr & TIOCP_HOST_INTR_ADDR));
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		__sn_clrq_relaxed(&ptr->pic.p_int_addr[int_n],
-+		    PIC_HOST_INTR_ADDR);
-+		__sn_setq_relaxed(&ptr->pic.p_int_addr[int_n],
-+		    (addr & PIC_HOST_INTR_ADDR));
-+		break;
-+	default:
-+		panic("pcireg_intr_addr_addr_get: unknown bridgetype bridge 0x%p",
-+				ptr);
- 	}
- }
- 
-@@ -198,19 +177,16 @@ void pcireg_force_intr_set(struct pcibus_info *pcibus_info, int int_n)
- {
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			writeq(1, &ptr->tio.cp_force_pin[int_n]);
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			writeq(1, &ptr->pic.p_force_pin[int_n]);
--			break;
--		default:
--			panic
--			    ("pcireg_force_intr_set: unknown bridgetype bridge 0x%p",
--			     ptr);
--		}
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		writeq(1, &ptr->tio.cp_force_pin[int_n]);
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		writeq(1, &ptr->pic.p_force_pin[int_n]);
-+		break;
-+	default:
-+		panic("pcireg_force_intr_set: unknown bridgetype bridge 0x%p",
-+				ptr);
- 	}
- }
- 
-@@ -222,21 +198,20 @@ u64 pcireg_wrb_flush_get(struct pcibus_info *pcibus_info, int device)
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 	u64 ret = 0;
- 
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			ret =
--			    __sn_readq_relaxed(&ptr->tio.cp_wr_req_buf[device]);
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			ret =
--			    __sn_readq_relaxed(&ptr->pic.p_wr_req_buf[device]);
--			break;
--		default:
--		      panic("pcireg_wrb_flush_get: unknown bridgetype bridge 0x%p", ptr);
--		}
--
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		ret =
-+		    __sn_readq_relaxed(&ptr->tio.cp_wr_req_buf[device]);
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		ret =
-+		    __sn_readq_relaxed(&ptr->pic.p_wr_req_buf[device]);
-+		break;
-+	default:
-+	      panic("pcireg_wrb_flush_get: unknown bridgetype bridge 0x%p",
-+			      ptr);
- 	}
++struct pcmcia_driver;
 +
- 	/* Read of the Write Buffer Flush should always return zero */
- 	return ret;
- }
-@@ -246,19 +221,16 @@ void pcireg_int_ate_set(struct pcibus_info *pcibus_info, int ate_index,
- {
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
++int comedi_pcmcia_driver_register(struct comedi_driver *,
++					struct pcmcia_driver *);
++void comedi_pcmcia_driver_unregister(struct comedi_driver *,
++					struct pcmcia_driver *);
++
++/**
++ * module_comedi_pcmcia_driver() - Helper macro for registering a comedi PCMCIA driver
++ * @__comedi_driver: comedi_driver struct
++ * @__pcmcia_driver: pcmcia_driver struct
++ *
++ * Helper macro for comedi PCMCIA drivers which do not do anything special
++ * in module init/exit. This eliminates a lot of boilerplate. Each
++ * module may only use this macro once, and calling it replaces
++ * module_init() and module_exit()
++ */
++#define module_comedi_pcmcia_driver(__comedi_driver, __pcmcia_driver) \
++	module_driver(__comedi_driver, comedi_pcmcia_driver_register, \
++			comedi_pcmcia_driver_unregister, &(__pcmcia_driver))
++
+ struct usb_driver;
  
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			writeq(val, &ptr->tio.cp_int_ate_ram[ate_index]);
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			writeq(val, &ptr->pic.p_int_ate_ram[ate_index]);
--			break;
--		default:
--			panic
--			    ("pcireg_int_ate_set: unknown bridgetype bridge 0x%p",
--			     ptr);
--		}
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		writeq(val, &ptr->tio.cp_int_ate_ram[ate_index]);
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		writeq(val, &ptr->pic.p_int_ate_ram[ate_index]);
-+		break;
-+	default:
-+		panic("pcireg_int_ate_set: unknown bridgetype bridge 0x%p",
-+				ptr);
- 	}
+ int comedi_usb_driver_register(struct comedi_driver *, struct usb_driver *);
+diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+index b67a0c9..bd9c678 100644
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -24,6 +24,8 @@
+ #include <linux/device.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
++#include <pcmcia/cistpl.h>
++#include <pcmcia/ds.h>
+ #include <linux/usb.h>
+ #include <linux/errno.h>
+ #include <linux/kconfig.h>
+@@ -954,6 +956,36 @@ void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
  }
+ EXPORT_SYMBOL_GPL(comedi_pci_driver_unregister);
  
-@@ -267,19 +239,16 @@ u64 __iomem *pcireg_int_ate_addr(struct pcibus_info *pcibus_info, int ate_index)
- 	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 	u64 __iomem *ret = NULL;
++#if IS_ENABLED(CONFIG_PCMCIA)
++int comedi_pcmcia_driver_register(struct comedi_driver *comedi_driver,
++		struct pcmcia_driver *pcmcia_driver)
++{
++	int ret;
++
++	ret = comedi_driver_register(comedi_driver);
++	if (ret < 0)
++		return ret;
++
++	ret = pcmcia_register_driver(pcmcia_driver);
++	if (ret < 0) {
++		comedi_driver_unregister(comedi_driver);
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_register);
++
++void comedi_pcmcia_driver_unregister(struct comedi_driver *comedi_driver,
++		struct pcmcia_driver *pcmcia_driver)
++{
++	pcmcia_unregister_driver(pcmcia_driver);
++	comedi_driver_unregister(comedi_driver);
++}
++EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_unregister);
++
++#endif
++
+ #if IS_ENABLED(CONFIG_USB)
  
--	if (pcibus_info) {
--		switch (pcibus_info->pbi_bridge_type) {
--		case PCIBR_BRIDGETYPE_TIOCP:
--			ret = &ptr->tio.cp_int_ate_ram[ate_index];
--			break;
--		case PCIBR_BRIDGETYPE_PIC:
--			ret = &ptr->pic.p_int_ate_ram[ate_index];
--			break;
--		default:
--			panic
--			    ("pcireg_int_ate_addr: unknown bridgetype bridge 0x%p",
--			     ptr);
--		}
-+	switch (pcibus_info->pbi_bridge_type) {
-+	case PCIBR_BRIDGETYPE_TIOCP:
-+		ret = &ptr->tio.cp_int_ate_ram[ate_index];
-+		break;
-+	case PCIBR_BRIDGETYPE_PIC:
-+		ret = &ptr->pic.p_int_ate_ram[ate_index];
-+		break;
-+	default:
-+		panic("pcireg_int_ate_addr: unknown bridgetype bridge 0x%p",
-+				ptr);
- 	}
- 	return ret;
- }
+ int comedi_usb_driver_register(struct comedi_driver *comedi_driver,
 -- 
-1.7.4.5
+1.7.8.6
 
