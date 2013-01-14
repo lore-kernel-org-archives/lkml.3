@@ -1,369 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab3ANHiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 02:38:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25768 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755586Ab3ANHiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 02:38:11 -0500
-Message-ID: <50F3B5D6.4070405@redhat.com>
-Date: Mon, 14 Jan 2013 15:37:58 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755986Ab3ANHi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 02:38:28 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:30544 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755924Ab3ANHiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 02:38:24 -0500
+X-IronPort-AV: E=Sophos;i="4.84,466,1355068800"; 
+   d="scan'208";a="6581671"
+Date: Mon, 14 Jan 2013 15:38:21 +0800
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v12 0/8] pv event to notify host when the
+ guest is panicked
+Message-ID: <20130114073821.GE14958@localhost.localdomain>
+References: <cover.1355290850.git.hutao@cn.fujitsu.com>
+ <20121220075359.GF7141@localhost.localdomain>
+ <20121225215205.GA6222@amt.cnet>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, davem@davemloft.net
-Subject: Re: [PATCH V3 2/2] vhost: handle polling errors
-References: <1357456718-3072-1-git-send-email-jasowang@redhat.com> <1357456718-3072-3-git-send-email-jasowang@redhat.com> <20130106132201.GC18612@redhat.com> <50EA5139.7000904@redhat.com> <20130107145559.GA5901@redhat.com> <50EAE400.6030301@redhat.com> <20130113111035.GA23431@redhat.com> <50F37476.4070501@redhat.com> <20130114065712.GA10312@redhat.com>
-In-Reply-To: <20130114065712.GA10312@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121225215205.GA6222@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/14 15:37:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/14 15:37:42,
+	Serialize complete at 2013/01/14 15:37:42
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2013 02:57 PM, Michael S. Tsirkin wrote:
-> On Mon, Jan 14, 2013 at 10:59:02AM +0800, Jason Wang wrote:
->> On 01/13/2013 07:10 PM, Michael S. Tsirkin wrote:
->>> On Mon, Jan 07, 2013 at 11:04:32PM +0800, Jason Wang wrote:
->>>> On 01/07/2013 10:55 PM, Michael S. Tsirkin wrote:
->>>>> On Mon, Jan 07, 2013 at 12:38:17PM +0800, Jason Wang wrote:
->>>>>> On 01/06/2013 09:22 PM, Michael S. Tsirkin wrote:
->>>>>>> On Sun, Jan 06, 2013 at 03:18:38PM +0800, Jason Wang wrote:
->>>>>>>> Polling errors were ignored by vhost/vhost_net, this may lead to crash when
->>>>>>>> trying to remove vhost from waitqueue when after the polling is failed. Solve
->>>>>>>> this problem by:
->>>>>>>>
->>>>>>>> - checking the poll->wqh before trying to remove from waitqueue
->>>>>>>> - report an error when poll() returns a POLLERR in vhost_start_poll()
->>>>>>>> - report an error when vhost_start_poll() fails in
->>>>>>>>   vhost_vring_ioctl()/vhost_net_set_backend() which is used to notify the
->>>>>>>>   failure to userspace.
->>>>>>>> - report an error in the data path in vhost_net when meet polling errors.
->>>>>>>>
->>>>>>>> After those changes, we can safely drop the tx polling state in vhost_net since
->>>>>>>> it was replaced by the checking of poll->wqh.
->>>>>>>>
->>>>>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
->>>>>>>> ---
->>>>>>>>  drivers/vhost/net.c   |   74 ++++++++++++++++--------------------------------
->>>>>>>>  drivers/vhost/vhost.c |   31 +++++++++++++++-----
->>>>>>>>  drivers/vhost/vhost.h |    2 +-
->>>>>>>>  3 files changed, 49 insertions(+), 58 deletions(-)
->>>>>>>>
->>>>>>>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
->>>>>>>> index d10ad6f..125c1e5 100644
->>>>>>>> --- a/drivers/vhost/net.c
->>>>>>>> +++ b/drivers/vhost/net.c
->>>>>>>> @@ -64,20 +64,10 @@ enum {
->>>>>>>>  	VHOST_NET_VQ_MAX = 2,
->>>>>>>>  };
->>>>>>>>  
->>>>>>>> -enum vhost_net_poll_state {
->>>>>>>> -	VHOST_NET_POLL_DISABLED = 0,
->>>>>>>> -	VHOST_NET_POLL_STARTED = 1,
->>>>>>>> -	VHOST_NET_POLL_STOPPED = 2,
->>>>>>>> -};
->>>>>>>> -
->>>>>>>>  struct vhost_net {
->>>>>>>>  	struct vhost_dev dev;
->>>>>>>>  	struct vhost_virtqueue vqs[VHOST_NET_VQ_MAX];
->>>>>>>>  	struct vhost_poll poll[VHOST_NET_VQ_MAX];
->>>>>>>> -	/* Tells us whether we are polling a socket for TX.
->>>>>>>> -	 * We only do this when socket buffer fills up.
->>>>>>>> -	 * Protected by tx vq lock. */
->>>>>>>> -	enum vhost_net_poll_state tx_poll_state;
->>>>>>>>  	/* Number of TX recently submitted.
->>>>>>>>  	 * Protected by tx vq lock. */
->>>>>>>>  	unsigned tx_packets;
->>>>>>>> @@ -155,24 +145,6 @@ static void copy_iovec_hdr(const struct iovec *from, struct iovec *to,
->>>>>>>>  	}
->>>>>>>>  }
->>>>>>>>  
->>>>>>>> -/* Caller must have TX VQ lock */
->>>>>>>> -static void tx_poll_stop(struct vhost_net *net)
->>>>>>>> -{
->>>>>>>> -	if (likely(net->tx_poll_state != VHOST_NET_POLL_STARTED))
->>>>>>>> -		return;
->>>>>>>> -	vhost_poll_stop(net->poll + VHOST_NET_VQ_TX);
->>>>>>>> -	net->tx_poll_state = VHOST_NET_POLL_STOPPED;
->>>>>>>> -}
->>>>>>>> -
->>>>>>>> -/* Caller must have TX VQ lock */
->>>>>>>> -static void tx_poll_start(struct vhost_net *net, struct socket *sock)
->>>>>>>> -{
->>>>>>>> -	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
->>>>>>>> -		return;
->>>>>>>> -	vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
->>>>>>>> -	net->tx_poll_state = VHOST_NET_POLL_STARTED;
->>>>>>>> -}
->>>>>>>> -
->>>>>>>>  /* In case of DMA done not in order in lower device driver for some reason.
->>>>>>>>   * upend_idx is used to track end of used idx, done_idx is used to track head
->>>>>>>>   * of used idx. Once lower device DMA done contiguously, we will signal KVM
->>>>>>>> @@ -227,6 +199,7 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
->>>>>>>>  static void handle_tx(struct vhost_net *net)
->>>>>>>>  {
->>>>>>>>  	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
->>>>>>>> +	struct vhost_poll *poll = net->poll + VHOST_NET_VQ_TX;
->>>>>>>>  	unsigned out, in, s;
->>>>>>>>  	int head;
->>>>>>>>  	struct msghdr msg = {
->>>>>>>> @@ -252,7 +225,8 @@ static void handle_tx(struct vhost_net *net)
->>>>>>>>  	wmem = atomic_read(&sock->sk->sk_wmem_alloc);
->>>>>>>>  	if (wmem >= sock->sk->sk_sndbuf) {
->>>>>>>>  		mutex_lock(&vq->mutex);
->>>>>>>> -		tx_poll_start(net, sock);
->>>>>>>> +		if (vhost_poll_start(poll, sock->file))
->>>>>>>> +			vq_err(vq, "Fail to start TX polling\n");
->>>>>>> s/Fail/Failed/
->>>>>>>
->>>>>>> A question though: how can this happen? Could you clarify please?
->>>>>>> Maybe we can find a way to prevent this error?
->>>>>> Two conditions I think this can happen:
->>>>>>
->>>>>> 1) a buggy userspace disable a queue through TUNSETQUEUE
->>>>>> 2) the net device were gone
->>>>>>
->>>>>> For 1, looks like we can delay the disabling until the refcnt goes to
->>>>>> zero. For 2 may needs more changes.
->>>>> I'd expect keeping a socket reference would prevent both issues.
->>>>> Doesn't it?
->>>> Doesn't work for 2 I think, the socket didn't hold a refcnt of the
->>>> device, so the device can go away at anytime. Although we can change
->>>> this, but it's the behaviour before multiqueue support.
->>> Hmm there's one scenario that does seem to
->>> trigger this: queue can get disabled
->>> and then poll fails.
->>>
->>> Is this the only issue?
->> Another one I think we can trigger is:
->>
->> - start vhost thread
->> - do ip link del link dev tap0 to delete the tap device
->>
->> In this case, the netdevice is unregistered but the file/socket still exist.
-> Yes but in this case poll_wait is called so apparently no issue
-> with existing code? We only have an issue if poll_wait is
-> not called right?
+Hi Marcelo,
 
-Right.
-> Maybe the simplest fix is to invoke poll_wait before
-> checking if (!tun) ?
+Sorry for the late reply.
 
-True, but we this depends on the assumption that each kind of backend
-must make sure poll_wait() is called in .poll(). And we need to change
-macvtap_poll() as well. And we'd better also pass those polling errors
-to notify user about this wrong state.
->
->>>>>> Not sure it's worth to do this work,
->>>>>> maybe a warning is enough just like other failure.
->>>>> With other failures, you normally can correct the error then
->>>>> kick to have it restart. This is soomething thagt would not
->>>>> work here.
->>>> If userspace is wrote correctly, (e.g passing a fd with correct state)
->>>> it can also be corrected.
->>>>>>>>  		mutex_unlock(&vq->mutex);
->>>>>>>>  		return;
->>>>>>>>  	}
->>>>>>>> @@ -261,7 +235,7 @@ static void handle_tx(struct vhost_net *net)
->>>>>>>>  	vhost_disable_notify(&net->dev, vq);
->>>>>>>>  
->>>>>>>>  	if (wmem < sock->sk->sk_sndbuf / 2)
->>>>>>>> -		tx_poll_stop(net);
->>>>>>>> +		vhost_poll_stop(poll);
->>>>>>>>  	hdr_size = vq->vhost_hlen;
->>>>>>>>  	zcopy = vq->ubufs;
->>>>>>>>  
->>>>>>>> @@ -283,8 +257,10 @@ static void handle_tx(struct vhost_net *net)
->>>>>>>>  
->>>>>>>>  			wmem = atomic_read(&sock->sk->sk_wmem_alloc);
->>>>>>>>  			if (wmem >= sock->sk->sk_sndbuf * 3 / 4) {
->>>>>>>> -				tx_poll_start(net, sock);
->>>>>>>> -				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
->>>>>>>> +				if (vhost_poll_start(poll, sock->file))
->>>>>>>> +					vq_err(vq, "Fail to start TX polling\n");
->>>>>>>> +				else
->>>>>>>> +					set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
->>>>>>>>  				break;
->>>>>>>>  			}
->>>>>>>>  			/* If more outstanding DMAs, queue the work.
->>>>>>>> @@ -294,8 +270,10 @@ static void handle_tx(struct vhost_net *net)
->>>>>>>>  				    (vq->upend_idx - vq->done_idx) :
->>>>>>>>  				    (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
->>>>>>>>  			if (unlikely(num_pends > VHOST_MAX_PEND)) {
->>>>>>>> -				tx_poll_start(net, sock);
->>>>>>>> -				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
->>>>>>>> +				if (vhost_poll_start(poll, sock->file))
->>>>>>>> +					vq_err(vq, "Fail to start TX polling\n");
->>>>>>>> +				else
->>>>>>>> +					set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
->>>>>>>>  				break;
->>>>>>>>  			}
->>>>>>>>  			if (unlikely(vhost_enable_notify(&net->dev, vq))) {
->>>>>>>> @@ -360,7 +338,8 @@ static void handle_tx(struct vhost_net *net)
->>>>>>>>  			}
->>>>>>>>  			vhost_discard_vq_desc(vq, 1);
->>>>>>>>  			if (err == -EAGAIN || err == -ENOBUFS)
->>>>>>>> -				tx_poll_start(net, sock);
->>>>>>>> +				if (vhost_poll_start(poll, sock->file))
->>>>>>>> +					vq_err(vq, "Fail to start TX polling\n");
->>>>>>>>  			break;
->>>>>>>>  		}
->>>>>>>>  		if (err != len)
->>>>>>>> @@ -623,7 +602,6 @@ static int vhost_net_open(struct inode *inode, struct file *f)
->>>>>>>>  
->>>>>>>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
->>>>>>>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
->>>>>>>> -	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
->>>>>>>>  
->>>>>>>>  	f->private_data = n;
->>>>>>>>  
->>>>>>>> @@ -633,29 +611,25 @@ static int vhost_net_open(struct inode *inode, struct file *f)
->>>>>>>>  static void vhost_net_disable_vq(struct vhost_net *n,
->>>>>>>>  				 struct vhost_virtqueue *vq)
->>>>>>>>  {
->>>>>>>> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
->>>>>>>> +
->>>>>>>>  	if (!vq->private_data)
->>>>>>>>  		return;
->>>>>>>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
->>>>>>>> -		tx_poll_stop(n);
->>>>>>>> -		n->tx_poll_state = VHOST_NET_POLL_DISABLED;
->>>>>>>> -	} else
->>>>>>>> -		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
->>>>>>>> +	vhost_poll_stop(poll);
->>>>>>>>  }
->>>>>>>>  
->>>>>>>> -static void vhost_net_enable_vq(struct vhost_net *n,
->>>>>>>> +static int vhost_net_enable_vq(struct vhost_net *n,
->>>>>>>>  				struct vhost_virtqueue *vq)
->>>>>>>>  {
->>>>>>>>  	struct socket *sock;
->>>>>>>> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
->>>>>>>>  
->>>>>>>>  	sock = rcu_dereference_protected(vq->private_data,
->>>>>>>>  					 lockdep_is_held(&vq->mutex));
->>>>>>>>  	if (!sock)
->>>>>>>> -		return;
->>>>>>>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
->>>>>>>> -		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
->>>>>>>> -		tx_poll_start(n, sock);
->>>>>>>> -	} else
->>>>>>>> -		vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
->>>>>>>> +		return 0;
->>>>>>>> +
->>>>>>>> +	return vhost_poll_start(poll, sock->file);
->>>>>>>>  }
->>>>>>>>  
->>>>>>>>  static struct socket *vhost_net_stop_vq(struct vhost_net *n,
->>>>>>>> @@ -833,7 +807,9 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
->>>>>>>>  		r = vhost_init_used(vq);
->>>>>>>>  		if (r)
->>>>>>>>  			goto err_used;
->>>>>>>> -		vhost_net_enable_vq(n, vq);
->>>>>>>> +		r = vhost_net_enable_vq(n, vq);
->>>>>>>> +		if (r)
->>>>>>>> +			goto err_used;
->>>>>>>>  
->>>>>>>>  		oldubufs = vq->ubufs;
->>>>>>>>  		vq->ubufs = ubufs;
->>>>>>>> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
->>>>>>>> index 34389f7..5c7a466 100644
->>>>>>>> --- a/drivers/vhost/vhost.c
->>>>>>>> +++ b/drivers/vhost/vhost.c
->>>>>>>> @@ -77,26 +77,41 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
->>>>>>>>  	init_poll_funcptr(&poll->table, vhost_poll_func);
->>>>>>>>  	poll->mask = mask;
->>>>>>>>  	poll->dev = dev;
->>>>>>>> +	poll->wqh = NULL;
->>>>>>>>  
->>>>>>>>  	vhost_work_init(&poll->work, fn);
->>>>>>>>  }
->>>>>>>>  
->>>>>>>> +/* Stop polling a file. After this function returns, it becomes safe to drop the
->>>>>>>> + * file reference. You must also flush afterwards. */
->>>>>>>> +void vhost_poll_stop(struct vhost_poll *poll)
->>>>>>>> +{
->>>>>>>> +	if (poll->wqh) {
->>>>>>>> +		remove_wait_queue(poll->wqh, &poll->wait);
->>>>>>>> +		poll->wqh = NULL;
->>>>>>>> +	}
->>>>>>>> +}
->>>>>>>> +
->>>>>>>>  /* Start polling a file. We add ourselves to file's wait queue. The caller must
->>>>>>>>   * keep a reference to a file until after vhost_poll_stop is called. */
->>>>>>>> -void vhost_poll_start(struct vhost_poll *poll, struct file *file)
->>>>>>>> +int vhost_poll_start(struct vhost_poll *poll, struct file *file)
->>>>>>>>  {
->>>>>>>>  	unsigned long mask;
->>>>>>>> +	int ret = 0;
->>>>>>>> +
->>>>>>>> +	if (poll->wqh)
->>>>>>>> +		return -EBUSY;
->>>>>>>>  
->>>>>>> I think this should return success: we are already polling.
->>>>>>> Otherwise this would trigger a bug below I think.
->>>>>> Ok.
->>>>>>>>  	mask = file->f_op->poll(file, &poll->table);
->>>>>>>>  	if (mask)
->>>>>>>>  		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
->>>>>>>> -}
->>>>>>>>  
->>>>>>>> -/* Stop polling a file. After this function returns, it becomes safe to drop the
->>>>>>>> - * file reference. You must also flush afterwards. */
->>>>>>>> -void vhost_poll_stop(struct vhost_poll *poll)
->>>>>>>> -{
->>>>>>>> -	remove_wait_queue(poll->wqh, &poll->wait);
->>>>>>>> +	if (mask & POLLERR) {
->>>>>>>> +		ret = -EINVAL;
->>>>>>>> +		vhost_poll_stop(poll);
->>>>>>>> +	}
->>>>>>>> +
->>>>>>>> +	return ret;
->>>>>>>>  }
->>>>>>>>  
->>>>>>>>  static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
->>>>>>>> @@ -792,7 +807,7 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
->>>>>>>>  		fput(filep);
->>>>>>>>  
->>>>>>>>  	if (pollstart && vq->handle_kick)
->>>>>>>> -		vhost_poll_start(&vq->poll, vq->kick);
->>>>>>>> +		r = vhost_poll_start(&vq->poll, vq->kick);
->>>>>>>>  
->>>>>>>>  	mutex_unlock(&vq->mutex);
->>>>>>>>  
->>>>>>>> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
->>>>>>>> index 2639c58..17261e2 100644
->>>>>>>> --- a/drivers/vhost/vhost.h
->>>>>>>> +++ b/drivers/vhost/vhost.h
->>>>>>>> @@ -42,7 +42,7 @@ void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work);
->>>>>>>>  
->>>>>>>>  void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
->>>>>>>>  		     unsigned long mask, struct vhost_dev *dev);
->>>>>>>> -void vhost_poll_start(struct vhost_poll *poll, struct file *file);
->>>>>>>> +int vhost_poll_start(struct vhost_poll *poll, struct file *file);
->>>>>>>>  void vhost_poll_stop(struct vhost_poll *poll);
->>>>>>>>  void vhost_poll_flush(struct vhost_poll *poll);
->>>>>>>>  void vhost_poll_queue(struct vhost_poll *poll);
->>>>>>>> -- 
->>>>>>>> 1.7.1
->>>>>>> --
->>>>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe kvm" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Tue, Dec 25, 2012 at 07:52:05PM -0200, Marcelo Tosatti wrote:
+> On Thu, Dec 20, 2012 at 03:53:59PM +0800, Hu Tao wrote:
+> > Hi,
+> > 
+> > Any comments?
+> 
+> As far as i can see, items 2 and 3 of
+> 
+> https://lkml.org/lkml/2012/11/12/588
+> 
+> Have not been addressed.
+> 
+> https://lkml.org/lkml/2012/11/20/653 contains discussions on those
+> items.
+> 
+> 2) Format of the interface for other architectures (you can choose
+> a different KVM supported architecture and write an example). It was
+> your choice to choose an I/O port, which is x86 specific.
 
+Unfortunately I don't have hardware other than x86 in hand to test it.
+
+> 
+> 3) Clear/documented management interface for the feature.
+
+Patch #8 adds a document to describe the usage of pv event. But as you
+are asking again, I must be misunderstanding the meaning of management
+interface. Can you clarify it?
+
+> 
+> Note 3 is for management, not the guest<->host interface.
+> 
+> > On Wed, Dec 12, 2012 at 02:13:43PM +0800, Hu Tao wrote:
+> > > This series implements a new interface, kvm pv event, to notify host when
+> > > some events happen in guest. Right now there is one supported event: guest
+> > > panic.
+> > > 
+> > > changes from v11:
+> > > 
+> > >   - add a new patch 'save/load cpu runstate'
+> > >   - fix a bug of null-dereference when no -machine option is supplied
+> > >   - reserve RUN_STATE_GUEST_PANICKED during migration
+> > >   - add doc of enable_pv_event option
+> > >   - disable reboot-on-panic if pv_event is on
+> > > 
+> > > v11: http://lists.gnu.org/archive/html/qemu-devel/2012-10/msg04361.html
+> > > 
+> > > Hu Tao (7):
+> > >   save/load cpu runstate
+> > >   update kernel headers
+> > >   add a new runstate: RUN_STATE_GUEST_PANICKED
+> > >   add a new qevent: QEVENT_GUEST_PANICKED
+> > >   introduce a new qom device to deal with panicked event
+> > >   allower the user to disable pv event support
+> > >   pv event: add document to describe the usage
+> > > 
+> > > Wen Congyang (1):
+> > >   start vm after resetting it
+> > > 
+> > >  block.h                          |   2 +
+> > >  docs/pv-event.txt                |  17 ++++
+> > >  hw/kvm/Makefile.objs             |   2 +-
+> > >  hw/kvm/pv_event.c                | 197 +++++++++++++++++++++++++++++++++++++++
+> > >  hw/pc_piix.c                     |  11 +++
+> > >  kvm-stub.c                       |   4 +
+> > >  kvm.h                            |   2 +
+> > >  linux-headers/asm-x86/kvm_para.h |   1 +
+> > >  linux-headers/linux/kvm_para.h   |   6 ++
+> > >  migration.c                      |   7 +-
+> > >  monitor.c                        |   6 +-
+> > >  monitor.h                        |   1 +
+> > >  qapi-schema.json                 |   6 +-
+> > >  qemu-config.c                    |   4 +
+> > >  qemu-options.hx                  |   3 +-
+> > >  qmp.c                            |   5 +-
+> > >  savevm.c                         |   1 +
+> > >  sysemu.h                         |   2 +
+> > >  vl.c                             |  52 ++++++++++-
+> > >  19 files changed, 312 insertions(+), 17 deletions(-)
+> > >  create mode 100644 docs/pv-event.txt
+> > >  create mode 100644 hw/kvm/pv_event.c
+> > > 
+> > > -- 
+> > > 1.8.0.1.240.ge8a1f5a
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kvm" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
