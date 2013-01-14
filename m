@@ -1,181 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab3ANOO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:14:29 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:48169 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993Ab3ANOO1 (ORCPT
+	id S1757038Ab3ANOOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:14:52 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:51313 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757025Ab3ANOOu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:14:27 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2] gpio: vt8500: memory cleanup missing
-To: Tony Prisk <linux@prisktech.co.nz>,
-        Linux Walleij <linus.walleij@linaro.org>
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        Tony Prisk <linux@prisktech.co.nz>
-In-Reply-To: <1357844986-21891-1-git-send-email-linux@prisktech.co.nz>
-References: <1357844986-21891-1-git-send-email-linux@prisktech.co.nz>
-Date: Mon, 14 Jan 2013 14:14:22 +0000
-Message-Id: <20130114141422.80D6D3E232D@localhost>
+	Mon, 14 Jan 2013 09:14:50 -0500
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1357831934-31610-1-git-send-email-tomas.winkler@intel.com>
+References: <1357831934-31610-1-git-send-email-tomas.winkler@intel.com>
+Date: Mon, 14 Jan 2013 15:14:50 +0100
+Message-ID: <CA+icZUXa-cgNPTYAKjXDSkoqNhto7jz89yUMJAvYxa-jGtMbjg@mail.gmail.com>
+Subject: Re: [char-misc-next V2] mei: drop the warning when cl is not
+ initialized during unlinking
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: gregkh@linuxfoundation.org, arnd@arndb.de, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jan 2013 08:09:46 +1300, Tony Prisk <linux@prisktech.co.nz> wrote:
-> This driver is missing a .remove callback, and the fail path on
-> probe is incomplete.
-> 
-> If an error occurs in vt8500_add_chips, gpio_base is not unmapped.
-> The driver is also ignoring the return value from this function so
-> if a chip fails to register it completes as successful.
-> 
-> Replaced pr_err with dev_err in vt8500_add_chips since the device is
-> available.
-> 
-> There is also no .remove callback defined. To allow removing the
-> registered chips, I have moved *vtchip to be a static global.
-> 
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+On Thu, Jan 10, 2013 at 4:32 PM, Tomas Winkler <tomas.winkler@intel.com> wrote:
+> On systems where wd and amthif is not initialized
+> we will hit cl->dev == NULL. This condition is okay
+> so we don't need to be laud about it.
+>
+> Fixes the follwing warning during suspend
+> [  137.061985] WARNING: at drivers/misc/mei/client.c:315 mei_cl_unlink+0x86/0x90 [mei]()
+> [  137.061986] Hardware name: 530U3BI/530U4BI/530U4BH
+> [  137.062140] Modules linked in: snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel snd_hda_intel snd_hda_codec kvm arc4 iwldvm snd_hwdep i915 snd_pcm mac80211 ghash_clmulni_intel snd_page_alloc aesni_intel snd_seq_midi xts snd_seq_midi_event aes_x86_64 rfcomm snd_rawmidi parport_pc bnep lrw snd_seq uvcvideo i2c_algo_bit ppdev gf128mul iwlwifi snd_timer drm_kms_helper ablk_helper cryptd drm snd_seq_device videobuf2_vmalloc psmouse videobuf2_memops snd cfg80211 btusb videobuf2_core soundcore videodev lp bluetooth samsung_laptop wmi microcode mei serio_raw mac_hid video hid_generic lpc_ich parport usbhid hid r8169
+> [  137.062143] Pid: 2706, comm: kworker/u:15 Tainted: G      D W    3.8.0-rc2-next20130109-1-iniza-generic #1
+> [  137.062144] Call Trace:
+> [  137.062156]  [<ffffffff8105860f>] warn_slowpath_common+0x7f/0xc0
+> [  137.062159]  [<ffffffff8135b1ea>] ? ioread32+0x3a/0x40
+> [  137.062162]  [<ffffffff8105866a>] warn_slowpath_null+0x1a/0x20
+> [  137.062168]  [<ffffffffa0076be6>] mei_cl_unlink+0x86/0x90 [mei]
+> [  137.062173]  [<ffffffffa0071325>] mei_reset+0xc5/0x240 [mei]
+> [  137.062178]  [<ffffffffa0073703>] mei_pci_resume+0xa3/0x110 [mei]
+> [  137.062183]  [<ffffffff81379cae>] pci_pm_resume+0x7e/0xe0
+> [  137.062185]  [<ffffffff81379c30>] ? pci_pm_thaw+0x80/0x80
+> [  137.062189]  [<ffffffff8145a415>] dpm_run_callback.isra.6+0x25/0x50
+> [  137.062192]  [<ffffffff8145a6cf>] device_resume+0x9f/0x140
+> [  137.062194]  [<ffffffff8145a791>] async_resume+0x21/0x50
+> [  137.062200]  [<ffffffff810858b0>] async_run_entry_fn+0x90/0x1c0
+> [  137.062203]  [<ffffffff810778e5>] process_one_work+0x155/0x460
+> [  137.062207]  [<ffffffff81078578>] worker_thread+0x168/0x400
+> [  137.062210]  [<ffffffff81078410>] ? manage_workers+0x2b0/0x2b0
+> [  137.062214]  [<ffffffff8107d9f0>] kthread+0xc0/0xd0
+> [  137.062218]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
+> [  137.062222]  [<ffffffff816bac6c>] ret_from_fork+0x7c/0xb0
+> [  137.062228]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
+>
+> Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+> Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+
+Can you please apply this patch to char-misc-next?
+I am hitting it again while doing other regression testing!
+
+- Sedat -
+
+[1] http://marc.info/?l=linux-kernel&m=135817238702217&w=2
+
 > ---
-> v2:
-> Remove global variable and use platform_set_drvdata instead.
-> 
->  drivers/gpio/gpio-vt8500.c |   51 +++++++++++++++++++++++++++++++++++---------
->  1 file changed, 41 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-vt8500.c b/drivers/gpio/gpio-vt8500.c
-> index b53320a..87e59b5 100644
-> --- a/drivers/gpio/gpio-vt8500.c
-> +++ b/drivers/gpio/gpio-vt8500.c
-> @@ -233,10 +233,12 @@ static int vt8500_add_chips(struct platform_device *pdev, void __iomem *base,
->  			sizeof(struct vt8500_gpio_chip) * data->num_banks,
->  			GFP_KERNEL);
->  	if (!vtchip) {
-> -		pr_err("%s: failed to allocate chip memory\n", __func__);
-> +		dev_err(&pdev->dev, "failed to allocate chip memory\n");
->  		return -ENOMEM;
->  	}
->  
-> +	platform_set_drvdata(pdev, vtchip);
-> +
->  	for (i = 0; i < data->num_banks; i++) {
->  		vtchip[i].base = base;
->  		vtchip[i].regs = &data->banks[i];
-> @@ -261,6 +263,7 @@ static int vt8500_add_chips(struct platform_device *pdev, void __iomem *base,
->  
->  		gpiochip_add(chip);
->  	}
-> +
->  	return 0;
->  }
->  
-
-Watch out; irrelevant whitespace change here. From a maintainer point of
-voiew, I'm less confident about a patch when I see unrelated whitespace
-changes because it suggests that there are things in the patch that you
-don't intend. It helps me out a lot if this stuff gets scrubbed before I
-see it.
-
-> @@ -273,36 +276,64 @@ static struct of_device_id vt8500_gpio_dt_ids[] = {
->  
->  static int vt8500_gpio_probe(struct platform_device *pdev)
->  {
-> +	int ret;
->  	void __iomem *gpio_base;
-> -	struct device_node *np;
-> +	struct device_node *np = pdev->dev.of_node;
->  	const struct of_device_id *of_id =
->  				of_match_device(vt8500_gpio_dt_ids, &pdev->dev);
->  
-> -	if (!of_id) {
-> -		dev_err(&pdev->dev, "Failed to find gpio controller\n");
-> +	if (!np) {
-> +		dev_err(&pdev->dev, "GPIO node missing in devicetree\n");
->  		return -ENODEV;
->  	}
->  
-> -	np = pdev->dev.of_node;
-> -	if (!np) {
-> -		dev_err(&pdev->dev, "Missing GPIO description in devicetree\n");
-> -		return -EFAULT;
-> +	if (!of_id) {
-> +		dev_err(&pdev->dev, "No matching driver data\n");
-> +		return -ENODEV;
->  	}
-
-Why is this flipped around? I don't see any functional reason for this
-change.
-
-In actual fact, since the driver needs both it only needs to test for
-the of_id. If there is no node, then of_id will never be set.
-
->  
->  	gpio_base = of_iomap(np, 0);
->  	if (!gpio_base) {
->  		dev_err(&pdev->dev, "Unable to map GPIO registers\n");
-> -		of_node_put(np);
->  		return -ENOMEM;
->  	}
->  
-> -	vt8500_add_chips(pdev, gpio_base, of_id->data);
-> +	ret = vt8500_add_chips(pdev, gpio_base, of_id->data);
-> +	if (ret) {
-> +		iounmap(gpio_base);
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int vt8500_gpio_remove(struct platform_device *pdev)
-> +{
-> +	int i;
-> +	int ret;
-> +	const struct vt8500_gpio_data *data;
-> +	struct vt8500_gpio_chip *vtchip = platform_get_drvdata(pdev);
-> +	void __iomem *gpio_base = vtchip[0].base;
-> +	const struct of_device_id *of_id =
-> +				of_match_device(vt8500_gpio_dt_ids, &pdev->dev);
-> +
-> +	data = of_id->data;
-> +
-> +	for (i = 0; i < data->num_banks; i++) {
-
-It would make for simpler code all around if num_banks was cached in the
-vt8500_gpio_chip structure during the .probe() routine. It looks wrong
-to be calling of_match_device() in the remove hook.
-
-Otherwise this iteration looks much better.
-
-g.
-
-> +		ret = gpiochip_remove(&vtchip[i].chip);
-> +		if (ret)
-> +			dev_warn(&pdev->dev, "gpiochip_remove returned %d\n",
-> +				 ret);
-> +	}
-> +
-> +	iounmap(gpio_base);
->  
->  	return 0;
->  }
->  
->  static struct platform_driver vt8500_gpio_driver = {
->  	.probe		= vt8500_gpio_probe,
-> +	.remove		= vt8500_gpio_remove,
->  	.driver		= {
->  		.name	= "vt8500-gpio",
->  		.owner	= THIS_MODULE,
-> -- 
-> 1.7.9.5
-> 
+> V2: fix a typo in the comment
+>
+>  drivers/misc/mei/client.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+> index d566dd8..a921001 100644
+> --- a/drivers/misc/mei/client.c
+> +++ b/drivers/misc/mei/client.c
+> @@ -312,8 +312,9 @@ int mei_cl_unlink(struct mei_cl *cl)
+>         if (!cl)
+>                 return 0;
+>
+> -       if (WARN_ON(!cl->dev))
+> -               return -EINVAL;
+> +       /* wd and amthif might not be initialized */
+> +       if (!cl->dev)
+> +               return 0;
+>
+>         dev = cl->dev;
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+> 1.7.4.4
+>
