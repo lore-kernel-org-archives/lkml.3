@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab3ANPer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 10:34:47 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55639 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756635Ab3ANPeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756897Ab3ANPeq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 10:34:46 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:54427 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756376Ab3ANPeo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Jan 2013 10:34:44 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 0/2] Input: twl6040-vibra cleanups (devm_* conversion, system wq)
-Date: Mon, 14 Jan 2013 16:34:36 +0100
-Message-ID: <1358177678-16509-1-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v3 2/2] input: twl6040-vibra: Use system workqueue
+Date: Mon, 14 Jan 2013 16:34:38 +0100
+Message-ID: <1358177678-16509-3-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1358177678-16509-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1358177678-16509-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+It is time to switch to system wq instead creating a queue for the driver.
 
-Changes since v2:
-- twl4030-vibra patches are left out (they have been applied)
-- Do not use devm_input_allocate_device() in twl6040-vibra
-
-Changes since v1:
-- Use devm_input_allocate_device()
-- swtich drivers to use system workqueue
-
-Cover letter from v1 (resend set):
-
-This series seams to got lost:
-https://lkml.org/lkml/2012/6/15/128
-
-Can you take it for 3.9?
-
-Convert the twl4030, twl6040 vibra drivers to use devm_ at probe time to clean
-up the code a bit.
-The twl6040-vibra driver needed bigger change since the ordering of the
-initialization was not correct.
-
-Regards,
-Peter
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
-Peter Ujfalusi (2):
-  Input: twl6040-vibra: Code cleanup in probe with devm_* conversion
-  input: twl6040-vibra: Use system workqueue
+ drivers/input/misc/twl6040-vibra.c | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
- drivers/input/misc/twl6040-vibra.c | 100 +++++++++++++++----------------------
- 1 file changed, 41 insertions(+), 59 deletions(-)
-
+diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
+index d1e31b8..0c2dfc8 100644
+--- a/drivers/input/misc/twl6040-vibra.c
++++ b/drivers/input/misc/twl6040-vibra.c
+@@ -361,19 +361,13 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	info->workqueue = alloc_workqueue("twl6040-vibra", 0, 0);
+-	if (info->workqueue == NULL) {
+-		dev_err(info->dev, "couldn't create workqueue\n");
+-		ret = -ENOMEM;
+-		goto err_regulator;
+-	}
+ 	INIT_WORK(&info->play_work, vibra_play_work);
+ 
+ 	info->input_dev = input_allocate_device();
+ 	if (info->input_dev == NULL) {
+ 		dev_err(info->dev, "couldn't allocate input device\n");
+ 		ret = -ENOMEM;
+-		goto err_wq;
++		goto err_regulator;
+ 	}
+ 
+ 	input_set_drvdata(info->input_dev, info);
+@@ -404,8 +398,6 @@ err_iff:
+ 	input_ff_destroy(info->input_dev);
+ err_ialloc:
+ 	input_free_device(info->input_dev);
+-err_wq:
+-	destroy_workqueue(info->workqueue);
+ err_regulator:
+ 	regulator_bulk_free(ARRAY_SIZE(info->supplies), info->supplies);
+ 	return ret;
+@@ -417,7 +409,6 @@ static int twl6040_vibra_remove(struct platform_device *pdev)
+ 
+ 	input_unregister_device(info->input_dev);
+ 	regulator_bulk_free(ARRAY_SIZE(info->supplies), info->supplies);
+-	destroy_workqueue(info->workqueue);
+ 
+ 	return 0;
+ }
 -- 
 1.8.1
 
