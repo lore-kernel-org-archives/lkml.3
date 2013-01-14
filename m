@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab3ANPiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 10:38:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3795 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756545Ab3ANPiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 10:38:04 -0500
-Message-ID: <1358177872.4357.53.camel@t520.localdomain>
-Subject: Re: [Linux-c6x-dev] [PATCH 3/9] c6x: Provide dma_mmap_coherent()
- and dma_get_sgtable()
-From: Mark Salter <msalter@redhat.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-arch@vger.kernel.org, linux-c6x-dev@linux-c6x.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Date: Mon, 14 Jan 2013 10:37:52 -0500
-In-Reply-To: <1358073890-3610-3-git-send-email-geert@linux-m68k.org>
-References: <1358073890-3610-1-git-send-email-geert@linux-m68k.org>
-	 <1358073890-3610-3-git-send-email-geert@linux-m68k.org>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="iso-8859-7"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1757063Ab3ANPlt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 10:41:49 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59100 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756699Ab3ANPls (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 10:41:48 -0500
+Date: Mon, 14 Jan 2013 10:41:47 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v6 0/4] block layer runtime pm
+In-Reply-To: <20130114031422.GB15280@aaronlu.sh.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1301141040020.1782-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-01-13 at 11:44 +0100, Geert Uytterhoeven wrote:
-> c6x/allmodconfig (assumed):
+On Mon, 14 Jan 2013, Aaron Lu wrote:
+
+> On Tue, Jan 08, 2013 at 10:27:54AM -0500, Alan Stern wrote:
+> > On Tue, 8 Jan 2013, Aaron Lu wrote:
+> > 
+> > > So this also reminds me that as long as CONFIG_PM_RUNTIME is selected,
+> > > the blk_pm_add/put/peek_request functions will be in the block IO path.
+> > > Shall we introduce a new config option to selectively build block
+> > > runtime PM functionality? something like CONFIG_BLK_PM_RUNTIME perhaps?
+> > > 
+> > > Just some condition checks in those functions, not sure if it is worth a
+> > > new config though. Please suggest, thanks.
+> > 
+> > I don't think it is needed.  The new routines will be very quick when 
+> > blk_pm_runtime_init() hasn't been called, once you add back the checks 
+> > for the queue's device.
 > 
-> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ¡vb2_dc_mmap¢:
-> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ¡dma_mmap_coherent¢
-> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ¡vb2_dc_get_base_sgt¢:
-> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ¡dma_get_sgtable¢
+> Is it necessary to also add the q->dev check in the following case?
 > 
-> For architectures using dma_map_ops, dma_mmap_coherent() and
-> dma_get_sgtable() are provided in <asm-generic/dma-mapping-common.h>.
+> static void blk_pm_requeue_request(struct request *rq)
+> {
+> 	if (rq->q->dev && !(rq->cmd_flags & REQ_PM))
+> 		rq->q->nr_pending--;
+> }
 > 
-> C6x does not use dma_map_ops, hence it should implement them as inline
-> stubs using dma_common_mmap() and dma_common_get_sgtable().
-> 
+> So that we do not have a meanlingless value of nr_pending for those
+> drivers that don't use block runtime PM, and this also has the benefit
+> of making those drivers return early.
 
-So are dma_mmap_coherent() and dma_get_sgtable() part of the DMA API
-now? I don't them in Documentation/DMA*.txt anywhere.
+It doesn't really matter.  Since nr_pending doesn't get used when 
+q->dev isn't set, it doesn't hurt for it to have a meaningless value.
 
-Why does the default dma_common_mmap() for !CONFIG_MMU return an
-error?
-
-Wouldn't it be better to provide default implementations that an arch
-could override rather than having to patch all "no dma_map_ops"
-architectures?
-
---Mark
-
+Alan Stern
 
