@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab3ANT2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 14:28:36 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:53357 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757369Ab3ANT2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 14:28:34 -0500
+	id S1758408Ab3ANTaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 14:30:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:51015 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755277Ab3ANTaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 14:30:11 -0500
+Date: Mon, 14 Jan 2013 11:29:59 -0800
+From: Greg KH <greg@kroah.com>
+To: Rob Landley <rob@landley.net>
+Cc: Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: Minimum toolchain requirements?
+Message-ID: <20130114192959.GB13038@kroah.com>
+References: <1355523910.18402.9@driftwood>
+ <20121227200933.GC14257@digium.com>
+ <1356665727.31232.15@driftwood>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <50F454C2.6000509@kernel.dk>
-References: <CA+icZUW1+BzWCfGkbBiekKO8b6KiyAiyXWAHFmVUey2dHnSTzw@mail.gmail.com>
-	<50F454C2.6000509@kernel.dk>
-Date: Mon, 14 Jan 2013 20:28:33 +0100
-Message-ID: <CA+icZUX_uKSzvdhd4tMtgb+vUxqC=fS7tfSHhs29+xD_XQQjBQ@mail.gmail.com>
-Subject: Re: [next-20130114] Call-trace in LTP (lite) madvise02 test
- (block|mm|vfs related?)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next <linux-next@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356665727.31232.15@driftwood>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 7:56 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2013-01-14 19:33, Sedat Dilek wrote:
->> Hi,
->>
->> while running LTP lite on my next-20130114 kernel I hit this
->> call-trace (file attached).
->>
->> Looks to me like problem in the block layer, but not sure.
->> Might one of the experts have look at it?
->
-> Really? 600kb of data to look through? Can't you just paste the actual
-> error, I can't even find it...
->
+On Thu, Dec 27, 2012 at 09:35:27PM -0600, Rob Landley wrote:
+> On 12/27/2012 02:09:33 PM, Shaun Ruffell wrote:
+> >Hi Rob,
+> >
+> >On Fri, Dec 14, 2012 at 04:25:10PM -0600, Rob Landley wrote:
+> >> Although the README and Documentation/Changes both say the kernel
+> >> builds with gcc 3.2, this is no loner the case. In reality the new
+> >> 3.7 kernel no longer builds under unpatched gcc 4.2.1 (the last
+> >> GPLv2 release).
+> >>
+> >> Building for i686 breaks with
+> >> "arch/x86/kernel/cpu/perf_event_p6.c:22: error:
+> >> p6_hw_cache_event_ids causes a section type conflict" (trivial
+> >> workaround: patch kernel so CONFIG_BROKEN_RODATA defaults to y).
+> >
+> >I came across your email while searching for a solution to the above
+> >build error.
+> >
+> >In addition to setting CONFIG_BROKEN_RODATA=y, Jan Beulich sent a
+> >patch [1] to LKML that also fixes this build problem for me.
+> >
+> >[1] https://lkml.org/lkml/2012/11/23/308
+> >
+> >It doesn't appear to have hit Linus' tree yet though, but with luck
+> >someone will pick it up before 3.8 final.
+> >
+> >Cheers,
+> >Shaun
+> 
+> Having it in 3.7.x would be nice too. Copying stable.
 
-$ cat call-trace_ltplite_madvise02_next-20130114.txt
-Jan 14 17:47:14 fambox kernel: [ 1263.965957] ------------[ cut here
-]------------
-Jan 14 17:47:14 fambox kernel: [ 1263.965989] Kernel BUG at
-ffffffff81328b2b [verbose debug info unavailable]
-Jan 14 17:47:14 fambox kernel: [ 1263.966022] invalid opcode: 0000 [#1] SMP
-Jan 14 17:47:14 fambox kernel: [ 1263.966046] Modules linked in:
-snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel kvm
-snd_hda_intel snd_hda_codec arc4 iwldvm snd_hwdep snd_pcm
-ghash_clmulni_intel mac80211 aesni_intel i915 snd_page_alloc xts
-snd_seq_midi aes_x86_64 snd_seq_midi_event uvcvideo lrw gf128mul
-iwlwifi snd_rawmidi ablk_helper snd_seq i2c_algo_bit cryptd
-drm_kms_helper snd_timer videobuf2_vmalloc drm snd_seq_device
-videobuf2_memops psmouse parport_pc snd cfg80211 btusb rfcomm
-videobuf2_core bnep microcode ppdev soundcore videodev samsung_laptop
-wmi lp bluetooth serio_raw mei mac_hid hid_generic video lpc_ich
-parport usbhid hid r8169
-Jan 14 17:47:14 fambox kernel: [ 1263.966377] CPU 3
-Jan 14 17:47:14 fambox kernel: [ 1263.966388] Pid: 7803, comm:
-madvise02 Not tainted 3.8.0-rc3-next20130114-5-iniza-generic #1
-SAMSUNG ELECTRONICS CO., LTD.
-530U3BI/530U4BI/530U4BH/530U3BI/530U4BI/530U4BH
-Jan 14 17:47:14 fambox kernel: [ 1263.966450] RIP:
-0010:[<ffffffff81328b2b>]  [<ffffffff81328b2b>]
-blk_flush_plug_list+0x1eb/0x210
-Jan 14 17:47:14 fambox kernel: [ 1263.966508] RSP:
-0018:ffff88000d933e58  EFLAGS: 00010287
-Jan 14 17:47:14 fambox kernel: [ 1263.966532] RAX: 0000000091827364
-RBX: ffff88000d933e68 RCX: 0000000000000000
-Jan 14 17:47:14 fambox kernel: [ 1263.966566] RDX: 0000000000000000
-RSI: 0000000000000000 RDI: ffff88000d933f10
-Jan 14 17:47:14 fambox kernel: [ 1263.966614] RBP: ffff88000d933eb8
-R08: 0000000000000003 R09: 0000000000000000
-Jan 14 17:47:14 fambox kernel: [ 1263.966656] R10: 00007fff3d62c9b0
-R11: 0000000000000206 R12: 0000000000000000
-Jan 14 17:47:14 fambox kernel: [ 1263.966696] R13: 0000000000001000
-R14: ffff88000d933f10 R15: ffff88000d933f10
-Jan 14 17:47:14 fambox kernel: [ 1263.966736] FS:
-00007f56bcbc2700(0000) GS:ffff88011fac0000(0000)
-knlGS:0000000000000000
-Jan 14 17:47:14 fambox kernel: [ 1263.966780] CS:  0010 DS: 0000 ES:
-0000 CR0: 0000000080050033
-Jan 14 17:47:14 fambox kernel: [ 1263.966813] CR2: 00007f56bc6ec060
-CR3: 000000000bf66000 CR4: 00000000000407e0
-Jan 14 17:47:14 fambox kernel: [ 1263.966848] DR0: 0000000000000000
-DR1: 0000000000000000 DR2: 0000000000000000
-Jan 14 17:47:14 fambox kernel: [ 1263.966885] DR3: 0000000000000000
-DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Jan 14 17:47:14 fambox kernel: [ 1263.966921] Process madvise02 (pid:
-7803, threadinfo ffff88000d932000, task ffff88000d9f2e40)
-Jan 14 17:47:14 fambox kernel: [ 1263.966963] Stack:
-Jan 14 17:47:14 fambox kernel: [ 1263.966978]  0000000000000001
-0000000000000001 ffff88000d933e68 ffff88000d933e68
-Jan 14 17:47:14 fambox kernel: [ 1263.967024]  ffff88000d933ef8
-ffffffff8114b77c ffff88000d933ec0 ffff88000d933f10
-Jan 14 17:47:14 fambox kernel: [ 1263.967071]  0000000000000000
-0000000000001000 0000000000010000 ffff88000d933f10
-Jan 14 17:47:14 fambox kernel: [ 1263.967118] Call Trace:
-Jan 14 17:47:14 fambox kernel: [ 1263.967137]  [<ffffffff8114b77c>] ?
-vm_mmap_pgoff+0xbc/0xe0
-Jan 14 17:47:14 fambox kernel: [ 1263.967173]  [<ffffffff81328b68>]
-blk_finish_plug+0x18/0x50
-Jan 14 17:47:14 fambox kernel: [ 1263.967209]  [<ffffffff811544d8>]
-sys_madvise+0xc8/0x3a0
-Jan 14 17:47:14 fambox kernel: [ 1263.967247]  [<ffffffff816ba0e9>] ?
-do_page_fault+0x39/0x50
-Jan 14 17:47:14 fambox kernel: [ 1263.967288]  [<ffffffff816be79d>]
-system_call_fastpath+0x1a/0x1f
-Jan 14 17:47:14 fambox kernel: [ 1263.967331] Code: 4d 85 ff 74 0d 44
-89 e2 89 c6 4c 89 ff e8 be b5 ff ff 4c 89 ef 57 9d 66 66 90 66 90 48
-83 c4 38 5b 41 5c 41 5d 41 5e 41 5f 5d c3 <0f> 0b 31 d2 be ed ff ff ff
-4c 89 f7 89 45 a8 e8 91 f9 ff ff 8b
-Jan 14 17:47:14 fambox kernel: [ 1263.967589] RIP
-[<ffffffff81328b2b>] blk_flush_plug_list+0x1eb/0x210
-Jan 14 17:47:14 fambox kernel: [ 1263.967630]  RSP <ffff88000d933e58>
-Jan 14 17:47:14 fambox kernel: [ 1263.989553] ---[ end trace
-19e1575014ab42a7 ]---
+Please let stable@vger.kernel.org know the git commit id in Linus's tree
+when it makes it there, and we can take it.  Until then, nothing we can
+do, sorry.
 
-- Sedat -
-
-> --
-> Jens Axboe
->
+greg k-h
