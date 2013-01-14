@@ -1,62 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab3ANDNq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 22:13:46 -0500
-Received: from mga14.intel.com ([143.182.124.37]:54051 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755136Ab3ANDNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 22:13:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,465,1355126400"; 
-   d="scan'208";a="243412551"
-Date: Mon, 14 Jan 2013 11:14:23 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
-        Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v6 0/4] block layer runtime pm
-Message-ID: <20130114031422.GB15280@aaronlu.sh.intel.com>
-References: <50EBCBC3.4070606@intel.com>
- <Pine.LNX.4.44L0.1301081024300.1535-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1301081024300.1535-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755419Ab3ANDmd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 22:42:33 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:35459 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755219Ab3ANDmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 22:42:32 -0500
+Message-ID: <1358134958.19400.9.camel@joe-AO722>
+Subject: Re: [PATCH] scripts: checkpatch.pl: Fix misused memset detection
+From: Joe Perches <joe@perches.com>
+To: Cruz Julian Bishop <cruzjbishop@gmail.com>
+Cc: apw@canonical.com, linux-kernel@vger.kernel.org
+Date: Sun, 13 Jan 2013 19:42:38 -0800
+In-Reply-To: <1358132679-12235-1-git-send-email-cruzjbishop@gmail.com>
+References: <1358132679-12235-1-git-send-email-cruzjbishop@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 10:27:54AM -0500, Alan Stern wrote:
-> On Tue, 8 Jan 2013, Aaron Lu wrote:
-> 
-> > So this also reminds me that as long as CONFIG_PM_RUNTIME is selected,
-> > the blk_pm_add/put/peek_request functions will be in the block IO path.
-> > Shall we introduce a new config option to selectively build block
-> > runtime PM functionality? something like CONFIG_BLK_PM_RUNTIME perhaps?
-> > 
-> > Just some condition checks in those functions, not sure if it is worth a
-> > new config though. Please suggest, thanks.
-> 
-> I don't think it is needed.  The new routines will be very quick when 
-> blk_pm_runtime_init() hasn't been called, once you add back the checks 
-> for the queue's device.
+On Mon, 2013-01-14 at 13:04 +1000, Cruz Julian Bishop wrote:
+> Previously, checking memset declarations would generate
+> a lot of errors saying that $ms_size was not defined.
 
-Is it necessary to also add the q->dev check in the following case?
+Try this one instead:
 
-static void blk_pm_requeue_request(struct request *rq)
-{
-	if (rq->q->dev && !(rq->cmd_flags & REQ_PM))
-		rq->q->nr_pending--;
-}
+https://lkml.org/lkml/2013/1/10/444
 
-So that we do not have a meanlingless value of nr_pending for those
-drivers that don't use block runtime PM, and this also has the benefit
-of making those drivers return early.
 
-Thanks,
-Aaron
 
