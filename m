@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab3ANU6e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:58:34 -0500
-Received: from mout.gmx.net ([212.227.17.21]:57409 "EHLO mout.gmx.net"
+	id S1758829Ab3ANU6c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:58:32 -0500
+Received: from mout.gmx.net ([212.227.17.20]:60341 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758816Ab3ANU6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:58:31 -0500
+	id S1758799Ab3ANU6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 15:58:30 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19LpUkCmEtLTcAllKP6oaU5BG+j0c39bO16TxHmUh
-	gvySBknK7YtDJm
+X-Provags-ID: V01U2FsdGVkX1/NGN9l447NzGVpQ4YCiSNzjwUAJMuFiR3QOppeHt
+	43SF/uFkkSCpy8
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
@@ -17,9 +17,9 @@ Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
         Peter Huewe <peterhuewe@gmx.de>,
         YAMANE Toshiaki <yamanetoshi@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8] staging/comedi/ni_labpc_cs: Convert to module_comedi_pcmcia_driver
-Date: Mon, 14 Jan 2013 22:00:55 +0100
-Message-Id: <1358197255-17542-8-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 7/8] staging/comedi/ni_daq_700: Convert to module_comedi_pcmcia_driver
+Date: Mon, 14 Jan 2013 22:00:54 +0100
+Message-Id: <1358197255-17542-7-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1358197255-17542-1-git-send-email-peterhuewe@gmx.de>
 References: <ADE657CA350FB648AAC2C43247A983F00207A6CBADD1@AUSP01VMBX24.collaborationhost.net>
@@ -34,48 +34,45 @@ module_comedi_pcmcia_driver macro.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/comedi/drivers/ni_labpc_cs.c |   31 +-------------------------
- 1 files changed, 1 insertions(+), 30 deletions(-)
+ drivers/staging/comedi/drivers/ni_daq_700.c |   25 +------------------------
+ 1 files changed, 1 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc_cs.c b/drivers/staging/comedi/drivers/ni_labpc_cs.c
-index bfe19fa..b26496d 100644
---- a/drivers/staging/comedi/drivers/ni_labpc_cs.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc_cs.c
-@@ -282,33 +282,4 @@ static struct pcmcia_driver labpc_cs_driver = {
- 	.name = "daqcard-1200",
+diff --git a/drivers/staging/comedi/drivers/ni_daq_700.c b/drivers/staging/comedi/drivers/ni_daq_700.c
+index 68d7c6a..ff0e199 100644
+--- a/drivers/staging/comedi/drivers/ni_daq_700.c
++++ b/drivers/staging/comedi/drivers/ni_daq_700.c
+@@ -334,30 +334,7 @@ static struct pcmcia_driver daq700_cs_driver = {
+ 	.id_table	= daq700_cs_ids,
  };
  
--static int __init init_labpc_cs(void)
--{
--	pcmcia_register_driver(&labpc_cs_driver);
--	return 0;
--}
--
--static void __exit exit_labpc_cs(void)
--{
--	pcmcia_unregister_driver(&labpc_cs_driver);
--}
--
--static int __init labpc_init_module(void)
+-static int __init daq700_cs_init(void)
 -{
 -	int ret;
 -
--	ret = init_labpc_cs();
+-	ret = comedi_driver_register(&daq700_driver);
 -	if (ret < 0)
 -		return ret;
 -
--	return comedi_driver_register(&driver_labpc_cs);
--}
+-	ret = pcmcia_register_driver(&daq700_cs_driver);
+-	if (ret < 0) {
+-		comedi_driver_unregister(&daq700_driver);
+-		return ret;
+-	}
 -
--static void __exit labpc_exit_module(void)
+-	return 0;
+-}
+-module_init(daq700_cs_init);
+-
+-static void __exit daq700_cs_exit(void)
 -{
--	exit_labpc_cs();
--	comedi_driver_unregister(&driver_labpc_cs);
+-	pcmcia_unregister_driver(&daq700_cs_driver);
+-	comedi_driver_unregister(&daq700_driver);
 -}
--
--module_init(labpc_init_module);
--module_exit(labpc_exit_module);
-+module_comedi_pcmcia_driver(driver_labpc_cs, labpc_cs_driver);
+-module_exit(daq700_cs_exit);
++module_comedi_pcmcia_driver(daq700_driver, daq700_cs_driver);
+ 
+ MODULE_AUTHOR("Fred Brooks <nsaspook@nsaspook.com>");
+ MODULE_DESCRIPTION(
 -- 
 1.7.8.6
 
