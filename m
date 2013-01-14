@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab3ANSxe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:53:34 -0500
-Received: from mail-ye0-f202.google.com ([209.85.213.202]:64348 "EHLO
-	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279Ab3ANSxb (ORCPT
+	id S1758185Ab3ANSzT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:55:19 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:40322 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757462Ab3ANSzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:53:31 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-i2c@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 0/2] Add automatic bus number support for i2c busses with device tree
-Date: Mon, 14 Jan 2013 10:53:20 -0800
-Message-Id: <1358189602-24180-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1357927027-4857-2-git-send-email-dianders@chromium.org>
-References: <1357927027-4857-2-git-send-email-dianders@chromium.org>
+	Mon, 14 Jan 2013 13:55:17 -0500
+Date: Mon, 14 Jan 2013 10:55:12 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Colin Cross <ccross@google.com>, Mike Galbraith <efault@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 2/2] cgroup: remove synchronize_rcu() from
+ rebind_subsystems()
+Message-ID: <20130114185512.GG27942@mtj.dyndns.org>
+References: <50F3CE8E.5000402@huawei.com>
+ <50F3CEC2.1020909@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F3CEC2.1020909@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was suggested by Mark Brown in response to a patch for adding
-this functionality only for the s3c2410 bus:
-  https://lkml.org/lkml/2012/11/20/681
+On Mon, Jan 14, 2013 at 05:24:18PM +0800, Li Zefan wrote:
+> Nothing's protected by RCU in rebind_subsystems(), and I can't think
+> of a reason why it is needed.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-I have also modified the i2c-pxa driver to use this new functionality.
+Applied to cgroup/for-3.9.  We probably should synchornize_rcu() from
+cgroup_diput() too.  Probably by punting css_free() and cgrp freeing
+to a work item from call_rcu() callback.
 
-Changes in v2:
-- No longer tweak pdev->id as per Sylwester Nawrocki.
-- No longer add the dev ID to the adap.name.  Other drivers don't
-  include the device ID here and it doesn't make sense with
-  dynamically (or automatically) allocated IDs.
-- Use dev_name(&dev->dev) to register for the IRQ; this matches what
-  the i2c-s3c2410.c does and handles dynamically allocated IDs.
-- This change was only compile-tested (corgi_defconfig), since I don't
-  have access to a board that uses this driver.
-
-Doug Anderson (2):
-  i2c-core: dt: Pick i2c bus number from i2c alias if present
-  i2c: pxa: Use i2c-core to get bus number now
-
- drivers/i2c/busses/i2c-pxa.c |   20 ++++----
- drivers/i2c/i2c-core.c       |  105 ++++++++++++++++++++++++++++++-----------
- 2 files changed, 86 insertions(+), 39 deletions(-)
+Thanks.
 
 -- 
-1.7.7.3
-
+tejun
