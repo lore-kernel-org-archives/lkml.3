@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab3ANO6L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:58:11 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62319 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756065Ab3ANO6K (ORCPT
+	id S1756663Ab3ANPCV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 10:02:21 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39636 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555Ab3ANPCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:58:10 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/1] ARM: ux500: Disable Power Supply and Battery Management by default
-Date: Mon, 14 Jan 2013 14:57:50 +0000
-Message-Id: <1358175470-5041-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 14 Jan 2013 10:02:20 -0500
+Message-ID: <50F41D9D.1000403@linux.vnet.ibm.com>
+Date: Mon, 14 Jan 2013 07:00:45 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: paul.szabo@sydney.edu.au
+CC: linux-mm@kvack.org, 695182@bugs.debian.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Reproducible OOM with just a few sleeps
+References: <201301120331.r0C3VxXc016220@como.maths.usyd.edu.au>
+In-Reply-To: <201301120331.r0C3VxXc016220@como.maths.usyd.edu.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011415-5518-0000-0000-00000AB8B339
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AB8500 Battery Management collection of drivers are more than a
-little bit broken. There is lots of work still on-going in that area
-and it's improving day by day; however, it's not ready to be enabled
-by default just yet.
+On 01/11/2013 07:31 PM, paul.szabo@sydney.edu.au wrote:
+> Seems that any i386 PAE machine will go OOM just by running a few
+> processes. To reproduce:
+>   sh -c 'n=0; while [ $n -lt 19999 ]; do sleep 600 & ((n=n+1)); done'
+> My machine has 64GB RAM. With previous OOM episodes, it seemed that
+> running (booting) it with mem=32G might avoid OOM; but an OOM was
+> obtained just the same, and also with lower memory:
+>   Memory    sleeps to OOM       free shows total
+>   (mem=64G)  5300               64447796
+>   mem=32G   10200               31155512
+>   mem=16G   13400               14509364
+>   mem=8G    14200               6186296
+>   mem=6G    15200               4105532
+>   mem=4G    16400               2041364
+> The machine does not run out of highmem, nor does it use any swap.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/configs/u8500_defconfig |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+I think what you're seeing here is that, as the amount of total memory
+increases, the amount of lowmem available _decreases_ due to inflation
+of mem_map[] (and a few other more minor things).  The number of sleeps
+you can do is bound by the number of processes, as you noticed from
+ulimit.  Creating processes that don't use much memory eats a relatively
+large amount of low memory.
 
-diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
-index 231dca6..426270f 100644
---- a/arch/arm/configs/u8500_defconfig
-+++ b/arch/arm/configs/u8500_defconfig
-@@ -66,9 +66,9 @@ CONFIG_SPI=y
- CONFIG_SPI_PL022=y
- CONFIG_GPIO_STMPE=y
- CONFIG_GPIO_TC3589X=y
--CONFIG_POWER_SUPPLY=y
--CONFIG_AB8500_BM=y
--CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL=y
-+# CONFIG_POWER_SUPPLY is not set
-+# CONFIG_AB8500_BM is not set
-+# CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL is not set
- CONFIG_THERMAL=y
- CONFIG_CPU_THERMAL=y
- CONFIG_MFD_STMPE=y
--- 
-1.7.9.5
+This is a sad (and counterintuitive) fact: more RAM actually *CREATES*
+RAM bottlenecks on 32-bit systems.
+
+> On my large machine, 'free' fails to show about 2GB memory, e.g. with
+> mem=16G it shows:
+> 
+> root@zeno:~# free -l
+>              total       used       free     shared    buffers     cached
+> Mem:      14509364     435440   14073924          0       4068     111328
+> Low:        769044     120232     648812
+> High:     13740320     315208   13425112
+> -/+ buffers/cache:     320044   14189320
+> Swap:    134217724          0  134217724
+
+You probably have a memory hole.  mem=16G means "give me all the memory
+below the physical address at 16GB".  It does *NOT* mean, "give me
+enough memory such that 'free' will show ~16G available."  If you have a
+1.5GB hole below 16GB, and you do mem=16G, you'll end up with ~14.5GB
+available.
+
+The e820 map (during early boot in dmesg) or /proc/iomem will let you
+locate your memory holes.
 
