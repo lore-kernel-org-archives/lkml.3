@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab3ANGx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 01:53:29 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65407 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180Ab3ANGxZ (ORCPT
+	id S1752741Ab3ANHDG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 02:03:06 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48608 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369Ab3ANHDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 01:53:25 -0500
-X-AuditID: 9c93016f-b7b54ae000000e9e-77-50f3ab61b5d2
+	Mon, 14 Jan 2013 02:03:05 -0500
+X-AuditID: 9c930197-b7cefae0000002d7-df-50f3ada5a19b
 From: Namhyung Kim <namhyung@kernel.org>
 To: Alex Shi <alex.shi@intel.com>
 Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
@@ -15,13 +15,13 @@ Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         pjt@google.com, efault@gmx.de, vincent.guittot@linaro.org,
         gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 14/22] sched: add sched_policy and it's sysfs interface
+Subject: Re: [PATCH v3 16/22] sched: add power aware scheduling in fork/exec/wake
 References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
-	<1357375071-11793-15-git-send-email-alex.shi@intel.com>
-Date: Mon, 14 Jan 2013 15:53:21 +0900
-In-Reply-To: <1357375071-11793-15-git-send-email-alex.shi@intel.com> (Alex
-	Shi's message of "Sat, 5 Jan 2013 16:37:43 +0800")
-Message-ID: <87y5fwntlq.fsf@sejong.aot.lge.com>
+	<1357375071-11793-17-git-send-email-alex.shi@intel.com>
+Date: Mon, 14 Jan 2013 16:03:01 +0900
+In-Reply-To: <1357375071-11793-17-git-send-email-alex.shi@intel.com> (Alex
+	Shi's message of "Sat, 5 Jan 2013 16:37:45 +0800")
+Message-ID: <87txqknt5m.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -30,164 +30,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
-
-Just a few nitpickings..
-
-
-On Sat,  5 Jan 2013 16:37:43 +0800, Alex Shi wrote:
-> This patch add the power aware scheduler knob into sysfs:
+On Sat,  5 Jan 2013 16:37:45 +0800, Alex Shi wrote:
+> This patch add power aware scheduling in fork/exec/wake. It try to
+> select cpu from the busiest while still has utilization group. That's
+> will save power for other groups.
 >
-> $cat /sys/devices/system/cpu/sched_policy/available_sched_policy
-> performance powersaving balance
-> $cat /sys/devices/system/cpu/sched_policy/current_sched_policy
-> powersaving
+> The trade off is adding a power aware statistics collection in group
+> seeking. But since the collection just happened in power scheduling
+> eligible condition, the worst case of hackbench testing just drops
+> about 2% with powersaving/balance policy. No clear change for
+> performance policy.
 >
-> This means the using sched policy is 'powersaving'.
->
-> User can change the policy by commend 'echo':
->  echo performance > /sys/devices/system/cpu/current_sched_policy
+> I had tried to use rq load avg utilisation in this balancing, but since
+> the utilisation need much time to accumulate itself. It's unfit for any
+> burst balancing. So I use nr_running as instant rq utilisation.
 >
 > Signed-off-by: Alex Shi <alex.shi@intel.com>
 > ---
->  Documentation/ABI/testing/sysfs-devices-system-cpu | 24 +++++++
->  kernel/sched/fair.c                                | 76 ++++++++++++++++++++++
->  2 files changed, 100 insertions(+)
->
-> diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
-> index 6943133..9c9acbf 100644
-> --- a/Documentation/ABI/testing/sysfs-devices-system-cpu
-> +++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
-> @@ -53,6 +53,30 @@ Description:	Dynamic addition and removal of CPU's.  This is not hotplug
->  		the system.  Information writtento the file to remove CPU's
->  		is architecture specific.
->  
-> +What:		/sys/devices/system/cpu/sched_policy/current_sched_policy
-> +		/sys/devices/system/cpu/sched_policy/available_sched_policy
-> +Date:		Oct 2012
-> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-> +Description:	CFS scheduler policy showing and setting interface.
-> +
-> +		available_sched_policy shows there are 3 kinds of policy now:
-> +		performance, balance and powersaving.
-> +		current_sched_policy shows current scheduler policy. And user
-> +		can change the policy by writing it.
-> +
-> +		Policy decides that CFS scheduler how to distribute tasks onto
-> +		which CPU unit when tasks number less than LCPU number in system
-> +
-> +		performance: try to spread tasks onto more CPU sockets,
-> +		more CPU cores.
-> +
-> +		powersaving: try to shrink tasks onto same core or same CPU
-> +		until every LCPUs are busy.
-> +
-> +		balance:     try to shrink tasks onto same core or same CPU
-> +		until full powered CPUs are busy. This policy also consider
-> +		system performance when try to save power.
-> +
->  What:		/sys/devices/system/cpu/cpu#/node
->  Date:		October 2009
->  Contact:	Linux memory management mailing list <linux-mm@kvack.org>
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index f24aca6..ee015b8 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -6102,6 +6102,82 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
->  
->  /* The default scheduler policy is 'performance'. */
->  int __read_mostly sched_policy = SCHED_POLICY_PERFORMANCE;
-> +
-> +#ifdef CONFIG_SYSFS
-> +static ssize_t show_available_sched_policy(struct device *dev,
-> +		struct device_attribute *attr,
-> +		char *buf)
-
-This line can be combined to the above line.
-
-
-> +{
-> +	return sprintf(buf, "performance balance powersaving\n");
-> +}
-> +
-> +static ssize_t show_current_sched_policy(struct device *dev,
-> +		struct device_attribute *attr,
-> +		char *buf)
-
-Ditto.
-
-
-> +{
-> +	if (sched_policy == SCHED_POLICY_PERFORMANCE)
-> +		return sprintf(buf, "performance\n");
-> +	else if (sched_policy == SCHED_POLICY_POWERSAVING)
-> +		return sprintf(buf, "powersaving\n");
-> +	else if (sched_policy == SCHED_POLICY_BALANCE)
-> +		return sprintf(buf, "balance\n");
-> +	return 0;
-> +}
-> +
-> +static ssize_t set_sched_policy(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t count)
-> +{
-> +	unsigned int ret = -EINVAL;
-> +	char    str_policy[16];
-> +
-> +	ret = sscanf(buf, "%15s", str_policy);
-> +	if (ret != 1)
-> +		return -EINVAL;
-> +
-> +	if (!strcmp(str_policy, "performance"))
-> +		sched_policy = SCHED_POLICY_PERFORMANCE;
-> +	else if (!strcmp(str_policy, "powersaving"))
-> +		sched_policy = SCHED_POLICY_POWERSAVING;
-> +	else if (!strcmp(str_policy, "balance"))
-> +		sched_policy = SCHED_POLICY_BALANCE;
-> +	else
-> +		return -EINVAL;
-> +
-> +	return count;
-> +}
-> +
+[snip]
 > +/*
-> + *  * Sysfs setup bits:
-> + *   */
+> + * Try to collect the task running number and capacity of the doamin.
+> + */
+> +static void get_sd_power_stats(struct sched_domain *sd,
+> +		struct task_struct *p, struct sd_lb_stats *sds)
+> +{
+> +	struct sched_group *group;
+> +	struct sg_lb_stats sgs;
+> +	int sd_min_delta = INT_MAX;
+> +	int cpu = task_cpu(p);
+> +
+> +	group = sd->groups;
+> +	do {
+> +		long g_delta;
+> +		unsigned long threshold;
+> +
+> +		if (!cpumask_test_cpu(cpu, sched_group_mask(group)))
+> +			continue;
 
-Unneeded asterisks.
+Why?
+
+That means only local group's stat will be accounted for this domain,
+right?  Is it your intension?
 
 Thanks,
 Namhyung
 
 
-> +static DEVICE_ATTR(current_sched_policy, 0644, show_current_sched_policy,
-> +						set_sched_policy);
 > +
-> +static DEVICE_ATTR(available_sched_policy, 0444,
-> +		show_available_sched_policy, NULL);
+> +		memset(&sgs, 0, sizeof(sgs));
+> +		get_sg_power_stats(group, sd, &sgs);
 > +
-> +static struct attribute *sched_policy_default_attrs[] = {
-> +	&dev_attr_current_sched_policy.attr,
-> +	&dev_attr_available_sched_policy.attr,
-> +	NULL
-> +};
-> +static struct attribute_group sched_policy_attr_group = {
-> +	.attrs = sched_policy_default_attrs,
-> +	.name = "sched_policy",
-> +};
+> +		if (sched_policy == SCHED_POLICY_POWERSAVING)
+> +			threshold = sgs.group_weight;
+> +		else
+> +			threshold = sgs.group_capacity;
 > +
-> +int __init create_sysfs_sched_policy_group(struct device *dev)
-> +{
-> +	return sysfs_create_group(&dev->kobj, &sched_policy_attr_group);
+> +		g_delta = threshold - sgs.group_utils;
+> +
+> +		if (g_delta > 0 && g_delta < sd_min_delta) {
+> +			sd_min_delta = g_delta;
+> +			sds->group_leader = group;
+> +		}
+> +
+> +		sds->sd_utils += sgs.group_utils;
+> +		sds->total_pwr += group->sgp->power;
+> +	} while  (group = group->next, group != sd->groups);
+> +
+> +	sds->sd_capacity = DIV_ROUND_CLOSEST(sds->total_pwr,
+> +						SCHED_POWER_SCALE);
 > +}
-> +
-> +static int __init sched_policy_sysfs_init(void)
-> +{
-> +	return create_sysfs_sched_policy_group(cpu_subsys.dev_root);
-> +}
-> +
-> +core_initcall(sched_policy_sysfs_init);
-> +#endif /* CONFIG_SYSFS */
-> +
->  /*
->   * All the scheduling class methods:
->   */
