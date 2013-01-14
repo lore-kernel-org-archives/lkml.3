@@ -1,94 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab3ANHgA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 02:36:00 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:53870 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab3ANHf6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 02:35:58 -0500
-Message-ID: <50F3B54D.7010801@synopsys.com>
-Date: Mon, 14 Jan 2013 13:05:41 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755863Ab3ANHiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 02:38:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25768 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755586Ab3ANHiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 02:38:11 -0500
+Message-ID: <50F3B5D6.4070405@redhat.com>
+Date: Mon, 14 Jan 2013 15:37:58 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.cross-arch
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Grant Likely <grant.likely@secretlab.ca>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tglx@linutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: early init dt for earlyprintk (was Re: [RFC PATCH v1 25/31] ARC:
- [plat-arcfpga] Hooking up platform to ARC UART)
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-26-git-send-email-vgupta@synopsys.com> <201211071416.08012.arnd@arndb.de>
-In-Reply-To: <201211071416.08012.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, davem@davemloft.net
+Subject: Re: [PATCH V3 2/2] vhost: handle polling errors
+References: <1357456718-3072-1-git-send-email-jasowang@redhat.com> <1357456718-3072-3-git-send-email-jasowang@redhat.com> <20130106132201.GC18612@redhat.com> <50EA5139.7000904@redhat.com> <20130107145559.GA5901@redhat.com> <50EAE400.6030301@redhat.com> <20130113111035.GA23431@redhat.com> <50F37476.4070501@redhat.com> <20130114065712.GA10312@redhat.com>
+In-Reply-To: <20130114065712.GA10312@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On 01/14/2013 02:57 PM, Michael S. Tsirkin wrote:
+> On Mon, Jan 14, 2013 at 10:59:02AM +0800, Jason Wang wrote:
+>> On 01/13/2013 07:10 PM, Michael S. Tsirkin wrote:
+>>> On Mon, Jan 07, 2013 at 11:04:32PM +0800, Jason Wang wrote:
+>>>> On 01/07/2013 10:55 PM, Michael S. Tsirkin wrote:
+>>>>> On Mon, Jan 07, 2013 at 12:38:17PM +0800, Jason Wang wrote:
+>>>>>> On 01/06/2013 09:22 PM, Michael S. Tsirkin wrote:
+>>>>>>> On Sun, Jan 06, 2013 at 03:18:38PM +0800, Jason Wang wrote:
+>>>>>>>> Polling errors were ignored by vhost/vhost_net, this may lead to crash when
+>>>>>>>> trying to remove vhost from waitqueue when after the polling is failed. Solve
+>>>>>>>> this problem by:
+>>>>>>>>
+>>>>>>>> - checking the poll->wqh before trying to remove from waitqueue
+>>>>>>>> - report an error when poll() returns a POLLERR in vhost_start_poll()
+>>>>>>>> - report an error when vhost_start_poll() fails in
+>>>>>>>>   vhost_vring_ioctl()/vhost_net_set_backend() which is used to notify the
+>>>>>>>>   failure to userspace.
+>>>>>>>> - report an error in the data path in vhost_net when meet polling errors.
+>>>>>>>>
+>>>>>>>> After those changes, we can safely drop the tx polling state in vhost_net since
+>>>>>>>> it was replaced by the checking of poll->wqh.
+>>>>>>>>
+>>>>>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>>>>>>>> ---
+>>>>>>>>  drivers/vhost/net.c   |   74 ++++++++++++++++--------------------------------
+>>>>>>>>  drivers/vhost/vhost.c |   31 +++++++++++++++-----
+>>>>>>>>  drivers/vhost/vhost.h |    2 +-
+>>>>>>>>  3 files changed, 49 insertions(+), 58 deletions(-)
+>>>>>>>>
+>>>>>>>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+>>>>>>>> index d10ad6f..125c1e5 100644
+>>>>>>>> --- a/drivers/vhost/net.c
+>>>>>>>> +++ b/drivers/vhost/net.c
+>>>>>>>> @@ -64,20 +64,10 @@ enum {
+>>>>>>>>  	VHOST_NET_VQ_MAX = 2,
+>>>>>>>>  };
+>>>>>>>>  
+>>>>>>>> -enum vhost_net_poll_state {
+>>>>>>>> -	VHOST_NET_POLL_DISABLED = 0,
+>>>>>>>> -	VHOST_NET_POLL_STARTED = 1,
+>>>>>>>> -	VHOST_NET_POLL_STOPPED = 2,
+>>>>>>>> -};
+>>>>>>>> -
+>>>>>>>>  struct vhost_net {
+>>>>>>>>  	struct vhost_dev dev;
+>>>>>>>>  	struct vhost_virtqueue vqs[VHOST_NET_VQ_MAX];
+>>>>>>>>  	struct vhost_poll poll[VHOST_NET_VQ_MAX];
+>>>>>>>> -	/* Tells us whether we are polling a socket for TX.
+>>>>>>>> -	 * We only do this when socket buffer fills up.
+>>>>>>>> -	 * Protected by tx vq lock. */
+>>>>>>>> -	enum vhost_net_poll_state tx_poll_state;
+>>>>>>>>  	/* Number of TX recently submitted.
+>>>>>>>>  	 * Protected by tx vq lock. */
+>>>>>>>>  	unsigned tx_packets;
+>>>>>>>> @@ -155,24 +145,6 @@ static void copy_iovec_hdr(const struct iovec *from, struct iovec *to,
+>>>>>>>>  	}
+>>>>>>>>  }
+>>>>>>>>  
+>>>>>>>> -/* Caller must have TX VQ lock */
+>>>>>>>> -static void tx_poll_stop(struct vhost_net *net)
+>>>>>>>> -{
+>>>>>>>> -	if (likely(net->tx_poll_state != VHOST_NET_POLL_STARTED))
+>>>>>>>> -		return;
+>>>>>>>> -	vhost_poll_stop(net->poll + VHOST_NET_VQ_TX);
+>>>>>>>> -	net->tx_poll_state = VHOST_NET_POLL_STOPPED;
+>>>>>>>> -}
+>>>>>>>> -
+>>>>>>>> -/* Caller must have TX VQ lock */
+>>>>>>>> -static void tx_poll_start(struct vhost_net *net, struct socket *sock)
+>>>>>>>> -{
+>>>>>>>> -	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
+>>>>>>>> -		return;
+>>>>>>>> -	vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
+>>>>>>>> -	net->tx_poll_state = VHOST_NET_POLL_STARTED;
+>>>>>>>> -}
+>>>>>>>> -
+>>>>>>>>  /* In case of DMA done not in order in lower device driver for some reason.
+>>>>>>>>   * upend_idx is used to track end of used idx, done_idx is used to track head
+>>>>>>>>   * of used idx. Once lower device DMA done contiguously, we will signal KVM
+>>>>>>>> @@ -227,6 +199,7 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+>>>>>>>>  static void handle_tx(struct vhost_net *net)
+>>>>>>>>  {
+>>>>>>>>  	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
+>>>>>>>> +	struct vhost_poll *poll = net->poll + VHOST_NET_VQ_TX;
+>>>>>>>>  	unsigned out, in, s;
+>>>>>>>>  	int head;
+>>>>>>>>  	struct msghdr msg = {
+>>>>>>>> @@ -252,7 +225,8 @@ static void handle_tx(struct vhost_net *net)
+>>>>>>>>  	wmem = atomic_read(&sock->sk->sk_wmem_alloc);
+>>>>>>>>  	if (wmem >= sock->sk->sk_sndbuf) {
+>>>>>>>>  		mutex_lock(&vq->mutex);
+>>>>>>>> -		tx_poll_start(net, sock);
+>>>>>>>> +		if (vhost_poll_start(poll, sock->file))
+>>>>>>>> +			vq_err(vq, "Fail to start TX polling\n");
+>>>>>>> s/Fail/Failed/
+>>>>>>>
+>>>>>>> A question though: how can this happen? Could you clarify please?
+>>>>>>> Maybe we can find a way to prevent this error?
+>>>>>> Two conditions I think this can happen:
+>>>>>>
+>>>>>> 1) a buggy userspace disable a queue through TUNSETQUEUE
+>>>>>> 2) the net device were gone
+>>>>>>
+>>>>>> For 1, looks like we can delay the disabling until the refcnt goes to
+>>>>>> zero. For 2 may needs more changes.
+>>>>> I'd expect keeping a socket reference would prevent both issues.
+>>>>> Doesn't it?
+>>>> Doesn't work for 2 I think, the socket didn't hold a refcnt of the
+>>>> device, so the device can go away at anytime. Although we can change
+>>>> this, but it's the behaviour before multiqueue support.
+>>> Hmm there's one scenario that does seem to
+>>> trigger this: queue can get disabled
+>>> and then poll fails.
+>>>
+>>> Is this the only issue?
+>> Another one I think we can trigger is:
+>>
+>> - start vhost thread
+>> - do ip link del link dev tap0 to delete the tap device
+>>
+>> In this case, the netdevice is unregistered but the file/socket still exist.
+> Yes but in this case poll_wait is called so apparently no issue
+> with existing code? We only have an issue if poll_wait is
+> not called right?
 
-On Wednesday 07 November 2012 07:46 PM, Arnd Bergmann wrote:
-> On Wednesday 07 November 2012, Vineet Gupta wrote:
->> +static struct platform_device arc_uart##n##_dev = {    \
->> +       .name = "arc-uart",                             \
->> +       .id = n,                                        \
->> +       .num_resources = ARRAY_SIZE(arc_uart##n##_res), \
->> +       .resource = arc_uart##n##_res,                  \
->> +       .dev = {                                        \
->> +               .platform_data = &arc_uart_info,        \
->> +       },                                              \
->> +}
->> +
->> +ARC_UART_DEV(0);
->> +#if CONFIG_SERIAL_ARC_NR_PORTS > 1
->> +ARC_UART_DEV(1);
->> +#endif
->> +
->> +static struct platform_device *fpga_early_devs[] __initdata = {
->> +#if defined(CONFIG_SERIAL_ARC_CONSOLE)
->> +       &arc_uart0_dev,
->> +#endif
->> +};
-> 
-> statically defining platform devices like this is considered very
-> bad style, especially since it prevents you from doing proper
-> boot-time configuration. Please get the available devices from
-> the boot loader. Normally this is done using a flattened device
-> tree blob that gets passed, unless you can probe the hardware
-> directly.
-> 
-> 	Arnd
-> 
+Right.
+> Maybe the simplest fix is to invoke poll_wait before
+> checking if (!tun) ?
 
-OK, I have DeviceTree infrastructure in place. After wrapping my head around
-irq-domains, the whole thing indeed seems like a nice abstraction. ARC Port
-converted to it and patches to arc-uart driver to that effect posted to serial
-lists. Thanks for your ACK to the arc-uart DT binding patch for same.
+True, but we this depends on the assumption that each kind of backend
+must make sure poll_wait() is called in .poll(). And we need to change
+macvtap_poll() as well. And we'd better also pass those polling errors
+to notify user about this wrong state.
+>
+>>>>>> Not sure it's worth to do this work,
+>>>>>> maybe a warning is enough just like other failure.
+>>>>> With other failures, you normally can correct the error then
+>>>>> kick to have it restart. This is soomething thagt would not
+>>>>> work here.
+>>>> If userspace is wrote correctly, (e.g passing a fd with correct state)
+>>>> it can also be corrected.
+>>>>>>>>  		mutex_unlock(&vq->mutex);
+>>>>>>>>  		return;
+>>>>>>>>  	}
+>>>>>>>> @@ -261,7 +235,7 @@ static void handle_tx(struct vhost_net *net)
+>>>>>>>>  	vhost_disable_notify(&net->dev, vq);
+>>>>>>>>  
+>>>>>>>>  	if (wmem < sock->sk->sk_sndbuf / 2)
+>>>>>>>> -		tx_poll_stop(net);
+>>>>>>>> +		vhost_poll_stop(poll);
+>>>>>>>>  	hdr_size = vq->vhost_hlen;
+>>>>>>>>  	zcopy = vq->ubufs;
+>>>>>>>>  
+>>>>>>>> @@ -283,8 +257,10 @@ static void handle_tx(struct vhost_net *net)
+>>>>>>>>  
+>>>>>>>>  			wmem = atomic_read(&sock->sk->sk_wmem_alloc);
+>>>>>>>>  			if (wmem >= sock->sk->sk_sndbuf * 3 / 4) {
+>>>>>>>> -				tx_poll_start(net, sock);
+>>>>>>>> -				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+>>>>>>>> +				if (vhost_poll_start(poll, sock->file))
+>>>>>>>> +					vq_err(vq, "Fail to start TX polling\n");
+>>>>>>>> +				else
+>>>>>>>> +					set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+>>>>>>>>  				break;
+>>>>>>>>  			}
+>>>>>>>>  			/* If more outstanding DMAs, queue the work.
+>>>>>>>> @@ -294,8 +270,10 @@ static void handle_tx(struct vhost_net *net)
+>>>>>>>>  				    (vq->upend_idx - vq->done_idx) :
+>>>>>>>>  				    (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
+>>>>>>>>  			if (unlikely(num_pends > VHOST_MAX_PEND)) {
+>>>>>>>> -				tx_poll_start(net, sock);
+>>>>>>>> -				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+>>>>>>>> +				if (vhost_poll_start(poll, sock->file))
+>>>>>>>> +					vq_err(vq, "Fail to start TX polling\n");
+>>>>>>>> +				else
+>>>>>>>> +					set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+>>>>>>>>  				break;
+>>>>>>>>  			}
+>>>>>>>>  			if (unlikely(vhost_enable_notify(&net->dev, vq))) {
+>>>>>>>> @@ -360,7 +338,8 @@ static void handle_tx(struct vhost_net *net)
+>>>>>>>>  			}
+>>>>>>>>  			vhost_discard_vq_desc(vq, 1);
+>>>>>>>>  			if (err == -EAGAIN || err == -ENOBUFS)
+>>>>>>>> -				tx_poll_start(net, sock);
+>>>>>>>> +				if (vhost_poll_start(poll, sock->file))
+>>>>>>>> +					vq_err(vq, "Fail to start TX polling\n");
+>>>>>>>>  			break;
+>>>>>>>>  		}
+>>>>>>>>  		if (err != len)
+>>>>>>>> @@ -623,7 +602,6 @@ static int vhost_net_open(struct inode *inode, struct file *f)
+>>>>>>>>  
+>>>>>>>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
+>>>>>>>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
+>>>>>>>> -	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
+>>>>>>>>  
+>>>>>>>>  	f->private_data = n;
+>>>>>>>>  
+>>>>>>>> @@ -633,29 +611,25 @@ static int vhost_net_open(struct inode *inode, struct file *f)
+>>>>>>>>  static void vhost_net_disable_vq(struct vhost_net *n,
+>>>>>>>>  				 struct vhost_virtqueue *vq)
+>>>>>>>>  {
+>>>>>>>> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
+>>>>>>>> +
+>>>>>>>>  	if (!vq->private_data)
+>>>>>>>>  		return;
+>>>>>>>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
+>>>>>>>> -		tx_poll_stop(n);
+>>>>>>>> -		n->tx_poll_state = VHOST_NET_POLL_DISABLED;
+>>>>>>>> -	} else
+>>>>>>>> -		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
+>>>>>>>> +	vhost_poll_stop(poll);
+>>>>>>>>  }
+>>>>>>>>  
+>>>>>>>> -static void vhost_net_enable_vq(struct vhost_net *n,
+>>>>>>>> +static int vhost_net_enable_vq(struct vhost_net *n,
+>>>>>>>>  				struct vhost_virtqueue *vq)
+>>>>>>>>  {
+>>>>>>>>  	struct socket *sock;
+>>>>>>>> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
+>>>>>>>>  
+>>>>>>>>  	sock = rcu_dereference_protected(vq->private_data,
+>>>>>>>>  					 lockdep_is_held(&vq->mutex));
+>>>>>>>>  	if (!sock)
+>>>>>>>> -		return;
+>>>>>>>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
+>>>>>>>> -		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
+>>>>>>>> -		tx_poll_start(n, sock);
+>>>>>>>> -	} else
+>>>>>>>> -		vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
+>>>>>>>> +		return 0;
+>>>>>>>> +
+>>>>>>>> +	return vhost_poll_start(poll, sock->file);
+>>>>>>>>  }
+>>>>>>>>  
+>>>>>>>>  static struct socket *vhost_net_stop_vq(struct vhost_net *n,
+>>>>>>>> @@ -833,7 +807,9 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+>>>>>>>>  		r = vhost_init_used(vq);
+>>>>>>>>  		if (r)
+>>>>>>>>  			goto err_used;
+>>>>>>>> -		vhost_net_enable_vq(n, vq);
+>>>>>>>> +		r = vhost_net_enable_vq(n, vq);
+>>>>>>>> +		if (r)
+>>>>>>>> +			goto err_used;
+>>>>>>>>  
+>>>>>>>>  		oldubufs = vq->ubufs;
+>>>>>>>>  		vq->ubufs = ubufs;
+>>>>>>>> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+>>>>>>>> index 34389f7..5c7a466 100644
+>>>>>>>> --- a/drivers/vhost/vhost.c
+>>>>>>>> +++ b/drivers/vhost/vhost.c
+>>>>>>>> @@ -77,26 +77,41 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+>>>>>>>>  	init_poll_funcptr(&poll->table, vhost_poll_func);
+>>>>>>>>  	poll->mask = mask;
+>>>>>>>>  	poll->dev = dev;
+>>>>>>>> +	poll->wqh = NULL;
+>>>>>>>>  
+>>>>>>>>  	vhost_work_init(&poll->work, fn);
+>>>>>>>>  }
+>>>>>>>>  
+>>>>>>>> +/* Stop polling a file. After this function returns, it becomes safe to drop the
+>>>>>>>> + * file reference. You must also flush afterwards. */
+>>>>>>>> +void vhost_poll_stop(struct vhost_poll *poll)
+>>>>>>>> +{
+>>>>>>>> +	if (poll->wqh) {
+>>>>>>>> +		remove_wait_queue(poll->wqh, &poll->wait);
+>>>>>>>> +		poll->wqh = NULL;
+>>>>>>>> +	}
+>>>>>>>> +}
+>>>>>>>> +
+>>>>>>>>  /* Start polling a file. We add ourselves to file's wait queue. The caller must
+>>>>>>>>   * keep a reference to a file until after vhost_poll_stop is called. */
+>>>>>>>> -void vhost_poll_start(struct vhost_poll *poll, struct file *file)
+>>>>>>>> +int vhost_poll_start(struct vhost_poll *poll, struct file *file)
+>>>>>>>>  {
+>>>>>>>>  	unsigned long mask;
+>>>>>>>> +	int ret = 0;
+>>>>>>>> +
+>>>>>>>> +	if (poll->wqh)
+>>>>>>>> +		return -EBUSY;
+>>>>>>>>  
+>>>>>>> I think this should return success: we are already polling.
+>>>>>>> Otherwise this would trigger a bug below I think.
+>>>>>> Ok.
+>>>>>>>>  	mask = file->f_op->poll(file, &poll->table);
+>>>>>>>>  	if (mask)
+>>>>>>>>  		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
+>>>>>>>> -}
+>>>>>>>>  
+>>>>>>>> -/* Stop polling a file. After this function returns, it becomes safe to drop the
+>>>>>>>> - * file reference. You must also flush afterwards. */
+>>>>>>>> -void vhost_poll_stop(struct vhost_poll *poll)
+>>>>>>>> -{
+>>>>>>>> -	remove_wait_queue(poll->wqh, &poll->wait);
+>>>>>>>> +	if (mask & POLLERR) {
+>>>>>>>> +		ret = -EINVAL;
+>>>>>>>> +		vhost_poll_stop(poll);
+>>>>>>>> +	}
+>>>>>>>> +
+>>>>>>>> +	return ret;
+>>>>>>>>  }
+>>>>>>>>  
+>>>>>>>>  static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
+>>>>>>>> @@ -792,7 +807,7 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
+>>>>>>>>  		fput(filep);
+>>>>>>>>  
+>>>>>>>>  	if (pollstart && vq->handle_kick)
+>>>>>>>> -		vhost_poll_start(&vq->poll, vq->kick);
+>>>>>>>> +		r = vhost_poll_start(&vq->poll, vq->kick);
+>>>>>>>>  
+>>>>>>>>  	mutex_unlock(&vq->mutex);
+>>>>>>>>  
+>>>>>>>> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+>>>>>>>> index 2639c58..17261e2 100644
+>>>>>>>> --- a/drivers/vhost/vhost.h
+>>>>>>>> +++ b/drivers/vhost/vhost.h
+>>>>>>>> @@ -42,7 +42,7 @@ void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work);
+>>>>>>>>  
+>>>>>>>>  void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+>>>>>>>>  		     unsigned long mask, struct vhost_dev *dev);
+>>>>>>>> -void vhost_poll_start(struct vhost_poll *poll, struct file *file);
+>>>>>>>> +int vhost_poll_start(struct vhost_poll *poll, struct file *file);
+>>>>>>>>  void vhost_poll_stop(struct vhost_poll *poll);
+>>>>>>>>  void vhost_poll_flush(struct vhost_poll *poll);
+>>>>>>>>  void vhost_poll_queue(struct vhost_poll *poll);
+>>>>>>>> -- 
+>>>>>>>> 1.7.1
+>>>>>>> --
+>>>>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Couple of things though:
-
-1. While I've eliminated the platform_device population for SERIAL_ARC, we still
-need the static resource definitions and aux platform data for
-early_platform_add_devices() for SERIAL_ARC_CONSOLE since it uses the early param
-based driver registration and device probe. AFAIKS, there's no existing way to
-scan a special "earlyprintk" node (from flat tree) which at a minimum contains a
-"reg" property and some device specific platform info. There are only a few  other
-drivers which uses the same design (e.g. tty/serial/sh-sci.c) but they don't seem
-to be DT enabled. Thus in the short term we will have to live with static coding
-for early platform device. Later on we can clean it up - I can take a stab at
-adding earlyprintk based bits to fdt.c - if that makes sense.
-
-2. We really need a Documentation/dt-for-new-linux-arches.txt, as the existing
-refs - while very helpful - fail to mention subtleties such as you absolutely need
-a intc instance and a default irq domain ..... before the driver can start using
-the DT. Also the board specific callbacks etc are not really fundamental to the DT
-concept (at least I initially thought so) causing a distraction when adding the
-initial implementation. The minimal dynamic device population can very well be
-done in a arch initcall. I'll sum these up in a documentation-for-dummies and
-float around.
-
-Thx,
--Vineet
