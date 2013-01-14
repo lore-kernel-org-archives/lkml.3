@@ -1,108 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab3ANSr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:47:59 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59982 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756809Ab3ANSr6 (ORCPT
+	id S1757920Ab3ANSsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:48:32 -0500
+Received: from mail-in-04.arcor-online.net ([151.189.21.44]:48792 "EHLO
+	mail-in-04.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756667Ab3ANSsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:47:58 -0500
-Message-ID: <50F45321.50808@infradead.org>
-Date: Mon, 14 Jan 2013 10:49:05 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Mon, 14 Jan 2013 13:48:30 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-03.arcor-online.net 9BC3E1754CF
+Date: Mon, 14 Jan 2013 19:48:15 +0100
+From: Albrecht =?iso-8859-1?b?RHJl3w==?= <albrecht.dress@arcor.de>
+Subject: Re: [ 17/49] drm/radeon: add connector table for Mac G4 Silver
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Alex Deucher <alexander.deucher@amd.com>
+References: <20130113174255.736888844@decadent.org.uk>
+	<20130113174259.392401812@decadent.org.uk>
+In-Reply-To: <20130113174259.392401812@decadent.org.uk> (from
+	ben@decadent.org.uk on Sun Jan 13 18:43:12 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1358189306.2543.0@antares>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Jan 7 (rcutorture)
-References: <20130107142649.c843e0b711532dc3a631e4cf@canb.auug.org.au> <50EB252C.4010005@infradead.org> <20130107221627.GZ2525@linux.vnet.ibm.com> <20130108095959.98d83d91dbd0e9e1ac023373@canb.auug.org.au> <1357600327.5190.13.camel@gandalf.local.home> <1357605379.5190.15.camel@gandalf.local.home> <20130108035348.GF2525@linux.vnet.ibm.com> <50F43612.8080600@infradead.org> <20130114173208.GY3384@linux.vnet.ibm.com>
-In-Reply-To: <20130114173208.GY3384@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+	protocol="application/pgp-signature"; boundary="=-1b6wE2/IVimxMXCPoPOb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/13 09:32, Paul E. McKenney wrote:
-> On Mon, Jan 14, 2013 at 08:45:06AM -0800, Randy Dunlap wrote:
->> On 01/07/13 19:53, Paul E. McKenney wrote:
->>> On Mon, Jan 07, 2013 at 07:36:19PM -0500, Steven Rostedt wrote:
->>>> On Mon, 2013-01-07 at 18:12 -0500, Steven Rostedt wrote:
->>>>> On Tue, 2013-01-08 at 09:59 +1100, Stephen Rothwell wrote:
->>>>>> Hi Paul,
->>>>>>
->>>>>> On Mon, 7 Jan 2013 14:16:27 -0800 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
->>>>>>>
->>>>>>> On Mon, Jan 07, 2013 at 11:42:36AM -0800, Randy Dunlap wrote:
->>>>>>>>
->>>>>>>> on i386 or x86_64:
->>>>>>>>
->>>>>>>> ERROR: "trace_clock_local" [kernel/rcutorture.ko] undefined!
->>>>>>>
->>>>>>> Hello, Randy,
->>>>>>>
->>>>>>> Did your build include the following, also pushed to -next in that same
->>>>>>> batch from -rcu?  Including Steven Rostedt on CC for his take.
->>>>>>
->>>>>> That commit was certainly in next-20130107.
->>>>>
->>>>> Could be bad config dependencies.
->>>>
->>>> Paul,
->>>>
->>>> You need to also select TRACE_CLOCK if you are going to use it.
->>>
->>> Thank you, Steve!
->>>
->>> Randy, does the following patch help?
->>>
->>> 							Thanx, Paul
->>
->> Hi Paul,
->>
->> This patch fixed the Jan. 7 linux-next build errors, but there is
->> still some similar problem with current linux-next (0114 and late
->> last week as well).
->>
->> ERROR: "trace_clock_local" [kernel/rcutorture.ko] undefined!
-> 
-> Ah, my bad...
-> 
-> Does the following (rough and untested) patch help?
+--=-1b6wE2/IVimxMXCPoPOb
+Content-Type: text/plain; charset=ISO-8859-1; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, it helps, but there is still the same problem in
-rcu_torture_reader() -- after that it builds OK.
+This patch properly sets the connector table on my Powermac G4 "Silver".  H=
+owever, I cannot get any usable video output as still something seems to be=
+ wrong with the register settings.  Thus, it's not the *full* solution yet.=
+..
 
-Thanks.
+---
+Tested-by: Albrecht Dre=DF <albrecht.dress@arcor.de>
 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-> index cd4c35d..36f0106 100644
-> --- a/kernel/rcutorture.c
-> +++ b/kernel/rcutorture.c
-> @@ -1047,11 +1047,13 @@ static void rcu_torture_timer(unsigned long unused)
->  	static DEFINE_SPINLOCK(rand_lock);
->  	struct rcu_torture *p;
->  	int pipe_count;
-> -	unsigned long long ts;
-> +	unsigned long long ts = 0;
->  
->  	idx = cur_ops->readlock();
->  	completed = cur_ops->completed();
-> +#ifdef CONFIG_RCU_TRACE
->  	ts = trace_clock_local();
-> +#endif /* #ifdef CONFIG_RCU_TRACE */
->  	p = rcu_dereference_check(rcu_torture_current,
->  				  rcu_read_lock_bh_held() ||
->  				  rcu_read_lock_sched_held() ||
-> 
-> --
+Am 13.01.13 18:43 schrieb(en) Ben Hutchings:
+> 3.2-stable review patch.  If anyone has any objections, please let me kno=
+w.
+>=20
+> ------------------
+>=20
+> From: Alex Deucher <alexander.deucher@amd.com>
+>=20
+> commit cafa59b9011a7790be4ddd5979419259844a165d upstream.
+>=20
+> Apple cards do not provide data tables in the vbios
+> so we have to hard code the connector parameters
+> in the driver.
+>=20
+> Reported-by: Albrecht Dre=DF <albrecht.dress@arcor.de>
+> Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  drivers/gpu/drm/radeon/radeon_combios.c |   51 +++++++++++++++++++++++++=
+++++++
+>  drivers/gpu/drm/radeon/radeon_mode.h    |    3 +-
+>  2 files changed, 53 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/gpu/drm/radeon/radeon_combios.c b/drivers/gpu/drm/ra=
+deon/radeon_combios.c
+> index 4af8912..33a56a0 100644
+> --- a/drivers/gpu/drm/radeon/radeon_combios.c
+> +++ b/drivers/gpu/drm/radeon/radeon_combios.c
+> @@ -1548,6 +1548,9 @@ bool radeon_get_legacy_connector_info_from_table(st=
+ruct drm_device *dev)
+>  			   of_machine_is_compatible("PowerBook6,7")) {
+>  			/* ibook */
+>  			rdev->mode_info.connector_table =3D CT_IBOOK;
+> +		} else if (of_machine_is_compatible("PowerMac3,5")) {
+> +			/* PowerMac G4 Silver radeon 7500 */
+> +			rdev->mode_info.connector_table =3D CT_MAC_G4_SILVER;
+>  		} else if (of_machine_is_compatible("PowerMac4,4")) {
+>  			/* emac */
+>  			rdev->mode_info.connector_table =3D CT_EMAC;
+> @@ -2212,6 +2215,54 @@ bool radeon_get_legacy_connector_info_from_table(s=
+truct drm_device *dev)
+>  					    CONNECTOR_OBJECT_ID_SVIDEO,
+>  					    &hpd);
+>  		break;
+> +	case CT_MAC_G4_SILVER:
+> +		DRM_INFO("Connector Table: %d (mac g4 silver)\n",
+> +			 rdev->mode_info.connector_table);
+> +		/* DVI-I - tv dac, int tmds */
+> +		ddc_i2c =3D combios_setup_i2c_bus(rdev, DDC_DVI, 0, 0);
+> +		hpd.hpd =3D RADEON_HPD_1; /* ??? */
+> +		radeon_add_legacy_encoder(dev,
+> +					  radeon_get_encoder_enum(dev,
+> +								ATOM_DEVICE_DFP1_SUPPORT,
+> +								0),
+> +					  ATOM_DEVICE_DFP1_SUPPORT);
+> +		radeon_add_legacy_encoder(dev,
+> +					  radeon_get_encoder_enum(dev,
+> +								ATOM_DEVICE_CRT2_SUPPORT,
+> +								2),
+> +					  ATOM_DEVICE_CRT2_SUPPORT);
+> +		radeon_add_legacy_connector(dev, 0,
+> +					    ATOM_DEVICE_DFP1_SUPPORT |
+> +					    ATOM_DEVICE_CRT2_SUPPORT,
+> +					    DRM_MODE_CONNECTOR_DVII, &ddc_i2c,
+> +					    CONNECTOR_OBJECT_ID_SINGLE_LINK_DVI_I,
+> +					    &hpd);
+> +		/* VGA - primary dac */
+> +		ddc_i2c =3D combios_setup_i2c_bus(rdev, DDC_VGA, 0, 0);
+> +		hpd.hpd =3D RADEON_HPD_NONE;
+> +		radeon_add_legacy_encoder(dev,
+> +					  radeon_get_encoder_enum(dev,
+> +								ATOM_DEVICE_CRT1_SUPPORT,
+> +								1),
+> +					  ATOM_DEVICE_CRT1_SUPPORT);
+> +		radeon_add_legacy_connector(dev, 1, ATOM_DEVICE_CRT1_SUPPORT,
+> +					    DRM_MODE_CONNECTOR_VGA, &ddc_i2c,
+> +					    CONNECTOR_OBJECT_ID_VGA,
+> +					    &hpd);
+> +		/* TV - TV DAC */
+> +		ddc_i2c.valid =3D false;
+> +		hpd.hpd =3D RADEON_HPD_NONE;
+> +		radeon_add_legacy_encoder(dev,
+> +					  radeon_get_encoder_enum(dev,
+> +								ATOM_DEVICE_TV1_SUPPORT,
+> +								2),
+> +					  ATOM_DEVICE_TV1_SUPPORT);
+> +		radeon_add_legacy_connector(dev, 2, ATOM_DEVICE_TV1_SUPPORT,
+> +					    DRM_MODE_CONNECTOR_SVIDEO,
+> +					    &ddc_i2c,
+> +					    CONNECTOR_OBJECT_ID_SVIDEO,
+> +					    &hpd);
+> +		break;
+>  	default:
+>  		DRM_INFO("Connector table: %d (invalid)\n",
+>  			 rdev->mode_info.connector_table);
+> diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeo=
+n/radeon_mode.h
+> index d818b50..ed8a0fa 100644
+> --- a/drivers/gpu/drm/radeon/radeon_mode.h
+> +++ b/drivers/gpu/drm/radeon/radeon_mode.h
+> @@ -209,7 +209,8 @@ enum radeon_connector_table {
+>  	CT_RN50_POWER,
+>  	CT_MAC_X800,
+>  	CT_MAC_G5_9600,
+> -	CT_SAM440EP
+> +	CT_SAM440EP,
+> +	CT_MAC_G4_SILVER
+>  };
+>=20
+>  enum radeon_dvo_chip {
+>=20
+>=20
+>=20
+=
 
+--=-1b6wE2/IVimxMXCPoPOb
+Content-Type: application/pgp-signature
 
--- 
-~Randy
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iD8DBQBQ9FL6n/9unNAn/9ERAkqHAJ9pUTrtcbHcyiWI2Imki9t4+nCQzwCgqPNy
+Y/RfG7vZTfxhoeNvBHuq6Nc=
+=bqBx
+-----END PGP SIGNATURE-----
+
+--=-1b6wE2/IVimxMXCPoPOb--
