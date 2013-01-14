@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab3ANJy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 04:54:56 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42165 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751040Ab3ANJyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 04:54:54 -0500
-Message-ID: <50F3D5E2.4000102@ti.com>
-Date: Mon, 14 Jan 2013 11:54:42 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755877Ab3ANJ5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 04:57:12 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:56338 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755663Ab3ANJ5K convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 04:57:10 -0500
+Date: Mon, 14 Jan 2013 09:57:07 +0000
+From: Andrew Murray <andrew.murray@arm.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
+Message-ID: <20130114095706.GA23467@arm.com>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130111154516.GA25335@avionic-0098.adnet.avionic-design.de>
+ <20130112123640.GA22505@avionic-0098.adnet.avionic-design.de>
+ <201301122112.25772.arnd@arndb.de>
+ <20130113095806.GA31966@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kishon@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 04/14] usb: phy: nop: Handle power supply regulator for
- the PHY
-References: <1357836694-30788-1-git-send-email-rogerq@ti.com> <1357836694-30788-5-git-send-email-rogerq@ti.com> <20130111171726.GI23505@n2100.arm.linux.org.uk>
-In-Reply-To: <20130111171726.GI23505@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130113095806.GA31966@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 14 Jan 2013 09:57:07.0775 (UTC) FILETIME=[838F5CF0:01CDF23D]
+X-MC-Unique: 113011409570806001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2013 07:17 PM, Russell King - ARM Linux wrote:
-> On Thu, Jan 10, 2013 at 06:51:24PM +0200, Roger Quadros wrote:
->> We use "vcc" as the supply name for the PHY's power supply.
->> The power supply will be enabled during .init() and disabled
->> during .shutdown()
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>  drivers/usb/otg/nop-usb-xceiv.c |   18 ++++++++++++++++++
->>  1 files changed, 18 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
->> index 163f972..1c6db10 100644
->> --- a/drivers/usb/otg/nop-usb-xceiv.c
->> +++ b/drivers/usb/otg/nop-usb-xceiv.c
->> @@ -33,11 +33,13 @@
->>  #include <linux/usb/nop-usb-xceiv.h>
->>  #include <linux/slab.h>
->>  #include <linux/clk.h>
->> +#include <linux/regulator/consumer.h>
->>  
->>  struct nop_usb_xceiv {
->>  	struct usb_phy		phy;
->>  	struct device		*dev;
->>  	struct clk		*clk;
->> +	struct regulator	*vcc;
->>  };
->>  
->>  static struct platform_device *pd;
->> @@ -70,6 +72,11 @@ static int nop_init(struct usb_phy *phy)
->>  {
->>  	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
->>  
->> +	if (nop->vcc) {
->> +		if (regulator_enable(nop->vcc))
->> +			dev_err(phy->dev, "Failed to enable power\n");
->> +	}
->> +
->>  	if (nop->clk)
->>  		clk_enable(nop->clk);
->>  
->> @@ -82,6 +89,11 @@ static void nop_shutdown(struct usb_phy *phy)
->>  
->>  	if (nop->clk)
->>  		clk_disable(nop->clk);
->> +
->> +	if (nop->vcc) {
->> +		if (regulator_disable(nop->vcc))
->> +			dev_err(phy->dev, "Failed to disable power\n");
->> +	}
->>  }
->>  
->>  static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
->> @@ -157,6 +169,12 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
->>  		}
->>  	}
->>  
->> +	nop->vcc = devm_regulator_get(&pdev->dev, "vcc");
->> +	if (IS_ERR(nop->vcc)) {
->> +		dev_dbg(&pdev->dev, "Error getting vcc regulator\n");
->> +		nop->vcc = NULL;
->> +	}
+On Sun, Jan 13, 2013 at 09:58:06AM +0000, Thierry Reding wrote:
+> On Sat, Jan 12, 2013 at 09:12:25PM +0000, Arnd Bergmann wrote:
+> > On Saturday 12 January 2013, Thierry Reding wrote:
+> > > > I already hinted at that in one of the other subthreads. Having such a
+> > > > multiplex would also allow the driver to be built as a module. I had
+> > > > already thought about this when I was working on an earlier version of
+> > > > these patches. Basically these would be two ops attached to the host
+> > > > bridge, and the generic arch_setup_msi_irq() could then look that up
+> > > > given the struct pci_dev that is passed to it and call this new per-
+> > > > host bridge .setup_msi_irq().
+> > > 
+> > > struct pci_ops looks like a good place to put these. They'll be
+> > > available from each struct pci_bus, so should be easy to call from
+> > > arch_setup_msi_irq().
+> > > 
+> > > Any objections?
+> > > 
+> > 
+> > struct pci_ops has a long history of being specifically about
+> > config space read/write operations, so on the one hand it does
+> > not feel like the right place to put interrupt specific operations,
+> > but on the other hand, the name sounds appropriate and I cannot
+> > think of any other place to put this, so it's fine with me.
+> > 
+> > The only alternative I can think of is to introduce a new
+> > structure next to it in struct pci_bus, but that feels a bit
+> > pointless. Maybe Bjorn has a preference one way or the other.
 > 
-> Is it really appropriate for drivers to do this kind of thing with
-> pointer-returning functions (I mean, setting the pointer to NULL on
-> error, rather than just using a test for IS_ERR() in the above
-> locations).  You are imposing driver-local assumptions on an API.
-> 
-> Practically it probably doesn't make much difference but given the
-> amount of mistakes that we have with IS_ERR_OR_NULL()...
-> 
-Makes sense. I'll convert it to use IS_ERR_OR_NULL() throughout.
+> The name pci_ops is certainly generic enough. Also the comment above the
+> structure declaration says "Low-level architecture-dependent routines",
+> which applies to the MSI functions as well.
 
---
-cheers,
--roger
+I've previously looked into this. It seems that architectures handle this
+in different ways, some use vector tables, others use a multiplex and others
+just let the end user implement the callback directly.
+
+I've made an attempt to find a more common way. Though my implementation, which
+I will try to share later today for reference provides a registration function
+in drivers/pci/msi.c to provide implementations of the
+(setup|teardown)_msi_irq(s) ops. This seems slightly better than the current
+approach and doesn't break existing users - but is still ugly.
+
+At present the PCI and MSI frameworks are largely uncoupled from each other and
+so I was keen to not pollute PCI structures (e.g. pci_ops) with MSI ops. Just
+because most PCI host bridges also provide MSI support I don't think there is a
+reason why they should always come as a pair or be provided by the same chip.
+
+Perhaps the solution is to support MSI controller drivers and a means to
+associate them with PCI host controller drivers?
+
+Andrew Murray
+
+
