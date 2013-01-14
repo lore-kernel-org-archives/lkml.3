@@ -1,103 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab3ANOmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:42:17 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:34949 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756224Ab3ANOmP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:42:15 -0500
+	id S1756591Ab3ANOoA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:44:00 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:34857 "EHLO mxout2.iskon.hr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756467Ab3ANOn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 09:43:59 -0500
+X-Remote-IP: 213.191.128.133
+Date: Mon, 14 Jan 2013 15:43:52 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <1357624239-13938-2-git-send-email-rajagopal.venkat@linaro.org>
-References: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
-	<1357624239-13938-2-git-send-email-rajagopal.venkat@linaro.org>
-Date: Mon, 14 Jan 2013 23:42:14 +0900
-X-Google-Sender-Auth: 4h0O0L5xQfznEreZSYRPbTfv4H0
-Message-ID: <CAJ0PZbQ1FOk0LMxDCpANqAJ5MOciGy1fvyN__TrEgTGRz-63KA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] PM / devfreq: fix stats start time stamp
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Rajagopal Venkat <rajagopal.venkat@linaro.org>, jonghwa3.lee@samsung.com
-Cc: kyungmin.park@samsung.com, mturquette@linaro.org, rjw@sisk.pl,
-        patches@linaro.org, linaro-dev@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Spam-Score: ##
+Message-ID: <50F419A8.8000307@iskon.hr>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+Subject: [PATCH] mm: don't wait on congested zones in balance_pgdat()
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20130114 #9052380, check: 20130114 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 41460 [Jan 14 2013]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 8, 2013 at 2:50 PM, Rajagopal Venkat
-<rajagopal.venkat@linaro.org> wrote:
-> Mark the stats start time stamp when actual load monitoring is
-> started for accuracy.
->
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
 
-It appears that you are changing the semantics of the information here.
+Commit 92df3a72 (mm: vmscan: throttle reclaim if encountering too many
+dirty pages under writeback) introduced waiting on congested zones
+based on a sane algorithm in shrink_inactive_list(). What this means
+is that there's no more need for throttling and additional heuristics
+in balance_pgdat(). So, let's remove it and tidy up the code.
 
+Signed-off-by: Zlatko Calusic <zlatko.calusic@iskon.hr>
+---
+ include/linux/vm_event_item.h |  1 -
+ mm/vmscan.c                   | 29 +----------------------------
+ mm/vmstat.c                   |  1 -
+ 3 files changed, 1 insertion(+), 30 deletions(-)
 
-For example, in the case:
-- devfreq started at 0 w/ 100MHz
-- at 10, devfreq monitor starts w/ 100MHz
-- at 20, devfreq updates the freq to 200MHz
-- at 30, devfreq is requested to show the stat
-
-The conventional:
-20 @ 100MHz / 10 @ 200MHz
-
-You proposed:
-10 @ 100MHz / 10 @ 200MHz
-
-
-Could you please give some reasons why the latter is "more accurate"?
-To me, the former seems appropriate.
-
-
-
-Cheers,
-MyungJoo
-
-
-> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-> ---
->  drivers/devfreq/devfreq.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> index 5782c9b..2843a22 100644
-> --- a/drivers/devfreq/devfreq.c
-> +++ b/drivers/devfreq/devfreq.c
-> @@ -254,9 +254,12 @@ static void devfreq_monitor(struct work_struct *work)
->  void devfreq_monitor_start(struct devfreq *devfreq)
->  {
->         INIT_DEFERRABLE_WORK(&devfreq->work, devfreq_monitor);
-> -       if (devfreq->profile->polling_ms)
-> +       if (devfreq->profile->polling_ms) {
->                 queue_delayed_work(devfreq_wq, &devfreq->work,
->                         msecs_to_jiffies(devfreq->profile->polling_ms));
-> +
-> +               devfreq->last_stat_updated = jiffies;
-> +       }
->  }
->  EXPORT_SYMBOL(devfreq_monitor_start);
->
-> @@ -498,7 +501,6 @@ struct devfreq *devfreq_add_device(struct device *dev,
->         devfreq->time_in_state = devm_kzalloc(dev, sizeof(unsigned int) *
->                                                 devfreq->profile->max_state,
->                                                 GFP_KERNEL);
-> -       devfreq->last_stat_updated = jiffies;
->         devfreq_set_freq_limits(devfreq);
->
->         dev_set_name(&devfreq->dev, dev_name(dev));
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index e84a25e..d4b7a18 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -36,7 +36,6 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ #endif
+ 		PGINODESTEAL, SLABS_SCANNED, KSWAPD_INODESTEAL,
+ 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
+-		KSWAPD_SKIP_CONGESTION_WAIT,
+ 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
+ #ifdef CONFIG_NUMA_BALANCING
+ 		NUMA_PTE_UPDATES,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 32fbfdb..fea5a0b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2619,7 +2619,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 							int *classzone_idx)
+ {
+ 	bool pgdat_is_balanced = false;
+-	struct zone *unbalanced_zone;
+ 	int i;
+ 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+ 	unsigned long total_scanned;
+@@ -2650,9 +2649,6 @@ loop_again:
+ 
+ 	do {
+ 		unsigned long lru_pages = 0;
+-		int has_under_min_watermark_zone = 0;
+-
+-		unbalanced_zone = NULL;
+ 
+ 		/*
+ 		 * Scan in the highmem->dma direction for the highest
+@@ -2792,17 +2788,7 @@ loop_again:
+ 				continue;
+ 			}
+ 
+-			if (!zone_balanced(zone, testorder, 0, end_zone)) {
+-				unbalanced_zone = zone;
+-				/*
+-				 * We are still under min water mark.  This
+-				 * means that we have a GFP_ATOMIC allocation
+-				 * failure risk. Hurry up!
+-				 */
+-				if (!zone_watermark_ok_safe(zone, order,
+-					    min_wmark_pages(zone), end_zone, 0))
+-					has_under_min_watermark_zone = 1;
+-			} else {
++			if (zone_balanced(zone, testorder, 0, end_zone))
+ 				/*
+ 				 * If a zone reaches its high watermark,
+ 				 * consider it to be no longer congested. It's
+@@ -2811,8 +2797,6 @@ loop_again:
+ 				 * speculatively avoid congestion waits
+ 				 */
+ 				zone_clear_flag(zone, ZONE_CONGESTED);
+-			}
+-
+ 		}
+ 
+ 		/*
+@@ -2830,17 +2814,6 @@ loop_again:
+ 		}
+ 
+ 		/*
+-		 * OK, kswapd is getting into trouble.  Take a nap, then take
+-		 * another pass across the zones.
+-		 */
+-		if (total_scanned && (sc.priority < DEF_PRIORITY - 2)) {
+-			if (has_under_min_watermark_zone)
+-				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
+-			else if (unbalanced_zone)
+-				wait_iff_congested(unbalanced_zone, BLK_RW_ASYNC, HZ/10);
+-		}
+-
+-		/*
+ 		 * We do this so kswapd doesn't build up large priorities for
+ 		 * example when it is freeing in parallel with allocators. It
+ 		 * matches the direct reclaim path behaviour in terms of impact
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 58e3da5..bb492b5 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -769,7 +769,6 @@ const char * const vmstat_text[] = {
+ 	"kswapd_inodesteal",
+ 	"kswapd_low_wmark_hit_quickly",
+ 	"kswapd_high_wmark_hit_quickly",
+-	"kswapd_skip_congestion_wait",
+ 	"pageoutrun",
+ 	"allocstall",
+ 
+-- 
+1.8.1
 
 -- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
+Zlatko
