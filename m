@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab3ANTAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 14:00:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41407 "EHLO mx2.suse.de"
+	id S1757519Ab3ANTA5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 14:00:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56568 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754929Ab3ANTAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 14:00:11 -0500
-Date: Mon, 14 Jan 2013 20:00:08 +0100
-From: Jan Kara <jack@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        chavey@google.com, fengguang.wu@intel.com, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH] writeback: mark sysctl vm.block_dump for removal
-Message-ID: <20130114190008.GM6597@quack.suse.cz>
-References: <1357938397-5413-1-git-send-email-tj@kernel.org>
- <20130114140227.GB2441@kernel.dk>
- <20130114174318.GD27942@mtj.dyndns.org>
- <20130114182203.GE27942@mtj.dyndns.org>
+	id S1755484Ab3ANTA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 14:00:56 -0500
+Message-ID: <50F455A3.4070706@zytor.com>
+Date: Mon, 14 Jan 2013 10:59:47 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130114182203.GE27942@mtj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>
+Subject: Re: [PATCH v7u1 22/31] x86, boot: add fields to support load bzImage
+ and ramdisk above 4G
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org> <1357260531-11115-23-git-send-email-yinghai@kernel.org> <20130113214132.GB17200@liondog.tnic> <CAE9FiQVQRAOtw7kiPJO3xszJx9uPFjgK82PjbvTyqzJgujdicw@mail.gmail.com> <50F4452D.2060000@zytor.com> <CAE9FiQXkgoLKp3ZnOcM9gLDJNGNxUE8WSRXiQy1G_v5Os5_v2A@mail.gmail.com>
+In-Reply-To: <CAE9FiQXkgoLKp3ZnOcM9gLDJNGNxUE8WSRXiQy1G_v5Os5_v2A@mail.gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14-01-13 10:22:03, Tejun Heo wrote:
-> vm.block_dump is nasty in that it dumps IO traces directly to printk.
-> It isn't scalable and can easily lead to looping behavior - IO
-> generating kernel message which in turn genreates log IO, ad
-> infinitum.
+On 01/14/2013 10:57 AM, Yinghai Lu wrote:
+>>
+>> If the sentinel is flagged, zero *all fields not explicitly set by the
+>> broken versions of kexec*, not just your new "ext" fields.
 > 
-> Now that proper tracepoints are in place, vm.block_dump isn't
-> necessary.  Generate a warning if used so that it can be removed down
-> the road.
-  Looks good. Maybe we could extend the message to ask people to let us know
-if they see the message? If someone is using it we shouldn't really remove
-it.
+> other fields are pad* fields, so do we zero out them
+> with memset with exact address?
+> so next times, when someone change pad fields to other ext_*,
+> they don't need to change code again here.
+> 
 
-								Honza
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  include/linux/writeback.h |    3 +++
->  kernel/sysctl.c           |    2 +-
->  mm/page-writeback.c       |   14 ++++++++++++++
->  3 files changed, 18 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-> index b82a83a..678ee6d 100644
-> --- a/include/linux/writeback.h
-> +++ b/include/linux/writeback.h
-> @@ -143,6 +143,9 @@ extern int dirty_ratio_handler(struct ctl_table *table, int write,
->  extern int dirty_bytes_handler(struct ctl_table *table, int write,
->  		void __user *buffer, size_t *lenp,
->  		loff_t *ppos);
-> +extern int block_dump_handler(struct ctl_table *table, int write,
-> +		void __user *buffer, size_t *lenp,
-> +		loff_t *ppos);
->  
->  struct ctl_table;
->  int dirty_writeback_centisecs_handler(struct ctl_table *, int,
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index c88878d..9e7f7b5 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -1288,7 +1288,7 @@ static struct ctl_table vm_table[] = {
->  		.data		= &block_dump,
->  		.maxlen		= sizeof(block_dump),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_dointvec,
-> +		.proc_handler	= block_dump_handler,
->  		.extra1		= &zero,
->  	},
->  	{
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 6f42712..5548bef 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -390,6 +390,20 @@ int dirty_bytes_handler(struct ctl_table *table, int write,
->  	return ret;
->  }
->  
-> +int block_dump_handler(struct ctl_table *table, int write,
-> +		       void __user *buffer, size_t *lenp, loff_t *ppos)
-> +{
-> +	static bool warned = false;
-> +	int ret;
-> +
-> +	ret = proc_dointvec(table, write, buffer, lenp, ppos);
-> +	if (!warned && block_dump) {
-> +		pr_warning("sysctl: vm.block_dump is scheduled for removal. Please use tracepoints instead.\n");
-> +		warned = true;
-> +	}
-> +	return ret;
-> +}
-> +
->  static unsigned long wp_next_time(unsigned long cur_time)
->  {
->  	cur_time += VM_COMPLETIONS_PERIOD_LEN;
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+No, there were other fields that were also left uninitialized, per your
+analysis from last year.  I don't remember the details, but I seem to
+recall they included the EFI and graphics-related fields.
+
+So yes, just zero them all out.
+
+	-hpa
+
+
