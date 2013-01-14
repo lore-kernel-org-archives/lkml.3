@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab3ANKx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 05:53:29 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:51709 "EHLO
+	id S1756695Ab3ANKyp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 05:54:45 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:52462 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409Ab3ANKx1 (ORCPT
+	with ESMTP id S1756201Ab3ANKym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 05:53:27 -0500
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] gpio: mvebu: Don't free chip label memory
-Date: Mon, 14 Jan 2013 11:53:20 +0100
-Message-Id: <1358160800-12185-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.1
-X-Provags-ID: V02:K0:++Z4jBZttXS2a8Bw3kiTEkeUvQQ0nQcq17JU1e6rFAJ
- GIwC5hjWuHkbb3iHv4Xb24yNuv7/tKhyfs8K6f8L0k//Zbyd/U
- QPKaO/23V7jOrOPzAYgB98x83zHDUlgi2pAUSYRcJqnnBEIDjG
- cUjr0y2xtbHB+4G8Cztuw9ebqdkx/5Ui45JuzS2C6M15yypmZC
- rHWKleRy4ottOEDwTVPx/UcL7KbSnfylHycLi0etTVde8nem1s
- 2zedO0nv+OWRwy8uQs1H2CGcfiz6SlPaeNnM+x1s4tUSELNzXb
- SxWuSaFyqPblnexRdYBa1/iCYPxbpUUH2G4ZMmi9kHJyRMw9Tl
- MsR0LpLF1BN8LoXfiO0YF87BrGOImrh78dIsQm//4SXV4syVmq
- /2Iq5D8D0f6Cj3O42vCkqWGosdJr8+54KN+WiB2RSAfT7+Jt6w
- e9zPA
+	Mon, 14 Jan 2013 05:54:42 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: early init dt for earlyprintk (was Re: [RFC PATCH v1 25/31] ARC: [plat-arcfpga] Hooking up platform to ARC UART)
+Date: Mon, 14 Jan 2013 10:54:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        Paul Mundt <lethal@linux-sh.org>
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <201211071416.08012.arnd@arndb.de> <50F3B54D.7010801@synopsys.com>
+In-Reply-To: <50F3B54D.7010801@synopsys.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301141054.27872.arnd@arndb.de>
+X-Provags-ID: V02:K0:lriJZgZbUmNX3HiN9OdVu0bYdLG8015ijRogfdmDAxc
+ dNKUepJ4wgvREUDzD3v4lt6PjrJg7kKOMX0MV61rkbPmdsTn7g
+ f6hO/swNhUlKkG7l+OSrxsmkwVZOCyAaCAokhGbVbjT/NUEmIM
+ EnaaXdp+tZ3Cwb8h7ZfoX9nrK/Ggbj/37gddtQRZWsRROcAv2u
+ vmqDlprncND8tG6KnL1RJEUo7qa7HOrDoRSh+Zaps2KXdPDNVI
+ //QP+h8jH2/pPDohDYnupisMfcLx0ucUlGmmshBbRC5N9L056O
+ 4Tv3ru2WLUZnW4PEvY0qGYu3rgipc/GXL0TmpgUeiIV+f7W1fb
+ 0iKU6cdPeJy3OxohhfQs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The gpio_chip.label field is a const char * and assigned the value of a
-call to dev_name(). Memory obtained from dev_name() should not be freed
-by drivers.
+On Monday 14 January 2013, Vineet Gupta wrote:
+> 
+> On Wednesday 07 November 2012 07:46 PM, Arnd Bergmann wrote:
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- drivers/gpio/gpio-mvebu.c | 6 ------
- 1 file changed, 6 deletions(-)
+> 
+> OK, I have DeviceTree infrastructure in place. After wrapping my head around
+> irq-domains, the whole thing indeed seems like a nice abstraction. ARC Port
+> converted to it and patches to arc-uart driver to that effect posted to serial
+> lists.
 
-diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
-index 7d9bd94..6819d63 100644
---- a/drivers/gpio/gpio-mvebu.c
-+++ b/drivers/gpio/gpio-mvebu.c
-@@ -547,7 +547,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
- 	mvchip->membase = devm_request_and_ioremap(&pdev->dev, res);
- 	if (! mvchip->membase) {
- 		dev_err(&pdev->dev, "Cannot ioremap\n");
--		kfree(mvchip->chip.label);
- 		return -ENOMEM;
- 	}
- 
-@@ -557,14 +556,12 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
- 		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
- 		if (! res) {
- 			dev_err(&pdev->dev, "Cannot get memory resource\n");
--			kfree(mvchip->chip.label);
- 			return -ENODEV;
- 		}
- 
- 		mvchip->percpu_membase = devm_request_and_ioremap(&pdev->dev, res);
- 		if (! mvchip->percpu_membase) {
- 			dev_err(&pdev->dev, "Cannot ioremap\n");
--			kfree(mvchip->chip.label);
- 			return -ENOMEM;
- 		}
- 	}
-@@ -625,7 +622,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
- 	mvchip->irqbase = irq_alloc_descs(-1, 0, ngpios, -1);
- 	if (mvchip->irqbase < 0) {
- 		dev_err(&pdev->dev, "no irqs\n");
--		kfree(mvchip->chip.label);
- 		return -ENOMEM;
- 	}
- 
-@@ -633,7 +629,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
- 				    mvchip->membase, handle_level_irq);
- 	if (! gc) {
- 		dev_err(&pdev->dev, "Cannot allocate generic irq_chip\n");
--		kfree(mvchip->chip.label);
- 		return -ENOMEM;
- 	}
- 
-@@ -668,7 +663,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
- 		irq_remove_generic_chip(gc, IRQ_MSK(ngpios), IRQ_NOREQUEST,
- 					IRQ_LEVEL | IRQ_NOPROBE);
- 		kfree(gc);
--		kfree(mvchip->chip.label);
- 		return -ENODEV;
- 	}
- 
--- 
-1.8.1
+Ok, very good.
 
+> Couple of things though:
+> 
+> 1. While I've eliminated the platform_device population for SERIAL_ARC, we still
+> need the static resource definitions and aux platform data for
+> early_platform_add_devices() for SERIAL_ARC_CONSOLE since it uses the early param
+> based driver registration and device probe. AFAIKS, there's no existing way to
+> scan a special "earlyprintk" node (from flat tree) which at a minimum contains a
+> "reg" property and some device specific platform info. There are only a few  other
+> drivers which uses the same design (e.g. tty/serial/sh-sci.c) but they don't seem
+> to be DT enabled. Thus in the short term we will have to live with static coding
+> for early platform device. Later on we can clean it up - I can take a stab at
+> adding earlyprintk based bits to fdt.c - if that makes sense.
+
+There is always a question of how early you want the early printk to be --
+the earlier you want it, the more hacks you end up needing.
+
+The early_platform_device infrastructure is not used by a lot of architectures,
+so things can get a little hairy. Something you can do though is have an
+early_console without a platform_device attached to it, and scan the
+device tree for the nodes manually in order to find the registers.
+It would be good if we could eventually agree on a common approach for this,
+but right now just use whatever works for you.
+
+
+
+> 2. We really need a Documentation/dt-for-new-linux-arches.txt, as the existing
+> refs - while very helpful - fail to mention subtleties such as you absolutely need
+> a intc instance and a default irq domain ..... before the driver can start using
+> the DT. Also the board specific callbacks etc are not really fundamental to the DT
+> concept (at least I initially thought so) causing a distraction when adding the
+> initial implementation. The minimal dynamic device population can very well be
+> done in a arch initcall. I'll sum these up in a documentation-for-dummies and
+> float around.
+
+Ok, great! That is very much appreciated.
+
+	Arnd
