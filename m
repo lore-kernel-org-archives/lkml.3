@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab3ANW0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 17:26:11 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:35397 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757144Ab3ANW0K (ORCPT
+	id S1758225Ab3ANW1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 17:27:04 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:59715 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757765Ab3ANW1C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 17:26:10 -0500
+	Mon, 14 Jan 2013 17:27:02 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 2/2] nconf:  function keys line, change background color for better readability
+Date: Mon, 14 Jan 2013 23:26:58 +0100
+User-Agent: KMail/1.13.5 (Linux/3.6.11-treguer; KDE/4.4.5; x86_64; ; )
+Cc: Roland Eggner <edvx1@systemanalysen.net>,
+        Dmitry Voytik <dvv.kernel@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
+References: <20121228185108.GA13644@voyt-hp> <20121229223328.GA28355@mobil.systemanalysen.net> <201301142320.13141.yann.morin.1998@free.fr>
+In-Reply-To: <201301142320.13141.yann.morin.1998@free.fr>
 MIME-Version: 1.0
-In-Reply-To: <1355995215-6273-1-git-send-email-linus.walleij@stericsson.com>
-References: <1355995215-6273-1-git-send-email-linus.walleij@stericsson.com>
-Date: Mon, 14 Jan 2013 23:26:09 +0100
-Message-ID: <CACRpkdaV3VvhkOQ1Byvqc23oiONddcLVtKnRQbEA9q0U0YW4cg@mail.gmail.com>
-Subject: Re: [PATCH v2] mfd: db8500-prcmu: fix irqdomain usage
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Anmar Oueja <anmar.oueja@linaro.org>,
-        stable@kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201301142326.58199.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 10:20 AM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
+Roland, All,
 
-> From: Linus Walleij <linus.walleij@linaro.org>
->
-> This fixes two issues with the DB8500 PRCMU irqdomain:
-> - You have to state the irq base 0 to get a linear domain
->   for the DT case from irq_domain_add_simple()
-> - The irqdomain was not used to translate the initial irq
->   request using irq_create_mapping() making the linear
->   case fail as it was lacking a proper descriptor.
->
-> I took this opportunity to fix two lines of whitespace
-> errors in related code as I was anyway messing around with
-> it.
->
-> Cc: stable@kernel.org
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+On Monday 14 January 2013 Yann E. MORIN wrote:
+> On Saturday 29 December 2012 Roland Eggner wrote:
+> > >From: Roland Eggner <edvx1@systemanalysen.net>
+> > 
+> > •  In function keys line descriptions black on darkblue are almost impossible
+> >    to read.  Change colors to black on brown.
+[--SNIP--]
+> Although I am not a fan of this color scheme, it is much more readable
+> than the previous black-on-blue. Tested in frame-buffer console, in konsole
+> and in xterm. And queued in my non-official for-next branch.
 
-Sam, this regression fix has been around for a month soon,
-could you please apply it if there are no problems with it?
+Sorry, the branch is:
+  git@gitorious.org:linux-kconfig/linux-kconfig.git yem-kconfig-for-next
 
-Yours,
-Linus Walleij
+Regards,
+Yann E. MORIN.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
+
