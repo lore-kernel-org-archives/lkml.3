@@ -1,162 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab3ANRx0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 12:53:26 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:37766 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757747Ab3ANRxY (ORCPT
+	id S1758075Ab3ANRzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 12:55:45 -0500
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:42257 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756417Ab3ANRzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 12:53:24 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Jes Sorensen <jes@sgi.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-altix@sgi.com,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] ia64: sn/pci/pcibr/pcibr_reg.c: check null pointer dereference
-Date: Mon, 14 Jan 2013 17:53:12 +0000
-Message-Id: <1358185998-5997-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.4.5
+	Mon, 14 Jan 2013 12:55:44 -0500
+MIME-Version: 1.0
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: peterz@infradead.org, mingo@elte.hu
+Cc: Mike Galbraith <bitbucket@online.de>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Shawn Bohrer <sbohrer@rgmadvisors.com>
+Subject: [PATCH] sched_rt: Use root_domain of rt_rq not current processor
+Date: Mon, 14 Jan 2013 11:55:31 -0600
+Message-Id: <1358186131-29494-1-git-send-email-sbohrer@rgmadvisors.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1357884213.5716.35.camel@marge.simpson.net>
+References: <1357884213.5716.35.camel@marge.simpson.net>
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we should ensure the pointer is not null before the first use, rather than
-after it.
+When the system has multiple domains do_sched_rt_period_timer() can run
+on any CPU and may iterate over all rt_rq in cpu_online_mask.  This
+means when balance_runtime() is run for a given rt_rq that rt_rq may be
+in a different rd than the current processor.  Thus if we use
+smp_processor_id() to get rd in do_balance_runtime() we may borrow
+runtime from a rt_rq that is not part of our rd.
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
+This changes do_balance_runtime to get the rd from the passed in rt_rq
+ensuring that we borrow runtime only from the correct rd for the given
+rt_rq.
+
+This fixes a BUG at kernel/sched/rt.c:687! in __disable_runtime when we
+try reclaim runtime lent to other rt_rq but runtime has been lent to
+a rt_rq in another rd.
+
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
 ---
- arch/ia64/sn/pci/pcibr/pcibr_reg.c |   29 +++++++++++------------------
- 1 file changed, 11 insertions(+), 18 deletions(-)
+ kernel/sched/rt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/ia64/sn/pci/pcibr/pcibr_reg.c b/arch/ia64/sn/pci/pcibr/pcibr_reg.c
-index 8b8bbd5..b33ee60 100644
---- a/arch/ia64/sn/pci/pcibr/pcibr_reg.c
-+++ b/arch/ia64/sn/pci/pcibr/pcibr_reg.c
-@@ -25,9 +25,8 @@ union br_ptr {
-  */
- void pcireg_control_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 418feb0..4f02b28 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -566,7 +566,7 @@ static inline struct rt_bandwidth *sched_rt_bandwidth(struct rt_rq *rt_rq)
+ static int do_balance_runtime(struct rt_rq *rt_rq)
  {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
--
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			__sn_clrq_relaxed(&ptr->tio.cp_control, bits);
-@@ -45,9 +44,8 @@ void pcireg_control_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
+ 	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+-	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
++	struct root_domain *rd = rq_of_rt_rq(rt_rq)->rd;
+ 	int i, weight, more = 0;
+ 	u64 rt_period;
  
- void pcireg_control_bit_set(struct pcibus_info *pcibus_info, u64 bits)
- {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
--
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			__sn_setq_relaxed(&ptr->tio.cp_control, bits);
-@@ -68,10 +66,10 @@ void pcireg_control_bit_set(struct pcibus_info *pcibus_info, u64 bits)
-  */
- u64 pcireg_tflush_get(struct pcibus_info *pcibus_info)
- {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 	u64 ret = 0;
- 
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			ret = __sn_readq_relaxed(&ptr->tio.cp_tflush);
-@@ -98,10 +96,10 @@ u64 pcireg_tflush_get(struct pcibus_info *pcibus_info)
-  */
- u64 pcireg_intr_status_get(struct pcibus_info * pcibus_info)
- {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 	u64 ret = 0;
- 
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			ret = __sn_readq_relaxed(&ptr->tio.cp_int_status);
-@@ -123,9 +121,8 @@ u64 pcireg_intr_status_get(struct pcibus_info * pcibus_info)
-  */
- void pcireg_intr_enable_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
- {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
--
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			__sn_clrq_relaxed(&ptr->tio.cp_int_enable, bits);
-@@ -143,9 +140,8 @@ void pcireg_intr_enable_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
- 
- void pcireg_intr_enable_bit_set(struct pcibus_info *pcibus_info, u64 bits)
- {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
--
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			__sn_setq_relaxed(&ptr->tio.cp_int_enable, bits);
-@@ -167,9 +163,8 @@ void pcireg_intr_enable_bit_set(struct pcibus_info *pcibus_info, u64 bits)
- void pcireg_intr_addr_addr_set(struct pcibus_info *pcibus_info, int int_n,
- 			       u64 addr)
- {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
--
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			__sn_clrq_relaxed(&ptr->tio.cp_int_addr[int_n],
-@@ -196,9 +191,8 @@ void pcireg_intr_addr_addr_set(struct pcibus_info *pcibus_info, int int_n,
-  */
- void pcireg_force_intr_set(struct pcibus_info *pcibus_info, int int_n)
- {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
--
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			writeq(1, &ptr->tio.cp_force_pin[int_n]);
-@@ -219,10 +213,10 @@ void pcireg_force_intr_set(struct pcibus_info *pcibus_info, int int_n)
-  */
- u64 pcireg_wrb_flush_get(struct pcibus_info *pcibus_info, int device)
- {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 	u64 ret = 0;
- 
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			ret =
-@@ -244,9 +238,8 @@ u64 pcireg_wrb_flush_get(struct pcibus_info *pcibus_info, int device)
- void pcireg_int_ate_set(struct pcibus_info *pcibus_info, int ate_index,
- 			u64 val)
- {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
--
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			writeq(val, &ptr->tio.cp_int_ate_ram[ate_index]);
-@@ -264,10 +257,10 @@ void pcireg_int_ate_set(struct pcibus_info *pcibus_info, int ate_index,
- 
- u64 __iomem *pcireg_int_ate_addr(struct pcibus_info *pcibus_info, int ate_index)
- {
--	union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 	u64 __iomem *ret = NULL;
- 
- 	if (pcibus_info) {
-+		union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
- 		switch (pcibus_info->pbi_bridge_type) {
- 		case PCIBR_BRIDGETYPE_TIOCP:
- 			ret = &ptr->tio.cp_int_ate_ram[ate_index];
 -- 
-1.7.9.5
+1.7.7.6
 
+
+-- 
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
