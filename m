@@ -1,157 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758729Ab3ANUhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:37:04 -0500
-Received: from talus.maths.usyd.edu.au ([129.78.68.1]:44505 "EHLO
-	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758716Ab3ANUhC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:37:02 -0500
-X-smtpdoor-from: psz@maths.usyd.edu.au
-X-smtpdoor-want-Message-ID: <201301142036.r0EKaYGN005907@como.maths.usyd.edu.au>
-Date: Tue, 15 Jan 2013 07:36:34 +1100
-From: paul.szabo@sydney.edu.au
-Message-Id: <201301142036.r0EKaYGN005907@como.maths.usyd.edu.au>
-To: dave@linux.vnet.ibm.com
-Subject: Re: [RFC] Reproducible OOM with just a few sleeps
-Cc: 695182@bugs.debian.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <50F41D9D.1000403@linux.vnet.ibm.com>
+	id S1758745Ab3ANUhQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:37:16 -0500
+Received: from fieldses.org ([174.143.236.118]:33693 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758732Ab3ANUhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 15:37:12 -0500
+Date: Mon, 14 Jan 2013 15:37:11 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
+Message-ID: <20130114203711.GA29982@fieldses.org>
+References: <50F42F85.50907@teksavvy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F42F85.50907@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Dave,
+Thanks for the report.
 
->> Seems that any i386 PAE machine will go OOM just by running a few
->> processes. To reproduce:
->>   sh -c 'n=0; while [ $n -lt 19999 ]; do sleep 600 & ((n=n+1)); done'
->> ...
-> I think what you're seeing here is that, as the amount of total memory
-> increases, the amount of lowmem available _decreases_ due to inflation
-> of mem_map[] (and a few other more minor things).  The number of sleeps
-> you can do is bound by the number of processes, as you noticed from
-> ulimit.  Creating processes that don't use much memory eats a relatively
-> large amount of low memory.
-> This is a sad (and counterintuitive) fact: more RAM actually *CREATES*
-> RAM bottlenecks on 32-bit systems.
+On Mon, Jan 14, 2013 at 11:17:09AM -0500, Mark Lord wrote:
+> Since upgrading to 3.7, and now 3.7.2, my AMD-450E based server
 
-I understand that more RAM leaves less lowmem. What is unacceptable is
-that PAE crashes or freezes with OOM: it should gracefully handle the
-issue. Noting that (for a machine with 4GB or under) PAE fails where the
-HIGHMEM4G kernel succeeds and survives.
+It's acting as an NFS client, right?
 
->> On my large machine, 'free' fails to show about 2GB memory ...
-> You probably have a memory hole. ...
-> The e820 map (during early boot in dmesg) or /proc/iomem will let you
-> locate your memory holes.
+What did you upgrade from?
 
-Thanks, that might explain it. Output of /proc/iomem below: sorry I do
-not know how to interpret it.
+> is getting these BUG complaints.  The .config file is gzip'd/attached.
 
-Cheers, Paul
+Is this easy to reproduce?
 
-Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
-School of Mathematics and Statistics   University of Sydney    Australia
+--b.
+
+> 
+> ------------[ cut here ]------------
+> kernel BUG at net/sunrpc/svc_xprt.c:921!
+> invalid opcode: 0000 [#1] SMP
+> Modules linked in: nfsv4 xt_state xt_tcpudp xt_recent xt_LOG xt_limit iptable_mangle iptable_nat
+> nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_filter ip_tables x_tables
+> sc520_wdt btusb snd_usb_audio snd_usbmidi_lib hid_generic ftdi_sio usbserial usbhid hid
+> snd_hda_codec_realtek psmouse snd_hda_codec_hdmi r8169 xhci_hcd mii snd_hda_intel snd_hda_codec
+> snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq bnep
+> snd_timer rfcomm snd_seq_device bluetooth snd nfsd auth_rpcgss binfmt_misc radeon nfs lockd sunrpc
+> soundcore ttm snd_page_alloc drm_kms_helper drm i2c_algo_bit it87 hwmon_vid k10temp hwmon microcode
+> CPU 0
+> Pid: 29613, comm: nfsv4.0-svc Not tainted 3.7.2 #1 System manufacturer System Product Name/E45M1-I
+> DELUXE
+> RIP: 0010:[<ffffffffa01696cd>]  [<ffffffffa01696cd>] svc_delete_xprt+0x23/0xeb [sunrpc]
+> RSP: 0018:ffff880234f05e38  EFLAGS: 00010286
+> RAX: 00000000ffffffff RBX: ffff8801b931b000 RCX: dead000000200200
+> RDX: dead000000100100 RSI: ffff8801b931b038 RDI: 0000000000000006
+> RBP: ffff880049125e40 R08: 0000000000000606 R09: ffff88023ec10fc0
+> R10: ffff88023ec10fc0 R11: ffff88023ec10fc0 R12: ffff880049125e40
+> R13: ffff8801b931b038 R14: 0000000000000000 R15: 0000000000000000
+> FS:  00007f5bef2fd700(0000) GS:ffff88023ec00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 00007f2f1800bfa0 CR3: 000000015ba2e000 CR4: 00000000000007f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process nfsv4.0-svc (pid: 29613, threadinfo ffff880234f04000, task ffff88021b51a280)
+> Stack:
+>  0000000000001cc7 ffff8801a5f2e000 ffff8801b931b000 ffff880049125e40
+>  ffff880049125e40 ffffffffa016a56a 0000000000010fc0 ffff880234f05fd8
+>  ffff880234f05fd8 ffff8801a5f2e000 ffff8801a5f2e000 ffff880234f05f08
+> Call Trace:
+>  [<ffffffffa016a56a>] ? svc_recv+0xcc/0x338 [sunrpc]
+>  [<ffffffffa0318bfc>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
+>  [<ffffffffa0318c19>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
+>  [<ffffffff810407e6>] ? kthread+0x81/0x89
+>  [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
+>  [<ffffffff812ea62c>] ? ret_from_fork+0x7c/0xb0
+>  [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
+> Code: c2 84 d2 74 02 eb a0 c3 41 55 4c 8d 6f 38 41 54 4c 89 ee 55 53 48 89 fb 50 48 8b 6f 40 bf 06
+> 00 00 00 e8 77 fa ff ff 85 c0 74 02 <0f> 0b 48 8b 43 08 4c 8d 65 10 48 89 df ff 50 38 4c 89 e7 e8 6d
+> RIP  [<ffffffffa01696cd>] svc_delete_xprt+0x23/0xeb [sunrpc]
+>  RSP <ffff880234f05e38>
+> ---[ end trace 916f6471c0b47e1d ]---
+> 
+> 
+> Here's the code with the BUG() at net/sunrpc/svc_xprt.c line 921:
+> 
+> /*
+>  * Remove a dead transport
+>  */
+> static void svc_delete_xprt(struct svc_xprt *xprt)
+> {
+>         struct svc_serv *serv = xprt->xpt_server;
+>         struct svc_deferred_req *dr;
+> 
+>         /* Only do this once */
+>         if (test_and_set_bit(XPT_DEAD, &xprt->xpt_flags))
+>                 BUG();
+> ...
+> 
+> 
+> 
+> 
 
 
----
-root@zeno:~# cat /proc/iomem
-00000000-0000ffff : reserved
-00010000-00099bff : System RAM
-00099c00-0009ffff : reserved
-000a0000-000bffff : PCI Bus 0000:00
-  000a0000-000bffff : Video RAM area
-000c0000-000dffff : PCI Bus 0000:00
-  000c0000-000c7fff : Video ROM
-  000c8000-000cf5ff : Adapter ROM
-  000cf800-000d07ff : Adapter ROM
-  000d0800-000d0bff : Adapter ROM
-000e0000-000fffff : reserved
-  000f0000-000fffff : System ROM
-00100000-7e445fff : System RAM
-  01000000-01610e15 : Kernel code
-  01610e16-01802dff : Kernel data
-  01880000-018b2fff : Kernel bss
-7e446000-7e565fff : ACPI Non-volatile Storage
-7e566000-7f1e2fff : reserved
-7f1e3000-7f25efff : ACPI Tables
-7f25f000-7f31cfff : reserved
-7f31d000-7f323fff : ACPI Non-volatile Storage
-7f324000-7f333fff : reserved
-7f334000-7f33bfff : ACPI Non-volatile Storage
-7f33c000-7f365fff : reserved
-7f366000-7f7fffff : ACPI Non-volatile Storage
-7f800000-7fffffff : RAM buffer
-80000000-dfffffff : PCI Bus 0000:00
-  80000000-8fffffff : PCI MMCONFIG 0000 [bus 00-ff]
-    80000000-8fffffff : reserved
-  90000000-9000000f : 0000:00:16.0
-  90000010-9000001f : 0000:00:16.1
-  dd000000-ddffffff : PCI Bus 0000:08
-    dd000000-ddffffff : 0000:08:03.0
-  de000000-de4fffff : PCI Bus 0000:07
-    de000000-de3fffff : 0000:07:00.0
-    de47c000-de47ffff : 0000:07:00.0
-  de600000-de6fffff : PCI Bus 0000:02
-  df000000-df8fffff : PCI Bus 0000:08
-    df000000-df7fffff : 0000:08:03.0
-    df800000-df803fff : 0000:08:03.0
-  df900000-df9fffff : PCI Bus 0000:07
-  dfa00000-dfafffff : PCI Bus 0000:02
-    dfa00000-dfa1ffff : 0000:02:00.1
-      dfa00000-dfa1ffff : igb
-    dfa20000-dfa3ffff : 0000:02:00.0
-      dfa20000-dfa3ffff : igb
-    dfa40000-dfa43fff : 0000:02:00.1
-      dfa40000-dfa43fff : igb
-    dfa44000-dfa47fff : 0000:02:00.0
-      dfa44000-dfa47fff : igb
-  dfb00000-dfb03fff : 0000:00:04.7
-  dfb04000-dfb07fff : 0000:00:04.6
-  dfb08000-dfb0bfff : 0000:00:04.5
-  dfb0c000-dfb0ffff : 0000:00:04.4
-  dfb10000-dfb13fff : 0000:00:04.3
-  dfb14000-dfb17fff : 0000:00:04.2
-  dfb18000-dfb1bfff : 0000:00:04.1
-  dfb1c000-dfb1ffff : 0000:00:04.0
-  dfb20000-dfb200ff : 0000:00:1f.3
-  dfb21000-dfb217ff : 0000:00:1f.2
-    dfb21000-dfb217ff : ahci
-  dfb22000-dfb223ff : 0000:00:1d.0
-    dfb22000-dfb223ff : ehci_hcd
-  dfb23000-dfb233ff : 0000:00:1a.0
-    dfb23000-dfb233ff : ehci_hcd
-  dfb25000-dfb25fff : 0000:00:05.4
-  dfffc000-dfffdfff : pnp 00:02
-e0000000-fbffffff : PCI Bus 0000:80
-  fbe00000-fbefffff : PCI Bus 0000:84
-    fbe00000-fbe3ffff : 0000:84:00.0
-    fbe40000-fbe5ffff : 0000:84:00.0
-    fbe60000-fbe63fff : 0000:84:00.0
-  fbf00000-fbf03fff : 0000:80:04.7
-  fbf04000-fbf07fff : 0000:80:04.6
-  fbf08000-fbf0bfff : 0000:80:04.5
-  fbf0c000-fbf0ffff : 0000:80:04.4
-  fbf10000-fbf13fff : 0000:80:04.3
-  fbf14000-fbf17fff : 0000:80:04.2
-  fbf18000-fbf1bfff : 0000:80:04.1
-  fbf1c000-fbf1ffff : 0000:80:04.0
-  fbf20000-fbf20fff : 0000:80:05.4
-  fbffe000-fbffffff : pnp 00:12
-fc000000-fcffffff : pnp 00:01
-fd000000-fdffffff : pnp 00:01
-fe000000-feafffff : pnp 00:01
-feb00000-febfffff : pnp 00:01
-fec00000-fec003ff : IOAPIC 0
-fec01000-fec013ff : IOAPIC 1
-fec40000-fec403ff : IOAPIC 2
-fed00000-fed003ff : HPET 0
-fed08000-fed08fff : pnp 00:0c
-fed1c000-fed3ffff : reserved
-  fed1c000-fed1ffff : pnp 00:0c
-fed45000-fedfffff : pnp 00:01
-fee00000-fee00fff : Local APIC
-ff000000-ffffffff : reserved
-  ff000000-ffffffff : pnp 00:0c
-100000000-107fffffff : System RAM
-root@zeno:~# 
