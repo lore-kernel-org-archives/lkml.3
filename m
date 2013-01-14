@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820Ab3ANPWk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 10:22:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37652 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756462Ab3ANPWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 10:22:39 -0500
-Date: Mon, 14 Jan 2013 10:22:33 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: majianpeng <majianpeng@gmail.com>
-Cc: axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>,
-        tj <tj@kernel.org>
-Subject: Re: Re: [PATCH] blkcg: Before starting a new slice, firstly count
- bps/iops limit in func tg_may_dispatch.
-Message-ID: <20130114152233.GB2380@redhat.com>
-References: <201301111711251317275@gmail.com>
- <50F0211D.7040209@kernel.dk>
- <20130111191726.GB12019@redhat.com>
- <201301141015538278161@gmail.com>
+	id S1756838Ab3ANPaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 10:30:10 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59063 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755512Ab3ANPaI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 10:30:08 -0500
+Date: Mon, 14 Jan 2013 10:30:07 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Chuansheng Liu <chuansheng.liu@intel.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / Runtime: Fix the twice judgement in rpm_suspend/resume()
+In-Reply-To: <2969423.iZ1VgpHf54@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1301141027290.1782-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201301141015538278161@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 10:15:58AM +0800, majianpeng wrote:
+On Mon, 14 Jan 2013, Rafael J. Wysocki wrote:
 
-[..]
-> >Index: linux-2.6/block/blk-throttle.c
-> >===================================================================
-> >--- linux-2.6.orig/block/blk-throttle.c	2012-10-18 01:52:28.000000000 -0400
-> >+++ linux-2.6/block/blk-throttle.c	2013-01-14 03:40:41.355731375 -0500
-> >@@ -648,8 +648,14 @@ static bool tg_may_dispatch(struct throt
-> > 	 * If previous slice expired, start a new one otherwise renew/extend
-> > 	 * existing slice to make sure it is at least throtl_slice interval
-> > 	 * long since now.
-> >+	 *
-> >+	 * Start a new slice only if there is no bio queued in that direction.
-> >+	 * That bio is waiting to be dispatched and slice needs to be
-> >+	 * extended. It might happen that bio waited to be dispatched but
-> >+	 * workqueue execution got little late it might restart a new slice
-> >+	 * instead of taking all the waited time into account.
-> > 	 */
-> >-	if (throtl_slice_used(td, tg, rw))
-> >+	if (throtl_slice_used(td, tg, rw) && !tg->nr_queued[rw])
-> > 		throtl_start_new_slice(td, tg, rw);
-> > 	else {
-> > 		if (time_before(tg->slice_end[rw], jiffies + throtl_slice))
-> Hi vivek,
-> 	Your patch is ok.But i had a question:
-> What's condition tg->nr_queued[rw] = 0, but bio is not null?
+> On Tuesday, January 15, 2013 01:48:18 AM Chuansheng Liu wrote:
+> > 
+> > In function rpm_suspend/resume(), when going into the for(;;),
+> > the pre-condition judgement has been done, and the variable runtime_status
+> > are always protected by &power.lock, so it is not necessary to judge
+> > them again before unlock_irq &power.lock in for(;;).
+> > 
+> > This patch clean them up.
+> 
+> Well, I don't really think this fixes anything.  Yes, we may save one check
+> here and there, but the current code follows the wait_event() convention.
 
-When a new bio is about to be queued in an empty group (look at
-blk_throtl_bio). At that time, tg->nr_queued[rw] might be 0 if no other
-bio is already queued.
+Indeed, this patch introduces a race.  If runtime_status changes from
+RPM_SUSPENDING and power.wait_queue is signalled in between the test at
+the end of the loop and the prepare_to_wait() call, the loop will never
+end.
 
-Thanks
-Vivek
+Alan Stern
+
+> Thanks,
+> Rafael
+> 
+> 
+> > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> > ---
+> >  drivers/base/power/runtime.c |   18 +++++++++---------
+> >  1 files changed, 9 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+> > index 3148b10..32d6497 100644
+> > --- a/drivers/base/power/runtime.c
+> > +++ b/drivers/base/power/runtime.c
+> > @@ -377,14 +377,14 @@ static int rpm_suspend(struct device *dev, int rpmflags)
+> >  		for (;;) {
+> >  			prepare_to_wait(&dev->power.wait_queue, &wait,
+> >  					TASK_UNINTERRUPTIBLE);
+> > -			if (dev->power.runtime_status != RPM_SUSPENDING)
+> > -				break;
+> >  
+> >  			spin_unlock_irq(&dev->power.lock);
+> >  
+> >  			schedule();
+> >  
+> >  			spin_lock_irq(&dev->power.lock);
+> > +			if (dev->power.runtime_status != RPM_SUSPENDING)
+> > +				break;
+> >  		}
+
