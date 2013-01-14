@@ -1,167 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559Ab3ANJMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 04:12:10 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:46917 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755659Ab3ANJMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 04:12:08 -0500
+	id S1756568Ab3ANJNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 04:13:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40814 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755706Ab3ANJNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 04:13:44 -0500
+Date: Mon, 14 Jan 2013 11:17:33 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, davem@davemloft.net
+Subject: Re: [PATCH V3 2/2] vhost: handle polling errors
+Message-ID: <20130114091732.GA11684@redhat.com>
+References: <1357456718-3072-1-git-send-email-jasowang@redhat.com>
+ <1357456718-3072-3-git-send-email-jasowang@redhat.com>
+ <20130106132201.GC18612@redhat.com>
+ <50EA5139.7000904@redhat.com>
+ <20130107145559.GA5901@redhat.com>
+ <50EAE400.6030301@redhat.com>
+ <20130113111035.GA23431@redhat.com>
+ <50F37476.4070501@redhat.com>
+ <20130114065712.GA10312@redhat.com>
+ <50F3B5D6.4070405@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130114075740.GC10176@arwen.pp.htv.fi>
-References: <1356357513-8892-1-git-send-email-gautam.vivek@samsung.com>
-	<20130110130238.GW28920@arwen.pp.htv.fi>
-	<CAFp+6iHEJvCPHbSvqYhjuTjzvkKQVuKz8f8TupqFcZ9gdvpt-A@mail.gmail.com>
-	<20130111135931.GE12715@arwen.pp.htv.fi>
-	<CAFp+6iEvO2z=bWF7awN4vxN5W1YT0eXcpwarXoB8Mf_=BsQBpQ@mail.gmail.com>
-	<20130114075740.GC10176@arwen.pp.htv.fi>
-Date: Mon, 14 Jan 2013 14:42:05 +0530
-Message-ID: <CAFp+6iFCQPWsB1WzcpOMj=WnNLROmYG=R=FYOXiR_E=hF8nyPA@mail.gmail.com>
-Subject: Re: [PATCH RFC] usb: dwc3: Remove dwc3 dependency on gadget.
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        gregkh@linuxfoundation.org, Doug Anderson <dianders@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F3B5D6.4070405@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+On Mon, Jan 14, 2013 at 03:37:58PM +0800, Jason Wang wrote:
+> On 01/14/2013 02:57 PM, Michael S. Tsirkin wrote:
+> > On Mon, Jan 14, 2013 at 10:59:02AM +0800, Jason Wang wrote:
+> >> On 01/13/2013 07:10 PM, Michael S. Tsirkin wrote:
+> >>> On Mon, Jan 07, 2013 at 11:04:32PM +0800, Jason Wang wrote:
+> >>>> On 01/07/2013 10:55 PM, Michael S. Tsirkin wrote:
+> >>>>> On Mon, Jan 07, 2013 at 12:38:17PM +0800, Jason Wang wrote:
+> >>>>>> On 01/06/2013 09:22 PM, Michael S. Tsirkin wrote:
+> >>>>>>> On Sun, Jan 06, 2013 at 03:18:38PM +0800, Jason Wang wrote:
+> >>>>>>>> Polling errors were ignored by vhost/vhost_net, this may lead to crash when
+> >>>>>>>> trying to remove vhost from waitqueue when after the polling is failed. Solve
+> >>>>>>>> this problem by:
+> >>>>>>>>
+> >>>>>>>> - checking the poll->wqh before trying to remove from waitqueue
+> >>>>>>>> - report an error when poll() returns a POLLERR in vhost_start_poll()
+> >>>>>>>> - report an error when vhost_start_poll() fails in
+> >>>>>>>>   vhost_vring_ioctl()/vhost_net_set_backend() which is used to notify the
+> >>>>>>>>   failure to userspace.
+> >>>>>>>> - report an error in the data path in vhost_net when meet polling errors.
+> >>>>>>>>
+> >>>>>>>> After those changes, we can safely drop the tx polling state in vhost_net since
+> >>>>>>>> it was replaced by the checking of poll->wqh.
+> >>>>>>>>
+> >>>>>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> >>>>>>>> ---
+> >>>>>>>>  drivers/vhost/net.c   |   74 ++++++++++++++++--------------------------------
+> >>>>>>>>  drivers/vhost/vhost.c |   31 +++++++++++++++-----
+> >>>>>>>>  drivers/vhost/vhost.h |    2 +-
+> >>>>>>>>  3 files changed, 49 insertions(+), 58 deletions(-)
+> >>>>>>>>
+> >>>>>>>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> >>>>>>>> index d10ad6f..125c1e5 100644
+> >>>>>>>> --- a/drivers/vhost/net.c
+> >>>>>>>> +++ b/drivers/vhost/net.c
+> >>>>>>>> @@ -64,20 +64,10 @@ enum {
+> >>>>>>>>  	VHOST_NET_VQ_MAX = 2,
+> >>>>>>>>  };
+> >>>>>>>>  
+> >>>>>>>> -enum vhost_net_poll_state {
+> >>>>>>>> -	VHOST_NET_POLL_DISABLED = 0,
+> >>>>>>>> -	VHOST_NET_POLL_STARTED = 1,
+> >>>>>>>> -	VHOST_NET_POLL_STOPPED = 2,
+> >>>>>>>> -};
+> >>>>>>>> -
+> >>>>>>>>  struct vhost_net {
+> >>>>>>>>  	struct vhost_dev dev;
+> >>>>>>>>  	struct vhost_virtqueue vqs[VHOST_NET_VQ_MAX];
+> >>>>>>>>  	struct vhost_poll poll[VHOST_NET_VQ_MAX];
+> >>>>>>>> -	/* Tells us whether we are polling a socket for TX.
+> >>>>>>>> -	 * We only do this when socket buffer fills up.
+> >>>>>>>> -	 * Protected by tx vq lock. */
+> >>>>>>>> -	enum vhost_net_poll_state tx_poll_state;
+> >>>>>>>>  	/* Number of TX recently submitted.
+> >>>>>>>>  	 * Protected by tx vq lock. */
+> >>>>>>>>  	unsigned tx_packets;
+> >>>>>>>> @@ -155,24 +145,6 @@ static void copy_iovec_hdr(const struct iovec *from, struct iovec *to,
+> >>>>>>>>  	}
+> >>>>>>>>  }
+> >>>>>>>>  
+> >>>>>>>> -/* Caller must have TX VQ lock */
+> >>>>>>>> -static void tx_poll_stop(struct vhost_net *net)
+> >>>>>>>> -{
+> >>>>>>>> -	if (likely(net->tx_poll_state != VHOST_NET_POLL_STARTED))
+> >>>>>>>> -		return;
+> >>>>>>>> -	vhost_poll_stop(net->poll + VHOST_NET_VQ_TX);
+> >>>>>>>> -	net->tx_poll_state = VHOST_NET_POLL_STOPPED;
+> >>>>>>>> -}
+> >>>>>>>> -
+> >>>>>>>> -/* Caller must have TX VQ lock */
+> >>>>>>>> -static void tx_poll_start(struct vhost_net *net, struct socket *sock)
+> >>>>>>>> -{
+> >>>>>>>> -	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
+> >>>>>>>> -		return;
+> >>>>>>>> -	vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
+> >>>>>>>> -	net->tx_poll_state = VHOST_NET_POLL_STARTED;
+> >>>>>>>> -}
+> >>>>>>>> -
+> >>>>>>>>  /* In case of DMA done not in order in lower device driver for some reason.
+> >>>>>>>>   * upend_idx is used to track end of used idx, done_idx is used to track head
+> >>>>>>>>   * of used idx. Once lower device DMA done contiguously, we will signal KVM
+> >>>>>>>> @@ -227,6 +199,7 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+> >>>>>>>>  static void handle_tx(struct vhost_net *net)
+> >>>>>>>>  {
+> >>>>>>>>  	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
+> >>>>>>>> +	struct vhost_poll *poll = net->poll + VHOST_NET_VQ_TX;
+> >>>>>>>>  	unsigned out, in, s;
+> >>>>>>>>  	int head;
+> >>>>>>>>  	struct msghdr msg = {
+> >>>>>>>> @@ -252,7 +225,8 @@ static void handle_tx(struct vhost_net *net)
+> >>>>>>>>  	wmem = atomic_read(&sock->sk->sk_wmem_alloc);
+> >>>>>>>>  	if (wmem >= sock->sk->sk_sndbuf) {
+> >>>>>>>>  		mutex_lock(&vq->mutex);
+> >>>>>>>> -		tx_poll_start(net, sock);
+> >>>>>>>> +		if (vhost_poll_start(poll, sock->file))
+> >>>>>>>> +			vq_err(vq, "Fail to start TX polling\n");
+> >>>>>>> s/Fail/Failed/
+> >>>>>>>
+> >>>>>>> A question though: how can this happen? Could you clarify please?
+> >>>>>>> Maybe we can find a way to prevent this error?
+> >>>>>> Two conditions I think this can happen:
+> >>>>>>
+> >>>>>> 1) a buggy userspace disable a queue through TUNSETQUEUE
+> >>>>>> 2) the net device were gone
+> >>>>>>
+> >>>>>> For 1, looks like we can delay the disabling until the refcnt goes to
+> >>>>>> zero. For 2 may needs more changes.
+> >>>>> I'd expect keeping a socket reference would prevent both issues.
+> >>>>> Doesn't it?
+> >>>> Doesn't work for 2 I think, the socket didn't hold a refcnt of the
+> >>>> device, so the device can go away at anytime. Although we can change
+> >>>> this, but it's the behaviour before multiqueue support.
+> >>> Hmm there's one scenario that does seem to
+> >>> trigger this: queue can get disabled
+> >>> and then poll fails.
+> >>>
+> >>> Is this the only issue?
+> >> Another one I think we can trigger is:
+> >>
+> >> - start vhost thread
+> >> - do ip link del link dev tap0 to delete the tap device
+> >>
+> >> In this case, the netdevice is unregistered but the file/socket still exist.
+> > Yes but in this case poll_wait is called so apparently no issue
+> > with existing code? We only have an issue if poll_wait is
+> > not called right?
+> 
+> Right.
+> > Maybe the simplest fix is to invoke poll_wait before
+> > checking if (!tun) ?
+> 
+> True, but we this depends on the assumption that each kind of backend
+> must make sure poll_wait() is called in .poll(). And we need to change
+> macvtap_poll() as well. And we'd better also pass those polling errors
+> to notify user about this wrong state.
 
+For macvtap at least, I agree checking at the time where backend is set
+makes sense, since the error can be reported to user.
+Checking during vring operation can't properly be reported.
 
-On Mon, Jan 14, 2013 at 1:27 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Fri, Jan 11, 2013 at 07:58:23PM +0530, Vivek Gautam wrote:
->> Hi,
->>
->>
->> On Fri, Jan 11, 2013 at 7:29 PM, Felipe Balbi <balbi@ti.com> wrote:
->> > Hi,
->> >
->> > On Fri, Jan 11, 2013 at 07:13:55PM +0530, Vivek Gautam wrote:
->> >> On Thu, Jan 10, 2013 at 6:32 PM, Felipe Balbi <balbi@ti.com> wrote:
->> >> > Hi,
->> >> >
->> >> > On Mon, Dec 24, 2012 at 07:28:33PM +0530, Vivek Gautam wrote:
->> >> >> DWC3 controller curretly depends on CONFIG_USB and CONFIG_USB_GADGET.
->> >> >> Some hardware may like to use only host feature on dwc3.
->> >> >> So, removing the dependency of USB_DWC3 on USB_GADGET
->> >> >> and further modulating the dwc3 core to enable gadget features
->> >> >> only with USB_GADGET.
->> >> >>
->> >> >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> >> >> CC: Doug Anderson <dianders@chromium.org>
->> >> >
->> >> > right, right... Eventually we need to do it, but you're only making
->> >> > gadget side optional. Host side should be optional too, but then you
->> >> > need to make sure we don't build dwc3 without gadget and host.
->> >> >
->> >>
->> >> Yes, true we need to make host side also optional, build dwc3 only when
->> >> either of host or gadget are built.
->> >
->> > btw, make the default Dual-Role, if user/defconfig doesn't select
->> > anything we want to build with all features.
->> >
->>
->> Yes we can try something like this ?
->>
->>          if (USB || USB_GADGET)
->
-> no need for this if, actually...
->
->>          menuconfig USB_DWC3
->>                  tristate "DesignWare USB3 DRD Core Support"
->
-> make it a "depends on (USB || USB_GAGDGET)" here
->
-Yeah, sure.
+So my suggestion is to make polling of disable queue in tun
+simply work, and check wqh when backend is set to handle
+the macvtap case.
 
-> other than that, it looks correct. Just make sure to compile test in all
-> options.
->
+Makes sense?
 
-Yes ofcourse, i shall compile test all possible options.
-
->>           if USB_DWC3
->>           choice
->>           default USB_DWC3_DUAL_ROLE_MODE
->>           ...
->>
->>           config USB_DWC3_HOST_MODE
->
-> this one should depend on USB
->
-yes true.
-
->>           ...
->>
->>           config USB_DWC3_DEVICE_MODE
->
-> this one should depend on USB_GADGET
->
-Ok,
-
->>           ...
->>
->>           config USB_DWC3_DUAL_ROLE_MODE
->
-> should depend on USB && USB_GADGET
->
-
-Ok
-
->> >> >>  int dwc3_gadget_init(struct dwc3 *dwc);
->> >> >>  void dwc3_gadget_exit(struct dwc3 *dwc);
->> >> >> +#else
->> >> >> +static inline int dwc3_gadget_init(struct dwc3 *dwc)
->> >> >> +{ return -EINVAL; }
->> >> >> +static inline void dwc3_gadget_exit(struct dwc3 *dwc)
->> >> >> +{ }
->> >> >> +#endif
->> >> >>
->> >> >>  #endif /* __DRIVERS_USB_DWC3_CORE_H */
->> >> >> diff --git a/drivers/usb/dwc3/debugfs.c b/drivers/usb/dwc3/debugfs.c
->> >> >> index d4a30f1..553bbaa 100644
->> >> >> --- a/drivers/usb/dwc3/debugfs.c
->> >> >> +++ b/drivers/usb/dwc3/debugfs.c
->> >> >> @@ -535,7 +535,8 @@ static ssize_t dwc3_testmode_write(struct file *file,
->> >> >>               testmode = 0;
->> >> >>
->> >> >>       spin_lock_irqsave(&dwc->lock, flags);
->> >> >> -     dwc3_gadget_set_test_mode(dwc, testmode);
->> >> >> +     if (dwc3_gadget_set_test_mode(dwc, testmode))
->> >> >> +             dev_dbg(dwc->dev, "host: Invalid request\n");
->> >> >>       spin_unlock_irqrestore(&dwc->lock, flags);
->> >> >>
->> >> >>       return count;
->> >> >
->> >> > wrong, if you don't have gadget mode, you just don't create this file.
->> >> >
->> >>
->> >> dwc3-core makes call to dwc3_debugfs_init() invariably depending on DEBUG_FS.
->> >> Will this not go ahead and create this file ?
->> >> I think i am missing here something.  :-(
->> >
->> > right, you can change dwc3_debugfs_init() to take into account the fact
->> > that you're a gadget/drd or host-only.
->> >
->> > In case of host only, you stil want regdump to be available :-)
->> >
->>
->> So in dwc3_debugfs_init() we shall actually create just 'regdump' file
->> in case of host only mode, otherwise keep the dwc3_debugfs_init() happy
->> with creating other files too.
->> Right ?
->
-> right.
->
-Ok so we shall change dwc3_debugfs_init().
-
-Thanks for reviewing and suggesting changes.
-
-
--- 
-Thanks & Regards
-Vivek
+> >
+> >>>>>> Not sure it's worth to do this work,
+> >>>>>> maybe a warning is enough just like other failure.
+> >>>>> With other failures, you normally can correct the error then
+> >>>>> kick to have it restart. This is soomething thagt would not
+> >>>>> work here.
+> >>>> If userspace is wrote correctly, (e.g passing a fd with correct state)
+> >>>> it can also be corrected.
+> >>>>>>>>  		mutex_unlock(&vq->mutex);
+> >>>>>>>>  		return;
+> >>>>>>>>  	}
+> >>>>>>>> @@ -261,7 +235,7 @@ static void handle_tx(struct vhost_net *net)
+> >>>>>>>>  	vhost_disable_notify(&net->dev, vq);
+> >>>>>>>>  
+> >>>>>>>>  	if (wmem < sock->sk->sk_sndbuf / 2)
+> >>>>>>>> -		tx_poll_stop(net);
+> >>>>>>>> +		vhost_poll_stop(poll);
+> >>>>>>>>  	hdr_size = vq->vhost_hlen;
+> >>>>>>>>  	zcopy = vq->ubufs;
+> >>>>>>>>  
+> >>>>>>>> @@ -283,8 +257,10 @@ static void handle_tx(struct vhost_net *net)
+> >>>>>>>>  
+> >>>>>>>>  			wmem = atomic_read(&sock->sk->sk_wmem_alloc);
+> >>>>>>>>  			if (wmem >= sock->sk->sk_sndbuf * 3 / 4) {
+> >>>>>>>> -				tx_poll_start(net, sock);
+> >>>>>>>> -				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+> >>>>>>>> +				if (vhost_poll_start(poll, sock->file))
+> >>>>>>>> +					vq_err(vq, "Fail to start TX polling\n");
+> >>>>>>>> +				else
+> >>>>>>>> +					set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+> >>>>>>>>  				break;
+> >>>>>>>>  			}
+> >>>>>>>>  			/* If more outstanding DMAs, queue the work.
+> >>>>>>>> @@ -294,8 +270,10 @@ static void handle_tx(struct vhost_net *net)
+> >>>>>>>>  				    (vq->upend_idx - vq->done_idx) :
+> >>>>>>>>  				    (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
+> >>>>>>>>  			if (unlikely(num_pends > VHOST_MAX_PEND)) {
+> >>>>>>>> -				tx_poll_start(net, sock);
+> >>>>>>>> -				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+> >>>>>>>> +				if (vhost_poll_start(poll, sock->file))
+> >>>>>>>> +					vq_err(vq, "Fail to start TX polling\n");
+> >>>>>>>> +				else
+> >>>>>>>> +					set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+> >>>>>>>>  				break;
+> >>>>>>>>  			}
+> >>>>>>>>  			if (unlikely(vhost_enable_notify(&net->dev, vq))) {
+> >>>>>>>> @@ -360,7 +338,8 @@ static void handle_tx(struct vhost_net *net)
+> >>>>>>>>  			}
+> >>>>>>>>  			vhost_discard_vq_desc(vq, 1);
+> >>>>>>>>  			if (err == -EAGAIN || err == -ENOBUFS)
+> >>>>>>>> -				tx_poll_start(net, sock);
+> >>>>>>>> +				if (vhost_poll_start(poll, sock->file))
+> >>>>>>>> +					vq_err(vq, "Fail to start TX polling\n");
+> >>>>>>>>  			break;
+> >>>>>>>>  		}
+> >>>>>>>>  		if (err != len)
+> >>>>>>>> @@ -623,7 +602,6 @@ static int vhost_net_open(struct inode *inode, struct file *f)
+> >>>>>>>>  
+> >>>>>>>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
+> >>>>>>>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
+> >>>>>>>> -	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
+> >>>>>>>>  
+> >>>>>>>>  	f->private_data = n;
+> >>>>>>>>  
+> >>>>>>>> @@ -633,29 +611,25 @@ static int vhost_net_open(struct inode *inode, struct file *f)
+> >>>>>>>>  static void vhost_net_disable_vq(struct vhost_net *n,
+> >>>>>>>>  				 struct vhost_virtqueue *vq)
+> >>>>>>>>  {
+> >>>>>>>> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
+> >>>>>>>> +
+> >>>>>>>>  	if (!vq->private_data)
+> >>>>>>>>  		return;
+> >>>>>>>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
+> >>>>>>>> -		tx_poll_stop(n);
+> >>>>>>>> -		n->tx_poll_state = VHOST_NET_POLL_DISABLED;
+> >>>>>>>> -	} else
+> >>>>>>>> -		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
+> >>>>>>>> +	vhost_poll_stop(poll);
+> >>>>>>>>  }
+> >>>>>>>>  
+> >>>>>>>> -static void vhost_net_enable_vq(struct vhost_net *n,
+> >>>>>>>> +static int vhost_net_enable_vq(struct vhost_net *n,
+> >>>>>>>>  				struct vhost_virtqueue *vq)
+> >>>>>>>>  {
+> >>>>>>>>  	struct socket *sock;
+> >>>>>>>> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
+> >>>>>>>>  
+> >>>>>>>>  	sock = rcu_dereference_protected(vq->private_data,
+> >>>>>>>>  					 lockdep_is_held(&vq->mutex));
+> >>>>>>>>  	if (!sock)
+> >>>>>>>> -		return;
+> >>>>>>>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
+> >>>>>>>> -		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
+> >>>>>>>> -		tx_poll_start(n, sock);
+> >>>>>>>> -	} else
+> >>>>>>>> -		vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
+> >>>>>>>> +		return 0;
+> >>>>>>>> +
+> >>>>>>>> +	return vhost_poll_start(poll, sock->file);
+> >>>>>>>>  }
+> >>>>>>>>  
+> >>>>>>>>  static struct socket *vhost_net_stop_vq(struct vhost_net *n,
+> >>>>>>>> @@ -833,7 +807,9 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+> >>>>>>>>  		r = vhost_init_used(vq);
+> >>>>>>>>  		if (r)
+> >>>>>>>>  			goto err_used;
+> >>>>>>>> -		vhost_net_enable_vq(n, vq);
+> >>>>>>>> +		r = vhost_net_enable_vq(n, vq);
+> >>>>>>>> +		if (r)
+> >>>>>>>> +			goto err_used;
+> >>>>>>>>  
+> >>>>>>>>  		oldubufs = vq->ubufs;
+> >>>>>>>>  		vq->ubufs = ubufs;
+> >>>>>>>> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> >>>>>>>> index 34389f7..5c7a466 100644
+> >>>>>>>> --- a/drivers/vhost/vhost.c
+> >>>>>>>> +++ b/drivers/vhost/vhost.c
+> >>>>>>>> @@ -77,26 +77,41 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+> >>>>>>>>  	init_poll_funcptr(&poll->table, vhost_poll_func);
+> >>>>>>>>  	poll->mask = mask;
+> >>>>>>>>  	poll->dev = dev;
+> >>>>>>>> +	poll->wqh = NULL;
+> >>>>>>>>  
+> >>>>>>>>  	vhost_work_init(&poll->work, fn);
+> >>>>>>>>  }
+> >>>>>>>>  
+> >>>>>>>> +/* Stop polling a file. After this function returns, it becomes safe to drop the
+> >>>>>>>> + * file reference. You must also flush afterwards. */
+> >>>>>>>> +void vhost_poll_stop(struct vhost_poll *poll)
+> >>>>>>>> +{
+> >>>>>>>> +	if (poll->wqh) {
+> >>>>>>>> +		remove_wait_queue(poll->wqh, &poll->wait);
+> >>>>>>>> +		poll->wqh = NULL;
+> >>>>>>>> +	}
+> >>>>>>>> +}
+> >>>>>>>> +
+> >>>>>>>>  /* Start polling a file. We add ourselves to file's wait queue. The caller must
+> >>>>>>>>   * keep a reference to a file until after vhost_poll_stop is called. */
+> >>>>>>>> -void vhost_poll_start(struct vhost_poll *poll, struct file *file)
+> >>>>>>>> +int vhost_poll_start(struct vhost_poll *poll, struct file *file)
+> >>>>>>>>  {
+> >>>>>>>>  	unsigned long mask;
+> >>>>>>>> +	int ret = 0;
+> >>>>>>>> +
+> >>>>>>>> +	if (poll->wqh)
+> >>>>>>>> +		return -EBUSY;
+> >>>>>>>>  
+> >>>>>>> I think this should return success: we are already polling.
+> >>>>>>> Otherwise this would trigger a bug below I think.
+> >>>>>> Ok.
+> >>>>>>>>  	mask = file->f_op->poll(file, &poll->table);
+> >>>>>>>>  	if (mask)
+> >>>>>>>>  		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
+> >>>>>>>> -}
+> >>>>>>>>  
+> >>>>>>>> -/* Stop polling a file. After this function returns, it becomes safe to drop the
+> >>>>>>>> - * file reference. You must also flush afterwards. */
+> >>>>>>>> -void vhost_poll_stop(struct vhost_poll *poll)
+> >>>>>>>> -{
+> >>>>>>>> -	remove_wait_queue(poll->wqh, &poll->wait);
+> >>>>>>>> +	if (mask & POLLERR) {
+> >>>>>>>> +		ret = -EINVAL;
+> >>>>>>>> +		vhost_poll_stop(poll);
+> >>>>>>>> +	}
+> >>>>>>>> +
+> >>>>>>>> +	return ret;
+> >>>>>>>>  }
+> >>>>>>>>  
+> >>>>>>>>  static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
+> >>>>>>>> @@ -792,7 +807,7 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
+> >>>>>>>>  		fput(filep);
+> >>>>>>>>  
+> >>>>>>>>  	if (pollstart && vq->handle_kick)
+> >>>>>>>> -		vhost_poll_start(&vq->poll, vq->kick);
+> >>>>>>>> +		r = vhost_poll_start(&vq->poll, vq->kick);
+> >>>>>>>>  
+> >>>>>>>>  	mutex_unlock(&vq->mutex);
+> >>>>>>>>  
+> >>>>>>>> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> >>>>>>>> index 2639c58..17261e2 100644
+> >>>>>>>> --- a/drivers/vhost/vhost.h
+> >>>>>>>> +++ b/drivers/vhost/vhost.h
+> >>>>>>>> @@ -42,7 +42,7 @@ void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work);
+> >>>>>>>>  
+> >>>>>>>>  void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+> >>>>>>>>  		     unsigned long mask, struct vhost_dev *dev);
+> >>>>>>>> -void vhost_poll_start(struct vhost_poll *poll, struct file *file);
+> >>>>>>>> +int vhost_poll_start(struct vhost_poll *poll, struct file *file);
+> >>>>>>>>  void vhost_poll_stop(struct vhost_poll *poll);
+> >>>>>>>>  void vhost_poll_flush(struct vhost_poll *poll);
+> >>>>>>>>  void vhost_poll_queue(struct vhost_poll *poll);
+> >>>>>>>> -- 
+> >>>>>>>> 1.7.1
+> >>>>>>> --
+> >>>>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> >>>>>>> the body of a message to majordomo@vger.kernel.org
+> >>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>>> --
+> >>>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> >>>>> the body of a message to majordomo@vger.kernel.org
+> >>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe netdev" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
