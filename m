@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab3ANU6Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:58:25 -0500
-Received: from mout.gmx.net ([212.227.17.21]:52699 "EHLO mout.gmx.net"
+	id S1758813Ab3ANU63 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:58:29 -0500
+Received: from mout.gmx.net ([212.227.15.19]:58710 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758782Ab3ANU6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:58:23 -0500
+	id S1758799Ab3ANU60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 15:58:26 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19dURUf8GVdSRKH8k7zz4dhWHtKz9G3CN3McmTquC
-	rNqOHq2lkpgiSb
+X-Provags-ID: V01U2FsdGVkX19Ue68QxFhUS6T9KrWISYqoAIIiXeFhlFrfu866lw
+	4CAKOrBBjMXqhL
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
@@ -17,9 +17,9 @@ Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
         Peter Huewe <peterhuewe@gmx.de>,
         YAMANE Toshiaki <yamanetoshi@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/8] staging/comedi/ni_mio_cs: Convert to module_comedi_pcmcia_driver
-Date: Mon, 14 Jan 2013 22:00:50 +0100
-Message-Id: <1358197255-17542-3-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 5/8] staging/comedi/cb_das16_cs: Convert to module_comedi_pcmcia_driver
+Date: Mon, 14 Jan 2013 22:00:52 +0100
+Message-Id: <1358197255-17542-5-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1358197255-17542-1-git-send-email-peterhuewe@gmx.de>
 References: <ADE657CA350FB648AAC2C43247A983F00207A6CBADD1@AUSP01VMBX24.collaborationhost.net>
@@ -32,48 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 This patch removes the boring init/exit functions with the new
 module_comedi_pcmcia_driver macro.
 
-Also removed the superflous #ifdef MODULE
-
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/comedi/drivers/ni_mio_cs.c |   20 +-------------------
- 1 files changed, 1 insertions(+), 19 deletions(-)
+ drivers/staging/comedi/drivers/cb_das16_cs.c |   25 +------------------------
+ 1 files changed, 1 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_mio_cs.c b/drivers/staging/comedi/drivers/ni_mio_cs.c
-index 76c6a13..b5c5d58 100644
---- a/drivers/staging/comedi/drivers/ni_mio_cs.c
-+++ b/drivers/staging/comedi/drivers/ni_mio_cs.c
-@@ -408,8 +408,6 @@ static int ni_getboardtype(struct comedi_device *dev,
- 	return 0;
- }
- 
--#ifdef MODULE
--
- static const struct pcmcia_device_id ni_mio_cs_ids[] = {
- 	PCMCIA_DEVICE_MANF_CARD(0x010b, 0x010d),	/* DAQCard-ai-16xe-50 */
- 	PCMCIA_DEVICE_MANF_CARD(0x010b, 0x010c),	/* DAQCard-ai-16e-4 */
-@@ -434,20 +432,4 @@ static struct pcmcia_driver ni_mio_cs_driver = {
- 	.name = "ni_mio_cs",
+diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
+index 93731de..e253fc0 100644
+--- a/drivers/staging/comedi/drivers/cb_das16_cs.c
++++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
+@@ -548,30 +548,7 @@ static struct pcmcia_driver das16cs_driver = {
+ 	.id_table	= das16cs_id_table,
  };
  
--int init_module(void)
+-static int __init das16cs_init(void)
 -{
--	pcmcia_register_driver(&ni_mio_cs_driver);
--	comedi_driver_register(&driver_ni_mio_cs);
+-	int ret;
+-
+-	ret = comedi_driver_register(&driver_das16cs);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = pcmcia_register_driver(&das16cs_driver);
+-	if (ret < 0) {
+-		comedi_driver_unregister(&driver_das16cs);
+-		return ret;
+-	}
+-
 -	return 0;
 -}
+-module_init(das16cs_init);
 -
--void cleanup_module(void)
+-static void __exit das16cs_exit(void)
 -{
--	pcmcia_unregister_driver(&ni_mio_cs_driver);
--#if 0
--	while (cur_dev != NULL)
--		cs_detach(cur_dev->handle);
--#endif
--	comedi_driver_unregister(&driver_ni_mio_cs);
+-	pcmcia_unregister_driver(&das16cs_driver);
+-	comedi_driver_unregister(&driver_das16cs);
 -}
--#endif
-+module_comedi_pcmcia_driver(driver_ni_mio_cs, ni_mio_cs_driver);
+-module_exit(das16cs_exit);
++module_comedi_pcmcia_driver(driver_das16cs, das16cs_driver);
+ 
+ MODULE_AUTHOR("David A. Schleef <ds@schleef.org>");
+ MODULE_DESCRIPTION("Comedi driver for Computer Boards PC-CARD DAS16/16");
 -- 
 1.7.8.6
 
