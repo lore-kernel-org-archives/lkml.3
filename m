@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757038Ab3ANOOw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:14:52 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:51313 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025Ab3ANOOu convert rfc822-to-8bit (ORCPT
+	id S1757072Ab3ANOPP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:15:15 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:32950 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756756Ab3ANOPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:14:50 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1357831934-31610-1-git-send-email-tomas.winkler@intel.com>
-References: <1357831934-31610-1-git-send-email-tomas.winkler@intel.com>
-Date: Mon, 14 Jan 2013 15:14:50 +0100
-Message-ID: <CA+icZUXa-cgNPTYAKjXDSkoqNhto7jz89yUMJAvYxa-jGtMbjg@mail.gmail.com>
-Subject: Re: [char-misc-next V2] mei: drop the warning when cl is not
- initialized during unlinking
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: gregkh@linuxfoundation.org, arnd@arndb.de, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Jan 2013 09:15:13 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] gpio: mvebu: Don't free chip label memory
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <1358160800-12185-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1358160800-12185-1-git-send-email-thierry.reding@avionic-design.de>
+Date: Mon, 14 Jan 2013 14:15:04 +0000
+Message-Id: <20130114141504.C91503E232D@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 4:32 PM, Tomas Winkler <tomas.winkler@intel.com> wrote:
-> On systems where wd and amthif is not initialized
-> we will hit cl->dev == NULL. This condition is okay
-> so we don't need to be laud about it.
->
-> Fixes the follwing warning during suspend
-> [  137.061985] WARNING: at drivers/misc/mei/client.c:315 mei_cl_unlink+0x86/0x90 [mei]()
-> [  137.061986] Hardware name: 530U3BI/530U4BI/530U4BH
-> [  137.062140] Modules linked in: snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel snd_hda_intel snd_hda_codec kvm arc4 iwldvm snd_hwdep i915 snd_pcm mac80211 ghash_clmulni_intel snd_page_alloc aesni_intel snd_seq_midi xts snd_seq_midi_event aes_x86_64 rfcomm snd_rawmidi parport_pc bnep lrw snd_seq uvcvideo i2c_algo_bit ppdev gf128mul iwlwifi snd_timer drm_kms_helper ablk_helper cryptd drm snd_seq_device videobuf2_vmalloc psmouse videobuf2_memops snd cfg80211 btusb videobuf2_core soundcore videodev lp bluetooth samsung_laptop wmi microcode mei serio_raw mac_hid video hid_generic lpc_ich parport usbhid hid r8169
-> [  137.062143] Pid: 2706, comm: kworker/u:15 Tainted: G      D W    3.8.0-rc2-next20130109-1-iniza-generic #1
-> [  137.062144] Call Trace:
-> [  137.062156]  [<ffffffff8105860f>] warn_slowpath_common+0x7f/0xc0
-> [  137.062159]  [<ffffffff8135b1ea>] ? ioread32+0x3a/0x40
-> [  137.062162]  [<ffffffff8105866a>] warn_slowpath_null+0x1a/0x20
-> [  137.062168]  [<ffffffffa0076be6>] mei_cl_unlink+0x86/0x90 [mei]
-> [  137.062173]  [<ffffffffa0071325>] mei_reset+0xc5/0x240 [mei]
-> [  137.062178]  [<ffffffffa0073703>] mei_pci_resume+0xa3/0x110 [mei]
-> [  137.062183]  [<ffffffff81379cae>] pci_pm_resume+0x7e/0xe0
-> [  137.062185]  [<ffffffff81379c30>] ? pci_pm_thaw+0x80/0x80
-> [  137.062189]  [<ffffffff8145a415>] dpm_run_callback.isra.6+0x25/0x50
-> [  137.062192]  [<ffffffff8145a6cf>] device_resume+0x9f/0x140
-> [  137.062194]  [<ffffffff8145a791>] async_resume+0x21/0x50
-> [  137.062200]  [<ffffffff810858b0>] async_run_entry_fn+0x90/0x1c0
-> [  137.062203]  [<ffffffff810778e5>] process_one_work+0x155/0x460
-> [  137.062207]  [<ffffffff81078578>] worker_thread+0x168/0x400
-> [  137.062210]  [<ffffffff81078410>] ? manage_workers+0x2b0/0x2b0
-> [  137.062214]  [<ffffffff8107d9f0>] kthread+0xc0/0xd0
-> [  137.062218]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
-> [  137.062222]  [<ffffffff816bac6c>] ret_from_fork+0x7c/0xb0
-> [  137.062228]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
->
-> Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
-> Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+On Mon, 14 Jan 2013 11:53:20 +0100, Thierry Reding <thierry.reding@avionic-design.de> wrote:
+> The gpio_chip.label field is a const char * and assigned the value of a
+> call to dev_name(). Memory obtained from dev_name() should not be freed
+> by drivers.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-Can you please apply this patch to char-misc-next?
-I am hitting it again while doing other regression testing!
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-- Sedat -
+Linus, can you put this in your fixes branch?
 
-[1] http://marc.info/?l=linux-kernel&m=135817238702217&w=2
+Thanks,
+g.
 
 > ---
-> V2: fix a typo in the comment
->
->  drivers/misc/mei/client.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-> index d566dd8..a921001 100644
-> --- a/drivers/misc/mei/client.c
-> +++ b/drivers/misc/mei/client.c
-> @@ -312,8 +312,9 @@ int mei_cl_unlink(struct mei_cl *cl)
->         if (!cl)
->                 return 0;
->
-> -       if (WARN_ON(!cl->dev))
-> -               return -EINVAL;
-> +       /* wd and amthif might not be initialized */
-> +       if (!cl->dev)
-> +               return 0;
->
->         dev = cl->dev;
->
-> --
-> 1.7.4.4
->
+>  drivers/gpio/gpio-mvebu.c | 6 ------
+>  1 file changed, 6 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
+> index 7d9bd94..6819d63 100644
+> --- a/drivers/gpio/gpio-mvebu.c
+> +++ b/drivers/gpio/gpio-mvebu.c
+> @@ -547,7 +547,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
+>  	mvchip->membase = devm_request_and_ioremap(&pdev->dev, res);
+>  	if (! mvchip->membase) {
+>  		dev_err(&pdev->dev, "Cannot ioremap\n");
+> -		kfree(mvchip->chip.label);
+>  		return -ENOMEM;
+>  	}
+>  
+> @@ -557,14 +556,12 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
+>  		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+>  		if (! res) {
+>  			dev_err(&pdev->dev, "Cannot get memory resource\n");
+> -			kfree(mvchip->chip.label);
+>  			return -ENODEV;
+>  		}
+>  
+>  		mvchip->percpu_membase = devm_request_and_ioremap(&pdev->dev, res);
+>  		if (! mvchip->percpu_membase) {
+>  			dev_err(&pdev->dev, "Cannot ioremap\n");
+> -			kfree(mvchip->chip.label);
+>  			return -ENOMEM;
+>  		}
+>  	}
+> @@ -625,7 +622,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
+>  	mvchip->irqbase = irq_alloc_descs(-1, 0, ngpios, -1);
+>  	if (mvchip->irqbase < 0) {
+>  		dev_err(&pdev->dev, "no irqs\n");
+> -		kfree(mvchip->chip.label);
+>  		return -ENOMEM;
+>  	}
+>  
+> @@ -633,7 +629,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
+>  				    mvchip->membase, handle_level_irq);
+>  	if (! gc) {
+>  		dev_err(&pdev->dev, "Cannot allocate generic irq_chip\n");
+> -		kfree(mvchip->chip.label);
+>  		return -ENOMEM;
+>  	}
+>  
+> @@ -668,7 +663,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
+>  		irq_remove_generic_chip(gc, IRQ_MSK(ngpios), IRQ_NOREQUEST,
+>  					IRQ_LEVEL | IRQ_NOPROBE);
+>  		kfree(gc);
+> -		kfree(mvchip->chip.label);
+>  		return -ENODEV;
+>  	}
+>  
+> -- 
+> 1.8.1
+> 
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
