@@ -1,675 +1,935 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab3ANKzd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 05:55:33 -0500
-Received: from zmc.proxad.net ([212.27.53.206]:57547 "EHLO zmc.proxad.net"
+	id S1756817Ab3ANKz6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 05:55:58 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:54474 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756201Ab3ANKzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 05:55:31 -0500
-From: Florian Fainelli <florian@openwrt.org>
-To: netdev@vger.kernel.org
-Cc: konszert@marvell.com, davem@davemloft.net, afleming@gmail.com,
-        linux-kernel@vger.kernel.org, Florian Fainelli <florian@openwrt.org>
-Subject: [PATCH net-next] net: phy: remove flags argument from phy_{attach,connect,connect_direct}
-Date: Mon, 14 Jan 2013 11:52:52 +0100
-Message-Id: <1358160772-29631-1-git-send-email-florian@openwrt.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756201Ab3ANKzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 05:55:52 -0500
+Message-ID: <50F3E3FF.4080803@imgtec.com>
+Date: Mon, 14 Jan 2013 10:54:55 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: James Hogan <james.hogan@imgtec.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v3 43/44] tty/metag_da: Add metag DA TTY driver
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <1357831872-29451-44-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1357831872-29451-44-git-send-email-james.hogan@imgtec.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enig7C13DABA59A5B681EB099753"
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_01_14_10_55_21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The flags argument of the phy_{attach,connect,connect_direct} functions
-is then used to assign a struct phy_device dev_flags with its value.
-All callers but the tg3 driver pass the flag 0, which results in the
-underlying PHY drivers in drivers/net/phy/ not being able to actually
-use any of the flags they would set in dev_flags. This patch gets rid of
-the flags argument, and passes phydev->dev_flags to the internal PHY
-library call phy_attach_direct() such that drivers which actually modify
-a phy device dev_flags get the value preserved for use by the underlying
-phy driver.
+--------------enig7C13DABA59A5B681EB099753
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Kosta Zertsekel <konszert@marvell.com>
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
+Here's a new version addressing Jiri's feedback.
+
+Add a TTY driver for communicating over a Meta DA (Debug Adapter)
+channel using the bios channel SWITCH operation.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: Joe Perches <joe@perches.com>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
-Changes since RFC state:
-- remove accidentally included include/linux/version.h file
-- changed Documentation bits to reflect this change
+ MAINTAINERS                            |    1 +
+ arch/metag/Kconfig                     |    4 +-
+ arch/metag/configs/meta1_defconfig     |    2 +
+ arch/metag/configs/meta2_defconfig     |    2 +
+ arch/metag/configs/meta2_smp_defconfig |    2 +
+ arch/metag/kernel/setup.c              |   12 +
+ drivers/tty/Kconfig                    |   13 +
+ drivers/tty/Makefile                   |    1 +
+ drivers/tty/metag_da.c                 |  679 ++++++++++++++++++++++++++=
+++++++
+ 9 files changed, 715 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/tty/metag_da.c
 
-The following coccinelle script was used for modifying callers:
-virtual patch
-virtual context
-virtual org
-virtual report
+diff --git a/MAINTAINERS b/MAINTAINERS
+index dbc2bd6..63ccab6 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5002,6 +5002,7 @@ S:	Supported
+ F:	arch/metag/
+ F:	Documentation/metag/
+ F:	Documentation/devicetree/bindings/metag/
++F:	drivers/tty/metag_da.c
+=20
+ MICROBLAZE ARCHITECTURE
+ M:	Michal Simek <monstr@monstr.eu>
+diff --git a/arch/metag/Kconfig b/arch/metag/Kconfig
+index 9bd0bc1..f4ef3bb 100644
+--- a/arch/metag/Kconfig
++++ b/arch/metag/Kconfig
+@@ -221,7 +221,9 @@ config METAG_DA
+ 	  of the DA will be detected automatically at boot, so it is safe to sa=
+y
+ 	  Y to this option even when booting without a DA.
+=20
+-	  This enables support for services provided by DA JTAG debug adapters.=
 
-@@
-expression E1, E2, E3, E4;
-@@
++	  This enables support for services provided by DA JTAG debug adapters,=
 
-- phy_attach(E1, E2, E3, E4)
-+ phy_attach(E1, E2, E4)
++	  such as:
++	  - communication over DA channels (such as the console driver).
+=20
+ menu "Boot options"
+=20
+diff --git a/arch/metag/configs/meta1_defconfig b/arch/metag/configs/meta=
+1_defconfig
+index 0773425..ad663ca 100644
+--- a/arch/metag/configs/meta1_defconfig
++++ b/arch/metag/configs/meta1_defconfig
+@@ -28,6 +28,8 @@ CONFIG_BLK_DEV_RAM_SIZE=3D16384
+ # CONFIG_SERIO is not set
+ # CONFIG_VT is not set
+ # CONFIG_LEGACY_PTYS is not set
++CONFIG_DA_TTY=3Dy
++CONFIG_DA_CONSOLE=3Dy
+ # CONFIG_DEVKMEM is not set
+ # CONFIG_HW_RANDOM is not set
+ # CONFIG_HWMON is not set
+diff --git a/arch/metag/configs/meta2_defconfig b/arch/metag/configs/meta=
+2_defconfig
+index 001f9bf..47922e93 100644
+--- a/arch/metag/configs/meta2_defconfig
++++ b/arch/metag/configs/meta2_defconfig
+@@ -29,6 +29,8 @@ CONFIG_BLK_DEV_RAM_SIZE=3D16384
+ # CONFIG_SERIO is not set
+ # CONFIG_VT is not set
+ # CONFIG_LEGACY_PTYS is not set
++CONFIG_DA_TTY=3Dy
++CONFIG_DA_CONSOLE=3Dy
+ # CONFIG_DEVKMEM is not set
+ # CONFIG_HW_RANDOM is not set
+ # CONFIG_HWMON is not set
+diff --git a/arch/metag/configs/meta2_smp_defconfig b/arch/metag/configs/=
+meta2_smp_defconfig
+index d6f7e46..f508250 100644
+--- a/arch/metag/configs/meta2_smp_defconfig
++++ b/arch/metag/configs/meta2_smp_defconfig
+@@ -30,6 +30,8 @@ CONFIG_BLK_DEV_RAM_SIZE=3D16384
+ # CONFIG_SERIO is not set
+ # CONFIG_VT is not set
+ # CONFIG_LEGACY_PTYS is not set
++CONFIG_DA_TTY=3Dy
++CONFIG_DA_CONSOLE=3Dy
+ # CONFIG_DEVKMEM is not set
+ # CONFIG_HW_RANDOM is not set
+ # CONFIG_HWMON is not set
+diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
+index 1410db0..0d46334 100644
+--- a/arch/metag/kernel/setup.c
++++ b/arch/metag/kernel/setup.c
+@@ -61,6 +61,11 @@ extern char _heap_start[];
+ extern u32 __dtb_start[];
+ #endif
+=20
++#ifdef CONFIG_DA_CONSOLE
++/* Our early channel based console driver */
++extern struct console dash_console;
++#endif
++
+ struct machine_desc *machine_desc __initdata;
+=20
+ /*
+@@ -182,6 +187,13 @@ void __init setup_arch(char **cmdline_p)
+ 	metag_cache_probe();
+=20
+ 	metag_da_probe();
++#ifdef CONFIG_DA_CONSOLE
++	if (metag_da_enabled()) {
++		/* An early channel based console driver */
++		register_console(&dash_console);
++		add_preferred_console("ttyDA", 1, NULL);
++	}
++#endif
+=20
+ 	/* try interpreting the argument as a device tree */
+ 	machine_desc =3D setup_machine_fdt(original_cmd_line);
+diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
+index 0ecf22b..5eef53d 100644
+--- a/drivers/tty/Kconfig
++++ b/drivers/tty/Kconfig
+@@ -388,3 +388,16 @@ config PPC_EARLY_DEBUG_EHV_BC_HANDLE
+ 	  If the number you specify is not a valid byte channel handle, then
+ 	  there simply will be no early console output.  This is true also
+ 	  if you don't boot under a hypervisor at all.
++
++config DA_TTY
++	bool "DA TTY"
++	depends on METAG_DA
++	select SERIAL_NONSTANDARD
++	help
++	  This enables a TTY on a Dash channel.
++
++config DA_CONSOLE
++	bool "DA Console"
++	depends on DA_TTY
++	help
++	  This enables a console on a Dash channel.
+diff --git a/drivers/tty/Makefile b/drivers/tty/Makefile
+index 2953059..dbd7745 100644
+--- a/drivers/tty/Makefile
++++ b/drivers/tty/Makefile
+@@ -27,5 +27,6 @@ obj-$(CONFIG_SYNCLINK_GT)	+=3D synclink_gt.o
+ obj-$(CONFIG_SYNCLINKMP)	+=3D synclinkmp.o
+ obj-$(CONFIG_SYNCLINK)		+=3D synclink.o
+ obj-$(CONFIG_PPC_EPAPR_HV_BYTECHAN) +=3D ehv_bytechan.o
++obj-$(CONFIG_DA_TTY)	+=3D metag_da.o
+=20
+ obj-y +=3D ipwireless/
+diff --git a/drivers/tty/metag_da.c b/drivers/tty/metag_da.c
+new file mode 100644
+index 0000000..6a0b2e6
+--- /dev/null
++++ b/drivers/tty/metag_da.c
+@@ -0,0 +1,679 @@
++/*
++ *  dashtty.c - tty driver for Dash channels interface.
++ *
++ *  Copyright (C) 2007,2008,2012 Imagination Technologies
++ *
++ * This file is subject to the terms and conditions of the GNU General P=
+ublic
++ * License.  See the file COPYING in the main directory of this archive
++ * for more details.
++ *
++ */
++
++#include <linux/atomic.h>
++#include <linux/completion.h>
++#include <linux/console.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/kthread.h>
++#include <linux/mutex.h>
++#include <linux/sched.h>
++#include <linux/serial.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/string.h>
++#include <linux/timer.h>
++#include <linux/tty.h>
++#include <linux/tty_driver.h>
++#include <linux/tty_flip.h>
++#include <linux/uaccess.h>
++
++#include <asm/da.h>
++
++/* Channel error codes */
++#define CONAOK	0
++#define CONERR	1
++#define CONBAD	2
++#define CONPRM	3
++#define CONADR	4
++#define CONCNT	5
++#define CONCBF	6
++#define CONCBE	7
++#define CONBSY	8
++
++/* Default channel for the console */
++#define CONSOLE_CHANNEL      1
++
++#define NUM_TTY_CHANNELS     6
++
++/* Auto allocate */
++#define DA_TTY_MAJOR        0
++
++/* A speedy poll rate helps the userland debug process connection respon=
+se.
++ * But, if you set it too high then no other userland processes get much=
 
-@@
-expression E1, E2, E3, E4, E5;
-@@
++ * of a look in.
++ */
++#define DA_TTY_POLL (HZ / 50)
++
++/*
++ * A short put delay improves latency but has a high throughput overhead=
 
-- phy_connect(E1, E2, E3, E4, E5)
-+ phy_connect(E1, E2, E3, E5)
++ */
++#define DA_TTY_PUT_DELAY (HZ / 100)
++
++static atomic_t num_channels_need_poll =3D ATOMIC_INIT(0);
++
++static struct timer_list poll_timer;
++
++static struct tty_driver *channel_driver;
++
++static struct timer_list put_timer;
++static struct task_struct *dashtty_thread;
++
++#define RX_BUF_SIZE 1024
++
++enum {
++	INCHR =3D 1,
++	OUTCHR,
++	RDBUF,
++	WRBUF,
++	RDSTAT
++};
++
++/**
++ * struct dashtty_port - Wrapper struct for dashtty tty_port.
++ * @port:		TTY port data
++ * @rx_lock:		Lock for rx_buf.
++ *			This protects between the poll timer and user context.
++ *			It's also held during read SWITCH operations.
++ * @rx_buf:		Read buffer
++ * @xmit_lock:		Lock for xmit_*, and port.xmit_buf.
++ *			This protects between user context and kernel thread.
++ *			It's also held during write SWITCH operations.
++ * @xmit_cnt:		Size of xmit buffer contents
++ * @xmit_head:		Head of xmit buffer where data is written
++ * @xmit_tail:		Tail of xmit buffer where data is read
++ * @xmit_empty:		Completion for xmit buffer being empty
++ */
++struct dashtty_port {
++	struct tty_port		 port;
++	spinlock_t		 rx_lock;
++	void			*rx_buf;
++	struct mutex		 xmit_lock;
++	unsigned int		 xmit_cnt;
++	unsigned int		 xmit_head;
++	unsigned int		 xmit_tail;
++	struct completion	 xmit_empty;
++};
++
++static struct dashtty_port dashtty_ports[NUM_TTY_CHANNELS];
++
++static atomic_t dashtty_xmit_cnt =3D ATOMIC_INIT(0);
++static wait_queue_head_t dashtty_waitqueue;
++
++/*
++ * Low-level DA channel access routines
++ */
++static int chancall(int in_bios_function, int in_channel,
++		    int in_arg2, void *in_arg3,
++		    void *in_arg4)
++{
++	register int   bios_function asm("D1Ar1") =3D in_bios_function;
++	register int   channel       asm("D0Ar2") =3D in_channel;
++	register int   arg2          asm("D1Ar3") =3D in_arg2;
++	register void *arg3          asm("D0Ar4") =3D in_arg3;
++	register void *arg4          asm("D1Ar5") =3D in_arg4;
++	register int   bios_call     asm("D0Ar6") =3D 3;
++	register int   result        asm("D0Re0");
++
++	asm volatile (
++		"MSETL	[A0StP++], %6,%4,%2\n\t"
++		"ADD	A0StP, A0StP, #8\n\t"
++		"SWITCH	#0x0C30208\n\t"
++		"GETD	%0, [A0StP+#-8]\n\t"
++		"SUB	A0StP, A0StP, #(4*6)+8\n\t"
++		: "=3Dd" (result)   /* outs */
++		: "d" (bios_function),
++		  "d" (channel),
++		  "d" (arg2),
++		  "d" (arg3),
++		  "d" (arg4),
++		  "d" (bios_call) /* ins */
++		: "memory");
++
++	return result;
++}
++
++/*
++ * Attempts to fetch count bytes from channel and returns actual count.
++ */
++static int fetch_data(struct tty_struct *tty)
++{
++	unsigned int channel =3D tty->index;
++	struct dashtty_port *dport =3D &dashtty_ports[channel];
++	int received =3D 0;
++
++	spin_lock_bh(&dport->rx_lock);
++	/* check the port isn't being shut down */
++	if (!dport->rx_buf)
++		goto unlock;
++	if (chancall(RDBUF, channel, RX_BUF_SIZE,
++		     (void *)dport->rx_buf, &received) =3D=3D CONAOK) {
++		if (received) {
++			int space;
++			unsigned char *cbuf;
++
++			space =3D tty_prepare_flip_string(tty, &cbuf, received);
++
++			if (space <=3D 0)
++				goto unlock;
++
++			memcpy(cbuf, dport->rx_buf, space);
++			tty_flip_buffer_push(tty);
++		}
++	}
++unlock:
++	spin_unlock_bh(&dport->rx_lock);
++
++	return received;
++}
++
++/**
++ * find_channel_to_poll() - Returns kref to the next channel tty to poll=
+=2E
++ * Returns:	The TTY of the next channel to poll, or NULL if no TTY needs=
 
-@@
-expression E1, E2, E3, E4, E5;
-@@
++ *		polling. Release with tty_kref_put().
++ */
++static struct tty_struct *find_channel_to_poll(void)
++{
++	static int last_polled_channel;
++	int last =3D last_polled_channel;
++	int chan;
++	struct tty_struct *tty =3D NULL;
++
++	for (chan =3D last + 1; ; ++chan) {
++		if (chan >=3D NUM_TTY_CHANNELS)
++			chan =3D 0;
++
++		tty =3D tty_port_tty_get(&dashtty_ports[chan].port);
++		if (tty) {
++			last_polled_channel =3D chan;
++			return tty;
++		}
++
++		if (chan =3D=3D last)
++			break;
++	}
++	return tty;
++}
++
++/**
++ * put_channel_data() - Write out a block of channel data.
++ * @chan:	DA channel number.
++ *
++ * Write a single block of data out to the debug adapter. If the circula=
+r buffer
++ * is wrapped then only the first block is written.
++ *
++ * Returns:	1 if the remote buffer was too full to accept data.
++ *		0 otherwise.
++ */
++static int put_channel_data(unsigned int chan)
++{
++	struct dashtty_port *dport;
++	struct tty_struct *tty;
++	int number_written;
++	unsigned int count =3D 0;
++
++	dport =3D &dashtty_ports[chan];
++	mutex_lock(&dport->xmit_lock);
++	if (dport->xmit_cnt) {
++		count =3D min((unsigned int)(SERIAL_XMIT_SIZE - dport->xmit_tail),
++			    dport->xmit_cnt);
++		chancall(WRBUF, chan, count,
++			 dport->port.xmit_buf + dport->xmit_tail,
++			 &number_written);
++		dport->xmit_cnt -=3D number_written;
++		if (!dport->xmit_cnt) {
++			/* reset pointers to avoid wraps */
++			dport->xmit_head =3D 0;
++			dport->xmit_tail =3D 0;
++			complete(&dport->xmit_empty);
++		} else {
++			dport->xmit_tail +=3D number_written;
++			if (dport->xmit_tail >=3D SERIAL_XMIT_SIZE)
++				dport->xmit_tail -=3D SERIAL_XMIT_SIZE;
++		}
++		atomic_sub(number_written, &dashtty_xmit_cnt);
++	}
++	mutex_unlock(&dport->xmit_lock);
++
++	/* if we've made more data available, wake up tty */
++	if (count && number_written) {
++		tty =3D tty_port_tty_get(&dport->port);
++		if (tty) {
++			tty_wakeup(tty);
++			tty_kref_put(tty);
++		}
++	}
++
++	/* did the write fail? */
++	return count && !number_written;
++}
++
++/**
++ * put_data() - Kernel thread to write out blocks of channel data to DA.=
 
-- phy_connect_direct(E1, E2, E3, E4, E5)
-+ phy_connect_direct(E1, E2, E3, E5)
++ * @arg:	Unused.
++ *
++ * This kernel thread runs while @dashtty_xmit_cnt !=3D 0, and loops ove=
+r the
++ * channels to write out any buffered data. If any of the channels stall=
+ due to
++ * the remote buffer being full, a hold off happens to allow the debugge=
+r to
++ * drain the buffer.
++ */
++static int put_data(void *arg)
++{
++	unsigned int chan, stall;
++
++	__set_current_state(TASK_RUNNING);
++	while (!kthread_should_stop()) {
++		/*
++		 * For each channel see if there's anything to transmit in the
++		 * port's xmit_buf.
++		 */
++		stall =3D 0;
++		for (chan =3D 0; chan < NUM_TTY_CHANNELS; ++chan)
++			stall +=3D put_channel_data(chan);
++
++		/*
++		 * If some of the buffers are full, hold off for a short while
++		 * to allow them to empty.
++		 */
++		if (stall)
++			msleep(25);
++
++		wait_event_interruptible(dashtty_waitqueue,
++					 atomic_read(&dashtty_xmit_cnt));
++	}
++
++	return 0;
++}
++
++/*
++ *	This gets called every DA_TTY_POLL and polls the channels for data
++ */
++static void dashtty_timer(unsigned long ignored)
++{
++	struct tty_struct *tty;
++
++	/* If there are no ports open do nothing and don't poll again. */
++	if (!atomic_read(&num_channels_need_poll))
++		return;
++
++	tty =3D find_channel_to_poll();
++
++	/* Did we find a channel to poll? */
++	if (tty) {
++		fetch_data(tty);
++		tty_kref_put(tty);
++	}
++
++	mod_timer_pinned(&poll_timer, jiffies + DA_TTY_POLL);
++}
++
++static void add_poll_timer(struct timer_list *poll_timer)
++{
++	setup_timer(poll_timer, dashtty_timer, 0);
++	poll_timer->expires =3D jiffies + DA_TTY_POLL;
++
++	/*
++	 * Always attach the timer to the boot CPU. The DA channels are per-CPU=
 
- Documentation/networking/phy.txt                  |   11 ++++++-----
- drivers/net/ethernet/8390/ax88796.c               |    2 +-
- drivers/net/ethernet/adi/bfin_mac.c               |    4 ++--
- drivers/net/ethernet/aeroflex/greth.c             |    4 +---
- drivers/net/ethernet/amd/au1000_eth.c             |    4 ++--
- drivers/net/ethernet/broadcom/bcm63xx_enet.c      |    2 +-
- drivers/net/ethernet/broadcom/sb1250-mac.c        |    2 +-
- drivers/net/ethernet/broadcom/tg3.c               |    4 ++--
- drivers/net/ethernet/cadence/macb.c               |    2 +-
- drivers/net/ethernet/dnet.c                       |    4 ++--
- drivers/net/ethernet/ethoc.c                      |    4 ++--
- drivers/net/ethernet/faraday/ftgmac100.c          |    3 +--
- drivers/net/ethernet/freescale/fec.c              |    2 +-
- drivers/net/ethernet/lantiq_etop.c                |    4 ++--
- drivers/net/ethernet/marvell/mv643xx_eth.c        |    2 +-
- drivers/net/ethernet/marvell/pxa168_eth.c         |    2 +-
- drivers/net/ethernet/nxp/lpc_eth.c                |    2 +-
- drivers/net/ethernet/rdc/r6040.c                  |    2 +-
- drivers/net/ethernet/renesas/sh_eth.c             |    2 +-
- drivers/net/ethernet/s6gmac.c                     |    2 +-
- drivers/net/ethernet/smsc/smsc911x.c              |    5 ++---
- drivers/net/ethernet/smsc/smsc9420.c              |    2 +-
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    3 +--
- drivers/net/ethernet/ti/cpmac.c                   |    4 ++--
- drivers/net/ethernet/ti/cpsw.c                    |    2 +-
- drivers/net/ethernet/ti/davinci_emac.c            |    2 +-
- drivers/net/ethernet/toshiba/tc35815.c            |    5 ++---
- drivers/net/ethernet/xscale/ixp4xx_eth.c          |    2 +-
- drivers/net/phy/phy_device.c                      |   15 ++++++---------
- drivers/net/usb/ax88172a.c                        |    2 +-
- drivers/of/of_mdio.c                              |    4 ++--
- drivers/staging/et131x/et131x.c                   |    2 +-
- include/linux/phy.h                               |    6 +++---
- net/dsa/slave.c                                   |    2 +-
- 34 files changed, 56 insertions(+), 64 deletions(-)
++	 * so all polling should be from a single CPU.
++	 */
++	add_timer_on(poll_timer, 0);
++}
++
++static int dashtty_port_activate(struct tty_port *port, struct tty_struc=
+t *tty)
++{
++	struct dashtty_port *dport =3D container_of(port, struct dashtty_port,
++						  port);
++	void *rx_buf;
++
++	/* Allocate the buffer we use for writing data */
++	if (tty_port_alloc_xmit_buf(port) < 0)
++		goto err;
++
++	/* Allocate the buffer we use for reading data */
++	rx_buf =3D kzalloc(RX_BUF_SIZE, GFP_KERNEL);
++	if (!rx_buf)
++		goto err_free_xmit;
++
++	spin_lock_bh(&dport->rx_lock);
++	dport->rx_buf =3D rx_buf;
++	spin_unlock_bh(&dport->rx_lock);
++
++	/*
++	 * Don't add the poll timer if we're opening a console. This
++	 * avoids the overhead of polling the Dash but means it is not
++	 * possible to have a login on /dev/console.
++	 *
++	 */
++	if (dport !=3D &dashtty_ports[CONSOLE_CHANNEL])
++		if (atomic_inc_return(&num_channels_need_poll) =3D=3D 1)
++			add_poll_timer(&poll_timer);
++
++	return 0;
++err_free_xmit:
++	tty_port_free_xmit_buf(port);
++err:
++	return -ENOMEM;
++}
++
++static void dashtty_port_shutdown(struct tty_port *port)
++{
++	struct dashtty_port *dport =3D container_of(port, struct dashtty_port,
++						  port);
++	void *rx_buf;
++	unsigned int count;
++
++	/* stop reading */
++	if (dport !=3D &dashtty_ports[CONSOLE_CHANNEL])
++		if (atomic_dec_and_test(&num_channels_need_poll))
++			del_timer_sync(&poll_timer);
++
++	mutex_lock(&dport->xmit_lock);
++	count =3D dport->xmit_cnt;
++	mutex_unlock(&dport->xmit_lock);
++	if (count) {
++		/*
++		 * There's still data to write out, so wake and wait for the
++		 * writer thread to drain the buffer.
++		 */
++		del_timer(&put_timer);
++		wake_up_interruptible(&dashtty_waitqueue);
++		wait_for_completion(&dport->xmit_empty);
++	}
++
++	/* Null the read buffer (timer could still be running!) */
++	spin_lock_bh(&dport->rx_lock);
++	rx_buf =3D dport->rx_buf;
++	dport->rx_buf =3D NULL;
++	spin_unlock_bh(&dport->rx_lock);
++	/* Free the read buffer */
++	kfree(rx_buf);
++
++	/* Free the write buffer */
++	tty_port_free_xmit_buf(port);
++}
++
++static const struct tty_port_operations dashtty_port_ops =3D {
++	.activate	=3D dashtty_port_activate,
++	.shutdown	=3D dashtty_port_shutdown,
++};
++
++static int dashtty_install(struct tty_driver *driver, struct tty_struct =
+*tty)
++{
++	return tty_port_install(&dashtty_ports[tty->index].port, driver, tty);
++}
++
++static int dashtty_open(struct tty_struct *tty, struct file *filp)
++{
++	return tty_port_open(tty->port, tty, filp);
++}
++
++static void dashtty_close(struct tty_struct *tty, struct file *filp)
++{
++	return tty_port_close(tty->port, tty, filp);
++}
++
++static void dashtty_hangup(struct tty_struct *tty)
++{
++	int channel;
++	struct dashtty_port *dport;
++
++	channel =3D tty->index;
++	dport =3D &dashtty_ports[channel];
++
++	/* drop any data in the xmit buffer */
++	mutex_lock(&dport->xmit_lock);
++	if (dport->xmit_cnt) {
++		atomic_sub(dport->xmit_cnt, &dashtty_xmit_cnt);
++		dport->xmit_cnt =3D 0;
++		dport->xmit_head =3D 0;
++		dport->xmit_tail =3D 0;
++		complete(&dport->xmit_empty);
++	}
++	mutex_unlock(&dport->xmit_lock);
++
++	tty_port_hangup(tty->port);
++}
++
++/**
++ * dashtty_put_timer() - Delayed wake up of kernel thread.
++ * @ignored:	unused
++ *
++ * This timer function wakes up the kernel thread if any data exists in =
+the
++ * buffers. It is used to delay the expensive writeout until the writer =
+has
++ * stopped writing.
++ */
++static void dashtty_put_timer(unsigned long ignored)
++{
++	if (atomic_read(&dashtty_xmit_cnt))
++		wake_up_interruptible(&dashtty_waitqueue);
++}
++
++static int dashtty_write(struct tty_struct *tty, const unsigned char *bu=
+f,
++			 int total)
++{
++	int channel, count, block;
++	struct dashtty_port *dport;
++
++	/* Determine the channel */
++	channel =3D tty->index;
++	dport =3D &dashtty_ports[channel];
++
++	/*
++	 * Write to output buffer.
++	 *
++	 * The reason that we asynchronously write the buffer is because if we
++	 * were to write the buffer synchronously then because DA channels are
++	 * per-CPU the buffer would be written to the channel of whatever CPU
++	 * we're running on.
++	 *
++	 * What we actually want to happen is have all input and output done on=
 
-diff --git a/Documentation/networking/phy.txt b/Documentation/networking/phy.txt
-index 95e5f59..d5b1a39 100644
---- a/Documentation/networking/phy.txt
-+++ b/Documentation/networking/phy.txt
-@@ -103,7 +103,7 @@ Letting the PHY Abstraction Layer do Everything
-  
-  Now, to connect, just call this function:
-  
--   phydev = phy_connect(dev, phy_name, &adjust_link, flags, interface);
-+   phydev = phy_connect(dev, phy_name, &adjust_link, interface);
- 
-  phydev is a pointer to the phy_device structure which represents the PHY.  If
-  phy_connect is successful, it will return the pointer.  dev, here, is the
-@@ -113,7 +113,9 @@ Letting the PHY Abstraction Layer do Everything
-  current state, though the PHY will not yet be truly operational at this
-  point.
- 
-- flags is a u32 which can optionally contain phy-specific flags.
-+ PHY-specific flags should be set in phydev->dev_flags prior to the call
-+ to phy_connect() such that the underlying PHY driver can check for flags
-+ and perform specific operations based on them.
-  This is useful if the system has put hardware restrictions on
-  the PHY/controller, of which the PHY needs to be aware.
- 
-@@ -185,11 +187,10 @@ Doing it all yourself
-    start, or disables then frees them for stop.
- 
-  struct phy_device * phy_attach(struct net_device *dev, const char *phy_id,
--		 u32 flags, phy_interface_t interface);
-+		 phy_interface_t interface);
- 
-    Attaches a network device to a particular PHY, binding the PHY to a generic
--   driver if none was found during bus initialization.  Passes in
--   any phy-specific flags as needed.
-+   driver if none was found during bus initialization.
- 
-  int phy_start_aneg(struct phy_device *phydev);
-    
-diff --git a/drivers/net/ethernet/8390/ax88796.c b/drivers/net/ethernet/8390/ax88796.c
-index 7eeddf0..cab306a 100644
---- a/drivers/net/ethernet/8390/ax88796.c
-+++ b/drivers/net/ethernet/8390/ax88796.c
-@@ -358,7 +358,7 @@ static int ax_mii_probe(struct net_device *dev)
- 		return -ENODEV;
- 	}
- 
--	ret = phy_connect_direct(dev, phy_dev, ax_handle_link_change, 0,
-+	ret = phy_connect_direct(dev, phy_dev, ax_handle_link_change,
- 				 PHY_INTERFACE_MODE_MII);
- 	if (ret) {
- 		netdev_err(dev, "Could not attach to PHY\n");
-diff --git a/drivers/net/ethernet/adi/bfin_mac.c b/drivers/net/ethernet/adi/bfin_mac.c
-index c7a83f6..a175d0b 100644
---- a/drivers/net/ethernet/adi/bfin_mac.c
-+++ b/drivers/net/ethernet/adi/bfin_mac.c
-@@ -425,8 +425,8 @@ static int mii_probe(struct net_device *dev, int phy_mode)
- 		return -EINVAL;
- 	}
- 
--	phydev = phy_connect(dev, dev_name(&phydev->dev), &bfin_mac_adjust_link,
--			0, phy_mode);
-+	phydev = phy_connect(dev, dev_name(&phydev->dev),
-+			     &bfin_mac_adjust_link, phy_mode);
- 
- 	if (IS_ERR(phydev)) {
- 		netdev_err(dev, "could not attach PHY\n");
-diff --git a/drivers/net/ethernet/aeroflex/greth.c b/drivers/net/ethernet/aeroflex/greth.c
-index 480662b..0be2195 100644
---- a/drivers/net/ethernet/aeroflex/greth.c
-+++ b/drivers/net/ethernet/aeroflex/greth.c
-@@ -1288,9 +1288,7 @@ static int greth_mdio_probe(struct net_device *dev)
- 	}
- 
- 	ret = phy_connect_direct(dev, phy, &greth_link_change,
--			0, greth->gbit_mac ?
--			PHY_INTERFACE_MODE_GMII :
--			PHY_INTERFACE_MODE_MII);
-+				 greth->gbit_mac ? PHY_INTERFACE_MODE_GMII : PHY_INTERFACE_MODE_MII);
- 	if (ret) {
- 		if (netif_msg_ifup(greth))
- 			dev_err(&dev->dev, "could not attach to PHY\n");
-diff --git a/drivers/net/ethernet/amd/au1000_eth.c b/drivers/net/ethernet/amd/au1000_eth.c
-index 65b865a..de774d4 100644
---- a/drivers/net/ethernet/amd/au1000_eth.c
-+++ b/drivers/net/ethernet/amd/au1000_eth.c
-@@ -437,8 +437,8 @@ static int au1000_mii_probe(struct net_device *dev)
- 	/* now we are supposed to have a proper phydev, to attach to... */
- 	BUG_ON(phydev->attached_dev);
- 
--	phydev = phy_connect(dev, dev_name(&phydev->dev), &au1000_adjust_link,
--			0, PHY_INTERFACE_MODE_MII);
-+	phydev = phy_connect(dev, dev_name(&phydev->dev),
-+			     &au1000_adjust_link, PHY_INTERFACE_MODE_MII);
- 
- 	if (IS_ERR(phydev)) {
- 		netdev_err(dev, "Could not attach to PHY\n");
-diff --git a/drivers/net/ethernet/broadcom/bcm63xx_enet.c b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-index d8a1510..f5b6b47 100644
---- a/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-+++ b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-@@ -799,7 +799,7 @@ static int bcm_enet_open(struct net_device *dev)
- 		snprintf(phy_id, sizeof(phy_id), PHY_ID_FMT,
- 			 priv->mii_bus->id, priv->phy_id);
- 
--		phydev = phy_connect(dev, phy_id, bcm_enet_adjust_phy_link, 0,
-+		phydev = phy_connect(dev, phy_id, bcm_enet_adjust_phy_link,
- 				     PHY_INTERFACE_MODE_MII);
- 
- 		if (IS_ERR(phydev)) {
-diff --git a/drivers/net/ethernet/broadcom/sb1250-mac.c b/drivers/net/ethernet/broadcom/sb1250-mac.c
-index 3a1c8a3..e9b35da 100644
---- a/drivers/net/ethernet/broadcom/sb1250-mac.c
-+++ b/drivers/net/ethernet/broadcom/sb1250-mac.c
-@@ -2385,7 +2385,7 @@ static int sbmac_mii_probe(struct net_device *dev)
- 		return -ENXIO;
- 	}
- 
--	phy_dev = phy_connect(dev, dev_name(&phy_dev->dev), &sbmac_mii_poll, 0,
-+	phy_dev = phy_connect(dev, dev_name(&phy_dev->dev), &sbmac_mii_poll,
- 			      PHY_INTERFACE_MODE_GMII);
- 	if (IS_ERR(phy_dev)) {
- 		printk(KERN_ERR "%s: could not attach to PHY\n", dev->name);
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 88f2d41..2277491 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -2004,8 +2004,8 @@ static int tg3_phy_init(struct tg3 *tp)
- 	phydev = tp->mdio_bus->phy_map[TG3_PHY_MII_ADDR];
- 
- 	/* Attach the MAC to the PHY. */
--	phydev = phy_connect(tp->dev, dev_name(&phydev->dev), tg3_adjust_link,
--			     phydev->dev_flags, phydev->interface);
-+	phydev = phy_connect(tp->dev, dev_name(&phydev->dev),
-+			     tg3_adjust_link, phydev->interface);
- 	if (IS_ERR(phydev)) {
- 		dev_err(&tp->pdev->dev, "Could not attach to PHY\n");
- 		return PTR_ERR(phydev);
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index a9b0830..352190b 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -287,7 +287,7 @@ static int macb_mii_probe(struct net_device *dev)
- 	}
- 
- 	/* attach the mac to the phy */
--	ret = phy_connect_direct(dev, phydev, &macb_handle_link_change, 0,
-+	ret = phy_connect_direct(dev, phydev, &macb_handle_link_change,
- 				 bp->phy_interface);
- 	if (ret) {
- 		netdev_err(dev, "Could not attach to PHY\n");
-diff --git a/drivers/net/ethernet/dnet.c b/drivers/net/ethernet/dnet.c
-index 2c177b3..f3d60eb 100644
---- a/drivers/net/ethernet/dnet.c
-+++ b/drivers/net/ethernet/dnet.c
-@@ -281,11 +281,11 @@ static int dnet_mii_probe(struct net_device *dev)
- 	/* attach the mac to the phy */
- 	if (bp->capabilities & DNET_HAS_RMII) {
- 		phydev = phy_connect(dev, dev_name(&phydev->dev),
--				     &dnet_handle_link_change, 0,
-+				     &dnet_handle_link_change,
- 				     PHY_INTERFACE_MODE_RMII);
- 	} else {
- 		phydev = phy_connect(dev, dev_name(&phydev->dev),
--				     &dnet_handle_link_change, 0,
-+				     &dnet_handle_link_change,
- 				     PHY_INTERFACE_MODE_MII);
- 	}
- 
-diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
-index b51c81a..aa47ef9 100644
---- a/drivers/net/ethernet/ethoc.c
-+++ b/drivers/net/ethernet/ethoc.c
-@@ -682,8 +682,8 @@ static int ethoc_mdio_probe(struct net_device *dev)
- 		return -ENXIO;
- 	}
- 
--	err = phy_connect_direct(dev, phy, ethoc_mdio_poll, 0,
--			PHY_INTERFACE_MODE_GMII);
-+	err = phy_connect_direct(dev, phy, ethoc_mdio_poll,
-+				 PHY_INTERFACE_MODE_GMII);
- 	if (err) {
- 		dev_err(&dev->dev, "could not attach to PHY\n");
- 		return err;
-diff --git a/drivers/net/ethernet/faraday/ftgmac100.c b/drivers/net/ethernet/faraday/ftgmac100.c
-index 96454b5..7c361d1 100644
---- a/drivers/net/ethernet/faraday/ftgmac100.c
-+++ b/drivers/net/ethernet/faraday/ftgmac100.c
-@@ -858,8 +858,7 @@ static int ftgmac100_mii_probe(struct ftgmac100 *priv)
- 	}
- 
- 	phydev = phy_connect(netdev, dev_name(&phydev->dev),
--			     &ftgmac100_adjust_link, 0,
--			     PHY_INTERFACE_MODE_GMII);
-+			     &ftgmac100_adjust_link, PHY_INTERFACE_MODE_GMII);
- 
- 	if (IS_ERR(phydev)) {
- 		netdev_err(netdev, "%s: Could not attach to PHY\n", netdev->name);
-diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
-index 5f2b4ac..1b7684a 100644
---- a/drivers/net/ethernet/freescale/fec.c
-+++ b/drivers/net/ethernet/freescale/fec.c
-@@ -1008,7 +1008,7 @@ static int fec_enet_mii_probe(struct net_device *ndev)
- 	}
- 
- 	snprintf(phy_name, sizeof(phy_name), PHY_ID_FMT, mdio_bus_id, phy_id);
--	phy_dev = phy_connect(ndev, phy_name, &fec_enet_adjust_link, 0,
-+	phy_dev = phy_connect(ndev, phy_name, &fec_enet_adjust_link,
- 			      fep->phy_interface);
- 	if (IS_ERR(phy_dev)) {
- 		printk(KERN_ERR "%s: could not attach to PHY\n", ndev->name);
-diff --git a/drivers/net/ethernet/lantiq_etop.c b/drivers/net/ethernet/lantiq_etop.c
-index 8ead46a..6a21274 100644
---- a/drivers/net/ethernet/lantiq_etop.c
-+++ b/drivers/net/ethernet/lantiq_etop.c
-@@ -393,8 +393,8 @@ ltq_etop_mdio_probe(struct net_device *dev)
- 		return -ENODEV;
- 	}
- 
--	phydev = phy_connect(dev, dev_name(&phydev->dev), &ltq_etop_mdio_link,
--			0, priv->pldata->mii_mode);
-+	phydev = phy_connect(dev, dev_name(&phydev->dev),
-+			     &ltq_etop_mdio_link, priv->pldata->mii_mode);
- 
- 	if (IS_ERR(phydev)) {
- 		netdev_err(dev, "Could not attach to PHY\n");
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index 84c1326..c27b23d8 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -2789,7 +2789,7 @@ static void phy_init(struct mv643xx_eth_private *mp, int speed, int duplex)
- 
- 	phy_reset(mp);
- 
--	phy_attach(mp->dev, dev_name(&phy->dev), 0, PHY_INTERFACE_MODE_GMII);
-+	phy_attach(mp->dev, dev_name(&phy->dev), PHY_INTERFACE_MODE_GMII);
- 
- 	if (speed == 0) {
- 		phy->autoneg = AUTONEG_ENABLE;
-diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index c7f2fa6..037ed86 100644
---- a/drivers/net/ethernet/marvell/pxa168_eth.c
-+++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -1390,7 +1390,7 @@ static void phy_init(struct pxa168_eth_private *pep, int speed, int duplex)
- 	struct phy_device *phy = pep->phy;
- 	ethernet_phy_reset(pep);
- 
--	phy_attach(pep->dev, dev_name(&phy->dev), 0, PHY_INTERFACE_MODE_MII);
-+	phy_attach(pep->dev, dev_name(&phy->dev), PHY_INTERFACE_MODE_MII);
- 
- 	if (speed == 0) {
- 		phy->autoneg = AUTONEG_ENABLE;
-diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
-index 6fda51e..c4122c8 100644
---- a/drivers/net/ethernet/nxp/lpc_eth.c
-+++ b/drivers/net/ethernet/nxp/lpc_eth.c
-@@ -800,7 +800,7 @@ static int lpc_mii_probe(struct net_device *ndev)
- 	else
- 		netdev_info(ndev, "using RMII interface\n");
- 	phydev = phy_connect(ndev, dev_name(&phydev->dev),
--			     &lpc_handle_link_change, 0,
-+			     &lpc_handle_link_change,
- 			     lpc_phy_interface_mode(&pldat->pdev->dev));
- 
- 	if (IS_ERR(phydev)) {
-diff --git a/drivers/net/ethernet/rdc/r6040.c b/drivers/net/ethernet/rdc/r6040.c
-index be3616d..34f76e9 100644
---- a/drivers/net/ethernet/rdc/r6040.c
-+++ b/drivers/net/ethernet/rdc/r6040.c
-@@ -1042,7 +1042,7 @@ static int r6040_mii_probe(struct net_device *dev)
- 	}
- 
- 	phydev = phy_connect(dev, dev_name(&phydev->dev), &r6040_adjust_link,
--				0, PHY_INTERFACE_MODE_MII);
-+			     PHY_INTERFACE_MODE_MII);
- 
- 	if (IS_ERR(phydev)) {
- 		dev_err(&lp->pdev->dev, "could not attach to PHY\n");
-diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
-index 3d70586..e195c1e 100644
---- a/drivers/net/ethernet/renesas/sh_eth.c
-+++ b/drivers/net/ethernet/renesas/sh_eth.c
-@@ -1422,7 +1422,7 @@ static int sh_eth_phy_init(struct net_device *ndev)
- 
- 	/* Try connect to PHY */
- 	phydev = phy_connect(ndev, phy_id, sh_eth_adjust_link,
--				0, mdp->phy_interface);
-+			     mdp->phy_interface);
- 	if (IS_ERR(phydev)) {
- 		dev_err(&ndev->dev, "phy_connect failed\n");
- 		return PTR_ERR(phydev);
-diff --git a/drivers/net/ethernet/s6gmac.c b/drivers/net/ethernet/s6gmac.c
-index 72fc57d..21683e2 100644
---- a/drivers/net/ethernet/s6gmac.c
-+++ b/drivers/net/ethernet/s6gmac.c
-@@ -795,7 +795,7 @@ static inline int s6gmac_phy_start(struct net_device *dev)
- 	struct phy_device *p = NULL;
- 	while ((i < PHY_MAX_ADDR) && (!(p = pd->mii.bus->phy_map[i])))
- 		i++;
--	p = phy_connect(dev, dev_name(&p->dev), &s6gmac_adjust_link, 0,
-+	p = phy_connect(dev, dev_name(&p->dev), &s6gmac_adjust_link,
- 			PHY_INTERFACE_MODE_RGMII);
- 	if (IS_ERR(p)) {
- 		printk(KERN_ERR "%s: Could not attach to PHY\n", dev->name);
-diff --git a/drivers/net/ethernet/smsc/smsc911x.c b/drivers/net/ethernet/smsc/smsc911x.c
-index 04ff63c..da5cc9a 100644
---- a/drivers/net/ethernet/smsc/smsc911x.c
-+++ b/drivers/net/ethernet/smsc/smsc911x.c
-@@ -997,9 +997,8 @@ static int smsc911x_mii_probe(struct net_device *dev)
- 	SMSC_TRACE(pdata, probe, "PHY: addr %d, phy_id 0x%08X",
- 		   phydev->addr, phydev->phy_id);
- 
--	ret = phy_connect_direct(dev, phydev,
--			&smsc911x_phy_adjust_link, 0,
--			pdata->config.phy_interface);
-+	ret = phy_connect_direct(dev, phydev, &smsc911x_phy_adjust_link,
-+				 pdata->config.phy_interface);
- 
- 	if (ret) {
- 		netdev_err(dev, "Could not attach to PHY\n");
-diff --git a/drivers/net/ethernet/smsc/smsc9420.c b/drivers/net/ethernet/smsc/smsc9420.c
-index 3c58658..ecfb436 100644
---- a/drivers/net/ethernet/smsc/smsc9420.c
-+++ b/drivers/net/ethernet/smsc/smsc9420.c
-@@ -1179,7 +1179,7 @@ static int smsc9420_mii_probe(struct net_device *dev)
- 		phydev->phy_id);
- 
- 	phydev = phy_connect(dev, dev_name(&phydev->dev),
--		smsc9420_phy_adjust_link, 0, PHY_INTERFACE_MODE_MII);
-+			     smsc9420_phy_adjust_link, PHY_INTERFACE_MODE_MII);
- 
- 	if (IS_ERR(phydev)) {
- 		pr_err("%s: Could not attach to PHY\n", dev->name);
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index f07c061..8c65729 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -428,8 +428,7 @@ static int stmmac_init_phy(struct net_device *dev)
- 		 priv->plat->phy_addr);
- 	pr_debug("stmmac_init_phy:  trying to attach to %s\n", phy_id_fmt);
- 
--	phydev = phy_connect(dev, phy_id_fmt, &stmmac_adjust_link, 0,
--			     interface);
-+	phydev = phy_connect(dev, phy_id_fmt, &stmmac_adjust_link, interface);
- 
- 	if (IS_ERR(phydev)) {
- 		pr_err("%s: Could not attach to PHY\n", dev->name);
-diff --git a/drivers/net/ethernet/ti/cpmac.c b/drivers/net/ethernet/ti/cpmac.c
-index 70d1920..31bbbca 100644
---- a/drivers/net/ethernet/ti/cpmac.c
-+++ b/drivers/net/ethernet/ti/cpmac.c
-@@ -1172,8 +1172,8 @@ static int cpmac_probe(struct platform_device *pdev)
- 	snprintf(priv->phy_name, MII_BUS_ID_SIZE, PHY_ID_FMT,
- 						mdio_bus_id, phy_id);
- 
--	priv->phy = phy_connect(dev, priv->phy_name, cpmac_adjust_link, 0,
--						PHY_INTERFACE_MODE_MII);
-+	priv->phy = phy_connect(dev, priv->phy_name, cpmac_adjust_link,
-+				PHY_INTERFACE_MODE_MII);
- 
- 	if (IS_ERR(priv->phy)) {
- 		if (netif_msg_drv(priv))
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index bea736b..3772804 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -592,7 +592,7 @@ static void cpsw_slave_open(struct cpsw_slave *slave, struct cpsw_priv *priv)
- 			   1 << slave_port, 0, ALE_MCAST_FWD_2);
- 
- 	slave->phy = phy_connect(priv->ndev, slave->data->phy_id,
--				 &cpsw_adjust_link, 0, slave->data->phy_if);
-+				 &cpsw_adjust_link, slave->data->phy_if);
- 	if (IS_ERR(slave->phy)) {
- 		dev_err(priv->dev, "phy %s not found on slave %d\n",
- 			slave->data->phy_id, slave->slave_num);
-diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
-index 6621ae3..8478d98 100644
---- a/drivers/net/ethernet/ti/davinci_emac.c
-+++ b/drivers/net/ethernet/ti/davinci_emac.c
-@@ -1599,7 +1599,7 @@ static int emac_dev_open(struct net_device *ndev)
- 
- 	if (priv->phy_id && *priv->phy_id) {
- 		priv->phydev = phy_connect(ndev, priv->phy_id,
--					   &emac_adjust_link, 0,
-+					   &emac_adjust_link,
- 					   PHY_INTERFACE_MODE_MII);
- 
- 		if (IS_ERR(priv->phydev)) {
-diff --git a/drivers/net/ethernet/toshiba/tc35815.c b/drivers/net/ethernet/toshiba/tc35815.c
-index f16410e..fe25609 100644
---- a/drivers/net/ethernet/toshiba/tc35815.c
-+++ b/drivers/net/ethernet/toshiba/tc35815.c
-@@ -633,9 +633,8 @@ static int tc_mii_probe(struct net_device *dev)
- 
- 	/* attach the mac to the phy */
- 	phydev = phy_connect(dev, dev_name(&phydev->dev),
--			     &tc_handle_link_change, 0,
--			     lp->chiptype == TC35815_TX4939 ?
--			     PHY_INTERFACE_MODE_RMII : PHY_INTERFACE_MODE_MII);
-+			     &tc_handle_link_change,
-+			     lp->chiptype == TC35815_TX4939 ? PHY_INTERFACE_MODE_RMII : PHY_INTERFACE_MODE_MII);
- 	if (IS_ERR(phydev)) {
- 		printk(KERN_ERR "%s: Could not attach to PHY\n", dev->name);
- 		return PTR_ERR(phydev);
-diff --git a/drivers/net/ethernet/xscale/ixp4xx_eth.c b/drivers/net/ethernet/xscale/ixp4xx_eth.c
-index a4be1ad..6958a5e 100644
---- a/drivers/net/ethernet/xscale/ixp4xx_eth.c
-+++ b/drivers/net/ethernet/xscale/ixp4xx_eth.c
-@@ -1451,7 +1451,7 @@ static int eth_init_one(struct platform_device *pdev)
- 
- 	snprintf(phy_id, MII_BUS_ID_SIZE + 3, PHY_ID_FMT,
- 		mdio_bus->id, plat->phy);
--	port->phydev = phy_connect(dev, phy_id, &ixp4xx_adjust_link, 0,
-+	port->phydev = phy_connect(dev, phy_id, &ixp4xx_adjust_link,
- 				   PHY_INTERFACE_MODE_MII);
- 	if (IS_ERR(port->phydev)) {
- 		err = PTR_ERR(port->phydev);
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index 8af46e8..9930f99 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -416,16 +416,15 @@ static void phy_prepare_link(struct phy_device *phydev,
-  * @dev: the network device to connect
-  * @phydev: the pointer to the phy device
-  * @handler: callback function for state change notifications
-- * @flags: PHY device's dev_flags
-  * @interface: PHY device's interface
-  */
- int phy_connect_direct(struct net_device *dev, struct phy_device *phydev,
--		       void (*handler)(struct net_device *), u32 flags,
-+		       void (*handler)(struct net_device *),
- 		       phy_interface_t interface)
- {
- 	int rc;
- 
--	rc = phy_attach_direct(dev, phydev, flags, interface);
-+	rc = phy_attach_direct(dev, phydev, phydev->dev_flags, interface);
- 	if (rc)
- 		return rc;
- 
-@@ -443,7 +442,6 @@ EXPORT_SYMBOL(phy_connect_direct);
-  * @dev: the network device to connect
-  * @bus_id: the id string of the PHY device to connect
-  * @handler: callback function for state change notifications
-- * @flags: PHY device's dev_flags
-  * @interface: PHY device's interface
-  *
-  * Description: Convenience function for connecting ethernet
-@@ -455,7 +453,7 @@ EXPORT_SYMBOL(phy_connect_direct);
-  *   the desired functionality.
-  */
- struct phy_device * phy_connect(struct net_device *dev, const char *bus_id,
--		void (*handler)(struct net_device *), u32 flags,
-+		void (*handler)(struct net_device *),
- 		phy_interface_t interface)
- {
- 	struct phy_device *phydev;
-@@ -471,7 +469,7 @@ struct phy_device * phy_connect(struct net_device *dev, const char *bus_id,
- 	}
- 	phydev = to_phy_device(d);
- 
--	rc = phy_connect_direct(dev, phydev, handler, flags, interface);
-+	rc = phy_connect_direct(dev, phydev, handler, interface);
- 	if (rc)
- 		return ERR_PTR(rc);
- 
-@@ -576,14 +574,13 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
-  * phy_attach - attach a network device to a particular PHY device
-  * @dev: network device to attach
-  * @bus_id: Bus ID of PHY device to attach
-- * @flags: PHY device's dev_flags
-  * @interface: PHY device's interface
-  *
-  * Description: Same as phy_attach_direct() except that a PHY bus_id
-  *     string is passed instead of a pointer to a struct phy_device.
-  */
- struct phy_device *phy_attach(struct net_device *dev,
--		const char *bus_id, u32 flags, phy_interface_t interface)
-+		const char *bus_id, phy_interface_t interface)
- {
- 	struct bus_type *bus = &mdio_bus_type;
- 	struct phy_device *phydev;
-@@ -599,7 +596,7 @@ struct phy_device *phy_attach(struct net_device *dev,
- 	}
- 	phydev = to_phy_device(d);
- 
--	rc = phy_attach_direct(dev, phydev, flags, interface);
-+	rc = phy_attach_direct(dev, phydev, phydev->dev_flags, interface);
- 	if (rc)
- 		return ERR_PTR(rc);
- 
-diff --git a/drivers/net/usb/ax88172a.c b/drivers/net/usb/ax88172a.c
-index c8e0aa8..fdbab72 100644
---- a/drivers/net/usb/ax88172a.c
-+++ b/drivers/net/usb/ax88172a.c
-@@ -377,7 +377,7 @@ static int ax88172a_reset(struct usbnet *dev)
- 
- 	priv->phydev = phy_connect(dev->net, priv->phy_name,
- 				   &ax88172a_adjust_link,
--				   0, PHY_INTERFACE_MODE_MII);
-+				   PHY_INTERFACE_MODE_MII);
- 	if (IS_ERR(priv->phydev)) {
- 		netdev_err(dev->net, "Could not connect to PHY device %s\n",
- 			   priv->phy_name);
-diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-index 83ca06f..e3a8b22 100644
---- a/drivers/of/of_mdio.c
-+++ b/drivers/of/of_mdio.c
-@@ -157,7 +157,7 @@ struct phy_device *of_phy_connect(struct net_device *dev,
- 	if (!phy)
- 		return NULL;
- 
--	return phy_connect_direct(dev, phy, hndlr, flags, iface) ? NULL : phy;
-+	return phy_connect_direct(dev, phy, hndlr, iface) ? NULL : phy;
- }
- EXPORT_SYMBOL(of_phy_connect);
- 
-@@ -194,7 +194,7 @@ struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
- 
- 	sprintf(bus_id, PHY_ID_FMT, "fixed-0", be32_to_cpu(phy_id[0]));
- 
--	phy = phy_connect(dev, bus_id, hndlr, 0, iface);
-+	phy = phy_connect(dev, bus_id, hndlr, iface);
- 	return IS_ERR(phy) ? NULL : phy;
- }
- EXPORT_SYMBOL(of_phy_connect_fixed_link);
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index f15059c..a0a30b3 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -3917,7 +3917,7 @@ static int et131x_mii_probe(struct net_device *netdev)
- 	}
- 
- 	phydev = phy_connect(netdev, dev_name(&phydev->dev),
--			&et131x_adjust_link, 0, PHY_INTERFACE_MODE_MII);
-+			     &et131x_adjust_link, PHY_INTERFACE_MODE_MII);
- 
- 	if (IS_ERR(phydev)) {
- 		dev_err(&adapter->pdev->dev, "Could not attach to PHY\n");
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index 93b3cf7..33999ad 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -506,13 +506,13 @@ struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45);
- int phy_device_register(struct phy_device *phy);
- int phy_init_hw(struct phy_device *phydev);
- struct phy_device * phy_attach(struct net_device *dev,
--		const char *bus_id, u32 flags, phy_interface_t interface);
-+		const char *bus_id, phy_interface_t interface);
- struct phy_device *phy_find_first(struct mii_bus *bus);
- int phy_connect_direct(struct net_device *dev, struct phy_device *phydev,
--		void (*handler)(struct net_device *), u32 flags,
-+		void (*handler)(struct net_device *),
- 		phy_interface_t interface);
- struct phy_device * phy_connect(struct net_device *dev, const char *bus_id,
--		void (*handler)(struct net_device *), u32 flags,
-+		void (*handler)(struct net_device *),
- 		phy_interface_t interface);
- void phy_disconnect(struct phy_device *phydev);
- void phy_detach(struct phy_device *phydev);
-diff --git a/net/dsa/slave.c b/net/dsa/slave.c
-index f795b0c..f434558 100644
---- a/net/dsa/slave.c
-+++ b/net/dsa/slave.c
-@@ -391,7 +391,7 @@ dsa_slave_create(struct dsa_switch *ds, struct device *parent,
- 
- 	if (p->phy != NULL) {
- 		phy_attach(slave_dev, dev_name(&p->phy->dev),
--			   0, PHY_INTERFACE_MODE_GMII);
-+			   PHY_INTERFACE_MODE_GMII);
- 
- 		p->phy->autoneg = AUTONEG_ENABLE;
- 		p->phy->speed = 0;
--- 
-1.7.10.4
++	 * one CPU.
++	 */
++	mutex_lock(&dport->xmit_lock);
++	/* work out how many bytes we can write to the xmit buffer */
++	total =3D min(total, (int)(SERIAL_XMIT_SIZE - dport->xmit_cnt));
++	atomic_add(total, &dashtty_xmit_cnt);
++	dport->xmit_cnt +=3D total;
++	/* write the actual bytes (may need splitting if it wraps) */
++	for (count =3D total; count; count -=3D block) {
++		block =3D min(count, (int)(SERIAL_XMIT_SIZE - dport->xmit_head));
++		memcpy(dport->port.xmit_buf + dport->xmit_head, buf, block);
++		dport->xmit_head +=3D block;
++		if (dport->xmit_head >=3D SERIAL_XMIT_SIZE)
++			dport->xmit_head -=3D SERIAL_XMIT_SIZE;
++		buf +=3D block;
++	}
++	count =3D dport->xmit_cnt;
++	/* xmit buffer no longer empty? */
++	if (count)
++		INIT_COMPLETION(dport->xmit_empty);
++	mutex_unlock(&dport->xmit_lock);
++
++	if (total) {
++		/*
++		 * If the buffer is full, wake up the kthread, otherwise allow
++		 * some more time for the buffer to fill up a bit before waking
++		 * it.
++		 */
++		if (count =3D=3D SERIAL_XMIT_SIZE) {
++			del_timer(&put_timer);
++			wake_up_interruptible(&dashtty_waitqueue);
++		} else {
++			mod_timer(&put_timer, jiffies + DA_TTY_PUT_DELAY);
++		}
++	}
++	return total;
++}
++
++static int dashtty_write_room(struct tty_struct *tty)
++{
++	struct dashtty_port *dport;
++	int channel;
++	int room;
++
++	channel =3D tty->index;
++	dport =3D &dashtty_ports[channel];
++
++	/* report the space in the xmit buffer */
++	mutex_lock(&dport->xmit_lock);
++	room =3D SERIAL_XMIT_SIZE - dport->xmit_cnt;
++	mutex_unlock(&dport->xmit_lock);
++
++	return room;
++}
++
++static int dashtty_chars_in_buffer(struct tty_struct *tty)
++{
++	struct dashtty_port *dport;
++	int channel;
++	int chars;
++
++	channel =3D tty->index;
++	dport =3D &dashtty_ports[channel];
++
++	/* report the number of bytes in the xmit buffer */
++	mutex_lock(&dport->xmit_lock);
++	chars =3D dport->xmit_cnt;
++	mutex_unlock(&dport->xmit_lock);
++
++	return chars;
++}
++
++static const struct tty_operations dashtty_ops =3D {
++	.install		=3D dashtty_install,
++	.open			=3D dashtty_open,
++	.close			=3D dashtty_close,
++	.hangup			=3D dashtty_hangup,
++	.write			=3D dashtty_write,
++	.write_room		=3D dashtty_write_room,
++	.chars_in_buffer	=3D dashtty_chars_in_buffer,
++};
++
++static int __init dashtty_init(void)
++{
++	int ret;
++	int nport;
++	struct dashtty_port *dport;
++
++	if (!metag_da_enabled())
++		return -ENODEV;
++
++	channel_driver =3D tty_alloc_driver(NUM_TTY_CHANNELS,
++					  TTY_DRIVER_REAL_RAW);
++	if (IS_ERR(channel_driver))
++		return PTR_ERR(channel_driver);
++
++	channel_driver->driver_name =3D "metag_da";
++	channel_driver->name =3D "ttyDA";
++	channel_driver->major =3D DA_TTY_MAJOR;
++	channel_driver->minor_start =3D 0;
++	channel_driver->type =3D TTY_DRIVER_TYPE_SERIAL;
++	channel_driver->subtype =3D SERIAL_TYPE_NORMAL;
++	channel_driver->init_termios =3D tty_std_termios;
++	channel_driver->init_termios.c_cflag |=3D CLOCAL;
++
++	tty_set_operations(channel_driver, &dashtty_ops);
++	for (nport =3D 0; nport < NUM_TTY_CHANNELS; nport++) {
++		dport =3D &dashtty_ports[nport];
++		tty_port_init(&dport->port);
++		dport->port.ops =3D &dashtty_port_ops;
++		spin_lock_init(&dport->rx_lock);
++		mutex_init(&dport->xmit_lock);
++		/* the xmit buffer starts empty, i.e. completely written */
++		init_completion(&dport->xmit_empty);
++		complete(&dport->xmit_empty);
++	}
++
++	setup_timer(&put_timer, dashtty_put_timer, 0);
++
++	init_waitqueue_head(&dashtty_waitqueue);
++	dashtty_thread =3D kthread_create(put_data, NULL, "ttyDA");
++	if (IS_ERR(dashtty_thread)) {
++		pr_err("Couldn't create dashtty thread\n");
++		ret =3D PTR_ERR(dashtty_thread);
++		goto err_destroy_ports;
++	}
++	/*
++	 * Bind the writer thread to the boot CPU so it can't migrate.
++	 * DA channels are per-CPU and we want all channel I/O to be on a singl=
+e
++	 * predictable CPU.
++	 */
++	kthread_bind(dashtty_thread, 0);
++	wake_up_process(dashtty_thread);
++
++	ret =3D tty_register_driver(channel_driver);
++
++	if (ret < 0) {
++		pr_err("Couldn't install dashtty driver: err %d\n",
++		       ret);
++		goto err_stop_kthread;
++	}
++
++	return 0;
++
++err_stop_kthread:
++	kthread_stop(dashtty_thread);
++err_destroy_ports:
++	for (nport =3D 0; nport < NUM_TTY_CHANNELS; nport++) {
++		dport =3D &dashtty_ports[nport];
++		tty_port_destroy(&dport->port);
++	}
++	put_tty_driver(channel_driver);
++	return ret;
++}
++
++static void dashtty_exit(void)
++{
++	int nport;
++	struct dashtty_port *dport;
++
++	del_timer_sync(&put_timer);
++	kthread_stop(dashtty_thread);
++	del_timer_sync(&poll_timer);
++	tty_unregister_driver(channel_driver);
++	for (nport =3D 0; nport < NUM_TTY_CHANNELS; nport++) {
++		dport =3D &dashtty_ports[nport];
++		tty_port_destroy(&dport->port);
++	}
++	put_tty_driver(channel_driver);
++}
++
++module_init(dashtty_init);
++module_exit(dashtty_exit);
++
++#ifdef CONFIG_DA_CONSOLE
++
++static void dash_console_write(struct console *co, const char *s,
++			       unsigned int count)
++{
++	int actually_written;
++
++	chancall(WRBUF, CONSOLE_CHANNEL, count, (void *)s, &actually_written);
++}
++
++static struct tty_driver *dash_console_device(struct console *c, int *in=
+dex)
++{
++	*index =3D c->index;
++	return channel_driver;
++}
++
++struct console dash_console =3D {
++	.name =3D "ttyDA",
++	.write =3D dash_console_write,
++	.device =3D dash_console_device,
++	.flags =3D CON_PRINTBUFFER,
++	.index =3D 1,
++};
++
++#endif
+--=20
+1.7.7.6
+
+
+
+--------------enig7C13DABA59A5B681EB099753
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ8+QGAAoJEKHZs+irPybfXuQP/RWm3K5gzHWgVe5QsQVpP7oT
+wY4I68TFr5eRNJeVJM0OhEQUsKuwUbZjbT32dCO7k6m2vVYKOec+muQXgJr40/qi
+H4THZKZy9GF1eTm+g6ireKNDgHpctPvQ/+qQCQBDnfqNxGq9ZKDJ/huKM+cJMuPS
+/tiekqzpzH6KgIx7hGfwrVoWEZrcpM2zyC8X35JN76gfCJ5m0hCsUHkgKrleRDuZ
+vToG1qaQlwVNxDxUsNkWgGxK/ZV8TD83veWqD99REiU9MZGeKuuaW6Ntb9cYM/1m
+TU3zkvTwjl0CJ9ADpUyAYHTx6HLT2Z2lopCDwcYTBduXNBl7wMD8ekvUYpuDLlAZ
+yD09m6O+gR7HIxKwkx0WGnI4k9jfQIMSOGSDU24BVtO+vlPxzWjIexTY1sei3OGO
+l6prwvXf+KViZq+Wb/SmAgTgFXN7mpwWIB5o7CYyOooegozX1Xq4e7NiJhPhahDO
+uqGqEzrPglRq0tM4zaqam+DzYs+WFMOXAHIrg2AtcgJ735keNWlSCUxw1zLLcOEX
+NXF2i4ZnoMf/EsNXS2zep+hwBnM5B7+ucCgfosMC0x51GiLKcHYh2peeZpW54T2e
+A5XorVLhox54MQQiA9dJGsjfp9TGtt4JqQR7jddG6mm2oP/pU5OJNGOnpPIbef0t
+PFJW8Clct17Vve5jSKqy
+=bYIk
+-----END PGP SIGNATURE-----
+
+--------------enig7C13DABA59A5B681EB099753--
 
