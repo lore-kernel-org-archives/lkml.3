@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab3ANA00 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 19:26:26 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45749 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755970Ab3ANA0Z (ORCPT
+	id S1755593Ab3ANBEM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 20:04:12 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:56541 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755309Ab3ANBEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 19:26:25 -0500
-Date: Mon, 14 Jan 2013 00:26:08 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Chanho Min <chanho.min@lge.com>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, chanho0207@gmail.com
-Subject: Re: [PATCH] ARM: PL011: Add support for Rx DMA buffer polling
-Message-ID: <20130114002608.GV23505@n2100.arm.linux.org.uk>
-References: <50efad8d.84fc440a.589e.ffff9546SMTPIN_ADDED_BROKEN@mx.google.com> <CACRpkdYSaFsastx-WWC7sBu8NteAc2hCDZMz4-yMc8+=2dyBVw@mail.gmail.com> <50f107aa.894e420a.596a.ffffe3f6SMTPIN_ADDED_BROKEN@mx.google.com> <CACRpkdaJd48WOzP_iURATb=c+V6==2-AB2Y9oFyh=E3oe1eT0Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaJd48WOzP_iURATb=c+V6==2-AB2Y9oFyh=E3oe1eT0Q@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sun, 13 Jan 2013 20:04:10 -0500
+Date: Mon, 14 Jan 2013 12:04:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Greg KH <greg@kroah.com>
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20130114120400.e04269f927629773b0570ff2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__14_Jan_2013_12_04_00_+1100_Jm/LFSP_KDaaFzfR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 01:04:58AM +0100, Linus Walleij wrote:
-> At some point we reasoned that we may actually be saved
-> by the reverse phenomena - if single request is *NOT*
-> connected, there will very often be some characters in the
-> FIFO, and that's enough to trigger the RTIM IRQ, and we get
-> a nice flow. So maybe the platforms that actually work, work
-> because they have bursts only.
-> 
-> But that would pose a problem when an even burst of
-> characters arrive. Say 16 characters, this will be transferred
-> in two bursts and leave the FIFO empty, but no DMA TC
-> IRQ since the buffer is not full, and we'd get your
-> phenomena.
-> 
-> But I could never reproduce the latter theoretical problem,
-> so I think the hardware actually has a fix for this, around
-> the burst signal logic.
-> 
-> But it may very well be that the single request can not be
-> enabled for the PL011 for it to work properly.
+--Signature=_Mon__14_Jan_2013_12_04_00_+1100_Jm/LFSP_KDaaFzfR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What you describe above is exactly the problem I see on the Versatile
-platform with it's PL080 and PL011.  I made the comment that this setup
-can't work properly as it stands.  And I don't think that setting a
-timer which fires every jiffy count is really a solution to the problem.
-That's an expensive way of having a per-jiffy callback for something
-that's probably going to remain idle most of the time.
+Hi all,
 
-Not only that, but a 1 jiffy timeout even for slower baud rates is
-just utterly silly.
+After merging the sound-asoc tree, today's linux-next build
+(x86_64allmodconfig) failed like this:
 
-The point of using DMA is to move the workload off the CPU onto hardware,
-so that the CPU can go off and do other stuff.  If it's having to poll
-it once every jiffy, then...
+sound/soc/codecs/ak4642.c:550:46: error: expected '=3D', ',', ';', 'asm' or=
+ '__attribute__' before '__devinitconst'
+sound/soc/codecs/ak4642.c:556:1: error: '__mod_of_device_table' aliased to =
+undefined symbol 'ak4642_of_match'
+sound/soc/codecs/ak4642.c:556:1: error: '__mod_of_device_table' aliased to =
+external symbol 'ak4642_of_match'
 
-> You may not be able to turn this off, and in that case this
-> kind of code is the only way forward indeed.
+Caused by commit bbf1453e28e4 ("ASoC: ak4642: add Device Tree support")
+interacting with commit 54b956b90360 ("Remove __dev* markings from
+init.h") from the driver-core.current tree.
 
-Unless there's something inbetween the PL080 and PL011 to do that.
-The peripherals themselves don't have any means of controlling this.
+As an aside, should ak4642_of_match be marked "const"?
 
-The solution I came up with on Versatile was to just not enable
-receive DMA - at all.
+I have added the following merge fix patch for today (which could be
+applied to the sound-asoc tree directly - please):
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 14 Jan 2013 11:59:50 +1100
+Subject: [PATCH] ASoC: ak4642: remove __devinitconst annotation
+
+CONFIG_HOTPLUG is always true now and the __dev* macros have been removed.
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ sound/soc/codecs/ak4642.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/soc/codecs/ak4642.c b/sound/soc/codecs/ak4642.c
+index c78794d..2d03787 100644
+--- a/sound/soc/codecs/ak4642.c
++++ b/sound/soc/codecs/ak4642.c
+@@ -547,7 +547,7 @@ static int ak4642_i2c_remove(struct i2c_client *client)
+ 	return 0;
+ }
+=20
+-static struct of_device_id ak4642_of_match[] __devinitconst =3D {
++static struct of_device_id ak4642_of_match[] =3D {
+ 	{ .compatible =3D "asahi-kasei,ak4642",	.data =3D &soc_codec_dev_ak4642},
+ 	{ .compatible =3D "asahi-kasei,ak4643",	.data =3D &soc_codec_dev_ak4642},
+ 	{ .compatible =3D "asahi-kasei,ak4648",	.data =3D &soc_codec_dev_ak4648},
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__14_Jan_2013_12_04_00_+1100_Jm/LFSP_KDaaFzfR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ81mAAAoJEECxmPOUX5FEzkwP/REUWx3/0Q06vSWsN4qc09U3
+rzXy5bKvi/f+x6lF5XT9T6NhAyFnmgj0fUujwi5y8+aiXXEyU8n2x6upRkmxU/3V
+h/mgYXKyWutIvdjrg4sQ8uHryDCcS1M0lTO16E0jHFKGVbcOrqeksSn5XUugB6BP
+gKhpehDEfzHS0Xf+5ktZcmyIXlPq4QZkrggBanLTIG+1B87x4wpcFqR1qzWqxrhb
+EpBHe4XWLuK+jVg6a2ksVFtgymHHSTA7UVHmiOVgeAgOYtcBxV5p+6HD7AFE1/yO
+lWcCaUGcFcB6PEBdBaDzwoboe0vhGn90e/qfNu/FWCx4Mlxt3pio7Ody1NbQUvhU
+gz/EaHz3sJTZuO5D0wWnAxOTMHLoO7nCl52Kp4f5JoU4+DGPhszbhKlDRX1IPGhR
+SCk1kceqgtKv+XtlCwDod5ihJbmvy5s6RW59wJDtUXIQZ1Ns5UZ4IcZI4MJE26tA
+itwnD7XuQaSwRXIDd4bIDWisYO79AN6h63pEpY5duObT0cjIIMv8OcycljwkQ9JO
+ggse4r6nO138Brc6TFvsUU5pUuWLcYFCMgOVafX3bpK7UHIRjf4C39rAGGfeHxFm
+IVXCDdj1qOsmYKUzBLpo17NhxCWeItpr/2ARm3VOmiO72Utb7QYunCiwcsBCNzcP
+kOvIeIjekP/Yilm7Gyha
+=KEOz
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__14_Jan_2013_12_04_00_+1100_Jm/LFSP_KDaaFzfR--
