@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab3ANJ5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 04:57:12 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:56338 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab3ANJ5K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 04:57:10 -0500
-Date: Mon, 14 Jan 2013 09:57:07 +0000
-From: Andrew Murray <andrew.murray@arm.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
-Message-ID: <20130114095706.GA23467@arm.com>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <20130111154516.GA25335@avionic-0098.adnet.avionic-design.de>
- <20130112123640.GA22505@avionic-0098.adnet.avionic-design.de>
- <201301122112.25772.arnd@arndb.de>
- <20130113095806.GA31966@avionic-0098.adnet.avionic-design.de>
+	id S1756178Ab3ANKDp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 05:03:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755645Ab3ANKDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 05:03:44 -0500
+From: Nikola Pajkovsky <npajkovs@redhat.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Lijo Antony <lijo.kernel@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
+References: <20130108223611.GA19672@kroah.com>
+	<20130109003824.GA21075@kroah.com>
+	<CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com>
+	<20130109042533.GA9164@kroah.com>
+	<CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com>
+	<50ED1C12.2090608@gmail.com> <50EDC8A1.30307@oracle.com>
+	<50EDCF14.4080101@oracle.com> <8738y7skae.fsf@redhat.com>
+	<CAKMK7uGpAHRgT3aj6bvU-13gaFe0u8gq19nDfo86JCJJy3R-tw@mail.gmail.com>
+	<87obgsl08a.fsf@redhat.com>
+	<CAKMK7uEd4xLCbiMiVvPGCWG2h5v32WEJVYUtwSsDxZmWu4rUZA@mail.gmail.com>
+Date: Mon, 14 Jan 2013 10:49:08 +0100
+In-Reply-To: <CAKMK7uEd4xLCbiMiVvPGCWG2h5v32WEJVYUtwSsDxZmWu4rUZA@mail.gmail.com>
+	(Daniel Vetter's message of "Mon, 14 Jan 2013 10:06:49 +0100")
+Message-ID: <878v7w14dn.fsf@redhat.com>
+User-Agent: Gnus/5.130006 (Ma Gnus v0.6) Emacs/24.2 (x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20130113095806.GA31966@avionic-0098.adnet.avionic-design.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 14 Jan 2013 09:57:07.0775 (UTC) FILETIME=[838F5CF0:01CDF23D]
-X-MC-Unique: 113011409570806001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 13, 2013 at 09:58:06AM +0000, Thierry Reding wrote:
-> On Sat, Jan 12, 2013 at 09:12:25PM +0000, Arnd Bergmann wrote:
-> > On Saturday 12 January 2013, Thierry Reding wrote:
-> > > > I already hinted at that in one of the other subthreads. Having such a
-> > > > multiplex would also allow the driver to be built as a module. I had
-> > > > already thought about this when I was working on an earlier version of
-> > > > these patches. Basically these would be two ops attached to the host
-> > > > bridge, and the generic arch_setup_msi_irq() could then look that up
-> > > > given the struct pci_dev that is passed to it and call this new per-
-> > > > host bridge .setup_msi_irq().
-> > > 
-> > > struct pci_ops looks like a good place to put these. They'll be
-> > > available from each struct pci_bus, so should be easy to call from
-> > > arch_setup_msi_irq().
-> > > 
-> > > Any objections?
-> > > 
-> > 
-> > struct pci_ops has a long history of being specifically about
-> > config space read/write operations, so on the one hand it does
-> > not feel like the right place to put interrupt specific operations,
-> > but on the other hand, the name sounds appropriate and I cannot
-> > think of any other place to put this, so it's fine with me.
-> > 
-> > The only alternative I can think of is to introduce a new
-> > structure next to it in struct pci_bus, but that feels a bit
-> > pointless. Maybe Bjorn has a preference one way or the other.
-> 
-> The name pci_ops is certainly generic enough. Also the comment above the
-> structure declaration says "Low-level architecture-dependent routines",
-> which applies to the MSI functions as well.
+Daniel Vetter <daniel.vetter@ffwll.ch> writes:
 
-I've previously looked into this. It seems that architectures handle this
-in different ways, some use vector tables, others use a multiplex and others
-just let the end user implement the callback directly.
+> On Mon, Jan 14, 2013 at 7:58 AM, Nikola Pajkovsky <npajkovs@redhat.com> wrote:
+>> Daniel Vetter <daniel.vetter@ffwll.ch> writes:
+>>
+>>> On Fri, Jan 11, 2013 at 6:26 PM, Nikola Pajkovsky <npajkovs@redhat.com> wrote:
+>>>> bug still kicking even w/ (drm/i915: Revert shrinker changes from "Track
+>>>> unbound pages")
+>>>
+>>> Could be a different bug, can you please attach the error_state somewhere?
+>>
+>> yep, i915_error_state is attached. btw, I'm going to bisect kernel, so
+>> hopefully I will bring some commit.
+>
+> Different bug, on a quick lock this could be a dupe of
+> https://bugzilla.kernel.org/show_bug.cgi?id=52311
 
-I've made an attempt to find a more common way. Though my implementation, which
-I will try to share later today for reference provides a registration function
-in drivers/pci/msi.c to provide implementations of the
-(setup|teardown)_msi_irq(s) ops. This seems slightly better than the current
-approach and doesn't break existing users - but is still ugly.
+ok
 
-At present the PCI and MSI frameworks are largely uncoupled from each other and
-so I was keen to not pollute PCI structures (e.g. pci_ops) with MSI ops. Just
-because most PCI host bridges also provide MSI support I don't think there is a
-reason why they should always come as a pair or be provided by the same chip.
+> Chris should know the details.
 
-Perhaps the solution is to support MSI controller drivers and a means to
-associate them with PCI host controller drivers?
+thanks, bisection leads me to commit d7d4eed ("drm/i915: Allow
+DRM_ROOT_ONLY|DRM_MASTER to submit privileged batchbuffers). It's not
+possible to simply revert/test commit and I have no idea how i915 works.
 
-Andrew Murray
+Chris any ideas?
 
-
+-- 
+Nikola
