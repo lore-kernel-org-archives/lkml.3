@@ -1,180 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab3ANJyV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 04:54:21 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:36439 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab3ANJyU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 04:54:20 -0500
-Subject: Re: 3.7.X vs 3.6.11 HP Folio 9470m brightness regression?
-From: joeyli <jlee@suse.com>
-To: Fabio Coatti <fabio.coatti@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Bob Moore <robert.moore@intel.com>,
-        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>,
-        Tom St Denis <tstdenis@elliptictech.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-In-Reply-To: <CADpTngVJqvXfgnd2cMRFL49nt9so+dcwKos8cSLPRj6L0eEPMg@mail.gmail.com>
-References: <1520620637.200975.1355955029721.JavaMail.root@elliptictech.com>
-	 <1425298.zMcaSB7taE@calvin>
-	 <CADpTngUE7H9K2j3yCsm+TUx+X2RJZKaSz8kKn-ehpxzx1O2=fA@mail.gmail.com>
-	 <CAKMK7uF1ZyFu5JMUH91bUWzQey2RCH1awN2GVeu5w=nXkfJrEQ@mail.gmail.com>
-	 <CADpTngV4N-JtVKgT+FN_VoNWUyKdfvb=bsTVJC9MktREmdrSAg@mail.gmail.com>
-	 <CADpTngVJqvXfgnd2cMRFL49nt9so+dcwKos8cSLPRj6L0eEPMg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jan 2013 17:50:59 +0800
-Message-ID: <1358157059.14569.16.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1755348Ab3ANJy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 04:54:56 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42165 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751040Ab3ANJyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 04:54:54 -0500
+Message-ID: <50F3D5E2.4000102@ti.com>
+Date: Mon, 14 Jan 2013 11:54:42 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kishon@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 04/14] usb: phy: nop: Handle power supply regulator for
+ the PHY
+References: <1357836694-30788-1-git-send-email-rogerq@ti.com> <1357836694-30788-5-git-send-email-rogerq@ti.com> <20130111171726.GI23505@n2100.arm.linux.org.uk>
+In-Reply-To: <20130111171726.GI23505@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 一，2013-01-14 於 09:13 +0100，Fabio Coatti 提到：
-> While looking at a different issue (rfkill), related to this commit:
-> ====
-> > a57f7f9175b8ccbc9df83ac13860488913115de4 is the first bad commit
-> > commit a57f7f9175b8ccbc9df83ac13860488913115de4
-> > Author: Bob Moore <robert.moore@intel.com>
-> > Date: Fri Aug 17 10:55:02 2012 +0800
-> >
-> > ACPICA: Add Windows8/Server2012 string for _OSI method.
-> > This change adds a new _OSI string, "Windows 2012" for both Windows 8
-> > and Windows Server 2012.
-> > >From Microsoft document "How to Identify the Windows Version in ACPI
-> > by Using _OSI", July 13, 2012.
-> >
-> > Signed-off-by: Bob Moore <robert.moore@intel.com>
-> > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> > Signed-off-by: Len Brown <len.brown@intel.com>
-> ====
+On 01/11/2013 07:17 PM, Russell King - ARM Linux wrote:
+> On Thu, Jan 10, 2013 at 06:51:24PM +0200, Roger Quadros wrote:
+>> We use "vcc" as the supply name for the PHY's power supply.
+>> The power supply will be enabled during .init() and disabled
+>> during .shutdown()
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>  drivers/usb/otg/nop-usb-xceiv.c |   18 ++++++++++++++++++
+>>  1 files changed, 18 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
+>> index 163f972..1c6db10 100644
+>> --- a/drivers/usb/otg/nop-usb-xceiv.c
+>> +++ b/drivers/usb/otg/nop-usb-xceiv.c
+>> @@ -33,11 +33,13 @@
+>>  #include <linux/usb/nop-usb-xceiv.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/clk.h>
+>> +#include <linux/regulator/consumer.h>
+>>  
+>>  struct nop_usb_xceiv {
+>>  	struct usb_phy		phy;
+>>  	struct device		*dev;
+>>  	struct clk		*clk;
+>> +	struct regulator	*vcc;
+>>  };
+>>  
+>>  static struct platform_device *pd;
+>> @@ -70,6 +72,11 @@ static int nop_init(struct usb_phy *phy)
+>>  {
+>>  	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
+>>  
+>> +	if (nop->vcc) {
+>> +		if (regulator_enable(nop->vcc))
+>> +			dev_err(phy->dev, "Failed to enable power\n");
+>> +	}
+>> +
+>>  	if (nop->clk)
+>>  		clk_enable(nop->clk);
+>>  
+>> @@ -82,6 +89,11 @@ static void nop_shutdown(struct usb_phy *phy)
+>>  
+>>  	if (nop->clk)
+>>  		clk_disable(nop->clk);
+>> +
+>> +	if (nop->vcc) {
+>> +		if (regulator_disable(nop->vcc))
+>> +			dev_err(phy->dev, "Failed to disable power\n");
+>> +	}
+>>  }
+>>  
+>>  static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
+>> @@ -157,6 +169,12 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+>>  		}
+>>  	}
+>>  
+>> +	nop->vcc = devm_regulator_get(&pdev->dev, "vcc");
+>> +	if (IS_ERR(nop->vcc)) {
+>> +		dev_dbg(&pdev->dev, "Error getting vcc regulator\n");
+>> +		nop->vcc = NULL;
+>> +	}
 > 
-> I discovered that reverting this commit (or, as suggested by joeyli
-> <jlee@suse.com>, booting with acpi_osi="!Windows 2012" ) also fixes
-> the brightness issue. So it seems related to the same ACPI issue, now
-> I wonder how it's happened that I got the wrong commit while
-> bisecting. Sorry for the noise, now the issue is still there but makes
-> more sense ):)
-
-Use "!Windows 2012" can fallback to Windows 2009 mode for workaround
-rkfill button and brightness issue on your machine, but we still have
-problem with Windows 2012 mode. 
-
-That means we need spend more time to trace the dsdt stuff for guess
-what's behavior on HP machine with Windows 8.
-
-
-Thanks a lot!
-Joey Lee
-
+> Is it really appropriate for drivers to do this kind of thing with
+> pointer-returning functions (I mean, setting the pointer to NULL on
+> error, rather than just using a test for IS_ERR() in the above
+> locations).  You are imposing driver-local assumptions on an API.
 > 
+> Practically it probably doesn't make much difference but given the
+> amount of mistakes that we have with IS_ERR_OR_NULL()...
 > 
-> 
-> 2013/1/12 Fabio Coatti <fabio.coatti@gmail.com>:
-> > well, I tried to do that, bisecting between 3.6.10 and 3.7. I'm not
-> > sure to have done that properly, as the result seems quite harmless,
-> > however here it is:
-> >
-> > d978348b300595b067b80980f6a78db09fcd584c is the first bad commit
-> > commit d978348b300595b067b80980f6a78db09fcd584c
-> > Author: Bob Moore <robert.moore@intel.com>
-> > Date:   Fri Aug 17 10:51:47 2012 +0800
-> >
-> >     ACPICA: Split ACPICA initialization functions to new file, utxfinit.c
-> >
-> >     Split utxface.c to improve modularity and reduce file size.
-> >
-> >     Signed-off-by: Bob Moore <robert.moore@intel.com>
-> >     Signed-off-by: Feng Tang <feng.tang@intel.com>
-> >     Signed-off-by: Len Brown <len.brown@intel.com>
-> >
-> > :040000 040000 57bc8451026afe02fdbc2970b152164ff4e5412a
-> > 55311ce2f9fed66501b06f93f67fa99b54d46e86 M      drivers
-> >
-> > Please let me know If I've done something wrong or if I can help in other ways.
-> >
-> > Many thanks for the hint.
-> >
-> >
-> > 2013/1/12 Daniel Vetter <daniel.vetter@ffwll.ch>:
-> >> On Sat, Jan 12, 2013 at 12:22 PM, Fabio Coatti <fabio.coatti@gmail.com> wrote:
-> >>> I'm seeing the same behaviour on 3.7.2; even
-> >>> echo "NN" > brightness has no effect.
-> >>> I've tried to look at changes between 3.6.11 and 3.7.2 but probably
-> >>> this is beyond my skills ;)
-> >>
-> >> If the regression is with the acpi_video backlight, then it's very
-> >> likely not a bug in drm/i915. Quickest way to figure that out is to do
-> >> a git bisect between 3.6 and 3.7, my favourite howto is:
-> >> http://www.reactivated.net/weblog/archives/2006/01/using-git-bisect-to-find-buggy-kernel-patches/
-> >>
-> >> Cheers, Daniel
-> >>
-> >>> 2012/12/20 Fabio Coatti <fabio.coatti@gmail.com>:
-> >>>> In data mercoledì 19 dicembre 2012 17:10:29, hai scritto:
-> >>>>> ----- Original Message -----
-> >>>>>
-> >>>>> > From: "Fabio Coatti" <fabio.coatti@gmail.com>
-> >>>>> > To: linux-kernel@vger.kernel.org
-> >>>>> > Sent: Wednesday, 19 December, 2012 5:01:30 PM
-> >>>>> > Subject: 3.7.X vs 3.6.11 HP Folio 9470m brightness regression?
-> >>>>> >
-> >>>>> > Hi,
-> >>>>> > I'm testing kernels 3.7.X vs 3.6.11 on an HP Folio 9470m machine,
-> >>>>> > i915
-> >>>>> > driver for a VGA compatible controller: Intel Corporation 3rd Gen
-> >>>>> > Core
-> >>>>> > processor Graphics Controller (rev 09) 8086:0166
-> >>>>> >
-> >>>>> > With 3.6.11, the brightness can be correctly set using fn+f9/10: kde
-> >>>>> > shows the bar and brightness changes.
-> >>>>> >
-> >>>>> > With 3.7.1 kde shows the percentage bar and
-> >>>>> > /sys/class/backlight/acpi_video0/brightness is updated, but the
-> >>>>> > screen
-> >>>>> > brightness does not changes.
-> >>>>>
-> >>>>> I had a similar problem with my Dell laptop and i915/acpi...
-> >>>>>
-> >>>>> Is there another acpi_video? device?  In my case two showed up in 3.7
-> >>>>> whereas in 3.6 there was one.  In 3.7 it was controlling the wrong one
-> >>>>> apparently.
-> >>>>
-> >>>> Well, this seems not to be the case, I have only one acpi_video:
-> >>>>
-> >>>> calvin ~ # ls -l /sys/class/backlight/
-> >>>> totale 0
-> >>>> lrwxrwxrwx 1 root root 0 20 dic 09.20 acpi_video0 ->
-> >>>> ../../devices/pci0000:00/0000:00:02.0/backlight/acpi_video0
-> >>>>
-> >>>> calvin ~ # ls -l /sys/devices/pci0000:00/0000:00:02.0/backlight
-> >>>> totale 0
-> >>>> drwxr-xr-x 3 root root 0 20 dic 09.20 acpi_video0
-> >>>>
-> >>>>
-> >>>>
-> >>>> --
-> >>>> Fabio
-> >>>
-> >>>
-> >>>
-> >>> --
-> >>> Fabio
-> >>
-> >>
-> >>
-> >> --
-> >> Daniel Vetter
-> >> Software Engineer, Intel Corporation
-> >> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
-> >
-> >
-> >
-> > --
-> > Fabio
-> 
-> 
-> 
+Makes sense. I'll convert it to use IS_ERR_OR_NULL() throughout.
 
-
+--
+cheers,
+-roger
