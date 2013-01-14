@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758342Ab3ANWUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 17:20:20 -0500
-Received: from mail-wi0-f196.google.com ([209.85.212.196]:47355 "EHLO
-	mail-wi0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757614Ab3ANWUS convert rfc822-to-8bit (ORCPT
+	id S1758388Ab3ANWVm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 17:21:42 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:38124 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756202Ab3ANWVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 17:20:18 -0500
-X-Greylist: delayed 87688 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jan 2013 17:20:17 EST
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org, Roland Eggner <edvx1@systemanalysen.net>
-Subject: Re: [PATCH 2/2] nconf:  function keys line, change background color for better readability
-Date: Mon, 14 Jan 2013 23:20:12 +0100
-User-Agent: KMail/1.13.5 (Linux/3.6.11-treguer; KDE/4.4.5; x86_64; ; )
-Cc: Dmitry Voytik <dvv.kernel@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
-References: <20121228185108.GA13644@voyt-hp> <1356723607-17027-1-git-send-email-dvv.kernel@gmail.com> <20121229223328.GA28355@mobil.systemanalysen.net>
-In-Reply-To: <20121229223328.GA28355@mobil.systemanalysen.net>
+	Mon, 14 Jan 2013 17:21:40 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201301142320.13141.yann.morin.1998@free.fr>
+In-Reply-To: <3885603.ydrrB7OEKf@vostro.rjw.lan>
+References: <3885603.ydrrB7OEKf@vostro.rjw.lan>
+Date: Mon, 14 Jan 2013 14:21:38 -0800
+X-Google-Sender-Auth: Ti9XcPhewmgnfN1n1bu8_xXy7HE
+Message-ID: <CAE9FiQUbQVdxDxD68ktZhFuJYs861-aFEXjTOgee1ueEous2eQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] ACPI: Rework acpi_bus_trim()
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roland, All,
+On Mon, Jan 14, 2013 at 1:33 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> The next three patches actually rework acpi_bus_trim() in three steps:
+>
+> [3/5] Drop the second argument of acpi_bus_trim() (all callers pass 1 in there
+>       anyway.
+> [4/5] Reimplement acpi_bus_trim() using acpi_walk_namespace().
+> [3/5] Make acpi_bus_trim() carry out two passes as described above.
+>
+> I'm aware of the fact that this will conflict with the patches that Yinghai
+> posted a few days ago, but in my opinion the changes here are prerequisite for
+> the Yinghai's patchset.
 
-On Saturday 29 December 2012 Roland Eggner wrote:
-> >From: Roland Eggner <edvx1@systemanalysen.net>
-> 
-> •  In function keys line descriptions black on darkblue are almost impossible
->    to read.  Change colors to black on brown.
-> 
-> Signed-off-by: Roland Eggner <edvx1@systemanalysen.net>
-> ---
-> --- a/scripts/kconfig/nconf.gui.c	2012-11-16 17:47:22.000000000 +0100
-> +++ b/scripts/kconfig/nconf.gui.c	2012-12-23 23:51:40.929833170 +0100
-> @@ -48,7 +48,7 @@ static void set_normal_colors(void)
->  	init_pair(INPUT_FIELD, -1, -1);
->  
->  	init_pair(FUNCTION_HIGHLIGHT, -1, -1);
-> -	init_pair(FUNCTION_TEXT, COLOR_BLUE, -1);
-> +	init_pair(FUNCTION_TEXT, COLOR_YELLOW, -1);
+Sure, I will drop my change to acpi_bus_trim() and update one
+reference accordingly.
 
-Although I am not a fan of this color scheme, it is much more readable
-than the previous black-on-blue. Tested in frame-buffer console, in konsole
-and in xterm. And queued in my non-official for-next branch.
+Acked-by: for those 5 patches.
 
-Regards,
-Yann E. MORIN.
+So you will put those patches in acpi-scan, and Bjorn will pull that
+again to pci tree?
 
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+Thanks
 
+Yinghai
