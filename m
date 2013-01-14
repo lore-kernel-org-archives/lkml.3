@@ -1,185 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab3ANCdn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 21:33:43 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43554 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3ANCdm (ORCPT
+	id S1756013Ab3ANCfI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 21:35:08 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33401 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755240Ab3ANCfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 21:33:42 -0500
-X-AuditID: 9c930197-b7cefae0000002d7-1e-50f36e82131b
-Date: Mon, 14 Jan 2013 11:33:38 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andy Whitcroft <apw@shadowen.org>, Alexander Nyberg <alexn@dsv.su.se>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH v2 2/2] Enhance read_block of page_owner.c
-Message-ID: <20130114023338.GB18097@blaptop>
-References: <1357871401-7075-1-git-send-email-minchan@kernel.org>
- <1357871401-7075-2-git-send-email-minchan@kernel.org>
- <xa1t8v7zbteu.fsf@mina86.com>
+	Sun, 13 Jan 2013 21:35:05 -0500
+Date: Mon, 14 Jan 2013 02:34:39 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
+Subject: Re: [RFC-v2 1/7] capebus: Core capebus support
+Message-ID: <20130114023439.GB4928@sirena.org.uk>
+References: <1351783952-11804-1-git-send-email-panto@antoniou-consulting.com>
+ <1351783952-11804-2-git-send-email-panto@antoniou-consulting.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <xa1t8v7zbteu.fsf@mina86.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1351783952-11804-2-git-send-email-panto@antoniou-consulting.com>
+X-Cookie: Smile!  You're on Candid Camera.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 05:01:29PM +0100, Michal Nazarewicz wrote:
-> It occurred to me -- and I know it will sound like a heresy -- that
-> maybe providing an overly long example in C is not the best option here.
-> Why not page_owner.py with the following content instead (not tested):
+On Thu, Nov 01, 2012 at 05:32:26PM +0200, Pantelis Antoniou wrote:
+> Introducing capebus; a bus that allows small boards (capes) to connect
+> to a complex SoC using simple expansion connectors.
 > 
-> 
-> #!/usr/bin/python
-> import collections
-> import sys
-> 
-> counts = collections.defaultdict(int)
-> 
-> txt = ''
-> for line in sys.stdin:
->     if line == '\n':
->         counts[txt] += 1
->         txt = ''
->     else:
->         txt += line
-> counts[txt] += 1
-> 
-> for txt, num in sorted(counts.items(), txt=lambda x: x[1]):
->     if len(txt) > 1:
->         print '%d times:\n%s' % num, txt
-> 
-> 
-> And it's so “long” only because I chose not to read the whole file at
-> once as in:
-> 
->     
-> counts = collections.defaultdict(int)
-> for txt in sys.stdin.read().split('\n\n'):
->     counts[txt] += 1
+> Up to now to support these kind of boards, one had to hack the board files,
+> and do all sort of gymnastics to handle all the different cases of
+> conflict resolution.
 
-I'm not familar with Python but I can see the point of the program.
-It's very short and good for maintainace but I have a concern about the size.
-For working it in embedded side, we have to port python in that machine. :(
-You might argue we can parse it on host after downloading from target machine.
-But the problem is somecase we have no facility to download it from target
-machine because only connection to outside is LCD.
-In case of that, just small C program when we release product would be
-good choice.
-
-But I'm not strong aginst on your simple python program. If it is merged,
-we will just continue to use C program instead of python's one.
-If you have a strong opinion, send it to akpm as separate patch.
-
-Thanks.
-
-> 
-> 
-> On Fri, Jan 11 2013, Minchan Kim wrote:
-> > The read_block reads char one by one until meeting two newline.
-> > It's not good for the performance and current code isn't good shape
-> > for readability.
-> >
-> > This patch enhances speed and clean up.
-> >
-> > Cc: Mel Gorman <mgorman@suse.de>
-> > Cc: Andy Whitcroft <apw@shadowen.org>
-> > Cc: Alexander Nyberg <alexn@dsv.su.se>
-> > Cc: Randy Dunlap <rdunlap@infradead.org>
-> > Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  Documentation/page_owner.c |   34 +++++++++++++---------------------
-> >  1 file changed, 13 insertions(+), 21 deletions(-)
-> >
-> > diff --git a/Documentation/page_owner.c b/Documentation/page_owner.c
-> > index 43dde96..96bf481 100644
-> > --- a/Documentation/page_owner.c
-> > +++ b/Documentation/page_owner.c
-> > @@ -28,26 +28,17 @@ static int max_size;
-> >  
-> >  struct block_list *block_head;
-> >  
-> > -int read_block(char *buf, FILE *fin)
-> > +int read_block(char *buf, int buf_size, FILE *fin)
-> >  {
-> > -	int ret = 0;
-> > -	int hit = 0;
-> > -	int val;
-> > -	char *curr = buf;
-> > -
-> > -	for (;;) {
-> > -		val = getc(fin);
-> > -		if (val == EOF) return -1;
-> > -		*curr = val;
-> > -		ret++;
-> > -		if (*curr == '\n' && hit == 1)
-> > -			return ret - 1;
-> > -		else if (*curr == '\n')
-> > -			hit = 1;
-> > -		else
-> > -			hit = 0;
-> > -		curr++;
-> > +	char *curr = buf, *const buf_end = buf + buf_size;
-> > +
-> > +	while (buf_end - curr > 1 && fgets(curr, buf_end - curr, fin)) {
-> > +		if (*curr == '\n') /* empty line */
-> > +			return curr - buf;
-> > +		curr += strlen(curr);
-> >  	}
-> > +
-> > +	return -1; /* EOF or no space left in buf. */
-> >  }
-> >  
-> >  static int compare_txt(struct block_list *l1, struct block_list *l2)
-> > @@ -84,10 +75,12 @@ static void add_list(char *buf, int len)
-> >  	}
-> >  }
-> >  
-> > +#define BUF_SIZE	1024
-> > +
-> >  int main(int argc, char **argv)
-> >  {
-> >  	FILE *fin, *fout;
-> > -	char buf[1024];
-> > +	char buf[BUF_SIZE];
-> >  	int ret, i, count;
-> >  	struct block_list *list2;
-> >  	struct stat st;
-> > @@ -106,11 +99,10 @@ int main(int argc, char **argv)
-> >  	list = malloc(max_size * sizeof(*list));
-> >  
-> >  	for(;;) {
-> > -		ret = read_block(buf, fin);
-> > +		ret = read_block(buf, BUF_SIZE, fin);
-> >  		if (ret < 0)
-> >  			break;
-> >  
-> > -		buf[ret] = '\0';
-> >  		add_list(buf, ret);
-> >  	}
-> >  
-> > -- 
-> > 1.7.9.5
-> >
-> 
-> -- 
-> Best regards,                                         _     _
-> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
-
-
-
-
-
--- 
-Kind regards,
-Minchan Kim
+Would it be possible to split out the DT support from the underlying
+bus?  Looking at the code it seems like we're relying on DT for a lot of
+the functionality when it comes to mapping devices into the system but
+that doesn't really meet what I'm looking for.  One of the use cases I
+have is supporting modules which can be used with multiple systems so I
+really want to be able to just define the modules once and then have a
+layer in the subsystem which remaps the connections onto the actual
+hardware.
