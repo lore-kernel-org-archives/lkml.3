@@ -1,106 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab3ANGAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 01:00:55 -0500
-Received: from mga09.intel.com ([134.134.136.24]:21964 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751097Ab3ANGAy convert rfc822-to-8bit (ORCPT
+	id S1752518Ab3ANGGI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 01:06:08 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48070 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab3ANGGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 01:00:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,465,1355126400"; 
-   d="scan'208";a="246194973"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: RE: [PATCH V2 2/2] Xen ACPI memory hotplug
-Thread-Topic: [PATCH V2 2/2] Xen ACPI memory hotplug
-Thread-Index: AQHN8Ch2gSdugiMySf2ZunvFOlFXHphIVELw
-Date: Mon, 14 Jan 2013 06:00:50 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923353C2472@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923353BB10D@SHSMSX101.ccr.corp.intel.com>
- <20130111182124.GB28685@phenom.dumpdata.com>
-In-Reply-To: <20130111182124.GB28685@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 14 Jan 2013 01:06:07 -0500
+From: Liu Bo <bo.li.liu@oracle.com>
+To: linux-mm@kvack.org
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>
+Subject: [PATCH] mm/slab: add a leak decoder callback
+Date: Mon, 14 Jan 2013 14:03:39 +0800
+Message-Id: <1358143419-13074-1-git-send-email-bo.li.liu@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Agree, w/ minor comments below.
+This adds a leak decoder callback so that kmem_cache_destroy()
+can use to generate debugging output for the allocated objects.
 
+Callers like btrfs are using their own leak tracking which will
+manage allocated objects in a list(or something else), this does
+indeed the same thing as what slab does.  So adding a callback
+for leak tracking can avoid this as well as runtime overhead.
 
-Konrad Rzeszutek Wilk wrote:
->> +
->> +	/*
->> +	 * Early boot code has recognized memory area by EFI/E820.
->> +	 * If DSDT shows these memory devices on boot, hotplug is not
->> necessary +	 * for them. So, it just returns until completion of
->> this driver's +	 * start up.
-> 
-> "So it just returns until completion of this drivers's start up."
-> 
-> Can you change that to be:
-> "Return OK until this driver starts up."
-> 
-> But then.. how can this function be called with
-> acpi_hotmem_initialized=false? Is it b/c of the acpi_walk_namespace
-> call? How about you state that: 
-> 
-> "This can be done via the acpi_walk_namespace which is called during
-> early boot and acpi_hotmem_initialized is set _after_ that call
-> has completed."
-> 
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+---
+The idea is from Zach Brown <zab@zabbo.net>.
 
-The action for booting existed memory and hot-added memory is different.
-For booting existed memory devices, we don't need do xen_hotadd_memory.
-For hot-added memory devices, we need do xen_hotadd_memory, hypercall to hypervisor to add memory.
+ fs/btrfs/extent_io.c     |   24 ++++++++++++++++++++++++
+ fs/btrfs/extent_map.c    |   12 ++++++++++++
+ include/linux/slab.h     |    1 +
+ include/linux/slab_def.h |    1 +
+ include/linux/slub_def.h |    1 +
+ mm/slab_common.c         |    1 +
+ mm/slub.c                |    5 +++++
+ 7 files changed, 45 insertions(+), 0 deletions(-)
 
-I've updated comments as below to be more clear:
-        /*
-         * For booting existed memory devices, early boot code has recognized
-         * memory area by EFI/E820. If DSDT shows these memory devices on boot,
-         * hotplug is not necessary for them.
-         * For hot-added memory devices during runtime, it need hypercall to
-         * Xen hypervisor to add memory.
-         */
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index bcc8dff..4954f3d 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -63,6 +63,26 @@ tree_fs_info(struct extent_io_tree *tree)
+ 	return btrfs_sb(tree->mapping->host->i_sb);
+ }
+ 
++static void extent_state_leak_decoder(void *object)
++{
++	struct extent_state *state = object;
++
++	printk(KERN_ERR "btrfs state leak: start %llu end %llu "
++	       "state %lu in tree %p refs %d\n",
++	       (unsigned long long)state->start,
++	       (unsigned long long)state->end,
++	       state->state, state->tree, atomic_read(&state->refs));
++}
++
++static void extent_buffer_leak_decoder(void *object)
++{
++	struct extent_buffer *eb = object;
++
++	printk(KERN_ERR "btrfs buffer leak start %llu len %lu "
++	       "refs %d\n", (unsigned long long)eb->start,
++	       eb->len, atomic_read(&eb->refs));
++}
++
+ int __init extent_io_init(void)
+ {
+ 	extent_state_cache = kmem_cache_create("btrfs_extent_state",
+@@ -71,11 +91,15 @@ int __init extent_io_init(void)
+ 	if (!extent_state_cache)
+ 		return -ENOMEM;
+ 
++	extent_state_cache->decoder = extent_state_leak_decoder;
++
+ 	extent_buffer_cache = kmem_cache_create("btrfs_extent_buffer",
+ 			sizeof(struct extent_buffer), 0,
+ 			SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD, NULL);
+ 	if (!extent_buffer_cache)
+ 		goto free_state_cache;
++
++	extent_buffer_cache->decoder = extent_buffer_leak_decoder;
+ 	return 0;
+ 
+ free_state_cache:
+diff --git a/fs/btrfs/extent_map.c b/fs/btrfs/extent_map.c
+index 80370d6..d598a8d 100644
+--- a/fs/btrfs/extent_map.c
++++ b/fs/btrfs/extent_map.c
+@@ -16,6 +16,16 @@ static LIST_HEAD(emaps);
+ static DEFINE_SPINLOCK(map_leak_lock);
+ #endif
+ 
++static void extent_map_leak_decoder(void *object)
++{
++	struct extent_map *em = object;
++
++	printk(KERN_ERR "btrfs ext map leak: start %llu len %llu block %llu "
++	       "flags %lu refs %d in tree %d compress %d\n",
++	       em->start, em->len, em->block_start, em->flags,
++	       atomic_read(&em->refs), em->in_tree, (int)em->compress_type);
++}
++
+ int __init extent_map_init(void)
+ {
+ 	extent_map_cache = kmem_cache_create("btrfs_extent_map",
+@@ -23,6 +33,8 @@ int __init extent_map_init(void)
+ 			SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD, NULL);
+ 	if (!extent_map_cache)
+ 		return -ENOMEM;
++
++	extent_map_cache->decoder = extent_map_leak_decoder;
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 5d168d7..89a9efd 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -114,6 +114,7 @@ struct kmem_cache {
+ 	const char *name;	/* Slab name for sysfs */
+ 	int refcount;		/* Use counter */
+ 	void (*ctor)(void *);	/* Called on object slot creation */
++	void (*decoder)(void *);/* Called on object slot leak detection */
+ 	struct list_head list;	/* List of all slab caches on the system */
+ };
+ #endif
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index 8bb6e0e..7ca8309 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -48,6 +48,7 @@ struct kmem_cache {
+ 
+ 	/* constructor func */
+ 	void (*ctor)(void *obj);
++	void (*decoder)(void *obj);
+ 
+ /* 4) cache creation/removal */
+ 	const char *name;
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index 9db4825..fc18af7 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -93,6 +93,7 @@ struct kmem_cache {
+ 	gfp_t allocflags;	/* gfp flags to use on each alloc */
+ 	int refcount;		/* Refcount for slab cache destroy */
+ 	void (*ctor)(void *);
++	void (*decoder)(void *);
+ 	int inuse;		/* Offset to metadata */
+ 	int align;		/* Alignment */
+ 	int reserved;		/* Reserved bytes at the end of slabs */
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 3f3cd97..39a0fb2 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -193,6 +193,7 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+ 		s->object_size = s->size = size;
+ 		s->align = calculate_alignment(flags, align, size);
+ 		s->ctor = ctor;
++		s->decoder = NULL;
+ 
+ 		if (memcg_register_cache(memcg, s, parent_cache)) {
+ 			kmem_cache_free(kmem_cache, s);
+diff --git a/mm/slub.c b/mm/slub.c
+index ba2ca53..0496a2b 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3098,6 +3098,8 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
+ 	for_each_object(p, s, addr, page->objects) {
+ 
+ 		if (!test_bit(slab_index(p, s, addr), map)) {
++			if (unlikely(s->decoder))
++				s->decoder(p);
+ 			printk(KERN_ERR "INFO: Object 0x%p @offset=%tu\n",
+ 							p, p - addr);
+ 			print_tracking(s, p);
+@@ -3787,6 +3789,9 @@ static int slab_unmergeable(struct kmem_cache *s)
+ 	if (s->ctor)
+ 		return 1;
+ 
++	if (s->decoder)
++		return 1;
++
+ 	/*
+ 	 * We may have set a slab to be unmergeable during bootstrap.
+ 	 */
+-- 
+1.7.7.6
 
-
->> +static void __exit xen_acpi_memory_device_exit(void) +{
->> +	acpi_status status;
->> +
->> +	if (!xen_initial_domain())
->> +		return;
->> +
->> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
->> +				     ACPI_UINT32_MAX, +				    
->> acpi_memory_deregister_notify_handler, +				     NULL, NULL, NULL);
->> +	if (ACPI_FAILURE(status))
->> +		pr_warn(PREFIX "walk_namespace failed\n");
->> +
->> +	acpi_bus_unregister_driver(&xen_acpi_memory_device_driver); +
->> +	/*
->> +	 * stub reserve space again to prevent any chance of native
->> +	 * driver loading, though not much meaning in real life
-> 
-> not much meaning in real life? What does that mean?
-> 
-
-Hmm, what I want to say here is, in real life module driver seldomly unloaded.
-Anyway, the comments is ambiguous, I've dropped the word 'though not much meaning in real life'.
-
-Thanks,
-Jinsong
-
->> +	 */
->> +	acpi_bus_register_driver(&xen_stub_memory_device_driver); +	return;
->> +}
->> +
