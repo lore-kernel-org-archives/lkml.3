@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab3ANWDn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 17:03:43 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:52323 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757088Ab3ANWDm (ORCPT
+	id S1757528Ab3ANWIv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 17:08:51 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:15290 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757454Ab3ANWIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 17:03:42 -0500
-Message-ID: <50F480BB.6070105@gmail.com>
-Date: Mon, 14 Jan 2013 14:03:39 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-mips@linux-mips.org, Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: 3.8-rc1 build failure with MIPS/SPARSEMEM
-References: <20121222122757.GB6847@blackmetal.musicnaut.iki.fi> <20121226003434.GA27760@otc-wbsnb-06> <20121227121607.GA7097@blackmetal.musicnaut.iki.fi> <20121230103850.GA5424@otc-wbsnb-06> <20130114151641.GA17996@otc-wbsnb-06>
-In-Reply-To: <20130114151641.GA17996@otc-wbsnb-06>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 14 Jan 2013 17:08:49 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-d7-50f481ef19bc
+Message-id: <50F481F5.9070804@samsung.com>
+Date: Tue, 15 Jan 2013 07:08:53 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/11] extcon-arizona updates
+References: <20130110120231.GL20956@opensource.wolfsonmicro.com>
+ <50EF71C3.6060009@samsung.com>
+ <20130114075923.GD4833@opensource.wolfsonmicro.com>
+ <20130114142921.GB20384@kroah.com>
+In-reply-to: <20130114142921.GB20384@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t8zTd33jV8CDDa9MrO4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZjYdSCzazVcz5eImxgbGftYuRk0NCwETi4r7L7BC2mMSFe+vZ
+	uhi5OIQEljFKdP19zgZT1L3vBlRiEaPE50vzWSGcLiaJ5x+2MIFU8QpoSUzsOA82ikVAVeLp
+	y2lgcTag+P4XIN0cHKICERK/+jkgygUlfky+xwJiiwgYS/SfncUOMpNZ4BSjxJYZx8F6hQUM
+	JA6sOwtmCwnsYZR4e8YKxOYU0JdYs24Z2C5mAR2J/a3T2CBseYnNa94yQ9wgIPFt8iEWkL0S
+	ArISmw4wg8yXEGhml/jcfATqZUmJgytusExgFJuF5KZZSMbOQjJ2ASPzKkbR1ILkguKk9Fwj
+	veLE3OLSvHS95PzcTYyQmJDewbiqweIQowAHoxIP703dLwFCrIllxZW5hxglOJiVRHh3RgKF
+	eFMSK6tSi/Lji0pzUosPMfoAXTuRWUo0OR8Yr3kl8YbGBsaGhpaGZqaWpgY4hJXEeRlPPQkQ
+	EkhPLEnNTk0tSC2CGcfEwSnVwBj2dOJm5pDWdZzKjovOLAp5ueJC17P1t358vcY+ySXLsk57
+	wtRgrsTTH1N75HTrohL279TLmHg8WuGIaPjjba84XlfcM2aw2NzStEJtSbbRwqjqfUHKm5Y9
+	2nvtTWGfMb9Yj6SNUPXujE+eavZTjoT8lfRS2j2V56SoufDN/wk3k5r0uV03L1NiKc5INNRi
+	LipOBADUxYuGtgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t9jAd33jV8CDGb3G1hc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjMZDqQWb2SrmfLzE2MDY
+	z9rFyMkhIWAi0b3vBhuELSZx4d56IJuLQ0hgEaPE50vzWSGcLiaJ5x+2MIFU8QpoSUzsOM8O
+	YrMIqEo8fTkNLM4GFN//AmQSB4eoQITEr34OiHJBiR+T77GA2CICxhL9Z2exg8xkFjjFKLFl
+	xnGwXmEBA4kD686C2UICexgl3p6xArE5BfQl1qxbBraLWUBHYn/rNDYIW15i85q3zBMYBWYh
+	2TELSdksJGULGJlXMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH3DPpHYyrGiwOMQpwMCrx
+	8N7U/RIgxJpYVlyZe4hRgoNZSYR3ZyRQiDclsbIqtSg/vqg0J7X4EKMPMAQmMkuJJucDk0Fe
+	SbyhsYmZkaWRmbGJubExDmElcV7GU08ChATSE0tSs1NTC1KLYMYxcXBKNTAGbVebNW1D0pSS
+	yKKoxOeNvWzCJkY7i5oKt7Vaxt/4keLXUiPPIdr0XnvXDMs8gdzZ97dN5mGfdEN+r9SrKeGz
+	J59ZyVO9jjX/im3Z+x3TD8rOYGXX77RbyV0dfpJxu/6BKnO5AJPjBteuMYqZLS4UvzJd1YCp
+	TPdjzar1SyYduZDS1ie34JoSS3FGoqEWc1FxIgDBG6DT5QIAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2013 07:16 AM, Kirill A. Shutemov wrote:
-> On Sun, Dec 30, 2012 at 12:38:50PM +0200, Kirill A. Shutemov wrote:
->> On Thu, Dec 27, 2012 at 02:16:07PM +0200, Aaro Koskinen wrote:
->>> Hi,
->>>
->>> On Wed, Dec 26, 2012 at 02:34:35AM +0200, Kirill A. Shutemov wrote:
->>>> On MIPS if SPARSEMEM is enabled we've got this:
->>>>
->>>> In file included from /home/kas/git/public/linux/arch/mips/include/asm/pgtable.h:552,
->>>>                   from include/linux/mm.h:44,
->>>>                   from arch/mips/kernel/asm-offsets.c:14:
->>>> include/asm-generic/pgtable.h: In function ‘my_zero_pfn’:
->>>> include/asm-generic/pgtable.h:466: error: implicit declaration of function ‘page_to_section’
->>>> In file included from arch/mips/kernel/asm-offsets.c:14:
->>>> include/linux/mm.h: At top level:
->>>> include/linux/mm.h:738: error: conflicting types for ‘page_to_section’
->>>> include/asm-generic/pgtable.h:466: note: previous implicit declaration of ‘page_to_section’ was here
->>>>
->>>> Due header files inter-dependencies, the only way I see to fix it is
->>>> convert my_zero_pfn() for __HAVE_COLOR_ZERO_PAGE to macros.
->>>>
->>>> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
->>>
->>> Thanks, this works.
->>>
->>> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+On 01/14/2013 11:29 PM, Greg Kroah-Hartman wrote:
+> On Mon, Jan 14, 2013 at 04:59:25PM +0900, Mark Brown wrote:
+>> On Fri, Jan 11, 2013 at 10:58:27AM +0900, Chanwoo Choi wrote:
 >>
->> Andrew, could you take the patch?
+>>> Applied this patch set.
+>>
+>>> You can check this on extcon git repository:
+>>> http://git.kernel.org/?p=linux/kernel/git/chanwoo/extcon.git;a=shortlog;h=refs/heads/for-next
+>>
+>> Looks good.  It does seem this tree isn't in -next, though - if this
+>> tree ends up getting sent to Linus (via Greg I guess?) it'd make sense
+>> to do that so we get integration testing for it as soon as possible.
+> 
+> It would be good if Chanwoo sent me pull requests, I thought that was
+> going to happen but I have not seen any yet...
+> 
 
-I found the same problem and arrived at an equivalent solution.
+OK, I will send pull request to GregKH for extcon immediately.
 
-Acked-by: David Daney <david.daney@cavium.com>
-
->
-> ping?
->
-
+Best Regards,
+Chanwoo Choi
