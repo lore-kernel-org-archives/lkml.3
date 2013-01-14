@@ -1,373 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab3ANFhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 00:37:11 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:65489 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab3ANFhJ (ORCPT
+	id S1752473Ab3ANFpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 00:45:19 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:54365 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab3ANFpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 00:37:09 -0500
+	Mon, 14 Jan 2013 00:45:17 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130113214132.GB17200@liondog.tnic>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-23-git-send-email-yinghai@kernel.org>
-	<20130113214132.GB17200@liondog.tnic>
-Date: Sun, 13 Jan 2013 21:37:08 -0800
-X-Google-Sender-Auth: aRmwegEd2QNTyG-WgIB2E9eK4FQ
-Message-ID: <CAE9FiQVQRAOtw7kiPJO3xszJx9uPFjgK82PjbvTyqzJgujdicw@mail.gmail.com>
-Subject: Re: [PATCH v7u1 22/31] x86, boot: add fields to support load bzImage
- and ramdisk above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Gokul Caushik <caushik1@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>
+In-Reply-To: <CAD=FV=XhMbWjCR5r=R3+zE1524NuUUvFDf2HZuCrXPmsei4BNA@mail.gmail.com>
+References: <1355841786-13307-1-git-send-email-gautam.vivek@samsung.com>
+	<1355841786-13307-3-git-send-email-gautam.vivek@samsung.com>
+	<CAD=FV=WMjqszsTQja82_uZc4Ue50TfTmSNO2yOhSMCX1w1L5Dg@mail.gmail.com>
+	<CAFp+6iHYRRS3uSWnmdqBvfOgUDKKJUzMvqoj1HP2uXS=Fdaifg@mail.gmail.com>
+	<CAD=FV=XhMbWjCR5r=R3+zE1524NuUUvFDf2HZuCrXPmsei4BNA@mail.gmail.com>
+Date: Mon, 14 Jan 2013 11:15:15 +0530
+Message-ID: <CAFp+6iHFw2orVOxxzb+daQJsA46zUk2ZOA=h6QwGAme18JngXw@mail.gmail.com>
+Subject: Re: [PATCH v5 2/4] usb: phy: samsung: Add host phy support to
+ samsung-phy driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        yulgon.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        Praveen Paneri <p.paneri@samsung.com>, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org, jg1.han@samsung.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        balbi@ti.com, kishon@ti.com, Kukjin Kim <kgene.kim@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 13, 2013 at 1:41 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Jan 03, 2013 at 04:48:42PM -0800, Yinghai Lu wrote:
->> ext_ramdisk_image/size will record high 32bits for ramdisk info.
+Hi Doug,
+
+
+On Sat, Jan 12, 2013 at 6:20 AM, Doug Anderson <dianders@chromium.org> wrote:
+> Vivek,
+>
+> On Fri, Jan 11, 2013 at 4:40 AM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
+>>>> +#define HOST_CTRL0_REFCLKSEL_MASK              (0x3)
+>>>> +#define HOST_CTRL0_REFCLKSEL_XTAL              (0x0 << 19)
+>>>> +#define HOST_CTRL0_REFCLKSEL_EXTL              (0x1 << 19)
+>>>> +#define HOST_CTRL0_REFCLKSEL_CLKCORE           (0x2 << 19)
+>>>> +
+>>>> +#define HOST_CTRL0_FSEL_MASK                   (0x7 << 16)
+>>>> +#define HOST_CTRL0_FSEL(_x)                    ((_x) << 16)
+>>>> +#define HOST_CTRL0_FSEL_CLKSEL_50M             (0x7)
+>>>> +#define HOST_CTRL0_FSEL_CLKSEL_24M             (0x5)
+>>>> +#define HOST_CTRL0_FSEL_CLKSEL_20M             (0x4)
+>>>> +#define HOST_CTRL0_FSEL_CLKSEL_19200K          (0x3)
+>>>> +#define HOST_CTRL0_FSEL_CLKSEL_12M             (0x2)
+>>>> +#define HOST_CTRL0_FSEL_CLKSEL_10M             (0x1)
+>>>> +#define HOST_CTRL0_FSEL_CLKSEL_9600K           (0x0)
+>>>
+>>> Add the shifts to the #defines and remove HOST_CTRL0_FSEL(_x).  That
+>>> makes it match the older phy more closely.
+>>>
+>> Wouldn't it hamper the readability when shifts are used ??
+>> I mean if we have something like this -
 >>
->> xloadflags bit0 will be set if relocatable with 64bit.
->
-> Let's describe that in more detail:
->
-> "Bit 0 of xloadflags is set if we are both a 64-bit and a relocatable
-> kernel. In that case, it denotes that ramdisk can be loaded above 4Gb."
->
->> Let get_ramdisk_image/size to use ext_ramdisk_image/size to get
->> right positon for ramdisk.
+>> phyhost |= HOST_CTRL0_FSEL(phyclk)
 >>
->> bootloader will fill value to ext_ramdisk_image/size when it load
->> ramdisk above 4G.
+>> so, if we are using the shifts then
+>> phyhost |= (HOST_CTRL0_FSEL_CLKSEL_24M << HOST_CTRL0_FSEL_SHIFT)
+>
+> I was actually suggesting modifying the #defines like this:
+>
+> #define HOST_CTRL0_FSEL_SHIFT 16
+> #define HOST_CTRL0_FSEL_MASK                   (0x7 << HOST_CTRL0_FSEL_SHIFT)
+> #define HOST_CTRL0_FSEL_CLKSEL_50M             (0x7 << HOST_CTRL0_FSEL_SHIFT)
+> #define HOST_CTRL0_FSEL_CLKSEL_24M             (0x5 << HOST_CTRL0_FSEL_SHIFT)
+> #define HOST_CTRL0_FSEL_CLKSEL_20M             (0x4 << HOST_CTRL0_FSEL_SHIFT)
+> #define HOST_CTRL0_FSEL_CLKSEL_19200K          (0x3 << HOST_CTRL0_FSEL_SHIFT)
+> #define HOST_CTRL0_FSEL_CLKSEL_12M             (0x2 << HOST_CTRL0_FSEL_SHIFT)
+> #define HOST_CTRL0_FSEL_CLKSEL_10M             (0x1 << HOST_CTRL0_FSEL_SHIFT)
+> #define HOST_CTRL0_FSEL_CLKSEL_9600K           (0x0 << HOST_CTRL0_FSEL_SHIFT)
+>
+> ...then the code doesn't need to think about shifts, right?
+>
+
+right right, sorry i din't get your point earlier. :-(
+
+this way things will be similar in samsung_usbphy_get_refclk_freq()
+across exynos 5 and older SoCs.
+
+Is it fine if we don't use macro for SHIFT, earlier code also doesn't use it.
+Can we just do like this ..
+#define HOST_CTRL0_FSEL_MASK                       (0x7 << 16)
+#define HOST_CTRL0_FSEL_CLKSEL_50M            (0x7 << 16)
+#define HOST_CTRL0_FSEL_CLKSEL_24M            (0x5 << 16)
+#define HOST_CTRL0_FSEL_CLKSEL_20M            (0x4 << 16)
+#define HOST_CTRL0_FSEL_CLKSEL_19200K       (0x3 << 16)
+#define HOST_CTRL0_FSEL_CLKSEL_12M            (0x2 << 16)
+#define HOST_CTRL0_FSEL_CLKSEL_10M            (0x1 << 16)
+#define HOST_CTRL0_FSEL_CLKSEL_9600K         (0x0 << 16)
+
+>
+>>>>         if (IS_ERR(ref_clk)) {
+>>>>                 dev_err(sphy->dev, "Failed to get reference clock\n");
+>>>>                 return PTR_ERR(ref_clk);
+>>>>         }
+>>>>
+>>>> -       switch (clk_get_rate(ref_clk)) {
+>>>> -       case 12 * MHZ:
+>>>> -               refclk_freq = PHYCLK_CLKSEL_12M;
+>>>> -               break;
+>>>> -       case 24 * MHZ:
+>>>> -               refclk_freq = PHYCLK_CLKSEL_24M;
+>>>> -               break;
+>>>> -       case 48 * MHZ:
+>>>> -               refclk_freq = PHYCLK_CLKSEL_48M;
+>>>> -               break;
+>>>> -       default:
+>>>> -               if (sphy->cpu_type == TYPE_S3C64XX)
+>>>> -                       refclk_freq = PHYCLK_CLKSEL_48M;
+>>>> -               else
+>>>> +       if (sphy->cpu_type == TYPE_EXYNOS5250) {
+>>>> +               /* set clock frequency for PLL */
+>>>> +               switch (clk_get_rate(ref_clk)) {
+>>>> +               case 96 * 100000:
+>>>
+>>> nit: change to 9600 * KHZ to match; below too.
+>>>
+>> sure.
 >>
->> Also bootloader will check if xloadflags bit0 is set to decicde if
+>>>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_9600K;
+>>>
+>>> Why |= with 0?
+>>>
+>> kept this just to keep things look similar :-). will remove this line,
 >
->                                                           decide
+> My comment was about keeping things similar.  Right now the 5250 code
+> has the |= and the non-5250 code doesn't.  I don't care which is
+> picked but the two sides of the "if" should be symmetric.
 >
->> it could load ramdisk high above 4G.
->>
->> sentinel is used to make sure kernel have ext_* valid values set
->
-> The explanation of the sentinel field from "-v6" below should be
-> actually up here. We absolutely want to have it in the commit message
-> *and* in the code so that it is well documented why we've added it.
->
->> Update header version to 2.12.
->>
->> -v2: add ext_cmd_line_ptr for above 4G support.
->> -v3: update to xloadflags from HPA.
->> -v4: use fields from bootparam instead setup_header according to HPA.
->> -v5: add checking for USE_EXT_BOOT_PARAMS
->> -v6: use sentinel to check if ext_* are valid suggested by HPA.
->>      HPA said:
->>       1. add a field in the uninitialized portion, call it "sentinel";
->>       2. make sure the byte position corresponding to the "sentinel" field is
->>          nonzero in the bzImage file;
->>       3. if the kernel boots up and sentinel is nonzero, erase those fields
->>          that you identified as uninitialized;
->
-> Question: if the bootloader sets ext_* properly, is it going to set
-> sentinel to 0 so that it can signal to the code further on that ext_*
-> are valid?
 
-old bootloaders have no idea of sentinel, but if they initialize boot_param
-properly that new sentinel will be 0 and new kernel will know.
+True, it's good to maintain symmetry in the code.
+I shall amend the code as suggested.
 
+> See parts of the patch below.
 >
-> This is kinda missing from the mechanism of the sentinel and it should
-> be documented too.
+>>>> +                       break;
+>>>> +               case 10 * MHZ:
+>>>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_10M;
+>>>> +                       break;
+>>>> +               case 12 * MHZ:
+>>>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_12M;
+>>>> +                       break;
+>>>> +               case 192 * 100000:
+>>>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_19200K;
+>>>> +                       break;
+>>>> +               case 20 * MHZ:
+>>>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_20M;
+>>>> +                       break;
+>>>> +               case 50 * MHZ:
+>>>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_50M;
+>>>> +                       break;
+>>>> +               case 24 * MHZ:
+>>>> +               default:
+>>>> +                       /* default reference clock */
+>>>> +                       refclk_freq |= HOST_CTRL0_FSEL_CLKSEL_24M;
+>>>> +                       break;
+>>>> +               }
+>>>> +       } else {
+>>>> +               switch (clk_get_rate(ref_clk)) {
+>>>> +               case 12 * MHZ:
+>>>> +                       refclk_freq = PHYCLK_CLKSEL_12M;
+>>>> +                       break;
+>>>> +               case 24 * MHZ:
+>>>>                         refclk_freq = PHYCLK_CLKSEL_24M;
+>>>> -               break;
+>>>> +                       break;
+>>>> +               case 48 * MHZ:
+>>>> +                       refclk_freq = PHYCLK_CLKSEL_48M;
+>>>> +                       break;
+>>>> +               default:
+>>>> +                       if (sphy->cpu_type == TYPE_S3C64XX)
+>>>> +                               refclk_freq = PHYCLK_CLKSEL_48M;
+>>>> +                       else
+>>>> +                               refclk_freq = PHYCLK_CLKSEL_24M;
+>>>> +                       break;
+>>>> +               }
+>>>>         }
+>>>>         clk_put(ref_clk);
+>>>>
+>>>>         return refclk_freq;
+>>>>  }
+>
+> -Doug
 
-No, we should have too much duplicated info.
 
->
->> -v7: change to 0x1ef instead of 0x1f0, HPA said:
->>       it is quite plausible that someone may (fairly sanely) start the
->>       copy range at 0x1f0 instead of 0x1f1
->
-> Right, all those -vX notes are all important and should *definitely* be
-> at least in the commit message.
 
-No, I want to keep them in order to track the reviewing progress.
-
->
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: Rob Landley <rob@landley.net>
->> Cc: Matt Fleming <matt.fleming@intel.com>
->> Cc: Gokul Caushik <caushik1@gmail.com>
->> Cc: Josh Triplett <josh@joshtriplett.org>
->> Cc: Joe Millenbach <jmillenbach@gmail.com>
->> ---
->>  Documentation/x86/boot.txt            |   15 ++++++++++++++-
->>  Documentation/x86/zero-page.txt       |    4 ++++
->>  arch/x86/boot/compressed/cmdline.c    |    2 ++
->>  arch/x86/boot/compressed/misc.c       |   12 ++++++++++++
->>  arch/x86/boot/header.S                |   12 ++++++++++--
->>  arch/x86/boot/setup.ld                |    7 +++++++
->>  arch/x86/include/uapi/asm/bootparam.h |   13 ++++++++++---
->>  arch/x86/kernel/head64.c              |    2 ++
->>  arch/x86/kernel/setup.c               |    4 ++++
->>  9 files changed, 65 insertions(+), 6 deletions(-)
->>
->> diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
->> index 406d82d..18ca9fb 100644
->> --- a/Documentation/x86/boot.txt
->> +++ b/Documentation/x86/boot.txt
->> @@ -57,6 +57,9 @@ Protocol 2.10:      (Kernel 2.6.31) Added a protocol for relaxed alignment
->>  Protocol 2.11:       (Kernel 3.6) Added a field for offset of EFI handover
->>               protocol entry point.
->>
->> +Protocol 2.12:       (Kernel 3.9) Added three fields for loading bzImage and
->> +              ramdisk above 4G with 64bit in bootparam.
->
-> change to:
->
-> "Added three additional fields to bootparam used for loading bzImage and
-> ramdisk above 4Gb in 64-bit."
-
-ok
-
->
->> +
->>  **** MEMORY LAYOUT
->>
->>  The traditional memory map for the kernel loader, used for Image or
->> @@ -182,7 +185,7 @@ Offset    Proto   Name            Meaning
->>  0230/4       2.05+   kernel_alignment Physical addr alignment required for kernel
->>  0234/1       2.05+   relocatable_kernel Whether kernel is relocatable or not
->>  0235/1       2.10+   min_alignment   Minimum alignment, as a power of two
->> -0236/2       N/A     pad3            Unused
->> +0236/2       2.12+   xloadflags      Boot protocol option flags
->>  0238/4       2.06+   cmdline_size    Maximum size of the kernel command line
->>  023C/4       2.07+   hardware_subarch Hardware subarchitecture
->>  0240/8       2.07+   hardware_subarch_data Subarchitecture-specific data
->> @@ -582,6 +585,16 @@ Protocol:        2.10+
->>    misaligned kernel.  Therefore, a loader should typically try each
->>    power-of-two alignment from kernel_alignment down to this alignment.
->>
->> +Field name:     xloadflags
->> +Type:           modify (obligatory)
->> +Offset/size:    0x236/2
->> +Protocol:       2.12+
->> +
->> +  This field is a bitmask.
->> +
->> +  Bit 0 (read): CAN_BE_LOADED_ABOVE_4G
->> +        - If 1, kernel/boot_params/cmdline/ramdisk can be above 4g,
->
->                                                                 fullstop at the
->                                                                 end.
-
-ok.
-
->
->> +
->>  Field name:  cmdline_size
->>  Type:                read
->>  Offset/size: 0x238/4
->> diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
->> index cf5437d..1140e59 100644
->> --- a/Documentation/x86/zero-page.txt
->> +++ b/Documentation/x86/zero-page.txt
->> @@ -19,6 +19,9 @@ Offset      Proto   Name            Meaning
->>  090/010      ALL     hd1_info        hd1 disk parameter, OBSOLETE!!
->>  0A0/010      ALL     sys_desc_table  System description table (struct sys_desc_table)
->>  0B0/010      ALL     olpc_ofw_header OLPC's OpenFirmware CIF and friends
->> +0C0/004      ALL     ext_ramdisk_image ramdisk_image high 32bits
->> +0C4/004      ALL     ext_ramdisk_size  ramdisk_size high 32bits
->> +0C8/004      ALL     ext_cmd_line_ptr  cmd_line_ptr high 32bits
->>  140/080      ALL     edid_info       Video mode setup (struct edid_info)
->>  1C0/020      ALL     efi_info        EFI 32 information (struct efi_info)
->>  1E0/004      ALL     alk_mem_k       Alternative mem check, in KB
->> @@ -27,6 +30,7 @@ Offset      Proto   Name            Meaning
->>  1E9/001      ALL     eddbuf_entries  Number of entries in eddbuf (below)
->>  1EA/001      ALL     edd_mbr_sig_buf_entries Number of entries in edd_mbr_sig_buffer
->>                               (below)
->> +1EF/001      ALL     sentinel        0: states _ext_* fields are valid
->>  290/040      ALL     edd_mbr_sig_buffer EDD MBR signatures
->>  2D0/A00      ALL     e820_map        E820 memory map table
->>                               (array of struct e820entry)
->> diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
->> index b4c913c..bffd73b 100644
->> --- a/arch/x86/boot/compressed/cmdline.c
->> +++ b/arch/x86/boot/compressed/cmdline.c
->> @@ -17,6 +17,8 @@ static unsigned long get_cmd_line_ptr(void)
->>  {
->>       unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
->>
->> +     cmd_line_ptr |= (u64)real_mode->ext_cmd_line_ptr << 32;
->> +
->>       return cmd_line_ptr;
->>  }
->
-> On 32-bit, this unsigned long cmd_line_ptr is 4 bytes and the OR doesn't
-> have any effect on the final result. You probably want to do:
-
-yes, that is what we want to keep 32bit and 64bit unified.
-
->
-> #ifdef CONFIG_64BIT
->         cmd_line_ptr |= (u64)real_mode->ext_cmd_line_ptr << 32;
-> #endif
->
-> right?
->
-> Or instead look at ->sentinel to know whether the ext_* fields are valid
-> or not, and save yourself the OR if not.
-
-no.
-
-that is whole point of sentinel, we don't need to check sentinel everywhere
-because ext_* are valid.
-
->
->>  int cmdline_find_option(const char *option, char *buffer, int bufsize)
->> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
->> index 88f7ff6..f714576 100644
->> --- a/arch/x86/boot/compressed/misc.c
->> +++ b/arch/x86/boot/compressed/misc.c
->> @@ -318,6 +318,16 @@ static void parse_elf(void *output)
->>       free(phdrs);
->>  }
->>
->> +static void sanitize_real_mode(struct boot_params *real_mode)
->> +{
->> +     if (real_mode->sentinel) {
->> +             /* ext_* fields in boot_params are not valid, clear them */
->> +             real_mode->ext_ramdisk_image = 0;
->> +             real_mode->ext_ramdisk_size  = 0;
->> +             real_mode->ext_cmd_line_ptr  = 0;
->> +     }
->> +}
->> +
->>  asmlinkage void decompress_kernel(void *rmode, memptr heap,
->>                                 unsigned char *input_data,
->>                                 unsigned long input_len,
->> @@ -325,6 +335,8 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
->>  {
->>       real_mode = rmode;
->>
->> +     sanitize_real_mode(real_mode);
->> +
->>       if (real_mode->screen_info.orig_video_mode == 7) {
->>               vidmem = (char *) 0xb0000;
->>               vidport = 0x3b4;
->> diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
->> index 8c132a6..0d5790f 100644
->> --- a/arch/x86/boot/header.S
->> +++ b/arch/x86/boot/header.S
->> @@ -279,7 +279,7 @@ _start:
->>       # Part 2 of the header, from the old setup.S
->>
->>               .ascii  "HdrS"          # header signature
->> -             .word   0x020b          # header version number (>= 0x0105)
->> +             .word   0x020c          # header version number (>= 0x0105)
->>                                       # or else old loadlin-1.5 will fail)
->>               .globl realmode_swtch
->>  realmode_swtch:      .word   0, 0            # default_switch, SETUPSEG
->> @@ -369,7 +369,15 @@ relocatable_kernel:    .byte 1
->>  relocatable_kernel:    .byte 0
->>  #endif
->>  min_alignment:               .byte MIN_KERNEL_ALIGN_LG2      # minimum alignment
->> -pad3:                        .word 0
->> +
->> +xloadflags:
->> +CAN_BE_LOADED_ABOVE_4G       = 1             # If set, the kernel/boot_param/
->> +                                     # ramdisk could be loaded above 4g
->> +#if defined(CONFIG_X86_64) && defined(CONFIG_RELOCATABLE)
->> +                     .word CAN_BE_LOADED_ABOVE_4G
->> +#else
->> +                     .word 0
->> +#endif
->>
->>  cmdline_size:   .long   COMMAND_LINE_SIZE-1     #length of the command line,
->>                                                  #added with boot protocol
->> diff --git a/arch/x86/boot/setup.ld b/arch/x86/boot/setup.ld
->> index 03c0683..9333d37 100644
->> --- a/arch/x86/boot/setup.ld
->> +++ b/arch/x86/boot/setup.ld
->> @@ -13,6 +13,13 @@ SECTIONS
->>       .bstext         : { *(.bstext) }
->>       .bsdata         : { *(.bsdata) }
->>
->> +     /* sentinel: make sure if boot_params from bootloader is right */
->
-> This should say:
->
->         /*
->          * The bootloader signals the validity of the three ext_* boot params with this.
->          */
-
-no, bootloader does not signal that.
-old bootloaders have no idea of sentinel, but if they initialize boot_param
-properly that new sentinel will be 0 and new kernel will know.
-
->
->> +     . = 495;
->> +     .sentinel       : {
->> +             sentinel = .;
->> +             BYTE(0xff);
->> +     }
->> +
->>       . = 497;
->>       .header         : { *(.header) }
->>       .entrytext      : { *(.entrytext) }
->> diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
->> index 92862cd..3d8ed8f 100644
->> --- a/arch/x86/include/uapi/asm/bootparam.h
->> +++ b/arch/x86/include/uapi/asm/bootparam.h
->> @@ -58,7 +58,9 @@ struct setup_header {
->>       __u32   initrd_addr_max;
->>       __u32   kernel_alignment;
->>       __u8    relocatable_kernel;
->> -     __u8    _pad2[3];
->> +     __u8    min_alignment;
->
-> Hehe, this is actually a minor bugfix because min_alignment was only
-> defined in header.S but was _pad2[0] in the struct definition.
->
->> +     __u16   xloadflags;
->> +#define CAN_BE_LOADED_ABOVE_4G       (1<<0)
->>       __u32   cmdline_size;
->>       __u32   hardware_subarch;
->>       __u64   hardware_subarch_data;
->> @@ -106,7 +108,10 @@ struct boot_params {
->>       __u8  hd1_info[16];     /* obsolete! */         /* 0x090 */
->>       struct sys_desc_table sys_desc_table;           /* 0x0a0 */
->>       struct olpc_ofw_header olpc_ofw_header;         /* 0x0b0 */
->> -     __u8  _pad4[128];                               /* 0x0c0 */
->> +     __u32 ext_ramdisk_image;                        /* 0x0c0 */
->> +     __u32 ext_ramdisk_size;                         /* 0x0c4 */
->> +     __u32 ext_cmd_line_ptr;                         /* 0x0c8 */
->> +     __u8  _pad4[116];                               /* 0x0cc */
->>       struct edid_info edid_info;                     /* 0x140 */
->>       struct efi_info efi_info;                       /* 0x1c0 */
->>       __u32 alt_mem_k;                                /* 0x1e0 */
->> @@ -115,7 +120,9 @@ struct boot_params {
->>       __u8  eddbuf_entries;                           /* 0x1e9 */
->>       __u8  edd_mbr_sig_buf_entries;                  /* 0x1ea */
->>       __u8  kbd_status;                               /* 0x1eb */
->> -     __u8  _pad6[5];                                 /* 0x1ec */
->> +     __u8  _pad5[3];                                 /* 0x1ec */
->> +     __u8  sentinel;                                 /* 0x1ef */
->> +     __u8  _pad6[1];                                 /* 0x1f0 */
->
-> This needs the -v7 explanation from above as a comment here or somewhere
-> around here, for why we've chosen 0x1ef offset.
-
-no, there is no such comment for other fields there.
-
-Thanks
-
-Yinghai
+-- 
+Thanks & Regards
+Vivek
