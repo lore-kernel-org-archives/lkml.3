@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab3ANKrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 05:47:07 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:52699 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073Ab3ANKrF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 05:47:05 -0500
+	id S1756620Ab3ANKtd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 05:49:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47954 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751340Ab3ANKtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 05:49:32 -0500
+Date: Mon, 14 Jan 2013 10:49:30 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Eric Wong <normalperson@yhbt.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: compaction: Partially revert capture of suitable
+ high-order page
+Message-ID: <20130114104930.GP13304@suse.de>
+References: <20130111092701.GK13304@suse.de>
+ <1358046453.1518.1.camel@kernel.cn.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1357923834-31641-5-git-send-email-dianders@chromium.org>
-References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
-	<1357923834-31641-1-git-send-email-dianders@chromium.org>
-	<1357923834-31641-5-git-send-email-dianders@chromium.org>
-Date: Mon, 14 Jan 2013 10:47:02 +0000
-Message-ID: <CAFbHwiTafLhK-uJKjUX4_yLC+27OOUnC2JxYM9-3rHZkPx7s5Q@mail.gmail.com>
-Subject: Re: [PATCH v4 5/5] mmc: dw_mmc: Remove DW_MCI_QUIRK_NO_WRITE_PROTECT
-From: Will Newton <will.newton@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: linux-mmc@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
-        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1358046453.1518.1.camel@kernel.cn.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 5:03 PM, Doug Anderson <dianders@chromium.org> wrote:
-> The original quirk was added in the change 'mmc: dw_mmc: add quirk to
-> indicate missing write protect line'.  The original quirk was added at
-> a controller level even though each slot has its own write protect (so
-> the quirk should be at the slot level).  A recent change (mmc: dw_mmc:
-> Add "disable-wp" device tree property) added a slot-level quirk and
-> support for the quirk directly to dw_mmc.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v4:
-> - New for this version; addresses comments from Olof Johansson about
->   the fact that we shouldn't have both a slot and controller level
->   quirk for the same thing.
->
->  drivers/mmc/host/dw_mmc.c  |    8 +-------
->  include/linux/mmc/dw_mmc.h |    7 -------
->  2 files changed, 1 insertions(+), 14 deletions(-)
+On Sat, Jan 12, 2013 at 09:07:33PM -0600, Simon Jeons wrote:
+> On Fri, 2013-01-11 at 09:27 +0000, Mel Gorman wrote:
+> > Eric Wong reported on 3.7 and 3.8-rc2 that ppoll() got stuck when waiting
+> > for POLLIN on a local TCP socket. It was easier to trigger if there was disk
+> > IO and dirty pages at the same time and he bisected it to commit 1fb3f8ca
+> > "mm: compaction: capture a suitable high-order page immediately when it
+> > is made available".
+> > 
+> > The intention of that patch was to improve high-order allocations under
+> > memory pressure after changes made to reclaim in 3.6 drastically hurt
+> > THP allocations but the approach was flawed. For Eric, the problem was
+> > that page->pfmemalloc was not being cleared for captured pages leading to
+> > a poor interaction with swap-over-NFS support causing the packets to be
+> > dropped. However, I identified a few more problems with the patch including
+> > the fact that it can increase contention on zone->lock in some cases which
+> > could result in async direct compaction being aborted early.
+> > 
+> > In retrospect the capture patch took the wrong approach. What it should
+> > have done is mark the pageblock being migrated as MIGRATE_ISOLATE if it
+> > was allocating for THP and avoided races that way. While the patch was
+> 
+> Hi Mel,
+> 
+> Mark pageblock being migrated as MIGRATE_ISOLATE if it was allocating
+> for THP and avoided races that way is a good idea. But why I can't see
+> you do it in this patch?
+> 
 
-Hi Doug,
+Because it is not what the patch does. Implementing that idea will take
+time to do properly and cleanly with no guarantee it'll work well enough
+to justify the complexity. Fixing the POLLIN bug was more important.
 
-These changes look ok to me. I don't know if patch 4 made it to the
-list, I only got a copy via the cc and the only archive I can find of
-linux-mmc (gmane) seems to be missing a lot of messages besides this
-one.
-
-So for the dw_mmc parts:
-
-Acked-by: Will Newton <will.newton@imgtec.com>
+-- 
+Mel Gorman
+SUSE Labs
