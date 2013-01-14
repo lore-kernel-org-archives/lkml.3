@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab3ANCQq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 21:16:46 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:49923 "EHLO gir.skynet.ie"
+	id S1755589Ab3ANCSY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 21:18:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:23250 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752951Ab3ANCQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 21:16:45 -0500
-Date: Mon, 14 Jan 2013 02:16:42 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1301140215060.8853@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752951Ab3ANCSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jan 2013 21:18:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,465,1355126400"; 
+   d="scan'208";a="246135490"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>
+Subject: RE: [PATCH] mfd, TWL4030: TWL4030 need select REGMAP_I2C
+Thread-Topic: [PATCH] mfd, TWL4030: TWL4030 need select REGMAP_I2C
+Thread-Index: AQHN5z4cEjBF4U1C/UWbAzF3dkdU0ZhIK6Iw
+Date: Mon, 14 Jan 2013 02:18:04 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A203154@SHSMSX101.ccr.corp.intel.com>
+References: <1356358796.1688.3.camel@cliu38-desktop-build>
+ <50E162F8.8030403@ti.com>
+In-Reply-To: <50E162F8.8030403@ti.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0E2IWQA030110
 
+Hi maintainers,
 
-Hi Linus,
+Could you help to push this patch?
+Every time syncing the latest code, always meet this build error.
+Sorry to disturb.
 
-Nothing too astounding,
-
-nouveau: bunch of regression fixes and oops fixes
-radeon: UMS fixes , rn50 fix, dma fix
-udl: fix EDID retrieval for large EDIDs.
-
-Dave.
-
-The following changes since commit 82ba789f48de669fd0bbc84c326f07571d078572:
-
-  Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel (2013-01-11 07:52:48 +1000)
-
-are available in the git repository at:
-
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 7b4cf994e4c6ba48872bb25253cc393b7fb74c82:
-
-  udldrmfb: udl_get_edid: drop unneeded i-- (2013-01-14 08:45:27 +1000)
-
-----------------------------------------------------------------
-Aleksi Torhamo (2):
-      drm/nouveau/clock: fix support for more than 2 monitors on nve0
-      drm/nvc0/fb: fix crash when different mutex is used to protect same list
-
-Ben Skeggs (2):
-      drm/nouveau/devinit: ensure legacy vga control is enabled during post
-      drm/nouveau: do not forcibly power on lvds panels
-
-Dave Airlie (2):
-      Merge branch 'drm-nouveau-fixes' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-next
-      Merge branch 'drm-fixes-3.8' of git://people.freedesktop.org/~agd5f/linux into drm-next
-
-Hans de Goede (3):
-      udldrmfb: Fix EDID not working with monitors with EDID extension blocks
-      udldrmfb: udl_get_edid: usb_control_msg buffer must not be on the stack
-      udldrmfb: udl_get_edid: drop unneeded i--
-
-Ilija Hadzic (3):
-      drm/radeon: fix NULL pointer dereference in UMS mode
-      drm/radeon: fix a bogus kfree
-      drm/radeon: fix error path in kpage allocation
-
-Jerome Glisse (2):
-      radeon/kms: force rn50 chip to always report connected on analog output
-      radeon/kms: fix dma relocation checking
-
-Marcin Slusarz (7):
-      drm/nouveau: add locking around instobj list operations
-      drm/nouveau/vm: fix memory corruption when pgt allocation fails
-      drm/nouveau: don't return freed object from nouveau_handle_create
-      drm/nouveau: fix nouveau_client allocation failure path
-      drm/nouveau: fix blank LVDS screen regression on pre-nv50 cards
-      drm/nv17-50: restore fence buffer on resume
-      drm/nv50/disp: fix selection of bios script for analog outputs
-
- drivers/gpu/drm/nouveau/core/core/client.c         |  4 +-
- drivers/gpu/drm/nouveau/core/core/handle.c         |  5 ++-
- drivers/gpu/drm/nouveau/core/engine/disp/nv50.c    | 46 ++++++++++++----------
- drivers/gpu/drm/nouveau/core/include/core/client.h |  3 ++
- .../gpu/drm/nouveau/core/include/subdev/bios/pll.h |  2 +
- drivers/gpu/drm/nouveau/core/subdev/bios/init.c    |  1 -
- drivers/gpu/drm/nouveau/core/subdev/clock/nvc0.c   |  2 +
- drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c      |  6 +--
- drivers/gpu/drm/nouveau/core/subdev/instmem/base.c | 35 ++++++++++++----
- drivers/gpu/drm/nouveau/core/subdev/vm/base.c      |  4 +-
- drivers/gpu/drm/nouveau/nouveau_connector.c        | 30 ++++++++++++--
- drivers/gpu/drm/nouveau/nouveau_display.c          |  9 -----
- drivers/gpu/drm/nouveau/nouveau_drm.c              |  7 +++-
- drivers/gpu/drm/nouveau/nouveau_fence.h            |  1 +
- drivers/gpu/drm/nouveau/nv04_dfp.c                 |  2 +-
- drivers/gpu/drm/nouveau/nv10_fence.c               |  8 ++++
- drivers/gpu/drm/nouveau/nv50_fence.c               |  1 +
- drivers/gpu/drm/radeon/r600_cs.c                   | 12 +++---
- drivers/gpu/drm/radeon/radeon_cs.c                 |  9 +++--
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c    |  8 ++++
- drivers/gpu/drm/udl/udl_connector.c                | 17 +++++++-
- 21 files changed, 149 insertions(+), 63 deletions(-)
+> -----Original Message-----
+> From: Peter Ujfalusi [mailto:peter.ujfalusi@ti.com]
+> Sent: Monday, December 31, 2012 6:04 PM
+> To: Liu, Chuansheng
+> Cc: sameo@linux.intel.com; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] mfd, TWL4030: TWL4030 need select REGMAP_I2C
+> 
+> On 12/24/2012 03:19 PM, Chuansheng Liu wrote:
+> > This patch fix the below build error:
+> > drivers/built-in.o: In function `twl_probe':
+> > drivers/mfd/twl-core.c:1256: undefined reference to `devm_regmap_init_i2c'
+> > make: *** [vmlinux] Error 1
+> 
+> Thanks Liu, I have missed this one.
+> 
+> Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> 
+> >
+> > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> > ---
+> >  drivers/mfd/Kconfig |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index 1c0abd4..47ad4e2 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -292,6 +292,7 @@ config TWL4030_CORE
+> >  	bool "Texas Instruments TWL4030/TWL5030/TWL6030/TPS659x0
+> Support"
+> >  	depends on I2C=y && GENERIC_HARDIRQS
+> >  	select IRQ_DOMAIN
+> > +	select REGMAP_I2C
+> >  	help
+> >  	  Say yes here if you have TWL4030 / TWL6030 family chip on your board.
+> >  	  This core driver provides register access and IRQ handling
+> >
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
