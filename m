@@ -1,90 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab3ANJxS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 04:53:18 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:56841 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755501Ab3ANJxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 04:53:17 -0500
-Date: Mon, 14 Jan 2013 10:53:14 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: Re: [PATCH v7u1 21/31] x86, kexec: only set ident mapping for ram.
-Message-ID: <20130114095314.GE1228@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Yinghai Lu <yinghai@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jan Kiszka <jan.kiszka@web.de>,
-	Jason Wessel <jason.wessel@windriver.com>,
-	linux-kernel@vger.kernel.org,
-	Alexander Duyck <alexander.h.duyck@intel.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
- <1357260531-11115-22-git-send-email-yinghai@kernel.org>
- <20130113125653.GA17200@liondog.tnic>
- <CAE9FiQXve8SnpzC4i212SaU5j6HtNWiMNnaQhfnjfG4UzXDJYQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQXve8SnpzC4i212SaU5j6HtNWiMNnaQhfnjfG4UzXDJYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756776Ab3ANJyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 04:54:21 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:36439 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab3ANJyU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 04:54:20 -0500
+Subject: Re: 3.7.X vs 3.6.11 HP Folio 9470m brightness regression?
+From: joeyli <jlee@suse.com>
+To: Fabio Coatti <fabio.coatti@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Bob Moore <robert.moore@intel.com>,
+        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>,
+        Tom St Denis <tstdenis@elliptictech.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+In-Reply-To: <CADpTngVJqvXfgnd2cMRFL49nt9so+dcwKos8cSLPRj6L0eEPMg@mail.gmail.com>
+References: <1520620637.200975.1355955029721.JavaMail.root@elliptictech.com>
+	 <1425298.zMcaSB7taE@calvin>
+	 <CADpTngUE7H9K2j3yCsm+TUx+X2RJZKaSz8kKn-ehpxzx1O2=fA@mail.gmail.com>
+	 <CAKMK7uF1ZyFu5JMUH91bUWzQey2RCH1awN2GVeu5w=nXkfJrEQ@mail.gmail.com>
+	 <CADpTngV4N-JtVKgT+FN_VoNWUyKdfvb=bsTVJC9MktREmdrSAg@mail.gmail.com>
+	 <CADpTngVJqvXfgnd2cMRFL49nt9so+dcwKos8cSLPRj6L0eEPMg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jan 2013 17:50:59 +0800
+Message-ID: <1358157059.14569.16.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 13, 2013 at 09:46:17PM -0800, Yinghai Lu wrote:
-> On Sun, Jan 13, 2013 at 4:56 AM, Borislav Petkov <bp@alien8.de> wrote:
-> > On Thu, Jan 03, 2013 at 04:48:41PM -0800, Yinghai Lu wrote:
-> >> We should not set mapping for all under max_pfn.
+於 一，2013-01-14 於 09:13 +0100，Fabio Coatti 提到：
+> While looking at a different issue (rfkill), related to this commit:
+> ====
+> > a57f7f9175b8ccbc9df83ac13860488913115de4 is the first bad commit
+> > commit a57f7f9175b8ccbc9df83ac13860488913115de4
+> > Author: Bob Moore <robert.moore@intel.com>
+> > Date: Fri Aug 17 10:55:02 2012 +0800
 > >
-> > "We should not establish mappings for all memory under max_pfn."
-> 
-> that is not accurate.
-> 
-> We should not set mapping for all range under max_pfn.
-> 
-> or
-> 
-> We should set mappings only for memory ranges under max_pfn.
-
-Ok, that last thing is getting close. So do I understand it correctly
-now:
-
-"We should establish mappings only for memory (memory which is not
-marked reserved or whatever by E820 or some other mechanism) under
-max_pfn."
-
-?
-
-> >> That causes same problem that is fixed by
+> > ACPICA: Add Windows8/Server2012 string for _OSI method.
+> > This change adds a new _OSI string, "Windows 2012" for both Windows 8
+> > and Windows Server 2012.
+> > >From Microsoft document "How to Identify the Windows Version in ACPI
+> > by Using _OSI", July 13, 2012.
 > >
-> > "Otherwise, it causes the same ..."
+> > Signed-off-by: Bob Moore <robert.moore@intel.com>
+> > Signed-off-by: Feng Tang <feng.tang@intel.com>
+> > Signed-off-by: Len Brown <len.brown@intel.com>
+> ====
+> 
+> I discovered that reverting this commit (or, as suggested by joeyli
+> <jlee@suse.com>, booting with acpi_osi="!Windows 2012" ) also fixes
+> the brightness issue. So it seems related to the same ACPI issue, now
+> I wonder how it's happened that I got the wrong commit while
+> bisecting. Sorry for the noise, now the issue is still there but makes
+> more sense ):)
+
+Use "!Windows 2012" can fallback to Windows 2009 mode for workaround
+rkfill button and brightness issue on your machine, but we still have
+problem with Windows 2012 mode. 
+
+That means we need spend more time to trace the dsdt stuff for guess
+what's behavior on HP machine with Windows 8.
+
+
+Thanks a lot!
+Joey Lee
+
+> 
+> 
+> 
+> 2013/1/12 Fabio Coatti <fabio.coatti@gmail.com>:
+> > well, I tried to do that, bisecting between 3.6.10 and 3.7. I'm not
+> > sure to have done that properly, as the result seems quite harmless,
+> > however here it is:
 > >
+> > d978348b300595b067b80980f6a78db09fcd584c is the first bad commit
+> > commit d978348b300595b067b80980f6a78db09fcd584c
+> > Author: Bob Moore <robert.moore@intel.com>
+> > Date:   Fri Aug 17 10:51:47 2012 +0800
+> >
+> >     ACPICA: Split ACPICA initialization functions to new file, utxfinit.c
+> >
+> >     Split utxface.c to improve modularity and reduce file size.
+> >
+> >     Signed-off-by: Bob Moore <robert.moore@intel.com>
+> >     Signed-off-by: Feng Tang <feng.tang@intel.com>
+> >     Signed-off-by: Len Brown <len.brown@intel.com>
+> >
+> > :040000 040000 57bc8451026afe02fdbc2970b152164ff4e5412a
+> > 55311ce2f9fed66501b06f93f67fa99b54d46e86 M      drivers
+> >
+> > Please let me know If I've done something wrong or if I can help in other ways.
+> >
+> > Many thanks for the hint.
+> >
+> >
+> > 2013/1/12 Daniel Vetter <daniel.vetter@ffwll.ch>:
+> >> On Sat, Jan 12, 2013 at 12:22 PM, Fabio Coatti <fabio.coatti@gmail.com> wrote:
+> >>> I'm seeing the same behaviour on 3.7.2; even
+> >>> echo "NN" > brightness has no effect.
+> >>> I've tried to look at changes between 3.6.11 and 3.7.2 but probably
+> >>> this is beyond my skills ;)
 > >>
-> >>       x86, mm: Only direct map addresses that are marked as E820_RAM
+> >> If the regression is with the acpi_video backlight, then it's very
+> >> likely not a bug in drm/i915. Quickest way to figure that out is to do
+> >> a git bisect between 3.6 and 3.7, my favourite howto is:
+> >> http://www.reactivated.net/weblog/archives/2006/01/using-git-bisect-to-find-buggy-kernel-patches/
+> >>
+> >> Cheers, Daniel
+> >>
+> >>> 2012/12/20 Fabio Coatti <fabio.coatti@gmail.com>:
+> >>>> In data mercoledì 19 dicembre 2012 17:10:29, hai scritto:
+> >>>>> ----- Original Message -----
+> >>>>>
+> >>>>> > From: "Fabio Coatti" <fabio.coatti@gmail.com>
+> >>>>> > To: linux-kernel@vger.kernel.org
+> >>>>> > Sent: Wednesday, 19 December, 2012 5:01:30 PM
+> >>>>> > Subject: 3.7.X vs 3.6.11 HP Folio 9470m brightness regression?
+> >>>>> >
+> >>>>> > Hi,
+> >>>>> > I'm testing kernels 3.7.X vs 3.6.11 on an HP Folio 9470m machine,
+> >>>>> > i915
+> >>>>> > driver for a VGA compatible controller: Intel Corporation 3rd Gen
+> >>>>> > Core
+> >>>>> > processor Graphics Controller (rev 09) 8086:0166
+> >>>>> >
+> >>>>> > With 3.6.11, the brightness can be correctly set using fn+f9/10: kde
+> >>>>> > shows the bar and brightness changes.
+> >>>>> >
+> >>>>> > With 3.7.1 kde shows the percentage bar and
+> >>>>> > /sys/class/backlight/acpi_video0/brightness is updated, but the
+> >>>>> > screen
+> >>>>> > brightness does not changes.
+> >>>>>
+> >>>>> I had a similar problem with my Dell laptop and i915/acpi...
+> >>>>>
+> >>>>> Is there another acpi_video? device?  In my case two showed up in 3.7
+> >>>>> whereas in 3.6 there was one.  In 3.7 it was controlling the wrong one
+> >>>>> apparently.
+> >>>>
+> >>>> Well, this seems not to be the case, I have only one acpi_video:
+> >>>>
+> >>>> calvin ~ # ls -l /sys/class/backlight/
+> >>>> totale 0
+> >>>> lrwxrwxrwx 1 root root 0 20 dic 09.20 acpi_video0 ->
+> >>>> ../../devices/pci0000:00/0000:00:02.0/backlight/acpi_video0
+> >>>>
+> >>>> calvin ~ # ls -l /sys/devices/pci0000:00/0000:00:02.0/backlight
+> >>>> totale 0
+> >>>> drwxr-xr-x 3 root root 0 20 dic 09.20 acpi_video0
+> >>>>
+> >>>>
+> >>>>
+> >>>> --
+> >>>> Fabio
+> >>>
+> >>>
+> >>>
+> >>> --
+> >>> Fabio
+> >>
+> >>
+> >>
+> >> --
+> >> Daniel Vetter
+> >> Software Engineer, Intel Corporation
+> >> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
 > >
-> > You could add this patch's commit id since it is in tip:x86/mm2 and it
-> > shouldn't change: 66520ebc2df3.
+> >
+> >
+> > --
+> > Fabio
 > 
-> why ? they are not in linus tree yet, so it could change if that tip
-> branch is rebased.
+> 
+> 
 
-Oh, you didn't know: tip branches don't get rebased. At least almost
-never.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
