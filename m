@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab3ANObv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:31:51 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:37723 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913Ab3ANObu (ORCPT
+	id S1756422Ab3ANOgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:36:44 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:33062 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab3ANOgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:31:50 -0500
-Date: Mon, 14 Jan 2013 06:32:38 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Tomas Winkler <tomas.winkler@intel.com>, arnd@arndb.de,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next V2] mei: drop the warning when cl is not
- initialized during unlinking
-Message-ID: <20130114143238.GC20384@kroah.com>
-References: <1357831934-31610-1-git-send-email-tomas.winkler@intel.com>
- <CA+icZUXa-cgNPTYAKjXDSkoqNhto7jz89yUMJAvYxa-jGtMbjg@mail.gmail.com>
+	Mon, 14 Jan 2013 09:36:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUXa-cgNPTYAKjXDSkoqNhto7jz89yUMJAvYxa-jGtMbjg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
+References: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
+Date: Mon, 14 Jan 2013 23:36:38 +0900
+X-Google-Sender-Auth: D0EDdkUKSNDmff-VZcpnVGda0kA
+Message-ID: <CAJ0PZbTAOdQrUjefOpc2MDam1hHLjSEDLHw3VrP+9=OAbgQ8ug@mail.gmail.com>
+Subject: Re: [PATCH 1/3] PM / devfreq: set min/max freq limit from freq table
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Cc: kyungmin.park@samsung.com, mturquette@linaro.org, rjw@sisk.pl,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 03:14:50PM +0100, Sedat Dilek wrote:
-> On Thu, Jan 10, 2013 at 4:32 PM, Tomas Winkler <tomas.winkler@intel.com> wrote:
-> > On systems where wd and amthif is not initialized
-> > we will hit cl->dev == NULL. This condition is okay
-> > so we don't need to be laud about it.
-> >
-> > Fixes the follwing warning during suspend
-> > [  137.061985] WARNING: at drivers/misc/mei/client.c:315 mei_cl_unlink+0x86/0x90 [mei]()
-> > [  137.061986] Hardware name: 530U3BI/530U4BI/530U4BH
-> > [  137.062140] Modules linked in: snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel snd_hda_intel snd_hda_codec kvm arc4 iwldvm snd_hwdep i915 snd_pcm mac80211 ghash_clmulni_intel snd_page_alloc aesni_intel snd_seq_midi xts snd_seq_midi_event aes_x86_64 rfcomm snd_rawmidi parport_pc bnep lrw snd_seq uvcvideo i2c_algo_bit ppdev gf128mul iwlwifi snd_timer drm_kms_helper ablk_helper cryptd drm snd_seq_device videobuf2_vmalloc psmouse videobuf2_memops snd cfg80211 btusb videobuf2_core soundcore videodev lp bluetooth samsung_laptop wmi microcode mei serio_raw mac_hid video hid_generic lpc_ich parport usbhid hid r8169
-> > [  137.062143] Pid: 2706, comm: kworker/u:15 Tainted: G      D W    3.8.0-rc2-next20130109-1-iniza-generic #1
-> > [  137.062144] Call Trace:
-> > [  137.062156]  [<ffffffff8105860f>] warn_slowpath_common+0x7f/0xc0
-> > [  137.062159]  [<ffffffff8135b1ea>] ? ioread32+0x3a/0x40
-> > [  137.062162]  [<ffffffff8105866a>] warn_slowpath_null+0x1a/0x20
-> > [  137.062168]  [<ffffffffa0076be6>] mei_cl_unlink+0x86/0x90 [mei]
-> > [  137.062173]  [<ffffffffa0071325>] mei_reset+0xc5/0x240 [mei]
-> > [  137.062178]  [<ffffffffa0073703>] mei_pci_resume+0xa3/0x110 [mei]
-> > [  137.062183]  [<ffffffff81379cae>] pci_pm_resume+0x7e/0xe0
-> > [  137.062185]  [<ffffffff81379c30>] ? pci_pm_thaw+0x80/0x80
-> > [  137.062189]  [<ffffffff8145a415>] dpm_run_callback.isra.6+0x25/0x50
-> > [  137.062192]  [<ffffffff8145a6cf>] device_resume+0x9f/0x140
-> > [  137.062194]  [<ffffffff8145a791>] async_resume+0x21/0x50
-> > [  137.062200]  [<ffffffff810858b0>] async_run_entry_fn+0x90/0x1c0
-> > [  137.062203]  [<ffffffff810778e5>] process_one_work+0x155/0x460
-> > [  137.062207]  [<ffffffff81078578>] worker_thread+0x168/0x400
-> > [  137.062210]  [<ffffffff81078410>] ? manage_workers+0x2b0/0x2b0
-> > [  137.062214]  [<ffffffff8107d9f0>] kthread+0xc0/0xd0
-> > [  137.062218]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
-> > [  137.062222]  [<ffffffff816bac6c>] ret_from_fork+0x7c/0xb0
-> > [  137.062228]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
-> >
-> > Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
-> > Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> 
-> Can you please apply this patch to char-misc-next?
-> I am hitting it again while doing other regression testing!
+On Tue, Jan 8, 2013 at 2:50 PM, Rajagopal Venkat
+<rajagopal.venkat@linaro.org> wrote:
+> Set devfreq device min and max frequency limits when device
+> is added to devfreq, provided frequency table is supplied.
+> This helps governors to suggest target frequency with in
+> limits.
+>
+> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
 
-Please be patient, it will get there soon.
+Could you please elaborate the benefit of the patch?
 
-greg k-h
+The devfreq device drivers are required to choose proper frequencies
+anyway regardless which values the governors may give (hopefully by
+choosing the closest value that can support the required performance).
+
+Besides, the min/max values are to be set by userspace. Users may
+enter 0 in order to express that they do not want to limit the
+behaviors of governors.
+
+
+Cheers,
+MyungJoo.
+
+> ---
+>  drivers/devfreq/devfreq.c |   24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+>
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index a8f0173..5782c9b 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -69,6 +69,29 @@ static struct devfreq *find_device_devfreq(struct device *dev)
+>  }
+>
+>  /**
+> + * devfreq_set_freq_limits() - Set min and max frequency from freq_table
+> + * @devfreq:   the devfreq instance
+> + */
+> +static void devfreq_set_freq_limits(struct devfreq *devfreq)
+> +{
+> +       int idx;
+> +       unsigned long min = ~0, max = 0;
+> +
+> +       if (!devfreq->profile->freq_table)
+> +               return;
+> +
+> +       for (idx = 0; idx < devfreq->profile->max_state; idx++) {
+> +               if (min > devfreq->profile->freq_table[idx])
+> +                       min = devfreq->profile->freq_table[idx];
+> +               if (max < devfreq->profile->freq_table[idx])
+> +                       max = devfreq->profile->freq_table[idx];
+> +       }
+> +
+> +       devfreq->min_freq = min;
+> +       devfreq->max_freq = max;
+> +}
+> +
+> +/**
+>   * devfreq_get_freq_level() - Lookup freq_table for the frequency
+>   * @devfreq:   the devfreq instance
+>   * @freq:      the target frequency
+> @@ -476,6 +499,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+>                                                 devfreq->profile->max_state,
+>                                                 GFP_KERNEL);
+>         devfreq->last_stat_updated = jiffies;
+> +       devfreq_set_freq_limits(devfreq);
+>
+>         dev_set_name(&devfreq->dev, dev_name(dev));
+>         err = device_register(&devfreq->dev);
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
