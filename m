@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab3ANLKo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 06:10:44 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58459 "EHLO
+	id S1755856Ab3ANLQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 06:16:27 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58485 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755704Ab3ANLKn (ORCPT
+	with ESMTP id S1755623Ab3ANLQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 06:10:43 -0500
-Date: Mon, 14 Jan 2013 12:10:41 +0100 (CET)
+	Mon, 14 Jan 2013 06:16:27 -0500
+Date: Mon, 14 Jan 2013 12:16:24 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Mark Rutland <mark.rutland@arm.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nico@linaro.org, will.deacon@arm.com, marc.zyngier@arm.com,
-        john.stultz@linaro.org
-Subject: Re: [PATCHv2 3/4] clockevents: Add generic timer broadcast
- function
-In-Reply-To: <1357742770-15028-4-git-send-email-mark.rutland@arm.com>
-Message-ID: <alpine.LFD.2.02.1301141209290.7475@ionos>
-References: <1357742770-15028-1-git-send-email-mark.rutland@arm.com> <1357742770-15028-4-git-send-email-mark.rutland@arm.com>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] genirq: Give warning when setup an already-setup non-shared
+ irq
+In-Reply-To: <1357833301.21958.10.camel@cliu38-desktop-build>
+Message-ID: <alpine.LFD.2.02.1301141211500.7475@ionos>
+References: <1357833301.21958.10.camel@cliu38-desktop-build>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,21 +26,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jan 2013, Mark Rutland wrote:
-> Currently, the timer broadcast mechanism is defined by a function
-> pointer on struct clock_event_device. As the fundamental mechanism for
-> broadcast is architecture-specific, this means that clock_event_device
-> drivers cannot be shared across multiple architectures.
+On Thu, 10 Jan 2013, Chuansheng Liu wrote:
 > 
-> This patch adds an (optional) architecture-specific function for timer
-> tick broadcast, allowing drivers which may require broadcast
-> functionality to be shared across multiple architectures.
+> Meet the case when the request_threaded_irq() with the same irq
+> is called twice continually, get the below mismatch info:
+> "IRQ handler type mismatch for IRQ 323"
 
-Looks good.
+I have no idea where you get that from. The mismatch is printed with:
 
-If you fixup the first one of the series, I'll take the generic
-patches and provide a branch to pull for the ARM folks, so the ARM
-part can go via their tree.
+        if (!(new->flags & IRQF_PROBE_SHARED)) {
+	   pr_err("Flags mismatch irq %d. %08x (%s) vs. %08x (%s)\n",
+                       irq, new->flags, new->name, old->flags, old->name);
+
+And its only printed when IRQF_PROBE_SHARED is not set. Your change
+would cause printouts where no printouts are due and it'd change the
+return value from EBUSY to EINVAL.
 
 Thanks,
 
