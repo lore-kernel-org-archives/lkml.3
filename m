@@ -1,75 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab3ANOOF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:14:05 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:60742 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055Ab3ANOOD (ORCPT
+	id S1757008Ab3ANOO3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:14:29 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48169 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756993Ab3ANOO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:14:03 -0500
-MIME-Version: 1.0
-Date: Mon, 14 Jan 2013 15:14:02 +0100
-Message-ID: <CABPqkBStWUyv_vwb9jgWe0hirMNe=J1g_V7z69piajr1pTPt=g@mail.gmail.com>
-Subject: [BUG] perf record: --uid=x fails
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 14 Jan 2013 09:14:27 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2] gpio: vt8500: memory cleanup missing
+To: Tony Prisk <linux@prisktech.co.nz>,
+        Linux Walleij <linus.walleij@linaro.org>
+Cc: vt8500-wm8505-linux-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        Tony Prisk <linux@prisktech.co.nz>
+In-Reply-To: <1357844986-21891-1-git-send-email-linux@prisktech.co.nz>
+References: <1357844986-21891-1-git-send-email-linux@prisktech.co.nz>
+Date: Mon, 14 Jan 2013 14:14:22 +0000
+Message-Id: <20130114141422.80D6D3E232D@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 11 Jan 2013 08:09:46 +1300, Tony Prisk <linux@prisktech.co.nz> wrote:
+> This driver is missing a .remove callback, and the fail path on
+> probe is incomplete.
+> 
+> If an error occurs in vt8500_add_chips, gpio_base is not unmapped.
+> The driver is also ignoring the return value from this function so
+> if a chip fails to register it completes as successful.
+> 
+> Replaced pr_err with dev_err in vt8500_add_chips since the device is
+> available.
+> 
+> There is also no .remove callback defined. To allow removing the
+> registered chips, I have moved *vtchip to be a static global.
+> 
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> ---
+> v2:
+> Remove global variable and use platform_set_drvdata instead.
+> 
+>  drivers/gpio/gpio-vt8500.c |   51 +++++++++++++++++++++++++++++++++++---------
+>  1 file changed, 41 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-vt8500.c b/drivers/gpio/gpio-vt8500.c
+> index b53320a..87e59b5 100644
+> --- a/drivers/gpio/gpio-vt8500.c
+> +++ b/drivers/gpio/gpio-vt8500.c
+> @@ -233,10 +233,12 @@ static int vt8500_add_chips(struct platform_device *pdev, void __iomem *base,
+>  			sizeof(struct vt8500_gpio_chip) * data->num_banks,
+>  			GFP_KERNEL);
+>  	if (!vtchip) {
+> -		pr_err("%s: failed to allocate chip memory\n", __func__);
+> +		dev_err(&pdev->dev, "failed to allocate chip memory\n");
+>  		return -ENOMEM;
+>  	}
+>  
+> +	platform_set_drvdata(pdev, vtchip);
+> +
+>  	for (i = 0; i < data->num_banks; i++) {
+>  		vtchip[i].base = base;
+>  		vtchip[i].regs = &data->banks[i];
+> @@ -261,6 +263,7 @@ static int vt8500_add_chips(struct platform_device *pdev, void __iomem *base,
+>  
+>  		gpiochip_add(chip);
+>  	}
+> +
+>  	return 0;
+>  }
+>  
 
-I was trying to use the --uid option of perf record but it fails for
-me no matter
-what I tried. Looks like the goal of this option is to measure ALL the processes
-owned by the specified uid. Each process is measured in per-thread mode.
+Watch out; irrelevant whitespace change here. From a maintainer point of
+voiew, I'm less confident about a patch when I see unrelated whitespace
+changes because it suggests that there are things in the patch that you
+don't intend. It helps me out a lot if this stuff gets scrubbed before I
+see it.
 
-However for me it failed on all my attempts when running with 3.8.0-rc3 on
-Ubuntu Quantal.
+> @@ -273,36 +276,64 @@ static struct of_device_id vt8500_gpio_dt_ids[] = {
+>  
+>  static int vt8500_gpio_probe(struct platform_device *pdev)
+>  {
+> +	int ret;
+>  	void __iomem *gpio_base;
+> -	struct device_node *np;
+> +	struct device_node *np = pdev->dev.of_node;
+>  	const struct of_device_id *of_id =
+>  				of_match_device(vt8500_gpio_dt_ids, &pdev->dev);
+>  
+> -	if (!of_id) {
+> -		dev_err(&pdev->dev, "Failed to find gpio controller\n");
+> +	if (!np) {
+> +		dev_err(&pdev->dev, "GPIO node missing in devicetree\n");
+>  		return -ENODEV;
+>  	}
+>  
+> -	np = pdev->dev.of_node;
+> -	if (!np) {
+> -		dev_err(&pdev->dev, "Missing GPIO description in devicetree\n");
+> -		return -EFAULT;
+> +	if (!of_id) {
+> +		dev_err(&pdev->dev, "No matching driver data\n");
+> +		return -ENODEV;
+>  	}
 
-$ perf record --uid=eranian sleep 4
-Error:
-Permission error - are you root?
-Consider tweaking /proc/sys/kernel/perf_event_paranoid:
- -1 - Not paranoid at all
-  0 - Disallow raw tracepoint access for unpriv
-  1 - Disallow cpu events for unpriv
-  2 - Disallow kernel profiling for unpriv
-sleep: Terminated
+Why is this flipped around? I don't see any functional reason for this
+change.
 
-You don't want to be root to run this command.  Should not require
-to measure the processes I own. So the error message is confusing
-here.
+In actual fact, since the driver needs both it only needs to test for
+the of_id. If there is no node, then of_id will never be set.
 
-After some debugging, I came to the conclusion that this command
-fails when it hits the sshd daemon:
+>  
+>  	gpio_base = of_iomap(np, 0);
+>  	if (!gpio_base) {
+>  		dev_err(&pdev->dev, "Unable to map GPIO registers\n");
+> -		of_node_put(np);
+>  		return -ENOMEM;
+>  	}
+>  
+> -	vt8500_add_chips(pdev, gpio_base, of_id->data);
+> +	ret = vt8500_add_chips(pdev, gpio_base, of_id->data);
+> +	if (ret) {
+> +		iounmap(gpio_base);
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int vt8500_gpio_remove(struct platform_device *pdev)
+> +{
+> +	int i;
+> +	int ret;
+> +	const struct vt8500_gpio_data *data;
+> +	struct vt8500_gpio_chip *vtchip = platform_get_drvdata(pdev);
+> +	void __iomem *gpio_base = vtchip[0].base;
+> +	const struct of_device_id *of_id =
+> +				of_match_device(vt8500_gpio_dt_ids, &pdev->dev);
+> +
+> +	data = of_id->data;
+> +
+> +	for (i = 0; i < data->num_banks; i++) {
 
-eranian   2439  0.0  0.0 110424  1968 ?        S    15:07   0:00 sshd:
-eranian@pts/2
-root      2301  0.0  0.0 110424  4420 ?        Ss   15:07   0:00 sshd:
-eranian [priv]
+It would make for simpler code all around if num_banks was cached in the
+vt8500_gpio_chip structure during the .probe() routine. It looks wrong
+to be calling of_match_device() in the remove hook.
 
-I mean the sshd process owned by me. It is owned by me but I cannot attached
-an event to it. I get EACCES and I suspect it's because of missing
-ptrace privilege.
-The sshd binary is obviously not setuid. So there is something else preventing
-ptrace. In fact, even strace -p 2349 fails. Looked online and there
-were a couple
-of mentions to the Yama security model and the ptrace_scope sysctl
-control. I tried
-that and it did not help.
+Otherwise this iteration looks much better.
 
-So looks to me that something is broken somewhere. If the kernel
-restrictions are
-normal, then I think perf record should warn that it has to skip the
-sshd process and
-continue with the other processes owned by me. That  seems more useful than the
-current situation. But I may be missing something here. If so please
-explain to me.
+g.
 
-Thanks.
+> +		ret = gpiochip_remove(&vtchip[i].chip);
+> +		if (ret)
+> +			dev_warn(&pdev->dev, "gpiochip_remove returned %d\n",
+> +				 ret);
+> +	}
+> +
+> +	iounmap(gpio_base);
+>  
+>  	return 0;
+>  }
+>  
+>  static struct platform_driver vt8500_gpio_driver = {
+>  	.probe		= vt8500_gpio_probe,
+> +	.remove		= vt8500_gpio_remove,
+>  	.driver		= {
+>  		.name	= "vt8500-gpio",
+>  		.owner	= THIS_MODULE,
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
