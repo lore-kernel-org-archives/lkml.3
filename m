@@ -1,149 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab3ANOoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:44:00 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:34857 "EHLO mxout2.iskon.hr"
+	id S1756792Ab3ANOpd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:45:33 -0500
+Received: from mga02.intel.com ([134.134.136.20]:46229 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756467Ab3ANOn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:43:59 -0500
-X-Remote-IP: 213.191.128.133
-Date: Mon, 14 Jan 2013 15:43:52 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-X-Spam-Score: ##
-Message-ID: <50F419A8.8000307@iskon.hr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-Subject: [PATCH] mm: don't wait on congested zones in balance_pgdat()
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20130114 #9052380, check: 20130114 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 41460 [Jan 14 2013]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+	id S1756501Ab3ANOpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 09:45:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,468,1355126400"; 
+   d="scan'208";a="246386997"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH 3/3] ACPI: create Lynxpoint clocks if LPSS devices are found during scan
+Date: Mon, 14 Jan 2013 16:46:28 +0200
+Message-Id: <1358174788-24439-4-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1358174788-24439-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1358174788-24439-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Since we don't want to create the Lynxpoint LPSS clock tree on a machines
+where no LPSS exists at all we look for the Lynxpoint device ACPI HIDs
+during ACPI namespace scan and if a known device is seen we assume that it
+is safe to create the LPSS clocks.
 
-Commit 92df3a72 (mm: vmscan: throttle reclaim if encountering too many
-dirty pages under writeback) introduced waiting on congested zones
-based on a sane algorithm in shrink_inactive_list(). What this means
-is that there's no more need for throttling and additional heuristics
-in balance_pgdat(). So, let's remove it and tidy up the code.
+Therefore we allow init function to be passed via acpi_platform_device_ids[]
+table which is called whenever the corresponding device is found.
 
-Signed-off-by: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- include/linux/vm_event_item.h |  1 -
- mm/vmscan.c                   | 29 +----------------------------
- mm/vmstat.c                   |  1 -
- 3 files changed, 1 insertion(+), 30 deletions(-)
+ drivers/acpi/scan.c |   36 +++++++++++++++++++++++++++---------
+ 1 file changed, 27 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index e84a25e..d4b7a18 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -36,7 +36,6 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- #endif
- 		PGINODESTEAL, SLABS_SCANNED, KSWAPD_INODESTEAL,
- 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
--		KSWAPD_SKIP_CONGESTION_WAIT,
- 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
- #ifdef CONFIG_NUMA_BALANCING
- 		NUMA_PTE_UPDATES,
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 32fbfdb..fea5a0b 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2619,7 +2619,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 							int *classzone_idx)
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 6a12702..8d9965e 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -11,6 +11,7 @@
+ #include <linux/kthread.h>
+ #include <linux/dmi.h>
+ #include <linux/nls.h>
++#include <linux/platform_device.h>
+ 
+ #include <acpi/acpi_drivers.h>
+ 
+@@ -29,6 +30,15 @@ extern struct acpi_device *acpi_root;
+ 
+ static const char *dummy_hid = "device";
+ 
++static void lpt_lpss_init_once(void)
++{
++	static struct platform_device *pdev;
++
++	/* Lynxpoint LPSS clocks */
++	if (!pdev)
++		pdev = platform_device_register_simple("clk-lpt", -1, NULL, 0);
++}
++
+ /*
+  * The following ACPI IDs are known to be suitable for representing as
+  * platform devices.
+@@ -38,14 +48,14 @@ static const struct acpi_device_id acpi_platform_device_ids[] = {
+ 	{ "PNP0D40" },
+ 
+ 	/* Haswell LPSS devices */
+-	{ "INT33C0", 0 },
+-	{ "INT33C1", 0 },
+-	{ "INT33C2", 0 },
+-	{ "INT33C3", 0 },
+-	{ "INT33C4", 0 },
+-	{ "INT33C5", 0 },
+-	{ "INT33C6", 0 },
+-	{ "INT33C7", 0 },
++	{ "INT33C0", (kernel_ulong_t)lpt_lpss_init_once },
++	{ "INT33C1", (kernel_ulong_t)lpt_lpss_init_once },
++	{ "INT33C2", (kernel_ulong_t)lpt_lpss_init_once },
++	{ "INT33C3", (kernel_ulong_t)lpt_lpss_init_once },
++	{ "INT33C4", (kernel_ulong_t)lpt_lpss_init_once },
++	{ "INT33C5", (kernel_ulong_t)lpt_lpss_init_once },
++	{ "INT33C6", (kernel_ulong_t)lpt_lpss_init_once },
++	{ "INT33C7", (kernel_ulong_t)lpt_lpss_init_once },
+ 
+ 	{ }
+ };
+@@ -1580,6 +1590,7 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
+ static acpi_status acpi_bus_device_attach(acpi_handle handle, u32 lvl_not_used,
+ 					  void *not_used, void **ret_not_used)
  {
- 	bool pgdat_is_balanced = false;
--	struct zone *unbalanced_zone;
- 	int i;
- 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
- 	unsigned long total_scanned;
-@@ -2650,9 +2649,6 @@ loop_again:
++	const struct acpi_device_id *id;
+ 	acpi_status status = AE_OK;
+ 	struct acpi_device *device;
+ 	unsigned long long sta_not_used;
+@@ -1595,7 +1606,14 @@ static acpi_status acpi_bus_device_attach(acpi_handle handle, u32 lvl_not_used,
+ 	if (acpi_bus_get_device(handle, &device))
+ 		return AE_CTRL_DEPTH;
  
- 	do {
- 		unsigned long lru_pages = 0;
--		int has_under_min_watermark_zone = 0;
--
--		unbalanced_zone = NULL;
- 
- 		/*
- 		 * Scan in the highmem->dma direction for the highest
-@@ -2792,17 +2788,7 @@ loop_again:
- 				continue;
- 			}
- 
--			if (!zone_balanced(zone, testorder, 0, end_zone)) {
--				unbalanced_zone = zone;
--				/*
--				 * We are still under min water mark.  This
--				 * means that we have a GFP_ATOMIC allocation
--				 * failure risk. Hurry up!
--				 */
--				if (!zone_watermark_ok_safe(zone, order,
--					    min_wmark_pages(zone), end_zone, 0))
--					has_under_min_watermark_zone = 1;
--			} else {
-+			if (zone_balanced(zone, testorder, 0, end_zone))
- 				/*
- 				 * If a zone reaches its high watermark,
- 				 * consider it to be no longer congested. It's
-@@ -2811,8 +2797,6 @@ loop_again:
- 				 * speculatively avoid congestion waits
- 				 */
- 				zone_clear_flag(zone, ZONE_CONGESTED);
--			}
--
- 		}
- 
- 		/*
-@@ -2830,17 +2814,6 @@ loop_again:
- 		}
- 
- 		/*
--		 * OK, kswapd is getting into trouble.  Take a nap, then take
--		 * another pass across the zones.
--		 */
--		if (total_scanned && (sc.priority < DEF_PRIORITY - 2)) {
--			if (has_under_min_watermark_zone)
--				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
--			else if (unbalanced_zone)
--				wait_iff_congested(unbalanced_zone, BLK_RW_ASYNC, HZ/10);
--		}
--
--		/*
- 		 * We do this so kswapd doesn't build up large priorities for
- 		 * example when it is freeing in parallel with allocators. It
- 		 * matches the direct reclaim path behaviour in terms of impact
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 58e3da5..bb492b5 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -769,7 +769,6 @@ const char * const vmstat_text[] = {
- 	"kswapd_inodesteal",
- 	"kswapd_low_wmark_hit_quickly",
- 	"kswapd_high_wmark_hit_quickly",
--	"kswapd_skip_congestion_wait",
- 	"pageoutrun",
- 	"allocstall",
- 
+-	if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
++	id = __acpi_match_device(device, acpi_platform_device_ids);
++	if (id) {
++		void (*init)(void) = (void (*)(void))id->driver_data;
++
++		/* Run any initialization if required */
++		if (init)
++			init();
++
+ 		/* This is a known good platform device. */
+ 		acpi_create_platform_device(device);
+ 	} else if (device_attach(&device->dev) < 0) {
 -- 
-1.8.1
+1.7.10.4
 
--- 
-Zlatko
