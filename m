@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab3ANJQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 04:16:17 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:20217 "EHLO song.cn.fujitsu.com"
+	id S1756656Ab3ANJQu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 04:16:50 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:20223 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756590Ab3ANJQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 04:16:14 -0500
+	id S1756607Ab3ANJQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 04:16:16 -0500
 X-IronPort-AV: E=Sophos;i="4.84,466,1355068800"; 
-   d="scan'208";a="6582718"
+   d="scan'208";a="6582721"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: akpm@linux-foundation.org, jiang.liu@huawei.com, wujianguo@huawei.com,
         hpa@zytor.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
@@ -18,54 +18,87 @@ To: akpm@linux-foundation.org, jiang.liu@huawei.com, wujianguo@huawei.com,
         lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
         glommer@parallels.com
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH v5 1/5] x86: get pg_data_t's memory from other node
-Date: Mon, 14 Jan 2013 17:15:21 +0800
-Message-Id: <1358154925-21537-2-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v5 5/5] page_alloc: Bootmem limit with movablecore_map
+Date: Mon, 14 Jan 2013 17:15:25 +0800
+Message-Id: <1358154925-21537-6-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/01/14 17:15:27,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/14 17:15:28,
-	Serialize complete at 2013/01/14 17:15:28
+ 2013/01/14 17:15:29,
+	Serialize complete at 2013/01/14 17:15:29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+This patch make sure bootmem will not allocate memory from areas that
+may be ZONE_MOVABLE. The map info is from movablecore_map boot option.
 
-If system can create movable node which all memory of the
-node is allocated as ZONE_MOVABLE, setup_node_data() cannot
-allocate memory for the node's pg_data_t.
-So, use memblock_alloc_try_nid() instead of memblock_alloc_nid()
-to retry when the first allocation fails.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |   18 +++++++++++++++++-
+ 2 files changed, 18 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 2d125be..db939b6 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -222,10 +222,9 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 		nd_pa = __pa(nd);
- 		remapped = true;
- 	} else {
--		nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
-+		nd_pa = memblock_alloc_try_nid(nd_size, SMP_CACHE_BYTES, nid);
- 		if (!nd_pa) {
--			pr_err("Cannot find %zu bytes in node %d\n",
--			       nd_size, nid);
-+			pr_err("Cannot find %zu bytes in any node\n", nd_size);
- 			return;
- 		}
- 		nd = __va(nd_pa);
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index d452ee1..6e25597 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -42,6 +42,7 @@ struct memblock {
+ 
+ extern struct memblock memblock;
+ extern int memblock_debug;
++extern struct movablecore_map movablecore_map;
+ 
+ #define memblock_dbg(fmt, ...) \
+ 	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 88adc8a..1e48774 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -101,6 +101,7 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ {
+ 	phys_addr_t this_start, this_end, cand;
+ 	u64 i;
++	int curr = movablecore_map.nr_map - 1;
+ 
+ 	/* pump up @end */
+ 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+@@ -114,13 +115,28 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 		this_start = clamp(this_start, start, end);
+ 		this_end = clamp(this_end, start, end);
+ 
+-		if (this_end < size)
++restart:
++		if (this_end <= this_start || this_end < size)
+ 			continue;
+ 
++		for (; curr >= 0; curr--) {
++			if ((movablecore_map.map[curr].start_pfn << PAGE_SHIFT)
++			    < this_end)
++				break;
++		}
++
+ 		cand = round_down(this_end - size, align);
++		if (curr >= 0 &&
++		    cand < movablecore_map.map[curr].end_pfn << PAGE_SHIFT) {
++			this_end = movablecore_map.map[curr].start_pfn
++				   << PAGE_SHIFT;
++			goto restart;
++		}
++
+ 		if (cand >= this_start)
+ 			return cand;
+ 	}
++
+ 	return 0;
+ }
+ 
 -- 
 1.7.1
 
