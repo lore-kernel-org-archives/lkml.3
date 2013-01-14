@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758779Ab3ANU6V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:58:21 -0500
-Received: from mout.gmx.net ([212.227.17.20]:57473 "EHLO mout.gmx.net"
+	id S1758796Ab3ANU6Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:58:25 -0500
+Received: from mout.gmx.net ([212.227.17.21]:52699 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757950Ab3ANU6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:58:19 -0500
+	id S1758782Ab3ANU6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 15:58:23 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19mJ4stHHNmR6h/vAPMTU2y3Dkd4QyJM3KCCH9r9D
-	0hWT/KLcZQbYEA
+X-Provags-ID: V01U2FsdGVkX19dURUf8GVdSRKH8k7zz4dhWHtKz9G3CN3McmTquC
+	rNqOHq2lkpgiSb
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
@@ -17,114 +17,63 @@ Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
         Peter Huewe <peterhuewe@gmx.de>,
         YAMANE Toshiaki <yamanetoshi@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8 v2] staging/comedi: Add macro for registering a comedi PCMCIA driver
-Date: Mon, 14 Jan 2013 22:00:48 +0100
-Message-Id: <1358197255-17542-1-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 3/8] staging/comedi/ni_mio_cs: Convert to module_comedi_pcmcia_driver
+Date: Mon, 14 Jan 2013 22:00:50 +0100
+Message-Id: <1358197255-17542-3-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00207A6CBADD1@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <1358197255-17542-1-git-send-email-peterhuewe@gmx.de>
 References: <ADE657CA350FB648AAC2C43247A983F00207A6CBADD1@AUSP01VMBX24.collaborationhost.net>
+ <1358197255-17542-1-git-send-email-peterhuewe@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a new macro 'module_comedi_pcmcia_driver'
-for comedi PCMCIA drivers which do not do anything special in module
-init/exit. This eliminates a lot of boilerplate.
+This patch removes the boring init/exit functions with the new
+module_comedi_pcmcia_driver macro.
 
-Adapted from 'module_comedi_pci_driver'
+Also removed the superflous #ifdef MODULE
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
-v2:
-Removed unnecessary stuff. Thanks Hartley&Ian
+ drivers/staging/comedi/drivers/ni_mio_cs.c |   20 +-------------------
+ 1 files changed, 1 insertions(+), 19 deletions(-)
 
- drivers/staging/comedi/comedidev.h |   21 +++++++++++++++++++++
- drivers/staging/comedi/drivers.c   |   32 ++++++++++++++++++++++++++++++++
- 2 files changed, 53 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-index 34a85d3..d0248ed 100644
---- a/drivers/staging/comedi/comedidev.h
-+++ b/drivers/staging/comedi/comedidev.h
-@@ -316,6 +316,27 @@ void comedi_pci_driver_unregister(struct comedi_driver *, struct pci_driver *);
- 	module_driver(__comedi_driver, comedi_pci_driver_register, \
- 			comedi_pci_driver_unregister, &(__pci_driver))
- 
-+struct pcmcia_driver;
-+
-+int comedi_pcmcia_driver_register(struct comedi_driver *,
-+					struct pcmcia_driver *);
-+void comedi_pcmcia_driver_unregister(struct comedi_driver *,
-+					struct pcmcia_driver *);
-+
-+/**
-+ * module_comedi_pcmcia_driver() - Helper macro for registering a comedi PCMCIA driver
-+ * @__comedi_driver: comedi_driver struct
-+ * @__pcmcia_driver: pcmcia_driver struct
-+ *
-+ * Helper macro for comedi PCMCIA drivers which do not do anything special
-+ * in module init/exit. This eliminates a lot of boilerplate. Each
-+ * module may only use this macro once, and calling it replaces
-+ * module_init() and module_exit()
-+ */
-+#define module_comedi_pcmcia_driver(__comedi_driver, __pcmcia_driver) \
-+	module_driver(__comedi_driver, comedi_pcmcia_driver_register, \
-+			comedi_pcmcia_driver_unregister, &(__pcmcia_driver))
-+
- struct usb_driver;
- 
- int comedi_usb_driver_register(struct comedi_driver *, struct usb_driver *);
-diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-index b67a0c9..bd9c678 100644
---- a/drivers/staging/comedi/drivers.c
-+++ b/drivers/staging/comedi/drivers.c
-@@ -24,6 +24,8 @@
- #include <linux/device.h>
- #include <linux/module.h>
- #include <linux/pci.h>
-+#include <pcmcia/cistpl.h>
-+#include <pcmcia/ds.h>
- #include <linux/usb.h>
- #include <linux/errno.h>
- #include <linux/kconfig.h>
-@@ -954,6 +956,36 @@ void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
+diff --git a/drivers/staging/comedi/drivers/ni_mio_cs.c b/drivers/staging/comedi/drivers/ni_mio_cs.c
+index 76c6a13..b5c5d58 100644
+--- a/drivers/staging/comedi/drivers/ni_mio_cs.c
++++ b/drivers/staging/comedi/drivers/ni_mio_cs.c
+@@ -408,8 +408,6 @@ static int ni_getboardtype(struct comedi_device *dev,
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(comedi_pci_driver_unregister);
  
-+#if IS_ENABLED(CONFIG_PCMCIA)
-+int comedi_pcmcia_driver_register(struct comedi_driver *comedi_driver,
-+		struct pcmcia_driver *pcmcia_driver)
-+{
-+	int ret;
-+
-+	ret = comedi_driver_register(comedi_driver);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = pcmcia_register_driver(pcmcia_driver);
-+	if (ret < 0) {
-+		comedi_driver_unregister(comedi_driver);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_register);
-+
-+void comedi_pcmcia_driver_unregister(struct comedi_driver *comedi_driver,
-+		struct pcmcia_driver *pcmcia_driver)
-+{
-+	pcmcia_unregister_driver(pcmcia_driver);
-+	comedi_driver_unregister(comedi_driver);
-+}
-+EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_unregister);
-+
-+#endif
-+
- #if IS_ENABLED(CONFIG_USB)
+-#ifdef MODULE
+-
+ static const struct pcmcia_device_id ni_mio_cs_ids[] = {
+ 	PCMCIA_DEVICE_MANF_CARD(0x010b, 0x010d),	/* DAQCard-ai-16xe-50 */
+ 	PCMCIA_DEVICE_MANF_CARD(0x010b, 0x010c),	/* DAQCard-ai-16e-4 */
+@@ -434,20 +432,4 @@ static struct pcmcia_driver ni_mio_cs_driver = {
+ 	.name = "ni_mio_cs",
+ };
  
- int comedi_usb_driver_register(struct comedi_driver *comedi_driver,
+-int init_module(void)
+-{
+-	pcmcia_register_driver(&ni_mio_cs_driver);
+-	comedi_driver_register(&driver_ni_mio_cs);
+-	return 0;
+-}
+-
+-void cleanup_module(void)
+-{
+-	pcmcia_unregister_driver(&ni_mio_cs_driver);
+-#if 0
+-	while (cur_dev != NULL)
+-		cs_detach(cur_dev->handle);
+-#endif
+-	comedi_driver_unregister(&driver_ni_mio_cs);
+-}
+-#endif
++module_comedi_pcmcia_driver(driver_ni_mio_cs, ni_mio_cs_driver);
 -- 
 1.7.8.6
 
