@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab3ANULe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:11:34 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:36751 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757308Ab3ANULd (ORCPT
+	id S1758651Ab3ANUMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:12:19 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:33198 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756282Ab3ANUMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:11:33 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] spi: erase pointer to drvdata on removal
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-In-Reply-To: <20130114025145.GC4928@sirena.org.uk>
-References: <1351793136-14126-1-git-send-email-vivien.didelot@savoirfairelinux.com> <20130114025145.GC4928@sirena.org.uk>
-Date: Mon, 14 Jan 2013 20:11:28 +0000
-Message-Id: <20130114201128.ECDD13E249D@localhost>
+	Mon, 14 Jan 2013 15:12:18 -0500
+Date: Mon, 14 Jan 2013 15:12:14 -0500 (EST)
+Message-Id: <20130114.151214.1296751187134652417.davem@davemloft.net>
+To: florian@openwrt.org
+Cc: netdev@vger.kernel.org, konszert@marvell.com, afleming@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] net: phy: remove flags argument from
+ phy_{attach,connect,connect_direct}
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1358160772-29631-1-git-send-email-florian@openwrt.org>
+References: <1358160772-29631-1-git-send-email-florian@openwrt.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013 02:51:45 +0000, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Nov 01, 2012 at 02:05:36PM -0400, Vivien Didelot wrote:
-> > As for i2c-core, let the SPI core handle the removal of the device's
-> > drvdata, after a remove() or a probe() failure.
+From: Florian Fainelli <florian@openwrt.org>
+Date: Mon, 14 Jan 2013 11:52:52 +0100
+
+> The flags argument of the phy_{attach,connect,connect_direct} functions
+> is then used to assign a struct phy_device dev_flags with its value.
+> All callers but the tg3 driver pass the flag 0, which results in the
+> underlying PHY drivers in drivers/net/phy/ not being able to actually
+> use any of the flags they would set in dev_flags. This patch gets rid of
+> the flags argument, and passes phydev->dev_flags to the internal PHY
+> library call phy_attach_direct() such that drivers which actually modify
+> a phy device dev_flags get the value preserved for use by the underlying
+> phy driver.
 > 
-> Any driver that notices this change is buggy, the driver shouldn't
-> use a drvdata value that it didn't set.  I had thought this stuff had
-> all been removed from I2C and either dropped or factored out into the
-> driver core...
+> Acked-by: Kosta Zertsekel <konszert@marvell.com>
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
 
-Looks to me like __device_release_driver() in drivers/base/dd.c already
-does this.
-
-g.
-
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Applied, thanks.
