@@ -1,111 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab3ANXui (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 18:50:38 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:35116 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755811Ab3ANXuh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 18:50:37 -0500
+	id S1757457Ab3ANXuv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 18:50:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60011 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755811Ab3ANXus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 18:50:48 -0500
+Message-ID: <50F499BA.4090403@zytor.com>
+Date: Mon, 14 Jan 2013 15:50:18 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAFp+6iF4Q2uUzJKf8d-jMZoxBcVzxBAxLyKDqF4B8=p+_JYuCQ@mail.gmail.com>
-References: <1355841786-13307-1-git-send-email-gautam.vivek@samsung.com>
-	<1355841786-13307-3-git-send-email-gautam.vivek@samsung.com>
-	<CAD=FV=WMjqszsTQja82_uZc4Ue50TfTmSNO2yOhSMCX1w1L5Dg@mail.gmail.com>
-	<CAFp+6iHYRRS3uSWnmdqBvfOgUDKKJUzMvqoj1HP2uXS=Fdaifg@mail.gmail.com>
-	<CAD=FV=XhMbWjCR5r=R3+zE1524NuUUvFDf2HZuCrXPmsei4BNA@mail.gmail.com>
-	<CAFp+6iHFw2orVOxxzb+daQJsA46zUk2ZOA=h6QwGAme18JngXw@mail.gmail.com>
-	<CAFp+6iF4Q2uUzJKf8d-jMZoxBcVzxBAxLyKDqF4B8=p+_JYuCQ@mail.gmail.com>
-Date: Mon, 14 Jan 2013 15:45:30 -0800
-Message-ID: <CAD=FV=Vxo8D+W_=m1+ODEarMXgCgcT0cSs3KekTkGyvVVANyMA@mail.gmail.com>
-Subject: Re: [PATCH v5 2/4] usb: phy: samsung: Add host phy support to
- samsung-phy driver
-From: Doug Anderson <dianders@chromium.org>
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        yulgon.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
-        Praveen Paneri <p.paneri@samsung.com>, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org, jg1.han@samsung.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        balbi@ti.com, kishon@ti.com, Kukjin Kim <kgene.kim@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7u1 00/31] x86, boot, 64bit: Add support for loading
+ ramdisk and bzImage above 4G
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>  <50F46E77.4070500@zytor.com>  <CAE9FiQVajL=XE7q5KckN6JQZJi2gvbnB1EDadfW6MFW37OoKWQ@mail.gmail.com>  <50F491E2.8090907@zytor.com> <1358206790.2397.13.camel@shinybook.infradead.org>
+In-Reply-To: <1358206790.2397.13.camel@shinybook.infradead.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek,
+On 01/14/2013 03:39 PM, David Woodhouse wrote:
+> On Mon, 2013-01-14 at 15:16 -0800, H. Peter Anvin wrote:
+>> The reason I want to do this this way is that I want to also make
+>> David Woodhouse's protocol fixes to make the EFI stub work correctly
+>> at the same time, so we get a single protocol level bump. 
+> 
+> My changes don't need a protocol level bump. It's just two new bits in
+> load_flags that old loaders won't care about.
+> 
 
+I'm wondering if we should put your new flags in xloadflags instead just
+because some boot loaders have been known to clobber the loadflags when
+setting the upper bits.  In theory it shouldn't matter... I'm wondering
+if it does in practice.  The other bit is that Yinghai's changes want
+even more flags.
 
-On Mon, Jan 14, 2013 at 12:06 AM, Vivek Gautam
-<gautamvivek1987@gmail.com> wrote:
->> Is it fine if we don't use macro for SHIFT, earlier code also doesn't use it.
->> Can we just do like this ..
->> #define HOST_CTRL0_FSEL_MASK                       (0x7 << 16)
->> #define HOST_CTRL0_FSEL_CLKSEL_50M            (0x7 << 16)
->> #define HOST_CTRL0_FSEL_CLKSEL_24M            (0x5 << 16)
->> #define HOST_CTRL0_FSEL_CLKSEL_20M            (0x4 << 16)
->> #define HOST_CTRL0_FSEL_CLKSEL_19200K       (0x3 << 16)
->> #define HOST_CTRL0_FSEL_CLKSEL_12M            (0x2 << 16)
->> #define HOST_CTRL0_FSEL_CLKSEL_10M            (0x1 << 16)
->> #define HOST_CTRL0_FSEL_CLKSEL_9600K         (0x0 << 16)
+Either way might as well see if we can do it as closely adjacently as
+possible (but no, I don't want to drag this out.)
 
-I don't have a problem with just putting the << 16 there...
+	-hpa
 
-> Actually missed one thing here, this "HOST_CTRL0_FSEL_CLKSEL_XX" is
-> being used by
-> HOST/OTG blocks to prepare reference clock, that's the reason we kept
->             #define HOST_CTRL0_FSEL(_x)                  ((_x) << 16)
-> and       #define OTG_SYS_FSEL(_x)                       ((_x) << 4)
-> where (_x) is the reference clock returned from
-> samsung_usbphy_get_refclk_freq().
-
-I feel like samsung_usbphy_get_refclk_freq() is supposed to be
-returning an already shifted value.  ...at least that's how it appears
-to work with existing code.  Why does it feel like that?  ...because
-with existing code we have:
-
-#define PHYCLK_CLKSEL_MASK (0x3 << 0)
-#define PHYCLK_CLKSEL_48M (0x0 << 0)
-#define PHYCLK_CLKSEL_12M (0x2 << 0)
-#define PHYCLK_CLKSEL_24M (0x3 << 0)
-
-Those #defines are what are returned by
-samsung_usbphy_get_refclk_freq().  The fact that the "<< 0" is there
-implies (to me) that the existing function would return shifted values
-if it were applicable.
-
-For exynos you are having the same function return things like:
-
-#define FSEL_CLKSEL_50M (0x7)
-#define FSEL_CLKSEL_24M (0x5)
-#define FSEL_CLKSEL_20M (0x4)
-
-...to me that means that the exynos code is returning unshifted values.
-
-
-If you say that samsung_usbphy_get_refclk_freq() is in charge of
-returning shifted values then you no longer need the HOST_CTRL0_FSEL()
-macro.
-
-
-In any case, I will defer to whatever Felipe thinks is best here (if
-he has an opinion on it).  I am only pointing out that the exynos code
-and existing code seem to be specifying things differently.  That's
-weird to me.
-
-
-> so we can change this to something like
->
->                            case 10 * MHZ:
->                                      refclk_freq = FSEL_CLKSEL_10M;
->                                      break;
-> and so on.
-> will this be fine ?
-
-Seems good to me.
-
-
--Doug
