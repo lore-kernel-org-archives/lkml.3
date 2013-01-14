@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758859Ab3ANVO5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 16:14:57 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:45161 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757605Ab3ANVO4 (ORCPT
+	id S1758876Ab3ANVR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 16:17:27 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:45473 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758796Ab3ANVR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 16:14:56 -0500
-X-Greylist: delayed 494 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jan 2013 16:14:56 EST
-Date: Mon, 14 Jan 2013 21:06:37 +0000
-From: James Hogan <james@albanarts.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] NULL pointer dereference in udf_sb_free_partitions
-Message-ID: <20130114210637.GA2122@balrog>
-References: <20130112220015.GA2387@balrog>
- <CAKYAXd_zYTfaCw445Cc2uCbry=w9nLKBgivOc2M5chK7o_rE=Q@mail.gmail.com>
+	Mon, 14 Jan 2013 16:17:26 -0500
+Message-ID: <50F475E3.5060409@gmail.com>
+Date: Mon, 14 Jan 2013 15:17:23 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKYAXd_zYTfaCw445Cc2uCbry=w9nLKBgivOc2M5chK7o_rE=Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: [GIT PULL] DeviceTree fixes for 3.8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linus,
 
-On Mon, Jan 14, 2013 at 02:19:39PM +0900, Namjae Jeon wrote:
-> There is missing exception handling in memory leak patch. (udf: Fix
-> memory leak when mounting)
-> So, Would you try to reproduce this problem with the below patch ?
-> 
-> Thanks.
-> 
-> ---------------------------------------------------------------------------
-> Subject: [PATCH] UDF: Fix a null pointer dereference in udf_sb_free_partitions
-> 
-> This patch fixes a regression caused by commit bff943af6fe
-> "udf: Fix memory leak when mounting" due to which it was triggering
-> a kernel null point dereference in case of mount failed OR when allocating
-> memory to sbi->s_partmaps failed in function udf_sb_alloc_partition_maps.
-> 
-> Reported-by: James Hogan <james@albanarts.com>
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+Please pull these 2 small fixes for DT. The move to common dtb build rules
+went in through the DT tree, so I'm taking the fixes too.
 
-v3.8-rc3 + your patch no longer crashes.
+Rob
 
-Tested-by: James Hogan <james@albanarts.com>
+The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
 
-Thanks
-James
+  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
+
+are available in the git repository at:
+
+  git://sources.calxeda.com/kernel/linux.git tags/dt-fixes-for-3.8
+
+for you to fetch changes up to 1ab3681271c84b7f926be9ae3be1d769b7e933e9:
+
+  ARM: dts: prevent *.dtb from always being rebuilt (2013-01-14 08:08:31 -0600)
+
+----------------------------------------------------------------
+DeviceTree fixes for 3.8
+
+2 fixes to prevent unconditional re-compile of dts files on arm and arm64.
+
+----------------------------------------------------------------
+Stephen Warren (2):
+      arm64: dts: prevent *.dtb from always being rebuilt
+      ARM: dts: prevent *.dtb from always being rebuilt
+
+ arch/arm/boot/dts/Makefile   |    1 +
+ arch/arm64/boot/dts/Makefile |    1 +
+ 2 files changed, 2 insertions(+)
