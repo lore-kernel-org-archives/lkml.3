@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab3ANOCd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:02:33 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37014 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756175Ab3ANOCc (ORCPT
+	id S1756918Ab3ANOCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:02:51 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:62348 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756175Ab3ANOCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:02:32 -0500
-Date: Mon, 14 Jan 2013 15:02:28 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, chavey@google.com, fengguang.wu@intel.com
-Subject: Re: [PATCHSET] block: improve tracepoints, take#2
-Message-ID: <20130114140227.GB2441@kernel.dk>
-References: <1357938397-5413-1-git-send-email-tj@kernel.org>
+	Mon, 14 Jan 2013 09:02:49 -0500
+Date: Mon, 14 Jan 2013 15:02:45 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, jolsa@redhat.com, acme@redhat.com, mingo@elte.hu,
+        namhyung.kim@lge.com
+Subject: [PATCH] perf tools: mark branch_info maps as referenced
+Message-ID: <20130114140245.GA4692@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1357938397-5413-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11 2013, Tejun Heo wrote:
-> drivers
-> triggering them manually and adds more buffer / block / writeback TPs.
-> These improve visibility in general and are already in use in google.
-> 
-> This patchset contains the following five patches.
-> 
-> 0001-block-add-missing-block_bio_complete-tracepoint.patch
-> 0002-block-add-req-to-bio_-front-back-_merge-tracepoints.patch
-> 0003-buffer-make-touch_buffer-an-exported-function.patch
-> 0004-block-add-block_-touch-dirty-_buffer-tracepoint.patch
-> 0005-writeback-add-more-tracepoints.patch
-> 
-> It's based on top of v3.8-rc2 and also available in the following git
-> branch.
 
-Applied (with Jan's review on the writeback side). Since we now have
-buffer dirtying in the proper traces, it'd be really nice to deprecate
-the ancient block_dump and phase it out of the tree...
+As noticed by Jiri, the hist_entry->branch_info.to/from maps
+need to be marked as referenced to avoid problems later on.
+So we do this when the hist_entry is allocated.
 
--- 
-Jens Axboe
+Signed-off-by: Stephane Eranian <eranian@google.com>
+--
 
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index cb17e2a..ab35b82 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -242,6 +242,14 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ 
+ 		if (he->ms.map)
+ 			he->ms.map->referenced = true;
++
++		if (he->branch_info) {
++			if (he->branch_info->from.map)
++				he->branch_info->from.map->referenced = true;
++			if (he->branch_info->to.map)
++				he->branch_info->to.map->referenced = true;
++		}
++
+ 		if (symbol_conf.use_callchain)
+ 			callchain_init(he->callchain);
+ 
