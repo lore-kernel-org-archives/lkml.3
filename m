@@ -1,136 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab3ANSNf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:13:35 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:59142 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756718Ab3ANSNd (ORCPT
+	id S1757231Ab3ANSQH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:16:07 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:51737 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757065Ab3ANSQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:13:33 -0500
-Date: Mon, 14 Jan 2013 13:13:32 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Aaron Lu <aaron.lu@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
-        Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v6 3/4] block: implement runtime pm strategy
-In-Reply-To: <20130114030302.GA15280@aaronlu.sh.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1301141306560.1782-100000@iolanthe.rowland.org>
+	Mon, 14 Jan 2013 13:16:05 -0500
+Date: Mon, 14 Jan 2013 10:16:05 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <john.stultz@linaro.org>, arm@kernel.org
+Subject: Re: [PATCH v2 0/3] Use helper clockevents_config_and_register()
+Message-ID: <20130114181605.GB31901@quad.lixom.net>
+References: <1357991406-22778-1-git-send-email-shawn.guo@linaro.org>
+ <201301122114.07278.arnd@arndb.de>
+ <alpine.LFD.2.02.1301141222130.7475@ionos>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1301141222130.7475@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013, Aaron Lu wrote:
-
-> On Tue, Jan 08, 2013 at 10:22:45AM -0500, Alan Stern wrote:
-> > Just as importantly, all of the public routines added in patch 2/4 to
-> > blk-core.c should have kerneldoc explaining how and where to use them.  
-> > In particular, the kerneldoc for blk_pm_runtime_init() has to mention
-> > that the block runtime PM implementation works only for drivers that
-> > use request structures for their I/O; it doesn't work for drivers that
-> > use bio's directly.
+On Mon, Jan 14, 2013 at 12:23:16PM +0100, Thomas Gleixner wrote:
+> On Sat, 12 Jan 2013, Arnd Bergmann wrote:
+> > On Saturday 12 January 2013, Shawn Guo wrote:
+> > > The clockevent core is able to figure out the best mult and shift,
+> > > calculate min_delta_ns and max_delta_ns, with the necessary info passed
+> > > into clockevents_config_and_register().  Use this handy helper to make
+> > > the drivers less error prone and save some LOC.
+> > > 
+> > > Changes since v1:
+> > >  - Add one patch to export clockevents_config_and_register for fixing
+> > >    the error [1] reported by Fengguang.
+> > >  - Add Acked-by and Tested-by tags given by people (Thanks!)
+> > > 
+> > > [1] http://thread.gmane.org/gmane.linux.ports.arm.kernel/209152
+> > 
+> > Very nice series!
+> > 
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
 > 
-> How about the following description for them?
-
-Overall this is very good.
-
-> /**
->  * blk_pm_runtime_init - Block layer runtime PM initialization routine
->  * @q: the queue of the device
->  * @dev: the device the queue belongs to
->  *
->  * Description:
->  *    Initialize runtime PM related fields for @q and start auto suspend
->  *    for @dev. Drivers that want to take advantage of request based runtime
->  *    PM should call this function after @dev has been initialized, and its
->  *    request queue @q has been allocated, and runtime PM for it is not
->  *    ready yet(either disabled/forbidden or its usage count >= 0).
->  *
->  *    The block layer runtime PM is request based, so only works for drivers
->  *    that use request as their IO unit instead of those directly use bio's.
->  */
+> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 > 
-> /**
->  * blk_pre_runtime_suspend - Pre runtime suspend check
->  * @q: the queue of the device
->  *
->  * Description:
->  *    This function will check if runtime suspend is allowed for the device
->  *    by examining if there are any requests pending in the queue. If there
->  *    are requests pending, the device can not be runtime suspended; otherwise,
->  *    the queue's status will be updated to SUSPENDING and the driver can
->  *    proceed to suspend the device.
->  *
->  *    For the not allowed case, we mark last busy for the device so that
->  *    runtime PM core will try to autosuspend it some time later.
->  *
->  *    This function should be called in the device's runtime suspend callback,
->  *    before its runtime suspend function is called.
+> Arnd, can you take the whole lot via the ARM tree? The export should
+> not cause any conflicts, and if it does Linus should be able to solve
+> it :)
 
-This doesn't quite make sense, because the runtime_suspend callback 
-_is_ the runtime-suspend function.  How about "... should be called 
-near the start of the device's runtime_suspend callback."?
+(with the presumed s/Arnd/Arnd or Olof/)
 
-A similar comment applies to the other functions.
+Great! I've applied these to a clockevent/cleanup topic branch in arm-soc,
+together with the added acks, etc.
 
->  *
->  * Return:
->  *    0		- OK to runtime suspend the device
->  *    -EBUSY	- Device should not be runtime suspended
->  */
-> 
-> /**
->  * blk_post_runtime_suspend - Post runtime suspend processing
->  * @q: the queue of the device
->  * @err: return value of the device's runtime suspend function
->  *
->  * Description:
->  *    Update the queue's runtime status according to the return value of the
->  *    device's runtime suspend function.
->  *
->  *    This function should be called in the device's runtime suspend callback,
->  *    after its runtime suspend function is called.
->  */
-> 
-> /**
->  * blk_pre_runtime_resume - Pre runtime resume processing
->  * @q: the queue of the device
->  *
->  * Description:
->  *    Update the queue's runtime status to RESUMING in preparation for the
->  *    runtime resume of the device.
->  *
->  *    This function should be called in the device's runtime resume callback,
->  *    before its runtime resume function is called.
->  */
-> 
-> /**
->  * blk_post_runtime_resume - Post runtime resume processing
->  * @q: the queue of the device
->  * @err: return value of the device's runtime resume function
->  *
->  * Description:
->  *    Update the queue's runtime status according to the return value of the
->  *    device's runtime resume function. If it is successfully resumed, process
->  *    the requests that are queued into the device's queue when it is resuming
->  *    and then mark last busy and initiate autosuspend for it.
->  *
->  *    This function should be called in the device's runtime resume callback,
->  *    after its runtime resume function is called.
->  */
-> 
-> Please feel free to suggest, thanks.
 
-I would hypenate some of these words, such as "runtime-PM-related
-fields" or "request-based runtime PM".  Also, "runtime_suspend" and 
-"runtime_resume" generally should have either a '_' or a '-'.
-
-But that's a very minor point; your descriptions are quite good.
-
-Alan Stern
-
+-Olof
