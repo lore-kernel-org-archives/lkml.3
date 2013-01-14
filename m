@@ -1,43 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab3ANIIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 03:08:21 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:56668 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755778Ab3ANIIV convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Mon, 14 Jan 2013 03:08:21 -0500
-Message-Id: <50F3CAFD02000078000B52BE@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Mon, 14 Jan 2013 08:08:13 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <linux@rainbow-software.org>
-Cc: <dmitry.torokhov@gmail.com>, <hpa@linux.intel.com>,
-        "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>
-Subject: your patch "x86, 8042: Enable A20 using KBC to fix S3 resume
- on some MSI laptops"
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756112Ab3ANIKV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 03:10:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:33965 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841Ab3ANIKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 03:10:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,466,1355126400"; 
+   d="scan'208";a="271656540"
+Message-ID: <50F3BDA9.4040801@intel.com>
+Date: Mon, 14 Jan 2013 16:11:21 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 14/22] sched: add sched_policy and it's sysfs interface
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-15-git-send-email-alex.shi@intel.com> <87y5fwntlq.fsf@sejong.aot.lge.com>
+In-Reply-To: <87y5fwntlq.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ondrej,
+On 01/14/2013 02:53 PM, Namhyung Kim wrote:
+> Hi Alex,
+> 
+> Just a few nitpickings..
 
-I see two problems with this patch: For one, on a system without
-i8042 the code at the place it got inserted ought to incur a stall of
-1s (50us * I8042_CTL_TIMEOUT [10000] * 2). I believe that this
-code should not be run before i8042_controller_check() completed
-successfully, but at the very least the second call to
-i8042_command() should be conditional upon the first being
-successful (effectively halving the stall).
+Got it. Thanks a lot!
+> 
+> 
+> On Sat,  5 Jan 2013 16:37:43 +0800, Alex Shi wrote:
+>> This patch add the power aware scheduler knob into sysfs:
+>>
+>> $cat /sys/devices/system/cpu/sched_policy/available_sched_policy
+>> performance powersaving balance
+>> $cat /sys/devices/system/cpu/sched_policy/current_sched_policy
+>> powersaving
+>>
+>> This means the using sched policy is 'powersaving'.
+>>
+>> User can change the policy by commend 'echo':
+>>  echo performance > /sys/devices/system/cpu/current_sched_policy
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> ---
+>>  Documentation/ABI/testing/sysfs-devices-system-cpu | 24 +++++++
+>>  kernel/sched/fair.c                                | 76 ++++++++++++++++++++++
+>>  2 files changed, 100 insertions(+)
+>>
+>> diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
+>> index 6943133..9c9acbf 100644
+>> --- a/Documentation/ABI/testing/sysfs-devices-system-cpu
+>> +++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
+>> @@ -53,6 +53,30 @@ Description:	Dynamic addition and removal of CPU's.  This is not hotplug
+>>  		the system.  Information writtento the file to remove CPU's
+>>  		is architecture specific.
+>>  
+>> +What:		/sys/devices/system/cpu/sched_policy/current_sched_policy
+>> +		/sys/devices/system/cpu/sched_policy/available_sched_policy
+>> +Date:		Oct 2012
+>> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
+>> +Description:	CFS scheduler policy showing and setting interface.
+>> +
+>> +		available_sched_policy shows there are 3 kinds of policy now:
+>> +		performance, balance and powersaving.
+>> +		current_sched_policy shows current scheduler policy. And user
+>> +		can change the policy by writing it.
+>> +
+>> +		Policy decides that CFS scheduler how to distribute tasks onto
+>> +		which CPU unit when tasks number less than LCPU number in system
+>> +
+>> +		performance: try to spread tasks onto more CPU sockets,
+>> +		more CPU cores.
+>> +
+>> +		powersaving: try to shrink tasks onto same core or same CPU
+>> +		until every LCPUs are busy.
+>> +
+>> +		balance:     try to shrink tasks onto same core or same CPU
+>> +		until full powered CPUs are busy. This policy also consider
+>> +		system performance when try to save power.
+>> +
+>>  What:		/sys/devices/system/cpu/cpu#/node
+>>  Date:		October 2009
+>>  Contact:	Linux memory management mailing list <linux-mm@kvack.org>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index f24aca6..ee015b8 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -6102,6 +6102,82 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
+>>  
+>>  /* The default scheduler policy is 'performance'. */
+>>  int __read_mostly sched_policy = SCHED_POLICY_PERFORMANCE;
+>> +
+>> +#ifdef CONFIG_SYSFS
+>> +static ssize_t show_available_sched_policy(struct device *dev,
+>> +		struct device_attribute *attr,
+>> +		char *buf)
+> 
+> This line can be combined to the above line.
+> 
+> 
+>> +{
+>> +	return sprintf(buf, "performance balance powersaving\n");
+>> +}
+>> +
+>> +static ssize_t show_current_sched_policy(struct device *dev,
+>> +		struct device_attribute *attr,
+>> +		char *buf)
+> 
+> Ditto.
+> 
+> 
+>> +{
+>> +	if (sched_policy == SCHED_POLICY_PERFORMANCE)
+>> +		return sprintf(buf, "performance\n");
+>> +	else if (sched_policy == SCHED_POLICY_POWERSAVING)
+>> +		return sprintf(buf, "powersaving\n");
+>> +	else if (sched_policy == SCHED_POLICY_BALANCE)
+>> +		return sprintf(buf, "balance\n");
+>> +	return 0;
+>> +}
+>> +
+>> +static ssize_t set_sched_policy(struct device *dev,
+>> +		struct device_attribute *attr, const char *buf, size_t count)
+>> +{
+>> +	unsigned int ret = -EINVAL;
+>> +	char    str_policy[16];
+>> +
+>> +	ret = sscanf(buf, "%15s", str_policy);
+>> +	if (ret != 1)
+>> +		return -EINVAL;
+>> +
+>> +	if (!strcmp(str_policy, "performance"))
+>> +		sched_policy = SCHED_POLICY_PERFORMANCE;
+>> +	else if (!strcmp(str_policy, "powersaving"))
+>> +		sched_policy = SCHED_POLICY_POWERSAVING;
+>> +	else if (!strcmp(str_policy, "balance"))
+>> +		sched_policy = SCHED_POLICY_BALANCE;
+>> +	else
+>> +		return -EINVAL;
+>> +
+>> +	return count;
+>> +}
+>> +
+>> +/*
+>> + *  * Sysfs setup bits:
+>> + *   */
+> 
+> Unneeded asterisks.
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+>> +static DEVICE_ATTR(current_sched_policy, 0644, show_current_sched_policy,
+>> +						set_sched_policy);
+>> +
+>> +static DEVICE_ATTR(available_sched_policy, 0444,
+>> +		show_available_sched_policy, NULL);
+>> +
+>> +static struct attribute *sched_policy_default_attrs[] = {
+>> +	&dev_attr_current_sched_policy.attr,
+>> +	&dev_attr_available_sched_policy.attr,
+>> +	NULL
+>> +};
+>> +static struct attribute_group sched_policy_attr_group = {
+>> +	.attrs = sched_policy_default_attrs,
+>> +	.name = "sched_policy",
+>> +};
+>> +
+>> +int __init create_sysfs_sched_policy_group(struct device *dev)
+>> +{
+>> +	return sysfs_create_group(&dev->kobj, &sched_policy_attr_group);
+>> +}
+>> +
+>> +static int __init sched_policy_sysfs_init(void)
+>> +{
+>> +	return create_sysfs_sched_policy_group(cpu_subsys.dev_root);
+>> +}
+>> +
+>> +core_initcall(sched_policy_sysfs_init);
+>> +#endif /* CONFIG_SYSFS */
+>> +
+>>  /*
+>>   * All the scheduling class methods:
+>>   */
 
-Second, considering that enabling A20 (even if just in a fake way),
-is a core system operation, I don't think it belongs into a driver
-that is only optionally present in the kernel.
 
-Jan
-
+-- 
+Thanks Alex
