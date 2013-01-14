@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758500Ab3ANWYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 17:24:37 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:52256 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757847Ab3ANWYe (ORCPT
+	id S1757715Ab3ANW0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 17:26:11 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:35397 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757144Ab3ANW0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 17:24:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource allocation
-Date: Mon, 14 Jan 2013 22:24:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, swarren@nvidia.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
-References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com> <20130114161644.GC14721@kroah.com> <20130114221551.GA30020@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20130114221551.GA30020@avionic-0098.adnet.avionic-design.de>
+	Mon, 14 Jan 2013 17:26:10 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301142224.11243.arnd@arndb.de>
-X-Provags-ID: V02:K0:560sYHfWkzGxl9duWKixdNsUlE3pw6vEzWxRmXSHBNc
- biLASvLsG8MwxwDIROdHfYSjZumsSXwotoHaMf9OxWve7e9GvF
- DZaBHOOgLE1pNbXZmOeowAqbm2PA1kWX8OfvdW0gVCvunk3iN6
- ZxtmearN4XazJWRKqP2NBvRCJhyCRqWxcHooEuxD1RI1xvoCWq
- DesFismfDA9dP0U3zmPCWhvJuCmVso/JhhQ8Bpa0utfABFwQwa
- ttB/+P7t3hZodVHNXRpoySigNmnADO7YG3NeRyNX25S6fzdG/g
- rpOQlZcVcMK24suDRVzAlrqGKBvKcIU25p/iyzhJv1q7QqWLzk
- 0ZlWdYd5kE0FK8dgNlcQ=
+In-Reply-To: <1355995215-6273-1-git-send-email-linus.walleij@stericsson.com>
+References: <1355995215-6273-1-git-send-email-linus.walleij@stericsson.com>
+Date: Mon, 14 Jan 2013 23:26:09 +0100
+Message-ID: <CACRpkdaV3VvhkOQ1Byvqc23oiONddcLVtKnRQbEA9q0U0YW4cg@mail.gmail.com>
+Subject: Re: [PATCH v2] mfd: db8500-prcmu: fix irqdomain usage
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Anmar Oueja <anmar.oueja@linaro.org>,
+        stable@kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 January 2013, Thierry Reding wrote:
-> It certainly sounds like a less complicated way to do it. But it also
-> involves adding a function with a made up name and drop a function with
-> a perfectly good name instead. I wouldn't even know what name to choose
-> for the new API.
-> 
+On Thu, Dec 20, 2012 at 10:20 AM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
 
-How about devm_ioremap_resource()? Sounds equally fitting, and is shorter.
+> From: Linus Walleij <linus.walleij@linaro.org>
+>
+> This fixes two issues with the DB8500 PRCMU irqdomain:
+> - You have to state the irq base 0 to get a linear domain
+>   for the DT case from irq_domain_add_simple()
+> - The irqdomain was not used to translate the initial irq
+>   request using irq_create_mapping() making the linear
+>   case fail as it was lacking a proper descriptor.
+>
+> I took this opportunity to fix two lines of whitespace
+> errors in related code as I was anyway messing around with
+> it.
+>
+> Cc: stable@kernel.org
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-	Arnd
+Sam, this regression fix has been around for a month soon,
+could you please apply it if there are no problems with it?
+
+Yours,
+Linus Walleij
