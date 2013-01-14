@@ -1,132 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856Ab3ANMBi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 07:01:38 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:48916 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755623Ab3ANMBh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 07:01:37 -0500
-Date: Mon, 14 Jan 2013 12:01:39 +0000
-From: Morten Rasmussen <Morten.Rasmussen@arm.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 11/22] sched: consider runnable load average in
- effective_load
-Message-ID: <20130114120138.GJ2046@e103034-lin>
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
- <1357375071-11793-12-git-send-email-alex.shi@intel.com>
- <20130110112817.GD2046@e103034-lin>
- <50EF8683.7040404@intel.com>
-MIME-Version: 1.0
-In-Reply-To: <50EF8683.7040404@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 14 Jan 2013 12:01:32.0618 (UTC) FILETIME=[E4F402A0:01CDF24E]
-X-MC-Unique: 113011412013402001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756175Ab3ANMGd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 07:06:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5616 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756103Ab3ANMGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 07:06:32 -0500
+Date: Mon, 14 Jan 2013 10:05:01 -0200
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com,
+        aquini@redhat.com, mst@redhat.com, agl@us.ibm.com
+Subject: Re: [RFC 2/2] virtio_balloon: add auto-ballooning support
+Message-ID: <20130114100501.603ce8a4@doriath.home>
+In-Reply-To: <20130111204317.GB11436@amit.redhat.com>
+References: <1355861850-2702-1-git-send-email-lcapitulino@redhat.com>
+	<1355861850-2702-3-git-send-email-lcapitulino@redhat.com>
+	<20130111204317.GB11436@amit.redhat.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 03:26:59AM +0000, Alex Shi wrote:
-> On 01/10/2013 07:28 PM, Morten Rasmussen wrote:
-> > On Sat, Jan 05, 2013 at 08:37:40AM +0000, Alex Shi wrote:
-> >> effective_load calculates the load change as seen from the
-> >> root_task_group. It needs to multiple cfs_rq's tg_runnable_contrib
-> >> when we turn to runnable load average balance.
-> >>
-> >> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> >> ---
-> >>  kernel/sched/fair.c | 11 ++++++++---
-> >>  1 file changed, 8 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> >> index cab62aa..247d6a8 100644
-> >> --- a/kernel/sched/fair.c
-> >> +++ b/kernel/sched/fair.c
-> >> @@ -2982,7 +2982,8 @@ static void task_waking_fair(struct task_struct *p)
-> >>  
-> >>  #ifdef CONFIG_FAIR_GROUP_SCHED
-> >>  /*
-> >> - * effective_load() calculates the load change as seen from the root_task_group
-> >> + * effective_load() calculates the runnable load average change as seen from
-> >> + * the root_task_group
-> >>   *
-> >>   * Adding load to a group doesn't make a group heavier, but can cause movement
-> >>   * of group shares between cpus. Assuming the shares were perfectly aligned one
-> >> @@ -3030,13 +3031,17 @@ static void task_waking_fair(struct task_struct *p)
-> >>   * Therefore the effective change in loads on CPU 0 would be 5/56 (3/8 - 2/7)
-> >>   * times the weight of the group. The effect on CPU 1 would be -4/56 (4/8 -
-> >>   * 4/7) times the weight of the group.
-> >> + *
-> >> + * After get effective_load of the load moving, will multiple the cpu own
-> >> + * cfs_rq's runnable contrib of root_task_group.
-> >>   */
-> >>  static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
-> >>  {
-> >>  	struct sched_entity *se = tg->se[cpu];
-> >>  
-> >>  	if (!tg->parent)	/* the trivial, non-cgroup case */
-> >> -		return wl;
-> >> +		return wl * tg->cfs_rq[cpu]->tg_runnable_contrib
-> >> +						>> NICE_0_SHIFT;
-> > 
-> > Why do we need to scale the load of the task (wl) by runnable_contrib
-> > when the task is in the root task group? Wouldn't the load change still
-> > just be wl?
-> > 
-> 
-> Here, wl is the load weight, runnable_contrib engaged the runnable time.
+On Sat, 12 Jan 2013 02:13:17 +0530
+Amit Shah <amit.shah@redhat.com> wrote:
 
-Yes, wl is the load weight of the task. But I don't understand why you
-multiply it with the tg_runnable_contrib of the group you want to insert
-it into. Since effective_load() is supposed to return the load change
-caused by adding the task to the cpu it would make more sense if you
-multiplied with the task runnable_avg_sum / runnable_avg_period of the
-task in question.
+> On (Tue) 18 Dec 2012 [18:17:30], Luiz Capitulino wrote:
+> > The auto-ballooning feature automatically performs balloon inflate or
+> > deflate based on host and guest memory pressure. This can help to
+> > avoid swapping or worse in both, host and guest.
+> > 
+> > Auto-ballooning has a host and a guest part. The host performs
+> > automatic inflate by requesting the guest to inflate its balloon
+> > when the host is facing memory pressure. The guest performs
+> > automatic deflate when it's facing memory pressure itself. It's
+> > expected that auto-inflate and auto-deflate will balance each
+> > other over time.
+> > 
+> > This commit implements the guest side of auto-ballooning.
+> > 
+> > To perform automatic deflate, the virtio_balloon driver registers
+> > a shrinker callback, which will try to deflate the guest's balloon
+> > on guest memory pressure just like if it were a cache. The shrinker
+> > callback is only registered if the host supports the
+> > VIRTIO_BALLOON_F_AUTO_BALLOON feature bit.
+> 
+> I'm wondering if guest should auto-deflate even when the AUTO_BALLOON
+> feature isn't supported by the host: if a guest is under pressure,
+> there's no way for it to tell the host and wait for the host to
+> deflate the balloon, so it may be beneficial to just go ahead and
+> deflate the balloon for all hosts.
 
-Morten
+I see two problems with this. First, this will automagically override
+balloon changes done by the user; and second, if we don't have the
+auto-inflate part and if the host starts facing memory pressure, VMs
+may start getting OOM.
 
-> >>  
-> >>  	for_each_sched_entity(se) {
-> >>  		long w, W;
-> >> @@ -3084,7 +3089,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
-> >>  		wg = 0;
-> >>  	}
-> >>  
-> >> -	return wl;
-> >> +	return wl * tg->cfs_rq[cpu]->tg_runnable_contrib >> NICE_0_SHIFT;
-> > 
-> > I believe that effective_load() is only used in wake_affine() to compare
-> > load scenarios of the same task group. Since the task group is the same
-> > the effective load is scaled by the same factor and should not make any
-> > difference?
-> > 
-> > Also, in wake_affine() the result of effective_load() is added with
-> > target_load() which is load.weight of the cpu and not a tracked load
-> > based on runnable_avg_*/contrib?
-> > 
-> > Finally, you have not scaled the result of effective_load() in the
-> > function used when FAIR_GROUP_SCHED is disabled. Should that be scaled
-> > too?
+> Similarly, on the host side, management can configure a VM to either
+> enable or disable auto-balloon (the auto-inflate part).  So even the
+> host can do away with the feature advertisement and negotiation.
 > 
-> it should be, thanks reminder.
+> Is there some use-case I'm missing where doing these actions after
+> feature negotiation is beneficial?
 > 
-> the wake up is not good for burst wakeup benchmark. I am thinking to
-> rewrite this part.
+> > FIXMEs
+> > 
+> >  o the guest kernel seems to spin when the host is performing a long
+> >    auto-inflate
 > 
+> Is this introduced by the current patches?  I'd assume it happens even
+> without it -- these patches just introduce some heuristics, the
+> mechanism has stayed the same.
+
+Good point, I'll check that.
+
+> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> > ---
+> >  drivers/virtio/virtio_balloon.c     | 54 +++++++++++++++++++++++++++++++++++++
+> >  include/uapi/linux/virtio_balloon.h |  1 +
+> >  2 files changed, 55 insertions(+)
+> 
+> Patch looks good, just one thing:
+> 
+> > +	/*
+> > +	 * If the current balloon size is greater than the number of
+> > +	 * pages being reclaimed by the kernel, deflate only the needed
+> > +	 * amount. Otherwise deflate everything we have.
+> > +	 */
+> > +	if (nr_pages > sc->nr_to_scan) {
+> > +		new_target = nr_pages - sc->nr_to_scan;
+> > +	} else {
+> > +		new_target = 0;
+> > +	}
+> 
+> This looks better:
+> 
+> 	new_target = 0;
+> 	if (nr_pages > sc->nr_to_scan) {
+> 		new_target = nr_pages - sc->nr_to_scan;
+> 	}
+
+Ok.
+
+> 
+> 
+> Thanks,
+> 		Amit
 > 
 
