@@ -1,106 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab3ANI5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 03:57:44 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:6365 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755728Ab3ANI5n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 03:57:43 -0500
-X-IronPort-AV: E=Sophos;i="4.84,466,1355068800"; 
-   d="scan'208";a="6582531"
-Subject: Re: [PATCH v3 05/22] sched: remove domain iterations in
- fork/exec/wake
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Morten Rasmussen <Morten.Rasmussen@arm.com>
-Cc: Alex Shi <alex.shi@intel.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20130111100757.GH2046@e103034-lin>
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
-	 <1357375071-11793-6-git-send-email-alex.shi@intel.com>
-	 <20130109182102.GC2046@e103034-lin> <50EF7D07.6080006@intel.com>
-	 <20130111100757.GH2046@e103034-lin>
-Date: Mon, 14 Jan 2013 16:55:43 +0800
-Message-ID: <1358153743.8818.9.camel@liguang.fnst.cn.fujitsu.com>
+	id S1756553Ab3ANI7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 03:59:37 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:43461 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756525Ab3ANI7g convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 14 Jan 2013 03:59:36 -0500
+Message-Id: <50F3D70402000078000B530E@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Mon, 14 Jan 2013 08:59:32 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mjg@redhat.com>
+Cc: "Bjorn Helgaas" <bjorn.helgaas@google.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fix setup_efi_pci()
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/14 16:56:58,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/14 16:57:00,
-	Serialize complete at 2013/01/14 16:57:00
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-01-11五的 10:07 +0000，Morten Rasmussen写道：
-> On Fri, Jan 11, 2013 at 02:46:31AM +0000, Alex Shi wrote:
-> > On 01/10/2013 02:21 AM, Morten Rasmussen wrote:
-> > >>  		new_cpu = find_idlest_cpu(group, p, cpu);
-> > >> > -
-> > >> > -		/* Now try balancing at a lower domain level of new_cpu */
-> > >> > -		cpu = new_cpu;
-> > >> > -		weight = sd->span_weight;
-> > >> > -		sd = NULL;
-> > >> > -		for_each_domain(cpu, tmp) {
-> > >> > -			if (weight <= tmp->span_weight)
-> > >> > -				break;
-> > >> > -			if (tmp->flags & sd_flag)
-> > >> > -				sd = tmp;
-> > >> > -		}
-> > >> > -		/* while loop will break here if sd == NULL */
-> > > I agree that this should be a major optimization. I just can't figure
-> > > out why the existing recursive search for an idle cpu switches to the
-> > > new cpu near the end and then starts a search for an idle cpu in the new
-> > > cpu's domain. Is this to handle some exotic sched domain configurations?
-> > > If so, they probably wouldn't work with your optimizations.
-> > 
-> > I did not find odd configuration that asking for old logical.
-> > 
-> > According to Documentation/scheduler/sched-domains.txt, Maybe never.
-> > "A domain's span MUST be a superset of it child's span (this restriction
-> > could be relaxed if the need arises), and a base domain for CPU i MUST
-> > span at least i."  etc. etc.
-> 
-> The reason for my suspicion is the SD_OVERLAP flag, which has something
-> to do overlapping sched domains. I haven't looked into what it does or
-> how it works. I'm just wondering if this optimization will affect the
-> use of that flag.
+This fixes three issues:
+- missing parentheses around a flag test
+- wrong memory type used for allocation intended to persist post-boot
+- four similar build warnings on 32-bit (casts between different size
+  pointers and integers)
 
-seems it did, SD_OVERLAP will not work after this change,
-though this flag is maybe scarcely used.
-because, this optimization assume all sched-domains span 
-is super-set over child domain.
-isn't it? Alex.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-> 
-> Morten
-> 
-> > 
-> > 
-> > -- 
-> > Thanks Alex
-> > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+---
+ arch/x86/boot/compressed/eboot.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
--- 
-regards!
-li guang
+--- 3.8-rc3/arch/x86/boot/compressed/eboot.c
++++ 3.8-rc3-x86-EFI-PCI-ROMs/arch/x86/boot/compressed/eboot.c
+@@ -256,10 +256,10 @@ static efi_status_t setup_efi_pci(struct
+ 	int i;
+ 	struct setup_data *data;
+ 
+-	data = (struct setup_data *)params->hdr.setup_data;
++	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
+ 
+ 	while (data && data->next)
+-		data = (struct setup_data *)data->next;
++		data = (struct setup_data *)(unsigned long)data->next;
+ 
+ 	status = efi_call_phys5(sys_table->boottime->locate_handle,
+ 				EFI_LOCATE_BY_PROTOCOL, &pci_proto,
+@@ -302,7 +302,7 @@ static efi_status_t setup_efi_pci(struct
+ 		if (status != EFI_SUCCESS)
+ 			continue;
+ 
+-		if (!attributes & EFI_PCI_IO_ATTRIBUTE_EMBEDDED_ROM)
++		if (!(attributes & EFI_PCI_IO_ATTRIBUTE_EMBEDDED_ROM))
+ 			continue;
+ 
+ 		if (!pci->romimage || !pci->romsize)
+@@ -311,7 +311,7 @@ static efi_status_t setup_efi_pci(struct
+ 		size = pci->romsize + sizeof(*rom);
+ 
+ 		status = efi_call_phys3(sys_table->boottime->allocate_pool,
+-				EFI_LOADER_DATA, size, &rom);
++					EFI_RUNTIME_SERVICES_DATA, size, &rom);
+ 
+ 		if (status != EFI_SUCCESS)
+ 			continue;
+@@ -345,9 +345,9 @@ static efi_status_t setup_efi_pci(struct
+ 		memcpy(rom->romdata, pci->romimage, pci->romsize);
+ 
+ 		if (data)
+-			data->next = (uint64_t)rom;
++			data->next = (unsigned long)rom;
+ 		else
+-			params->hdr.setup_data = (uint64_t)rom;
++			params->hdr.setup_data = (unsigned long)rom;
+ 
+ 		data = (struct setup_data *)rom;
+ 
+
+
 
