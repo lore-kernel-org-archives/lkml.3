@@ -1,78 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab3ANL7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 06:59:21 -0500
-Received: from mout.web.de ([212.227.15.4]:51934 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752663Ab3ANL7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 06:59:20 -0500
-Message-ID: <50F3F289.3090402@web.de>
-Date: Mon, 14 Jan 2013 12:56:57 +0100
-From: Soeren Moch <smoch@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755856Ab3ANMBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 07:01:38 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:48916 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755623Ab3ANMBh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 07:01:37 -0500
+Date: Mon, 14 Jan 2013 12:01:39 +0000
+From: Morten Rasmussen <Morten.Rasmussen@arm.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 11/22] sched: consider runnable load average in
+ effective_load
+Message-ID: <20130114120138.GJ2046@e103034-lin>
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
+ <1357375071-11793-12-git-send-email-alex.shi@intel.com>
+ <20130110112817.GD2046@e103034-lin>
+ <50EF8683.7040404@intel.com>
 MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all dma_alloc_coherent()
- calls
-References: <20121119144826.f59667b2.akpm@linux-foundation.org> <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:tTylKC9xqcXU7PyNVazSZHKQDR07aoIy+41etsZwp/W
- Si0lyrWa94mcNJEujR99jVYDGTb91nTdOQw7XjGlSvxjJgoGPy
- /fDQWW5toYLQFotP10nXt72eYCB/FE1xdcuLVqNegj3DY5hKKI
- S69GHryptsSybW5Kqpwgfhx8wOJwfK6D9ED9aRnbuiukB2Zl/9
- S8GnEl8HRLmMtxAz2uTYg==
+In-Reply-To: <50EF8683.7040404@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 14 Jan 2013 12:01:32.0618 (UTC) FILETIME=[E4F402A0:01CDF24E]
+X-MC-Unique: 113011412013402001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.11.2012 15:31, Marek Szyprowski wrote:
-> dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
-> regardless the flags provided by the caller. This causes excessive
-> pruning of emergency memory pools without any good reason. Additionaly,
-> on ARM architecture any driver which is using dmapools will sooner or
-> later  trigger the following error:
-> "ERROR: 256 KiB atomic DMA coherent pool is too small!
-> Please increase it with coherent_pool= kernel parameter!".
-> Increasing the coherent pool size usually doesn't help much and only
-> delays such error, because all GFP_ATOMIC DMA allocations are always
-> served from the special, very limited memory pool.
->
-> This patch changes the dmapool code to correctly use gfp flags provided
-> by the dmapool caller.
->
-> Reported-by: Soeren Moch <smoch@web.de>
-> Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Tested-by: Andrew Lunn <andrew@lunn.ch>
-> Tested-by: Soeren Moch <smoch@web.de>
+On Fri, Jan 11, 2013 at 03:26:59AM +0000, Alex Shi wrote:
+> On 01/10/2013 07:28 PM, Morten Rasmussen wrote:
+> > On Sat, Jan 05, 2013 at 08:37:40AM +0000, Alex Shi wrote:
+> >> effective_load calculates the load change as seen from the
+> >> root_task_group. It needs to multiple cfs_rq's tg_runnable_contrib
+> >> when we turn to runnable load average balance.
+> >>
+> >> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> >> ---
+> >>  kernel/sched/fair.c | 11 ++++++++---
+> >>  1 file changed, 8 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> >> index cab62aa..247d6a8 100644
+> >> --- a/kernel/sched/fair.c
+> >> +++ b/kernel/sched/fair.c
+> >> @@ -2982,7 +2982,8 @@ static void task_waking_fair(struct task_struct *p)
+> >>  
+> >>  #ifdef CONFIG_FAIR_GROUP_SCHED
+> >>  /*
+> >> - * effective_load() calculates the load change as seen from the root_task_group
+> >> + * effective_load() calculates the runnable load average change as seen from
+> >> + * the root_task_group
+> >>   *
+> >>   * Adding load to a group doesn't make a group heavier, but can cause movement
+> >>   * of group shares between cpus. Assuming the shares were perfectly aligned one
+> >> @@ -3030,13 +3031,17 @@ static void task_waking_fair(struct task_struct *p)
+> >>   * Therefore the effective change in loads on CPU 0 would be 5/56 (3/8 - 2/7)
+> >>   * times the weight of the group. The effect on CPU 1 would be -4/56 (4/8 -
+> >>   * 4/7) times the weight of the group.
+> >> + *
+> >> + * After get effective_load of the load moving, will multiple the cpu own
+> >> + * cfs_rq's runnable contrib of root_task_group.
+> >>   */
+> >>  static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+> >>  {
+> >>  	struct sched_entity *se = tg->se[cpu];
+> >>  
+> >>  	if (!tg->parent)	/* the trivial, non-cgroup case */
+> >> -		return wl;
+> >> +		return wl * tg->cfs_rq[cpu]->tg_runnable_contrib
+> >> +						>> NICE_0_SHIFT;
+> > 
+> > Why do we need to scale the load of the task (wl) by runnable_contrib
+> > when the task is in the root task group? Wouldn't the load change still
+> > just be wl?
+> > 
+> 
+> Here, wl is the load weight, runnable_contrib engaged the runnable time.
 
-Now I tested linux-3.7.1 (this patch is included there) on my Marvell
-Kirkwood system. I still see
+Yes, wl is the load weight of the task. But I don't understand why you
+multiply it with the tg_runnable_contrib of the group you want to insert
+it into. Since effective_load() is supposed to return the load change
+caused by adding the task to the cpu it would make more sense if you
+multiplied with the task runnable_avg_sum / runnable_avg_period of the
+task in question.
 
-   ERROR: 1024 KiB atomic DMA coherent pool is too small!
-   Please increase it with coherent_pool= kernel parameter!
+Morten
 
-after several hours of runtime under heavy load with SATA and
-DVB-Sticks (em28xx / drxk and dib0700).
-
-As already reported earlier this patch improved the behavior compared to 
-linux-3.6.x and 3.7.0 (error after several ten minutes runtime), but
-I still see a regression compared to linux-3.5.x. With this kernel the
-same system with same workload runs flawlessly.
-
-Regards,
-Soeren
+> >>  
+> >>  	for_each_sched_entity(se) {
+> >>  		long w, W;
+> >> @@ -3084,7 +3089,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+> >>  		wg = 0;
+> >>  	}
+> >>  
+> >> -	return wl;
+> >> +	return wl * tg->cfs_rq[cpu]->tg_runnable_contrib >> NICE_0_SHIFT;
+> > 
+> > I believe that effective_load() is only used in wake_affine() to compare
+> > load scenarios of the same task group. Since the task group is the same
+> > the effective load is scaled by the same factor and should not make any
+> > difference?
+> > 
+> > Also, in wake_affine() the result of effective_load() is added with
+> > target_load() which is load.weight of the cpu and not a tracked load
+> > based on runnable_avg_*/contrib?
+> > 
+> > Finally, you have not scaled the result of effective_load() in the
+> > function used when FAIR_GROUP_SCHED is disabled. Should that be scaled
+> > too?
+> 
+> it should be, thanks reminder.
+> 
+> the wake up is not good for burst wakeup benchmark. I am thinking to
+> rewrite this part.
+> 
+> 
 
