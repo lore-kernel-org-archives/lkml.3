@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758581Ab3ANUBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:01:32 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33886 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756762Ab3ANUBa (ORCPT
+	id S1757972Ab3ANUEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:04:24 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:50581 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756761Ab3ANUEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:01:30 -0500
+	Mon, 14 Jan 2013 15:04:23 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130114184616.GB2015@liondog.tnic>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-24-git-send-email-yinghai@kernel.org>
-	<20130114112045.GF1228@liondog.tnic>
-	<CAE9FiQUVkrv3jcCZnrg3=7pXyyfd9d+MJGDqU-dF_+YtB+2-ww@mail.gmail.com>
-	<CAE9FiQWPbRRGkycs_oocNcHB+bEcdkqxX9zHfJVmwq_hKgKBOA@mail.gmail.com>
-	<20130114184616.GB2015@liondog.tnic>
-Date: Mon, 14 Jan 2013 12:01:29 -0800
-X-Google-Sender-Auth: xysc5vSHXXoTSVJsw0ZtF3bZ8NQ
-Message-ID: <CAE9FiQVOrFRpuPGMxnP-w9KLaxXfU7S22Q-cgM__=iB60GuZEQ@mail.gmail.com>
-Subject: Re: [PATCH v7u1 23/31] x86, boot: update comments about entries for
- 64bit image
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>
+In-Reply-To: <1482200.orrNyi3164@bentobox>
+References: <1482200.orrNyi3164@bentobox>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 14 Jan 2013 15:03:59 -0500
+Message-ID: <CA+1xoqeX-v14GrWzhk_g8_YLnuPXVwRckDbBq-CpJn+wqiicfg@mail.gmail.com>
+Subject: Re: Hashtable implementation breaks on flow statements
+To: Schrober <franzschrober@yahoo.de>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 10:46 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Jan 14, 2013 at 10:37:39AM -0800, Yinghai Lu wrote:
->> also I fix some errors that you mentioned, but not all of them because
->> I copied 32bit portion to 64bit and modified it.
->>
->> So you may submit patch to fix 32bit and 64bit at the same time if you
->> like.
+Hi Franz,
+
+The hashtable should behave correctly (that is, not continue iteration
+from the next
+bucket) with regards to a 'break' inside the loop, this issue was
+raised previously
+during one of the RFCs and has been dealt with before the merge of the hashtable
+into the kernel.
+
+Do you see a case where it behaves incorrectly? can you share your code which
+does that?
+
+
+Thanks,
+Sasha
+
+On Mon, Jan 14, 2013 at 5:51 AM, Schrober <franzschrober@yahoo.de> wrote:
+> Hi,
 >
-> Sure, if they're old typos/errors. If they're new typos/errors
-> introduced by you, then you know that we don't commit half-baked
-> patches, right?
-
-no, we should not.
-
-some times I could tell your understanding is right or not.
-
-other cases, i just don't know if your changes is right or original 32
-bit sentence
-is right.
-
-So later, you or maybe hpa would like to change them at the same time.
-
-Yinghai
+> I think the new hash implementation in include/linux/hashtable.h is slightly
+> unintuitive when using things like hash_for_each, hash_for_each_rcu,
+> hash_for_each_safe and hash_for_each_possible.
+>
+> Users may want to get out of the loop through the hashtable iteration when
+> some condition is met. This works well on hlist, list and other "abstract"
+> data types. But the hash table would just jump to the next bucket and
+> continue.
+> --
+> Franz Schrober
