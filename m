@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab3ANShm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:37:42 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:54400 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757533Ab3ANShl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:37:41 -0500
+	id S1757622Ab3ANSly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:41:54 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:40613 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756927Ab3ANSlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 13:41:53 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: lenb@kernel.org, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH v2 02/12] ACPI: Add sys_hotplug.h for system device hotplug framework
+Date: Mon, 14 Jan 2013 19:47:36 +0100
+Message-ID: <3236298.SULt2IKQv6@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1358178833.14145.65.camel@misato.fc.hp.com>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <2024927.lMzqqbDSpI@vostro.rjw.lan> <1358178833.14145.65.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUVkrv3jcCZnrg3=7pXyyfd9d+MJGDqU-dF_+YtB+2-ww@mail.gmail.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-24-git-send-email-yinghai@kernel.org>
-	<20130114112045.GF1228@liondog.tnic>
-	<CAE9FiQUVkrv3jcCZnrg3=7pXyyfd9d+MJGDqU-dF_+YtB+2-ww@mail.gmail.com>
-Date: Mon, 14 Jan 2013 10:37:39 -0800
-X-Google-Sender-Auth: 85p4AsqabSUzSoHNmkIQarDToUY
-Message-ID: <CAE9FiQWPbRRGkycs_oocNcHB+bEcdkqxX9zHfJVmwq_hKgKBOA@mail.gmail.com>
-Subject: Re: [PATCH v7u1 23/31] x86, boot: update comments about entries for
- 64bit image
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 10:35 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Jan 14, 2013 at 3:20 AM, Borislav Petkov <bp@alien8.de> wrote:
->>> the boot loader should
->>> +also fill the additional fields of the struct boot_params as that
->>
->>                                                         remove "that"
->>
->>> +described in zero-page.txt.
->>
->> Btw, you could document the sentinel mechanism here or in zero-page.txt,
->> for example.
->
->
-> that is:
-> ---
-> The memory for struct boot_params
-> could be allocated anywhere (even above 4G) and initialized to all zero.
-> ---
->
-> bootloader memset zero_page at first means.
-> and all bootloader did that except kexec. and it is fixed patches for
-> kexec-tools.
+On Monday, January 14, 2013 08:53:53 AM Toshi Kani wrote:
+> On Fri, 2013-01-11 at 22:25 +0100, Rafael J. Wysocki wrote:
+> > On Thursday, January 10, 2013 04:40:20 PM Toshi Kani wrote:
+> > > Added include/acpi/sys_hotplug.h, which is ACPI-specific system
+> > > device hotplug header and defines the order values of ACPI-specific
+> > > handlers.
+> > > 
+> > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > ---
+> > >  include/acpi/sys_hotplug.h |   48 ++++++++++++++++++++++++++++++++++++++++++++
+> > >  1 file changed, 48 insertions(+)
+> > >  create mode 100644 include/acpi/sys_hotplug.h
+> > > 
+> > > diff --git a/include/acpi/sys_hotplug.h b/include/acpi/sys_hotplug.h
+> > > new file mode 100644
+> > > index 0000000..ad80f61
+> > > --- /dev/null
+> > > +++ b/include/acpi/sys_hotplug.h
+> > > @@ -0,0 +1,48 @@
+> > > +/*
+> > > + * sys_hotplug.h - ACPI System device hot-plug framework
+> > > + *
+> > > + * Copyright (C) 2012 Hewlett-Packard Development Company, L.P.
+> > > + *	Toshi Kani <toshi.kani@hp.com>
+> > > + *
+> > > + * This program is free software; you can redistribute it and/or modify
+> > > + * it under the terms of the GNU General Public License version 2 as
+> > > + * published by the Free Software Foundation.
+> > > + */
+> > > +
+> > > +#ifndef _ACPI_SYS_HOTPLUG_H
+> > > +#define _ACPI_SYS_HOTPLUG_H
+> > > +
+> > > +#include <linux/list.h>
+> > > +#include <linux/device.h>
+> > > +#include <linux/sys_hotplug.h>
+> > > +
+> > > +/*
+> > > + * System device hot-plug operation proceeds in the following order.
+> > > + *   Validate phase -> Execute phase -> Commit phase
+> > > + *
+> > > + * The order values below define the calling sequence of ACPI-specific
+> > > + * handlers for each phase in ascending order.  The order value of
+> > > + * platform-neutral handlers are defined in <linux/sys_hotplug.h>.
+> > > + */
+> > > +
+> > > +/* Add Validate order values */
+> > > +#define SHP_ACPI_BUS_ADD_VALIDATE_ORDER		0	/* must be first */
+> > > +
+> > > +/* Add Execute order values */
+> > > +#define SHP_ACPI_BUS_ADD_EXECUTE_ORDER		10
+> > > +#define SHP_ACPI_RES_ADD_EXECUTE_ORDER		20
+> > > +
+> > > +/* Add Commit order values */
+> > > +#define SHP_ACPI_BUS_ADD_COMMIT_ORDER		10
+> > > +
+> > > +/* Delete Validate order values */
+> > > +#define SHP_ACPI_BUS_DEL_VALIDATE_ORDER		0	/* must be first */
+> > > +#define SHP_ACPI_RES_DEL_VALIDATE_ORDER		10
+> > > +
+> > > +/* Delete Execute order values */
+> > > +#define SHP_ACPI_BUS_DEL_EXECUTE_ORDER		100
+> > > +
+> > > +/* Delete Commit order values */
+> > > +#define SHP_ACPI_BUS_DEL_COMMIT_ORDER		100
+> > > +
+> > > +#endif	/* _ACPI_SYS_HOTPLUG_H */
+> > > --
+> > 
+> > Why did you use the particular values above?
+> 
+> The ordering values above are used to define the relative order among
+> handlers.  For instance, the 100 for SHP_ACPI_BUS_DEL_EXECUTE_ORDER can
+> potentially be 21 since it is still larger than 20 for
+> SHP_MEM_DEL_EXECUTE_ORDER defined in linux/sys_hotplug.h.  I picked 100
+> so that more platform-neutral handlers can be added in between 20 and
+> 100 in future.
 
-also I fix some errors that you mentioned, but not all of them
-because I copied 32bit portion to 64bit and modified it.
+I thought so, but I don't think it's a good idea to add gaps like this.
 
-So you  may submit patch to fix 32bit and 64bit at the same time if you like.
+Thanks,
+Rafael
 
-Thanks
 
-Yinghai
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
