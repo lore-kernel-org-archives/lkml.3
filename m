@@ -1,19 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab3ANI7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 03:59:37 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:43461 "EHLO
+	id S1752925Ab3ANJCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 04:02:19 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:54546 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab3ANI7g convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Mon, 14 Jan 2013 03:59:36 -0500
-Message-Id: <50F3D70402000078000B530E@nat28.tlf.novell.com>
+	with ESMTP id S1751095Ab3ANJCR convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Mon, 14 Jan 2013 04:02:17 -0500
+Message-Id: <50F3D7A302000078000B531D@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Mon, 14 Jan 2013 08:59:32 +0000
+Date: Mon, 14 Jan 2013 09:02:11 +0000
 From: "Jan Beulich" <JBeulich@suse.com>
-To: <mjg@redhat.com>
-Cc: "Bjorn Helgaas" <bjorn.helgaas@google.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fix setup_efi_pci()
+To: "Ondrej Zary" <linux@rainbow-software.org>
+Cc: <dmitry.torokhov@gmail.com>, <hpa@linux.intel.com>,
+        "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>
+Subject: Re: your patch "x86, 8042: Enable A20 using KBC to fix S3
+ resume on some MSI laptops"
+References: <50F3CAFD02000078000B52BE@nat28.tlf.novell.com>
+ <201301140929.38462.linux@rainbow-software.org>
+ <50F3D1F702000078000B52FB@nat28.tlf.novell.com>
+ <201301140954.43795.linux@rainbow-software.org>
+In-Reply-To: <201301140954.43795.linux@rainbow-software.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -22,63 +30,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes three issues:
-- missing parentheses around a flag test
-- wrong memory type used for allocation intended to persist post-boot
-- four similar build warnings on 32-bit (casts between different size
-  pointers and integers)
+>>> On 14.01.13 at 09:54, Ondrej Zary <linux@rainbow-software.org> wrote:
+> On Monday 14 January 2013, Jan Beulich wrote:
+>> >>> On 14.01.13 at 09:29, Ondrej Zary <linux@rainbow-software.org> wrote:
+>> > On Monday 14 January 2013, Jan Beulich wrote:
+>> >> Second, considering that enabling A20 (even if just in a fake way),
+>> >> is a core system operation, I don't think it belongs into a driver
+>> >> that is only optionally present in the kernel.
+>> >
+>> > The first version of this patch added A20 enabling to early init code.
+>> > But that could be dangerous as it was run before any 8042 detection,
+>> > possibly breaking systems without 8042. I haven't found a better place
+>> > for this.
+>>
+>> I realize that the change would be more intrusive, but imo that's
+>> not an excuse for not doing it properly.
+> 
+> What's "properly"? Doing extra 8042 detection somewhere else does not look 
+> right.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Why?
 
----
- arch/x86/boot/compressed/eboot.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
---- 3.8-rc3/arch/x86/boot/compressed/eboot.c
-+++ 3.8-rc3-x86-EFI-PCI-ROMs/arch/x86/boot/compressed/eboot.c
-@@ -256,10 +256,10 @@ static efi_status_t setup_efi_pci(struct
- 	int i;
- 	struct setup_data *data;
- 
--	data = (struct setup_data *)params->hdr.setup_data;
-+	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
- 
- 	while (data && data->next)
--		data = (struct setup_data *)data->next;
-+		data = (struct setup_data *)(unsigned long)data->next;
- 
- 	status = efi_call_phys5(sys_table->boottime->locate_handle,
- 				EFI_LOCATE_BY_PROTOCOL, &pci_proto,
-@@ -302,7 +302,7 @@ static efi_status_t setup_efi_pci(struct
- 		if (status != EFI_SUCCESS)
- 			continue;
- 
--		if (!attributes & EFI_PCI_IO_ATTRIBUTE_EMBEDDED_ROM)
-+		if (!(attributes & EFI_PCI_IO_ATTRIBUTE_EMBEDDED_ROM))
- 			continue;
- 
- 		if (!pci->romimage || !pci->romsize)
-@@ -311,7 +311,7 @@ static efi_status_t setup_efi_pci(struct
- 		size = pci->romsize + sizeof(*rom);
- 
- 		status = efi_call_phys3(sys_table->boottime->allocate_pool,
--				EFI_LOADER_DATA, size, &rom);
-+					EFI_RUNTIME_SERVICES_DATA, size, &rom);
- 
- 		if (status != EFI_SUCCESS)
- 			continue;
-@@ -345,9 +345,9 @@ static efi_status_t setup_efi_pci(struct
- 		memcpy(rom->romdata, pci->romimage, pci->romsize);
- 
- 		if (data)
--			data->next = (uint64_t)rom;
-+			data->next = (unsigned long)rom;
- 		else
--			params->hdr.setup_data = (uint64_t)rom;
-+			params->hdr.setup_data = (unsigned long)rom;
- 
- 		data = (struct setup_data *)rom;
- 
-
-
+Jan
 
