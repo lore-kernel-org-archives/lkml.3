@@ -1,59 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820Ab3ANQCv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 11:02:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5804 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756158Ab3ANQCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 11:02:50 -0500
-Date: Mon, 14 Jan 2013 17:01:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: u3557@miso.sublimeip.com
-Cc: Pedro Alves <palves@redhat.com>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: Re: PTRACE_SYSCALL && vsyscall (Was: arch_check_bp_in_kernelspace:
-	fix the range check)
-Message-ID: <20130114160153.GA16555@redhat.com>
-References: <20121125225533.GA24905@redhat.com> <20121125234834.DAC34592076@miso.sublimeip.com> <20121202193058.GA4264@redhat.com> <841b7a319f9d22402d269eed23d03835.squirrel@mail.sublimeip.com> <20121204175933.GA11537@redhat.com> <50EC527C.5030800@redhat.com> <20130109175203.GA32191@redhat.com> <6dff6dcdbfd7444f0b43d8b8bea6ca7c.squirrel@mail.sublimeip.com> <20130112181258.GA24903@redhat.com> <a370d0f1bac7b2cee0bd2c2eea1ce22f.squirrel@mail.sublimeip.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a370d0f1bac7b2cee0bd2c2eea1ce22f.squirrel@mail.sublimeip.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757137Ab3ANQDp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 11:03:45 -0500
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:36608 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756838Ab3ANQDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 11:03:43 -0500
+Message-ID: <1358178833.14145.65.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v2 02/12] ACPI: Add sys_hotplug.h for system device
+ hotplug framework
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: lenb@kernel.org, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 14 Jan 2013 08:53:53 -0700
+In-Reply-To: <2024927.lMzqqbDSpI@vostro.rjw.lan>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
+	 <1357861230-29549-3-git-send-email-toshi.kani@hp.com>
+	 <2024927.lMzqqbDSpI@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14, u3557@miso.sublimeip.com wrote:
->
-> So here again is the patch that I need so badly - clearly it fixes a bug
-> and harms nobody:
->
-> -----------------------------------------------------------------------
-> diff -Naur before/arch/x86/kernel/hw_breakpoint.c
-> after/arch/x86/kernel/hw_breakpoint.c
-> --- before/arch/x86/kernel/hw_breakpoint.c	2013-01-14 12:45:20.000000000
-> +1030
-> +++ after/arch/x86/kernel/hw_breakpoint.c	2013-01-14 12:46:24.000000000 +1030
-> @@ -200,7 +200,8 @@
->  	va = info->address;
->  	len = get_hbp_len(info->len);
+On Fri, 2013-01-11 at 22:25 +0100, Rafael J. Wysocki wrote:
+> On Thursday, January 10, 2013 04:40:20 PM Toshi Kani wrote:
+> > Added include/acpi/sys_hotplug.h, which is ACPI-specific system
+> > device hotplug header and defines the order values of ACPI-specific
+> > handlers.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > ---
+> >  include/acpi/sys_hotplug.h |   48 ++++++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 48 insertions(+)
+> >  create mode 100644 include/acpi/sys_hotplug.h
+> > 
+> > diff --git a/include/acpi/sys_hotplug.h b/include/acpi/sys_hotplug.h
+> > new file mode 100644
+> > index 0000000..ad80f61
+> > --- /dev/null
+> > +++ b/include/acpi/sys_hotplug.h
+> > @@ -0,0 +1,48 @@
+> > +/*
+> > + * sys_hotplug.h - ACPI System device hot-plug framework
+> > + *
+> > + * Copyright (C) 2012 Hewlett-Packard Development Company, L.P.
+> > + *	Toshi Kani <toshi.kani@hp.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +
+> > +#ifndef _ACPI_SYS_HOTPLUG_H
+> > +#define _ACPI_SYS_HOTPLUG_H
+> > +
+> > +#include <linux/list.h>
+> > +#include <linux/device.h>
+> > +#include <linux/sys_hotplug.h>
+> > +
+> > +/*
+> > + * System device hot-plug operation proceeds in the following order.
+> > + *   Validate phase -> Execute phase -> Commit phase
+> > + *
+> > + * The order values below define the calling sequence of ACPI-specific
+> > + * handlers for each phase in ascending order.  The order value of
+> > + * platform-neutral handlers are defined in <linux/sys_hotplug.h>.
+> > + */
+> > +
+> > +/* Add Validate order values */
+> > +#define SHP_ACPI_BUS_ADD_VALIDATE_ORDER		0	/* must be first */
+> > +
+> > +/* Add Execute order values */
+> > +#define SHP_ACPI_BUS_ADD_EXECUTE_ORDER		10
+> > +#define SHP_ACPI_RES_ADD_EXECUTE_ORDER		20
+> > +
+> > +/* Add Commit order values */
+> > +#define SHP_ACPI_BUS_ADD_COMMIT_ORDER		10
+> > +
+> > +/* Delete Validate order values */
+> > +#define SHP_ACPI_BUS_DEL_VALIDATE_ORDER		0	/* must be first */
+> > +#define SHP_ACPI_RES_DEL_VALIDATE_ORDER		10
+> > +
+> > +/* Delete Execute order values */
+> > +#define SHP_ACPI_BUS_DEL_EXECUTE_ORDER		100
+> > +
+> > +/* Delete Commit order values */
+> > +#define SHP_ACPI_BUS_DEL_COMMIT_ORDER		100
+> > +
+> > +#endif	/* _ACPI_SYS_HOTPLUG_H */
+> > --
 > 
-> -	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
-> +	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE) &&
-> +		!((va >= VSYSCALL_START) && ((va + len - 1) <= VSYSCALL_END));
->  }
+> Why did you use the particular values above?
 
-I meant this one: http://marc.info/?l=linux-kernel&m=135336050319266
-on top of http://marc.info/?l=linux-kernel&m=135248575426474
+The ordering values above are used to define the relative order among
+handlers.  For instance, the 100 for SHP_ACPI_BUS_DEL_EXECUTE_ORDER can
+potentially be 21 since it is still larger than 20 for
+SHP_MEM_DEL_EXECUTE_ORDER defined in linux/sys_hotplug.h.  I picked 100
+so that more platform-neutral handlers can be added in between 20 and
+100 in future.
 
-But nobody bothers to take even the trivial bugfix I sent ;)
+Thanks,
+-Toshi
 
-Oleg.
 
