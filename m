@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab3ANMbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 07:31:31 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:40442 "EHLO hydra.sisk.pl"
+	id S1756611Ab3ANMry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 07:47:54 -0500
+Received: from mga14.intel.com ([143.182.124.37]:29700 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756388Ab3ANMb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 07:31:29 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the pm tree
-Date: Mon, 14 Jan 2013 13:37:19 +0100
-Message-ID: <1519070.xb1StfSez8@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130114110311.a399f92e5e4ec730b380eaf4@canb.auug.org.au>
-References: <20130114110311.a399f92e5e4ec730b380eaf4@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756556Ab3ANMrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 07:47:53 -0500
+Message-Id: <1f4a33$5m0jfk@AZSMGA002.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,468,1355126400"; 
+   d="scan'208";a="190860788"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
+To: Nikola Pajkovsky <npajkovs@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Lijo Antony <lijo.kernel@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <878v7w14dn.fsf@redhat.com>
+References: <20130108223611.GA19672@kroah.com> <20130109003824.GA21075@kroah.com> <CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com> <20130109042533.GA9164@kroah.com> <CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com> <50ED1C12.2090608@gmail.com> <50EDC8A1.30307@oracle.com> <50EDCF14.4080101@oracle.com> <8738y7skae.fsf@redhat.com> <CAKMK7uGpAHRgT3aj6bvU-13gaFe0u8gq19nDfo86JCJJy3R-tw@mail.gmail.com> <87obgsl08a.fsf@redhat.com> <CAKMK7uEd4xLCbiMiVvPGCWG2h5v32WEJVYUtwSsDxZmWu4rUZA@mail.gmail.com> <878v7w14dn.fsf@redhat.com>
+Date: Mon, 14 Jan 2013 12:47:46 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 14 Jan 2013 10:49:08 +0100, Nikola Pajkovsky <npajkovs@redhat.com> wrote:
+> Daniel Vetter <daniel.vetter@ffwll.ch> writes:
+> 
+> > On Mon, Jan 14, 2013 at 7:58 AM, Nikola Pajkovsky <npajkovs@redhat.com> wrote:
+> >> Daniel Vetter <daniel.vetter@ffwll.ch> writes:
+> >>
+> >>> On Fri, Jan 11, 2013 at 6:26 PM, Nikola Pajkovsky <npajkovs@redhat.com> wrote:
+> >>>> bug still kicking even w/ (drm/i915: Revert shrinker changes from "Track
+> >>>> unbound pages")
+> >>>
+> >>> Could be a different bug, can you please attach the error_state somewhere?
+> >>
+> >> yep, i915_error_state is attached. btw, I'm going to bisect kernel, so
+> >> hopefully I will bring some commit.
+> >
+> > Different bug, on a quick lock this could be a dupe of
+> > https://bugzilla.kernel.org/show_bug.cgi?id=52311
+> 
+> ok
+> 
+> > Chris should know the details.
+> 
+> thanks, bisection leads me to commit d7d4eed ("drm/i915: Allow
+> DRM_ROOT_ONLY|DRM_MASTER to submit privileged batchbuffers). It's not
+> possible to simply revert/test commit and I have no idea how i915 works.
+> 
+> Chris any ideas?
 
-On Monday, January 14, 2013 11:03:11 AM Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> After merging the pm tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> In file included from init/main.c:25:0:
-> include/linux/acpi.h:549:46: error: unknown type name 'acpi_handle'
-> include/linux/acpi.h:551:49: error: unknown type name 'acpi_handle'
-> 
-> and many more.
-> 
-> Caused by commit c9b147cd9648 ("ACPI / PM: Rework the handling of devices
-> depending on power resources").  Please check with and without CONFIG
-> options that affect patches ...
-> 
-> I have used the pm tree from next-20130111 for today.
+Userspace is failing to prepare the GPU to execute a WAIT_FOR_EVENT
+command, which it can only try if the kernel allows execution of
+privileged batch buffers.
 
-Thanks for the report and sorry for the breakage.  Should be fixed now.
-
-Rafael
-
+Option "SwapbuffersWait" "false" in xorg.conf will prevent the ddx from
+issuing the hanging command sequence. It is not clear yet what the
+missing ingredient is, I suspect the ddx needs to be more careful about
+not setting conditions that can never be met.
+-Chris
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
-
+Chris Wilson, Intel Open Source Technology Centre
