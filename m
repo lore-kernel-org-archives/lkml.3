@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619Ab3ANRGu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 12:06:50 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:55252 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389Ab3ANRGs (ORCPT
+	id S1757637Ab3ANRI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 12:08:29 -0500
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:40037 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756610Ab3ANRI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 12:06:48 -0500
-From: Mark Rutland <mark.rutland@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, tglx@linutronix.de, nico@linaro.org,
-        Will.Deacon@arm.com, Marc.Zyngier@arm.com, john.stultz@linaro.org,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCHv3 4/4] arm: Add generic timer broadcast support
-Date: Mon, 14 Jan 2013 17:05:24 +0000
-Message-Id: <1358183124-28461-5-git-send-email-mark.rutland@arm.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1358183124-28461-1-git-send-email-mark.rutland@arm.com>
-References: <1358183124-28461-1-git-send-email-mark.rutland@arm.com>
-X-OriginalArrivalTime: 14 Jan 2013 17:06:46.0973 (UTC) FILETIME=[8928CED0:01CDF279]
-X-MC-Unique: 113011417064714501
-Content-Type: text/plain; charset=WINDOWS-1252
+	Mon, 14 Jan 2013 12:08:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130113231836.GJ5041@opensource.wolfsonmicro.com>
+References: <1358024054-9895-1-git-send-email-andrew.smirnov@gmail.com>
+	<1358024054-9895-4-git-send-email-andrew.smirnov@gmail.com>
+	<20130113231836.GJ5041@opensource.wolfsonmicro.com>
+Date: Mon, 14 Jan 2013 09:08:27 -0800
+Message-ID: <CAHQ1cqGWYsfBAsp_8AOyJ0Q-7_PS-v6wRv6w5DQTju5tNf9fdg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] [regmap] [RESEND] Add "no-bus" option for regmap API
+From: Andrey Smirnov <andrew.smirnov@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "andrey.smirnov@convergeddevices.net" 
+	<andrey.smirnov@convergeddevices.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r0EH6pmo001328
 
-Implement timer_broadcast for the arm architecture, allowing for the use
-of clock_event_device_drivers decoupled from the timer tick broadcast
-mechanism.
+On Sun, Jan 13, 2013 at 3:18 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Sat, Jan 12, 2013 at 12:54:14PM -0800, Andrey Smirnov wrote:
+>
+>> +     bool cache_registers;
+>> +
+>
+> I'm afraid I don't quite understand this...
+>
+>> -     if (!map->cache_bypass && map->format.format_write) {
+>> +     if (!map->cache_bypass && map->cache_registers) {
+>>               ret = regcache_write(map, reg, val);
+>
+> ...I think it's mostly to service this check here, but looking at the
+> code I can't quite think why the code is doing what it's doing - I
+> suspect we should just remove the check for format_write() here.  I
+> think it was there to support potential bulk writes from the cache code
+> (which we don't do yet) but we're not actually doing those and it's not
+> clear that this should be doing that anyway.
+>
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/Kconfig      |    1 +
- arch/arm/kernel/smp.c |    3 +--
- 2 files changed, 2 insertions(+), 2 deletions(-)
+>From my understanding of the code it is done because the caching is
+handled differently for cases when format_write() and format_reg(),
+format_val() are provided.
+In case of 'format_write' the regcache_write() is called in
+_regmap_write() directly whereas when format_reg(), format_val() are
+there _regmap_write() calls _regmap_raw_write() which in turn calls
+regcache_write(). If I remove that variable and corresponding check
+then regcache_write() would be called twice in the case of
+format_reg(), format_val(), when _regmap_write() is called, would it
+not? I apologise if I miss something obvious and that is not a case(or
+issue).
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 67874b8..65ae737 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -4,6 +4,7 @@ config ARM
- 	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select ARCH_HAVE_CUSTOM_GPIO_H
-+	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select BUILDTIME_EXTABLE_SORT if MMU
- 	select CPU_PM if (SUSPEND || CPU_IDLE)
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 9308519..b7e3b50 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -476,7 +476,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
- static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
- 
- #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
--static void smp_timer_broadcast(const struct cpumask *mask)
-+void tick_broadcast(const struct cpumask *mask)
- {
- 	smp_cross_call(mask, IPI_TIMER);
- }
-@@ -524,7 +524,6 @@ static void __cpuinit percpu_timer_setup(void)
- 	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
- 
- 	evt->cpumask = cpumask_of(cpu);
--	evt->broadcast = smp_timer_broadcast;
- 
- 	if (!lt_ops || lt_ops->setup(evt))
- 		broadcast_timer_setup(evt);
--- 
-1.7.0.4
+>>       int ret;
+>> +     void *context = (map->bus) ? map : map->bus_context;
+>> +
+>
+> Can you please make this a static inline regmap_map_get_context() or
+> something?  The same thing appears in quite a few places and the terery
+> operator isn't great at the best of times.
+>
+
+Will do in the next version of this patch.
 
 
+Completely unrelated off-topic question: the following code in
+regmap_bulk_write()
+
+...
+
+if (map->use_single_rw) {
+    for (i = 0; i < val_count; i++) {
+        ret = regmap_raw_write(map,
+                                           reg + (i * map->reg_stride),
+                                           val + (i * val_bytes),
+                                           val_bytes);
+        if (ret != 0)
+            return ret;
+    }
+}
+
+....
+
+Would it not deadlock, since both regmap_bulk_write() and
+regmap_raw_write() call map->lock(...)?
+Once again, sorry for off-topic, I just didn't want to start a new
+thread because of what very well may by my poor understanding of the
+code(I'll submit a patch to change regmap_raw_write() to
+_regmap_raw_write() If I am correct).
