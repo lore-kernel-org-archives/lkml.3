@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab3ANStG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:49:06 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:40635 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756527Ab3ANStC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:49:02 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the pm tree
-Date: Mon, 14 Jan 2013 19:54:53 +0100
-Message-ID: <1814895.KpbBrTDE8x@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CA+icZUX7O6bAzSL_ysSum2psQC0M3K2EE5QUYL68F62vSsKfrA@mail.gmail.com>
-References: <20130114110311.a399f92e5e4ec730b380eaf4@canb.auug.org.au> <CA+icZUX7O6bAzSL_ysSum2psQC0M3K2EE5QUYL68F62vSsKfrA@mail.gmail.com>
+	id S1758005Ab3ANStZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:49:25 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:33883 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757872Ab3ANStX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 13:49:23 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <29967FDF21E24227AD4EC1DE00AC4044@VIU9IM6TKCWEEDX>
+References: <29967FDF21E24227AD4EC1DE00AC4044@VIU9IM6TKCWEEDX>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: Opening DEBUG in compressed/head.S,then kernel crashed
+From: Domenico Andreoli <cavokz@gmail.com>
+Date: Mon, 14 Jan 2013 19:14:35 +0100
+To: zhaoyilong <registcn@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <216ac924-a227-4c7e-a492-6d55db1ff657@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 14, 2013 02:22:20 PM Sedat Dilek wrote:
-> On Mon, Jan 14, 2013 at 1:03 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Hi Rafael,
-> >
-> > After merging the pm tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
-> >
-> > In file included from init/main.c:25:0:
-> > include/linux/acpi.h:549:46: error: unknown type name 'acpi_handle'
-> > include/linux/acpi.h:551:49: error: unknown type name 'acpi_handle'
-> >
-> > and many more.
-> >
-> > Caused by commit c9b147cd9648 ("ACPI / PM: Rework the handling of devices
-> > depending on power resources").  Please check with and without CONFIG
-> > options that affect patches ...
-> >
-> > I have used the pm tree from next-20130111 for today.
-> 
-> [ Please also CC linux-next ML ! ]
-> 
-> [ QUOTE ]
-> Thanks for the report and sorry for the breakage.  Should be fixed now.
-> 
-> Rafael
-> [ /QUOTE ]
-> 
-> What was the cause for this?
-> 
-> Did you refresh "ACPI / PM: Rework the handling of devices depending
-> on power resources" [1]?
+zhaoyilong <registcn@gmail.com> wrote:
 
-I did.
+>    When I open the macro DEBUG in the front of  file 
+>arch/arm/boot/decompressed/head.S,the kernel runs and stops
+>at"Uncompressing 
+>Linux... done, booting the kernel."
 
-Thanks,
-Rafael
+so the decompressor is able to write to the right console (and uncompress the kernel) but the kernel isn't.
+
+with a bit of luck you could get something appending earlyprintk to the kernel command line.
+
+cheers,
+Dome
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
