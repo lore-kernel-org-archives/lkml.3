@@ -1,120 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab3ANOhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:37:40 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:44906 "EHLO mxout2.iskon.hr"
+	id S1756439Ab3ANOjJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:39:09 -0500
+Received: from mail.gw90.de ([188.40.100.199]:52928 "EHLO mail.gw90.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756151Ab3ANOhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:37:38 -0500
-X-Remote-IP: 213.191.128.133
-Date: Mon, 14 Jan 2013 15:37:30 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
-MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <50EDE41C.7090107@iskon.hr>  <1357867501.6568.19.camel@kernel.cn.ibm.com> <50EFF6BC.4060200@iskon.hr> <1358038004.1466.4.camel@kernel.cn.ibm.com>
-In-Reply-To: <1358038004.1466.4.camel@kernel.cn.ibm.com>
-X-Spam-Score: ##
-Message-ID: <50F4182A.80006@iskon.hr>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Subject: Re: [PATCH] mm: wait for congestion to clear on all zones
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20130114 #9052380, check: 20130114 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 41460 [Jan 14 2013]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+	id S1751795Ab3ANOjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 09:39:08 -0500
+X-Greylist: delayed 1755 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jan 2013 09:39:08 EST
+Message-ID: <1358172566.15057.16.camel@mattotaupa>
+Subject: Re: Regression: drm/radeon: brightness control hard system lockup
+From: Paul Menzel <paulepanter@users.sourceforge.net>
+To: Eldad Zack <eldad@fogrefinery.com>
+Cc: Alex Deucher <alexdeucher@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Date: Mon, 14 Jan 2013 15:09:26 +0100
+In-Reply-To: <alpine.LNX.2.00.1301132143310.1772@xoschi>
+References: <alpine.LNX.2.00.1301061336180.1397@xoschi>
+	 <CADnq5_O1GDuigxwR8eXu7f1Fsb8iqrggVwYBaiOJKOR-ighYag@mail.gmail.com>
+	 <alpine.LNX.2.00.1301072206530.1617@xoschi>
+	 <CADnq5_NEQ2cCEPEGwBhX1KP0bDn7b+Q2M=Logw1fVC67ct-gEA@mail.gmail.com>
+	 <alpine.LNX.2.00.1301132143310.1772@xoschi>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-jsAGXu8HdcXbfEXbqb4L"
+X-Mailer: Evolution 3.4.4-1.1~pre4 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.01.2013 01:46, Simon Jeons wrote:
-> On Fri, 2013-01-11 at 12:25 +0100, Zlatko Calusic wrote:
->> On 11.01.2013 02:25, Simon Jeons wrote:
->>> On Wed, 2013-01-09 at 22:41 +0100, Zlatko Calusic wrote:
->>>> From: Zlatko Calusic <zlatko.calusic@iskon.hr>
->>>>
->>>> Currently we take a short nap (HZ/10) and wait for congestion to clear
->>>> before taking another pass with lower priority in balance_pgdat(). But
->>>> we do that only for the highest zone that we encounter is unbalanced
->>>> and congested.
->>>>
->>>> This patch changes that to wait on all congested zones in a single
->>>> pass in the hope that it will save us some scanning that way. Also we
->>>> take a nap as soon as congested zone is encountered and sc.priority <
->>>> DEF_PRIORITY - 2 (aka kswapd in trouble).
->>>
->>> But you still didn't explain what's the problem you meat and what
->>> scenario can get benefit from your change.
->>>
->>
->> I did in my reply to Andrew. Here's the relevant part:
->>
->>> I have an observation that without it, under some circumstances that
->>> are VERY HARD to repeat (many days need to pass and some stars to align
->>> to see the effect), the page cache gets hit hard, 2/3 of it evicted in
->>> a split second. And it's not even under high load! So, I'm still
->>> monitoring it, but so far the memory utilization really seems better
->>> with the patch applied (no more mysterious page cache shootdowns).
->>
->> The scenario that should get benefit is everyday. I observed problems during
->> light but constant reading from disk (< 10MB/s). And sending that data
->> over the network at the same time. Think backup that compresses data on the
->> fly before pushing it over the network (so it's not very fast).
->>
->> The trouble is that you can't just fix up a quick benchmark and measure the
->> impact, because many days need to pass for the bug to show up in all it's beauty.
->>
->> Is there anybody out there who'd like to comment on the patch logic? I.e. do
->> you think that waiting on every congested zone is the more correct solution
->> than waiting on only one (only the highest one, and ignoring the fact that
->> there may be other even more congested zones)?
-> 
-> What's the benefit of waiting on every congested zone than waiting on
-> only one against your scenario?
-> 
 
-The good:
+--=-jsAGXu8HdcXbfEXbqb4L
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Actually, we are _already_ waiting on every congested zone. And have
-been for more than a year. So, all this discussion is... moot.
+Dear Eldad,
 
-Andrew, ignore this patch, I'll send you a much better one in a minute.
-There shouldn't be nearly so many questions about that one. ;)
 
-The bad:
+thanks a lot for the patch.
 
-Obviously then, this patch didn't fix my issue. It just took a little
-bit longer for it to appear again.
 
-The ugly:
+Am Sonntag, den 13.01.2013, 22:00 +0100 schrieb Eldad Zack:
 
-Here's what I observe on one of my machines:
+[=E2=80=A6]
 
-Node 0, zone      DMA
-    nr_vmscan_write 0
-    nr_vmscan_immediate_reclaim 0
-Node 0, zone    DMA32
-    nr_vmscan_write 23164
-    nr_vmscan_immediate_reclaim 582038
-Node 0, zone   Normal
-    nr_vmscan_write 16584344  <-- ugh!
-    nr_vmscan_immediate_reclaim 1118415
+> From 5817128d2761f60051b069d2bb31209c909b6a04 Mon Sep 17 00:00:00 2001
+> From: Eldad Zack <eldad@fogrefinery.com>
+> Date: Sun, 13 Jan 2013 21:14:08 +0100
+> Subject: [PATCH] drm/radeon: fix evergreen brightness control regression
+>=20
+> Commit 0ecebb9e0d14e9948e0b1529883a776758117d6f
 
-But that's just a sneak peek, I'll open a proper thread to discuss this
-when I collect a little bit more data. BTW, that Normal zone with
-extraordinary amount of writebacks under memory pressure is 4 times
-smaller than DMA32 zone, that's why I consider it ugly. :P
--- 
-Zlatko
+please paste the commit summary into the commit message as remembering
+hashes is difficult.
+
+> introduced a
+> regression, where using ACPI brightness control leads to a
+> hard system lock-up.
+> To resolve the issue, this patch moves the GUI_ACTIVE test
+> earlier, as it was before the commit.
+
+Please also add a link to this discussion on the list to the commit
+message.
+
+> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+> ---
+>  drivers/gpu/drm/radeon/evergreen.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+
+[=E2=80=A6]
+
+
+Thanks,
+
+Paul
+
+--=-jsAGXu8HdcXbfEXbqb4L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEABECAAYFAlD0EZYACgkQPX1aK2wOHVghkQCdEYIgsbFsFFzpzV3FRW3oG2YX
+Vr8An1tHlnYvWXb5x0b8iejRWdNBOMGz
+=Lli+
+-----END PGP SIGNATURE-----
+
+--=-jsAGXu8HdcXbfEXbqb4L--
+
