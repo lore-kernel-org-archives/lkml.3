@@ -1,257 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab3ANNXd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 08:23:33 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:35351 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756395Ab3ANNX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 08:23:29 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 2/2] cpufreq: Simplify cpufreq_add_dev()
-Date: Mon, 14 Jan 2013 18:53:04 +0530
-Message-Id: <c8858f2e2768be94901696e5fc208efe9104b26e.1358169251.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <52283ef705d795f3bbc50f8444c292e80364372e.1358169251.git.viresh.kumar@linaro.org>
-References: <52283ef705d795f3bbc50f8444c292e80364372e.1358169251.git.viresh.kumar@linaro.org>
-In-Reply-To: <52283ef705d795f3bbc50f8444c292e80364372e.1358169251.git.viresh.kumar@linaro.org>
-References: <52283ef705d795f3bbc50f8444c292e80364372e.1358169251.git.viresh.kumar@linaro.org>
+	id S1756492Ab3ANN1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 08:27:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751288Ab3ANN1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 08:27:41 -0500
+Date: Mon, 14 Jan 2013 15:27:36 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Andrew Clayton <andrew@digital-domain.net>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: qemu-kvm hangs at start up under 3.8.0-rc3-00074-gb719f43 (works
+ with CONFIG_LOCKDEP)
+Message-ID: <20130114132736.GA12489@redhat.com>
+References: <20130113222958.64840242@omega.digital-domain.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130113222958.64840242@omega.digital-domain.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently cpufreq_add_dev() firsts allocates policy, calls driver->init() and
-then checks if this cpu is already managed or not. And if it is already managed,
-free its policy.
+On Sun, Jan 13, 2013 at 10:29:58PM +0000, Andrew Clayton wrote:
+> When running qemu-kvm under 64but Fedora 16 under current 3.8, it just
+> hangs at start up. Dong a ps -ef hangs the process at the point where it
+> would display the qemu process (trying to list the qemu-kvm /proc pid
+> directory contents just hangs ls).
+> 
+> I also noticed some other weirdness at this point like Firefox hanging
+> for many seconds at a time and increasing load average.
+> 
+> The qemu command I was trying to run was
+> 
+> $ qemu-kvm -m 512 -smp 2 -vga vmware -k en-gb -drive
+> file=/home/andrew/machines/qemu/f16-i386.img,if=virtio
+> 
+> Here's the last few lines of a strace on it at start up.
+> 
+> open("/home/andrew/machines/qemu/f16-i386.img", O_RDWR|O_DSYNC|O_CLOEXEC) = 8
+> lseek(8, 0, SEEK_END)                   = 9100722176
+> pread(8, "QFI\373\0\0\0\2\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\20\0\0\0\2\200\0\0\0"..., 512, 0) = 512
+> pread(8, "\200\0\0\0\0\4\0\0\200\0\0\0\0\10\0\0\200\0\0\0\2\210\0\0\200\0\0\0\2\233\0\0"..., 512, 65536) = 512
+> brk(0)                                  = 0x7faf12db0000
+> brk(0x7faf12ddd000
+> 
+> It's hanging in that brk syscall. The load average also then starts to increase.
+> 
+> 
+> However. I can make it run fine, if I enable CONFIG_LOCKDEP. But the only
+> thing in dmesg I get is the usual.
+> 
+> kvm: SMP vm created on host with unstable TSC; guest TSC will not be reliable
+> 
+> I've attached both working and non-working .configs. The only difference being
+> the lock checking enabled in config.good.
+> 
+> The most recent kernel I had it working in was 3.7.0
+> 
+> System is a Quad Core Intel running 64bit Fedora 16.
+> 
+Can you run "echo t > /proc/sysrq-trigger" and see where it hangs?
 
-We can save all this if we somehow know cpu is managed or not in advance.
-policy->related_cpus contains list of all valid sibling cpus of policy->cpu. We
-can check this to know if current cpu is already managed.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
----
-V1->V2:
-- #ifdef,endif CONFIG_HOTPLUG added across: cpufreq_add_policy_cpu() and its
-  usage.
-
- drivers/cpufreq/cpufreq.c | 153 +++++++++++++++++-----------------------------
- 1 file changed, 55 insertions(+), 98 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 9af14a8..5f72ad4 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -703,92 +703,6 @@ static struct kobj_type ktype_cpufreq = {
- 	.release	= cpufreq_sysfs_release,
- };
- 
--/*
-- * Returns:
-- *   Negative: Failure
-- *   0:        Success
-- *   Positive: When we have a managed CPU and the sysfs got symlinked
-- */
--static int cpufreq_add_dev_policy(unsigned int cpu,
--				  struct cpufreq_policy *policy,
--				  struct device *dev)
--{
--	int ret = 0;
--#ifdef CONFIG_SMP
--	unsigned long flags;
--	unsigned int j;
--#ifdef CONFIG_HOTPLUG_CPU
--	struct cpufreq_governor *gov;
--
--	gov = __find_governor(per_cpu(cpufreq_cpu_governor, cpu));
--	if (gov) {
--		policy->governor = gov;
--		pr_debug("Restoring governor %s for cpu %d\n",
--		       policy->governor->name, cpu);
--	}
--#endif
--
--	for_each_cpu(j, policy->cpus) {
--		struct cpufreq_policy *managed_policy;
--
--		if (cpu == j)
--			continue;
--
--		/* Check for existing affected CPUs.
--		 * They may not be aware of it due to CPU Hotplug.
--		 * cpufreq_cpu_put is called when the device is removed
--		 * in __cpufreq_remove_dev()
--		 */
--		managed_policy = cpufreq_cpu_get(j);
--		if (unlikely(managed_policy)) {
--
--			/* Set proper policy_cpu */
--			unlock_policy_rwsem_write(cpu);
--			per_cpu(cpufreq_policy_cpu, cpu) = managed_policy->cpu;
--
--			if (lock_policy_rwsem_write(cpu) < 0) {
--				/* Should not go through policy unlock path */
--				if (cpufreq_driver->exit)
--					cpufreq_driver->exit(policy);
--				cpufreq_cpu_put(managed_policy);
--				return -EBUSY;
--			}
--
--			__cpufreq_governor(managed_policy, CPUFREQ_GOV_STOP);
--
--			spin_lock_irqsave(&cpufreq_driver_lock, flags);
--			cpumask_copy(managed_policy->cpus, policy->cpus);
--			per_cpu(cpufreq_cpu_data, cpu) = managed_policy;
--			spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
--
--			__cpufreq_governor(managed_policy, CPUFREQ_GOV_START);
--			__cpufreq_governor(managed_policy, CPUFREQ_GOV_LIMITS);
--
--			pr_debug("CPU already managed, adding link\n");
--			ret = sysfs_create_link(&dev->kobj,
--						&managed_policy->kobj,
--						"cpufreq");
--			if (ret)
--				cpufreq_cpu_put(managed_policy);
--			/*
--			 * Success. We only needed to be added to the mask.
--			 * Call driver->exit() because only the cpu parent of
--			 * the kobj needed to call init().
--			 */
--			if (cpufreq_driver->exit)
--				cpufreq_driver->exit(policy);
--
--			if (!ret)
--				return 1;
--			else
--				return ret;
--		}
--	}
--#endif
--	return ret;
--}
--
--
- /* symlink affected CPUs */
- static int cpufreq_add_dev_symlink(unsigned int cpu,
- 				   struct cpufreq_policy *policy)
-@@ -893,6 +807,42 @@ err_out_kobj_put:
- 	return ret;
- }
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
-+				  struct device *dev)
-+{
-+	struct cpufreq_policy *policy;
-+	int ret = 0;
-+	unsigned long flags;
-+
-+	policy = cpufreq_cpu_get(sibling);
-+	WARN_ON(!policy);
-+
-+	per_cpu(cpufreq_policy_cpu, cpu) = policy->cpu;
-+
-+	lock_policy_rwsem_write(cpu);
-+
-+	__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-+
-+	spin_lock_irqsave(&cpufreq_driver_lock, flags);
-+	cpumask_set_cpu(cpu, policy->cpus);
-+	per_cpu(cpufreq_cpu_data, cpu) = policy;
-+	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+
-+	__cpufreq_governor(policy, CPUFREQ_GOV_START);
-+	__cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
-+
-+	unlock_policy_rwsem_write(cpu);
-+
-+	ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
-+	if (ret) {
-+		cpufreq_cpu_put(policy);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+#endif
- 
- /**
-  * cpufreq_add_dev - add a CPU device
-@@ -905,12 +855,12 @@ err_out_kobj_put:
-  */
- static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- {
--	unsigned int cpu = dev->id;
--	int ret = 0, found = 0;
-+	unsigned int j, cpu = dev->id;
-+	int ret = -ENOMEM, found = 0;
- 	struct cpufreq_policy *policy;
- 	unsigned long flags;
--	unsigned int j;
- #ifdef CONFIG_HOTPLUG_CPU
-+	struct cpufreq_governor *gov;
- 	int sibling;
- #endif
- 
-@@ -927,6 +877,15 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 		cpufreq_cpu_put(policy);
- 		return 0;
- 	}
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+	/* Check if this cpu was hot-unplugged earlier and has siblings */
-+	for_each_online_cpu(sibling) {
-+		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
-+		if (cp && cpumask_test_cpu(cpu, cp->related_cpus))
-+			return cpufreq_add_policy_cpu(cpu, sibling, dev);
-+	}
-+#endif
- #endif
- 
- 	if (!try_module_get(cpufreq_driver->owner)) {
-@@ -934,7 +893,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 		goto module_out;
- 	}
- 
--	ret = -ENOMEM;
- 	policy = kzalloc(sizeof(struct cpufreq_policy), GFP_KERNEL);
- 	if (!policy)
- 		goto nomem_out;
-@@ -992,14 +950,14 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
- 				     CPUFREQ_START, policy);
- 
--	ret = cpufreq_add_dev_policy(cpu, policy, dev);
--	if (ret) {
--		if (ret > 0)
--			/* This is a managed cpu, symlink created,
--			   exit with 0 */
--			ret = 0;
--		goto err_unlock_policy;
-+#ifdef CONFIG_HOTPLUG_CPU
-+	gov = __find_governor(per_cpu(cpufreq_cpu_governor, cpu));
-+	if (gov) {
-+		policy->governor = gov;
-+		pr_debug("Restoring governor %s for cpu %d\n",
-+		       policy->governor->name, cpu);
- 	}
-+#endif
- 
- 	ret = cpufreq_add_dev_interface(cpu, policy, dev);
- 	if (ret)
-@@ -1013,7 +971,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 
- 	return 0;
- 
--
- err_out_unregister:
- 	spin_lock_irqsave(&cpufreq_driver_lock, flags);
- 	for_each_cpu(j, policy->cpus)
--- 
-1.7.12.rc2.18.g61b472e
-
+--
+			Gleb.
