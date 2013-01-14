@@ -1,229 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3ANGPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 01:15:09 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:33184 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab3ANGPH (ORCPT
+	id S1752738Ab3ANGSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 01:18:09 -0500
+Received: from relay.parallels.com ([195.214.232.42]:52420 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841Ab3ANGSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 01:15:07 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, rob@landley.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] documentation: devicetree: Fix typo within Documentation/devicetree
-Date: Mon, 14 Jan 2013 15:14:56 +0900
-Message-Id: <1358144096-24678-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
+	Mon, 14 Jan 2013 01:18:06 -0500
+Message-ID: <50F3A317.9040604@parallels.com>
+Date: Mon, 14 Jan 2013 10:17:59 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [Devel] [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
+References: <20121206153447.30693.54128.stgit@localhost.localdomain> <20121210202842.GB17350@fieldses.org> <50C73C60.8060405@parallels.com> <50C73F58.1080005@parallels.com> <20121211145621.GA3336@fieldses.org> <50C74C14.8030807@parallels.com> <20121211152036.GB3336@fieldses.org> <20121211153527.GC3336@fieldses.org> <50F0283A.6040509@parallels.com> <20130111170312.GF17909@fieldses.org> <20130111172015.GG17909@fieldses.org>
+In-Reply-To: <20130111172015.GG17909@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typos within Documentation/devicetree
+Thanks!
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- Documentation/devicetree/bindings/arm/atmel-aic.txt                | 2 +-
- Documentation/devicetree/bindings/arm/exynos/power_domain.txt      | 2 +-
- Documentation/devicetree/bindings/arm/gic.txt                      | 4 ++--
- Documentation/devicetree/bindings/arm/omap/omap.txt                | 6 +++---
- Documentation/devicetree/bindings/i2c/samsung-i2c.txt              | 2 +-
- Documentation/devicetree/bindings/mips/cavium/dma-engine.txt       | 2 +-
- Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt           | 6 +++---
- Documentation/devicetree/bindings/mmc/samsung-sdhci.txt            | 2 +-
- Documentation/devicetree/bindings/powerpc/fsl/srio.txt             | 4 ++--
- Documentation/devicetree/bindings/regulator/tps62360-regulator.txt | 4 ++--
- Documentation/devicetree/bindings/rtc/s3c-rtc.txt                  | 2 +-
- Documentation/devicetree/bindings/watchdog/samsung-wdt.txt         | 2 +-
- 12 files changed, 19 insertions(+), 19 deletions(-)
+11.01.2013 21:20, J. Bruce Fields пишет:
+> On Fri, Jan 11, 2013 at 12:03:12PM -0500, J. Bruce Fields wrote:
+>> On Fri, Jan 11, 2013 at 06:56:58PM +0400, Stanislav Kinsbursky wrote:
+>>> 11.12.2012 19:35, J. Bruce Fields пишет:
+>>>> On Tue, Dec 11, 2012 at 10:20:36AM -0500, J. Bruce Fields wrote:
+>>>>> On Tue, Dec 11, 2012 at 07:07:00PM +0400, Stanislav Kinsbursky wrote:
+>>>>>> I don't really understand, how  mountd's root can be wrong. I.e.
+>>>>>> its' always right as I see it. NFSd kthreads have to swap/use
+>>>>>> relative path/whatever to communicate with proper mountd.
+>>>>>> Or I'm missing something?
+>>>>>
+>>>>> Ugh, I see the problem: I thought svc_export_request was called at the
+>>>>> time mountd does the read, but instead its done at the time nfsd does
+>>>>> the upcall.
+>>>>>
+>>>>> I suspect that's wrong, and we really want this done in the context of
+>>>>> the mountd process when it does the read call.  If d_path is called
+>>>>> there then we have no problem.
+>>>>
+>>>> Right, so I'd be happier if we could modify sunrpc_cache_pipe_upcall to
+>>>> skip calling cache_request and instead delay that until cache_read().  I
+>>>> think that should be possible.
+>>>>
+>>>
+>>> So, Bruce, what we going to do (or what you want me to do) with the rest of NFSd changes?
+>>> I.e. how I should solve this d_path() problem?
+>>> I.e. I don't understand what did you mean by "I'd be happier if we could modify sunrpc_cache_pipe_upcall to
+>>> skip calling cache_request and instead delay that until cache_read()".
+>>> Could you give me a hint?
+>>
+>> Definitely.  So normally the way these upcalls happen are:
+>>
+>> 	1. the kernel does a cache lookup, finds no matching item, and
+>> 	   calls sunrpc_cache_pipe_upcall().
+>> 	2. sunrpc_cache_pipe_upcall() formats the upcall: it allocates a
+>> 	   struct cache_request crq and fills crq->buf with the upcall
+>> 	   data by calling the cache's ->cache_request() method.
+>> 	3. Then rpc.mountd realizes there's data available in
+>> 	   /proc/net/rpc/nfsd.fh/content, so it does a read on that file.
+>> 	4. cache_read copies the formatted upcall from crq->buf to
+>> 	   to userspace.
+>>
+>> So all I'm suggesting is that instead of calling ->cache_request() at
+>> step 2, we do it at step 4.
+>>
+>> Then cache_request will be called from rpc.mountd's read.  So we'll know
+>> which container rpc.mountd is in.
+>>
+>> Does that make sense?
+>
+> The following is untested, ugly, and almost certainly insufficient and
+> wrong, but maybe it's a starting point:
+>
+> --b.
+>
+> diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+> index 9f84703..f15e4c1 100644
+> --- a/net/sunrpc/cache.c
+> +++ b/net/sunrpc/cache.c
+> @@ -744,6 +744,7 @@ struct cache_request {
+>   	char			* buf;
+>   	int			len;
+>   	int			readers;
+> +	void (*cache_request)(struct cache_detail *, struct cache_head *, char **, int *);
+>   };
+>   struct cache_reader {
+>   	struct cache_queue	q;
+> @@ -785,10 +786,19 @@ static ssize_t cache_read(struct file *filp, char __user *buf, size_t count,
+>   	spin_unlock(&queue_lock);
+>
+>   	if (rp->offset == 0 && !test_bit(CACHE_PENDING, &rq->item->flags)) {
+> +		char *bp;
+> +		int len = PAGE_SIZE;
+> +
+>   		err = -EAGAIN;
+>   		spin_lock(&queue_lock);
+>   		list_move(&rp->q.list, &rq->q.list);
+>   		spin_unlock(&queue_lock);
+> +
+> +		bp = rq->buf;
+> +		rq->cache_request(cd, rq->item, &bp, &len);
+> +		if (rq->len < 0)
+> +			goto out;
+> +		rq->len = PAGE_SIZE - len;
+>   	} else {
+>   		if (rp->offset + count > rq->len)
+>   			count = rq->len - rp->offset;
+> @@ -1149,8 +1159,6 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h,
+>
+>   	char *buf;
+>   	struct cache_request *crq;
+> -	char *bp;
+> -	int len;
+>
+>   	if (!cache_listeners_exist(detail)) {
+>   		warn_no_listener(detail);
+> @@ -1167,19 +1175,10 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h,
+>   		return -EAGAIN;
+>   	}
+>
+> -	bp = buf; len = PAGE_SIZE;
+> -
+> -	cache_request(detail, h, &bp, &len);
+> -
+> -	if (len < 0) {
+> -		kfree(buf);
+> -		kfree(crq);
+> -		return -EAGAIN;
+> -	}
+> +	crq->cache_request = cache_request;
+>   	crq->q.reader = 0;
+>   	crq->item = cache_get(h);
+>   	crq->buf = buf;
+> -	crq->len = PAGE_SIZE - len;
+>   	crq->readers = 0;
+>   	spin_lock(&queue_lock);
+>   	list_add_tail(&crq->q.list, &detail->queue);
+>
 
-diff --git a/Documentation/devicetree/bindings/arm/atmel-aic.txt b/Documentation/devicetree/bindings/arm/atmel-aic.txt
-index 19078bf..ad03121 100644
---- a/Documentation/devicetree/bindings/arm/atmel-aic.txt
-+++ b/Documentation/devicetree/bindings/arm/atmel-aic.txt
-@@ -4,7 +4,7 @@ Required properties:
- - compatible: Should be "atmel,<chip>-aic"
- - interrupt-controller: Identifies the node as an interrupt controller.
- - interrupt-parent: For single AIC system, it is an empty property.
--- #interrupt-cells: The number of cells to define the interrupts. It sould be 3.
-+- #interrupt-cells: The number of cells to define the interrupts. It should be 3.
-   The first cell is the IRQ number (aka "Peripheral IDentifier" on datasheet).
-   The second cell is used to specify flags:
-     bits[3:0] trigger type and level flags:
-diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-index 6528e21..3fb457b 100644
---- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-+++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-@@ -4,7 +4,7 @@ Exynos processors include support for multiple power domains which are used
- to gate power to one or more peripherals on the processor.
- 
- Required Properties:
--- compatiable: should be one of the following.
-+- compatible: should be one of the following.
-     * samsung,exynos4210-pd - for exynos4210 type power domain.
- - reg: physical base address of the controller and length of memory mapped
-     region.
-diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-index 62eb8df..3dfb0c0 100644
---- a/Documentation/devicetree/bindings/arm/gic.txt
-+++ b/Documentation/devicetree/bindings/arm/gic.txt
-@@ -42,7 +42,7 @@ Main node required properties:
- 
- Optional
- - interrupts	: Interrupt source of the parent interrupt controller on
--  secondary GICs, or VGIC maintainance interrupt on primary GIC (see
-+  secondary GICs, or VGIC maintenance interrupt on primary GIC (see
-   below).
- 
- - cpu-offset	: per-cpu offset within the distributor and cpu interface
-@@ -74,7 +74,7 @@ Required properties:
-   virtual interface control register base and size. The 2nd additional
-   region is the GIC virtual cpu interface register base and size.
- 
--- interrupts : VGIC maintainance interrupt.
-+- interrupts : VGIC maintenance interrupt.
- 
- Example:
- 
-diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
-index d0051a7..f8288ea 100644
---- a/Documentation/devicetree/bindings/arm/omap/omap.txt
-+++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
-@@ -39,16 +39,16 @@ Boards:
- - OMAP3 Tobi with Overo : Commercial expansion board with daughter board
-   compatible = "ti,omap3-tobi", "ti,omap3-overo", "ti,omap3"
- 
--- OMAP4 SDP : Software Developement Board
-+- OMAP4 SDP : Software Development Board
-   compatible = "ti,omap4-sdp", "ti,omap4430"
- 
- - OMAP4 PandaBoard : Low cost community board
-   compatible = "ti,omap4-panda", "ti,omap4430"
- 
--- OMAP3 EVM : Software Developement Board for OMAP35x, AM/DM37x
-+- OMAP3 EVM : Software Development Board for OMAP35x, AM/DM37x
-   compatible = "ti,omap3-evm", "ti,omap3"
- 
--- AM335X EVM : Software Developement Board for AM335x
-+- AM335X EVM : Software Development Board for AM335x
-   compatible = "ti,am335x-evm", "ti,am33xx", "ti,omap3"
- 
- - AM335X Bone : Low cost community board
-diff --git a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-index b6cb5a1..ccdf9c9 100644
---- a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-+++ b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-@@ -18,7 +18,7 @@ Optional properties:
-     The gpio specifier depends on the gpio controller. Required in all
-     cases except for "samsung,s3c2440-hdmiphy-i2c" whose input/output
-     lines are permanently wired to the respective client
--  - samsung,i2c-slave-addr: Slave address in multi-master enviroment. If not
-+  - samsung,i2c-slave-addr: Slave address in multi-master environment. If not
-     specified, default value is 0.
-   - samsung,i2c-max-bus-freq: Desired frequency in Hz of the bus. If not
-     specified, the default value in Hz is 100000.
-diff --git a/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt b/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
-index cb4291e..a5bdff4 100644
---- a/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
-+++ b/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
-@@ -1,7 +1,7 @@
- * DMA Engine.
- 
- The Octeon DMA Engine transfers between the Boot Bus and main memory.
--The DMA Engine will be refered to by phandle by any device that is
-+The DMA Engine will be referred to by phandle by any device that is
- connected to it.
- 
- Properties:
-diff --git a/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt
-index 7927689..898b222 100644
---- a/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt
-+++ b/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt
-@@ -11,11 +11,11 @@ Required Properties:
- 
- * compatible: should be
- 	- "samsung,exynos4210-dw-mshc": for controllers with Samsung Exynos4210
--	  specific extentions.
-+	  specific extensions.
- 	- "samsung,exynos4412-dw-mshc": for controllers with Samsung Exynos4412
--	  specific extentions.
-+	  specific extensions.
- 	- "samsung,exynos5250-dw-mshc": for controllers with Samsung Exynos5250
--	  specific extentions.
-+	  specific extensions.
- 
- * samsung,dw-mshc-ciu-div: Specifies the divider value for the card interface
-   unit (ciu) clock. This property is applicable only for Exynos5 SoC's and
-diff --git a/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt b/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
-index 630a7d7..43acfdf 100644
---- a/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
-+++ b/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
-@@ -49,5 +49,5 @@ Example:
- 	};
- 
- 	Note: This example shows both SoC specific and board specific properties
--	in a single device node. The properties can be actually be seperated
-+	in a single device node. The properties can be actually be separated
- 	into SoC specific node and board specific node.
-diff --git a/Documentation/devicetree/bindings/powerpc/fsl/srio.txt b/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
-index b039bcb..07abf0f 100644
---- a/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
-+++ b/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
-@@ -8,9 +8,9 @@ Properties:
- 	Definition: Must include "fsl,srio" for IP blocks with IP Block
- 	Revision Register (SRIO IPBRR1) Major ID equal to 0x01c0.
- 
--	Optionally, a compatiable string of "fsl,srio-vX.Y" where X is Major
-+	Optionally, a compatible string of "fsl,srio-vX.Y" where X is Major
- 	version in IP Block Revision Register and Y is Minor version.  If this
--	compatiable is provided it should be ordered before "fsl,srio".
-+	compatible is provided it should be ordered before "fsl,srio".
- 
-    - reg
- 	Usage: required
-diff --git a/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt b/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
-index c8ca6b8..1b20c3d 100644
---- a/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
-@@ -17,9 +17,9 @@ Optional properties:
- - ti,vsel1-gpio: Gpio for controlling VSEL1 line.
-   If this property is missing, then assume that there is no GPIO
-   for vsel1 control.
--- ti,vsel0-state-high: Inital state of vsel0 input is high.
-+- ti,vsel0-state-high: Initial state of vsel0 input is high.
-   If this property is missing, then assume the state as low (0).
--- ti,vsel1-state-high: Inital state of vsel1 input is high.
-+- ti,vsel1-state-high: Initial state of vsel1 input is high.
-   If this property is missing, then assume the state as low (0).
- 
- Any property defined as part of the core regulator binding, defined in
-diff --git a/Documentation/devicetree/bindings/rtc/s3c-rtc.txt b/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
-index 90ec45f..7ac7259 100644
---- a/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
-+++ b/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
-@@ -7,7 +7,7 @@ Required properties:
- - reg: physical base address of the controller and length of memory mapped
-   region.
- - interrupts: Two interrupt numbers to the cpu should be specified. First
--  interrupt number is the rtc alarm interupt and second interrupt number
-+  interrupt number is the rtc alarm interrupt and second interrupt number
-   is the rtc tick interrupt. The number of cells representing a interrupt
-   depends on the parent interrupt controller.
- 
-diff --git a/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt b/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt
-index 79ead82..ce0d8e7 100644
---- a/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt
-+++ b/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt
-@@ -2,7 +2,7 @@
- 
- The Samsung's Watchdog controller is used for resuming system operation
- after a preset amount of time during which the WDT reset event has not
--occured.
-+occurred.
- 
- Required properties:
- - compatible : should be "samsung,s3c2410-wdt"
+
 -- 
-1.8.1.336.g94702dd
-
+Best regards,
+Stanislav Kinsbursky
