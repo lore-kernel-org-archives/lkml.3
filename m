@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab3ANW1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 17:27:04 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:59715 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757765Ab3ANW1C convert rfc822-to-8bit (ORCPT
+	id S1758503Ab3ANW2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 17:28:31 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:60726 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757733Ab3ANW2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 17:27:02 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 2/2] nconf:  function keys line, change background color for better readability
-Date: Mon, 14 Jan 2013 23:26:58 +0100
-User-Agent: KMail/1.13.5 (Linux/3.6.11-treguer; KDE/4.4.5; x86_64; ; )
-Cc: Roland Eggner <edvx1@systemanalysen.net>,
-        Dmitry Voytik <dvv.kernel@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
-References: <20121228185108.GA13644@voyt-hp> <20121229223328.GA28355@mobil.systemanalysen.net> <201301142320.13141.yann.morin.1998@free.fr>
-In-Reply-To: <201301142320.13141.yann.morin.1998@free.fr>
+	Mon, 14 Jan 2013 17:28:30 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201301142326.58199.yann.morin.1998@free.fr>
+In-Reply-To: <1357134014-31203-1-git-send-email-linus.walleij@stericsson.com>
+References: <1357134014-31203-1-git-send-email-linus.walleij@stericsson.com>
+Date: Mon, 14 Jan 2013 23:28:29 +0100
+Message-ID: <CACRpkdZhzSbf4rNf57MFcZZraUfZ0xiJxs2TzPHQaYz4x4X10Q@mail.gmail.com>
+Subject: Re: [PATCH v2] mfd: tc3589x: use simple irqdomain
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Anmar Oueja <anmar.oueja@linaro.org>,
+        stable@kernel.org, Fabio Baltieri <fabio.baltieri@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roland, All,
+On Wed, Jan 2, 2013 at 2:40 PM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
 
-On Monday 14 January 2013 Yann E. MORIN wrote:
-> On Saturday 29 December 2012 Roland Eggner wrote:
-> > >From: Roland Eggner <edvx1@systemanalysen.net>
-> > 
-> > •  In function keys line descriptions black on darkblue are almost impossible
-> >    to read.  Change colors to black on brown.
-[--SNIP--]
-> Although I am not a fan of this color scheme, it is much more readable
-> than the previous black-on-blue. Tested in frame-buffer console, in konsole
-> and in xterm. And queued in my non-official for-next branch.
+> This fixes a regression in the TC3589x driver introduced in
+> commit 15e27b1088245a2de3b7d09d39cd209212eb16af
+> "mfd: Provide the tc3589x with its own IRQ domain"
+>
+> If a system with a TC3589x expander is booted and a base
+> IRQ is passed from platform data, a legacy domain will
+> be used. However, since the Ux500 is now switched to use
+> SPARSE_IRQ, no descriptors get allocated on-the-fly,
+> and we get a crash.
+>
+> Fix this by switching to using the simple irqdomain that
+> will handle this uniformly and also allocates descriptors
+> explicitly.
+>
+> Also fix two small whitespace errors in the vicinity while
+> we're at it.
+>
+> Cc: stable@kernel.org
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+> ---
+> ChangeLog v1->v2:
+> - Update commit message after comments from Lee, add ACK, no
+>   changes to the patche per se.
 
-Sorry, the branch is:
-  git@gitorious.org:linux-kconfig/linux-kconfig.git yem-kconfig-for-next
+Ping on this regression fix patch as well...
 
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
-
+Yours,
+Linus Walleij
