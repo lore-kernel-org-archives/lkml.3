@@ -1,128 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab3ANCb6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 21:31:58 -0500
-Received: from miso.sublimeip.com ([203.12.5.51]:53184 "EHLO
-	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3ANCb5 (ORCPT
+	id S1755617Ab3ANCdn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 21:33:43 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43554 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754564Ab3ANCdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 21:31:57 -0500
-Message-ID: <a370d0f1bac7b2cee0bd2c2eea1ce22f.squirrel@mail.sublimeip.com>
-In-Reply-To: <20130112181258.GA24903@redhat.com>
-References: <20121125225533.GA24905@redhat.com>
-    <20121125234834.DAC34592076@miso.sublimeip.com>
-    <20121202193058.GA4264@redhat.com>
-    <841b7a319f9d22402d269eed23d03835.squirrel@mail.sublimeip.com>
-    <20121204175933.GA11537@redhat.com> <50EC527C.5030800@redhat.com>
-    <20130109175203.GA32191@redhat.com>
-    <6dff6dcdbfd7444f0b43d8b8bea6ca7c.squirrel@mail.sublimeip.com>
-    <20130112181258.GA24903@redhat.com>
-Date: Mon, 14 Jan 2013 13:31:55 +1100
-Subject: Re: PTRACE_SYSCALL && vsyscall (Was: arch_check_bp_in_kernelspace:
- fix the range check)
-From: u3557@miso.sublimeip.com
-To: "Oleg Nesterov" <oleg@redhat.com>
-Cc: u3557@miso.sublimeip.com, "Pedro Alves" <palves@redhat.com>,
-        "Denys Vlasenko" <dvlasenk@redhat.com>,
-        "Jan Kratochvil" <jan.kratochvil@redhat.com>,
-        "Cyrill Gorcunov" <gorcunov@openvz.org>,
-        "Pavel Emelyanov" <xemul@parallels.com>,
-        "Steven Rostedt" <rostedt@goodmis.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Ingo Molnar" <mingo@redhat.com>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org
-Reply-To: mosix@mosix.com.au
-User-Agent: SquirrelMail/1.4.22
+	Sun, 13 Jan 2013 21:33:42 -0500
+X-AuditID: 9c930197-b7cefae0000002d7-1e-50f36e82131b
+Date: Mon, 14 Jan 2013 11:33:38 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andy Whitcroft <apw@shadowen.org>, Alexander Nyberg <alexn@dsv.su.se>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v2 2/2] Enhance read_block of page_owner.c
+Message-ID: <20130114023338.GB18097@blaptop>
+References: <1357871401-7075-1-git-send-email-minchan@kernel.org>
+ <1357871401-7075-2-git-send-email-minchan@kernel.org>
+ <xa1t8v7zbteu.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;boundary="----=_20130114133154_69408"
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <xa1t8v7zbteu.fsf@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_20130114133154_69408
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+On Fri, Jan 11, 2013 at 05:01:29PM +0100, Michal Nazarewicz wrote:
+> It occurred to me -- and I know it will sound like a heresy -- that
+> maybe providing an overly long example in C is not the best option here.
+> Why not page_owner.py with the following content instead (not tested):
+> 
+> 
+> #!/usr/bin/python
+> import collections
+> import sys
+> 
+> counts = collections.defaultdict(int)
+> 
+> txt = ''
+> for line in sys.stdin:
+>     if line == '\n':
+>         counts[txt] += 1
+>         txt = ''
+>     else:
+>         txt += line
+> counts[txt] += 1
+> 
+> for txt, num in sorted(counts.items(), txt=lambda x: x[1]):
+>     if len(txt) > 1:
+>         print '%d times:\n%s' % num, txt
+> 
+> 
+> And it's so “long” only because I chose not to read the whole file at
+> once as in:
+> 
+>     
+> counts = collections.defaultdict(int)
+> for txt in sys.stdin.read().split('\n\n'):
+>     counts[txt] += 1
 
-Hi,
+I'm not familar with Python but I can see the point of the program.
+It's very short and good for maintainace but I have a concern about the size.
+For working it in embedded side, we have to port python in that machine. :(
+You might argue we can parse it on host after downloading from target machine.
+But the problem is somecase we have no facility to download it from target
+machine because only connection to outside is LCD.
+In case of that, just small C program when we release product would be
+good choice.
 
-> I would not say this is a bug but let me repeat, no need to convince me.
->
-> Please feel free to re-send the patch(es) I sent to maintainers. Sorry,
-> I can't push these changes into Linus's tree.
+But I'm not strong aginst on your simple python program. If it is merged,
+we will just continue to use C program instead of python's one.
+If you have a strong opinion, send it to akpm as separate patch.
 
-So here again is the patch that I need so badly - clearly it fixes a bug
-and harms nobody:
+Thanks.
 
------------------------------------------------------------------------
-diff -Naur before/arch/x86/kernel/hw_breakpoint.c
-after/arch/x86/kernel/hw_breakpoint.c
---- before/arch/x86/kernel/hw_breakpoint.c	2013-01-14 12:45:20.000000000
-+1030
-+++ after/arch/x86/kernel/hw_breakpoint.c	2013-01-14 12:46:24.000000000 +1030
-@@ -200,7 +200,8 @@
- 	va = info->address;
- 	len = get_hbp_len(info->len);
+> 
+> 
+> On Fri, Jan 11 2013, Minchan Kim wrote:
+> > The read_block reads char one by one until meeting two newline.
+> > It's not good for the performance and current code isn't good shape
+> > for readability.
+> >
+> > This patch enhances speed and clean up.
+> >
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > Cc: Andy Whitcroft <apw@shadowen.org>
+> > Cc: Alexander Nyberg <alexn@dsv.su.se>
+> > Cc: Randy Dunlap <rdunlap@infradead.org>
+> > Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  Documentation/page_owner.c |   34 +++++++++++++---------------------
+> >  1 file changed, 13 insertions(+), 21 deletions(-)
+> >
+> > diff --git a/Documentation/page_owner.c b/Documentation/page_owner.c
+> > index 43dde96..96bf481 100644
+> > --- a/Documentation/page_owner.c
+> > +++ b/Documentation/page_owner.c
+> > @@ -28,26 +28,17 @@ static int max_size;
+> >  
+> >  struct block_list *block_head;
+> >  
+> > -int read_block(char *buf, FILE *fin)
+> > +int read_block(char *buf, int buf_size, FILE *fin)
+> >  {
+> > -	int ret = 0;
+> > -	int hit = 0;
+> > -	int val;
+> > -	char *curr = buf;
+> > -
+> > -	for (;;) {
+> > -		val = getc(fin);
+> > -		if (val == EOF) return -1;
+> > -		*curr = val;
+> > -		ret++;
+> > -		if (*curr == '\n' && hit == 1)
+> > -			return ret - 1;
+> > -		else if (*curr == '\n')
+> > -			hit = 1;
+> > -		else
+> > -			hit = 0;
+> > -		curr++;
+> > +	char *curr = buf, *const buf_end = buf + buf_size;
+> > +
+> > +	while (buf_end - curr > 1 && fgets(curr, buf_end - curr, fin)) {
+> > +		if (*curr == '\n') /* empty line */
+> > +			return curr - buf;
+> > +		curr += strlen(curr);
+> >  	}
+> > +
+> > +	return -1; /* EOF or no space left in buf. */
+> >  }
+> >  
+> >  static int compare_txt(struct block_list *l1, struct block_list *l2)
+> > @@ -84,10 +75,12 @@ static void add_list(char *buf, int len)
+> >  	}
+> >  }
+> >  
+> > +#define BUF_SIZE	1024
+> > +
+> >  int main(int argc, char **argv)
+> >  {
+> >  	FILE *fin, *fout;
+> > -	char buf[1024];
+> > +	char buf[BUF_SIZE];
+> >  	int ret, i, count;
+> >  	struct block_list *list2;
+> >  	struct stat st;
+> > @@ -106,11 +99,10 @@ int main(int argc, char **argv)
+> >  	list = malloc(max_size * sizeof(*list));
+> >  
+> >  	for(;;) {
+> > -		ret = read_block(buf, fin);
+> > +		ret = read_block(buf, BUF_SIZE, fin);
+> >  		if (ret < 0)
+> >  			break;
+> >  
+> > -		buf[ret] = '\0';
+> >  		add_list(buf, ret);
+> >  	}
+> >  
+> > -- 
+> > 1.7.9.5
+> >
+> 
+> -- 
+> Best regards,                                         _     _
+> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
 
--	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
-+	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE) &&
-+		!((va >= VSYSCALL_START) && ((va + len - 1) <= VSYSCALL_END));
- }
-
- int arch_bp_generic_fields(int x86_len, int x86_type,
------------------------------------------------------------------------
-
-Where else can I send it?
-Amnon.
-
-> On 01/10, u3557@miso.sublimeip.com wrote:
->>
->> Hi Everyone,
->>
->> > On 01/08, Pedro Alves wrote:
->> >>
->> >> On 12/04/2012 05:59 PM, Oleg Nesterov wrote:
->> >>
->> >> > But If we want to allow to trace vsyscall's, hw bp doesn't look
->> very
->> >> > nice imo. HBP_NUM = 4 and you need to setup 3 bp's to trace them
->> all.
->> >>
->> >> Irrespective of the whole syscall tracing issue, allowing HW bkpts in
->> >> the vsyscall just seems like a bug fix to me.
->> >
->> > And I never argued. I sent the patch iirc ;)
->>
->> Exactly, it is a bug and I am still waiting for it to be fixed in the
->> Linux kernel.
->
-> I would not say this is a bug but let me repeat, no need to convince me.
->
-> Please feel free to re-send the patch(es) I sent to maintainers. Sorry,
-> I can't push these changes into Linus's tree.
->
-> Oleg.
->
->
-
-------=_20130114133154_69408
-Content-Type: application/octet-stream; name="patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="patch"
-
-ZGlmZiAtTmF1ciBiZWZvcmUvYXJjaC94ODYva2VybmVsL2h3X2JyZWFrcG9pbnQuYyBhZnRlci9h
-cmNoL3g4Ni9rZXJuZWwvaHdfYnJlYWtwb2ludC5jCi0tLSBiZWZvcmUvYXJjaC94ODYva2VybmVs
-L2h3X2JyZWFrcG9pbnQuYwkyMDEzLTAxLTE0IDEyOjQ1OjIwLjAwMDAwMDAwMCArMTAzMAorKysg
-YWZ0ZXIvYXJjaC94ODYva2VybmVsL2h3X2JyZWFrcG9pbnQuYwkyMDEzLTAxLTE0IDEyOjQ2OjI0
-LjAwMDAwMDAwMCArMTAzMApAQCAtMjAwLDcgKzIwMCw4IEBACiAJdmEgPSBpbmZvLT5hZGRyZXNz
-OwogCWxlbiA9IGdldF9oYnBfbGVuKGluZm8tPmxlbik7CiAKLQlyZXR1cm4gKHZhID49IFRBU0tf
-U0laRSkgJiYgKCh2YSArIGxlbiAtIDEpID49IFRBU0tfU0laRSk7CisJcmV0dXJuICh2YSA+PSBU
-QVNLX1NJWkUpICYmICgodmEgKyBsZW4gLSAxKSA+PSBUQVNLX1NJWkUpICYmCisJCSEoKHZhID49
-IFZTWVNDQUxMX1NUQVJUKSAmJiAoKHZhICsgbGVuIC0gMSkgPD0gVlNZU0NBTExfRU5EKSk7CiB9
-CiAKIGludCBhcmNoX2JwX2dlbmVyaWNfZmllbGRzKGludCB4ODZfbGVuLCBpbnQgeDg2X3R5cGUs
-Cg==
-------=_20130114133154_69408--
 
 
+
+
+-- 
+Kind regards,
+Minchan Kim
