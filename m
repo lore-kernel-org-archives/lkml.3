@@ -1,124 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757725Ab3ANWMl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 17:12:41 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:33271 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756744Ab3ANWMk (ORCPT
+	id S1758247Ab3ANWQT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 17:16:19 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:55724 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756432Ab3ANWQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 17:12:40 -0500
-Message-ID: <50F482D1.4090301@gmail.com>
-Date: Mon, 14 Jan 2013 14:12:33 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 14 Jan 2013 17:16:16 -0500
+Date: Mon, 14 Jan 2013 23:15:51 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, swarren@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource
+ allocation
+Message-ID: <20130114221551.GA30020@avionic-0098.adnet.avionic-design.de>
+References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com>
+ <1357371910-3164-3-git-send-email-ldewangan@nvidia.com>
+ <20130105080658.GA1315@core.coreip.homeip.net>
+ <20130106192739.GA11566@avionic-0098.adnet.avionic-design.de>
+ <20130106195748.GA28212@core.coreip.homeip.net>
+ <20130109070745.GA12782@avionic-0098.adnet.avionic-design.de>
+ <20130109091939.GA4369@core.coreip.homeip.net>
+ <20130109092352.GA28037@avionic-0098.adnet.avionic-design.de>
+ <20130114154959.GA25049@avionic-0098.adnet.avionic-design.de>
+ <20130114161644.GC14721@kroah.com>
 MIME-Version: 1.0
-To: Alan Cooper <alcooperx@gmail.com>
-CC: ralf@linux-mips.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mips: function tracer: Fix broken function tracing
-References: <1357914810-20656-1-git-send-email-alcooperx@gmail.com> <50F0454D.5060109@gmail.com> <CAOGqxeU3zZuFfL_M1u-hgjbPHgm6MrzoCK1KqpbazwKC4td4ww@mail.gmail.com>
-In-Reply-To: <CAOGqxeU3zZuFfL_M1u-hgjbPHgm6MrzoCK1KqpbazwKC4td4ww@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
+Content-Disposition: inline
+In-Reply-To: <20130114161644.GC14721@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:zit8yfsI44HGVAhUbvHiXAvqdrxMUlqRM8oksc+p8cU
+ H0jtDD7H3P4Mdky3AEIOPWqZYOWkhOpSoHuCgU2yToUqgF27nz
+ yjnT12uCpA7IYG9c0VPvksH4eg9W4OjtfFqkTWib9UZZQfYdQR
+ oRLSo90mH8IWA7Iy3QIMIERHFXeYihZ0JyyGsvoe/gVqpDaxIy
+ Lx7DkA5jyZZih54uhm0f7FvC7Wc4KrUhljlpAHcTELAC3Kw6LZ
+ iXB5UD+vGKQSPXH6GX9vkYcrNHbnCdI1qlze6Oi3+nCCnDKF/0
+ 8XEQ8flAuaB/gGm83Bpbd/SG9TN0/cFBlOHRkal75Ji+33aU+H
+ Gz44Bf1cp128tDU7W/NYptCGKJDy0/PptfRQKz3R9DvmMFbRPb
+ zLkBw/RtYq2yNeE0XI4Ta+jD84xrJFcDtMoptMw89M3LXB+iqe
+ rV1Du
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2013 01:10 PM, Alan Cooper wrote:
-> I already tried using "adddiu sp, sp, 8" and it caused the kernel to
-> randomly crash. After many hours of debugging the reason occurred to
-> me while in bed in the middle of the night. The problem is that if we
-> get an interrupt between the add 8 and the add -8 instructions, we
-> trash the existing stack.
->
-> The problem with the 2 nop approach is that there are a series of
-> subroutines used to write each nop and these nested subroutines are
-> traceable.
 
-This seems like a bug.  The low-level code used to do code patching 
-probably should be CFLAGS_REMOVE_file.o = -pg
+--AqsLC8rIMeq19msA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Jan 14, 2013 at 08:16:44AM -0800, Greg Kroah-Hartman wrote:
+> On Mon, Jan 14, 2013 at 04:49:59PM +0100, Thierry Reding wrote:
+> > On Wed, Jan 09, 2013 at 10:23:52AM +0100, Thierry Reding wrote:
+> > > On Wed, Jan 09, 2013 at 01:19:39AM -0800, Dmitry Torokhov wrote:
+> > > > On Wed, Jan 09, 2013 at 08:07:45AM +0100, Thierry Reding wrote:
+> > > > > On Sun, Jan 06, 2013 at 11:57:48AM -0800, Dmitry Torokhov wrote:
+> > > > > > On Sun, Jan 06, 2013 at 08:27:39PM +0100, Thierry Reding wrote:
+> > > > > > > On Sat, Jan 05, 2013 at 12:06:58AM -0800, Dmitry Torokhov wro=
+te:
+> > > > > > > > On Sat, Jan 05, 2013 at 01:15:08PM +0530, Laxman Dewangan w=
+rote:
+> > > > > > > [...]
+> > > > > > > > > @@ -735,25 +738,16 @@ static int tegra_kbc_probe(struct p=
+latform_device *pdev)
+> > > > > > > > >  	spin_lock_init(&kbc->lock);
+> > > > > > > > >  	setup_timer(&kbc->timer, tegra_kbc_keypress_timer, (uns=
+igned long)kbc);
+> > > > > > > > > =20
+> > > > > > > > > -	res =3D request_mem_region(res->start, resource_size(re=
+s), pdev->name);
+> > > > > > > > > -	if (!res) {
+> > > > > > > > > -		dev_err(&pdev->dev, "failed to request I/O memory\n");
+> > > > > > > > > -		err =3D -EBUSY;
+> > > > > > > > > -		goto err_free_mem;
+> > > > > > > > > -	}
+> > > > > > > > > -
+> > > > > > > > > -	kbc->mmio =3D ioremap(res->start, resource_size(res));
+> > > > > > > > > +	kbc->mmio =3D devm_request_and_ioremap(&pdev->dev, res);
+> > > > > > > > >  	if (!kbc->mmio) {
+> > > > > > > > > -		dev_err(&pdev->dev, "failed to remap I/O memory\n");
+> > > > > > > > > -		err =3D -ENXIO;
+> > > > > > > > > -		goto err_free_mem_region;
+> > > > > > > > > +		dev_err(&pdev->dev, "Cannot request memregion/iomap ad=
+dress\n");
+> > > > > > > > > +		return -EADDRNOTAVAIL;
+> > > > > > > >=20
+> > > > > > > > Erm, no, -EBUSY please.
+> > > > > > >=20
+> > > > > > > EADDRNOTAVAIL is the canonical error for devm_request_and_ior=
+emap()
+> > > > > > > failure. The kerneldoc comment in lib/devres.c even gives a s=
+hort
+> > > > > > > example that uses this error code.
+> > > > > >=20
+> > > > > > I am sorry, but I do not consider a function that was added a l=
+ittle
+> > > > > > over a year ago as a canon. If you look at the uses of EADDRNOT=
+AVAIL it
+> > > > > > is used predominantly in networking code to indicate that attem=
+pted
+> > > > > > _network_ address is not available.
+> > > > >=20
+> > > > > EBUSY might be misleading, though. devm_request_and_ioremap() can=
+ fail
+> > > > > in both the request_mem_region() and ioremap() calls. Furthermore=
+ it'd
+> > > > > be good to settle on a consistent error-code instead of doing it
+> > > > > differently depending on subsystem and/or driver. Currently the v=
+arious
+> > > > > error codes used are:
+> > > > >=20
+> > > > > 	EBUSY, EADDRNOTAVAIL, ENXIO, ENOMEM, ENODEV, ENOENT, EINVAL,
+> > > > > 	EIO, EFAULT, EADDRINUSE
+> > > > >=20
+> > > > > Also if we can settle on one error code we should follow up with =
+a patch
+> > > > > to make it consistent across the tree and also update that kernel=
+doc
+> > > > > comment. I volunteer to do that if nobody else steps up. I'm also=
+ Cc'ing
+> > > > > Wolfram (the original author), maybe he has some thoughts on this.
+> > > > >=20
+> > > >=20
+> > > > If you going to change all drivers make devm_request_and_ioremap()
+> > > > return ERR_PTR()-encoded errors and then we can differentiate what
+> > > > part of it failed.
+> > >=20
+> > > Yeah, that thought also crossed my mind. I'll give other people some
+> > > time to comment before hurling myself into preparing patches.
+> >=20
+> > I've prepared a patch that changes devm_request_and_ioremap() to return
+> > ERR_PTR()-encoded errors and adjusts all callers. As you can imagine it
+> > is a bit on the huge side. scripts/get_maintainer.pl lists 156 people
+> > and mailing lists. I've gone through the list, and as far as I can tell
+> > everyone on that list is actually affected by the patch, so there's not
+> > much potential for tuning it down.
+> >=20
+> > There is also the issue of whose tree this should go into. Unfortunately
+> > the patch can't be broken down into smaller chunks because it changes
+> > how the devm_request_and_ioremap() function's return value is handled in
+> > an incompatible way, so it won't be possible to gradually phase this in.
+> > Furthermore I can imagine that until the end of the release cycle new
+> > code may be added on which the same transformations need to be done. I
+> > have a semantic patch to do the bulk of the work, but quite a bit of
+> > coordination will be required.
+> >=20
+> > I'm adding Arnd and Greg on Cc, maybe they can advise on how best to
+> > handle this kind of patch.
+>=20
+> You should provide a "wrapper" function that does the correct return
+> value, convert drivers over to it, and then, when everyone is changed,
+> drop the old call.  To change 156 different drivers all at once, in a
+> way that is not detectable by the compiler breaking the build, is not a
+> good thing to do at all.
+>=20
+> By doing it in this manner, it will take longer, but you can push the
+> patches through the different maintainer's trees.  If they are slow,
+> I'll be glad to take the remaining patches in my driver-core tree to do
+> the final bits.
 
-> This means on the second call to these subroutines they
-> execute with only one nop and crash. I could  write  some new code
-> that wrote the 2 nops at once, but (now that I understand
-> "stop_machine") with the branch likely solution we should be able to
-> stop using "stop_machine" when we write nops to the 20-30 thousand
-> Linux functions. It looks like other platforms have stopped using
-> stop_machine.
+It certainly sounds like a less complicated way to do it. But it also
+involves adding a function with a made up name and drop a function with
+a perfectly good name instead. I wouldn't even know what name to choose
+for the new API.
 
-I don't particularly object to the 'branch likely solution', but I think 
-the failures of the other approaches indicates underlying bugs in the 
-tracing code.  Those bugs should probably be fixed.
+Thierry
 
-David Daney
+--AqsLC8rIMeq19msA
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
->
-> Al
->
-> On Fri, Jan 11, 2013 at 12:01 PM, David Daney <ddaney.cavm@gmail.com> wrote:
->> On 01/11/2013 06:33 AM, Al Cooper wrote:
->>>
->>> Function tracing is currently broken for all 32 bit MIPS platforms.
->>> When tracing is enabled, the kernel immediately hangs on boot.
->>> This is a result of commit b732d439cb43336cd6d7e804ecb2c81193ef63b0
->>> that changes the kernel/trace/Kconfig file so that is no longer
->>> forces FRAME_POINTER when FUNCTION_TRACING is enabled.
->>>
->>> MIPS frame pointers are generally considered to be useless because
->>> they cannot be used to unwind the stack. Unfortunately the MIPS
->>> function tracing code has bugs that are masked by the use of frame
->>> pointers. This commit fixes the bugs so that MIPS frame pointers do
->>> not need to be enabled.
->>>
->>> The bugs are a result of the odd calling sequence used to call the trace
->>> routine. This calling sequence is inserted into every tracable function
->>> when the tracing CONFIG option is enabled. This sequence is generated
->>> for 32bit MIPS platforms by the compiler via the "-pg" flag.
->>> Part of the sequence is "addiu sp,sp,-8" in the delay slot after every
->>> call to the trace routine "_mcount" (some legacy thing where 2 arguments
->>> used to be pushed on the stack). The _mcount routine is expected to
->>> adjust the sp by +8 before returning.
->>>
->>> One of the bugs is that when tracing is disabled for a function, the
->>> "jalr _mcount" instruction is replaced with a nop, but the
->>> "addiu sp,sp,-8" is still executed and the stack pointer is left
->>> trashed. When frame pointers are enabled the problem is masked
->>> because any access to the stack is done through the frame
->>> pointer and the stack pointer is restored from the frame pointer when
->>> the function returns. This patch uses a branch likely instruction
->>> "bltzl zero, f1" instead of "nop" to disable the call because this
->>> instruction will not execute the "addiu sp,sp,-8" instruction in
->>> the delay slot. The other possible solution would be to nop out both
->>> the jalr and the "addiu sp,sp,-8", but this would need to be interrupt
->>> and SMP safe and would be much more intrusive.
->>
->>
->> I thought all CPUs were in stop_machine() when the modifications were done,
->> so that there is no issue with multi-word instruction patching.
->>
->> Am I wrong about this?
->>
->> So really I think you can do two NOP just as easily.
->>
->> The only reason I bring this up is that I am not sure all 32-bit CPUs
->> implement the 'Likely' branch variants. Also there may be an affect on the
->> branch predictor.
->>
->> A third possibility would be to replace the JALR with 'ADDIU SP,SP,8' That
->> way the following adjustment would be canceled out.  This would work well on
->> single-issue CPUs, but the instructions may not be able to dual-issue on a
->> multi issue machine due to data dependencies.
->>
->> David Daney
->>
->>
->>>
->>> A few other bugs were fixed where the _mcount routine itself did not
->>> always fix the sp on return.
->>>
->>
->
->
+iQIcBAEBAgAGBQJQ9IOXAAoJEN0jrNd/PrOhpzIP/1nnZVmPvoVuQmLXjf0NZ7rf
+5WIrjY9B5LSpCr1vqt2KIPAoYuOwM6PPTU2jmk7yl0TV2ZMzAj4l7ooTPQqrGhYy
+3Q9jwdrO2MLPRT2jW+/6c4UFBbK0M++gLw5AWBkDNPlocAyd2LlqJQIcJZBekfaI
+UNeZnVGaXCd8oHDKQeYzzet+LG486eBjX3HwxlnsCHyLSjA/HM/x4UG10EvM3+qA
+2xmUFuEKfIvqVEeQg1zNIyXeHnU47rMb9LmpANyau1rjE9EZtvgyBt9fDhutpEcj
+cg9SQWjQakZ67tTz3WP9NBKFaWXi7gMZiyw448E1LM+NABM+qTmzQCDHTDoenCyq
+PxLeMOhctSBSHva9uT2hoOycFOS8hLR0twKWxwpakSAQqMv6S/NRZnnsiWDftmeT
+pKgjwQb6XkSNT+01lAA044+Lnhn7Lk4JGN2uE0bXiq4zO1n0Iknyp9BwWWzmInEM
+6S+fTfelg5npfm02NgvzLDY9sVCqyqZYNQzNvpVsd2kHpEugAd+eAAwaOna8Troh
+zM6FWeLtp0YP3NceFsNn4txDdbi9G6UANiKiMPdspglOSSp7ldN+60JG25SKF1Wy
+0YO2a3kynWVGRi5njTAArt0LdHmYqLvHeuJKTvrQ3sDBEaXiKhLhspqveNqO9JGz
+Qx3E80c9Yj6B66x9jmeY
+=1of4
+-----END PGP SIGNATURE-----
 
+--AqsLC8rIMeq19msA--
