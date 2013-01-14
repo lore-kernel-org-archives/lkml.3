@@ -1,57 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757546Ab3ANSSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:18:42 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:49609 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756247Ab3ANSSk (ORCPT
+	id S1757447Ab3ANSTh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:19:37 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:39089 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756776Ab3ANSTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:18:40 -0500
+	Mon, 14 Jan 2013 13:19:36 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130114154354.GA27740@liondog.tnic>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-28-git-send-email-yinghai@kernel.org>
-	<20130114154354.GA27740@liondog.tnic>
-Date: Mon, 14 Jan 2013 10:18:39 -0800
-X-Google-Sender-Auth: T3Ko1S2XWd7cyJdtTJWOTTWYEpk
-Message-ID: <CAE9FiQWo2LfGuGpZdWYapU-VxHuwDkGbAdqfBKif9XzH59QBkw@mail.gmail.com>
-Subject: Re: [PATCH v7u1 27/31] x86, kdump: remove crashkernel range find
- limit for 64bit
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1358185998-5997-1-git-send-email-dinggnu@gmail.com>
+References: <1358185998-5997-1-git-send-email-dinggnu@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 14 Jan 2013 11:19:15 -0700
+Message-ID: <CAErSpo6AfLBGZpdByuUeqbD5pUc1o-YD-EyVekOgWP5m6Yv-pw@mail.gmail.com>
+Subject: Re: [PATCH] ia64: sn/pci/pcibr/pcibr_reg.c: check null pointer dereference
+To: Cong Ding <dinggnu@gmail.com>
+Cc: Jes Sorensen <jes@sgi.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-altix@sgi.com,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 7:43 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Jan 03, 2013 at 04:48:47PM -0800, Yinghai Lu wrote:
->> Now kexeced kernel/ramdisk could be above 4g, so remove 896 limit for
->> 64bit.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> ---
->>  arch/x86/kernel/setup.c |    4 +---
->>  1 file changed, 1 insertion(+), 3 deletions(-)
->>
->> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
->> index c58497e..6adbc45 100644
->> --- a/arch/x86/kernel/setup.c
->> +++ b/arch/x86/kernel/setup.c
->> @@ -501,13 +501,11 @@ static void __init memblock_x86_reserve_range_setup_data(void)
->>  /*
->>   * Keep the crash kernel below this limit.  On 32 bits earlier kernels
->>   * would limit the kernel to the low 512 MiB due to mapping restrictions.
->> - * On 64 bits, kexec-tools currently limits us to 896 MiB; increase this
->> - * limit once kexec-tools are fixed.
->
-> Does this mean that kexec-tools has been fixed too?
+On Mon, Jan 14, 2013 at 10:53 AM, Cong Ding <dinggnu@gmail.com> wrote:
+> we should ensure the pointer is not null before the first use, rather than
+> after it.
 
-with the patcheset that i sent to kexec-tools mailing list.
+These changes look technically correct, but the whole pcibr_reg.c file
+is ridiculously defensive programming.
+
+For example, the first two hunks are for pcireg_control_bit_clr() and
+pcireg_control_bit_set().  These functions are called only from
+pcibr_bus_fixup(), and it's impossible for it to pass a null pointer.
+It would be better to just remove the null pointer checks completely.
+
+The panics in pcibr_reg.c are dubious, too.  That sort of check
+belongs higher up, e.g., in pcibr_bus_fixup() where we set up
+pcibus_info->pbi_buscommon.bs_base in the first place.
+
+Bjorn
+
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> ---
+>  arch/ia64/sn/pci/pcibr/pcibr_reg.c |   29 +++++++++++------------------
+>  1 file changed, 11 insertions(+), 18 deletions(-)
+>
+> diff --git a/arch/ia64/sn/pci/pcibr/pcibr_reg.c b/arch/ia64/sn/pci/pcibr/pcibr_reg.c
+> index 8b8bbd5..b33ee60 100644
+> --- a/arch/ia64/sn/pci/pcibr/pcibr_reg.c
+> +++ b/arch/ia64/sn/pci/pcibr/pcibr_reg.c
+> @@ -25,9 +25,8 @@ union br_ptr {
+>   */
+>  void pcireg_control_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+> -
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         __sn_clrq_relaxed(&ptr->tio.cp_control, bits);
+> @@ -45,9 +44,8 @@ void pcireg_control_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
+>
+>  void pcireg_control_bit_set(struct pcibus_info *pcibus_info, u64 bits)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+> -
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         __sn_setq_relaxed(&ptr->tio.cp_control, bits);
+> @@ -68,10 +66,10 @@ void pcireg_control_bit_set(struct pcibus_info *pcibus_info, u64 bits)
+>   */
+>  u64 pcireg_tflush_get(struct pcibus_info *pcibus_info)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>         u64 ret = 0;
+>
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         ret = __sn_readq_relaxed(&ptr->tio.cp_tflush);
+> @@ -98,10 +96,10 @@ u64 pcireg_tflush_get(struct pcibus_info *pcibus_info)
+>   */
+>  u64 pcireg_intr_status_get(struct pcibus_info * pcibus_info)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>         u64 ret = 0;
+>
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         ret = __sn_readq_relaxed(&ptr->tio.cp_int_status);
+> @@ -123,9 +121,8 @@ u64 pcireg_intr_status_get(struct pcibus_info * pcibus_info)
+>   */
+>  void pcireg_intr_enable_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+> -
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         __sn_clrq_relaxed(&ptr->tio.cp_int_enable, bits);
+> @@ -143,9 +140,8 @@ void pcireg_intr_enable_bit_clr(struct pcibus_info *pcibus_info, u64 bits)
+>
+>  void pcireg_intr_enable_bit_set(struct pcibus_info *pcibus_info, u64 bits)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+> -
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         __sn_setq_relaxed(&ptr->tio.cp_int_enable, bits);
+> @@ -167,9 +163,8 @@ void pcireg_intr_enable_bit_set(struct pcibus_info *pcibus_info, u64 bits)
+>  void pcireg_intr_addr_addr_set(struct pcibus_info *pcibus_info, int int_n,
+>                                u64 addr)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+> -
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         __sn_clrq_relaxed(&ptr->tio.cp_int_addr[int_n],
+> @@ -196,9 +191,8 @@ void pcireg_intr_addr_addr_set(struct pcibus_info *pcibus_info, int int_n,
+>   */
+>  void pcireg_force_intr_set(struct pcibus_info *pcibus_info, int int_n)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+> -
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         writeq(1, &ptr->tio.cp_force_pin[int_n]);
+> @@ -219,10 +213,10 @@ void pcireg_force_intr_set(struct pcibus_info *pcibus_info, int int_n)
+>   */
+>  u64 pcireg_wrb_flush_get(struct pcibus_info *pcibus_info, int device)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>         u64 ret = 0;
+>
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         ret =
+> @@ -244,9 +238,8 @@ u64 pcireg_wrb_flush_get(struct pcibus_info *pcibus_info, int device)
+>  void pcireg_int_ate_set(struct pcibus_info *pcibus_info, int ate_index,
+>                         u64 val)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+> -
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         writeq(val, &ptr->tio.cp_int_ate_ram[ate_index]);
+> @@ -264,10 +257,10 @@ void pcireg_int_ate_set(struct pcibus_info *pcibus_info, int ate_index,
+>
+>  u64 __iomem *pcireg_int_ate_addr(struct pcibus_info *pcibus_info, int ate_index)
+>  {
+> -       union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>         u64 __iomem *ret = NULL;
+>
+>         if (pcibus_info) {
+> +               union br_ptr __iomem *ptr = (union br_ptr __iomem *)pcibus_info->pbi_buscommon.bs_base;
+>                 switch (pcibus_info->pbi_bridge_type) {
+>                 case PCIBR_BRIDGETYPE_TIOCP:
+>                         ret = &ptr->tio.cp_int_ate_ram[ate_index];
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
