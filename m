@@ -1,85 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab3ANCoV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 21:44:21 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:53924 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754012Ab3ANCoU convert rfc822-to-8bit (ORCPT
+	id S1755388Ab3ANCss (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 21:48:48 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:48823 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305Ab3ANCsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 21:44:20 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Axel Lin <axel.lin@ingics.com>, "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/3] regulator-core: update all enable GPIO state in
-	_enable/disable
-Thread-Topic: [PATCH 2/3] regulator-core: update all enable GPIO state in
-	_enable/disable
-Thread-Index: AQHN8fhzdUVzsipdnka7A7zmYXiw6phIDtuA
-Date: Mon, 14 Jan 2013 02:44:08 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E12A43@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F69E122AA@DQHE02.ent.ti.com>
- <20130113224220.GE5041@opensource.wolfsonmicro.com>
- <A874F61F95741C4A9BA573A70FE3998F69E12A0D@DQHE02.ent.ti.com>
- <20130114014239.GA29909@opensource.wolfsonmicro.com>
-In-Reply-To: <20130114014239.GA29909@opensource.wolfsonmicro.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sun, 13 Jan 2013 21:48:47 -0500
+Subject: Re: rf kill button not working on hp folio 9470m - bisected
+From: joeyli <jlee@suse.com>
+To: Fabio Coatti <fabio.coatti@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>,
+        MaChen@suse.com
+In-Reply-To: <CADpTngVYgS1nefgYO+fpBWkQ+XvvdE7RL1kV5cP4TLsKkU2i-Q@mail.gmail.com>
+References: <CADpTngVYgS1nefgYO+fpBWkQ+XvvdE7RL1kV5cP4TLsKkU2i-Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jan 2013 10:45:27 +0800
+Message-ID: <1358131527.6113.428.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+Hi Fabio, 
+
+於 日，2013-01-13 於 23:11 +0100，Fabio Coatti 提到：
+> Hi all,
+> on my laptop (hp folio 9470m), the rfkill button works fine on 3.6.10
+
+Does rfkill button means Fn+F12 key on your machine?
+
+> and 11 (don't know about older kernels), but is not working on 3.7.X
+> (latest tested is 3.7.2).
+> On non working kernel, log shows the following messages:
 > 
-> So, clearly that's going to be the behaviour at the system level but
-> the
-> consumers aren't going to know that.  If the consumer supports some of
-> the supplies being enabled and disabled separately then it will rely on
-> the regulator core reference counting to keep the supply enabled if
-> there are other reasons to do so.  This is how things would work if
-> both
-> supplies came from the same regulator so I'd expect us to preserve the
-> same behaviour.
+> Jan 13 17:34:33 calvin kernel: atkbd serio0: Unknown key pressed
+> (translated set 2, code 0xf8 on isa0060/serio0).
+> Jan 13 17:34:33 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+> <keycode>' to make it known.
 
-OK, the consumer just cares about the regulator(s) which is(are) obtained.
-However it doesn't show exact state of regulator in case that enable GPIOs are
-shared.
-For example, LDO1 and LDO3 can be enabled by same GPIO pin.
-But there are two separate regulator consumers, CA and CB.
+Looks your machine emit e078 code when it switch to Windows 8 code path.
+Please tail your log and press Fn key for make sure it emit e078 code.
 
-(1) CA gets LDO1 regulator.
-(2) CB gets LDO3 regulator.
-(3) CA enables LDO1 (the GPIO goes to HIGH state)
-    : Both LDO1 and LDO3 are enabled physically.
-(4) CB also enables LDO3
-    : But no GPIO state is changed because GPIO is already HIGH state.
-(5) CA disables LDO1. LDO3 also is turned off eventually.
-(6) CB tries to get the state of LDO3 before disabling it,
-regulator_is_enabled() returns 1, but real state is 0.
+I didn't see e078 code in hewlett-packard keymap file in udev, currently
+it define 0xD7 to be the wlan key.
 
-	if(!regulator_is_enabled(rdev))
-		regulator_disable(rdev);
+> Jan 13 17:34:33 calvin kernel: atkbd serio0: Unknown key released
+> (translated set 2, code 0xf8 on isa0060/serio0).
+> Jan 13 17:34:33 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+> <keycode>' to make it known.
+> Jan 13 17:34:34 calvin kernel: atkbd serio0: Unknown key pressed
+> (translated set 2, code 0xf8 on isa0060/serio0).
+> Jan 13 17:34:34 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+> <keycode>' to make it known.
+> Jan 13 17:34:35 calvin kernel: atkbd serio0: Unknown key released
+> (translated set 2, code 0xf8 on isa0060/serio0).
+> Jan 13 17:34:35 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+> <keycode>' to make it known.
+> 
+> On working kernels, same logs shows the following lines:
+> 
+> Jan 13 22:55:59 calvin kernel: atkbd serio0: Unknown key pressed
+> (translated set 2, code 0xf8 on isa0060/serio0).
+> Jan 13 22:55:59 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+> <keycode>' to make it known.
+> Jan 13 22:55:59 calvin NetworkManager[4823]: <info> WiFi now enabled
+> by radio killswitch
+> Jan 13 22:55:59 calvin NetworkManager[4823]: <info> (wlan0): bringing up device.
+> Jan 13 22:55:59 calvin kernel: iwlwifi 0000:03:00.0: L1 Disabled; Enabling L0S
+> Jan 13 22:55:59 calvin kernel: iwlwifi 0000:03:00.0: Radio type=0x2-0x1-0x0
+> Jan 13 22:55:59 calvin kernel: atkbd serio0: Unknown key released
+> (translated set 2, code 0xf8 on isa0060/serio0).
 
-	Therefore CB never disables LDO3, use_count is always 1.
+hmm... this machine changed wlan0 status on working kernel and also emit
+e078 code like on Windows 8 mode.
 
-This patch solves this unmatched situation.
+Then I think your machine control RF power by different way but BIOS,
+maybe wmi or other ways.
 
-But based on regulator behavior, I don't need to care this situation either.
-A regulator consumer handles their *own* regulator(s).
-Regulator APIs may show unmatched value, but it can be handled in each consumer 
-driver *separately*.
-Therefore, we should not update 'ena_gpio_state' of other regulators.
-This patch should be ignored.
-Is that correct?
+Please attached on your DSDT, hope OEM do those things through ACPI.
 
-Best Regards,
-Milo
+> Jan 13 22:55:59 calvin kernel: atkbd serio0: Use 'setkeycodes e078
+> <keycode>' to make it known.
+> 
+> I've tried to bisect the regression, and I've got this:
+> 
+> a57f7f9175b8ccbc9df83ac13860488913115de4 is the first bad commit
+> commit a57f7f9175b8ccbc9df83ac13860488913115de4
+> Author: Bob Moore <robert.moore@intel.com>
+> Date: Fri Aug 17 10:55:02 2012 +0800
+> 
+> ACPICA: Add Windows8/Server2012 string for _OSI method.
+> This change adds a new _OSI string, "Windows 2012" for both Windows 8
+> and Windows Server 2012.
+> >From Microsoft document "How to Identify the Windows Version in ACPI
+> by Using _OSI", July 13, 2012.
+> 
+> Signed-off-by: Bob Moore <robert.moore@intel.com>
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> 
+> :040000 040000 55311ce2f9fed66501b06f93f67fa99b54d46e86
+> 998889c21c3b68f8072ad131b643c592a4cbe423 M drivers
+> 
+> I've reverted this commit in 3.7.2 and now the rfkill button is
+> working just fine, so it seems the real culprit (well, I have no
+> knowledge about acpi so I say so only because reverting it fixes the
+> issue)
+> Please forgive me If I'm completely wrong  :)
+> 
+> --
+> Fabio
+
+Please try acpi_osi="!Windows 2012", it will switch back to Windows 2009
+mode. Then look at does things better than before?
 
 
+Thanks a lot!
+Joey Lee
 
