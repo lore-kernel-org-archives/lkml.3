@@ -1,194 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab3ANGGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 01:06:08 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:48070 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab3ANGGH (ORCPT
+	id S1752925Ab3ANGIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 01:08:39 -0500
+Received: from relay.parallels.com ([195.214.232.42]:50882 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab3ANGIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 01:06:07 -0500
-From: Liu Bo <bo.li.liu@oracle.com>
-To: linux-mm@kvack.org
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>
-Subject: [PATCH] mm/slab: add a leak decoder callback
-Date: Mon, 14 Jan 2013 14:03:39 +0800
-Message-Id: <1358143419-13074-1-git-send-email-bo.li.liu@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 14 Jan 2013 01:08:38 -0500
+Message-ID: <50F3A0D9.5080103@parallels.com>
+Date: Mon, 14 Jan 2013 10:08:25 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [Devel] [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
+References: <20121206153204.30693.11408.stgit@localhost.localdomain> <20121206153447.30693.54128.stgit@localhost.localdomain> <20121210202842.GB17350@fieldses.org> <50C73C60.8060405@parallels.com> <50C73F58.1080005@parallels.com> <20121211145621.GA3336@fieldses.org> <50C74C14.8030807@parallels.com> <20121211152036.GB3336@fieldses.org> <20121211153527.GC3336@fieldses.org> <50F0283A.6040509@parallels.com> <20130111170312.GF17909@fieldses.org>
+In-Reply-To: <20130111170312.GF17909@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a leak decoder callback so that kmem_cache_destroy()
-can use to generate debugging output for the allocated objects.
+11.01.2013 21:03, J. Bruce Fields пишет:
+> On Fri, Jan 11, 2013 at 06:56:58PM +0400, Stanislav Kinsbursky wrote:
+>> 11.12.2012 19:35, J. Bruce Fields пишет:
+>>> On Tue, Dec 11, 2012 at 10:20:36AM -0500, J. Bruce Fields wrote:
+>>>> On Tue, Dec 11, 2012 at 07:07:00PM +0400, Stanislav Kinsbursky wrote:
+>>>>> I don't really understand, how  mountd's root can be wrong. I.e.
+>>>>> its' always right as I see it. NFSd kthreads have to swap/use
+>>>>> relative path/whatever to communicate with proper mountd.
+>>>>> Or I'm missing something?
+>>>>
+>>>> Ugh, I see the problem: I thought svc_export_request was called at the
+>>>> time mountd does the read, but instead its done at the time nfsd does
+>>>> the upcall.
+>>>>
+>>>> I suspect that's wrong, and we really want this done in the context of
+>>>> the mountd process when it does the read call.  If d_path is called
+>>>> there then we have no problem.
+>>>
+>>> Right, so I'd be happier if we could modify sunrpc_cache_pipe_upcall to
+>>> skip calling cache_request and instead delay that until cache_read().  I
+>>> think that should be possible.
+>>>
+>>
+>> So, Bruce, what we going to do (or what you want me to do) with the rest of NFSd changes?
+>> I.e. how I should solve this d_path() problem?
+>> I.e. I don't understand what did you mean by "I'd be happier if we could modify sunrpc_cache_pipe_upcall to
+>> skip calling cache_request and instead delay that until cache_read()".
+>> Could you give me a hint?
+>
+> Definitely.  So normally the way these upcalls happen are:
+>
+> 	1. the kernel does a cache lookup, finds no matching item, and
+> 	   calls sunrpc_cache_pipe_upcall().
+> 	2. sunrpc_cache_pipe_upcall() formats the upcall: it allocates a
+> 	   struct cache_request crq and fills crq->buf with the upcall
+> 	   data by calling the cache's ->cache_request() method.
+> 	3. Then rpc.mountd realizes there's data available in
+> 	   /proc/net/rpc/nfsd.fh/content, so it does a read on that file.
+> 	4. cache_read copies the formatted upcall from crq->buf to
+> 	   to userspace.
+>
+> So all I'm suggesting is that instead of calling ->cache_request() at
+> step 2, we do it at step 4.
+>
+> Then cache_request will be called from rpc.mountd's read.  So we'll know
+> which container rpc.mountd is in.
+>
+> Does that make sense?
+>
 
-Callers like btrfs are using their own leak tracking which will
-manage allocated objects in a list(or something else), this does
-indeed the same thing as what slab does.  So adding a callback
-for leak tracking can avoid this as well as runtime overhead.
+Ok, now I understand.
+If the upcall is just the way to inform rpc.mound, that there are some data to read and process, then it your proposing changes should work.
+I'll prepare initial patch set.
+Thanks!
 
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
----
-The idea is from Zach Brown <zab@zabbo.net>.
+> --b.
+>
 
- fs/btrfs/extent_io.c     |   24 ++++++++++++++++++++++++
- fs/btrfs/extent_map.c    |   12 ++++++++++++
- include/linux/slab.h     |    1 +
- include/linux/slab_def.h |    1 +
- include/linux/slub_def.h |    1 +
- mm/slab_common.c         |    1 +
- mm/slub.c                |    5 +++++
- 7 files changed, 45 insertions(+), 0 deletions(-)
 
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index bcc8dff..4954f3d 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -63,6 +63,26 @@ tree_fs_info(struct extent_io_tree *tree)
- 	return btrfs_sb(tree->mapping->host->i_sb);
- }
- 
-+static void extent_state_leak_decoder(void *object)
-+{
-+	struct extent_state *state = object;
-+
-+	printk(KERN_ERR "btrfs state leak: start %llu end %llu "
-+	       "state %lu in tree %p refs %d\n",
-+	       (unsigned long long)state->start,
-+	       (unsigned long long)state->end,
-+	       state->state, state->tree, atomic_read(&state->refs));
-+}
-+
-+static void extent_buffer_leak_decoder(void *object)
-+{
-+	struct extent_buffer *eb = object;
-+
-+	printk(KERN_ERR "btrfs buffer leak start %llu len %lu "
-+	       "refs %d\n", (unsigned long long)eb->start,
-+	       eb->len, atomic_read(&eb->refs));
-+}
-+
- int __init extent_io_init(void)
- {
- 	extent_state_cache = kmem_cache_create("btrfs_extent_state",
-@@ -71,11 +91,15 @@ int __init extent_io_init(void)
- 	if (!extent_state_cache)
- 		return -ENOMEM;
- 
-+	extent_state_cache->decoder = extent_state_leak_decoder;
-+
- 	extent_buffer_cache = kmem_cache_create("btrfs_extent_buffer",
- 			sizeof(struct extent_buffer), 0,
- 			SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD, NULL);
- 	if (!extent_buffer_cache)
- 		goto free_state_cache;
-+
-+	extent_buffer_cache->decoder = extent_buffer_leak_decoder;
- 	return 0;
- 
- free_state_cache:
-diff --git a/fs/btrfs/extent_map.c b/fs/btrfs/extent_map.c
-index 80370d6..d598a8d 100644
---- a/fs/btrfs/extent_map.c
-+++ b/fs/btrfs/extent_map.c
-@@ -16,6 +16,16 @@ static LIST_HEAD(emaps);
- static DEFINE_SPINLOCK(map_leak_lock);
- #endif
- 
-+static void extent_map_leak_decoder(void *object)
-+{
-+	struct extent_map *em = object;
-+
-+	printk(KERN_ERR "btrfs ext map leak: start %llu len %llu block %llu "
-+	       "flags %lu refs %d in tree %d compress %d\n",
-+	       em->start, em->len, em->block_start, em->flags,
-+	       atomic_read(&em->refs), em->in_tree, (int)em->compress_type);
-+}
-+
- int __init extent_map_init(void)
- {
- 	extent_map_cache = kmem_cache_create("btrfs_extent_map",
-@@ -23,6 +33,8 @@ int __init extent_map_init(void)
- 			SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD, NULL);
- 	if (!extent_map_cache)
- 		return -ENOMEM;
-+
-+	extent_map_cache->decoder = extent_map_leak_decoder;
- 	return 0;
- }
- 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 5d168d7..89a9efd 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -114,6 +114,7 @@ struct kmem_cache {
- 	const char *name;	/* Slab name for sysfs */
- 	int refcount;		/* Use counter */
- 	void (*ctor)(void *);	/* Called on object slot creation */
-+	void (*decoder)(void *);/* Called on object slot leak detection */
- 	struct list_head list;	/* List of all slab caches on the system */
- };
- #endif
-diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-index 8bb6e0e..7ca8309 100644
---- a/include/linux/slab_def.h
-+++ b/include/linux/slab_def.h
-@@ -48,6 +48,7 @@ struct kmem_cache {
- 
- 	/* constructor func */
- 	void (*ctor)(void *obj);
-+	void (*decoder)(void *obj);
- 
- /* 4) cache creation/removal */
- 	const char *name;
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index 9db4825..fc18af7 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -93,6 +93,7 @@ struct kmem_cache {
- 	gfp_t allocflags;	/* gfp flags to use on each alloc */
- 	int refcount;		/* Refcount for slab cache destroy */
- 	void (*ctor)(void *);
-+	void (*decoder)(void *);
- 	int inuse;		/* Offset to metadata */
- 	int align;		/* Alignment */
- 	int reserved;		/* Reserved bytes at the end of slabs */
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 3f3cd97..39a0fb2 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -193,6 +193,7 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
- 		s->object_size = s->size = size;
- 		s->align = calculate_alignment(flags, align, size);
- 		s->ctor = ctor;
-+		s->decoder = NULL;
- 
- 		if (memcg_register_cache(memcg, s, parent_cache)) {
- 			kmem_cache_free(kmem_cache, s);
-diff --git a/mm/slub.c b/mm/slub.c
-index ba2ca53..0496a2b 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3098,6 +3098,8 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
- 	for_each_object(p, s, addr, page->objects) {
- 
- 		if (!test_bit(slab_index(p, s, addr), map)) {
-+			if (unlikely(s->decoder))
-+				s->decoder(p);
- 			printk(KERN_ERR "INFO: Object 0x%p @offset=%tu\n",
- 							p, p - addr);
- 			print_tracking(s, p);
-@@ -3787,6 +3789,9 @@ static int slab_unmergeable(struct kmem_cache *s)
- 	if (s->ctor)
- 		return 1;
- 
-+	if (s->decoder)
-+		return 1;
-+
- 	/*
- 	 * We may have set a slab to be unmergeable during bootstrap.
- 	 */
 -- 
-1.7.7.6
-
+Best regards,
+Stanislav Kinsbursky
