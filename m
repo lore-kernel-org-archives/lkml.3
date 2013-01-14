@@ -1,282 +1,879 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab3ANMPX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 07:15:23 -0500
-Received: from nm29-vm1.access.bullet.mail.mud.yahoo.com ([66.94.237.65]:34667
-	"EHLO nm29-vm1.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756237Ab3ANMPV (ORCPT
+	id S1756388Ab3ANMRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 07:17:15 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:58143 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756170Ab3ANMRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 07:15:21 -0500
-X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jan 2013 07:15:20 EST
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 191022.73112.bm@omp1009.access.mail.mud.yahoo.com
-X-YMail-OSG: xEWo92EVM1lT0Sh.4AsqKxpdIYVDe79ohTTvZ7mzCqPhsY6
- .UFuvLUud3QR.7Fh78tp2hmXwyVQNdGQkKTSZjOjEX8dxmXvI1gB78KJhBb0
- kteQqglAGc_.TBbCauaXq1IiG1P1u._QVBQC_fwGknioPQh1MeZog6jI5Ud9
- 2c7rMelySRZxB6O1Lla7A.9Wdey_raPBnXv3vygozSI1_8e9GjPd34XflMby
- GsRyHqcCJcKGUDXJovkTINn_bk3XQbEaUj6PuUcDUTPBcd95zVv7ahgEIyeY
- 7wOkubtj2mnz85l9QL5y4dSitZz2UGkzMNkZHSI6hufw81uugdkkgXZYV_bZ
- vmPjyP.h.x2pEJnGJnIoltBxnaQmC66LhlAd9jHNeylhiyBAxVR.XNoGbORx
- 29d0gxe9ndipmYToaai5kf0JwVwBySRiQUUJ1R7Et7udBzJ0kaWe5RfahKRG
- lm27VkX8.vgI.3GGG2UHnaEorltidKj0Ir0Z6iWu7A3BZ7zpGvFHMTUqL0y0
- -
-X-Rocket-MIMEInfo: 001.001,CgEwAQEBAQ--
-X-RocketYMMF: webchapy
-X-Mailer: YahooMailRC/718 YahooMailWebService/0.8.130.494
-Message-ID: <1358165405.16662.YahooMailRC@web5708.biz.mail.ne1.yahoo.com>
-Date: Mon, 14 Jan 2013 04:10:05 -0800 (PST)
-From: Capt Hook Williams <hookwwlims@gmail.com>
-Reply-To: Capt Hook Williams <hookwillaims.ptk@gmail.com>
-Subject: From Capt Hook Williams.. Please Open Attached Letter For More Details.
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="-1724390852-241309871-1358165405=:16662"
+	Mon, 14 Jan 2013 07:17:11 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-92-50f3f7455324
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
+        balbi@ti.com, kgene.kim@samsung.com, thomas.abraham@linaro.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        sylvester.nawrocki@gmail.com, dianders@chromium.org,
+        jg1.han@samsung.com, p.paneri@samsung.com
+Subject: [PATCH v7 2/4] usb: phy: samsung: Add host phy support to samsung-phy
+ driver
+Date: Mon, 14 Jan 2013 17:52:15 +0530
+Message-id: <1358166135-22073-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.6.5
+In-reply-to: <1357916550-11421-3-git-send-email-gautam.vivek@samsung.com>
+References: <1357916550-11421-3-git-send-email-gautam.vivek@samsung.com>
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsWyRsSkStft++cAg8vz2S0u75rDZjHj/D4m
+	i0XLWpkdmD0+b5ILYIzisklJzcksSy3St0vgytj36wpLwYUDjBXL911jaWDcMJuxi5GTQ0LA
+	ROL3oQZ2CFtM4sK99WxdjFwcQgJLGSV2/lsLlOAAK9rcLQwRX8Qo0XmwgwXCmcwk8fv1cSaQ
+	bjYBXYmmt7vApooIyEocvvKbGaSIWeABk8TtjevAVggLhEv8XDaFBcRmEVCVeDOxlxnE5hXw
+	kPjbPZMZ4gwFiTe3n4HZnAKeEv+/vwWzhYBqfn1+zg7RKyDxbfIhFojrZCU2HQDbJSHwnE2i
+	/dA7Nog5khIHV9xgmcAovICRYRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGYHCe/vdMagfj
+	ygaLQ4wCHIxKPLyTIj4HCLEmlhVX5h5ilOBgVhLhjXsNFOJNSaysSi3Kjy8qzUktPsToA3TJ
+	RGYp0eR8YOTklcQbGpuYmxqbWhoZmZma4hBWEudlPPUkQEggPbEkNTs1tSC1CGYcEwenVAPj
+	tNOTE7R/f9Lb9lM1ou9wfazSqXCzOXmWLrGH/Da/nrDmxdqzPEud3rW2ljPwWM1mXnZS9Lfl
+	nz8SNS/qU/dkrv99Knb2m8U1tes+K1y6Gi6k3K9w6EbwtUNH9id1JeltyP0Y+9Z0sbbdDqtW
+	9aQLkel7v7y5yPz1FPfN0jXTfIoaj0VtebApT4mlOCPRUIu5qDgRANkVcgV7AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t9jAV3X758DDE4d07e4vGsOm8WM8/uY
+	LBYta2V2YPb4vEkugDGqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
+	1VbJxSdA1y0zB2i+kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjFj368r
+	LAUXDjBWLN93jaWBccNsxi5GDg4JAROJzd3CXYycQKaYxIV769m6GLk4hAQWMUp0HuxggXAm
+	M0n8fn2cCaSKTUBXountLkYQW0RAVuLwld/MIEXMAg+YJG5vXMcOkhAWCJf4uWwKC4jNIqAq
+	8WZiLzOIzSvgIfG3eyYzxDoFiTe3n4HZnAKeEv+/vwWzhYBqfn1+zj6BkXcBI8MqRtHUguSC
+	4qT0XEO94sTc4tK8dL3k/NxNjODQfya1g3Flg8UhRgEORiUe3kkRnwOEWBPLiitzDzFKcDAr
+	ifDGvQYK8aYkVlalFuXHF5XmpBYfYvQBumois5Rocj4wLvNK4g2NTcxNjU0tTSxMzCxxCCuJ
+	8zKeehIgJJCeWJKanZpakFoEM46Jg1OqgfHiyv2+a5Zwcbfq8KotEdJT0eT1PfTxd2hO13Vd
+	CeYfNQvj3ybk6L3Wqv5VseJTYHB2caSd1YWFXdYSi+I/q06+tdzsbN7TyN/Pi/IFPPlfm9i4
+	6KzMyalaYb6m5uIhab6J3LseGHcnlIo2POfXmhuqs1+B7cwVv916za9UxFYzOMRIn2VyUWIp
+	zkg01GIuKk4EAEC6HgyqAgAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----1724390852-241309871-1358165405=:16662
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+This patch adds host phy support to samsung-usbphy driver and
+further adds support for samsung's exynos5250 usb-phy.
 
-=0A
----1724390852-241309871-1358165405=:16662
-Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document; name="LETTER..docx"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="LETTER..docx"
+Signed-off-by: Praveen Paneri <p.paneri@samsung.com>
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+---
 
-UEsDBBQABgAIAAAAIQDd/JU3ZgEAACAFAAATAAgCW0NvbnRlbnRfVHlwZXNd
-LnhtbCCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC0VMtuwjAQvFfqP0S+Vomh
-h6qqCBz6OLZIpR9g7A1Y9Uv28vr7bgJEVQtBKuUSKVnvzOzsxIPR2ppsCTFp
-70rWL3osAye90m5Wso/JS37PsoTCKWG8g5JtILHR8PpqMNkESBl1u1SyOWJ4
-4DzJOViRCh/AUaXy0Qqk1zjjQchPMQN+2+vdcekdgsMcaww2HDxBJRYGs+c1
-fd4qiWASyx63B2uukokQjJYCSSlfOvWDJd8xFNTZnElzHdINyWD8IENdOU6w
-63sja6JWkI1FxFdhSQZf+ai48nJhaYaiG+aATl9VWkLbX6OF6CWkRJ5bU7QV
-K7Tb6z+qI+HGQPp/FVvcLnrSOY4+JE57OZsf6s0rUDlZESCihnZ1x0cHRLLs
-EsPvkLvGb1KAlHfgzbN/tgcNzEnKin6JiZgaOJvvV/Ja6JMiVjB9v5j738C7
-hLT5kz7+wYz9dVF3H0gdb+634RcAAAD//wMAUEsDBBQABgAIAAAAIQAekRq3
-8wAAAE4CAAALAAgCX3JlbHMvLnJlbHMgogQCKKAAAgAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAjJLbSgNBDIbvBd9hyH032woi0tneSKF3IusDhJnsAXcOzKTavr2jILpQ
-217m9OfLT9abg5vUO6c8Bq9hWdWg2JtgR99reG23iwdQWchbmoJnDUfOsGlu
-b9YvPJGUoTyMMaui4rOGQSQ+ImYzsKNchci+VLqQHEkJU4+RzBv1jKu6vsf0
-VwOamabaWQ1pZ+9AtcdYNl/WDl03Gn4KZu/Yy4kVyAdhb9kuYipsScZyjWop
-9SwabDDPJZ2RYqwKNuBpotX1RP9fi46FLAmhCYnP83x1nANaXg902aJ5x687
-HyFZLBZ9e/tDg7MvaD4BAAD//wMAUEsDBBQABgAIAAAAIQDWZLNR+gAAADED
-AAAcAAgBd29yZC9fcmVscy9kb2N1bWVudC54bWwucmVscyCiBAEooAABAAAA
-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
-AMECAAD8JQAAAAA=
+Changes from v6:
+ - Changing macro names from 'HOST_CTRL0_FSEL_CLKSEL_XX' to 'FSEL_CLKSEL_XX'
+   since it's being used by HOST and OTG block to prepare reference clock.
+ - Directly Assigning 'FSEL_CLKSEL_XX' to refclk_freq in
+   samsung_usbphy_get_refclk_freq() instead of ORing them since we are
+   anyways using macros:
+	"HOST_CTRL0_FSEL(_x)                    ((_x) << 16)"
+	"OTG_SYS_FSEL(_x)                       ((_x) << 4)"
 
----1724390852-241309871-1358165405=:16662--
+ .../devicetree/bindings/usb/samsung-usbphy.txt     |   12 +-
+ drivers/usb/phy/Kconfig                            |    2 +-
+ drivers/usb/phy/samsung-usbphy.c                   |  513 ++++++++++++++++++--
+ 3 files changed, 496 insertions(+), 31 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
+index 22d06cf..0331949 100644
+--- a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
++++ b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
+@@ -1,15 +1,23 @@
+ * Samsung's usb phy transceiver
+ 
+-The Samsung's phy transceiver is used for controlling usb otg phy for
+-s3c-hsotg usb device controller.
++The Samsung's phy transceiver is used for controlling usb phy for
++s3c-hsotg as well as ehci-s5p and ohci-exynos usb controllers
++across Samsung SOCs.
+ TODO: Adding the PHY binding with controller(s) according to the under
+ developement generic PHY driver.
+ 
+ Required properties:
++
++Exynos4210:
+ - compatible : should be "samsung,exynos4210-usbphy"
+ - reg : base physical address of the phy registers and length of memory mapped
+ 	region.
+ 
++Exynos5250:
++- compatible : should be "samsung,exynos5250-usbphy"
++- reg : base physical address of the phy registers and length of memory mapped
++	region.
++
+ Optional properties:
+ - #address-cells: should be '1' when usbphy node has a child node with 'reg'
+ 		  property.
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index 36a85b6..fae4d08 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -48,7 +48,7 @@ config USB_RCAR_PHY
+ 
+ config SAMSUNG_USBPHY
+ 	bool "Samsung USB PHY controller Driver"
+-	depends on USB_S3C_HSOTG
++	depends on USB_S3C_HSOTG || USB_EHCI_S5P || USB_OHCI_EXYNOS
+ 	select USB_OTG_UTILS
+ 	help
+ 	  Enable this to support Samsung USB phy controller for samsung
+diff --git a/drivers/usb/phy/samsung-usbphy.c b/drivers/usb/phy/samsung-usbphy.c
+index 7eec7c3..355c6b2 100644
+--- a/drivers/usb/phy/samsung-usbphy.c
++++ b/drivers/usb/phy/samsung-usbphy.c
+@@ -5,7 +5,8 @@
+  *
+  * Author: Praveen Paneri <p.paneri@samsung.com>
+  *
+- * Samsung USB2.0 High-speed OTG transceiver, talks to S3C HS OTG controller
++ * Samsung USB2.0 PHY transceiver; talks to S3C HS OTG controller, EHCI-S5P and
++ * OHCI-EXYNOS controllers.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -21,11 +22,13 @@
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
+ #include <linux/delay.h>
++#include <linux/device.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/usb/otg.h>
++#include <linux/usb/samsung_usb_phy.h>
+ #include <linux/platform_data/samsung-usbphy.h>
+ 
+ /* Register definitions */
+@@ -57,24 +60,132 @@
+ #define RSTCON_HLINK_SWRST			(0x1 << 1)
+ #define RSTCON_SWRST				(0x1 << 0)
+ 
++/* EXYNOS5 */
++#define EXYNOS5_PHY_HOST_CTRL0			(0x00)
++
++#define HOST_CTRL0_PHYSWRSTALL			(0x1 << 31)
++
++#define HOST_CTRL0_REFCLKSEL_MASK		(0x3 << 19)
++#define HOST_CTRL0_REFCLKSEL_XTAL		(0x0 << 19)
++#define HOST_CTRL0_REFCLKSEL_EXTL		(0x1 << 19)
++#define HOST_CTRL0_REFCLKSEL_CLKCORE		(0x2 << 19)
++
++#define HOST_CTRL0_FSEL_MASK			(0x7 << 16)
++#define HOST_CTRL0_FSEL(_x)			((_x) << 16)
++
++#define FSEL_CLKSEL_50M				(0x7)
++#define FSEL_CLKSEL_24M				(0x5)
++#define FSEL_CLKSEL_20M				(0x4)
++#define FSEL_CLKSEL_19200K			(0x3)
++#define FSEL_CLKSEL_12M				(0x2)
++#define FSEL_CLKSEL_10M				(0x1)
++#define FSEL_CLKSEL_9600K			(0x0)
++
++#define HOST_CTRL0_TESTBURNIN			(0x1 << 11)
++#define HOST_CTRL0_RETENABLE			(0x1 << 10)
++#define HOST_CTRL0_COMMONON_N			(0x1 << 9)
++#define HOST_CTRL0_SIDDQ			(0x1 << 6)
++#define HOST_CTRL0_FORCESLEEP			(0x1 << 5)
++#define HOST_CTRL0_FORCESUSPEND			(0x1 << 4)
++#define HOST_CTRL0_WORDINTERFACE		(0x1 << 3)
++#define HOST_CTRL0_UTMISWRST			(0x1 << 2)
++#define HOST_CTRL0_LINKSWRST			(0x1 << 1)
++#define HOST_CTRL0_PHYSWRST			(0x1 << 0)
++
++#define EXYNOS5_PHY_HOST_TUNE0			(0x04)
++
++#define EXYNOS5_PHY_HSIC_CTRL1			(0x10)
++
++#define EXYNOS5_PHY_HSIC_TUNE1			(0x14)
++
++#define EXYNOS5_PHY_HSIC_CTRL2			(0x20)
++
++#define EXYNOS5_PHY_HSIC_TUNE2			(0x24)
++
++#define HSIC_CTRL_REFCLKSEL_MASK		(0x3 << 23)
++#define HSIC_CTRL_REFCLKSEL			(0x2 << 23)
++
++#define HSIC_CTRL_REFCLKDIV_MASK		(0x7f << 16)
++#define HSIC_CTRL_REFCLKDIV(_x)			((_x) << 16)
++#define HSIC_CTRL_REFCLKDIV_12			(0x24 << 16)
++#define HSIC_CTRL_REFCLKDIV_15			(0x1c << 16)
++#define HSIC_CTRL_REFCLKDIV_16			(0x1a << 16)
++#define HSIC_CTRL_REFCLKDIV_19_2		(0x15 << 16)
++#define HSIC_CTRL_REFCLKDIV_20			(0x14 << 16)
++
++#define HSIC_CTRL_SIDDQ				(0x1 << 6)
++#define HSIC_CTRL_FORCESLEEP			(0x1 << 5)
++#define HSIC_CTRL_FORCESUSPEND			(0x1 << 4)
++#define HSIC_CTRL_WORDINTERFACE			(0x1 << 3)
++#define HSIC_CTRL_UTMISWRST			(0x1 << 2)
++#define HSIC_CTRL_PHYSWRST			(0x1 << 0)
++
++#define EXYNOS5_PHY_HOST_EHCICTRL		(0x30)
++
++#define HOST_EHCICTRL_ENAINCRXALIGN		(0x1 << 29)
++#define HOST_EHCICTRL_ENAINCR4			(0x1 << 28)
++#define HOST_EHCICTRL_ENAINCR8			(0x1 << 27)
++#define HOST_EHCICTRL_ENAINCR16			(0x1 << 26)
++
++#define EXYNOS5_PHY_HOST_OHCICTRL		(0x34)
++
++#define HOST_OHCICTRL_SUSPLGCY			(0x1 << 3)
++#define HOST_OHCICTRL_APPSTARTCLK		(0x1 << 2)
++#define HOST_OHCICTRL_CNTSEL			(0x1 << 1)
++#define HOST_OHCICTRL_CLKCKTRST			(0x1 << 0)
++
++#define EXYNOS5_PHY_OTG_SYS			(0x38)
++
++#define OTG_SYS_PHYLINK_SWRESET			(0x1 << 14)
++#define OTG_SYS_LINKSWRST_UOTG			(0x1 << 13)
++#define OTG_SYS_PHY0_SWRST			(0x1 << 12)
++
++#define OTG_SYS_REFCLKSEL_MASK			(0x3 << 9)
++#define OTG_SYS_REFCLKSEL_XTAL			(0x0 << 9)
++#define OTG_SYS_REFCLKSEL_EXTL			(0x1 << 9)
++#define OTG_SYS_REFCLKSEL_CLKCORE		(0x2 << 9)
++
++#define OTG_SYS_IDPULLUP_UOTG			(0x1 << 8)
++#define OTG_SYS_COMMON_ON			(0x1 << 7)
++
++#define OTG_SYS_FSEL_MASK			(0x7 << 4)
++#define OTG_SYS_FSEL(_x)			((_x) << 4)
++
++#define OTG_SYS_FORCESLEEP			(0x1 << 3)
++#define OTG_SYS_OTGDISABLE			(0x1 << 2)
++#define OTG_SYS_SIDDQ_UOTG			(0x1 << 1)
++#define OTG_SYS_FORCESUSPEND			(0x1 << 0)
++
++#define EXYNOS5_PHY_OTG_TUNE			(0x40)
++
+ #ifndef MHZ
+ #define MHZ (1000*1000)
+ #endif
+ 
++#ifndef KHZ
++#define KHZ (1000)
++#endif
++
++#define EXYNOS_USBHOST_PHY_CTRL_OFFSET		(0x4)
+ #define S3C64XX_USBPHY_ENABLE			(0x1 << 16)
+ #define EXYNOS_USBPHY_ENABLE			(0x1 << 0)
++#define EXYNOS_USB20PHY_CFG_HOST_LINK		(0x1 << 0)
+ 
+ enum samsung_cpu_type {
+ 	TYPE_S3C64XX,
+ 	TYPE_EXYNOS4210,
++	TYPE_EXYNOS5250,
+ };
+ 
+ /*
+  * struct samsung_usbphy_drvdata - driver data for various SoC variants
+  * @cpu_type: machine identifier
+  * @devphy_en_mask: device phy enable mask for PHY CONTROL register
++ * @hostphy_en_mask: host phy enable mask for PHY CONTROL register
+  * @devphy_reg_offset: offset to DEVICE PHY CONTROL register from
+  *		       mapped address of system controller.
++ * @hostphy_reg_offset: offset to HOST PHY CONTROL register from
++ *		       mapped address of system controller.
+  *
+  *	Here we have a separate mask for device type phy.
+  *	Having different masks for host and device type phy helps
+@@ -87,7 +198,9 @@ enum samsung_cpu_type {
+ struct samsung_usbphy_drvdata {
+ 	int cpu_type;
+ 	int devphy_en_mask;
++	int hostphy_en_mask;
+ 	u32 devphy_reg_offset;
++	u32 hostphy_reg_offset;
+ };
+ 
+ /*
+@@ -98,8 +211,12 @@ struct samsung_usbphy_drvdata {
+  * @clk: usb phy clock
+  * @regs: usb phy controller registers memory base
+  * @pmuregs: USB device PHY_CONTROL register memory base
++ * @sysreg: USB2.0 PHY_CFG register memory base
+  * @ref_clk_freq: reference clock frequency selection
+  * @drv_data: driver data available for different SoCs
++ * @phy_type: Samsung SoCs specific phy types:	#HOST
++ *						#DEVICE
++ * @phy_usage: usage count for phy
+  * @lock: lock for phy operations
+  */
+ struct samsung_usbphy {
+@@ -109,13 +226,27 @@ struct samsung_usbphy {
+ 	struct clk	*clk;
+ 	void __iomem	*regs;
+ 	void __iomem	*pmuregs;
++	void __iomem	*sysreg;
+ 	int		ref_clk_freq;
+ 	const struct samsung_usbphy_drvdata *drv_data;
++	enum samsung_usb_phy_type phy_type;
++	atomic_t	phy_usage;
+ 	spinlock_t	lock;
+ };
+ 
+ #define phy_to_sphy(x)		container_of((x), struct samsung_usbphy, phy)
+ 
++int samsung_usbphy_set_host(struct usb_otg *otg, struct usb_bus *host)
++{
++	if (!otg)
++		return -ENODEV;
++
++	if (!otg->host)
++		otg->host = host;
++
++	return 0;
++}
++
+ static int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
+ {
+ 	struct device_node *usbphy_sys;
+@@ -127,14 +258,27 @@ static int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
+ 
+ 	sphy->pmuregs = of_iomap(usbphy_sys, 0);
+ 
+-	of_node_put(usbphy_sys);
+-
+ 	if (sphy->pmuregs == NULL) {
+ 		dev_err(sphy->dev, "Can't get usb-phy pmu control register\n");
+-		return -ENODEV;
++		goto err0;
+ 	}
+ 
++	sphy->sysreg = of_iomap(usbphy_sys, 1);
++
++	/*
++	 * Not returning error code here, since this situation is not fatal.
++	 * Few SoCs may not have this switch available
++	 */
++	if (sphy->sysreg == NULL)
++		dev_warn(sphy->dev, "Can't get usb-phy sysreg cfg register\n");
++
++	of_node_put(usbphy_sys);
++
+ 	return 0;
++
++err0:
++	of_node_put(usbphy_sys);
++	return -ENXIO;
+ }
+ 
+ /*
+@@ -144,17 +288,42 @@ static int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
+  */
+ static void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, bool on)
+ {
+-	void __iomem *reg;
++	void __iomem *reg = NULL;
+ 	u32 reg_val;
+-	u32 en_mask;
++	u32 en_mask = 0;
+ 
+ 	if (!sphy->pmuregs) {
+ 		dev_warn(sphy->dev, "Can't set pmu isolation\n");
+ 		return;
+ 	}
+ 
+-	reg = sphy->pmuregs + sphy->drv_data->devphy_reg_offset;
+-	en_mask = sphy->drv_data->devphy_en_mask;
++	switch (sphy->drv_data->cpu_type) {
++	case TYPE_S3C64XX:
++		/*
++		 * Do nothing: We will add here once S3C64xx goes for DT support
++		 */
++		break;
++	case TYPE_EXYNOS4210:
++		/*
++		 * Fall through since exynos4210 and exynos5250 have similar
++		 * register architecture: two separate registers for host and
++		 * device phy control with enable bit at position 0.
++		 */
++	case TYPE_EXYNOS5250:
++		if (sphy->phy_type == USB_PHY_TYPE_DEVICE) {
++			reg = sphy->pmuregs +
++				sphy->drv_data->devphy_reg_offset;
++			en_mask = sphy->drv_data->devphy_en_mask;
++		} else if (sphy->phy_type == USB_PHY_TYPE_HOST) {
++			reg = sphy->pmuregs +
++				sphy->drv_data->hostphy_reg_offset;
++			en_mask = sphy->drv_data->hostphy_en_mask;
++		}
++		break;
++	default:
++		dev_err(sphy->dev, "Invalid SoC type\n");
++		return;
++	}
+ 
+ 	reg_val = readl(reg);
+ 
+@@ -167,6 +336,43 @@ static void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, bool on)
+ }
+ 
+ /*
++ * Configure the mode of working of usb-phy here: HOST/DEVICE.
++ */
++static void samsung_usbphy_cfg_sel(struct samsung_usbphy *sphy)
++{
++	u32 reg;
++
++	if (!sphy->sysreg) {
++		dev_warn(sphy->dev, "Can't configure specified phy mode\n");
++		return;
++	}
++
++	reg = readl(sphy->sysreg);
++
++	if (sphy->phy_type == USB_PHY_TYPE_DEVICE)
++		reg &= ~EXYNOS_USB20PHY_CFG_HOST_LINK;
++	else if (sphy->phy_type == USB_PHY_TYPE_HOST)
++		reg |= EXYNOS_USB20PHY_CFG_HOST_LINK;
++
++	writel(reg, sphy->sysreg);
++}
++
++/*
++ * PHYs are different for USB Device and USB Host.
++ * This make sure that correct PHY type is selected before
++ * any operation on PHY.
++ */
++static int samsung_usbphy_set_type(struct usb_phy *phy,
++				enum samsung_usb_phy_type phy_type)
++{
++	struct samsung_usbphy *sphy = phy_to_sphy(phy);
++
++	sphy->phy_type = phy_type;
++
++	return 0;
++}
++
++/*
+  * Returns reference clock frequency selection value
+  */
+ static int samsung_usbphy_get_refclk_freq(struct samsung_usbphy *sphy)
+@@ -174,34 +380,185 @@ static int samsung_usbphy_get_refclk_freq(struct samsung_usbphy *sphy)
+ 	struct clk *ref_clk;
+ 	int refclk_freq = 0;
+ 
+-	ref_clk = clk_get(sphy->dev, "xusbxti");
++	/*
++	 * In exynos5250 USB host and device PHY use
++	 * external crystal clock XXTI
++	 */
++	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250)
++		ref_clk = clk_get(sphy->dev, "ext_xtal");
++	else
++		ref_clk = clk_get(sphy->dev, "xusbxti");
+ 	if (IS_ERR(ref_clk)) {
+ 		dev_err(sphy->dev, "Failed to get reference clock\n");
+ 		return PTR_ERR(ref_clk);
+ 	}
+ 
+-	switch (clk_get_rate(ref_clk)) {
+-	case 12 * MHZ:
+-		refclk_freq = PHYCLK_CLKSEL_12M;
+-		break;
+-	case 24 * MHZ:
+-		refclk_freq = PHYCLK_CLKSEL_24M;
+-		break;
+-	case 48 * MHZ:
+-		refclk_freq = PHYCLK_CLKSEL_48M;
+-		break;
+-	default:
+-		if (sphy->drv_data->cpu_type == TYPE_S3C64XX)
+-			refclk_freq = PHYCLK_CLKSEL_48M;
+-		else
++	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250) {
++		/* set clock frequency for PLL */
++		switch (clk_get_rate(ref_clk)) {
++		case 9600 * KHZ:
++			refclk_freq = FSEL_CLKSEL_9600K;
++			break;
++		case 10 * MHZ:
++			refclk_freq = FSEL_CLKSEL_10M;
++			break;
++		case 12 * MHZ:
++			refclk_freq = FSEL_CLKSEL_12M;
++			break;
++		case 19200 * KHZ:
++			refclk_freq = FSEL_CLKSEL_19200K;
++			break;
++		case 20 * MHZ:
++			refclk_freq = FSEL_CLKSEL_20M;
++			break;
++		case 50 * MHZ:
++			refclk_freq = FSEL_CLKSEL_50M;
++			break;
++		case 24 * MHZ:
++		default:
++			/* default reference clock */
++			refclk_freq = FSEL_CLKSEL_24M;
++			break;
++		}
++	} else {
++		switch (clk_get_rate(ref_clk)) {
++		case 12 * MHZ:
++			refclk_freq = PHYCLK_CLKSEL_12M;
++			break;
++		case 24 * MHZ:
+ 			refclk_freq = PHYCLK_CLKSEL_24M;
+-		break;
++			break;
++		case 48 * MHZ:
++			refclk_freq = PHYCLK_CLKSEL_48M;
++			break;
++		default:
++			if (sphy->drv_data->cpu_type == TYPE_S3C64XX)
++				refclk_freq = PHYCLK_CLKSEL_48M;
++			else
++				refclk_freq = PHYCLK_CLKSEL_24M;
++			break;
++		}
+ 	}
+ 	clk_put(ref_clk);
+ 
+ 	return refclk_freq;
+ }
+ 
++static bool exynos5_phyhost_is_on(void *regs)
++{
++	u32 reg;
++
++	reg = readl(regs + EXYNOS5_PHY_HOST_CTRL0);
++
++	return !(reg & HOST_CTRL0_SIDDQ);
++}
++
++static void samsung_exynos5_usbphy_enable(struct samsung_usbphy *sphy)
++{
++	void __iomem *regs = sphy->regs;
++	u32 phyclk = sphy->ref_clk_freq;
++	u32 phyhost;
++	u32 phyotg;
++	u32 phyhsic;
++	u32 ehcictrl;
++	u32 ohcictrl;
++
++	/*
++	 * phy_usage helps in keeping usage count for phy
++	 * so that the first consumer enabling the phy is also
++	 * the last consumer to disable it.
++	 */
++
++	atomic_inc(&sphy->phy_usage);
++
++	if (exynos5_phyhost_is_on(regs)) {
++		dev_info(sphy->dev, "Already power on PHY\n");
++		return;
++	}
++
++	/* Host configuration */
++	phyhost = readl(regs + EXYNOS5_PHY_HOST_CTRL0);
++
++	/* phy reference clock configuration */
++	phyhost &= ~HOST_CTRL0_FSEL_MASK;
++	phyhost |= HOST_CTRL0_FSEL(phyclk);
++
++	/* host phy reset */
++	phyhost &= ~(HOST_CTRL0_PHYSWRST |
++			HOST_CTRL0_PHYSWRSTALL |
++			HOST_CTRL0_SIDDQ |
++			/* Enable normal mode of operation */
++			HOST_CTRL0_FORCESUSPEND |
++			HOST_CTRL0_FORCESLEEP);
++
++	/* Link reset */
++	phyhost |= (HOST_CTRL0_LINKSWRST |
++			HOST_CTRL0_UTMISWRST |
++			/* COMMON Block configuration during suspend */
++			HOST_CTRL0_COMMONON_N);
++	writel(phyhost, regs + EXYNOS5_PHY_HOST_CTRL0);
++	udelay(10);
++	phyhost &= ~(HOST_CTRL0_LINKSWRST |
++			HOST_CTRL0_UTMISWRST);
++	writel(phyhost, regs + EXYNOS5_PHY_HOST_CTRL0);
++
++	/* OTG configuration */
++	phyotg = readl(regs + EXYNOS5_PHY_OTG_SYS);
++
++	/* phy reference clock configuration */
++	phyotg &= ~OTG_SYS_FSEL_MASK;
++	phyotg |= OTG_SYS_FSEL(phyclk);
++
++	/* Enable normal mode of operation */
++	phyotg &= ~(OTG_SYS_FORCESUSPEND |
++			OTG_SYS_SIDDQ_UOTG |
++			OTG_SYS_FORCESLEEP |
++			OTG_SYS_REFCLKSEL_MASK |
++			/* COMMON Block configuration during suspend */
++			OTG_SYS_COMMON_ON);
++
++	/* OTG phy & link reset */
++	phyotg |= (OTG_SYS_PHY0_SWRST |
++			OTG_SYS_LINKSWRST_UOTG |
++			OTG_SYS_PHYLINK_SWRESET |
++			OTG_SYS_OTGDISABLE |
++			/* Set phy refclk */
++			OTG_SYS_REFCLKSEL_CLKCORE);
++
++	writel(phyotg, regs + EXYNOS5_PHY_OTG_SYS);
++	udelay(10);
++	phyotg &= ~(OTG_SYS_PHY0_SWRST |
++			OTG_SYS_LINKSWRST_UOTG |
++			OTG_SYS_PHYLINK_SWRESET);
++	writel(phyotg, regs + EXYNOS5_PHY_OTG_SYS);
++
++	/* HSIC phy configuration */
++	phyhsic = (HSIC_CTRL_REFCLKDIV_12 |
++			HSIC_CTRL_REFCLKSEL |
++			HSIC_CTRL_PHYSWRST);
++	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL1);
++	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL2);
++	udelay(10);
++	phyhsic &= ~HSIC_CTRL_PHYSWRST;
++	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL1);
++	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL2);
++
++	udelay(80);
++
++	/* enable EHCI DMA burst */
++	ehcictrl = readl(regs + EXYNOS5_PHY_HOST_EHCICTRL);
++	ehcictrl |= (HOST_EHCICTRL_ENAINCRXALIGN |
++				HOST_EHCICTRL_ENAINCR4 |
++				HOST_EHCICTRL_ENAINCR8 |
++				HOST_EHCICTRL_ENAINCR16);
++	writel(ehcictrl, regs + EXYNOS5_PHY_HOST_EHCICTRL);
++
++	/* set ohci_suspend_on_n */
++	ohcictrl = readl(regs + EXYNOS5_PHY_HOST_OHCICTRL);
++	ohcictrl |= HOST_OHCICTRL_SUSPLGCY;
++	writel(ohcictrl, regs + EXYNOS5_PHY_HOST_OHCICTRL);
++}
++
+ static void samsung_usbphy_enable(struct samsung_usbphy *sphy)
+ {
+ 	void __iomem *regs = sphy->regs;
+@@ -237,6 +594,41 @@ static void samsung_usbphy_enable(struct samsung_usbphy *sphy)
+ 	writel(rstcon, regs + SAMSUNG_RSTCON);
+ }
+ 
++static void samsung_exynos5_usbphy_disable(struct samsung_usbphy *sphy)
++{
++	void __iomem *regs = sphy->regs;
++	u32 phyhost;
++	u32 phyotg;
++	u32 phyhsic;
++
++	if (atomic_dec_return(&sphy->phy_usage) > 0) {
++		dev_info(sphy->dev, "still being used\n");
++		return;
++	}
++
++	phyhsic = (HSIC_CTRL_REFCLKDIV_12 |
++			HSIC_CTRL_REFCLKSEL |
++			HSIC_CTRL_SIDDQ |
++			HSIC_CTRL_FORCESLEEP |
++			HSIC_CTRL_FORCESUSPEND);
++	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL1);
++	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL2);
++
++	phyhost = readl(regs + EXYNOS5_PHY_HOST_CTRL0);
++	phyhost |= (HOST_CTRL0_SIDDQ |
++			HOST_CTRL0_FORCESUSPEND |
++			HOST_CTRL0_FORCESLEEP |
++			HOST_CTRL0_PHYSWRST |
++			HOST_CTRL0_PHYSWRSTALL);
++	writel(phyhost, regs + EXYNOS5_PHY_HOST_CTRL0);
++
++	phyotg = readl(regs + EXYNOS5_PHY_OTG_SYS);
++	phyotg |= (OTG_SYS_FORCESUSPEND |
++			OTG_SYS_SIDDQ_UOTG |
++			OTG_SYS_FORCESLEEP);
++	writel(phyotg, regs + EXYNOS5_PHY_OTG_SYS);
++}
++
+ static void samsung_usbphy_disable(struct samsung_usbphy *sphy)
+ {
+ 	void __iomem *regs = sphy->regs;
+@@ -264,11 +656,14 @@ static void samsung_usbphy_disable(struct samsung_usbphy *sphy)
+ static int samsung_usbphy_init(struct usb_phy *phy)
+ {
+ 	struct samsung_usbphy *sphy;
++	struct usb_bus *host = NULL;
+ 	unsigned long flags;
+ 	int ret = 0;
+ 
+ 	sphy = phy_to_sphy(phy);
+ 
++	host = phy->otg->host;
++
+ 	/* Enable the phy clock */
+ 	ret = clk_prepare_enable(sphy->clk);
+ 	if (ret) {
+@@ -278,19 +673,35 @@ static int samsung_usbphy_init(struct usb_phy *phy)
+ 
+ 	spin_lock_irqsave(&sphy->lock, flags);
+ 
++	if (host) {
++		/* setting default phy-type for USB 2.0 */
++		if (!strstr(dev_name(host->controller), "ehci") ||
++				!strstr(dev_name(host->controller), "ohci"))
++			samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_HOST);
++	} else {
++		samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_DEVICE);
++	}
++
+ 	/* Disable phy isolation */
+ 	if (sphy->plat && sphy->plat->pmu_isolation)
+ 		sphy->plat->pmu_isolation(false);
+ 	else
+ 		samsung_usbphy_set_isolation(sphy, false);
+ 
++	/* Selecting Host/OTG mode; After reset USB2.0PHY_CFG: HOST */
++	samsung_usbphy_cfg_sel(sphy);
++
+ 	/* Initialize usb phy registers */
+-	samsung_usbphy_enable(sphy);
++	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250)
++		samsung_exynos5_usbphy_enable(sphy);
++	else
++		samsung_usbphy_enable(sphy);
+ 
+ 	spin_unlock_irqrestore(&sphy->lock, flags);
+ 
+ 	/* Disable the phy clock */
+ 	clk_disable_unprepare(sphy->clk);
++
+ 	return ret;
+ }
+ 
+@@ -300,10 +711,13 @@ static int samsung_usbphy_init(struct usb_phy *phy)
+ static void samsung_usbphy_shutdown(struct usb_phy *phy)
+ {
+ 	struct samsung_usbphy *sphy;
++	struct usb_bus *host = NULL;
+ 	unsigned long flags;
+ 
+ 	sphy = phy_to_sphy(phy);
+ 
++	host = phy->otg->host;
++
+ 	if (clk_prepare_enable(sphy->clk)) {
+ 		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
+ 		return;
+@@ -311,8 +725,20 @@ static void samsung_usbphy_shutdown(struct usb_phy *phy)
+ 
+ 	spin_lock_irqsave(&sphy->lock, flags);
+ 
++	if (host) {
++		/* setting default phy-type for USB 2.0 */
++		if (!strstr(dev_name(host->controller), "ehci") ||
++				!strstr(dev_name(host->controller), "ohci"))
++			samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_HOST);
++	} else {
++		samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_DEVICE);
++	}
++
+ 	/* De-initialize usb phy registers */
+-	samsung_usbphy_disable(sphy);
++	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250)
++		samsung_exynos5_usbphy_disable(sphy);
++	else
++		samsung_usbphy_disable(sphy);
+ 
+ 	/* Enable phy isolation */
+ 	if (sphy->plat && sphy->plat->pmu_isolation)
+@@ -344,7 +770,9 @@ static inline const struct samsung_usbphy_drvdata
+ static int __devinit samsung_usbphy_probe(struct platform_device *pdev)
+ {
+ 	struct samsung_usbphy *sphy;
++	struct usb_otg *otg;
+ 	struct samsung_usbphy_data *pdata = pdev->dev.platform_data;
++	const struct samsung_usbphy_drvdata *drv_data;
+ 	struct device *dev = &pdev->dev;
+ 	struct resource *phy_mem;
+ 	void __iomem	*phy_base;
+@@ -367,7 +795,17 @@ static int __devinit samsung_usbphy_probe(struct platform_device *pdev)
+ 	if (!sphy)
+ 		return -ENOMEM;
+ 
+-	clk = devm_clk_get(dev, "otg");
++	otg = devm_kzalloc(dev, sizeof(*otg), GFP_KERNEL);
++	if (!otg)
++		return -ENOMEM;
++
++	drv_data = samsung_usbphy_get_driver_data(pdev);
++
++	if (drv_data->cpu_type == TYPE_EXYNOS5250)
++		clk = devm_clk_get(dev, "usbhost");
++	else
++		clk = devm_clk_get(dev, "otg");
++
+ 	if (IS_ERR(clk)) {
+ 		dev_err(dev, "Failed to get otg clock\n");
+ 		return PTR_ERR(clk);
+@@ -389,13 +827,17 @@ static int __devinit samsung_usbphy_probe(struct platform_device *pdev)
+ 	sphy->plat		= pdata;
+ 	sphy->regs		= phy_base;
+ 	sphy->clk		= clk;
++	sphy->drv_data		= drv_data;
+ 	sphy->phy.dev		= sphy->dev;
+ 	sphy->phy.label		= "samsung-usbphy";
+ 	sphy->phy.init		= samsung_usbphy_init;
+ 	sphy->phy.shutdown	= samsung_usbphy_shutdown;
+-	sphy->drv_data		= samsung_usbphy_get_driver_data(pdev);
+ 	sphy->ref_clk_freq	= samsung_usbphy_get_refclk_freq(sphy);
+ 
++	sphy->phy.otg		= otg;
++	sphy->phy.otg->phy	= &sphy->phy;
++	sphy->phy.otg->set_host = samsung_usbphy_set_host;
++
+ 	spin_lock_init(&sphy->lock);
+ 
+ 	platform_set_drvdata(pdev, sphy);
+@@ -411,6 +853,8 @@ static int __exit samsung_usbphy_remove(struct platform_device *pdev)
+ 
+ 	if (sphy->pmuregs)
+ 		iounmap(sphy->pmuregs);
++	if (sphy->sysreg)
++		iounmap(sphy->sysreg);
+ 
+ 	return 0;
+ }
+@@ -423,6 +867,13 @@ static const struct samsung_usbphy_drvdata usbphy_s3c64xx = {
+ static const struct samsung_usbphy_drvdata usbphy_exynos4 = {
+ 	.cpu_type		= TYPE_EXYNOS4210,
+ 	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
++	.hostphy_en_mask	= EXYNOS_USBPHY_ENABLE,
++};
++
++static struct samsung_usbphy_drvdata usbphy_exynos5 = {
++	.cpu_type		= TYPE_EXYNOS5250,
++	.hostphy_en_mask	= EXYNOS_USBPHY_ENABLE,
++	.hostphy_reg_offset	= EXYNOS_USBHOST_PHY_CTRL_OFFSET,
+ };
+ 
+ #ifdef CONFIG_OF
+@@ -433,6 +884,9 @@ static const struct of_device_id samsung_usbphy_dt_match[] = {
+ 	}, {
+ 		.compatible = "samsung,exynos4210-usbphy",
+ 		.data = &usbphy_exynos4,
++	}, {
++		.compatible = "samsung,exynos5250-usbphy",
++		.data = &usbphy_exynos5
+ 	},
+ 	{},
+ };
+@@ -446,6 +900,9 @@ static struct platform_device_id samsung_usbphy_driver_ids[] = {
+ 	}, {
+ 		.name		= "exynos4210-usbphy",
+ 		.driver_data	= (unsigned long)&usbphy_exynos4,
++	}, {
++		.name		= "exynos5250-usbphy",
++		.driver_data	= (unsigned long)&usbphy_exynos5,
+ 	},
+ 	{},
+ };
+-- 
+1.7.6.5
+
