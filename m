@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab3ANKqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 05:46:10 -0500
-Received: from nm4.bullet.mail.ird.yahoo.com ([77.238.189.61]:46820 "EHLO
-	nm4.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752473Ab3ANKqI (ORCPT
+	id S1756581Ab3ANKqy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 05:46:54 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:61641 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756073Ab3ANKqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 05:46:08 -0500
-X-Yahoo-Newman-Id: 160357.4792.bm@smtp118.mail.ird.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: sqS9sDsVM1nVDhGGleElJLF7Bw1d.njIDegQunhMo.f7XCE
- MnQFjmPcG.wGDLh9sL4WgCs80EDFxo.acDw3SByFcxTWeSwWKQKBGuayuiCl
- z0EK4CGFmjrSocJYBC9jgoV_0NKh6Cs.AgpxtIIIDj2IFy9FkoEIwzVSdOPW
- ziyGpjTS2i.fMOdZWozb6kKOcmdMrq6BahjIHdEk3dDrCNJhhpqxgbwRqnAt
- Qm7L0ns5IqAOE..s052p8Uwj1PCsFIGqYIiuJW580D75CLx4wKmnrcJqv86i
- tDFrUslCP7aSNkO.6xnkSd3nW81lj1O.0y8wGu_z1ec2FysyNa_CThJu6kI4
- ocIg6GxJL7Pykq3sSux2Fq85IjRq3wPTSpsssFLy5ZZ8Ti2OWcN7kGhX9TmU
- X4Lb4tk4mjRB0H00rEQ--
-X-Yahoo-SMTP: mOFZFAuswBAG4_8a4ZBj.Wmvw2Qxc4R7nmE-
-From: Schrober <franzschrober@yahoo.de>
-To: linux-kernel@vger.kernel.org
-Subject: container-of Implementation
-Date: Mon, 14 Jan 2013 11:46:05 +0100
-Message-ID: <1635127.Ytukyo95FQ@bentobox>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+	Mon, 14 Jan 2013 05:46:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alex Courbot <acourbot@nvidia.com>
+Subject: Re: [PATCH 0/4] gpio: introduce descriptor-based interface
+Date: Mon, 14 Jan 2013 10:46:12 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Mike Frysinger <vapier@gentoo.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        gnurou@gmail.com, linux-m68k@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org
+References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <201301101008.45091.arnd@arndb.de> <50F3DC2B.6000603@nvidia.com>
+In-Reply-To: <50F3DC2B.6000603@nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301141046.12976.arnd@arndb.de>
+X-Provags-ID: V02:K0:ajd6tcuv8jgSuvGSBsZ63Ii6EPr9CJmCpMf4u7PwK+j
+ yn0QmALdn1q9ct2rKPheEwIm7ulJ9VN4J3TfBfUpulOz/zzCzJ
+ U7kYrH+fA/JLpH7UyydKh2cYXWN4xBAOVTgbBMw2s40vAii+g0
+ ehmTayhy57xEAXDZ3z5LNUI8bly+fq+8qRYJBAJEdq/VcnrsC3
+ veZ04iXCa8xX9GkHqNI9NiCgX08VZXhoyBPz1oVC1j0xura0Ie
+ /hFnTwA1ZlSlFbUeHats/hU4SBjo5CRxfgs5BN7/krjR0r/oq9
+ U0N9YRvn3piWKCQt/Ee3bk7WJbM+hFK8ahtBvWVAjmf1DzYiGG
+ I9xdwNtshQyOhC09wfX8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Monday 14 January 2013, Alex Courbot wrote:
+> On 01/10/2013 07:08 PM, Arnd Bergmann wrote:
+> > I found two that provide the generic gpio interfaces when gpiolib
+> > is disabled, but use gpiolib otherwise for the same hardware,
+> > arch/m68k/include/asm/mcfgpio.h and arch/blackfin/include/asm/gpio.h.
+> > I would assume that we can simply remove the non-gpiolib shortcut
+> > here at cost of a small overhead.
+> 
+> I performed a search on my side too (checking configurations options 
+> which select GENERIC_GPIO but not ARCH_REQUIRE_GPIOLIB) and found the 
+> same list. This takes some time btw - many platforms use this combo to 
+> make GPIO support optional. Can I ask how you figured out these two archs?
 
-I wondered why the container_of implementation is so complicated.
+I basically grepped for GENERIC_GPIO and looked at
+the individual implementations.
 
-#define container_of(ptr, type, member) ({			\
-	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
-	(type *)( (char *)__mptr - offsetof(type,member) );})
+> > Then there are a bunch that use gpiolib but have a nontrivial
+> > implementation of gpio_get_value and other functions. I'm not sure
+> > if these are a problematic with your code.
+> 
+> AFAICT these all implement an inline path that bypasses GPIOlib when the 
+> GPIO number is known at compile time, for faster bitbanging I presume. 
+> It should be totally harmless to keep them. Unfortunately, I don't think 
+> it would be possible to have a similar trick using handlers.
 
-isn't the __mptr not unnecessary? Why not following version?
+Right, makes sense.
 
-#define container_of(ptr, type, member) \
-    ((type *)((char *)(ptr) - offsetof(type, member)))
--- 
-Franz Schrober
+	Arnd
