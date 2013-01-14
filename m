@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab3ANQu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 11:50:59 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:48348 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab3ANQu6 (ORCPT
+	id S1757461Ab3ANQvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 11:51:55 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:38633 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756521Ab3ANQvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 11:50:58 -0500
+	Mon, 14 Jan 2013 11:51:54 -0500
 From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf: dso_load - move name malloc to when needed
-Date: Mon, 14 Jan 2013 09:50:50 -0700
-Message-Id: <1358182250-89669-1-git-send-email-dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf: symbol - mark vmlinux filename as allocated
+Date: Mon, 14 Jan 2013 09:51:48 -0700
+Message-Id: <1358182308-89715-1-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memory is currently leaked on some paths.
+Needs to be marked allocated so memory can be freed when
+dso is deleted.
 ---
- tools/perf/util/symbol.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ tools/perf/util/symbol.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 61edfd0..e9c0c3a 100644
+index 295f8d4..61edfd0 100644
 --- a/tools/perf/util/symbol.c
 +++ b/tools/perf/util/symbol.c
-@@ -775,10 +775,6 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 	else
- 		machine = NULL;
+@@ -1124,8 +1124,10 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 	filename = dso__build_id_filename(dso, NULL, 0);
+ 	if (filename != NULL) {
+ 		err = dso__load_vmlinux(dso, map, filename, filter);
+-		if (err > 0)
++		if (err > 0) {
++			dso->lname_alloc = 1;
+ 			goto out;
++		}
+ 		free(filename);
+ 	}
  
--	name = malloc(PATH_MAX);
--	if (!name)
--		return -1;
--
- 	dso->adjust_symbols = 0;
- 
- 	if (strncmp(dso->name, "/tmp/perf-", 10) == 0) {
-@@ -802,6 +798,10 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 	if (machine)
- 		root_dir = machine->root_dir;
- 
-+	name = malloc(PATH_MAX);
-+	if (!name)
-+		return -1;
-+
- 	/* Iterate over candidate debug images.
- 	 * Keep track of "interesting" ones (those which have a symtab, dynsym,
- 	 * and/or opd section) for processing.
+@@ -1133,6 +1135,7 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 		err = dso__load_vmlinux(dso, map, vmlinux_path[i], filter);
+ 		if (err > 0) {
+ 			dso__set_long_name(dso, strdup(vmlinux_path[i]));
++			dso->lname_alloc = 1;
+ 			break;
+ 		}
+ 	}
+@@ -1172,6 +1175,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 		if (err > 0) {
+ 			dso__set_long_name(dso,
+ 					   strdup(symbol_conf.vmlinux_name));
++			dso->lname_alloc = 1;
+ 			goto out_fixup;
+ 		}
+ 		return err;
 -- 
 1.7.10.1
 
