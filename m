@@ -1,98 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3ANCCd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 21:02:33 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:35316 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab3ANCCa (ORCPT
+	id S1755620Ab3ANCEP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 21:04:15 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:60695 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524Ab3ANCEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 21:02:30 -0500
-From: Takahisa Tanaka <mc74hc00@gmail.com>
-To: linux-watchdog@vger.kernel.org
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Paul Menzel <paulepanter@users.sourceforge.net>,
-        Arkadiusz Miskiewicz <arekm@maven.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org,
-        Florian Mickler <florian@mickler.org>,
-        Takahisa Tanaka <mc74hc00@gmail.com>
-Subject: [PATCH 2/2] sp5100_tco: Write back the original value to reserved bits, instead of zero
-Date: Mon, 14 Jan 2013 11:01:58 +0900
-Message-Id: <1358128918-4415-2-git-send-email-mc74hc00@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1358128918-4415-1-git-send-email-mc74hc00@gmail.com>
-References: <1358128918-4415-1-git-send-email-mc74hc00@gmail.com>
+	Sun, 13 Jan 2013 21:04:09 -0500
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH 3/4] serial: vt8500: UART uses gated clock rather than 24Mhz reference
+Date: Mon, 14 Jan 2013 15:04:18 +1300
+Message-Id: <1358129060-9399-4-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358129060-9399-1-git-send-email-linux@prisktech.co.nz>
+References: <1358129060-9399-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of SP5100 or SB7x0 chipsets, the sp5100_tco module writes zero to
-reserved bits. The module, however, shouldn't depend on specific default
-value, and should perform a read-merge-write operation for the reserved
-bits.
+UART modules on Wondermedia SoCs are connected via a gated clock
+source, rather than directly to the 24Mhz reference clock. While
+uboot enables UART0 for debugging, other UART ports are unavailable
+until the clock is enabled.
 
-This patch makes the sp5100_tco module perform a read-merge-write operation
-on all the chipset (sp5100, sb7x0, sb8x0 or later).
+This patch checks that a valid clock is actually passed from devicetree,
+enables the clock in probe. This change removes the fallback when a
+clock was not specified as it doesn't apply any longer (and would only
+work if the UART clock was already enabled).
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43176
-Signed-off-by: Takahisa Tanaka <mc74hc00@gmail.com>
+DTSI files are updated for VT8500, WM8505 and WM8650.
+
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- drivers/watchdog/sp5100_tco.c | 28 ++++++++--------------------
- 1 file changed, 8 insertions(+), 20 deletions(-)
+ arch/arm/boot/dts/vt8500.dtsi      |   40 +++++++++++++++++++++---
+ arch/arm/boot/dts/wm8505.dtsi      |   60 ++++++++++++++++++++++++++++++++----
+ arch/arm/boot/dts/wm8650.dtsi      |   20 ++++++++++--
+ drivers/tty/serial/vt8500_serial.c |   17 ++++++----
+ 4 files changed, 119 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/watchdog/sp5100_tco.c b/drivers/watchdog/sp5100_tco.c
-index 5dfe86e..e3b8f75 100644
---- a/drivers/watchdog/sp5100_tco.c
-+++ b/drivers/watchdog/sp5100_tco.c
-@@ -361,7 +361,7 @@ static unsigned char sp5100_tco_setupdevice(void)
- {
- 	struct pci_dev *dev = NULL;
- 	const char *dev_name = NULL;
--	u32 val;
-+	u32 val, tmp_val;
- 	u32 index_reg, data_reg, base_addr;
+diff --git a/arch/arm/boot/dts/vt8500.dtsi b/arch/arm/boot/dts/vt8500.dtsi
+index d8645e9..cf31ced 100644
+--- a/arch/arm/boot/dts/vt8500.dtsi
++++ b/arch/arm/boot/dts/vt8500.dtsi
+@@ -45,6 +45,38 @@
+ 					compatible = "fixed-clock";
+ 					clock-frequency = <24000000>;
+ 				};
++
++				clkuart0: uart0 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <1>;
++				};
++
++				clkuart1: uart1 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <2>;
++				};
++
++				clkuart2: uart2 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <3>;
++				};
++
++				clkuart3: uart3 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <4>;
++				};
+ 			};
+ 		};
  
- 	/* Match the PCI device */
-@@ -497,31 +497,19 @@ static unsigned char sp5100_tco_setupdevice(void)
- 		pr_debug("Got 0x%04x from resource tree\n", val);
+@@ -83,28 +115,28 @@
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8200000 0x1040>;
+ 			interrupts = <32>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart0>;
+ 		};
+ 
+ 		uart@d82b0000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd82b0000 0x1040>;
+ 			interrupts = <33>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart1>;
+ 		};
+ 
+ 		uart@d8210000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8210000 0x1040>;
+ 			interrupts = <47>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart2>;
+ 		};
+ 
+ 		uart@d82c0000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd82c0000 0x1040>;
+ 			interrupts = <50>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart3>;
+ 		};
+ 
+ 		rtc@d8100000 {
+diff --git a/arch/arm/boot/dts/wm8505.dtsi b/arch/arm/boot/dts/wm8505.dtsi
+index 330f833..e74a1c0 100644
+--- a/arch/arm/boot/dts/wm8505.dtsi
++++ b/arch/arm/boot/dts/wm8505.dtsi
+@@ -59,6 +59,54 @@
+ 					compatible = "fixed-clock";
+ 					clock-frequency = <24000000>;
+ 				};
++
++				clkuart0: uart0 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <1>;
++				};
++
++				clkuart1: uart1 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <2>;
++				};
++
++				clkuart2: uart2 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <3>;
++				};
++
++				clkuart3: uart3 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <4>;
++				};
++
++				clkuart4: uart4 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <22>;
++				};
++
++				clkuart5: uart5 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <23>;
++				};
+ 			};
+ 		};
+ 
+@@ -96,42 +144,42 @@
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8200000 0x1040>;
+ 			interrupts = <32>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart0>;
+ 		};
+ 
+ 		uart@d82b0000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd82b0000 0x1040>;
+ 			interrupts = <33>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart1>;
+ 		};
+ 
+ 		uart@d8210000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8210000 0x1040>;
+ 			interrupts = <47>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart2>;
+ 		};
+ 
+ 		uart@d82c0000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd82c0000 0x1040>;
+ 			interrupts = <50>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart3>;
+ 		};
+ 
+ 		uart@d8370000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8370000 0x1040>;
+ 			interrupts = <31>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart4>;
+ 		};
+ 
+ 		uart@d8380000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8380000 0x1040>;
+ 			interrupts = <30>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart5>;
+ 		};
+ 
+ 		rtc@d8100000 {
+diff --git a/arch/arm/boot/dts/wm8650.dtsi b/arch/arm/boot/dts/wm8650.dtsi
+index 83b9467..e0c42ff 100644
+--- a/arch/arm/boot/dts/wm8650.dtsi
++++ b/arch/arm/boot/dts/wm8650.dtsi
+@@ -75,6 +75,22 @@
+ 					reg = <0x204>;
+ 				};
+ 
++				clkuart0: uart0 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <1>;
++				};
++
++				clkuart1: uart1 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <2>;
++				};
++
+ 				arm: arm {
+ 					#clock-cells = <0>;
+ 					compatible = "via,vt8500-device-clock";
+@@ -128,14 +144,14 @@
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8200000 0x1040>;
+ 			interrupts = <32>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart0>;
+ 		};
+ 
+ 		uart@d82b0000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd82b0000 0x1040>;
+ 			interrupts = <33>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart1>;
+ 		};
+ 
+ 		rtc@d8100000 {
+diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
+index 8865afd..7de279a 100644
+--- a/drivers/tty/serial/vt8500_serial.c
++++ b/drivers/tty/serial/vt8500_serial.c
+@@ -604,12 +604,16 @@ static int vt8500_serial_probe(struct platform_device *pdev)
+ 	vt8500_port->uart.flags = UPF_IOREMAP | UPF_BOOT_AUTOCONF;
+ 
+ 	vt8500_port->clk = of_clk_get(pdev->dev.of_node, 0);
+-	if (vt8500_port->clk) {
+-		vt8500_port->uart.uartclk = clk_get_rate(vt8500_port->clk);
+-	} else {
+-		/* use the default of 24Mhz if not specified and warn */
+-		pr_warn("%s: serial clock source not specified\n", __func__);
+-		vt8500_port->uart.uartclk = 24000000;
++	if (IS_ERR(vt8500_port->clk)) {
++		dev_err(&pdev->dev, "failed to get clock\n");
++		ret = -EINVAL;
++		goto err;
++	}
++
++	ret = clk_prepare_enable(vt8500_port->clk);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to enable clock\n");
++		goto err;
  	}
  
--	/* Restore to the low three bits, if chipset is SB8x0(or later) */
--	if (sp5100_tco_pci->revision >= 0x40) {
--		u8 reserved_bit;
--		outb(base_addr+0, index_reg);
--		reserved_bit = inb(data_reg) & 0x7;
--		val |= (u32)reserved_bit;
--	}
-+	/* Restore to the low three bits */
-+	outb(base_addr+0, index_reg);
-+	tmp_val = val | (inb(data_reg) & 0x7);
+ 	snprintf(vt8500_port->name, sizeof(vt8500_port->name),
+@@ -639,6 +643,7 @@ static int vt8500_serial_remove(struct platform_device *pdev)
+ 	struct vt8500_port *vt8500_port = platform_get_drvdata(pdev);
  
- 	/* Re-programming the watchdog timer base address */
- 	outb(base_addr+0, index_reg);
--	/* Low three bits of BASE are reserved */
--	outb((val >>  0) & 0xff, data_reg);
-+	outb((tmp_val >>  0) & 0xff, data_reg);
- 	outb(base_addr+1, index_reg);
--	outb((val >>  8) & 0xff, data_reg);
-+	outb((tmp_val >>  8) & 0xff, data_reg);
- 	outb(base_addr+2, index_reg);
--	outb((val >> 16) & 0xff, data_reg);
-+	outb((tmp_val >> 16) & 0xff, data_reg);
- 	outb(base_addr+3, index_reg);
--	outb((val >> 24) & 0xff, data_reg);
--
--	/*
--	 * Clear unnecessary the low three bits,
--	 * if chipset is SB8x0(or later)
--	 */
--	if (sp5100_tco_pci->revision >= 0x40)
--		val &= ~0x7;
-+	outb((tmp_val >> 24) & 0xff, data_reg);
+ 	platform_set_drvdata(pdev, NULL);
++	clk_disable_unprepare(vt8500_port->clk);
+ 	uart_remove_one_port(&vt8500_uart_driver, &vt8500_port->uart);
+ 	kfree(vt8500_port);
  
- 	if (!request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE,
- 								   dev_name)) {
 -- 
-1.7.11.7
+1.7.9.5
 
