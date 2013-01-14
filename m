@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab3ANRzp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 12:55:45 -0500
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:42257 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756417Ab3ANRzo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 12:55:44 -0500
+	id S1757356Ab3ANSE1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:04:27 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51444 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756687Ab3ANSE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 13:04:26 -0500
+Date: Mon, 14 Jan 2013 19:04:23 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7u1 24/31] x86, boot: Not need to check setup_header
+ version for setup_data
+Message-ID: <20130114180423.GA6213@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-25-git-send-email-yinghai@kernel.org>
+ <20130114112619.GG1228@liondog.tnic>
+ <50F44260.5030305@zytor.com>
 MIME-Version: 1.0
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: peterz@infradead.org, mingo@elte.hu
-Cc: Mike Galbraith <bitbucket@online.de>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Shawn Bohrer <sbohrer@rgmadvisors.com>
-Subject: [PATCH] sched_rt: Use root_domain of rt_rq not current processor
-Date: Mon, 14 Jan 2013 11:55:31 -0600
-Message-Id: <1358186131-29494-1-git-send-email-sbohrer@rgmadvisors.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1357884213.5716.35.camel@marge.simpson.net>
-References: <1357884213.5716.35.camel@marge.simpson.net>
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50F44260.5030305@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the system has multiple domains do_sched_rt_period_timer() can run
-on any CPU and may iterate over all rt_rq in cpu_online_mask.  This
-means when balance_runtime() is run for a given rt_rq that rt_rq may be
-in a different rd than the current processor.  Thus if we use
-smp_processor_id() to get rd in do_balance_runtime() we may borrow
-runtime from a rt_rq that is not part of our rd.
+On Mon, Jan 14, 2013 at 09:37:36AM -0800, H. Peter Anvin wrote:
+> No, this is a case of cargo-cult programming. I asked Yinghai to
+> remove it.
+>
+> It is cargo-cult programming because the value of boot_params.hdr
+> comes from the kernel itself, so all you're doing is telling you the
+> boot protocol version associated with the kernel itself, which we
+> already know.
 
-This changes do_balance_runtime to get the rd from the passed in rt_rq
-ensuring that we borrow runtime only from the correct rd for the given
-rt_rq.
+LOOL. Great.
 
-This fixes a BUG at kernel/sched/rt.c:687! in __disable_runtime when we
-try reclaim runtime lent to other rt_rq but runtime has been lent to
-a rt_rq in another rd.
+> If we find a bootloader that does that incorrectly (e.g. if kexec
+> were to blindly copy struct boot_params from the older kernel...
+> which ironically would be better than the current situation) then
+> the right thing to do would be to have a central place which scrub
+> out the fields and just force them to zero rather than putting a
+> bunch of tests all over the place.
 
-Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
----
- kernel/sched/rt.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Ok, I didn't realize that.
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 418feb0..4f02b28 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -566,7 +566,7 @@ static inline struct rt_bandwidth *sched_rt_bandwidth(struct rt_rq *rt_rq)
- static int do_balance_runtime(struct rt_rq *rt_rq)
- {
- 	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
--	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
-+	struct root_domain *rd = rq_of_rt_rq(rt_rq)->rd;
- 	int i, weight, more = 0;
- 	u64 rt_period;
- 
--- 
-1.7.7.6
+And besides, nothing stops a silly boot loader from adjusting
+boot_params.hdr.version so that the check - or any check for that matter
+- passes, AFAICT.
 
+See, this is exactly the reason why I'm trying to explain to Yinghai
+why it is a Good Thing to document stuff like that at least in commit
+messages.
+
+Thanks.
 
 -- 
+Regards/Gruss,
+    Boris.
 
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
+Sent from a fat crate under my desk. Formatting is fine.
+--
