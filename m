@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757452Ab3ANQtw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 11:49:52 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:57496 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757058Ab3ANQtu (ORCPT
+	id S1756890Ab3ANQu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 11:50:59 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:48348 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512Ab3ANQu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 11:49:50 -0500
-Date: Mon, 14 Jan 2013 08:49:42 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel J Blueman <daniel@quora.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH v7 2/4] PCI: shpchp: Make shpchp_wq non-ordered
-Message-ID: <20130114164942.GA27942@mtj.dyndns.org>
-References: <20130113232606.7225.94802.stgit@bhelgaas.mtv.corp.google.com>
- <20130113232743.7225.11180.stgit@bhelgaas.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130113232743.7225.11180.stgit@bhelgaas.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Jan 2013 11:50:58 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf: dso_load - move name malloc to when needed
+Date: Mon, 14 Jan 2013 09:50:50 -0700
+Message-Id: <1358182250-89669-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+memory is currently leaked on some paths.
+---
+ tools/perf/util/symbol.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-On Sun, Jan 13, 2013 at 04:27:43PM -0700, Bjorn Helgaas wrote:
-> e24dcbef93 ("shpchp: update workqueue usage") was described as adding
-> non-ordered shpchp_wq, but it actually made it an *ordered* workqueue.
-> 
-> This patch changes shpchp_wq to be non-ordered, as described in the
-> e24dcbef93 commit log and as was done for pciehp by a827ea307b ("pciehp:
-> update workqueue usage").
-> 
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> CC: Tejun Heo <tj@kernel.org>
-
-Yeap, my mistake.
-
-Acked-by: Tejun Heo <tj@kernel.org>
-
-Thanks!
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 61edfd0..e9c0c3a 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -775,10 +775,6 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	else
+ 		machine = NULL;
+ 
+-	name = malloc(PATH_MAX);
+-	if (!name)
+-		return -1;
+-
+ 	dso->adjust_symbols = 0;
+ 
+ 	if (strncmp(dso->name, "/tmp/perf-", 10) == 0) {
+@@ -802,6 +798,10 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	if (machine)
+ 		root_dir = machine->root_dir;
+ 
++	name = malloc(PATH_MAX);
++	if (!name)
++		return -1;
++
+ 	/* Iterate over candidate debug images.
+ 	 * Keep track of "interesting" ones (those which have a symtab, dynsym,
+ 	 * and/or opd section) for processing.
 -- 
-tejun
+1.7.10.1
+
