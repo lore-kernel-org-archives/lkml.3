@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab3ANXnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 18:43:11 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:2481 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757089Ab3ANXnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 18:43:10 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Subject: Re: tg3 v3.123 in 100Mbps Full-Duplex mode with autoneg off
-From: "Michael Chan" <mchan@broadcom.com>
-To: "Marcin Miotk" <marcinmiotk81@gmail.com>
-cc: =?UTF-8?Q?=E7=8E=8B=E9=87=91=E6=B5=A6?= <jinpuwang@gmail.com>,
-        nsujir@broadcom.com, "Benjamin Li" <benli@broadcom.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAMXyS3PhStKo_xeiTRH+kbZXNUcwmMvrvTHrDOR-6qkuUCVH2A@mail.gmail.com>
-References: <CAMXyS3Mvc8SkJxu4fCcUn+XpNcHrzEQ=M5w2eenVr-YKwa3AEQ@mail.gmail.com>
- <CAMXyS3MRx3D__60xtt4G4CCyHSTW2iHd1x1AR1LCQkrZrOiJ2g@mail.gmail.com>
- <CAD9gYJL1GjZtPuEWozmgM37NzhJeAO1Oe69Tnzxi5bCPMijmcA@mail.gmail.com>
- <1357703565.7140.217.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
- <CAMXyS3PhStKo_xeiTRH+kbZXNUcwmMvrvTHrDOR-6qkuUCVH2A@mail.gmail.com>
-Date: Mon, 14 Jan 2013 15:32:45 -0800
-Message-ID: <1358206365.4596.23.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	id S1757293Ab3ANXoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 18:44:16 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:53140 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757089Ab3ANXoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 18:44:14 -0500
 MIME-Version: 1.0
-X-WSS-ID: 7CEA481E1ZS6768091-01-01
-Content-Type: text/plain;
- charset=cp1252
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUXyTvW0P4Adbr2x+RP3X-b3Qj8E53uxWrnDe964MgZepg@mail.gmail.com>
+References: <CA+icZUXyTvW0P4Adbr2x+RP3X-b3Qj8E53uxWrnDe964MgZepg@mail.gmail.com>
+Date: Tue, 15 Jan 2013 00:44:13 +0100
+Message-ID: <CA+icZUXHksmiZYVU+gTyi+j9q9e1b5R9ZJ2RxUTeWKiey2PRuA@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix BUG on madvise early failure
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>, Shaohua Li <shli@fusionio.com>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-09 at 08:03 +0100, Marcin Miotk wrote:
-> 03:04.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5715
-> Gigabit Ethernet (rev a3)
-> 03:04.1 Ethernet controller: Broadcom Corporation NetXtreme BCM5715
-> Gigabit Ethernet (rev a3) 
+On Mon, Jan 14, 2013 at 10:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> Hi,
+>
+> this patch is for Linux-Next - more exactly next-20130114.
+> Can you please enhance the subject-line of your patch next time.
+>
+> Your patch fixes the issue I have reported a few hours ago in [1].
+>
+> [ TESTCASE ]
+>
+> "madvise02" from Linux Test Project (LTP) see [2]
+>
+> $ cd /opt/ltp/testcases/bin/
+>
+> $ sudo ./madvise02
+> [ OUTPUT ]
+> madvise02    1  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22):
+> Invalid argument
+> madvise02    2  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22):
+> Invalid argument
+> madvise02    3  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22):
+> Invalid argument
+> madvise02    4  TPASS  :  failed as expected: TEST_ERRNO=ENOMEM(12):
+> Cannot allocate memory
+> madvise02    5  TFAIL  :  madvise succeeded unexpectedly
+>
+> [ /TESTCASE ]
+>
+> Please feel free and add a...
+>
+>      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+>
+> Thanks!
+>
+> Regards,
+> - Sedat -
+>
+> [1] http://marc.info/?l=linux-mm&m=135818843710244&w=2
+> [2] http://sourceforge.net/projects/ltp/
 
-I tested on 3.7 kernel and it seemed to work.  Bear in mind that you'll
-lose auto MDI-X when both sides don't autoneg.  Please provide the
-following:
+You happen to know how I get more verbose-debug outputs?
 
-1. ethtool eth0 with a working kernel.  I'd like to see the MDI-X
-setting when it is working.
+You have...
 
-2. mii-tool -vvv eth0 with the non-working kernel.
+[   57.320031] kernel BUG at block/blk-core.c:2981!
+[   57.320031] invalid opcode: 0000 [#3] PREEMPT SMP DEBUG_PAGEALLOC
 
-Thanks.
+Me has...
 
+[ 1263.965989] Kernel BUG at ffffffff81328b2b [verbose debug info unavailable]
+[ 1263.966022] invalid opcode: 0000 [#1] SMP
 
+CONFIG_DEBUG_PAGEALLOC=y ?
+
+Block-specific debug settings?
+
+$ egrep -i 'block|blk' .config | egrep -i 'debug|dbg'
+# CONFIG_DEBUG_BLK_CGROUP is not set
+# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+
+- Sedat -
