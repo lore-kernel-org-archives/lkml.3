@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab3ANFrR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 00:47:17 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:52232 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab3ANFrQ (ORCPT
+	id S1755334Ab3ANFrq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 00:47:46 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:57165 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab3ANFro convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 00:47:16 -0500
-Message-ID: <1358142455.25591.1.camel@gitbox>
-Subject: Re: [Bulk] [PATCH] timer: vt8500: Move timer code to
- drivers/clocksource
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Olof Johansson <olof@lixom.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org,
-        VT8500 Mailing List 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>
-Date: Mon, 14 Jan 2013 18:47:35 +1300
-In-Reply-To: <1358140429.25452.1.camel@gitbox>
-References: <1358140171-25390-1-git-send-email-linux@prisktech.co.nz>
-	 <1358140171-25390-2-git-send-email-linux@prisktech.co.nz>
-	 <1358140429.25452.1.camel@gitbox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 14 Jan 2013 00:47:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <1358126915.22868.18.camel@kjgkr>
+References: <1357969308-9361-1-git-send-email-linkinjeon@gmail.com>
+	<1358126915.22868.18.camel@kjgkr>
+Date: Mon, 14 Jan 2013 14:47:43 +0900
+Message-ID: <CAKYAXd-48BxygiLq+e5sP2VK0SB722EUj6HLwByz19Pmbvu6dw@mail.gmail.com>
+Subject: Re: [PATCH 3/4] f2fs: introduce trace points in f2fs filesystem
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-14 at 18:13 +1300, Tony Prisk wrote:
-> On Mon, 2013-01-14 at 18:09 +1300, Tony Prisk wrote:
-> > This patch moves arch-vt8500/timer.c into drivers/clocksource and
-> > updates the necessary Kconfig/Makefile options.
-> > 
-> > Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> > ---
-> >  arch/arm/mach-vt8500/Kconfig       |    1 +
-> >  arch/arm/mach-vt8500/Makefile      |    2 +-
-> >  arch/arm/mach-vt8500/common.h      |    1 -
-> >  arch/arm/mach-vt8500/timer.c       |  184 ------------------------------------
-> >  arch/arm/mach-vt8500/vt8500.c      |    1 +
-> >  drivers/clocksource/Kconfig        |    3 +
-> >  drivers/clocksource/Makefile       |    1 +
-> >  drivers/clocksource/vt8500_timer.c |  184 ++++++++++++++++++++++++++++++++++++
-> >  include/linux/vt8500_timer.h       |   22 +++++
-> >  9 files changed, 213 insertions(+), 186 deletions(-)
-> >  delete mode 100644 arch/arm/mach-vt8500/timer.c
-> >  create mode 100644 drivers/clocksource/vt8500_timer.c
-> >  create mode 100644 include/linux/vt8500_timer.h
-> 
-> Darn.. forgot the -m again. I'll await your feedback regarding the
-> basing of the patch first (and any other feedback), then I'll redo it
-> with the correct stats.
-> 
-> Regards
-> Tony P
+2013/1/14, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> 2013-01-12 (토), 14:41 +0900, Namjae Jeon:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> #> cat /sys/kernel/debug/tracing/events/f2fs/enable
+>> 0
+>> #> echo 1 > /sys/kernel/debug/tracing/events/f2fs/enable
+>> #> cat /sys/kernel/debug/tracing/events/f2fs/enable
+>> 1
+>>
+>> #> mount -t f2fs /dev/sdb3  /mnt/
+>> #>
+>> #> cat /sys/kernel/debug/tracing/trace
+>> # tracer: nop
+>> #
+>> #TASK-PID    CPU#    TIMESTAMP  FUNCTION
+>> #   | |       |          |         |
+>>  mount-423   [001]    49.879188: f2fs_iget: dev 8,19 ino 2
+>>  mount-423   [001]    49.879215: f2fs_get_page: dev 8,19  page_index 81,
+>> type 2
+>>  mount-423   [001]    49.879224: f2fs_readpage: dev 8,19 ino 2 page_index
+>> 81
+>>  mount-423   [001]    49.879819: f2fs_get_page: dev 8,19  page_index 83,
+>> type 2
+>>  mount-423   [001]    49.879830: f2fs_readpage: dev 8,19 ino 2 page_index
+>> 83
+>>  mount-423   [001]    49.880434: f2fs_get_page: dev 8,19  page_index 593,
+>> type 2
+>>  mount-423   [001]    49.880442: f2fs_readpage: dev 8,19 ino 2 page_index
+>> 593
+>>  mount-423   [001]    49.889931: f2fs_get_page: dev 8,19  page_index 595,
+>> type 2
+>>  mount-423   [001]    49.889939: f2fs_readpage: dev 8,19 ino 2 page_index
+>> 595
+>>  mount-423   [001]    49.892169: f2fs_get_page: dev 8,19  page_index 594,
+>> type 2
+>>  mount-423   [001]    49.892186: f2fs_readpage: dev 8,19 ino 2 page_index
+>> 594
+>>  ...
+>>  ..
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+>> ---
+>>  fs/f2fs/checkpoint.c        |   17 +
+>>  fs/f2fs/data.c              |   17 +
+>>  fs/f2fs/file.c              |   14 +
+>>  fs/f2fs/inode.c             |   10 +
+>>  fs/f2fs/namei.c             |    7 +-
+>>  fs/f2fs/node.c              |   23 +-
+>>  fs/f2fs/segment.c           |    5 +
+>>  fs/f2fs/super.c             |    4 +
+>>  include/trace/events/f2fs.h | 1220
+>> +++++++++++++++++++++++++++++++++++++++++++
+>
+> IMO, it needs to split this patch into two independent patches like:
+> 1. adding a header file to the event subsystem, and
+> 2. introducing tracepoints in f2fs.
+>
+> Then, we need to get acks from all the related maintainers.
+>
+> Moreover, it is obvious that the patch-set should describe each of
+> tracepoints precisely and concretely.
+>
+> Anyway, it must be a valuable job. :)
+> Thanks,
+Hi Jaegeuk.
+Okay, I see. I will split the patch as your suggestion.
+And I will check more performance side and the reason why we should
+add trace point here.
 
-Oh grr.. forget this completely. It doesn't take into account the
-patches I already sent for WM8850.
-
-I guess it needs to be based on timer/cleanup + vt8500/wm8x50.
-
-Need a little advise on how to handle this one please :)
-
-Regards
-Tony P
-
+Thanks.
+>
+> --
+> Jaegeuk Kim
+> Samsung
+>
