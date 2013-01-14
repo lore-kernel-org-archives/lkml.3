@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab3ANNpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 08:45:19 -0500
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:1935 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751795Ab3ANNpR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 08:45:17 -0500
+	id S1756521Ab3ANNuG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 08:50:06 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:57535 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755513Ab3ANNuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 08:50:05 -0500
+Message-ID: <1358171412.19400.10.camel@joe-AO722>
 Subject: Re: checkpatch.pl "uninitialized value"
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Schrober <franzschrober@yahoo.de>
-Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
-        Joe Perches <joe@perches.com>,
+From: Joe Perches <joe@perches.com>
+To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+Cc: Schrober <franzschrober@yahoo.de>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 14 Jan 2013 14:45:06 +0100
-In-Reply-To: <8765116.NauFasYmb5@bentobox>
-References: <8765116.NauFasYmb5@bentobox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1358171107.15075.89.camel@thorin>
+Date: Mon, 14 Jan 2013 05:50:12 -0800
+In-Reply-To: <1358171107.15075.89.camel@thorin>
+References: <8765116.NauFasYmb5@bentobox> <1358171107.15075.89.camel@thorin>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
-X-DCC-dcc1-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, 2013-01-14 at 14:45 +0100, Bernd Petrovitsch wrote:
+> On Mon, 2013-01-14 at 14:42 +0100, Schrober wrote:
+> [...]
+> > it seems the current version of checkpatch.pl in linux-next ist broken. I get
+> > a lot of
+> > 
+> > Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3383.
 
-On Mon, 2013-01-14 at 14:42 +0100, Schrober wrote:
-[...]
-> it seems the current version of checkpatch.pl in linux-next ist broken. I get
-> a lot of
-> 
-> Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3383.
-> Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3386.
-> Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3383.
-> Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3386.
-> Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3383.
-> Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3386.
+> on which file?
 
-on which file?
-If you would have added the command line to trivially reproduce that (or
-whatever you did to get it), people are more likely to look into it.
+Any file with a usleep_range or a memset
 
-MfG,
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
+> If you would have added the command line to trivially reproduce that (or
+> whatever you did to get it), people are more likely to look into it.
+
+Try this patch:
+https://lkml.org/lkml/2013/1/10/444
+
+
 
