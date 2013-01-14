@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab3ANPns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 10:43:48 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:18174 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757096Ab3ANPnq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 10:43:46 -0500
-Message-ID: <1358177628.14145.49.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device
- hotplug framework
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: lenb@kernel.org, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Mon, 14 Jan 2013 08:33:48 -0700
-In-Reply-To: <5036592.TuXAnGzk4M@vostro.rjw.lan>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
-	 <1357861230-29549-2-git-send-email-toshi.kani@hp.com>
-	 <5036592.TuXAnGzk4M@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757161Ab3ANPn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 10:43:59 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40437 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757140Ab3ANPn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 10:43:57 -0500
+Date: Mon, 14 Jan 2013 16:43:54 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7u1 27/31] x86, kdump: remove crashkernel range find
+ limit for 64bit
+Message-ID: <20130114154354.GA27740@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-28-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1357260531-11115-28-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-11 at 22:23 +0100, Rafael J. Wysocki wrote:
-> On Thursday, January 10, 2013 04:40:19 PM Toshi Kani wrote:
-> > Added include/linux/sys_hotplug.h, which defines the system device
-> > hotplug framework interfaces used by the framework itself and
-> > handlers.
-> > 
-> > The order values define the calling sequence of handlers.  For add
-> > execute, the ordering is ACPI->MEM->CPU.  Memory is onlined before
-> > CPU so that threads on new CPUs can start using their local memory.
-> > The ordering of the delete execute is symmetric to the add execute.
-> > 
-> > struct shp_request defines a hot-plug request information.  The
-> > device resource information is managed with a list so that a single
-> > request may target to multiple devices.
-> > 
- :
-> > +
-> > +struct shp_device {
-> > +	struct list_head	list;
-> > +	struct device		*device;
-> > +	enum shp_class		class;
-> > +	union shp_dev_info	info;
-> > +};
-> > +
-> > +/*
-> > + * Hot-plug request
-> > + */
-> > +struct shp_request {
-> > +	/* common info */
-> > +	enum shp_operation	operation;	/* operation */
-> > +
-> > +	/* hot-plug event info: only valid for hot-plug operations */
-> > +	void			*handle;	/* FW handle */
+On Thu, Jan 03, 2013 at 04:48:47PM -0800, Yinghai Lu wrote:
+> Now kexeced kernel/ramdisk could be above 4g, so remove 896 limit for
+> 64bit.
 > 
-> What's the role of handle here?
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  arch/x86/kernel/setup.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index c58497e..6adbc45 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -501,13 +501,11 @@ static void __init memblock_x86_reserve_range_setup_data(void)
+>  /*
+>   * Keep the crash kernel below this limit.  On 32 bits earlier kernels
+>   * would limit the kernel to the low 512 MiB due to mapping restrictions.
+> - * On 64 bits, kexec-tools currently limits us to 896 MiB; increase this
+> - * limit once kexec-tools are fixed.
 
-On ACPI-based platforms, the handle keeps a notified ACPI handle when a
-hot-plug request is made.  ACPI bus handlers, acpi_add_execute() /
-acpi_del_execute(), then scans / trims ACPI devices from the handle.
+Does this mean that kexec-tools has been fixed too?
 
-Thanks,
--Toshi
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
