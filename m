@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950Ab3ANU03 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:26:29 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40196 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757559Ab3ANU02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:26:28 -0500
-Date: Mon, 14 Jan 2013 21:26:23 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Gokul Caushik <caushik1@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>
-Subject: Re: [PATCH v7u1 22/31] x86, boot: add fields to support load bzImage
- and ramdisk above 4G
-Message-ID: <20130114202623.GD2015@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jan Kiszka <jan.kiszka@web.de>,
-	Jason Wessel <jason.wessel@windriver.com>,
-	linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-	Matt Fleming <matt.fleming@intel.com>,
-	Gokul Caushik <caushik1@gmail.com>,
-	Josh Triplett <josh@joshtriplett.org>,
-	Joe Millenbach <jmillenbach@gmail.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
- <1357260531-11115-23-git-send-email-yinghai@kernel.org>
- <20130113214132.GB17200@liondog.tnic>
- <CAE9FiQVQRAOtw7kiPJO3xszJx9uPFjgK82PjbvTyqzJgujdicw@mail.gmail.com>
- <50F4452D.2060000@zytor.com>
- <CAE9FiQXkgoLKp3ZnOcM9gLDJNGNxUE8WSRXiQy1G_v5Os5_v2A@mail.gmail.com>
- <20130114200505.GC2015@liondog.tnic>
- <CAE9FiQWXxmOnoc1wJzHUYCyO8hHvLOkNpGMwM8vVubjMAGJ5dA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQWXxmOnoc1wJzHUYCyO8hHvLOkNpGMwM8vVubjMAGJ5dA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758676Ab3ANU06 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:26:58 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:41765 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757996Ab3ANU04 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 15:26:56 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] cpsw: Add support to read cpu MAC address
+To: Michal Bachraty <michal.bachraty@streamunlimited.com>,
+        rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk
+Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        netdev@vger.kernel.org,
+        Michal Bachraty <michal.bachraty@streamunlimited.com>
+In-Reply-To: <1357917302-32550-1-git-send-email-michal.bachraty@streamunlimited.com>
+References: <1357917302-32550-1-git-send-email-michal.bachraty@streamunlimited.com>
+Date: Mon, 14 Jan 2013 20:26:51 +0000
+Message-Id: <20130114202651.5360F3E249D@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 12:14:18PM -0800, Yinghai Lu wrote:
-> no, no, no.
+On Fri, 11 Jan 2013 16:15:02 +0100, Michal Bachraty <michal.bachraty@streamunlimited.com> wrote:
+> Signed-off-by: Michal Bachraty <michal.bachraty@streamunlimited.com>
+> ---
+>  Documentation/devicetree/bindings/net/cpsw.txt |   10 +-
+>  arch/arm/boot/dts/am33xx.dtsi                  |    5 +-
+>  drivers/net/ethernet/ti/cpsw.c                 |  121 +++++++++++++++++++++---
+>  include/linux/platform_data/cpsw.h             |    8 ++
+>  4 files changed, 128 insertions(+), 16 deletions(-)
 > 
-> bootloader does not need to know sentinel, and they only need to do:
->     clearing boot_param buffer and copying setup_header only
-> 
-> even new bootloader is not supposed to know sentinel ...
+> diff --git a/Documentation/devicetree/bindings/net/cpsw.txt b/Documentation/devicetree/bindings/net/cpsw.txt
+> index dcaabe9..432122c 100644
+> --- a/Documentation/devicetree/bindings/net/cpsw.txt
+> +++ b/Documentation/devicetree/bindings/net/cpsw.txt
+> @@ -4,7 +4,7 @@ TI SoC Ethernet Switch Controller Device Tree Bindings
+>  Required properties:
+>  - compatible		: Should be "ti,cpsw"
+>  - reg			: physical base address and size of the cpsw
+> -			  registers map
+> +			  registers map and mac-address cpu config registers
+>  - interrupts		: property with a value describing the interrupt
+>  			  number
+>  - interrupt-parent	: The parent interrupt controller
+> @@ -25,17 +25,23 @@ Required properties:
+>  - slave_reg_ofs		: Specifies slave register offset
+>  - sliver_reg_ofs	: Specifies slave sliver register offset
+>  - phy_id		: Specifies slave phy id
+> -- mac-address		: Specifies slave MAC address
+>  
+>  Optional properties:
+>  - ti,hwmods		: Must be "cpgmac0"
+>  - no_bd_ram		: Must be 0 or 1
+> +- mac-address-source 	: Specifies source of MAC address ("user-defined-mac",
+> +			  "cpu-id0-mac", "cpu-id01-mac", "random-mac"). If not
+> +			  specified, "cpu-id0-mac" is selected
 
-Ah, ok. I thought something was fishy because if bootloaders would know
-about it, they'd copy setup_header and zero out the sentinel only, to
-force the kernel to use crappy ext_* etc. values.
+Drop the '-mac' suffix on the values. The property is already named
+"mac-address-source", so I think it is already unambiguious from the
+context.  :-)
 
-How about this:
+Otherwise the patch looks good to me, but I haven't gone over the code
+in fine detail.
 
-"The sentinel variable is set by the linker script to 0xff. It is
-supposed to be used for catching bootloaders which just copy the
-setup_header portion and don't clear the whole boot_params buffer as
-they are supposed to. Such bootloaders will leave the sentinel to its
-initial value of 0xff and in this case, the kernel will assume that some
-fields in boot_params have invalid values and zero them out."
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
