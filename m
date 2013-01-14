@@ -1,105 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758882Ab3ANVSo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 16:18:44 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:64900 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871Ab3ANVSn (ORCPT
+	id S1758898Ab3ANVTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 16:19:09 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:60445 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756871Ab3ANVTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 16:18:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <50F0454D.5060109@gmail.com>
-References: <1357914810-20656-1-git-send-email-alcooperx@gmail.com>
-	<50F0454D.5060109@gmail.com>
-Date: Mon, 14 Jan 2013 16:10:48 -0500
-Message-ID: <CAOGqxeU3zZuFfL_M1u-hgjbPHgm6MrzoCK1KqpbazwKC4td4ww@mail.gmail.com>
-Subject: Re: [PATCH] mips: function tracer: Fix broken function tracing
-From: Alan Cooper <alcooperx@gmail.com>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: ralf@linux-mips.org, linux-mips@linux-mips.org,
+	Mon, 14 Jan 2013 16:19:07 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        John Linn <john.linn@xilinx.com>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] arm: mach-zynq/timer.c: fix memory leakage
+Date: Mon, 14 Jan 2013 22:18:46 +0100
+Message-Id: <1358198331-31949-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I already tried using "adddiu sp, sp, 8" and it caused the kernel to
-randomly crash. After many hours of debugging the reason occurred to
-me while in bed in the middle of the night. The problem is that if we
-get an interrupt between the add 8 and the add -8 instructions, we
-trash the existing stack.
+the variable ttccs allocated isn't freed when error occurs, so we call kfree
+before return.
 
-The problem with the 2 nop approach is that there are a series of
-subroutines used to write each nop and these nested subroutines are
-traceable. This means on the second call to these subroutines they
-execute with only one nop and crash. I could  write  some new code
-that wrote the 2 nops at once, but (now that I understand
-"stop_machine") with the branch likely solution we should be able to
-stop using "stop_machine" when we write nops to the 20-30 thousand
-Linux functions. It looks like other platforms have stopped using
-stop_machine.
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ arch/arm/mach-zynq/timer.c |   25 ++++++++++++++++---------
+ 1 file changed, 16 insertions(+), 9 deletions(-)
 
-Al
+diff --git a/arch/arm/mach-zynq/timer.c b/arch/arm/mach-zynq/timer.c
+index f9fbc9c..df04761 100644
+--- a/arch/arm/mach-zynq/timer.c
++++ b/arch/arm/mach-zynq/timer.c
+@@ -203,15 +203,15 @@ static void __init zynq_ttc_setup_clocksource(struct device_node *np,
+ 
+ 	err = of_property_read_u32(np, "reg", &reg);
+ 	if (WARN_ON(err))
+-		return;
++		goto out;
+ 
+ 	clk = of_clk_get_by_name(np, "cpu_1x");
+ 	if (WARN_ON(IS_ERR(clk)))
+-		return;
++		goto out;
+ 
+ 	err = clk_prepare_enable(clk);
+ 	if (WARN_ON(err))
+-		return;
++		goto out;
+ 
+ 	ttccs->xttc.base_addr = base + reg * 4;
+ 
+@@ -229,7 +229,10 @@ static void __init zynq_ttc_setup_clocksource(struct device_node *np,
+ 
+ 	err = clocksource_register_hz(&ttccs->cs, clk_get_rate(clk) / PRESCALE);
+ 	if (WARN_ON(err))
+-		return;
++		goto out;
++	return;
++out:
++	kfree(ttccs);
+ }
+ 
+ static void __init zynq_ttc_setup_clockevent(struct device_node *np,
+@@ -245,21 +248,21 @@ static void __init zynq_ttc_setup_clockevent(struct device_node *np,
+ 
+ 	err = of_property_read_u32(np, "reg", &reg);
+ 	if (WARN_ON(err))
+-		return;
++		goto out;
+ 
+ 	ttcce->xttc.base_addr = base + reg * 4;
+ 
+ 	ttcce->clk = of_clk_get_by_name(np, "cpu_1x");
+ 	if (WARN_ON(IS_ERR(ttcce->clk)))
+-		return;
++		goto out;
+ 
+ 	err = clk_prepare_enable(ttcce->clk);
+ 	if (WARN_ON(err))
+-		return;
++		goto out;
+ 
+ 	irq = irq_of_parse_and_map(np, 0);
+ 	if (WARN_ON(!irq))
+-		return;
++		goto out;
+ 
+ 	ttcce->ce.name = np->name;
+ 	ttcce->ce.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
+@@ -277,11 +280,15 @@ static void __init zynq_ttc_setup_clockevent(struct device_node *np,
+ 	err = request_irq(irq, xttcps_clock_event_interrupt, IRQF_TIMER,
+ 			  np->name, ttcce);
+ 	if (WARN_ON(err))
+-		return;
++		goto out;
+ 
+ 	clockevents_config_and_register(&ttcce->ce,
+ 					clk_get_rate(ttcce->clk) / PRESCALE,
+ 					1, 0xfffe);
++	return;
++
++out:
++	kfree(ttcce);
+ }
+ 
+ static const __initconst struct of_device_id zynq_ttc_match[] = {
+-- 
+1.7.9.5
 
-On Fri, Jan 11, 2013 at 12:01 PM, David Daney <ddaney.cavm@gmail.com> wrote:
-> On 01/11/2013 06:33 AM, Al Cooper wrote:
->>
->> Function tracing is currently broken for all 32 bit MIPS platforms.
->> When tracing is enabled, the kernel immediately hangs on boot.
->> This is a result of commit b732d439cb43336cd6d7e804ecb2c81193ef63b0
->> that changes the kernel/trace/Kconfig file so that is no longer
->> forces FRAME_POINTER when FUNCTION_TRACING is enabled.
->>
->> MIPS frame pointers are generally considered to be useless because
->> they cannot be used to unwind the stack. Unfortunately the MIPS
->> function tracing code has bugs that are masked by the use of frame
->> pointers. This commit fixes the bugs so that MIPS frame pointers do
->> not need to be enabled.
->>
->> The bugs are a result of the odd calling sequence used to call the trace
->> routine. This calling sequence is inserted into every tracable function
->> when the tracing CONFIG option is enabled. This sequence is generated
->> for 32bit MIPS platforms by the compiler via the "-pg" flag.
->> Part of the sequence is "addiu sp,sp,-8" in the delay slot after every
->> call to the trace routine "_mcount" (some legacy thing where 2 arguments
->> used to be pushed on the stack). The _mcount routine is expected to
->> adjust the sp by +8 before returning.
->>
->> One of the bugs is that when tracing is disabled for a function, the
->> "jalr _mcount" instruction is replaced with a nop, but the
->> "addiu sp,sp,-8" is still executed and the stack pointer is left
->> trashed. When frame pointers are enabled the problem is masked
->> because any access to the stack is done through the frame
->> pointer and the stack pointer is restored from the frame pointer when
->> the function returns. This patch uses a branch likely instruction
->> "bltzl zero, f1" instead of "nop" to disable the call because this
->> instruction will not execute the "addiu sp,sp,-8" instruction in
->> the delay slot. The other possible solution would be to nop out both
->> the jalr and the "addiu sp,sp,-8", but this would need to be interrupt
->> and SMP safe and would be much more intrusive.
->
->
-> I thought all CPUs were in stop_machine() when the modifications were done,
-> so that there is no issue with multi-word instruction patching.
->
-> Am I wrong about this?
->
-> So really I think you can do two NOP just as easily.
->
-> The only reason I bring this up is that I am not sure all 32-bit CPUs
-> implement the 'Likely' branch variants. Also there may be an affect on the
-> branch predictor.
->
-> A third possibility would be to replace the JALR with 'ADDIU SP,SP,8' That
-> way the following adjustment would be canceled out.  This would work well on
-> single-issue CPUs, but the instructions may not be able to dual-issue on a
-> multi issue machine due to data dependencies.
->
-> David Daney
->
->
->>
->> A few other bugs were fixed where the _mcount routine itself did not
->> always fix the sp on return.
->>
->
