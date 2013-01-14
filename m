@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab3ANFDN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 00:03:13 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:42116 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab3ANFDL (ORCPT
+	id S1752293Ab3ANFDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 00:03:41 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:47759 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab3ANFDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 00:03:11 -0500
-Date: Sun, 13 Jan 2013 21:04:00 -0800
+	Mon, 14 Jan 2013 00:03:39 -0500
+Date: Sun, 13 Jan 2013 21:04:28 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] Staging driver patches for 3.8-rc3
-Message-ID: <20130114050400.GA8587@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB patches for 3.8-rc3
+Message-ID: <20130114050428.GA8614@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
@@ -29,159 +29,143 @@ The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.8-rc3
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.8-rc3
 
-for you to fetch changes up to 397c60668aa5ae7130b5ad4e73870d7b8a787085:
+for you to fetch changes up to 8cf65dc386f3634a43312f436cc7a935476a40c4:
 
-  staging: zram: fix invalid memory references during disk write (2013-01-13 19:40:02 -0800)
+  usb: ftdi_sio: Crucible Technologies COMET Caller ID - pid added (2013-01-13 13:44:23 -0800)
 
 ----------------------------------------------------------------
-Staging fixes for 3.8-rc3
+USB fixes for 3.8-rc3
 
-Here are a number of small fixes to staging drivers for your 3.8-rc3
-tree.
-
-Well, the omapdrm fixes aren't really "small" but they were waiting on a
-number of other drm patches to go in through the drm tree, and got
-delayed by my vacation over the holidays.  They are totally
-self-contained, everyone involved have acked them, and they fix issues
-that people have been having with the driver.
-
-Other than that one, it's a bunch of tiny bugfixes for a number of
-reported issues.
+Here are a bunch of USB fixes for your 3.8-rc3 tree.  They all either fix
+problems that have been reported (like the xhci/hub changes) or add new device
+ids to existing drivers.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Alexander Holler (1):
-      iio: hid-sensors: respect CONFIG_IIO_TRIGGER
+Afzal Mohammed (1):
+      usb: musb: dsps: header movement build error fix
 
-Axel Lin (7):
-      iio: adc: ad7266: Don't set error code to st->vref_uv
-      iio: dac: ad5380: Don't set error code to st->vref
-      iio: dac: ad5791: Don't set error code to [pos|neg]_voltage_uv
-      iio: dac: ad5504: Don't set error code to voltage_uv
-      iio: dac: ad5624r_spi: Don't set error code to voltage_uv
-      iio: dac: ad5686: Don't set error code to voltage_uv
-      iio: dac: ad5446: Don't set error code to voltage_uv
+Alan Stern (1):
+      USB: usbtest: fix test number in log message
 
-Emil Goode (1):
-      Staging: wlan-ng: Add missing argument
+Anatolij Gustschin (3):
+      USB: fix fsl_otg config dependency
+      USB: fsl-mph-dr-of: fix regression on mpc5121e
+      USB: ehci-fsl: fix regression on mpc5121e
 
-Enric Balletbo i Serra (1):
-      staging: tidspbridge: Fix build breakage due to splitting CM functions.
+Andreas Fleig (1):
+      USB: Add device quirk for Microsoft VX700 webcam
 
-Greg Kroah-Hartman (1):
-      Merge tag 'iio-fixes-for-3.8a' of git://git.kernel.org/.../jic23/iio into staging-linus
+Bjørn Mork (2):
+      USB: option: blacklist network interface on ZTE MF880
+      USB: option: add Telekom Speedstick LTE II
 
-Guenter Roeck (1):
-      iio: (max1363) Fix probe error path
+Chao Xie (3):
+      usb: gadget: mv_udc: fix the clk APIs
+      usb: host: ehci-mv: fix clk APIs
+      usb: otg: mv_otg: fix the clk APIs
 
-Ian Abbott (3):
-      staging: comedi: prevent auto-unconfig of manually configured devices
-      staging: comedi: Kconfig: COMEDI_NI_AT_A2150 should select COMEDI_FC
-      staging: comedi: comedi_test: fix race when cancelling command
+Denis N Ladin (1):
+      USB: cdc-acm: Add support for "PSC Scanning, Magellan 800i"
 
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      iio: at91: fix dev var name in at91_adc_trigger_handler
+Dzianis Kahanovich (1):
+      USB: option: add Nexpring NP10T terminal id
 
-Konstantin Khlebnikov (1):
-      staging: vme_pio2: fix oops on module unloading
+Fabio Estevam (2):
+      usb: imx21-hcd: Include missing linux/module.h
+      usb: chipidea: Allow disabling streaming not only in udc mode
 
-Larry Finger (3):
-      staging: r8712u: Add new device ID
-      staging: rtl8187se: Fix failure to check pci_map_single()
-      staging: rtl8192e: Fix failure to check pci_map_single()
+Felipe Balbi (1):
+      usb: host: ohci-tmio: fix compile warning
 
-Lars-Peter Clausen (1):
-      staging:iio:adis16260: Select adislib
+Greg Kroah-Hartman (2):
+      Merge tag 'fixes-for-v3.8-rc2' of git://git.kernel.org/.../balbi/usb into usb-linus
+      Merge tag 'for-usb-linus-2013-01-03' of git://git.kernel.org/.../sarah/xhci into usb-linus
 
-Lothar Waßmann (3):
-      staging: drm/imx: check return value of ipu_reset()
-      staging: drm/imx: several bug fixes
-      staging: drm/imx: fix double free bug in error path
+Haipeng YU (1):
+      usb: gadget: u_serial: fix switch off blocked
 
-Michael Hennerich (1):
-      iio:adf4350: Fix typo
+Jack Pham (1):
+      usb: dwc3: debugfs: fix regdump offset
 
-Nickolai Zeldovich (1):
-      staging: speakup: avoid out-of-range access in synth_init()
+Jan Beulich (1):
+      USB: ehci: make debug port in-use detection functional again
 
-Nitin Gupta (1):
-      staging: zram: fix invalid memory references during disk write
+Kuninori Morimoto (3):
+      usb: renesas_usbhs: gadget: remove usbhsg_uep_init()
+      usb: renesas_usbhs: gadget: usbhsg_ep_disable() care pipe settings
+      usb: renesas_usbhs: mod_host: fixup usbhsh_ureq_free() timing
 
-Omar Ramirez Luna (1):
-      staging: tidspbridge: use prepare/unprepare on dsp clocks
+Maxime Ripard (1):
+      USB: select USB_ARCH_HAS_EHCI for MXS
 
-Peter Hurley (3):
-      staging/fwserial: Refine Kconfig help text
-      staging/fwserial: Limit tx/rx to 1394-2008 spec maximum
-      staging/fwserial: Update TODO file per reviewer comments
+Oliver Neukum (1):
+      USB: hub: handle claim of enabled remote wakeup after reset
 
-Rob Clark (2):
-      staging: drm/omap: use omapdss low level API
-      staging: drm/omap: fix flags in dma buf exporting
+Quentin.Li (1):
+      USB: option: Add new MEDIATEK PID support
 
-Samuel Thibault (1):
-      staging: speakup: avoid out-of-range access in synth_add()
+Sarah Sharp (8):
+      xhci: Handle HS bulk/ctrl endpoints that don't NAK.
+      USB: Handle auto-transition from hot to warm reset.
+      USB: Ignore xHCI Reset Device status.
+      USB: Allow USB 3.0 ports to be disabled.
+      USB: Increase reset timeout.
+      USB: Ignore port state until reset completes.
+      USB: Handle warm reset failure on empty port.
+      xhci: Avoid "dead ports", add roothub port polling.
 
-Steven Rostedt (2):
-      staging: Make SystemBase PCI Multiport UART only for x86
-      staging: Enable parport sb105x drivers if parport is configured
+Sebastian Andrzej Siewior (1):
+      usb: gadget: dummy: fix enumeration with g_multi
 
-Éric Piel (1):
-      staging: comedi: fix minimum AO period for NI 625x and NI 628x
+Sergei Shtylyov (1):
+      usb: musb: core: print new line in the driver banner again
 
- drivers/iio/accel/Kconfig                      |   1 +
- drivers/iio/adc/ad7266.c                       |   6 +-
- drivers/iio/adc/at91_adc.c                     |   2 +-
- drivers/iio/adc/max1363.c                      |  13 +-
- drivers/iio/common/hid-sensors/Kconfig         |  13 +-
- drivers/iio/common/hid-sensors/Makefile        |   3 +-
- drivers/iio/dac/ad5380.c                       |   6 +-
- drivers/iio/dac/ad5446.c                       |   6 +-
- drivers/iio/dac/ad5504.c                       |   6 +-
- drivers/iio/dac/ad5624r_spi.c                  |   6 +-
- drivers/iio/dac/ad5686.c                       |   6 +-
- drivers/iio/dac/ad5791.c                       |  13 +-
- drivers/iio/frequency/adf4350.c                |   2 +-
- drivers/iio/gyro/Kconfig                       |   1 +
- drivers/iio/light/Kconfig                      |   1 +
- drivers/iio/magnetometer/Kconfig               |   1 +
- drivers/staging/comedi/Kconfig                 |   1 +
- drivers/staging/comedi/comedi_fops.c           |   3 +
- drivers/staging/comedi/drivers/comedi_test.c   |   2 +-
- drivers/staging/comedi/drivers/ni_pcimio.c     |  16 +-
- drivers/staging/fwserial/Kconfig               |   4 +-
- drivers/staging/fwserial/TODO                  |  14 +-
- drivers/staging/fwserial/fwserial.c            |   2 +-
- drivers/staging/fwserial/fwserial.h            |   6 +-
- drivers/staging/iio/gyro/Kconfig               |   4 +-
- drivers/staging/imx-drm/imx-drm-core.c         |   1 -
- drivers/staging/imx-drm/ipu-v3/ipu-common.c    |   5 +-
- drivers/staging/imx-drm/ipuv3-crtc.c           |   6 +-
- drivers/staging/omapdrm/Makefile               |   1 +
- drivers/staging/omapdrm/TODO                   |   3 -
- drivers/staging/omapdrm/omap_connector.c       | 111 +-----
- drivers/staging/omapdrm/omap_crtc.c            | 507 ++++++++++++++++++++++---
- drivers/staging/omapdrm/omap_drv.c             | 439 ++++-----------------
- drivers/staging/omapdrm/omap_drv.h             | 140 +++++--
- drivers/staging/omapdrm/omap_encoder.c         | 132 +++----
- drivers/staging/omapdrm/omap_gem_dmabuf.c      |   2 +-
- drivers/staging/omapdrm/omap_irq.c             | 322 ++++++++++++++++
- drivers/staging/omapdrm/omap_plane.c           | 452 +++++++++-------------
- drivers/staging/rtl8187se/r8180_core.c         |   3 +-
- drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c |   4 +
- drivers/staging/rtl8192e/rtl8192e/rtl_core.c   |  11 +-
- drivers/staging/rtl8712/usb_intf.c             |   2 +
- drivers/staging/sb105x/Kconfig                 |   1 +
- drivers/staging/sb105x/sb_pci_mp.c             |   2 +
- drivers/staging/speakup/synth.c                |   4 +-
- drivers/staging/tidspbridge/core/_tiomap.h     |   2 +-
- drivers/staging/tidspbridge/core/dsp-clock.c   |  13 +-
- drivers/staging/tidspbridge/core/wdt.c         |  12 +-
- drivers/staging/vme/devices/vme_pio2_core.c    |  14 +-
- drivers/staging/wlan-ng/cfg80211.c             |   7 +-
- drivers/staging/zram/zram_drv.c                |  39 +-
- 51 files changed, 1390 insertions(+), 983 deletions(-)
- create mode 100644 drivers/staging/omapdrm/omap_irq.c
+Tomasz Mloduchowski (1):
+      usb: ftdi_sio: Crucible Technologies COMET Caller ID - pid added
+
+Tushar Behera (1):
+      usb: gadget: s3c-hsotg: Fix invalid free of devm_ allocated data
+
+Wei Yongjun (1):
+      usb: gadget: tcm_usb_gadge: fix to return error or 0 in tcm_usbg_drop_nexus()
+
+Xi Wang (1):
+      usb: gadget: amd5536udc: avoid NULL pointer dereference in udc_pci_probe()
+
+ drivers/usb/Kconfig                    |   1 +
+ drivers/usb/chipidea/host.c            |   3 +
+ drivers/usb/class/cdc-acm.c            |   3 +
+ drivers/usb/core/hub.c                 | 120 ++++++++++++++++++++++++++-------
+ drivers/usb/core/quirks.c              |   3 +
+ drivers/usb/dwc3/debugfs.c             |   2 +-
+ drivers/usb/gadget/amd5536udc.c        |   4 +-
+ drivers/usb/gadget/dummy_hcd.c         |   9 +--
+ drivers/usb/gadget/mv_udc_core.c       |   4 +-
+ drivers/usb/gadget/s3c-hsotg.c         |   5 +-
+ drivers/usb/gadget/tcm_usb_gadget.c    |   3 +-
+ drivers/usb/gadget/u_serial.c          |   2 +-
+ drivers/usb/host/ehci-fsl.c            |   9 +--
+ drivers/usb/host/ehci-mv.c             |   4 +-
+ drivers/usb/host/ehci-pci.c            |  39 +++++------
+ drivers/usb/host/fsl-mph-dr-of.c       |   3 +
+ drivers/usb/host/imx21-hcd.c           |   1 +
+ drivers/usb/host/ohci-tmio.c           |   3 +-
+ drivers/usb/host/xhci-hub.c            |  38 ++++++++++-
+ drivers/usb/host/xhci-mem.c            |   2 +
+ drivers/usb/host/xhci-ring.c           |   9 +++
+ drivers/usb/host/xhci.c                |  10 +++
+ drivers/usb/misc/usbtest.c             |   2 +-
+ drivers/usb/musb/musb_core.c           |   5 +-
+ drivers/usb/musb/musb_dsps.c           |   5 ++
+ drivers/usb/otg/Kconfig                |   2 +-
+ drivers/usb/otg/mv_otg.c               |   4 +-
+ drivers/usb/renesas_usbhs/mod_gadget.c |  22 +++---
+ drivers/usb/renesas_usbhs/mod_host.c   |   3 +-
+ drivers/usb/serial/ftdi_sio.c          |   2 +
+ drivers/usb/serial/ftdi_sio_ids.h      |   6 ++
+ drivers/usb/serial/option.c            |  18 ++++-
+ 32 files changed, 257 insertions(+), 89 deletions(-)
