@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab3ANTBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 14:01:53 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:42888 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758238Ab3ANTBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 14:01:51 -0500
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Jan 14 (mtd)
-References: <20130114154649.cb077b499876da60463fb304@canb.auug.org.au>
-	<50F43197.6010308@infradead.org>
-X-URL: http://belgarath.falguerolles.org/
-Date: Mon, 14 Jan 2013 20:01:37 +0100
-In-Reply-To: <50F43197.6010308@infradead.org> (Randy Dunlap's message of "Mon,
-	14 Jan 2013 08:25:59 -0800")
-Message-ID: <874nija8ry.fsf@free.fr>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	id S1758071Ab3ANTEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 14:04:39 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:42681 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757069Ab3ANTEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 14:04:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <201301141605.43428.trenn@suse.de>
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
+	<2741365.qqWvlU8HGl@hammer82.arch.suse.de>
+	<CAE9FiQV+W21WcZuuWJYJKXhN4sf0mi=iAFgjX644c3EytPXptw@mail.gmail.com>
+	<201301141605.43428.trenn@suse.de>
+Date: Mon, 14 Jan 2013 11:04:36 -0800
+X-Google-Sender-Auth: boJVeBJsff1OynX6j1gp2kdJYSE
+Message-ID: <CAE9FiQVQvj1TPokoCgx_jbp0VACC8cgtFibH4KoqOssEc6JSPw@mail.gmail.com>
+Subject: Re: [PATCH] x86 e820: only void usable memory areas in
+ memmap=exactmap case
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
+        tglx@linutronix.de, khalid@gonehiking.org, horms@verge.net.au
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy Dunlap <rdunlap@infradead.org> writes:
-> ERROR: "byte_rev_table" [drivers/mtd/devices/docg3.ko] undefined!
+On Mon, Jan 14, 2013 at 7:05 AM, Thomas Renninger <trenn@suse.de> wrote:
+> What is this for?:
+> @@ -871,6 +879,11 @@ static int __init parse_memmap_one(char
+>         userdef = 1;
+>         if (*p == '@') {
+>                 start_at = memparse(p+1, &p);
+> +               if (exactusablemap_parsed) {
+> +                       /* remove all range with other types */
+> +                       e820_remove_range(start_at, mem_size,
+> +                                                E820_RAM, 0);
+> +               }
+>                 e820_add_region(start_at, mem_size, E820_RAM);
+>         } else if (*p == '#') {
+>                 start_at = memparse(p+1, &p);
 
-Thanks for the report. I have a trivial patch attached. Should it go through
-Artem's tree or do you want to take it directly ?
-
-Cheers.
-
---
-Robert
-
----8>---
-
->From 771d13b0094421b98310171d8794f2a793ec5d4d Mon Sep 17 00:00:00 2001
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-Date: Mon, 9 Apr 2012 13:19:08 +0200
-Subject: [PATCH] mtd: docg3 fix missing bitreverse lib
-
-Fix missing dependency which can cause a build error such
-as: ERROR: "byte_rev_table" [drivers/mtd/devices/docg3.ko]
-undefined!
-
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
----
- drivers/mtd/devices/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-index 27f80cd..46dcb54 100644
---- a/drivers/mtd/devices/Kconfig
-+++ b/drivers/mtd/devices/Kconfig
-@@ -272,6 +272,7 @@ config MTD_DOCG3
- 	tristate "M-Systems Disk-On-Chip G3"
- 	select BCH
- 	select BCH_CONST_PARAMS
-+	select BITREVERSE
- 	---help---
- 	  This provides an MTD device driver for the M-Systems DiskOnChip
- 	  G3 devices.
--- 
-1.7.10.4
-
+remove all old renges before add E820_RAM, otherwise new add E820
+ranges could be ignored.
