@@ -1,104 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab3ANOzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:55:48 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:62393 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab3ANOzq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:55:46 -0500
+	id S1756645Ab3ANO4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:56:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59623 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755719Ab3ANO4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 09:56:33 -0500
+Date: Mon, 14 Jan 2013 15:56:30 +0100
+From: Jan Kara <jack@suse.cz>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: jack@suse.cz, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>,
+        Bonggil Bak <bgbak@samsung.com>
+Subject: Re: [PATCH] udf: add extent cache support in case of file reading
+Message-ID: <20130114145630.GH6597@quack.suse.cz>
+References: <1357971188-16023-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130114143238.GC20384@kroah.com>
-References: <1357831934-31610-1-git-send-email-tomas.winkler@intel.com>
-	<CA+icZUXa-cgNPTYAKjXDSkoqNhto7jz89yUMJAvYxa-jGtMbjg@mail.gmail.com>
-	<20130114143238.GC20384@kroah.com>
-Date: Mon, 14 Jan 2013 15:55:44 +0100
-Message-ID: <CA+icZUXLFp_oZnVPcVDwuy_dvbywKgqHKknzg6qyF3o=mw-p+A@mail.gmail.com>
-Subject: Re: [char-misc-next V2] mei: drop the warning when cl is not
- initialized during unlinking
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tomas Winkler <tomas.winkler@intel.com>, arnd@arndb.de,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357971188-16023-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 3:32 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Jan 14, 2013 at 03:14:50PM +0100, Sedat Dilek wrote:
->> On Thu, Jan 10, 2013 at 4:32 PM, Tomas Winkler <tomas.winkler@intel.com> wrote:
->> > On systems where wd and amthif is not initialized
->> > we will hit cl->dev == NULL. This condition is okay
->> > so we don't need to be laud about it.
->> >
->> > Fixes the follwing warning during suspend
->> > [  137.061985] WARNING: at drivers/misc/mei/client.c:315 mei_cl_unlink+0x86/0x90 [mei]()
->> > [  137.061986] Hardware name: 530U3BI/530U4BI/530U4BH
->> > [  137.062140] Modules linked in: snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel snd_hda_intel snd_hda_codec kvm arc4 iwldvm snd_hwdep i915 snd_pcm mac80211 ghash_clmulni_intel snd_page_alloc aesni_intel snd_seq_midi xts snd_seq_midi_event aes_x86_64 rfcomm snd_rawmidi parport_pc bnep lrw snd_seq uvcvideo i2c_algo_bit ppdev gf128mul iwlwifi snd_timer drm_kms_helper ablk_helper cryptd drm snd_seq_device videobuf2_vmalloc psmouse videobuf2_memops snd cfg80211 btusb videobuf2_core soundcore videodev lp bluetooth samsung_laptop wmi microcode mei serio_raw mac_hid video hid_generic lpc_ich parport usbhid hid r8169
->> > [  137.062143] Pid: 2706, comm: kworker/u:15 Tainted: G      D W    3.8.0-rc2-next20130109-1-iniza-generic #1
->> > [  137.062144] Call Trace:
->> > [  137.062156]  [<ffffffff8105860f>] warn_slowpath_common+0x7f/0xc0
->> > [  137.062159]  [<ffffffff8135b1ea>] ? ioread32+0x3a/0x40
->> > [  137.062162]  [<ffffffff8105866a>] warn_slowpath_null+0x1a/0x20
->> > [  137.062168]  [<ffffffffa0076be6>] mei_cl_unlink+0x86/0x90 [mei]
->> > [  137.062173]  [<ffffffffa0071325>] mei_reset+0xc5/0x240 [mei]
->> > [  137.062178]  [<ffffffffa0073703>] mei_pci_resume+0xa3/0x110 [mei]
->> > [  137.062183]  [<ffffffff81379cae>] pci_pm_resume+0x7e/0xe0
->> > [  137.062185]  [<ffffffff81379c30>] ? pci_pm_thaw+0x80/0x80
->> > [  137.062189]  [<ffffffff8145a415>] dpm_run_callback.isra.6+0x25/0x50
->> > [  137.062192]  [<ffffffff8145a6cf>] device_resume+0x9f/0x140
->> > [  137.062194]  [<ffffffff8145a791>] async_resume+0x21/0x50
->> > [  137.062200]  [<ffffffff810858b0>] async_run_entry_fn+0x90/0x1c0
->> > [  137.062203]  [<ffffffff810778e5>] process_one_work+0x155/0x460
->> > [  137.062207]  [<ffffffff81078578>] worker_thread+0x168/0x400
->> > [  137.062210]  [<ffffffff81078410>] ? manage_workers+0x2b0/0x2b0
->> > [  137.062214]  [<ffffffff8107d9f0>] kthread+0xc0/0xd0
->> > [  137.062218]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
->> > [  137.062222]  [<ffffffff816bac6c>] ret_from_fork+0x7c/0xb0
->> > [  137.062228]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
->> >
->> > Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
->> > Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
->> > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
->>
->> Can you please apply this patch to char-misc-next?
->> I am hitting it again while doing other regression testing!
->
-> Please be patient, it will get there soon.
->
+On Sat 12-01-13 15:13:08, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> This patch implements extent caching in case of file reading.
+> While reading a file, currently, UDF reads metadata serially
+> which takes a lot of time depending on the number of extents present
+> in the file. Caching last accessd extent improves metadata read time.
+> Instead of reading file metadata from start, now we read from
+> the cached extent.
+> 
+> This patch considerably improves the time spent by CPU in kernel mode.
+> For example, while reading a 10.9 GB file using dd:
+> Time before applying patch:
+> 11677022208 bytes (10.9GB) copied, 1529.748921 seconds, 7.3MB/s
+> real    25m 29.85s
+> user    0m 12.41s
+> sys     15m 34.75s
+> 
+> Time after applying patch:
+> 11677022208 bytes (10.9GB) copied, 1469.338231 seconds, 7.6MB/s
+> real    24m 29.44s
+> user    0m 15.73s
+> sys     3m 27.61s
+  Thanks for the patch! I have just three minor comments below.
+ 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+> Signed-off-by: Bonggil Bak <bgbak@samsung.com>
+> ---
+>  fs/udf/ialloc.c  |    2 ++
+>  fs/udf/inode.c   |   74 +++++++++++++++++++++++++++++++++++++++++++++++++-----
+>  fs/udf/udf_i.h   |   17 +++++++++++++
+>  fs/udf/udfdecl.h |   10 ++++----
+>  4 files changed, 92 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/udf/ialloc.c b/fs/udf/ialloc.c
+> index 7e5aae4..7dd86a4a 100644
+> --- a/fs/udf/ialloc.c
+> +++ b/fs/udf/ialloc.c
+> @@ -117,6 +117,8 @@ struct inode *udf_new_inode(struct inode *dir, umode_t mode, int *err)
+>  	iinfo->i_lenAlloc = 0;
+>  	iinfo->i_use = 0;
+>  	iinfo->i_checkpoint = 1;
+> +	memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
+> +	mutex_init(&(iinfo->i_extent_cache_lock));
+>  	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_AD_IN_ICB))
+>  		iinfo->i_alloc_type = ICBTAG_FLAG_AD_IN_ICB;
+>  	else if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_SHORT_AD))
+> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+> index cbae1ed..9980381 100644
+> --- a/fs/udf/inode.c
+> +++ b/fs/udf/inode.c
+> @@ -90,6 +90,7 @@ void udf_evict_inode(struct inode *inode)
+>  	}
+>  	kfree(iinfo->i_ext.i_data);
+>  	iinfo->i_ext.i_data = NULL;
+> +	udf_clear_extent_cache(iinfo);
+>  	if (want_delete) {
+>  		udf_free_inode(inode);
+>  	}
+> @@ -105,6 +106,7 @@ static void udf_write_failed(struct address_space *mapping, loff_t to)
+>  		truncate_pagecache(inode, to, isize);
+>  		if (iinfo->i_alloc_type != ICBTAG_FLAG_AD_IN_ICB) {
+>  			down_write(&iinfo->i_data_sem);
+> +			udf_clear_extent_cache(iinfo);
+>  			udf_truncate_extents(inode);
+>  			up_write(&iinfo->i_data_sem);
+>  		}
+> @@ -372,7 +374,7 @@ static int udf_get_block(struct inode *inode, sector_t block,
+>  		iinfo->i_next_alloc_goal++;
+>  	}
+>  
+> -
+> +	udf_clear_extent_cache(iinfo);
+>  	phys = inode_getblk(inode, block, &err, &new);
+>  	if (!phys)
+>  		goto abort;
+> @@ -1171,6 +1173,7 @@ set_size:
+>  	} else {
+>  		if (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB) {
+>  			down_write(&iinfo->i_data_sem);
+> +			udf_clear_extent_cache(iinfo);
+>  			memset(iinfo->i_ext.i_data + iinfo->i_lenEAttr + newsize,
+>  			       0x00, bsize - newsize -
+>  			       udf_file_entry_alloc_offset(inode));
+> @@ -1184,6 +1187,7 @@ set_size:
+>  		if (err)
+>  			return err;
+>  		down_write(&iinfo->i_data_sem);
+> +		udf_clear_extent_cache(iinfo);
+>  		truncate_setsize(inode, newsize);
+>  		udf_truncate_extents(inode);
+>  		up_write(&iinfo->i_data_sem);
+> @@ -1301,6 +1305,8 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
+>  	iinfo->i_lenAlloc = 0;
+>  	iinfo->i_next_alloc_block = 0;
+>  	iinfo->i_next_alloc_goal = 0;
+> +	memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
+> +	mutex_init(&(iinfo->i_extent_cache_lock));
+>  	if (fe->descTag.tagIdent == cpu_to_le16(TAG_IDENT_EFE)) {
+>  		iinfo->i_efe = 1;
+>  		iinfo->i_use = 0;
+> @@ -2156,11 +2162,12 @@ int8_t inode_bmap(struct inode *inode, sector_t block,
+>  	struct udf_inode_info *iinfo;
+>  
+>  	iinfo = UDF_I(inode);
+> -	pos->offset = 0;
+> -	pos->block = iinfo->i_location;
+> -	pos->bh = NULL;
+> +	if (!udf_read_extent_cache(inode, bcount, &lbcount, pos)) {
+> +		pos->offset = 0;
+> +		pos->block = iinfo->i_location;
+> +		pos->bh = NULL;
+> +	}
+>  	*elen = 0;
+> -
+>  	do {
+>  		etype = udf_next_aext(inode, pos, eloc, elen, 1);
+>  		if (etype == -1) {
+> @@ -2170,7 +2177,8 @@ int8_t inode_bmap(struct inode *inode, sector_t block,
+>  		}
+>  		lbcount += *elen;
+>  	} while (lbcount <= bcount);
+> -
+> +	/* update extent cache */
+> +	udf_update_extent_cache(inode, lbcount - *elen, pos, 1);
+>  	*offset = (bcount + *elen - lbcount) >> blocksize_bits;
+>  
+>  	return etype;
+> @@ -2200,3 +2208,57 @@ long udf_block_map(struct inode *inode, sector_t block)
+>  	else
+>  		return ret;
+>  }
+> +int udf_read_extent_cache(struct inode *inode, loff_t bcount,
+> +			  loff_t *lbcount, struct extent_position *pos)
+> +{
+> +	struct udf_inode_info *iinfo = UDF_I(inode);
+  Use empty line after declarations please...
 
-The same answer I got for the report/testing of [1], it is still not
-in mainline.
-Yes, I have seen your pull-request for char-misc-linus of today, but
-why does this takes weeks to apply?
+> +	mutex_lock(&iinfo->i_extent_cache_lock);
+> +	if ((iinfo->cached_extent.lstart <= bcount) &&
+> +	    (iinfo->cached_extent.valid)) {
+> +		/* Cache hit */
+> +		*lbcount = iinfo->cached_extent.lstart;
+> +		memcpy(pos, &iinfo->cached_extent.epos,
+> +		       sizeof(struct extent_position));
+> +		mutex_unlock(&iinfo->i_extent_cache_lock);
+> +		return 1;
+> +	} else
+> +		udf_clear_extent_cache(iinfo);
+> +	mutex_unlock(&iinfo->i_extent_cache_lock);
+> +	return 0;
+> +}
+> +void udf_update_extent_cache(struct inode *inode, loff_t estart,
+> +			     struct extent_position *pos, int next_epos)
+> +{
+> +	struct udf_inode_info *iinfo = UDF_I(inode);
+> +	mutex_lock(&iinfo->i_extent_cache_lock);
+> +	if (pos->bh != NULL)
+> +		/* Increase ref count */
+> +		get_bh(pos->bh);
+> +	memcpy(&iinfo->cached_extent.epos, pos,
+> +	       sizeof(struct extent_position));
+> +	iinfo->cached_extent.lstart = estart;
+> +	iinfo->cached_extent.valid = 1;
+> +	if (next_epos)
+> +		switch (iinfo->i_alloc_type) {
+> +		case ICBTAG_FLAG_AD_SHORT:
+> +			iinfo->cached_extent.epos.offset -=
+> +			sizeof(struct short_ad);
+> +			break;
+> +		case ICBTAG_FLAG_AD_LONG:
+> +			iinfo->cached_extent.epos.offset -=
+> +			sizeof(struct long_ad);
+> +		}
+> +	mutex_unlock(&iinfo->i_extent_cache_lock);
+> +}
+> +
+> +/* This function should be called after i_data_sem is
+> + * held for writing OR i_extent_cache_lock is taken.
+> + */
+> +void udf_clear_extent_cache(struct udf_inode_info *iinfo)
+> +{
+> +	if (iinfo->cached_extent.valid) {
+> +		brelse(iinfo->cached_extent.epos.bh);
+> +		memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
+> +	}
+> +}
+> +
+> diff --git a/fs/udf/udf_i.h b/fs/udf/udf_i.h
+> index bb8309d..95e5e17 100644
+> --- a/fs/udf/udf_i.h
+> +++ b/fs/udf/udf_i.h
+> @@ -1,6 +1,20 @@
+>  #ifndef _UDF_I_H
+>  #define _UDF_I_H
+>  
+> +struct extent_position {
+> +	struct buffer_head *bh;
+> +	uint32_t offset;
+> +	struct kernel_lb_addr block;
+> +};
+> +
+> +struct udf_ext_cache {
+> +	/* Extent position */
+> +	struct extent_position epos;
+> +	/* Start logical offset in bytes */
+> +	loff_t lstart;
+> +	bool valid;
+  I'd just remove the 'valid' entry and use lstart == -1 as an indication
+for invalid cache.
 
-*** Why don't you treat (reported and tested) regressions with a
-higher priority? ***
-This has nothing to do with patience! You steal other people's time!
-Hitting other regressions while doing bisecting is really no fun.
-( ...and [GIT-PULL] requests are cheap... or do you really think we
-will wait until you emptied your inbox? )
+> +};
+> +
+>  /*
+>   * The i_data_sem and i_mutex serve for protection of allocation information
+>   * of a regular files and symlinks. This includes all extents belonging to
+> @@ -35,6 +49,9 @@ struct udf_inode_info {
+>  		__u8		*i_data;
+>  	} i_ext;
+>  	struct rw_semaphore	i_data_sem;
+> +	struct udf_ext_cache cached_extent;
+> +	/* Mutex for protecting extent cache */
+> +	struct mutex i_extent_cache_lock;
+  This should be spinlock not mutex. We don't need to sleep while holding
+the lock and spinlocks are both faster and smaller...
 
-It makes me angry to fell over and over the same sh*t.
-
-The consequence is...
-
-        CONFIG_INTEL_MEI=n
-
-Test your code by yourself!
-
-In your endless time you will find a minute to apply [2] as well (sarcasm off).
-
-23-Dec-2012 [3]...
-
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/gregkh/char-misc.git;a=commitdiff;h=e6028db0146cf5a68dbd1508225ea49840997880
-[2] https://patchwork.kernel.org/patch/1952421/
-[3] http://lkml.org/lkml/2012/12/23/49
-
-> greg k-h
+>  	struct inode vfs_inode;
+>  };
+>  
+> diff --git a/fs/udf/udfdecl.h b/fs/udf/udfdecl.h
+> index de038da..db4a22e 100644
+> --- a/fs/udf/udfdecl.h
+> +++ b/fs/udf/udfdecl.h
+> @@ -113,11 +113,6 @@ struct ustr {
+>  	uint8_t u_len;
+>  };
+>  
+> -struct extent_position {
+> -	struct buffer_head *bh;
+> -	uint32_t offset;
+> -	struct kernel_lb_addr block;
+> -};
+>  
+>  /* super.c */
+>  
+> @@ -164,6 +159,11 @@ extern int8_t udf_next_aext(struct inode *, struct extent_position *,
+>  			    struct kernel_lb_addr *, uint32_t *, int);
+>  extern int8_t udf_current_aext(struct inode *, struct extent_position *,
+>  			       struct kernel_lb_addr *, uint32_t *, int);
+> +int udf_read_extent_cache(struct inode *inode, loff_t bcount, loff_t *lbcount,
+> +			  struct extent_position *pos);
+> +void udf_update_extent_cache(struct inode *inode, loff_t estart,
+> +			     struct extent_position *pos, int next_epos);
+> +void udf_clear_extent_cache(struct udf_inode_info *iinfo);
+>  
+>  /* misc.c */
+>  extern struct buffer_head *udf_tgetblk(struct super_block *, int);
+> -- 
+> 1.7.9.5
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
