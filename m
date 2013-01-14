@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab3ANKtd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 05:49:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47954 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751340Ab3ANKtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 05:49:32 -0500
-Date: Mon, 14 Jan 2013 10:49:30 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Eric Wong <normalperson@yhbt.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: compaction: Partially revert capture of suitable
- high-order page
-Message-ID: <20130114104930.GP13304@suse.de>
-References: <20130111092701.GK13304@suse.de>
- <1358046453.1518.1.camel@kernel.cn.ibm.com>
+	id S1756409Ab3ANKvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 05:51:39 -0500
+Received: from nm16.bullet.mail.ird.yahoo.com ([77.238.189.69]:36219 "EHLO
+	nm16.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756084Ab3ANKvi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 05:51:38 -0500
+X-Yahoo-Newman-Id: 493305.85727.bm@smtp122.mail.ird.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: zQmuDR4VM1nD8kS0bdmy2kX3vFquYIqbZGkX0JbHTVC..Yf
+ YREL_hqUQ8UCWbkktHoqcrI4BIo0dq5mW1NBnh72OIjHXBtbPakwqJrTvSq_
+ MwJXCnixeQ9rzKRksAmRJpBXlyJh9CUTdQLpkf6q2YN4wwd_CrJa0dhnqYco
+ qeHNQcabfBK4bxxlEWbhlrYvIeM0MuARR94.ALFAW0h15tAaluZqN0by1tE4
+ zKwIN879FRQW.EsVRAbXEPV2G28YH6lkLbRU7iXFSs2lj8mej8Fgbl.t0ufe
+ MKtb236Hv2uP4ugBGHUDoqM_stfdoe7k6.bKLWwmVGktOkIvzrc2qM_cLR6P
+ 5gK4cG_p.DJRWwj2cH3EhvprMydgycrhpdwZ6xz0002PcwaxB4mkRB7v0XsX
+ wpqEW5ScccvYTbBgTqWw-
+X-Yahoo-SMTP: mOFZFAuswBAG4_8a4ZBj.Wmvw2Qxc4R7nmE-
+From: Schrober <franzschrober@yahoo.de>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <levinsasha928@gmail.com>
+Subject: Hashtable implementation breaks on flow statements
+Date: Mon, 14 Jan 2013 11:51:35 +0100
+Message-ID: <1482200.orrNyi3164@bentobox>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1358046453.1518.1.camel@kernel.cn.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 12, 2013 at 09:07:33PM -0600, Simon Jeons wrote:
-> On Fri, 2013-01-11 at 09:27 +0000, Mel Gorman wrote:
-> > Eric Wong reported on 3.7 and 3.8-rc2 that ppoll() got stuck when waiting
-> > for POLLIN on a local TCP socket. It was easier to trigger if there was disk
-> > IO and dirty pages at the same time and he bisected it to commit 1fb3f8ca
-> > "mm: compaction: capture a suitable high-order page immediately when it
-> > is made available".
-> > 
-> > The intention of that patch was to improve high-order allocations under
-> > memory pressure after changes made to reclaim in 3.6 drastically hurt
-> > THP allocations but the approach was flawed. For Eric, the problem was
-> > that page->pfmemalloc was not being cleared for captured pages leading to
-> > a poor interaction with swap-over-NFS support causing the packets to be
-> > dropped. However, I identified a few more problems with the patch including
-> > the fact that it can increase contention on zone->lock in some cases which
-> > could result in async direct compaction being aborted early.
-> > 
-> > In retrospect the capture patch took the wrong approach. What it should
-> > have done is mark the pageblock being migrated as MIGRATE_ISOLATE if it
-> > was allocating for THP and avoided races that way. While the patch was
-> 
-> Hi Mel,
-> 
-> Mark pageblock being migrated as MIGRATE_ISOLATE if it was allocating
-> for THP and avoided races that way is a good idea. But why I can't see
-> you do it in this patch?
-> 
+Hi,
 
-Because it is not what the patch does. Implementing that idea will take
-time to do properly and cleanly with no guarantee it'll work well enough
-to justify the complexity. Fixing the POLLIN bug was more important.
+I think the new hash implementation in include/linux/hashtable.h is slightly 
+unintuitive when using things like hash_for_each, hash_for_each_rcu, 
+hash_for_each_safe and hash_for_each_possible.
 
+Users may want to get out of the loop through the hashtable iteration when 
+some condition is met. This works well on hlist, list and other "abstract" 
+data types. But the hash table would just jump to the next bucket and 
+continue.
 -- 
-Mel Gorman
-SUSE Labs
+Franz Schrober
