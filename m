@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757778Ab3ANVYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 16:24:36 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:44013 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757033Ab3ANVYf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 16:24:35 -0500
-Date: Mon, 14 Jan 2013 16:24:22 -0500 (EST)
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Message-ID: <509501101.524434.1358198662068.JavaMail.root@mail.savoirfairelinux.com>
-In-Reply-To: <20130114201128.ECDD13E249D@localhost>
-Subject: Re: [PATCH] spi: erase pointer to drvdata on removal
+	id S1758002Ab3ANV0S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 16:26:18 -0500
+Received: from mout.gmx.net ([212.227.17.20]:51774 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756677Ab3ANV0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 16:26:16 -0500
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18T34cuzaAT/0pjHwEWvQvIlMXNyMGkPEVrdTzPi9
+	qH84Ri+Do6Z9Wd
+Message-ID: <50F477F5.8070403@gmx.de>
+Date: Mon, 14 Jan 2013 22:26:13 +0100
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130111 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [208.88.110.46]
-X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: ibm-acpi-devel@lists.sourceforge.net
+Subject: / is remounted when the power cable is plugged in/out
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark, Grant,
+At my ThinkPad T420 I get these syslog messages when I plug off the power cable of a system
+booted from an external USB drive (root / is /dev/sdb3):
 
-> On Mon, 14 Jan 2013 02:51:45 +0000, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
-> > On Thu, Nov 01, 2012 at 02:05:36PM -0400, Vivien Didelot wrote:
-> > > As for i2c-core, let the SPI core handle the removal of the
-> > > device's
-> > > drvdata, after a remove() or a probe() failure.
-> > 
-> > Any driver that notices this change is buggy, the driver shouldn't
-> > use a drvdata value that it didn't set.  I had thought this stuff
-> > had
-> > all been removed from I2C and either dropped or factored out into
-> > the
-> > driver core...
-> 
-> Looks to me like __device_release_driver() in drivers/base/dd.c
-> already
-> does this.
-> 
-> g.
 
-You are right, I figured this out after the resend of this patch, see my reply here:
-https://lkml.org/lkml/2012/12/4/224
+2013-01-14T22:20:46.028+01:00 n22 kernel: ata1.00: failed to get Identify Device Data, Emask 0x1
+2013-01-14T22:20:46.029+01:00 n22 kernel: ata1.00: failed to get Identify Device Data, Emask 0x1
+2013-01-14T22:20:46.029+01:00 n22 kernel: ata1.00: configured for UDMA/100
+2013-01-14T22:20:46.029+01:00 n22 kernel: ata1: EH complete
+2013-01-14T22:20:46.029+01:00 n22 kernel: sd 0:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA                     
+2013-01-14T22:20:46.083+01:00 n22 kernel: thinkpad_acpi: unknown possible thermal alarm or keyboard event received                                     
+2013-01-14T22:20:46.083+01:00 n22 kernel: thinkpad_acpi: unhandled HKEY event 0x6040                                                                   
+2013-01-14T22:20:46.083+01:00 n22 kernel: thinkpad_acpi: please report the conditions when this event happened to ibm-acpi-devel@lists.sourceforge.net 
+2013-01-14T22:20:46.085+01:00 n22 kernel: thinkpad_acpi: EC reports that Thermal Table has changed                                                     
+2013-01-14T22:20:46.000+01:00 n22 logger: ACPI event : ibm/hotkey HKEY 00000080 00006040                                                               
+2013-01-14T22:20:46.000+01:00 n22 logger: ACPI event : ibm/hotkey HKEY 00000080 00006030                                                               
+2013-01-14T22:20:46.305+01:00 n22 kernel: EXT4-fs (sdb3): re-mounted. Opts: commit=600                                                                 
 
-    -Vivien
+
+and when I plug in the power cable I get the similar events :
+
+
+2013-01-14T22:20:51.476+01:00 n22 kernel: ata1.00: failed to get Identify Device Data, Emask 0x1
+2013-01-14T22:20:51.477+01:00 n22 kernel: ata1.00: failed to get Identify Device Data, Emask 0x1
+2013-01-14T22:20:51.477+01:00 n22 kernel: ata1.00: configured for UDMA/100
+2013-01-14T22:20:51.477+01:00 n22 kernel: ata1: EH complete
+2013-01-14T22:20:51.477+01:00 n22 kernel: sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+2013-01-14T22:20:51.514+01:00 n22 kernel: thinkpad_acpi: unknown possible thermal alarm or keyboard event received
+2013-01-14T22:20:51.514+01:00 n22 kernel: thinkpad_acpi: unhandled HKEY event 0x6040
+2013-01-14T22:20:51.514+01:00 n22 kernel: thinkpad_acpi: please report the conditions when this event happened to ibm-acpi-devel@lists.sourceforge.net
+2013-01-14T22:20:51.516+01:00 n22 kernel: thinkpad_acpi: EC reports that Thermal Table has changed
+2013-01-14T22:20:51.000+01:00 n22 logger: ACPI event : ibm/hotkey HKEY 00000080 00006040
+2013-01-14T22:20:51.000+01:00 n22 logger: ACPI event : ibm/hotkey HKEY 00000080 00006030
+2013-01-14T22:20:52.170+01:00 n22 kernel: EXT4-fs (sdb3): re-mounted. Opts: commit=0
+
+
+b/c of the unknown event 0x6040 the ibm acpi list is Cc'ed, but what makes me really wondering is
+why / is remounted.
+
+
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
