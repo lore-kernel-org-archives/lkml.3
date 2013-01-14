@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab3ANRSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 12:18:21 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:10624 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757673Ab3ANRST (ORCPT
+	id S1757876Ab3ANRSb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 12:18:31 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:53186 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757673Ab3ANRS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 12:18:19 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/heiVBVYlvdQbRWgiqpLfc
-Date: Mon, 14 Jan 2013 09:18:14 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: balbi@ti.com, gregkh@linuxfoundation.org, sameo@linux.intel.com,
-        kishon@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 01/14] mfd: omap-usb-host: Consolidate OMAP USB-HS
- platform data
-Message-ID: <20130114171814.GT14149@atomide.com>
-References: <1357836694-30788-1-git-send-email-rogerq@ti.com>
- <1357836694-30788-2-git-send-email-rogerq@ti.com>
- <20130110234537.GB15458@atomide.com>
- <50EFDE10.9080902@ti.com>
- <20130111181331.GM14149@atomide.com>
- <50F3EBEF.8040809@ti.com>
+	Mon, 14 Jan 2013 12:18:29 -0500
+Date: Mon, 14 Jan 2013 09:18:22 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
+        Mike Galbraith <efault@gmx.de>, Josh Triplett <josh@joshtriplett.org>,
+        Tim Abbott <tabbott@ksplice.com>
+Subject: Re: [PATCH] module, fix percpu reserved memory exhaustion
+Message-ID: <20130114171822.GC27942@mtj.dyndns.org>
+References: <1357785669-31848-1-git-send-email-prarit@redhat.com>
+ <87d2xc1itd.fsf@rustcorp.com.au>
+ <50F01EC2.1000908@redhat.com>
+ <87pq1byzum.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50F3EBEF.8040809@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87pq1byzum.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [130114 03:31]:
-> On 01/11/2013 08:13 PM, Tony Lindgren wrote:
-> > * Roger Quadros <rogerq@ti.com> [130111 01:43]:
-> >> Tony,
-> >>
-> >> On 01/11/2013 01:45 AM, Tony Lindgren wrote:
-> >>> * Roger Quadros <rogerq@ti.com> [130110 08:54]:
-> >>>> Let's have a single platform data structure for the OMAP's High-Speed
-> >>>> USB host subsystem instead of having 3 separate ones i.e. one for
-> >>>> board data, one for USB Host (UHH) module and one for USB-TLL module.
-> >>>>
-> >>>> This makes the code much simpler and avoids creating multiple copies of
-> >>>> platform data.
-> >>>
-> >>> I can apply just this patch alone into an immutable branch that
-> >>> we all can merge in as needed as long as we have acks for the USB
-> >>> and MFD parts.
-> >>>
-> >>> Or does this one need to be changed based on Alan's comments
-> >>> on the EHCI lib related changes?
-> >>>
-> >>
-> >> This does not depend on EHCI lib based changes but it depends on the
-> >> OMAP USB Host cleanup series posted earlier.
-> > 
-> > Can we first apply just the minimal platform_data + board file + clock
-> > changes?
-> > 
-> We could, but I'll then have to make changes to the patches in the first
-> series and re-post them. Do you want me to do that?
+Hello, Rusty.
 
-Yes please. Otherwise we'll unnecessarily complicate the dependencies between 
-arch/arm/*omap* code and the drivers. And we've certainly had enough of
-self-inflicted merge conflicts with the omap usb code already :)
- 
-> > That way I can apply those to some immutable tree for everybody to use,
-> > and we cut off the dependency to the driver changes for the rest of the
-> > patches. And then I'm off the hook for the rest of the patches :)
-> > 
+On Sat, Jan 12, 2013 at 11:36:09AM +1030, Rusty Russell wrote:
+> > I've been thinking about that.  The problem is that at the same time the kvm
+> > problem occurs I'm attempting to load a debug module that I've written to debug
+> > some cpu timer issues that allocates a large amount of percpu data (~.5K/cpu).
+> > While extending PERCPU_MODULE_RESERVE to 10k might work now, it might not work
+> > tomorrow if I have the need to increase the size of my log buffer.
 > 
-> Or you could just ack this patch ;). The platform data is specific to
-> USB host only :)
+> Well, it looks like PERCPU_MODULE_RESERVE is actually very generous; it
+> could easily be halved.  I guess this is because dynamic per-cpu data is
+> now such a nice alternative (thanks to Tejun).
 
-Well it's not just this patch. It's the clock related patches in your
-earlier seriers that will conflict with any attempts to move the clock
-data to live under drivers/clk/omap where it needs to go. And the three
-patches at the end of this series to add platform data (which look fine),
-but will likely conflict with something else. Let's try do do these changes
-in a way where the dependencies are cut to minimum where possible.
+Heh, thanks. :)
 
-Regards,
+There are two percpu constants that I basically pulled out of my ass.
 
-Tony
+* PERCPU_MODULE_RESERVE: It's used on architectures with data model
+  which restricts the distance between code and data.  e.g. x86_64
+  genereates code which can't address full 64bit for static data and
+  as percpu addressing depends on the regular address generation to
+  derive percpu addresses, the percpu offsets need to be restricted
+  somehow.  Percpu allocator currently achieves this by reserving
+  certain amount in the first percpu chunk which is guaranteed to have
+  very low (starting from 0) percpu address space offsets.
+
+  On those archs, this becomes the hard limit for all module static
+  percpu areas.  Maybe 8k is way too high and we can go with 4k.
+  Worth a try I guess.
+
+* PERCPU_DYNAMIC_RESERVE: The amount of space at the end of the first
+  chunk used for dynamic allocation.  This isn't as critical as the
+  above and the only reason it exists is because the first chunk is
+  often embedded in the kernel linear address space instead of vmalloc
+  area and the former is often mapped with larger page table size than
+  the latter.  The goal of PERCPU_DYNAMIC_RESERVE is to have just
+  enough space to cover the usual percpu allocations without wasting
+  too much space to minimize impact on TLB pressure.
+
+  The current number isn't entirely made up.  I did some testing with
+  some random config.  Don't know how it holds up now.  It probably
+  can be increased given that we developed quite a few percpu dynamic
+  allocations since then.
+
+  It would be awesome to have a way to somehow dynamically adjust this
+  one; unfortunately, that would require persistent data across
+  boots. :(
+
+Thanks.
+
+-- 
+tejun
