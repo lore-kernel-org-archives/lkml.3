@@ -1,161 +1,541 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab3ANQof (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 11:44:35 -0500
-Received: from mail160.messagelabs.com ([216.82.253.99]:30327 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756880Ab3ANQoe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 11:44:34 -0500
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-160.messagelabs.com!1358181831!8441713!16
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.8; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Peter Huewe <peterhuewe@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Ian Abbott <abbotti@mev.co.uk>, Mori Hess <fmhess@users.sourceforge.net>,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Jan 2013 10:44:29 -0600
-Subject: RE: [PATCH 1/8] staging/comedi: Add macro for registering a comedi
- PCMCIA driver
-Thread-Topic: [PATCH 1/8] staging/comedi: Add macro for registering a comedi
- PCMCIA driver
-Thread-Index: Ac3xMulQ+8YEeW8/T3C0nrt3UCtFSgBQofYA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00207A6CBADD1@AUSP01VMBX24.collaborationhost.net>
-References: <1358043073-12328-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1358043073-12328-1-git-send-email-peterhuewe@gmx.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757431Ab3ANQp1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 11:45:27 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:56588 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756943Ab3ANQp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 11:45:26 -0500
+Date: Mon, 14 Jan 2013 10:45:24 -0600
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v3] procfs: Improve Scaling in proc
+Message-ID: <20130114164523.GA4194@gulag1.americas.sgi.com>
+References: <1351090849-31667-1-git-send-email-nzimmer@sgi.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351090849-31667-1-git-send-email-nzimmer@sgi.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, January 12, 2013 7:11 PM, Peter Huewe wrote:
-> This patch introduces a new macro 'module_comedi_pcmcia_driver'
-> for comedi PCMCIA drivers which do not do anything special in module
-> init/exit. This eliminates a lot of boilerplate.
->
-> Adapted from 'module_comedi_pci_driver'
->
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
->  drivers/staging/comedi/comedidev.h |   22 ++++++++++++++++++++++
->  drivers/staging/comedi/drivers.c   |   34 ++++++++++++++++++++++++++++++++++
->  2 files changed, 56 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-> index 692e1e6..ccb22dd 100644
-> --- a/drivers/staging/comedi/comedidev.h
-> +++ b/drivers/staging/comedi/comedidev.h
-> @@ -41,6 +41,9 @@
->  #include <linux/io.h>
->  #include <linux/timer.h>
->  #include <linux/pci.h>
-> +#include <pcmcia/cistpl.h>
-> +#include <pcmcia/cisreg.h>
-> +#include <pcmcia/ds.h>
+I am currently tracking a hotlock reported by a customer on a large system,
+512 cores.  I am currently running 3.7.1 but the issue looks like it has been
+this way for a very long time.
+The offending lock is proc_dir_entry->pde_unload_lock.
 
-Are these includes actually needed here?
+This patch converts the replaces the lock with the rcu. However the pde_openers
+list still is controlled by a spin lock. I tested on a 4096 machine and the lock
+doesn't seem hot at least according to perf.
 
-We need to work on getting rid of relying on comedidev.h to include everything,
+This is a refresh of what was orignally suggested by Eric Dumazet some time
+ago. 
 
->  #include <linux/usb.h>
->  
->  #include "comedi.h"
-> @@ -342,6 +345,25 @@ void comedi_pci_driver_unregister(struct comedi_driver *, struct pci_driver *);
->  	module_driver(__comedi_driver, comedi_pci_driver_register, \
->  			comedi_pci_driver_unregister, &(__pci_driver))
->  
-> +int comedi_pcmcia_driver_register(struct comedi_driver *,
-> +					struct pcmcia_driver *);
-> +void comedi_pcmcia_driver_unregister(struct comedi_driver *,
-> +					struct pcmcia_driver *);
-> +
-> +/**
-> + * module_comedi_pcmcia_driver() - Helper macro for registering a comedi PCMCIA driver
-> + * @__comedi_driver: comedi_driver struct
-> + * @__pcmcia_driver: pcmcia_driver struct
-> + *
-> + * Helper macro for comedi PCMCIA drivers which do not do anything special
-> + * in module init/exit. This eliminates a lot of boilerplate. Each
-> + * module may only use this macro once, and calling it replaces
-> + * module_init() and module_exit()
-> + */
-> +#define module_comedi_pcmcia_driver(__comedi_driver, __pcmcia_driver) \
-> +	module_driver(__comedi_driver, comedi_pcmcia_driver_register, \
-> +			comedi_pcmcia_driver_unregister, &(__pcmcia_driver))
-> +
->  struct usb_driver;
->  
->  int comedi_usb_driver_register(struct comedi_driver *, struct usb_driver *);
-> diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-> index 50cf498..17a9e35 100644
-> --- a/drivers/staging/comedi/drivers.c
-> +++ b/drivers/staging/comedi/drivers.c
-> @@ -24,6 +24,9 @@
->  #include <linux/device.h>
->  #include <linux/module.h>
->  #include <linux/pci.h>
-> +#include <pcmcia/cistpl.h>
-> +#include <pcmcia/cisreg.h>
-> +#include <pcmcia/ds.h>
->  #include <linux/usb.h>
->  #include <linux/errno.h>
->  #include <linux/kconfig.h>
-> @@ -958,6 +961,37 @@ void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
->  }
->  EXPORT_SYMBOL_GPL(comedi_pci_driver_unregister);
->  
-> +int comedi_pcmcia_driver_register(struct comedi_driver *comedi_driver,
-> +		struct pcmcia_driver *pcmcia_driver)
-> +{
-> +	int ret;
-> +
-> +	ret = comedi_driver_register(comedi_driver);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* FIXME: Remove this test after auditing all comedi pci drivers */
-> +	if (!pcmcia_driver->name)
-> +		pcmcia_driver->name = comedi_driver->driver_name;
+Supporting numbers, lower is better, they are from the test I posted earlier.
+cpuinfo baseline        Rcu
+tasks   read-sec        read-sec
+1       0.0141          0.0141
+2       0.0140          0.0142
+4       0.0140          0.0141
+8       0.0145          0.0140
+16      0.0553          0.0168
+32      0.1688          0.0549
+64      0.5017          0.1690
+128     1.7005          0.5038
+256     5.2513          2.0804
+512     8.0529          3.0162
 
-This chunk should not be here. All the comedi pcmcia drivers have the 'name'
-field properly initialized.
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Nathan Zimmer <nzimmer@gulag1.americas.sgi.com>
+---
+ fs/proc/generic.c       |   58 +++++++++---------
+ fs/proc/inode.c         |  156 ++++++++++++++++++++++++++---------------------
+ include/linux/proc_fs.h |    6 +-
+ 3 files changed, 118 insertions(+), 102 deletions(-)
 
-> +
-> +	ret = pcmcia_register_driver(pcmcia_driver);
-> +	if (ret < 0) {
-> +		comedi_driver_unregister(comedi_driver);
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_register);
-> +
-> +void comedi_pcmcia_driver_unregister(struct comedi_driver *comedi_driver,
-> +		struct pcmcia_driver *pcmcia_driver)
-> +{
-> +	pcmcia_unregister_driver(pcmcia_driver);
-> +	comedi_driver_unregister(comedi_driver);
-> +}
-> +EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_unregister);
-> +
->  #if IS_ENABLED(CONFIG_USB)
->  
->  int comedi_usb_driver_register(struct comedi_driver *comedi_driver,
-
-Regards,
-Hartley
+diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+index 0d80cef..45eb96e 100644
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -191,13 +191,16 @@ proc_file_read(struct file *file, char __user *buf, size_t nbytes,
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	ssize_t rv = -EIO;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	const struct file_operations *fops;
++
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	rcu_read_unlock();
+ 
+ 	rv = __proc_file_read(file, buf, nbytes, ppos);
+ 
+@@ -213,13 +216,16 @@ proc_file_write(struct file *file, const char __user *buffer,
+ 	ssize_t rv = -EIO;
+ 
+ 	if (pde->write_proc) {
+-		spin_lock(&pde->pde_unload_lock);
+-		if (!pde->proc_fops) {
+-			spin_unlock(&pde->pde_unload_lock);
++		const struct file_operations *fops;
++
++		rcu_read_lock();
++		fops = rcu_dereference(pde->proc_fops);
++		if (!fops) {
++			rcu_read_unlock();
+ 			return rv;
+ 		}
+-		pde->pde_users++;
+-		spin_unlock(&pde->pde_unload_lock);
++		atomic_inc(&pde->pde_users);
++		rcu_read_unlock();
+ 
+ 		/* FIXME: does this routine need ppos?  probably... */
+ 		rv = pde->write_proc(file, buffer, count, pde->data);
+@@ -564,7 +570,7 @@ static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp
+ 
+ 	if (S_ISDIR(dp->mode)) {
+ 		if (dp->proc_iops == NULL) {
+-			dp->proc_fops = &proc_dir_operations;
++			RCU_INIT_POINTER(dp->proc_fops, &proc_dir_operations);
+ 			dp->proc_iops = &proc_dir_inode_operations;
+ 		}
+ 		dir->nlink++;
+@@ -573,7 +579,7 @@ static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp
+ 			dp->proc_iops = &proc_link_inode_operations;
+ 	} else if (S_ISREG(dp->mode)) {
+ 		if (dp->proc_fops == NULL)
+-			dp->proc_fops = &proc_file_operations;
++			RCU_INIT_POINTER(dp->proc_fops, &proc_file_operations);
+ 		if (dp->proc_iops == NULL)
+ 			dp->proc_iops = &proc_file_inode_operations;
+ 	}
+@@ -626,7 +632,8 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
+ 	ent->mode = mode;
+ 	ent->nlink = nlink;
+ 	atomic_set(&ent->count, 1);
+-	spin_lock_init(&ent->pde_unload_lock);
++	atomic_set(&ent->pde_users, 1);
++	spin_lock_init(&ent->pde_openers_lock);
+ 	INIT_LIST_HEAD(&ent->pde_openers);
+ out:
+ 	return ent;
+@@ -750,7 +757,7 @@ struct proc_dir_entry *proc_create_data(const char *name, umode_t mode,
+ 	pde = __proc_create(&parent, name, mode, nlink);
+ 	if (!pde)
+ 		goto out;
+-	pde->proc_fops = proc_fops;
++	rcu_assign_pointer(pde->proc_fops, proc_fops);
+ 	pde->data = data;
+ 	if (proc_register(parent, pde) < 0)
+ 		goto out_free;
+@@ -808,37 +815,30 @@ void remove_proc_entry(const char *name, struct proc_dir_entry *parent)
+ 		return;
+ 	}
+ 
+-	spin_lock(&de->pde_unload_lock);
+ 	/*
+ 	 * Stop accepting new callers into module. If you're
+ 	 * dynamically allocating ->proc_fops, save a pointer somewhere.
+ 	 */
+-	de->proc_fops = NULL;
+-	/* Wait until all existing callers into module are done. */
+-	if (de->pde_users > 0) {
+-		DECLARE_COMPLETION_ONSTACK(c);
+-
+-		if (!de->pde_unload_completion)
+-			de->pde_unload_completion = &c;
+ 
+-		spin_unlock(&de->pde_unload_lock);
++	rcu_assign_pointer(de->proc_fops, NULL);
++	synchronize_rcu();
++	/* Wait until all existing callers into module are done. */
+ 
++	DECLARE_COMPLETION_ONSTACK(c);
++	de->pde_unload_completion = &c;
++	if (!atomic_dec_and_test(&de->pde_users))
+ 		wait_for_completion(de->pde_unload_completion);
+ 
+-		spin_lock(&de->pde_unload_lock);
+-	}
+-
++	spin_lock(&de->pde_openers_lock);
+ 	while (!list_empty(&de->pde_openers)) {
+ 		struct pde_opener *pdeo;
+ 
+ 		pdeo = list_first_entry(&de->pde_openers, struct pde_opener, lh);
+ 		list_del(&pdeo->lh);
+-		spin_unlock(&de->pde_unload_lock);
+ 		pdeo->release(pdeo->inode, pdeo->file);
+ 		kfree(pdeo);
+-		spin_lock(&de->pde_unload_lock);
+ 	}
+-	spin_unlock(&de->pde_unload_lock);
++	spin_unlock(&de->pde_openers_lock);
+ 
+ 	if (S_ISDIR(de->mode))
+ 		parent->nlink--;
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 3b22bbd..0d4ab79 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -126,46 +126,40 @@ static const struct super_operations proc_sops = {
+ 	.show_options	= proc_show_options,
+ };
+ 
+-static void __pde_users_dec(struct proc_dir_entry *pde)
+-{
+-	pde->pde_users--;
+-	if (pde->pde_unload_completion && pde->pde_users == 0)
+-		complete(pde->pde_unload_completion);
+-}
+-
+ void pde_users_dec(struct proc_dir_entry *pde)
+ {
+-	spin_lock(&pde->pde_unload_lock);
+-	__pde_users_dec(pde);
+-	spin_unlock(&pde->pde_unload_lock);
++	if (atomic_dec_and_test(&pde->pde_users) && pde->pde_unload_completion)
++		complete(pde->pde_unload_completion);
+ }
+ 
+ static loff_t proc_reg_llseek(struct file *file, loff_t offset, int whence)
+ {
++	const struct file_operations *fops;
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	loff_t rv = -EINVAL;
+ 	loff_t (*llseek)(struct file *, loff_t, int);
+ 
+-	spin_lock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
+ 	/*
+ 	 * remove_proc_entry() is going to delete PDE (as part of module
+ 	 * cleanup sequence). No new callers into module allowed.
+ 	 */
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+ 	/*
+ 	 * Bump refcount so that remove_proc_entry will wail for ->llseek to
+ 	 * complete.
+ 	 */
+-	pde->pde_users++;
++	atomic_inc(&pde->pde_users);
+ 	/*
+ 	 * Save function pointer under lock, to protect against ->proc_fops
+ 	 * NULL'ifying right after ->pde_unload_lock is dropped.
+ 	 */
+-	llseek = pde->proc_fops->llseek;
+-	spin_unlock(&pde->pde_unload_lock);
++	llseek = fops->llseek;
++	rcu_read_unlock();
+ 
+ 	if (!llseek)
+ 		llseek = default_llseek;
+@@ -180,15 +174,17 @@ static ssize_t proc_reg_read(struct file *file, char __user *buf, size_t count,
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	ssize_t rv = -EIO;
+ 	ssize_t (*read)(struct file *, char __user *, size_t, loff_t *);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	read = pde->proc_fops->read;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	read = fops->read;
++	rcu_read_unlock();
+ 
+ 	if (read)
+ 		rv = read(file, buf, count, ppos);
+@@ -202,15 +198,17 @@ static ssize_t proc_reg_write(struct file *file, const char __user *buf, size_t
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	ssize_t rv = -EIO;
+ 	ssize_t (*write)(struct file *, const char __user *, size_t, loff_t *);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	write = pde->proc_fops->write;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	write = fops->write;
++	rcu_read_unlock();
+ 
+ 	if (write)
+ 		rv = write(file, buf, count, ppos);
+@@ -224,15 +222,17 @@ static unsigned int proc_reg_poll(struct file *file, struct poll_table_struct *p
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	unsigned int rv = DEFAULT_POLLMASK;
+ 	unsigned int (*poll)(struct file *, struct poll_table_struct *);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	poll = pde->proc_fops->poll;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	poll = fops->poll;
++	rcu_read_unlock();
+ 
+ 	if (poll)
+ 		rv = poll(file, pts);
+@@ -246,15 +246,17 @@ static long proc_reg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	long rv = -ENOTTY;
+ 	long (*ioctl)(struct file *, unsigned int, unsigned long);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	ioctl = pde->proc_fops->unlocked_ioctl;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	ioctl = fops->unlocked_ioctl;
++	rcu_read_unlock();
+ 
+ 	if (ioctl)
+ 		rv = ioctl(file, cmd, arg);
+@@ -269,15 +271,17 @@ static long proc_reg_compat_ioctl(struct file *file, unsigned int cmd, unsigned
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	long rv = -ENOTTY;
+ 	long (*compat_ioctl)(struct file *, unsigned int, unsigned long);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
++	atomic_inc(&pde->pde_users);
+ 	compat_ioctl = pde->proc_fops->compat_ioctl;
+-	spin_unlock(&pde->pde_unload_lock);
++	rcu_read_unlock();
+ 
+ 	if (compat_ioctl)
+ 		rv = compat_ioctl(file, cmd, arg);
+@@ -292,15 +296,17 @@ static int proc_reg_mmap(struct file *file, struct vm_area_struct *vma)
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	int rv = -EIO;
+ 	int (*mmap)(struct file *, struct vm_area_struct *);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
++	atomic_inc(&pde->pde_users);
+ 	mmap = pde->proc_fops->mmap;
+-	spin_unlock(&pde->pde_unload_lock);
++	rcu_read_unlock();
+ 
+ 	if (mmap)
+ 		rv = mmap(file, vma);
+@@ -316,6 +322,7 @@ static int proc_reg_open(struct inode *inode, struct file *file)
+ 	int (*open)(struct inode *, struct file *);
+ 	int (*release)(struct inode *, struct file *);
+ 	struct pde_opener *pdeo;
++	const struct file_operations *fops;
+ 
+ 	/*
+ 	 * What for, you ask? Well, we can have open, rmmod, remove_proc_entry
+@@ -331,32 +338,33 @@ static int proc_reg_open(struct inode *inode, struct file *file)
+ 	if (!pdeo)
+ 		return -ENOMEM;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		kfree(pdeo);
+ 		return -ENOENT;
+ 	}
+-	pde->pde_users++;
+-	open = pde->proc_fops->open;
+-	release = pde->proc_fops->release;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	open = fops->open;
++	release = fops->release;
++	rcu_read_lock();
+ 
+ 	if (open)
+ 		rv = open(inode, file);
+ 
+-	spin_lock(&pde->pde_unload_lock);
+ 	if (rv == 0 && release) {
+ 		/* To know what to release. */
+ 		pdeo->inode = inode;
+ 		pdeo->file = file;
+ 		/* Strictly for "too late" ->release in proc_reg_release(). */
+ 		pdeo->release = release;
++		spin_lock(&pde->pde_openers_lock);
+ 		list_add(&pdeo->lh, &pde->pde_openers);
++		spin_unlock(&pde->pde_openers_lock);
+ 	} else
+ 		kfree(pdeo);
+-	__pde_users_dec(pde);
+-	spin_unlock(&pde->pde_unload_lock);
++	pde_users_dec(pde);
+ 	return rv;
+ }
+ 
+@@ -365,10 +373,14 @@ static struct pde_opener *find_pde_opener(struct proc_dir_entry *pde,
+ {
+ 	struct pde_opener *pdeo;
+ 
++	spin_lock(&pde->pde_openers_lock);
+ 	list_for_each_entry(pdeo, &pde->pde_openers, lh) {
+-		if (pdeo->inode == inode && pdeo->file == file)
++		if (pdeo->inode == inode && pdeo->file == file) {
++			spin_unlock(&pde->pde_openers_lock);
+ 			return pdeo;
++		}
+ 	}
++	spin_unlock(&pde->pde_openers_lock);
+ 	return NULL;
+ }
+ 
+@@ -378,10 +390,12 @@ static int proc_reg_release(struct inode *inode, struct file *file)
+ 	int rv = 0;
+ 	int (*release)(struct inode *, struct file *);
+ 	struct pde_opener *pdeo;
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+ 	pdeo = find_pde_opener(pde, inode, file);
+-	if (!pde->proc_fops) {
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
+ 		/*
+ 		 * Can't simply exit, __fput() will think that everything is OK,
+ 		 * and move on to freeing struct file. remove_proc_entry() will
+@@ -391,21 +405,23 @@ static int proc_reg_release(struct inode *inode, struct file *file)
+ 		 * But if opener is removed from list, who will ->release it?
+ 		 */
+ 		if (pdeo) {
++			spin_lock(&pde->pde_openers_lock);
+ 			list_del(&pdeo->lh);
+-			spin_unlock(&pde->pde_unload_lock);
++			spin_unlock(&pde->pde_openers_lock);
+ 			rv = pdeo->release(inode, file);
+ 			kfree(pdeo);
+-		} else
+-			spin_unlock(&pde->pde_unload_lock);
++		}
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	release = pde->proc_fops->release;
++	atomic_inc(&pde->pde_users);
++	release = fops->release;
++	rcu_read_unlock();
+ 	if (pdeo) {
++		spin_lock(&pde->pde_openers_lock);
+ 		list_del(&pdeo->lh);
+-		kfree(pdeo);
++		spin_unlock(&pde->pde_openers_lock);
+ 	}
+-	spin_unlock(&pde->pde_unload_lock);
++	kfree(pdeo);
+ 
+ 	if (release)
+ 		rv = release(inode, file);
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 3fd2e87..74e9a3a 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -64,16 +64,16 @@ struct proc_dir_entry {
+ 	 * If you're allocating ->proc_fops dynamically, save a pointer
+ 	 * somewhere.
+ 	 */
+-	const struct file_operations *proc_fops;
++	const struct file_operations __rcu *proc_fops;
+ 	struct proc_dir_entry *next, *parent, *subdir;
+ 	void *data;
+ 	read_proc_t *read_proc;
+ 	write_proc_t *write_proc;
+ 	atomic_t count;		/* use count */
+-	int pde_users;	/* number of callers into module in progress */
++	atomic_t pde_users;	/* number of callers into module in progress */
+ 	struct completion *pde_unload_completion;
++	spinlock_t pde_openers_lock;
+ 	struct list_head pde_openers;	/* who did ->open, but not ->release */
+-	spinlock_t pde_unload_lock; /* proc_fops checks and pde_users bumps */
+ 	u8 namelen;
+ 	char name[];
+ };
+-- 
+1.6.0.2
 
