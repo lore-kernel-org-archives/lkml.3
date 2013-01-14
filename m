@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab3ANOR3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 09:17:29 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58989 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999Ab3ANOR2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 09:17:28 -0500
-Date: Mon, 14 Jan 2013 15:17:26 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mark Rutland <mark.rutland@arm.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "nico@linaro.org" <nico@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>
-Subject: Re: [PATCHv2 1/4] clockevents: Add generic timer broadcast
- receiver
-In-Reply-To: <20130114121247.GD7990@e106331-lin.cambridge.arm.com>
-Message-ID: <alpine.LFD.2.02.1301141318460.7475@ionos>
-References: <1357742770-15028-1-git-send-email-mark.rutland@arm.com> <1357742770-15028-2-git-send-email-mark.rutland@arm.com> <alpine.LFD.2.02.1301141204421.7475@ionos> <20130114112951.GC7990@e106331-lin.cambridge.arm.com> <alpine.LFD.2.02.1301141247020.7475@ionos>
- <20130114121247.GD7990@e106331-lin.cambridge.arm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756979Ab3ANOSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 09:18:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752999Ab3ANOSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 09:18:22 -0500
+Date: Mon, 14 Jan 2013 15:18:08 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, acme@redhat.com,
+        mingo@elte.hu, namhyung.kim@lge.com
+Subject: Re: [PATCH] perf tools: mark branch_info maps as referenced
+Message-ID: <20130114141808.GB1363@krava.brq.redhat.com>
+References: <20130114140245.GA4692@quad>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130114140245.GA4692@quad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013, Mark Rutland wrote:
-> On Mon, Jan 14, 2013 at 11:50:55AM +0000, Thomas Gleixner wrote:
-> > On Mon, 14 Jan 2013, Mark Rutland wrote:
-> > 
-> > > On Mon, Jan 14, 2013 at 11:06:31AM +0000, Thomas Gleixner wrote:
-> > > > On Wed, 9 Jan 2013, Mark Rutland wrote:
-> > > > > +#ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
-> > > > > +extern int tick_receive_broadcast(void);
-> > > > > +#else
-> > > > > +static inline int tick_receive_broadcast(void)
-> > > > > +{
-> > > > > +	return 0;
-> > > > > +}
-> > > > 
-> > > > What's the inline function for? If an arch does not have broadcasting
-> > > > support it should not have a receive broadcast function call either.
-> > > 
-> > > That was how this was originally structured [1], but Santosh suggested this
-> > > would break the build for !GENERIC_CLOCKEVENTS_BROADCAST [1]. It means that the
-> > > arch-specific receive path (i.e. IPI handler) doesn't have to be #ifdef'd,
-> > > which makes it less ugly.
-> > 
-> > Hmm. If you want to keep the IPI around unconditionally the inline
-> > makes some sense, though the question is whether keeping an unused IPI
-> > around makes sense in the first place. I'd rather see a warning that
-> > an unexpected IPI happened than a silent inline function being called.
+On Mon, Jan 14, 2013 at 03:02:45PM +0100, Stephane Eranian wrote:
 > 
-> How about I add a warning (e.g. "Impossible timer broadcast received.") and
-> return -EOPNOTSUPP when !GENERIC_CLOCKEVENTS_BROADCAST?
-
-You still need to do something with the return value in the arch IPI
-code, right?
-
-> > > > Is anything going to use the return value?
-> > > 
-> > > I'd added this after looking at the x86 lapic timers, where interrupts might
-> > > remain pending over a kexec, and lapic interrupts come up before timers are
-> > > registered. The return value is useful for shutting down the timer in that case
-> > > (see x86's local_apic_timer_interrupt).
-> > 
-> > Right, though then you need to check for evt->event_handler as well.
+> As noticed by Jiri, the hist_entry->branch_info.to/from maps
+> need to be marked as referenced to avoid problems later on.
+> So we do this when the hist_entry is allocated.
 > 
-> I thought this previously also [1], but I couldn't find any path such that a
-> tick_cpu_device would have an evtdev without an event_handler. We always set the
-> handler before setting evtdev, and alway wipe evtdev before wiping the handler.
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+
+> --
 > 
-> Have I missed something?
-
-That's an x86 specific issue. Though we could try and make that
-functionality completely generic.
-
-Thanks,
-
-	tglx
-
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index cb17e2a..ab35b82 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -242,6 +242,14 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+>  
+>  		if (he->ms.map)
+>  			he->ms.map->referenced = true;
+> +
+> +		if (he->branch_info) {
+> +			if (he->branch_info->from.map)
+> +				he->branch_info->from.map->referenced = true;
+> +			if (he->branch_info->to.map)
+> +				he->branch_info->to.map->referenced = true;
+> +		}
+> +
+>  		if (symbol_conf.use_callchain)
+>  			callchain_init(he->callchain);
+>  
