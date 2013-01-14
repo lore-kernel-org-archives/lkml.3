@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab3ANPeq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 10:34:46 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:54427 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756376Ab3ANPeo (ORCPT
+	id S1756937Ab3ANPfD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 10:35:03 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:37789 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756635Ab3ANPe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 10:34:44 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 2/2] input: twl6040-vibra: Use system workqueue
-Date: Mon, 14 Jan 2013 16:34:38 +0100
-Message-ID: <1358177678-16509-3-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1358177678-16509-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1358177678-16509-1-git-send-email-peter.ujfalusi@ti.com>
+	Mon, 14 Jan 2013 10:34:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130114151220.GA20610@kroah.com>
+References: <1357831934-31610-1-git-send-email-tomas.winkler@intel.com>
+	<CA+icZUXa-cgNPTYAKjXDSkoqNhto7jz89yUMJAvYxa-jGtMbjg@mail.gmail.com>
+	<20130114143238.GC20384@kroah.com>
+	<CA+icZUXLFp_oZnVPcVDwuy_dvbywKgqHKknzg6qyF3o=mw-p+A@mail.gmail.com>
+	<20130114151220.GA20610@kroah.com>
+Date: Mon, 14 Jan 2013 16:34:58 +0100
+Message-ID: <CA+icZUWUwn=SP-rnc=-K=J36vcUdOWURr2Kd_XV=fzCh+OMLJA@mail.gmail.com>
+Subject: Re: [char-misc-next V2] mei: drop the warning when cl is not
+ initialized during unlinking
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Tomas Winkler <tomas.winkler@intel.com>, arnd@arndb.de,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is time to switch to system wq instead creating a queue for the driver.
+On Mon, Jan 14, 2013 at 4:12 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Jan 14, 2013 at 03:55:44PM +0100, Sedat Dilek wrote:
+>> On Mon, Jan 14, 2013 at 3:32 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > On Mon, Jan 14, 2013 at 03:14:50PM +0100, Sedat Dilek wrote:
+>> >> On Thu, Jan 10, 2013 at 4:32 PM, Tomas Winkler <tomas.winkler@intel.com> wrote:
+>> >>
+>> >> Can you please apply this patch to char-misc-next?
+>> >> I am hitting it again while doing other regression testing!
+>> >
+>> > Please be patient, it will get there soon.
+>> >
+>>
+>> The same answer I got for the report/testing of [1], it is still not
+>> in mainline.
+>> Yes, I have seen your pull-request for char-misc-linus of today, but
+>> why does this takes weeks to apply?
+>
+> "Weeks"?  You do realize this was sent to me over a holliday break, one
+> in which I was on vacation?  I only returned a week ago, to over 1500
+> patches to sift through and process.
+>
+> And, I did that within 4 days, and sent the needed fix off to Linus
+> within 7 days of returning.
+>
+> If you think you can do better than that, wonderful, I would love for
+> you to start out reviewing code and helping with handling stuff like
+> that.  Please do so before complaining about anything.
+>
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/input/misc/twl6040-vibra.c | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+The MAINTAINERS file lists a co-maintainer. Not sure what his job is.
+In every company when people are on holidays, the work continues.
 
-diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
-index d1e31b8..0c2dfc8 100644
---- a/drivers/input/misc/twl6040-vibra.c
-+++ b/drivers/input/misc/twl6040-vibra.c
-@@ -361,19 +361,13 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	info->workqueue = alloc_workqueue("twl6040-vibra", 0, 0);
--	if (info->workqueue == NULL) {
--		dev_err(info->dev, "couldn't create workqueue\n");
--		ret = -ENOMEM;
--		goto err_regulator;
--	}
- 	INIT_WORK(&info->play_work, vibra_play_work);
- 
- 	info->input_dev = input_allocate_device();
- 	if (info->input_dev == NULL) {
- 		dev_err(info->dev, "couldn't allocate input device\n");
- 		ret = -ENOMEM;
--		goto err_wq;
-+		goto err_regulator;
- 	}
- 
- 	input_set_drvdata(info->input_dev, info);
-@@ -404,8 +398,6 @@ err_iff:
- 	input_ff_destroy(info->input_dev);
- err_ialloc:
- 	input_free_device(info->input_dev);
--err_wq:
--	destroy_workqueue(info->workqueue);
- err_regulator:
- 	regulator_bulk_free(ARRAY_SIZE(info->supplies), info->supplies);
- 	return ret;
-@@ -417,7 +409,6 @@ static int twl6040_vibra_remove(struct platform_device *pdev)
- 
- 	input_unregister_device(info->input_dev);
- 	regulator_bulk_free(ARRAY_SIZE(info->supplies), info->supplies);
--	destroy_workqueue(info->workqueue);
- 
- 	return 0;
- }
--- 
-1.8.1
+Speaking in general... regression fixes (freezing my machine on reboot
+is one!) should be treat differently - faster!
 
+I am testing GIT tree's before they enter mainline or Linux-Next.
+And I am doing this in my free-time - I am not paid for it.
+In a scrum talk the speaker called that (time) "units" (of work
+especially in OSS projects)... "lost of free-time".
+Maybe, I should look for a different hobby and wait til -rc4 is
+released to be on the safe side of life.
+
+In another email I was reflecting on a "arbritration board".
+Good Mr. Torvalds said in an interview "I don't read code anymore"...
+but what was with these fs/blkdev changes late in 3.7 cycle :-)?
+There seems to be no rules except yours.
+Right, you have the reponsibilty.
+
+The last week I played with Linux Test Project and I still do NOT know
+how to (really) test my kernels!
+In each kernel-release (even rc) we read "please test" - but how?
+Noone tells you this.
+( A different story... )
+
+Just some thoughts... for free.
+
+- Sedat -
+
+> greg k-h
