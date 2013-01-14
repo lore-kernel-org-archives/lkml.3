@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab3ANAD2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 19:03:28 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56448 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207Ab3ANAD1 (ORCPT
+	id S1755953Ab3ANAFB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 19:05:01 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:44572 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524Ab3ANAE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 19:03:27 -0500
-Date: Mon, 14 Jan 2013 11:03:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the pm tree
-Message-Id: <20130114110311.a399f92e5e4ec730b380eaf4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__14_Jan_2013_11_03_11_+1100_2GqNI1FC8YzbwKVi"
+	Sun, 13 Jan 2013 19:04:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <50f107aa.894e420a.596a.ffffe3f6SMTPIN_ADDED_BROKEN@mx.google.com>
+References: <50efad8d.84fc440a.589e.ffff9546SMTPIN_ADDED_BROKEN@mx.google.com>
+	<CACRpkdYSaFsastx-WWC7sBu8NteAc2hCDZMz4-yMc8+=2dyBVw@mail.gmail.com>
+	<50f107aa.894e420a.596a.ffffe3f6SMTPIN_ADDED_BROKEN@mx.google.com>
+Date: Mon, 14 Jan 2013 01:04:58 +0100
+Message-ID: <CACRpkdaJd48WOzP_iURATb=c+V6==2-AB2Y9oFyh=E3oe1eT0Q@mail.gmail.com>
+Subject: Re: [PATCH] ARM: PL011: Add support for Rx DMA buffer polling
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Chanho Min <chanho.min@lge.com>
+Cc: Alan Cox <alan@linux.intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>, chanho0207@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_Jan_2013_11_03_11_+1100_2GqNI1FC8YzbwKVi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Jan 12, 2013 at 7:50 AM, Chanho Min <chanho.min@lge.com> wrote:
 
-Hi Rafael,
+> We tested as follows:
+> We set baud rate to 3Mbps and transfer 5000 bytes via /dev/tty at
+> a time. Then 4096 bytes is received by DMA irq. But, There is no way
+> to get remaining 904 bytes, unless another 3192 bytes are coming,
 
-After merging the pm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+OK clearly cut phenomena: IRQs seem to appear from the
+PL080 TC (transfer complete) IRQ only, not from any of the
+PL011 IRQs.
 
-In file included from init/main.c:25:0:
-include/linux/acpi.h:549:46: error: unknown type name 'acpi_handle'
-include/linux/acpi.h:551:49: error: unknown type name 'acpi_handle'
+So there will be zero IRQs from the uart in /proc/interrupts
+but a few of them from the PL080, correct?
 
-and many more.
+>>- What DMA controller are you using with the
+>>  PL011?
+>
+> PL080.
+> We don't add any customized configuration from the mainline.
 
-Caused by commit c9b147cd9648 ("ACPI / PM: Rework the handling of devices
-depending on power resources").  Please check with and without CONFIG
-options that affect patches ...
+OK sorry I was thinking of the old times when we has
+.cctl configured from the platform.
 
-I have used the pm tree from next-20130111 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> - If they cannot be software-configured, how are
+>>   they then configured in hardware? Burst-only?
+>> Burst single
+>
+> As far as I know, single request is not disabled at PL080.
+> Could you explain what single request has to do with this?
 
---Signature=_Mon__14_Jan_2013_11_03_11_+1100_2GqNI1FC8YzbwKVi
-Content-Type: application/pgp-signature
+At some point we reasoned that we may actually be saved
+by the reverse phenomena - if single request is *NOT*
+connected, there will very often be some characters in the
+FIFO, and that's enough to trigger the RTIM IRQ, and we get
+a nice flow. So maybe the platforms that actually work, work
+because they have bursts only.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+But that would pose a problem when an even burst of
+characters arrive. Say 16 characters, this will be transferred
+in two bursts and leave the FIFO empty, but no DMA TC
+IRQ since the buffer is not full, and we'd get your
+phenomena.
 
-iQIcBAEBCAAGBQJQ80s/AAoJEECxmPOUX5FETvQQAJdg1yNsZUVG9Gzm/20NBRX5
-56/PBozMn2gZmnD8VYy4Rgx6oH2xo+pzNaUrm/KJcbR5ZAiiWrLI8oxm5VAgF8Wj
-LCqAw1ft9HvQ9iJwsEeppc8Wwiq6h74pke87zk6BM0C6feOUzqC4cj2arH0N0dns
-r6rdFxtkrx0NhNZPD3tU+luTRUjdczC0dG7Sc5RuRcR6xkfhi3lLwR6ZsHwgHBel
-Vfwwktbja53wC04ldD3C+ttpYuWoodOUquIuPTD1WJYvKxcGYApKXDRk2wHITeD/
-BzqDhEJ0PnafzYl+UCzMQFeMEHSGjAzDGjTEsuXGseR2mjWzE7qjlCvZL4p1JfXl
-7ilOFNOfSuiIRK2syie1HmMwWyT4ddmDRa5Od7uCvlblw1L4nkzawJYQSHdqFSKb
-laZyuHJSNnP77qc5CPrZV/W+P6Zyp9SZLQpcfShz7lSLcbZg2OWRD+YRkAJAj56Q
-Xx9EwGBaed8Su1H6qq+7sbntQBT5Sm5li+9ZgzMTQln8h1v3mfSIuIbNWcDJQJb6
-ZK3fMuzj4HsQpDSEZNHm/n4oVDiSLZ7wC+9KPXWA+yytRPVoHeUE7oFk/IZzc2iz
-D3lbFI5aIRXnGTLpCO9oHeOlcmAomwVeo6onGNkJdiIIsJHc50kKN7VqitH5vCVq
-EE+V8t0yIoKMuMI84cfG
-=RFQO
------END PGP SIGNATURE-----
+But I could never reproduce the latter theoretical problem,
+so I think the hardware actually has a fix for this, around
+the burst signal logic.
 
---Signature=_Mon__14_Jan_2013_11_03_11_+1100_2GqNI1FC8YzbwKVi--
+But it may very well be that the single request can not be
+enabled for the PL011 for it to work properly.
+
+You may not be able to turn this off, and in that case this
+kind of code is the only way forward indeed.
+
+Yours,
+Linus Walleij
