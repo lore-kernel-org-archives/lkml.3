@@ -1,93 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab3ANLZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 06:25:20 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58521 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389Ab3ANLZS (ORCPT
+	id S1756836Ab3ANL0J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 06:26:09 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46004 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756761Ab3ANL0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 06:25:18 -0500
-Date: Mon, 14 Jan 2013 12:25:13 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-cc: Stephen Boyd <sboyd@codeaurora.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at x86/lib/debugobjects.c:908
- check_results.constprop.9+0x129/0x153()
-In-Reply-To: <20130114023107.GA9061@localhost>
-Message-ID: <alpine.LFD.2.02.1301141224460.7475@ionos>
-References: <20130114023107.GA9061@localhost>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 14 Jan 2013 06:26:06 -0500
+Date: Mon, 14 Jan 2013 11:25:49 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roger Quadros <rogerq@ti.com>
+Cc: balbi@ti.com, sameo@linux.intel.com, tony@atomide.com,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kishon@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 04/14] usb: phy: nop: Handle power supply regulator for
+	the PHY
+Message-ID: <20130114112549.GY23505@n2100.arm.linux.org.uk>
+References: <1357836694-30788-1-git-send-email-rogerq@ti.com> <1357836694-30788-5-git-send-email-rogerq@ti.com> <20130111171726.GI23505@n2100.arm.linux.org.uk> <50F3D5E2.4000102@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F3D5E2.4000102@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013, Fengguang Wu wrote:
+On Mon, Jan 14, 2013 at 11:54:42AM +0200, Roger Quadros wrote:
+> On 01/11/2013 07:17 PM, Russell King - ARM Linux wrote:
+> > On Thu, Jan 10, 2013 at 06:51:24PM +0200, Roger Quadros wrote:
+> >> We use "vcc" as the supply name for the PHY's power supply.
+> >> The power supply will be enabled during .init() and disabled
+> >> during .shutdown()
+> >>
+> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >> ---
+> >>  drivers/usb/otg/nop-usb-xceiv.c |   18 ++++++++++++++++++
+> >>  1 files changed, 18 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
+> >> index 163f972..1c6db10 100644
+> >> --- a/drivers/usb/otg/nop-usb-xceiv.c
+> >> +++ b/drivers/usb/otg/nop-usb-xceiv.c
+> >> @@ -33,11 +33,13 @@
+> >>  #include <linux/usb/nop-usb-xceiv.h>
+> >>  #include <linux/slab.h>
+> >>  #include <linux/clk.h>
+> >> +#include <linux/regulator/consumer.h>
+> >>  
+> >>  struct nop_usb_xceiv {
+> >>  	struct usb_phy		phy;
+> >>  	struct device		*dev;
+> >>  	struct clk		*clk;
+> >> +	struct regulator	*vcc;
+> >>  };
+> >>  
+> >>  static struct platform_device *pd;
+> >> @@ -70,6 +72,11 @@ static int nop_init(struct usb_phy *phy)
+> >>  {
+> >>  	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
+> >>  
+> >> +	if (nop->vcc) {
+> >> +		if (regulator_enable(nop->vcc))
+> >> +			dev_err(phy->dev, "Failed to enable power\n");
+> >> +	}
+> >> +
+> >>  	if (nop->clk)
+> >>  		clk_enable(nop->clk);
+> >>  
+> >> @@ -82,6 +89,11 @@ static void nop_shutdown(struct usb_phy *phy)
+> >>  
+> >>  	if (nop->clk)
+> >>  		clk_disable(nop->clk);
+> >> +
+> >> +	if (nop->vcc) {
+> >> +		if (regulator_disable(nop->vcc))
+> >> +			dev_err(phy->dev, "Failed to disable power\n");
+> >> +	}
+> >>  }
+> >>  
+> >>  static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
+> >> @@ -157,6 +169,12 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+> >>  		}
+> >>  	}
+> >>  
+> >> +	nop->vcc = devm_regulator_get(&pdev->dev, "vcc");
+> >> +	if (IS_ERR(nop->vcc)) {
+> >> +		dev_dbg(&pdev->dev, "Error getting vcc regulator\n");
+> >> +		nop->vcc = NULL;
+> >> +	}
+> > 
+> > Is it really appropriate for drivers to do this kind of thing with
+> > pointer-returning functions (I mean, setting the pointer to NULL on
+> > error, rather than just using a test for IS_ERR() in the above
+> > locations).  You are imposing driver-local assumptions on an API.
+> > 
+> > Practically it probably doesn't make much difference but given the
+> > amount of mistakes that we have with IS_ERR_OR_NULL()...
+> > 
+> Makes sense. I'll convert it to use IS_ERR_OR_NULL() throughout.
 
-> Hi Stephen,
-> 
-> I got this warning when testing kernels in kvm:
-> 
-> [    0.000000] --------------------------------------------------------
-> [    0.000000] 133 out of 218 testcases failed, as expected. |
-> [    0.000000] ----------------------------------------------------
-> [    0.000000] ODEBUG: 8 of 8 active objects replaced
-> [    0.000000] ------------[ cut here ]------------
-> [    0.000000] WARNING: at /c/kernel-tests/src/x86/lib/debugobjects.c:908 check_results.constprop.9+0x129/0x153()
-> [    0.000000] Hardware name: Bochs
-> [    0.000000] ODEBUG: selftest warnings failed 4 != 5
-> [    0.000000] Pid: 0, comm: swapper/0 Not tainted 3.2.0-06292-g59a5680 #1
-> [    0.000000] Call Trace:
-> [    0.000000]  [<ffffffff810587ea>] warn_slowpath_common+0x7a/0xb0
-> [    0.000000]  [<ffffffff818ff01f>] ? check_results.constprop.9+0x35/0x153
-> [    0.000000]  [<ffffffff81058896>] warn_slowpath_fmt+0x46/0x50
-> [    0.000000]  [<ffffffff81435c81>] ? _raw_spin_lock_irqsave+0x61/0x70
-> [    0.000000]  [<ffffffff818ff01f>] ? check_results.constprop.9+0x35/0x153
-> [    0.000000]  [<ffffffff818ff113>] check_results.constprop.9+0x129/0x153
-> [    0.000000]  [<ffffffff818ff6d6>] debug_objects_mem_init+0x412/0x4a6
-> [    0.000000]  [<ffffffff818e0a15>] start_kernel+0x3c0/0x443
-> [    0.000000]  [<ffffffff818e0000>] ? __init_begin+0x14000/0x14000
-> [    0.000000]  [<ffffffff818e0156>] x86_64_start_reservations+0x131/0x135
-> [    0.000000]  [<ffffffff818e0259>] x86_64_start_kernel+0xff/0x10e
-> [    0.000000] ---[ end trace 4eaa2a86a8e2da22 ]---
-> [    0.000000] hpet clockevent registered
-> [    0.000000] Fast TSC calibration using PIT
-> [    0.000000] Detected 3092.385 MHz processor.
-> [    0.008004] Calibrating delay loop (skipped), value calculated using timer frequency.. 6184.77 BogoMIPS (lpj=12369540)
-> 
-> feac18dda25134005909e7770c77464e65608bd8 is the first bad commit
-> 
-> commit feac18dda25134005909e7770c77464e65608bd8
-> Author: Stephen Boyd <sboyd@codeaurora.org>
-> Date:   Mon Nov 7 19:48:26 2011 -0800
-> 
->     debugobjects: Be smarter about static objects
-> 
->     Make debugobjects use the return code from the fixup function. That
->     allows us better diagnostics in the activate check than relying on a
->     WARN_ON() in the object specific code.
-> 
->     [ tglx@linutronix.de: Split out the debugobjects vs. the timer change ]
-> 
->     Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->     Cc: Christine Chan <cschan@codeaurora.org>
->     Cc: John Stultz <john.stultz@linaro.org>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Link: http://lkml.kernel.org/r/1320724108-20788-2-git-send-email-sboyd@codeaurora.org
->     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+IS_ERR_OR_NULL() is going to be deprecated and removed.  Please take a
+look at how these APIs work.
 
-That's already fixed by:
+If regulator support is not enabled, then devm_regulator_get() returns
+NULL, and all the other regulator functions become no-ops.  This is not
+an error.  Do you need the driver to error out if CONFIG_REGULATOR is
+disabled?
 
-commit 9f78ff005a6b6313728247113948450b2adddde8
-Author: Stephen Boyd <sboyd@codeaurora.org>
-Date:   Mon Mar 5 14:59:17 2012 -0800
+If regulator support is enabled, then it can return a pointer-error
+value (as defined when IS_ERR() is true, and _in that case only_ can it
+be decoded by PTR_ERR() - PTR_ERR() is _only_ valid when IS_ERR()
+returns true - it is _not_ valid for all the cases that IS_ERR_OR_NULL()
+returns true.)  Otherwise, it returns a cookie as far as the driver is
+concerned for the regulator suitable for passing into the other regulator
+APIs.
 
-    debugobjects: Fix selftest for static warnings
+By having the driver do something different, and make use of NULL as its
+own special sentinel, it's placing additional interpretations on the API,
+which can lead to bugs.  Don't do this.
 
-Thanks,
+If you can start making use of 'nop' vcc/clk members before they've been
+"got" then initialize them to ERR_PTR(-EINVAL) first.
 
-	tglx
+Also consider that when using the devm interfaces, you can do:
+
+
+	nop->clk = devm_clk_get(&pdev->dev, ...);
+	nop->vcc = devm_regulator_get(&pdev->dev, "vcc");
+
+	if (IS_ERR(nop->clk))
+		dev_dbg(&pdev->dev, "unable to get clock: %d\n",
+			PTR_ERR(nop->clk));
+
+	if (IS_ERR(nop->vcc))
+		dev_dbg(&pdev->dev, "unable to get vcc regulator: %d\n",
+			PTR_ERR(nop->vcc));
+...
+	if (!IS_ERR(nop->clk))
+		clk_enable(nop->clk);
+
+You may also consider that if you're going to print a warning for
+regulator_enable(), that you should print the error code as well, so that
+you know the reason why the failure happened.
+
+Also consider... is dev_err() appropriate for an "error", for which you
+print a message and continue as if nothing went wrong.  To me that sounds
+more like a warning than an error, so maybe dev_warn() would be more
+appropriate?
