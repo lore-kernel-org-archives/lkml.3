@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab3ANXd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 18:33:29 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:34274 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758611Ab3ANXdZ (ORCPT
+	id S1757048Ab3ANXfD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 18:35:03 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:34570 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755279Ab3ANXfB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 18:33:25 -0500
+	Mon, 14 Jan 2013 18:35:01 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1354025380-19092-1-git-send-email-colin.king@canonical.com>
-References: <1354025380-19092-1-git-send-email-colin.king@canonical.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 14 Jan 2013 16:33:04 -0700
-Message-ID: <CAErSpo46jV0C0QCC9_=Bg+B8214eGcDNFtg_udzBv2fqQDHhdg@mail.gmail.com>
-Subject: Re: [PATCH RESEND] PCI: Allow pcie_aspm=force to work even when FADT
- indicates it is unsupported
-To: Colin King <colin.king@canonical.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: Rob Herring <robherring2@gmail.com>,
+        Denis Efremov <yefremov.denis@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <50E99120.7080608@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+References: <1357482103-14116-1-git-send-email-yefremov.denis@gmail.com>
+ <50E99120.7080608@gmail.com>
+Message-ID: <20130114233455.23734.83658@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH] clk: remove exported function from __init section
+Date: Mon, 14 Jan 2013 15:34:55 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 7:09 AM, Colin King <colin.king@canonical.com> wrote:
-> From: Colin Ian King <colin.king@canonical.com>
+Quoting Rob Herring (2013-01-06 06:58:40)
+> On 01/06/2013 08:21 AM, Denis Efremov wrote:
+> > The symbol of_fixed_clk_setup is exported and annotated __init.
+> > This looks like section mismatch.
+> > Fix this by removing the __init annotation of of_fixed_clk_setup.
+> > 
+> > Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+> 
+> Mike should take this.
+> 
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
 >
-> BugLink: http://bugs.launchpad.net/bugs/962038
->
-> Right now using pcie_aspm=force will not enable ASPM if the FADT indicates
-> ASPM is unsupported.  However, the semantics of force should probably allow
-> for this, especially as they did before the ASPM disable rework with commit
-> 3c076351c4027a56d5005a39a0b518a4ba393ce2
->
-> This patch just skips the clearing of any ASPM setup that the firmware has
-> carried out on this bus if pcie_aspm=force is being used.
->
-> Signed-off-by: Colin Ian King <colin.king@canonical.com>
 
-I applied this to my for-linus branch, so it should appear in v3.8.
-Thanks, and sorry for the delay in applying this.
+Thanks for catching this Denis.  Taken into clk-next.
 
-Bjorn
-
-> ---
->  drivers/pci/pcie/aspm.c | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-> index 213753b..449f257 100644
-> --- a/drivers/pci/pcie/aspm.c
-> +++ b/drivers/pci/pcie/aspm.c
-> @@ -773,6 +773,9 @@ void pcie_clear_aspm(struct pci_bus *bus)
->  {
->         struct pci_dev *child;
->
-> +       if (aspm_force)
-> +               return;
-> +
->         /*
->          * Clear any ASPM setup that the firmware has carried out on this bus
->          */
-> --
-> 1.8.0
->
+Regards,
+Mike
+ 
+> > ---
+> >  drivers/clk/clk-fixed-rate.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
+> > index af78ed6..a53b53b 100644
+> > --- a/drivers/clk/clk-fixed-rate.c
+> > +++ b/drivers/clk/clk-fixed-rate.c
+> > @@ -85,7 +85,7 @@ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+> >  /**
+> >   * of_fixed_clk_setup() - Setup function for simple fixed rate clock
+> >   */
+> > -void __init of_fixed_clk_setup(struct device_node *node)
+> > +void of_fixed_clk_setup(struct device_node *node)
+> >  {
+> >       struct clk *clk;
+> >       const char *clk_name = node->name;
+> >
