@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab3AND6V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 22:58:21 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46761 "EHLO
+	id S1755364Ab3ANEDX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 23:03:23 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:57695 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978Ab3AND6U (ORCPT
+	with ESMTP id S1752951Ab3ANEDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 22:58:20 -0500
-Date: Mon, 14 Jan 2013 14:58:16 +1100
+	Sun, 13 Jan 2013 23:03:21 -0500
+Date: Mon, 14 Jan 2013 15:03:14 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Sam Bradshaw <sbradshaw@micron.com>, Jens Axboe <axboe@kernel.dk>,
-        Kent Overstreet <koverstreet@google.com>
-Subject: linux-next: manual merge of the akpm tree with the block tree
-Message-Id: <20130114145816.397108bb0b1aec82e77d5a7a@canb.auug.org.au>
+To: Joe Perches <joe@perches.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: mmotm 2013-01-11-15-47 uploaded (x86 asm-offsets broken)
+Message-Id: <20130114150314.d48d73b145d66049ba4a169d@canb.auug.org.au>
+In-Reply-To: <1357957789.2168.11.camel@joe-AO722>
+References: <20130111234813.170A620004E@hpza10.eem.corp.google.com>
+	<50F0BFAA.10902@infradead.org>
+	<20130112131713.749566c8d374cd77b1f2885e@canb.auug.org.au>
+	<1357957789.2168.11.camel@joe-AO722>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__14_Jan_2013_14_58_16_+1100_w7uAFjr6aqLwPEzm"
+ boundary="Signature=_Mon__14_Jan_2013_15_03_14_+1100_HxFuEtG72tXyZwq3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_Jan_2013_14_58_16_+1100_w7uAFjr6aqLwPEzm
+--Signature=_Mon__14_Jan_2013_15_03_14_+1100_HxFuEtG72tXyZwq3
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+Hi Joe, Andrew,
 
-Today's linux-next merge of the akpm tree got a conflict in
-drivers/block/mtip32xx/mtip32xx.c between commit 16c906e51c6f ("mtip32xx:
-Add workqueue and NUMA support") from the  tree and commit "mtip32xx:
-convert to batch completion" from the akpm tree.
+On Fri, 11 Jan 2013 18:29:49 -0800 Joe Perches <joe@perches.com> wrote:
+>
+> On Sat, 2013-01-12 at 13:17 +1100, Stephen Rothwell wrote:
+> > On Fri, 11 Jan 2013 17:43:06 -0800 Randy Dunlap <rdunlap@infradead.org>=
+ wrote:
+> > >
+> > > b0rked.
+> > >=20
+> > > Some (randconfig?) causes this set of errors:
+>=20
+> I guess that's when CONFIG_HZ is not an even divisor of 1000.
+> I suppose this needs to be worked on a bit more.
 
-I couldn't see how to fix up the conflicts, so I just dropped the akpm
-tree patch.
+I have dropped "jiffies conversions: Use compile time constants when
+possible" from the copy of mmotm in linux-next.
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__14_Jan_2013_14_58_16_+1100_w7uAFjr6aqLwPEzm
+--Signature=_Mon__14_Jan_2013_15_03_14_+1100_HxFuEtG72tXyZwq3
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQ84JYAAoJEECxmPOUX5FEHT4P/R9cywnfgp+/fkodusOxzoCc
-fs53gliQcSWYqtvmcuJcIwwROW1YjDWxy4Ds/jVPnjnSHXpFeYupgbb+sBC4R4+d
-svpDtjjXC4dBzfbz2ePr0vJVP4MC9xuffQcxtI3Ly6/KV8dkyh/ofrjld/IcyUMR
-5kmv2pmtbfDfY3b1/uYQiM2rfy00kS/DBpYKK6i4rinCLxRzBmw6ht5BQiWXTNfX
-W7xB8d1lfdY0ssvOnH//NxEaVX8Mz218e5jLI2i1TtDyukBJirP93mhlmDP0WKWs
-tbiVxOBlmmBwPvzwaIDp4jwjMeKHN5sJ6egI3GbghEaA4W4kwDFpFygmgeQMVm/f
-2bxpftn9zBUPiatYyQOTj6wwsTtTxugoffP5x1WrOvfSihiJNZLNmezXjaSChcLG
-A5rmXJeq9EAruWAj/CjlHMwxA1JfI2hWBMI3/37mcLZCEJ35BFSkGHTC5K0UI6Lm
-QNck7ofMgzVXCNm6oz388/Eh2YCQngRth04wY1nRj+4vWvv+FDcT9bhyHD8/rCsT
-/MrQDv+KEhHTnuk8CGiTeS7fc1EhYRAqLyWZ3SByt5mU+TDBn4M7FdiBseDMJZe3
-cEfSBc7XvUKvaBXNTTqrhrsNjl1w3/aWSWYqSphLjUg8tv6JKNdJPhcwsjxLPm88
-hvUS59+Qza81ygRqGBEL
-=fnOp
+iQIcBAEBCAAGBQJQ84OCAAoJEECxmPOUX5FE8zEQAIHS01Uyu+5pGl4FCpSq0fQa
+4Keeaf6ewLpbM2peUIvj06RkLFm8pcE6roYyF/Es5NgA6ljwgjIG4w3Fkp3le4nb
+mGEtfemHfbqjrwN6aekKU5/yQGBCKBdA9aPpgf5geKiNg7Ea1uJHIB3HeGGld+7l
+VmQEQ0Vjv0ri/EB6aDixQb8r2k8gBwz81PrkDlWc60auY2cniMYILw0fyWD71mrg
+08iWcU/9Uec0pYDItD4DhqvCLaRzFSMrh4g0MXoBVr0QCrldSlD03j0NQGsrtOJt
+SllovVAzMH8TVnwHxP7gKuT48BanVtGqEIrfp8kEHlJUM/T1W/wZjSbgl6jbxJDG
+OT5lgwcOpdaEF4Ts6FtFOsUt6ysr94Z6bQ8t3NZI6+7dhezT+pL6wMxJDAmF4YzJ
+BzzCW2KxxOkHWYkRRMeYdkvQfWPlvOhLibmPpNb3GqHNqsG8Hu0o+CkEg5gM813N
+XEqb2eEx0NfGkDTfyMtaH3Oicas+encV82shth8GdIem1Uuq1UaXHTo/Wzx30Lrw
+Lh5qQYP/3CYEppgocdolsPb4FEmPpVi7YL3iXWVQqgoaziRyw00A0JAi73FQ3UBv
+mZ5DFjanhphTiPLsUFOCPmQusT4KIoVKNDcmsBUNowuqJ2Tvb2rQ2x0hysqGPGcQ
+1woVFcg9TjW03yDcxSxq
+=Eeog
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__14_Jan_2013_14_58_16_+1100_w7uAFjr6aqLwPEzm--
+--Signature=_Mon__14_Jan_2013_15_03_14_+1100_HxFuEtG72tXyZwq3--
