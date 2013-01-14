@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab3ANTJt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 14:09:49 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:58466 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757082Ab3ANTJe (ORCPT
+	id S1758374Ab3ANTL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 14:11:57 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:45940 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756432Ab3ANTL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 14:09:34 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH] ARM: sunxi: Use the Synosys APB UART instead of ns8250
-Date: Mon, 14 Jan 2013 20:09:27 +0100
-Message-Id: <1358190567-6304-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 14 Jan 2013 14:11:56 -0500
+Message-ID: <1358190124.14145.79.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device
+ hotplug framework
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: lenb@kernel.org, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 14 Jan 2013 12:02:04 -0700
+In-Reply-To: <2154272.qDAyBlTr8z@vostro.rjw.lan>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
+	 <5036592.TuXAnGzk4M@vostro.rjw.lan>
+	 <1358177628.14145.49.camel@misato.fc.hp.com>
+	 <2154272.qDAyBlTr8z@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The UART controller used in the A10/A13 is the Synopsys DesignWare 8250.
-The wrong use of a regular 8250 driver may lead to a oops during kernel
-boot with "irq 17: nobody cared", because the apb UART as an extra
-interrupt that gets raised when writing to the LCR when busy.
+On Mon, 2013-01-14 at 19:48 +0100, Rafael J. Wysocki wrote:
+> On Monday, January 14, 2013 08:33:48 AM Toshi Kani wrote:
+> > On Fri, 2013-01-11 at 22:23 +0100, Rafael J. Wysocki wrote:
+> > > On Thursday, January 10, 2013 04:40:19 PM Toshi Kani wrote:
+> > > > Added include/linux/sys_hotplug.h, which defines the system device
+> > > > hotplug framework interfaces used by the framework itself and
+> > > > handlers.
+> > > > 
+> > > > The order values define the calling sequence of handlers.  For add
+> > > > execute, the ordering is ACPI->MEM->CPU.  Memory is onlined before
+> > > > CPU so that threads on new CPUs can start using their local memory.
+> > > > The ordering of the delete execute is symmetric to the add execute.
+> > > > 
+> > > > struct shp_request defines a hot-plug request information.  The
+> > > > device resource information is managed with a list so that a single
+> > > > request may target to multiple devices.
+> > > > 
+> >  :
+> > > > +
+> > > > +struct shp_device {
+> > > > +	struct list_head	list;
+> > > > +	struct device		*device;
+> > > > +	enum shp_class		class;
+> > > > +	union shp_dev_info	info;
+> > > > +};
+> > > > +
+> > > > +/*
+> > > > + * Hot-plug request
+> > > > + */
+> > > > +struct shp_request {
+> > > > +	/* common info */
+> > > > +	enum shp_operation	operation;	/* operation */
+> > > > +
+> > > > +	/* hot-plug event info: only valid for hot-plug operations */
+> > > > +	void			*handle;	/* FW handle */
+> > > 
+> > > What's the role of handle here?
+> > 
+> > On ACPI-based platforms, the handle keeps a notified ACPI handle when a
+> > hot-plug request is made.  ACPI bus handlers, acpi_add_execute() /
+> > acpi_del_execute(), then scans / trims ACPI devices from the handle.
+> 
+> OK, so this is ACPI-specific and should be described as such.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/boot/dts/sunxi.dtsi |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Other FW interface I know is parisc, which has mod_index (module index)
+to identify a unique object, just like what ACPI handle does.  The
+handle can keep the mod_index as an opaque value as well.  But as you
+said, I do not know if the handle works for all other FWs.  So, I will
+add descriptions, such that the hot-plug event info is modeled after
+ACPI and may need to be revisited when supporting other FW.
 
-diff --git a/arch/arm/boot/dts/sunxi.dtsi b/arch/arm/boot/dts/sunxi.dtsi
-index 8bbc2bf..8b36abe 100644
---- a/arch/arm/boot/dts/sunxi.dtsi
-+++ b/arch/arm/boot/dts/sunxi.dtsi
-@@ -60,19 +60,21 @@
- 		};
- 
- 		uart0: uart@01c28000 {
--			compatible = "ns8250";
-+			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c28000 0x400>;
- 			interrupts = <1>;
- 			reg-shift = <2>;
-+			reg-io-width = <4>;
- 			clock-frequency = <24000000>;
- 			status = "disabled";
- 		};
- 
- 		uart1: uart@01c28400 {
--			compatible = "ns8250";
-+			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c28400 0x400>;
- 			interrupts = <2>;
- 			reg-shift = <2>;
-+			reg-io-width = <4>;
- 			clock-frequency = <24000000>;
- 			status = "disabled";
- 		};
--- 
-1.7.10.4
+Thanks,
+-Toshi
 
