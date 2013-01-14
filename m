@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab3ANPCV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 10:02:21 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:39636 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555Ab3ANPCU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 10:02:20 -0500
-Message-ID: <50F41D9D.1000403@linux.vnet.ibm.com>
-Date: Mon, 14 Jan 2013 07:00:45 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756617Ab3ANPF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 10:05:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60032 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753125Ab3ANPFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 10:05:54 -0500
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] x86 e820: only void usable memory areas in memmap=exactmap case
+Date: Mon, 14 Jan 2013 16:05:43 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-24-desktop; KDE/4.6.0; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
+        tglx@linutronix.de, khalid@gonehiking.org, horms@verge.net.au
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local> <2741365.qqWvlU8HGl@hammer82.arch.suse.de> <CAE9FiQV+W21WcZuuWJYJKXhN4sf0mi=iAFgjX644c3EytPXptw@mail.gmail.com>
+In-Reply-To: <CAE9FiQV+W21WcZuuWJYJKXhN4sf0mi=iAFgjX644c3EytPXptw@mail.gmail.com>
 MIME-Version: 1.0
-To: paul.szabo@sydney.edu.au
-CC: linux-mm@kvack.org, 695182@bugs.debian.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Reproducible OOM with just a few sleeps
-References: <201301120331.r0C3VxXc016220@como.maths.usyd.edu.au>
-In-Reply-To: <201301120331.r0C3VxXc016220@como.maths.usyd.edu.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011415-5518-0000-0000-00000AB8B339
+Message-Id: <201301141605.43428.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2013 07:31 PM, paul.szabo@sydney.edu.au wrote:
-> Seems that any i386 PAE machine will go OOM just by running a few
-> processes. To reproduce:
->   sh -c 'n=0; while [ $n -lt 19999 ]; do sleep 600 & ((n=n+1)); done'
-> My machine has 64GB RAM. With previous OOM episodes, it seemed that
-> running (booting) it with mem=32G might avoid OOM; but an OOM was
-> obtained just the same, and also with lower memory:
->   Memory    sleeps to OOM       free shows total
->   (mem=64G)  5300               64447796
->   mem=32G   10200               31155512
->   mem=16G   13400               14509364
->   mem=8G    14200               6186296
->   mem=6G    15200               4105532
->   mem=4G    16400               2041364
-> The machine does not run out of highmem, nor does it use any swap.
-
-I think what you're seeing here is that, as the amount of total memory
-increases, the amount of lowmem available _decreases_ due to inflation
-of mem_map[] (and a few other more minor things).  The number of sleeps
-you can do is bound by the number of processes, as you noticed from
-ulimit.  Creating processes that don't use much memory eats a relatively
-large amount of low memory.
-
-This is a sad (and counterintuitive) fact: more RAM actually *CREATES*
-RAM bottlenecks on 32-bit systems.
-
-> On my large machine, 'free' fails to show about 2GB memory, e.g. with
-> mem=16G it shows:
+On Monday, January 14, 2013 03:43:46 AM Yinghai Lu wrote:
+> On Sun, Jan 13, 2013 at 6:08 PM, Thomas Renninger <trenn@suse.de> wrote:
+> > On Saturday, January 12, 2013 09:07:12 AM Yinghai Lu wrote:
+...
+> everyone could understand it straightforward:
+> exactmap:  memmap will be specified, and it should be honored without
+> considering old any memmap.
+> exactusablemap: will make sure only old ram range get removed, and
+> specified usable ranges will become final usable
+> ranges in the final memmap. so we need to remove overlapping to old
+> reserved ranges.
 > 
-> root@zeno:~# free -l
->              total       used       free     shared    buffers     cached
-> Mem:      14509364     435440   14073924          0       4068     111328
-> Low:        769044     120232     648812
-> High:     13740320     315208   13425112
-> -/+ buffers/cache:     320044   14189320
-> Swap:    134217724          0  134217724
+> aka: exact means EXACT ...
+The naming is not my point...
+Anyway after a quick talk with Alexander Graf, I guess I won't have
+much of a chance: rule is rule and a boot param is a public interface
+which must not change just like that (deprecation phase, etc.).
 
-You probably have a memory hole.  mem=16G means "give me all the memory
-below the physical address at 16GB".  It does *NOT* mean, "give me
-enough memory such that 'free' will show ~16G available."  If you have a
-1.5GB hole below 16GB, and you do mem=16G, you'll end up with ~14.5GB
-available.
+...
+ 
+> those just some kind of improvement without considering kdump.
+> because kdump/scripts already does good job to provide right exactmap
+> with usable and acpi reserved areas.
+No it's conceptional wrong to provide the reserved areas via memmap
+while the original ones are declared already via boot loader structures.
 
-The e820 map (during early boot in dmesg) or /proc/iomem will let you
-locate your memory holes.
+There are store ACPI NVS memory in suspend/resume workarounds (suspend does not
+fit that much for kdump, but there may be more than this and mmconf).
+The reserved areas in kdump kernel should be the same than with the
+original e820 table to avoid any unforseen issues.
+And kdump got them already passed and should use this info.
 
+> for mmconf, some system that range reserved in e820, and some have that in ACPI.
+> and those systems will have that mmconf enabled in kdumped kernel.
+
+ 
+> attached is what I like to have with exactusablemap, but maybe is not
+> needed, and we can just stay with exactmap...
+> 
+> ps: we don't need to add e820_remove_type...
+I thought this tiny loop:
++       for (i = 0; i < e820.nr_map; i++) {
++               struct e820entry *ei = &e820.map[i];
++               if (ei->type == type) {
++                       memset(ei, 0, sizeof(struct e820entry));
++                       continue;
++               }
++       }
+would be easier to evaluate what it's doing (cmp to.
+e820_remove_range(0, ULLONG_MAX, E820_RAM, 1);)
+But I do not have a strong opinion on that.
+
+What is this for?:
+@@ -871,6 +879,11 @@ static int __init parse_memmap_one(char
+ 	userdef = 1;
+ 	if (*p == '@') {
+ 		start_at = memparse(p+1, &p);
++		if (exactusablemap_parsed) {
++			/* remove all range with other types */
++			e820_remove_range(start_at, mem_size,
++						 E820_RAM, 0);
++		}
+ 		e820_add_region(start_at, mem_size, E820_RAM);
+ 	} else if (*p == '#') {
+ 		start_at = memparse(p+1, &p);
+
+
+    Thomas
