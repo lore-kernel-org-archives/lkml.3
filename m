@@ -1,106 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab3ANBEM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jan 2013 20:04:12 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56541 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755309Ab3ANBEK (ORCPT
+	id S1755464Ab3ANBR2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jan 2013 20:17:28 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:54699 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976Ab3ANBR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jan 2013 20:04:10 -0500
-Date: Mon, 14 Jan 2013 12:04:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Greg KH <greg@kroah.com>
-Subject: linux-next: build failure after merge of the sound-asoc tree
-Message-Id: <20130114120400.e04269f927629773b0570ff2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__14_Jan_2013_12_04_00_+1100_Jm/LFSP_KDaaFzfR"
+	Sun, 13 Jan 2013 20:17:27 -0500
+Message-ID: <50F35CD3.9080300@gmail.com>
+Date: Mon, 14 Jan 2013 09:18:11 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Cong Ding <dinggnu@gmail.com>
+CC: antoine.trux@gmail.com, fa.linux.kernel@googlegroups.com,
+        Johannes Weiner <hannes@saeurebad.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        clameter@sgi.com, penberg@cs.helsinki.fi
+Subject: Re: Why is the kfree() argument const?
+References: <fa.cHMztHfqJXv7vw5O0nQ8SdTrma0@ifi.uio.no> <fa.V9M+5l8C/um5KEiBtZOjbJDQmu4@ifi.uio.no> <379cc523-8f08-4c7f-ae20-20f216352a01@googlegroups.com> <50F26BE0.7020005@gmail.com> <CAM3j68qo2_Jd=sHBtPaweAwp00N-TYnq8Y1OJZBh3sPfxL3ajw@mail.gmail.com>
+In-Reply-To: <CAM3j68qo2_Jd=sHBtPaweAwp00N-TYnq8Y1OJZBh3sPfxL3ajw@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------060702000001010203040905"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_Jan_2013_12_04_00_+1100_Jm/LFSP_KDaaFzfR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a multi-part message in MIME format.
+--------------060702000001010203040905
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-Hi all,
+于 2013年01月14日 04:54, Cong Ding 写道:
+> On Sun, Jan 13, 2013 at 9:10 AM, Chen Gang F T
+> <chen.gang.flying.transformer@gmail.com> wrote:
+>> >   all together:
+>> >     kfree() should use 'const void *' as parameter type
+>> >     the free() of C Library is incorrect (it use void *).
+> you are definitely wrong. both of them are correct - it's the
+> difference between kernel space and user space.
+> 
 
-After merging the sound-asoc tree, today's linux-next build
-(x86_64allmodconfig) failed like this:
+  for API features, they are should be no different.
 
-sound/soc/codecs/ak4642.c:550:46: error: expected '=3D', ',', ';', 'asm' or=
- '__attribute__' before '__devinitconst'
-sound/soc/codecs/ak4642.c:556:1: error: '__mod_of_device_table' aliased to =
-undefined symbol 'ak4642_of_match'
-sound/soc/codecs/ak4642.c:556:1: error: '__mod_of_device_table' aliased to =
-external symbol 'ak4642_of_match'
+ "- From a very obvious and very *real* caller perspective, 'free()' really 
+   doesn't change the thing the pointer points to. It does something 
+   totally different: it makes the *pointer* itself invalid."
 
-Caused by commit bbf1453e28e4 ("ASoC: ak4642: add Device Tree support")
-interacting with commit 54b956b90360 ("Remove __dev* markings from
-init.h") from the driver-core.current tree.
+   "we want the types to be as tight as possible"
 
-As an aside, should ak4642_of_match be marked "const"?
+  so should use 'const void *' both for 'kfree()' and 'free()' .
 
-I have added the following merge fix patch for today (which could be
-applied to the sound-asoc tree directly - please):
+-- 
+Chen Gang
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 14 Jan 2013 11:59:50 +1100
-Subject: [PATCH] ASoC: ak4642: remove __devinitconst annotation
+Flying Transformer
 
-CONFIG_HOTPLUG is always true now and the __dev* macros have been removed.
+--------------060702000001010203040905
+Content-Type: text/x-vcard; charset=utf-8;
+ name="chen_gang_flying_transformer.vcf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="chen_gang_flying_transformer.vcf"
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- sound/soc/codecs/ak4642.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/sound/soc/codecs/ak4642.c b/sound/soc/codecs/ak4642.c
-index c78794d..2d03787 100644
---- a/sound/soc/codecs/ak4642.c
-+++ b/sound/soc/codecs/ak4642.c
-@@ -547,7 +547,7 @@ static int ak4642_i2c_remove(struct i2c_client *client)
- 	return 0;
- }
-=20
--static struct of_device_id ak4642_of_match[] __devinitconst =3D {
-+static struct of_device_id ak4642_of_match[] =3D {
- 	{ .compatible =3D "asahi-kasei,ak4642",	.data =3D &soc_codec_dev_ak4642},
- 	{ .compatible =3D "asahi-kasei,ak4643",	.data =3D &soc_codec_dev_ak4642},
- 	{ .compatible =3D "asahi-kasei,ak4648",	.data =3D &soc_codec_dev_ak4648},
---=20
-1.7.10.280.gaa39
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__14_Jan_2013_12_04_00_+1100_Jm/LFSP_KDaaFzfR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ81mAAAoJEECxmPOUX5FEzkwP/REUWx3/0Q06vSWsN4qc09U3
-rzXy5bKvi/f+x6lF5XT9T6NhAyFnmgj0fUujwi5y8+aiXXEyU8n2x6upRkmxU/3V
-h/mgYXKyWutIvdjrg4sQ8uHryDCcS1M0lTO16E0jHFKGVbcOrqeksSn5XUugB6BP
-gKhpehDEfzHS0Xf+5ktZcmyIXlPq4QZkrggBanLTIG+1B87x4wpcFqR1qzWqxrhb
-EpBHe4XWLuK+jVg6a2ksVFtgymHHSTA7UVHmiOVgeAgOYtcBxV5p+6HD7AFE1/yO
-lWcCaUGcFcB6PEBdBaDzwoboe0vhGn90e/qfNu/FWCx4Mlxt3pio7Ody1NbQUvhU
-gz/EaHz3sJTZuO5D0wWnAxOTMHLoO7nCl52Kp4f5JoU4+DGPhszbhKlDRX1IPGhR
-SCk1kceqgtKv+XtlCwDod5ihJbmvy5s6RW59wJDtUXIQZ1Ns5UZ4IcZI4MJE26tA
-itwnD7XuQaSwRXIDd4bIDWisYO79AN6h63pEpY5duObT0cjIIMv8OcycljwkQ9JO
-ggse4r6nO138Brc6TFvsUU5pUuWLcYFCMgOVafX3bpK7UHIRjf4C39rAGGfeHxFm
-IVXCDdj1qOsmYKUzBLpo17NhxCWeItpr/2ARm3VOmiO72Utb7QYunCiwcsBCNzcP
-kOvIeIjekP/Yilm7Gyha
-=KEOz
------END PGP SIGNATURE-----
-
---Signature=_Mon__14_Jan_2013_12_04_00_+1100_Jm/LFSP_KDaaFzfR--
+YmVnaW46dmNhcmQNCmZuOkNoZW4gR2FuZw0Kbjo7Q2hlbiBHYW5nDQp2ZXJzaW9uOjIuMQ0K
+ZW5kOnZjYXJkDQoNCg==
+--------------060702000001010203040905--
