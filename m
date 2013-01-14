@@ -1,240 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620Ab3ANUFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 15:05:48 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:33866 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758609Ab3ANUFq (ORCPT
+	id S1758631Ab3ANUHo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 15:07:44 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:41807 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757102Ab3ANUHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 15:05:46 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] documentation: devicetree: Fix typo within Documentation/devicetree
-To: Masanari Iida <standby24x7@gmail.com>, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, rob@landley.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-In-Reply-To: <1358144096-24678-1-git-send-email-standby24x7@gmail.com>
-References: <1358144096-24678-1-git-send-email-standby24x7@gmail.com>
-Date: Mon, 14 Jan 2013 20:05:40 +0000
-Message-Id: <20130114200540.9B5BE3E2458@localhost>
+	Mon, 14 Jan 2013 15:07:43 -0500
+Date: Mon, 14 Jan 2013 12:07:43 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org,
+        VT8500 Mailing List 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>
+Subject: Re: [Bulk] [PATCH] timer: vt8500: Move timer code to
+ drivers/clocksource
+Message-ID: <20130114200743.GA26482@quad.lixom.net>
+References: <1358140171-25390-1-git-send-email-linux@prisktech.co.nz>
+ <1358140171-25390-2-git-send-email-linux@prisktech.co.nz>
+ <1358140429.25452.1.camel@gitbox>
+ <1358142455.25591.1.camel@gitbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358142455.25591.1.camel@gitbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013 15:14:56 +0900, Masanari Iida <standby24x7@gmail.com> wrote:
-> Correct spelling typos within Documentation/devicetree
+On Mon, Jan 14, 2013 at 06:47:35PM +1300, Tony Prisk wrote:
+> On Mon, 2013-01-14 at 18:13 +1300, Tony Prisk wrote:
+> > On Mon, 2013-01-14 at 18:09 +1300, Tony Prisk wrote:
+> > > This patch moves arch-vt8500/timer.c into drivers/clocksource and
+> > > updates the necessary Kconfig/Makefile options.
+> > > 
+> > > Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> > > ---
+> > >  arch/arm/mach-vt8500/Kconfig       |    1 +
+> > >  arch/arm/mach-vt8500/Makefile      |    2 +-
+> > >  arch/arm/mach-vt8500/common.h      |    1 -
+> > >  arch/arm/mach-vt8500/timer.c       |  184 ------------------------------------
+> > >  arch/arm/mach-vt8500/vt8500.c      |    1 +
+> > >  drivers/clocksource/Kconfig        |    3 +
+> > >  drivers/clocksource/Makefile       |    1 +
+> > >  drivers/clocksource/vt8500_timer.c |  184 ++++++++++++++++++++++++++++++++++++
+> > >  include/linux/vt8500_timer.h       |   22 +++++
+> > >  9 files changed, 213 insertions(+), 186 deletions(-)
+> > >  delete mode 100644 arch/arm/mach-vt8500/timer.c
+> > >  create mode 100644 drivers/clocksource/vt8500_timer.c
+> > >  create mode 100644 include/linux/vt8500_timer.h
+> > 
+> > Darn.. forgot the -m again. I'll await your feedback regarding the
+> > basing of the patch first (and any other feedback), then I'll redo it
+> > with the correct stats.
+> > 
+> > Regards
+> > Tony P
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-
-Applied, thanks.
-
-g.
-
-> ---
->  Documentation/devicetree/bindings/arm/atmel-aic.txt                | 2 +-
->  Documentation/devicetree/bindings/arm/exynos/power_domain.txt      | 2 +-
->  Documentation/devicetree/bindings/arm/gic.txt                      | 4 ++--
->  Documentation/devicetree/bindings/arm/omap/omap.txt                | 6 +++---
->  Documentation/devicetree/bindings/i2c/samsung-i2c.txt              | 2 +-
->  Documentation/devicetree/bindings/mips/cavium/dma-engine.txt       | 2 +-
->  Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt           | 6 +++---
->  Documentation/devicetree/bindings/mmc/samsung-sdhci.txt            | 2 +-
->  Documentation/devicetree/bindings/powerpc/fsl/srio.txt             | 4 ++--
->  Documentation/devicetree/bindings/regulator/tps62360-regulator.txt | 4 ++--
->  Documentation/devicetree/bindings/rtc/s3c-rtc.txt                  | 2 +-
->  Documentation/devicetree/bindings/watchdog/samsung-wdt.txt         | 2 +-
->  12 files changed, 19 insertions(+), 19 deletions(-)
+> Oh grr.. forget this completely. It doesn't take into account the
+> patches I already sent for WM8850.
 > 
-> diff --git a/Documentation/devicetree/bindings/arm/atmel-aic.txt b/Documentation/devicetree/bindings/arm/atmel-aic.txt
-> index 19078bf..ad03121 100644
-> --- a/Documentation/devicetree/bindings/arm/atmel-aic.txt
-> +++ b/Documentation/devicetree/bindings/arm/atmel-aic.txt
-> @@ -4,7 +4,7 @@ Required properties:
->  - compatible: Should be "atmel,<chip>-aic"
->  - interrupt-controller: Identifies the node as an interrupt controller.
->  - interrupt-parent: For single AIC system, it is an empty property.
-> -- #interrupt-cells: The number of cells to define the interrupts. It sould be 3.
-> +- #interrupt-cells: The number of cells to define the interrupts. It should be 3.
->    The first cell is the IRQ number (aka "Peripheral IDentifier" on datasheet).
->    The second cell is used to specify flags:
->      bits[3:0] trigger type and level flags:
-> diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-> index 6528e21..3fb457b 100644
-> --- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-> +++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-> @@ -4,7 +4,7 @@ Exynos processors include support for multiple power domains which are used
->  to gate power to one or more peripherals on the processor.
->  
->  Required Properties:
-> -- compatiable: should be one of the following.
-> +- compatible: should be one of the following.
->      * samsung,exynos4210-pd - for exynos4210 type power domain.
->  - reg: physical base address of the controller and length of memory mapped
->      region.
-> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-> index 62eb8df..3dfb0c0 100644
-> --- a/Documentation/devicetree/bindings/arm/gic.txt
-> +++ b/Documentation/devicetree/bindings/arm/gic.txt
-> @@ -42,7 +42,7 @@ Main node required properties:
->  
->  Optional
->  - interrupts	: Interrupt source of the parent interrupt controller on
-> -  secondary GICs, or VGIC maintainance interrupt on primary GIC (see
-> +  secondary GICs, or VGIC maintenance interrupt on primary GIC (see
->    below).
->  
->  - cpu-offset	: per-cpu offset within the distributor and cpu interface
-> @@ -74,7 +74,7 @@ Required properties:
->    virtual interface control register base and size. The 2nd additional
->    region is the GIC virtual cpu interface register base and size.
->  
-> -- interrupts : VGIC maintainance interrupt.
-> +- interrupts : VGIC maintenance interrupt.
->  
->  Example:
->  
-> diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
-> index d0051a7..f8288ea 100644
-> --- a/Documentation/devicetree/bindings/arm/omap/omap.txt
-> +++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
-> @@ -39,16 +39,16 @@ Boards:
->  - OMAP3 Tobi with Overo : Commercial expansion board with daughter board
->    compatible = "ti,omap3-tobi", "ti,omap3-overo", "ti,omap3"
->  
-> -- OMAP4 SDP : Software Developement Board
-> +- OMAP4 SDP : Software Development Board
->    compatible = "ti,omap4-sdp", "ti,omap4430"
->  
->  - OMAP4 PandaBoard : Low cost community board
->    compatible = "ti,omap4-panda", "ti,omap4430"
->  
-> -- OMAP3 EVM : Software Developement Board for OMAP35x, AM/DM37x
-> +- OMAP3 EVM : Software Development Board for OMAP35x, AM/DM37x
->    compatible = "ti,omap3-evm", "ti,omap3"
->  
-> -- AM335X EVM : Software Developement Board for AM335x
-> +- AM335X EVM : Software Development Board for AM335x
->    compatible = "ti,am335x-evm", "ti,am33xx", "ti,omap3"
->  
->  - AM335X Bone : Low cost community board
-> diff --git a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-> index b6cb5a1..ccdf9c9 100644
-> --- a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-> +++ b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-> @@ -18,7 +18,7 @@ Optional properties:
->      The gpio specifier depends on the gpio controller. Required in all
->      cases except for "samsung,s3c2440-hdmiphy-i2c" whose input/output
->      lines are permanently wired to the respective client
-> -  - samsung,i2c-slave-addr: Slave address in multi-master enviroment. If not
-> +  - samsung,i2c-slave-addr: Slave address in multi-master environment. If not
->      specified, default value is 0.
->    - samsung,i2c-max-bus-freq: Desired frequency in Hz of the bus. If not
->      specified, the default value in Hz is 100000.
-> diff --git a/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt b/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
-> index cb4291e..a5bdff4 100644
-> --- a/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
-> +++ b/Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
-> @@ -1,7 +1,7 @@
->  * DMA Engine.
->  
->  The Octeon DMA Engine transfers between the Boot Bus and main memory.
-> -The DMA Engine will be refered to by phandle by any device that is
-> +The DMA Engine will be referred to by phandle by any device that is
->  connected to it.
->  
->  Properties:
-> diff --git a/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt
-> index 7927689..898b222 100644
-> --- a/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt
-> +++ b/Documentation/devicetree/bindings/mmc/exynos-dw-mshc.txt
-> @@ -11,11 +11,11 @@ Required Properties:
->  
->  * compatible: should be
->  	- "samsung,exynos4210-dw-mshc": for controllers with Samsung Exynos4210
-> -	  specific extentions.
-> +	  specific extensions.
->  	- "samsung,exynos4412-dw-mshc": for controllers with Samsung Exynos4412
-> -	  specific extentions.
-> +	  specific extensions.
->  	- "samsung,exynos5250-dw-mshc": for controllers with Samsung Exynos5250
-> -	  specific extentions.
-> +	  specific extensions.
->  
->  * samsung,dw-mshc-ciu-div: Specifies the divider value for the card interface
->    unit (ciu) clock. This property is applicable only for Exynos5 SoC's and
-> diff --git a/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt b/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
-> index 630a7d7..43acfdf 100644
-> --- a/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
-> +++ b/Documentation/devicetree/bindings/mmc/samsung-sdhci.txt
-> @@ -49,5 +49,5 @@ Example:
->  	};
->  
->  	Note: This example shows both SoC specific and board specific properties
-> -	in a single device node. The properties can be actually be seperated
-> +	in a single device node. The properties can be actually be separated
->  	into SoC specific node and board specific node.
-> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/srio.txt b/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
-> index b039bcb..07abf0f 100644
-> --- a/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
-> +++ b/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
-> @@ -8,9 +8,9 @@ Properties:
->  	Definition: Must include "fsl,srio" for IP blocks with IP Block
->  	Revision Register (SRIO IPBRR1) Major ID equal to 0x01c0.
->  
-> -	Optionally, a compatiable string of "fsl,srio-vX.Y" where X is Major
-> +	Optionally, a compatible string of "fsl,srio-vX.Y" where X is Major
->  	version in IP Block Revision Register and Y is Minor version.  If this
-> -	compatiable is provided it should be ordered before "fsl,srio".
-> +	compatible is provided it should be ordered before "fsl,srio".
->  
->     - reg
->  	Usage: required
-> diff --git a/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt b/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
-> index c8ca6b8..1b20c3d 100644
-> --- a/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
-> +++ b/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
-> @@ -17,9 +17,9 @@ Optional properties:
->  - ti,vsel1-gpio: Gpio for controlling VSEL1 line.
->    If this property is missing, then assume that there is no GPIO
->    for vsel1 control.
-> -- ti,vsel0-state-high: Inital state of vsel0 input is high.
-> +- ti,vsel0-state-high: Initial state of vsel0 input is high.
->    If this property is missing, then assume the state as low (0).
-> -- ti,vsel1-state-high: Inital state of vsel1 input is high.
-> +- ti,vsel1-state-high: Initial state of vsel1 input is high.
->    If this property is missing, then assume the state as low (0).
->  
->  Any property defined as part of the core regulator binding, defined in
-> diff --git a/Documentation/devicetree/bindings/rtc/s3c-rtc.txt b/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
-> index 90ec45f..7ac7259 100644
-> --- a/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
-> +++ b/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
-> @@ -7,7 +7,7 @@ Required properties:
->  - reg: physical base address of the controller and length of memory mapped
->    region.
->  - interrupts: Two interrupt numbers to the cpu should be specified. First
-> -  interrupt number is the rtc alarm interupt and second interrupt number
-> +  interrupt number is the rtc alarm interrupt and second interrupt number
->    is the rtc tick interrupt. The number of cells representing a interrupt
->    depends on the parent interrupt controller.
->  
-> diff --git a/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt b/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt
-> index 79ead82..ce0d8e7 100644
-> --- a/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt
-> +++ b/Documentation/devicetree/bindings/watchdog/samsung-wdt.txt
-> @@ -2,7 +2,7 @@
->  
->  The Samsung's Watchdog controller is used for resuming system operation
->  after a preset amount of time during which the WDT reset event has not
-> -occured.
-> +occurred.
->  
->  Required properties:
->  - compatible : should be "samsung,s3c2410-wdt"
-> -- 
-> 1.8.1.336.g94702dd
+> I guess it needs to be based on timer/cleanup + vt8500/wm8x50.
 > 
+> Need a little advise on how to handle this one please :)
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+The normal way to handle these kind of dependencies is to base them on merges
+of the needed branches. Based on the later email, you only seem to need
+timer/cleanup, but if you would have needed the other one, then you'd merge
+that on top of timer/cleanup, and then add your patches.
+
+Of course, ideally you would do the cleanup, then add the wm8x50 features,
+but in reality work doesn't always pan out that way, so you end up with
+cleanups that depend on including new features in the same (sweeping)
+cleanup since they have already been merged. That's when things sometimes
+get hairy, and we need to start a second cleanup branch that's "after"
+the feature branch in the sequence of topics. But it should be rare,
+and in your case it seems like it wasn't needed.
+
+
+-Olof
