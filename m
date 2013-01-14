@@ -1,50 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3ANFws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 00:52:48 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:53816 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab3ANFwr (ORCPT
+	id S1751871Ab3ANGAz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 01:00:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:21964 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751097Ab3ANGAy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 00:52:47 -0500
-Message-ID: <1358142787.28351.1.camel@gitbox>
-Subject: Re: [Bulk] [PATCH] timer: vt8500: Move timer code to
- drivers/clocksource
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Olof Johansson <olof@lixom.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org,
-        VT8500 Mailing List 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>
-Date: Mon, 14 Jan 2013 18:53:07 +1300
-In-Reply-To: <1358142455.25591.1.camel@gitbox>
-References: <1358140171-25390-1-git-send-email-linux@prisktech.co.nz>
-	 <1358140171-25390-2-git-send-email-linux@prisktech.co.nz>
-	 <1358140429.25452.1.camel@gitbox> <1358142455.25591.1.camel@gitbox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 14 Jan 2013 01:00:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,465,1355126400"; 
+   d="scan'208";a="246194973"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: RE: [PATCH V2 2/2] Xen ACPI memory hotplug
+Thread-Topic: [PATCH V2 2/2] Xen ACPI memory hotplug
+Thread-Index: AQHN8Ch2gSdugiMySf2ZunvFOlFXHphIVELw
+Date: Mon, 14 Jan 2013 06:00:50 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923353C2472@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC82923353BB10D@SHSMSX101.ccr.corp.intel.com>
+ <20130111182124.GB28685@phenom.dumpdata.com>
+In-Reply-To: <20130111182124.GB28685@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Oh grr.. forget this completely. It doesn't take into account the
-> patches I already sent for WM8850.
+Agree, w/ minor comments below.
+
+
+Konrad Rzeszutek Wilk wrote:
+>> +
+>> +	/*
+>> +	 * Early boot code has recognized memory area by EFI/E820.
+>> +	 * If DSDT shows these memory devices on boot, hotplug is not
+>> necessary +	 * for them. So, it just returns until completion of
+>> this driver's +	 * start up.
 > 
-> I guess it needs to be based on timer/cleanup + vt8500/wm8x50.
+> "So it just returns until completion of this drivers's start up."
 > 
-> Need a little advise on how to handle this one please :)
+> Can you change that to be:
+> "Return OK until this driver starts up."
 > 
-> Regards
-> Tony P
+> But then.. how can this function be called with
+> acpi_hotmem_initialized=false? Is it b/c of the acpi_walk_namespace
+> call? How about you state that: 
+> 
+> "This can be done via the acpi_walk_namespace which is called during
+> early boot and acpi_hotmem_initialized is set _after_ that call
+> has completed."
+> 
 
-Turns out the original patch applies cleanly on timer/cleanup +
-vt8500/wm8x50 anyway so maybe it doesn't need to be rebased.
+The action for booting existed memory and hot-added memory is different.
+For booting existed memory devices, we don't need do xen_hotadd_memory.
+For hot-added memory devices, we need do xen_hotadd_memory, hypercall to hypervisor to add memory.
 
-Let me know if I need to do anything (other than the -m to cleanup the
-stats).
+I've updated comments as below to be more clear:
+        /*
+         * For booting existed memory devices, early boot code has recognized
+         * memory area by EFI/E820. If DSDT shows these memory devices on boot,
+         * hotplug is not necessary for them.
+         * For hot-added memory devices during runtime, it need hypercall to
+         * Xen hypervisor to add memory.
+         */
 
-Regards
-Tony P
 
+>> +static void __exit xen_acpi_memory_device_exit(void) +{
+>> +	acpi_status status;
+>> +
+>> +	if (!xen_initial_domain())
+>> +		return;
+>> +
+>> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+>> +				     ACPI_UINT32_MAX, +				    
+>> acpi_memory_deregister_notify_handler, +				     NULL, NULL, NULL);
+>> +	if (ACPI_FAILURE(status))
+>> +		pr_warn(PREFIX "walk_namespace failed\n");
+>> +
+>> +	acpi_bus_unregister_driver(&xen_acpi_memory_device_driver); +
+>> +	/*
+>> +	 * stub reserve space again to prevent any chance of native
+>> +	 * driver loading, though not much meaning in real life
+> 
+> not much meaning in real life? What does that mean?
+> 
+
+Hmm, what I want to say here is, in real life module driver seldomly unloaded.
+Anyway, the comments is ambiguous, I've dropped the word 'though not much meaning in real life'.
+
+Thanks,
+Jinsong
+
+>> +	 */
+>> +	acpi_bus_register_driver(&xen_stub_memory_device_driver); +	return;
+>> +}
+>> +
