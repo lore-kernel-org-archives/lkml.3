@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757893Ab3ANSWL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 13:22:11 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:36430 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757524Ab3ANSWK (ORCPT
+	id S1757907Ab3ANSYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 13:24:44 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:44064 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756793Ab3ANSYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 13:22:10 -0500
-Date: Mon, 14 Jan 2013 10:22:03 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, chavey@google.com, fengguang.wu@intel.com,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH] writeback: mark sysctl vm.block_dump for removal
-Message-ID: <20130114182203.GE27942@mtj.dyndns.org>
-References: <1357938397-5413-1-git-send-email-tj@kernel.org>
- <20130114140227.GB2441@kernel.dk>
- <20130114174318.GD27942@mtj.dyndns.org>
+	Mon, 14 Jan 2013 13:24:42 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: Roland Eggner <edvx1@systemanalysen.net>
+Subject: Re: [PATCH 1/2] nconf:  add keybindings for vi-style menu navigation, rewrite help texts
+Date: Mon, 14 Jan 2013 19:24:36 +0100
+User-Agent: KMail/1.13.5 (Linux/3.6.11-treguer; KDE/4.4.5; x86_64; ; )
+Cc: Dmitry Voytik <dvv.kernel@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+References: <20121228185108.GA13644@voyt-hp> <1356723607-17027-1-git-send-email-dvv.kernel@gmail.com> <20121229223415.GB28355@mobil.systemanalysen.net>
+In-Reply-To: <20121229223415.GB28355@mobil.systemanalysen.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130114174318.GD27942@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301141924.37268.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vm.block_dump is nasty in that it dumps IO traces directly to printk.
-It isn't scalable and can easily lead to looping behavior - IO
-generating kernel message which in turn genreates log IO, ad
-infinitum.
+Roland, All,
 
-Now that proper tracepoints are in place, vm.block_dump isn't
-necessary.  Generate a warning if used so that it can be removed down
-the road.
+On Saturday 29 December 2012 Roland Eggner wrote:
+> On 2012-12-28 Friday at 23:40 +0400 Dmitry Voytik wrote:
+> > Add alternative vi-style keys for the menu navigation:
+> > <j>/<k> for down/up navigation, <C-f>/<C-b> for
+> > page down/up, <g>/<G> for first/last menu item selection
+> > and <l> for entering to a submenu.
+> 
+> Good starting point, thanks for your initial work.
+> Here is completion of the work:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/writeback.h |    3 +++
- kernel/sysctl.c           |    2 +-
- mm/page-writeback.c       |   14 ++++++++++++++
- 3 files changed, 18 insertions(+), 1 deletion(-)
+I'm sorry, but this patch does not apply cleanly, neither on-top of
+Dmitry's patch, nor on-top of Michal's for-next branch:
 
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index b82a83a..678ee6d 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -143,6 +143,9 @@ extern int dirty_ratio_handler(struct ctl_table *table, int write,
- extern int dirty_bytes_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos);
-+extern int block_dump_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp,
-+		loff_t *ppos);
- 
- struct ctl_table;
- int dirty_writeback_centisecs_handler(struct ctl_table *, int,
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c88878d..9e7f7b5 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1288,7 +1288,7 @@ static struct ctl_table vm_table[] = {
- 		.data		= &block_dump,
- 		.maxlen		= sizeof(block_dump),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= block_dump_handler,
- 		.extra1		= &zero,
- 	},
- 	{
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 6f42712..5548bef 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -390,6 +390,20 @@ int dirty_bytes_handler(struct ctl_table *table, int write,
- 	return ret;
- }
- 
-+int block_dump_handler(struct ctl_table *table, int write,
-+		       void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	static bool warned = false;
-+	int ret;
-+
-+	ret = proc_dointvec(table, write, buffer, lenp, ppos);
-+	if (!warned && block_dump) {
-+		pr_warning("sysctl: vm.block_dump is scheduled for removal. Please use tracepoints instead.\n");
-+		warned = true;
-+	}
-+	return ret;
-+}
-+
- static unsigned long wp_next_time(unsigned long cur_time)
- {
- 	cur_time += VM_COMPLETIONS_PERIOD_LEN;
+$ patch -p1 --dry-run <../roland-nconf-2.patch
+patching file scripts/kconfig/nconf.c
+Hunk #1 FAILED at 12.
+Hunk #2 FAILED at 229.
+Hunk #3 FAILED at 319.
+Hunk #4 FAILED at 355.
+Hunk #5 succeeded at 393 with fuzz 1 (offset 1 line).
+Hunk #6 succeeded at 408 (offset 1 line).
+Hunk #7 succeeded at 1116 (offset 8 lines).
+Hunk #8 FAILED at 1141.
+Hunk #9 succeeded at 1178 (offset 8 lines).
+Hunk #10 FAILED at 1302.
+Hunk #11 succeeded at 1348 with fuzz 1 (offset 8 lines).
+6 out of 11 hunks FAILED -- saving rejects to file scripts/kconfig/nconf.c.rej
+
+git am does not like it either:
+$ git am ../roland-nconf-2.patch
+Applying: nconf: add keybindings for vi-style menu navigation, rewrite help texts
+error: patch failed: scripts/kconfig/nconf.c:12
+error: scripts/kconfig/nconf.c: patch does not apply
+
+Also, the patch is line-mangled, with long lines being wrapped by your
+MUA. Could you use git send-email, next time, please?
+
+Care to resend your patch on-top of Michal's for-next branch (and on-top
+of Dmitry's patch if needed) ? Or tell me what branch to apply it onto.
+
+Thank you.
+
+Regards,
+Yann E. MORIN.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
+
