@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757719Ab3ANRne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 12:43:34 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:62745 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756660Ab3ANRnd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 12:43:33 -0500
-Date: Mon, 14 Jan 2013 09:43:18 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, chavey@google.com, fengguang.wu@intel.com
-Subject: Re: [PATCHSET] block: improve tracepoints, take#2
-Message-ID: <20130114174318.GD27942@mtj.dyndns.org>
-References: <1357938397-5413-1-git-send-email-tj@kernel.org>
- <20130114140227.GB2441@kernel.dk>
+	id S1757318Ab3ANRqO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 12:46:14 -0500
+Received: from lihas.de ([87.106.212.181]:56532 "EHLO mx.lihas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756495Ab3ANRqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 12:46:13 -0500
+X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jan 2013 12:46:12 EST
+Date: Mon, 14 Jan 2013 18:36:31 +0100
+From: Christian Recktenwald <cre@lihas.de>
+To: linux-kernel@vger.kernel.org
+Subject: linux-firmware/Makefile - rm: cannot remove
+ `/lib/firmware/{WHENCE,LICENSE.*,LICENCE.*}': No such file or directory
+Message-ID: <20130114173631.GA16331@curtis.s.lihas.de>
+Reply-To: Christian Recktenwald <cre@lihas.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130114140227.GB2441@kernel.dk>
+Content-Transfer-Encoding: 8bit
+Organization: Adrian Reyer LinuxHaus Stuttgart
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jens.
+Checked out commit 65a5163b8bb77bd7759efa3ca780867fcaed89b0
 
-On Mon, Jan 14, 2013 at 03:02:28PM +0100, Jens Axboe wrote:
-> > It's based on top of v3.8-rc2 and also available in the following git
-> > branch.
-> 
-> Applied (with Jan's review on the writeback side). Since we now have
-> buffer dirtying in the proper traces, it'd be really nice to deprecate
-> the ancient block_dump and phase it out of the tree...
+Makefile looks like:
 
-Yeah, that really is kinda nasty.  I'll cook up a patch to trigger a
-warning message on it.  Maybe we can remove it in some years.
+  ...
+  install:
+		  mkdir -p $(DESTDIR)$(FIRMWAREDIR)
+		  cp -r * $(DESTDIR)$(FIRMWAREDIR)
+		  rm -f $(DESTDIR)/usbdux/*dux $(DESTDIR)/*/*.asm
+		  rm $(DESTDIR)$(FIRMWAREDIR)/{WHENCE,LICENSE.*,LICENCE.*}
 
-Thanks.
+last one breaks. AFAIK {WHENCE,LICENSE.*,LICENCE.*} would 
+be a bash-ism. 
+
+Replacing by:
+		rm $(DESTDIR)$(FIRMWAREDIR)/WHENCE 
+		rm $(DESTDIR)$(FIRMWAREDIR)/LICENCE.*
+		rm $(DESTDIR)$(FIRMWAREDIR)/LICENSE.*
+or
+	    /bin/bash -c "rm -f $(DESTDIR)$(FIRMWAREDIR)/{WHENCE,LICENSE.*,LICENCE.*}"
+helps.
+
+make: GNU Make 3.81
 
 -- 
-tejun
+LiHAS - Adrian Reyer - Hessenwiesenstraße 10 - D-70565 Stuttgart
+Fon: +49 (7 11) 78 28 50 90 - Fax:  +49 (7 11) 78 28 50 91
+Mail: cre@lihas.de - Web: http://lihas.de
+Linux, Netzwerke, Consulting & Support - USt-ID: DE 227 816 626 Stuttgart
