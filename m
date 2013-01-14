@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab3ANNmS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 08:42:18 -0500
-Received: from nm17-vm1.bullet.mail.ird.yahoo.com ([77.238.189.206]:26927 "EHLO
-	nm17-vm1.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751288Ab3ANNmR (ORCPT
+	id S1756802Ab3ANNmu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 08:42:50 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38371 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755426Ab3ANNmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 08:42:17 -0500
-X-Yahoo-Newman-Id: 604198.5502.bm@smtp124.mail.ird.yahoo.com
-X-Yahoo-Newman-Property: ymail-5
-X-YMail-OSG: 2oRASzUVM1mcz75aFn0ay5lKIuaFrywJxLmkNYFZTkqJbiU
- VZpNAjb7ii9aEMC3l_AvZ0rY5DWXx5hbPK2VDopMjArUyXPfoC96HJPa4IEj
- pSU6sKl.9krJZA4FERnwSs45nGb18oRAZRISYL5SfheZygQvWOYm7iYpaOCs
- 7IvZsZhr7X7CloiijMcjDQsD.byfoObXG1aODasYB4GtEnp4_H8v3ziGqOnS
- fhfthwHl3swx4Srvr5b2zN0oU6f0WFS63LIB_l8u08_Rkh9K33LogWwK_sQX
- GGFVjuSxVxEGWRHkDZNC8epc4MRTDWBEuk30M_Lr3jqAzKQsQe6D.6MBA_kR
- p8zozQNO9jqTH.q2mpIKsvnmfJAIqgMoqno35b2H2I3qmzCprKxHLP4ZSTiy
- is6cq0iJURhsMWee31CyRjAj.o.KJJxpNfrCYIWh1umoitaeTqqkvDkbI4O6
- ll3IhqTcwdXCeqglplj6hxccsDIgnMr2OTqRPKA--
-X-Yahoo-SMTP: mOFZFAuswBAG4_8a4ZBj.Wmvw2Qxc4R7nmE-
-From: Schrober <franzschrober@yahoo.de>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: checkpatch.pl "uninitialized value"
-Date: Mon, 14 Jan 2013 14:42:14 +0100
-Message-ID: <8765116.NauFasYmb5@bentobox>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+	Mon, 14 Jan 2013 08:42:49 -0500
+Date: Mon, 14 Jan 2013 22:42:36 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: sameo@linux.intel.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rob@landley.net, lrg@ti.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] mfd: tps65090: remove suspend/resume callbacks
+Message-ID: <20130114134235.GD25037@opensource.wolfsonmicro.com>
+References: <1356686981-4152-1-git-send-email-ldewangan@nvidia.com>
+ <1356686981-4152-5-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356686981-4152-5-git-send-email-ldewangan@nvidia.com>
+X-Cookie: You will inherit millions of dollars.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Dec 28, 2012 at 02:59:41PM +0530, Laxman Dewangan wrote:
+> The tps65090 mfd driver implement the suspend/resume callbacks
+> which just disable and enable irqs in suspend/resume respectively.
+> 
+> This operation is already done in irq suspend and irq_resume and
+> hence it is not require to implement the same in the driver.
+> 
+> Remove this non-require code.
 
-it seems the current version of checkpatch.pl in linux-next ist broken. I get
-a lot of
-
-Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3383.
-Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3386.
-Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3383.
-Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3386.
-Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3383.
-Use of uninitialized value $ms_size in pattern match (m//) at ./scripts/checkpatch.pl line 3386.
--- 
-Franz Schrober
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
