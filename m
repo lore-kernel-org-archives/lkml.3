@@ -1,49 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab3ANMXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 07:23:23 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:51896 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756530Ab3ANMXW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 07:23:22 -0500
+	id S1756572Ab3ANM0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 07:26:16 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:40437 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756284Ab3ANM0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 07:26:15 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM / Runtime: Fix the twice judgement in rpm_suspend/resume()
+Date: Mon, 14 Jan 2013 13:32:04 +0100
+Message-ID: <2969423.iZ1VgpHf54@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1358185698.1223.13.camel@cliu38-desktop-build>
+References: <1358185698.1223.13.camel@cliu38-desktop-build>
 MIME-Version: 1.0
-In-Reply-To: <1635127.Ytukyo95FQ@bentobox>
-References: <1635127.Ytukyo95FQ@bentobox>
-Date: Mon, 14 Jan 2013 13:23:21 +0100
-X-Google-Sender-Auth: Wm6yVbf-v65SdAo_gov6FBCuL0I
-Message-ID: <CAMuHMdVR_pviGjD4qUZtkSQR9Cst2cRQv53205E00CUxEGr33Q@mail.gmail.com>
-Subject: Re: container-of Implementation
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Schrober <franzschrober@yahoo.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 11:46 AM, Schrober <franzschrober@yahoo.de> wrote:
-> I wondered why the container_of implementation is so complicated.
->
-> #define container_of(ptr, type, member) ({                      \
->         const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
->         (type *)( (char *)__mptr - offsetof(type,member) );})
->
-> isn't the __mptr not unnecessary? Why not following version?
->
-> #define container_of(ptr, type, member) \
->     ((type *)((char *)(ptr) - offsetof(type, member)))
+On Tuesday, January 15, 2013 01:48:18 AM Chuansheng Liu wrote:
+> 
+> In function rpm_suspend/resume(), when going into the for(;;),
+> the pre-condition judgement has been done, and the variable runtime_status
+> are always protected by &power.lock, so it is not necessary to judge
+> them again before unlock_irq &power.lock in for(;;).
+> 
+> This patch clean them up.
 
-The __mptr construct will cause a compiler warning if ptr is of the
-wrong type.
+Well, I don't really think this fixes anything.  Yes, we may save one check
+here and there, but the current code follows the wait_event() convention.
 
-Gr{oetje,eeting}s,
+Thanks,
+Rafael
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> ---
+>  drivers/base/power/runtime.c |   18 +++++++++---------
+>  1 files changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+> index 3148b10..32d6497 100644
+> --- a/drivers/base/power/runtime.c
+> +++ b/drivers/base/power/runtime.c
+> @@ -377,14 +377,14 @@ static int rpm_suspend(struct device *dev, int rpmflags)
+>  		for (;;) {
+>  			prepare_to_wait(&dev->power.wait_queue, &wait,
+>  					TASK_UNINTERRUPTIBLE);
+> -			if (dev->power.runtime_status != RPM_SUSPENDING)
+> -				break;
+>  
+>  			spin_unlock_irq(&dev->power.lock);
+>  
+>  			schedule();
+>  
+>  			spin_lock_irq(&dev->power.lock);
+> +			if (dev->power.runtime_status != RPM_SUSPENDING)
+> +				break;
+>  		}
+>  		finish_wait(&dev->power.wait_queue, &wait);
+>  		goto repeat;
+> @@ -557,15 +557,15 @@ static int rpm_resume(struct device *dev, int rpmflags)
+>  		for (;;) {
+>  			prepare_to_wait(&dev->power.wait_queue, &wait,
+>  					TASK_UNINTERRUPTIBLE);
+> -			if (dev->power.runtime_status != RPM_RESUMING
+> -			    && dev->power.runtime_status != RPM_SUSPENDING)
+> -				break;
+>  
+>  			spin_unlock_irq(&dev->power.lock);
+>  
+>  			schedule();
+>  
+>  			spin_lock_irq(&dev->power.lock);
+> +			if (dev->power.runtime_status != RPM_RESUMING
+> +			    && dev->power.runtime_status != RPM_SUSPENDING)
+> +				break;
+>  		}
+>  		finish_wait(&dev->power.wait_queue, &wait);
+>  		goto repeat;
+> @@ -989,15 +989,15 @@ static void __pm_runtime_barrier(struct device *dev)
+>  		for (;;) {
+>  			prepare_to_wait(&dev->power.wait_queue, &wait,
+>  					TASK_UNINTERRUPTIBLE);
+> -			if (dev->power.runtime_status != RPM_SUSPENDING
+> -			    && dev->power.runtime_status != RPM_RESUMING
+> -			    && !dev->power.idle_notification)
+> -				break;
+>  			spin_unlock_irq(&dev->power.lock);
+>  
+>  			schedule();
+>  
+>  			spin_lock_irq(&dev->power.lock);
+> +			if (dev->power.runtime_status != RPM_SUSPENDING
+> +			    && dev->power.runtime_status != RPM_RESUMING
+> +			    && !dev->power.idle_notification)
+> +				break;
+>  		}
+>  		finish_wait(&dev->power.wait_queue, &wait);
+>  	}
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
