@@ -1,193 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758218Ab3ANTBn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 14:01:43 -0500
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:44503 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756152Ab3ANTBm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 14:01:42 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-i2c@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] i2c-core: dt: Pick i2c bus number from i2c alias if present
-Date: Mon, 14 Jan 2013 10:53:21 -0800
-Message-Id: <1358189602-24180-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1358189602-24180-1-git-send-email-dianders@chromium.org>
-References: <1357927027-4857-2-git-send-email-dianders@chromium.org>
- <1358189602-24180-1-git-send-email-dianders@chromium.org>
+	id S1758255Ab3ANTBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 14:01:50 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:40652 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758227Ab3ANTBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 14:01:46 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: lenb@kernel.org, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH v2 02/12] ACPI: Add sys_hotplug.h for system device hotplug framework
+Date: Mon, 14 Jan 2013 20:07:35 +0100
+Message-ID: <4116384.4pypaK248y@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1358188929.14145.69.camel@misato.fc.hp.com>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <3236298.SULt2IKQv6@vostro.rjw.lan> <1358188929.14145.69.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows you to get the equivalent functionality of
-i2c_add_numbered_adapter() with all data in the device tree and no
-special case code in your driver.  This is a common device tree
-technique.
+On Monday, January 14, 2013 11:42:09 AM Toshi Kani wrote:
+> On Mon, 2013-01-14 at 19:47 +0100, Rafael J. Wysocki wrote:
+> > On Monday, January 14, 2013 08:53:53 AM Toshi Kani wrote:
+> > > On Fri, 2013-01-11 at 22:25 +0100, Rafael J. Wysocki wrote:
+> > > > On Thursday, January 10, 2013 04:40:20 PM Toshi Kani wrote:
+> > > > > Added include/acpi/sys_hotplug.h, which is ACPI-specific system
+> > > > > device hotplug header and defines the order values of ACPI-specific
+> > > > > handlers.
+> > > > > 
+> > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > > ---
+> > > > >  include/acpi/sys_hotplug.h |   48 ++++++++++++++++++++++++++++++++++++++++++++
+> > > > >  1 file changed, 48 insertions(+)
+> > > > >  create mode 100644 include/acpi/sys_hotplug.h
+> > > > > 
+> > > > > diff --git a/include/acpi/sys_hotplug.h b/include/acpi/sys_hotplug.h
+> > > > > new file mode 100644
+> > > > > index 0000000..ad80f61
+> > > > > --- /dev/null
+> > > > > +++ b/include/acpi/sys_hotplug.h
+> > > > > @@ -0,0 +1,48 @@
+> > > > > +/*
+> > > > > + * sys_hotplug.h - ACPI System device hot-plug framework
+> > > > > + *
+> > > > > + * Copyright (C) 2012 Hewlett-Packard Development Company, L.P.
+> > > > > + *	Toshi Kani <toshi.kani@hp.com>
+> > > > > + *
+> > > > > + * This program is free software; you can redistribute it and/or modify
+> > > > > + * it under the terms of the GNU General Public License version 2 as
+> > > > > + * published by the Free Software Foundation.
+> > > > > + */
+> > > > > +
+> > > > > +#ifndef _ACPI_SYS_HOTPLUG_H
+> > > > > +#define _ACPI_SYS_HOTPLUG_H
+> > > > > +
+> > > > > +#include <linux/list.h>
+> > > > > +#include <linux/device.h>
+> > > > > +#include <linux/sys_hotplug.h>
+> > > > > +
+> > > > > +/*
+> > > > > + * System device hot-plug operation proceeds in the following order.
+> > > > > + *   Validate phase -> Execute phase -> Commit phase
+> > > > > + *
+> > > > > + * The order values below define the calling sequence of ACPI-specific
+> > > > > + * handlers for each phase in ascending order.  The order value of
+> > > > > + * platform-neutral handlers are defined in <linux/sys_hotplug.h>.
+> > > > > + */
+> > > > > +
+> > > > > +/* Add Validate order values */
+> > > > > +#define SHP_ACPI_BUS_ADD_VALIDATE_ORDER		0	/* must be first */
+> > > > > +
+> > > > > +/* Add Execute order values */
+> > > > > +#define SHP_ACPI_BUS_ADD_EXECUTE_ORDER		10
+> > > > > +#define SHP_ACPI_RES_ADD_EXECUTE_ORDER		20
+> > > > > +
+> > > > > +/* Add Commit order values */
+> > > > > +#define SHP_ACPI_BUS_ADD_COMMIT_ORDER		10
+> > > > > +
+> > > > > +/* Delete Validate order values */
+> > > > > +#define SHP_ACPI_BUS_DEL_VALIDATE_ORDER		0	/* must be first */
+> > > > > +#define SHP_ACPI_RES_DEL_VALIDATE_ORDER		10
+> > > > > +
+> > > > > +/* Delete Execute order values */
+> > > > > +#define SHP_ACPI_BUS_DEL_EXECUTE_ORDER		100
+> > > > > +
+> > > > > +/* Delete Commit order values */
+> > > > > +#define SHP_ACPI_BUS_DEL_COMMIT_ORDER		100
+> > > > > +
+> > > > > +#endif	/* _ACPI_SYS_HOTPLUG_H */
+> > > > > --
+> > > > 
+> > > > Why did you use the particular values above?
+> > > 
+> > > The ordering values above are used to define the relative order among
+> > > handlers.  For instance, the 100 for SHP_ACPI_BUS_DEL_EXECUTE_ORDER can
+> > > potentially be 21 since it is still larger than 20 for
+> > > SHP_MEM_DEL_EXECUTE_ORDER defined in linux/sys_hotplug.h.  I picked 100
+> > > so that more platform-neutral handlers can be added in between 20 and
+> > > 100 in future.
+> > 
+> > I thought so, but I don't think it's a good idea to add gaps like this.
+> 
+> OK, I will use an equal gap of 10 for all values.  So, the 100 in the
+> above example will be changed to 30.  
 
-For quick reference, the FDT syntax for using an alias to provide an
-ID looks like:
-  aliases {
-    i2c0 = &i2c_0;
-    i2c1 = &i2c_1;
-  };
+I wonder why you want to have those gaps at all.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
----
-Changes in v2: None
+Anyway, this is just a small detail and it doesn't mean I don't have more
+comments.  I just need some more time to get the big picture idea of how this
+is supposed to work and perhaps Greg will have some remarks too.
 
- drivers/i2c/i2c-core.c |  105 +++++++++++++++++++++++++++++++++++-------------
- 1 files changed, 77 insertions(+), 28 deletions(-)
+Thanks,
+Rafael
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index e388590..a60ed6d 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -921,13 +921,81 @@ out_list:
- }
- 
- /**
-+ * i2c_get_number_from_dt - get the adapter number based on dt alias
-+ * @adap: the adapter to look at
-+ *
-+ * Check whether there's an alias in the FDT that gives an ID for this i2c
-+ * device.  Use an alias like "i2c<nr>", like:
-+ *   aliases {
-+ *     i2c0 = &i2c_0;
-+ *     i2c1 = &i2c_1;
-+ *   };
-+ *
-+ * Returns the ID if found.  If no alias is found returns -1.
-+ */
-+static int i2c_get_number_from_dt(struct i2c_adapter *adap)
-+{
-+	struct device *dev = &adap->dev;
-+	int id;
-+
-+	if (!dev->of_node)
-+		return -1;
-+
-+	id = of_alias_get_id(dev->of_node, "i2c");
-+	if (id < 0)
-+		return -1;
-+	return id;
-+}
-+
-+/**
-+ * _i2c_add_numbered_adapter - i2c_add_numbered_adapter where nr is never -1
-+ * @adap: the adapter to register (with adap->nr initialized)
-+ * Context: can sleep
-+ *
-+ * See i2c_add_numbered_adapter() for details.
-+ */
-+static int _i2c_add_numbered_adapter(struct i2c_adapter *adap)
-+{
-+	int	id;
-+	int	status;
-+
-+	/* Handled by wrappers */
-+	BUG_ON(adap->nr == -1);
-+
-+	if (adap->nr & ~MAX_IDR_MASK)
-+		return -EINVAL;
-+
-+retry:
-+	if (idr_pre_get(&i2c_adapter_idr, GFP_KERNEL) == 0)
-+		return -ENOMEM;
-+
-+	mutex_lock(&core_lock);
-+	/* "above" here means "above or equal to", sigh;
-+	 * we need the "equal to" result to force the result
-+	 */
-+	status = idr_get_new_above(&i2c_adapter_idr, adap, adap->nr, &id);
-+	if (status == 0 && id != adap->nr) {
-+		status = -EBUSY;
-+		idr_remove(&i2c_adapter_idr, id);
-+	}
-+	mutex_unlock(&core_lock);
-+	if (status == -EAGAIN)
-+		goto retry;
-+
-+	if (status == 0)
-+		status = i2c_register_adapter(adap);
-+	return status;
-+}
-+
-+/**
-  * i2c_add_adapter - declare i2c adapter, use dynamic bus number
-  * @adapter: the adapter to add
-  * Context: can sleep
-  *
-  * This routine is used to declare an I2C adapter when its bus number
-- * doesn't matter.  Examples: for I2C adapters dynamically added by
-- * USB links or PCI plugin cards.
-+ * doesn't matter or when its bus number is specified by an dt alias.
-+ * Examples of bases when the bus number doesn't matter: I2C adapters
-+ * dynamically added by USB links or PCI plugin cards.
-  *
-  * When this returns zero, a new bus number was allocated and stored
-  * in adap->nr, and the specified adapter became available for clients.
-@@ -937,6 +1005,12 @@ int i2c_add_adapter(struct i2c_adapter *adapter)
- {
- 	int	id, res = 0;
- 
-+	id = i2c_get_number_from_dt(adapter);
-+	if (id >= 0) {
-+		adapter->nr = id;
-+		return _i2c_add_numbered_adapter(adapter);
-+	}
-+
- retry:
- 	if (idr_pre_get(&i2c_adapter_idr, GFP_KERNEL) == 0)
- 		return -ENOMEM;
-@@ -983,34 +1057,9 @@ EXPORT_SYMBOL(i2c_add_adapter);
-  */
- int i2c_add_numbered_adapter(struct i2c_adapter *adap)
- {
--	int	id;
--	int	status;
--
- 	if (adap->nr == -1) /* -1 means dynamically assign bus id */
- 		return i2c_add_adapter(adap);
--	if (adap->nr & ~MAX_IDR_MASK)
--		return -EINVAL;
--
--retry:
--	if (idr_pre_get(&i2c_adapter_idr, GFP_KERNEL) == 0)
--		return -ENOMEM;
--
--	mutex_lock(&core_lock);
--	/* "above" here means "above or equal to", sigh;
--	 * we need the "equal to" result to force the result
--	 */
--	status = idr_get_new_above(&i2c_adapter_idr, adap, adap->nr, &id);
--	if (status == 0 && id != adap->nr) {
--		status = -EBUSY;
--		idr_remove(&i2c_adapter_idr, id);
--	}
--	mutex_unlock(&core_lock);
--	if (status == -EAGAIN)
--		goto retry;
--
--	if (status == 0)
--		status = i2c_register_adapter(adap);
--	return status;
-+	return _i2c_add_numbered_adapter(adap);
- }
- EXPORT_SYMBOL_GPL(i2c_add_numbered_adapter);
- 
+
+
 -- 
-1.7.7.3
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
