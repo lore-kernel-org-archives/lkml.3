@@ -1,151 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab3AONTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:19:08 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:57056 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab3AONTG (ORCPT
+	id S1756530Ab3AONUv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:20:51 -0500
+Received: from myspam1.stec-inc.com ([210.19.18.169]:40483 "HELO
+	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755769Ab3AONUt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:19:06 -0500
-Message-ID: <50F5573D.4060007@atmel.com>
-Date: Tue, 15 Jan 2013 14:18:53 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 15 Jan 2013 08:20:49 -0500
+X-ASG-Debug-ID: 1358256039-053ea90dcf1b73d0001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Amit Kale <akale@stec-inc.com>
+X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: Mike Snitzer <snitzer@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>
+Date: Tue, 15 Jan 2013 21:19:10 +0800
+Subject: RE: Announcement: STEC EnhanceIO SSD caching software for Linux
+ kernel
+Thread-Topic: Announcement: STEC EnhanceIO SSD caching software for Linux
+ kernel
+X-ASG-Orig-Subj: RE: Announcement: STEC EnhanceIO SSD caching software for Linux
+ kernel
+Thread-Index: Ac3yoKI/HYpAmmqfTNq7k/35359UiQAfoF6g
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D70CE@MYMBX.MY.STEC-INC.AD>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
+ <CAMM=eLdgD8GKeK48SU2rfC49u3H4WRf9-xFxM4ymVPbKkx+mCw@mail.gmail.com>
+In-Reply-To: <CAMM=eLdgD8GKeK48SU2rfC49u3H4WRf9-xFxM4ymVPbKkx+mCw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>, <plagnioj@jcrosoft.com>
-CC: <gregkh@linuxfoundation.org>, <grant.likely@secretlab.ca>,
-        <linus.walleij@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <w.sang@pengutronix.de>,
-        <jbe@pengutronix.de>, <highguy@gmail.com>,
-        <broonie@opensource.wolfsonmicro.com>, <daniel-gl@gmx.net>,
-        <rmallon@gmail.com>, <sr@denx.de>, <wg@grandegger.com>,
-        <tru@work-microwave.de>, <mark.rutland@arm.com>
-Subject: Re: [PATCH RESEND 6/6 v13] gpio: Add block gpio to several gpio drivers
-References: <1358250716-21986-1-git-send-email-stigge@antcom.de> <1358250716-21986-7-git-send-email-stigge@antcom.de>
-In-Reply-To: <1358250716-21986-7-git-send-email-stigge@antcom.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1358256039
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.119925
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Mike,
 
-Le 15/01/2013 12:51, Roland Stigge a écrit :
-> This patch adds block GPIO support to several gpio drivers.
->
-> This implements block GPIO only for some selected drivers since block GPIO is
-> an optional feature which may not be suitable for every GPIO hardware. (With
-> automatic fallback to the single GPIO functions if not available in a driver.)
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
->
-> ---
->   drivers/gpio/Kconfig              |    2
->   drivers/gpio/gpio-em.c            |   23 ++++++++++
->   drivers/gpio/gpio-ge.c            |   29 +++++++++++++
->   drivers/gpio/gpio-generic.c       |   56 +++++++++++++++++++++++++
->   drivers/gpio/gpio-ks8695.c        |   34 +++++++++++++++
->   drivers/gpio/gpio-lpc32xx.c       |   82 ++++++++++++++++++++++++++++++++++++++
->   drivers/gpio/gpio-max730x.c       |   61 ++++++++++++++++++++++++++++
->   drivers/gpio/gpio-max732x.c       |   59 +++++++++++++++++++++++++++
->   drivers/gpio/gpio-mc33880.c       |   16 +++++++
->   drivers/gpio/gpio-ml-ioh.c        |   27 ++++++++++++
->   drivers/gpio/gpio-mm-lantiq.c     |   22 ++++++++++
->   drivers/gpio/gpio-mpc5200.c       |   64 +++++++++++++++++++++++++++++
->   drivers/gpio/gpio-mpc8xxx.c       |   41 +++++++++++++++++++
->   drivers/gpio/gpio-pca953x.c       |   64 +++++++++++++++++++++++++++++
->   drivers/gpio/gpio-pcf857x.c       |   24 +++++++++++
->   drivers/gpio/gpio-pch.c           |   27 ++++++++++++
->   drivers/gpio/gpio-pl061.c         |   17 +++++++
->   drivers/gpio/gpio-sa1100.c        |   20 +++++++++
->   drivers/gpio/gpio-samsung.c       |   31 ++++++++++++++
->   drivers/gpio/gpio-twl6040.c       |   32 ++++++++++++++
->   drivers/gpio/gpio-ucb1400.c       |   23 ++++++++++
->   drivers/gpio/gpio-vt8500.c        |   24 +++++++++++
->   drivers/gpio/gpio-xilinx.c        |   44 ++++++++++++++++++++
->   drivers/pinctrl/pinctrl-at91.c    |   29 +++++++++++++
-
-I do not want to delay the process of inclusion for this patch series. 
-But I have a little question on AT91 driver modification...
-
->   drivers/pinctrl/pinctrl-nomadik.c |   36 ++++++++++++++++
->   25 files changed, 887 insertions(+)
-
-[..]
-
-> --- linux-2.6.orig/drivers/pinctrl/pinctrl-at91.c
-> +++ linux-2.6/drivers/pinctrl/pinctrl-at91.c
-> @@ -49,6 +49,7 @@ struct at91_gpio_chip {
->   	struct clk		*clock;		/* associated clock */
->   	struct irq_domain	*domain;	/* associated irq domain */
->   	struct at91_pinctrl_mux_ops *ops;	/* ops */
-> +	unsigned long		mask_cache;	/* cached mask for block gpio */
->   };
->
->   #define to_at91_gpio_chip(c) container_of(c, struct at91_gpio_chip, chip)
-> @@ -1125,6 +1126,32 @@ static void at91_gpio_set(struct gpio_ch
->   	writel_relaxed(mask, pio + (val ? PIO_SODR : PIO_CODR));
->   }
->
-> +static unsigned long at91_gpio_get_block(struct gpio_chip *chip,
-> +					 unsigned long mask)
-> +{
-> +	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
-> +	void __iomem *pio = at91_gpio->regbase;
-> +	u32 pdsr;
-> +
-> +	pdsr = __raw_readl(pio + PIO_PDSR);
-
-Maybe you should use readl_relaxed() here as it is used in the 
-at91_gpio_[get|set]() functions.
+> The github code you've referenced is in a strange place; it is
+> obviously in a bit of flux.
 
 
-> +	return pdsr & mask;
-> +}
-> +
-> +static void at91_gpio_set_block(struct gpio_chip *chip, unsigned long mask,
-> +				unsigned long val)
-> +{
-> +	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
-> +	void __iomem *pio = at91_gpio->regbase;
-> +
-> +	/* Do synchronous data output with a single write access */
-> +	if (mask != at91_gpio->mask_cache) {
-> +		at91_gpio->mask_cache = mask;
-> +		__raw_writel(~mask, pio + PIO_OWDR);
-> +		__raw_writel(mask, pio + PIO_OWER);
-> +	}
-> +	__raw_writel(val, pio + PIO_ODSR);
+Git URLs for accessing these are - 
 
-Ditto.
+git clone https://github.com/stec-inc/EnhanceIO.git
+git clone git://github.com/stec-inc/EnhanceIO.git
 
-> +}
-> +
->   static int at91_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
->   				int val)
->   {
-> @@ -1435,8 +1462,10 @@ static struct gpio_chip at91_gpio_templa
->   	.free			= at91_gpio_free,
->   	.direction_input	= at91_gpio_direction_input,
->   	.get			= at91_gpio_get,
-> +	.get_block		= at91_gpio_get_block,
->   	.direction_output	= at91_gpio_direction_output,
->   	.set			= at91_gpio_set,
-> +	.set_block		= at91_gpio_set_block,
->   	.to_irq			= at91_gpio_to_irq,
->   	.dbg_show		= at91_gpio_dbg_show,
->   	.can_sleep		= 0,
-> --- linux-2.6.orig/drivers/pinctrl/pinctrl-nomadik.c
-> +++ linux-2.6/drivers/pinctrl/pinctrl-nomadik.c
+> 
+> > Repository location -  https://github.com/stec-inc/EnhanceIO
 
-[..]
+> > ----------------
+> > EnhanceIO driver is based on EnhanceIO SSD caching software product
+> developed by STEC Inc. EnhanceIO was derived from Facebook's open
+> source Flashcache project. EnhanceIO uses SSDs as cache devices for
+> traditional rotating hard disk drives (referred to as source volumes
+> throughout this document).
+> 
+> Earlier versions of EnhanceIO made use of Device Mapper (and your
+> github code still has artifacts from that historic DM dependency, e.g.
+> eio_map still returns DM_MAPIO_SUBMITTED).
 
-Otherwise, seems ok to me ; for AT91 part:
+This is correct. First version of our product was based on DM.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
+> As a DM target, EnhanceIO still implemented its own bio splitting
+> rather than just use the DM core's bio splitting, now you've decided to
+> move away from DM entirely.  Any reason why?
 
-Best regards,
--- 
-Nicolas Ferre
+1. EnhanceIO product was always created as a "transparent" cache. This meant the cached device path was identical to the original device path. In order to make this fit into device mapper scheme, we had a bunch of init and udev scripts to replace old device node by a new dm device node. The difficulty in this architecture was the principle reason for moving away from DM. Our transparent cache architecture has been a big winner with enterprise customers enabling easy deployments.
+
+2. EnhanceIO now is fully transparent. So applications can continue running while a cache is created or deleted. This is a significant improvement helping enterprise users reduce downtime.
+
+3. DM overhead is minimal compared to the CPU cycles spent in a cache block lookup. Since we weren't using DM's splitting anyways, that overhead was reduced by going away from DM.
+
+4. We can now create a cache for an entire HDD containing partitions. All the partitions will be cached automatically. User always has an option to cache partitions individually, if required.
+
+5. We have designed our writeback architecture from scratch. Coalescing/bunching together of metadata writes and cleanup is much improved after redesigning of the EnhanceIO-SSD interface. The DM interface would have been too restrictive for this. EnhanceIO uses set level locking, which improves parallelism of IO, particularly for writeback.
+
+> 
+> Joe Thornber published the new DM cache target on dm-devel a month ago:
+> https://www.redhat.com/archives/dm-devel/2012-December/msg00029.html
+
+Thanks for this link. Will review and get back to you.
+
+> 
+> ( I've also kept a functional git repo with that code, and additional
+> fixes, in the 'dm-devel-cache' branch of my github repo:
+> git://github.com/snitm/linux.git )
+> 
+> It would be unfortunate if Joe's publishing of the dm-cache codebase
+> somehow motivated STEC's switch away from DM (despite EnhanceIO's DM
+> roots given it was based on FB's flashcache which also uses DM).
+
+Not at all! We had working on a fully transparent cache architecture since a long time.
+
+> DM really does offer a compelling foundation for stacking storage
+> drivers in complementary ways (e.g. we envision dm-cache being stacked
+> in conjunction with dm-thinp).  So a DM-based caching layer has been of
+> real interest to Red Hat's DM team.
+
+IMHO caching does not DM architecture. DM is best suited for RAID requiring similar or even access to all component devices. Caching requires skewed or uneven access to SSD and HDD.
+
+Regards.
+-Amit
+
+
+> 
+> Given dm-cache's clean design and modular cache replacement policy
+> interface we were hopeful that any existing limitations in dm-cache
+> could be resolved through further work with the greater community (STEC
+> included).  Instead, in addition to bcache, with EnhanceIO we have more
+> fragmentation for a block caching layer (a layer which has been sorely
+> overdue in upstream Linux).
+> 
+> Hopefully upstream Linux will get this caching feature before its
+> utility is no longer needed.  The DM team welcomes review of dm-cache
+> from STEC and the greater community.  We're carrying on with dm-cache
+> review/fixes for hopeful upstream inclusion as soon as v3.9.
+> 
+> Mike
+
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+
+
+
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
