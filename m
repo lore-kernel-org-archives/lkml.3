@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab3AOWtZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:49:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45568 "EHLO mail.kernel.org"
+	id S1758923Ab3AOXys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:54:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45626 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758782Ab3AOWtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:49:19 -0500
+	id S1758803Ab3AOWtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Weston Andros Adamson <dros@netapp.com>, Tejun Heo <tj@kernel.org>,
-        Bruce Fields <bfields@fieldses.org>
-Subject: [ 033/171] SUNRPC: Ensure that we free the rpc_task after cleanups are done
-Date: Tue, 15 Jan 2013 14:43:18 -0800
-Message-Id: <20130115224315.804360240@linuxfoundation.org>
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 035/171] jffs2: hold erase_completion_lock on exit
+Date: Tue, 15 Jan 2013 14:43:20 -0800
+Message-Id: <20130115224315.946144505@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,65 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-commit c6567ed1402c55e19b012e66a8398baec2a726f3 upstream.
+commit 2cbba75a56ea78e6876b4e2547a882f10b3fe72b upstream.
 
-This patch ensures that we free the rpc_task after the cleanup callbacks
-are done in order to avoid a deadlock problem that can be triggered if
-the callback needs to wait for another workqueue item to complete.
+Users of jffs2_do_reserve_space() expect they still held
+erase_completion_lock after call to it. But there is a path
+where jffs2_do_reserve_space() leaves erase_completion_lock unlocked.
+The patch fixes it.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Weston Andros Adamson <dros@netapp.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Bruce Fields <bfields@fieldses.org>
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/sched.c |   27 +++++++++++++++++++++++----
- 1 file changed, 23 insertions(+), 4 deletions(-)
+ fs/jffs2/nodemgmt.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -915,16 +915,35 @@ struct rpc_task *rpc_new_task(const stru
- 	return task;
- }
+--- a/fs/jffs2/nodemgmt.c
++++ b/fs/jffs2/nodemgmt.c
+@@ -375,14 +375,16 @@ static int jffs2_do_reserve_space(struct
+ 			spin_unlock(&c->erase_completion_lock);
  
-+/*
-+ * rpc_free_task - release rpc task and perform cleanups
-+ *
-+ * Note that we free up the rpc_task _after_ rpc_release_calldata()
-+ * in order to work around a workqueue dependency issue.
-+ *
-+ * Tejun Heo states:
-+ * "Workqueue currently considers two work items to be the same if they're
-+ * on the same address and won't execute them concurrently - ie. it
-+ * makes a work item which is queued again while being executed wait
-+ * for the previous execution to complete.
-+ *
-+ * If a work function frees the work item, and then waits for an event
-+ * which should be performed by another work item and *that* work item
-+ * recycles the freed work item, it can create a false dependency loop.
-+ * There really is no reliable way to detect this short of verifying
-+ * every memory free."
-+ *
-+ */
- static void rpc_free_task(struct rpc_task *task)
- {
--	const struct rpc_call_ops *tk_ops = task->tk_ops;
--	void *calldata = task->tk_calldata;
-+	unsigned short tk_flags = task->tk_flags;
- 
--	if (task->tk_flags & RPC_TASK_DYNAMIC) {
-+	rpc_release_calldata(task->tk_ops, task->tk_calldata);
+ 			ret = jffs2_prealloc_raw_node_refs(c, jeb, 1);
+-			if (ret)
+-				return ret;
 +
-+	if (tk_flags & RPC_TASK_DYNAMIC) {
- 		dprintk("RPC: %5u freeing task\n", task->tk_pid);
- 		mempool_free(task, rpc_task_mempool);
- 	}
--	rpc_release_calldata(tk_ops, calldata);
- }
+ 			/* Just lock it again and continue. Nothing much can change because
+ 			   we hold c->alloc_sem anyway. In fact, it's not entirely clear why
+ 			   we hold c->erase_completion_lock in the majority of this function...
+ 			   but that's a question for another (more caffeine-rich) day. */
+ 			spin_lock(&c->erase_completion_lock);
  
- static void rpc_async_release(struct work_struct *work)
++			if (ret)
++				return ret;
++
+ 			waste = jeb->free_size;
+ 			jffs2_link_node_ref(c, jeb,
+ 					    (jeb->offset + c->sector_size - waste) | REF_OBSOLETE,
 
 
