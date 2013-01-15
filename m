@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab3APAXi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:23:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41980 "EHLO mail.kernel.org"
+	id S1758226Ab3AOWaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:30:05 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41936 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758230Ab3AOWaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:30:09 -0500
+	id S1758197Ab3AOWaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:30:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
+        Peter Ujfalusi <peter.ujfalusi@gmail.com>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 087/221] drm/i915; Only increment the user-pin-count after successfully pinning the bo
-Date: Tue, 15 Jan 2013 10:50:14 -0800
-Message-Id: <20130115185004.318924317@linuxfoundation.org>
+Subject: [ 083/221] drm/i915: dont disable disconnected outputs
+Date: Tue, 15 Jan 2013 10:50:10 -0800
+Message-Id: <20130115185004.039297472@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,42 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 93be8788e648817d62fda33e2998eb6ca6ebf3a3 upstream.
+commit b0a2658acb5bf9ca86b4aab011b7106de3af0add upstream.
 
-As along the error path we do not correct the user pin-count for the
-failure, we may end up with userspace believing that it has a pinned
-object at offset 0 (when interrupted by a signal for example).
+This piece of neat lore has been ported painstakingly and bug-for-bug
+compatible from the old crtc helper code.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Imo it's utter nonsense.
+
+If you disconnected a cable and before you reconnect it, userspace (or
+the kernel) does an set_crtc call, this will result in that connector
+getting disabled. Which will result in a nice black screen when
+plugging in the cable again.
+
+There's absolutely no reason the kernel does such policy enforcements
+- if userspace tries to set up a mode on something disconnected we
+might fail loudly (since the dp link training fails), but silently
+adjusting the output configuration behind userspace's back is a recipe
+for disaster. Specifically I think that this could explain some of our
+MI_WAIT hangs around suspend, where userspace issues a scanline wait
+on a disable pipe. This mechanisims here could explain how that pipe
+got disabled without userspace noticing.
+
+Note that this fixes a NULL deref at BIOS takeover when the firmware
+sets up a disconnected output in a clone configuration with a
+connected output on the 2nd pipe: When doing the full modeset we don't
+have a mode for the 2nd pipe and OOPS. On the first pipe this doesn't
+matter, since at boot-up the fbdev helpers will set up the choosen
+configuration on that on first. Since this is now the umptenth bug
+around handling this imo brain-dead semantics correctly, I think it's
+time to kill it and see whether there's any userspace out there which
+relies on this.
+
+It also nicely demonstrates that we have a tiny window where DP
+hotplug can still kill the driver.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=58396
+Tested-by: Peter Ujfalusi <peter.ujfalusi@gmail.com>
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -3511,14 +3511,15 @@ i915_gem_pin_ioctl(struct drm_device *de
- 		goto out;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7298,10 +7298,6 @@ intel_modeset_stage_output_state(struct
+ 			DRM_DEBUG_KMS("encoder changed, full mode switch\n");
+ 			config->mode_changed = true;
+ 		}
+-
+-		/* Disable all disconnected encoders. */
+-		if (connector->base.status == connector_status_disconnected)
+-			connector->new_encoder = NULL;
  	}
+ 	/* connector->new_encoder is now updated for all connectors. */
  
--	obj->user_pin_count++;
--	obj->pin_filp = file;
--	if (obj->user_pin_count == 1) {
-+	if (obj->user_pin_count == 0) {
- 		ret = i915_gem_object_pin(obj, args->alignment, true, false);
- 		if (ret)
- 			goto out;
- 	}
- 
-+	obj->user_pin_count++;
-+	obj->pin_filp = file;
-+
- 	/* XXX - flush the CPU caches for pinned objects
- 	 * as the X server doesn't manage domains yet
- 	 */
 
 
