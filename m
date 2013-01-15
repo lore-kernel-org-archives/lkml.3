@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933571Ab3AOWwG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:52:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46620 "EHLO mail.kernel.org"
+	id S933521Ab3AOWvw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:51:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46543 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933121Ab3AOWwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:01 -0500
+	id S933121Ab3AOWvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:51:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Graf <agraf@suse.de>, CAI Qian <caiqian@redhat.com>
-Subject: [ 111/171] KVM: PPC: 44x: fix DCR read/write
-Date: Tue, 15 Jan 2013 14:44:36 -0800
-Message-Id: <20130115224321.382817824@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 104/171] USB: Ignore port state until reset completes.
+Date: Tue, 15 Jan 2013 14:44:29 -0800
+Message-Id: <20130115224320.882609254@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,39 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Graf <agraf@suse.de>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit e43a028752fed049e4bd94ef895542f96d79fa74 upstream.
+commit 4f43447e62b37ee19c82a13f72f35b1ca60a74d3 upstream.
 
-When remembering the direction of a DCR transaction, we should write
-to the same variable that we interpret on later when doing vcpu_run
-again.
+The port reset code bails out early if the current connect status is
+cleared (device disconnected).  If we're issuing a hot reset, it may
+also look at the link state before the reset is finished.
 
-Signed-off-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Section 10.14.2.6 of the USB 3.0 spec says that when a port enters the
+Error state or Resetting state, the port connection bit retains the
+value from the previous state.  Therefore we can't trust it until the
+reset finishes.  Also, the xHCI spec section 4.19.1.2.5 says software
+shall ignore the link state while the port is resetting, as it can be in
+an unknown state.
+
+The port state during reset is also unknown for USB 2.0 hubs.  The hub
+sends a reset signal by driving the bus into an SE0 state.  This
+overwhelms the "connect" signal from the device, so the port can't tell
+whether anything is connected or not.
+
+Fix the port reset code to ignore the port link state and current
+connect bit until the reset finishes, and USB_PORT_STAT_RESET is
+cleared.
+
+Remove the check for USB_PORT_STAT_C_BH_RESET in the warm reset case,
+because it's redundant.  When the warm reset finishes, the port reset
+bit will be cleared at the same time USB_PORT_STAT_C_BH_RESET is set.
+Remove the now-redundant check for a cleared USB_PORT_STAT_RESET bit
+in the code to deal with the finished reset.
+
+This patch should be backported to all stable kernels.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kvm/44x_emulate.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/core/hub.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/arch/powerpc/kvm/44x_emulate.c
-+++ b/arch/powerpc/kvm/44x_emulate.c
-@@ -79,6 +79,7 @@ int kvmppc_core_emulate_op(struct kvm_ru
- 				run->dcr.dcrn = dcrn;
- 				run->dcr.data =  0;
- 				run->dcr.is_write = 0;
-+				vcpu->arch.dcr_is_write = 0;
- 				vcpu->arch.io_gpr = rt;
- 				vcpu->arch.dcr_needed = 1;
- 				kvmppc_account_exit(vcpu, DCR_EXITS);
-@@ -100,6 +101,7 @@ int kvmppc_core_emulate_op(struct kvm_ru
- 				run->dcr.dcrn = dcrn;
- 				run->dcr.data = kvmppc_get_gpr(vcpu, rs);
- 				run->dcr.is_write = 1;
-+				vcpu->arch.dcr_is_write = 1;
- 				vcpu->arch.dcr_needed = 1;
- 				kvmppc_account_exit(vcpu, DCR_EXITS);
- 				emulated = EMULATE_DO_DCR;
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2203,6 +2203,10 @@ static int hub_port_wait_reset(struct us
+ 		if (ret < 0)
+ 			return ret;
+ 
++		/* The port state is unknown until the reset completes. */
++		if ((portstatus & USB_PORT_STAT_RESET))
++			goto delay;
++
+ 		/*
+ 		 * Some buggy devices require a warm reset to be issued even
+ 		 * when the port appears not to be connected.
+@@ -2248,11 +2252,7 @@ static int hub_port_wait_reset(struct us
+ 			if ((portchange & USB_PORT_STAT_C_CONNECTION))
+ 				return -ENOTCONN;
+ 
+-			/* if we`ve finished resetting, then break out of
+-			 * the loop
+-			 */
+-			if (!(portstatus & USB_PORT_STAT_RESET) &&
+-			    (portstatus & USB_PORT_STAT_ENABLE)) {
++			if ((portstatus & USB_PORT_STAT_ENABLE)) {
+ 				if (hub_is_wusb(hub))
+ 					udev->speed = USB_SPEED_WIRELESS;
+ 				else if (hub_is_superspeed(hub->hdev))
+@@ -2266,10 +2266,10 @@ static int hub_port_wait_reset(struct us
+ 				return 0;
+ 			}
+ 		} else {
+-			if (portchange & USB_PORT_STAT_C_BH_RESET)
+-				return 0;
++			return 0;
+ 		}
+ 
++delay:
+ 		/* switch to the long delay after two short delay failures */
+ 		if (delay_time >= 2 * HUB_SHORT_RESET_TIME)
+ 			delay = HUB_LONG_RESET_TIME;
 
 
