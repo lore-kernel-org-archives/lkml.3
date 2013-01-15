@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab3AOXxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:53:30 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:41522 "EHLO hydra.sisk.pl"
+	id S933028Ab3AOXyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:54:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45640 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932777Ab3AOXx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 18:53:26 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 1/3] x86: enable common clk on x86
-Date: Wed, 16 Jan 2013 00:59:17 +0100
-Message-ID: <1474259.FsoB54Sm0k@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1358174788-24439-2-git-send-email-mika.westerberg@linux.intel.com>
-References: <1358174788-24439-1-git-send-email-mika.westerberg@linux.intel.com> <1358174788-24439-2-git-send-email-mika.westerberg@linux.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1758813Ab3AOWt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:26 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Ravi Murty <Ravi.Murty@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 037/171] intel-iommu: Free old page tables before creating superpage
+Date: Tue, 15 Jan 2013 14:43:22 -0800
+Message-Id: <20130115224316.085418115@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
+References: <20130115224313.394976595@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 14, 2013 04:46:26 PM Mika Westerberg wrote:
-> We are starting to see traditional SoC peripherals also in the x86 world,
-> things like UART, I2C and SPI controllers that might already have a working
-> device driver. These drivers typically take advantage of the Linux clk
-> framework to control and retrieve information about the peripheral clock.
-> 
-> There hasn't been a standard way on x86 to pass the clock rate from
-> whatever configuration system is used to the driver, but instead different
-> variations have emerged, like adding this information to the platform data.
-> 
-> In order to use the standard Linux way we enable the common clk subsystem
-> also on x86. This allows us to re-use the drivers with little or no
-> modification wrt. clock API usage.
-> 
-> This patch was originally proposed by Mark Brown.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Are there any side effects of selecting COMMON_CLK by an arch and if so then
-what are they?
+------------------
 
-Rafael
+From: "Woodhouse, David" <david.woodhouse@intel.com>
+
+commit 6491d4d02893d9787ba67279595990217177b351 upstream.
+
+The dma_pte_free_pagetable() function will only free a page table page
+if it is asked to free the *entire* 2MiB range that it covers. So if a
+page table page was used for one or more small mappings, it's likely to
+end up still present in the page tables... but with no valid PTEs.
+
+This was fine when we'd only be repopulating it with 4KiB PTEs anyway
+but the same virtual address range can end up being reused for a
+*large-page* mapping. And in that case were were trying to insert the
+large page into the second-level page table, and getting a complaint
+from the sanity check in __domain_mapping() because there was already a
+corresponding entry. This was *relatively* harmless; it led to a memory
+leak of the old page table page, but no other ill-effects.
+
+Fix it by calling dma_pte_clear_range (hopefully redundant) and
+dma_pte_free_pagetable() before setting up the new large page.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Tested-by: Ravi Murty <Ravi.Murty@intel.com>
+Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/iommu/intel-iommu.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1826,10 +1826,17 @@ static int __domain_mapping(struct dmar_
+ 			if (!pte)
+ 				return -ENOMEM;
+ 			/* It is large page*/
+-			if (largepage_lvl > 1)
++			if (largepage_lvl > 1) {
+ 				pteval |= DMA_PTE_LARGE_PAGE;
+-			else
++				/* Ensure that old small page tables are removed to make room
++				   for superpage, if they exist. */
++				dma_pte_clear_range(domain, iov_pfn,
++						    iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
++				dma_pte_free_pagetable(domain, iov_pfn,
++						       iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
++			} else {
+ 				pteval &= ~(uint64_t)DMA_PTE_LARGE_PAGE;
++			}
+ 
+ 		}
+ 		/* We don't need lock here, nobody else
 
 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  arch/x86/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 79795af..decda04 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -114,6 +114,7 @@ config X86
->  	select MODULES_USE_ELF_RELA if X86_64
->  	select CLONE_BACKWARDS if X86_32
->  	select GENERIC_SIGALTSTACK
-> +	select COMMON_CLK
->  
->  config INSTRUCTION_DECODER
->  	def_bool y
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
