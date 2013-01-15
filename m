@@ -1,274 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756348Ab3AOMGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 07:06:41 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:44128 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab3AOMGj (ORCPT
+	id S1756515Ab3AOMJX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:09:23 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:64015 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab3AOMJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:06:39 -0500
-Message-ID: <50F5464A.7070704@gmail.com>
-Date: Tue, 15 Jan 2013 13:06:34 +0100
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 15 Jan 2013 07:09:21 -0500
+Date: Tue, 15 Jan 2013 13:08:55 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Andrew Murray <andrew.murray@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
+Message-ID: <20130115120855.GA5637@avionic-0098.adnet.avionic-design.de>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130111154516.GA25335@avionic-0098.adnet.avionic-design.de>
+ <20130112123640.GA22505@avionic-0098.adnet.avionic-design.de>
+ <201301122112.25772.arnd@arndb.de>
+ <20130113095806.GA31966@avionic-0098.adnet.avionic-design.de>
+ <20130114095706.GA23467@arm.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Shawn Guo <shawn.guo@linaro.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <florianSchandinat@gmx.de>
-Subject: Re: [PATCH] fb: Rework locking to fix lock ordering on takeover
-References: <CA+1xoqe0G4rha5bDcoQQUcACYbQ8BCO7AE_JE8z5VjJLeNUdyA@mail.gmail.com> <CAM_iQpWLgnxQR+oYD+Dnh9NprR1-QLjXa6T+dtHUs3A-_N2wmQ@mail.gmail.com> <CA+1xoqf0d5ckDZ3o1-Y+qd61nvVA7EECeH20U+WjDpNVb4E=pw@mail.gmail.com> <20121227045301.GB17472@x1.alien8.de> <20121228115022.GA28009@S2101-09.ap.freescale.net> <20121228124026.GB12918@x1.alien8.de> <alpine.LRH.2.00.1301071037010.5443@twin.jikos.cz> <20130112183619.GC10630@liondog.tnic> <CA+55aFw163CwK_MmUKY7zGFeck+Rxk_xs=BDrCAFpg-xac3vmQ@mail.gmail.com> <20130112131323.31d2a585.akpm@linux-foundation.org> <20130113000242.GD10630@liondog.tnic>
-In-Reply-To: <20130113000242.GD10630@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
+Content-Disposition: inline
+In-Reply-To: <20130114095706.GA23467@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:2bCvxZFsIi8Fl6yosiCvabg9vLAbTXpx8CMLwv7pBTI
+ mKJC4Vs5pxe1+z/HDOYkib5PGJXTmExV78yeZUTWLk5YLoZpXF
+ 5V/TXGmgweUGNyNLTdRP5H90C1cONIp4ds1zbgvGAcMy4Dibij
+ IT3qysxh09xpHRPxnicJz+sw2wi1D9PSAuBevPA6ppI2+Tf4sw
+ p3gtqzwp+cVxbLdE192wc8pxXwDt8irmruix5YeZ/Kbo7i1l+I
+ +T5Ht45ds6w6Wurtz0ufKzRDl2Te8lpCXvzq1xEpqWFuNbWi2N
+ CXMhDql+4l38AfpfYLK38Dzbp5uavEs1jj/NSkxm6D/0VnsTia
+ bxdK7Dzuj1o5NrO+8pkKUA6euB93ZLmgbuh6eCjeAENKvTTPT+
+ mode46VVb41vXifyiDn3yfRk9zIgvYUGvk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
 
-Op 13-01-13 01:02, Borislav Petkov schreef:
-> On Sat, Jan 12, 2013 at 01:13:23PM -0800, Andrew Morton wrote:
->> Florian has been taking a month or two's downtime (now expired, I
->> think) so I've been waiting for him to reappear to process this one for
->> 3.8.
->>
->> Meanwhile, I guess we could put it into mainline ;) It has been in
->> -next for a month.
->>
->> From: Alan Cox <alan@linux.intel.com>
->> Subject: fb: rework locking to fix lock ordering on takeover
->>
->> Adjust the console layer to allow a take over call where the caller
->> already holds the locks.  Make the fb layer lock in order.
->>
->> This is partly a band aid, the fb layer is terminally confused about the
->> locking rules it uses for its notifiers it seems.
->>
->> [akpm@linux-foundation.org: remove stray non-ascii char, tidy comment]
->> [akpm@linux-foundation.org: export do_take_over_console()]
->> Signed-off-by: Alan Cox <alan@linux.intel.com>
->> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
->> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
->> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Yes, that's the one, modulo Andrew's fixes, which I've been running.
-> Irregardless, I'll run this one tomorrow just in case, because it
-> triggers here so easily.
->
-Just tested this patch on a macbook pro with i915 and radeon. First I get a nasty lockdep splat, then it locks up completely:
+--zYM0uCDKw75PZbzx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[   13.507373] fb: conflicting fb hw usage radeondrmfb vs EFI VGA - removing generic driver
-[   13.507412] 
-[   13.507413] ======================================================
-[   13.507413] [ INFO: possible circular locking dependency detected ]
-[   13.507414] 3.8.0-rc3-patser+ #910 Not tainted
-[   13.507415] -------------------------------------------------------
-[   13.507415] modprobe/554 is trying to acquire lock:
-[   13.507421]  (console_lock){+.+.+.}, at: [<ffffffff813f6ca7>] unbind_con_driver+0x37/0x210
-[   13.507422] 
-[   13.507422] but task is already holding lock:
-[   13.507425]  ((fb_notifier_list).rwsem){.+.+.+}, at: [<ffffffff8106d96d>] __blocking_notifier_call_chain+0x3d/0x80
-[   13.507426] 
-[   13.507426] which lock already depends on the new lock.
-[   13.507426] 
-[   13.507426] 
-[   13.507426] the existing dependency chain (in reverse order) is:
-[   13.507428] 
-[   13.507428] -> #1 ((fb_notifier_list).rwsem){.+.+.+}:
-[   13.507431]        [<ffffffff8109e946>] lock_acquire+0x96/0xc0
-[   13.507434]        [<ffffffff816f8442>] down_read+0x42/0x57
-[   13.507435]        [<ffffffff8106d96d>] __blocking_notifier_call_chain+0x3d/0x80
-[   13.507437]        [<ffffffff8106d9c1>] blocking_notifier_call_chain+0x11/0x20
-[   13.507439]        [<ffffffff8138e816>] fb_notifier_call_chain+0x16/0x20
-[   13.507441]        [<ffffffff8138fd23>] register_framebuffer+0x1c3/0x2e0
-[   13.507444]        [<ffffffff81cdfabf>] efifb_probe+0x402/0x489
-[   13.507446]        [<ffffffff81412e0e>] platform_drv_probe+0x3e/0x70
-[   13.507448]        [<ffffffff81410e96>] driver_probe_device+0x76/0x240
-[   13.507450]        [<ffffffff81411103>] __driver_attach+0xa3/0xb0
-[   13.507451]        [<ffffffff8140f2f6>] bus_for_each_dev+0x56/0x90
-[   13.507452]        [<ffffffff814109f9>] driver_attach+0x19/0x20
-[   13.507454]        [<ffffffff81410598>] bus_add_driver+0x188/0x270
-[   13.507455]        [<ffffffff81411635>] driver_register+0x75/0x150
-[   13.507457]        [<ffffffff814126a1>] platform_driver_register+0x41/0x50
-[   13.507458]        [<ffffffff814126c6>] platform_driver_probe+0x16/0xa0
-[   13.507460]        [<ffffffff81cdfdbd>] efifb_init+0x277/0x292
-[   13.507462]        [<ffffffff810001fa>] do_one_initcall+0x3a/0x170
-[   13.507464]        [<ffffffff816df85d>] kernel_init+0x11d/0x290
-[   13.507466]        [<ffffffff817008ac>] ret_from_fork+0x7c/0xb0
-[   13.507467] 
-[   13.507467] -> #0 (console_lock){+.+.+.}:
-[   13.507469]        [<ffffffff8109dccf>] __lock_acquire+0x168f/0x1d90
-[   13.507471]        [<ffffffff8109e946>] lock_acquire+0x96/0xc0
-[   13.507474]        [<ffffffff81048dff>] console_lock+0x6f/0x80
-[   13.507475]        [<ffffffff813f6ca7>] unbind_con_driver+0x37/0x210
-[   13.507477]        [<ffffffff8139dbe7>] fbcon_event_notify+0x477/0x920
-[   13.507478]        [<ffffffff816fe318>] notifier_call_chain+0x58/0xb0
-[   13.507479]        [<ffffffff8106d983>] __blocking_notifier_call_chain+0x53/0x80
-[   13.507481]        [<ffffffff8106d9c1>] blocking_notifier_call_chain+0x11/0x20
-[   13.507482]        [<ffffffff8138e816>] fb_notifier_call_chain+0x16/0x20
-[   13.507484]        [<ffffffff8138f902>] do_unregister_framebuffer+0x62/0x100
-[   13.507485]        [<ffffffff8138fb34>] do_remove_conflicting_framebuffers+0x154/0x180
-[   13.507487]        [<ffffffff8138fe7a>] remove_conflicting_framebuffers+0x3a/0x60
-[   13.507501]        [<ffffffffa02111a4>] radeon_pci_probe+0x84/0xc0 [radeon]
-[   13.507503]        [<ffffffff813745c6>] local_pci_probe+0x46/0x80
-[   13.507505]        [<ffffffff81375e19>] pci_device_probe+0xf9/0x120
-[   13.507506]        [<ffffffff81410e96>] driver_probe_device+0x76/0x240
-[   13.507507]        [<ffffffff81411103>] __driver_attach+0xa3/0xb0
-[   13.507508]        [<ffffffff8140f2f6>] bus_for_each_dev+0x56/0x90
-[   13.507510]        [<ffffffff814109f9>] driver_attach+0x19/0x20
-[   13.507511]        [<ffffffff81410598>] bus_add_driver+0x188/0x270
-[   13.507512]        [<ffffffff81411635>] driver_register+0x75/0x150
-[   13.507514]        [<ffffffff81374e2f>] __pci_register_driver+0x5f/0x70
-[   13.507520]        [<ffffffffa009773a>] drm_pci_init+0x11a/0x130 [drm]
-[   13.507528]        [<ffffffffa02f30ec>] radeon_init+0xec/0x1000 [radeon]
-[   13.507530]        [<ffffffff810001fa>] do_one_initcall+0x3a/0x170
-[   13.507532]        [<ffffffff810a9fd2>] load_module+0x1a52/0x2020
-[   13.507533]        [<ffffffff810aa671>] sys_init_module+0xd1/0x100
-[   13.507535]        [<ffffffff81700952>] system_call_fastpath+0x16/0x1b
-[   13.507535] 
-[   13.507535] other info that might help us debug this:
-[   13.507535] 
-[   13.507535]  Possible unsafe locking scenario:
-[   13.507535] 
-[   13.507536]        CPU0                    CPU1
-[   13.507536]        ----                    ----
-[   13.507537]   lock((fb_notifier_list).rwsem);
-[   13.507538]                                lock(console_lock);
-[   13.507538]                                lock((fb_notifier_list).rwsem);
-[   13.507539]   lock(console_lock);
-[   13.507539] 
-[   13.507539]  *** DEADLOCK ***
-[   13.507539] 
-[   13.507540] 5 locks held by modprobe/554:
-[   13.507543]  #0:  (&__lockdep_no_validate__){......}, at: [<ffffffff814110b3>] __driver_attach+0x53/0xb0
-[   13.507545]  #1:  (&__lockdep_no_validate__){......}, at: [<ffffffff814110c1>] __driver_attach+0x61/0xb0
-[   13.507547]  #2:  (registration_lock){+.+.+.}, at: [<ffffffff8138fe6b>] remove_conflicting_framebuffers+0x2b/0x60
-[   13.507550]  #3:  (&fb_info->lock){+.+.+.}, at: [<ffffffff8138ecd1>] lock_fb_info+0x21/0x60
-[   13.507552]  #4:  ((fb_notifier_list).rwsem){.+.+.+}, at: [<ffffffff8106d96d>] __blocking_notifier_call_chain+0x3d/0x80
-[   13.507552] 
-[   13.507552] stack backtrace:
-[   13.507554] Pid: 554, comm: modprobe Not tainted 3.8.0-rc3-patser+ #910
-[   13.507554] Call Trace:
-[   13.507557]  [<ffffffff816efd4e>] print_circular_bug+0x1fb/0x20c
-[   13.507559]  [<ffffffff8109dccf>] __lock_acquire+0x168f/0x1d90
-[   13.507561]  [<ffffffff8109b532>] ? mark_held_locks+0x82/0x130
-[   13.507563]  [<ffffffff8109e946>] lock_acquire+0x96/0xc0
-[   13.507565]  [<ffffffff813f6ca7>] ? unbind_con_driver+0x37/0x210
-[   13.507566]  [<ffffffff8109b7cd>] ? trace_hardirqs_on+0xd/0x10
-[   13.507568]  [<ffffffff81048dff>] console_lock+0x6f/0x80
-[   13.507570]  [<ffffffff813f6ca7>] ? unbind_con_driver+0x37/0x210
-[   13.507571]  [<ffffffff813f6ca7>] unbind_con_driver+0x37/0x210
-[   13.507573]  [<ffffffff8109e953>] ? lock_acquire+0xa3/0xc0
-[   13.507574]  [<ffffffff8139dbe7>] fbcon_event_notify+0x477/0x920
-[   13.507576]  [<ffffffff816fe318>] notifier_call_chain+0x58/0xb0
-[   13.507577]  [<ffffffff8106d983>] __blocking_notifier_call_chain+0x53/0x80
-[   13.507579]  [<ffffffff8106d9c1>] blocking_notifier_call_chain+0x11/0x20
-[   13.507580]  [<ffffffff8138e816>] fb_notifier_call_chain+0x16/0x20
-[   13.507582]  [<ffffffff8138f902>] do_unregister_framebuffer+0x62/0x100
-[   13.507584]  [<ffffffff8138fb34>] do_remove_conflicting_framebuffers+0x154/0x180
-[   13.507586]  [<ffffffff8138fe7a>] remove_conflicting_framebuffers+0x3a/0x60
-[   13.507597]  [<ffffffffa02111a4>] radeon_pci_probe+0x84/0xc0 [radeon]
-[   13.507598]  [<ffffffff813745c6>] local_pci_probe+0x46/0x80
-[   13.507600]  [<ffffffff81375e19>] pci_device_probe+0xf9/0x120
-[   13.507601]  [<ffffffff81410e96>] driver_probe_device+0x76/0x240
-[   13.507603]  [<ffffffff81411103>] __driver_attach+0xa3/0xb0
-[   13.507604]  [<ffffffff81411060>] ? driver_probe_device+0x240/0x240
-[   13.507606]  [<ffffffff8140f2f6>] bus_for_each_dev+0x56/0x90
-[   13.507607]  [<ffffffff814109f9>] driver_attach+0x19/0x20
-[   13.507608]  [<ffffffff81410598>] bus_add_driver+0x188/0x270
-[   13.507610]  [<ffffffff81411635>] driver_register+0x75/0x150
-[   13.507612]  [<ffffffff81374e2f>] __pci_register_driver+0x5f/0x70
-[   13.507617]  [<ffffffffa009773a>] drm_pci_init+0x11a/0x130 [drm]
-[   13.507619]  [<ffffffffa02f3000>] ? 0xffffffffa02f2fff
-[   13.507620]  [<ffffffffa02f3000>] ? 0xffffffffa02f2fff
-[   13.507628]  [<ffffffffa02f30ec>] radeon_init+0xec/0x1000 [radeon]
-[   13.507630]  [<ffffffff810001fa>] do_one_initcall+0x3a/0x170
-[   13.507632]  [<ffffffff810a9fd2>] load_module+0x1a52/0x2020
-[   13.507633]  [<ffffffff810a71b0>] ? get_modinfo.isra.30+0xc0/0xc0
-[   13.507635]  [<ffffffff8135166e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   13.507637]  [<ffffffff810aa671>] sys_init_module+0xd1/0x100
-[   13.507639]  [<ffffffff81700952>] system_call_fastpath+0x16/0x1b
+On Mon, Jan 14, 2013 at 09:57:07AM +0000, Andrew Murray wrote:
+> On Sun, Jan 13, 2013 at 09:58:06AM +0000, Thierry Reding wrote:
+> > On Sat, Jan 12, 2013 at 09:12:25PM +0000, Arnd Bergmann wrote:
+> > > On Saturday 12 January 2013, Thierry Reding wrote:
+> > > > > I already hinted at that in one of the other subthreads. Having s=
+uch a
+> > > > > multiplex would also allow the driver to be built as a module. I =
+had
+> > > > > already thought about this when I was working on an earlier versi=
+on of
+> > > > > these patches. Basically these would be two ops attached to the h=
+ost
+> > > > > bridge, and the generic arch_setup_msi_irq() could then look that=
+ up
+> > > > > given the struct pci_dev that is passed to it and call this new p=
+er-
+> > > > > host bridge .setup_msi_irq().
+> > > >=20
+> > > > struct pci_ops looks like a good place to put these. They'll be
+> > > > available from each struct pci_bus, so should be easy to call from
+> > > > arch_setup_msi_irq().
+> > > >=20
+> > > > Any objections?
+> > > >=20
+> > >=20
+> > > struct pci_ops has a long history of being specifically about
+> > > config space read/write operations, so on the one hand it does
+> > > not feel like the right place to put interrupt specific operations,
+> > > but on the other hand, the name sounds appropriate and I cannot
+> > > think of any other place to put this, so it's fine with me.
+> > >=20
+> > > The only alternative I can think of is to introduce a new
+> > > structure next to it in struct pci_bus, but that feels a bit
+> > > pointless. Maybe Bjorn has a preference one way or the other.
+> >=20
+> > The name pci_ops is certainly generic enough. Also the comment above the
+> > structure declaration says "Low-level architecture-dependent routines",
+> > which applies to the MSI functions as well.
+>=20
+> I've previously looked into this. It seems that architectures handle this
+> in different ways, some use vector tables, others use a multiplex and oth=
+ers
+> just let the end user implement the callback directly.
+>=20
+> I've made an attempt to find a more common way. Though my implementation,=
+ which
+> I will try to share later today for reference provides a registration fun=
+ction
+> in drivers/pci/msi.c to provide implementations of the
+> (setup|teardown)_msi_irq(s) ops. This seems slightly better than the curr=
+ent
+> approach and doesn't break existing users - but is still ugly.
+>=20
+> At present the PCI and MSI frameworks are largely uncoupled from each oth=
+er and
+> so I was keen to not pollute PCI structures (e.g. pci_ops) with MSI ops. =
+Just
+> because most PCI host bridges also provide MSI support I don't think ther=
+e is a
+> reason why they should always come as a pair or be provided by the same c=
+hip.
+>=20
+> Perhaps the solution is to support MSI controller drivers and a means to
+> associate them with PCI host controller drivers?
 
-<...>
+I'm not sure I follow you're reasoning here. Is it possible to use MSIs
+without PCI? If not then I think there's little sense in keeping the
+implementations separate.
 
-[   62.505111] INFO: task plymouthd:293 blocked for more than 30 seconds.
-[   62.505113] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[   62.505122] plymouthd       D 0000000000000246     0   293      1 0x00000000
-[   62.505130]  ffff88016a293b18 0000000000000046 0000000000000000 0000000000000000
-[   62.505135]  ffff88015ce12040 ffff88016a293fd8 ffff88016a293fd8 ffff88016a293fd8
-[   62.505141]  ffff880153c66040 ffff88015ce12040 ffffffff81c30360 ffffffffa00bb1e0
-[   62.505142] Call Trace:
-[   62.505162]  [<ffffffff816f9224>] schedule+0x24/0x70
-[   62.505178]  [<ffffffff816f9543>] schedule_preempt_disabled+0x13/0x20
-[   62.505180]  [<ffffffff816f5de9>] mutex_lock_nested+0x179/0x390
-[   62.505187]  [<ffffffffa00907f4>] ? drm_stub_open+0x54/0x170 [drm]
-[   62.505193]  [<ffffffffa00907f4>] drm_stub_open+0x54/0x170 [drm]
-[   62.505195]  [<ffffffff8113739c>] chrdev_open+0x9c/0x1a0
-[   62.505197]  [<ffffffff81137300>] ? cdev_put+0x30/0x30
-[   62.505200]  [<ffffffff81130cae>] do_dentry_open+0x26e/0x310
-[   62.505201]  [<ffffffff81130eb0>] finish_open+0x30/0x40
-[   62.505204]  [<ffffffff81140fee>] do_last+0x74e/0xea0
-[   62.505206]  [<ffffffff8113e00d>] ? link_path_walk+0x23d/0x920
-[   62.505208]  [<ffffffff811417ee>] path_openat+0xae/0x4c0
-[   62.505210]  [<ffffffff8114237d>] do_filp_open+0x3d/0xa0
-[   62.505213]  [<ffffffff8114fd0f>] ? __alloc_fd+0xcf/0x120
-[   62.505215]  [<ffffffff811321f9>] do_sys_open+0xf9/0x1e0
-[   62.505216]  [<ffffffff811322fc>] sys_open+0x1c/0x20
-[   62.505218]  [<ffffffff81700952>] system_call_fastpath+0x16/0x1b
-[   62.505219] INFO: lockdep is turned off.
-[   62.505221] INFO: task modprobe:554 blocked for more than 30 seconds.
-[   62.505221] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[   62.505223] modprobe        D 0000000000000000     0   554    539 0x00000002
-[   62.505225]  ffff88015cf155a8 0000000000000046 0000000000000000 ffffffff81070dad
-[   62.505227]  ffff88016a284040 ffff88015cf15fd8 ffff88015cf15fd8 ffff88015cf15fd8
-[   62.505228]  ffffffff81c13440 ffff88016a284040 ffff88016fdfdf48 ffffffff81c220e0
-[   62.505228] Call Trace:
-[   62.505231]  [<ffffffff81070dad>] ? __wake_up+0x2d/0x70
-[   62.505233]  [<ffffffff816f9224>] schedule+0x24/0x70
-[   62.505234]  [<ffffffff816f57e5>] schedule_timeout+0x175/0x1b0
-[   62.505237]  [<ffffffff81009996>] ? native_sched_clock+0x26/0x90
-[   62.505239]  [<ffffffff816f84ee>] __down_common+0x97/0xe8
-[   62.505241]  [<ffffffff816f859e>] __down+0x18/0x1a
-[   62.505242]  [<ffffffff8106d81c>] down+0x3c/0x50
-[   62.505246]  [<ffffffff81048db7>] console_lock+0x27/0x80
-[   62.505248]  [<ffffffff8139b196>] set_con2fb_map+0x116/0x4c0
-[   62.505250]  [<ffffffff8139d9bb>] fbcon_event_notify+0x24b/0x920
-[   62.505252]  [<ffffffff816fe318>] notifier_call_chain+0x58/0xb0
-[   62.505254]  [<ffffffff8106d983>] __blocking_notifier_call_chain+0x53/0x80
-[   62.505255]  [<ffffffff8106d9c1>] blocking_notifier_call_chain+0x11/0x20
-[   62.505257]  [<ffffffff8138e816>] fb_notifier_call_chain+0x16/0x20
-[   62.505259]  [<ffffffff8138fd23>] register_framebuffer+0x1c3/0x2e0
-[   62.505262]  [<ffffffffa0115e7b>] drm_fb_helper_single_fb_probe+0x1eb/0x320 [drm_kms_helper]
-[   62.505265]  [<ffffffffa0116183>] drm_fb_helper_initial_config+0x1d3/0x260 [drm_kms_helper]
-[   62.505268]  [<ffffffff8109b7cd>] ? trace_hardirqs_on+0xd/0x10
-[   62.505288]  [<ffffffffa0253e1a>] radeon_fbdev_init+0xaa/0xf0 [radeon]
-[   62.505301]  [<ffffffffa024e95b>] radeon_modeset_init+0x37b/0xa50 [radeon]
-[   62.505313]  [<ffffffffa022b5c8>] radeon_driver_load_kms+0xe8/0x150 [radeon]
-[   62.505319]  [<ffffffffa00974f9>] drm_get_pci_dev+0x179/0x2a0 [drm]
-[   62.505331]  [<ffffffffa02111be>] radeon_pci_probe+0x9e/0xc0 [radeon]
-[   62.505333]  [<ffffffff813745c6>] local_pci_probe+0x46/0x80
-[   62.505335]  [<ffffffff81375e19>] pci_device_probe+0xf9/0x120
-[   62.505337]  [<ffffffff81410e96>] driver_probe_device+0x76/0x240
-[   62.505339]  [<ffffffff81411103>] __driver_attach+0xa3/0xb0
-[   62.505341]  [<ffffffff81411060>] ? driver_probe_device+0x240/0x240
-[   62.505342]  [<ffffffff8140f2f6>] bus_for_each_dev+0x56/0x90
-[   62.505344]  [<ffffffff814109f9>] driver_attach+0x19/0x20
-[   62.505345]  [<ffffffff81410598>] bus_add_driver+0x188/0x270
-[   62.505347]  [<ffffffff81411635>] driver_register+0x75/0x150
-[   62.505349]  [<ffffffff81374e2f>] __pci_register_driver+0x5f/0x70
-[   62.505354]  [<ffffffffa009773a>] drm_pci_init+0x11a/0x130 [drm]
-[   62.505356]  [<ffffffffa02f3000>] ? 0xffffffffa02f2fff
-[   62.505358]  [<ffffffffa02f3000>] ? 0xffffffffa02f2fff
-[   62.505367]  [<ffffffffa02f30ec>] radeon_init+0xec/0x1000 [radeon]
-[   62.505369]  [<ffffffff810001fa>] do_one_initcall+0x3a/0x170
-[   62.505372]  [<ffffffff810a9fd2>] load_module+0x1a52/0x2020
-[   62.505373]  [<ffffffff810a71b0>] ? get_modinfo.isra.30+0xc0/0xc0
-[   62.505375]  [<ffffffff8135166e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   62.505377]  [<ffffffff810aa671>] sys_init_module+0xd1/0x100
-[   62.505379]  [<ffffffff81700952>] system_call_fastpath+0x16/0x1b
+Furthermore, if MSI controller and PCI host bridge are separate entities
+how do you look up the MSI controller given a PCI device?
 
+Thierry
 
+--zYM0uCDKw75PZbzx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ9UbXAAoJEN0jrNd/PrOhPUMQAKNhspoQI51u1sXnZ0ln3ibR
+FLBRqTURtkSryRPqcuc+trnITfOMi7McsACOGsPVRzU3NwZpxrH+vENZuIWEtMjP
+pt++wG60l2oiOBVKkumxD/qDS/q7FBPC+0eD6vaXq5Nk8zG/NDSzvgCY0EY7kfnD
+rgNXAFhHZTGN3srxM7ZVc3IkMZt43Q5F5yaCiy1GOhR9dnpUK/taOwo821rcx+Tf
+0agNyrafnD3nfP51cAIzjAWIeaPt467L0xU3O1byrh+BnOufwlMhUQmMOrgXtmf4
+XQBg0Al9JCS382heYvArCIcj/UI2EILtMdJp9V567vQ3dIA1k0pQ7IiZRez3zjFW
+3uhzUrI2W2MFR/kBOVkf3LoWxx+L+ja0Ur70KOR5BtH/tp4qAQmkWy2HJMh7WmL9
+UlvSsmNqL5FkU470tv7+uPDgJYmhVnWUhn/e2CskagT60ngfmvGo3s5xGDKMKWUt
+aGL36UR1G0xWzJTC2dgfggMfvWV0fq+HXRMe5wF7wW5ftxqnW2t8V8Q+gjLF/+k1
+faCMJld6ueA0h0sz0zVKlacBgo0ocT5Q8KxlMFnTSsvizvmHe5MYIxXDGb6zC8gL
+jZfF+VeG4WXtMTl/eO3UbOi5lEg/rH1PVbGMSW0Tg65BBEGGldMu0l2DIsMsyBCd
+Fv0lXQVkotmB8gKfpzss
+=0RFY
+-----END PGP SIGNATURE-----
+
+--zYM0uCDKw75PZbzx--
