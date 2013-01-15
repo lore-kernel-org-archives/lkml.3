@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab3AOKzs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:55:48 -0500
+	id S1756595Ab3AOK4I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:56:08 -0500
 Received: from cn.fujitsu.com ([222.73.24.84]:32090 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756215Ab3AOKzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:55:43 -0500
+	id S1756449Ab3AOKzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:55:49 -0500
 X-IronPort-AV: E=Sophos;i="4.84,473,1355068800"; 
-   d="scan'208";a="6591340"
+   d="scan'208";a="6591341"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
         benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
@@ -21,9 +21,9 @@ Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
         sparclinux@vger.kernel.org
-Subject: [BUG Fix Patch 2/6] Bug fix: Do not calculate direct mapping pages when freeing vmemmap pagetables.
-Date: Tue, 15 Jan 2013 18:54:23 +0800
-Message-Id: <1358247267-18089-3-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [BUG Fix Patch 3/6] Bug fix: Do not free direct mapping pages twice.
+Date: Tue, 15 Jan 2013 18:54:24 +0800
+Message-Id: <1358247267-18089-4-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1358247267-18089-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1358247267-18089-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -36,84 +36,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We only need to update direct_pages_count[level] when we freeing direct mapped
-pagetables.
+Direct mapped pages were freed when they were offlined, or they were
+not allocated. So we only need to free vmemmap pages, no need to free
+direct mapped pages.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/init_64.c |   17 +++++++----------
- 1 files changed, 7 insertions(+), 10 deletions(-)
+ arch/x86/mm/init_64.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index e829113..368cc3f 100644
+index 368cc3f..e77d312 100644
 --- a/arch/x86/mm/init_64.c
 +++ b/arch/x86/mm/init_64.c
-@@ -804,14 +804,13 @@ remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
+@@ -804,6 +804,10 @@ remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
  
  		if (IS_ALIGNED(addr, PAGE_SIZE) &&
  		    IS_ALIGNED(next, PAGE_SIZE)) {
--			if (!direct) {
-+			if (!direct)
++			/*
++			 * Do not free direct mapping pages since they were
++			 * freed when offlining.
++			 */
+ 			if (!direct)
  				free_pagetable(pte_page(*pte), 0);
--				pages++;
--			}
  
- 			spin_lock(&init_mm.page_table_lock);
- 			pte_clear(&init_mm, addr, pte);
- 			spin_unlock(&init_mm.page_table_lock);
-+			pages++;
- 		} else {
- 			/*
- 			 * If we are not removing the whole page, it means
-@@ -824,11 +823,11 @@ remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
+@@ -819,10 +823,11 @@ remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
+ 			 * remove the page when it is wholly filled with 0xFD.
+ 			 */
+ 			memset((void *)addr, PAGE_INUSE, next - addr);
+-			page_addr = page_address(pte_page(*pte));
  
++			page_addr = page_address(pte_page(*pte));
  			if (!memchr_inv(page_addr, PAGE_INUSE, PAGE_SIZE)) {
- 				free_pagetable(pte_page(*pte), 0);
--				pages++;
+-				free_pagetable(pte_page(*pte), 0);
++				if (!direct)
++					free_pagetable(pte_page(*pte), 0);
  
  				spin_lock(&init_mm.page_table_lock);
  				pte_clear(&init_mm, addr, pte);
- 				spin_unlock(&init_mm.page_table_lock);
-+				pages++;
- 			}
- 		}
- 	}
-@@ -857,15 +856,14 @@ remove_pmd_table(pmd_t *pmd_start, unsigned long addr, unsigned long end,
- 		if (pmd_large(*pmd)) {
- 			if (IS_ALIGNED(addr, PMD_SIZE) &&
- 			    IS_ALIGNED(next, PMD_SIZE)) {
--				if (!direct) {
-+				if (!direct)
- 					free_pagetable(pmd_page(*pmd),
- 						       get_order(PMD_SIZE));
--					pages++;
--				}
- 
- 				spin_lock(&init_mm.page_table_lock);
- 				pmd_clear(pmd);
- 				spin_unlock(&init_mm.page_table_lock);
-+				pages++;
- 				continue;
- 			}
- 
-@@ -914,15 +912,14 @@ remove_pud_table(pud_t *pud_start, unsigned long addr, unsigned long end,
- 		if (pud_large(*pud)) {
- 			if (IS_ALIGNED(addr, PUD_SIZE) &&
- 			    IS_ALIGNED(next, PUD_SIZE)) {
--				if (!direct) {
-+				if (!direct)
- 					free_pagetable(pud_page(*pud),
- 						       get_order(PUD_SIZE));
--					pages++;
--				}
- 
- 				spin_lock(&init_mm.page_table_lock);
- 				pud_clear(pud);
- 				spin_unlock(&init_mm.page_table_lock);
-+				pages++;
- 				continue;
- 			}
- 
 -- 
 1.7.1
 
