@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934215Ab3AOXKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:10:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48086 "EHLO mail.kernel.org"
+	id S934233Ab3AOXLI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:11:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48062 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934186Ab3AOW42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:56:28 -0500
+	id S934085Ab3AOW4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 24/71] ring-buffer: Fix race between integrity check and readers
-Date: Tue, 15 Jan 2013 14:54:21 -0800
-Message-Id: <20130115225342.176297340@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 20/71] i2400m: add Intel 6150 device IDs
+Date: Tue, 15 Jan 2013 14:54:17 -0800
+Message-Id: <20130115225341.892642216@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -25,46 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 9366c1ba13fbc41bdb57702e75ca4382f209c82f upstream.
+commit 999a7c5776a0ed2133645fa7e008bec05bda9254 upstream.
 
-The function rb_check_pages() was added to make sure the ring buffer's
-pages were sane. This check is done when the ring buffer size is modified
-as well as when the iterator is released (closing the "trace" file),
-as that was considered a non fast path and a good place to do a sanity
-check.
+Add device IDs for WiMAX function of Intel 6150 cards.
 
-The problem is that the check does not have any locks around it.
-If one process were to read the trace file, and another were to read
-the raw binary file, the check could happen while the reader is reading
-the file.
-
-The issues with this is that the check requires to clear the HEAD page
-before doing the full check and it restores it afterward. But readers
-require the HEAD page to exist before it can read the buffer, otherwise
-it gives a nasty warning and disables the buffer.
-
-By adding the reader lock around the check, this keeps the race from
-happening.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wimax/i2400m/i2400m-usb.h |    3 +++
+ drivers/net/wimax/i2400m/usb.c        |    6 ++++++
+ 2 files changed, 9 insertions(+)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2926,6 +2926,8 @@ rb_get_reader_page(struct ring_buffer_pe
- 	 * Splice the empty reader page into the list around the head.
- 	 */
- 	reader = rb_set_head_page(cpu_buffer);
-+	if (!reader)
-+		goto out;
- 	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
- 	cpu_buffer->reader_page->list.prev = reader->list.prev;
+--- a/drivers/net/wimax/i2400m/i2400m-usb.h
++++ b/drivers/net/wimax/i2400m/i2400m-usb.h
+@@ -152,6 +152,9 @@ enum {
+ 	/* Device IDs */
+ 	USB_DEVICE_ID_I6050 = 0x0186,
+ 	USB_DEVICE_ID_I6050_2 = 0x0188,
++	USB_DEVICE_ID_I6150 = 0x07d6,
++	USB_DEVICE_ID_I6150_2 = 0x07d7,
++	USB_DEVICE_ID_I6150_3 = 0x07d9,
+ 	USB_DEVICE_ID_I6250 = 0x0187,
+ };
  
+--- a/drivers/net/wimax/i2400m/usb.c
++++ b/drivers/net/wimax/i2400m/usb.c
+@@ -491,6 +491,9 @@ int i2400mu_probe(struct usb_interface *
+ 	switch (id->idProduct) {
+ 	case USB_DEVICE_ID_I6050:
+ 	case USB_DEVICE_ID_I6050_2:
++	case USB_DEVICE_ID_I6150:
++	case USB_DEVICE_ID_I6150_2:
++	case USB_DEVICE_ID_I6150_3:
+ 	case USB_DEVICE_ID_I6250:
+ 		i2400mu->i6050 = 1;
+ 		break;
+@@ -740,6 +743,9 @@ static
+ struct usb_device_id i2400mu_id_table[] = {
+ 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050) },
+ 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050_2) },
++	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150) },
++	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_2) },
++	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_3) },
+ 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6250) },
+ 	{ USB_DEVICE(0x8086, 0x0181) },
+ 	{ USB_DEVICE(0x8086, 0x1403) },
 
 
