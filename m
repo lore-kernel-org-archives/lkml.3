@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758226Ab3AOWaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:30:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41936 "EHLO mail.kernel.org"
+	id S1758211Ab3AOWaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:30:03 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41924 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758197Ab3AOWaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:30:01 -0500
+	id S1756246Ab3AOW37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:29:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Ujfalusi <peter.ujfalusi@gmail.com>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 083/221] drm/i915: dont disable disconnected outputs
-Date: Tue, 15 Jan 2013 10:50:10 -0800
-Message-Id: <20130115185004.039297472@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Daniel Gnoutcheff <daniel@gnoutcheff.name>
+Subject: [ 082/221] drm/i915: Flush outstanding unpin tasks before pageflipping
+Date: Tue, 15 Jan 2013 10:50:09 -0800
+Message-Id: <20130115185003.970574304@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -28,65 +27,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit b0a2658acb5bf9ca86b4aab011b7106de3af0add upstream.
+commit b4a98e57fc27854b5938fc8b08b68e5e68b91e1f upstream.
 
-This piece of neat lore has been ported painstakingly and bug-for-bug
-compatible from the old crtc helper code.
+If we accumulate unpin tasks because we are pageflipping faster than the
+system can schedule its workers, we can effectively create a
+pin-leak. The solution taken here is to limit the number of unpin tasks
+we have per-crtc and to flush those outstanding tasks if we accumulate
+too many. This should prevent any jitter in the normal case, and also
+prevent the hang if we should run too fast.
 
-Imo it's utter nonsense.
+Note: It is important that we switch from the system workqueue to our
+own dev_priv->wq since all work items on that queue are guaranteed to
+only need the dev->struct_mutex and not any modeset resources. For
+otherwise if we have a work item ahead in the queue which needs the
+modeset lock (like the output detect work used by both polling or
+hpd), this work and so the unpin work will never execute since the
+pageflip code already holds that lock. Unfortunately there's no
+lockdep support for this scenario in the workqueue code.
 
-If you disconnected a cable and before you reconnect it, userspace (or
-the kernel) does an set_crtc call, this will result in that connector
-getting disabled. Which will result in a nice black screen when
-plugging in the cable again.
-
-There's absolutely no reason the kernel does such policy enforcements
-- if userspace tries to set up a mode on something disconnected we
-might fail loudly (since the dp link training fails), but silently
-adjusting the output configuration behind userspace's back is a recipe
-for disaster. Specifically I think that this could explain some of our
-MI_WAIT hangs around suspend, where userspace issues a scanline wait
-on a disable pipe. This mechanisims here could explain how that pipe
-got disabled without userspace noticing.
-
-Note that this fixes a NULL deref at BIOS takeover when the firmware
-sets up a disconnected output in a clone configuration with a
-connected output on the 2nd pipe: When doing the full modeset we don't
-have a mode for the 2nd pipe and OOPS. On the first pipe this doesn't
-matter, since at boot-up the fbdev helpers will set up the choosen
-configuration on that on first. Since this is now the umptenth bug
-around handling this imo brain-dead semantics correctly, I think it's
-time to kill it and see whether there's any userspace out there which
-relies on this.
-
-It also nicely demonstrates that we have a tiny window where DP
-hotplug can still kill the driver.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=58396
-Tested-by: Peter Ujfalusi <peter.ujfalusi@gmail.com>
-Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=46991
+Reported-and-tested-by: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: Added note about workqueu deadlock.]
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=56337
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Tested-by: Daniel Gnoutcheff <daniel@gnoutcheff.name>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |   22 ++++++++++++++++------
+ drivers/gpu/drm/i915/intel_drv.h     |    4 +++-
+ 2 files changed, 19 insertions(+), 7 deletions(-)
 
 --- a/drivers/gpu/drm/i915/intel_display.c
 +++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7298,10 +7298,6 @@ intel_modeset_stage_output_state(struct
- 			DRM_DEBUG_KMS("encoder changed, full mode switch\n");
- 			config->mode_changed = true;
- 		}
--
--		/* Disable all disconnected encoders. */
--		if (connector->base.status == connector_status_disconnected)
--			connector->new_encoder = NULL;
- 	}
- 	/* connector->new_encoder is now updated for all connectors. */
+@@ -6187,14 +6187,19 @@ static void intel_unpin_work_fn(struct w
+ {
+ 	struct intel_unpin_work *work =
+ 		container_of(__work, struct intel_unpin_work, work);
++	struct drm_device *dev = work->crtc->dev;
  
+-	mutex_lock(&work->dev->struct_mutex);
++	mutex_lock(&dev->struct_mutex);
+ 	intel_unpin_fb_obj(work->old_fb_obj);
+ 	drm_gem_object_unreference(&work->pending_flip_obj->base);
+ 	drm_gem_object_unreference(&work->old_fb_obj->base);
+ 
+-	intel_update_fbc(work->dev);
+-	mutex_unlock(&work->dev->struct_mutex);
++	intel_update_fbc(dev);
++	mutex_unlock(&dev->struct_mutex);
++
++	BUG_ON(atomic_read(&to_intel_crtc(work->crtc)->unpin_work_count) == 0);
++	atomic_dec(&to_intel_crtc(work->crtc)->unpin_work_count);
++
+ 	kfree(work);
+ }
+ 
+@@ -6249,9 +6254,9 @@ static void do_intel_finish_page_flip(st
+ 
+ 	atomic_clear_mask(1 << intel_crtc->plane,
+ 			  &obj->pending_flip.counter);
+-
+ 	wake_up(&dev_priv->pending_flip_queue);
+-	schedule_work(&work->work);
++
++	queue_work(dev_priv->wq, &work->work);
+ 
+ 	trace_i915_flip_complete(intel_crtc->plane, work->pending_flip_obj);
+ }
+@@ -6570,7 +6575,7 @@ static int intel_crtc_page_flip(struct d
+ 		return -ENOMEM;
+ 
+ 	work->event = event;
+-	work->dev = crtc->dev;
++	work->crtc = crtc;
+ 	intel_fb = to_intel_framebuffer(crtc->fb);
+ 	work->old_fb_obj = intel_fb->obj;
+ 	INIT_WORK(&work->work, intel_unpin_work_fn);
+@@ -6595,6 +6600,9 @@ static int intel_crtc_page_flip(struct d
+ 	intel_fb = to_intel_framebuffer(fb);
+ 	obj = intel_fb->obj;
+ 
++	if (atomic_read(&intel_crtc->unpin_work_count) >= 2)
++		flush_workqueue(dev_priv->wq);
++
+ 	ret = i915_mutex_lock_interruptible(dev);
+ 	if (ret)
+ 		goto cleanup;
+@@ -6613,6 +6621,7 @@ static int intel_crtc_page_flip(struct d
+ 	 * the flip occurs and the object is no longer visible.
+ 	 */
+ 	atomic_add(1 << intel_crtc->plane, &work->old_fb_obj->pending_flip);
++	atomic_inc(&intel_crtc->unpin_work_count);
+ 
+ 	ret = dev_priv->display.queue_flip(dev, crtc, fb, obj);
+ 	if (ret)
+@@ -6627,6 +6636,7 @@ static int intel_crtc_page_flip(struct d
+ 	return 0;
+ 
+ cleanup_pending:
++	atomic_dec(&intel_crtc->unpin_work_count);
+ 	atomic_sub(1 << intel_crtc->plane, &work->old_fb_obj->pending_flip);
+ 	drm_gem_object_unreference(&work->old_fb_obj->base);
+ 	drm_gem_object_unreference(&obj->base);
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -198,6 +198,8 @@ struct intel_crtc {
+ 	struct intel_unpin_work *unpin_work;
+ 	int fdi_lanes;
+ 
++	atomic_t unpin_work_count;
++
+ 	/* Display surface base address adjustement for pageflips. Note that on
+ 	 * gen4+ this only adjusts up to a tile, offsets within a tile are
+ 	 * handled in the hw itself (with the TILEOFF register). */
+@@ -380,7 +382,7 @@ intel_get_crtc_for_plane(struct drm_devi
+ 
+ struct intel_unpin_work {
+ 	struct work_struct work;
+-	struct drm_device *dev;
++	struct drm_crtc *crtc;
+ 	struct drm_i915_gem_object *old_fb_obj;
+ 	struct drm_i915_gem_object *pending_flip_obj;
+ 	struct drm_pending_vblank_event *event;
 
 
