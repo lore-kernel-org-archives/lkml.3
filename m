@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934247Ab3AOXOW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:14:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47630 "EHLO mail.kernel.org"
+	id S934054Ab3AOWyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:54:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47602 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934059Ab3AOWyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:54:50 -0500
+	id S933925Ab3AOWyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:54:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Laura Abbott <lauraa@codeaurora.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 05/71] mm: use aligned zone start for pfn_to_bitidx calculation
-Date: Tue, 15 Jan 2013 14:54:02 -0800
-Message-Id: <20130115225340.782366320@linuxfoundation.org>
+        Peter Oberparleiter <peter.oberparleiter@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 03/71] s390/cio: fix pgid reserved check
+Date: Tue, 15 Jan 2013 14:54:00 -0800
+Message-Id: <20130115225340.634562767@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,53 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laura Abbott <lauraa@codeaurora.org>
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-commit c060f943d0929f3e429c5d9522290584f6281d6e upstream.
+commit d99e79ec5574fc556c988f613ed6175f6de66f4a upstream.
 
-The current calculation in pfn_to_bitidx assumes that (pfn -
-zone->zone_start_pfn) >> pageblock_order will return the same bit for
-all pfn in a pageblock.  If zone_start_pfn is not aligned to
-pageblock_nr_pages, this may not always be correct.
+The check to whom a device is reserved is done by checking the path
+state of the affected channel paths. If it turns out that one path is
+flagged as reserved by someone else the whole device is marked as such.
 
-Consider the following with pageblock order = 10, zone start 2MB:
+However the meaning of the RESVD_ELSE bit is that the addressed device
+is reserved to a different pathgroup (and not reserved to a different
+LPAR). If we do this test on a path which is currently not a member of
+the pathgroup we could erroneously mark the device as reserved to
+someone else.
 
-  pfn     | pfn - zone start | (pfn - zone start) >> page block order
-  ----------------------------------------------------------------
-  0x26000 | 0x25e00	   |  0x97
-  0x26100 | 0x25f00	   |  0x97
-  0x26200 | 0x26000	   |  0x98
-  0x26300 | 0x26100	   |  0x98
+To fix this collect the reserved state for all potential members of the
+pathgroup and only mark the device as reserved if all of those potential
+members have the RESVD_ELSE bit set.
 
-This means that calling {get,set}_pageblock_migratetype on a single page
-will not set the migratetype for the full block.  Fix this by rounding
-down zone_start_pfn when doing the bitidx calculation.
-
-For our use case, the effects of this bug were mostly tied to the fact
-that CMA allocations would either take a long time or fail to happen.
-Depending on the driver using CMA, this could result in anything from
-visual glitches to application failures.
-
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/s390/cio/device_pgid.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5492,7 +5492,7 @@ static inline int pfn_to_bitidx(struct z
- 	pfn &= (PAGES_PER_SECTION-1);
- 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
- #else
--	pfn = pfn - zone->zone_start_pfn;
-+	pfn = pfn - round_down(zone->zone_start_pfn, pageblock_nr_pages);
- 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
- #endif /* CONFIG_SPARSEMEM */
- }
+--- a/drivers/s390/cio/device_pgid.c
++++ b/drivers/s390/cio/device_pgid.c
+@@ -234,7 +234,7 @@ static int pgid_cmp(struct pgid *p1, str
+  * Determine pathgroup state from PGID data.
+  */
+ static void pgid_analyze(struct ccw_device *cdev, struct pgid **p,
+-			 int *mismatch, int *reserved, u8 *reset)
++			 int *mismatch, u8 *reserved, u8 *reset)
+ {
+ 	struct pgid *pgid = &cdev->private->pgid[0];
+ 	struct pgid *first = NULL;
+@@ -248,7 +248,7 @@ static void pgid_analyze(struct ccw_devi
+ 		if ((cdev->private->pgid_valid_mask & lpm) == 0)
+ 			continue;
+ 		if (pgid->inf.ps.state2 == SNID_STATE2_RESVD_ELSE)
+-			*reserved = 1;
++			*reserved |= lpm;
+ 		if (pgid_is_reset(pgid)) {
+ 			*reset |= lpm;
+ 			continue;
+@@ -316,14 +316,14 @@ static void snid_done(struct ccw_device
+ 	struct subchannel *sch = to_subchannel(cdev->dev.parent);
+ 	struct pgid *pgid;
+ 	int mismatch = 0;
+-	int reserved = 0;
++	u8 reserved = 0;
+ 	u8 reset = 0;
+ 	u8 donepm;
+ 
+ 	if (rc)
+ 		goto out;
+ 	pgid_analyze(cdev, &pgid, &mismatch, &reserved, &reset);
+-	if (reserved)
++	if (reserved == cdev->private->pgid_valid_mask)
+ 		rc = -EUSERS;
+ 	else if (mismatch)
+ 		rc = -EOPNOTSUPP;
+@@ -336,7 +336,7 @@ static void snid_done(struct ccw_device
+ 	}
+ out:
+ 	CIO_MSG_EVENT(2, "snid: device 0.%x.%04x: rc=%d pvm=%02x vpm=%02x "
+-		      "todo=%02x mism=%d rsvd=%d reset=%02x\n", id->ssid,
++		      "todo=%02x mism=%d rsvd=%02x reset=%02x\n", id->ssid,
+ 		      id->devno, rc, cdev->private->pgid_valid_mask, sch->vpm,
+ 		      cdev->private->pgid_todo_mask, mismatch, reserved, reset);
+ 	switch (rc) {
 
 
