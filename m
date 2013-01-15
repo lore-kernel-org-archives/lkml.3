@@ -1,55 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab3AOV1L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 16:27:11 -0500
-Received: from mga09.intel.com ([134.134.136.24]:22581 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750863Ab3AOV1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 16:27:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,475,1355126400"; 
-   d="scan'208";a="247272309"
-From: Andi Kleen <andi@firstfloor.org>
-To: John McCorquodale <mcq@rockgeek.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Transparent Hugepage Nit
-References: <20130115205041.GA12113@rockgeek.org>
-Date: Tue, 15 Jan 2013 13:26:58 -0800
-In-Reply-To: <20130115205041.GA12113@rockgeek.org> (John McCorquodale's
-	message of "Tue, 15 Jan 2013 13:50:41 -0700")
-Message-ID: <m2zk0ayw65.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756395Ab3AOV1h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 16:27:37 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:45472 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755719Ab3AOV1f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 16:27:35 -0500
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+Cc: Kent Overstreet <koverstreet@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/4] Revert "rw_semaphore: remove up/down_read_non_owner"
+Date: Tue, 15 Jan 2013 13:25:39 -0800
+Message-Id: <1358285142-10576-1-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <20130114223202.GV26407@google.com>
+References: <20130114223202.GV26407@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John McCorquodale <mcq@rockgeek.org> writes:
+This reverts commit 11b80f459adaf91a712f95e7734a17655a36bf30.
 
-> Suppose a hugepage-aligned mmap(MAP_ANONYMOUS) mapping has been madvise()d
-> HUGEPAGE.  If a subeqeuent call to mremap() grows the mapping and has to
-> move the mapping, the hugepage-alignment is not preserved in the choice of 
-> new address (in 3.7.2).
->
-> I can workaround this by doing a 1-hugepage-oversized remap to find a new 
-> aligned address and then size it back down MREMAP_FIXED, but that's probably 
-> a lot of frags to 4k pages and back that aren't necessary.
->
-> Should it not be the case that mremap(MAYMOVE) on something advised hugepage
-> ALWAYS chooses a hugepage-aligned address?  This would be handy when doing the
-> initial allocation too: mmap, madvise, mremap (to the same size) to get
-> alignment.
+Bcache needs rw semaphores for cache coherency in writeback mode -
+writes have to take a read lock on a per cache device rw sem, and
+release it when the bio completes.
 
-The hole searching currently doesn't know anything about transparent
-huge pages. There were some discussions on fixing it. But it's
-essentially a trade off between memory fragmentation and huge page
-optimization: aggressively aligning to 2MB can lose address space
-in holes.
+But since this is for bios it's naturally not in the context of the
+process that originally took the lock.
 
-Usually if the program uses large enough mappings and enough memory 
-it shouldn't be a problem.
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+CC: Christoph Hellwig <hch@infradead.org>
+CC: David Howells <dhowells@redhat.com>
+---
+ include/linux/rwsem.h | 10 ++++++++++
+ kernel/rwsem.c        | 16 ++++++++++++++++
+ 2 files changed, 26 insertions(+)
 
--Andi
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 54bd7cd..ddfe46d 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -125,9 +125,19 @@ extern void downgrade_write(struct rw_semaphore *sem);
+  */
+ extern void down_read_nested(struct rw_semaphore *sem, int subclass);
+ extern void down_write_nested(struct rw_semaphore *sem, int subclass);
++/*
++ * Take/release a lock when not the owner will release it.
++ *
++ * [ This API should be avoided as much as possible - the
++ *   proper abstraction for this case is completions. ]
++ */
++extern void down_read_non_owner(struct rw_semaphore *sem);
++extern void up_read_non_owner(struct rw_semaphore *sem);
+ #else
+ # define down_read_nested(sem, subclass)		down_read(sem)
+ # define down_write_nested(sem, subclass)	down_write(sem)
++# define down_read_non_owner(sem)		down_read(sem)
++# define up_read_non_owner(sem)			up_read(sem)
+ #endif
+ 
+ #endif /* _LINUX_RWSEM_H */
+diff --git a/kernel/rwsem.c b/kernel/rwsem.c
+index 6850f53..78b7915 100644
+--- a/kernel/rwsem.c
++++ b/kernel/rwsem.c
+@@ -116,6 +116,15 @@ void down_read_nested(struct rw_semaphore *sem, int subclass)
+ 
+ EXPORT_SYMBOL(down_read_nested);
+ 
++void down_read_non_owner(struct rw_semaphore *sem)
++{
++	might_sleep();
++
++	__down_read(sem);
++}
++
++EXPORT_SYMBOL(down_read_non_owner);
++
+ void down_write_nested(struct rw_semaphore *sem, int subclass)
+ {
+ 	might_sleep();
+@@ -126,6 +135,13 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
+ 
+ EXPORT_SYMBOL(down_write_nested);
+ 
++void up_read_non_owner(struct rw_semaphore *sem)
++{
++	__up_read(sem);
++}
++
++EXPORT_SYMBOL(up_read_non_owner);
++
+ #endif
+ 
+ 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.12
+
