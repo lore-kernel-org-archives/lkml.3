@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758567Ab3AOXBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:01:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48633 "EHLO mail.kernel.org"
+	id S934456Ab3AOXB5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:01:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48591 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934441Ab3AOW5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:38 -0500
+	id S934431Ab3AOW5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
         =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 59/71] USB: option: add Telekom Speedstick LTE II
-Date: Tue, 15 Jan 2013 14:54:56 -0800
-Message-Id: <20130115225344.643568923@linuxfoundation.org>
+Subject: [ 57/71] USB: option: blacklist network interface on ZTE MF880
+Date: Tue, 15 Jan 2013 14:54:54 -0800
+Message-Id: <20130115225344.504732753@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -31,44 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bjørn Mork <bjorn@mork.no>
 
-commit 5ec0085440ef8c2cf50002b34d5a504ee12aa2bf upstream.
-
-also known as Alcatel One Touch L100V LTE
+commit fab38246f318edcd0dcb8fd3852a47cf8938878a upstream.
 
 The driver description files gives these names to the vendor specific
 functions on this modem:
 
- Application1: VID_1BBB&PID_011E&MI_00
- Application2: VID_1BBB&PID_011E&MI_01
- Modem:        VID_1BBB&PID_011E&MI_03
- Ethernet:     VID_1BBB&PID_011E&MI_04
+ diag: VID_19D2&PID_0284&MI_00
+ nmea: VID_19D2&PID_0284&MI_01
+ at:   VID_19D2&PID_0284&MI_02
+ mdm:  VID_19D2&PID_0284&MI_03
+ net:  VID_19D2&PID_0284&MI_04
 
-Reported-by: Thomas Schäfer <tschaefer@t-online.de>
 Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/option.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- a/drivers/usb/serial/option.c
 +++ b/drivers/usb/serial/option.c
-@@ -288,6 +288,7 @@ static void option_instat_callback(struc
- #define ALCATEL_VENDOR_ID			0x1bbb
- #define ALCATEL_PRODUCT_X060S_X200		0x0000
- #define ALCATEL_PRODUCT_X220_X500D		0x0017
-+#define ALCATEL_PRODUCT_L100V			0x011e
- 
- #define PIRELLI_VENDOR_ID			0x1266
- #define PIRELLI_PRODUCT_C100_1			0x1002
-@@ -1198,6 +1199,8 @@ static const struct usb_device_id option
- 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
- 	},
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
+@@ -927,7 +927,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0257, 0xff, 0xff, 0xff), /* ZTE MF821 */
+ 	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0265, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff), /* ZTE MF880 */
 +	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
- 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0317, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0326, 0xff, 0xff, 0xff),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
 
 
