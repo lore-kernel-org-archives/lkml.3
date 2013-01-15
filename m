@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933722Ab3AOX2n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:28:43 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46838 "EHLO mail.kernel.org"
+	id S933738Ab3AOX27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:28:59 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46825 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933668Ab3AOWwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:32 -0500
+	id S933662Ab3AOWwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Ben Widawsky <ben@bwidawsk.net>,
+        Sean Paul <seanpaul@chromium.org>, Ben Widawsky <ben@bwidawsk.net>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ben Hutchings <ben@decadent.org.uk>,
         Julien Cristau <jcristau@debian.org>
-Subject: [ 128/171] drm/i915: Fix GT_MODE default value
-Date: Tue, 15 Jan 2013 14:44:53 -0800
-Message-Id: <20130115224322.575402381@linuxfoundation.org>
+Subject: [ 118/171] drm/i915: Add wait_for in init_ring_common
+Date: Tue, 15 Jan 2013 14:44:43 -0800
+Message-Id: <20130115224321.865507991@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -29,53 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Widawsky <ben@bwidawsk.net>
+From: Sean Paul <seanpaul@chromium.org>
 
-commit f8f2ac9a76b0f80a6763ca316116a7bab8486997 upstream.
+commit f01db988ef6f6c70a6cc36ee71e4a98a68901229 upstream.
 
-I can't even find how I figured this might be needed anymore. But sure
-enough, the value I'm reading back on platforms doesn't match what the
-docs recommends.
+I have seen a number of "blt ring initialization failed" messages
+where the ctl or start registers are not the correct value. Upon further
+inspection, if the code just waited a little bit, it would read the
+correct value. Adding the wait_for to these reads should eliminate the
+issue.
 
-It seemed to fix Chris' GT1 in limited testing as well.
-
-Tested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+Reviewed-by: Ben Widawsky <ben@bwidawsk.net>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: open-code _MASKED_BIT_{ENABLE,DISABLE}]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Julien Cristau <jcristau@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/gpu/drm/i915/i915_reg.h      |    3 +++
- drivers/gpu/drm/i915/intel_display.c |    5 +++++
- 2 files changed, 8 insertions(+)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -445,6 +445,9 @@
- # define VS_TIMER_DISPATCH				(1 << 6)
- # define MI_FLUSH_ENABLE				(1 << 12)
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -295,9 +295,9 @@ static int init_ring_common(struct intel
+ 			| RING_VALID);
  
-+#define GEN6_GT_MODE	0x20d0
-+#define   GEN6_GT_MODE_HI	(1 << 9)
-+
- #define GFX_MODE	0x02520
- #define GFX_MODE_GEN7	0x0229c
- #define RING_MODE_GEN7(ring)	((ring)->mmio_base+0x29c)
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8620,6 +8620,11 @@ static void gen6_init_clock_gating(struc
- 			   DISPPLANE_TRICKLE_FEED_DISABLE);
- 		intel_flush_display_plane(dev_priv, pipe);
- 	}
-+
-+	/* The default value should be 0x200 according to docs, but the two
-+	 * platforms I checked have a 0 for this. (Maybe BIOS overrides?) */
-+	I915_WRITE(GEN6_GT_MODE, 0xffff << 16);
-+	I915_WRITE(GEN6_GT_MODE, GEN6_GT_MODE_HI << 16 | GEN6_GT_MODE_HI);
- }
- 
- static void gen7_setup_fixed_func_scheduler(struct drm_i915_private *dev_priv)
+ 	/* If the head is still not zero, the ring is dead */
+-	if ((I915_READ_CTL(ring) & RING_VALID) == 0 ||
+-	    I915_READ_START(ring) != obj->gtt_offset ||
+-	    (I915_READ_HEAD(ring) & HEAD_ADDR) != 0) {
++	if (wait_for((I915_READ_CTL(ring) & RING_VALID) != 0 &&
++		     I915_READ_START(ring) == obj->gtt_offset &&
++		     (I915_READ_HEAD(ring) & HEAD_ADDR) == 0, 50)) {
+ 		DRM_ERROR("%s initialization failed "
+ 				"ctl %08x head %08x tail %08x start %08x\n",
+ 				ring->name,
 
 
