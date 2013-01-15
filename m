@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758736Ab3AOXlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:41:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46159 "EHLO mail.kernel.org"
+	id S1758781Ab3AOXlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:41:47 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46147 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933282Ab3AOWus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:48 -0500
+	id S933111Ab3AOWur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Mike Dunn <mikedunn@newsguy.com>,
         Igor Grinberg <grinberg@compulab.co.il>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 079/171] ALSA: pxa27x: fix ac97 warm reset
-Date: Tue, 15 Jan 2013 14:44:04 -0800
-Message-Id: <20130115224319.106329532@linuxfoundation.org>
+Subject: [ 078/171] ALSA: pxa27x: fix ac97 cold reset
+Date: Tue, 15 Jan 2013 14:44:03 -0800
+Message-Id: <20130115224319.034735516@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -29,102 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mike Dunn <mikedunn@newsguy.com>
 
-commit 3b4bc7bccc7857274705b05cf81a0c72cfd0b0dd upstream.
+commit 41b645c8624df6ace020a8863ad1449d69140f7d upstream.
 
-This patch fixes some code that implements a work-around to a hardware bug in
-the ac97 controller on the pxa27x.  A bug in the controller's warm reset
-functionality requires that the mfp used by the controller as the AC97_nRESET
-line be temporarily reconfigured as a generic output gpio (AF0) and manually
-held high for the duration of the warm reset cycle.  This is what was done in
-the original code, but it was broken long ago by commit fb1bf8cd
-    ([ARM] pxa: introduce processor specific pxa27x_assert_ac97reset())
-which changed the mfp to a GPIO input instead of a high output.
+Cold reset on the pxa27x currently fails and
 
-The fix requires the ac97 controller to obtain the gpio via gpio_request_one(),
-with arguments that configure the gpio as an output initially driven high.
+     pxa2xx_ac97_try_cold_reset: cold reset timeout (GSR=0x44)
 
-Tested on a palm treo 680 machine.  Reportedly, this broken code only prevents a
-warm reset on hardware that lacks a pull-up on the line, which appears to be the
-case for me.
+appears in the kernel log.  Through trial-and-error (the pxa270 developer's
+manual is mostly incoherent on the topic of ac97 reset), I got cold reset to
+complete by setting the WARM_RST bit in the GCR register (and later noticed that
+pxa3xx does this for cold reset as well).  Also, a timeout loop is needed to
+wait for the reset to complete.
+
+Tested on a palm treo 680 machine.
 
 Signed-off-by: Mike Dunn <mikedunn@newsguy.com>
-Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+Acked-by: Igor Grinberg <grinberg@compulab.co.il>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-pxa/include/mach/mfp-pxa27x.h |    3 +++
- arch/arm/mach-pxa/pxa27x.c                  |    4 ++--
- sound/arm/pxa2xx-ac97-lib.c                 |   18 +++++++++++++++++-
- 3 files changed, 22 insertions(+), 3 deletions(-)
+ sound/arm/pxa2xx-ac97-lib.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-pxa/include/mach/mfp-pxa27x.h
-+++ b/arch/arm/mach-pxa/include/mach/mfp-pxa27x.h
-@@ -462,6 +462,9 @@
- 	GPIO76_LCD_PCLK,	\
- 	GPIO77_LCD_BIAS
- 
-+/* these enable a work-around for a hw bug in pxa27x during ac97 warm reset */
-+#define GPIO113_AC97_nRESET_GPIO_HIGH MFP_CFG_OUT(GPIO113, AF0, DEFAULT)
-+#define GPIO95_AC97_nRESET_GPIO_HIGH MFP_CFG_OUT(GPIO95, AF0, DEFAULT)
- 
- extern int keypad_set_wake(unsigned int on);
- #endif /* __ASM_ARCH_MFP_PXA27X_H */
---- a/arch/arm/mach-pxa/pxa27x.c
-+++ b/arch/arm/mach-pxa/pxa27x.c
-@@ -47,9 +47,9 @@ void pxa27x_clear_otgph(void)
- EXPORT_SYMBOL(pxa27x_clear_otgph);
- 
- static unsigned long ac97_reset_config[] = {
--	GPIO113_GPIO,
-+	GPIO113_AC97_nRESET_GPIO_HIGH,
- 	GPIO113_AC97_nRESET,
--	GPIO95_GPIO,
-+	GPIO95_AC97_nRESET_GPIO_HIGH,
- 	GPIO95_AC97_nRESET,
- };
- 
 --- a/sound/arm/pxa2xx-ac97-lib.c
 +++ b/sound/arm/pxa2xx-ac97-lib.c
-@@ -18,6 +18,7 @@
- #include <linux/delay.h>
- #include <linux/module.h>
- #include <linux/io.h>
-+#include <linux/gpio.h>
+@@ -148,6 +148,8 @@ static inline void pxa_ac97_warm_pxa27x(
  
- #include <sound/ac97_codec.h>
- #include <sound/pxa2xx-lib.h>
-@@ -344,8 +345,21 @@ int __devinit pxa2xx_ac97_hw_probe(struc
- 	}
- 
- 	if (cpu_is_pxa27x()) {
--		/* Use GPIO 113 as AC97 Reset on Bulverde */
-+		/*
-+		 * This gpio is needed for a work-around to a bug in the ac97
-+		 * controller during warm reset.  The direction and level is set
-+		 * here so that it is an output driven high when switching from
-+		 * AC97_nRESET alt function to generic gpio.
-+		 */
-+		ret = gpio_request_one(reset_gpio, GPIOF_OUT_INIT_HIGH,
-+				       "pxa27x ac97 reset");
-+		if (ret < 0) {
-+			pr_err("%s: gpio_request_one() failed: %d\n",
-+			       __func__, ret);
-+			goto err_conf;
-+		}
- 		pxa27x_assert_ac97reset(reset_gpio, 0);
-+
- 		ac97conf_clk = clk_get(&dev->dev, "AC97CONFCLK");
- 		if (IS_ERR(ac97conf_clk)) {
- 			ret = PTR_ERR(ac97conf_clk);
-@@ -388,6 +402,8 @@ EXPORT_SYMBOL_GPL(pxa2xx_ac97_hw_probe);
- 
- void pxa2xx_ac97_hw_remove(struct platform_device *dev)
+ static inline void pxa_ac97_cold_pxa27x(void)
  {
-+	if (cpu_is_pxa27x())
-+		gpio_free(reset_gpio);
- 	GCR |= GCR_ACLINK_OFF;
- 	free_irq(IRQ_AC97, NULL);
- 	if (ac97conf_clk) {
++	unsigned int timeout;
++
+ 	GCR &=  GCR_COLD_RST;  /* clear everything but nCRST */
+ 	GCR &= ~GCR_COLD_RST;  /* then assert nCRST */
+ 
+@@ -157,8 +159,10 @@ static inline void pxa_ac97_cold_pxa27x(
+ 	clk_enable(ac97conf_clk);
+ 	udelay(5);
+ 	clk_disable(ac97conf_clk);
+-	GCR = GCR_COLD_RST;
+-	udelay(50);
++	GCR = GCR_COLD_RST | GCR_WARM_RST;
++	timeout = 100;     /* wait for the codec-ready bit to be set */
++	while (!((GSR | gsr_bits) & (GSR_PCR | GSR_SCR)) && timeout--)
++		mdelay(1);
+ }
+ #endif
+ 
 
 
