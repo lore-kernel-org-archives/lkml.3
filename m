@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab3AOAyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 19:54:12 -0500
-Received: from mga14.intel.com ([143.182.124.37]:11855 "EHLO mga14.intel.com"
+	id S1757335Ab3AOAzI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 19:55:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53872 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756216Ab3AOAyL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 19:54:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,469,1355126400"; 
-   d="scan'208";a="191087623"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] genirq: Give warning when setup an already-setup
- non-shared irq
-Thread-Topic: [PATCH] genirq: Give warning when setup an already-setup
- non-shared irq
-Thread-Index: AQHN8kikefkpUiL9mkmDdP3wIMIbnZhJjo1w
-Date: Tue, 15 Jan 2013 00:54:06 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A203FC1@SHSMSX101.ccr.corp.intel.com>
-References: <1357833301.21958.10.camel@cliu38-desktop-build>
- <alpine.LFD.2.02.1301141211500.7475@ionos>
-In-Reply-To: <alpine.LFD.2.02.1301141211500.7475@ionos>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755484Ab3AOAzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 19:55:06 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
+        tglx@linutronix.de, khalid@gonehiking.org, horms@verge.net.au
+Subject: Re: [PATCH] x86 e820: only void usable memory areas in memmap=exactmap case
+Date: Tue, 15 Jan 2013 01:54:55 +0100
+Message-ID: <1824463.EWDqkMLC4N@hammer82.arch.suse.de>
+User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CAE9FiQVQvj1TPokoCgx_jbp0VACC8cgtFibH4KoqOssEc6JSPw@mail.gmail.com>
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local> <201301141605.43428.trenn@suse.de> <CAE9FiQVQvj1TPokoCgx_jbp0VACC8cgtFibH4KoqOssEc6JSPw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, January 14, 2013 11:04:36 AM Yinghai Lu wrote:
+> On Mon, Jan 14, 2013 at 7:05 AM, Thomas Renninger <trenn@suse.de> wrote:
+> > What is this for?:
+> > @@ -871,6 +879,11 @@ static int __init parse_memmap_one(char
+> > 
+> >         userdef = 1;
+> >         if (*p == '@') {
+> >         
+> >                 start_at = memparse(p+1, &p);
+> > 
+> > +               if (exactusablemap_parsed) {
+> > +                       /* remove all range with other types */
+> > +                       e820_remove_range(start_at, mem_size,
+> > +                                                E820_RAM, 0);
+> > +               }
+> > 
+> >                 e820_add_region(start_at, mem_size, E820_RAM);
+> >         
+> >         } else if (*p == '#') {
+> >         
+> >                 start_at = memparse(p+1, &p);
+> 
+> remove all old renges before add E820_RAM, otherwise new add E820
+> ranges could be ignored.
+But this is intended?
+kexec must never request reserved memory to be used as ordinary E820_RAM
+by the kdump kernel.
+This also reverts what exactusablemap is all about:
+Keep all reserved memory ranges of the original BIOS map.
 
+Above would again wrongly remove the mmconf and other reserved regions
+if kexec passes memmap=exactuseablemap,x@y
 
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Monday, January 14, 2013 7:16 PM
-> To: Liu, Chuansheng
-> Cc: linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] genirq: Give warning when setup an already-setup
-> non-shared irq
-> 
-> On Thu, 10 Jan 2013, Chuansheng Liu wrote:
-> >
-> > Meet the case when the request_threaded_irq() with the same irq
-> > is called twice continually, get the below mismatch info:
-> > "IRQ handler type mismatch for IRQ 323"
-> 
-> I have no idea where you get that from. The mismatch is printed with:
-> 
->         if (!(new->flags & IRQF_PROBE_SHARED)) {
-> 	   pr_err("Flags mismatch irq %d. %08x (%s) vs. %08x (%s)\n",
->                        irq, new->flags, new->name, old->flags,
-> old->name);
-	if (!(new->flags & IRQF_PROBE_SHARED)) {
-		printk(KERN_ERR "IRQ handler type mismatch for IRQ %d\n", irq);
-		if (old_name)
-			printk(KERN_ERR "current handler: %s\n", old_name);
-		dump_stack();
-	}
-The "IRQ handler type mismatch for IRQ 323" message is coming from the above code,
-which is something older than you pasted, but it is the same place.
+>From what I can see the patch looks fine, but above part should
+simply be left out.
 
-> 
-> And its only printed when IRQF_PROBE_SHARED is not set. Your change
-> would cause printouts where no printouts are due and it'd change the
-> return value from EBUSY to EINVAL.
-My test case is below:
-request_irq(323, func1,
-				IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING,
-				name, dev);
-After succeeded, then called it again:
-request_irq(323, func1,
-				IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING,
-				name, dev);
-
-After the test case, I will get the "mismatch" info.
-But in this case, it should not be the "mismatch" case, so I want to give another warning
-in case of duplicated setup the same irq with non-shared.
-Not sure if it is right. Thanks your pointing out.
-> 
-> Thanks,
-> 
-> 	tglx
+   Thomas
