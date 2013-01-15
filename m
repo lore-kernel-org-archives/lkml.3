@@ -1,693 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab3AORxU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 12:53:20 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:53253 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756109Ab3AORxS (ORCPT
+	id S1757012Ab3AORxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 12:53:41 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22855 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756637Ab3AORxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 12:53:18 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: dwmw2@infradead.org
-Cc: linux-mtd@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH v2] mtd: vt8500: Add support for Wondermedia Serial Flash Controller
-Date: Wed, 16 Jan 2013 06:53:34 +1300
-Message-Id: <1358272414-6266-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 15 Jan 2013 12:53:40 -0500
+Date: Tue, 15 Jan 2013 12:53:05 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@alien8.de>, Stefan Bader <stefan.bader@canonical.com>,
+        Andre Przywara <andre@andrep.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
+Message-ID: <20130115175305.GA12449@phenom.dumpdata.com>
+References: <50F42B3E.7090602@canonical.com>
+ <20130114163445.GA4867@liondog.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130114163445.GA4867@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the Wondermedia serial flash controller
-found on WM8505, WM8650 and WM8850 SoCs.
+On Mon, Jan 14, 2013 at 05:34:45PM +0100, Borislav Petkov wrote:
+> On Mon, Jan 14, 2013 at 04:58:54PM +0100, Stefan Bader wrote:
+> > Starting with kernel v3.7 the following commit added a quirk
+> > to obtain the real frequencies of certain AMD systems:
+> > 
+> > commit f594065faf4f9067c2283a34619fc0714e79a98d
+> > Author: Matthew Garrett <mjg@redhat.com>
+> > Date:   Tue Sep 4 08:28:06 2012 +0000
+> > 
+> >     ACPI: Add fixups for AMD P-state figures
+> > 
+> > When running bare-metal, on my Opteron 6128 test box results
+> > in the frequencies remaining effectively unchanged:
+> > [    5.475735] P0: MSR(hi,lo): 8000015c-50004004
+> > [    5.479049] P0: fid=0x4, did=0x0, freq: 2000 -> 2000
+> > [    5.484001] P1: MSR(hi,lo): 8000014c-50004a4e
+> > [    5.487314] P1: fid=0xe, did=0x1, freq: 1500 -> 1500
+> > [    5.492272] P2: MSR(hi,lo): 80000141-50005048
+> > [    5.495584] P2: fid=0x8, did=0x1, freq: 1200 -> 1200
+> > [    5.500540] P3: MSR(hi,lo): 80000138-50005844
+> > [    5.503853] P3: fid=0x4, did=0x1, freq: 1000 -> 1000
+> > [    5.508812] P4: MSR(hi,lo): 80000131-50005c40
+> > [    5.512125] P4: fid=0x0, did=0x1, freq: 800 -> 800
+> > 
+> > However running as dom0 under Xen 4.2, reading this MSR returns
+> > null:
+> > [   11.613068] P0: MSR(hi,lo): 00000000-00000000
+> > [   11.613074] P0: fid=0x0, did=0x0, freq: 2000 -> 1600
+> > [   11.613078] P1: MSR(hi,lo): 00000000-00000000
+> > [   11.613081] P1: fid=0x0, did=0x0, freq: 1500 -> 1600
+> > [   11.613085] P2: MSR(hi,lo): 00000000-00000000
+> > [   11.613088] P2: fid=0x0, did=0x0, freq: 1200 -> 1600
+> > [   11.613091] P3: MSR(hi,lo): 00000000-00000000
+> > [   11.613094] P3: fid=0x0, did=0x0, freq: 1000 -> 1600
+> > [   11.613098] P4: MSR(hi,lo): 00000000-00000000
+> > [   11.613101] P4: fid=0x0, did=0x0, freq: 800 -> 1600
+> > 
+> > And this results in Xen failing to change the governor:
+> >   "(XEN) Fail change to ondemand governor"
+> > 
+> > I suppose this ultimately requires some support in the hypervisor
+> > to pass through the real values. But since this is at least on my
+> > combination of Xen 4.2 + kernel v3.7+ and AMD family 0x10 CPU a
+> > regression compared to older kernels, I wonder whether the following
+> > change might be something that should go into mainline:
+> > 
+> > --- a/drivers/acpi/processor_perflib.c
+> > +++ b/drivers/acpi/processor_perflib.c
+> > @@ -340,6 +340,9 @@ static void amd_fixup_frequency(struct acpi_processor_px *px
+> >         if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
+> >             || boot_cpu_data.x86 == 0x11) {
+> >                 rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
+> > +               /* Bit 63 indicates whether contents are valid */
+> > +               if (!(hi & 0x8000000))
+> > +                       return;
+> 
+> I don't think that's the right change - this is fixing baremetal so that
+> it works on xen. And besides, this code was in powernow-k8 before so I'm
+> wondering why did it work then.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
-v2:
-Change Kconfig depends to ARCH_VT8500 as this driver can't be used on other
-platforms.
+Powernow-k8 only populated the cpufreq policy information. This library
+(processor_perflib) is the generic library used for ACPI P-states parsing.
+This specific function (acpi_processor_get_performance_states) is just
+used to fetch and parse the P-states.
 
- drivers/mtd/devices/Kconfig      |    7 +
- drivers/mtd/devices/Makefile     |    3 +-
- drivers/mtd/devices/wmt_sflash.c |  614 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 623 insertions(+), 1 deletion(-)
- create mode 100644 drivers/mtd/devices/wmt_sflash.c
+Xen-acpi-processor (which we use to upload the P and C-states to the
+hypervisor) ends up calling this library to parse the P-states
+and this unfortunate quirk clamps the P-states based on the MSRS.
 
-diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-index 27f80cd..0233b37 100644
---- a/drivers/mtd/devices/Kconfig
-+++ b/drivers/mtd/devices/Kconfig
-@@ -128,6 +128,13 @@ config MTD_BCM47XXSFLASH
- 	  registered by bcma as platform devices. This enables driver for
- 	  serial flash memories (only read-only mode is implemented).
- 
-+config MTD_WMT_SFLASH
-+	tristate "WonderMedia Serial Flash Support"
-+	depends on ARCH_VT8500
-+	help
-+	  Enable this option to provide support for the Wondermedia SoC serial
-+	  flash controller.
-+
- config MTD_SLRAM
- 	tristate "Uncached system RAM"
- 	help
-diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
-index 395733a..10b8bec 100644
---- a/drivers/mtd/devices/Makefile
-+++ b/drivers/mtd/devices/Makefile
-@@ -19,6 +19,7 @@ obj-$(CONFIG_MTD_DATAFLASH)	+= mtd_dataflash.o
- obj-$(CONFIG_MTD_M25P80)	+= m25p80.o
- obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
- obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
-+obj-$(CONFIG_MTD_WMT_SFLASH)	+= wmt_sflash.o
- obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
- 
--CFLAGS_docg3.o			+= -I$(src)
-\ No newline at end of file
-+CFLAGS_docg3.o			+= -I$(src)
-diff --git a/drivers/mtd/devices/wmt_sflash.c b/drivers/mtd/devices/wmt_sflash.c
-new file mode 100644
-index 0000000..49359ea
---- /dev/null
-+++ b/drivers/mtd/devices/wmt_sflash.c
-@@ -0,0 +1,614 @@
-+/*
-+ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/errno.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_address.h>
-+
-+#include <linux/mtd/mtd.h>
-+
-+/* controller only supports erase size of 64KB */
-+#define WMT_ERASESIZE			0x10000
-+
-+/* Serial Flash controller register offsets */
-+#define SF_CHIP_SEL_0_CFG		0x000
-+#define SF_CHIP_SEL_1_CFG		0x008
-+#define SF_SPI_INTF_CFG			0x040
-+#define SF_SPI_RD_WR_CTR		0x050
-+#define SF_SPI_WR_EN_CTR		0x060
-+#define SF_SPI_ER_CTR			0x070
-+#define SF_SPI_ER_START_ADDR		0x074
-+#define SF_SPI_ERROR_STATUS		0x080
-+#define SF_SPI_MEM_0_SR_ACC		0x100
-+#define SF_SPI_MEM_1_SR_ACC		0x110
-+#define SF_SPI_PDWN_CTR_0		0x180
-+#define SF_SPI_PDWN_CTR_1		0x190
-+#define SF_SPI_PROG_CMD_CTR		0x200
-+#define SF_SPI_USER_CMD_VAL		0x210
-+#define SF_SPI_PROG_CMD_WBF		0x300	/* 64 bytes */
-+#define SF_SPI_PROG_CMD_RBF		0x380	/* 64 bytes */
-+
-+/* SF_SPI_WR_EN_CTR bit fields */
-+#define SF_CS0_WR_EN			BIT(0)
-+#define SF_CS1_WR_EN			BIT(1)
-+
-+/* SF_SPI_ER_CTR bit fields */
-+#define SF_SEC_ER_EN			BIT(31)
-+
-+/* SF_SPI_ERROR_STATUS bit fields */
-+#define SF_ERR_TIMEOUT			BIT(31)
-+#define SF_ERR_WR_PROT_ERR		BIT(5)
-+#define SF_ERR_MEM_REGION_ERR		BIT(4)
-+#define SF_ERR_PWR_DWN_ACC_ERR		BIT(3)
-+#define SF_ERR_PCMD_OP_ERR		BIT(2)
-+#define SF_ERR_PCMD_ACC_ERR		BIT(1)
-+#define SF_ERR_MASLOCK_ERR		BIT(0)
-+
-+/*
-+ * Serial Flash device manufacturers
-+ * Please keep sorted by manufacturers ID
-+ */
-+#define MFR_SPANSION		0x01
-+#define MFR_EON			0x1C
-+#define MFR_ATMEL		0x1F
-+#define MFR_NUMONYX		0x20
-+#define MFR_FUDAN		0xA1
-+#define MFR_SST			0xBF
-+#define MFR_MXIC		0xC2
-+#define MFR_WINBOND		0xEF
-+
-+/*
-+ * SF Device Models
-+ * Please keep in the same order as the manufacturers table
-+ */
-+
-+/* Spansion */
-+#define SPAN_FL016A		0x0214 /* 2 MB */
-+#define SPAN_FL064A		0x0216 /* 8 MB */
-+
-+/* Eon */
-+#define EON_25P16		0x2015 /* 2 MB */
-+#define EON_25P64		0x2017 /* 8 MB */
-+#define EON_25F40		0x3113 /* 512 KB */
-+#define EON_25F16		0x3115 /* 2 MB */
-+
-+/* Atmel */
-+#define AT_25DF041A		0x4401 /* 512KB */
-+
-+/* Numonyx */
-+#define	NX_25P16		0x2015 /* 2 MB */
-+#define	NX_25P64		0x2017 /* 8 MB */
-+
-+/* Fudan Microelectronics Group */
-+#define FM_25F04		0x3113 /* 512 KB */
-+
-+/* SST */
-+#define SST_VF016B		0x2541 /* 2 MB */
-+
-+/* MXIC */
-+#define	MX_L512			0x2010 /* 64 KB , 4KB*/
-+#define MX_L4005A		0x2013 /* 512 KB */
-+#define	MX_L1605D		0x2015 /* 2 MB */
-+#define	MX_L3205D		0x2016 /* 4 MB */
-+#define	MX_L6405D		0x2017 /* 8 MB */
-+#define	MX_L1635D		0x2415 /* 2 MB */
-+#define	MX_L3235D		0x5E16 /* 4 MB */
-+#define	MX_L12805D		0x2018 /* 16 MB */
-+
-+/* WinBond */
-+#define WB_W25X40BV		0x3013	/* 512 KB */
-+#define WB_X16A			0x3015	/* 2 MB */
-+#define WB_X32			0x3016	/* 4 MB */
-+#define WB_X64			0x3017	/* 8 MB */
-+
-+
-+#define SF_ID(mfr, mdl)		((mfr << 16) | mdl)
-+
-+#define FLASH_UNKNOWN		0x00ffffff
-+
-+struct wmt_flash_id {
-+	u32	id;
-+	u32	size;		/* Size in KB */
-+};
-+
-+static struct wmt_flash_id flash_ids[] = {
-+	{ SF_ID(MFR_SPANSION,	SPAN_FL016A),	2048 },
-+	{ SF_ID(MFR_SPANSION,	SPAN_FL064A),	8192 },
-+	{ SF_ID(MFR_EON,	EON_25P16),	2048 },
-+	{ SF_ID(MFR_EON,	EON_25P64),	8192 },
-+	{ SF_ID(MFR_EON,	EON_25F40),	512 },
-+	{ SF_ID(MFR_EON,	EON_25F16),	2048 },
-+	{ SF_ID(MFR_ATMEL,	AT_25DF041A),	512 },
-+	{ SF_ID(MFR_NUMONYX,	NX_25P16),	2048 },
-+	{ SF_ID(MFR_NUMONYX,	NX_25P64),	8192 },
-+	{ SF_ID(MFR_FUDAN,	FM_25F04),	512 },
-+	{ SF_ID(MFR_SST,	SST_VF016B),	2048 },
-+	{ SF_ID(MFR_MXIC,	MX_L512),	64 },
-+	{ SF_ID(MFR_MXIC,	MX_L4005A),	512 },
-+	{ SF_ID(MFR_MXIC,	MX_L1605D),	2048 },
-+	{ SF_ID(MFR_MXIC,	MX_L3205D),	4192 },
-+	{ SF_ID(MFR_MXIC,	MX_L6405D),	8192 },
-+	{ SF_ID(MFR_MXIC,	MX_L1635D),	2048 },
-+	{ SF_ID(MFR_MXIC,	MX_L3235D),	4192 },
-+	{ SF_ID(MFR_MXIC,	MX_L12805D),	16384 },
-+	{ SF_ID(MFR_WINBOND,	WB_W25X40BV),	512 },
-+	{ SF_ID(MFR_WINBOND,	WB_X16A),	2048 },
-+	{ SF_ID(MFR_WINBOND,	WB_X32),	4096 },
-+	{ SF_ID(MFR_WINBOND,	WB_X64),	8192 },
-+	{ 0, 0 },
-+};
-+
-+struct wmt_sf_chip {
-+	u32	id;
-+	u32	size;
-+	u32	addr_phys;
-+	u32	ccr;
-+};
-+
-+struct wmt_sf_data {
-+	struct mtd_info		*sf_mtd;
-+	struct clk		*sf_clk;
-+	struct device		*dev;
-+
-+	struct wmt_sf_chip	chip[2];
-+
-+	void __iomem		*base;		/* register virt base */
-+
-+	void __iomem		*sf_base_virt;	/* mem-mapped sf virt base */
-+	u32			sf_base_phys;	/* mem-mapped sf phys base */
-+	u32			sf_total_size;
-+};
-+
-+static u32 sf_get_chip_size(struct device *dev, u32 id)
-+{
-+	int i;
-+	for (i = 0; flash_ids[i].id != 0; i++)
-+		if (flash_ids[i].id == id)
-+			return flash_ids[i].size * 1024;
-+
-+	dev_err(dev, "Unknown flash id (%08x)\n", id);
-+	return 0;
-+}
-+
-+static void sf_calc_ccr(struct wmt_sf_chip *chip)
-+{
-+	unsigned int cnt = 0, size;
-+
-+	size = chip->size;
-+	while (size) {
-+		size >>= 1;
-+		cnt++;
-+	}
-+	cnt -= 16;
-+	cnt = cnt << 8;
-+	chip->ccr = (chip->addr_phys | cnt);
-+}
-+
-+static int wmt_sf_init_hw(struct wmt_sf_data *info)
-+{
-+	u32 strap;
-+	u32 phys_addr;
-+	struct device_node *np;
-+	void __iomem *gpio_base;
-+
-+	np = of_find_compatible_node(NULL, NULL, "wm,wm8650-gpio");
-+	if (!np) {
-+		dev_err(info->dev, "Unable to find GPIO node\n");
-+		return -1;
-+	}
-+
-+	gpio_base = of_iomap(np, 0);
-+	if (!gpio_base) {
-+		dev_err(info->dev, "Failed to map gpio memory\n");
-+		return -1;
-+	}
-+
-+	strap = readl_relaxed(gpio_base + 0x100);
-+	iounmap(gpio_base);
-+
-+	if ((strap & 0x06) == 0) {
-+		phys_addr = 0xFFFFFFFF;
-+		writel(0x00000011, info->base + SF_SPI_RD_WR_CTR);
-+		writel(0xFF800800, info->base + SF_CHIP_SEL_0_CFG);
-+		writel(0x00030000, info->base + SF_SPI_INTF_CFG);
-+	} else {
-+		phys_addr = 0xEFFFFFFF;
-+		writel(0x00000011, info->base + SF_SPI_RD_WR_CTR);
-+		writel(0xEF800800, info->base + SF_CHIP_SEL_0_CFG);
-+		writel(0x00030000, info->base + SF_SPI_INTF_CFG);
-+	}
-+
-+	info->chip[0].id = FLASH_UNKNOWN;
-+	info->chip[1].id = FLASH_UNKNOWN;
-+
-+	/* Read serial flash ID */
-+	writel(0x11, info->base + SF_SPI_RD_WR_CTR);
-+	info->chip[0].id = readl(info->base + SF_SPI_MEM_0_SR_ACC);
-+	writel(0x01, info->base + SF_SPI_RD_WR_CTR);
-+
-+	writel(0x11, info->base + SF_SPI_RD_WR_CTR);
-+	info->chip[1].id = readl(info->base + SF_SPI_MEM_1_SR_ACC);
-+	writel(0x01, info->base + SF_SPI_RD_WR_CTR);
-+
-+	info->chip[0].size = sf_get_chip_size(info->dev, info->chip[0].id);
-+	if (info->chip[0].size == 0)
-+		return -1;
-+
-+	info->chip[0].addr_phys = phys_addr - info->chip[0].size + 1;
-+	if (info->chip[0].addr_phys & 0xffff) {
-+		dev_err(info->dev, "Chip 0 start address must align to 64KB\n");
-+		return -1;
-+	}
-+	info->sf_base_phys = info->chip[0].addr_phys;
-+	info->sf_total_size = info->chip[0].size;
-+	pr_info("SFC: Chip 0 @ %08x (size: %d)\n", info->chip[0].addr_phys,
-+							info->chip[0].size);
-+
-+	sf_calc_ccr(&info->chip[0]);
-+	writel(info->chip[0].ccr, info->base + SF_CHIP_SEL_0_CFG);
-+
-+	if (info->chip[1].id != FLASH_UNKNOWN) {
-+		info->chip[1].size = sf_get_chip_size(info->dev,
-+						      info->chip[1].id);
-+		info->chip[1].addr_phys = info->chip[0].addr_phys -
-+							info->chip[1].size;
-+		if (info->chip[1].addr_phys & 0xffff) {
-+			dev_err(info->dev, "Chip 1 start address must align to 64KB\n");
-+			info->chip[1].id = FLASH_UNKNOWN;
-+			return 0;
-+		}
-+		info->sf_base_phys = info->chip[1].addr_phys;
-+		info->sf_total_size += info->chip[1].size;
-+		pr_info("SFC: Chip 1 @ %08x (size: %d)\n",
-+				info->chip[1].addr_phys, info->chip[1].size);
-+
-+		sf_calc_ccr(&info->chip[1]);
-+		writel(info->chip[1].ccr, info->base + SF_CHIP_SEL_1_CFG);
-+	}
-+
-+	return 0;
-+}
-+
-+static int sf_check_error(struct device *dev, u32 code)
-+{
-+	if (code & SF_ERR_TIMEOUT) {
-+		dev_err(dev, "Serial flash timeout\n");
-+		return -ETIMEDOUT;
-+	}
-+
-+	if (code & SF_ERR_WR_PROT_ERR) {
-+		dev_err(dev, "Serial flash write-protected\n");
-+		return -EIO;
-+	}
-+
-+	if (code & SF_ERR_MEM_REGION_ERR) {
-+		dev_err(dev, "Serial flash memory region error\n");
-+		return -EIO;
-+	}
-+
-+	if (code & SF_ERR_PWR_DWN_ACC_ERR) {
-+		dev_err(dev, "Serial flash power down access error\n");
-+		return -EIO;
-+	}
-+
-+	if (code & SF_ERR_PCMD_OP_ERR)	{
-+		dev_err(dev, "Serial flash program CMD OP error\n");
-+		return -EIO;
-+	}
-+
-+	if (code & SF_ERR_PCMD_ACC_ERR) {
-+		dev_err(dev, "Serial flash program CMD OP access error\n");
-+		return -EIO;
-+	}
-+
-+	if (code & SF_ERR_MASLOCK_ERR) {
-+		dev_err(dev, "Serial flash master lock error\n");
-+		return -EIO;
-+	}
-+
-+	/* no error */
-+	return 0;
-+}
-+
-+static int sf_spi_read_status(struct wmt_sf_data *info, int chip)
-+{
-+	u32 timeout = 0x30000000;
-+	u32 temp;
-+	int err;
-+
-+	do {
-+		if (chip == 0)
-+			temp = readl_relaxed(info->base + SF_SPI_MEM_0_SR_ACC);
-+		else
-+			temp = readl_relaxed(info->base + SF_SPI_MEM_1_SR_ACC);
-+
-+		if ((temp & 0x1) == 0x0)
-+			break;
-+
-+		err = sf_check_error(info->dev,
-+				     readl(info->base + SF_SPI_ERROR_STATUS));
-+		if (err) {
-+			writel(0x3f, info->base + SF_SPI_ERROR_STATUS);
-+			return err;
-+		}
-+		timeout--;
-+	} while (timeout);
-+
-+	if (timeout == 0) {
-+		dev_err(info->dev, "spi request timed-out\n");
-+		return -ETIMEDOUT;
-+	}
-+
-+	return 0;
-+}
-+
-+static int sf_sector_erase(struct wmt_sf_data *info, u32 addr)
-+{
-+	int chip;
-+	u32 val;
-+
-+	if ((info->sf_base_phys + addr) < info->chip[0].addr_phys) {
-+		chip = 0;
-+		writel(SF_CS0_WR_EN, info->base + SF_SPI_WR_EN_CTR);
-+	} else {
-+		chip = 1;
-+		writel(SF_CS1_WR_EN, info->base + SF_SPI_WR_EN_CTR);
-+	}
-+
-+	addr &= ~(info->sf_mtd->erasesize - 1);
-+	writel(addr, info->base + SF_SPI_ER_START_ADDR);
-+
-+	writel(SF_SEC_ER_EN, info->base + SF_SPI_ER_CTR);
-+
-+	val = sf_spi_read_status(info, chip);
-+
-+	writel(0, info->base + SF_SPI_WR_EN_CTR);
-+	return val;
-+}
-+
-+static int sf_erase(struct mtd_info *mtd, struct erase_info *instr)
-+{
-+	struct wmt_sf_data *info = mtd->priv;
-+	int ret;
-+
-+	ret = clk_enable(info->sf_clk);
-+	if (ret)
-+		return ret;
-+
-+	ret = sf_sector_erase(info, (u32)instr->addr);
-+	if (ret) {
-+		clk_disable(info->sf_clk);
-+		return ret;
-+	}
-+
-+	instr->state = MTD_ERASE_DONE;
-+	mtd_erase_callback(instr);
-+
-+	clk_disable(info->sf_clk);
-+	return 0;
-+}
-+
-+static int sf_read(struct mtd_info *mtd, loff_t from, size_t len,
-+			 size_t *retlen, u_char *buf)
-+{
-+	struct wmt_sf_data *info = mtd->priv;
-+	int ret;
-+
-+	ret = clk_enable(info->sf_clk);
-+	if (ret)
-+		return ret;
-+
-+	if (sf_spi_read_status(info, 0))
-+		return -EBUSY;
-+	if (sf_spi_read_status(info, 1))
-+		return -EBUSY;
-+
-+	if (from + len > mtd->size) {
-+		dev_err(info->dev, "Request out of bounds (from=%llu, len=%d)\n",
-+								from, len);
-+		return -EINVAL;
-+	}
-+
-+	memcpy_fromio(buf, info->sf_base_virt + from, len);
-+	*retlen = len;
-+
-+	clk_disable(info->sf_clk);
-+	return 0;
-+}
-+
-+static int sf_sector_write(struct wmt_sf_data *info, loff_t to, size_t len,
-+			   const u_char *buf)
-+{
-+	int ret;
-+	int data_size;
-+	u32 count;
-+	u32 addr_to = (u32)(info->sf_base_virt) + to;
-+
-+	ret = clk_enable(info->sf_clk);
-+	if (ret)
-+		return ret;
-+
-+	if (sf_spi_read_status(info, 0))
-+		return -EBUSY;
-+	if (sf_spi_read_status(info, 1))
-+		return -EBUSY;
-+
-+	writel(SF_CS0_WR_EN | SF_CS1_WR_EN, info->base + SF_SPI_WR_EN_CTR);
-+
-+	count = 0;
-+	while (len) {
-+		data_size = (len >= 4) ? 4 : 1;
-+		memcpy_toio(((u_char *)(addr_to + count)), buf + count,
-+								data_size);
-+		count += data_size;
-+		len -= data_size;
-+
-+		if (len) {
-+			data_size = (len >= 4) ? 4 : 1;
-+			memcpy_toio(((u_char *)(addr_to + count)), buf + count,
-+								data_size);
-+			count += data_size;
-+			len -= data_size;
-+		}
-+
-+		ret = sf_spi_read_status(info, 0);
-+		if (ret) {
-+			clk_disable(info->sf_clk);
-+			return ret;
-+		}
-+	}
-+
-+	writel(0, info->base + SF_SPI_WR_EN_CTR);
-+
-+	clk_disable(info->sf_clk);
-+
-+	return count;
-+}
-+
-+static int sf_write(struct mtd_info *mtd, loff_t to, size_t len,
-+				size_t *retlen, const u_char *buf)
-+{
-+	struct wmt_sf_data *info = mtd->priv;
-+
-+	*retlen = sf_sector_write(info, to, len, buf);
-+
-+	return 0;
-+}
-+
-+static int mtdsf_init_device(struct device *dev, struct mtd_info *mtd,
-+					unsigned long size, char *name)
-+{
-+	mtd->name = name;
-+	mtd->type = MTD_NORFLASH;
-+	mtd->flags = MTD_CAP_NORFLASH;
-+	mtd->size = size;
-+	mtd->erasesize = WMT_ERASESIZE;
-+	mtd->owner = THIS_MODULE;
-+	mtd->_erase = sf_erase;
-+	mtd->_read = sf_read;
-+	mtd->_write = sf_write;
-+	mtd->writesize = 1;
-+
-+	if (mtd_device_register(mtd, NULL, 0)) {
-+		dev_err(dev, "Erroring adding MTD device\n");
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static int wmt_sf_probe(struct platform_device *pdev)
-+{
-+	struct wmt_sf_data	*info;
-+	struct device_node	*np = pdev->dev.of_node;
-+	int err;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "Invalid devicetree node\n");
-+		return -EINVAL;
-+	}
-+
-+	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
-+	if (!info) {
-+		dev_err(&pdev->dev, "Failed to get memory for SF info\n");
-+		return -ENOMEM;
-+	}
-+
-+	info->dev = &pdev->dev;
-+
-+	info->base = of_iomap(np, 0);
-+	if (!info->base) {
-+		dev_err(&pdev->dev, "Failed to map register memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	info->sf_clk = of_clk_get(np, 0);
-+	if (!info->sf_clk) {
-+		dev_err(&pdev->dev, "Failed to get clock from device tree\n");
-+		return -EINVAL;
-+	}
-+
-+	err = clk_prepare_enable(info->sf_clk);
-+	if (err)
-+		return err;
-+
-+	err = wmt_sf_init_hw(info);
-+	clk_disable(info->sf_clk);
-+	if (err) {
-+		dev_err(&pdev->dev, "Failed to initialize SF hardware\n");
-+		return -EIO;
-+	}
-+
-+	info->sf_base_virt = devm_ioremap(&pdev->dev, info->sf_base_phys,
-+					  info->sf_total_size);
-+	if (!info->sf_base_virt) {
-+		dev_err(&pdev->dev, "Failed to map serial flash memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	info->sf_mtd = devm_kzalloc(&pdev->dev, sizeof(struct mtd_info),
-+								GFP_KERNEL);
-+	if (!info->sf_mtd) {
-+		dev_err(&pdev->dev, "Failed to allocate SFMTD memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	err = mtdsf_init_device(info->dev, info->sf_mtd, info->sf_total_size,
-+						"Wondermedia SF Device");
-+	if (err)
-+		return err;
-+
-+	info->sf_mtd->priv = info;
-+	dev_set_drvdata(&pdev->dev, info);
-+
-+	pr_info("Wondermedia Serial Flash Controller initialized\n");
-+
-+	return 0;
-+}
-+
-+static int wmt_sf_remove(struct platform_device *pdev)
-+{
-+	struct wmt_sf_data *info = dev_get_drvdata(&pdev->dev);
-+
-+	mtd_device_unregister(info->sf_mtd);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id wmt_dt_ids[] = {
-+	{ .compatible = "wm,wm8505-sf", },
-+	{}
-+};
-+
-+static struct platform_driver wmt_sf_driver = {
-+	.probe		= wmt_sf_probe,
-+	.remove		= wmt_sf_remove,
-+	.driver		= {
-+		.name	= "wmt-sf",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(wmt_dt_ids),
-+	},
-+};
-+
-+module_platform_driver(wmt_sf_driver);
-+
-+MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
-+MODULE_DESCRIPTION("Wondermedia SoC Serial Flash driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+It is odd that this CPU specific quirk got added in this generic
+library. Is there no ACPI quirk system similar to how DMI quirks
+are handled?
 
+Anyhow, I think this patch makes sense - it makes sure that the
+MSR value is sane.
+
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+> 
+> >                 fid = lo & 0x3f;
+> >                 did = (lo >> 6) & 7;
+> >                 if (boot_cpu_data.x86 == 0x10)
+> > 
+> > I tested something similar (so hopefully I have not failed on slapping
+> > together a cleaned up version), which did resolve the problem.
+> > 
+> > -Stefan
+> > 
+> > Reference: https://bugs.launchpad.net/bugs/1078619
+> 
+> Adding the new Andre. :-) Andre, what did we do for powernow-k8 on xen
+> so that the F10h 50MHz steps quirk would work?
+> 
+> Thanks.
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
