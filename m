@@ -1,57 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758265Ab3APA2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:28:41 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:59882 "EHLO e9.ny.us.ibm.com"
+	id S1758219Ab3APA3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:29:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41859 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758207Ab3APAZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 19:25:49 -0500
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux MM <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 07/17] mm/page_alloc: use zone_spans_pfn() instead of open coding.
-Date: Tue, 15 Jan 2013 16:24:44 -0800
-Message-Id: <1358295894-24167-8-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.0.3
-In-Reply-To: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011600-7182-0000-0000-000004762EEF
+	id S1755091Ab3AOW3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:29:47 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?Christian=20K=C3=B6nig?= <deathsimple@vodafone.de>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 068/221] drm/radeon: stop page faults from hanging the system (v2)
+Date: Tue, 15 Jan 2013 10:49:55 -0800
+Message-Id: <20130115185002.957340205@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
+References: <20130115184958.025580322@linuxfoundation.org>
+User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use zone_spans_pfn() instead of open coding pfn ownership checks.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-This is split from following patch as could slightly degrade the
-generated code. Pre-patch, the code uses it's knowledge that start_pfn <
-end_pfn to cut down on the number of comparisons. Post-patch, the
-compiler has to figure it out.
+------------------
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+From: Christian König <deathsimple@vodafone.de>
+
+commit ae133a1129790ec288b429b5f08ab4701633844a upstream.
+
+Redirect invalid memory accesses to the default page
+instead of locking up the memory controller. Also
+enable the invalid memory access interrupts and
+start spamming system log with it.
+
+v2 (agd5f): fix up against 2 level PT changes
+
+Signed-off-by: Christian König <deathsimple@vodafone.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- mm/page_alloc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c  |   10 ++++++++++
+ drivers/gpu/drm/radeon/evergreend.h |    3 +++
+ drivers/gpu/drm/radeon/ni.c         |   16 +++++++++++++---
+ drivers/gpu/drm/radeon/nid.h        |   11 +++++++++++
+ drivers/gpu/drm/radeon/si.c         |   25 +++++++++++++++++++++++--
+ drivers/gpu/drm/radeon/sid.h        |   14 ++++++++++++++
+ 6 files changed, 74 insertions(+), 5 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index da5a5ec..3911c1a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -978,9 +978,9 @@ int move_freepages_block(struct zone *zone, struct page *page,
- 	end_pfn = start_pfn + pageblock_nr_pages - 1;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -3093,6 +3093,16 @@ restart_ih:
+ 				break;
+ 			}
+ 			break;
++		case 146:
++		case 147:
++			dev_err(rdev->dev, "GPU fault detected: %d 0x%08x\n", src_id, src_data);
++			dev_err(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_ADDR   0x%08X\n",
++				RREG32(VM_CONTEXT1_PROTECTION_FAULT_ADDR));
++			dev_err(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_STATUS 0x%08X\n",
++				RREG32(VM_CONTEXT1_PROTECTION_FAULT_STATUS));
++			/* reset addr and status */
++			WREG32_P(VM_CONTEXT1_CNTL2, 1, ~1);
++			break;
+ 		case 176: /* CP_INT in ring buffer */
+ 		case 177: /* CP_INT in IB1 */
+ 		case 178: /* CP_INT in IB2 */
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -651,6 +651,7 @@
+ #define		PAGE_TABLE_DEPTH(x)				(((x) & 3) << 1)
+ #define		RANGE_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 4)
+ #define VM_CONTEXT1_CNTL				0x1414
++#define VM_CONTEXT1_CNTL2				0x1434
+ #define	VM_CONTEXT0_PAGE_TABLE_BASE_ADDR		0x153C
+ #define	VM_CONTEXT0_PAGE_TABLE_END_ADDR			0x157C
+ #define	VM_CONTEXT0_PAGE_TABLE_START_ADDR		0x155C
+@@ -672,6 +673,8 @@
+ #define		CACHE_UPDATE_MODE(x)				((x) << 6)
+ #define	VM_L2_STATUS					0x140C
+ #define		L2_BUSY						(1 << 0)
++#define	VM_CONTEXT1_PROTECTION_FAULT_ADDR		0x14FC
++#define	VM_CONTEXT1_PROTECTION_FAULT_STATUS		0x14DC
  
- 	/* Do not cross zone boundaries */
--	if (start_pfn < zone->zone_start_pfn)
-+	if (!zone_spans_pfn(zone, start_pfn))
- 		start_page = page;
--	if (end_pfn >= zone->zone_start_pfn + zone->spanned_pages)
-+	if (!zone_spans_pfn(zone, end_pfn))
- 		return 0;
+ #define	WAIT_UNTIL					0x8040
  
- 	return move_freepages(zone, start_page, end_page, migratetype);
--- 
-1.8.0.3
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -784,10 +784,20 @@ static int cayman_pcie_gart_enable(struc
+ 	/* enable context1-7 */
+ 	WREG32(VM_CONTEXT1_PROTECTION_FAULT_DEFAULT_ADDR,
+ 	       (u32)(rdev->dummy_page.addr >> 12));
+-	WREG32(VM_CONTEXT1_CNTL2, 0);
+-	WREG32(VM_CONTEXT1_CNTL, 0);
++	WREG32(VM_CONTEXT1_CNTL2, 4);
+ 	WREG32(VM_CONTEXT1_CNTL, ENABLE_CONTEXT | PAGE_TABLE_DEPTH(1) |
+-				RANGE_PROTECTION_FAULT_ENABLE_DEFAULT);
++				RANGE_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				RANGE_PROTECTION_FAULT_ENABLE_DEFAULT |
++				DUMMY_PAGE_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				DUMMY_PAGE_PROTECTION_FAULT_ENABLE_DEFAULT |
++				PDE0_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				PDE0_PROTECTION_FAULT_ENABLE_DEFAULT |
++				VALID_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				VALID_PROTECTION_FAULT_ENABLE_DEFAULT |
++				READ_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				READ_PROTECTION_FAULT_ENABLE_DEFAULT |
++				WRITE_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				WRITE_PROTECTION_FAULT_ENABLE_DEFAULT);
+ 
+ 	cayman_pcie_gart_tlb_flush(rdev);
+ 	DRM_INFO("PCIE GART of %uM enabled (table at 0x%016llX).\n",
+--- a/drivers/gpu/drm/radeon/nid.h
++++ b/drivers/gpu/drm/radeon/nid.h
+@@ -80,7 +80,18 @@
+ #define VM_CONTEXT0_CNTL				0x1410
+ #define		ENABLE_CONTEXT					(1 << 0)
+ #define		PAGE_TABLE_DEPTH(x)				(((x) & 3) << 1)
++#define		RANGE_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 3)
+ #define		RANGE_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 4)
++#define		DUMMY_PAGE_PROTECTION_FAULT_ENABLE_INTERRUPT	(1 << 6)
++#define		DUMMY_PAGE_PROTECTION_FAULT_ENABLE_DEFAULT	(1 << 7)
++#define		PDE0_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 9)
++#define		PDE0_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 10)
++#define		VALID_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 12)
++#define		VALID_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 13)
++#define		READ_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 15)
++#define		READ_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 16)
++#define		WRITE_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 18)
++#define		WRITE_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 19)
+ #define VM_CONTEXT1_CNTL				0x1414
+ #define VM_CONTEXT0_CNTL2				0x1430
+ #define VM_CONTEXT1_CNTL2				0x1434
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2426,9 +2426,20 @@ static int si_pcie_gart_enable(struct ra
+ 	/* enable context1-15 */
+ 	WREG32(VM_CONTEXT1_PROTECTION_FAULT_DEFAULT_ADDR,
+ 	       (u32)(rdev->dummy_page.addr >> 12));
+-	WREG32(VM_CONTEXT1_CNTL2, 0);
++	WREG32(VM_CONTEXT1_CNTL2, 4);
+ 	WREG32(VM_CONTEXT1_CNTL, ENABLE_CONTEXT | PAGE_TABLE_DEPTH(1) |
+-				RANGE_PROTECTION_FAULT_ENABLE_DEFAULT);
++				RANGE_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				RANGE_PROTECTION_FAULT_ENABLE_DEFAULT |
++				DUMMY_PAGE_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				DUMMY_PAGE_PROTECTION_FAULT_ENABLE_DEFAULT |
++				PDE0_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				PDE0_PROTECTION_FAULT_ENABLE_DEFAULT |
++				VALID_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				VALID_PROTECTION_FAULT_ENABLE_DEFAULT |
++				READ_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				READ_PROTECTION_FAULT_ENABLE_DEFAULT |
++				WRITE_PROTECTION_FAULT_ENABLE_INTERRUPT |
++				WRITE_PROTECTION_FAULT_ENABLE_DEFAULT);
+ 
+ 	si_pcie_gart_tlb_flush(rdev);
+ 	DRM_INFO("PCIE GART of %uM enabled (table at 0x%016llX).\n",
+@@ -3684,6 +3695,16 @@ restart_ih:
+ 				break;
+ 			}
+ 			break;
++		case 146:
++		case 147:
++			dev_err(rdev->dev, "GPU fault detected: %d 0x%08x\n", src_id, src_data);
++			dev_err(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_ADDR   0x%08X\n",
++				RREG32(VM_CONTEXT1_PROTECTION_FAULT_ADDR));
++			dev_err(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_STATUS 0x%08X\n",
++				RREG32(VM_CONTEXT1_PROTECTION_FAULT_STATUS));
++			/* reset addr and status */
++			WREG32_P(VM_CONTEXT1_CNTL2, 1, ~1);
++			break;
+ 		case 176: /* RINGID0 CP_INT */
+ 			radeon_fence_process(rdev, RADEON_RING_TYPE_GFX_INDEX);
+ 			break;
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -91,7 +91,18 @@
+ #define VM_CONTEXT0_CNTL				0x1410
+ #define		ENABLE_CONTEXT					(1 << 0)
+ #define		PAGE_TABLE_DEPTH(x)				(((x) & 3) << 1)
++#define		RANGE_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 3)
+ #define		RANGE_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 4)
++#define		DUMMY_PAGE_PROTECTION_FAULT_ENABLE_INTERRUPT	(1 << 6)
++#define		DUMMY_PAGE_PROTECTION_FAULT_ENABLE_DEFAULT	(1 << 7)
++#define		PDE0_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 9)
++#define		PDE0_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 10)
++#define		VALID_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 12)
++#define		VALID_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 13)
++#define		READ_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 15)
++#define		READ_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 16)
++#define		WRITE_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 18)
++#define		WRITE_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 19)
+ #define VM_CONTEXT1_CNTL				0x1414
+ #define VM_CONTEXT0_CNTL2				0x1430
+ #define VM_CONTEXT1_CNTL2				0x1434
+@@ -104,6 +115,9 @@
+ #define	VM_CONTEXT14_PAGE_TABLE_BASE_ADDR		0x1450
+ #define	VM_CONTEXT15_PAGE_TABLE_BASE_ADDR		0x1454
+ 
++#define	VM_CONTEXT1_PROTECTION_FAULT_ADDR		0x14FC
++#define	VM_CONTEXT1_PROTECTION_FAULT_STATUS		0x14DC
++
+ #define VM_INVALIDATE_REQUEST				0x1478
+ #define VM_INVALIDATE_RESPONSE				0x147c
+ 
+
 
