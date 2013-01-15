@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933729Ab3AOWwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:52:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46977 "EHLO mail.kernel.org"
+	id S933741Ab3AOWwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:52:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47046 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932834Ab3AOWwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:45 -0500
+	id S932834Ab3AOWwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Josh Durgin <josh.durgin@inktank.com>, Alex Elder <elder@inktank.com>
-Subject: [ 134/171] rbd: only reset capacity when pointing to head
-Date: Tue, 15 Jan 2013 14:44:59 -0800
-Message-Id: <20130115224323.013575478@linuxfoundation.org>
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Julien Cristau <jcristau@debian.org>
+Subject: [ 127/171] drm/i915: prevent possible pin leak on error path
+Date: Tue, 15 Jan 2013 14:44:52 -0800
+Message-Id: <20130115224322.504160423@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,35 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Eugeni Dodonov <eugeni.dodonov@intel.com>
 
-From: Josh Durgin <josh.durgin@inktank.com>
+commit ab3951eb74e7c33a2f5b7b64d72e82f1eea61571 upstream.
 
-Snapshots cannot be resized, and the new capacity of head should not
-be reflected by the snapshot.
+We should not hit this under any sane conditions, but still, this does not
+looks right.
 
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
-(cherry picked from commit 474ef7ce832d471148f63a9d07f67fc5564834f1)
+Reported-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+CC: Chris Wilson <chris@chris-wilson.co.uk>
+CC: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Chris Wlison <chris@chris-wilson.co.uk>
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Julien Cristau <jcristau@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/block/rbd.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1721,7 +1721,12 @@ static int __rbd_update_snaps(struct rbd
- 		return ret;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7505,7 +7505,7 @@ static int intel_gen7_queue_flip(struct
+ 	default:
+ 		WARN_ONCE(1, "unknown plane in flip command\n");
+ 		ret = -ENODEV;
+-		goto err;
++		goto err_unpin;
+ 	}
  
- 	/* resized? */
--	set_capacity(rbd_dev->disk, h.image_size / SECTOR_SIZE);
-+	if (rbd_dev->snap_id == CEPH_NOSNAP) {
-+		sector_t size = (sector_t) h.image_size / SECTOR_SIZE;
-+
-+		dout("setting size to %llu sectors", (unsigned long long) size);
-+		set_capacity(rbd_dev->disk, size);
-+	}
- 
- 	down_write(&rbd_dev->header_rwsem);
- 
+ 	ret = intel_ring_begin(ring, 4);
 
 
