@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab3AOVRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 16:17:55 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44559 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab3AOVRx (ORCPT
+	id S1756322Ab3AOVSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 16:18:42 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:49556 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855Ab3AOVSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 16:17:53 -0500
-Subject: [GIT PULL] target fixes for v3.8-rc4
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Hannes Reinecke <hare@suse.de>,
-        "Rustad, Mark D" <mark.d.rustad@intel.com>,
-        Roland Dreier <roland@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Jan 2013 13:17:48 -0800
-Message-ID: <1358284668.25196.47.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jan 2013 16:18:41 -0500
+Date: Tue, 15 Jan 2013 13:18:37 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk,
+        James.Bottomley@hansenpartnership.com, snitzer@redhat.com
+Subject: Re: Bcache v. whatever
+Message-ID: <20130115211837.GB26407@google.com>
+References: <20130114223202.GV26407@google.com>
+ <20130115014931.GA19373@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115014931.GA19373@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Jan 14, 2013 at 05:49:31PM -0800, Greg KH wrote:
+> On Mon, Jan 14, 2013 at 02:32:02PM -0800, Kent Overstreet wrote:
+> > Bcache: a block layer SSD cache
+> > 
+> > Does writethrough and writeback, handles unclean shutdown, and has
+> > various other nifty features. See the wiki and the documentation for
+> > more:
+> > 
+> > http://bcache.evilpiepirate.org
+> > 
+> > Over the Christmas break I finally got the tree into a self contained
+> > state that ought to be suitable for merging; this tree is fairly close
+> > to the previous stable tree that people have been running on production
+> > servers for awhile (and that I've been running on this workstation), 
+> > 
+> > So, I think this is ready for mainline and I'd like to get it in. I
+> > should've tried to push it ages ago, but I was hoping to get in various
+> > block layer cleanups first; I finally deided to work around them in the
+> > meantime since I haven't had time to finish the block layer stuff.
+> > 
+> > Not everything has been addressed since I last posted for review
+> > feedback - notably the closure code was controversial and for now I've
+> > just moved that into drivers/block/bcache (though I've been refactoring
+> > stuff to make it less asynchronous lately; most of that work is in the
+> > testing/dev branches). The bigger issue IMO is the userspace interface -
+> > I'd like to finish the md integration so it doesn't need userspace stuff
+> > for probing/bootup. So, I'd be fine with it going into staging if that's
+> > the consensus, but it's stable tested code.
+> 
+> If it goes into staging, I need a reason why it can't be merged into the
+> "real" part of the kernel, and what will be done to get it there.
 
-The following are the target pending fixes headed into v3.8-rc4.  Please
-go ahead and pull from:
+I don't personally see why it can't, but maybe other people will chime
+in. There's certainly still stuff to do (something this size is never
+finished) but I'm not abandoning the code.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
+> Oh, and you will need to get acks from the people who's symbols you are
+> wanting to export, usually staging patches are self-contained.
 
-This includes an important >= v3.6 regression bugfix for active I/O
-shutdown (Roland), some TMR related failure / corner cases fixes for
-long outstanding I/O (Roland), two FCoE target mode fabric fabric role
-fixes (MDR), a fix for an incorrect sense code during LUN communication
-failure (Dr. Hannes), plus a handful of other minor fixes.
-
-There are still some outstanding zero-length control CDB regression
-fixes that need to be addressed for v3.8, that will be coming in a
-follow-up PULL request.
-
-Thank you,
-
---nab
-
-Hannes Reinecke (3):
-  target: use correct sense code for LUN communication failure
-  target: Introduce TCM_NO_SENSE
-  target: Use TCM_NO_SENSE for initialisation
-
-Mark Rustad (2):
-  tcm_fc: Do not indicate retry capability to initiators
-  tcm_fc: Do not report target role when target is not defined
-
-Roland Dreier (4):
-  target: Fix missing CMD_T_ACTIVE bit regression for pending WRITEs
-  target: Fix use-after-free in LUN RESET handling
-  target: Release se_cmd when LUN lookup fails for TMR
-  iscsi-target: Fix CmdSN comparison (use cmd->cmd_sn instead of
-    cmd->stat_sn)
-
- drivers/target/iscsi/iscsi_target_erl2.c |    2 +-
- drivers/target/target_core_alua.c        |    2 +-
- drivers/target/target_core_pr.c          |    2 +-
- drivers/target/target_core_transport.c   |   20 ++++++++++++++++----
- drivers/target/tcm_fc/tfc_sess.c         |   12 +++++++++---
- include/target/target_core_base.h        |    1 +
- 6 files changed, 29 insertions(+), 10 deletions(-)
-
-
+Yeah, good point. I'll mail out those patches now.
