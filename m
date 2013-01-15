@@ -1,89 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab3AOQnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 11:43:19 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:53200 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989Ab3AOQnS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 11:43:18 -0500
+	id S1756769Ab3AOQoS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 11:44:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63933 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756221Ab3AOQoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 11:44:16 -0500
+Date: Tue, 15 Jan 2013 18:48:08 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4 3/3] tuntap: allow polling/writing/reading when
+ detached
+Message-ID: <20130115164808.GA8792@redhat.com>
+References: <1358245726-16250-1-git-send-email-jasowang@redhat.com>
+ <1358245726-16250-4-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1301151214480.4978@kaball.uk.xensource.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1301151214480.4978@kaball.uk.xensource.com>
-Date: Tue, 15 Jan 2013 08:43:16 -0800
-X-Google-Sender-Auth: GA3Esz6rJEsCfPN-Pjd980x7vb4
-Message-ID: <CAE9FiQV1uxeHDVMcgNij7qAta+r2A52Jqwzb32Y1qgM13jUOeQ@mail.gmail.com>
-Subject: Re: [PATCH v7u1 00/31] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358245726-16250-4-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 4:19 AM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
->> could be found at:
->>
->>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
->
-> I tried to boot this kernel as PV guest with 2GB of RAM, but
-> unfortunately it crashes early on at boot (earlyprintk=xen log
-> appended).
->
->
->
-> mapping kernel into physical memory
-> about to get started...
-> [    0.000000] Initializing cgroup subsys cpuset
-> [    0.000000] Linux version 3.8.0-rc3+ (sstabellini@st22) (gcc version 4.4.5 (Debian 4.4.5-8) ) #4 SMP Tue Jan 15 12:11:59 UTC 2013
-> [    0.000000] Command line: root=/dev/xvda1 rw loglevel=9 debug console=hvc0 earlyprintk=xen
-> [    0.000000] ACPI in unprivileged domain disabled
-> [    0.000000] e820: BIOS-provided physical RAM map:
-> [    0.000000] Xen: [mem 0x0000000000000000-0x000000000009ffff] usable
-> [    0.000000] Xen: [mem 0x00000000000a0000-0x00000000000fffff] reserved
-> [    0.000000] Xen: [mem 0x0000000000100000-0x000000007fffffff] usable
-> [    0.000000] bootconsole [xenboot0] enabled
-> [    0.000000] NX (Execute Disable) protection: active
-> [    0.000000] DMI not present or invalid.
-> [    0.000000] e820: update [mem 0x00000000-0x0000ffff] usable ==> reserved
-> [    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
-> [    0.000000] No AGP bridge found
-> [    0.000000] e820: last_pfn = 0x80000 max_arch_pfn = 0x400000000
-> [    0.000000] Base memory trampoline at [ffff88000009a000] 9a000 size 24576
-> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
-> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
-> [    0.000000] init_memory_mapping: [mem 0x7fe00000-0x7fffffff]
-> [    0.000000]  [mem 0x7fe00000-0x7fffffff] page 4k
-> [    0.000000] BRK [0x023b8000, 0x023b8fff] PGTABLE
-> [    0.000000] BRK [0x023b9000, 0x023b9fff] PGTABLE
-> [    0.000000] init_memory_mapping: [mem 0x7c000000-0x7fdfffff]
-> [    0.000000]  [mem 0x7c000000-0x7fdfffff] page 4k
-> [    0.000000] BRK [0x023ba000, 0x023bafff] PGTABLE
-> [    0.000000] BRK [0x023bb000, 0x023bbfff] PGTABLE
-> [    0.000000] BRK [0x023bc000, 0x023bcfff] PGTABLE
-> [    0.000000] init_memory_mapping: [mem 0x00100000-0x7bffffff]
-> [    0.000000]  [mem 0x00100000-0x7bffffff] page 4k
-> (XEN) d15:v0: unhandled page fault (ec=0000)
-> (XEN) Pagetable walk from ffffea0000080330:
-> (XEN)  L4[0x1d4] = 0000000000000000 ffffffffffffffff
-> (XEN) domain_crash_sync called from entry.S
-> (XEN) Domain 15 (vcpu#0) crashed on cpu#3:
-> (XEN) ----[ Xen-4.3-unstable  x86_64  debug=y  Not tainted ]----
+On Tue, Jan 15, 2013 at 06:28:46PM +0800, Jason Wang wrote:
+> We forbid polling, writing and reading when the file were detached, this may
+> complex the user in several cases:
+> 
+> - when guest pass some buffers to vhost/qemu and then disable some queues,
+>   vhost/qemu needs to to its own cleanup which is complex. We can do this simply
+>   by allowing a user can still write to an disabled queue to handle this. And
+>   user can still do read but just nothing returned.
+> - align the polling behavior with macvtap which never fails when the queue is
+>   created. this can simplify the polling errors handling of its user (e.g vhost)
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/net/tun.c |   18 +++++++++++-------
+>  1 files changed, 11 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index af372d0..eb68937 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -307,7 +307,7 @@ static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
+>  
+>  	rcu_read_lock();
+>  
+> -	if (tun->numqueues == 1)
+> +	if (tun->numqueues == 1 || queue_index >= tun->numqueues)
+>  		goto unlock;
+>  
+>  	e = tun_flow_find(head, rxhash);
 
-ok, i think i know the cause for now,  will check if there is good way
-to fix it.
+Hmm I don't understand - does something ensure that queue_index is >
+numqueues if the queue is disabled?
+Can we check tun->disabled and skip tun_flow_update completely?
+We might need to switch to rcu_assign for tun->disabled for this
+but otherwise it looks easy.
 
-Thanks
 
-Yinghai
+> @@ -406,21 +406,21 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+>  
+>  	tun = rtnl_dereference(tfile->tun);
+>  
+> -	if (tun) {
+> +	if (tun && !tfile->detached) {
+>  		u16 index = tfile->queue_index;
+>  		BUG_ON(index >= tun->numqueues);
+>  		dev = tun->dev;
+>  
+>  		rcu_assign_pointer(tun->tfiles[index],
+>  				   tun->tfiles[tun->numqueues - 1]);
+> -		rcu_assign_pointer(tfile->tun, NULL);
+>  		ntfile = rtnl_dereference(tun->tfiles[index]);
+>  		ntfile->queue_index = index;
+>  
+>  		--tun->numqueues;
+> -		if (clean)
+> +		if (clean) {
+> +			rcu_assign_pointer(tfile->tun, NULL);
+>  			sock_put(&tfile->sk);
+> -		else
+> +		} else
+>  			tun_disable_queue(tun, tfile);
+>  
+>  		synchronize_net();
+> @@ -465,6 +465,10 @@ static void tun_detach_all(struct net_device *dev)
+>  		rcu_assign_pointer(tfile->tun, NULL);
+>  		--tun->numqueues;
+>  	}
+> +	list_for_each_entry(tfile, &tun->disabled, next) {
+> +		wake_up_all(&tfile->wq.wait);
+> +		rcu_assign_pointer(tfile->tun, NULL);
+> +	}
+>  	BUG_ON(tun->numqueues != 0);
+>  
+>  	synchronize_net();
+> @@ -491,7 +495,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+>  	int err;
+>  
+>  	err = -EINVAL;
+> -	if (rtnl_dereference(tfile->tun))
+> +	if (rtnl_dereference(tfile->tun) && !tfile->detached)
+>  		goto out;
+>  
+>  	err = -EBUSY;
+> @@ -1795,7 +1799,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
+>  			ret = tun_attach(tun, file);
+>  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
+>  		tun = rtnl_dereference(tfile->tun);
+> -		if (!tun || !(tun->flags & TUN_TAP_MQ))
+> +		if (!tun || !(tun->flags & TUN_TAP_MQ) || tfile->detached)
+>  			ret = -EINVAL;
+>  		else
+>  			__tun_detach(tfile, false);
+> -- 
+> 1.7.1
