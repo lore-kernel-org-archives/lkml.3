@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933190Ab3AOWuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:50:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45981 "EHLO mail.kernel.org"
+	id S933215Ab3AOXpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:45:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45994 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933178Ab3AOWuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:22 -0500
+	id S932935Ab3AOWuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Juergen Beisert <jbe@pengutronix.de>,
-        Lauri Hintsala <lauri.hintsala@bluegiga.net>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 055/171] video: mxsfb: fix crash when unblanking the display
-Date: Tue, 15 Jan 2013 14:43:40 -0800
-Message-Id: <20130115224317.392114395@linuxfoundation.org>
+        David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 065/171] thp, memcg: split hugepage for memcg oom on cow
+Date: Tue, 15 Jan 2013 14:43:50 -0800
+Message-Id: <20130115224318.105903702@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,36 +31,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lothar Waßmann <LW@KARO-electronics.de>
+From: David Rientjes <rientjes@google.com>
 
-commit 6c1ecba8d84841277d68140ef485335d5be28485 upstream.
+commit 1f1d06c34f7675026326cd9f39ff91e4555cf355 upstream.
 
-The VDCTRL4 register does not provide the MXS SET/CLR/TOGGLE feature.
-The write in mxsfb_disable_controller() sets the data_cnt for the LCD
-DMA to 0 which obviously means the max. count for the LCD DMA and
-leads to overwriting arbitrary memory when the display is unblanked.
+On COW, a new hugepage is allocated and charged to the memcg.  If the
+system is oom or the charge to the memcg fails, however, the fault
+handler will return VM_FAULT_OOM which results in an oom kill.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-Acked-by: Juergen Beisert <jbe@pengutronix.de>
-Tested-by: Lauri Hintsala <lauri.hintsala@bluegiga.net>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Instead, it's possible to fallback to splitting the hugepage so that the
+COW results only in an order-0 page being allocated and charged to the
+memcg which has a higher liklihood to succeed.  This is expensive
+because the hugepage must be split in the page fault handler, but it is
+much better than unnecessarily oom killing a process.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/mxsfb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/huge_memory.c |    3 +++
+ mm/memory.c      |   18 +++++++++++++++---
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
---- a/drivers/video/mxsfb.c
-+++ b/drivers/video/mxsfb.c
-@@ -366,7 +366,8 @@ static void mxsfb_disable_controller(str
- 		loop--;
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -950,6 +950,8 @@ int do_huge_pmd_wp_page(struct mm_struct
+ 		count_vm_event(THP_FAULT_FALLBACK);
+ 		ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
+ 						   pmd, orig_pmd, page, haddr);
++		if (ret & VM_FAULT_OOM)
++			split_huge_page(page);
+ 		put_page(page);
+ 		goto out;
  	}
+@@ -957,6 +959,7 @@ int do_huge_pmd_wp_page(struct mm_struct
  
--	writel(VDCTRL4_SYNC_SIGNALS_ON, host->base + LCDC_VDCTRL4 + REG_CLR);
-+	reg = readl(host->base + LCDC_VDCTRL4);
-+	writel(reg & ~VDCTRL4_SYNC_SIGNALS_ON, host->base + LCDC_VDCTRL4);
+ 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
+ 		put_page(new_page);
++		split_huge_page(page);
+ 		put_page(page);
+ 		ret |= VM_FAULT_OOM;
+ 		goto out;
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3494,6 +3494,7 @@ int handle_mm_fault(struct mm_struct *mm
+ 	if (unlikely(is_vm_hugetlb_page(vma)))
+ 		return hugetlb_fault(mm, vma, address, flags);
  
- 	clk_disable_unprepare(host->clk);
- 
++retry:
+ 	pgd = pgd_offset(mm, address);
+ 	pud = pud_alloc(mm, pgd, address);
+ 	if (!pud)
+@@ -3507,13 +3508,24 @@ int handle_mm_fault(struct mm_struct *mm
+ 							  pmd, flags);
+ 	} else {
+ 		pmd_t orig_pmd = *pmd;
++		int ret;
++
+ 		barrier();
+ 		if (pmd_trans_huge(orig_pmd)) {
+ 			if (flags & FAULT_FLAG_WRITE &&
+ 			    !pmd_write(orig_pmd) &&
+-			    !pmd_trans_splitting(orig_pmd))
+-				return do_huge_pmd_wp_page(mm, vma, address,
+-							   pmd, orig_pmd);
++			    !pmd_trans_splitting(orig_pmd)) {
++				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
++							  orig_pmd);
++				/*
++				 * If COW results in an oom, the huge pmd will
++				 * have been split, so retry the fault on the
++				 * pte for a smaller charge.
++				 */
++				if (unlikely(ret & VM_FAULT_OOM))
++					goto retry;
++				return ret;
++			}
+ 			return 0;
+ 		}
+ 	}
 
 
