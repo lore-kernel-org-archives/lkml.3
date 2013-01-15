@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab3APANl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:13:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42769 "EHLO mail.kernel.org"
+	id S932404Ab3APAOA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:14:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42748 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758428Ab3AOWcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:32:23 -0500
+	id S932335Ab3AOWcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>
-Subject: [ 119/221] ACPI : do not use Lid and Sleep button for S5 wakeup
-Date: Tue, 15 Jan 2013 10:50:46 -0800
-Message-Id: <20130115185006.628023120@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 127/221] ASoC: wm2200: Fix setting dai format in wm2200_set_fmt
+Date: Tue, 15 Jan 2013 10:50:54 -0800
+Message-Id: <20130115185007.191744271@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,48 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit b7e383046c2c7c13ad928cd7407eafff758ddd4b upstream.
+commit 2a5f431592343b78896013b055582f94c12a5049 upstream.
 
-When system enters power off, the _PSW of Lid device is enabled.
-But this may cause the system to reboot instead of power off.
+According to the defines in wm2200.h:
+/*
+ * R1284 (0x504) - Audio IF 1_5
+ */
 
-A proper way to fix this is to always disable lid wakeup capability for S5.
+We should not left shift 1 bit for fmt_val when setting dai format.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=35262
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/scan.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm2200.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -859,8 +859,8 @@ acpi_bus_extract_wakeup_device_power_pac
- static void acpi_bus_set_run_wake_flags(struct acpi_device *device)
- {
- 	struct acpi_device_id button_device_ids[] = {
--		{"PNP0C0D", 0},
- 		{"PNP0C0C", 0},
-+		{"PNP0C0D", 0},
- 		{"PNP0C0E", 0},
- 		{"", 0},
- 	};
-@@ -872,6 +872,11 @@ static void acpi_bus_set_run_wake_flags(
- 	/* Power button, Lid switch always enable wakeup */
- 	if (!acpi_match_device_ids(device, button_device_ids)) {
- 		device->wakeup.flags.run_wake = 1;
-+		if (!acpi_match_device_ids(device, &button_device_ids[1])) {
-+			/* Do not use Lid/sleep button for S5 wakeup */
-+			if (device->wakeup.sleep_state == ACPI_STATE_S5)
-+				device->wakeup.sleep_state = ACPI_STATE_S4;
-+		}
- 		device_set_wakeup_capable(&device->dev, true);
- 		return;
- 	}
+--- a/sound/soc/codecs/wm2200.c
++++ b/sound/soc/codecs/wm2200.c
+@@ -1440,7 +1440,7 @@ static int wm2200_set_fmt(struct snd_soc
+ 			    WM2200_AIF1TX_LRCLK_MSTR | WM2200_AIF1TX_LRCLK_INV,
+ 			    lrclk);
+ 	snd_soc_update_bits(codec, WM2200_AUDIO_IF_1_5,
+-			    WM2200_AIF1_FMT_MASK << 1, fmt_val << 1);
++			    WM2200_AIF1_FMT_MASK, fmt_val);
+ 
+ 	return 0;
+ }
 
 
