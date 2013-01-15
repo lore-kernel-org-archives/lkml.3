@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab3AOS5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:57:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34757 "EHLO mail.kernel.org"
+	id S1758008Ab3AOS53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:57:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34838 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757377Ab3AOS5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:57:06 -0500
+	id S1757988Ab3AOS51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:57:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stephan Gatzka <stephan.gatzka@gmail.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [ 026/221] firewire: net: Fix handling of fragmented multicast/broadcast packets.
-Date: Tue, 15 Jan 2013 10:49:13 -0800
-Message-Id: <20130115184959.930124155@linuxfoundation.org>
+        Steve Hodgson <steve@purestorage.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@risingtidesystems.com>
+Subject: [ 040/221] qla2xxx: Look up LUN for abort requests
+Date: Tue, 15 Jan 2013 10:49:27 -0800
+Message-Id: <20130115185000.919638083@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,70 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephan Gatzka <stephan.gatzka@gmail.com>
+From: Steve Hodgson <steve@purestorage.com>
 
-commit 9d2373420900a39f5212a3b289331aa3535b1000 upstream.
+commit 06e97b489006f28e23bb028febfa1c01c266d676 upstream.
 
-This patch fixes both the transmit and receive portion of sending
-fragmented mutlicast and broadcast packets.
+Search through the list of pending commands on the session list to find
+the command the initiator is actually aborting, so that we can pass the
+correct LUN to the core TMR handling code.
 
-The transmit section was broken because the offset for INTFRAG and
-LASTFRAG packets were just miscalculated by IEEE1394_GASP_HDR_SIZE (which
-was reserved with skb_push() in fwnet_send_packet).
+(nab: Allow abort requests to work to LUN=0 with mainline target code)
 
-The receive section was broken because in fwnet_incoming_packet is a call
-to fwnet_peer_find_by_node_id(). Called with generation == -1 it will
-not find a peer and the partial datagrams are associated to a peer.
-
-[Stefan R:  The fix to use context->card->generation is not perfect.
-It relies on the IR tasklet which processes packets from the prior bus
-generation to run before the self-ID-complete worklet which sets the
-current card generation.  Alas, there is no simple way of a race-free
-implementation.  Let's do it this way for now.]
-
-Signed-off-by: Stephan Gatzka <stephan.gatzka@gmail.com>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Steve Hodgson <steve@purestorage.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@risingtidesystems.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/net.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/scsi/qla2xxx/qla_target.c |   21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
 
---- a/drivers/firewire/net.c
-+++ b/drivers/firewire/net.c
-@@ -861,8 +861,8 @@ static void fwnet_receive_broadcast(stru
- 	if (specifier_id == IANA_SPECIFIER_ID && ver == RFC2734_SW_VERSION) {
- 		buf_ptr += 2;
- 		length -= IEEE1394_GASP_HDR_SIZE;
--		fwnet_incoming_packet(dev, buf_ptr, length,
--				      source_node_id, -1, true);
-+		fwnet_incoming_packet(dev, buf_ptr, length, source_node_id,
-+				      context->card->generation, true);
- 	}
- 
- 	packet.payload_length = dev->rcv_buffer_size;
-@@ -958,7 +958,12 @@ static void fwnet_transmit_packet_done(s
- 			break;
- 		}
- 
--		skb_pull(skb, ptask->max_payload);
-+		if (ptask->dest_node == IEEE1394_ALL_NODES) {
-+			skb_pull(skb,
-+				 ptask->max_payload + IEEE1394_GASP_HDR_SIZE);
-+		} else {
-+			skb_pull(skb, ptask->max_payload);
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -1264,8 +1264,27 @@ static int __qlt_24xx_handle_abts(struct
+ 	struct abts_recv_from_24xx *abts, struct qla_tgt_sess *sess)
+ {
+ 	struct qla_hw_data *ha = vha->hw;
++	struct se_session *se_sess = sess->se_sess;
+ 	struct qla_tgt_mgmt_cmd *mcmd;
++	struct se_cmd *se_cmd;
++	u32 lun = 0;
+ 	int rc;
++	bool found_lun = false;
++
++	spin_lock(&se_sess->sess_cmd_lock);
++	list_for_each_entry(se_cmd, &se_sess->sess_cmd_list, se_cmd_list) {
++		struct qla_tgt_cmd *cmd =
++			container_of(se_cmd, struct qla_tgt_cmd, se_cmd);
++		if (cmd->tag == abts->exchange_addr_to_abort) {
++			lun = cmd->unpacked_lun;
++			found_lun = true;
++			break;
 +		}
- 		if (ptask->outstanding_pkts > 1) {
- 			fwnet_make_sf_hdr(&ptask->hdr, RFC2374_HDR_INTFRAG,
- 					  dg_size, fg_off, datagram_label);
-@@ -1062,7 +1067,7 @@ static int fwnet_send_packet(struct fwne
- 		smp_rmb();
- 		node_id = dev->card->node_id;
++	}
++	spin_unlock(&se_sess->sess_cmd_lock);
++
++	if (!found_lun)
++		return -ENOENT;
  
--		p = skb_push(ptask->skb, 8);
-+		p = skb_push(ptask->skb, IEEE1394_GASP_HDR_SIZE);
- 		put_unaligned_be32(node_id << 16 | IANA_SPECIFIER_ID >> 8, p);
- 		put_unaligned_be32((IANA_SPECIFIER_ID & 0xff) << 24
- 						| RFC2734_SW_VERSION, &p[4]);
+ 	ql_dbg(ql_dbg_tgt_mgt, vha, 0xf00f,
+ 	    "qla_target(%d): task abort (tag=%d)\n",
+@@ -1283,7 +1302,7 @@ static int __qlt_24xx_handle_abts(struct
+ 	mcmd->sess = sess;
+ 	memcpy(&mcmd->orig_iocb.abts, abts, sizeof(mcmd->orig_iocb.abts));
+ 
+-	rc = ha->tgt.tgt_ops->handle_tmr(mcmd, 0, TMR_ABORT_TASK,
++	rc = ha->tgt.tgt_ops->handle_tmr(mcmd, lun, TMR_ABORT_TASK,
+ 	    abts->exchange_addr_to_abort);
+ 	if (rc != 0) {
+ 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf052,
 
 
