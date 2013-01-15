@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735Ab3AOWfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:35:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43573 "EHLO mail.kernel.org"
+	id S932824Ab3AOWfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:35:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43639 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932702Ab3AOWf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:35:28 -0500
+	id S932730Ab3AOWfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:35:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Denis Kirjanov <kirjanov@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>
-Subject: [ 187/221] EDAC: Fix kernel panic on module unloading
-Date: Tue, 15 Jan 2013 10:51:54 -0800
-Message-Id: <20130115185011.519323969@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 190/221] libceph: socket can close in any connection state
+Date: Tue, 15 Jan 2013 10:51:57 -0800
+Message-Id: <20130115185011.741688951@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -28,39 +25,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: Alex Elder <elder@inktank.com>
 
-commit 311bd84247ee0bedae6cdfbfc5e2c3450f9decd1 upstream.
+(cherry picked from commit 7bb21d68c535ad8be38e14a715632ae398b37ac1)
 
-This patch fixes use-after-free and double-free bugs in
-edac_mc_sysfs_exit(). mci_pdev has single reference and put_device()
-calls mc_attr_release() which calls kfree(). The following
-device_del() works with already released memory. An another kfree() in
-edac_mc_sysfs_exit() releses the same memory again. Great.
+A connection's socket can close for any reason, independent of the
+state of the connection (and without irrespective of the connection
+mutex).  As a result, the connectino can be in pretty much any state
+at the time its socket is closed.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Denis Kirjanov <kirjanov@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Link: http://lkml.kernel.org/r/20121214110310.11019.21098.stgit@zurg
-Signed-off-by: Borislav Petkov <bp@alien8.de>
-[ a partial 3.7.y backport ]
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Handle those other cases at the top of con_work().  Pull this whole
+block of code into a separate function to reduce the clutter.
+
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/edac/edac_mc_sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ceph/messenger.c |   47 ++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 30 insertions(+), 17 deletions(-)
 
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -1145,7 +1145,7 @@ int __init edac_mc_sysfs_init(void)
- 
- void __exit edac_mc_sysfs_exit(void)
- {
--	put_device(mci_pdev);
- 	device_del(mci_pdev);
-+	put_device(mci_pdev);
- 	edac_put_sysfs_subsys();
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -2262,6 +2262,35 @@ static void queue_con(struct ceph_connec
+ 	}
  }
+ 
++static bool con_sock_closed(struct ceph_connection *con)
++{
++	if (!test_and_clear_bit(CON_FLAG_SOCK_CLOSED, &con->flags))
++		return false;
++
++#define CASE(x)								\
++	case CON_STATE_ ## x:						\
++		con->error_msg = "socket closed (con state " #x ")";	\
++		break;
++
++	switch (con->state) {
++	CASE(CLOSED);
++	CASE(PREOPEN);
++	CASE(CONNECTING);
++	CASE(NEGOTIATING);
++	CASE(OPEN);
++	CASE(STANDBY);
++	default:
++		pr_warning("%s con %p unrecognized state %lu\n",
++			__func__, con, con->state);
++		con->error_msg = "unrecognized con state";
++		BUG();
++		break;
++	}
++#undef CASE
++
++	return true;
++}
++
+ /*
+  * Do some work on a connection.  Drop a connection ref when we're done.
+  */
+@@ -2273,24 +2302,8 @@ static void con_work(struct work_struct
+ 
+ 	mutex_lock(&con->mutex);
+ restart:
+-	if (test_and_clear_bit(CON_FLAG_SOCK_CLOSED, &con->flags)) {
+-		switch (con->state) {
+-		case CON_STATE_CONNECTING:
+-			con->error_msg = "connection failed";
+-			break;
+-		case CON_STATE_NEGOTIATING:
+-			con->error_msg = "negotiation failed";
+-			break;
+-		case CON_STATE_OPEN:
+-			con->error_msg = "socket closed";
+-			break;
+-		default:
+-			dout("unrecognized con state %d\n", (int)con->state);
+-			con->error_msg = "unrecognized con state";
+-			BUG();
+-		}
++	if (con_sock_closed(con))
+ 		goto fault;
+-	}
+ 
+ 	if (test_and_clear_bit(CON_FLAG_BACKOFF, &con->flags)) {
+ 		dout("con_work %p backing off\n", con);
 
 
