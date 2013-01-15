@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab3APAUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:20:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42150 "EHLO mail.kernel.org"
+	id S932168Ab3APAVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:21:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42050 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758331Ab3AOWbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:31:01 -0500
+	id S1758293Ab3AOWa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:30:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 099/221] staging: vt6656: 64bit fixes: key.c/h change unsigned long to u32
-Date: Tue, 15 Jan 2013 10:50:26 -0800
-Message-Id: <20130115185005.179580725@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 093/221] dm ioctl: prevent unsafe change to dm_ioctl data_size
+Date: Tue, 15 Jan 2013 10:50:20 -0800
+Message-Id: <20130115185004.751419236@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,86 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Alasdair G Kergon <agk@redhat.com>
 
-commit c0d05b305b00c698b0a8c1b3d46c9380bce9db45 upstream.
+commit e910d7ebecd1aac43125944a8641b6cb1a0dfabe upstream.
 
-Fixes long issues.
+Abort dm ioctl processing if userspace changes the data_size parameter
+after we validated it but before we finished copying the data buffer
+from userspace.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+The dm ioctl parameters are processed in the following sequence:
+ 1. ctl_ioctl() calls copy_params();
+ 2. copy_params() makes a first copy of the fixed-sized portion of the
+    userspace parameters into the local variable "tmp";
+ 3. copy_params() then validates tmp.data_size and allocates a new
+    structure big enough to hold the complete data and copies the whole
+    userspace buffer there;
+ 4. ctl_ioctl() reads userspace data the second time and copies the whole
+    buffer into the pointer "param";
+ 5. ctl_ioctl() reads param->data_size without any validation and stores it
+    in the variable "input_param_size";
+ 6. "input_param_size" is further used as the authoritative size of the
+    kernel buffer.
+
+The problem is that userspace code could change the contents of user
+memory between steps 2 and 4.  In particular, the data_size parameter
+can be changed to an invalid value after the kernel has validated it.
+This lets userspace force the kernel to access invalid kernel memory.
+
+The fix is to ensure that the size has not changed at step 4.
+
+This patch shouldn't have a security impact because CAP_SYS_ADMIN is
+required to run this code, but it should be fixed anyway.
+
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/key.c |    6 +++---
- drivers/staging/vt6656/key.h |    8 ++++----
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/md/dm-ioctl.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/staging/vt6656/key.c
-+++ b/drivers/staging/vt6656/key.c
-@@ -223,7 +223,7 @@ BOOL KeybSetKey(
-     PSKeyManagement pTable,
-     PBYTE           pbyBSSID,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -675,7 +675,7 @@ BOOL KeybSetDefaultKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -791,7 +791,7 @@ BOOL KeybSetAllGroupKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
---- a/drivers/staging/vt6656/key.h
-+++ b/drivers/staging/vt6656/key.h
-@@ -58,7 +58,7 @@
- typedef struct tagSKeyItem
- {
-     BOOL        bKeyValid;
--    unsigned long       uKeyLength;
-+	u32 uKeyLength;
-     BYTE        abyKey[MAX_KEY_LEN];
-     QWORD       KeyRSC;
-     DWORD       dwTSC47_16;
-@@ -107,7 +107,7 @@ BOOL KeybSetKey(
-     PSKeyManagement pTable,
-     PBYTE           pbyBSSID,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -146,7 +146,7 @@ BOOL KeybSetDefaultKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -156,7 +156,7 @@ BOOL KeybSetAllGroupKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -1566,6 +1566,14 @@ static int copy_params(struct dm_ioctl _
+ 	if (copy_from_user(dmi, user, tmp.data_size))
+ 		goto bad;
+ 
++	/*
++	 * Abort if something changed the ioctl data while it was being copied.
++	 */
++	if (dmi->data_size != tmp.data_size) {
++		DMERR("rejecting ioctl: data size modified while processing parameters");
++		goto bad;
++	}
++
+ 	/* Wipe the user buffer so we do not return it to userspace */
+ 	if (secure_data && clear_user(user, tmp.data_size))
+ 		goto bad;
 
 
