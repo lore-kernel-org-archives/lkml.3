@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab3AOW3b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:29:31 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41782 "EHLO mail.kernel.org"
+	id S1758091Ab3AOW3h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:29:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41797 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758045Ab3AOW33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:29:29 -0500
+	id S1758045Ab3AOW3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:29:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Subject: [ 070/221] drm/radeon: fix eDP clk and lane setup for scaled modes
-Date: Tue, 15 Jan 2013 10:49:57 -0800
-Message-Id: <20130115185003.120480769@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 071/221] drm/radeon: fix amd afusion gpu setup aka sumo v2
+Date: Tue, 15 Jan 2013 10:49:58 -0800
+Message-Id: <20130115185003.189732855@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,31 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 93927f9c1db5f55085457e820f0631064c7bfa34 upstream.
+commit bd25f0783dc3fb72e1e2779c2b99b2d34b67fa8a upstream.
 
-Need to use the adjusted mode since we are sending native
-timing and using the scaler for non-native modes.
+Set the proper number of tile pipe that should be a multiple of
+pipe depending on the number of se engine.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=56405
+https://bugs.freedesktop.org/show_bug.cgi?id=56720
+
+v2: Don't change sumo2
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/evergreen.c  |    8 ++++----
+ drivers/gpu/drm/radeon/evergreend.h |    2 ++
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -340,7 +340,7 @@ static bool radeon_atom_mode_fixup(struc
- 	    ((radeon_encoder->active_device & (ATOM_DEVICE_DFP_SUPPORT | ATOM_DEVICE_LCD_SUPPORT)) ||
- 	     (radeon_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_OBJECT_ID_NONE))) {
- 		struct drm_connector *connector = radeon_get_connector_for_encoder(encoder);
--		radeon_dp_set_link_config(connector, mode);
-+		radeon_dp_set_link_config(connector, adjusted_mode);
- 	}
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1821,7 +1821,7 @@ static void evergreen_gpu_init(struct ra
+ 	case CHIP_SUMO:
+ 		rdev->config.evergreen.num_ses = 1;
+ 		rdev->config.evergreen.max_pipes = 4;
+-		rdev->config.evergreen.max_tile_pipes = 2;
++		rdev->config.evergreen.max_tile_pipes = 4;
+ 		if (rdev->pdev->device == 0x9648)
+ 			rdev->config.evergreen.max_simds = 3;
+ 		else if ((rdev->pdev->device == 0x9647) ||
+@@ -1844,7 +1844,7 @@ static void evergreen_gpu_init(struct ra
+ 		rdev->config.evergreen.sc_prim_fifo_size = 0x40;
+ 		rdev->config.evergreen.sc_hiz_tile_fifo_size = 0x30;
+ 		rdev->config.evergreen.sc_earlyz_tile_fifo_size = 0x130;
+-		gb_addr_config = REDWOOD_GB_ADDR_CONFIG_GOLDEN;
++		gb_addr_config = SUMO_GB_ADDR_CONFIG_GOLDEN;
+ 		break;
+ 	case CHIP_SUMO2:
+ 		rdev->config.evergreen.num_ses = 1;
+@@ -1866,7 +1866,7 @@ static void evergreen_gpu_init(struct ra
+ 		rdev->config.evergreen.sc_prim_fifo_size = 0x40;
+ 		rdev->config.evergreen.sc_hiz_tile_fifo_size = 0x30;
+ 		rdev->config.evergreen.sc_earlyz_tile_fifo_size = 0x130;
+-		gb_addr_config = REDWOOD_GB_ADDR_CONFIG_GOLDEN;
++		gb_addr_config = SUMO2_GB_ADDR_CONFIG_GOLDEN;
+ 		break;
+ 	case CHIP_BARTS:
+ 		rdev->config.evergreen.num_ses = 2;
+@@ -1914,7 +1914,7 @@ static void evergreen_gpu_init(struct ra
+ 		break;
+ 	case CHIP_CAICOS:
+ 		rdev->config.evergreen.num_ses = 1;
+-		rdev->config.evergreen.max_pipes = 4;
++		rdev->config.evergreen.max_pipes = 2;
+ 		rdev->config.evergreen.max_tile_pipes = 2;
+ 		rdev->config.evergreen.max_simds = 2;
+ 		rdev->config.evergreen.max_backends = 1 * rdev->config.evergreen.num_ses;
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -45,6 +45,8 @@
+ #define TURKS_GB_ADDR_CONFIG_GOLDEN          0x02010002
+ #define CEDAR_GB_ADDR_CONFIG_GOLDEN          0x02010001
+ #define CAICOS_GB_ADDR_CONFIG_GOLDEN         0x02010001
++#define SUMO_GB_ADDR_CONFIG_GOLDEN           0x02010002
++#define SUMO2_GB_ADDR_CONFIG_GOLDEN          0x02010002
  
- 	return true;
+ /* Registers */
+ 
 
 
