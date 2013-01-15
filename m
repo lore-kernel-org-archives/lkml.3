@@ -1,109 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757037Ab3AOQHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 11:07:14 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:39237 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755255Ab3AOQHM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 11:07:12 -0500
-From: "B, Ravi" <ravibabu@ti.com>
-To: "Balbi, Felipe" <balbi@ti.com>, "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [RFC PATCH 0/7] usb: musb: add driver for control module
-Thread-Topic: [RFC PATCH 0/7] usb: musb: add driver for control module
-Thread-Index: AQHN8zGiQgWIUwHMKUadb+uNVk2+z5hKhdQg
-Date: Tue, 15 Jan 2013 16:06:44 +0000
-Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EA5ACAB@DBDE01.ent.ti.com>
-References: <1358239378-10030-1-git-send-email-kishon@ti.com>
- <201301151341.08297.arnd@arndb.de> <50F56A1A.3040504@ti.com>
- <20130115150432.GB26272@arwen.pp.htv.fi>
-In-Reply-To: <20130115150432.GB26272@arwen.pp.htv.fi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.81.233]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1756468Ab3AOQJj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 11:09:39 -0500
+Received: from mga14.intel.com ([143.182.124.37]:56384 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754173Ab3AOQJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 11:09:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,473,1355126400"; 
+   d="scan'208";a="191395587"
+From: Feng Tang <feng.tang@intel.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Feng Tang <feng.tang@intel.com>
+Subject: [PATCH v2 1/3] timekeeping: Add persistent_clock_exist flag
+Date: Wed, 16 Jan 2013 00:09:47 +0800
+Message-Id: <1358266189-8812-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi,
-> 
-> On Tue, Jan 15, 2013 at 08:09:22PM +0530, kishon wrote:
-> > Hi Arnd,
-> > 
-> > On Tuesday 15 January 2013 07:11 PM, Arnd Bergmann wrote:
-> > >On Tuesday 15 January 2013, Kishon Vijay Abraham I wrote:
-> > >>Added a new driver for the usb part of control module. 
-> This has an 
-> > >>API to power on the USB2 phy and an API to write to the mailbox 
-> > >>depending on whether MUSB has to act in host mode or in 
-> device mode.
-> > >>
-> > >>Writing to control module registers for doing the above 
-> task which 
-> > >>was previously done in omap glue and in omap-usb2 phy is removed.
-> > >>
-> > >>Also added the dt data to get MUSB working in OMAP platforms.
-> > >>This series has patches for both drivers and ARCH 
-> folders, so If it 
-> > >>has to be split I'll do it.
-> > >>
-> > >
-> > >The series looks good to me, I just had a minor comment on 
-> one patch.
-> > >
-> > >One a somewhat related topic, I wonder whether there are 
-> any plans on 
-> > >your side to change this driver to support multiple bus 
-> glues to be 
-> > >built for one kernel image. With a multiplatform kernel, 
-> we may need 
-> > >all of TUSB6010/OMAP2PLUS/DSPS/UX500 for instance.
-> > 
-> > We don't have plans as of now. I actually don't expect any 
-> changes in 
-> > the driver other than the Kconfig changes. Anyways the 
-> probe of glue's 
-> > other than the platform it's running won't get called. right Felipe?
+In current kernel, there are several places which need to check
+whether there is a persistent clock for the platform. Current check
+is done by calling the read_persistent_clock() and validating its
+return value.
 
-If understand correctly the control module driver used to configure the respective usb phy of SoC to respective usb modes using the common set of control module APIs. What if, if control module interface (register defintions) varies b/w different revision or spin of same type of SoCs, if usbphy type is changed. In this case whether the single instance of control module driver is good enough to cater of all cpu types of same SoC series ? 
-Whether cpu_is_xxx() can be used to differentiate b/w different cpu types in CM driver?
+So one optimization is to do the check only once in timekeeping_init(),
+and use a flag persistent_clock_exist to record it.
 
-> 
-> AFAICT there's nothing preventing those from being built 
-> together as long as you don't use DMA (yeah, that's a touchy 
-> subject still with MUSB).
-> 
-> If there are any build breaks, please report them so bus glue 
-> owners can fix. I see that at least the davinci folks need to 
-> work a bit
-> 
-> $ git grep -e "mach\/" drivers/usb/musb/ 
-> drivers/usb/musb/da8xx.c:#include <mach/da8xx.h> 
-> drivers/usb/musb/davinci.c:#include <mach/cputype.h> 
-> drivers/usb/musb/davinci.c:#include <mach/hardware.h>
-> 
-> I'm adding Ravi B to the loop here for those.
-> 
-> --
-> balbi
-> 
+v2: Add a has_persistent_clock() helper function, as suggested by John.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ include/linux/time.h      |    6 ++++++
+ kernel/time/timekeeping.c |   16 +++++++++++-----
+ 2 files changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 4d358e9..2f58603 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -115,6 +115,12 @@ static inline bool timespec_valid_strict(const struct timespec *ts)
+ 	return true;
+ }
+ 
++extern bool persistent_clock_exist;
++static inline bool has_persistent_clock(void)
++{
++	return persistent_clock_exist;
++}
++
+ extern void read_persistent_clock(struct timespec *ts);
+ extern void read_boot_clock(struct timespec *ts);
+ extern int update_persistent_clock(struct timespec now);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index cbc6acb..2fd3aed 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -29,6 +29,9 @@ static struct timekeeper timekeeper;
+ /* flag for if timekeeping is suspended */
+ int __read_mostly timekeeping_suspended;
+ 
++/* Flag for if there is a persistent clock on this platform */
++bool __read_mostly persistent_clock_exist = false;
++
+ static inline void tk_normalize_xtime(struct timekeeper *tk)
+ {
+ 	while (tk->xtime_nsec >= ((u64)NSEC_PER_SEC << tk->shift)) {
+@@ -640,12 +643,14 @@ void __init timekeeping_init(void)
+ 	struct timespec now, boot, tmp;
+ 
+ 	read_persistent_clock(&now);
++
+ 	if (!timespec_valid_strict(&now)) {
+ 		pr_warn("WARNING: Persistent clock returned invalid value!\n"
+ 			"         Check your CMOS/BIOS settings.\n");
+ 		now.tv_sec = 0;
+ 		now.tv_nsec = 0;
+-	}
++	} else if (now.tv_sec || now.tv_nsec)
++		persistent_clock_exist = true;
+ 
+ 	read_boot_clock(&boot);
+ 	if (!timespec_valid_strict(&boot)) {
+@@ -718,11 +723,12 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
+ {
+ 	struct timekeeper *tk = &timekeeper;
+ 	unsigned long flags;
+-	struct timespec ts;
+ 
+-	/* Make sure we don't set the clock twice */
+-	read_persistent_clock(&ts);
+-	if (!(ts.tv_sec == 0 && ts.tv_nsec == 0))
++	/*
++	 * Make sure we don't set the clock twice, as timekeeping_resume()
++	 * already did it
++	 */
++	if (has_persistent_clock())
+ 		return;
+ 
+ 	write_seqlock_irqsave(&tk->lock, flags);
+-- 
+1.7.9.5
+
