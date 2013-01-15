@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933493Ab3AOWvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:51:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46508 "EHLO mail.kernel.org"
+	id S933505Ab3AOXgR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:36:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46496 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933444Ab3AOWvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:51:42 -0500
+	id S933461Ab3AOWvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:51:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 101/171] USB: Ignore xHCI Reset Device status.
-Date: Tue, 15 Jan 2013 14:44:26 -0800
-Message-Id: <20130115224320.654732260@linuxfoundation.org>
+        Denis Kaganovich <mahatma@eu.by>
+Subject: [ 091/171] USB: option: add Nexpring NP10T terminal id
+Date: Tue, 15 Jan 2013 14:44:16 -0800
+Message-Id: <20130115224319.944467767@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,67 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
 
-commit 8b8132bc3d1cc3d4c0687e4d638a482fa920d98a upstream.
+commit ad86e58661b38b279b7519d4e49c7a19dc1654bb upstream.
 
-When the USB core finishes reseting a USB device, the xHCI driver sends
-a Reset Device command to the host.  The xHC then updates its internal
-representation of the USB device to the 'Default' device state.  If the
-device was already in the Default state, the xHC will complete the
-command with an error status.
+Hyundai Petatel Inc. Nexpring NP10T terminal (EV-DO rev.A USB modem) ID
 
-If a device needs to be reset several times during enumeration, the
-second reset will always fail because of the xHCI Reset Device command.
-This can cause issues during enumeration.
-
-For example, usb_reset_and_verify_device calls into hub_port_init in a
-loop.  Say that on the first call into hub_port_init, the device is
-successfully reset, but doesn't respond to several set address control
-transfers.  Then the port will be disabled, but the udev will remain in
-tact.  usb_reset_and_verify_device will call into hub_port_init again.
-
-On the second call into hub_port_init, the device will be reset, and the
-xHCI driver will issue a Reset Device command.  This command will fail
-(because the device is already in the Default state), and
-usb_reset_and_verify_device will fail.  The port will be disabled, and
-the device won't be able to enumerate.
-
-Fix this by ignoring the return value of the HCD reset_device callback.
-
-This commit should be backported to kernels as old as 3.2, that contain
-the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine
-warm reset logic".
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Denis Kaganovich <mahatma@eu.by>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2234,14 +2234,11 @@ static void hub_port_finish_reset(struct
- 			msleep(10 + 40);
- 			update_devnum(udev, 0);
- 			hcd = bus_to_hcd(udev->bus);
--			if (hcd->driver->reset_device) {
--				*status = hcd->driver->reset_device(hcd, udev);
--				if (*status < 0) {
--					dev_err(&udev->dev, "Cannot reset "
--							"HCD device state\n");
--					break;
--				}
--			}
-+			/* The xHC may think the device is already reset,
-+			 * so ignore the status.
-+			 */
-+			if (hcd->driver->reset_device)
-+				hcd->driver->reset_device(hcd, udev);
- 		}
- 		/* FALL THROUGH */
- 	case -ENOTCONN:
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -441,6 +441,10 @@ static void option_instat_callback(struc
+ #define CELLIENT_VENDOR_ID			0x2692
+ #define CELLIENT_PRODUCT_MEN200			0x9005
+ 
++/* Hyundai Petatel Inc. products */
++#define PETATEL_VENDOR_ID			0x1ff4
++#define PETATEL_PRODUCT_NP10T			0x600e
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1295,6 +1299,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FPDC_1COM, 0x0a, 0x00, 0x00) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FPDC_2COM, 0x0a, 0x00, 0x00) },
+ 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
++	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
