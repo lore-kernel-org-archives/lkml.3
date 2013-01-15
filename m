@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab3AONXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:23:41 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:59085 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754930Ab3AONXk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:23:40 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 04/18] power: ab8500_fg: Replace msleep() with usleep_range() for greater accuracy
-Date: Tue, 15 Jan 2013 13:23:28 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        cbouatmailru@gmail.com, Jonas Aaberg <jonas.aberg@stericsson.com>
-References: <1357909986-9262-1-git-send-email-lee.jones@linaro.org> <1358183857.19400.13.camel@joe-AO722> <20130115084821.GT12385@gmail.com>
-In-Reply-To: <20130115084821.GT12385@gmail.com>
+	id S1756638Ab3AON35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:29:57 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46181 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755259Ab3AON3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:29:55 -0500
+From: Afzal Mohammed <afzal@ti.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 00/10] video: da8xx-fb: runtime timing configuration
+Date: Tue, 15 Jan 2013 19:00:50 +0530
+Message-ID: <cover.1358250489.git.afzal@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301151323.28879.arnd@arndb.de>
-X-Provags-ID: V02:K0:1n0rEc1zASYf3rrcJtVISbQGxJW7q823zmk/T3mHtw4
- 0Po6n97Q+Z5rIg+2Kw+QQJacqn608AYNjsLXzzJVep9XcJL3yb
- /5PZO39s0ss1z9wlefNEkf7R3FqmWPccMYpnQ/fGX2iiLDAQ3e
- vxpJV+jTiIWdISkDjrJW5YkenG1F9ygszPFTLoEzyaKn2rS7Q4
- LGwQpcTECIishnc0zA99Ar139pwXNGhGxofkcAJU2LWGCjEarq
- dYHLVtKLFuDSJiHTzXQ311+gUcDFlZVIvNRVqR2Nm/UfsJPy9K
- LCYwbuoZ1ZF31IVGG22u5/pGGUkC2bTkXDfLdCBZSKtVWxiuuH
- EAIOXkImm3dQGOcXWfCk=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 January 2013, Lee Jones wrote:
-> > > @@ -956,7 +956,7 @@ static int ab8500_fg_load_comp_volt_to_capacity(struct ab8500_fg *di)
-> > >     do {
-> > >             vbat += ab8500_fg_bat_voltage(di);
-> > >             i++;
-> > > -           msleep(5);
-> > > +           usleep_range(5000, 5001);
-> > 
-> > If you're going to give a range that small
-> > you might as well use usleep instead.
-> > 
-> > Otherwise, add some tolerance to allow any
-> > other coalesced wakeup to occur.
-> 
-> I can't increase the tolerance, as I don't know how that would
-> effect the running of the system, and the person who would know
-> is off on parental leave.
+Hi,
 
-The function only averages the voltage between a couple of readings.
-It won't change much if those register reads are slightly more
-uniformly timed. Note that the thread can still be preempted for
-a much longer time if anything else is running, and the entire
-interrupt handling in this driver looks so fragile that I would
-not rely on the interrupt actually happening at the right time
-anyway. I think it should first be debugged properly to remove
-the need for the enable_irq/disable_irq calls.
+This series makes da8xx-fb driver (device found on DaVinci and AM335x)
+capable of handling runtime timing configuration by adding fb_set_par.
 
-	Arnd
+The last change adds actual fb_set_par support. Other preceeding
+changes makes the way clear for it as well as does certain cleanup's
+on the way.
+
+This has been tested on da850 evm as is. This was also tested on
+am335x-evm & am335x-evmsk with a series that adds DT support.
+
+This is based on v3.8-rc3, this is the only change in this revision.
+The new version of this series is being posted so that this series can
+be applied easily (as __dev* are removed, there would be merge
+conflicts with v2, which was based on -rc2).
+series
+
+Regards
+Afzal
+
+v3: rebased over -rc3, no functional changes
+v2: disable raster in fb_set_par properly
+
+Afzal Mohammed (10):
+  video: da8xx-fb: fb_check_var enhancement
+  video: da8xx-fb: simplify lcd_reset
+  video: da8xx-fb: use modedb helper to update var
+  video: da8xx-fb: remove unneeded "var" initialization
+  video: da8xx-fb: store current display information
+  video: da8xx-fb: store clk rate even if !CPUFREQ
+  video: da8xx-fb: pix clk and clk div handling cleanup
+  video: da8xx-fb: store struct device *
+  video: da8xx-fb: report correct pixclock
+  video: da8xx-fb: fb_set_par support
+
+ drivers/video/da8xx-fb.c |  185 ++++++++++++++++++++++++++--------------------
+ 1 file changed, 105 insertions(+), 80 deletions(-)
+
+-- 
+1.7.9.5
+
