@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933865Ab3AOWxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:53:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47300 "EHLO mail.kernel.org"
+	id S933896Ab3AOWxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:53:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47369 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933645Ab3AOWxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:53:25 -0500
+	id S933645Ab3AOWxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:53:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 153/171] libceph: avoid using freed osd in __kick_osd_requests()
-Date: Tue, 15 Jan 2013 14:45:18 -0800
-Message-Id: <20130115224324.384805734@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 160/171] rbd: BUG on invalid layout
+Date: Tue, 15 Jan 2013 14:45:25 -0800
+Message-Id: <20130115224324.875621848@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,46 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Alex Elder <elder@inktank.com>
+From: Sage Weil <sage@inktank.com>
 
-If an osd has no requests and no linger requests, __reset_osd()
-will just remove it with a call to __remove_osd().  That drops
-a reference to the osd, and therefore the osd may have been free
-by the time __reset_osd() returns.  That function offers no
-indication this may have occurred, and as a result the osd will
-continue to be used even when it's no longer valid.
+This shouldn't actually be possible because the layout struct is
+constructed from the RBD header and validated then.
 
-Change__reset_osd() so it returns an error (ENODEV) when it
-deletes the osd being reset.  And change __kick_osd_requests() so it
-returns immediately (before referencing osd again) if __reset_osd()
-returns *any* error.
+[elder@inktank.com: converted BUG() call to equivalent rbd_assert()]
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
-(cherry picked from commit 685a7555ca69030739ddb57a47f0ea8ea80196a4)
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+(based on commit 6cae3717cddaf8e5e96e304733dca66e40d56f89)
 ---
- net/ceph/osd_client.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/block/rbd.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -579,7 +579,7 @@ static void __kick_osd_requests(struct c
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -930,8 +930,9 @@ static int rbd_do_request(struct request
+ 	layout->fl_object_size = cpu_to_le32(1 << RBD_MAX_OBJ_ORDER);
+ 	layout->fl_pg_preferred = cpu_to_le32(-1);
+ 	layout->fl_pg_pool = cpu_to_le32(dev->poolid);
+-	ceph_calc_raw_layout(osdc, layout, snapid, ofs, &len, &bno,
+-				req, ops);
++	ret = ceph_calc_raw_layout(osdc, layout, snapid, ofs, &len, &bno,
++				   req, ops);
++	BUG_ON(ret != 0);
  
- 	dout("__kick_osd_requests osd%d\n", osd->o_osd);
- 	err = __reset_osd(osdc, osd);
--	if (err == -EAGAIN)
-+	if (err)
- 		return;
- 
- 	list_for_each_entry(req, &osd->o_requests, r_osd_item) {
-@@ -750,6 +750,7 @@ static int __reset_osd(struct ceph_osd_c
- 	if (list_empty(&osd->o_requests) &&
- 	    list_empty(&osd->o_linger_requests)) {
- 		__remove_osd(osdc, osd);
-+		ret = -ENODEV;
- 	} else if (memcmp(&osdc->osdmap->osd_addr[osd->o_osd],
- 			  &osd->o_con.peer_addr,
- 			  sizeof(osd->o_con.peer_addr)) == 0 &&
+ 	ceph_osdc_build_request(req, ofs, &len,
+ 				ops,
 
 
