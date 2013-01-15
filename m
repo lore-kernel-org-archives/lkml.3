@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933470Ab3AOXhE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:37:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46484 "EHLO mail.kernel.org"
+	id S933467Ab3AOXhd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:37:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46452 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933445Ab3AOWvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:51:37 -0500
+	id S933433Ab3AOWvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:51:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Paulson-Ellis <chris@edesix.com>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 099/171] drm/nouveau: fix blank LVDS screen regression on pre-nv50 cards
-Date: Tue, 15 Jan 2013 14:44:24 -0800
-Message-Id: <20130115224320.506238762@linuxfoundation.org>
+        Denis N Ladin <denladin@gmail.com>, Oliver Neukum <oneukum@suse.de>
+Subject: [ 096/171] USB: cdc-acm: Add support for "PSC Scanning, Magellan 800i"
+Date: Tue, 15 Jan 2013 14:44:21 -0800
+Message-Id: <20130115224320.294738407@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,45 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: Denis N Ladin <denladin@gmail.com>
 
-commit 92441b2263866c27ef48137be5aa6c8c692652fc upstream.
+commit 036915a7a402753c05b8d0529f5fd08805ab46d0 upstream.
 
-Commit 2a44e499 ("drm/nouveau/disp: introduce proper init/fini, separate
-from create/destroy") started to call display init routines on pre-nv50
-hardware on module load. But LVDS init code sets driver state in a way
-which prevents modesetting code from operating properly.
+Adding support "PSC Scanning, Magellan 800i" in cdc-acm
 
-nv04_display_init calls nv04_dfp_restore, which sets encoder->last_dpms to
-NV_DPMS_CLEARED.
+Very simple, but very necessary.
+Suitable for all versions of the kernel > 2.6
 
-drm_crtc_helper_set_mode
-  nv04_dfp_prepare
-    nv04_lvds_dpms(DRM_MODE_DPMS_OFF)
-
-nv04_lvds_dpms checks last_dpms mode (which is NV_DPMS_CLEARED) and wrongly
-assumes it's a "powersaving mode", the new one (DRM_MODE_DPMS_OFF) is too,
-so it skips calling some crucial lvds scripts.
-
-Reported-by: Chris Paulson-Ellis <chris@edesix.com>
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Denis N Ladin <denladin@gmail.com>
+Acked-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nv04_dfp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/nv04_dfp.c
-+++ b/drivers/gpu/drm/nouveau/nv04_dfp.c
-@@ -504,7 +504,7 @@ static void nv04_dfp_update_backlight(st
- 
- static inline bool is_powersaving_dpms(int mode)
- {
--	return (mode != DRM_MODE_DPMS_ON);
-+	return mode != DRM_MODE_DPMS_ON && mode != NV_DPMS_CLEARED;
- }
- 
- static void nv04_lvds_dpms(struct drm_encoder *encoder, int mode)
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1602,6 +1602,9 @@ static const struct usb_device_id acm_id
+ 	{ USB_DEVICE(0x0572, 0x1340), /* Conexant CX93010-2x UCMxx */
+ 	.driver_info = NO_UNION_NORMAL,
+ 	},
++	{ USB_DEVICE(0x05f9, 0x4002), /* PSC Scanning, Magellan 800i */
++	.driver_info = NO_UNION_NORMAL,
++	},
+ 	{ USB_DEVICE(0x1bbb, 0x0003), /* Alcatel OT-I650 */
+ 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
+ 	},
 
 
