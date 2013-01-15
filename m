@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758667Ab3APAJE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:09:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43029 "EHLO mail.kernel.org"
+	id S1758571Ab3APAJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:09:24 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42993 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758364Ab3AOWdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:33:07 -0500
+	id S932444Ab3AOWdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:33:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 149/221] radeon/kms: force rn50 chip to always report connected on analog output
-Date: Tue, 15 Jan 2013 10:51:16 -0800
-Message-Id: <20130115185008.805892956@linuxfoundation.org>
+        Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Nickolai Zeldovich <nickolai@csail.mit.edu>
+Subject: [ 146/221] staging: speakup: avoid out-of-range access in synth_add()
+Date: Tue, 15 Jan 2013 10:51:13 -0800
+Message-Id: <20130115185008.599887290@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,38 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
-commit 51861d4eebc2ddc25c77084343d060fa79f6e291 upstream.
+commit 6102c48bd421074a33e102f2ebda3724e8d275f9 upstream.
 
-Those rn50 chip are often connected to console remoting hw and load
-detection often fails with those. Just don't try to load detect and
-report connect.
+Check that array index is in-bounds before accessing the synths[] array.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: Nickolai Zeldovich <nickolai@csail.mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/staging/speakup/synth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-@@ -640,6 +640,14 @@ static enum drm_connector_status radeon_
- 	enum drm_connector_status found = connector_status_disconnected;
- 	bool color = true;
- 
-+	/* just don't bother on RN50 those chip are often connected to remoting
-+	 * console hw and often we get failure to load detect those. So to make
-+	 * everyone happy report the encoder as always connected.
-+	 */
-+	if (ASIC_IS_RN50(rdev)) {
-+		return connector_status_connected;
-+	}
-+
- 	/* save the regs we need */
- 	vclk_ecp_cntl = RREG32_PLL(RADEON_VCLK_ECP_CNTL);
- 	crtc_ext_cntl = RREG32(RADEON_CRTC_EXT_CNTL);
+--- a/drivers/staging/speakup/synth.c
++++ b/drivers/staging/speakup/synth.c
+@@ -423,7 +423,7 @@ int synth_add(struct spk_synth *in_synth
+ 	int i;
+ 	int status = 0;
+ 	mutex_lock(&spk_mutex);
+-	for (i = 0; synths[i] != NULL && i < MAXSYNTHS; i++)
++	for (i = 0; i < MAXSYNTHS && synths[i] != NULL; i++)
+ 		/* synth_remove() is responsible for rotating the array down */
+ 		if (in_synth == synths[i]) {
+ 			mutex_unlock(&spk_mutex);
 
 
