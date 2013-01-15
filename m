@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab3AORkE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 12:40:04 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:45156 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305Ab3AORkB (ORCPT
+	id S1755345Ab3AORoq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 12:44:46 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:54995 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305Ab3AORop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 12:40:01 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org, Roland Eggner <edvx1@systemanalysen.net>
-Subject: Re: [PATCH v2stable 1/2] nconf:  add keybindings for vi-style menu navigation, rewrite help texts
-Date: Tue, 15 Jan 2013 18:39:56 +0100
-User-Agent: KMail/1.13.5 (Linux/3.6.11-treguer; KDE/4.4.5; x86_64; ; )
-Cc: Dmitry Voytik <dvv.kernel@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
-References: <20121228185108.GA13644@voyt-hp> <20130115162632.GB5513@mobil.systemanalysen.net> <20130115163608.GC5513@mobil.systemanalysen.net>
-In-Reply-To: <20130115163608.GC5513@mobil.systemanalysen.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301151839.56773.yann.morin.1998@free.fr>
+	Tue, 15 Jan 2013 12:44:45 -0500
+Message-ID: <1358271907.31593.1.camel@gitbox>
+Subject: Re: [PATCH v2] mtd: vt8500: Add support for Wondermedia Serial
+ Flash Controller
+From: Tony Prisk <linux@prisktech.co.nz>
+To: dedekind1@gmail.com
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Wed, 16 Jan 2013 06:45:07 +1300
+In-Reply-To: <1358261750.2731.148.camel@sauron.fi.intel.com>
+References: <1356901207-13536-1-git-send-email-linux@prisktech.co.nz>
+	 <1358261750.2731.148.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roland, All,
+On Tue, 2013-01-15 at 16:55 +0200, Artem Bityutskiy wrote:
+> On Mon, 2012-12-31 at 10:00 +1300, Tony Prisk wrote:
+> > This patch adds support for the Wondermedia serial flash controller
+> > found on WM8505, WM8650 and WM8850 SoCs.
+> > 
+> > Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> > ---
+> > v2: Whitespace tidyup
+> 
+> Hi, would you please take a look at these warings, identified by aiaiai:
+> 
+> Successfully built configuration "x86_64_defconfig,x86_64,", results:
+> 
+> --- before_patching.log
+> +++ after_patching.log
+> @@ @@
+> +drivers/mtd/devices/wmt_sflash.c: In function ‘sf_read’:
+> +drivers/mtd/devices/wmt_sflash.c:425:9: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘size_t’ [-Wformat]
+> +drivers/mtd/devices/wmt_sflash.c: In function ‘sf_sector_write’:
+> +drivers/mtd/devices/wmt_sflash.c:442:16: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+> +drivers/mtd/devices/wmt_sflash.c:442:24: warning: cast removes address space of expression [sparse]
+> +drivers/mtd/devices/wmt_sflash.c:458:16: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+> +drivers/mtd/devices/wmt_sflash.c:458:31: warning: incorrect type in argument 1 (different address spaces) [sparse]
+> +drivers/mtd/devices/wmt_sflash.c:458:31:    expected void volatile [noderef] <asn:2>*dst [sparse]
+> +drivers/mtd/devices/wmt_sflash.c:458:31:    got unsigned char [usertype] *<noident> [sparse]
+> +drivers/mtd/devices/wmt_sflash.c:465:17: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+> +drivers/mtd/devices/wmt_sflash.c:465:39: warning: incorrect type in argument 1 (different address spaces) [sparse]
+> +drivers/mtd/devices/wmt_sflash.c:465:39:    expected void volatile [noderef] <asn:2>*dst [sparse]
+> +drivers/mtd/devices/wmt_sflash.c:465:39:    got unsigned char [usertype] *<noident> [sparse]
+> 
 
-On Tuesday 15 January 2013 Roland Eggner wrote:
-> >From: Roland Eggner <edvx1@systemanalysen.net>
-[--SNIP--]
-> ---
-> For stable users: to be applied on vanilla 3.2.37
+Apologies - This driver shouldn't be selectable for x86_64.
+It is an ARM driver for an embedded device. Will fix.
 
-I think feature-changes are not supposed to go into -stable.
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+Regards
+Tony P
 
