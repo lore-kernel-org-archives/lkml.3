@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758442Ab3AOWcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:32:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42730 "EHLO mail.kernel.org"
+	id S1757753Ab3AOWcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:32:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42812 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757850Ab3AOWcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:32:19 -0500
+	id S1758447Ab3AOWc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Patrick Lai <plai@codeaurora.org>, Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 126/221] ASoC: wm2000: Fix sense of speech clarity enable
-Date: Tue, 15 Jan 2013 10:50:53 -0800
-Message-Id: <20130115185007.119206661@linuxfoundation.org>
+Subject: [ 130/221] ASoC: pcm: allow backend hardware to be freed in pause state
+Date: Tue, 15 Jan 2013 10:50:57 -0800
+Message-Id: <20130115185007.420814211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,30 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Patrick Lai <plai@codeaurora.org>
 
-commit 267f8fa2e1eef0612b2007e1f1846bcbc35cc1fa upstream.
+commit 08b27848da620f206a8b6d80f26184485dd7aa40 upstream.
 
+When front-end PCM session is in paused state, back-end
+PCM session will be put in paused state as well if given
+front-end PCM session is the only client of given back-end.
+Then, application closes front-end PCM session, DPCM
+framework will not allow back-end enters HW_FREE state
+so back-end will never get shutdown completely.
+
+Signed-off-by: Patrick Lai <plai@codeaurora.org>
+Acked-by: Liam Girdwood <lrg@ti.com>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm2000.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/soc-pcm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/soc/codecs/wm2000.c
-+++ b/sound/soc/codecs/wm2000.c
-@@ -209,9 +209,9 @@ static int wm2000_power_up(struct i2c_cl
+--- a/sound/soc/soc-pcm.c
++++ b/sound/soc/soc-pcm.c
+@@ -1240,6 +1240,7 @@ static int dpcm_be_dai_hw_free(struct sn
+ 		if ((be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_PARAMS) &&
+ 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_PREPARE) &&
+ 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_FREE) &&
++		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_PAUSED) &&
+ 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_STOP))
+ 			continue;
  
- 	ret = wm2000_read(i2c, WM2000_REG_SPEECH_CLARITY);
- 	if (wm2000->speech_clarity)
--		ret &= ~WM2000_SPEECH_CLARITY;
--	else
- 		ret |= WM2000_SPEECH_CLARITY;
-+	else
-+		ret &= ~WM2000_SPEECH_CLARITY;
- 	wm2000_write(i2c, WM2000_REG_SPEECH_CLARITY, ret);
- 
- 	wm2000_write(i2c, WM2000_REG_SYS_START0, 0x33);
 
 
