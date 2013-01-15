@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab3APAan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:30:43 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41808 "EHLO mail.kernel.org"
+	id S1758096Ab3APAba (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:31:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41664 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757864Ab3AOW3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:29:36 -0500
+	id S1754976Ab3AOW3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:29:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 072/221] drm/radeon: restore modeset late in GPU reset path
-Date: Tue, 15 Jan 2013 10:49:59 -0800
-Message-Id: <20130115185003.259956162@linuxfoundation.org>
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Ravi Murty <Ravi.Murty@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 067/221] intel-iommu: Free old page tables before creating superpage
+Date: Tue, 15 Jan 2013 10:49:54 -0800
+Message-Id: <20130115185002.881397640@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,40 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: "Woodhouse, David" <david.woodhouse@intel.com>
 
-commit d3493574e267c203836bfdcb9c58d8af46fc0da1 upstream.
+commit 6491d4d02893d9787ba67279595990217177b351 upstream.
 
-Modeset path seems to conflict sometimes with the memory management
-leading to kernel deadlock. This move modesetting reset after GPU
-acceleration reset.
+The dma_pte_free_pagetable() function will only free a page table page
+if it is asked to free the *entire* 2MiB range that it covers. So if a
+page table page was used for one or more small mappings, it's likely to
+end up still present in the page tables... but with no valid PTEs.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This was fine when we'd only be repopulating it with 4KiB PTEs anyway
+but the same virtual address range can end up being reused for a
+*large-page* mapping. And in that case were were trying to insert the
+large page into the second-level page table, and getting a complaint
+from the sanity check in __domain_mapping() because there was already a
+corresponding entry. This was *relatively* harmless; it led to a memory
+leak of the old page table page, but no other ill-effects.
+
+Fix it by calling dma_pte_clear_range (hopefully redundant) and
+dma_pte_free_pagetable() before setting up the new large page.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Tested-by: Ravi Murty <Ravi.Murty@intel.com>
+Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_device.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/iommu/intel-iommu.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -1337,7 +1337,6 @@ retry:
- 	}
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1827,10 +1827,17 @@ static int __domain_mapping(struct dmar_
+ 			if (!pte)
+ 				return -ENOMEM;
+ 			/* It is large page*/
+-			if (largepage_lvl > 1)
++			if (largepage_lvl > 1) {
+ 				pteval |= DMA_PTE_LARGE_PAGE;
+-			else
++				/* Ensure that old small page tables are removed to make room
++				   for superpage, if they exist. */
++				dma_pte_clear_range(domain, iov_pfn,
++						    iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
++				dma_pte_free_pagetable(domain, iov_pfn,
++						       iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
++			} else {
+ 				pteval &= ~(uint64_t)DMA_PTE_LARGE_PAGE;
++			}
  
- 	radeon_restore_bios_scratch_regs(rdev);
--	drm_helper_resume_force_mode(rdev->ddev);
- 
- 	if (!r) {
- 		for (i = 0; i < RADEON_NUM_RINGS; ++i) {
-@@ -1362,6 +1361,8 @@ retry:
  		}
- 	}
- 
-+	drm_helper_resume_force_mode(rdev->ddev);
-+
- 	ttm_bo_unlock_delayed_workqueue(&rdev->mman.bdev, resched);
- 	if (r) {
- 		/* bad news, how to tell it to userspace ? */
+ 		/* We don't need lock here, nobody else
 
 
