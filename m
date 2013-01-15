@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058Ab3AOWtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:49:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45716 "EHLO mail.kernel.org"
+	id S933093Ab3AOWtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:49:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45748 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932896Ab3AOWti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:49:38 -0500
+	id S933034Ab3AOWts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
-        Roland Dreier <roland@purestorage.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 044/171] RDMA/nes: Fix for terminate timer crash
-Date: Tue, 15 Jan 2013 14:43:29 -0800
-Message-Id: <20130115224316.596121034@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 047/171] dm ioctl: prevent unsafe change to dm_ioctl data_size
+Date: Tue, 15 Jan 2013 14:43:32 -0800
+Message-Id: <20130115224316.803330905@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,84 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+From: Alasdair G Kergon <agk@redhat.com>
 
-commit 7bfcfa51c35cdd2d37e0d70fc11790642dd11fb3 upstream.
+commit e910d7ebecd1aac43125944a8641b6cb1a0dfabe upstream.
 
-The terminate timer needs to be initialized just once.
+Abort dm ioctl processing if userspace changes the data_size parameter
+after we validated it but before we finished copying the data buffer
+from userspace.
 
-Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+The dm ioctl parameters are processed in the following sequence:
+ 1. ctl_ioctl() calls copy_params();
+ 2. copy_params() makes a first copy of the fixed-sized portion of the
+    userspace parameters into the local variable "tmp";
+ 3. copy_params() then validates tmp.data_size and allocates a new
+    structure big enough to hold the complete data and copies the whole
+    userspace buffer there;
+ 4. ctl_ioctl() reads userspace data the second time and copies the whole
+    buffer into the pointer "param";
+ 5. ctl_ioctl() reads param->data_size without any validation and stores it
+    in the variable "input_param_size";
+ 6. "input_param_size" is further used as the authoritative size of the
+    kernel buffer.
+
+The problem is that userspace code could change the contents of user
+memory between steps 2 and 4.  In particular, the data_size parameter
+can be changed to an invalid value after the kernel has validated it.
+This lets userspace force the kernel to access invalid kernel memory.
+
+The fix is to ensure that the size has not changed at step 4.
+
+This patch shouldn't have a security impact because CAP_SYS_ADMIN is
+required to run this code, but it should be fixed anyway.
+
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/nes/nes.h       |    1 +
- drivers/infiniband/hw/nes/nes_hw.c    |    9 ++-------
- drivers/infiniband/hw/nes/nes_verbs.c |    4 +++-
- 3 files changed, 6 insertions(+), 8 deletions(-)
+ drivers/md/dm-ioctl.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/infiniband/hw/nes/nes.h
-+++ b/drivers/infiniband/hw/nes/nes.h
-@@ -524,6 +524,7 @@ void nes_iwarp_ce_handler(struct nes_dev
- int nes_destroy_cqp(struct nes_device *);
- int nes_nic_cm_xmit(struct sk_buff *, struct net_device *);
- void nes_recheck_link_status(struct work_struct *work);
-+void nes_terminate_timeout(unsigned long context);
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -1563,6 +1563,14 @@ static int copy_params(struct dm_ioctl _
+ 	if (copy_from_user(dmi, user, tmp.data_size))
+ 		goto bad;
  
- /* nes_nic.c */
- struct net_device *nes_netdev_init(struct nes_device *, void __iomem *);
---- a/drivers/infiniband/hw/nes/nes_hw.c
-+++ b/drivers/infiniband/hw/nes/nes_hw.c
-@@ -75,7 +75,6 @@ static void nes_process_iwarp_aeqe(struc
- static void process_critical_error(struct nes_device *nesdev);
- static void nes_process_mac_intr(struct nes_device *nesdev, u32 mac_number);
- static unsigned int nes_reset_adapter_ne020(struct nes_device *nesdev, u8 *OneG_Mode);
--static void nes_terminate_timeout(unsigned long context);
- static void nes_terminate_start_timer(struct nes_qp *nesqp);
- 
- #ifdef CONFIG_INFINIBAND_NES_DEBUG
-@@ -3522,7 +3521,7 @@ static void nes_terminate_received(struc
- }
- 
- /* Timeout routine in case terminate fails to complete */
--static void nes_terminate_timeout(unsigned long context)
-+void nes_terminate_timeout(unsigned long context)
- {
- 	struct nes_qp *nesqp = (struct nes_qp *)(unsigned long)context;
- 
-@@ -3532,11 +3531,7 @@ static void nes_terminate_timeout(unsign
- /* Set a timer in case hw cannot complete the terminate sequence */
- static void nes_terminate_start_timer(struct nes_qp *nesqp)
- {
--	init_timer(&nesqp->terminate_timer);
--	nesqp->terminate_timer.function = nes_terminate_timeout;
--	nesqp->terminate_timer.expires = jiffies + HZ;
--	nesqp->terminate_timer.data = (unsigned long)nesqp;
--	add_timer(&nesqp->terminate_timer);
-+	mod_timer(&nesqp->terminate_timer, (jiffies + HZ));
- }
- 
- /**
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -1404,6 +1404,9 @@ static struct ib_qp *nes_create_qp(struc
- 	}
- 
- 	nesqp->sig_all = (init_attr->sq_sig_type == IB_SIGNAL_ALL_WR);
-+	init_timer(&nesqp->terminate_timer);
-+	nesqp->terminate_timer.function = nes_terminate_timeout;
-+	nesqp->terminate_timer.data = (unsigned long)nesqp;
- 
- 	/* update the QP table */
- 	nesdev->nesadapter->qp_table[nesqp->hwqp.qp_id-NES_FIRST_QPN] = nesqp;
-@@ -1413,7 +1416,6 @@ static struct ib_qp *nes_create_qp(struc
- 	return &nesqp->ibqp;
- }
- 
--
- /**
-  * nes_clean_cq
-  */
++	/*
++	 * Abort if something changed the ioctl data while it was being copied.
++	 */
++	if (dmi->data_size != tmp.data_size) {
++		DMERR("rejecting ioctl: data size modified while processing parameters");
++		goto bad;
++	}
++
+ 	/* Wipe the user buffer so we do not return it to userspace */
+ 	if (secure_data && clear_user(user, tmp.data_size))
+ 		goto bad;
 
 
