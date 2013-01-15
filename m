@@ -1,116 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933610Ab3AOXdh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:33:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46630 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933556Ab3AOWwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:04 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Adam Jackson <ajax@redhat.com>, Dave Airlie <airlied@redhat.com>,
-        Julien Cristau <jcristau@debian.org>
-Subject: [ 112/171] drm/edid/quirks: ViewSonic VA2026w
-Date: Tue, 15 Jan 2013 14:44:37 -0800
-Message-Id: <20130115224321.445479841@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
-References: <20130115224313.394976595@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S933613Ab3AOXdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:33:54 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:58370 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932102Ab3AOXdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 18:33:51 -0500
+Date: Tue, 15 Jan 2013 15:33:47 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk,
+        snitzer@redhat.com, agk@redhat.com, neilb@suse.de
+Subject: Re: Bcache v. whatever
+Message-ID: <20130115233347.GD26407@google.com>
+References: <20130114223202.GV26407@google.com>
+ <1358241656.2383.2.camel@dabdike.int.hansenpartnership.com>
+ <20130115205912.GA26407@google.com>
+ <1358291738.10591.23.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358291738.10591.23.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jan 15, 2013 at 11:15:38PM +0000, James Bottomley wrote:
+> I think md integration would be a bit of a mistake, since md is pretty
+> much only a raid engine at this point in time.  There are also a couple
+> of other dm cache targets, so it would be nice to have one rather than
+> three.  This all, however, seems to be under discussion on the dm list.
 
-------------------
+The raid vs. caching bit is a bit beside the point IMO; they both
+aggregate block devices and expose virtual block devices, and the
+mechanism for doing so isn't part of the generic framework.
 
-From: Adam Jackson <ajax@redhat.com>
+I'm not morally opposed to dm integration, I'm just more comfortable
+with the md code and find it easier to understand and work with.
 
-commit bc42aabc6a01b92b0f961d65671564e0e1cd7592 upstream.
+And the goal I care about is just commonality of userspace interfaces
+and tooling, which integration with either would accomplish.
 
-Entirely new class of fail for this one.  The detailed timings are for
-normal CVT but the monitor really wanted CVT-R.
+> > So I'm not sure why it'd go in via dm, it seems to me it'd make just as
+> > much sense for it to go in via Neil Brown's tree. Unless there's
+> > something I'm missing?
+> 
+> Um, well there's no caching patches in the md tree; it's RAID only.  The
+> basic caching stuff is all in the dm tree, which is why it's the natural
+> one.
+> 
+> It seems to me that your stuff is progressing on the dm list, so I don't
+> really see a need to circumvent the process in the dm tree ... unless
+> there's some problem I'm not seeing?
 
-Bugzilla: http://bugzilla.redhat/com/516471
-Signed-off-by: Adam Jackson <ajax@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Julien Cristau <jcristau@debian.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/gpu/drm/drm_edid.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+I haven't been active on dm-devel, besides the occasional cross
+posting... not sure what activity you're referring to on the dm list,
 
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -66,6 +66,8 @@
- #define EDID_QUIRK_FIRST_DETAILED_PREFERRED	(1 << 5)
- /* use +hsync +vsync for detailed mode */
- #define EDID_QUIRK_DETAILED_SYNC_PP		(1 << 6)
-+/* Force reduced-blanking timings for detailed modes */
-+#define EDID_QUIRK_FORCE_REDUCED_BLANKING	(1 << 7)
- 
- struct detailed_mode_closure {
- 	struct drm_connector *connector;
-@@ -120,6 +122,9 @@ static struct edid_quirk {
- 	/* Samsung SyncMaster 22[5-6]BW */
- 	{ "SAM", 596, EDID_QUIRK_PREFER_LARGE_60 },
- 	{ "SAM", 638, EDID_QUIRK_PREFER_LARGE_60 },
-+
-+	/* ViewSonic VA2026w */
-+	{ "VSC", 5020, EDID_QUIRK_FORCE_REDUCED_BLANKING },
- };
- 
- /*** DDC fetch and block validation ***/
-@@ -852,12 +857,19 @@ static struct drm_display_mode *drm_mode
- 				"Wrong Hsync/Vsync pulse width\n");
- 		return NULL;
- 	}
-+
-+	if (quirks & EDID_QUIRK_FORCE_REDUCED_BLANKING) {
-+		mode = drm_cvt_mode(dev, hactive, vactive, 60, true, false, false);
-+		if (!mode)
-+			return NULL;
-+
-+		goto set_size;
-+	}
-+
- 	mode = drm_mode_create(dev);
- 	if (!mode)
- 		return NULL;
- 
--	mode->type = DRM_MODE_TYPE_DRIVER;
--
- 	if (quirks & EDID_QUIRK_135_CLOCK_TOO_HIGH)
- 		timing->pixel_clock = cpu_to_le16(1088);
- 
-@@ -881,8 +893,6 @@ static struct drm_display_mode *drm_mode
- 
- 	drm_mode_do_interlace_quirk(mode, pt);
- 
--	drm_mode_set_name(mode);
--
- 	if (quirks & EDID_QUIRK_DETAILED_SYNC_PP) {
- 		pt->misc |= DRM_EDID_PT_HSYNC_POSITIVE | DRM_EDID_PT_VSYNC_POSITIVE;
- 	}
-@@ -892,6 +902,7 @@ static struct drm_display_mode *drm_mode
- 	mode->flags |= (pt->misc & DRM_EDID_PT_VSYNC_POSITIVE) ?
- 		DRM_MODE_FLAG_PVSYNC : DRM_MODE_FLAG_NVSYNC;
- 
-+set_size:
- 	mode->width_mm = pt->width_mm_lo | (pt->width_height_mm_hi & 0xf0) << 4;
- 	mode->height_mm = pt->height_mm_lo | (pt->width_height_mm_hi & 0xf) << 8;
- 
-@@ -905,6 +916,9 @@ static struct drm_display_mode *drm_mode
- 		mode->height_mm = edid->height_cm * 10;
- 	}
- 
-+	mode->type = DRM_MODE_TYPE_DRIVER;
-+	drm_mode_set_name(mode);
-+
- 	return mode;
- }
- 
-
-
+But if Alasdair wants to pick it up I'm not complaining, I don't
+particularly care who merges it.
