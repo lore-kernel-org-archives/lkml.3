@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389Ab3AOWck (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:32:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42861 "EHLO mail.kernel.org"
+	id S932441Ab3APAMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:12:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42878 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758447Ab3AOWch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:32:37 -0500
+	id S932375Ab3AOWcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 135/221] vfs: add missing virtual cache flush after editing partial pages
-Date: Tue, 15 Jan 2013 10:51:02 -0800
-Message-Id: <20130115185007.797866124@linuxfoundation.org>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 128/221] ASoC: wm2200: Remove DSP B and left justified AIF modes
+Date: Tue, 15 Jan 2013 10:50:55 -0800
+Message-Id: <20130115185007.270604305@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,49 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 6d283dba3721cc43be014b50a1acc2f35860a65a upstream.
+commit 0cc411b934c4317b363d1af993549f391852b980 upstream.
 
-Andrew Morton pointed this out a month ago, and then I completely forgot
-about it.
+These are not supported.
 
-If we read a partial last page of a block device, we will zero out the
-end of the page, but since that page can then be mapped into user space,
-we should also make sure to flush the cache on architectures that have
-virtual caches.  We have the flush_dcache_page() function for this, so
-use it.
-
-Now, in practice this really never matters, because nobody sane uses
-virtual caches to begin with, and they largely exist on old broken RISC
-arhitectures.
-
-And even if you did run on one of those obsolete CPU's, the whole "mmap
-and access the last partial page of a block device" behavior probably
-doesn't actually exist.  The normal IO functions (read/write) will never
-see the zeroed-out part of the page that migth not be coherent in the
-cache, because they honor the size of the device.
-
-So I'm marking this for stable (3.7 only), but I'm not sure anybody will
-ever care.
-
-Pointed-out-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/buffer.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/wm2200.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2939,6 +2939,7 @@ static void guard_bh_eod(int rw, struct
- 		void *kaddr = kmap_atomic(bh->b_page);
- 		memset(kaddr + bh_offset(bh) + bytes, 0, bh->b_size - bytes);
- 		kunmap_atomic(kaddr);
-+		flush_dcache_page(bh->b_page);
- 	}
- }
- 
+--- a/sound/soc/codecs/wm2200.c
++++ b/sound/soc/codecs/wm2200.c
+@@ -1380,15 +1380,9 @@ static int wm2200_set_fmt(struct snd_soc
+ 	case SND_SOC_DAIFMT_DSP_A:
+ 		fmt_val = 0;
+ 		break;
+-	case SND_SOC_DAIFMT_DSP_B:
+-		fmt_val = 1;
+-		break;
+ 	case SND_SOC_DAIFMT_I2S:
+ 		fmt_val = 2;
+ 		break;
+-	case SND_SOC_DAIFMT_LEFT_J:
+-		fmt_val = 3;
+-		break;
+ 	default:
+ 		dev_err(codec->dev, "Unsupported DAI format %d\n",
+ 			fmt & SND_SOC_DAIFMT_FORMAT_MASK);
 
 
