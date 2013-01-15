@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757876Ab3AOW27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:28:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47902 "EHLO mx2.suse.de"
+	id S1757292Ab3AOW3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:29:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41588 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757832Ab3AOW2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:28:53 -0500
-Message-ID: <50F5D81C.1070702@suse.cz>
-Date: Tue, 15 Jan 2013 23:28:44 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Wang YanQing <udknight@gmail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rdunlap@xenotime.net, bp@alien8.de,
-        sakiwit@gmail.com, lacombar@gmail.com, lucas.demarchi@profusion.mobi,
-        dave@gnu.org, paul.gortmaker@windriver.com, crquan@gmail.com,
-        bpoirier@suse.de
-Subject: Re: [PATCH] menuconfig:inputbox: support navigate input position
-References: <20121217143802.GB16993@udknight> <201212171922.59669.yann.morin.1998@free.fr>
-In-Reply-To: <201212171922.59669.yann.morin.1998@free.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757888Ab3AOW3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:29:05 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Weston Andros Adamson <dros@netapp.com>, Tejun Heo <tj@kernel.org>,
+        Bruce Fields <bfields@fieldses.org>
+Subject: [ 063/221] SUNRPC: Ensure that we free the rpc_task after cleanups are done
+Date: Tue, 15 Jan 2013 10:49:50 -0800
+Message-Id: <20130115185002.600044202@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
+References: <20130115184958.025580322@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.12.2012 19:22, Yann E. MORIN wrote:
-> Wang, All,
-> 
-> On Monday 17 December 2012 Wang YanQing wrote:
->> This patch add support navigate input position *inside* the input
->> field with LEFT/RIGHT, so it is possible to modify the text in place.
->>
->> Signed-off-by: Wang YanQing <udknight@gmail.com>
-> 
-> Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> 
-> I am not knowledgeable enough in ncurses and the dialog code-base
-> to add any reviewed-by tag. All I can say, is that it works as
-> advertised.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-I merged this into kbuild.git#kconfig.
+------------------
 
-Thanks,
-Michal
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit c6567ed1402c55e19b012e66a8398baec2a726f3 upstream.
+
+This patch ensures that we free the rpc_task after the cleanup callbacks
+are done in order to avoid a deadlock problem that can be triggered if
+the callback needs to wait for another workqueue item to complete.
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Weston Andros Adamson <dros@netapp.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Bruce Fields <bfields@fieldses.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/sunrpc/sched.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
+
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -919,16 +919,35 @@ struct rpc_task *rpc_new_task(const stru
+ 	return task;
+ }
+ 
++/*
++ * rpc_free_task - release rpc task and perform cleanups
++ *
++ * Note that we free up the rpc_task _after_ rpc_release_calldata()
++ * in order to work around a workqueue dependency issue.
++ *
++ * Tejun Heo states:
++ * "Workqueue currently considers two work items to be the same if they're
++ * on the same address and won't execute them concurrently - ie. it
++ * makes a work item which is queued again while being executed wait
++ * for the previous execution to complete.
++ *
++ * If a work function frees the work item, and then waits for an event
++ * which should be performed by another work item and *that* work item
++ * recycles the freed work item, it can create a false dependency loop.
++ * There really is no reliable way to detect this short of verifying
++ * every memory free."
++ *
++ */
+ static void rpc_free_task(struct rpc_task *task)
+ {
+-	const struct rpc_call_ops *tk_ops = task->tk_ops;
+-	void *calldata = task->tk_calldata;
++	unsigned short tk_flags = task->tk_flags;
+ 
+-	if (task->tk_flags & RPC_TASK_DYNAMIC) {
++	rpc_release_calldata(task->tk_ops, task->tk_calldata);
++
++	if (tk_flags & RPC_TASK_DYNAMIC) {
+ 		dprintk("RPC: %5u freeing task\n", task->tk_pid);
+ 		mempool_free(task, rpc_task_mempool);
+ 	}
+-	rpc_release_calldata(tk_ops, calldata);
+ }
+ 
+ static void rpc_async_release(struct work_struct *work)
+
 
