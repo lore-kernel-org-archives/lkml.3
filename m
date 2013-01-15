@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab3AOXAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:00:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48708 "EHLO mail.kernel.org"
+	id S934018Ab3AOXBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:01:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48656 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934005Ab3AOW5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:54 -0500
+	id S934436Ab3AOW5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vincent Pelletier <plr.vincent@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 65/71] xhci: Handle HS bulk/ctrl endpoints that dont NAK.
-Date: Tue, 15 Jan 2013 14:55:02 -0800
-Message-Id: <20130115225345.093725144@linuxfoundation.org>
+        Denis N Ladin <denladin@gmail.com>, Oliver Neukum <oneukum@suse.de>
+Subject: [ 61/71] USB: cdc-acm: Add support for "PSC Scanning, Magellan 800i"
+Date: Tue, 15 Jan 2013 14:54:58 -0800
+Message-Id: <20130115225344.784859564@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,47 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Denis N Ladin <denladin@gmail.com>
 
-commit 55c1945edaac94c5338a3647bc2e85ff75d9cf36 upstream.
+commit 036915a7a402753c05b8d0529f5fd08805ab46d0 upstream.
 
-A high speed control or bulk endpoint may have bInterval set to zero,
-which means it does not NAK.  If bInterval is non-zero, it means the
-endpoint NAKs at a rate of 2^(bInterval - 1).
+Adding support "PSC Scanning, Magellan 800i" in cdc-acm
 
-The xHCI code to compute the NAK interval does not handle the special
-case of zero properly.  The current code unconditionally subtracts one
-from bInterval and uses it as an exponent.  This causes a very large
-bInterval to be used, and warning messages like these will be printed:
+Very simple, but very necessary.
+Suitable for all versions of the kernel > 2.6
 
-usb 1-1: ep 0x1 - rounding interval to 32768 microframes, ep desc says 0 microframes
-
-This may cause the xHCI host hardware to reject the Configure Endpoint
-command, which means the HS device will be unusable under xHCI ports.
-
-This patch should be backported to kernels as old as 2.6.31, that contain
-commit dfa49c4ad120a784ef1ff0717168aa79f55a483a "USB: xhci - fix math in
-xhci_get_endpoint_interval()".
-
-Reported-by: Vincent Pelletier <plr.vincent@gmail.com>
-Suggested-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Denis N Ladin <denladin@gmail.com>
+Acked-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-mem.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/class/cdc-acm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1026,6 +1026,8 @@ static unsigned int xhci_microframes_to_
- static unsigned int xhci_parse_microframe_interval(struct usb_device *udev,
- 		struct usb_host_endpoint *ep)
- {
-+	if (ep->desc.bInterval == 0)
-+		return 0;
- 	return xhci_microframes_to_exponent(udev, ep,
- 			ep->desc.bInterval, 0, 15);
- }
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1509,6 +1509,9 @@ static const struct usb_device_id acm_id
+ 	{ USB_DEVICE(0x0572, 0x1340), /* Conexant CX93010-2x UCMxx */
+ 	.driver_info = NO_UNION_NORMAL,
+ 	},
++	{ USB_DEVICE(0x05f9, 0x4002), /* PSC Scanning, Magellan 800i */
++	.driver_info = NO_UNION_NORMAL,
++	},
+ 	{ USB_DEVICE(0x1bbb, 0x0003), /* Alcatel OT-I650 */
+ 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
+ 	},
 
 
