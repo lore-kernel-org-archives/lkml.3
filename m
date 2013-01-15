@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab3AOUae (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:30:34 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:37057 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757147Ab3AOU2j (ORCPT
+	id S1757443Ab3AOUbN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:31:13 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:55101 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756921Ab3AOU20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:28:39 -0500
+	Tue, 15 Jan 2013 15:28:26 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v5 11/14] ARM: dts: add AM33XX MMC support
-Date: Tue, 15 Jan 2013 15:32:51 -0500
-Message-Id: <1358281974-8411-12-git-send-email-mporter@ti.com>
+Subject: [PATCH v5 07/14] dmaengine: add dma_request_slave_channel_compat()
+Date: Tue, 15 Jan 2013 15:32:47 -0500
+Message-Id: <1358281974-8411-8-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358281974-8411-1-git-send-email-mporter@ti.com>
 References: <1358281974-8411-1-git-send-email-mporter@ti.com>
@@ -37,120 +37,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds AM33XX MMC support for am335x-bone, am335x-evm, and
-am335x-evmsk.
+Adds a dma_request_slave_channel_compat() wrapper which accepts
+both the arguments from dma_request_channel() and
+dma_request_slave_channel(). Based on whether the driver is
+instantiated via DT, the appropriate channel request call will be
+made.
 
+This allows for a much cleaner migration of drivers to the
+dmaengine DT API as platforms continue to be mixed between those
+that boot using DT and those that do not.
+
+Suggested-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Matt Porter <mporter@ti.com>
 Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm/boot/dts/am335x-bone.dts  |    7 +++++++
- arch/arm/boot/dts/am335x-evm.dts   |    7 +++++++
- arch/arm/boot/dts/am335x-evmsk.dts |    7 +++++++
- arch/arm/boot/dts/am33xx.dtsi      |   28 ++++++++++++++++++++++++++++
- 4 files changed, 49 insertions(+)
+ include/linux/dmaengine.h |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-index 11b240c..a154ce0 100644
---- a/arch/arm/boot/dts/am335x-bone.dts
-+++ b/arch/arm/boot/dts/am335x-bone.dts
-@@ -120,6 +120,8 @@
- 		};
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 9fd0c5b..64f9f69 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -1047,6 +1047,16 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
+ struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
+ struct dma_chan *net_dma_find_channel(void);
+ #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
++static inline struct dma_chan
++*dma_request_slave_channel_compat(dma_cap_mask_t mask, dma_filter_fn fn,
++				  void *fn_param, struct device *dev,
++				  char *name)
++{
++	if (dev->of_node)
++		return dma_request_slave_channel(dev, name);
++	else
++		return dma_request_channel(mask, fn, fn_param);
++}
  
- 		ldo3_reg: regulator@5 {
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <3300000>;
- 			regulator-always-on;
- 		};
+ /* --- Helper iov-locking functions --- */
  
-@@ -136,3 +138,8 @@
- &cpsw_emac1 {
- 	phy_id = <&davinci_mdio>, <1>;
- };
-+
-+&mmc1 {
-+	status = "okay";
-+	vmmc-supply = <&ldo3_reg>;
-+};
-diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-index d649644..2907da6 100644
---- a/arch/arm/boot/dts/am335x-evm.dts
-+++ b/arch/arm/boot/dts/am335x-evm.dts
-@@ -232,6 +232,8 @@
- 		};
- 
- 		vmmc_reg: regulator@12 {
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <3300000>;
- 			regulator-always-on;
- 		};
- 	};
-@@ -244,3 +246,8 @@
- &cpsw_emac1 {
- 	phy_id = <&davinci_mdio>, <1>;
- };
-+
-+&mmc1 {
-+	status = "okay";
-+	vmmc-supply = <&vmmc_reg>;
-+};
-diff --git a/arch/arm/boot/dts/am335x-evmsk.dts b/arch/arm/boot/dts/am335x-evmsk.dts
-index f5a6162..f050c46 100644
---- a/arch/arm/boot/dts/am335x-evmsk.dts
-+++ b/arch/arm/boot/dts/am335x-evmsk.dts
-@@ -244,7 +244,14 @@
- 		};
- 
- 		vmmc_reg: regulator@12 {
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <3300000>;
- 			regulator-always-on;
- 		};
- 	};
- };
-+
-+&mmc1 {
-+	status = "okay";
-+	vmmc-supply = <&vmmc_reg>;
-+};
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index e711ffb..278b75d 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -235,6 +235,34 @@
- 			status = "disabled";
- 		};
- 
-+		mmc1: mmc@48060000 {
-+			compatible = "ti,omap3-hsmmc";
-+			ti,hwmods = "mmc1";
-+			ti,dual-volt;
-+			ti,needs-special-reset;
-+			dmas = <&edma 24
-+				&edma 25>;
-+			dma-names = "tx", "rx";
-+			status = "disabled";
-+		};
-+
-+		mmc2: mmc@481d8000 {
-+			compatible = "ti,omap3-hsmmc";
-+			ti,hwmods = "mmc2";
-+			ti,needs-special-reset;
-+			dmas = <&edma 2
-+				&edma 3>;
-+			dma-names = "tx", "rx";
-+			status = "disabled";
-+		};
-+
-+		mmc3: mmc@47810000 {
-+			compatible = "ti,omap3-hsmmc";
-+			ti,hwmods = "mmc3";
-+			ti,needs-special-reset;
-+			status = "disabled";
-+		};
-+
- 		wdt2: wdt@44e35000 {
- 			compatible = "ti,omap3-wdt";
- 			ti,hwmods = "wd_timer2";
 -- 
 1.7.9.5
 
