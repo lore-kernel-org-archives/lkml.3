@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab3AOPOA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 10:14:00 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:63691 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757465Ab3AOPN5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 10:13:57 -0500
-From: Liam Girdwood <lgirdwood@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <liam.r.girdwood@intel.com>
-Subject: [PATCH] regulator: maintainers: update email address
-Date: Tue, 15 Jan 2013 15:13:27 +0000
-Message-Id: <1358262807-8511-1-git-send-email-lgirdwood@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1757512Ab3AOPOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 10:14:30 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:54231 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757464Ab3AOPO2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 10:14:28 -0500
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Ido Yariv <ido@wizery.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?iso-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>
+Date: Tue, 15 Jan 2013 16:14:19 +0100
+Subject: RE: [RFCv2 11/11] remoteproc: Support virtio config space.
+Thread-Topic: [RFCv2 11/11] remoteproc: Support virtio config space.
+Thread-Index: Ac3fIfPDj3MRRW/YTI2W5ZT7V9AEngUD+Gww
+Message-ID: <81C3A93C17462B4BBD7E272753C1057924588EE067@EXDCVYMBSTM005.EQ1STM.local>
+References: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1355501220-4572-12-git-send-email-sjur.brandeland@stericsson.com>
+ <20121221022150.GH28692@WorkStation.localnet>
+In-Reply-To: <20121221022150.GH28692@WorkStation.localnet>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liam Girdwood <liam.r.girdwood@intel.com>
+Hi Ido,
 
-I no longer work at TI.
+> > +void rproc_virtio_get(struct virtio_device *vdev, unsigned offset,
+> > +							void *buf, unsigned
+> len)
+> > +{
+> > +	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
+> > +	void *cfg = &rvdev->rsc->vring[rvdev->rsc->num_of_vrings];
+> > +	memcpy(buf, cfg + offset, len);
+> > +}
+> > +
+> > +void rproc_virtio_set(struct virtio_device *vdev, unsigned offset,
+> > +		      const void *buf, unsigned len)
+> > +{
+> > +	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
+> > +	void *cfg = &rvdev->rsc->vring[rvdev->rsc->num_of_vrings];
+> > +	memcpy(cfg + offset, buf, len);
+> >  }
+> 
+> Perhaps verify the offset and length to avoid overwriting memory?
 
-Signed-off-by: Liam Girdwood <liam.r.girdwood@intel.com>
----
- MAINTAINERS |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+OK, I'll add checks on size of the config space.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 915564e..3c2e275 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7082,7 +7082,7 @@ F:	include/uapi/sound/
- F:	sound/
- 
- SOUND - SOC LAYER / DYNAMIC AUDIO POWER MANAGEMENT (ASoC)
--M:	Liam Girdwood <lrg@ti.com>
-+M:	Liam Girdwood <lgirdwood@gmail.com>
- M:	Mark Brown <broonie@opensource.wolfsonmicro.com>
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
- L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
--- 
-1.7.10.4
-
+Regards,
+Sjur
