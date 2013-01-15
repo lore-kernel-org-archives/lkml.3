@@ -1,163 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab3AOMcj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 07:32:39 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:41571 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755706Ab3AOMci (ORCPT
+	id S1756148Ab3AOMc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:32:59 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:37027 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756068Ab3AOMc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:32:38 -0500
-Date: Tue, 15 Jan 2013 04:33:31 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Mitch Harder <mitch.harder@sabayonlinux.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: zram: fix invalid memory references during disk write
-Message-ID: <20130115123331.GA31707@kroah.com>
-References: <CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com>
- <20121219034949.GA22281@kroah.com>
- <50D16AF8.7030401@vflare.org>
- <20121219150826.GA23953@kroah.com>
- <50D1E300.4000006@vflare.org>
- <20121219161705.GA24251@kroah.com>
- <50D1F799.4060800@vflare.org>
- <CAKcLGm9eFRQrAc_Nm0Z658ct46psVemWt4c8NbpETjhMF3A+jQ@mail.gmail.com>
- <20130114191953.GA6588@kroah.com>
- <CAPkvG_ccOt8vQwPev0FNyywstNszpECTN9+2OU_VDwzEvwb6bQ@mail.gmail.com>
+	Tue, 15 Jan 2013 07:32:58 -0500
+Date: Tue, 15 Jan 2013 04:32:50 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: RCU: non-atomic assignment to long/pointer variables in gcc
+Message-ID: <20130115123250.GK3384@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <50F52FC8.4000701@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPkvG_ccOt8vQwPev0FNyywstNszpECTN9+2OU_VDwzEvwb6bQ@mail.gmail.com>
+In-Reply-To: <50F52FC8.4000701@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011512-4834-0000-0000-00000297CE11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 04:48:18PM -0800, Nitin Gupta wrote:
-> On Mon, Jan 14, 2013 at 11:19 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Dec 19, 2012 at 11:39:15AM -0600, Mitch Harder wrote:
-> >> On Wed, Dec 19, 2012 at 11:21 AM, Nitin Gupta <ngupta@vflare.org> wrote:
-> >> > On 12/19/2012 08:17 AM, Greg KH wrote:
-> >> >> On Wed, Dec 19, 2012 at 07:53:36AM -0800, Nitin Gupta wrote:
-> >> >>> On 12/19/2012 07:08 AM, Greg KH wrote:
-> >> >>>> On Tue, Dec 18, 2012 at 11:21:28PM -0800, Nitin Gupta wrote:
-> >> >>>>> On 12/18/2012 07:49 PM, Greg KH wrote:
-> >> >>>>>> On Tue, Dec 18, 2012 at 01:12:05PM -0800, Nitin Gupta wrote:
-> >> >>>>>>> On Tue, Dec 11, 2012 at 10:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> >>>>>>>> On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
-> >> >>>>>>>>> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
-> >> >>>>>>>>> of incompressible pages") which caused invalid memory references
-> >> >>>>>>>>> during disk write. Invalid references could occur in two cases:
-> >> >>>>>>>>>  - Incoming data expands on compression: In this case, reference was
-> >> >>>>>>>>> made to kunmap()'ed bio page.
-> >> >>>>>>>>>  - Partial (non PAGE_SIZE) write with incompressible data: In this
-> >> >>>>>>>>> case, reference was made to a kfree()'ed buffer.
-> >> >>>>>>>>>
-> >> >>>>>>>>> Fixes bug 50081:
-> >> >>>>>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=50081
-> >> >>>>>>>>>
-> >> >>>>>>>>> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
-> >> >>>>>>>>> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
-> >> >>>>>>>>>
-> >> >>>>>>>>> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
-> >> >>>>>>>>>                               # zram_decompress_page() function
-> >> >>>>>>>>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> >> >>>>>>>>> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
-> >> >>>>>>>>> Reported-by: Tomas M <tomas@slax.org>
-> >> >>>>>>>>> Reviewed-by: Minchan Kim <minchan@kernel.org>
-> >> >>>>>>>>> ---
-> >> >>>>>>>>>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
-> >> >>>>>>>>>  1 file changed, 24 insertions(+), 15 deletions(-)
-> >> >>>>>>>>
-> >> >>>>>>>> This patch fails to apply to 3.6.10:
-> >> >>>>>>>>
-> >> >>>>>>>> patching file drivers/staging/zram/zram_drv.c
-> >> >>>>>>>> Hunk #1 succeeded at 282 (offset 17 lines).
-> >> >>>>>>>> Hunk #2 FAILED at 286.
-> >> >>>>>>>> Hunk #3 succeeded at 319 (offset 17 lines).
-> >> >>>>>>>> Hunk #4 succeeded at 340 (offset 17 lines).
-> >> >>>>>>>> Hunk #5 succeeded at 353 (offset 17 lines).
-> >> >>>>>>>> Hunk #6 succeeded at 368 (offset 17 lines).
-> >> >>>>>>>> Hunk #7 succeeded at 385 (offset 17 lines).
-> >> >>>>>>>> 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
-> >> >>>>>>>>
-> >> >>>>>>>> Please redo this patch and resend it if you wish for it to be applied to
-> >> >>>>>>>> the 3.6-stable tree.
-> >> >>>>>>>>
-> >> >>>>>>>>
-> >> >>>>>>>
-> >> >>>>>>> Please apply this patch to stable tree asap.
-> >> >>>>>>
-> >> >>>>>> 3.6 is now end-of-life, there will not be any more releases for that
-> >> >>>>>> kernel series anymore, sorry.
-> >> >>>>>>
-> >> >>>>>
-> >> >>>>> Then please apply to 3.7.
-> >> >>>>
-> >> >>>> That is impossible to do so, for the obvious reason.
-> >> >>>>
-> >> >>>
-> >> >>> I meant to include it in whatever 3.7.x is released in future. Or put it
-> >> >>> in staging, so it may eventually make it to mainline (by 3.8?).
-> >> >>
-> >> >> {sigh}
-> >> >>
-> >> >> Please think for a moment for how it would be impossible for me to add
-> >> >> this patch to either the 3.7-stable tree, or the 3.8 tree, _again_.
-> >> >>
-> >> >
-> >> > I'm simply not getting it, I'm sorry, I must be missing something
-> >> > obvious -- what's really the problem with this: "whenever 3.8 is
-> >> > released, sometime in the future, just make sure that this fix is
-> >> > included in it" ?  Also, what's stopping it from staging, at least?
-> >> >
-> >>
-> >> Greg:
-> >>
-> >> I think there is still some residual confusion from the mix of patches
-> >> sent out for this issue.
-> >>
-> >> You appear to be saying that this patch as well as "37b51fd: zram:
-> >> factor-out  zram_decompress_page() function" have already been
-> >> applied.
-> >>
-> >> But I do not see either patch in 3.7.0 or in your message for
-> >> "3.7.1-stable review"
-> >>
-> >> I see the "37b51fd: zram: factor-out  zram_decompress_page() function"
-> >> patch in Linus' tree for 3.8_rc, but not the patch discussed in this
-> >> thread.
-> >
-> > Ok, I'm totally confused.
-> >
-> > Please, can someone tell me _exactly_ what commits they wish to see
-> > applied to the 3.7-stable tree.
-> >
-> > thanks,
-> >
-> > greg k-h
+On Tue, Jan 15, 2013 at 02:30:32PM +0400, Konstantin Khlebnikov wrote:
+> Documentation/atomic_ops.txt (182dd4b277177e8465ad11cd9f85f282946b5578)
+> says that pointers, longs, ints, and chars are stored and loaded atomically.
 > 
-> These two needs to be applied to 3.7-stable:
+> But GCC actually may split assignment to 'long' variable into two instructions.
+> see example in http://gcc.gnu.org/bugzilla/show_bug.cgi?id=55981
 > 
-> 1) 37b51fd: "staging: zram: factor-out zram_decompress_page() function"
+> GCC also splits assignments to 'volatile' variables and this is actually a bug in gcc.
 > 
-> and then...
+> volatile unsigned long y;
 > 
-> 2) 397c606: "staging: zram: fix invalid memory references during disk write"
+> y = 0x100000001ul;
+> 
+>   400728:	c7 05 66 06 20 00 01 	movl   $0x1,0x200666(%rip)        # 600d98 <y>
+>   40072f:	00 00 00
+>   400732:	c7 05 60 06 20 00 01 	movl   $0x1,0x200660(%rip)        # 600d9c <y+0x4>
+>   400739:	00 00 00
+> 
+> fortunately for y = 0; it generates this:
+> 
+>   40071d:	48 c7 05 70 06 20 00 	movq   $0x0,0x200670(%rip)        # 600d98 <y>
+>   400724:	00 00 00 00
+> 
+> Thus NULL is safe, but constant ERR_PTR may be dangerous.
+> 
+> Probably rcu_assign_pointer() should use ACCESS_ONCE() around lvalue, because
+> splitting assignment for non-volatile variable seems like completely valid,
+> but this may help only after fixing that bug in GCC.
 
-Thanks, that makes sense.
+Good catch!  I has queued the following patch.
 
-But note, until today, I could not have done this at all, as the last
-commit here was not in Linus's tree.  So I was right to be confused,
-there was nothing I could do at the time.
+							Thanx, Paul
 
-Please be more careful in the future, developer's time is limited,
-causing confusion doesn't help.
+------------------------------------------------------------------------
 
-greg k-h
+rcu: Add ACCESS_ONCE() to rcu_assign_pointer()
+
+GCC may split assignment to 'long' variable into two instructions:
+
+volatile unsigned long y;
+
+y = 0x100000001ul;
+
+	movl   $0x1,0x200666(%rip)
+	movl   $0x1,0x200660(%rip)
+
+This commit fixes this by applying ACCESS_ONCE() within
+__rcu_assign_pointer(), but note that some versions and architectures
+of GCC have a bug that defeats ACCESS_ONCE():
+
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=55981
+
+I added a comment to this bug report asking that the bug be fixed for
+volatiles as well as atomics, citing a device driver storing a constant
+into a 64-bit device register as motivation.
+
+Reported-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 9ed2c9a..3435174 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -556,7 +556,7 @@ static inline void rcu_preempt_sleep_check(void)
+ #define __rcu_assign_pointer(p, v, space) \
+ 	do { \
+ 		smp_wmb(); \
+-		(p) = (typeof(*v) __force space *)(v); \
++		ACCESS_ONCE(p) = (typeof(*v) __force space *)(v); \
+ 	} while (0)
+ 
+ 
+
