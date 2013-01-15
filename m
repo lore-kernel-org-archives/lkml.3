@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934245Ab3AOXLj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:11:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47786 "EHLO mail.kernel.org"
+	id S934258Ab3AOXLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:11:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47735 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934135Ab3AOWzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:55:15 -0500
+	id S934127Ab3AOWzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:55:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Weston Andros Adamson <dros@netapp.com>, Tejun Heo <tj@kernel.org>,
-        Bruce Fields <bfields@fieldses.org>
-Subject: [ 17/71] SUNRPC: Ensure that we free the rpc_task after cleanups are done
-Date: Tue, 15 Jan 2013 14:54:14 -0800
-Message-Id: <20130115225341.685688621@linuxfoundation.org>
+        Xiaotian Feng <dannyfeng@tencent.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 13/71] libata: fix Null pointer dereference on disk error
+Date: Tue, 15 Jan 2013 14:54:10 -0800
+Message-Id: <20130115225341.396026766@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,65 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Xiaotian Feng <xtfeng@gmail.com>
 
-commit c6567ed1402c55e19b012e66a8398baec2a726f3 upstream.
+commit 26cd4d65deba587f3cf2329b6869ce02bcbe68ec upstream.
 
-This patch ensures that we free the rpc_task after the cleanup callbacks
-are done in order to avoid a deadlock problem that can be triggered if
-the callback needs to wait for another workqueue item to complete.
+Following oops were observed when disk error happened:
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Weston Andros Adamson <dros@netapp.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Bruce Fields <bfields@fieldses.org>
+[ 4272.896937] sd 0:0:0:0: [sda] Unhandled error code
+[ 4272.896939] sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+[ 4272.896942] sd 0:0:0:0: [sda] CDB: Read(10): 28 00 00 5a de a7 00 00 08 00
+[ 4272.896951] end_request: I/O error, dev sda, sector 5955239
+[ 4291.574947] BUG: unable to handle kernel NULL pointer dereference at (null)
+[ 4291.658305] IP: [] ahci_activity_show+0x1/0x40
+[ 4291.730090] PGD 76dbbc067 PUD 6c4fba067 PMD 0
+[ 4291.783408] Oops: 0000 [#1] SMP
+[ 4291.822100] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/sw_activity
+[ 4291.934235] CPU 9
+[ 4291.958301] Pid: 27942, comm: hwinfo ......
+
+ata_scsi_find_dev could return NULL, so ata_scsi_activity_{show,store} should check if atadev is NULL.
+
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/sched.c |   27 +++++++++++++++++++++++----
- 1 file changed, 23 insertions(+), 4 deletions(-)
+ drivers/ata/libata-scsi.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -844,16 +844,35 @@ struct rpc_task *rpc_new_task(const stru
- 	return task;
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -308,7 +308,8 @@ ata_scsi_activity_show(struct device *de
+ 	struct ata_port *ap = ata_shost_to_port(sdev->host);
+ 	struct ata_device *atadev = ata_scsi_find_dev(ap, sdev);
+ 
+-	if (ap->ops->sw_activity_show && (ap->flags & ATA_FLAG_SW_ACTIVITY))
++	if (atadev && ap->ops->sw_activity_show &&
++	    (ap->flags & ATA_FLAG_SW_ACTIVITY))
+ 		return ap->ops->sw_activity_show(atadev, buf);
+ 	return -EINVAL;
  }
+@@ -323,7 +324,8 @@ ata_scsi_activity_store(struct device *d
+ 	enum sw_activity val;
+ 	int rc;
  
-+/*
-+ * rpc_free_task - release rpc task and perform cleanups
-+ *
-+ * Note that we free up the rpc_task _after_ rpc_release_calldata()
-+ * in order to work around a workqueue dependency issue.
-+ *
-+ * Tejun Heo states:
-+ * "Workqueue currently considers two work items to be the same if they're
-+ * on the same address and won't execute them concurrently - ie. it
-+ * makes a work item which is queued again while being executed wait
-+ * for the previous execution to complete.
-+ *
-+ * If a work function frees the work item, and then waits for an event
-+ * which should be performed by another work item and *that* work item
-+ * recycles the freed work item, it can create a false dependency loop.
-+ * There really is no reliable way to detect this short of verifying
-+ * every memory free."
-+ *
-+ */
- static void rpc_free_task(struct rpc_task *task)
- {
--	const struct rpc_call_ops *tk_ops = task->tk_ops;
--	void *calldata = task->tk_calldata;
-+	unsigned short tk_flags = task->tk_flags;
- 
--	if (task->tk_flags & RPC_TASK_DYNAMIC) {
-+	rpc_release_calldata(task->tk_ops, task->tk_calldata);
-+
-+	if (tk_flags & RPC_TASK_DYNAMIC) {
- 		dprintk("RPC: %5u freeing task\n", task->tk_pid);
- 		mempool_free(task, rpc_task_mempool);
- 	}
--	rpc_release_calldata(tk_ops, calldata);
- }
- 
- static void rpc_async_release(struct work_struct *work)
+-	if (ap->ops->sw_activity_store && (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
++	if (atadev && ap->ops->sw_activity_store &&
++	    (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
+ 		val = simple_strtoul(buf, NULL, 0);
+ 		switch (val) {
+ 		case OFF: case BLINK_ON: case BLINK_OFF:
 
 
