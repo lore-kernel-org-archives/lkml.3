@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933584Ab3AOXel (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:34:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46566 "EHLO mail.kernel.org"
+	id S933581Ab3AOXfA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:35:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46554 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933517Ab3AOWvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:51:52 -0500
+	id S933510Ab3AOWvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:51:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 106/171] xhci: Avoid "dead ports", add roothub port polling.
-Date: Tue, 15 Jan 2013 14:44:31 -0800
-Message-Id: <20130115224321.025220851@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        John Covici <covici@ccs.covici.com>
+Subject: [ 105/171] USB: Handle warm reset failure on empty port.
+Date: Tue, 15 Jan 2013 14:44:30 -0800
+Message-Id: <20130115224320.954570514@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -28,117 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit c52804a472649b2e5005342308739434cbd51119 upstream.
+commit 65bdac5effd15d6af619b3b7218627ef4d84ed6a upstream.
 
-The USB core hub thread (khubd) is designed with external USB hubs in
-mind.  It expects that if a port status change bit is set, the hub will
-continue to send a notification through the hub status data transfer.
-Basically, it expects hub notifications to be level-triggered.
+An empty port can transition to either Inactive or Compliance Mode if a
+newly connected USB 3.0 device fails to link train.  In that case, we
+issue a warm reset.  Some devices, such as John's Roseweil eusb3
+enclosure, slip back into Compliance Mode after the warm reset.
 
-The xHCI host controller is designed to be edge-triggered on the logical
-'OR' of all the port status change bits.  When all port status change
-bits are clear, and a new change bit is set, the xHC will generate a
-Port Status Change Event.  If another change bit is set in the same port
-status register before the first bit is cleared, it will not send
-another event.
+The current warm reset code does not check for device connect status on
+warm reset completion, and it incorrectly reports the warm reset
+succeeded.  This causes the USB core to attempt to send a Set Address
+control transfer to a port in Compliance Mode, which will always fail.
 
-This means that the hub code may lose port status changes because of
-race conditions between clearing change bits.  The user sees this as a
-"dead port" that doesn't react to device connects.
+Make hub_port_wait_reset check the current connect status and link state
+after the warm reset completes.  Return a failure status if the device
+is disconnected or the link state is Compliance Mode or SS.Inactive.
 
-The fix is to turn on port polling whenever a new change bit is set.
-Once the USB core issues a hub status request that shows that no change
-bits are set in any USB ports, turn off port polling.
+Make hub_events disable the port if warm reset fails.  This will disable
+the port, and then bring it back into the RxDetect state.  Make the USB
+core ignore the connect change until the device reconnects.
 
-We can't allow the USB core to poll the roothub for port events during
-host suspend because if the PCI host is in D3cold, the port registers
-will be all f's.  Instead, stop the port polling timer, and
-unconditionally restart it when the host resumes.  If there are no port
-change bits set after the resume, the first call to hub_status_data will
-disable polling.
+Note that this patch does NOT handle connected devices slipping into the
+Inactive state very well.  This is a concern, because devices can go
+into the Inactive state on U1/U2 exit failure.  However, the fix for
+that case is too large for stable, so it will be submitted in a separate
+patch.
 
-This patch should be backported to stable kernels with the first xHCI
-support, 2.6.31 and newer, that include the commit
-0f2a79300a1471cf92ab43af165ea13555c8b0a5 "USB: xhci: Root hub support."
-There will be merge conflicts because the check for HC_STATE_SUSPENDED
-was moved into xhci_suspend in 3.8.
+This patch should be backported to kernels as old as 3.2, contain the
+commit ID 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine warm
+reset logic"
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: John Covici <covici@ccs.covici.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-hub.c  |    7 +++++++
- drivers/usb/host/xhci-ring.c |    9 +++++++++
- drivers/usb/host/xhci.c      |   10 ++++++++++
- 3 files changed, 26 insertions(+)
+ drivers/usb/core/hub.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -940,6 +940,7 @@ int xhci_hub_status_data(struct usb_hcd
- 	int max_ports;
- 	__le32 __iomem **port_array;
- 	struct xhci_bus_state *bus_state;
-+	bool reset_change = false;
- 
- 	max_ports = xhci_get_ports(hcd, &port_array);
- 	bus_state = &xhci->bus_state[hcd_index(hcd)];
-@@ -971,6 +972,12 @@ int xhci_hub_status_data(struct usb_hcd
- 			buf[(i + 1) / 8] |= 1 << (i + 1) % 8;
- 			status = 1;
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2266,6 +2266,11 @@ static int hub_port_wait_reset(struct us
+ 				return 0;
+ 			}
+ 		} else {
++			if (!(portstatus & USB_PORT_STAT_CONNECTION) ||
++					hub_port_warm_reset_required(hub,
++						portstatus))
++				return -ENOTCONN;
++
+ 			return 0;
  		}
-+		if ((temp & PORT_RC))
-+			reset_change = true;
-+	}
-+	if (!status && !reset_change) {
-+		xhci_dbg(xhci, "%s: stopping port polling.\n", __func__);
-+		clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
- 	}
- 	spin_unlock_irqrestore(&xhci->lock, flags);
- 	return status ? retval : 0;
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1725,6 +1725,15 @@ cleanup:
- 	if (bogus_port_status)
- 		return;
  
-+	/*
-+	 * xHCI port-status-change events occur when the "or" of all the
-+	 * status-change bits in the portsc register changes from 0 to 1.
-+	 * New status changes won't cause an event if any other change
-+	 * bits are still set.  When an event occurs, switch over to
-+	 * polling to avoid losing status changes.
-+	 */
-+	xhci_dbg(xhci, "%s: starting port polling.\n", __func__);
-+	set_bit(HCD_FLAG_POLL_RH, &hcd->flags);
- 	spin_unlock(&xhci->lock);
- 	/* Pass this up to the core */
- 	usb_hcd_poll_rh_status(hcd);
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -880,6 +880,11 @@ int xhci_suspend(struct xhci_hcd *xhci)
- 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
- 	u32			command;
- 
-+	/* Don't poll the roothubs on bus suspend. */
-+	xhci_dbg(xhci, "%s: stopping port polling.\n", __func__);
-+	clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
-+	del_timer_sync(&hcd->rh_timer);
+@@ -3830,9 +3835,14 @@ static void hub_events(void)
+ 			 * SS.Inactive state.
+ 			 */
+ 			if (hub_port_warm_reset_required(hub, portstatus)) {
++				int status;
 +
- 	spin_lock_irq(&xhci->lock);
- 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
- 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &xhci->shared_hcd->flags);
-@@ -1064,6 +1069,11 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
- 		compliance_mode_recovery_timer_init(xhci);
+ 				dev_dbg(hub_dev, "warm reset port %d\n", i);
+-				hub_port_reset(hub, i, NULL,
++				status = hub_port_reset(hub, i, NULL,
+ 						HUB_BH_RESET_TIME, true);
++				if (status < 0)
++					hub_port_disable(hub, i, 1);
++				connect_change = 0;
+ 			}
  
-+	/* Re-enable port polling. */
-+	xhci_dbg(xhci, "%s: starting port polling.\n", __func__);
-+	set_bit(HCD_FLAG_POLL_RH, &hcd->flags);
-+	usb_hcd_poll_rh_status(hcd);
-+
- 	return retval;
- }
- #endif	/* CONFIG_PM */
+ 			if (connect_change)
 
 
