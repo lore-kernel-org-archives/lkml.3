@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572Ab3AOMNF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 07:13:05 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:63337 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756195Ab3AOMND (ORCPT
+	id S1755877Ab3AOMO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:14:58 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:34428 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab3AOMO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:13:03 -0500
-Date: Tue, 15 Jan 2013 04:13:56 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: cw00.choi@samsung.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [GIT PULL] extcon for 3.8-rc4
-Message-ID: <20130115121356.GA2349@kroah.com>
-References: <50F5067A.2060104@samsung.com>
- <20130115113719.GD1748@kroah.com>
- <CAGTfZH2r9TaNEPQ5am-UFwQd9t_qegxfo3MMOwJxvfctid7=-Q@mail.gmail.com>
+	Tue, 15 Jan 2013 07:14:56 -0500
+X-AuditID: 85900ec0-d5479b900000152f-8f-50f5483dab61
+Message-ID: <50F5482F.4070902@hitachi.com>
+Date: Tue, 15 Jan 2013 21:14:39 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGTfZH2r9TaNEPQ5am-UFwQd9t_qegxfo3MMOwJxvfctid7=-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [PATCH -tip  0/3] Move kprobes files under the kprobes
+ directory
+References: <20120928081509.3560.8860.stgit@ltc138.sdl.hitachi.co.jp> <1357937012.5141.39.camel@gandalf.local.home>
+In-Reply-To: <1357937012.5141.39.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 09:09:20PM +0900, Chanwoo Choi wrote:
-> On Tuesday, January 15, 2013, Greg KH wrote:
+(2013/01/12 5:43), Steven Rostedt wrote:
+> On Fri, 2012-09-28 at 17:15 +0900, Masami Hiramatsu wrote:
+>> Hi,
+>>
+>> Here are a series of patches to split ftrace-based kprobe part
+>> from arch/x86/kernel/kprobes.c and to move kprobes related
+>> files under arch/x86/kernel/kprobes/, according to Ingo's
+>> suggestion.
+>> https://lkml.org/lkml/2012/9/20/122
+>>
+>> Thank you,
 > 
->     On Tue, Jan 15, 2013 at 04:34:18PM +0900, Chanwoo Choi wrote:
->     > Hi Greg,
->     >
->     > This is the extcon pull request for Linux 3.8-rc4.
->     >
->     > Please pull extcon with following updates:
->     >
->     > Update to max77693/max8997 extcon driver:
->     > - Using MHL_TA cable for charging.
->     > - Support JIG cable.
->     > - Support Dock-Audio device for playing music and button of device.
->     > - Support Dock-Smart device for desktop mode with mouse/keyboard.
->     > - Set default UART/USB path on probe().
->     > - Check the state/type of cable after completing initialization.
->     > - Code clean to remove duplicate code and bug fix related to sequence of
->     interrupt.
->     > - Fix irq_flag of max8997/max77693 driver.
->     >
->     > Update to arizona extcon driver:
->     > - Headphone measurements.
->     > - Alternative detection mechanism for non-default system designs.
->     > - Microphone clamp integration.
->     > - Support for additional detection pin.
->     > - MICBIAS rise time configuration.
->     >
->     > Thanks in advance for pulling,
+> Hi Masami,
 > 
->     This request is for inclusion in 3.9, right?  This seems much too big
->     for 3.8 at the moment.
-> 
->  
-> If you think that, I agree your opinion about including this request in 3.9.
+> This seems to have slipped through the cracks. Is this patch series
+> still valid?
 
-That's really up to you, as a subsystem maintainer, to decide about.
-You need to take bugfixes and ask for them to be included in the 3.8,
-and new features and other work, for 3.9.
+Yes, at least on the latest -tip tree, it can be applied :)
+# and this series is for cleanup.
 
-So can you please go over these patches and ensure that none of them are
-ok for 3.8, and all are fine for 3.9?
+Thank you!
 
-Also, as Mark pointed out, you really need to get your tree(s) into
-linux-next, can you work on doing that as well?
 
-thanks,
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-greg k-h
+
