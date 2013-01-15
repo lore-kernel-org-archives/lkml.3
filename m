@@ -1,18 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257Ab3AOWul (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:50:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46062 "EHLO mail.kernel.org"
+	id S933241Ab3AOWui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:50:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46045 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933051Ab3AOWue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:34 -0500
+	id S933221Ab3AOWud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Marek Vasut <marex@denx.de>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 070/171] HID: add quirk for Freescale i.MX23 ROM recovery
-Date: Tue, 15 Jan 2013 14:43:55 -0800
-Message-Id: <20130115224318.446236172@linuxfoundation.org>
+        Eric Wong <normalperson@yhbt.net>,
+        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Olsa <jolsa@redhat.com>,
+        Jonathan Corbet <corbet@lwn.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Voellmy <andreas.voellmy@yale.edu>,
+        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [ 069/171] epoll: prevent missed events on EPOLL_CTL_MOD
+Date: Tue, 15 Jan 2013 14:43:54 -0800
+Message-Id: <20130115224318.378490097@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,47 +37,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Vasut <marex@denx.de>
+From: Eric Wong <normalperson@yhbt.net>
 
-commit 436136cec650d661eb662fcb508a99878606d050 upstream.
+commit 128dd1759d96ad36c379240f8b9463e8acfd37a1 upstream.
 
-The USB recovery mode present in i.MX23 ROM emulates USB HID.  It needs this
-quirk to behave properly.
+EPOLL_CTL_MOD sets the interest mask before calling f_op->poll() to
+ensure events are not missed.  Since the modifications to the interest
+mask are not protected by the same lock as ep_poll_callback, we need to
+ensure the change is visible to other CPUs calling ep_poll_callback.
 
-Even if the official branding of the chip is Freescale i.MX23, I named it
-Sigmatel STMP3780 since that's what the chip really is and it even reports
-itself as STMP3780.
+We also need to ensure f_op->poll() has an up-to-date view of past
+events which occured before we modified the interest mask.  So this
+barrier also pairs with the barrier in wq_has_sleeper().
 
-Signed-off-by: Marek Vasut <marex@denx.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+This should guarantee either ep_poll_callback or f_op->poll() (or both)
+will notice the readiness of a recently-ready/modified item.
+
+This issue was encountered by Andreas Voellmy and Junchang(Jason) Wang in:
+http://thread.gmane.org/gmane.linux.kernel/1408782/
+
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Davide Libenzi <davidel@xmailserver.org>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Voellmy <andreas.voellmy@yale.edu>
+Tested-by: "Junchang(Jason) Wang" <junchang.wang@yale.edu>
+Cc: netdev@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ fs/eventpoll.c |   22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -664,6 +664,9 @@
- #define USB_VENDOR_ID_SIGMA_MICRO	0x1c4f
- #define USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD	0x0002
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -1226,11 +1226,31 @@ static int ep_modify(struct eventpoll *e
+ 	 * otherwise we might miss an event that happens between the
+ 	 * f_op->poll() call and the new event set registering.
+ 	 */
+-	epi->event.events = event->events;
++	epi->event.events = event->events; /* need barrier below */
+ 	pt._key = event->events;
+ 	epi->event.data = event->data; /* protected by mtx */
  
-+#define USB_VENDOR_ID_SIGMATEL		0x066F
-+#define USB_DEVICE_ID_SIGMATEL_STMP3780	0x3780
+ 	/*
++	 * The following barrier has two effects:
++	 *
++	 * 1) Flush epi changes above to other CPUs.  This ensures
++	 *    we do not miss events from ep_poll_callback if an
++	 *    event occurs immediately after we call f_op->poll().
++	 *    We need this because we did not take ep->lock while
++	 *    changing epi above (but ep_poll_callback does take
++	 *    ep->lock).
++	 *
++	 * 2) We also need to ensure we do not miss _past_ events
++	 *    when calling f_op->poll().  This barrier also
++	 *    pairs with the barrier in wq_has_sleeper (see
++	 *    comments for wq_has_sleeper).
++	 *
++	 * This barrier will now guarantee ep_poll_callback or f_op->poll
++	 * (or both) will notice the readiness of an item.
++	 */
++	smp_mb();
 +
- #define USB_VENDOR_ID_SKYCABLE			0x1223
- #define	USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER	0x3F07
- 
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -78,6 +78,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SENNHEISER, USB_DEVICE_ID_SENNHEISER_BTD500USB, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_SIGMATEL, USB_DEVICE_ID_SIGMATEL_STMP3780, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
++	/*
+ 	 * Get current event bits. We can safely use the file* here because
+ 	 * its usage count has been increased by the caller of this function.
+ 	 */
 
 
