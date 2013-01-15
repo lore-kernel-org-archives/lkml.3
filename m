@@ -1,133 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758063Ab3AOS5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:57:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34909 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757185Ab3AOS5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:57:47 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 044/221] mlx4_core: Fix potential deadlock in mlx4_eq_int()
-Date: Tue, 15 Jan 2013 10:49:31 -0800
-Message-Id: <20130115185001.199365023@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
-References: <20130115184958.025580322@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1757720Ab3AOS6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:58:12 -0500
+Received: from mail-gh0-f182.google.com ([209.85.160.182]:42696 "EHLO
+	mail-gh0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757377Ab3AOS6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:58:09 -0500
+Date: Tue, 15 Jan 2013 15:57:59 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Anton Blanchard <anton@au1.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, robert.richter@amd.com,
+        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 6/6][v3] perf: Document the ABI of perf sysfs entries
+Message-ID: <20130115185759.GG5826@ghostprotocols.net>
+References: <20130110010347.GA32590@us.ibm.com>
+ <20130110010703.GF32590@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130110010703.GF32590@us.ibm.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+Em Wed, Jan 09, 2013 at 05:07:03PM -0800, Sukadev Bhattiprolu escreveu:
+> [PATCH 6/6][v3] perf: Document the ABI of perf sysfs entries
+> 
+> This patchset addes two new sets of files to sysfs:
+> 
+> 	- generic and POWER-specific perf events in /sys/devices/cpu/events/
+> 	- perf event config format in /sys/devices/cpu/format/event
+> 
+> Document the format of these files which would become part of the ABI.
+> 
+> Changelog[v3]:
+> 	[Greg KH] Include ABI documentation.
 
-------------------
+Jiri, can I have your ack on this one too?
 
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Greg, all ok now?
 
-commit 311f813a2daefcba03f706a692fe0c67888d7622 upstream.
-
-The slave_state_lock spinlock is used in both interrupt context and
-process context, hence irq locking must be used.  Found by lockdep.
-
-Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/ethernet/mellanox/mlx4/cmd.c |    9 +++++----
- drivers/net/ethernet/mellanox/mlx4/eq.c  |   10 ++++++----
- 2 files changed, 11 insertions(+), 8 deletions(-)
-
---- a/drivers/net/ethernet/mellanox/mlx4/cmd.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/cmd.c
-@@ -1498,6 +1498,7 @@ static void mlx4_master_do_cmd(struct ml
- 	u32 reply;
- 	u8 is_going_down = 0;
- 	int i;
-+	unsigned long flags;
+- Arnaldo
  
- 	slave_state[slave].comm_toggle ^= 1;
- 	reply = (u32) slave_state[slave].comm_toggle << 31;
-@@ -1576,12 +1577,12 @@ static void mlx4_master_do_cmd(struct ml
- 		mlx4_warn(dev, "Bad comm cmd:%d from slave:%d\n", cmd, slave);
- 		goto reset_slave;
- 	}
--	spin_lock(&priv->mfunc.master.slave_state_lock);
-+	spin_lock_irqsave(&priv->mfunc.master.slave_state_lock, flags);
- 	if (!slave_state[slave].is_slave_going_down)
- 		slave_state[slave].last_cmd = cmd;
- 	else
- 		is_going_down = 1;
--	spin_unlock(&priv->mfunc.master.slave_state_lock);
-+	spin_unlock_irqrestore(&priv->mfunc.master.slave_state_lock, flags);
- 	if (is_going_down) {
- 		mlx4_warn(dev, "Slave is going down aborting command(%d)"
- 			  " executing from slave:%d\n",
-@@ -1597,10 +1598,10 @@ static void mlx4_master_do_cmd(struct ml
- reset_slave:
- 	/* cleanup any slave resources */
- 	mlx4_delete_all_resources_for_slave(dev, slave);
--	spin_lock(&priv->mfunc.master.slave_state_lock);
-+	spin_lock_irqsave(&priv->mfunc.master.slave_state_lock, flags);
- 	if (!slave_state[slave].is_slave_going_down)
- 		slave_state[slave].last_cmd = MLX4_COMM_CMD_RESET;
--	spin_unlock(&priv->mfunc.master.slave_state_lock);
-+	spin_unlock_irqrestore(&priv->mfunc.master.slave_state_lock, flags);
- 	/*with slave in the middle of flr, no need to clean resources again.*/
- inform_slave_state:
- 	memset(&slave_state[slave].event_eq, 0,
---- a/drivers/net/ethernet/mellanox/mlx4/eq.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/eq.c
-@@ -401,6 +401,7 @@ void mlx4_master_handle_slave_flr(struct
- 	struct mlx4_slave_state *slave_state = priv->mfunc.master.slave_state;
- 	int i;
- 	int err;
-+	unsigned long flags;
- 
- 	mlx4_dbg(dev, "mlx4_handle_slave_flr\n");
- 
-@@ -412,10 +413,10 @@ void mlx4_master_handle_slave_flr(struct
- 
- 			mlx4_delete_all_resources_for_slave(dev, i);
- 			/*return the slave to running mode*/
--			spin_lock(&priv->mfunc.master.slave_state_lock);
-+			spin_lock_irqsave(&priv->mfunc.master.slave_state_lock, flags);
- 			slave_state[i].last_cmd = MLX4_COMM_CMD_RESET;
- 			slave_state[i].is_slave_going_down = 0;
--			spin_unlock(&priv->mfunc.master.slave_state_lock);
-+			spin_unlock_irqrestore(&priv->mfunc.master.slave_state_lock, flags);
- 			/*notify the FW:*/
- 			err = mlx4_cmd(dev, 0, i, 0, MLX4_CMD_INFORM_FLR_DONE,
- 				       MLX4_CMD_TIME_CLASS_A, MLX4_CMD_WRAPPED);
-@@ -440,6 +441,7 @@ static int mlx4_eq_int(struct mlx4_dev *
- 	u8 update_slave_state;
- 	int i;
- 	enum slave_port_gen_event gen_event;
-+	unsigned long flags;
- 
- 	while ((eqe = next_eqe_sw(eq))) {
- 		/*
-@@ -647,13 +649,13 @@ static int mlx4_eq_int(struct mlx4_dev *
- 			} else
- 				update_slave_state = 1;
- 
--			spin_lock(&priv->mfunc.master.slave_state_lock);
-+			spin_lock_irqsave(&priv->mfunc.master.slave_state_lock, flags);
- 			if (update_slave_state) {
- 				priv->mfunc.master.slave_state[flr_slave].active = false;
- 				priv->mfunc.master.slave_state[flr_slave].last_cmd = MLX4_COMM_CMD_FLR;
- 				priv->mfunc.master.slave_state[flr_slave].is_slave_going_down = 1;
- 			}
--			spin_unlock(&priv->mfunc.master.slave_state_lock);
-+			spin_unlock_irqrestore(&priv->mfunc.master.slave_state_lock, flags);
- 			queue_work(priv->mfunc.master.comm_wq,
- 				   &priv->mfunc.master.slave_flr_event_work);
- 			break;
-
-
+> Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+> ---
+>  Documentation/ABI/stable/sysfs-devices-cpu-events |   54 +++++++++++++++++++++
+>  Documentation/ABI/stable/sysfs-devices-cpu-format |   27 ++++++++++
+>  2 files changed, 81 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/stable/sysfs-devices-cpu-format
+> 
+> diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-events b/Documentation/ABI/stable/sysfs-devices-cpu-events
+> index e69de29..f37d542 100644
+> --- a/Documentation/ABI/stable/sysfs-devices-cpu-events
+> +++ b/Documentation/ABI/stable/sysfs-devices-cpu-events
+> @@ -0,0 +1,54 @@
+> +What:		/sys/devices/cpu/events/
+> +		/sys/devices/cpu/events/branch-misses
+> +		/sys/devices/cpu/events/cache-references
+> +		/sys/devices/cpu/events/cache-misses
+> +		/sys/devices/cpu/events/stalled-cycles-frontend
+> +		/sys/devices/cpu/events/branch-instructions
+> +		/sys/devices/cpu/events/stalled-cycles-backend
+> +		/sys/devices/cpu/events/instructions
+> +		/sys/devices/cpu/events/cpu-cycles
+> +
+> +Date:		2013/01/08
+> +
+> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
+> +
+> +Description:	Generic performance monitoring events
+> +
+> +		A collection of performance monitoring events that may be
+> +		supported by many/most CPUs. These events can be monitored
+> +		using the 'perf(1)' tool.
+> +
+> +		The contents of each file would look like:
+> +
+> +			event=0xNNNN
+> +
+> +		where 'N' is a hex digit.
+> +
+> +
+> +What: 		/sys/devices/cpu/events/PM_LD_MISS_L1
+> +		/sys/devices/cpu/events/PM_LD_REF_L1
+> +		/sys/devices/cpu/events/PM_CYC
+> +		/sys/devices/cpu/events/PM_BRU_FIN
+> +		/sys/devices/cpu/events/PM_GCT_NOSLOT_CYC
+> +		/sys/devices/cpu/events/PM_BRU_MPRED
+> +		/sys/devices/cpu/events/PM_INST_CMPL
+> +		/sys/devices/cpu/events/PM_CMPLU_STALL
+> +
+> +Date:		2013/01/08
+> +
+> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
+> +		Linux Powerpc mailing list <linuxppc-dev@ozlabs.org>
+> +
+> +Description:	POWER specific performance monitoring events
+> +
+> +		A collection of performance monitoring events that may be
+> +		supported by the POWER CPU. These events can be monitored
+> +		using the 'perf(1)' tool.
+> +
+> +		These events may not be supported by other CPUs.
+> +
+> +		The contents of each file would look like:
+> +
+> +			event=0xNNNN
+> +
+> +		where 'N' is a hex digit.
+> diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-format b/Documentation/ABI/stable/sysfs-devices-cpu-format
+> new file mode 100644
+> index 0000000..b15cfb2
+> --- /dev/null
+> +++ b/Documentation/ABI/stable/sysfs-devices-cpu-format
+> @@ -0,0 +1,27 @@
+> +What:		/sys/devices/cpu/format/
+> +		/sys/devices/cpu/format/event
+> +
+> +Date:		2013/01/08
+> +
+> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
+> +
+> +Description:	Format of performance monitoring events
+> +
+> +		Each CPU/architecture may use different format to represent
+> +		the perf event.  The 'event' file describes the configuration
+> +		format of the performance monitoring event on the CPU/system.
+> +
+> +		The contents of each file would look like:
+> +
+> +			config:m-n
+> +
+> +		where m and n are the starting and ending bits that are
+> +		used to represent the event.
+> +
+> +		For example, on POWER,
+> +
+> +			$ cat /sys/devices/cpu/format/event
+> +			config:0-20
+> +
+> +		meaning that POWER uses the first 20-bits to represent a perf
+> +		event.
+> -- 
+> 1.7.1
