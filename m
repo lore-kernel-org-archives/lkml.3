@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933781Ab3AOXZp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:25:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47076 "EHLO mail.kernel.org"
+	id S933850Ab3AOX0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:26:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47010 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933734Ab3AOWwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:54 -0500
+	id S933727Ab3AOWwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Josh Durgin <josh.durgin@dreamhost.com>,
         Alex Elder <elder@inktank.com>
-Subject: [ 137/171] rbd: use reference counting for the snap context
-Date: Tue, 15 Jan 2013 14:45:02 -0800
-Message-Id: <20130115224323.234764326@linuxfoundation.org>
+Subject: [ 135/171] rbd: expose the correct size of the device in sysfs
+Date: Tue, 15 Jan 2013 14:45:00 -0800
+Message-Id: <20130115224323.084985943@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -29,130 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josh Durgin <josh.durgin@dreamhost.com>
 
-This prevents a race between requests with a given snap context and
-header updates that free it. The osd client was already expecting the
-snap context to be reference counted, since it get()s it in
-ceph_osdc_build_request and put()s it when the request completes.
-
-Also remove the second down_read()/up_read() on header_rwsem in
-rbd_do_request, which wasn't actually preventing this race or
-protecting any other data.
+If an image was mapped to a snapshot, the size of the head version
+would be shown. Protect capacity with header_rwsem, since it may
+change.
 
 Signed-off-by: Josh Durgin <josh.durgin@dreamhost.com>
 Reviewed-by: Alex Elder <elder@inktank.com>
-(cherry picked from commit d1d25646543134d756a02ffe4e02073faa761f2c)
+(cherry picked from commit a51aa0c042fa39946dd017d5f91a073300a71577)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/block/rbd.c |   35 +++++++++++++++++------------------
- 1 file changed, 17 insertions(+), 18 deletions(-)
+ drivers/block/rbd.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
 --- a/drivers/block/rbd.c
 +++ b/drivers/block/rbd.c
-@@ -615,7 +615,7 @@ done:
+@@ -1720,6 +1720,8 @@ static int __rbd_update_snaps(struct rbd
+ 	if (ret < 0)
+ 		return ret;
  
- static void rbd_header_free(struct rbd_image_header *header)
++	down_write(&rbd_dev->header_rwsem);
++
+ 	/* resized? */
+ 	if (rbd_dev->snap_id == CEPH_NOSNAP) {
+ 		sector_t size = (sector_t) h.image_size / SECTOR_SIZE;
+@@ -1728,8 +1730,6 @@ static int __rbd_update_snaps(struct rbd
+ 		set_capacity(rbd_dev->disk, size);
+ 	}
+ 
+-	down_write(&rbd_dev->header_rwsem);
+-
+ 	snap_seq = rbd_dev->header.snapc->seq;
+ 	if (rbd_dev->header.total_snaps &&
+ 	    rbd_dev->header.snapc->snaps[0] == snap_seq)
+@@ -1844,8 +1844,13 @@ static ssize_t rbd_size_show(struct devi
+ 			     struct device_attribute *attr, char *buf)
  {
--	kfree(header->snapc);
-+	ceph_put_snap_context(header->snapc);
- 	kfree(header->snap_names);
- 	kfree(header->snap_sizes);
- }
-@@ -893,13 +893,10 @@ static int rbd_do_request(struct request
- 
- 	dout("rbd_do_request obj=%s ofs=%lld len=%lld\n", obj, len, ofs);
- 
--	down_read(&dev->header_rwsem);
--
- 	osdc = &dev->rbd_client->client->osdc;
- 	req = ceph_osdc_alloc_request(osdc, flags, snapc, ops,
- 					false, GFP_NOIO, pages, bio);
- 	if (!req) {
--		up_read(&dev->header_rwsem);
- 		ret = -ENOMEM;
- 		goto done_pages;
- 	}
-@@ -934,7 +931,6 @@ static int rbd_do_request(struct request
- 				snapc,
- 				&mtime,
- 				req->r_oid, req->r_oid_len);
--	up_read(&dev->header_rwsem);
- 
- 	if (linger_req) {
- 		ceph_osdc_set_request_linger(osdc, req);
-@@ -1446,6 +1442,7 @@ static void rbd_rq_fn(struct request_que
- 		u64 ofs;
- 		int num_segs, cur_seg = 0;
- 		struct rbd_req_coll *coll;
-+		struct ceph_snap_context *snapc;
- 
- 		/* peek at request from block layer */
- 		if (!rq)
-@@ -1472,21 +1469,20 @@ static void rbd_rq_fn(struct request_que
- 
- 		spin_unlock_irq(q->queue_lock);
- 
--		if (rbd_dev->snap_id != CEPH_NOSNAP) {
--			bool snap_exists;
-+		down_read(&rbd_dev->header_rwsem);
- 
--			down_read(&rbd_dev->header_rwsem);
--			snap_exists = rbd_dev->snap_exists;
-+		if (rbd_dev->snap_id != CEPH_NOSNAP && !rbd_dev->snap_exists) {
- 			up_read(&rbd_dev->header_rwsem);
--
--			if (!snap_exists) {
--				dout("request for non-existent snapshot");
--				spin_lock_irq(q->queue_lock);
--				__blk_end_request_all(rq, -ENXIO);
--				continue;
--			}
-+			dout("request for non-existent snapshot");
-+			spin_lock_irq(q->queue_lock);
-+			__blk_end_request_all(rq, -ENXIO);
-+			continue;
- 		}
- 
-+		snapc = ceph_get_snap_context(rbd_dev->header.snapc);
+ 	struct rbd_device *rbd_dev = dev_to_rbd_dev(dev);
++	sector_t size;
 +
-+		up_read(&rbd_dev->header_rwsem);
-+
- 		dout("%s 0x%x bytes at 0x%llx\n",
- 		     do_write ? "write" : "read",
- 		     size, blk_rq_pos(rq) * SECTOR_SIZE);
-@@ -1496,6 +1492,7 @@ static void rbd_rq_fn(struct request_que
- 		if (!coll) {
- 			spin_lock_irq(q->queue_lock);
- 			__blk_end_request_all(rq, -ENOMEM);
-+			ceph_put_snap_context(snapc);
- 			continue;
- 		}
++	down_read(&rbd_dev->header_rwsem);
++	size = get_capacity(rbd_dev->disk);
++	up_read(&rbd_dev->header_rwsem);
  
-@@ -1519,7 +1516,7 @@ static void rbd_rq_fn(struct request_que
- 			/* init OSD command: write or read */
- 			if (do_write)
- 				rbd_req_write(rq, rbd_dev,
--					      rbd_dev->header.snapc,
-+					      snapc,
- 					      ofs,
- 					      op_size, bio,
- 					      coll, cur_seg);
-@@ -1542,6 +1539,8 @@ next_seg:
- 		if (bp)
- 			bio_pair_release(bp);
- 		spin_lock_irq(q->queue_lock);
-+
-+		ceph_put_snap_context(snapc);
- 	}
+-	return sprintf(buf, "%llu\n", (unsigned long long)rbd_dev->header.image_size);
++	return sprintf(buf, "%llu\n", (unsigned long long) size * SECTOR_SIZE);
  }
  
-@@ -1737,7 +1736,7 @@ static int __rbd_update_snaps(struct rbd
- 		   if head moves */
- 		follow_seq = 1;
- 
--	kfree(rbd_dev->header.snapc);
-+	ceph_put_snap_context(rbd_dev->header.snapc);
- 	kfree(rbd_dev->header.snap_names);
- 	kfree(rbd_dev->header.snap_sizes);
- 
+ static ssize_t rbd_major_show(struct device *dev,
 
 
