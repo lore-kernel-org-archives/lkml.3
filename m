@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934495Ab3AOW5w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:57:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48685 "EHLO mail.kernel.org"
+	id S934510Ab3AOW55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:57:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48698 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934005Ab3AOW5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:49 -0500
+	id S934494Ab3AOW5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        John Covici <covici@ccs.covici.com>
-Subject: [ 63/71] USB: Increase reset timeout.
-Date: Tue, 15 Jan 2013 14:55:00 -0800
-Message-Id: <20130115225344.943959821@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 64/71] USB: hub: handle claim of enabled remote wakeup after reset
+Date: Tue, 15 Jan 2013 14:55:01 -0800
+Message-Id: <20130115225345.011080297@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,37 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit 77c7f072c87fa951e9a74805febf26466f31170c upstream.
+commit 07e72b95f5038cc82304b9a4a2eb7f9fc391ea68 upstream.
 
-John's NEC 0.96 xHCI host controller needs a longer timeout for a warm
-reset to complete.  The logs show it takes 650ms to complete the warm
-reset, so extend the hub reset timeout to 800ms to be on the safe side.
+Some touchscreens have buggy firmware which claims
+remote wakeup to be enabled after a reset. They nevertheless
+crash if the feature is cleared by the host.
+Add a check for reset resume before checking for
+an enabled remote wakeup feature. On compliant
+devices the feature must be cleared after a reset anyway.
 
-This commit should be backported to kernels as old as 3.2, that contain
-the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine
-warm reset logic".
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: John Covici <covici@ccs.covici.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/hub.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
 --- a/drivers/usb/core/hub.c
 +++ b/drivers/usb/core/hub.c
-@@ -2050,7 +2050,7 @@ static unsigned hub_is_wusb(struct usb_h
- #define HUB_ROOT_RESET_TIME	50	/* times are in msec */
- #define HUB_SHORT_RESET_TIME	10
- #define HUB_LONG_RESET_TIME	200
--#define HUB_RESET_TIMEOUT	500
-+#define HUB_RESET_TIMEOUT	800
+@@ -2413,7 +2413,7 @@ int usb_port_suspend(struct usb_device *
+ static int finish_port_resume(struct usb_device *udev)
+ {
+ 	int	status = 0;
+-	u16	devstatus;
++	u16	devstatus = 0;
  
- static int hub_port_wait_reset(struct usb_hub *hub, int port1,
- 				struct usb_device *udev, unsigned int delay)
+ 	/* caller owns the udev device lock */
+ 	dev_dbg(&udev->dev, "%s\n",
+@@ -2458,7 +2458,13 @@ static int finish_port_resume(struct usb
+ 	if (status) {
+ 		dev_dbg(&udev->dev, "gone after usb resume? status %d\n",
+ 				status);
+-	} else if (udev->actconfig) {
++	/*
++	 * There are a few quirky devices which violate the standard
++	 * by claiming to have remote wakeup enabled after a reset,
++	 * which crash if the feature is cleared, hence check for
++	 * udev->reset_resume
++	 */
++	} else if (udev->actconfig && !udev->reset_resume) {
+ 		le16_to_cpus(&devstatus);
+ 		if (devstatus & (1 << USB_DEVICE_REMOTE_WAKEUP)) {
+ 			status = usb_control_msg(udev,
 
 
