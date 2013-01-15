@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab3AOEwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 23:52:44 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:49702 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab3AOEwn (ORCPT
+	id S1755875Ab3AOE5O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 23:57:14 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:62768 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab3AOE5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 23:52:43 -0500
-Message-ID: <1358225583.5576.1.camel@gitbox>
-Subject: Re: [PATCH] timer: vt8500: Move timer code to drivers/clocksource
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com, arm@kernel.org
-Date: Tue, 15 Jan 2013 17:53:03 +1300
-In-Reply-To: <50F433A9.8020105@wwwdotorg.org>
-References: <1358140171-25390-1-git-send-email-linux@prisktech.co.nz>
-	 <1358140171-25390-2-git-send-email-linux@prisktech.co.nz>
-	 <50F433A9.8020105@wwwdotorg.org>
+	Mon, 14 Jan 2013 23:57:13 -0500
+Subject: Re: [PATCH 1/1] net: ipv4: refine the logic for determining daddr
+ in ip_queue_xmit.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Harvey Yang <harvey.huawei.yang@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1358225255-30973-1-git-send-email-harvey.huawei.yang@gmail.com>
+References: <1358225255-30973-1-git-send-email-harvey.huawei.yang@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+Date: Mon, 14 Jan 2013 20:57:09 -0800
+Message-ID: <1358225829.8744.4508.camel@edumazet-glaptop>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-14 at 09:34 -0700, Stephen Warren wrote:
-> On 01/13/2013 10:09 PM, Tony Prisk wrote:
-> > This patch moves arch-vt8500/timer.c into drivers/clocksource and
-> > updates the necessary Kconfig/Makefile options.
+On Tue, 2013-01-15 at 12:47 +0800, Harvey Yang wrote:
+> The destination address daddr is faddr if source route option is set, otherwise it is inet_daddr. So use if-else to assign the value.
 > 
-> > diff --git a/include/linux/vt8500_timer.h b/include/linux/vt8500_timer.h
+> Signed-off-by: Harvey Yang <harvey.huawei.yang@gmail.com>
+> ---
+>  net/ipv4/ip_output.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> > +#ifndef __VT8500_TIMER_H
-> > +#define __VT8500_TIMER_H
-> > +
-> > +#include <asm/mach/time.h>
-> > +
-> > +void vt8500_timer_init(void);
-> > +
-> > +#endif
-> 
-> Is VT8500 DT-only? If so, it'd be nice not to add this header, but
-> instead use CLOCKSOURCE_OF_DECLARE() inside the driver C file.
+> diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+> index 3e98ed2..22b738c 100644
+> --- a/net/ipv4/ip_output.c
+> +++ b/net/ipv4/ip_output.c
+> @@ -349,10 +349,10 @@ int ip_queue_xmit(struct sk_buff *skb, struct flowi *fl)
+>  		__be32 daddr;
+>  
+>  		/* Use correct destination address if we have options. */
+> -		daddr = inet->inet_daddr;
+>  		if (inet_opt && inet_opt->opt.srr)
+>  			daddr = inet_opt->opt.faddr;
+> -
+> +		else
+> +			daddr = inet->inet_daddr;
+>  		/* If this fails, retransmit mechanism of transport layer will
+>  		 * keep trying until route appears or the connection times
+>  		 * itself out.
 
-Agreed - I didn't like the header when I added it but I didn't know of
-another way and based in on the sunxi code.
+Current code is faster, srr is not often used.
 
-Unfortunately Olof already pulled it into arm-soc, so I will try get
-another patch done to undo it :)
 
-Regards
-Tony P
 
