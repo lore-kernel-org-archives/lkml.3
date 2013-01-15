@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab3AOUb7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:31:59 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:64577 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756811Ab3AOU2X (ORCPT
+	id S1757098Ab3AOUci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:32:38 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:53893 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756704Ab3AOU2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:28:23 -0500
+	Tue, 15 Jan 2013 15:28:11 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v5 06/14] ARM: dts: add AM33XX EDMA support
-Date: Tue, 15 Jan 2013 15:32:46 -0500
-Message-Id: <1358281974-8411-7-git-send-email-mporter@ti.com>
+Subject: [PATCH v5 02/14] ARM: edma: remove unused transfer controller handlers
+Date: Tue, 15 Jan 2013 15:32:42 -0500
+Message-Id: <1358281974-8411-3-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358281974-8411-1-git-send-email-mporter@ti.com>
 References: <1358281974-8411-1-git-send-email-mporter@ti.com>
@@ -37,45 +37,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds AM33XX EDMA support to the am33xx.dtsi as documented in
-Documentation/devicetree/bindings/dma/ti-edma.txt
+Fix build on OMAP, the irqs are undefined on AM33xx.
+These error interrupt handlers were hardcoded as disabled
+so since they are unused code, simply remove them.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- arch/arm/boot/dts/am33xx.dtsi |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ arch/arm/common/edma.c |   37 -------------------------------------
+ 1 file changed, 37 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index c2f14e8..e711ffb 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -87,6 +87,26 @@
- 			reg = <0x48200000 0x1000>;
- 		};
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index be3c04a..2dce245 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -494,26 +494,6 @@ static irqreturn_t dma_ccerr_handler(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
  
-+		edma: edma@49000000 {
-+			compatible = "ti,edma3";
-+			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
-+			reg =	<0x49000000 0x10000>,
-+				<0x44e10f90 0x10>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <12 13 14>;
-+			#dma-cells = <1>;
-+			dma-channels = <64>;
-+			ti,edma-regions = <4>;
-+			ti,edma-slots = <256>;
-+			ti,edma-queue-tc-map = <0 0
-+						1 1
-+						2 2>;
-+			ti,edma-queue-priority-map = <0 0
-+						      1 1
-+						      2 2>;
-+			ti,edma-default-queue = <0>;
-+		};
-+
- 		gpio1: gpio@44e07000 {
- 			compatible = "ti,omap4-gpio";
- 			ti,hwmods = "gpio1";
+-/******************************************************************************
+- *
+- * Transfer controller error interrupt handlers
+- *
+- *****************************************************************************/
+-
+-#define tc_errs_handled	false	/* disabled as long as they're NOPs */
+-
+-static irqreturn_t dma_tc0err_handler(int irq, void *data)
+-{
+-	dev_dbg(data, "dma_tc0err_handler\n");
+-	return IRQ_HANDLED;
+-}
+-
+-static irqreturn_t dma_tc1err_handler(int irq, void *data)
+-{
+-	dev_dbg(data, "dma_tc1err_handler\n");
+-	return IRQ_HANDLED;
+-}
+-
+ static int reserve_contiguous_slots(int ctlr, unsigned int id,
+ 				     unsigned int num_slots,
+ 				     unsigned int start_slot)
+@@ -1538,23 +1518,6 @@ static int edma_probe(struct platform_device *pdev)
+ 		arch_num_cc++;
+ 	}
+ 
+-	if (tc_errs_handled) {
+-		status = request_irq(IRQ_TCERRINT0, dma_tc0err_handler, 0,
+-					"edma_tc0", &pdev->dev);
+-		if (status < 0) {
+-			dev_dbg(&pdev->dev, "request_irq %d failed --> %d\n",
+-				IRQ_TCERRINT0, status);
+-			return status;
+-		}
+-		status = request_irq(IRQ_TCERRINT, dma_tc1err_handler, 0,
+-					"edma_tc1", &pdev->dev);
+-		if (status < 0) {
+-			dev_dbg(&pdev->dev, "request_irq %d --> %d\n",
+-				IRQ_TCERRINT, status);
+-			return status;
+-		}
+-	}
+-
+ 	return 0;
+ 
+ fail:
 -- 
 1.7.9.5
 
