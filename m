@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab3AOJeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 04:34:25 -0500
-Received: from ra.se.axis.com ([195.60.68.13]:59192 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752767Ab3AOJeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 04:34:21 -0500
-Date: Tue, 15 Jan 2013 10:34:18 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Mikael Starvik <starvik@axis.com>, linux-cris-kernel@axis.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cris: arch-v32/drivers/sync_serial.c: fix error macro
- position
-Message-ID: <20130115093418.GH23529@axis.com>
-References: <1358199990-15905-1-git-send-email-dinggnu@gmail.com>
+	id S1755726Ab3AOJgP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 04:36:15 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:60412 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab3AOJgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 04:36:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358199990-15905-1-git-send-email-dinggnu@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAKohpomeMb3FYzRTXgWFk8DRN+spgogbW88evM6Xe9xZ9yJ2_w@mail.gmail.com>
+References: <1358173253-680-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x==d46_R2btWmi1KnmY-TfAGRxHrwSzT6NFVFP-Hp0-0Kw@mail.gmail.com>
+	<CAHp75VdF7twFTFJvUgRZW+jk6cSc_y_DSc4VcCvjBcTYYJGhRQ@mail.gmail.com>
+	<CAOh2x=mzcxT=8=RS1Fa_Vn3Frixj9BNEeYGQ0NH+00YV1i-VHw@mail.gmail.com>
+	<CAHp75VegokmDnXTPHYE=kKzwAgiuD9ySg4wRxxZFGkuXdQoStw@mail.gmail.com>
+	<CAKohpomeMb3FYzRTXgWFk8DRN+spgogbW88evM6Xe9xZ9yJ2_w@mail.gmail.com>
+Date: Tue, 15 Jan 2013 11:36:11 +0200
+Message-ID: <CAHp75Vee+2PTzxnd0zQ1zeR437uKj_bRV-Pbb5g7O+CfaUb2aw@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: don't exceed AHB master number in dwc_get_data_width
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 10:46:28PM +0100, Cong Ding wrote:
-> the macro CONFIG_ETRAXFS is used in wrong position - all the port[1] related
-> stuff should be used only when CONFIG_ETRAXFS is enabled.
+On Tue, Jan 15, 2013 at 11:09 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 15 January 2013 14:38, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+>> You forgot the mem2mem type of transfers where we have no information
+>> about masters except default settings. Otherwise there is the case of
+>> custom slave config absence when we supply only request line via
+>> slave_id.
+>
+> Okay, but even for mem2mem you have just got the right bus width by
+> selecting same master. But are you programming same masters in control
+> register? I can't see that :(
 
-Problem should not be possible to see unless you enable
-CONFIG_ETRAX_SYNCHRONOUS_SERIAL_PORT1 also, which has
-   depends on ETRAX_SYNCHRONOUS_SERIAL && ETRAXFS
-in the Kconfig...
+Oops. Seems this patch does not cover the CTL lo register value.
+Thank you for pointing this out. I will think how to make the fix better.
 
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-
-...But anyways, the hardware doesn't have the second synchronous serial port
-for ARTPEC-3, so for clarity I'll take this in the CRIS tree. My thanks.
-
-/^JN - Jesper Nilsson
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+With Best Regards,
+Andy Shevchenko
