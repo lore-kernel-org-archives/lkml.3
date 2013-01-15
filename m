@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933698Ab3AOX32 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:29:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46811 "EHLO mail.kernel.org"
+	id S933659Ab3AOX3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:29:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46774 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933654Ab3AOWw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:29 -0500
+	id S933643Ab3AOWwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
@@ -13,9 +13,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Ben Hutchings <ben@decadent.org.uk>,
         Julien Cristau <jcristau@debian.org>
-Subject: [ 126/171] drm/i915: Reduce a pin-leak BUG into a WARN
-Date: Tue, 15 Jan 2013 14:44:51 -0800
-Message-Id: <20130115224322.435467352@linuxfoundation.org>
+Subject: [ 123/171] drm/i915: SDVO hotplug have different interrupt status bits for i915/i965/g4x
+Date: Tue, 15 Jan 2013 14:44:48 -0800
+Message-Id: <20130115224322.225987965@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -30,35 +30,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 7e81a42e341a4f15d76624b7c02ffb21b085b56f upstream.
+commit 084b612ecf8e59973576b2f644e6949609c79375 upstream.
 
-Pin-leaks persist and we get the perennial bug reports of machine
-lockups to the BUG_ON(pin_count==MAX). If we instead loudly report that
-the object cannot be pinned at that time it should prevent the driver from
-locking up, and hopefully restore a semblance of working whilst still
-leaving us a OOPS to debug.
+Note that gen3 is the only platform where we've got the bit
+definitions right, hence the workaround of disabling sdvo hotplug
+support on i945g/gm is not due to misdiagnosis of broken hotplug irq
+handling ...
 
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: add some blurb about sdvo hotplug fail on i945g/gm I've
+wondered about while reviewing.]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: adjust context]
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Handle all three cases in i915_driver_irq_postinstall() as there
+   are not separate functions for gen3 and gen4+
+ - Carry on using IS_SDVOB() in intel_sdvo_init()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Julien Cristau <jcristau@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/gpu/drm/i915/i915_gem.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_irq.c   |   20 ++++++++++++++++----
+ drivers/gpu/drm/i915/i915_reg.h   |   10 ++++++++--
+ drivers/gpu/drm/i915/intel_sdvo.c |   17 +++++++++++++----
+ 3 files changed, 37 insertions(+), 10 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -3318,7 +3318,8 @@ i915_gem_object_pin(struct drm_i915_gem_
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -2051,10 +2051,22 @@ static int i915_driver_irq_postinstall(s
+ 			hotplug_en |= HDMIC_HOTPLUG_INT_EN;
+ 		if (dev_priv->hotplug_supported_mask & HDMID_HOTPLUG_INT_STATUS)
+ 			hotplug_en |= HDMID_HOTPLUG_INT_EN;
+-		if (dev_priv->hotplug_supported_mask & SDVOC_HOTPLUG_INT_STATUS)
+-			hotplug_en |= SDVOC_HOTPLUG_INT_EN;
+-		if (dev_priv->hotplug_supported_mask & SDVOB_HOTPLUG_INT_STATUS)
+-			hotplug_en |= SDVOB_HOTPLUG_INT_EN;
++		if (IS_G4X(dev)) {
++			if (dev_priv->hotplug_supported_mask & SDVOC_HOTPLUG_INT_STATUS_G4X)
++				hotplug_en |= SDVOC_HOTPLUG_INT_EN;
++			if (dev_priv->hotplug_supported_mask & SDVOB_HOTPLUG_INT_STATUS_G4X)
++				hotplug_en |= SDVOB_HOTPLUG_INT_EN;
++		} else if (IS_GEN4(dev)) {
++			if (dev_priv->hotplug_supported_mask & SDVOC_HOTPLUG_INT_STATUS_I965)
++				hotplug_en |= SDVOC_HOTPLUG_INT_EN;
++			if (dev_priv->hotplug_supported_mask & SDVOB_HOTPLUG_INT_STATUS_I965)
++				hotplug_en |= SDVOB_HOTPLUG_INT_EN;
++		} else {
++			if (dev_priv->hotplug_supported_mask & SDVOC_HOTPLUG_INT_STATUS_I915)
++				hotplug_en |= SDVOC_HOTPLUG_INT_EN;
++			if (dev_priv->hotplug_supported_mask & SDVOB_HOTPLUG_INT_STATUS_I915)
++				hotplug_en |= SDVOB_HOTPLUG_INT_EN;
++		}
+ 		if (dev_priv->hotplug_supported_mask & CRT_HOTPLUG_INT_STATUS) {
+ 			hotplug_en |= CRT_HOTPLUG_INT_EN;
+ 
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -1491,14 +1491,20 @@
+ #define   DPC_HOTPLUG_INT_STATUS		(1 << 28)
+ #define   HDMID_HOTPLUG_INT_STATUS		(1 << 27)
+ #define   DPD_HOTPLUG_INT_STATUS		(1 << 27)
++/* CRT/TV common between gen3+ */
+ #define   CRT_HOTPLUG_INT_STATUS		(1 << 11)
+ #define   TV_HOTPLUG_INT_STATUS			(1 << 10)
+ #define   CRT_HOTPLUG_MONITOR_MASK		(3 << 8)
+ #define   CRT_HOTPLUG_MONITOR_COLOR		(3 << 8)
+ #define   CRT_HOTPLUG_MONITOR_MONO		(2 << 8)
+ #define   CRT_HOTPLUG_MONITOR_NONE		(0 << 8)
+-#define   SDVOC_HOTPLUG_INT_STATUS		(1 << 7)
+-#define   SDVOB_HOTPLUG_INT_STATUS		(1 << 6)
++/* SDVO is different across gen3/4 */
++#define   SDVOC_HOTPLUG_INT_STATUS_G4X		(1 << 3)
++#define   SDVOB_HOTPLUG_INT_STATUS_G4X		(1 << 2)
++#define   SDVOC_HOTPLUG_INT_STATUS_I965		(3 << 4)
++#define   SDVOB_HOTPLUG_INT_STATUS_I965		(3 << 2)
++#define   SDVOC_HOTPLUG_INT_STATUS_I915		(1 << 7)
++#define   SDVOB_HOTPLUG_INT_STATUS_I915		(1 << 6)
+ 
+ /* SDVO port control */
+ #define SDVOB			0x61140
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -2528,6 +2528,7 @@ bool intel_sdvo_init(struct drm_device *
  	struct drm_i915_private *dev_priv = dev->dev_private;
- 	int ret;
+ 	struct intel_encoder *intel_encoder;
+ 	struct intel_sdvo *intel_sdvo;
++	u32 hotplug_mask;
+ 	int i;
  
--	BUG_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT);
-+	if (WARN_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT))
-+		return -EBUSY;
- 	WARN_ON(i915_verify_lists(dev));
+ 	intel_sdvo = kzalloc(sizeof(struct intel_sdvo), GFP_KERNEL);
+@@ -2558,10 +2559,18 @@ bool intel_sdvo_init(struct drm_device *
+ 		}
+ 	}
  
- 	if (obj->gtt_space != NULL) {
+-	if (IS_SDVOB(sdvo_reg))
+-		dev_priv->hotplug_supported_mask |= SDVOB_HOTPLUG_INT_STATUS;
+-	else
+-		dev_priv->hotplug_supported_mask |= SDVOC_HOTPLUG_INT_STATUS;
++	hotplug_mask = 0;
++	if (IS_G4X(dev)) {
++		hotplug_mask = IS_SDVOB(sdvo_reg) ?
++			SDVOB_HOTPLUG_INT_STATUS_G4X : SDVOC_HOTPLUG_INT_STATUS_G4X;
++	} else if (IS_GEN4(dev)) {
++		hotplug_mask = IS_SDVOB(sdvo_reg) ?
++			SDVOB_HOTPLUG_INT_STATUS_I965 : SDVOC_HOTPLUG_INT_STATUS_I965;
++	} else {
++		hotplug_mask = IS_SDVOB(sdvo_reg) ?
++			SDVOB_HOTPLUG_INT_STATUS_I915 : SDVOC_HOTPLUG_INT_STATUS_I915;
++	}
++	dev_priv->hotplug_supported_mask |= hotplug_mask;
+ 
+ 	drm_encoder_helper_add(&intel_encoder->base, &intel_sdvo_helper_funcs);
+ 
 
 
