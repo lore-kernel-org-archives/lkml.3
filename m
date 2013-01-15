@@ -1,120 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab3AOOER (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 09:04:17 -0500
-Received: from relay.parallels.com ([195.214.232.42]:48756 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab3AOOEQ (ORCPT
+	id S1756715Ab3AOOEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 09:04:41 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:47822 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab3AOOEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 09:04:16 -0500
-Message-ID: <50F561DC.6000700@parallels.com>
-Date: Tue, 15 Jan 2013 18:04:12 +0400
-From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 15 Jan 2013 09:04:40 -0500
 MIME-Version: 1.0
-To: Brian Foster <bfoster@redhat.com>
-CC: <miklos@szeredi.hu>, <dev@parallels.com>, <xemul@parallels.com>,
-        <fuse-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>, <anand.avati@gmail.com>
-Subject: Re: [PATCH 3/5] fuse: wait for end of IO on release
-References: <20121220122702.4101.80042.stgit@maximpc.sw.ru> <20121220123144.4101.84499.stgit@maximpc.sw.ru> <50E49A06.4060901@redhat.com>
-In-Reply-To: <50E49A06.4060901@redhat.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+In-Reply-To: <20130115121958.GC3728@liondog.tnic>
+References: <20130110093831.GA19503@liondog.tnic>
+	<CADnq5_N9Dj5ZMoDaL9hp6R5wMkEf2yEL1C=66-PQ2+sLwwTm3g@mail.gmail.com>
+	<20130110203248.GI23008@liondog.tnic>
+	<CADnq5_MMk51H+Zy9GT9esfm_ndVqYzwU4t_6tYHu9zzSiqSr9g@mail.gmail.com>
+	<20130111114336.GE6570@liondog.tnic>
+	<20130115121958.GC3728@liondog.tnic>
+Date: Tue, 15 Jan 2013 09:04:38 -0500
+Message-ID: <CADnq5_OmRmn9QXZDxp6Thf7w=ZC1xYtaOn5xREwvczOuCmU4Yg@mail.gmail.com>
+Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Alex Deucher <alexdeucher@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=20cf307c9d960854e704d3543ee9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brian,
+--20cf307c9d960854e704d3543ee9
+Content-Type: text/plain; charset=ISO-8859-1
 
-01/03/2013 12:35 AM, Brian Foster пишет:
-> On 12/20/2012 07:31 AM, Maxim Patlasov wrote:
->> There are two types of I/O activity that can be "in progress" at the time
->> of fuse_release() execution: asynchronous read-ahead and write-back. The
->> patch ensures that they are completed before fuse_release_common sends
->> FUSE_RELEASE to userspace.
->>
->> So far as fuse_release() waits for end of async I/O, its callbacks
->> (fuse_readpages_end and fuse_writepage_finish) calling fuse_file_put cannot
->> be the last holders of fuse file anymore. To emphasize the fact, the patch
->> replaces fuse_file_put with __fuse_file_put there.
->>
->> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
->> ---
->>   fs/fuse/file.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
->>   1 files changed, 52 insertions(+), 3 deletions(-)
->>
->> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
->> index 4f23134..aed9be2 100644
->> --- a/fs/fuse/file.c
->> +++ b/fs/fuse/file.c
->> @@ -137,6 +137,12 @@ static void fuse_file_put(struct fuse_file *ff, bool sync)
->>   	}
->>   }
->>   
->> +static void __fuse_file_put(struct fuse_file *ff)
->> +{
->> +	if (atomic_dec_and_test(&ff->count))
->> +		BUG();
->> +}
->> +
-> I think a comment in or before this function to explain the reasoning
-> for the BUG would be helpful.
+On Tue, Jan 15, 2013 at 7:19 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Jan 11, 2013 at 12:43:36PM +0100, Borislav Petkov wrote:
+>> Ok, I'm running -rc3 with this and will watch it for any changes in
+>> behavior.
 >
->>   int fuse_do_open(struct fuse_conn *fc, u64 nodeid, struct file *file,
->>   		 bool isdir)
->>   {
->> @@ -260,7 +266,12 @@ void fuse_release_common(struct file *file, int opcode)
->>   	 * Make the release synchronous if this is a fuseblk mount,
->>   	 * synchronous RELEASE is allowed (and desirable) in this case
->>   	 * because the server can be trusted not to screw up.
->> +	 *
->> +	 * We might wait for them (asynchronous READ or WRITE requests), so:
->>   	 */
->> +	if (ff->fc->close_wait)
->> +		BUG_ON(atomic_read(&ff->count) != 1);
->> +
-> It might be cleaner to pull the new part of the comment and the BUG_ON()
-> check to before the existing comment and fuse_file_put (e.g., create a
-> new comment).
->
->>   	fuse_file_put(ff, ff->fc->destroy_req != NULL);
->>   }
->>   
->> @@ -271,6 +282,31 @@ static int fuse_open(struct inode *inode, struct file *file)
->>   
->>   static int fuse_release(struct inode *inode, struct file *file)
->>   {
->> +	struct fuse_file *ff = file->private_data;
->> +
->> +	if (ff->fc->close_wait) {
->> +		struct fuse_inode *fi = get_fuse_inode(inode);
->> +
->> +		/*
->> +		 * Must remove file from write list. Otherwise it is possible
->> +		 * this file will get more writeback from another files
->> +		 * rerouted via write_files.
->> +		 */
->> +		spin_lock(&ff->fc->lock);
->> +		list_del_init(&ff->write_entry);
->> +		spin_unlock(&ff->fc->lock);
->> +
->> +		wait_event(fi->page_waitq, atomic_read(&ff->count) == 1);
->> +
->> +		/*
->> +		 * Wait for threads just released ff to leave their critical
->> +		 * sections. Taking spinlock is the first thing
->> +		 * fuse_release_common does, so that this is unnecessary, but
->> +		 * it is still good to emphasize right here, that we need this.
->> +		 */
->> +		spin_unlock_wait(&ff->fc->lock);
-> I'm all for clarity, but if the wait is unnecessary, perhaps just leave
-> the comment..? Just my .02.
->
-> Aside from the few nits here, the set looks pretty good to me.
+> AFAICT, this fixes the CP stalls, for I haven't seen any of them in
+> dmesg for the last couple of days after applying your revert.
 
-Thanks for review, the suggestions look reasonable. I'll resend 
-corrected patch soon.
+Can you remove that revert and try the attached patch as an alternative?
 
-Maxim
+Thanks,
+
+Alex
+
+>
+> Thanks.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+
+--20cf307c9d960854e704d3543ee9
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-drm-radeon-clear-reset-flags-if-engines-are-idle.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-radeon-clear-reset-flags-if-engines-are-idle.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hbz443rr0
+
+RnJvbSBjYjUyMDZhYTFjNmM1MmIxYjQ1OWVhZjkzNzk3YzU5M2NmZjBjOGRiIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5j
+b20+CkRhdGU6IE1vbiwgMTQgSmFuIDIwMTMgMTE6MDQ6MzkgLTA1MDAKU3ViamVjdDogW1BBVENI
+XSBkcm0vcmFkZW9uOiBjbGVhciByZXNldCBmbGFncyBpZiBlbmdpbmVzIGFyZSBpZGxlCgpGaXhl
+cyBhIHJlZ3Jlc3Npb24gaW4gdGhlIGdwdSByZXNldCBjb2RlIGFmdGVyIHRoZQpyZXdvcmsgZm9y
+IERNQSBzdXBwb3J0LgoKUmVwb3J0ZWQtYnk6IEVsZGFkIFphY2sgPGVsZGFkQGZvZ3JlZmluZXJ5
+LmNvbT4KU2lnbmVkLW9mZi1ieTogQWxleCBEZXVjaGVyIDxhbGV4YW5kZXIuZGV1Y2hlckBhbWQu
+Y29tPgotLS0KIGRyaXZlcnMvZ3B1L2RybS9yYWRlb24vZXZlcmdyZWVuLmMgfCAgICA2ICsrKysr
+KwogZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9uaS5jICAgICAgICB8ICAgIDYgKysrKysrCiBkcml2
+ZXJzL2dwdS9kcm0vcmFkZW9uL3I2MDAuYyAgICAgIHwgICAgNiArKysrKysKIGRyaXZlcnMvZ3B1
+L2RybS9yYWRlb24vc2kuYyAgICAgICAgfCAgICA2ICsrKysrKwogNCBmaWxlcyBjaGFuZ2VkLCAy
+NCBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1
+L2RybS9yYWRlb24vZXZlcmdyZWVuLmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL2V2ZXJncmVl
+bi5jCmluZGV4IDA2MWZhMGEuLjRkMGU2MGEgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZ3B1L2RybS9y
+YWRlb24vZXZlcmdyZWVuLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9ldmVyZ3JlZW4u
+YwpAQCAtMjQwMSw2ICsyNDAxLDEyIEBAIHN0YXRpYyBpbnQgZXZlcmdyZWVuX2dwdV9zb2Z0X3Jl
+c2V0KHN0cnVjdCByYWRlb25fZGV2aWNlICpyZGV2LCB1MzIgcmVzZXRfbWFzaykKIHsKIAlzdHJ1
+Y3QgZXZlcmdyZWVuX21jX3NhdmUgc2F2ZTsKIAorCWlmICghKFJSRUczMihHUkJNX1NUQVRVUykg
+JiBHVUlfQUNUSVZFKSkKKwkJcmVzZXRfbWFzayAmPSB+KFJBREVPTl9SRVNFVF9HRlggfCBSQURF
+T05fUkVTRVRfQ09NUFVURSk7CisKKwlpZiAoUlJFRzMyKERNQV9TVEFUVVNfUkVHKSAmIERNQV9J
+RExFKQorCQlyZXNldF9tYXNrICY9IH5SQURFT05fUkVTRVRfRE1BOworCiAJaWYgKHJlc2V0X21h
+c2sgPT0gMCkKIAkJcmV0dXJuIDA7CiAKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9yYWRl
+b24vbmkuYyBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vbmkuYwppbmRleCA4OTZmMWNiLi41OWFj
+YWJiIDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL25pLmMKKysrIGIvZHJpdmVy
+cy9ncHUvZHJtL3JhZGVvbi9uaS5jCkBAIC0xNDA5LDYgKzE0MDksMTIgQEAgc3RhdGljIGludCBj
+YXltYW5fZ3B1X3NvZnRfcmVzZXQoc3RydWN0IHJhZGVvbl9kZXZpY2UgKnJkZXYsIHUzMiByZXNl
+dF9tYXNrKQogewogCXN0cnVjdCBldmVyZ3JlZW5fbWNfc2F2ZSBzYXZlOwogCisJaWYgKCEoUlJF
+RzMyKEdSQk1fU1RBVFVTKSAmIEdVSV9BQ1RJVkUpKQorCQlyZXNldF9tYXNrICY9IH4oUkFERU9O
+X1JFU0VUX0dGWCB8IFJBREVPTl9SRVNFVF9DT01QVVRFKTsKKworCWlmIChSUkVHMzIoRE1BX1NU
+QVRVU19SRUcpICYgRE1BX0lETEUpCisJCXJlc2V0X21hc2sgJj0gflJBREVPTl9SRVNFVF9ETUE7
+CisKIAlpZiAocmVzZXRfbWFzayA9PSAwKQogCQlyZXR1cm4gMDsKIApkaWZmIC0tZ2l0IGEvZHJp
+dmVycy9ncHUvZHJtL3JhZGVvbi9yNjAwLmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3I2MDAu
+YwppbmRleCA1MzdlMjU5Li4zY2I5ZDYwIDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vcmFk
+ZW9uL3I2MDAuYworKysgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3I2MDAuYwpAQCAtMTM3OCw2
+ICsxMzc4LDEyIEBAIHN0YXRpYyBpbnQgcjYwMF9ncHVfc29mdF9yZXNldChzdHJ1Y3QgcmFkZW9u
+X2RldmljZSAqcmRldiwgdTMyIHJlc2V0X21hc2spCiB7CiAJc3RydWN0IHJ2NTE1X21jX3NhdmUg
+c2F2ZTsKIAorCWlmICghKFJSRUczMihHUkJNX1NUQVRVUykgJiBHVUlfQUNUSVZFKSkKKwkJcmVz
+ZXRfbWFzayAmPSB+KFJBREVPTl9SRVNFVF9HRlggfCBSQURFT05fUkVTRVRfQ09NUFVURSk7CisK
+KwlpZiAoUlJFRzMyKERNQV9TVEFUVVNfUkVHKSAmIERNQV9JRExFKQorCQlyZXNldF9tYXNrICY9
+IH5SQURFT05fUkVTRVRfRE1BOworCiAJaWYgKHJlc2V0X21hc2sgPT0gMCkKIAkJcmV0dXJuIDA7
+CiAKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vc2kuYyBiL2RyaXZlcnMvZ3B1
+L2RybS9yYWRlb24vc2kuYwppbmRleCAzMjQwYTNkLi5hZThiNDgyIDEwMDY0NAotLS0gYS9kcml2
+ZXJzL2dwdS9kcm0vcmFkZW9uL3NpLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9zaS5j
+CkBAIC0yMjE1LDYgKzIyMTUsMTIgQEAgc3RhdGljIGludCBzaV9ncHVfc29mdF9yZXNldChzdHJ1
+Y3QgcmFkZW9uX2RldmljZSAqcmRldiwgdTMyIHJlc2V0X21hc2spCiB7CiAJc3RydWN0IGV2ZXJn
+cmVlbl9tY19zYXZlIHNhdmU7CiAKKwlpZiAoIShSUkVHMzIoR1JCTV9TVEFUVVMpICYgR1VJX0FD
+VElWRSkpCisJCXJlc2V0X21hc2sgJj0gfihSQURFT05fUkVTRVRfR0ZYIHwgUkFERU9OX1JFU0VU
+X0NPTVBVVEUpOworCisJaWYgKFJSRUczMihETUFfU1RBVFVTX1JFRykgJiBETUFfSURMRSkKKwkJ
+cmVzZXRfbWFzayAmPSB+UkFERU9OX1JFU0VUX0RNQTsKKwogCWlmIChyZXNldF9tYXNrID09IDAp
+CiAJCXJldHVybiAwOwogCi0tIAoxLjcuNy41Cgo=
+--20cf307c9d960854e704d3543ee9--
