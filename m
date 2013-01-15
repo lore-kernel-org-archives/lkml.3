@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab3APAS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:18:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42281 "EHLO mail.kernel.org"
+	id S932372Ab3APATS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:19:18 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42257 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932250Ab3AOWb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:31:29 -0500
+	id S932234Ab3AOWbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:31:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: [ 108/221] PM: Move disabling/enabling runtime PM to late suspend/early resume
-Date: Tue, 15 Jan 2013 10:50:35 -0800
-Message-Id: <20130115185005.846134876@linuxfoundation.org>
+        =?ISO-8859-15?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+        Juergen Beisert <jbe@pengutronix.de>,
+        Lauri Hintsala <lauri.hintsala@bluegiga.net>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 106/221] video: mxsfb: fix crash when unblanking the display
+Date: Tue, 15 Jan 2013 10:50:33 -0800
+Message-Id: <20130115185005.699266742@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,100 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Lothar Waßmann <LW@KARO-electronics.de>
 
-commit 9f6d8f6ab26b42620a914d67f29822f9bba90233 upstream.
+commit 6c1ecba8d84841277d68140ef485335d5be28485 upstream.
 
-Currently, the PM core disables runtime PM for all devices right
-after executing subsystem/driver .suspend() callbacks for them
-and re-enables it right before executing subsystem/driver .resume()
-callbacks for them.  This may lead to problems when there are
-two devices such that the .suspend() callback executed for one of
-them depends on runtime PM working for the other.  In that case,
-if runtime PM has already been disabled for the second device,
-the first one's .suspend() won't work correctly (and analogously
-for resume).
+The VDCTRL4 register does not provide the MXS SET/CLR/TOGGLE feature.
+The write in mxsfb_disable_controller() sets the data_cnt for the LCD
+DMA to 0 which obviously means the max. count for the LCD DMA and
+leads to overwriting arbitrary memory when the display is unblanked.
 
-To make those issues go away, make the PM core disable runtime PM
-for devices right before executing subsystem/driver .suspend_late()
-callbacks for them and enable runtime PM for them right after
-executing subsystem/driver .resume_early() callbacks for them.  This
-way the potential conflitcs between .suspend_late()/.resume_early()
-and their runtime PM counterparts are still prevented from happening,
-but the subtle ordering issues related to disabling/enabling runtime
-PM for devices during system suspend/resume are much easier to avoid.
-
-Reported-and-tested-by: Jan-Matthias Braun <jan_braun@gmx.net>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-Reviewed-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+Acked-by: Juergen Beisert <jbe@pengutronix.de>
+Tested-by: Lauri Hintsala <lauri.hintsala@bluegiga.net>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/power/runtime_pm.txt |    9 +++++----
- drivers/base/power/main.c          |    9 ++++-----
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/video/mxsfb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/Documentation/power/runtime_pm.txt
-+++ b/Documentation/power/runtime_pm.txt
-@@ -642,12 +642,13 @@ out the following operations:
-   * During system suspend it calls pm_runtime_get_noresume() and
-     pm_runtime_barrier() for every device right before executing the
-     subsystem-level .suspend() callback for it.  In addition to that it calls
--    pm_runtime_disable() for every device right after executing the
--    subsystem-level .suspend() callback for it.
-+    __pm_runtime_disable() with 'false' as the second argument for every device
-+    right before executing the subsystem-level .suspend_late() callback for it.
+--- a/drivers/video/mxsfb.c
++++ b/drivers/video/mxsfb.c
+@@ -369,7 +369,8 @@ static void mxsfb_disable_controller(str
+ 		loop--;
+ 	}
  
-   * During system resume it calls pm_runtime_enable() and pm_runtime_put_sync()
--    for every device right before and right after executing the subsystem-level
--    .resume() callback for it, respectively.
-+    for every device right after executing the subsystem-level .resume_early()
-+    callback and right after executing the subsystem-level .resume() callback
-+    for it, respectively.
+-	writel(VDCTRL4_SYNC_SIGNALS_ON, host->base + LCDC_VDCTRL4 + REG_CLR);
++	reg = readl(host->base + LCDC_VDCTRL4);
++	writel(reg & ~VDCTRL4_SYNC_SIGNALS_ON, host->base + LCDC_VDCTRL4);
  
- 7. Generic subsystem callbacks
+ 	clk_disable_unprepare(host->clk);
  
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -513,6 +513,8 @@ static int device_resume_early(struct de
- 
-  Out:
- 	TRACE_RESUME(error);
-+
-+	pm_runtime_enable(dev);
- 	return error;
- }
- 
-@@ -589,8 +591,6 @@ static int device_resume(struct device *
- 	if (!dev->power.is_suspended)
- 		goto Unlock;
- 
--	pm_runtime_enable(dev);
--
- 	if (dev->pm_domain) {
- 		info = "power domain ";
- 		callback = pm_op(&dev->pm_domain->ops, state);
-@@ -930,6 +930,8 @@ static int device_suspend_late(struct de
- 	pm_callback_t callback = NULL;
- 	char *info = NULL;
- 
-+	__pm_runtime_disable(dev, false);
-+
- 	if (dev->power.syscore)
- 		return 0;
- 
-@@ -1133,11 +1135,8 @@ static int __device_suspend(struct devic
- 
-  Complete:
- 	complete_all(&dev->power.completion);
--
- 	if (error)
- 		async_error = error;
--	else if (dev->power.is_suspended)
--		__pm_runtime_disable(dev, false);
- 
- 	return error;
- }
 
 
