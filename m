@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab3AOX6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:58:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44896 "EHLO mail.kernel.org"
+	id S932849Ab3AOX6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:58:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44880 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932845Ab3AOWpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:45:02 -0500
+	id S932768Ab3AOWpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:45:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [ 007/171] KVM: Fix user memslot overlap check
-Date: Tue, 15 Jan 2013 14:42:52 -0800
-Message-Id: <20130115224313.945515795@linuxfoundation.org>
+        Gabor Juhos <juhosg@openwrt.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 006/171] powerpc: Add missing NULL terminator to avoid boot panic on PPC40x
+Date: Tue, 15 Jan 2013 14:42:51 -0800
+Message-Id: <20130115224313.865326378@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,54 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit 5419369ed6bd4cf711fdda5e52a5999b940413f5 upstream.
+commit e6449c9b2d90c1bd9a5985bf05ddebfd1631cd6b upstream.
 
-Prior to memory slot sorting this loop compared all of the user memory
-slots for overlap with new entries.  With memory slot sorting, we're
-just checking some number of entries in the array that may or may not
-be user slots.  Instead, walk all the slots with kvm_for_each_memslot,
-which has the added benefit of terminating early when we hit the first
-empty slot, and skip comparison to private slots.
+The missing NULL terminator can cause a panic on
+PPC405 boards during boot:
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+  Linux/PowerPC load: console=ttyS0,115200 root=/dev/mtdblock1 rootfstype=squashfs,jffs2 noinitrd init=/etc/preinit
+  Finalizing device tree... flat tree at 0x6a5160
+  bootconsole [udbg0] enabled
+  Page fault in user mode with in_atomic() = 1 mm = (null)
+  NIP = c0275f50  MSR = fffffffe
+  Oops: Weird page fault, sig: 11 [#1]
+  PowerPC 40x Platform
+  Modules linked in:
+  NIP: c0275f50 LR: c0275f60 CTR: c0280000
+  REGS: c0275eb0 TRAP: 636f7265   Not tainted  (3.7.1)
+  MSR: fffffffe <VEC,VSX,EE,PR,FP,ME,SE,BE,IR,DR,PMM,RI> CR: c06a6190  XER: 00000001
+  TASK = c02662a8[0] 'swapper' THREAD: c0274000
+  GPR00: c0275ec0 c000c658 c027c4bf 00000000 c0275ee0 c000a0ec c020a1a8 c020a1f0
+  GPR08: c020f631 c020f404 c025f078 c025f080 c0275f10
+   Call Trace:
+   ---[ end trace 31fd0ba7d8756001 ]---
+
+  Kernel panic - not syncing: Attempted to kill the idle task!
+
+The panic happens since commit 9597abe00c1bab2aedce6b49866bf6d1e81c9eed
+(sections: fix section conflicts in arch/powerpc), however the root
+cause of this is that the NULL terminator were not added in commit
+a4f740cf33f7f6c164bbde3c0cdbcc77b0c4997c (of/flattree: Add of_flat_dt_match()
+helper function).
+
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/kvm_main.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ arch/powerpc/platforms/40x/ppc40x_simple.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -693,8 +693,7 @@ int __kvm_set_memory_region(struct kvm *
- 	int r;
- 	gfn_t base_gfn;
- 	unsigned long npages;
--	unsigned long i;
--	struct kvm_memory_slot *memslot;
-+	struct kvm_memory_slot *memslot, *slot;
- 	struct kvm_memory_slot old, new;
- 	struct kvm_memslots *slots, *old_memslots;
+--- a/arch/powerpc/platforms/40x/ppc40x_simple.c
++++ b/arch/powerpc/platforms/40x/ppc40x_simple.c
+@@ -57,7 +57,8 @@ static const char *board[] __initdata =
+ 	"amcc,makalu",
+ 	"apm,klondike",
+ 	"est,hotfoot",
+-	"plathome,obs600"
++	"plathome,obs600",
++	NULL
+ };
  
-@@ -741,13 +740,11 @@ int __kvm_set_memory_region(struct kvm *
- 
- 	/* Check for overlaps */
- 	r = -EEXIST;
--	for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
--		struct kvm_memory_slot *s = &kvm->memslots->memslots[i];
--
--		if (s == memslot || !s->npages)
-+	kvm_for_each_memslot(slot, kvm->memslots) {
-+		if (slot->id >= KVM_MEMORY_SLOTS || slot == memslot)
- 			continue;
--		if (!((base_gfn + npages <= s->base_gfn) ||
--		      (base_gfn >= s->base_gfn + s->npages)))
-+		if (!((base_gfn + npages <= slot->base_gfn) ||
-+		      (base_gfn >= slot->base_gfn + slot->npages)))
- 			goto out_free;
- 	}
- 
+ static int __init ppc40x_probe(void)
 
 
