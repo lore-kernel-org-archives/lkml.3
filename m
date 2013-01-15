@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab3AOU42 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:56:28 -0500
-Received: from fieldses.org ([174.143.236.118]:36989 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756416Ab3AOU40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:56:26 -0500
-Date: Tue, 15 Jan 2013 15:56:25 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-Message-ID: <20130115205625.GH4940@fieldses.org>
-References: <50F42F85.50907@teksavvy.com>
- <20130114203711.GA29982@fieldses.org>
- <50F4D800.5040703@teksavvy.com>
+	id S1756416Ab3AOU5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:57:07 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28855 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751762Ab3AOU5G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 15:57:06 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX184s2RtUHo5B98mNJN1+/n5Hi5x+URdFs4=
+Date: Tue, 15 Jan 2013 15:57:00 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Cong Ding <dinggnu@gmail.com>, Mike Turquette <mturquette@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3] clk: mvebu/clk-cpu.c: fix memory leakage
+Message-ID: <20130115205700.GE25500@titan.lakedaemon.net>
+References: <1358183892-28928-1-git-send-email-dinggnu@gmail.com>
+ <50F563EC.3030804@free-electrons.com>
+ <20130115152307.GA25615@gmail.com>
+ <20130115153716.GF13433@titan.lakedaemon.net>
+ <50F584F5.6030007@free-electrons.com>
+ <20130115182629.GB7211@gmail.com>
+ <50F5A1A9.2030803@free-electrons.com>
+ <20130115184423.GC7211@gmail.com>
+ <50F5C00B.10108@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50F4D800.5040703@teksavvy.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50F5C00B.10108@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 11:16:00PM -0500, Mark Lord wrote:
-> On 13-01-14 03:37 PM, J. Bruce Fields wrote:
-> > Thanks for the report.
-> > 
-> > On Mon, Jan 14, 2013 at 11:17:09AM -0500, Mark Lord wrote:
-> >> Since upgrading to 3.7, and now 3.7.2, my AMD-450E based server
-> > 
-> > It's acting as an NFS client, right?
-> 
-> Client and server, with other Linux boxes all running 3.something kernels.
-> 
-> > What did you upgrade from?
-> 
-> 3.4.something, I believe.
-> 
-> >> is getting these BUG complaints.  The .config file is gzip'd/attached.
-> > 
-> > Is this easy to reproduce?
-> 
-> So far, it seems to pop up within a day or so of any reboot.
-> I normally only reboot that system for a kernel upgrade,
-> but can do so a bit more often if there's useful info to collect.
+On Tue, Jan 15, 2013 at 09:46:03PM +0100, Gregory CLEMENT wrote:
+> If you prefer, Jason agrees to take it, but you probably didn't notice it,
+> because he uses your former(and no more valid) email when he wrote this.
 
-So this means svc_delete_xprt was called on an xprt twice.
+Actually, I caught that after I hit send.  I resent (just to him), so he
+should have it in his inbox.
 
-That could happen if server threads are still running (and calling
-svc_recv) after we start shutting down the server: svc_shutdown_net
-assumes that server threads are already shut down, but that isn't true
-any more after the containerization work.
+I've also updated my email alias accordingly.
 
-I thought that would only be a bug for users actually running multiple
-containers, but looking at nfs_callback_down, I don't think that's
-true--it seems to always shut down the thread last.
+thx,
 
---b.
+Jason.
