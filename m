@@ -1,239 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab3AOII6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 03:08:58 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:29288 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756341Ab3AOIIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 03:08:54 -0500
-Subject: [PATCH 2/4] SUNRPC: remove cache_detail->cache_upcall callback
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 15 Jan 2013 11:09:36 +0300
-Message-ID: <20130115080936.2996.1659.stgit@localhost.localdomain>
-In-Reply-To: <20130115080402.2996.74320.stgit@localhost.localdomain>
-References: <20130115080402.2996.74320.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1756762Ab3AOIJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 03:09:18 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:44737 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756341Ab3AOIJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 03:09:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130115064427.GB30331@kernel.dk>
+References: <CA+icZUW1+BzWCfGkbBiekKO8b6KiyAiyXWAHFmVUey2dHnSTzw@mail.gmail.com>
+	<50F454C2.6000509@kernel.dk>
+	<CA+icZUX_uKSzvdhd4tMtgb+vUxqC=fS7tfSHhs29+xD_XQQjBQ@mail.gmail.com>
+	<CA+icZUV_dz2Bvu6o=YRFu6324ccVr1MaOEpRcw0rguppR5rQQg@mail.gmail.com>
+	<20130115064427.GB30331@kernel.dk>
+Date: Tue, 15 Jan 2013 09:09:12 +0100
+Message-ID: <CA+icZUUdzALcqQUrB1QxcwNeVyLUWcf7x0ksm_XYrLnV5hsN_Q@mail.gmail.com>
+Subject: Re: [next-20130114] Call-trace in LTP (lite) madvise02 test
+ (block|mm|vfs related?)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This callback is redundant since all that its' implementations are doing is
-calling sunrpc_cache_pipe_upcall() with proper function address argument. This
-function address is now stored on cache_detail structure and thus all the code
-can be simplified.
+On Tue, Jan 15, 2013 at 7:44 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On Mon, Jan 14 2013, Sedat Dilek wrote:
+>> On Mon, Jan 14, 2013 at 8:28 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> > On Mon, Jan 14, 2013 at 7:56 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>> >> On 2013-01-14 19:33, Sedat Dilek wrote:
+>> >>> Hi,
+>> >>>
+>> >>> while running LTP lite on my next-20130114 kernel I hit this
+>> >>> call-trace (file attached).
+>> >>>
+>> >>> Looks to me like problem in the block layer, but not sure.
+>> >>> Might one of the experts have look at it?
+>> >>
+>> >> Really? 600kb of data to look through? Can't you just paste the actual
+>> >> error, I can't even find it...
+>> >>
+>> >
+>> > $ cat call-trace_ltplite_madvise02_next-20130114.txt
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.965957] ------------[ cut here
+>> > ]------------
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.965989] Kernel BUG at
+>> > ffffffff81328b2b [verbose debug info unavailable]
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966022] invalid opcode: 0000 [#1] SMP
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966046] Modules linked in:
+>> > snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel kvm
+>> > snd_hda_intel snd_hda_codec arc4 iwldvm snd_hwdep snd_pcm
+>> > ghash_clmulni_intel mac80211 aesni_intel i915 snd_page_alloc xts
+>> > snd_seq_midi aes_x86_64 snd_seq_midi_event uvcvideo lrw gf128mul
+>> > iwlwifi snd_rawmidi ablk_helper snd_seq i2c_algo_bit cryptd
+>> > drm_kms_helper snd_timer videobuf2_vmalloc drm snd_seq_device
+>> > videobuf2_memops psmouse parport_pc snd cfg80211 btusb rfcomm
+>> > videobuf2_core bnep microcode ppdev soundcore videodev samsung_laptop
+>> > wmi lp bluetooth serio_raw mei mac_hid hid_generic video lpc_ich
+>> > parport usbhid hid r8169
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966377] CPU 3
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966388] Pid: 7803, comm:
+>> > madvise02 Not tainted 3.8.0-rc3-next20130114-5-iniza-generic #1
+>> > SAMSUNG ELECTRONICS CO., LTD.
+>> > 530U3BI/530U4BI/530U4BH/530U3BI/530U4BI/530U4BH
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966450] RIP:
+>> > 0010:[<ffffffff81328b2b>]  [<ffffffff81328b2b>]
+>> > blk_flush_plug_list+0x1eb/0x210
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966508] RSP:
+>> > 0018:ffff88000d933e58  EFLAGS: 00010287
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966532] RAX: 0000000091827364
+>> > RBX: ffff88000d933e68 RCX: 0000000000000000
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966566] RDX: 0000000000000000
+>> > RSI: 0000000000000000 RDI: ffff88000d933f10
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966614] RBP: ffff88000d933eb8
+>> > R08: 0000000000000003 R09: 0000000000000000
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966656] R10: 00007fff3d62c9b0
+>> > R11: 0000000000000206 R12: 0000000000000000
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966696] R13: 0000000000001000
+>> > R14: ffff88000d933f10 R15: ffff88000d933f10
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966736] FS:
+>> > 00007f56bcbc2700(0000) GS:ffff88011fac0000(0000)
+>> > knlGS:0000000000000000
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966780] CS:  0010 DS: 0000 ES:
+>> > 0000 CR0: 0000000080050033
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966813] CR2: 00007f56bc6ec060
+>> > CR3: 000000000bf66000 CR4: 00000000000407e0
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966848] DR0: 0000000000000000
+>> > DR1: 0000000000000000 DR2: 0000000000000000
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966885] DR3: 0000000000000000
+>> > DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966921] Process madvise02 (pid:
+>> > 7803, threadinfo ffff88000d932000, task ffff88000d9f2e40)
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966963] Stack:
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.966978]  0000000000000001
+>> > 0000000000000001 ffff88000d933e68 ffff88000d933e68
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967024]  ffff88000d933ef8
+>> > ffffffff8114b77c ffff88000d933ec0 ffff88000d933f10
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967071]  0000000000000000
+>> > 0000000000001000 0000000000010000 ffff88000d933f10
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967118] Call Trace:
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967137]  [<ffffffff8114b77c>] ?
+>> > vm_mmap_pgoff+0xbc/0xe0
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967173]  [<ffffffff81328b68>]
+>> > blk_finish_plug+0x18/0x50
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967209]  [<ffffffff811544d8>]
+>> > sys_madvise+0xc8/0x3a0
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967247]  [<ffffffff816ba0e9>] ?
+>> > do_page_fault+0x39/0x50
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967288]  [<ffffffff816be79d>]
+>> > system_call_fastpath+0x1a/0x1f
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967331] Code: 4d 85 ff 74 0d 44
+>> > 89 e2 89 c6 4c 89 ff e8 be b5 ff ff 4c 89 ef 57 9d 66 66 90 66 90 48
+>> > 83 c4 38 5b 41 5c 41 5d 41 5e 41 5f 5d c3 <0f> 0b 31 d2 be ed ff ff ff
+>> > 4c 89 f7 89 45 a8 e8 91 f9 ff ff 8b
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967589] RIP
+>> > [<ffffffff81328b2b>] blk_flush_plug_list+0x1eb/0x210
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.967630]  RSP <ffff88000d933e58>
+>> > Jan 14 17:47:14 fambox kernel: [ 1263.989553] ---[ end trace
+>> > 19e1575014ab42a7 ]---
+>> >
+>>
+>> Looks like this is the fix from Sasha [1].
+>> Culprit commit is [2].
+>> Testing...
+>>
+>> - Sedat -
+>>
+>> [1] https://patchwork.kernel.org/patch/1973481/
+>> [2] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=0d18d770b9180ffc2c3f63b9eb8406ef80105e05
+>
+> It does indeed, let us know if it doesn't fix it.
+>
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/export.c                  |   12 ------------
- fs/nfsd/nfs4idmap.c               |   14 --------------
- include/linux/sunrpc/cache.h      |    3 ---
- net/sunrpc/auth_gss/svcauth_gss.c |    7 -------
- net/sunrpc/cache.c                |    6 +++---
- net/sunrpc/svcauth_unix.c         |   12 ------------
- 6 files changed, 3 insertions(+), 51 deletions(-)
+It is fixing the issue for me!
 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index 63ee3bc..6f030a5 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -67,11 +67,6 @@ static void expkey_request(struct cache_detail *cd,
- 	(*bpp)[-1] = '\n';
- }
- 
--static int expkey_upcall(struct cache_detail *cd, struct cache_head *h)
--{
--	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
--}
--
- static struct svc_expkey *svc_expkey_update(struct cache_detail *cd, struct svc_expkey *new,
- 					    struct svc_expkey *old);
- static struct svc_expkey *svc_expkey_lookup(struct cache_detail *cd, struct svc_expkey *);
-@@ -245,7 +240,6 @@ static struct cache_detail svc_expkey_cache_template = {
- 	.hash_size	= EXPKEY_HASHMAX,
- 	.name		= "nfsd.fh",
- 	.cache_put	= expkey_put,
--	.cache_upcall	= expkey_upcall,
- 	.cache_request	= expkey_request,
- 	.cache_parse	= expkey_parse,
- 	.cache_show	= expkey_show,
-@@ -338,11 +332,6 @@ static void svc_export_request(struct cache_detail *cd,
- 	(*bpp)[-1] = '\n';
- }
- 
--static int svc_export_upcall(struct cache_detail *cd, struct cache_head *h)
--{
--	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
--}
--
- static struct svc_export *svc_export_update(struct svc_export *new,
- 					    struct svc_export *old);
- static struct svc_export *svc_export_lookup(struct svc_export *);
-@@ -712,7 +701,6 @@ static struct cache_detail svc_export_cache_template = {
- 	.hash_size	= EXPORT_HASHMAX,
- 	.name		= "nfsd.export",
- 	.cache_put	= svc_export_put,
--	.cache_upcall	= svc_export_upcall,
- 	.cache_request	= svc_export_request,
- 	.cache_parse	= svc_export_parse,
- 	.cache_show	= svc_export_show,
-diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-index 9033dfd..d9402ea 100644
---- a/fs/nfsd/nfs4idmap.c
-+++ b/fs/nfsd/nfs4idmap.c
-@@ -140,12 +140,6 @@ idtoname_request(struct cache_detail *cd, struct cache_head *ch, char **bpp,
- }
- 
- static int
--idtoname_upcall(struct cache_detail *cd, struct cache_head *ch)
--{
--	return sunrpc_cache_pipe_upcall(cd, ch, cd->cache_request);
--}
--
--static int
- idtoname_match(struct cache_head *ca, struct cache_head *cb)
- {
- 	struct ent *a = container_of(ca, struct ent, h);
-@@ -192,7 +186,6 @@ static struct cache_detail idtoname_cache_template = {
- 	.hash_size	= ENT_HASHMAX,
- 	.name		= "nfs4.idtoname",
- 	.cache_put	= ent_put,
--	.cache_upcall	= idtoname_upcall,
- 	.cache_request	= idtoname_request,
- 	.cache_parse	= idtoname_parse,
- 	.cache_show	= idtoname_show,
-@@ -322,12 +315,6 @@ nametoid_request(struct cache_detail *cd, struct cache_head *ch, char **bpp,
- }
- 
- static int
--nametoid_upcall(struct cache_detail *cd, struct cache_head *ch)
--{
--	return sunrpc_cache_pipe_upcall(cd, ch, cd->cache_request);
--}
--
--static int
- nametoid_match(struct cache_head *ca, struct cache_head *cb)
- {
- 	struct ent *a = container_of(ca, struct ent, h);
-@@ -366,7 +353,6 @@ static struct cache_detail nametoid_cache_template = {
- 	.hash_size	= ENT_HASHMAX,
- 	.name		= "nfs4.nametoid",
- 	.cache_put	= ent_put,
--	.cache_upcall	= nametoid_upcall,
- 	.cache_request	= nametoid_request,
- 	.cache_parse	= nametoid_parse,
- 	.cache_show	= nametoid_show,
-diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
-index 4f1c858..249e73a 100644
---- a/include/linux/sunrpc/cache.h
-+++ b/include/linux/sunrpc/cache.h
-@@ -80,9 +80,6 @@ struct cache_detail {
- 	char			*name;
- 	void			(*cache_put)(struct kref *);
- 
--	int			(*cache_upcall)(struct cache_detail *,
--						struct cache_head *);
--
- 	void			(*cache_request)(struct cache_detail *cd,
- 						 struct cache_head *ch,
- 						 char **bpp, int *blen);
-diff --git a/net/sunrpc/auth_gss/svcauth_gss.c b/net/sunrpc/auth_gss/svcauth_gss.c
-index 82437f9..1bd18af 100644
---- a/net/sunrpc/auth_gss/svcauth_gss.c
-+++ b/net/sunrpc/auth_gss/svcauth_gss.c
-@@ -182,12 +182,6 @@ static void rsi_request(struct cache_detail *cd,
- 	(*bpp)[-1] = '\n';
- }
- 
--static int rsi_upcall(struct cache_detail *cd, struct cache_head *h)
--{
--	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
--}
--
--
- static int rsi_parse(struct cache_detail *cd,
- 		    char *mesg, int mlen)
- {
-@@ -275,7 +269,6 @@ static struct cache_detail rsi_cache_template = {
- 	.hash_size	= RSI_HASHMAX,
- 	.name           = "auth.rpcsec.init",
- 	.cache_put      = rsi_put,
--	.cache_upcall   = rsi_upcall,
- 	.cache_request  = rsi_request,
- 	.cache_parse    = rsi_parse,
- 	.match		= rsi_match,
-diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index fc2f7aa..ee6b5dd 100644
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -196,9 +196,9 @@ EXPORT_SYMBOL_GPL(sunrpc_cache_update);
- 
- static int cache_make_upcall(struct cache_detail *cd, struct cache_head *h)
- {
--	if (!cd->cache_upcall)
-+	if (!cd->cache_request)
- 		return -EINVAL;
--	return cd->cache_upcall(cd, h);
-+	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
- }
- 
- static inline int cache_is_valid(struct cache_detail *detail, struct cache_head *h)
-@@ -1605,7 +1605,7 @@ static int create_cache_proc_entries(struct cache_detail *cd, struct net *net)
- 	if (p == NULL)
- 		goto out_nomem;
- 
--	if (cd->cache_upcall || cd->cache_parse) {
-+	if (cd->cache_request || cd->cache_parse) {
- 		p = proc_create_data("channel", S_IFREG|S_IRUSR|S_IWUSR,
- 				     cd->u.procfs.proc_ent,
- 				     &cache_file_operations_procfs, cd);
-diff --git a/net/sunrpc/svcauth_unix.c b/net/sunrpc/svcauth_unix.c
-index 6b03cc1..002ddd9 100644
---- a/net/sunrpc/svcauth_unix.c
-+++ b/net/sunrpc/svcauth_unix.c
-@@ -157,11 +157,6 @@ static void ip_map_request(struct cache_detail *cd,
- 	(*bpp)[-1] = '\n';
- }
- 
--static int ip_map_upcall(struct cache_detail *cd, struct cache_head *h)
--{
--	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
--}
--
- static struct ip_map *__ip_map_lookup(struct cache_detail *cd, char *class, struct in6_addr *addr);
- static int __ip_map_update(struct cache_detail *cd, struct ip_map *ipm, struct unix_domain *udom, time_t expiry);
- 
-@@ -470,11 +465,6 @@ static void unix_gid_request(struct cache_detail *cd,
- 	(*bpp)[-1] = '\n';
- }
- 
--static int unix_gid_upcall(struct cache_detail *cd, struct cache_head *h)
--{
--	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
--}
--
- static struct unix_gid *unix_gid_lookup(struct cache_detail *cd, uid_t uid);
- 
- static int unix_gid_parse(struct cache_detail *cd,
-@@ -577,7 +567,6 @@ static struct cache_detail unix_gid_cache_template = {
- 	.hash_size	= GID_HASHMAX,
- 	.name		= "auth.unix.gid",
- 	.cache_put	= unix_gid_put,
--	.cache_upcall	= unix_gid_upcall,
- 	.cache_request	= unix_gid_request,
- 	.cache_parse	= unix_gid_parse,
- 	.cache_show	= unix_gid_show,
-@@ -875,7 +864,6 @@ static struct cache_detail ip_map_cache_template = {
- 	.hash_size	= IP_HASHMAX,
- 	.name		= "auth.unix.ip",
- 	.cache_put	= ip_map_put,
--	.cache_upcall	= ip_map_upcall,
- 	.cache_request	= ip_map_request,
- 	.cache_parse	= ip_map_parse,
- 	.cache_show	= ip_map_show,
+- Sedat -
 
+[1] http://marc.info/?l=linux-next&m=135819894717604&w=2
+
+> --
+> Jens Axboe
+>
