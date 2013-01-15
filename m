@@ -1,191 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab3AOHZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 02:25:34 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8826 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755652Ab3AOHZc (ORCPT
+	id S1756094Ab3AOHcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 02:32:00 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53273 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab3AOHb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 02:25:32 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 14 Jan 2013 23:24:17 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH v2 3/3 RFT] ARM: tegra: dts: seaboard: enable keyboard
-Date: Tue, 15 Jan 2013 12:54:49 +0530
-Message-ID: <1358234689-18126-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 15 Jan 2013 02:31:59 -0500
+X-AuditID: 9c930179-b7b0cae0000065b4-f6-50f505ed3f83
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCHSET 00/13] perf report: Add support for event group view (v8)
+Date: Tue, 15 Jan 2013 16:31:44 +0900
+Message-Id: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable tegra based keyboard controller and populate the key matrix for
-seaboard. The key matrix was originally on driver code which is removed
-to have clean driver. The key mapping is now passed through dts file.
+Hi,
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Added the configuration of kbc parameter as suggested by Stephen and
-corrected type for LEFTCTRL.
+This is my 8th attempt to enable the event group view for perf report.
+For basic idea and usage example, please see my initial post [1].
 
- arch/arm/boot/dts/tegra20-seaboard.dts |  139 ++++++++++++++++++++++++++++++++
- 1 files changed, 139 insertions(+), 0 deletions(-)
+This version is rebased on the current acme/perf/core and it's mainly
+changed due to a refactoring of gtk browser.
 
-diff --git a/arch/arm/boot/dts/tegra20-seaboard.dts b/arch/arm/boot/dts/tegra20-seaboard.dts
-index f9e3ad4..2e87330 100644
---- a/arch/arm/boot/dts/tegra20-seaboard.dts
-+++ b/arch/arm/boot/dts/tegra20-seaboard.dts
-@@ -612,6 +612,145 @@
- 		};
- 	};
- 
-+	kbc {
-+		status = "okay";
-+		nvidia,debounce-delay-ms = <32>;
-+		nvidia,repeat-delay-ms = <160>;
-+		nvidia,ghost-filter;
-+		nvidia,kbc-row-pins = <0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>;
-+		nvidia,kbc-col-pins = <16 17 18 19 20 21 22 23>;
-+		linux,keymap = <0x00020011	/* KEY_W */
-+				0x0003001F	/* KEY_S */
-+				0x0004001E	/* KEY_A */
-+				0x0005002C	/* KEY_Z */
-+				0x000701d0	/* KEY_FN */
-+
-+				0x0107007D	/* KEY_LEFTMETA */
-+				0x02060064 	/* KEY_RIGHTALT */
-+				0x02070038	/* KEY_LEFTALT */
-+
-+				0x03000006	/* KEY_5 */
-+				0x03010005	/* KEY_4 */
-+				0x03020013	/* KEY_R */
-+				0x03030012	/* KEY_E */
-+				0x03040021	/* KEY_F */
-+				0x03050020	/* KEY_D */
-+				0x0306002D	/* KEY_X */
-+
-+				0x04000008	/* KEY_7 */
-+				0x04010007	/* KEY_6 */
-+				0x04020014	/* KEY_T */
-+				0x04030023	/* KEY_H */
-+				0x04040022	/* KEY_G */
-+				0x0405002F	/* KEY_V */
-+				0x0406002E	/* KEY_C */
-+				0x04070039	/* KEY_SPACE */
-+
-+				0x0500000A	/* KEY_9 */
-+				0x05010009	/* KEY_8 */
-+				0x05020016	/* KEY_U */
-+				0x05030015	/* KEY_Y */
-+				0x05040024	/* KEY_J */
-+				0x05050031	/* KEY_N */
-+				0x05060030	/* KEY_B */
-+				0x0507002B	/* KEY_BACKSLASH */
-+
-+				0x0600000C	/* KEY_MINUS */
-+				0x0601000B	/* KEY_0 */
-+				0x06020018	/* KEY_O */
-+				0x06030017	/* KEY_I */
-+				0x06040026	/* KEY_L */
-+				0x06050025	/* KEY_K */
-+				0x06060033	/* KEY_COMMA */
-+				0x06070032	/* KEY_M */
-+
-+				0x0701000D	/* KEY_EQUAL */
-+				0x0702001B	/* KEY_RIGHTBRACE */
-+				0x0703001C	/* KEY_ENTER */
-+				0x0707008B	/* KEY_MENU */
-+
-+				0x08040036	/* KEY_RIGHTSHIFT */
-+				0x0805002A	/* KEY_LEFTSHIFT */
-+
-+				0x09050061	/* KEY_RIGHTCTRL */
-+				0x0907001D	/* KEY_LEFTCTRL */
-+
-+				0x0B00001A	/* KEY_LEFTBRACE */
-+				0x0B010019	/* KEY_P */
-+				0x0B020028	/* KEY_APOSTROPHE */
-+				0x0B030027	/* KEY_SEMICOLON */
-+				0x0B040035	/* KEY_SLASH */
-+				0x0B050034	/* KEY_DOT */
-+
-+				0x0C000044	/* KEY_F10 */
-+				0x0C010043	/* KEY_F9 */
-+				0x0C02000E	/* KEY_BACKSPACE */
-+				0x0C030004	/* KEY_3 */
-+				0x0C040003	/* KEY_2 */
-+				0x0C050067	/* KEY_UP */
-+				0x0C0600D2	/* KEY_PRINT */
-+				0x0C070077	/* KEY_PAUSE */
-+
-+				0x0D00006E	/* KEY_INSERT */
-+				0x0D01006F	/* KEY_DELETE */
-+				0x0D030068	/* KEY_PAGEUP  */
-+				0x0D04006D	/* KEY_PAGEDOWN */
-+				0x0D05006A	/* KEY_RIGHT */
-+				0x0D06006C	/* KEY_DOWN */
-+				0x0D070069	/* KEY_LEFT */
-+
-+				0x0E000057	/* KEY_F11 */
-+				0x0E010058	/* KEY_F12 */
-+				0x0E020042	/* KEY_F8 */
-+				0x0E030010	/* KEY_Q */
-+				0x0E04003E	/* KEY_F4 */
-+				0x0E05003D	/* KEY_F3 */
-+				0x0E060002	/* KEY_1 */1
-+				0x0E070041	/* KEY_F7 */
-+
-+				0x0F000001	/* KEY_ESC */
-+				0x0F010029	/* KEY_GRAVE */
-+				0x0F02003F	/* KEY_F5 */
-+				0x0F03000F	/* KEY_TAB */
-+				0x0F04003B	/* KEY_F1 */
-+				0x0F05003C	/* KEY_F2 */
-+				0x0F06003A	/* KEY_CAPSLOCK */
-+				0x0F070040	/* KEY_F6 */
-+
-+				/* Software Handled Function Keys */
-+				0x14000047	/* KEY_KP7 */
-+
-+				0x15000049	/* KEY_KP9 */
-+				0x15010048	/* KEY_KP8 */
-+				0x1502004B	/* KEY_KP4 */
-+				0x1504004F	/* KEY_KP1 */
-+
-+				0x1601004E	/* KEY_KPSLASH */
-+				0x1602004D	/* KEY_KP6 */
-+				0x1603004C	/* KEY_KP5 */
-+				0x16040051	/* KEY_KP3 */
-+				0x16050050	/* KEY_KP2 */
-+				0x16070052	/* KEY_KP0 */
-+
-+				0x1B010037	/* KEY_KPASTERISK */
-+				0x1B03004A	/* KEY_KPMINUS */
-+				0x1B04004E	/* KEY_KPPLUS */
-+				0x1B050053	/* KEY_KPDOT */
-+
-+				0x1C050073	/* KEY_VOLUMEUP */
-+
-+				0x1D030066	/* KEY_HOME */
-+				0x1D04006B	/* KEY_END */
-+				0x1D0500E0	/* KEY_BRIGHTNESSDOWN */
-+				0x1D060072	/* KEY_VOLUMEDOWN */
-+				0x1D0700E1	/* KEY_BRIGHTNESSUP */
-+
-+				0x1E000045	/* KEY_NUMLOCK */
-+				0x1E010046	/* KEY_SCROLLLOCK */
-+				0x1E020071	/* KEY_MUTE */
-+
-+				0x1F04008A>;	/* KEY_HELP */
-+	};
- 	regulators {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
+You can get this via 'perf/group-v8' branch on my tree:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+Any comments are welcome, thanks,
+Namhyung
+
+
+v7 -> v8:
+ * rebase onto acme/perf/core
+ * patch 3 in the previous version is merged
+ * add Jiri's Acked-by's
+
+v6 -> v7:
+ * hists__{match,link} changes are merged separately
+ * factor out inc_group_count() from parsing group_def (Jiri)
+ * add checking for group fields in evlist/evsel (Jiri)
+ * check return value of during header processing (Arnaldo)
+ * get rid of a temporal array in hpp functions (Arnaldo)
+ * convert hpp macros to static inline functions (Jiri)
+
+v5 -> v6:
+ * set ->leader alse for leader evsel (Arnaldo)
+ * use hists__{match,link} (Arnaldo)
+
+v4 -> v5:
+ * rebase onto acme/perf/core
+
+v3 -> v4:
+ * patch 1-9 in previous post are merged.
+ * add Jiri's Acked-by
+ * add report.group config option
+
+v2 -> v3:
+ * drop patch 1 since it's merged into acme/perf/core
+ * cherry-pick Jiri's hpp changes
+ * add missing bswap_32 on reading nr_groups (Jiri)
+ * remove perf_evlist__recalc_nr_groups() in favor of list_is_last (Jiri)
+
+v1 -> v2:
+ * save group relation to header (Jiri)
+
+[1] https://lkml.org/lkml/2012/7/24/81
+
+
+Namhyung Kim (13):
+  perf tools: Keep group information
+  perf tests: Add group test conditions
+  perf header: Add HEADER_GROUP_DESC feature
+  perf report: Make another loop for linking group hists
+  perf hists: Resort hist entries using group members for output
+  perf ui/hist: Add support for event group view
+  perf hist browser: Add support for event group view
+  perf gtk/browser: Add support for event group view
+  perf gtk/browser: Trim column header string when event group enabled
+  perf report: Bypass non-leader events when event group is enabled
+  perf report: Show group description when event group is enabled
+  perf report: Add --group option
+  perf report: Add report.group config option
+
+ tools/perf/Documentation/perf-report.txt |   3 +
+ tools/perf/builtin-record.c              |   3 +
+ tools/perf/builtin-report.c              |  47 ++++-
+ tools/perf/builtin-script.c              |  12 --
+ tools/perf/tests/parse-events.c          |  28 +++
+ tools/perf/ui/browsers/hists.c           | 219 +++++++++++++++++----
+ tools/perf/ui/gtk/hists.c                | 128 ++++++++++---
+ tools/perf/ui/hist.c                     | 316 ++++++++++++++++---------------
+ tools/perf/ui/stdio/hist.c               |   2 +
+ tools/perf/util/evlist.c                 |   7 +-
+ tools/perf/util/evlist.h                 |   1 +
+ tools/perf/util/evsel.c                  |  25 +++
+ tools/perf/util/evsel.h                  |  16 ++
+ tools/perf/util/header.c                 | 164 ++++++++++++++++
+ tools/perf/util/header.h                 |   2 +
+ tools/perf/util/hist.c                   |  59 +++++-
+ tools/perf/util/parse-events.c           |   1 +
+ tools/perf/util/parse-events.h           |   1 +
+ tools/perf/util/parse-events.y           |  10 +
+ tools/perf/util/string.c                 |  18 ++
+ tools/perf/util/symbol.h                 |   3 +-
+ tools/perf/util/util.h                   |   1 +
+ 22 files changed, 840 insertions(+), 226 deletions(-)
+
 -- 
-1.7.1.1
+1.7.11.7
 
