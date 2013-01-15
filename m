@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083Ab3AOU7S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:59:18 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:45288 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025Ab3AOU7Q (ORCPT
+	id S1757139Ab3AOU7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:59:49 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:33446 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305Ab3AOU7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:59:16 -0500
-Date: Tue, 15 Jan 2013 12:59:12 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk,
-        snitzer@redhat.com, agk@redhat.com, neilb@suse.de
-Subject: Re: Bcache v. whatever
-Message-ID: <20130115205912.GA26407@google.com>
-References: <20130114223202.GV26407@google.com>
- <1358241656.2383.2.camel@dabdike.int.hansenpartnership.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358241656.2383.2.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Jan 2013 15:59:48 -0500
+Date: Tue, 15 Jan 2013 14:10:18 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Kent Overstreet <koverstreet@google.com>
+Subject: linux-next: manual merge of the akpm tree with the block tree
+Message-Id: <20130115141018.5135198bda8b6c63f6b7d0ee@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__15_Jan_2013_14_10_18_+1100_iLkcnINP9eBo_JSo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 09:20:56AM +0000, James Bottomley wrote:
-> On Mon, 2013-01-14 at 14:32 -0800, Kent Overstreet wrote:
-> > Bcache: a block layer SSD cache
-> > 
-> > Does writethrough and writeback, handles unclean shutdown, and has
-> > various other nifty features. See the wiki and the documentation for
-> > more:
-> > 
-> > http://bcache.evilpiepirate.org
-> > 
-> > Over the Christmas break I finally got the tree into a self contained
-> > state that ought to be suitable for merging; this tree is fairly close
-> > to the previous stable tree that people have been running on production
-> > servers for awhile (and that I've been running on this workstation), 
-> > 
-> > So, I think this is ready for mainline and I'd like to get it in. I
-> > should've tried to push it ages ago, but I was hoping to get in various
-> > block layer cleanups first; I finally deided to work around them in the
-> > meantime since I haven't had time to finish the block layer stuff.
-> > 
-> > Not everything has been addressed since I last posted for review
-> > feedback - notably the closure code was controversial and for now I've
-> > just moved that into drivers/block/bcache (though I've been refactoring
-> > stuff to make it less asynchronous lately; most of that work is in the
-> > testing/dev branches). The bigger issue IMO is the userspace interface -
-> > I'd like to finish the md integration so it doesn't need userspace stuff
-> > for probing/bootup. So, I'd be fine with it going into staging if that's
-> > the consensus, but it's stable tested code.
-> > 
-> > The code is available at
-> > http://evilpiepirate.org/git/linux-bcache.git bcache-for-upstream
-> > 
-> > This latest branch is on top of v3.8-rc3:
-> 
-> The guy to merge this is the maintainer in that layer, which is Alasdair
-> Kergon.  I know you've been sending patches to the dm-devel list, what's
-> the reason you didn't include him in the cc list?  Is there some type of
-> political problem in dm?  From reading the list, it looks like your
-> patches are being tested and progressing, so what am I missing?
+--Signature=_Tue__15_Jan_2013_14_10_18_+1100_iLkcnINP9eBo_JSo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That was merely an oversight - but, bcache is currently just another
-block device, it doesn't plug into dm or md. There was some md
-integration work started, and that's the one I'm more inclined to work
-on personally (if and when I find the time).
+Hi Andrew,
 
-So I'm not sure why it'd go in via dm, it seems to me it'd make just as
-much sense for it to go in via Neil Brown's tree. Unless there's
-something I'm missing?
+Today's linux-next merge of the akpm tree got a conflict in fs/bio.c
+between commit 3a366e614d08 ("block: add missing block_bio_complete()
+tracepoint") from the block tree and commit "block, aio: batch completion
+for bios/kiocbs" from the akpm tree.
+
+I am not sure how to fix this up, so I just dropped the block tree
+additions of "trace_block_bio_complete(bio, error);" to this file.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__15_Jan_2013_14_10_18_+1100_iLkcnINP9eBo_JSo
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ9MiaAAoJEECxmPOUX5FEkVoP/AvCYHSD/aelKKn8Uf6qtcfq
+iuerjJc5h8wYxwzf+aKDXpjRNBSr6vxgF1tQ11SsbN4ytFSbsDugDnG/IQa0Samg
+7k96zdYY2yvVllmeOgv9kl2ouwWvTKvy8MCjsc573d4L6YWlCdCQjIHt9yymbKXw
+KVPH04VZDxR+oOzxI43J7r2KCsIwDc4OZk4sq3ZgEwOXi1BLX/AfjU9zzG3m3XG7
+tHgKGP6MK+7df4B0Zv/iby5UvnNZhbznTopVyx4bPWv62iOls/VmdVteungKr/nj
+8Yw91F9FdS0WJGQvTNsKGXOtd5y+3oyE9PJA/kcb0V9n4iiPBqYfsZsDsZs9XCb1
+wtJyPovITW9zfF/FR3LxA2VoHr0WipFYV/TWNrFCWm0I9aq+iXw3P17iLZIBZKJ3
+nNemNn4omwv01PYSFwj2m9pEUuXCybMlKp74DoNBdwLrfG3otQVlsRJGRYi3Juv6
+QMgKPozcLudnF4ojhPEgDBDkqOCWXrM6tBxsw+tc0dWXWDxrvkNxRIDVWgTaXiM1
+AWphe1YRbgoxVdQx9gQnzV7Q40eZJaNbpDE8X8ldeYN0gCpZss7dYYMQ+oliavsg
+ogw+Tlbmbm1fhtD9bFw5HUmxJ9es90bybv0ho8gGzyOCa3hqPnQFG2qlXJwjNYqu
+GJJpBsjwvlRP8+3HBLkB
+=g2Dh
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__15_Jan_2013_14_10_18_+1100_iLkcnINP9eBo_JSo--
