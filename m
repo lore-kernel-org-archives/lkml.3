@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757744Ab3AOTEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 14:04:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34025 "EHLO mail.kernel.org"
+	id S1757820Ab3AOTFJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 14:05:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:33982 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757482Ab3AOSwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:52:10 -0500
+	id S1756551Ab3AOSwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:52:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stefan Lippers-Hollmann <s.l-h@gmx.de>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 006/221] rt2x00: Only specify interface combinations if more then one interface is possible
-Date: Tue, 15 Jan 2013 10:48:53 -0800
-Message-Id: <20130115184958.516809179@linuxfoundation.org>
+        Florian Reitmeir <florian@reitmeir.org>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 004/221] iwlwifi: silently ignore fw flaws in Tx path
+Date: Tue, 15 Jan 2013 10:48:51 -0800
+Message-Id: <20130115184958.362102842@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -29,41 +27,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helmut Schaa <helmut.schaa@googlemail.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit f5685ba675449b072feab6a5391a9ef9f604bc94 upstream.
+commit 27edb1accf5695ff00a32c85c4a00ac7e1e7f298 upstream.
 
-Otherwise rt2500* triggers a warning in cfg80211, from net/wireless/core.c:
+We know that we have issues with the fw in the reclaim path.
+This is why iwl_reclaim doesn't complain too loud when it
+happens since it is recoverable. Somehow, the caller of
+iwl_reclaim however WARNed when it happens. This doesn't
+make any sense.
 
-	/* Combinations with just one interface aren't real */
-	if (WARN_ON(c->max_interfaces < 2))
+When I digged into the history of that code, I discovered
+that this bug occurs only when we receive a BA notification.
+So move the W/A in the BA notification handling code where
+it was before.
 
-This was introduced in commit 55d2e9da744ba11eae900b4bfc2da72eace3c1e1:
-rt2x00: Replace open coded interface checking with interface combinations.
+This patch addresses:
+http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2387
 
-Reported-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
-Tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
-Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Acked-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Florian Reitmeir <florian@reitmeir.org>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00dev.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/iwlwifi/dvm/tx.c |   49 ++++++++++++----------------------
+ 1 file changed, 18 insertions(+), 31 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -1123,6 +1123,9 @@ static inline void rt2x00lib_set_if_comb
- 	struct ieee80211_iface_limit *if_limit;
- 	struct ieee80211_iface_combination *if_combination;
+--- a/drivers/net/wireless/iwlwifi/dvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
+@@ -1100,29 +1100,6 @@ static void iwl_check_abort_status(struc
+ 	}
+ }
  
-+	if (rt2x00dev->ops->max_ap_intf < 2)
-+		return;
+-static int iwl_reclaim(struct iwl_priv *priv, int sta_id, int tid,
+-		       int txq_id, int ssn, struct sk_buff_head *skbs)
+-{
+-	if (unlikely(txq_id >= IWLAGN_FIRST_AMPDU_QUEUE &&
+-		     tid != IWL_TID_NON_QOS &&
+-		     txq_id != priv->tid_data[sta_id][tid].agg.txq_id)) {
+-		/*
+-		 * FIXME: this is a uCode bug which need to be addressed,
+-		 * log the information and return for now.
+-		 * Since it is can possibly happen very often and in order
+-		 * not to fill the syslog, don't use IWL_ERR or IWL_WARN
+-		 */
+-		IWL_DEBUG_TX_QUEUES(priv,
+-			"Bad queue mapping txq_id=%d, agg_txq[sta:%d,tid:%d]=%d\n",
+-			txq_id, sta_id, tid,
+-			priv->tid_data[sta_id][tid].agg.txq_id);
+-		return 1;
+-	}
+-
+-	iwl_trans_reclaim(priv->trans, txq_id, ssn, skbs);
+-	return 0;
+-}
+-
+ int iwlagn_rx_reply_tx(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb,
+ 			       struct iwl_device_cmd *cmd)
+ {
+@@ -1184,9 +1161,8 @@ int iwlagn_rx_reply_tx(struct iwl_priv *
+ 						  next_reclaimed);
+ 		}
+ 
+-		/*we can free until ssn % q.n_bd not inclusive */
+-		WARN_ON_ONCE(iwl_reclaim(priv, sta_id, tid,
+-					 txq_id, ssn, &skbs));
++		iwl_trans_reclaim(priv->trans, txq_id, ssn, &skbs);
 +
- 	/*
- 	 * Build up AP interface limits structure.
- 	 */
+ 		iwlagn_check_ratid_empty(priv, sta_id, tid);
+ 		freed = 0;
+ 
+@@ -1311,16 +1287,27 @@ int iwlagn_rx_reply_compressed_ba(struct
+ 		return 0;
+ 	}
+ 
++	if (unlikely(scd_flow != agg->txq_id)) {
++		/*
++		 * FIXME: this is a uCode bug which need to be addressed,
++		 * log the information and return for now.
++		 * Since it is can possibly happen very often and in order
++		 * not to fill the syslog, don't use IWL_ERR or IWL_WARN
++		 */
++		IWL_DEBUG_TX_QUEUES(priv,
++				    "Bad queue mapping txq_id=%d, agg_txq[sta:%d,tid:%d]=%d\n",
++				    scd_flow, sta_id, tid, agg->txq_id);
++		spin_unlock(&priv->sta_lock);
++		return 0;
++	}
++
+ 	__skb_queue_head_init(&reclaimed_skbs);
+ 
+ 	/* Release all TFDs before the SSN, i.e. all TFDs in front of
+ 	 * block-ack window (we assume that they've been successfully
+ 	 * transmitted ... if not, it's too late anyway). */
+-	if (iwl_reclaim(priv, sta_id, tid, scd_flow,
+-			ba_resp_scd_ssn, &reclaimed_skbs)) {
+-		spin_unlock(&priv->sta_lock);
+-		return 0;
+-	}
++	iwl_trans_reclaim(priv->trans, scd_flow, ba_resp_scd_ssn,
++			  &reclaimed_skbs);
+ 
+ 	IWL_DEBUG_TX_REPLY(priv, "REPLY_COMPRESSED_BA [%d] Received from %pM, "
+ 			   "sta_id = %d\n",
 
 
