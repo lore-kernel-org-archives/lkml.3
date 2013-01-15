@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab3AOQaz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 11:30:55 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:47508 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753933Ab3AOQay (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 11:30:54 -0500
-Date: Tue, 15 Jan 2013 16:30:52 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Liu Bo <bo.li.liu@oracle.com>
-cc: linux-mm@kvack.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH] mm/slab: add a leak decoder callback
-In-Reply-To: <1358143419-13074-1-git-send-email-bo.li.liu@oracle.com>
-Message-ID: <0000013c3f0c8af2-361e64b5-f822-4a93-a67e-b2902bb336fc-000000@email.amazonses.com>
-References: <1358143419-13074-1-git-send-email-bo.li.liu@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756150Ab3AOQdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 11:33:15 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:40920 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756245Ab3AOQdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 11:33:14 -0500
+Date: Tue, 15 Jan 2013 08:32:21 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        liu chuansheng <chuansheng.liu@intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v2] hardlockup: detect hard lockups without NMIs using
+ secondary cpus
+Message-ID: <20130115163221.GN3384@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1357941108-14138-1-git-send-email-ccross@android.com>
+ <CAFTL4hzYkPCmkfqBafkTA5E_snkLoC_y3p9xwumj=L1xWAWK0g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hzYkPCmkfqBafkTA5E_snkLoC_y3p9xwumj=L1xWAWK0g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011516-7182-0000-0000-00000472A429
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013, Liu Bo wrote:
+On Tue, Jan 15, 2013 at 01:13:10AM +0100, Frederic Weisbecker wrote:
+> 2013/1/11 Colin Cross <ccross@android.com>:
+> > Emulate NMIs on systems where they are not available by using timer
+> > interrupts on other cpus.  Each cpu will use its softlockup hrtimer
+> > to check that the next cpu is processing hrtimer interrupts by
+> > verifying that a counter is increasing.
+> >
+> > This patch is useful on systems where the hardlockup detector is not
+> > available due to a lack of NMIs, for example most ARM SoCs.
+> > Without this patch any cpu stuck with interrupts disabled can
+> > cause a hardware watchdog reset with no debugging information,
+> > but with this patch the kernel can detect the lockup and panic,
+> > which can result in useful debugging info.
+> >
+> > Signed-off-by: Colin Cross <ccross@android.com>
+> 
+> I believe this is pretty much what the RCU stall detector does
+> already: checks for other CPUs being responsive. The only difference
+> is on how it checks that. For RCU it's about checking for CPUs
+> reporting quiescent states when requested to do so. In your case it's
+> about ensuring the hrtimer interrupt is well handled.
+> 
+> One thing you can do is to enqueue an RCU callback (cal_rcu()) every
+> minute so you can force other CPUs to report quiescent states
+> periodically and thus check for lockups.
 
-> This adds a leak decoder callback so that kmem_cache_destroy()
-> can use to generate debugging output for the allocated objects.
+This would work in all but one case, and that is where RCU believes
+that the non-responsive CPU is in dyntick-idle mode.  In that case,
+RCU would not be expecting it to respond and would therefore ignore
+any non-responsiveness.
 
-Interesting idea.
+> Now you'll face the same problem in the end: if you don't have NMIs,
+> you won't have a very useful report.
 
-> @@ -3787,6 +3789,9 @@ static int slab_unmergeable(struct kmem_cache *s)
->  	if (s->ctor)
->  		return 1;
->
-> +	if (s->decoder)
-> +		return 1;
-> +
->  	/*
->  	 * We may have set a slab to be unmergeable during bootstrap.
->  	 */
+Indeed, I must confess that I have thus far chickened out on solving
+the general NMI problem.  The RCU stall detector does try to look at
+stacks remotely in some cases, but this is often unreliable, and some
+architectures seem to refuse to produce a remote stack trace.
 
-The merge processing occurs during kmem_cache_create and you are setting
-up the decoder field afterwards! Wont work.
-
+							Thanx, Paul
 
