@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab3AOIzR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 03:55:17 -0500
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:42392 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750872Ab3AOIzP (ORCPT
+	id S1756570Ab3AOIzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 03:55:35 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:52157 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756501Ab3AOIze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 03:55:15 -0500
-Date: Tue, 15 Jan 2013 09:55:11 +0100
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Arm Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        arm@kernel.org, rtc-linux@googlegroups.com
-Subject: Re: rtc: vt8500: Fix year field in vt8500_rtc_set_time
-Message-ID: <20130115095511.1ce8e283@linux.lan.towertech.it>
-In-Reply-To: <1358234563.6868.13.camel@gitbox>
-References: <1358234563.6868.13.camel@gitbox>
-Organization: Tower Technologies
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jan 2013 03:55:34 -0500
+MIME-Version: 1.0
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 15 Jan 2013 14:25:12 +0530
+Message-ID: <CA+V-a8sVhQDoni=mouiOjNCmgfn_rJTHaNfQ-O_E0yxMkeRfRA@mail.gmail.com>
+Subject: [GIT PULL FOR v3.9] media i2c devices trivial fixes
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-media <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013 20:22:43 +1300
-Tony Prisk <linux@prisktech.co.nz> wrote:
+Hi Mauro,
 
-> Alessandro,
-> 
-> This patch was sent out at the same time as two other RTC fixes for
-> vt8500 but this one seems to have stopped somewhere along the way while
-> the other two have been accepted.
+Please pull the following patches, which use devm_kzalloc() instead of
+kzalloc().
 
- Hi, Andrew usually picks up the patches directly from the rtc mailing list,
- unless there's an arch specific tree to carry it. 
+Regards,
+--Prabhakar Lad
 
- This one seems fine so I'm sure it's just an overlook
+The following changes since commit 3151d14aa6e983aa36d51a80d0477859f9ba12af:
 
--- 
+  [media] media: remove __dev* annotations (2013-01-11 13:03:24 -0200)
 
- Best regards,
+are available in the git repository at:
+  git://linuxtv.org/mhadli/v4l-dvb-davinci_devices.git media-i2c-fixes
 
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
+Lad, Prabhakar (4):
+      ths7303: use devm_kzalloc() instead of kzalloc()
+      tvp7002: use devm_kzalloc() instead of kzalloc()
+      tvp514x: use devm_kzalloc() instead of kzalloc()
+      adv7343: use devm_kzalloc() instead of kzalloc()
 
-  http://www.towertech.it
-
+ drivers/media/i2c/adv7343.c |    9 +++------
+ drivers/media/i2c/ths7303.c |    3 +--
+ drivers/media/i2c/tvp514x.c |    4 +---
+ drivers/media/i2c/tvp7002.c |   18 ++++++------------
+ 4 files changed, 11 insertions(+), 23 deletions(-)
