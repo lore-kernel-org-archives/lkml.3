@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934044Ab3AOXRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:17:01 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47487 "EHLO mail.kernel.org"
+	id S932511Ab3AOXRY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:17:24 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47452 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933974Ab3AOWyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:54:04 -0500
+	id S933964Ab3AOWx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:53:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 171/171] USB: fix endpoint-disabling for failed config changes
-Date: Tue, 15 Jan 2013 14:45:36 -0800
-Message-Id: <20130115224325.635859390@linuxfoundation.org>
+        David Zafman <david.zafman@inktank.com>,
+        Alex Elder <elder@inktank.com>
+Subject: [ 168/171] libceph: Unlock unprocessed pages in start_read() error path
+Date: Tue, 15 Jan 2013 14:45:33 -0800
+Message-Id: <20130115224325.434729058@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,104 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 36caff5d795429c572443894e8789c2150dd796b upstream.
 
-This patch (as1631) fixes a bug that shows up when a config change
-fails for a device under an xHCI controller.  The controller needs to
-be told to disable the endpoints that have been enabled for the new
-config.  The existing code does this, but before storing the
-information about which endpoints were enabled!  As a result, any
-second attempt to install the new config is doomed to fail because
-xhci-hcd will refuse to enable an endpoint that is already enabled.
+From: David Zafman <david.zafman@inktank.com>
 
-The patch optimistically initializes the new endpoints' device
-structures before asking the device to switch to the new config.  If
-the request fails then the endpoint information is already stored, so
-we can use usb_hcd_alloc_bandwidth() to disable the endpoints with no
-trouble.  The rest of the error path is slightly more complex now; we
-have to disable the new interfaces and call put_device() rather than
-simply deallocating them.
+Function start_read() can get an error before processing all pages.
+It must not only release the remaining pages, but unlock them too.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Matthias Schniedermeyer <ms@citd.de>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+This fixes http://tracker.newdream.net/issues/3370
+
+Signed-off-by: David Zafman <david.zafman@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+(cherry picked from commit 8884d53dd63b1d9315b343564fcbe1ede004a99e)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/core/message.c |   53 ++++++++++++++++++++++++++-------------------
- 1 file changed, 31 insertions(+), 22 deletions(-)
+ fs/ceph/addr.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1770,28 +1770,8 @@ free_interfaces:
- 		goto free_interfaces;
- 	}
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -267,6 +267,14 @@ static void finish_read(struct ceph_osd_
+ 	kfree(req->r_pages);
+ }
  
--	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
--			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
--			      NULL, 0, USB_CTRL_SET_TIMEOUT);
--	if (ret < 0) {
--		/* All the old state is gone, so what else can we do?
--		 * The device is probably useless now anyway.
--		 */
--		cp = NULL;
--	}
--
--	dev->actconfig = cp;
--	if (!cp) {
--		usb_set_device_state(dev, USB_STATE_ADDRESS);
--		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
--		mutex_unlock(hcd->bandwidth_mutex);
--		usb_autosuspend_device(dev);
--		goto free_interfaces;
--	}
--	mutex_unlock(hcd->bandwidth_mutex);
--	usb_set_device_state(dev, USB_STATE_CONFIGURED);
--
--	/* Initialize the new interface structures and the
-+	/*
-+	 * Initialize the new interface structures and the
- 	 * hc/hcd/usbcore interface/endpoint state.
- 	 */
- 	for (i = 0; i < nintf; ++i) {
-@@ -1835,6 +1815,35 @@ free_interfaces:
- 	}
- 	kfree(new_interfaces);
++static void ceph_unlock_page_vector(struct page **pages, int num_pages)
++{
++	int i;
++
++	for (i = 0; i < num_pages; i++)
++		unlock_page(pages[i]);
++}
++
+ /*
+  * start an async read(ahead) operation.  return nr_pages we submitted
+  * a read for on success, or negative error code.
+@@ -347,6 +355,7 @@ static int start_read(struct inode *inod
+ 	return nr_pages;
  
-+	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
-+			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
-+			      NULL, 0, USB_CTRL_SET_TIMEOUT);
-+	if (ret < 0 && cp) {
-+		/*
-+		 * All the old state is gone, so what else can we do?
-+		 * The device is probably useless now anyway.
-+		 */
-+		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
-+		for (i = 0; i < nintf; ++i) {
-+			usb_disable_interface(dev, cp->interface[i], true);
-+			put_device(&cp->interface[i]->dev);
-+			cp->interface[i] = NULL;
-+		}
-+		cp = NULL;
-+	}
-+
-+	dev->actconfig = cp;
-+	mutex_unlock(hcd->bandwidth_mutex);
-+
-+	if (!cp) {
-+		usb_set_device_state(dev, USB_STATE_ADDRESS);
-+
-+		/* Leave LPM disabled while the device is unconfigured. */
-+		usb_autosuspend_device(dev);
-+		return ret;
-+	}
-+	usb_set_device_state(dev, USB_STATE_CONFIGURED);
-+
- 	if (cp->string == NULL &&
- 			!(dev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
- 		cp->string = usb_cache_string(dev, cp->desc.iConfiguration);
+ out_pages:
++	ceph_unlock_page_vector(pages, nr_pages);
+ 	ceph_release_page_vector(pages, nr_pages);
+ out:
+ 	ceph_osdc_put_request(req);
 
 
