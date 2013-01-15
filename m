@@ -1,97 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab3AOPsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 10:48:22 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55269 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab3AOPsV (ORCPT
+	id S1756547Ab3AOPsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 10:48:52 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:63232 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab3AOPsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 10:48:21 -0500
-Message-ID: <50F57A30.10109@pengutronix.de>
-Date: Tue, 15 Jan 2013 16:48:00 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Subodh Nijsure <snijsure@grid-net.com>
-CC: linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
-        penguin-kernel@I-love.SAKURA.ne.jp,
-        linux-security-module@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [v4] Add security.* XATTR support for the UBIFS
-References: <1336915488-23943-1-git-send-email-snijsure@grid-net.com>
-In-Reply-To: <1336915488-23943-1-git-send-email-snijsure@grid-net.com>
-X-Enigmail-Version: 1.5
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2UATRGLPVLEEOHEUWPSIP"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 15 Jan 2013 10:48:51 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v6 00/18] perf: add memory access sampling support
+Date: Tue, 15 Jan 2013 16:39:28 +0100
+Message-Id: <1358264386-24633-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2UATRGLPVLEEOHEUWPSIP
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+This patch series had a new feature to the kernel perf_events
+interface and corresponding user level tool, perf.
 
-On 05/13/2012 05:24 AM, Subodh Nijsure wrote:
-> From: Subodh Nijsure <snijsure@grid-net.com>
->=20
-> Also fix couple of bugs in UBIFS extended attribute length calculation.=
+With this patch, it is possible to sample (not trace) memory
+accesses (load, store). For loads, the instruction and data
+addresses are captured along with the latency and data source.
+For stores, the instruction and data addresses are capture
+along with limited cache and TLB information.
 
->=20
-> Changes in v4:
->         Fix lock issues introduced in v3.
->         Tested with CONFIG_SECURITY enabled & disabled.
->=20
-> Changes in v3:
-> 	 Remove #ifdef CONFIG_UBIFS_FS_XATTR
->=20
-> Changes in v2:
->          Instead of just handling security.selinux extended attribute h=
-andle
->          all security.* attributes.
->=20
-> TESTING: Tested on  MX28 based platforms using Micron MT29F2G08ABAEAH4 =
-NAND
->          With these change we are able to label UBIFS filesystem with
->          security.selinux and run system with selinux enabled.
->          This change also allows one to set other security.* extended
->          attributes, such as security.smack security.evm, security.ima
->          Ran integck test on UBI filesystem.
->          This patch set has been tested with CONFIG_LOCKDEP=3Dy and oth=
-er options
->          suggested in Submitchecklist
->=20
-> Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+For load data source, the memory hierarchy level, the tlb, snoop
+and lock information is captured.
 
-What's the status of this patch? Was there a v5?
+Although the perf_event interface is extended in a generic manner,
+sampling memory accesses requires HW support. The current patches
+implement the feature on Intel processors starting with Nehalem.
+The patches leverage the PEBS Load Latency and Precise Store
+mechanisms. Precise Store is present only on Sandy Bridge and
+Ivy Bridge based processors.
 
-Marc
+The perf tool is extended to make capturing and analyzing the
+data easier with a new command: perf mem.
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+$ perf mem -t load rec triad
+$ perf mem -t load rep --stdio
+# Samples: 19K of event 'cpu/mem-loads/pp'
+# Total cost : 1013994
+# Sort order : cost,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked
+#
+# Overhead      Samples     Cost  Memory access Symbol      Shared Obj  Data Symbol             Data Object Snoop  TLB access   Locked
+# ........  ...........  .......  ............. ..........  ........... ......................  ........... ...... ............ ......
+#
+     0.10%            1      986  LFB hit       [.] triad   triad       [.] 0x00007f67dffe8038  [unknown]    None  L1 or L2 hit  No    
+     0.09%            1      890  LFB hit       [.] triad   triad       [.] 0x00007f67df91a750  [unknown]    None  L1 or L2 hit  No    
+     0.08%            1      826  LFB hit       [.] triad   triad       [.] 0x00007f67e288fba8  [unknown]    None  L1 or L2 hit  No    
+     0.08%            1      825  LFB hit       [.] triad   triad       [.] 0x00007f67dea28c80  [unknown]    None  L1 or L2 hit  No    
+     0.08%            1      787  LFB hit       [.] triad   triad       [.] 0x00007f67df055a60  [unknown]    None  L1 or L2 hit  No    
+
+The perf mem command is a wrapper around perf record/report. It passes the
+right options to the report and record commands. Note that the TUI mode is
+supported.
+
+One powerful feature of perf is that users can toy with sort order to display
+the information in different format or from a different angle. This is particularly
+useful with memory sampling:
+
+$ perf mem -t load rep --sort=mem
+# Samples: 19K of event 'cpu/mem-loads/pp'
+# Total cost : 1013994
+# Sort order : mem
+#
+# Overhead      Samples             Memory access
+# ........  ...........  ........................
+#
+    85.26%        10633  LFB hit                 
+     7.35%         8151  L1 hit                  
+     3.13%          383  L3 hit                  
+     3.09%          195  Local RAM hit           
+     1.16%          259  L2 hit                  
+     0.00%            4  Uncached hit            
+
+Or if one is interested in the data view:
+$ perf mem -t load rep --sort=symbol_daddr,cost
+# Samples: 19K of event 'cpu/mem-loads/pp'
+# Total cost : 1013994
+# Sort order : symbol_daddr,cost
+#
+# Overhead      Samples             Data Symbol     Cost
+# ........  ...........  ......................  .......
+#
+     0.10%            1  [.] 0x00007f67dffe8038      986
+     0.09%            1  [.] 0x00007f67df91a750      890
+     0.08%            1  [.] 0x00007f67e288fba8      826
 
 
-------enig2UATRGLPVLEEOHEUWPSIP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+One note on the cost displayed: On Intel processors with PEBS Load Latency, as described
+in the SDM, the cost encompasses the number of cycles from dispatch to Globally Observable
+(GO) state. That means, that it includes OOO execution. It is not usual to see L1D Hits
+with a cost of > 100 cycles. Always look at the memory level for an approximation of the
+access penalty, then interpret the cost value accordingly.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Data symbolization is working for initialized global variables. Dynamically allocated
+data and bss symbolization is currently non-functional.
 
-iEYEARECAAYFAlD1ejQACgkQjTAFq1RaXHPlOwCgj2oFC4JYU3BoYfv0rPj+AcLP
-nZMAn0VrMMC7sVTzcdMpHYjnovv2pJRb
-=3CxT
------END PGP SIGNATURE-----
+There is no cost associated with stores.
 
-------enig2UATRGLPVLEEOHEUWPSIP--
+In v2, we leverage some of Andi Kleen's Haswell patches, namely the weighted
+samples and perf tool event parser fixes. We  also introduce PERF_RECORD_MISC_DATA_MMAP
+to tag mmaps for data vs. code. This helps the perf tool distinguish data. vs. code
+mmaps (and therefore symbols). We have also integrated the feedback from v1. Note that in
+v2 data symbol resolution is not yet fully operational, but there is a slight improvement.
+
+In v3, we rebased the patch on 3.7.0-rc6 which includes certain of Nahyung's patches.
+
+In v4, we rebase to v3.7 tip and also included the fixes from Namhyung Kim for
+symbolization of data addresses. We now have accesses to global variables working.
+
+In v5, we rebase to 3.8.0-rc1. We also updated the WEIGHT patches from Andi to
+fix a couple of issues. Integrated the feedback from jolsa@.
+Reintegrated the man page.
+
+In v6, we rebased to 3.8.0-rc3 and fixed the issue reported by jolsa@ related
+to hist_entry->mem_info maps not being marked as referenced.
+
+
+Andi Kleen (2):
+  perf, x86: Support CPU specific sysfs events
+  perf, core: Add a concept of a weightened sample
+
+Namhyung Kim (2):
+  perf tools: Ignore ABS symbols when loading data maps
+  perf tools: Fix output of symbol_daddr offset
+
+Stephane Eranian (14):
+  perf/x86: improve sysfs event mapping with event string
+  perf/x86: add flags to event constraints
+  perf: add minimal support for PERF_SAMPLE_WEIGHT
+  perf: add support for PERF_SAMPLE_ADDR in dump_sampple()
+  perf: add generic memory sampling interface
+  perf/x86: add memory profiling via PEBS Load Latency
+  perf/x86: export PEBS load latency threshold register to sysfs
+  perf/x86: add support for PEBS Precise Store
+  perf tools: add mem access sampling core support
+  perf report: add support for mem access profiling
+  perf record: add support for mem access profiling
+  perf tools: add new mem command for memory access profiling
+  perf: add PERF_RECORD_MISC_MMAP_DATA to RECORD_MMAP
+  perf tools: detect data vs. text mappings
+
+ arch/x86/include/uapi/asm/msr-index.h         |    1 +
+ arch/x86/kernel/cpu/perf_event.c              |   67 +++--
+ arch/x86/kernel/cpu/perf_event.h              |   62 ++++-
+ arch/x86/kernel/cpu/perf_event_intel.c        |   34 ++-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c     |  182 +++++++++++++-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
+ include/linux/perf_event.h                    |    5 +
+ include/uapi/linux/perf_event.h               |   70 +++++-
+ kernel/events/core.c                          |   15 ++
+ tools/perf/Documentation/perf-mem.txt         |   48 ++++
+ tools/perf/Makefile                           |    1 +
+ tools/perf/builtin-mem.c                      |  238 ++++++++++++++++++
+ tools/perf/builtin-record.c                   |    2 +
+ tools/perf/builtin-report.c                   |  131 +++++++++-
+ tools/perf/builtin.h                          |    1 +
+ tools/perf/command-list.txt                   |    1 +
+ tools/perf/perf.c                             |    1 +
+ tools/perf/perf.h                             |    1 +
+ tools/perf/util/event.h                       |    2 +
+ tools/perf/util/evsel.c                       |   16 ++
+ tools/perf/util/hist.c                        |   77 +++++-
+ tools/perf/util/hist.h                        |   13 +
+ tools/perf/util/machine.c                     |   10 +-
+ tools/perf/util/session.c                     |   45 ++++
+ tools/perf/util/session.h                     |    4 +
+ tools/perf/util/sort.c                        |  325 ++++++++++++++++++++++++-
+ tools/perf/util/sort.h                        |   10 +-
+ tools/perf/util/symbol-elf.c                  |    3 +
+ tools/perf/util/symbol.h                      |    7 +
+ 29 files changed, 1326 insertions(+), 48 deletions(-)
+ create mode 100644 tools/perf/Documentation/perf-mem.txt
+ create mode 100644 tools/perf/builtin-mem.c
+
+-- 
+1.7.9.5
+
