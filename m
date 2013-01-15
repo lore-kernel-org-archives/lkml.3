@@ -1,131 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933318Ab3AOWu5 (ORCPT <rfc822;w@1wt.eu>);
+	id S933332Ab3AOWvB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:51:01 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:56892 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933305Ab3AOWu5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jan 2013 17:50:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46194 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933305Ab3AOWuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:52 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?=C3=89ric=20Piel?= <piel@delmic.com>,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 081/171] staging: comedi: fix minimum AO period for NI 625x and NI 628x
-Date: Tue, 15 Jan 2013 14:44:06 -0800
-Message-Id: <20130115224319.246625270@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
-References: <20130115224313.394976595@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+Message-ID: <50F5DD45.4060603@linux.vnet.ibm.com>
+Date: Tue, 15 Jan 2013 14:50:45 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [RFCv3][PATCH 1/3] create slow_virt_to_phys()
+References: <20130109185904.DD641DCE@kernel.stglabs.ibm.com> <50F5B214.5060604@zytor.com>
+In-Reply-To: <50F5B214.5060604@zytor.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011522-4834-0000-0000-0000029DA1AE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 01/15/2013 11:46 AM, H. Peter Anvin wrote:
+> I object to this switch statement.  If we are going to create new
+> primitives, let's create a primitive that embody this and put it in
+> pgtypes_types.h, especially since it is simply an algorithmic operation:
 
-------------------
+Yeah, that's a good point.  I did at least copy part of the switch from
+elsewhere in the file, so there's certainly room for consolidating some
+things.
 
-From: Éric Piel <piel@delmic.com>
+> static inline unsigned long page_level_size(int level)
+> {
+>     return (PAGE_SIZE/PGDIR_SIZE) << (PGDIR_SHIFT*level);
+> }
+> static inline unsigned long page_level_shift(int level)
+> {
+>     return (PAGE_SHIFT-PGDIR_SHIFT) + (PGDIR_SHIFT*level);
+> }
 
-commit 34b55d8c48f4f76044d8f4d6ec3dc786cf210312 upstream.
+(PAGE_SHIFT-PGDIR_SHIFT) == -27, so this can't possibly work, right?
 
-The minimum period was set to 357 ns, while the divider for these boards is 50
-ns. This prevented to output at maximum speed as ni_ao_cmdtest() would return
-357 but would not accept it.
+How about something like this?
 
-Not sure why it was set to 357 ns (this was done before the git history,
-which starts 5 years ago). My guess is that it comes from reading the
-specification stating a 2.8 MHz rate (~ 357 ns). The latest
-specification states a 2.86 MHz rate (~ 350 ns), which makes a lot
-more sense.
+/*
+ * Note: this only holds true for pagetable levels where PTEs can be
+ * present.  It would break if you used it on the PGD level where PAE
+ * is in use.  It basically assumes that the shift between _all_
+ * adjacent levels of the pagetables are the same as the lowest-level
+ * shift.
+ */
+#define PG_SHIFT_PER_LEVEL (PMD_SHIFT-PAGE_SHIFT)
 
-Tested on a pci-6251.
+static inline unsigned long page_level_shift(int level)
+{
+	return PAGE_SHIFT + (level - PG_LEVEL_4K) * PG_SHIFT_PER_LEVEL;
+}
+static inline unsigned long page_level_size(int level)
+{
+	return 1 << page_level_shift(level);
+}
 
-Signed-off-by: Éric Piel <piel@delmic.com>
-Acked-By: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The generated code for page_level_size() looks pretty good, despite it
+depending on page_level_shift(), so we might as well leave it defined
+this way for simplicity:
 
----
- drivers/staging/comedi/drivers/ni_pcimio.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+0000000000400610 <plsize>:
+  400610:       8d 7c bf fb             lea    -0x5(%rdi,%rdi,4),%edi
+  400614:       b8 01 00 00 00          mov    $0x1,%eax
+  400619:       8d 4c 3f 0c             lea    0xc(%rdi,%rdi,1),%ecx
+  40061d:       d3 e0                   shl    %cl,%eax
+  40061f:       c3                      retq
 
---- a/drivers/staging/comedi/drivers/ni_pcimio.c
-+++ b/drivers/staging/comedi/drivers/ni_pcimio.c
-@@ -1023,7 +1023,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_625x_ao,
- 	 .reg_type = ni_reg_625x,
- 	 .ao_unipolar = 0,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 8,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1042,7 +1042,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_625x_ao,
- 	 .reg_type = ni_reg_625x,
- 	 .ao_unipolar = 0,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 8,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1061,7 +1061,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_625x_ao,
- 	 .reg_type = ni_reg_625x,
- 	 .ao_unipolar = 0,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 8,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1097,7 +1097,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_625x_ao,
- 	 .reg_type = ni_reg_625x,
- 	 .ao_unipolar = 0,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 32,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1116,7 +1116,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_625x_ao,
- 	 .reg_type = ni_reg_625x,
- 	 .ao_unipolar = 0,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 32,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1152,7 +1152,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_628x_ao,
- 	 .reg_type = ni_reg_628x,
- 	 .ao_unipolar = 1,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 8,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1171,7 +1171,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_628x_ao,
- 	 .reg_type = ni_reg_628x,
- 	 .ao_unipolar = 1,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 8,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1207,7 +1207,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_628x_ao,
- 	 .reg_type = ni_reg_628x,
- 	 .ao_unipolar = 1,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 32,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-
+I'll send out another series doing this.
 
