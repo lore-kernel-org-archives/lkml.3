@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933175Ab3AOWuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:50:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45946 "EHLO mail.kernel.org"
+	id S932988Ab3AOWud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:50:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46022 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933161Ab3AOWuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:16 -0500
+	id S933051Ab3AOWu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Beregalov <a.beregalov@gmail.com>,
-        "Theodore Tso" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>
-Subject: [ 061/171] ext4: lock i_mutex when truncating orphan inodes
-Date: Tue, 15 Jan 2013 14:43:46 -0800
-Message-Id: <20130115224317.806265462@linuxfoundation.org>
+        Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>
+Subject: [ 067/171] ACPI : do not use Lid and Sleep button for S5 wakeup
+Date: Tue, 15 Jan 2013 14:43:52 -0800
+Message-Id: <20130115224318.243389840@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,37 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 721e3eba21e43532e438652dd8f1fcdfce3187e7 upstream.
+commit b7e383046c2c7c13ad928cd7407eafff758ddd4b upstream.
 
-Commit c278531d39 added a warning when ext4_flush_unwritten_io() is
-called without i_mutex being taken.  It had previously not been taken
-during orphan cleanup since races weren't possible at that point in
-the mount process, but as a result of this c278531d39, we will now see
-a kernel WARN_ON in this case.  Take the i_mutex in
-ext4_orphan_cleanup() to suppress this warning.
+When system enters power off, the _PSW of Lid device is enabled.
+But this may cause the system to reboot instead of power off.
 
-Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+A proper way to fix this is to always disable lid wakeup capability for S5.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=35262
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/acpi/scan.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2120,7 +2120,9 @@ static void ext4_orphan_cleanup(struct s
- 				__func__, inode->i_ino, inode->i_size);
- 			jbd_debug(2, "truncating inode %lu to %lld bytes\n",
- 				  inode->i_ino, inode->i_size);
-+			mutex_lock(&inode->i_mutex);
- 			ext4_truncate(inode);
-+			mutex_unlock(&inode->i_mutex);
- 			nr_truncates++;
- 		} else {
- 			ext4_msg(sb, KERN_DEBUG,
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -789,8 +789,8 @@ acpi_bus_extract_wakeup_device_power_pac
+ static void acpi_bus_set_run_wake_flags(struct acpi_device *device)
+ {
+ 	struct acpi_device_id button_device_ids[] = {
+-		{"PNP0C0D", 0},
+ 		{"PNP0C0C", 0},
++		{"PNP0C0D", 0},
+ 		{"PNP0C0E", 0},
+ 		{"", 0},
+ 	};
+@@ -802,6 +802,11 @@ static void acpi_bus_set_run_wake_flags(
+ 	/* Power button, Lid switch always enable wakeup */
+ 	if (!acpi_match_device_ids(device, button_device_ids)) {
+ 		device->wakeup.flags.run_wake = 1;
++		if (!acpi_match_device_ids(device, &button_device_ids[1])) {
++			/* Do not use Lid/sleep button for S5 wakeup */
++			if (device->wakeup.sleep_state == ACPI_STATE_S5)
++				device->wakeup.sleep_state = ACPI_STATE_S4;
++		}
+ 		device_set_wakeup_capable(&device->dev, true);
+ 		return;
+ 	}
 
 
