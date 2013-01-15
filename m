@@ -1,118 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab3AOKKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:10:42 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:46162 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756277Ab3AOKKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:10:40 -0500
-X-IronPort-AV: E=Sophos;i="4.84,473,1355068800"; 
-   d="scan'208";a="6591099"
-Message-ID: <50F52677.80100@cn.fujitsu.com>
-Date: Tue, 15 Jan 2013 17:50:47 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: virtualization@lists.linux-foundation.org
-CC: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, hutao@cn.fujitsu.com, linux-scsi@vger.kernel.org,
-        mst@redhat.com, rusty@rustcorp.com.au, asias@redhat.com,
-        stefanha@redhat.com, nab@linux-iscsi.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH 2/2] virtio-scsi: reset virtqueue affinity when doing cpu
- hotplug
-References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <50F525E3.1000100@cn.fujitsu.com>
-In-Reply-To: <50F525E3.1000100@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/15 17:49:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/15 17:49:51,
-	Serialize complete at 2013/01/15 17:49:51
+	id S1756446Ab3AOKLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:11:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47711 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753645Ab3AOKLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:11:42 -0500
+Message-ID: <1358244688.4264.7.camel@cr0>
+Subject: Re: the patch "bridge: export multicast database via netlink" broke
+ kernel 3.8 uapi (was: Re: [libvirt] if_bridge.h: include in6.h for struct
+ in6_addr use)
+From: Cong Wang <amwang@redhat.com>
+To: Thomas Backlund <tmb@mageia.org>
+Cc: Eric Blake <eblake@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch
+Date: Tue, 15 Jan 2013 18:11:28 +0800
+In-Reply-To: <50F52956.50201@mageia.org>
+References: <50F2FF1B.3020708@mageia.org> <50F313A5.3020707@mageia.org>
+	 <50F49B7E.50906@redhat.com> <50F52956.50201@mageia.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-01-15 at 12:03 +0200, Thomas Backlund wrote:
+> Eric Blake skrev 15.1.2013 01:57:
+> > On 01/13/2013 01:05 PM, Thomas Backlund wrote:
+> >> Thomas Backlund skrev 13.1.2013 20:38:
+> >>> patch both inline and attached as thunderbird tends to mess up ...
+> >>
+> >>> -----
+> >>>
+> >>> if_bridge.h uses struct in6_addr ip6; but does not include the in6.h
+> >>> header.
+> >>>
+> >>> Found by trying to build libvirt and connman against 3.8-rc3 headers.
+> >>>
+> >>
+> >> Ok,
+> >> ignore this patch, it's not the correct fix as it introduces
+> >> redefinitions...
+> >>
+> >> Btw, the error that I hit that made me suggest this fix was libvirt
+> >> config check bailing out:
+> >>
+> >> config.log:/usr/include/linux/if_bridge.h:173:20: error: field 'ip6' has
+> >> incomplete type
+> >
+> > Hmm, just now noticing this thread, after independently hitting and and
+> > having to work around the same problem in libvirt:
+> > https://www.redhat.com/archives/libvir-list/2013-January/msg00930.html
+> > https://bugzilla.redhat.com/show_bug.cgi?id=895141
+> 
+> 
+> Yep,
+> 
+> and the commit breaking uapi headers is by using "struct in6_addr ip6" is:
+> 
+> 
+>  From ee07c6e7a6f8a25c18f0a6b18152fbd7499245f6 Mon Sep 17 00:00:00 2001
+> From: Cong Wang <amwang@redhat.com>
+> Date: Fri, 7 Dec 2012 00:04:48 +0000
+> Subject: [PATCH] bridge: export multicast database via netlink
 
-Add hot cpu notifier to reset the request virtqueue affinity
-when doing cpu hotplug.
+Does the following patch help?
 
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
----
- drivers/scsi/virtio_scsi.c | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+$ git diff include/uapi/linux/if_bridge.h
+diff --git a/include/uapi/linux/if_bridge.h
+b/include/uapi/linux/if_bridge.h
+index 5db2975..653db23 100644
+--- a/include/uapi/linux/if_bridge.h
++++ b/include/uapi/linux/if_bridge.h
+@@ -14,6 +14,7 @@
+ #define _UAPI_LINUX_IF_BRIDGE_H
+ 
+ #include <linux/types.h>
++#include <linux/in6.h>
+ 
+ #define SYSFS_BRIDGE_ATTR      "bridge"
+ #define SYSFS_BRIDGE_FDB       "brforward"
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 16b0ef2..a3b5f12 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -20,6 +20,7 @@
- #include <linux/virtio_ids.h>
- #include <linux/virtio_config.h>
- #include <linux/virtio_scsi.h>
-+#include <linux/cpu.h>
- #include <scsi/scsi_host.h>
- #include <scsi/scsi_device.h>
- #include <scsi/scsi_cmnd.h>
-@@ -109,6 +110,9 @@ struct virtio_scsi {
- 	/* Does the affinity hint is set for virtqueues? */
- 	bool affinity_hint_set;
- 
-+	/* CPU hotplug notifier */
-+	struct notifier_block nb;
-+
- 	struct virtio_scsi_vq ctrl_vq;
- 	struct virtio_scsi_vq event_vq;
- 	struct virtio_scsi_vq req_vqs[];
-@@ -738,6 +742,23 @@ static void virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
- 	}
- }
- 
-+static int virtscsi_cpu_callback(struct notifier_block *nfb,
-+				 unsigned long action, void *hcpu)
-+{
-+	struct virtio_scsi *vscsi = container_of(nfb, struct virtio_scsi, nb);
-+	switch(action) {
-+	case CPU_ONLINE:
-+	case CPU_ONLINE_FROZEN:
-+	case CPU_DEAD:
-+	case CPU_DEAD_FROZEN:
-+		virtscsi_set_affinity(vscsi, true);
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
- static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
- 			     struct virtqueue *vq)
- {
-@@ -888,6 +909,13 @@ static int __devinit virtscsi_probe(struct virtio_device *vdev)
- 	if (err)
- 		goto virtscsi_init_failed;
- 
-+	vscsi->nb.notifier_call = &virtscsi_cpu_callback;
-+	err = register_hotcpu_notifier(&vscsi->nb);
-+	if (err) {
-+		pr_err("virtio_scsi: registering cpu notifier failed\n");
-+		goto scsi_add_host_failed;
-+	}
-+
- 	cmd_per_lun = virtscsi_config_get(vdev, cmd_per_lun) ?: 1;
- 	shost->cmd_per_lun = min_t(u32, cmd_per_lun, shost->can_queue);
- 	shost->max_sectors = virtscsi_config_get(vdev, max_sectors) ?: 0xFFFF;
-@@ -925,6 +953,8 @@ static void __devexit virtscsi_remove(struct virtio_device *vdev)
- 
- 	scsi_remove_host(shost);
- 
-+	unregister_hotcpu_notifier(&vscsi->nb);
-+
- 	virtscsi_remove_vqs(vdev);
- 	scsi_host_put(shost);
- }
--- 
-1.8.1
