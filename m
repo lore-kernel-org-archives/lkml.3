@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758276Ab3AOWaS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:30:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42014 "EHLO mail.kernel.org"
+	id S1758260Ab3AOWaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:30:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41958 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757893Ab3AOWaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:30:16 -0500
+	id S1758225Ab3AOWaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:30:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
-        Roland Dreier <roland@purestorage.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 090/221] RDMA/nes: Fix for terminate timer crash
-Date: Tue, 15 Jan 2013 10:50:17 -0800
-Message-Id: <20130115185004.530561677@linuxfoundation.org>
+        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 077/221] drm/radeon: Properly handle DDC probe for DP bridges
+Date: Tue, 15 Jan 2013 10:50:04 -0800
+Message-Id: <20130115185003.620291210@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,84 +26,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+From: Niels Ole Salscheider <niels_ole@salscheider-online.de>
 
-commit 7bfcfa51c35cdd2d37e0d70fc11790642dd11fb3 upstream.
+commit 0a9069d34918659bc8a89e21e69e60b2b83291a3 upstream.
 
-The terminate timer needs to be initialized just once.
+DDC information can be accessed using AUX CH
 
-Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Fixes failure to probe monitors on some systems with
+DP bridge chips.
+
+agd5f: minor fixes
+
+Signed-off-by: Niels Ole Salscheider <niels_ole@salscheider-online.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/nes/nes.h       |    1 +
- drivers/infiniband/hw/nes/nes_hw.c    |    9 ++-------
- drivers/infiniband/hw/nes/nes_verbs.c |    4 +++-
- 3 files changed, 6 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   10 ++++++----
+ drivers/gpu/drm/radeon/radeon_display.c    |   13 +++++++++----
+ drivers/gpu/drm/radeon/radeon_i2c.c        |   10 ++++++++--
+ drivers/gpu/drm/radeon/radeon_mode.h       |    2 +-
+ 4 files changed, 24 insertions(+), 11 deletions(-)
 
---- a/drivers/infiniband/hw/nes/nes.h
-+++ b/drivers/infiniband/hw/nes/nes.h
-@@ -532,6 +532,7 @@ void nes_iwarp_ce_handler(struct nes_dev
- int nes_destroy_cqp(struct nes_device *);
- int nes_nic_cm_xmit(struct sk_buff *, struct net_device *);
- void nes_recheck_link_status(struct work_struct *work);
-+void nes_terminate_timeout(unsigned long context);
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -741,7 +741,7 @@ radeon_vga_detect(struct drm_connector *
+ 		ret = connector_status_disconnected;
  
- /* nes_nic.c */
- struct net_device *nes_netdev_init(struct nes_device *, void __iomem *);
---- a/drivers/infiniband/hw/nes/nes_hw.c
-+++ b/drivers/infiniband/hw/nes/nes_hw.c
-@@ -75,7 +75,6 @@ static void nes_process_iwarp_aeqe(struc
- static void process_critical_error(struct nes_device *nesdev);
- static void nes_process_mac_intr(struct nes_device *nesdev, u32 mac_number);
- static unsigned int nes_reset_adapter_ne020(struct nes_device *nesdev, u8 *OneG_Mode);
--static void nes_terminate_timeout(unsigned long context);
- static void nes_terminate_start_timer(struct nes_qp *nesqp);
+ 	if (radeon_connector->ddc_bus)
+-		dret = radeon_ddc_probe(radeon_connector);
++		dret = radeon_ddc_probe(radeon_connector, false);
+ 	if (dret) {
+ 		radeon_connector->detected_by_load = false;
+ 		if (radeon_connector->edid) {
+@@ -947,7 +947,7 @@ radeon_dvi_detect(struct drm_connector *
+ 		return connector->status;
  
- #ifdef CONFIG_INFINIBAND_NES_DEBUG
-@@ -3520,7 +3519,7 @@ static void nes_terminate_received(struc
- }
+ 	if (radeon_connector->ddc_bus)
+-		dret = radeon_ddc_probe(radeon_connector);
++		dret = radeon_ddc_probe(radeon_connector, false);
+ 	if (dret) {
+ 		radeon_connector->detected_by_load = false;
+ 		if (radeon_connector->edid) {
+@@ -1401,7 +1401,8 @@ radeon_dp_detect(struct drm_connector *c
+ 		if (encoder) {
+ 			/* setup ddc on the bridge */
+ 			radeon_atom_ext_encoder_setup_ddc(encoder);
+-			if (radeon_ddc_probe(radeon_connector)) /* try DDC */
++			/* bridge chips are always aux */
++			if (radeon_ddc_probe(radeon_connector, true)) /* try DDC */
+ 				ret = connector_status_connected;
+ 			else if (radeon_connector->dac_load_detect) { /* try load detection */
+ 				struct drm_encoder_helper_funcs *encoder_funcs = encoder->helper_private;
+@@ -1419,7 +1420,8 @@ radeon_dp_detect(struct drm_connector *c
+ 				if (radeon_dp_getdpcd(radeon_connector))
+ 					ret = connector_status_connected;
+ 			} else {
+-				if (radeon_ddc_probe(radeon_connector))
++				/* try non-aux ddc (DP to DVI/HMDI/etc. adapter) */
++				if (radeon_ddc_probe(radeon_connector, false))
+ 					ret = connector_status_connected;
+ 			}
+ 		}
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -695,10 +695,15 @@ int radeon_ddc_get_modes(struct radeon_c
+ 	if (radeon_connector->router.ddc_valid)
+ 		radeon_router_select_ddc_port(radeon_connector);
  
- /* Timeout routine in case terminate fails to complete */
--static void nes_terminate_timeout(unsigned long context)
-+void nes_terminate_timeout(unsigned long context)
- {
- 	struct nes_qp *nesqp = (struct nes_qp *)(unsigned long)context;
+-	if ((radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_DisplayPort) ||
+-	    (radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_eDP) ||
+-	    (radeon_connector_encoder_get_dp_bridge_encoder_id(&radeon_connector->base) !=
+-	     ENCODER_OBJECT_ID_NONE)) {
++	if (radeon_connector_encoder_get_dp_bridge_encoder_id(&radeon_connector->base) !=
++	    ENCODER_OBJECT_ID_NONE) {
++		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
++
++		if (dig->dp_i2c_bus)
++			radeon_connector->edid = drm_get_edid(&radeon_connector->base,
++							      &dig->dp_i2c_bus->adapter);
++	} else if ((radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_DisplayPort) ||
++		   (radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_eDP)) {
+ 		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
  
-@@ -3530,11 +3529,7 @@ static void nes_terminate_timeout(unsign
- /* Set a timer in case hw cannot complete the terminate sequence */
- static void nes_terminate_start_timer(struct nes_qp *nesqp)
- {
--	init_timer(&nesqp->terminate_timer);
--	nesqp->terminate_timer.function = nes_terminate_timeout;
--	nesqp->terminate_timer.expires = jiffies + HZ;
--	nesqp->terminate_timer.data = (unsigned long)nesqp;
--	add_timer(&nesqp->terminate_timer);
-+	mod_timer(&nesqp->terminate_timer, (jiffies + HZ));
- }
- 
- /**
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -1404,6 +1404,9 @@ static struct ib_qp *nes_create_qp(struc
- 	}
- 
- 	nesqp->sig_all = (init_attr->sq_sig_type == IB_SIGNAL_ALL_WR);
-+	init_timer(&nesqp->terminate_timer);
-+	nesqp->terminate_timer.function = nes_terminate_timeout;
-+	nesqp->terminate_timer.data = (unsigned long)nesqp;
- 
- 	/* update the QP table */
- 	nesdev->nesadapter->qp_table[nesqp->hwqp.qp_id-NES_FIRST_QPN] = nesqp;
-@@ -1413,7 +1416,6 @@ static struct ib_qp *nes_create_qp(struc
- 	return &nesqp->ibqp;
- }
- 
--
- /**
-  * nes_clean_cq
+ 		if ((dig->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT ||
+--- a/drivers/gpu/drm/radeon/radeon_i2c.c
++++ b/drivers/gpu/drm/radeon/radeon_i2c.c
+@@ -39,7 +39,7 @@ extern u32 radeon_atom_hw_i2c_func(struc
+  * radeon_ddc_probe
+  *
   */
+-bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
++bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool use_aux)
+ {
+ 	u8 out = 0x0;
+ 	u8 buf[8];
+@@ -63,7 +63,13 @@ bool radeon_ddc_probe(struct radeon_conn
+ 	if (radeon_connector->router.ddc_valid)
+ 		radeon_router_select_ddc_port(radeon_connector);
+ 
+-	ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
++	if (use_aux) {
++		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
++		ret = i2c_transfer(&dig->dp_i2c_bus->adapter, msgs, 2);
++	} else {
++		ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
++	}
++
+ 	if (ret != 2)
+ 		/* Couldn't find an accessible DDC on this connector */
+ 		return false;
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -559,7 +559,7 @@ extern void radeon_i2c_put_byte(struct r
+ 				u8 val);
+ extern void radeon_router_select_ddc_port(struct radeon_connector *radeon_connector);
+ extern void radeon_router_select_cd_port(struct radeon_connector *radeon_connector);
+-extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector);
++extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool use_aux);
+ extern int radeon_ddc_get_modes(struct radeon_connector *radeon_connector);
+ 
+ extern struct drm_encoder *radeon_best_encoder(struct drm_connector *connector);
 
 
