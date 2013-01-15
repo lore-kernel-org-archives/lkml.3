@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934012Ab3AOWyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:54:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47524 "EHLO mail.kernel.org"
+	id S933969Ab3AOWyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:54:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47442 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933996Ab3AOWyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:54:10 -0500
-Date: Tue, 15 Jan 2013 14:47:18 -0800
-From: Greg KH <greg@kroah.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Anton Blanchard <anton@au1.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
-        robert.richter@amd.com, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 6/6][v3] perf: Document the ABI of perf sysfs entries
-Message-ID: <20130115224718.GC32544@kroah.com>
-References: <20130110010347.GA32590@us.ibm.com>
- <20130110010703.GF32590@us.ibm.com>
- <20130115185759.GG5826@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130115185759.GG5826@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933709Ab3AOWx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:53:57 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
+Subject: [ 167/171] ceph: call handle_cap_grant() for cap import message
+Date: Tue, 15 Jan 2013 14:45:32 -0800
+Message-Id: <20130115224325.364741384@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
+References: <20130115224313.394976595@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 03:57:59PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Jan 09, 2013 at 05:07:03PM -0800, Sukadev Bhattiprolu escreveu:
-> > [PATCH 6/6][v3] perf: Document the ABI of perf sysfs entries
-> > 
-> > This patchset addes two new sets of files to sysfs:
-> > 
-> > 	- generic and POWER-specific perf events in /sys/devices/cpu/events/
-> > 	- perf event config format in /sys/devices/cpu/format/event
-> > 
-> > Document the format of these files which would become part of the ABI.
-> > 
-> > Changelog[v3]:
-> > 	[Greg KH] Include ABI documentation.
-> 
-> Jiri, can I have your ack on this one too?
-> 
-> Greg, all ok now?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-No objection from me, thanks.
+------------------
 
-greg k-h
+
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+
+If client sends cap message that requests new max size during
+exporting caps, the exporting MDS will drop the message quietly.
+So the client may wait for the reply that updates the max size
+forever. call handle_cap_grant() for cap import message can
+avoid this issue.
+
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+(cherry picked from commit 0e5e1774a92e6fe9c511585de8f078b4c4c68dbb)
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/ceph/caps.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/fs/ceph/caps.c
++++ b/fs/ceph/caps.c
+@@ -2749,6 +2749,7 @@ static void handle_cap_import(struct cep
+ 
+ 	/* make sure we re-request max_size, if necessary */
+ 	spin_lock(&ci->i_ceph_lock);
++	ci->i_wanted_max_size = 0;  /* reset */
+ 	ci->i_requested_max_size = 0;
+ 	spin_unlock(&ci->i_ceph_lock);
+ }
+@@ -2844,8 +2845,6 @@ void ceph_handle_caps(struct ceph_mds_se
+ 	case CEPH_CAP_OP_IMPORT:
+ 		handle_cap_import(mdsc, inode, h, session,
+ 				  snaptrace, snaptrace_len);
+-		ceph_check_caps(ceph_inode(inode), 0, session);
+-		goto done_unlocked;
+ 	}
+ 
+ 	/* the rest require a cap */
+@@ -2862,6 +2861,7 @@ void ceph_handle_caps(struct ceph_mds_se
+ 	switch (op) {
+ 	case CEPH_CAP_OP_REVOKE:
+ 	case CEPH_CAP_OP_GRANT:
++	case CEPH_CAP_OP_IMPORT:
+ 		handle_cap_grant(inode, h, session, cap, msg->middle);
+ 		goto done_unlocked;
+ 
+
+
