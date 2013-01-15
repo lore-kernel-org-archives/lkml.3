@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934287Ab3AOXIl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:08:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48176 "EHLO mail.kernel.org"
+	id S934224Ab3AOW4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:56:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48107 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934167Ab3AOW4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:56:42 -0500
+	id S934194Ab3AOW4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 30/71] staging: vt6656: 64bit fixes: key.c/h change unsigned long to u32
-Date: Tue, 15 Jan 2013 14:54:27 -0800
-Message-Id: <20130115225342.612257588@linuxfoundation.org>
+Subject: [ 26/71] staging: vt6656: [BUG] out of bound array reference in RFbSetPower.
+Date: Tue, 15 Jan 2013 14:54:23 -0800
+Message-Id: <20130115225342.314489181@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,84 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit c0d05b305b00c698b0a8c1b3d46c9380bce9db45 upstream.
+commit ab1dd9963137a1e122004d5378a581bf16ae9bc8 upstream.
 
-Fixes long issues.
+Calling RFbSetPower with uCH zero value will cause out of bound array reference.
+
+This causes 64 bit kernels to oops on boot.
+
+Note: Driver does not function on 64 bit kernels and should be
+blacklisted on them.
 
 Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/key.c |    6 +++---
- drivers/staging/vt6656/key.h |    8 ++++----
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/staging/vt6656/rf.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/staging/vt6656/key.c
-+++ b/drivers/staging/vt6656/key.c
-@@ -223,7 +223,7 @@ BOOL KeybSetKey(
-     PSKeyManagement pTable,
-     PBYTE           pbyBSSID,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -675,7 +675,7 @@ BOOL KeybSetDefaultKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -788,7 +788,7 @@ BOOL KeybSetAllGroupKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
---- a/drivers/staging/vt6656/key.h
-+++ b/drivers/staging/vt6656/key.h
-@@ -58,7 +58,7 @@
- typedef struct tagSKeyItem
- {
-     BOOL        bKeyValid;
--    unsigned long       uKeyLength;
-+	u32 uKeyLength;
-     BYTE        abyKey[MAX_KEY_LEN];
-     QWORD       KeyRSC;
-     DWORD       dwTSC47_16;
-@@ -107,7 +107,7 @@ BOOL KeybSetKey(
-     PSKeyManagement pTable,
-     PBYTE           pbyBSSID,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -146,7 +146,7 @@ BOOL KeybSetDefaultKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -156,7 +156,7 @@ BOOL KeybSetAllGroupKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
+--- a/drivers/staging/vt6656/rf.c
++++ b/drivers/staging/vt6656/rf.c
+@@ -769,6 +769,9 @@ BYTE    byPwr = pDevice->byCCKPwr;
+         return TRUE;
+     }
+ 
++	if (uCH == 0)
++		return -EINVAL;
++
+     switch (uRATE) {
+     case RATE_1M:
+     case RATE_2M:
 
 
