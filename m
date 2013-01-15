@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758934Ab3AOXuu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:50:50 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:65390 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758862Ab3AOXus (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 18:50:48 -0500
-Date: Tue, 15 Jan 2013 15:50:43 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: USB device cannot be reconnected and khubd "blocked for more
- than 120 seconds"
-Message-ID: <20130115235043.GJ2668@htj.dyndns.org>
-References: <Pine.LNX.4.44L0.1301131153520.17578-100000@netrider.rowland.org>
- <CALxABCYtKJD4YrPxy6p+Frim8erccp3ine7SVEV9ReoaRh1BWQ@mail.gmail.com>
- <CACVXFVPMH-CHGw2EVwgYK5ozn1NAygT0f9=Df4vhSJmYYOZBMw@mail.gmail.com>
- <CACVXFVNvBeHG2TgfNY-wRQYtqsd6v-3AAiQVPAECuRnJ--ON-g@mail.gmail.com>
- <CA+55aFxV40V2WvNtJY3EC0F-B9wPk8CV2o1TTTyoF4CoWH7rhQ@mail.gmail.com>
- <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
- <CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com>
- <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
- <20130115183204.GE2668@htj.dyndns.org>
- <CA+55aFzZ1NJz34r99N7+mU4CN5Ju4QpHrDoWv5Kbd5-Z4QzgaA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzZ1NJz34r99N7+mU4CN5Ju4QpHrDoWv5Kbd5-Z4QzgaA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933071Ab3AOWtq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:49:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45727 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932881Ab3AOWtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:43 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Dan Williams <dcbw@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 036/171] i2400m: add Intel 6150 device IDs
+Date: Tue, 15 Jan 2013 14:43:21 -0800
+Message-Id: <20130115224316.009982836@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
+References: <20130115224313.394976595@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc'ing Arjan.  Arjan, the original thread can be read from
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-  http://thread.gmane.org/gmane.linux.kernel/1420814
+------------------
 
-Hello, again.
+From: Dan Williams <dcbw@redhat.com>
 
-On Tue, Jan 15, 2013 at 12:18:01PM -0800, Linus Torvalds wrote:
-> I think that is a good solution if it works, but look out: we need to
-> synchronize across *all* domains, not just the default one.  The sd.c
-> code, for example, uses its own "scsi_sd_probe_domain" for example,
-> and we *do* want to synchronize with it.
-> 
-> Can you do that with your suggested interface (ie it would have to be
-> a *global* sequence number).
+commit 999a7c5776a0ed2133645fa7e008bec05bda9254 upstream.
 
-So, I've been thinking about it for a while now and it looks like
-async is cutting too many corners to implement any sane stackable
-flushing scheme on top.  There simply isn't much information to
-determine who should wait for what.
+Add device IDs for WiMAX function of Intel 6150 cards.
 
-I've thought of two workarounds.  Both suck.
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-A. Try to detect deadlock conditions from synchronize().  If deadlock
-   condition involving other async jobs are detected, whine about it
-   and then skip.  Ignore deadlock condition on self (should solve
-   this particular case).
+---
+ drivers/net/wimax/i2400m/i2400m-usb.h |    3 +++
+ drivers/net/wimax/i2400m/usb.c        |    6 ++++++
+ 2 files changed, 9 insertions(+)
 
-   Detecting deadlock condition isn't difficult if there are only
-   global synchronizations; unfortunately, fragmented dependencies via
-   domain-local synchronization makes this non-trivial.
+--- a/drivers/net/wimax/i2400m/i2400m-usb.h
++++ b/drivers/net/wimax/i2400m/i2400m-usb.h
+@@ -152,6 +152,9 @@ enum {
+ 	/* Device IDs */
+ 	USB_DEVICE_ID_I6050 = 0x0186,
+ 	USB_DEVICE_ID_I6050_2 = 0x0188,
++	USB_DEVICE_ID_I6150 = 0x07d6,
++	USB_DEVICE_ID_I6150_2 = 0x07d7,
++	USB_DEVICE_ID_I6150_3 = 0x07d9,
+ 	USB_DEVICE_ID_I6250 = 0x0187,
+ };
+ 
+--- a/drivers/net/wimax/i2400m/usb.c
++++ b/drivers/net/wimax/i2400m/usb.c
+@@ -510,6 +510,9 @@ int i2400mu_probe(struct usb_interface *
+ 	switch (id->idProduct) {
+ 	case USB_DEVICE_ID_I6050:
+ 	case USB_DEVICE_ID_I6050_2:
++	case USB_DEVICE_ID_I6150:
++	case USB_DEVICE_ID_I6150_2:
++	case USB_DEVICE_ID_I6150_3:
+ 	case USB_DEVICE_ID_I6250:
+ 		i2400mu->i6050 = 1;
+ 		break;
+@@ -759,6 +762,9 @@ static
+ struct usb_device_id i2400mu_id_table[] = {
+ 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050) },
+ 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050_2) },
++	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150) },
++	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_2) },
++	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_3) },
+ 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6250) },
+ 	{ USB_DEVICE(0x8086, 0x0181) },
+ 	{ USB_DEVICE(0x8086, 0x1403) },
 
-   We can still do ignore-self thing mostly trivially tho.  This will
-   at least work around the problem at hand.
 
-B. The ranged synchronization I first suggested.  The problem with
-   this is that it's a common practice for a given async job to try to
-   flush anything which comes before it.  This can introduce spurious
-   synchronization dependencies which can then lead to deadlocks.
-
-   These conditions can be detected and ignored, at least only
-   considering global synchronizations.  The problem here is that
-   those deadlock conditions will occur under normal usage and thus
-   should be ignored silently, which basically makes synchronization
-   silently ignore and finish successfully even if there are
-   legitimate deadlocks which should be investigated.
-
-For now, I'm gonna implement simple "I'm not gonna wait for myself"
-self-deadlock avoidance.  If this needs any more sophistication, I
-think we better reimplement it so that we can explicitly match up and
-track who's gonna wait for what instead of throwing everything into a
-single cookie space and then try to work back from there.
-
-Thanks.
-
--- 
-tejun
