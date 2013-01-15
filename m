@@ -1,94 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab3AOXqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:46:07 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45958 "EHLO mail.kernel.org"
+	id S933217Ab3AOXqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:46:20 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:41508 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932980Ab3AOWuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:19 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Josh Boyer <jwboyer@redhat.com>, Ed Cashin <ecashin@coraid.com>
-Subject: [ 062/171] aoe: do not call bdi_init after blk_alloc_queue
-Date: Tue, 15 Jan 2013 14:43:47 -0800
-Message-Id: <20130115224317.892386244@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
-References: <20130115224313.394976595@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S933163Ab3AOXqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 18:46:07 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: stern@rowland.harvard.edu, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM / Runtime: return the right value when deferred_resume is true in rpm_suspend()
+Date: Wed, 16 Jan 2013 00:51:58 +0100
+Message-ID: <5832238.gzeSCHdU79@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1358263571.1223.26.camel@cliu38-desktop-build>
+References: <1358263571.1223.26.camel@cliu38-desktop-build>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, January 15, 2013 11:26:11 PM Chuansheng Liu wrote:
+> 
+> For the case that in rpm_suspend() and deferred_resume is true,
+> the rpm_resume() will be called, and if rpm_resume() return error,
+> at this time, the device is still in SUSPENDED state.
+> 
+> In this case it is still an suspend succeeding case, we should
+> return non-error instead of EAGAIN.
+> 
+> An example like below for this case:
+> CPU1:                                                      CPU2:
+> pm_runtime_get_sync()
+> pm_runtime_put_sync_suspend()
+>   rpm_suspend()
+>     __update_runtime_status(dev, RPM_SUSPENDING)
+>     rpm_callback()
+>         spin_unlock_irq()
+>           ...                                               pm_runtime_get()
+>                                                               spin_lock_irqsave()
+>           cb()                                                rpm_resume()
+>           ...                                                   dev->power.deferred_resume = true
+>                                                               spin_unlock_irqrestore()
+>         spin_lock_irq()
+>     __update_runtime_status(dev, RPM_SUSPENDED)
+>     rpm_resume() is called due to deferred_resume is true
+> 
+> Here if rpm_resume() failed in CPU1, the runtime_status is still SUSPENDED,
+> we should return 0 in this case.
 
-------------------
+No, we shouldn't.
 
-From: Ed Cashin <ecashin@coraid.com>
+Please note that rpm_resume() may fail for multiple reasons and some of them
+actually mean real errors, in which case we shouldn't return 0, because that
+may confuse the caller.
 
-commit 0a41409c518083133e79015092585d68915865be upstream, but doesn't
-apply, so this version is different for older kernels than 3.7.x
+However, if we return -EAGAIN regardless, whatever the caller does next will
+be fine.
 
-blk_alloc_queue has already done a bdi_init, so do not bdi_init
-again in aoeblk_gdalloc.  The extra call causes list corruption
-in the per-CPU backing dev info stats lists.
-
-Affected users see console WARNINGs about list_del corruption on
-percpu_counter_destroy when doing "rmmod aoe" or "aoeflush -a"
-when AoE targets have been detected and initialized by the
-system.
-
-The patch below applies to v3.6.11, with its v47 aoe driver.  It
-is expected to apply to all currently maintained stable kernels
-except 3.7.y.  A related but different fix has been posted for
-3.7.y.
-
-References:
-
-  RedHat bugzilla ticket with original report
-  https://bugzilla.redhat.com/show_bug.cgi?id=853064
-
-  LKML discussion of bug and fix
-  http://thread.gmane.org/gmane.linux.kernel/1416336/focus=1416497
-
-Reported-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/block/aoe/aoe.h    |    2 +-
- drivers/block/aoe/aoeblk.c |    5 -----
- 2 files changed, 1 insertion(+), 6 deletions(-)
-
---- a/drivers/block/aoe/aoe.h
-+++ b/drivers/block/aoe/aoe.h
-@@ -1,5 +1,5 @@
- /* Copyright (c) 2007 Coraid, Inc.  See COPYING for GPL terms. */
--#define VERSION "47"
-+#define VERSION "47q"
- #define AOE_MAJOR 152
- #define DEVICE_NAME "aoe"
- 
---- a/drivers/block/aoe/aoeblk.c
-+++ b/drivers/block/aoe/aoeblk.c
-@@ -276,8 +276,6 @@ aoeblk_gdalloc(void *vp)
- 		goto err_mempool;
- 	blk_queue_make_request(d->blkq, aoeblk_make_request);
- 	d->blkq->backing_dev_info.name = "aoe";
--	if (bdi_init(&d->blkq->backing_dev_info))
--		goto err_blkq;
- 	spin_lock_irqsave(&d->lock, flags);
- 	gd->major = AOE_MAJOR;
- 	gd->first_minor = d->sysminor * AOE_PARTITIONS;
-@@ -298,9 +296,6 @@ aoeblk_gdalloc(void *vp)
- 	aoedisk_add_sysfs(d);
- 	return;
- 
--err_blkq:
--	blk_cleanup_queue(d->blkq);
--	d->blkq = NULL;
- err_mempool:
- 	mempool_destroy(d->bufpool);
- err_disk:
+Thanks,
+Rafael
 
 
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> ---
+>  drivers/base/power/runtime.c |    8 +++++---
+>  1 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+> index 3148b10..0adc713 100644
+> --- a/drivers/base/power/runtime.c
+> +++ b/drivers/base/power/runtime.c
+> @@ -436,9 +436,11 @@ static int rpm_suspend(struct device *dev, int rpmflags)
+>  
+>  	if (dev->power.deferred_resume) {
+>  		dev->power.deferred_resume = false;
+> -		rpm_resume(dev, 0);
+> -		retval = -EAGAIN;
+> -		goto out;
+> +		if (rpm_resume(dev, 0) >= 0) {
+> +			/* In case resuming succeeded, return EAGAIN error */
+> +			retval = -EAGAIN;
+> +			goto out;
+> +		}
+>  	}
+>  
+>  	/* Maybe the parent is now able to suspend. */
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
