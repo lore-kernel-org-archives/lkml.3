@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962Ab3AOW3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:29:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41619 "EHLO mail.kernel.org"
+	id S1757903Ab3AOW3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:29:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41576 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757941Ab3AOW3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:29:11 -0500
+	id S1757832Ab3AOW3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:29:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 065/221] jffs2: hold erase_completion_lock on exit
-Date: Tue, 15 Jan 2013 10:49:52 -0800
-Message-Id: <20130115185002.745407482@linuxfoundation.org>
+        Sven Geggus <lists@fuchsschwanzdomain.de>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 062/221] svcrpc: Revert "sunrpc/cache.h: replace simple_strtoul"
+Date: Tue, 15 Jan 2013 10:49:49 -0800
+Message-Id: <20130115185002.528495378@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,45 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 2cbba75a56ea78e6876b4e2547a882f10b3fe72b upstream.
+commit 621eb19ce1ec216e03ad354cb0c4061736b2a436 upstream.
 
-Users of jffs2_do_reserve_space() expect they still held
-erase_completion_lock after call to it. But there is a path
-where jffs2_do_reserve_space() leaves erase_completion_lock unlocked.
-The patch fixes it.
+Commit bbf43dc888833ac0539e437dbaeb28bfd4fbab9f "sunrpc/cache.h: replace
+simple_strtoul" introduced new range-checking which could cause get_int
+to fail on unsigned integers too large to be represented as an int.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+We could parse them as unsigned instead--but it turns out svcgssd is
+actually passing down "-1" in some cases.  Which is perhaps stupid, but
+there's nothing we can do about it now.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+So just revert back to the previous "sloppy" behavior that accepts
+either representation.
+
+Reported-by: Sven Geggus <lists@fuchsschwanzdomain.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/nodemgmt.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ include/linux/sunrpc/cache.h |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -417,14 +417,16 @@ static int jffs2_do_reserve_space(struct
- 			spin_unlock(&c->erase_completion_lock);
+--- a/include/linux/sunrpc/cache.h
++++ b/include/linux/sunrpc/cache.h
+@@ -217,6 +217,8 @@ extern int qword_get(char **bpp, char *d
+ static inline int get_int(char **bpp, int *anint)
+ {
+ 	char buf[50];
++	char *ep;
++	int rv;
+ 	int len = qword_get(bpp, buf, sizeof(buf));
  
- 			ret = jffs2_prealloc_raw_node_refs(c, jeb, 1);
--			if (ret)
--				return ret;
-+
- 			/* Just lock it again and continue. Nothing much can change because
- 			   we hold c->alloc_sem anyway. In fact, it's not entirely clear why
- 			   we hold c->erase_completion_lock in the majority of this function...
- 			   but that's a question for another (more caffeine-rich) day. */
- 			spin_lock(&c->erase_completion_lock);
+ 	if (len < 0)
+@@ -224,9 +226,11 @@ static inline int get_int(char **bpp, in
+ 	if (len == 0)
+ 		return -ENOENT;
  
-+			if (ret)
-+				return ret;
-+
- 			waste = jeb->free_size;
- 			jffs2_link_node_ref(c, jeb,
- 					    (jeb->offset + c->sector_size - waste) | REF_OBSOLETE,
+-	if (kstrtoint(buf, 0, anint))
++	rv = simple_strtol(buf, &ep, 0);
++	if (*ep)
+ 		return -EINVAL;
+ 
++	*anint = rv;
+ 	return 0;
+ }
+ 
 
 
