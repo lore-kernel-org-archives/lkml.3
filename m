@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758551Ab3AOWdR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:33:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43071 "EHLO mail.kernel.org"
+	id S932497Ab3APAH6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:07:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43080 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758487Ab3AOWdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:33:14 -0500
+	id S1758538Ab3AOWdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:33:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nickolai Zeldovich <nickolai@csail.mit.edu>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>
-Subject: [ 145/221] staging: speakup: avoid out-of-range access in synth_init()
-Date: Tue, 15 Jan 2013 10:51:12 -0800
-Message-Id: <20130115185008.529024717@linuxfoundation.org>
+        Ben Greear <greearb@candelatech.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 154/221] mac80211: use del_timer_sync for final sta cleanup timer deletion
+Date: Tue, 15 Jan 2013 10:51:21 -0800
+Message-Id: <20130115185009.169084452@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,30 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nickolai Zeldovich <nickolai@csail.mit.edu>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit ae428655b826f2755a8101b27beda42a275ef8ad upstream.
+commit a56f992cdabc63f56b4b142885deebebf936ff76 upstream.
 
-Check that array index is in-bounds before accessing the synths[] array.
+This is a very old bug, but there's nothing that prevents the
+timer from running while the module is being removed when we
+only do del_timer() instead of del_timer_sync().
 
-Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>
+The timer should normally not be running at this point, but
+it's not clearly impossible (or we could just remove this.)
+
+Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/speakup/synth.c |    2 +-
+ net/mac80211/sta_info.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/speakup/synth.c
-+++ b/drivers/staging/speakup/synth.c
-@@ -342,7 +342,7 @@ int synth_init(char *synth_name)
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -870,7 +870,7 @@ void sta_info_init(struct ieee80211_loca
  
- 	mutex_lock(&spk_mutex);
- 	/* First, check if we already have it loaded. */
--	for (i = 0; synths[i] != NULL && i < MAXSYNTHS; i++)
-+	for (i = 0; i < MAXSYNTHS && synths[i] != NULL; i++)
- 		if (strcmp(synths[i]->name, synth_name) == 0)
- 			synth = synths[i];
+ void sta_info_stop(struct ieee80211_local *local)
+ {
+-	del_timer(&local->sta_cleanup);
++	del_timer_sync(&local->sta_cleanup);
+ 	sta_info_flush(local, NULL);
+ }
  
 
 
