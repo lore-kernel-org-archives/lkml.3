@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab3AONqe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:46:34 -0500
-Received: from mga14.intel.com ([143.182.124.37]:21156 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757167Ab3AONqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:46:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,473,1355126400"; 
-   d="asc'?scan'208";a="244127502"
-Message-ID: <1358257677.2731.141.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH -v2 17/26] mtd: rename random32() to prandom_u32()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Date: Tue, 15 Jan 2013 15:47:57 +0200
-In-Reply-To: <1357215562-6288-18-git-send-email-akinobu.mita@gmail.com>
-References: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
-	 <1357215562-6288-18-git-send-email-akinobu.mita@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-qKbVCtNnQRi42NKfPLwE"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1756939Ab3AONsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:48:47 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:63884 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756066Ab3AONsq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:48:46 -0500
+Date: Tue, 15 Jan 2013 05:49:41 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: cw00.choi@samsung.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [GIT PULL] extcon for 3.8-rc4
+Message-ID: <20130115134941.GA25473@kroah.com>
+References: <50F5067A.2060104@samsung.com>
+ <20130115113719.GD1748@kroah.com>
+ <CAGTfZH2r9TaNEPQ5am-UFwQd9t_qegxfo3MMOwJxvfctid7=-Q@mail.gmail.com>
+ <20130115121356.GA2349@kroah.com>
+ <CAGTfZH27VUuqqx5b4trMSDDDceWqwHE2wqPZdLbWvvBvbrzpKg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGTfZH27VUuqqx5b4trMSDDDceWqwHE2wqPZdLbWvvBvbrzpKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 15, 2013 at 10:23:44PM +0900, Chanwoo Choi wrote:
+> On Tuesday, January 15, 2013, Greg KH wrote:
+> 
+>     On Tue, Jan 15, 2013 at 09:09:20PM +0900, Chanwoo Choi wrote:
+>     > On Tuesday, January 15, 2013, Greg KH wrote:
+>     >
+>     >     On Tue, Jan 15, 2013 at 04:34:18PM +0900, Chanwoo Choi wrote:
+>     >     > Hi Greg,
+>     >     >
+>     >     > This is the extcon pull request for Linux 3.8-rc4.
+>     >     >
+>     >     > Please pull extcon with following updates:
+>     >     >
+>     >     > Update to max77693/max8997 extcon driver:
+>     >     > - Using MHL_TA cable for charging.
+>     >     > - Support JIG cable.
+>     >     > - Support Dock-Audio device for playing music and button of device.
+>     >     > - Support Dock-Smart device for desktop mode with mouse/keyboard.
+>     >     > - Set default UART/USB path on probe().
+>     >     > - Check the state/type of cable after completing initialization.
+>     >     > - Code clean to remove duplicate code and bug fix related to
+>     sequence of
+>     >     interrupt.
+>     >     > - Fix irq_flag of max8997/max77693 driver.
+>     >     >
+>     >     > Update to arizona extcon driver:
+>     >     > - Headphone measurements.
+>     >     > - Alternative detection mechanism for non-default system designs.
+>     >     > - Microphone clamp integration.
+>     >     > - Support for additional detection pin.
+>     >     > - MICBIAS rise time configuration.
+>     >     >
+>     >     > Thanks in advance for pulling,
+>     >
+>     >     This request is for inclusion in 3.9, right?  This seems much too big
+>     >     for 3.8 at the moment.
+>     >
+>     >  
+>     > If you think that, I agree your opinion about including this request in
+>     3.9.
+> 
+>     That's really up to you, as a subsystem maintainer, to decide about.
+>     You need to take bugfixes and ask for them to be included in the 3.8,
+>     and new features and other work, for 3.9.
+> 
+>  OK, I will resend pull-request to include only bugfixes patch in 3.8.
+> After released v3.8-rc7 or 3.8-rc8 kernel, I will send pull-request of extcon
+> to include new feature patches of extcon driver in 3.9.
 
---=-qKbVCtNnQRi42NKfPLwE
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+No, you can send me that pull request now as well, I have two different
+branches, one to go to Linus for this release, and one for the next one.
+Both of them show up in linux-next.  You should have the same.
 
-On Thu, 2013-01-03 at 21:19 +0900, Akinobu Mita wrote:
-> Use more preferable function name which implies using a pseudo-random
-> number generator.
->=20
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+So you can send me two pull requests now, does that make more sense?
 
-Pushed to l2-mtd.git, thanks!=20
+thanks,
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-qKbVCtNnQRi42NKfPLwE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ9V4NAAoJECmIfjd9wqK0WtgQAKcSD2qAF8pDUvO1bRwg9S4B
-i72IVOdKhd9mx8KOuklaDK7knxvOBKJ7uxT5wZmF+s1+MQ9VandfKihcf6t8xzRl
-BFKY0QwrVJLy8R4y0EO/RSFM/Pm6DKjfrIKtwHIPmlQf7/TjCeyqkLQ/o/fGbanr
-8FuRWOAalzJHavpumU3imhvLF899oDWDCUxxxtBPGFS1Rd0XlJTtbCzo4CUrrWvB
-5wEKOKgIZGewmeWYCwX+tPgdI5qv4LiiaRLXbyj2xFQiEpHphBTAtbz1R5Fx0D/W
-rdZR5kgF8OEV61zlfXSBwdP1ums4wVomEahWOEUz6GAOMRqyMrOzfWcgkhJa82cs
-qbkDu9YzV7SKxtnDx3UxnnRH4rmiEyAuWd7oXDyqMb+Xxjg5u3IVgURG4MQpfbO+
-GqU9VsOSCGSN6oOMz91EzShOVw3S2aHSetxBKJrO3i7M5Ap7sbWlZ5DIo6FF5Sgm
-q18L2uE0BHT8vSqTvhbxLqa1PcNvliOtXLXr2cP/rR1zuFalG/4GLFtil+hdNDzV
-JXQdgwACJS2Z15wthLPv6vBMugS7Q7DYQpmsv2846UJ/TCatvrZ+XqriKu6hvbAw
-S3FnGCj27lCB6LTlnEsNyo6uWoeLLXnLEk3fyxYgTY/7ANNx/zk5hum63kV0xcXg
-s0ai2QKa1Eyf1MymIqZ3
-=S/Cf
------END PGP SIGNATURE-----
-
---=-qKbVCtNnQRi42NKfPLwE--
-
+greg k-h
