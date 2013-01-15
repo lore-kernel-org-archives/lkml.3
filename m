@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933547Ab3AOXfg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:35:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46530 "EHLO mail.kernel.org"
+	id S933493Ab3AOWvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:51:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46508 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933498Ab3AOWvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:51:46 -0500
+	id S933444Ab3AOWvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:51:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        John Covici <covici@ccs.covici.com>
-Subject: [ 103/171] USB: Increase reset timeout.
-Date: Tue, 15 Jan 2013 14:44:28 -0800
-Message-Id: <20130115224320.815303314@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 101/171] USB: Ignore xHCI Reset Device status.
+Date: Tue, 15 Jan 2013 14:44:26 -0800
+Message-Id: <20130115224320.654732260@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -29,11 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 77c7f072c87fa951e9a74805febf26466f31170c upstream.
+commit 8b8132bc3d1cc3d4c0687e4d638a482fa920d98a upstream.
 
-John's NEC 0.96 xHCI host controller needs a longer timeout for a warm
-reset to complete.  The logs show it takes 650ms to complete the warm
-reset, so extend the hub reset timeout to 800ms to be on the safe side.
+When the USB core finishes reseting a USB device, the xHCI driver sends
+a Reset Device command to the host.  The xHC then updates its internal
+representation of the USB device to the 'Default' device state.  If the
+device was already in the Default state, the xHC will complete the
+command with an error status.
+
+If a device needs to be reset several times during enumeration, the
+second reset will always fail because of the xHCI Reset Device command.
+This can cause issues during enumeration.
+
+For example, usb_reset_and_verify_device calls into hub_port_init in a
+loop.  Say that on the first call into hub_port_init, the device is
+successfully reset, but doesn't respond to several set address control
+transfers.  Then the port will be disabled, but the udev will remain in
+tact.  usb_reset_and_verify_device will call into hub_port_init again.
+
+On the second call into hub_port_init, the device will be reset, and the
+xHCI driver will issue a Reset Device command.  This command will fail
+(because the device is already in the Default state), and
+usb_reset_and_verify_device will fail.  The port will be disabled, and
+the device won't be able to enumerate.
+
+Fix this by ignoring the return value of the HCD reset_device callback.
 
 This commit should be backported to kernels as old as 3.2, that contain
 the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine
@@ -41,23 +60,33 @@ warm reset logic".
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: John Covici <covici@ccs.covici.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/hub.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
 --- a/drivers/usb/core/hub.c
 +++ b/drivers/usb/core/hub.c
-@@ -2168,7 +2168,7 @@ static unsigned hub_is_wusb(struct usb_h
- #define HUB_SHORT_RESET_TIME	10
- #define HUB_BH_RESET_TIME	50
- #define HUB_LONG_RESET_TIME	200
--#define HUB_RESET_TIMEOUT	500
-+#define HUB_RESET_TIMEOUT	800
- 
- static int hub_port_reset(struct usb_hub *hub, int port1,
- 			struct usb_device *udev, unsigned int delay, bool warm);
+@@ -2234,14 +2234,11 @@ static void hub_port_finish_reset(struct
+ 			msleep(10 + 40);
+ 			update_devnum(udev, 0);
+ 			hcd = bus_to_hcd(udev->bus);
+-			if (hcd->driver->reset_device) {
+-				*status = hcd->driver->reset_device(hcd, udev);
+-				if (*status < 0) {
+-					dev_err(&udev->dev, "Cannot reset "
+-							"HCD device state\n");
+-					break;
+-				}
+-			}
++			/* The xHC may think the device is already reset,
++			 * so ignore the status.
++			 */
++			if (hcd->driver->reset_device)
++				hcd->driver->reset_device(hcd, udev);
+ 		}
+ 		/* FALL THROUGH */
+ 	case -ENOTCONN:
 
 
