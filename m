@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429Ab3AOKPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:15:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43229 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750963Ab3AOKPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:15:13 -0500
-Date: Tue, 15 Jan 2013 11:15:06 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
-        tytso@mit.edu, viro@zeniv.linux.org.uk, rminnich@sandia.gov,
-        martin.petersen@oracle.com, neilb@suse.de,
-        Mark Fasheh <mfasheh@suse.com>, david@fromorbit.com,
-        gnehzuil.liu@gmail.com, linux-kernel@vger.kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, ocfs2-devel@oss.oracle.com,
-        bharrosh@panasas.com, jlayton@samba.org, linux-ext4@vger.kernel.org,
-        hirofumi@mail.parknet.co.jp, Joel Becker <jlbec@evilplan.org>
-Subject: Re: [PATCH 5/6] ocfs2: Wait for page writeback to provide stable
- pages
-Message-ID: <20130115101506.GB1778@quack.suse.cz>
-References: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
- <20130115054313.1563.70148.stgit@blackbox.djwong.org>
+	id S1756554Ab3AOKTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:19:17 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6314 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab3AOKTQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:19:16 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 15 Jan 2013 02:18:30 -0800
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <gregkh@linuxfoundation.org>, <balbi@ti.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <swarren@wwwdotorg.org>, Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] usb: phy: remove unused APIs from Tegra PHY.
+Date: Tue, 15 Jan 2013 15:49:30 +0530
+Message-ID: <1358245170-22083-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130115054313.1563.70148.stgit@blackbox.djwong.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14-01-13 21:43:13, Darrick J. Wong wrote:
-> When stable pages are required, we have to wait if the page is just
-> going to disk and we want to modify it. Add proper callback to
-> ocfs2_grab_pages_for_write().
-> 
-> CC: ocfs2-devel@oss.oracle.com
-> CC: Joel Becker <jlbec@evilplan.org>
-> CC: Mark Fasheh <mfasheh@suse.com>
-> From: Jan Kara <jack@suse.cz>
-> Signed-off-by: Jan Kara <jack@suse.cz>
-  Darrick, to satisfy the kernel patch submission process you should also
-add your Signed-off-by to the patch...
+As tegra_usb_phy_clk_disable/enable() are not being
+used, removing them.
 
-								Honza
-> ---
->  fs/ocfs2/aops.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> 
-> diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-> index 6577432..9796330 100644
-> --- a/fs/ocfs2/aops.c
-> +++ b/fs/ocfs2/aops.c
-> @@ -1194,6 +1194,7 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
->  				goto out;
->  			}
->  		}
-> +		wait_for_stable_page(wc->w_pages[i]);
->  
->  		if (index == target_index)
->  			wc->w_target_page = wc->w_pages[i];
-> 
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+ drivers/usb/phy/tegra_usb_phy.c   |   13 -------------
+ include/linux/usb/tegra_usb_phy.h |    4 ----
+ 2 files changed, 0 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/usb/phy/tegra_usb_phy.c b/drivers/usb/phy/tegra_usb_phy.c
+index 2d3cae9..3059384 100644
+--- a/drivers/usb/phy/tegra_usb_phy.c
++++ b/drivers/usb/phy/tegra_usb_phy.c
+@@ -825,16 +825,3 @@ void tegra_ehci_phy_restore_end(struct tegra_usb_phy *phy)
+ }
+ EXPORT_SYMBOL_GPL(tegra_ehci_phy_restore_end);
+ 
+-void tegra_usb_phy_clk_disable(struct tegra_usb_phy *phy)
+-{
+-	if (!phy_is_ulpi(phy))
+-		utmi_phy_clk_disable(phy);
+-}
+-EXPORT_SYMBOL_GPL(tegra_usb_phy_clk_disable);
+-
+-void tegra_usb_phy_clk_enable(struct tegra_usb_phy *phy)
+-{
+-	if (!phy_is_ulpi(phy))
+-		utmi_phy_clk_enable(phy);
+-}
+-EXPORT_SYMBOL_GPL(tegra_usb_phy_clk_enable);
+diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
+index 176b1ca..34e6355 100644
+--- a/include/linux/usb/tegra_usb_phy.h
++++ b/include/linux/usb/tegra_usb_phy.h
+@@ -64,10 +64,6 @@ struct tegra_usb_phy {
+ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
+ 	void __iomem *regs, void *config, enum tegra_usb_phy_mode phy_mode);
+ 
+-void tegra_usb_phy_clk_disable(struct tegra_usb_phy *phy);
+-
+-void tegra_usb_phy_clk_enable(struct tegra_usb_phy *phy);
+-
+ void tegra_usb_phy_preresume(struct tegra_usb_phy *phy);
+ 
+ void tegra_usb_phy_postresume(struct tegra_usb_phy *phy);
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.0.4
+
