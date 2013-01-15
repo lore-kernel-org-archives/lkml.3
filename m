@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932892Ab3AOWgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:36:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43958 "EHLO mail.kernel.org"
+	id S932910Ab3AOWgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:36:21 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43968 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab3AOWgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:36:10 -0500
+	id S932320Ab3AOWgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:36:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 196/221] libceph: move linger requests sooner in kick_requests()
-Date: Tue, 15 Jan 2013 10:52:03 -0800
-Message-Id: <20130115185012.180585656@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Josh Durgin <josh.durgin@inktank.com>,
+        Dan Mick <dan.mick@inktank.com>
+Subject: [ 206/221] rbd: zero return code in rbd_dev_image_id()
+Date: Tue, 15 Jan 2013 10:52:13 -0800
+Message-Id: <20130115185012.901714274@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,112 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+
 From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit ab60b16d3c31b9bd9fd5b39f97dc42c52a50b67d)
+(cherry picked from commit a0ea3a40fd20b8c66381f747c454f89d6d1f50d4)
 
-The kick_requests() function is called by ceph_osdc_handle_map()
-when an osd map change has been indicated.  Its purpose is to
-re-queue any request whose target osd is different from what it
-was when it was originally sent.
+When rbd_dev_probe() calls rbd_dev_image_id() it expects to get
+a 0 return code if successful, but it is getting a positive value.
 
-It is structured as two loops, one for incomplete but registered
-requests, and a second for handling completed linger requests.
-As a special case, in the first loop if a request marked to linger
-has not yet completed, it is moved from the request list to the
-linger list.  This is as a quick and dirty way to have the second
-loop handle sending the request along with all the other linger
-requests.
+The reason is that rbd_dev_image_id() returns the value it gets from
+rbd_req_sync_exec(), which returns the number of bytes read in as a
+result of the request.  (This ultimately comes from
+ceph_copy_from_page_vector() in rbd_req_sync_op()).
 
-Because of the way it's done now, however, this quick and dirty
-solution can result in these incomplete linger requests never
-getting re-sent as desired.  The problem lies in the fact that
-the second loop only arranges for a linger request to be sent
-if it appears its target osd has changed.  This is the proper
-handling for *completed* linger requests (it avoids issuing
-the same linger request twice to the same osd).
-
-But although the linger requests added to the list in the first loop
-may have been sent, they have not yet completed, so they need to be
-re-sent regardless of whether their target osd has changed.
-
-The first required fix is we need to avoid calling __map_request()
-on any incomplete linger request.  Otherwise the subsequent
-__map_request() call in the second loop will find the target osd
-has not changed and will therefore not re-send the request.
-
-Second, we need to be sure that a sent but incomplete linger request
-gets re-sent.  If the target osd is the same with the new osd map as
-it was when the request was originally sent, this won't happen.
-This can be fixed through careful handling when we move these
-requests from the request list to the linger list, by unregistering
-the request *before* it is registered as a linger request.  This
-works because a side-effect of unregistering the request is to make
-the request's r_osd pointer be NULL, and *that* will ensure the
-second loop actually re-sends the linger request.
-
-Processing of such a request is done at that point, so continue with
-the next one once it's been moved.
+Force the return value to 0 when successful in rbd_dev_image_id().
+Do the same in rbd_dev_v2_object_prefix().
 
 Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
+Reviewed-by: Dan Mick <dan.mick@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/osd_client.c |   30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+ drivers/block/rbd.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1322,6 +1322,24 @@ static void kick_requests(struct ceph_os
- 	for (p = rb_first(&osdc->requests); p; ) {
- 		req = rb_entry(p, struct ceph_osd_request, r_node);
- 		p = rb_next(p);
-+
-+		/*
-+		 * For linger requests that have not yet been
-+		 * registered, move them to the linger list; they'll
-+		 * be sent to the osd in the loop below.  Unregister
-+		 * the request before re-registering it as a linger
-+		 * request to ensure the __map_request() below
-+		 * will decide it needs to be sent.
-+		 */
-+		if (req->r_linger && list_empty(&req->r_linger_item)) {
-+			dout("%p tid %llu restart on osd%d\n",
-+			     req, req->r_tid,
-+			     req->r_osd ? req->r_osd->o_osd : -1);
-+			__unregister_request(osdc, req);
-+			__register_linger_request(osdc, req);
-+			continue;
-+		}
-+
- 		err = __map_request(osdc, req, force_resend);
- 		if (err < 0)
- 			continue;  /* error */
-@@ -1336,17 +1354,6 @@ static void kick_requests(struct ceph_os
- 				req->r_flags |= CEPH_OSD_FLAG_RETRY;
- 			}
- 		}
--		if (req->r_linger && list_empty(&req->r_linger_item)) {
--			/*
--			 * register as a linger so that we will
--			 * re-submit below and get a new tid
--			 */
--			dout("%p tid %llu restart on osd%d\n",
--			     req, req->r_tid,
--			     req->r_osd ? req->r_osd->o_osd : -1);
--			__register_linger_request(osdc, req);
--			__unregister_request(osdc, req);
--		}
- 	}
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -2189,6 +2189,7 @@ static int rbd_dev_v2_object_prefix(stru
+ 	dout("%s: rbd_req_sync_exec returned %d\n", __func__, ret);
+ 	if (ret < 0)
+ 		goto out;
++	ret = 0;    /* rbd_req_sync_exec() can return positive */
  
- 	list_for_each_entry_safe(req, nreq, &osdc->req_linger,
-@@ -1354,6 +1361,7 @@ static void kick_requests(struct ceph_os
- 		dout("linger req=%p req->r_osd=%p\n", req, req->r_osd);
+ 	p = reply_buf;
+ 	rbd_dev->header.object_prefix = ceph_extract_encoded_string(&p,
+@@ -2841,6 +2842,7 @@ static int rbd_dev_image_id(struct rbd_d
+ 	dout("%s: rbd_req_sync_exec returned %d\n", __func__, ret);
+ 	if (ret < 0)
+ 		goto out;
++	ret = 0;    /* rbd_req_sync_exec() can return positive */
  
- 		err = __map_request(osdc, req, force_resend);
-+		dout("__map_request returned %d\n", err);
- 		if (err == 0)
- 			continue;  /* no change and no osd was specified */
- 		if (err < 0)
+ 	p = response;
+ 	rbd_dev->image_id = ceph_extract_encoded_string(&p,
 
 
