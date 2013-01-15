@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933874Ab3AOXVk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:21:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47311 "EHLO mail.kernel.org"
+	id S933834Ab3AOWxX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:53:23 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47268 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933841Ab3AOWx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:53:26 -0500
+	id S933675Ab3AOWxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:53:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 145/171] libceph: init event->node in ceph_osdc_create_event()
-Date: Tue, 15 Jan 2013 14:45:10 -0800
-Message-Id: <20130115224323.804263041@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 151/171] libceph: fix protocol feature mismatch failure path
+Date: Tue, 15 Jan 2013 14:45:16 -0800
+Message-Id: <20130115224324.234952034@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,30 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Alex Elder <elder@inktank.com>
+From: Sage Weil <sage@inktank.com>
 
-The red-black node node in the ceph osd event structure is not
-initialized in create_osdc_create_event().  Because this node can
-be the subject of a RB_EMPTY_NODE() call later on, we should ensure
-the node is initialized properly for that.
+We should not set con->state to CLOSED here; that happens in
+ceph_fault() in the caller, where it first asserts that the state
+is not yet CLOSED.  Avoids a BUG when the features don't match.
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
-(cherry picked from commit 3ee5234df68d253c415ba4f2db72ad250d9c21a9)
+Since the fail_protocol() has become a trivial wrapper, replace
+calls to it with direct calls to reset_connection().
+
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+(cherry picked from commit 0fa6ebc600bc8e830551aee47a0e929e818a1868)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/osd_client.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ceph/messenger.c |   14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1598,6 +1598,7 @@ int ceph_osdc_create_event(struct ceph_o
- 	event->data = data;
- 	event->osdc = osdc;
- 	INIT_LIST_HEAD(&event->osd_node);
-+	RB_CLEAR_NODE(&event->node);
- 	kref_init(&event->kref);   /* one ref for us */
- 	kref_get(&event->kref);    /* one ref for the caller */
- 	init_completion(&event->completion);
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -506,6 +506,7 @@ static void reset_connection(struct ceph
+ {
+ 	/* reset connection, out_queue, msg_ and connect_seq */
+ 	/* discard existing out_queue and msg_seq */
++	dout("reset_connection %p\n", con);
+ 	ceph_msg_remove_list(&con->out_queue);
+ 	ceph_msg_remove_list(&con->out_sent);
+ 
+@@ -1502,13 +1503,6 @@ static int process_banner(struct ceph_co
+ 	return 0;
+ }
+ 
+-static void fail_protocol(struct ceph_connection *con)
+-{
+-	reset_connection(con);
+-	WARN_ON(con->state != CON_STATE_NEGOTIATING);
+-	con->state = CON_STATE_CLOSED;
+-}
+-
+ static int process_connect(struct ceph_connection *con)
+ {
+ 	u64 sup_feat = con->msgr->supported_features;
+@@ -1526,7 +1520,7 @@ static int process_connect(struct ceph_c
+ 		       ceph_pr_addr(&con->peer_addr.in_addr),
+ 		       sup_feat, server_feat, server_feat & ~sup_feat);
+ 		con->error_msg = "missing required protocol features";
+-		fail_protocol(con);
++		reset_connection(con);
+ 		return -1;
+ 
+ 	case CEPH_MSGR_TAG_BADPROTOVER:
+@@ -1537,7 +1531,7 @@ static int process_connect(struct ceph_c
+ 		       le32_to_cpu(con->out_connect.protocol_version),
+ 		       le32_to_cpu(con->in_reply.protocol_version));
+ 		con->error_msg = "protocol version mismatch";
+-		fail_protocol(con);
++		reset_connection(con);
+ 		return -1;
+ 
+ 	case CEPH_MSGR_TAG_BADAUTHORIZER:
+@@ -1627,7 +1621,7 @@ static int process_connect(struct ceph_c
+ 			       ceph_pr_addr(&con->peer_addr.in_addr),
+ 			       req_feat, server_feat, req_feat & ~server_feat);
+ 			con->error_msg = "missing required protocol features";
+-			fail_protocol(con);
++			reset_connection(con);
+ 			return -1;
+ 		}
+ 
 
 
