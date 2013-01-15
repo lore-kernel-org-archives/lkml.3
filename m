@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab3AOWde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:33:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43120 "EHLO mail.kernel.org"
+	id S932566Ab3AOWdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:33:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43155 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932471Ab3AOWd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:33:28 -0500
+	id S932508Ab3AOWdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:33:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 158/221] USB: option: blacklist network interface on ZTE MF880
-Date: Tue, 15 Jan 2013 10:51:25 -0800
-Message-Id: <20130115185009.461815391@linuxfoundation.org>
+        Tomasz Mloduchowski <q@qdot.me>
+Subject: [ 161/221] usb: ftdi_sio: Crucible Technologies COMET Caller ID - pid added
+Date: Tue, 15 Jan 2013 10:51:28 -0800
+Message-Id: <20130115185009.679741086@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,37 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Tomasz Mloduchowski <q@qdot.me>
 
-commit fab38246f318edcd0dcb8fd3852a47cf8938878a upstream.
+commit 8cf65dc386f3634a43312f436cc7a935476a40c4 upstream.
 
-The driver description files gives these names to the vendor specific
-functions on this modem:
+Simple fix to add support for Crucible Technologies COMET Caller ID
+USB decoder - a device containing FTDI USB/Serial converter chip,
+handling 1200bps CallerID messages decoded from the phone line -
+adding correct USB PID is sufficient.
 
- diag: VID_19D2&PID_0284&MI_00
- nmea: VID_19D2&PID_0284&MI_01
- at:   VID_19D2&PID_0284&MI_02
- mdm:  VID_19D2&PID_0284&MI_03
- net:  VID_19D2&PID_0284&MI_04
+Tested to apply cleanly and work flawlessly against 3.6.9, 3.7.0-rc8
+and 3.8.0-rc3 on both amd64 and x86 arches.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Tomasz Mloduchowski <q@qdot.me>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -928,7 +928,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0257, 0xff, 0xff, 0xff), /* ZTE MF821 */
- 	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0265, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff), /* ZTE MF880 */
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0317, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0326, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -876,6 +876,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
++	/* Crucible Devices */
++	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1259,3 +1259,9 @@
+  * ATI command output: Cinterion MC55i
+  */
+ #define FTDI_CINTERION_MC55I_PID	0xA951
++
++/*
++ * Product: Comet Caller ID decoder
++ * Manufacturer: Crucible Technologies
++ */
++#define FTDI_CT_COMET_PID	0x8e08
 
 
