@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757986Ab3AOW3U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:29:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41631 "EHLO mail.kernel.org"
+	id S1758047Ab3AOW33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:29:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41745 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757941Ab3AOW3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:29:15 -0500
+	id S1757941Ab3AOW30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:29:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 066/221] i2400m: add Intel 6150 device IDs
-Date: Tue, 15 Jan 2013 10:49:53 -0800
-Message-Id: <20130115185002.810222048@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 069/221] drm/radeon/dce32+: use fractional fb dividers for high clocks
+Date: Tue, 15 Jan 2013 10:49:56 -0800
+Message-Id: <20130115185003.030819751@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,54 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 999a7c5776a0ed2133645fa7e008bec05bda9254 upstream.
+commit a02dc74b317d78298cb0587b9b1f6f741fd5c139 upstream.
 
-Add device IDs for WiMAX function of Intel 6150 cards.
+Fixes flickering with some high res montiors.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wimax/i2400m/i2400m-usb.h |    3 +++
- drivers/net/wimax/i2400m/usb.c        |    6 ++++++
- 2 files changed, 9 insertions(+)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wimax/i2400m/i2400m-usb.h
-+++ b/drivers/net/wimax/i2400m/i2400m-usb.h
-@@ -152,6 +152,9 @@ enum {
- 	/* Device IDs */
- 	USB_DEVICE_ID_I6050 = 0x0186,
- 	USB_DEVICE_ID_I6050_2 = 0x0188,
-+	USB_DEVICE_ID_I6150 = 0x07d6,
-+	USB_DEVICE_ID_I6150_2 = 0x07d7,
-+	USB_DEVICE_ID_I6150_3 = 0x07d9,
- 	USB_DEVICE_ID_I6250 = 0x0187,
- };
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -561,6 +561,8 @@ static u32 atombios_adjust_pll(struct dr
+ 		/* use frac fb div on APUs */
+ 		if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE61(rdev))
+ 			radeon_crtc->pll_flags |= RADEON_PLL_USE_FRAC_FB_DIV;
++		if (ASIC_IS_DCE32(rdev) && mode->clock > 165000)
++			radeon_crtc->pll_flags |= RADEON_PLL_USE_FRAC_FB_DIV;
+ 	} else {
+ 		radeon_crtc->pll_flags |= RADEON_PLL_LEGACY;
  
---- a/drivers/net/wimax/i2400m/usb.c
-+++ b/drivers/net/wimax/i2400m/usb.c
-@@ -510,6 +510,9 @@ int i2400mu_probe(struct usb_interface *
- 	switch (id->idProduct) {
- 	case USB_DEVICE_ID_I6050:
- 	case USB_DEVICE_ID_I6050_2:
-+	case USB_DEVICE_ID_I6150:
-+	case USB_DEVICE_ID_I6150_2:
-+	case USB_DEVICE_ID_I6150_3:
- 	case USB_DEVICE_ID_I6250:
- 		i2400mu->i6050 = 1;
- 		break;
-@@ -759,6 +762,9 @@ static
- struct usb_device_id i2400mu_id_table[] = {
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050) },
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050_2) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_2) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_3) },
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6250) },
- 	{ USB_DEVICE(0x8086, 0x0181) },
- 	{ USB_DEVICE(0x8086, 0x1403) },
 
 
