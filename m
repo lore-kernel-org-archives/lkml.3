@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab3AOMpA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 07:45:00 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:52933 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624Ab3AOMo6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:44:58 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
-Date: Tue, 15 Jan 2013 12:44:12 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andrew Murray <andrew.murray@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <20130114095706.GA23467@arm.com> <20130115120855.GA5637@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20130115120855.GA5637@avionic-0098.adnet.avionic-design.de>
+	id S1756437Ab3AOMvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:51:35 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:42764 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750953Ab3AOMve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 07:51:34 -0500
+Date: Tue, 15 Jan 2013 13:51:19 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Stefan Peter <s.peter@mpl.ch>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, jason@lakedaemon.net, andrew@lunn.ch,
+        dwmw2@infradead.org, jm@lentin.co.uk, arnd@arndb.de,
+        sebastian.hesselbarth@googlemail.com, iwamatsu@nigauri.org,
+        artem.bityutskiy@linux.intel.com, wfp5p@virginia.edu,
+        gregkh@linuxfoundation.org, broonie@opensource.wolfsonmicro.com,
+        mchehab@redhat.com, nico@linaro.org
+Subject: Re: [PATCH 3/4] Enable ecc-mode selection in the driver
+Message-ID: <20130115125119.GH13482@lunn.ch>
+References: <cover.1358242644.git.s.peter@mpl.ch>
+ <2d08c4c072fd4922a6056362adb96a455307d583.1358242644.git.s.peter@mpl.ch>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301151244.12767.arnd@arndb.de>
-X-Provags-ID: V02:K0:IpZvbkznpMKcrrZHOWfOsannV9wqnjP/aFfY6Iq+e+Y
- Rissaw2yPbaNb0kXoFkfbOEOYlJonb1tpGvSSsLCR88DbdF61k
- tQbzgb4lvAz4VRGafOACUOYoI4wFjxm5AWOygaMsQKfXO5HhxG
- maDN3RuifNVOJhQjTckx8DhF3kzxwfTKeBqBRu1S/pIbLPRZRE
- pqO4qSMvs6zrv4/74hjPbHPHJJ+hmEXOje/r03afQvj1kn2ZLF
- 29oBdMjZ0ueoAmq49OyH5hnp3lP+i4GIroKokRtuMg49SwQtv2
- w1ad3TWMJHaJDQyQyG0PWixJ0bYRWIotZ6pigRLNMDJaTO8qHN
- xbjg1eHscRgHxQ/zXSK8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2d08c4c072fd4922a6056362adb96a455307d583.1358242644.git.s.peter@mpl.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 January 2013, Thierry Reding wrote:
-> I'm not sure I follow you're reasoning here. Is it possible to use MSIs
-> without PCI? If not then I think there's little sense in keeping the
-> implementations separate.
+On Tue, Jan 15, 2013 at 01:13:12PM +0100, Stefan Peter wrote:
+> In order to be able to use the ecc-mode, add the bch module to the default
+> settings for the kirwood boards and enable the activation in orin-nand.c
+> 
+> Signed-off-by: Stefan Peter <s.peter@mpl.ch>
+> ---
+> diff --git a/arch/arm/configs/kirkwood_defconfig b/arch/arm/configs/kirkwood_defconfig
+> index 93f3794..4a9d3f7 100644
+> --- a/arch/arm/configs/kirkwood_defconfig
+> +++ b/arch/arm/configs/kirkwood_defconfig
+> @@ -84,6 +84,7 @@ CONFIG_MTD_CFI_STAA=y
+>  CONFIG_MTD_PHYSMAP=y
+>  CONFIG_MTD_M25P80=y
+>  CONFIG_MTD_NAND=y
+> +CONFIG_MTD_NAND_ECC_BCH=y
+>  CONFIG_MTD_NAND_ORION=y
+>  CONFIG_BLK_DEV_LOOP=y
+>  # CONFIG_SCSI_PROC_FS is not set
+> diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
+> index cd72b92..1a35257 100644
+> --- a/drivers/mtd/nand/orion_nand.c
+> +++ b/drivers/mtd/nand/orion_nand.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/module.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/of.h>
+> +#include <linux/of_mtd.h>
+>  #include <linux/mtd/mtd.h>
+>  #include <linux/mtd/nand.h>
+>  #include <linux/mtd/partitions.h>
+> @@ -130,6 +131,7 @@ static int __init orion_nand_probe(struct platform_device *pdev)
+>  		if (!of_property_read_u32(pdev->dev.of_node,
+>  						"chip-delay", &val))
+>  			board->chip_delay = (u8)val;
+> +		board->ecc_mode = of_get_nand_ecc_mode(pdev->dev.of_node);
 
-Conceptually, you can use MSI for any device, but the Linux interfaces
-for MSI are tied to PCI. If you use an MSI controller for a non-PCI
-device, it would probably just appear as a regular interrupt controller.
+>  	} else
+>  		board = pdev->dev.platform_data;
+>  
+> @@ -140,7 +142,8 @@ static int __init orion_nand_probe(struct platform_device *pdev)
+>  	nc->IO_ADDR_R = nc->IO_ADDR_W = io_base;
+>  	nc->cmd_ctrl = orion_nand_cmd_ctrl;
+>  	nc->read_buf = orion_nand_read_buf;
+> -	nc->ecc.mode = NAND_ECC_SOFT;
+> +	nc->ecc.mode = board->ecc_mode == NAND_ECC_SOFT_BCH ?
+> +		NAND_ECC_SOFT_BCH : NAND_ECC_SOFT;
 
-> Furthermore, if MSI controller and PCI host bridge are separate entities
-> how do you look up the MSI controller given a PCI device?
+Hi Stefan
 
-The host bridge can contain a pointer ot the MSI controller. You can
-have multiple host bridges sharing a single MSI controller or you
-can have separate ones for each host.
+What about a user that wants one of the other valid values?
+NAND_ECC_OOB_FIRST, NAND_ECC_HW_SYNDROME, etc.
 
-	Arnd
+Would:
+
+	if (IS_ERR(board->ecc_mode)) {
+		nc->ecc.mode = NAND_ECC_SOFT;
+		dev_info(&pdev->dev, "Defaulting to NAND_ECC_SOFT");
+	} else
+		nc->ecc.mode = board->ecc_mode
+
+be better?
+
+   Andrew
