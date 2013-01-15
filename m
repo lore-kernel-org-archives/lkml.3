@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758779Ab3AOWtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:49:12 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45533 "EHLO mail.kernel.org"
+	id S932880Ab3AOWt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:49:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45582 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758228Ab3AOWtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:49:11 -0500
+	id S1758765Ab3AOWtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Huang Shijie <b32955@freescale.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 031/171] mtd: nand: gpmi: reset BCH earlier, too, to avoid NAND startup problems
-Date: Tue, 15 Jan 2013 14:43:16 -0800
-Message-Id: <20130115224315.656802270@linuxfoundation.org>
+        Chris Perl <chris.perl@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 034/171] SUNRPC: Ensure we release the socket write lock if the rpc_task exits early
+Date: Tue, 15 Jan 2013 14:43:19 -0800
+Message-Id: <20130115224315.872766335@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,44 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <w.sang@pengutronix.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 6f2a6a52560ad8d85710aabd92b7a3239b3a6b07 upstream.
+commit 87ed50036b866db2ec2ba16b2a7aec4a2b0b7c39 upstream.
 
-It could happen (1 out of 100 times) that NAND did not start up
-correctly after warm rebooting, so the kernel could not find the UBI or
-DMA timed out due to a stalled BCH. When resetting BCH together with
-GPMI, the issue could not be observed anymore (after 10000+ reboots). We
-probably need the consistent state already before sending any command to
-NAND, even when no ECC is needed. I chose to keep the extra reset for
-BCH when changing the flash layout to be on the safe side.
+If the rpc_task exits while holding the socket write lock before it has
+allocated an rpc slot, then the usual mechanism for releasing the write
+lock in xprt_release() is defeated.
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Acked-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+The problem occurs if the call to xprt_lock_write() initially fails, so
+that the rpc_task is put on the xprt->sending wait queue. If the task
+exits after being assigned the lock by __xprt_lock_write_func, but
+before it has retried the call to xprt_lock_and_alloc_slot(), then
+it calls xprt_release() while holding the write lock, but will
+immediately exit due to the test for task->tk_rqstp != NULL.
+
+Reported-by: Chris Perl <chris.perl@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/gpmi-nand/gpmi-lib.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ net/sunrpc/sched.c |    3 +--
+ net/sunrpc/xprt.c  |   12 ++++++++++--
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
---- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-@@ -135,6 +135,15 @@ int gpmi_init(struct gpmi_nand_data *thi
- 	if (ret)
- 		goto err_out;
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -953,8 +953,7 @@ static void rpc_async_release(struct wor
  
-+	/*
-+	 * Reset BCH here, too. We got failures otherwise :(
-+	 * See later BCH reset for explanation of MX23 handling
-+	 */
-+	ret = gpmi_reset_block(r->bch_regs, GPMI_IS_MX23(this));
-+	if (ret)
-+		goto err_out;
-+
-+
- 	/* Choose NAND mode. */
- 	writel(BM_GPMI_CTRL1_GPMI_MODE, r->gpmi_regs + HW_GPMI_CTRL1_CLR);
+ static void rpc_release_resources_task(struct rpc_task *task)
+ {
+-	if (task->tk_rqstp)
+-		xprt_release(task);
++	xprt_release(task);
+ 	if (task->tk_msg.rpc_cred) {
+ 		put_rpccred(task->tk_msg.rpc_cred);
+ 		task->tk_msg.rpc_cred = NULL;
+--- a/net/sunrpc/xprt.c
++++ b/net/sunrpc/xprt.c
+@@ -1139,10 +1139,18 @@ static void xprt_request_init(struct rpc
+ void xprt_release(struct rpc_task *task)
+ {
+ 	struct rpc_xprt	*xprt;
+-	struct rpc_rqst	*req;
++	struct rpc_rqst	*req = task->tk_rqstp;
  
+-	if (!(req = task->tk_rqstp))
++	if (req == NULL) {
++		if (task->tk_client) {
++			rcu_read_lock();
++			xprt = rcu_dereference(task->tk_client->cl_xprt);
++			if (xprt->snd_task == task)
++				xprt_release_write(xprt, task);
++			rcu_read_unlock();
++		}
+ 		return;
++	}
+ 
+ 	xprt = req->rq_xprt;
+ 	if (task->tk_ops->rpc_count_stats != NULL)
 
 
