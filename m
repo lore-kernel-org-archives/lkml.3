@@ -1,335 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab3AOGoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 01:44:07 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:38888 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab3AOGoF (ORCPT
+	id S1754549Ab3AOGoi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 01:44:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49105 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab3AOGog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 01:44:05 -0500
+	Tue, 15 Jan 2013 01:44:36 -0500
+Date: Tue, 15 Jan 2013 07:44:27 +0100
+From: Jens Axboe <axboe@kernel.dk>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [next-20130114] Call-trace in LTP (lite) madvise02 test
+ (block|mm|vfs related?)
+Message-ID: <20130115064427.GB30331@kernel.dk>
+References: <CA+icZUW1+BzWCfGkbBiekKO8b6KiyAiyXWAHFmVUey2dHnSTzw@mail.gmail.com>
+ <50F454C2.6000509@kernel.dk>
+ <CA+icZUX_uKSzvdhd4tMtgb+vUxqC=fS7tfSHhs29+xD_XQQjBQ@mail.gmail.com>
+ <CA+icZUV_dz2Bvu6o=YRFu6324ccVr1MaOEpRcw0rguppR5rQQg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1493550.As37othyQz@vostro.rjw.lan>
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
-	<1357944049-29620-9-git-send-email-yinghai@kernel.org>
-	<1493550.As37othyQz@vostro.rjw.lan>
-Date: Mon, 14 Jan 2013 22:44:02 -0800
-X-Google-Sender-Auth: p8aiMqJCmIVMRzbUqxC0cJC6e_k
-Message-ID: <CAE9FiQX6q-tbQuq_0mc0kBFC-bb0zKRDyg=aGLkrAeh5Y7FkYg@mail.gmail.com>
-Subject: Re: [PATCH v8 08/22] PCI, acpiphp: Separate out hot-add support of
- pci host bridge
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUV_dz2Bvu6o=YRFu6324ccVr1MaOEpRcw0rguppR5rQQg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 12, 2013 at 3:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> @@ -673,3 +673,223 @@ int __init acpi_pci_root_init(void)
->>
->>       return 0;
->>  }
->> +
->> +/*
->> + * Separated from drivers/pci/hotplug/acpiphp_glue.c
->> + *   only support root bridge
->> + */
->
-> This comment will be useless after applying the patch.
->
->> +
->> +static LIST_HEAD(acpi_root_bridge_list);
->> +struct acpi_root_bridge {
->> +     struct list_head list;
->> +     acpi_handle handle;
->> +     u32 flags;
->> +};
->
-> We have struct acpi_pci_root already.  Why do we need this in addition?
+On Mon, Jan 14 2013, Sedat Dilek wrote:
+> On Mon, Jan 14, 2013 at 8:28 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> > On Mon, Jan 14, 2013 at 7:56 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> >> On 2013-01-14 19:33, Sedat Dilek wrote:
+> >>> Hi,
+> >>>
+> >>> while running LTP lite on my next-20130114 kernel I hit this
+> >>> call-trace (file attached).
+> >>>
+> >>> Looks to me like problem in the block layer, but not sure.
+> >>> Might one of the experts have look at it?
+> >>
+> >> Really? 600kb of data to look through? Can't you just paste the actual
+> >> error, I can't even find it...
+> >>
+> >
+> > $ cat call-trace_ltplite_madvise02_next-20130114.txt
+> > Jan 14 17:47:14 fambox kernel: [ 1263.965957] ------------[ cut here
+> > ]------------
+> > Jan 14 17:47:14 fambox kernel: [ 1263.965989] Kernel BUG at
+> > ffffffff81328b2b [verbose debug info unavailable]
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966022] invalid opcode: 0000 [#1] SMP
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966046] Modules linked in:
+> > snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel kvm
+> > snd_hda_intel snd_hda_codec arc4 iwldvm snd_hwdep snd_pcm
+> > ghash_clmulni_intel mac80211 aesni_intel i915 snd_page_alloc xts
+> > snd_seq_midi aes_x86_64 snd_seq_midi_event uvcvideo lrw gf128mul
+> > iwlwifi snd_rawmidi ablk_helper snd_seq i2c_algo_bit cryptd
+> > drm_kms_helper snd_timer videobuf2_vmalloc drm snd_seq_device
+> > videobuf2_memops psmouse parport_pc snd cfg80211 btusb rfcomm
+> > videobuf2_core bnep microcode ppdev soundcore videodev samsung_laptop
+> > wmi lp bluetooth serio_raw mei mac_hid hid_generic video lpc_ich
+> > parport usbhid hid r8169
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966377] CPU 3
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966388] Pid: 7803, comm:
+> > madvise02 Not tainted 3.8.0-rc3-next20130114-5-iniza-generic #1
+> > SAMSUNG ELECTRONICS CO., LTD.
+> > 530U3BI/530U4BI/530U4BH/530U3BI/530U4BI/530U4BH
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966450] RIP:
+> > 0010:[<ffffffff81328b2b>]  [<ffffffff81328b2b>]
+> > blk_flush_plug_list+0x1eb/0x210
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966508] RSP:
+> > 0018:ffff88000d933e58  EFLAGS: 00010287
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966532] RAX: 0000000091827364
+> > RBX: ffff88000d933e68 RCX: 0000000000000000
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966566] RDX: 0000000000000000
+> > RSI: 0000000000000000 RDI: ffff88000d933f10
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966614] RBP: ffff88000d933eb8
+> > R08: 0000000000000003 R09: 0000000000000000
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966656] R10: 00007fff3d62c9b0
+> > R11: 0000000000000206 R12: 0000000000000000
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966696] R13: 0000000000001000
+> > R14: ffff88000d933f10 R15: ffff88000d933f10
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966736] FS:
+> > 00007f56bcbc2700(0000) GS:ffff88011fac0000(0000)
+> > knlGS:0000000000000000
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966780] CS:  0010 DS: 0000 ES:
+> > 0000 CR0: 0000000080050033
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966813] CR2: 00007f56bc6ec060
+> > CR3: 000000000bf66000 CR4: 00000000000407e0
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966848] DR0: 0000000000000000
+> > DR1: 0000000000000000 DR2: 0000000000000000
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966885] DR3: 0000000000000000
+> > DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966921] Process madvise02 (pid:
+> > 7803, threadinfo ffff88000d932000, task ffff88000d9f2e40)
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966963] Stack:
+> > Jan 14 17:47:14 fambox kernel: [ 1263.966978]  0000000000000001
+> > 0000000000000001 ffff88000d933e68 ffff88000d933e68
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967024]  ffff88000d933ef8
+> > ffffffff8114b77c ffff88000d933ec0 ffff88000d933f10
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967071]  0000000000000000
+> > 0000000000001000 0000000000010000 ffff88000d933f10
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967118] Call Trace:
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967137]  [<ffffffff8114b77c>] ?
+> > vm_mmap_pgoff+0xbc/0xe0
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967173]  [<ffffffff81328b68>]
+> > blk_finish_plug+0x18/0x50
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967209]  [<ffffffff811544d8>]
+> > sys_madvise+0xc8/0x3a0
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967247]  [<ffffffff816ba0e9>] ?
+> > do_page_fault+0x39/0x50
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967288]  [<ffffffff816be79d>]
+> > system_call_fastpath+0x1a/0x1f
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967331] Code: 4d 85 ff 74 0d 44
+> > 89 e2 89 c6 4c 89 ff e8 be b5 ff ff 4c 89 ef 57 9d 66 66 90 66 90 48
+> > 83 c4 38 5b 41 5c 41 5d 41 5e 41 5f 5d c3 <0f> 0b 31 d2 be ed ff ff ff
+> > 4c 89 f7 89 45 a8 e8 91 f9 ff ff 8b
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967589] RIP
+> > [<ffffffff81328b2b>] blk_flush_plug_list+0x1eb/0x210
+> > Jan 14 17:47:14 fambox kernel: [ 1263.967630]  RSP <ffff88000d933e58>
+> > Jan 14 17:47:14 fambox kernel: [ 1263.989553] ---[ end trace
+> > 19e1575014ab42a7 ]---
+> >
+> 
+> Looks like this is the fix from Sasha [1].
+> Culprit commit is [2].
+> Testing...
+> 
+> - Sedat -
+> 
+> [1] https://patchwork.kernel.org/patch/1973481/
+> [2] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=0d18d770b9180ffc2c3f63b9eb8406ef80105e05
 
-will address that in following patch.
+It does indeed, let us know if it doesn't fix it.
 
->
-> Also, we have acpi_pci_roots, so why do we need another list of root bridges?
->
->> +
->> +/* bridge flags */
->> +#define ROOT_BRIDGE_HAS_EJ0  (0x00000002)
->> +#define ROOT_BRIDGE_HAS_PS3  (0x00000080)
->
-> What is that needed for?
+-- 
+Jens Axboe
 
-will address that in following patch.
-
->
->> +
->> +#define ACPI_STA_FUNCTIONING (0x00000008)
->> +
->> +static struct acpi_root_bridge *acpi_root_handle_to_bridge(acpi_handle handle)
->> +{
->> +     struct acpi_root_bridge *bridge;
->> +
->> +     list_for_each_entry(bridge, &acpi_root_bridge_list, list)
->> +             if (bridge->handle == handle)
->> +                     return bridge;
->> +
->> +     return NULL;
->> +}
->> +
->> +/* allocate and initialize host bridge data structure */
->> +static void add_acpi_root_bridge(acpi_handle handle)
->> +{
->> +     struct acpi_root_bridge *bridge;
->> +     acpi_handle dummy_handle;
->> +     acpi_status status;
->> +
->
-> Why do we need to evaluate all of the methods directly here?
->
-> Don't we have a struct acpi_device for handle already?
->
->> +     /* if the bridge doesn't have _STA, we assume it is always there */
->> +     status = acpi_get_handle(handle, "_STA", &dummy_handle);
->> +     if (ACPI_SUCCESS(status)) {
->> +             unsigned long long tmp;
->> +
->> +             status = acpi_evaluate_integer(handle, "_STA", NULL, &tmp);
->> +             if (ACPI_FAILURE(status)) {
->> +                     printk(KERN_DEBUG "%s: _STA evaluation failure\n",
->> +                                              __func__);
->> +                     return;
->> +             }
->> +             if ((tmp & ACPI_STA_FUNCTIONING) == 0)
->> +                     /* don't register this object */
->> +                     return;
->> +     }
->> +
->> +     bridge = kzalloc(sizeof(struct acpi_root_bridge), GFP_KERNEL);
->> +     if (!bridge)
->> +             return;
->> +
->> +     bridge->handle = handle;
->> +
->> +     if (ACPI_SUCCESS(acpi_get_handle(handle, "_EJ0", &dummy_handle)))
->> +             bridge->flags |= ROOT_BRIDGE_HAS_EJ0;
->> +     if (ACPI_SUCCESS(acpi_get_handle(handle, "_PS3", &dummy_handle)))
->> +             bridge->flags |= ROOT_BRIDGE_HAS_PS3;
->
-> All of this attempts to duplicate the scanning code from scan.c in a very
-> incomplete and questionable way.
->
-> For example, what if the root bridge has _PR0?
-
-will address that in following patch
-
->
->> +
->> +     list_add(&bridge->list, &acpi_root_bridge_list);
->> +}
->> +
->> +struct acpi_root_hp_work {
->> +     struct work_struct work;
->> +     acpi_handle handle;
->> +     u32 type;
->> +     void *context;
->> +};
->> +
->> +static void alloc_acpi_root_hp_work(acpi_handle handle, u32 type,
->> +                                     void *context,
->> +                                     void (*func)(struct work_struct *work))
->> +{
->> +     struct acpi_root_hp_work *hp_work;
->> +     int ret;
->> +
->> +     hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
->> +     if (!hp_work)
->> +             return;
->> +
->> +     hp_work->handle = handle;
->> +     hp_work->type = type;
->> +     hp_work->context = context;
->> +
->> +     INIT_WORK(&hp_work->work, func);
->> +     ret = queue_work(kacpi_hotplug_wq, &hp_work->work);
->> +     if (!ret)
->> +             kfree(hp_work);
->> +}
->
-> The function above is called only once and used by __init stuff only.
-> Why don't we move it to the caller and mark that caller as __init too?
-
-will merge the function and shared with acpiphp
-
->
->> +
->> +static void handle_root_bridge_insertion(acpi_handle handle)
->> +{
->> +     struct acpi_device *device, *pdevice;
->> +     acpi_handle phandle;
->> +     int ret_val;
->> +
->> +     acpi_get_parent(handle, &phandle);
->> +     if (acpi_bus_get_device(phandle, &pdevice)) {
->> +             printk(KERN_DEBUG "no parent device, assuming NULL\n");
->> +             pdevice = NULL;
->> +     }
->> +     if (!acpi_bus_get_device(handle, &device)) {
->> +             /* check if  pci root_bus is removed */
->> +             struct acpi_pci_root *root = acpi_driver_data(device);
->> +             if (pci_find_bus(root->segment, root->secondary.start))
->> +                     return;
->> +
->> +             printk(KERN_DEBUG "bus exists... trim\n");
->> +             /* this shouldn't be in here, so remove
->> +              * the bus then re-add it...
->> +              */
->
-> Why?  Shouldn't we just bail out here?
-
-should be the same from acpiphp.
-
->
->> +             /* remove pci devices at first */
->> +             ret_val = acpi_bus_trim(device, 0);
->> +             printk(KERN_DEBUG "acpi_bus_trim stop return %x\n", ret_val);
->> +             /* remove acpi devices */
->> +             ret_val = acpi_bus_trim(device, 1);
->
-> Oh, I see why you need the second argument of acpi_bus_trim() now.
->
-> Do I think correctly that you want acpi_pci_root_remove() to be executed before
-> all of the struct acpi_device objects are removed?  In which case why don't we
-> call acpi_pci_root_remove() directly before doing the acpi_bus_trim(device, 1)
-> instead of making the code next to impossible to understand?
-
-yes.
-
->
->> +             printk(KERN_DEBUG "acpi_bus_trim remove return %x\n", ret_val);
->> +     }
->> +     if (acpi_bus_add(handle))
->> +             printk(KERN_ERR "cannot add bridge to acpi list\n");
->> +}
->> +
->> +static void _handle_hotplug_event_root(struct work_struct *work)
->> +{
->> +     struct acpi_root_bridge *bridge;
->> +     char objname[64];
->> +     struct acpi_buffer buffer = { .length = sizeof(objname),
->> +                                   .pointer = objname };
->> +     struct acpi_root_hp_work *hp_work;
->> +     acpi_handle handle;
->> +     u32 type;
->> +
->> +     hp_work = container_of(work, struct acpi_root_hp_work, work);
->> +     handle = hp_work->handle;
->> +     type = hp_work->type;
->> +
->> +     bridge = acpi_root_handle_to_bridge(handle);
->> +
->> +     acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
->> +
->> +     switch (type) {
->> +     case ACPI_NOTIFY_BUS_CHECK:
->> +             /* bus enumerate */
->> +             printk(KERN_DEBUG "%s: Bus check notify on %s\n", __func__,
->> +                              objname);
->> +             if (!bridge) {
->> +                     handle_root_bridge_insertion(handle);
->
-> I don't think we should call add_acpi_root_bridge() for handle if the above
-> fails.  So probably handle_root_bridge_insertion() should return error codes?
-
-yes
-
->
->> +                     add_acpi_root_bridge(handle);
-
-will remove root bridge in following patch.
-
->> +             }
->> +
->> +             break;
->> +
->> +     case ACPI_NOTIFY_DEVICE_CHECK:
->> +             /* device check */
->> +             printk(KERN_DEBUG "%s: Device check notify on %s\n", __func__,
->> +                              objname);
->> +             if (!bridge) {
->> +                     handle_root_bridge_insertion(handle);
->> +                     add_acpi_root_bridge(handle);
->> +             }
->> +             break;
->> +
->> +     default:
->> +             printk(KERN_WARNING "notify_handler: unknown event type 0x%x for %s\n",
->> +                              type, objname);
->> +             break;
->> +     }
->> +
->> +     kfree(hp_work); /* allocated in handle_hotplug_event_bridge */
->> +}
->> +
->> +static void handle_hotplug_event_root(acpi_handle handle, u32 type,
->> +                                     void *context)
->> +{
->> +     alloc_acpi_root_hp_work(handle, type, context,
->> +                             _handle_hotplug_event_root);
->> +}
->> +
->> +static acpi_status __init
->> +find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
->> +{
->> +     char objname[64];
->> +     struct acpi_buffer buffer = { .length = sizeof(objname),
->> +                                   .pointer = objname };
->> +     int *count = (int *)context;
->> +
->> +     if (!acpi_is_root_bridge(handle))
->> +             return AE_OK;
->> +
->> +     (*count)++;
->> +
->> +     acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
->> +
->> +     acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
->> +                             handle_hotplug_event_root, NULL);
->> +     printk(KERN_DEBUG "acpi root: %s notify handler installed\n", objname);
->> +
->> +     add_acpi_root_bridge(handle);
->> +
->> +     return AE_OK;
->> +}
->> +
->> +static int __init acpi_pci_root_hp_init(void)
->> +{
->> +     int num = 0;
->> +
->> +     acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
->> +             ACPI_UINT32_MAX, find_root_bridges, NULL, &num, NULL);
->> +
->> +     printk(KERN_DEBUG "Found %d acpi root devices\n", num);
->> +
->> +     return 0;
->> +}
->
-> Why do we need to do that from an initcall?  Couldn't we simply hook up
-> that code to acpi_pci_root_add() somewhere?
-
-no, not inserted host bridge will not have acpi_pci_root_add called.
-
->
-> And even if not, why don't we call acpi_pci_root_hp_init() from
-> acpi_pci_root_init()?
-
-will check if can move that to acpi_pci_root_init and address that in
-another patch.
-
->
-> All of the changes in acpiphp_glue.c look reasonable to me.
-
-Good.
