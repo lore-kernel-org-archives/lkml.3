@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757620Ab3AOBl0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 20:41:26 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:65223 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756754Ab3AOBlZ (ORCPT
+	id S1757775Ab3AOBqG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 20:46:06 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:55752 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756479Ab3AOBqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 20:41:25 -0500
-Date: Tue, 15 Jan 2013 09:41:15 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mingo@redhat.com, hughd@google.com
-Subject: Re: [RFC]x86: clearing access bit don't flush tlb
-Message-ID: <20130115014115.GA1497@kernel.org>
-References: <20130107081213.GA21779@kernel.org>
- <50EAE66B.1020804@redhat.com>
- <50EB4CB9.9010104@zytor.com>
- <20130108045519.GB2459@kernel.org>
- <50EBA8AB.2060003@zytor.com>
- <50EBA9DC.9070400@redhat.com>
- <50EBAA27.7030506@zytor.com>
- <50EBC4BD.7010700@redhat.com>
+	Mon, 14 Jan 2013 20:46:04 -0500
+Message-ID: <50F4B506.8000509@gmail.com>
+Date: Tue, 15 Jan 2013 09:46:46 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EBC4BD.7010700@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Sedat Dilek <sedat.dilek@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tomas Winkler <tomas.winkler@intel.com>, arnd@arndb.de,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [char-misc-next V2] mei: drop the warning when cl is not initialized
+ during unlinking
+References: <1357831934-31610-1-git-send-email-tomas.winkler@intel.com> <CA+icZUXa-cgNPTYAKjXDSkoqNhto7jz89yUMJAvYxa-jGtMbjg@mail.gmail.com> <20130114143238.GC20384@kroah.com> <CA+icZUXLFp_oZnVPcVDwuy_dvbywKgqHKknzg6qyF3o=mw-p+A@mail.gmail.com> <20130114151220.GA20610@kroah.com>
+In-Reply-To: <20130114151220.GA20610@kroah.com>
+Content-Type: multipart/mixed;
+ boundary="------------080901020602060502040003"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 02:03:25AM -0500, Rik van Riel wrote:
-> On 01/08/2013 12:09 AM, H. Peter Anvin wrote:
-> >On 01/07/2013 09:08 PM, Rik van Riel wrote:
-> >>On 01/08/2013 12:03 AM, H. Peter Anvin wrote:
-> >>>On 01/07/2013 08:55 PM, Shaohua Li wrote:
-> >>>>
-> >>>>I searched a little bit, the change (doing TLB flush to clear access
-> >>>>bit) is
-> >>>>made between 2.6.7 - 2.6.8, I can't find the changelog, but I found a
-> >>>>patch:
-> >>>>http://www.kernel.org/pub/linux/kernel/people/akpm/patches/2.6/2.6.7-rc2/2.6.7-rc2-mm2/broken-out/mm-flush-tlb-when-clearing-young.patch
-> >>>>
-> >>>>
-> >>>>The changelog declaims this is for arm/ppc/ppc64.
-> >>>>
-> >>>
-> >>>Not really.  It says that those have stumbled over it already.  It is
-> >>>true in general that this change will make very frequently used pages
-> >>>(which stick in the TLB) candidates for eviction.
-> >>
-> >>That is only true if the pages were to stay in the TLB for a
-> >>very very long time.  Probably multiple seconds.
-> >>
-> >>>x86 would seem to be just as affected, although possibly with a
-> >>>different frequency.
-> >>>
-> >>>Do we have any actual metrics on anything here?
-> >>
-> >>I suspect that if we do need to force a TLB flush for page
-> >>reclaim purposes, it may make sense to do that TLB flush
-> >>asynchronously. For example, kswapd could kick off a TLB
-> >>flush of every CPU in the system once a second, when the
-> >>system is under pageout pressure.
-> >>
-> >>We would have to do this in a smart way, so the kswapds
-> >>from multiple nodes do not duplicate the work.
-> >>
-> >>If people want that kind of functionality, I would be
-> >>happy to cook up an RFC patch.
-> >>
-> >
-> >So it sounds like you're saying that this patch should never have been
-> >applied in the first place?
-> 
-> It made sense at the time.
+This is a multi-part message in MIME format.
+--------------080901020602060502040003
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-So you agreed the patch is safe, right?
- 
-> However, with larger SMP systems, we may need a different
-> mechanism to get the TLB flushes done after we clear a bunch
-> of accessed bits.
-> 
-> One thing we could do is mark bits in a bitmap, keeping track
-> of which CPUs should have their TLB flushed due to accessed bit
-> scanning.
-> 
-> Then we could set a timer for eg. a 1 second timeout, after
-> which the TLB flush IPIs get sent. If the timer is already
-> pending, we do not start it, but piggyback on the invocation
-> that is already scheduled to happen.
-> 
-> Does something like that make sense?
+于 2013年01月14日 23:12, Greg KH 写道:
+> If you think you can do better than that, wonderful, I would love for
+> you to start out reviewing code and helping with handling stuff like
+> that.  Please do so before complaining about anything.
 
-I don't understand why larger SMP system matters here. Only if there are enough
-TLB entries in CPU matters to me. And if the system is larger, memory is
-larger. TLB entries will not be sufficient. Or you are worrying about future
-larger SMP system can have very big TLB entries?
+  it seems, he is not complaining, maybe for him, he has to treat it as
+an urgent thing.
 
-Thanks,
-Shaohua
+  and for every member, it is necessary to have a rest, so can keep our
+contributes (work) with efficiency and sustainable.
+
+  so, please give more understanding with each other, so can make our
+cooperation better and better.
+
+by the way:
+  maybe it is necessary to think of a backup working flow to process
+such kind of issues: "how to make the negative effect lowest, when
+important members have to have a necessary rest".
+
+
+-- 
+Chen Gang
+
+Flying Transformer
+
+--------------080901020602060502040003
+Content-Type: text/x-vcard; charset=utf-8;
+ name="chen_gang_flying_transformer.vcf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="chen_gang_flying_transformer.vcf"
+
+YmVnaW46dmNhcmQNCmZuOkNoZW4gR2FuZw0Kbjo7Q2hlbiBHYW5nDQp2ZXJzaW9uOjIuMQ0K
+ZW5kOnZjYXJkDQoNCg==
+--------------080901020602060502040003--
