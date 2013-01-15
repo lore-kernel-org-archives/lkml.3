@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab3AONB3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:01:29 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:32927 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756355Ab3AOM4k (ORCPT
+	id S1756931Ab3AONBp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:01:45 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:54632 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756521Ab3AOM4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:56:40 -0500
+	Tue, 15 Jan 2013 07:56:37 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com, sameo@linux.intel.com,
-        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
+        Kennet Wallden <kennet.wallden@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 08/26] mfd: abx500-core: Provide an API to dump all ABx500 registers
-Date: Tue, 15 Jan 2013 12:55:48 +0000
-Message-Id: <1358254566-12419-9-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 06/26] mfd: ab8500-sysctrl: Provide configuration for SysClkReqRfClkBuf registers
+Date: Tue, 15 Jan 2013 12:55:46 +0000
+Message-Id: <1358254566-12419-7-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358254566-12419-1-git-send-email-lee.jones@linaro.org>
 References: <1358254566-12419-1-git-send-email-lee.jones@linaro.org>
@@ -22,70 +22,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+From: Kennet Wallden <kennet.wallden@stericsson.com>
 
-Some drivers can detect subsystem failures e.g. shared memory driver
-can detect modem sub system failures. It would be helpful in analyzing
-these failures if AB register dump is available at that point. This
-patch adds the API for the drivers to dump AB registers in the kernel
-log.
+Add the possibility to pass configuration settings for
+SysCl1kReqRfClkBuf to SysClk8ReqRfClkBuf via platform data.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
-Reviewed-by: Linus WALLEIJ <linus.walleij@stericsson.com>
-Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+Signed-off-by: Kennet Wallden <kennet.wallden@stericsson.com>
+Reviewed-by: Karl-Johan PERNTZ <karl-johan.perntz@stericsson.com>
+Reviewed-by: Bengt JONSSON <bengt.g.jonsson@stericsson.com>
 ---
- drivers/mfd/abx500-core.c  |   16 ++++++++++++++++
- include/linux/mfd/abx500.h |    2 ++
- 2 files changed, 18 insertions(+)
+ drivers/mfd/ab8500-sysctrl.c              |   25 +++++++++++++++++++++++++
+ include/linux/mfd/abx500/ab8500-sysctrl.h |    5 +++++
+ include/linux/mfd/abx500/ab8500.h         |    2 ++
+ 3 files changed, 32 insertions(+)
 
-diff --git a/drivers/mfd/abx500-core.c b/drivers/mfd/abx500-core.c
-index 7ce65f4..9818afb 100644
---- a/drivers/mfd/abx500-core.c
-+++ b/drivers/mfd/abx500-core.c
-@@ -153,6 +153,22 @@ int abx500_startup_irq_enabled(struct device *dev, unsigned int irq)
- }
- EXPORT_SYMBOL(abx500_startup_irq_enabled);
+diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
+index cf58f69..19a024e 100644
+--- a/drivers/mfd/ab8500-sysctrl.c
++++ b/drivers/mfd/ab8500-sysctrl.c
+@@ -113,11 +113,36 @@ int ab8500_sysctrl_write(u16 reg, u8 mask, u8 value)
+ static int __devinit ab8500_sysctrl_probe(struct platform_device *pdev)
+ {
+ 	struct ab8500_platform_data *plat;
++	struct ab8500_sysctrl_platform_data *pdata;
  
-+void abx500_dump_all_banks(void)
-+{
-+	struct abx500_ops *ops;
-+	struct device dummy_child = {0};
-+	struct abx500_device_entry *dev_entry;
+ 	sysctrl_dev = &pdev->dev;
+ 	plat = dev_get_platdata(pdev->dev.parent);
+ 	if (plat->pm_power_off)
+ 		pm_power_off = ab8500_power_off;
 +
-+	list_for_each_entry(dev_entry, &abx500_list, list) {
-+		dummy_child.parent = dev_entry->dev;
-+		ops = &dev_entry->ops;
++	pdata = plat->sysctrl;
 +
-+		if ((ops != NULL) && (ops->dump_all_banks != NULL))
-+			ops->dump_all_banks(&dummy_child);
++	if (pdata) {
++		int ret;
++		int i;
++		int j;
++		for (i = AB8500_SYSCLKREQ1RFCLKBUF;
++		     i <= AB8500_SYSCLKREQ8RFCLKBUF; i++) {
++			j = i - AB8500_SYSCLKREQ1RFCLKBUF;
++			ret = ab8500_sysctrl_write(i, 0xff,
++						   pdata->initial_req_buf_config[j]);
++			dev_dbg(&pdev->dev,
++				"Setting SysClkReq%dRfClkBuf 0x%X\n",
++				j + 1,
++				pdata->initial_req_buf_config[j]);
++			if (ret < 0) {
++				dev_err(&pdev->dev,
++					"unable to set sysClkReq%dRfClkBuf: "
++					"%d\n", j + 1, ret);
++			}
++		}
 +	}
-+}
-+EXPORT_SYMBOL(abx500_dump_all_banks);
 +
- MODULE_AUTHOR("Mattias Wallin <mattias.wallin@stericsson.com>");
- MODULE_DESCRIPTION("ABX500 core driver");
- MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
-index 5d5298d..2667af4 100644
---- a/include/linux/mfd/abx500.h
-+++ b/include/linux/mfd/abx500.h
-@@ -326,6 +326,7 @@ int abx500_mask_and_set_register_interruptible(struct device *dev, u8 bank,
- int abx500_get_chip_id(struct device *dev);
- int abx500_event_registers_startup_state_get(struct device *dev, u8 *event);
- int abx500_startup_irq_enabled(struct device *dev, unsigned int irq);
-+void abx500_dump_all_banks(void);
+ 	return 0;
+ }
  
- struct abx500_ops {
- 	int (*get_chip_id) (struct device *);
-@@ -336,6 +337,7 @@ struct abx500_ops {
- 	int (*mask_and_set_register) (struct device *, u8, u8, u8, u8);
- 	int (*event_registers_startup_state_get) (struct device *, u8 *);
- 	int (*startup_irq_enabled) (struct device *, unsigned int);
-+	void (*dump_all_banks) (struct device *);
+diff --git a/include/linux/mfd/abx500/ab8500-sysctrl.h b/include/linux/mfd/abx500/ab8500-sysctrl.h
+index 10eb509..ebf12e7 100644
+--- a/include/linux/mfd/abx500/ab8500-sysctrl.h
++++ b/include/linux/mfd/abx500/ab8500-sysctrl.h
+@@ -37,6 +37,11 @@ static inline int ab8500_sysctrl_clear(u16 reg, u8 bits)
+ 	return ab8500_sysctrl_write(reg, bits, 0);
+ }
+ 
++/* Configuration data for SysClkReq1RfClkBuf - SysClkReq8RfClkBuf */
++struct ab8500_sysctrl_platform_data {
++	u8 initial_req_buf_config[8];
++};
++
+ /* Registers */
+ #define AB8500_TURNONSTATUS		0x100
+ #define AB8500_RESETSTATUS		0x101
+diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
+index 96840c4..3f4e6d1 100644
+--- a/include/linux/mfd/abx500/ab8500.h
++++ b/include/linux/mfd/abx500/ab8500.h
+@@ -270,6 +270,7 @@ struct regulator_reg_init;
+ struct regulator_init_data;
+ struct ab8500_gpio_platform_data;
+ struct ab8500_codec_platform_data;
++struct ab8500_sysctrl_platform_data;
+ 
+ /**
+  * struct ab8500_platform_data - AB8500 platform data
+@@ -291,6 +292,7 @@ struct ab8500_platform_data {
+ 	struct regulator_init_data *regulator;
+ 	struct ab8500_gpio_platform_data *gpio;
+ 	struct ab8500_codec_platform_data *codec;
++	struct ab8500_sysctrl_platform_data *sysctrl;
  };
  
- int abx500_register_ops(struct device *core_dev, struct abx500_ops *ops);
+ extern int __devinit ab8500_init(struct ab8500 *ab8500,
 -- 
 1.7.9.5
 
