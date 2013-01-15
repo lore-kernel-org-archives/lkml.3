@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934233Ab3AOXLI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:11:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48062 "EHLO mail.kernel.org"
+	id S934245Ab3AOXLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:11:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47786 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934085Ab3AOW4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:56:23 -0500
+	id S934135Ab3AOWzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:55:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 20/71] i2400m: add Intel 6150 device IDs
-Date: Tue, 15 Jan 2013 14:54:17 -0800
-Message-Id: <20130115225341.892642216@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Weston Andros Adamson <dros@netapp.com>, Tejun Heo <tj@kernel.org>,
+        Bruce Fields <bfields@fieldses.org>
+Subject: [ 17/71] SUNRPC: Ensure that we free the rpc_task after cleanups are done
+Date: Tue, 15 Jan 2013 14:54:14 -0800
+Message-Id: <20130115225341.685688621@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,54 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 999a7c5776a0ed2133645fa7e008bec05bda9254 upstream.
+commit c6567ed1402c55e19b012e66a8398baec2a726f3 upstream.
 
-Add device IDs for WiMAX function of Intel 6150 cards.
+This patch ensures that we free the rpc_task after the cleanup callbacks
+are done in order to avoid a deadlock problem that can be triggered if
+the callback needs to wait for another workqueue item to complete.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Weston Andros Adamson <dros@netapp.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Bruce Fields <bfields@fieldses.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wimax/i2400m/i2400m-usb.h |    3 +++
- drivers/net/wimax/i2400m/usb.c        |    6 ++++++
- 2 files changed, 9 insertions(+)
+ net/sunrpc/sched.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wimax/i2400m/i2400m-usb.h
-+++ b/drivers/net/wimax/i2400m/i2400m-usb.h
-@@ -152,6 +152,9 @@ enum {
- 	/* Device IDs */
- 	USB_DEVICE_ID_I6050 = 0x0186,
- 	USB_DEVICE_ID_I6050_2 = 0x0188,
-+	USB_DEVICE_ID_I6150 = 0x07d6,
-+	USB_DEVICE_ID_I6150_2 = 0x07d7,
-+	USB_DEVICE_ID_I6150_3 = 0x07d9,
- 	USB_DEVICE_ID_I6250 = 0x0187,
- };
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -844,16 +844,35 @@ struct rpc_task *rpc_new_task(const stru
+ 	return task;
+ }
  
---- a/drivers/net/wimax/i2400m/usb.c
-+++ b/drivers/net/wimax/i2400m/usb.c
-@@ -491,6 +491,9 @@ int i2400mu_probe(struct usb_interface *
- 	switch (id->idProduct) {
- 	case USB_DEVICE_ID_I6050:
- 	case USB_DEVICE_ID_I6050_2:
-+	case USB_DEVICE_ID_I6150:
-+	case USB_DEVICE_ID_I6150_2:
-+	case USB_DEVICE_ID_I6150_3:
- 	case USB_DEVICE_ID_I6250:
- 		i2400mu->i6050 = 1;
- 		break;
-@@ -740,6 +743,9 @@ static
- struct usb_device_id i2400mu_id_table[] = {
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050) },
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050_2) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_2) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_3) },
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6250) },
- 	{ USB_DEVICE(0x8086, 0x0181) },
- 	{ USB_DEVICE(0x8086, 0x1403) },
++/*
++ * rpc_free_task - release rpc task and perform cleanups
++ *
++ * Note that we free up the rpc_task _after_ rpc_release_calldata()
++ * in order to work around a workqueue dependency issue.
++ *
++ * Tejun Heo states:
++ * "Workqueue currently considers two work items to be the same if they're
++ * on the same address and won't execute them concurrently - ie. it
++ * makes a work item which is queued again while being executed wait
++ * for the previous execution to complete.
++ *
++ * If a work function frees the work item, and then waits for an event
++ * which should be performed by another work item and *that* work item
++ * recycles the freed work item, it can create a false dependency loop.
++ * There really is no reliable way to detect this short of verifying
++ * every memory free."
++ *
++ */
+ static void rpc_free_task(struct rpc_task *task)
+ {
+-	const struct rpc_call_ops *tk_ops = task->tk_ops;
+-	void *calldata = task->tk_calldata;
++	unsigned short tk_flags = task->tk_flags;
+ 
+-	if (task->tk_flags & RPC_TASK_DYNAMIC) {
++	rpc_release_calldata(task->tk_ops, task->tk_calldata);
++
++	if (tk_flags & RPC_TASK_DYNAMIC) {
+ 		dprintk("RPC: %5u freeing task\n", task->tk_pid);
+ 		mempool_free(task, rpc_task_mempool);
+ 	}
+-	rpc_release_calldata(tk_ops, calldata);
+ }
+ 
+ static void rpc_async_release(struct work_struct *work)
 
 
