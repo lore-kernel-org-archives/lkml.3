@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934151Ab3AOWzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:55:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47773 "EHLO mail.kernel.org"
+	id S934175Ab3AOWzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:55:24 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47764 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934003Ab3AOWzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:55:13 -0500
+	id S934134Ab3AOWzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:55:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lukas Czerner <lczerner@redhat.com>,
-        Eugene Shatokhin <eugene.shatokhin@rosalab.ru>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 16/71] ext4: fix memory leak in ext4_xattr_set_acl()s error path
-Date: Tue, 15 Jan 2013 14:54:13 -0800
-Message-Id: <20130115225341.614255634@linuxfoundation.org>
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Peter Tyser <ptyser@xes-inc.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 15/71] mfd: Only unregister platform devices allocated by the mfd core
+Date: Tue, 15 Jan 2013 14:54:12 -0800
+Message-Id: <20130115225341.543197254@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,39 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 24ec19b0ae83a385ad9c55520716da671274b96c upstream.
+commit b9fbb62eb61452d728c39b2e5020739c575aac53 upstream.
 
-In ext4_xattr_set_acl(), if ext4_journal_start() returns an error,
-posix_acl_release() will not be called for 'acl' which may result in a
-memory leak.
+mfd_remove_devices would iterate over all devices sharing a parent with
+an mfd device regardless of whether they were allocated by the mfd core
+or not. This especially caused problems when the device structure was
+not contained within a platform_device, because to_platform_device is
+used on each device pointer.
 
-This patch fixes that.
+This patch defines a device_type for mfd devices and checks this is
+present from mfd_remove_devices_fn before processing the device.
 
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Tested-by: Peter Tyser <ptyser@xes-inc.com>
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/acl.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/mfd/mfd-core.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/acl.c
-+++ b/fs/ext4/acl.c
-@@ -450,8 +450,10 @@ ext4_xattr_set_acl(struct dentry *dentry
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -18,6 +18,10 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/slab.h>
  
- retry:
- 	handle = ext4_journal_start(inode, EXT4_DATA_TRANS_BLOCKS(inode->i_sb));
--	if (IS_ERR(handle))
--		return PTR_ERR(handle);
-+	if (IS_ERR(handle)) {
-+		error = PTR_ERR(handle);
-+		goto release_and_out;
-+	}
- 	error = ext4_set_acl(handle, inode, type, acl);
- 	ext4_journal_stop(handle);
- 	if (error == -ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
++static struct device_type mfd_dev_type = {
++	.name	= "mfd_device",
++};
++
+ int mfd_cell_enable(struct platform_device *pdev)
+ {
+ 	const struct mfd_cell *cell = mfd_get_cell(pdev);
+@@ -87,6 +91,7 @@ static int mfd_add_device(struct device
+ 		goto fail_device;
+ 
+ 	pdev->dev.parent = parent;
++	pdev->dev.type = &mfd_dev_type;
+ 
+ 	if (cell->pdata_size) {
+ 		ret = platform_device_add_data(pdev,
+@@ -182,10 +187,16 @@ EXPORT_SYMBOL(mfd_add_devices);
+ 
+ static int mfd_remove_devices_fn(struct device *dev, void *c)
+ {
+-	struct platform_device *pdev = to_platform_device(dev);
+-	const struct mfd_cell *cell = mfd_get_cell(pdev);
++	struct platform_device *pdev;
++	const struct mfd_cell *cell;
+ 	atomic_t **usage_count = c;
+ 
++	if (dev->type != &mfd_dev_type)
++		return 0;
++
++	pdev = to_platform_device(dev);
++	cell = mfd_get_cell(pdev);
++
+ 	/* find the base address of usage_count pointers (for freeing) */
+ 	if (!*usage_count || (cell->usage_count < *usage_count))
+ 		*usage_count = cell->usage_count;
 
 
