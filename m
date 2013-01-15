@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933521Ab3AOWvw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:51:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46543 "EHLO mail.kernel.org"
+	id S933553Ab3AOWwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:52:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46600 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933121Ab3AOWvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:51:48 -0500
+	id S933121Ab3AOWv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:51:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 104/171] USB: Ignore port state until reset completes.
-Date: Tue, 15 Jan 2013 14:44:29 -0800
-Message-Id: <20130115224320.882609254@linuxfoundation.org>
+Subject: [ 100/171] USB: Handle auto-transition from hot to warm reset.
+Date: Tue, 15 Jan 2013 14:44:25 -0800
+Message-Id: <20130115224320.582239200@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -28,82 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 4f43447e62b37ee19c82a13f72f35b1ca60a74d3 upstream.
+commit 1c7439c61fa6516419c32a9824976334ea969d47 upstream.
 
-The port reset code bails out early if the current connect status is
-cleared (device disconnected).  If we're issuing a hot reset, it may
-also look at the link state before the reset is finished.
+USB 3.0 hubs and roothubs will automatically transition a failed hot
+reset to a warm (BH) reset.  In that case, the warm reset change bit
+will be set, and the link state change bit may also be set.  Change
+hub_port_finish_reset to unconditionally clear those change bits for USB
+3.0 hubs.  If these bits are not cleared, we may lose port change events
+from the roothub.
 
-Section 10.14.2.6 of the USB 3.0 spec says that when a port enters the
-Error state or Resetting state, the port connection bit retains the
-value from the previous state.  Therefore we can't trust it until the
-reset finishes.  Also, the xHCI spec section 4.19.1.2.5 says software
-shall ignore the link state while the port is resetting, as it can be in
-an unknown state.
-
-The port state during reset is also unknown for USB 2.0 hubs.  The hub
-sends a reset signal by driving the bus into an SE0 state.  This
-overwhelms the "connect" signal from the device, so the port can't tell
-whether anything is connected or not.
-
-Fix the port reset code to ignore the port link state and current
-connect bit until the reset finishes, and USB_PORT_STAT_RESET is
-cleared.
-
-Remove the check for USB_PORT_STAT_C_BH_RESET in the warm reset case,
-because it's redundant.  When the warm reset finishes, the port reset
-bit will be cleared at the same time USB_PORT_STAT_C_BH_RESET is set.
-Remove the now-redundant check for a cleared USB_PORT_STAT_RESET bit
-in the code to deal with the finished reset.
-
-This patch should be backported to all stable kernels.
+This commit should be backported to kernels as old as 3.2, that contain
+the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine
+warm reset logic".
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/usb/core/hub.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 --- a/drivers/usb/core/hub.c
 +++ b/drivers/usb/core/hub.c
-@@ -2203,6 +2203,10 @@ static int hub_port_wait_reset(struct us
- 		if (ret < 0)
- 			return ret;
- 
-+		/* The port state is unknown until the reset completes. */
-+		if ((portstatus & USB_PORT_STAT_RESET))
-+			goto delay;
-+
- 		/*
- 		 * Some buggy devices require a warm reset to be issued even
- 		 * when the port appears not to be connected.
-@@ -2248,11 +2252,7 @@ static int hub_port_wait_reset(struct us
- 			if ((portchange & USB_PORT_STAT_C_CONNECTION))
- 				return -ENOTCONN;
- 
--			/* if we`ve finished resetting, then break out of
--			 * the loop
--			 */
--			if (!(portstatus & USB_PORT_STAT_RESET) &&
--			    (portstatus & USB_PORT_STAT_ENABLE)) {
-+			if ((portstatus & USB_PORT_STAT_ENABLE)) {
- 				if (hub_is_wusb(hub))
- 					udev->speed = USB_SPEED_WIRELESS;
- 				else if (hub_is_superspeed(hub->hdev))
-@@ -2266,10 +2266,10 @@ static int hub_port_wait_reset(struct us
- 				return 0;
- 			}
- 		} else {
--			if (portchange & USB_PORT_STAT_C_BH_RESET)
--				return 0;
-+			return 0;
- 		}
- 
-+delay:
- 		/* switch to the long delay after two short delay failures */
- 		if (delay_time >= 2 * HUB_SHORT_RESET_TIME)
- 			delay = HUB_LONG_RESET_TIME;
+@@ -2249,16 +2249,16 @@ static void hub_port_finish_reset(struct
+ 		clear_port_feature(hub->hdev,
+ 				port1, USB_PORT_FEAT_C_RESET);
+ 		/* FIXME need disconnect() for NOTATTACHED device */
+-		if (warm) {
++		if (hub_is_superspeed(hub->hdev)) {
+ 			clear_port_feature(hub->hdev, port1,
+ 					USB_PORT_FEAT_C_BH_PORT_RESET);
+ 			clear_port_feature(hub->hdev, port1,
+ 					USB_PORT_FEAT_C_PORT_LINK_STATE);
+-		} else {
++		}
++		if (!warm)
+ 			usb_set_device_state(udev, *status
+ 					? USB_STATE_NOTATTACHED
+ 					: USB_STATE_DEFAULT);
+-		}
+ 		break;
+ 	}
+ }
 
 
