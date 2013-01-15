@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185Ab3AOXpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:45:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45968 "EHLO mail.kernel.org"
+	id S933210Ab3AOXqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:46:07 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45958 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933163Ab3AOWuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:21 -0500
+	id S932980Ab3AOWuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>, Jan Kara <jack@suse.cz>,
-        Shuah Khan <shuah.khan@hp.com>
-Subject: [ 063/171] udf: fix memory leak while allocating blocks during write
-Date: Tue, 15 Jan 2013 14:43:48 -0800
-Message-Id: <20130115224317.963854490@linuxfoundation.org>
+        Josh Boyer <jwboyer@redhat.com>, Ed Cashin <ecashin@coraid.com>
+Subject: [ 062/171] aoe: do not call bdi_init after blk_alloc_queue
+Date: Tue, 15 Jan 2013 14:43:47 -0800
+Message-Id: <20130115224317.892386244@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,41 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+From: Ed Cashin <ecashin@coraid.com>
 
-commit 2fb7d99d0de3fd8ae869f35ab682581d8455887a upstream.
+commit 0a41409c518083133e79015092585d68915865be upstream, but doesn't
+apply, so this version is different for older kernels than 3.7.x
 
-Need to brelse the buffer_head stored in cur_epos and next_epos.
+blk_alloc_queue has already done a bdi_init, so do not bdi_init
+again in aoeblk_gdalloc.  The extra call causes list corruption
+in the per-CPU backing dev info stats lists.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Affected users see console WARNINGs about list_del corruption on
+percpu_counter_destroy when doing "rmmod aoe" or "aoeflush -a"
+when AoE targets have been detected and initialized by the
+system.
+
+The patch below applies to v3.6.11, with its v47 aoe driver.  It
+is expected to apply to all currently maintained stable kernels
+except 3.7.y.  A related but different fix has been posted for
+3.7.y.
+
+References:
+
+  RedHat bugzilla ticket with original report
+  https://bugzilla.redhat.com/show_bug.cgi?id=853064
+
+  LKML discussion of bug and fix
+  http://thread.gmane.org/gmane.linux.kernel/1416336/focus=1416497
+
+Reported-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/udf/inode.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/block/aoe/aoe.h    |    2 +-
+ drivers/block/aoe/aoeblk.c |    5 -----
+ 2 files changed, 1 insertion(+), 6 deletions(-)
 
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -738,6 +738,8 @@ static sector_t inode_getblk(struct inod
- 				goal, err);
- 		if (!newblocknum) {
- 			brelse(prev_epos.bh);
-+			brelse(cur_epos.bh);
-+			brelse(next_epos.bh);
- 			*err = -ENOSPC;
- 			return 0;
- 		}
-@@ -768,6 +770,8 @@ static sector_t inode_getblk(struct inod
- 	udf_update_extents(inode, laarr, startnum, endnum, &prev_epos);
+--- a/drivers/block/aoe/aoe.h
++++ b/drivers/block/aoe/aoe.h
+@@ -1,5 +1,5 @@
+ /* Copyright (c) 2007 Coraid, Inc.  See COPYING for GPL terms. */
+-#define VERSION "47"
++#define VERSION "47q"
+ #define AOE_MAJOR 152
+ #define DEVICE_NAME "aoe"
  
- 	brelse(prev_epos.bh);
-+	brelse(cur_epos.bh);
-+	brelse(next_epos.bh);
+--- a/drivers/block/aoe/aoeblk.c
++++ b/drivers/block/aoe/aoeblk.c
+@@ -276,8 +276,6 @@ aoeblk_gdalloc(void *vp)
+ 		goto err_mempool;
+ 	blk_queue_make_request(d->blkq, aoeblk_make_request);
+ 	d->blkq->backing_dev_info.name = "aoe";
+-	if (bdi_init(&d->blkq->backing_dev_info))
+-		goto err_blkq;
+ 	spin_lock_irqsave(&d->lock, flags);
+ 	gd->major = AOE_MAJOR;
+ 	gd->first_minor = d->sysminor * AOE_PARTITIONS;
+@@ -298,9 +296,6 @@ aoeblk_gdalloc(void *vp)
+ 	aoedisk_add_sysfs(d);
+ 	return;
  
- 	newblock = udf_get_pblock(inode->i_sb, newblocknum,
- 				iinfo->i_location.partitionReferenceNum, 0);
+-err_blkq:
+-	blk_cleanup_queue(d->blkq);
+-	d->blkq = NULL;
+ err_mempool:
+ 	mempool_destroy(d->bufpool);
+ err_disk:
 
 
