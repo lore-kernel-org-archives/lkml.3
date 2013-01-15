@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933686Ab3AOWwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:52:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46798 "EHLO mail.kernel.org"
+	id S933634Ab3AOWwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:52:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46716 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933617Ab3AOWw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:28 -0500
+	id S933617Ab3AOWwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Dominik=20K=C3=83=C2=B6ppl?= <dominik@devwork.org>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Julien Cristau <jcristau@debian.org>
-Subject: [ 125/171] drm/i915: only enable sdvo hotplug irq if needed
-Date: Tue, 15 Jan 2013 14:44:50 -0800
-Message-Id: <20130115224322.366751064@linuxfoundation.org>
+        Benjamin Marzinski <bmarzins@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 109/171] GFS2: Test bufdata with buffer locked and gfs2_log_lock held
+Date: Tue, 15 Jan 2013 14:44:34 -0800
+Message-Id: <20130115224321.245102503@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,71 +27,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Benjamin Marzinski <bmarzins@redhat.com>
 
-commit fcbc50da7753b210b4442ca9abc4efbd4e481f6e upstream.
+commit 96e5d1d3adf56f1c7eeb07258f6a1a0a7ae9c489 upstream.
 
-Avoid constant wakeups caused by noisy irq lines when we don't even care
-about the irq. This should be particularly useful for i945g/gm where the
-hotplug has been disabled:
+In gfs2_trans_add_bh(), gfs2 was testing if a there was a bd attached to the
+buffer without having the gfs2_log_lock held. It was then assuming it would
+stay attached for the rest of the function. However, without either the log
+lock being held of the buffer locked, __gfs2_ail_flush() could detach bd at any
+time.  This patch moves the locking before the test.  If there isn't a bd
+already attached, gfs2 can safely allocate one and attach it before locking.
+There is no way that the newly allocated bd could be on the ail list,
+and thus no way for __gfs2_ail_flush() to detach it.
 
-commit 768b107e4b3be0acf6f58e914afe4f337c00932b
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Fri May 4 11:29:56 2012 +0200
-
-    drm/i915: disable sdvo hotplug on i945g/gm
-
-v2: While at it, remove the bogus hotplug_active read, and do not mask
-hotplug_active[0] before checking whether the irq is needed, per discussion
-with Daniel on IRC.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=38442
-Tested-by: Dominik KÃ¶ppl <dominik@devwork.org>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Julien Cristau <jcristau@debian.org>
+Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ fs/gfs2/lops.c  |   18 ++++--------------
+ fs/gfs2/trans.c |    8 ++++++++
+ 2 files changed, 12 insertions(+), 14 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -2570,7 +2570,6 @@ bool intel_sdvo_init(struct drm_device *
- 		hotplug_mask = IS_SDVOB(sdvo_reg) ?
- 			SDVOB_HOTPLUG_INT_STATUS_I915 : SDVOC_HOTPLUG_INT_STATUS_I915;
+--- a/fs/gfs2/lops.c
++++ b/fs/gfs2/lops.c
+@@ -258,16 +258,14 @@ static void buf_lo_add(struct gfs2_sbd *
+ 	struct gfs2_meta_header *mh;
+ 	struct gfs2_trans *tr;
+ 
+-	lock_buffer(bd->bd_bh);
+-	gfs2_log_lock(sdp);
+ 	if (!list_empty(&bd->bd_list_tr))
+-		goto out;
++		return;
+ 	tr = current->journal_info;
+ 	tr->tr_touched = 1;
+ 	tr->tr_num_buf++;
+ 	list_add(&bd->bd_list_tr, &tr->tr_list_buf);
+ 	if (!list_empty(&le->le_list))
+-		goto out;
++		return;
+ 	set_bit(GLF_LFLUSH, &bd->bd_gl->gl_flags);
+ 	set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
+ 	gfs2_meta_check(sdp, bd->bd_bh);
+@@ -278,9 +276,6 @@ static void buf_lo_add(struct gfs2_sbd *
+ 	sdp->sd_log_num_buf++;
+ 	list_add(&le->le_list, &sdp->sd_log_le_buf);
+ 	tr->tr_num_buf_new++;
+-out:
+-	gfs2_log_unlock(sdp);
+-	unlock_buffer(bd->bd_bh);
+ }
+ 
+ static void buf_lo_before_commit(struct gfs2_sbd *sdp)
+@@ -611,11 +606,9 @@ static void databuf_lo_add(struct gfs2_s
+ 	struct address_space *mapping = bd->bd_bh->b_page->mapping;
+ 	struct gfs2_inode *ip = GFS2_I(mapping->host);
+ 
+-	lock_buffer(bd->bd_bh);
+-	gfs2_log_lock(sdp);
+ 	if (tr) {
+ 		if (!list_empty(&bd->bd_list_tr))
+-			goto out;
++			return;
+ 		tr->tr_touched = 1;
+ 		if (gfs2_is_jdata(ip)) {
+ 			tr->tr_num_buf++;
+@@ -623,7 +616,7 @@ static void databuf_lo_add(struct gfs2_s
+ 		}
  	}
--	dev_priv->hotplug_supported_mask |= hotplug_mask;
+ 	if (!list_empty(&le->le_list))
+-		goto out;
++		return;
  
- 	drm_encoder_helper_add(&intel_encoder->base, &intel_sdvo_helper_funcs);
- 
-@@ -2578,14 +2577,6 @@ bool intel_sdvo_init(struct drm_device *
- 	if (!intel_sdvo_get_capabilities(intel_sdvo, &intel_sdvo->caps))
- 		goto err;
- 
--	/* Set up hotplug command - note paranoia about contents of reply.
--	 * We assume that the hardware is in a sane state, and only touch
--	 * the bits we think we understand.
--	 */
--	intel_sdvo_get_value(intel_sdvo, SDVO_CMD_GET_ACTIVE_HOT_PLUG,
--			     &intel_sdvo->hotplug_active, 2);
--	intel_sdvo->hotplug_active[0] &= ~0x3;
--
- 	if (intel_sdvo_output_setup(intel_sdvo,
- 				    intel_sdvo->caps.output_flags) != true) {
- 		DRM_DEBUG_KMS("SDVO output failed to setup on SDVO%c\n",
-@@ -2593,6 +2584,12 @@ bool intel_sdvo_init(struct drm_device *
- 		goto err;
+ 	set_bit(GLF_LFLUSH, &bd->bd_gl->gl_flags);
+ 	set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
+@@ -635,9 +628,6 @@ static void databuf_lo_add(struct gfs2_s
+ 	} else {
+ 		list_add_tail(&le->le_list, &sdp->sd_log_le_ordered);
  	}
+-out:
+-	gfs2_log_unlock(sdp);
+-	unlock_buffer(bd->bd_bh);
+ }
  
-+	/* Only enable the hotplug irq if we need it, to work around noisy
-+	 * hotplug lines.
-+	 */
-+	if (intel_sdvo->hotplug_active[0])
-+		dev_priv->hotplug_supported_mask |= hotplug_mask;
-+
- 	intel_sdvo_select_ddc_bus(dev_priv, intel_sdvo, sdvo_reg);
+ static void gfs2_check_magic(struct buffer_head *bh)
+--- a/fs/gfs2/trans.c
++++ b/fs/gfs2/trans.c
+@@ -145,14 +145,22 @@ void gfs2_trans_add_bh(struct gfs2_glock
+ 	struct gfs2_sbd *sdp = gl->gl_sbd;
+ 	struct gfs2_bufdata *bd;
  
- 	/* Set the input timing to the screen. Assume always input 0. */
++	lock_buffer(bh);
++	gfs2_log_lock(sdp);
+ 	bd = bh->b_private;
+ 	if (bd)
+ 		gfs2_assert(sdp, bd->bd_gl == gl);
+ 	else {
++		gfs2_log_unlock(sdp);
++		unlock_buffer(bh);
+ 		gfs2_attach_bufdata(gl, bh, meta);
+ 		bd = bh->b_private;
++		lock_buffer(bh);
++		gfs2_log_lock(sdp);
+ 	}
+ 	lops_add(sdp, &bd->bd_le);
++	gfs2_log_unlock(sdp);
++	unlock_buffer(bh);
+ }
+ 
+ void gfs2_trans_add_revoke(struct gfs2_sbd *sdp, struct gfs2_bufdata *bd)
 
 
