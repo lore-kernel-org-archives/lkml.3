@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab3AONeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:34:19 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46443 "EHLO comal.ext.ti.com"
+	id S1757354Ab3AONej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:34:39 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46288 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756968Ab3AONeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:34:15 -0500
+	id S1756877Ab3AONbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:31:07 -0500
 From: Afzal Mohammed <afzal@ti.com>
-To: Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Sekhar Nori <nsekhar@ti.com>,
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Sekhar Nori <nsekhar@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: AM33XX: clock: SET_RATE_PARENT in lcd path
-Date: Tue, 15 Jan 2013 19:04:57 +0530
-Message-ID: <1358256897-26275-1-git-send-email-afzal@ti.com>
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 01/10] video: da8xx-fb: fb_check_var enhancement
+Date: Tue, 15 Jan 2013 19:01:36 +0530
+Message-ID: <4cc2a1179d24e067623b9516946e222b22d79f7e.1358250489.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1358250489.git.afzal@ti.com>
+References: <cover.1358250489.git.afzal@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LCDC clock node is a one that does not have set rate capability. It
-just passes on the rate that is sent downstream by it's parent. While
-lcdc clock parent and it's grand parent - dpll_disp_m2_ck and
-dpll_disp_ck has the capability to configure rate.
+Check whether "struct fb_var_screeninfo" fields are sane, if not
+update it to be within allowed limits.
 
-And the default rates provided by LCDC clock's ancestors are not
-sufficient to obtain pixel clock for current LCDC use cases, hence
-currently display would not work on AM335x SoC's (with driver
-modifications in platfrom independent way).
-
-Hence inform clock framework to propogate set rate for LCDC clock as
-well as it's parent - dpll_disp_m2_ck. With this change, set rate on
-LCDC clock would get propogated till dpll_disp_ck via dpll_disp_m2_ck,
-hence allowing the driver (same driver is used in DaVinci too) to set
-rates using LCDC clock without worrying about platform dependent clock
-details.
+If user sends down buggy "var" values, this will bring those within
+allowable limits. And fb_set_par is not supposed to change "var"
+values, fb_check_var has to ensure that values are proper.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
+ drivers/video/da8xx-fb.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-Based on v3.8-rc3
-
- arch/arm/mach-omap2/cclock33xx_data.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/cclock33xx_data.c b/arch/arm/mach-omap2/cclock33xx_data.c
-index ea64ad6..b731216 100644
---- a/arch/arm/mach-omap2/cclock33xx_data.c
-+++ b/arch/arm/mach-omap2/cclock33xx_data.c
-@@ -284,9 +284,10 @@ DEFINE_STRUCT_CLK(dpll_disp_ck, dpll_core_ck_parents, dpll_ddr_ck_ops);
-  * TODO: Add clksel here (sys_clkin, CORE_CLKOUTM6, PER_CLKOUTM2
-  * and ALT_CLK1/2)
-  */
--DEFINE_CLK_DIVIDER(dpll_disp_m2_ck, "dpll_disp_ck", &dpll_disp_ck, 0x0,
--		   AM33XX_CM_DIV_M2_DPLL_DISP, AM33XX_DPLL_CLKOUT_DIV_SHIFT,
--		   AM33XX_DPLL_CLKOUT_DIV_WIDTH, CLK_DIVIDER_ONE_BASED, NULL);
-+DEFINE_CLK_DIVIDER(dpll_disp_m2_ck, "dpll_disp_ck", &dpll_disp_ck,
-+		   CLK_SET_RATE_PARENT, AM33XX_CM_DIV_M2_DPLL_DISP,
-+		   AM33XX_DPLL_CLKOUT_DIV_SHIFT, AM33XX_DPLL_CLKOUT_DIV_WIDTH,
-+		   CLK_DIVIDER_ONE_BASED, NULL);
+diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+index 0810939..d00dd17 100644
+--- a/drivers/video/da8xx-fb.c
++++ b/drivers/video/da8xx-fb.c
+@@ -888,6 +888,9 @@ static int fb_check_var(struct fb_var_screeninfo *var,
+ 			struct fb_info *info)
+ {
+ 	int err = 0;
++	struct da8xx_fb_par *par = info->par;
++	int bpp = var->bits_per_pixel >> 3;
++	unsigned long line_size = var->xres_virtual * bpp;
  
- /* DPLL_PER */
- static struct dpll_data dpll_per_dd = {
-@@ -932,6 +933,8 @@ int __init am33xx_clk_init(void)
- 		cpu_clkflg = CK_AM33XX;
- 	}
- 
-+	lcd_gclk.flags |= CLK_SET_RATE_PARENT;
+ 	if (var->bits_per_pixel > 16 && lcd_revision == LCD_VERSION_1)
+ 		return -EINVAL;
+@@ -955,6 +958,21 @@ static int fb_check_var(struct fb_var_screeninfo *var,
+ 	var->green.msb_right = 0;
+ 	var->blue.msb_right = 0;
+ 	var->transp.msb_right = 0;
 +
- 	for (c = am33xx_clks; c < am33xx_clks + ARRAY_SIZE(am33xx_clks); c++) {
- 		if (c->cpu & cpu_clkflg) {
- 			clkdev_add(&c->lk);
++	if (line_size * var->yres_virtual > par->vram_size)
++		var->yres_virtual = par->vram_size / line_size;
++
++	if (var->yres > var->yres_virtual)
++		var->yres = var->yres_virtual;
++
++	if (var->xres > var->xres_virtual)
++		var->xres = var->xres_virtual;
++
++	if (var->xres + var->xoffset > var->xres_virtual)
++		var->xoffset = var->xres_virtual - var->xres;
++	if (var->yres + var->yoffset > var->yres_virtual)
++		var->yoffset = var->yres_virtual - var->yres;
++
+ 	return err;
+ }
+ 
 -- 
 1.7.9.5
 
