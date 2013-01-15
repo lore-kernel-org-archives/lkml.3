@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933834Ab3AOWxX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:53:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47268 "EHLO mail.kernel.org"
+	id S933860Ab3AOXWU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:22:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47258 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933675Ab3AOWxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:53:20 -0500
+	id S933814Ab3AOWxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:53:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
-Subject: [ 151/171] libceph: fix protocol feature mismatch failure path
-Date: Tue, 15 Jan 2013 14:45:16 -0800
-Message-Id: <20130115224324.234952034@linuxfoundation.org>
+        Ugis <ugis22@gmail.com>, Alex Elder <elder@inktank.com>,
+        Sage Weil <sage@inktank.com>
+Subject: [ 150/171] libceph: WARN, dont BUG on unexpected connection states
+Date: Tue, 15 Jan 2013 14:45:15 -0800
+Message-Id: <20130115224324.166661969@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,73 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Sage Weil <sage@inktank.com>
+From: Alex Elder <elder@inktank.com>
 
-We should not set con->state to CLOSED here; that happens in
-ceph_fault() in the caller, where it first asserts that the state
-is not yet CLOSED.  Avoids a BUG when the features don't match.
+A number of assertions in the ceph messenger are implemented with
+BUG_ON(), killing the system if connection's state doesn't match
+what's expected.  At this point our state model is (evidently) not
+well understood enough for these assertions to trigger a BUG().
+Convert all BUG_ON(con->state...) calls to be WARN_ON(con->state...)
+so we learn about these issues without killing the machine.
 
-Since the fail_protocol() has become a trivial wrapper, replace
-calls to it with direct calls to reset_connection().
+We now recognize that a connection fault can occur due to a socket
+closure at any time, regardless of the state of the connection.  So
+there is really nothing we can assert about the state of the
+connection at that point so eliminate that assertion.
 
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
-(cherry picked from commit 0fa6ebc600bc8e830551aee47a0e929e818a1868)
+Reported-by: Ugis <ugis22@gmail.com>
+Tested-by: Ugis <ugis22@gmail.com>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+(cherry picked from commit 122070a2ffc91f87fe8e8493eb0ac61986c5557c)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/messenger.c |   14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+ net/ceph/messenger.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
 --- a/net/ceph/messenger.c
 +++ b/net/ceph/messenger.c
-@@ -506,6 +506,7 @@ static void reset_connection(struct ceph
- {
- 	/* reset connection, out_queue, msg_ and connect_seq */
- 	/* discard existing out_queue and msg_seq */
-+	dout("reset_connection %p\n", con);
- 	ceph_msg_remove_list(&con->out_queue);
- 	ceph_msg_remove_list(&con->out_sent);
+@@ -561,7 +561,7 @@ void ceph_con_open(struct ceph_connectio
+ 	mutex_lock(&con->mutex);
+ 	dout("con_open %p %s\n", con, ceph_pr_addr(&addr->in_addr));
  
-@@ -1502,13 +1503,6 @@ static int process_banner(struct ceph_co
- 	return 0;
+-	BUG_ON(con->state != CON_STATE_CLOSED);
++	WARN_ON(con->state != CON_STATE_CLOSED);
+ 	con->state = CON_STATE_PREOPEN;
+ 
+ 	con->peer_name.type = (__u8) entity_type;
+@@ -1505,7 +1505,7 @@ static int process_banner(struct ceph_co
+ static void fail_protocol(struct ceph_connection *con)
+ {
+ 	reset_connection(con);
+-	BUG_ON(con->state != CON_STATE_NEGOTIATING);
++	WARN_ON(con->state != CON_STATE_NEGOTIATING);
+ 	con->state = CON_STATE_CLOSED;
  }
  
--static void fail_protocol(struct ceph_connection *con)
--{
--	reset_connection(con);
--	WARN_ON(con->state != CON_STATE_NEGOTIATING);
--	con->state = CON_STATE_CLOSED;
--}
--
- static int process_connect(struct ceph_connection *con)
- {
- 	u64 sup_feat = con->msgr->supported_features;
-@@ -1526,7 +1520,7 @@ static int process_connect(struct ceph_c
- 		       ceph_pr_addr(&con->peer_addr.in_addr),
- 		       sup_feat, server_feat, server_feat & ~sup_feat);
- 		con->error_msg = "missing required protocol features";
--		fail_protocol(con);
-+		reset_connection(con);
- 		return -1;
- 
- 	case CEPH_MSGR_TAG_BADPROTOVER:
-@@ -1537,7 +1531,7 @@ static int process_connect(struct ceph_c
- 		       le32_to_cpu(con->out_connect.protocol_version),
- 		       le32_to_cpu(con->in_reply.protocol_version));
- 		con->error_msg = "protocol version mismatch";
--		fail_protocol(con);
-+		reset_connection(con);
- 		return -1;
- 
- 	case CEPH_MSGR_TAG_BADAUTHORIZER:
-@@ -1627,7 +1621,7 @@ static int process_connect(struct ceph_c
- 			       ceph_pr_addr(&con->peer_addr.in_addr),
- 			       req_feat, server_feat, req_feat & ~server_feat);
- 			con->error_msg = "missing required protocol features";
--			fail_protocol(con);
-+			reset_connection(con);
+@@ -1631,7 +1631,7 @@ static int process_connect(struct ceph_c
  			return -1;
  		}
+ 
+-		BUG_ON(con->state != CON_STATE_NEGOTIATING);
++		WARN_ON(con->state != CON_STATE_NEGOTIATING);
+ 		con->state = CON_STATE_OPEN;
+ 
+ 		con->peer_global_seq = le32_to_cpu(con->in_reply.global_seq);
+@@ -2128,7 +2128,6 @@ more:
+ 		if (ret < 0)
+ 			goto out;
+ 
+-		BUG_ON(con->state != CON_STATE_CONNECTING);
+ 		con->state = CON_STATE_NEGOTIATING;
+ 
+ 		/*
+@@ -2156,7 +2155,7 @@ more:
+ 		goto more;
+ 	}
+ 
+-	BUG_ON(con->state != CON_STATE_OPEN);
++	WARN_ON(con->state != CON_STATE_OPEN);
+ 
+ 	if (con->in_base_pos < 0) {
+ 		/*
+@@ -2370,7 +2369,7 @@ static void ceph_fault(struct ceph_conne
+ 	dout("fault %p state %lu to peer %s\n",
+ 	     con, con->state, ceph_pr_addr(&con->peer_addr.in_addr));
+ 
+-	BUG_ON(con->state != CON_STATE_CONNECTING &&
++	WARN_ON(con->state != CON_STATE_CONNECTING &&
+ 	       con->state != CON_STATE_NEGOTIATING &&
+ 	       con->state != CON_STATE_OPEN);
  
 
 
