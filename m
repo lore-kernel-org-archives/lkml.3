@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab3AOWnQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:43:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43820 "EHLO mail.kernel.org"
+	id S1758626Ab3AOWnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:43:45 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43797 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932248Ab3AOWft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:35:49 -0500
+	id S932702Ab3AOWfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:35:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 197/221] libceph: always reset osds when kicking
-Date: Tue, 15 Jan 2013 10:52:04 -0800
-Message-Id: <20130115185012.251939402@linuxfoundation.org>
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Runyan, Arthur J" <arthur.j.runyan@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, CAI Qian <caiqian@redhat.com>
+Subject: [ 188/221] drm/i915: disable cpt phase pointer fdi rx workaround
+Date: Tue, 15 Jan 2013 10:51:55 -0800
+Message-Id: <20130115185011.590337962@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,60 +27,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-(cherry picked from commit e6d50f67a6b1a6252a616e6e629473b5c4277218)
+commit 539526b4137bc0e7a8806c38c8522f226814a0e6 upstream.
 
-When ceph_osdc_handle_map() is called to process a new osd map,
-kick_requests() is called to ensure all affected requests are
-updated if necessary to reflect changes in the osd map.  This
-happens in two cases:  whenever an incremental map update is
-processed; and when a full map update (or the last one if there is
-more than one) gets processed.
+We've originally added this in
 
-In the former case, the kick_requests() call is followed immediately
-by a call to reset_changed_osds() to ensure any connections to osds
-affected by the map change are reset.  But for full map updates
-this isn't done.
+commit 291427f5fdadec6e4be2924172e83588880e1539
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Fri Jul 29 12:42:37 2011 -0700
 
-Both cases should be doing this osd reset.
+    drm/i915: apply phase pointer override on SNB+ too
 
-Rather than duplicating the reset_changed_osds() call, move it into
-the end of kick_requests().
+and then copy-pasted it over to ivb/ppt. The w/a was originally added
+for ilk/ibx in
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+commit 5b2adf897146edeac6a1e438fb67b5a53dbbdf34
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Thu Oct 7 16:01:15 2010 -0700
+
+    drm/i915: add Ironlake clock gating workaround for FDI link training
+
+and fixed up a bit in
+
+commit 6f06ce184c765fd8d50669a8d12fdd566c920859
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Tue Jan 4 15:09:38 2011 -0800
+
+    drm/i915: set phase sync pointer override enable before setting phase sync pointer
+
+It turns out that this w/a isn't actually required on cpt/ppt and
+positively harmful on ivb/ppt when using fdi B/C links - it results in
+a black screen occasionally, with seemingfully everything working as
+it should. The only failure indication I've found in the hw is that
+eventually (but not right after the modeset completes) a pipe underrun
+is signalled.
+
+Big thanks to Arthur Runyan for all the ideas for registers to check
+and changes to test, otherwise I couldn't ever have tracked this down!
+
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: "Runyan, Arthur J" <arthur.j.runyan@intel.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/osd_client.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1308,7 +1308,7 @@ static void reset_changed_osds(struct ce
-  * Requeue requests whose mapping to an OSD has changed.  If requests map to
-  * no osd, request a new map.
-  *
-- * Caller should hold map_sem for read and request_mutex.
-+ * Caller should hold map_sem for read.
-  */
- static void kick_requests(struct ceph_osd_client *osdc, int force_resend)
- {
-@@ -1383,6 +1383,7 @@ static void kick_requests(struct ceph_os
- 		dout("%d requests for down osds, need new map\n", needmap);
- 		ceph_monc_request_next_osdmap(&osdc->client->monc);
- 	}
-+	reset_changed_osds(osdc);
+---
+ drivers/gpu/drm/i915/intel_display.c |   31 -------------------------------
+ 1 file changed, 31 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2302,18 +2302,6 @@ static void intel_fdi_normal_train(struc
+ 			   FDI_FE_ERRC_ENABLE);
  }
  
+-static void cpt_phase_pointer_enable(struct drm_device *dev, int pipe)
+-{
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-	u32 flags = I915_READ(SOUTH_CHICKEN1);
+-
+-	flags |= FDI_PHASE_SYNC_OVR(pipe);
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* once to unlock... */
+-	flags |= FDI_PHASE_SYNC_EN(pipe);
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* then again to enable */
+-	POSTING_READ(SOUTH_CHICKEN1);
+-}
+-
+ /* The FDI link training functions for ILK/Ibexpeak. */
+ static void ironlake_fdi_link_train(struct drm_crtc *crtc)
+ {
+@@ -2464,9 +2452,6 @@ static void gen6_fdi_link_train(struct d
+ 	POSTING_READ(reg);
+ 	udelay(150);
  
-@@ -1439,7 +1440,6 @@ void ceph_osdc_handle_map(struct ceph_os
- 				osdc->osdmap = newmap;
- 			}
- 			kick_requests(osdc, 0);
--			reset_changed_osds(osdc);
- 		} else {
- 			dout("ignoring incremental map %u len %d\n",
- 			     epoch, maplen);
+-	if (HAS_PCH_CPT(dev))
+-		cpt_phase_pointer_enable(dev, pipe);
+-
+ 	for (i = 0; i < 4; i++) {
+ 		reg = FDI_TX_CTL(pipe);
+ 		temp = I915_READ(reg);
+@@ -2593,9 +2578,6 @@ static void ivb_manual_fdi_link_train(st
+ 	POSTING_READ(reg);
+ 	udelay(150);
+ 
+-	if (HAS_PCH_CPT(dev))
+-		cpt_phase_pointer_enable(dev, pipe);
+-
+ 	for (i = 0; i < 4; i++) {
+ 		reg = FDI_TX_CTL(pipe);
+ 		temp = I915_READ(reg);
+@@ -2737,17 +2719,6 @@ static void ironlake_fdi_pll_disable(str
+ 	udelay(100);
+ }
+ 
+-static void cpt_phase_pointer_disable(struct drm_device *dev, int pipe)
+-{
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-	u32 flags = I915_READ(SOUTH_CHICKEN1);
+-
+-	flags &= ~(FDI_PHASE_SYNC_EN(pipe));
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* once to disable... */
+-	flags &= ~(FDI_PHASE_SYNC_OVR(pipe));
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* then again to lock */
+-	POSTING_READ(SOUTH_CHICKEN1);
+-}
+ static void ironlake_fdi_disable(struct drm_crtc *crtc)
+ {
+ 	struct drm_device *dev = crtc->dev;
+@@ -2777,8 +2748,6 @@ static void ironlake_fdi_disable(struct
+ 		I915_WRITE(FDI_RX_CHICKEN(pipe),
+ 			   I915_READ(FDI_RX_CHICKEN(pipe) &
+ 				     ~FDI_RX_PHASE_SYNC_POINTER_EN));
+-	} else if (HAS_PCH_CPT(dev)) {
+-		cpt_phase_pointer_disable(dev, pipe);
+ 	}
+ 
+ 	/* still set train pattern 1 */
 
 
