@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933883Ab3AOWyi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:54:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47548 "EHLO mail.kernel.org"
+	id S934031Ab3AOXQi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:16:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47498 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932713Ab3AOWyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:54:14 -0500
-Date: Tue, 15 Jan 2013 14:50:24 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk,
-        James.Bottomley@hansenpartnership.com, snitzer@redhat.com
-Subject: Re: Bcache v. whatever
-Message-ID: <20130115225024.GE32544@kroah.com>
-References: <20130114223202.GV26407@google.com>
- <20130115014931.GA19373@kroah.com>
- <20130115211837.GB26407@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130115211837.GB26407@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933983Ab3AOWyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:54:05 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
+Subject: [ 163/171] ceph: Dont update i_max_size when handling non-auth cap
+Date: Tue, 15 Jan 2013 14:45:28 -0800
+Message-Id: <20130115224325.084820820@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
+References: <20130115224313.394976595@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 01:18:37PM -0800, Kent Overstreet wrote:
-> On Mon, Jan 14, 2013 at 05:49:31PM -0800, Greg KH wrote:
-> > On Mon, Jan 14, 2013 at 02:32:02PM -0800, Kent Overstreet wrote:
-> > > Bcache: a block layer SSD cache
-> > > 
-> > > Does writethrough and writeback, handles unclean shutdown, and has
-> > > various other nifty features. See the wiki and the documentation for
-> > > more:
-> > > 
-> > > http://bcache.evilpiepirate.org
-> > > 
-> > > Over the Christmas break I finally got the tree into a self contained
-> > > state that ought to be suitable for merging; this tree is fairly close
-> > > to the previous stable tree that people have been running on production
-> > > servers for awhile (and that I've been running on this workstation), 
-> > > 
-> > > So, I think this is ready for mainline and I'd like to get it in. I
-> > > should've tried to push it ages ago, but I was hoping to get in various
-> > > block layer cleanups first; I finally deided to work around them in the
-> > > meantime since I haven't had time to finish the block layer stuff.
-> > > 
-> > > Not everything has been addressed since I last posted for review
-> > > feedback - notably the closure code was controversial and for now I've
-> > > just moved that into drivers/block/bcache (though I've been refactoring
-> > > stuff to make it less asynchronous lately; most of that work is in the
-> > > testing/dev branches). The bigger issue IMO is the userspace interface -
-> > > I'd like to finish the md integration so it doesn't need userspace stuff
-> > > for probing/bootup. So, I'd be fine with it going into staging if that's
-> > > the consensus, but it's stable tested code.
-> > 
-> > If it goes into staging, I need a reason why it can't be merged into the
-> > "real" part of the kernel, and what will be done to get it there.
-> 
-> I don't personally see why it can't, but maybe other people will chime
-> in. There's certainly still stuff to do (something this size is never
-> finished) but I'm not abandoning the code.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Ok, then it should be accepted, care to make it up into a format that
-can be applied to someone's tree?  We can't do anything in the current
-git-tree format it is in today.
+------------------
 
-thanks,
 
-greg k-h
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+
+The cap from non-auth mds doesn't have a meaningful max_size value.
+
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+(cherry picked from commit 5e62ad30157d0da04cf40c6d1a2f4bc840948b9c)
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/ceph/caps.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/ceph/caps.c
++++ b/fs/ceph/caps.c
+@@ -2388,7 +2388,7 @@ static void handle_cap_grant(struct inod
+ 			    &atime);
+ 
+ 	/* max size increase? */
+-	if (max_size != ci->i_max_size) {
++	if (ci->i_auth_cap == cap && max_size != ci->i_max_size) {
+ 		dout("max_size %lld -> %llu\n", ci->i_max_size, max_size);
+ 		ci->i_max_size = max_size;
+ 		if (max_size >= ci->i_wanted_max_size) {
+
+
