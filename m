@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab3AONBp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:01:45 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:54632 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab3AOM4h (ORCPT
+	id S1756501Ab3AOM4f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:56:35 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:57176 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756294Ab3AOM4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:56:37 -0500
+	Tue, 15 Jan 2013 07:56:32 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com, sameo@linux.intel.com,
-        Kennet Wallden <kennet.wallden@stericsson.com>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 06/26] mfd: ab8500-sysctrl: Provide configuration for SysClkReqRfClkBuf registers
-Date: Tue, 15 Jan 2013 12:55:46 +0000
-Message-Id: <1358254566-12419-7-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 03/26] mfd: ab8500-sysctrl: Only reboot into charging mode if battery type is known
+Date: Tue, 15 Jan 2013 12:55:43 +0000
+Message-Id: <1358254566-12419-4-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358254566-12419-1-git-send-email-lee.jones@linaro.org>
 References: <1358254566-12419-1-git-send-email-lee.jones@linaro.org>
@@ -22,98 +22,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kennet Wallden <kennet.wallden@stericsson.com>
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-Add the possibility to pass configuration settings for
-SysCl1kReqRfClkBuf to SysClk8ReqRfClkBuf via platform data.
+When a charger is connected, we usually want AB8500 based systems to
+reboot into charging-only mode. However, if the battery type cannot
+be identified this would be futile, so we'll just shut the system
+down instead.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Kennet Wallden <kennet.wallden@stericsson.com>
-Reviewed-by: Karl-Johan PERNTZ <karl-johan.perntz@stericsson.com>
-Reviewed-by: Bengt JONSSON <bengt.g.jonsson@stericsson.com>
+Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Reviewed-by: Karl KOMIEROWSKI <karl.komierowski@stericsson.com>
 ---
- drivers/mfd/ab8500-sysctrl.c              |   25 +++++++++++++++++++++++++
- include/linux/mfd/abx500/ab8500-sysctrl.h |    5 +++++
- include/linux/mfd/abx500/ab8500.h         |    2 ++
- 3 files changed, 32 insertions(+)
+ drivers/mfd/ab8500-sysctrl.c |   27 ++++++++++++++++++++++-----
+ 1 file changed, 22 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
-index cf58f69..19a024e 100644
+index 01b0669..26216e7 100644
 --- a/drivers/mfd/ab8500-sysctrl.c
 +++ b/drivers/mfd/ab8500-sysctrl.c
-@@ -113,11 +113,36 @@ int ab8500_sysctrl_write(u16 reg, u8 mask, u8 value)
- static int __devinit ab8500_sysctrl_probe(struct platform_device *pdev)
- {
- 	struct ab8500_platform_data *plat;
-+	struct ab8500_sysctrl_platform_data *pdata;
+@@ -23,6 +23,10 @@ void ab8500_power_off(void)
+ 	sigset_t all;
+ 	static char *pss[] = {"ab8500_ac", "ab8500_usb"};
+ 	int i;
++	bool charger_present = false;
++	union power_supply_propval val;
++	struct power_supply *psy;
++	int ret;
  
- 	sysctrl_dev = &pdev->dev;
- 	plat = dev_get_platdata(pdev->dev.parent);
- 	if (plat->pm_power_off)
- 		pm_power_off = ab8500_power_off;
+ 	/*
+ 	 * If we have a charger connected and we're powering off,
+@@ -30,23 +34,36 @@ void ab8500_power_off(void)
+ 	 */
+ 
+ 	for (i = 0; i < ARRAY_SIZE(pss); i++) {
+-		union power_supply_propval val;
+-		struct power_supply *psy;
+-		int ret;
+-
+ 		psy = power_supply_get_by_name(pss[i]);
+ 		if (!psy)
+ 			continue;
 +
-+	pdata = plat->sysctrl;
-+
-+	if (pdata) {
-+		int ret;
-+		int i;
-+		int j;
-+		for (i = AB8500_SYSCLKREQ1RFCLKBUF;
-+		     i <= AB8500_SYSCLKREQ8RFCLKBUF; i++) {
-+			j = i - AB8500_SYSCLKREQ1RFCLKBUF;
-+			ret = ab8500_sysctrl_write(i, 0xff,
-+						   pdata->initial_req_buf_config[j]);
-+			dev_dbg(&pdev->dev,
-+				"Setting SysClkReq%dRfClkBuf 0x%X\n",
-+				j + 1,
-+				pdata->initial_req_buf_config[j]);
-+			if (ret < 0) {
-+				dev_err(&pdev->dev,
-+					"unable to set sysClkReq%dRfClkBuf: "
-+					"%d\n", j + 1, ret);
-+			}
+ 		ret = psy->get_property(psy, POWER_SUPPLY_PROP_ONLINE, &val);
+ 
+ 		if (!ret && val.intval) {
++			charger_present = true;
++			break;
 +		}
 +	}
 +
- 	return 0;
- }
- 
-diff --git a/include/linux/mfd/abx500/ab8500-sysctrl.h b/include/linux/mfd/abx500/ab8500-sysctrl.h
-index 10eb509..ebf12e7 100644
---- a/include/linux/mfd/abx500/ab8500-sysctrl.h
-+++ b/include/linux/mfd/abx500/ab8500-sysctrl.h
-@@ -37,6 +37,11 @@ static inline int ab8500_sysctrl_clear(u16 reg, u8 bits)
- 	return ab8500_sysctrl_write(reg, bits, 0);
- }
- 
-+/* Configuration data for SysClkReq1RfClkBuf - SysClkReq8RfClkBuf */
-+struct ab8500_sysctrl_platform_data {
-+	u8 initial_req_buf_config[8];
-+};
++	if (!charger_present)
++		goto shutdown;
 +
- /* Registers */
- #define AB8500_TURNONSTATUS		0x100
- #define AB8500_RESETSTATUS		0x101
-diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
-index 96840c4..3f4e6d1 100644
---- a/include/linux/mfd/abx500/ab8500.h
-+++ b/include/linux/mfd/abx500/ab8500.h
-@@ -270,6 +270,7 @@ struct regulator_reg_init;
- struct regulator_init_data;
- struct ab8500_gpio_platform_data;
- struct ab8500_codec_platform_data;
-+struct ab8500_sysctrl_platform_data;
++	/* Check if battery is known */
++	psy = power_supply_get_by_name("ab8500_btemp");
++	if (psy) {
++		ret = psy->get_property(psy, POWER_SUPPLY_PROP_TECHNOLOGY,
++					&val);
++		if (!ret && val.intval != POWER_SUPPLY_TECHNOLOGY_UNKNOWN) {
+ 			printk(KERN_INFO
+-			       "Charger \"%s\" is connected. Rebooting.\n",
++			       "Charger \"%s\" is connected with known battery."
++			       " Rebooting.\n",
+ 			       pss[i]);
+ 			machine_restart(NULL);
+ 		}
+ 	}
  
- /**
-  * struct ab8500_platform_data - AB8500 platform data
-@@ -291,6 +292,7 @@ struct ab8500_platform_data {
- 	struct regulator_init_data *regulator;
- 	struct ab8500_gpio_platform_data *gpio;
- 	struct ab8500_codec_platform_data *codec;
-+	struct ab8500_sysctrl_platform_data *sysctrl;
- };
++shutdown:
+ 	sigfillset(&all);
  
- extern int __devinit ab8500_init(struct ab8500 *ab8500,
+ 	if (!sigprocmask(SIG_BLOCK, &all, &old)) {
 -- 
 1.7.9.5
 
