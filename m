@@ -1,194 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab3AOKey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:34:54 -0500
-Received: from mga06.intel.com ([134.134.136.21]:13425 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755060Ab3AOKes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:34:48 -0500
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-To: zohar@linux.vnet.ibm.com, dhowells@redhat.com, jmorris@namei.org,
-        linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC 1/1] ima: digital signature verification using asymmetric keys
-Date: Tue, 15 Jan 2013 12:34:38 +0200
-Message-Id: <53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1358246017.git.dmitry.kasatkin@intel.com>
-References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
-In-Reply-To: <cover.1358246017.git.dmitry.kasatkin@intel.com>
-References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
+	id S1756427Ab3AOKgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:36:52 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:58723 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752205Ab3AOKgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:36:51 -0500
+Message-ID: <50F5313C.8040506@mev.co.uk>
+Date: Tue, 15 Jan 2013 10:36:44 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Peter Huewe <peterhuewe@gmx.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        Mori Hess <fmhess@users.sourceforge.net>,
+        YAMANE Toshiaki <yamanetoshi@gmail.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/8 v2] staging/comedi: Add macro for registering a comedi
+ PCMCIA driver
+References: <ADE657CA350FB648AAC2C43247A983F00207A6CBADD1@AUSP01VMBX24.collaborationhost.net> <1358197255-17542-1-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <1358197255-17542-1-git-send-email-peterhuewe@gmx.de>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Asymmetric keys were introduced in linux-3.7 to verify the signature on
-signed kernel modules.  The asymmetric keys infrastructure abstracts the
-signature verification from the crypto details.  This patch adds IMA/EVM
-signature verification using asymmetric keys.  Support for additional
-signature verification methods can now be delegated to the asymmetric
-key infrastructure.
+On 2013-01-14 21:00, Peter Huewe wrote:
+> This patch introduces a new macro 'module_comedi_pcmcia_driver'
+> for comedi PCMCIA drivers which do not do anything special in module
+> init/exit. This eliminates a lot of boilerplate.
+>
+> Adapted from 'module_comedi_pci_driver'
+>
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> ---
+> v2:
+> Removed unnecessary stuff. Thanks Hartley&Ian
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
----
- security/integrity/Kconfig  |   12 +++++
- security/integrity/digsig.c |  103 ++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 114 insertions(+), 1 deletion(-)
+This looks (and builds with and without PCMCIA support) fine.  Thanks!
 
-diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
-index 5bd1cc1..19c4187 100644
---- a/security/integrity/Kconfig
-+++ b/security/integrity/Kconfig
-@@ -17,5 +17,17 @@ config INTEGRITY_SIGNATURE
- 	  This is useful for evm and module keyrings, when keys are
- 	  usually only added from initramfs.
- 
-+config INTEGRITY_ASYMMETRIC_KEYS
-+	boolean "Digital signature verification using asymmetric keys"
-+	depends on INTEGRITY_SIGNATURE
-+	default n
-+        select ASYMMETRIC_KEY_TYPE
-+        select ASYMMETRIC_PUBLIC_KEY_SUBTYPE
-+        select PUBLIC_KEY_ALGO_RSA
-+        select X509_CERTIFICATE_PARSER
-+	help
-+	  This option enables digital signature verification support
-+	  using asymmetric keys.
-+
- source security/integrity/ima/Kconfig
- source security/integrity/evm/Kconfig
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 2dc167d..1896537 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -15,10 +15,22 @@
- #include <linux/err.h>
- #include <linux/rbtree.h>
- #include <linux/key-type.h>
-+#include <crypto/public_key.h>
-+#include <keys/asymmetric-type.h>
- #include <linux/digsig.h>
- 
- #include "integrity.h"
- 
-+/*
-+ * signature format v2 - for using with asymmetric keys
-+ */
-+struct signature_v2_hdr {
-+	uint8_t version;	/* signature format version */
-+	uint8_t	hash_algo;	/* Digest algorithm [enum pkey_hash_algo] */
-+	uint8_t keyid[8];	/* IMA key identifier - not X509/PGP specific*/
-+	uint8_t payload[0];	/* signature payload */
-+} __packed;
-+
- static struct key *keyring[INTEGRITY_KEYRING_MAX];
- 
- static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
-@@ -27,6 +39,91 @@ static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
- 	"_ima",
- };
- 
-+#ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
-+
-+/*
-+ * Request an asymmetric key.
-+ */
-+static struct key *request_asymmetric_key(struct key *keyring, uint8_t *keyid)
-+{
-+	struct key *key;
-+	char name[20];
-+
-+	sprintf(name, "%llX", __be64_to_cpup((uint64_t *)keyid));
-+
-+	pr_debug("key search: \"%s\"\n", name);
-+
-+	if (keyring) {
-+		/* search in specific keyring */
-+		key_ref_t kref;
-+		kref = keyring_search(make_key_ref(keyring, 1),
-+				      &key_type_asymmetric, name);
-+		if (IS_ERR(kref))
-+			key = ERR_CAST(kref);
-+		else
-+			key = key_ref_to_ptr(kref);
-+	} else {
-+		key = request_key(&key_type_asymmetric, name, NULL);
-+	}
-+
-+	if (IS_ERR(key)) {
-+		pr_warn("Request for unknown key '%s' err %ld\n",
-+			name, PTR_ERR(key));
-+		switch (PTR_ERR(key)) {
-+			/* Hide some search errors */
-+		case -EACCES:
-+		case -ENOTDIR:
-+		case -EAGAIN:
-+			return ERR_PTR(-ENOKEY);
-+		default:
-+			return key;
-+		}
-+	}
-+
-+	pr_debug("%s() = 0 [%x]\n", __func__, key_serial(key));
-+
-+	return key;
-+}
-+
-+static int asymmetric_verify(struct key *keyring, const char *sig,
-+			     size_t siglen, const char *data, int datalen)
-+{
-+	struct public_key_signature pks;
-+	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
-+	struct key *key;
-+	int ret = -ENOMEM;
-+
-+	if (siglen <= sizeof(*hdr))
-+		return -EBADMSG;
-+
-+	siglen -= sizeof(*hdr);
-+
-+	if (hdr->hash_algo >= PKEY_HASH__LAST)
-+		return -ENOPKG;
-+
-+	key = request_asymmetric_key(keyring, hdr->keyid);
-+	if (IS_ERR(key))
-+		return PTR_ERR(key);
-+
-+	memset(&pks, 0, sizeof(pks));
-+
-+	pks.pkey_hash_algo = hdr->hash_algo;
-+	pks.digest = (u8 *)data;
-+	pks.digest_size = datalen;
-+	pks.nr_mpi = 1;
-+	pks.rsa.s = mpi_read_from_buffer(hdr->payload, &siglen);
-+
-+	if (pks.rsa.s)
-+		ret = verify_signature(key, &pks);
-+
-+	mpi_free(pks.rsa.s);
-+	key_put(key);
-+	pr_debug("%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+
-+#endif /* CONFIG_INTEGRITY_ASYMMETRIC_KEYS */
-+
- int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 					const char *digest, int digestlen)
- {
-@@ -43,6 +140,10 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			return err;
- 		}
- 	}
--
-+#ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
-+	if (sig[0] == 2)
-+		return asymmetric_verify(keyring[id], sig, siglen,
-+					 digest, digestlen);
-+#endif
- 	return digsig_verify(keyring[id], sig, siglen, digest, digestlen);
- }
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+(all 8 patches)
+
+>
+>   drivers/staging/comedi/comedidev.h |   21 +++++++++++++++++++++
+>   drivers/staging/comedi/drivers.c   |   32 ++++++++++++++++++++++++++++++++
+>   2 files changed, 53 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+> index 34a85d3..d0248ed 100644
+> --- a/drivers/staging/comedi/comedidev.h
+> +++ b/drivers/staging/comedi/comedidev.h
+> @@ -316,6 +316,27 @@ void comedi_pci_driver_unregister(struct comedi_driver *, struct pci_driver *);
+>   	module_driver(__comedi_driver, comedi_pci_driver_register, \
+>   			comedi_pci_driver_unregister, &(__pci_driver))
+>
+> +struct pcmcia_driver;
+> +
+> +int comedi_pcmcia_driver_register(struct comedi_driver *,
+> +					struct pcmcia_driver *);
+> +void comedi_pcmcia_driver_unregister(struct comedi_driver *,
+> +					struct pcmcia_driver *);
+> +
+> +/**
+> + * module_comedi_pcmcia_driver() - Helper macro for registering a comedi PCMCIA driver
+> + * @__comedi_driver: comedi_driver struct
+> + * @__pcmcia_driver: pcmcia_driver struct
+> + *
+> + * Helper macro for comedi PCMCIA drivers which do not do anything special
+> + * in module init/exit. This eliminates a lot of boilerplate. Each
+> + * module may only use this macro once, and calling it replaces
+> + * module_init() and module_exit()
+> + */
+> +#define module_comedi_pcmcia_driver(__comedi_driver, __pcmcia_driver) \
+> +	module_driver(__comedi_driver, comedi_pcmcia_driver_register, \
+> +			comedi_pcmcia_driver_unregister, &(__pcmcia_driver))
+> +
+>   struct usb_driver;
+>
+>   int comedi_usb_driver_register(struct comedi_driver *, struct usb_driver *);
+> diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+> index b67a0c9..bd9c678 100644
+> --- a/drivers/staging/comedi/drivers.c
+> +++ b/drivers/staging/comedi/drivers.c
+> @@ -24,6 +24,8 @@
+>   #include <linux/device.h>
+>   #include <linux/module.h>
+>   #include <linux/pci.h>
+> +#include <pcmcia/cistpl.h>
+> +#include <pcmcia/ds.h>
+>   #include <linux/usb.h>
+>   #include <linux/errno.h>
+>   #include <linux/kconfig.h>
+> @@ -954,6 +956,36 @@ void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
+>   }
+>   EXPORT_SYMBOL_GPL(comedi_pci_driver_unregister);
+>
+> +#if IS_ENABLED(CONFIG_PCMCIA)
+> +int comedi_pcmcia_driver_register(struct comedi_driver *comedi_driver,
+> +		struct pcmcia_driver *pcmcia_driver)
+> +{
+> +	int ret;
+> +
+> +	ret = comedi_driver_register(comedi_driver);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = pcmcia_register_driver(pcmcia_driver);
+> +	if (ret < 0) {
+> +		comedi_driver_unregister(comedi_driver);
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_register);
+> +
+> +void comedi_pcmcia_driver_unregister(struct comedi_driver *comedi_driver,
+> +		struct pcmcia_driver *pcmcia_driver)
+> +{
+> +	pcmcia_unregister_driver(pcmcia_driver);
+> +	comedi_driver_unregister(comedi_driver);
+> +}
+> +EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_unregister);
+> +
+> +#endif
+> +
+>   #if IS_ENABLED(CONFIG_USB)
+>
+>   int comedi_usb_driver_register(struct comedi_driver *comedi_driver,
+>
+
+
 -- 
-1.7.10.4
-
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
