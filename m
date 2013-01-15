@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab3AOEg3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 23:36:29 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:33108 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab3AOEf4 convert rfc822-to-8bit (ORCPT
+	id S1755583Ab3AOEnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 23:43:11 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:56446 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab3AOEnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 23:35:56 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Axel Lin <axel.lin@ingics.com>, "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/4] regulator-core: free requested GPIOs and manage the
- enable list
-Thread-Topic: [PATCH v2 3/4] regulator-core: free requested GPIOs and manage
- the enable list
-Thread-Index: Ac3y2cunsGm1Eie5TbmHVOsn2pOGDw==
-Date: Tue, 15 Jan 2013 04:35:50 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E12B3D@DQHE02.ent.ti.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 14 Jan 2013 23:43:09 -0500
+From: Harvey Yang <harvey.huawei.yang@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Harvey Yang <harvey.huawei.yang@gmail.com>
+Subject: [PATCH 1/1] net: ipv4: refine the logic for determining daddr in ip_queue_xmit.
+Date: Tue, 15 Jan 2013 12:47:35 +0800
+Message-Id: <1358225255-30973-1-git-send-email-harvey.huawei.yang@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- The regulator_ena_gpio_request() allocates the enable GPIO and add the list.
- Related resources should be released if they are not used any more.
- To free requested GPIO and remove it from the enable GPIO list,
- new function, 'regulator_ena_gpio_free()' is added.
+The destination address daddr is faddr if source route option is set, otherwise it is inet_daddr. So use if-else to assign the value.
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+Signed-off-by: Harvey Yang <harvey.huawei.yang@gmail.com>
 ---
- drivers/regulator/core.c |   19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+ net/ipv4/ip_output.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index dc713c4..8631234 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1501,6 +1501,19 @@ static int regulator_ena_gpio_request(struct regulator_dev *rdev,
- 	return 0;
- }
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index 3e98ed2..22b738c 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -349,10 +349,10 @@ int ip_queue_xmit(struct sk_buff *skb, struct flowi *fl)
+ 		__be32 daddr;
  
-+static void regulator_ena_gpio_free(struct regulator_dev *rdev)
-+{
-+	struct regulator_enable_gpio *pin, *n;
-+
-+	list_for_each_entry_safe(pin, n, &regulator_ena_gpio_list, list) {
-+		if (pin->regulator == rdev && pin->gpio) {
-+			gpio_free(pin->gpio);
-+			list_del(&pin->list);
-+			kfree(pin);
-+		}
-+	}
-+}
-+
- /**
-  * Balance enable_count of each GPIO and actual GPIO pin control.
-  * GPIO is enabled in case of initial use. (enable_count is 0)
-@@ -3590,8 +3603,7 @@ unset_supplies:
- scrub:
- 	if (rdev->supply)
- 		_regulator_put(rdev->supply);
--	if (rdev->ena_gpio)
--		gpio_free(rdev->ena_gpio);
-+	regulator_ena_gpio_free(rdev);
- 	kfree(rdev->constraints);
- wash:
- 	device_unregister(&rdev->dev);
-@@ -3626,8 +3638,7 @@ void regulator_unregister(struct regulator_dev *rdev)
- 	unset_regulator_supplies(rdev);
- 	list_del(&rdev->list);
- 	kfree(rdev->constraints);
--	if (rdev->ena_gpio)
--		gpio_free(rdev->ena_gpio);
-+	regulator_ena_gpio_free(rdev);
- 	device_unregister(&rdev->dev);
- 	mutex_unlock(&regulator_list_mutex);
- }
+ 		/* Use correct destination address if we have options. */
+-		daddr = inet->inet_daddr;
+ 		if (inet_opt && inet_opt->opt.srr)
+ 			daddr = inet_opt->opt.faddr;
+-
++		else
++			daddr = inet->inet_daddr;
+ 		/* If this fails, retransmit mechanism of transport layer will
+ 		 * keep trying until route appears or the connection times
+ 		 * itself out.
 -- 
-1.7.9.5
-
-
-Best Regards,
-Milo
-
+1.7.1
 
