@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932854Ab3AOWf7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:35:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43890 "EHLO mail.kernel.org"
+	id S932582Ab3AOWgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:36:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43920 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932841Ab3AOWfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:35:55 -0500
+	id S932855Ab3AOWgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:36:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        John Tapsell <johnflux@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [ 199/221] Revert "drm/i915: no lvds quirk for Zotac ZDBOX SD ID12/ID13"
-Date: Tue, 15 Jan 2013 10:52:06 -0800
-Message-Id: <20130115185012.400676916@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 201/221] libceph: fix osdmap decode error paths
+Date: Tue, 15 Jan 2013 10:52:08 -0800
+Message-Id: <20130115185012.550509279@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,43 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 48e858340dae43189a4e55647f6eac736766f828 upstream.
+From: Sage Weil <sage@inktank.com>
 
-This reverts commit 9756fe38d10b2bf90c81dc4d2f17d5632e135364.
+(cherry picked from commit 0ed7285e0001b960c888e5455ae982025210ed3d)
 
-The bogus lvds output is actually a lvds->hdmi bridge, which we don't
-really support. But unconditionally disabling it breaks some existing
-setups.
+Ensure that we set the err value correctly so that we do not pass a 0
+value to ERR_PTR and confuse the calling code.  (In particular,
+osd_client.c handle_map() will BUG(!newmap)).
 
-Reported-by: John Tapsell <johnflux@gmail.com>
-References: http://permalink.gmane.org/gmane.comp.freedesktop.xorg.drivers.intel/17237
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 --------
- 1 file changed, 8 deletions(-)
+ net/ceph/osdmap.c |   31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -763,14 +763,6 @@ static const struct dmi_system_id intel_
- 	},
- 	{
- 		.callback = intel_no_lvds_dmi_callback,
--		.ident = "ZOTAC ZBOXSD-ID12/ID13",
--		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "ZOTAC"),
--			DMI_MATCH(DMI_BOARD_NAME, "ZBOXSD-ID12/ID13"),
--		},
--	},
--	{
--		.callback = intel_no_lvds_dmi_callback,
- 		.ident = "Gigabyte GA-D525TUD",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
+--- a/net/ceph/osdmap.c
++++ b/net/ceph/osdmap.c
+@@ -645,10 +645,12 @@ struct ceph_osdmap *osdmap_decode(void *
+ 	ceph_decode_32_safe(p, end, max, bad);
+ 	while (max--) {
+ 		ceph_decode_need(p, end, 4 + 1 + sizeof(pi->v), bad);
++		err = -ENOMEM;
+ 		pi = kzalloc(sizeof(*pi), GFP_NOFS);
+ 		if (!pi)
+ 			goto bad;
+ 		pi->id = ceph_decode_32(p);
++		err = -EINVAL;
+ 		ev = ceph_decode_8(p); /* encoding version */
+ 		if (ev > CEPH_PG_POOL_VERSION) {
+ 			pr_warning("got unknown v %d > %d of ceph_pg_pool\n",
+@@ -664,8 +666,13 @@ struct ceph_osdmap *osdmap_decode(void *
+ 		__insert_pg_pool(&map->pg_pools, pi);
+ 	}
+ 
+-	if (version >= 5 && __decode_pool_names(p, end, map) < 0)
+-		goto bad;
++	if (version >= 5) {
++		err = __decode_pool_names(p, end, map);
++		if (err < 0) {
++			dout("fail to decode pool names");
++			goto bad;
++		}
++	}
+ 
+ 	ceph_decode_32_safe(p, end, map->pool_max, bad);
+ 
+@@ -745,7 +752,7 @@ struct ceph_osdmap *osdmap_decode(void *
+ 	return map;
+ 
+ bad:
+-	dout("osdmap_decode fail\n");
++	dout("osdmap_decode fail err %d\n", err);
+ 	ceph_osdmap_destroy(map);
+ 	return ERR_PTR(err);
+ }
+@@ -839,6 +846,7 @@ struct ceph_osdmap *osdmap_apply_increme
+ 		if (ev > CEPH_PG_POOL_VERSION) {
+ 			pr_warning("got unknown v %d > %d of ceph_pg_pool\n",
+ 				   ev, CEPH_PG_POOL_VERSION);
++			err = -EINVAL;
+ 			goto bad;
+ 		}
+ 		pi = __lookup_pg_pool(&map->pg_pools, pool);
+@@ -855,8 +863,11 @@ struct ceph_osdmap *osdmap_apply_increme
+ 		if (err < 0)
+ 			goto bad;
+ 	}
+-	if (version >= 5 && __decode_pool_names(p, end, map) < 0)
+-		goto bad;
++	if (version >= 5) {
++		err = __decode_pool_names(p, end, map);
++		if (err < 0)
++			goto bad;
++	}
+ 
+ 	/* old_pool */
+ 	ceph_decode_32_safe(p, end, len, bad);
+@@ -932,15 +943,13 @@ struct ceph_osdmap *osdmap_apply_increme
+ 			(void) __remove_pg_mapping(&map->pg_temp, pgid);
+ 
+ 			/* insert */
+-			if (pglen > (UINT_MAX - sizeof(*pg)) / sizeof(u32)) {
+-				err = -EINVAL;
++			err = -EINVAL;
++			if (pglen > (UINT_MAX - sizeof(*pg)) / sizeof(u32))
+ 				goto bad;
+-			}
++			err = -ENOMEM;
+ 			pg = kmalloc(sizeof(*pg) + sizeof(u32)*pglen, GFP_NOFS);
+-			if (!pg) {
+-				err = -ENOMEM;
++			if (!pg)
+ 				goto bad;
+-			}
+ 			pg->pgid = pgid;
+ 			pg->len = pglen;
+ 			for (j = 0; j < pglen; j++)
 
 
