@@ -1,672 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492Ab3AONns (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:43:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57286 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757358Ab3AONnr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:43:47 -0500
-Message-ID: <50F55D0F.9090604@canonical.com>
-Date: Tue, 15 Jan 2013 14:43:43 +0100
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1757519Ab3AONnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:43:55 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46899 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756752Ab3AONnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:43:51 -0500
+From: Afzal Mohammed <afzal@ti.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>, Sekhar Nori <nsekhar@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 12/12] video: da8xx-fb: set upstream clock rate (if reqd)
+Date: Tue, 15 Jan 2013 19:14:36 +0530
+Message-ID: <26e787b021cda89a080f80657c2094b9ff2decaf.1358251448.git.afzal@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1358251447.git.afzal@ti.com>
+References: <cover.1358251447.git.afzal@ti.com>
 MIME-Version: 1.0
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linaro-mm-sig@lists.linaro.org
-Subject: Re: [PATCH 2/7] mutex: add support for reservation style locks
-References: <1358253244-11453-1-git-send-email-maarten.lankhorst@canonical.com> <1358253244-11453-3-git-send-email-maarten.lankhorst@canonical.com>
-In-Reply-To: <1358253244-11453-3-git-send-email-maarten.lankhorst@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Woops, missed the updated patch description..
+LCDC IP has a clock divider to adjust pixel clock, this limits pixel
+clock range to fck/255 - fck/2(fck - rate of input clock to LCDC IP).
+In the case of AM335x, where this IP is present, default fck is not
+sufficient to provide normal pixel clock rates, hence rendering this
+driver unusable on AM335x.
 
-Op 15-01-13 13:33, Maarten Lankhorst schreef:
-> makes it easier to port ttm over..
->
-> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+If input clock too is configurable, allowable range of pixel clock
+would increase. Here initially it is checked whether with present fck,
+divider in IP could be configured to obtain required rate, if not,
+fck is adjusted. This makes it usable on AM335x.
 
-mutex_reserve_lock, and mutex_reserve_lock_interruptible:
-  Lock a buffer with a reservation_id set. reservation_id must not be set to 0,
-  since this is a special value that means no reservation_id.
+Note:
+A better (if allowable) solution may be to represent clock divider in
+LCDC IP as a basic divider clock - the one defined in common clock
+framework. But for this to happen, all the platform's using this driver
+should be using common clock framework (DaVinci is yet to be converted
+to use common clock framework). And it has to be determined whether
+common clock framework allows this kind of a clock modelling inside a
+driver and for this to be part of clock tree. Advantage of doing so
+would be better resolution for pixel clock, even though without this
+existing use cases are working properly. Or another extreme alternative
+would be to replicate clk-divider of common clock framework inside the
+driver, but that probably is not preferred and not worth as it would be
+duplication and without much advantage to existing users.
 
-  Normally if reservation_id is not set, or is older than the reservation_id that's
-  currently set on the mutex, the behavior will be to wait normally.
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+---
 
-  However, if  the reservation_id is newer than the current reservation_id, -EAGAIN
-  will be returned, and this function must unreserve all other mutexes and then redo
-  a blocking lock with normal mutex calls to prevent a deadlock, then call
-  mutex_locked_set_reservation on successful locking to set the reservation_id inside
-  the lock.
+v2: new patch
 
-  These functions will return -EDEADLK instead of -EAGAIN if reservation_id is the same
-  as the reservation_id that's attempted to lock the mutex with, since in that case you
-  presumably attempted to lock the same lock twice.
+ drivers/video/da8xx-fb.c |   76 +++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 58 insertions(+), 18 deletions(-)
 
-mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow:
-  Similar to mutex_reserve_lock, except it won't backoff with -EAGAIN. This is useful
-  after mutex_reserve_lock failed with -EAGAIN, and you unreserved all buffers so no
-  deadlock can occur.
-
-mutex_unreserve_unlock:
-   Unlock a buffer reserved with the previous calls.
-
-Missing at the moment, maybe TODO?
-  * lockdep warnings when wrongly calling mutex_unreserve_unlock or mutex_unlock,
-    depending on whether reservation_id was set previously or not.
-    - Does lockdep have something for this or do I need to extend struct mutex?
-
-  * Check if lockdep warns if you unlock a lock that other locks were nested to.
-    - spin_lock(m); spin_lock_nest_lock(a, m); spin_unlock(m); spin_unlock(a);
-      would be nice if it gave a splat. Have to recheck if it does, though..
-
-Design:
-  I chose for ticket_mutex to encapsulate struct mutex, so the extra memory usage and
-  atomic set on init will only happen when you deliberately create a ticket lock.
-
-  Since the mutexes are mostly meant to protect buffer object serialization in ttm, not
-  much contention is expected. I could be slightly smarter with wakeups, but this would
-  be at the expense at adding a field to struct mutex_waiter. Because this would add
-  overhead to all cases where ticket_mutexes are not used, and ticket_mutexes are less
-  performance sensitive anyway since they only protect buffer objects, I didn't want to
-  do this. It's still better than ttm always calling wake_up_all, which does a
-  unconditional spin_lock_irqsave/irqrestore.
-
-  I needed this in kernel/mutex.c because of the extensions to __lock_common, which are
-  hopefully optimized away for all normal paths.
-
-Changes since RFC patch v1:
- - Updated to use atomic_long instead of atomic, since the reservation_id was a long.
- - added mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow
- - removed mutex_locked_set_reservation_id (or w/e it was called)
-
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-
-> ---
->  include/linux/mutex.h |  86 +++++++++++++-
->  kernel/mutex.c        | 317 +++++++++++++++++++++++++++++++++++++++++++++++---
->  2 files changed, 387 insertions(+), 16 deletions(-)
->
-> diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-> index 9121595..602c247 100644
-> --- a/include/linux/mutex.h
-> +++ b/include/linux/mutex.h
-> @@ -62,6 +62,11 @@ struct mutex {
->  #endif
->  };
->  
-> +struct ticket_mutex {
-> +	struct mutex base;
-> +	atomic_long_t reservation_id;
-> +};
-> +
->  /*
->   * This is the control structure for tasks blocked on mutex,
->   * which resides on the blocked task's kernel stack:
-> @@ -109,12 +114,24 @@ static inline void mutex_destroy(struct mutex *lock) {}
->  		__DEBUG_MUTEX_INITIALIZER(lockname) \
->  		__DEP_MAP_MUTEX_INITIALIZER(lockname) }
->  
-> +#define __TICKET_MUTEX_INITIALIZER(lockname) \
-> +		{ .base = __MUTEX_INITIALIZER(lockname) \
-> +		, .reservation_id = ATOMIC_LONG_INIT(0) }
-> +
->  #define DEFINE_MUTEX(mutexname) \
->  	struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)
->  
->  extern void __mutex_init(struct mutex *lock, const char *name,
->  			 struct lock_class_key *key);
->  
-> +static inline void __ticket_mutex_init(struct ticket_mutex *lock,
-> +				       const char *name,
-> +				       struct lock_class_key *key)
-> +{
-> +	__mutex_init(&lock->base, name, key);
-> +	atomic_long_set(&lock->reservation_id, 0);
-> +}
-> +
->  /**
->   * mutex_is_locked - is the mutex locked
->   * @lock: the mutex to be queried
-> @@ -133,26 +150,91 @@ static inline int mutex_is_locked(struct mutex *lock)
->  #ifdef CONFIG_DEBUG_LOCK_ALLOC
->  extern void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
->  extern void _mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest_lock);
-> +
->  extern int __must_check mutex_lock_interruptible_nested(struct mutex *lock,
->  					unsigned int subclass);
->  extern int __must_check mutex_lock_killable_nested(struct mutex *lock,
->  					unsigned int subclass);
->  
-> +extern int __must_check _mutex_reserve_lock(struct ticket_mutex *lock,
-> +					struct lockdep_map *nest_lock,
-> +					unsigned long reservation_id);
-> +
-> +extern int __must_check _mutex_reserve_lock_interruptible(struct ticket_mutex *,
-> +					struct lockdep_map *nest_lock,
-> +					unsigned long reservation_id);
-> +
-> +extern void _mutex_reserve_lock_slow(struct ticket_mutex *lock,
-> +				     struct lockdep_map *nest_lock,
-> +				     unsigned long reservation_id);
-> +
-> +extern int __must_check _mutex_reserve_lock_intr_slow(struct ticket_mutex *,
-> +					struct lockdep_map *nest_lock,
-> +					unsigned long reservation_id);
-> +
->  #define mutex_lock(lock) mutex_lock_nested(lock, 0)
->  #define mutex_lock_interruptible(lock) mutex_lock_interruptible_nested(lock, 0)
->  #define mutex_lock_killable(lock) mutex_lock_killable_nested(lock, 0)
->  
->  #define mutex_lock_nest_lock(lock, nest_lock)				\
->  do {									\
-> -	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);		\
-> +	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);	\
->  	_mutex_lock_nest_lock(lock, &(nest_lock)->dep_map);		\
->  } while (0)
->  
-> +#define mutex_reserve_lock(lock, nest_lock, reservation_id)		\
-> +({									\
-> +	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);	\
-> +	_mutex_reserve_lock(lock, &(nest_lock)->dep_map, reservation_id);	\
-> +})
-> +
-> +#define mutex_reserve_lock_interruptible(lock, nest_lock, reservation_id)	\
-> +({									\
-> +	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);	\
-> +	_mutex_reserve_lock_interruptible(lock, &(nest_lock)->dep_map,	\
-> +					   reservation_id);		\
-> +})
-> +
-> +#define mutex_reserve_lock_slow(lock, nest_lock, reservation_id)	\
-> +do {									\
-> +	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);	\
-> +	_mutex_reserve_lock_slow(lock, &(nest_lock)->dep_map, reservation_id);	\
-> +} while (0)
-> +
-> +#define mutex_reserve_lock_intr_slow(lock, nest_lock, reservation_id)	\
-> +({									\
-> +	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);	\
-> +	_mutex_reserve_lock_intr_slow(lock, &(nest_lock)->dep_map,	\
-> +				      reservation_id);			\
-> +})
-> +
->  #else
->  extern void mutex_lock(struct mutex *lock);
->  extern int __must_check mutex_lock_interruptible(struct mutex *lock);
->  extern int __must_check mutex_lock_killable(struct mutex *lock);
->  
-> +extern int __must_check _mutex_reserve_lock(struct ticket_mutex *lock,
-> +					    unsigned long reservation_id);
-> +extern int __must_check _mutex_reserve_lock_interruptible(struct ticket_mutex *,
-> +						unsigned long reservation_id);
-> +
-> +extern void _mutex_reserve_lock_slow(struct ticket_mutex *lock,
-> +				     unsigned long reservation_id);
-> +extern int __must_check _mutex_reserve_lock_intr_slow(struct ticket_mutex *,
-> +						unsigned long reservation_id);
-> +
-> +#define mutex_reserve_lock(lock, nest_lock, reservation_id)		\
-> +	_mutex_reserve_lock(lock, reservation_id)
-> +
-> +#define mutex_reserve_lock_interruptible(lock, nest_lock, reservation_id)	\
-> +	_mutex_reserve_lock_interruptible(lock, reservation_id)
-> +
-> +#define mutex_reserve_lock_slow(lock, nest_lock, reservation_id)	\
-> +	_mutex_reserve_lock_slow(lock, reservation_id)
-> +
-> +#define mutex_reserve_lock_intr_slow(lock, nest_lock, reservation_id)	\
-> +	_mutex_reserve_lock_intr_slow(lock, reservation_id)
-> +
->  # define mutex_lock_nested(lock, subclass) mutex_lock(lock)
->  # define mutex_lock_interruptible_nested(lock, subclass) mutex_lock_interruptible(lock)
->  # define mutex_lock_killable_nested(lock, subclass) mutex_lock_killable(lock)
-> @@ -167,6 +249,8 @@ extern int __must_check mutex_lock_killable(struct mutex *lock);
->   */
->  extern int mutex_trylock(struct mutex *lock);
->  extern void mutex_unlock(struct mutex *lock);
-> +extern void mutex_unreserve_unlock(struct ticket_mutex *lock);
-> +
->  extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
->  
->  #ifndef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
-> diff --git a/kernel/mutex.c b/kernel/mutex.c
-> index a307cc9..8282729 100644
-> --- a/kernel/mutex.c
-> +++ b/kernel/mutex.c
-> @@ -126,16 +126,119 @@ void __sched mutex_unlock(struct mutex *lock)
->  
->  EXPORT_SYMBOL(mutex_unlock);
->  
-> +/**
-> + * mutex_unreserve_unlock - release the mutex
-> + * @lock: the mutex to be released
-> + *
-> + * Unlock a mutex that has been locked by this task previously
-> + * with _mutex_reserve_lock*.
-> + *
-> + * This function must not be used in interrupt context. Unlocking
-> + * of a not locked mutex is not allowed.
-> + */
-> +void __sched mutex_unreserve_unlock(struct ticket_mutex *lock)
-> +{
-> +	/*
-> +	 * mark mutex as no longer part of a reservation, next
-> +	 * locker can set this again
-> +	 */
-> +	atomic_long_set(&lock->reservation_id, 0);
-> +
-> +	/*
-> +	 * The unlocking fastpath is the 0->1 transition from 'locked'
-> +	 * into 'unlocked' state:
-> +	 */
-> +#ifndef CONFIG_DEBUG_MUTEXES
-> +	/*
-> +	 * When debugging is enabled we must not clear the owner before time,
-> +	 * the slow path will always be taken, and that clears the owner field
-> +	 * after verifying that it was indeed current.
-> +	 */
-> +	mutex_clear_owner(&lock->base);
-> +#endif
-> +	__mutex_fastpath_unlock(&lock->base.count, __mutex_unlock_slowpath);
-> +}
-> +EXPORT_SYMBOL(mutex_unreserve_unlock);
-> +
-> +static inline int __sched
-> +__mutex_lock_check_reserve(struct mutex *lock, unsigned long reservation_id)
-> +{
-> +	struct ticket_mutex *m = container_of(lock, struct ticket_mutex, base);
-> +	unsigned long cur_id;
-> +
-> +	cur_id = atomic_long_read(&m->reservation_id);
-> +	if (!cur_id)
-> +		return 0;
-> +
-> +	if (unlikely(reservation_id == cur_id))
-> +		return -EDEADLK;
-> +
-> +	if (unlikely(reservation_id - cur_id <= LONG_MAX))
-> +		return -EAGAIN;
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * after acquiring lock with fastpath or when we lost out in contested
-> + * slowpath, set reservation_id and wake up any waiters so they can recheck.
-> + */
-> +static __always_inline void
-> +mutex_set_reservation_fastpath(struct ticket_mutex *lock,
-> +			       unsigned long reservation_id, bool check_res)
-> +{
-> +	unsigned long flags;
-> +	struct mutex_waiter *cur;
-> +
-> +	if (check_res || config_enabled(CONFIG_DEBUG_LOCK_ALLOC)) {
-> +		unsigned long cur_id;
-> +
-> +		cur_id = atomic_long_xchg(&lock->reservation_id,
-> +					  reservation_id);
-> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> +		if (check_res)
-> +			DEBUG_LOCKS_WARN_ON(cur_id &&
-> +					   cur_id != reservation_id);
-> +		else
-> +			DEBUG_LOCKS_WARN_ON(cur_id);
-> +		lockdep_assert_held(&lock->base);
-> +#endif
-> +
-> +		if (unlikely(cur_id == reservation_id))
-> +			return;
-> +	} else
-> +		atomic_long_set(&lock->reservation_id, reservation_id);
-> +
-> +	/*
-> +	 * Check if lock is contended, if not there is nobody to wake up
-> +	 */
-> +	if (likely(atomic_read(&lock->base.count) == 0))
-> +		return;
-> +
-> +	/*
-> +	 * Uh oh, we raced in fastpath, wake up everyone in this case,
-> +	 * so they can see the new reservation_id
-> +	 */
-> +	spin_lock_mutex(&lock->base.wait_lock, flags);
-> +	list_for_each_entry(cur, &lock->base.wait_list, list) {
-> +		debug_mutex_wake_waiter(&lock->base, cur);
-> +		wake_up_process(cur->task);
-> +	}
-> +	spin_unlock_mutex(&lock->base.wait_lock, flags);
-> +}
-> +
->  /*
->   * Lock a mutex (possibly interruptible), slowpath:
->   */
->  static inline int __sched
->  __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> -		    struct lockdep_map *nest_lock, unsigned long ip)
-> +		    struct lockdep_map *nest_lock, unsigned long ip,
-> +		    unsigned long reservation_id, bool res_slow)
->  {
->  	struct task_struct *task = current;
->  	struct mutex_waiter waiter;
->  	unsigned long flags;
-> +	int ret;
->  
->  	preempt_disable();
->  	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
-> @@ -162,6 +265,12 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  	for (;;) {
->  		struct task_struct *owner;
->  
-> +		if (!__builtin_constant_p(reservation_id) && !res_slow) {
-> +			ret = __mutex_lock_check_reserve(lock, reservation_id);
-> +			if (ret)
-> +				goto err_nowait;
-> +		}
-> +
->  		/*
->  		 * If there's an owner, wait for it to either
->  		 * release the lock or go to sleep.
-> @@ -172,6 +281,13 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  
->  		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
->  			lock_acquired(&lock->dep_map, ip);
-> +			if (res_slow) {
-> +				struct ticket_mutex *m;
-> +				m = container_of(lock, struct ticket_mutex, base);
-> +
-> +				mutex_set_reservation_fastpath(m, reservation_id, false);
-> +			}
-> +
->  			mutex_set_owner(lock);
->  			preempt_enable();
->  			return 0;
-> @@ -227,15 +343,16 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		 * TASK_UNINTERRUPTIBLE case.)
->  		 */
->  		if (unlikely(signal_pending_state(state, task))) {
-> -			mutex_remove_waiter(lock, &waiter,
-> -					    task_thread_info(task));
-> -			mutex_release(&lock->dep_map, 1, ip);
-> -			spin_unlock_mutex(&lock->wait_lock, flags);
-> +			ret = -EINTR;
-> +			goto err;
-> +		}
->  
-> -			debug_mutex_free_waiter(&waiter);
-> -			preempt_enable();
-> -			return -EINTR;
-> +		if (!__builtin_constant_p(reservation_id) && !res_slow) {
-> +			ret = __mutex_lock_check_reserve(lock, reservation_id);
-> +			if (ret)
-> +				goto err;
->  		}
-> +
->  		__set_task_state(task, state);
->  
->  		/* didn't get the lock, go to sleep: */
-> @@ -250,6 +367,28 @@ done:
->  	mutex_remove_waiter(lock, &waiter, current_thread_info());
->  	mutex_set_owner(lock);
->  
-> +	if (!__builtin_constant_p(reservation_id)) {
-> +		struct ticket_mutex *m;
-> +		struct mutex_waiter *cur;
-> +		/*
-> +		 * this should get optimized out for the common case,
-> +		 * and is only important for _mutex_reserve_lock
-> +		 */
-> +
-> +		m = container_of(lock, struct ticket_mutex, base);
-> +		atomic_long_set(&m->reservation_id, reservation_id);
-> +
-> +		/*
-> +		 * give any possible sleeping processes the chance to wake up,
-> +		 * so they can recheck if they have to back off from
-> +		 * reservations
-> +		 */
-> +		list_for_each_entry(cur, &lock->wait_list, list) {
-> +			debug_mutex_wake_waiter(lock, cur);
-> +			wake_up_process(cur->task);
-> +		}
-> +	}
-> +
->  	/* set it to 0 if there are no waiters left: */
->  	if (likely(list_empty(&lock->wait_list)))
->  		atomic_set(&lock->count, 0);
-> @@ -260,6 +399,19 @@ done:
->  	preempt_enable();
->  
->  	return 0;
-> +
-> +err:
-> +	mutex_remove_waiter(lock, &waiter, task_thread_info(task));
-> +	spin_unlock_mutex(&lock->wait_lock, flags);
-> +	debug_mutex_free_waiter(&waiter);
-> +
-> +#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
-> +err_nowait:
-> +#endif
-> +	mutex_release(&lock->dep_map, 1, ip);
-> +
-> +	preempt_enable();
-> +	return ret;
->  }
->  
->  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> @@ -267,7 +419,8 @@ void __sched
->  mutex_lock_nested(struct mutex *lock, unsigned int subclass)
->  {
->  	might_sleep();
-> -	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, subclass, NULL, _RET_IP_);
-> +	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
-> +			    subclass, NULL, _RET_IP_, 0, 0);
->  }
->  
->  EXPORT_SYMBOL_GPL(mutex_lock_nested);
-> @@ -276,7 +429,8 @@ void __sched
->  _mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest)
->  {
->  	might_sleep();
-> -	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, nest, _RET_IP_);
-> +	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
-> +			    0, nest, _RET_IP_, 0, 0);
->  }
->  
->  EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
-> @@ -285,7 +439,8 @@ int __sched
->  mutex_lock_killable_nested(struct mutex *lock, unsigned int subclass)
->  {
->  	might_sleep();
-> -	return __mutex_lock_common(lock, TASK_KILLABLE, subclass, NULL, _RET_IP_);
-> +	return __mutex_lock_common(lock, TASK_KILLABLE,
-> +				   subclass, NULL, _RET_IP_, 0, 0);
->  }
->  EXPORT_SYMBOL_GPL(mutex_lock_killable_nested);
->  
-> @@ -294,10 +449,63 @@ mutex_lock_interruptible_nested(struct mutex *lock, unsigned int subclass)
->  {
->  	might_sleep();
->  	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE,
-> -				   subclass, NULL, _RET_IP_);
-> +				   subclass, NULL, _RET_IP_, 0, 0);
->  }
->  
->  EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
-> +
-> +int __sched
-> +_mutex_reserve_lock(struct ticket_mutex *lock, struct lockdep_map *nest,
-> +		    unsigned long reservation_id)
-> +{
-> +	DEBUG_LOCKS_WARN_ON(!reservation_id);
-> +
-> +	might_sleep();
-> +	return __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
-> +				   0, nest, _RET_IP_, reservation_id, 0);
-> +}
-> +EXPORT_SYMBOL_GPL(_mutex_reserve_lock);
-> +
-> +
-> +int __sched
-> +_mutex_reserve_lock_interruptible(struct ticket_mutex *lock,
-> +				  struct lockdep_map *nest,
-> +				  unsigned long reservation_id)
-> +{
-> +	DEBUG_LOCKS_WARN_ON(!reservation_id);
-> +
-> +	might_sleep();
-> +	return __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
-> +				   0, nest, _RET_IP_, reservation_id, 0);
-> +}
-> +EXPORT_SYMBOL_GPL(_mutex_reserve_lock_interruptible);
-> +
-> +void __sched
-> +_mutex_reserve_lock_slow(struct ticket_mutex *lock, struct lockdep_map *nest,
-> +			 unsigned long reservation_id)
-> +{
-> +	DEBUG_LOCKS_WARN_ON(!reservation_id);
-> +
-> +	might_sleep();
-> +	__mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE, 0,
-> +			    nest, _RET_IP_, reservation_id, 1);
-> +}
-> +EXPORT_SYMBOL_GPL(_mutex_reserve_lock_slow);
-> +
-> +int __sched
-> +_mutex_reserve_lock_intr_slow(struct ticket_mutex *lock,
-> +			      struct lockdep_map *nest,
-> +			      unsigned long reservation_id)
-> +{
-> +	DEBUG_LOCKS_WARN_ON(!reservation_id);
-> +
-> +	might_sleep();
-> +	return __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE, 0,
-> +				   nest, _RET_IP_, reservation_id, 1);
-> +}
-> +EXPORT_SYMBOL_GPL(_mutex_reserve_lock_intr_slow);
-> +
-> +
->  #endif
->  
->  /*
-> @@ -400,7 +608,8 @@ __mutex_lock_slowpath(atomic_t *lock_count)
->  {
->  	struct mutex *lock = container_of(lock_count, struct mutex, count);
->  
-> -	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, NULL, _RET_IP_);
-> +	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0,
-> +			    NULL, _RET_IP_, 0, 0);
->  }
->  
->  static noinline int __sched
-> @@ -408,7 +617,8 @@ __mutex_lock_killable_slowpath(atomic_t *lock_count)
->  {
->  	struct mutex *lock = container_of(lock_count, struct mutex, count);
->  
-> -	return __mutex_lock_common(lock, TASK_KILLABLE, 0, NULL, _RET_IP_);
-> +	return __mutex_lock_common(lock, TASK_KILLABLE, 0,
-> +				   NULL, _RET_IP_, 0, 0);
->  }
->  
->  static noinline int __sched
-> @@ -416,8 +626,28 @@ __mutex_lock_interruptible_slowpath(atomic_t *lock_count)
->  {
->  	struct mutex *lock = container_of(lock_count, struct mutex, count);
->  
-> -	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, NULL, _RET_IP_);
-> +	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0,
-> +				   NULL, _RET_IP_, 0, 0);
-> +}
-> +
-> +static noinline int __sched
-> +__mutex_lock_reserve_slowpath(atomic_t *lock_count, void *rid)
-> +{
-> +	struct mutex *lock = container_of(lock_count, struct mutex, count);
-> +
-> +	return __mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0,
-> +				   NULL, _RET_IP_, (unsigned long)rid, 0);
-> +}
-> +
-> +static noinline int __sched
-> +__mutex_lock_interruptible_reserve_slowpath(atomic_t *lock_count, void *rid)
-> +{
-> +	struct mutex *lock = container_of(lock_count, struct mutex, count);
-> +
-> +	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0,
-> +				   NULL, _RET_IP_, (unsigned long)rid, 0);
->  }
-> +
->  #endif
->  
->  /*
-> @@ -473,6 +703,63 @@ int __sched mutex_trylock(struct mutex *lock)
->  }
->  EXPORT_SYMBOL(mutex_trylock);
->  
-> +#ifndef CONFIG_DEBUG_LOCK_ALLOC
-> +int __sched
-> +_mutex_reserve_lock(struct ticket_mutex *lock, unsigned long rid)
-> +{
-> +	int ret;
-> +
-> +	might_sleep();
-> +
-> +	ret = __mutex_fastpath_lock_retval_arg(&lock->base.count, (void *)rid,
-> +					__mutex_lock_reserve_slowpath);
-> +
-> +	if (!ret) {
-> +		mutex_set_reservation_fastpath(lock, rid, true);
-> +		mutex_set_owner(&lock->base);
-> +	}
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(_mutex_reserve_lock);
-> +
-> +int __sched
-> +_mutex_reserve_lock_interruptible(struct ticket_mutex *lock, unsigned long rid)
-> +{
-> +	int ret;
-> +
-> +	might_sleep();
-> +
-> +	ret = __mutex_fastpath_lock_retval_arg(&lock->base.count, (void *)rid,
-> +				__mutex_lock_interruptible_reserve_slowpath);
-> +
-> +	if (!ret) {
-> +		mutex_set_reservation_fastpath(lock, rid, true);
-> +		mutex_set_owner(&lock->base);
-> +	}
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(_mutex_reserve_lock_interruptible);
-> +
-> +void __sched
-> +_mutex_reserve_lock_slow(struct ticket_mutex *lock, unsigned long rid)
-> +{
-> +	might_sleep();
-> +	__mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
-> +			    0, NULL, _RET_IP_, rid, 1);
-> +}
-> +EXPORT_SYMBOL(_mutex_reserve_lock_slow);
-> +
-> +int __sched
-> +_mutex_reserve_lock_intr_slow(struct ticket_mutex *lock, unsigned long rid)
-> +{
-> +	might_sleep();
-> +	return __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
-> +				   0, NULL, _RET_IP_, rid, 1);
-> +}
-> +EXPORT_SYMBOL(_mutex_reserve_lock_intr_slow);
-> +
-> +#endif
-> +
->  /**
->   * atomic_dec_and_mutex_lock - return holding mutex if we dec to 0
->   * @cnt: the atomic which we are to dec
+diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+index 5455682..09dfa12 100644
+--- a/drivers/video/da8xx-fb.c
++++ b/drivers/video/da8xx-fb.c
+@@ -133,6 +133,9 @@
+ #define WSI_TIMEOUT	50
+ #define PALETTE_SIZE	256
+ 
++#define	CLK_MIN_DIV	2
++#define	CLK_MAX_DIV	255
++
+ static void __iomem *da8xx_fb_reg_base;
+ static struct resource *lcdc_regs;
+ static unsigned int lcd_revision;
+@@ -683,23 +686,21 @@ static void da8xx_fb_lcd_reset(void)
+ 	}
+ }
+ 
+-static inline unsigned da8xx_fb_calc_clk_divider(struct da8xx_fb_par *par,
+-						 unsigned pixclock)
+-{
+-	return par->lcd_fck_rate / (PICOS2KHZ(pixclock) * 1000);
+-}
+-
+-static inline unsigned da8xx_fb_round_clk(struct da8xx_fb_par *par,
+-					  unsigned pixclock)
++static int da8xx_fb_config_clk_divider(struct da8xx_fb_par *par,
++					      unsigned div, unsigned rate)
+ {
+-	unsigned div;
++	int ret;
+ 
+-	div = da8xx_fb_calc_clk_divider(par, pixclock);
+-	return KHZ2PICOS(par->lcd_fck_rate / (1000 * div));
+-}
++	if (par->lcd_fck_rate != rate) {
++		ret = clk_set_rate(par->lcdc_clk, rate);
++		if (IS_ERR_VALUE(ret)) {
++			dev_err(par->dev,
++				"unable to set clock rate at %u\n", rate);
++			return ret;
++		}
++		par->lcd_fck_rate = clk_get_rate(par->lcdc_clk);
++	}
+ 
+-static inline void da8xx_fb_config_clk_divider(unsigned div)
+-{
+ 	/* Configure the LCD clock divisor. */
+ 	lcdc_write(LCD_CLK_DIVISOR(div) |
+ 			(LCD_RASTER_MODE & 0x1), LCD_CTRL_REG);
+@@ -707,14 +708,49 @@ static inline void da8xx_fb_config_clk_divider(unsigned div)
+ 	if (lcd_revision == LCD_VERSION_2)
+ 		lcdc_write(LCD_V2_DMA_CLK_EN | LCD_V2_LIDD_CLK_EN |
+ 				LCD_V2_CORE_CLK_EN, LCD_CLK_ENABLE_REG);
++
++	return 0;
++}
++
++static unsigned int da8xx_fb_calc_clk_divider(struct da8xx_fb_par *par,
++					      unsigned pixclock,
++					      unsigned *rate)
++{
++	unsigned div;
++
++	pixclock = PICOS2KHZ(pixclock) * 1000;
++
++	*rate = par->lcd_fck_rate;
++
++	if (pixclock < (*rate / CLK_MAX_DIV)) {
++		*rate = clk_round_rate(par->lcdc_clk, pixclock * CLK_MAX_DIV);
++		div = CLK_MAX_DIV;
++	} else if (pixclock > (*rate / CLK_MIN_DIV)) {
++		*rate = clk_round_rate(par->lcdc_clk, pixclock * CLK_MIN_DIV);
++		div = CLK_MIN_DIV;
++	} else {
++		div = *rate / pixclock;
++	}
++
++	return div;
+ }
+ 
+-static inline void da8xx_fb_calc_config_clk_divider(struct da8xx_fb_par *par,
++static inline int da8xx_fb_calc_config_clk_divider(struct da8xx_fb_par *par,
+ 						    struct fb_videomode *mode)
+ {
+-	unsigned div = da8xx_fb_calc_clk_divider(par, mode->pixclock);
++	unsigned rate;
++	unsigned div = da8xx_fb_calc_clk_divider(par, mode->pixclock, &rate);
+ 
+-	da8xx_fb_config_clk_divider(div);
++	return da8xx_fb_config_clk_divider(par, div, rate);
++}
++
++static inline unsigned da8xx_fb_round_clk(struct da8xx_fb_par *par,
++					  unsigned pixclock)
++{
++	unsigned div, rate;
++
++	div = da8xx_fb_calc_clk_divider(par, pixclock, &rate);
++	return KHZ2PICOS(rate / (1000 * div));
+ }
+ 
+ static int lcd_init(struct da8xx_fb_par *par, const struct lcd_ctrl_config *cfg,
+@@ -723,7 +759,11 @@ static int lcd_init(struct da8xx_fb_par *par, const struct lcd_ctrl_config *cfg,
+ 	u32 bpp;
+ 	int ret = 0;
+ 
+-	da8xx_fb_calc_config_clk_divider(par, panel);
++	ret = da8xx_fb_calc_config_clk_divider(par, panel);
++	if (IS_ERR_VALUE(ret)) {
++		dev_err(par->dev, "unable to configure clock\n");
++		return ret;
++	}
+ 
+ 	if (panel->sync & FB_SYNC_CLK_INVERT)
+ 		lcdc_write((lcdc_read(LCD_RASTER_TIMING_2_REG) |
+-- 
+1.7.9.5
 
