@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758869Ab3AOXsj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:48:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45859 "EHLO mail.kernel.org"
+	id S1758881Ab3AOXsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:48:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45850 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932268Ab3AOWuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:03 -0500
+	id S932961Ab3AOWuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 053/171] staging: vt6656: 64bit fixes: vCommandTimerWait change calculation of timer.
-Date: Tue, 15 Jan 2013 14:43:38 -0800
-Message-Id: <20130115224317.244883974@linuxfoundation.org>
+Subject: [ 052/171] staging: vt6656: 64bit fixes: key.c/h change unsigned long to u32
+Date: Tue, 15 Jan 2013 14:43:37 -0800
+Message-Id: <20130115224317.172613060@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,69 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 70e227790d4ee4590023d8041a3485f8053593fc upstream.
+commit c0d05b305b00c698b0a8c1b3d46c9380bce9db45 upstream.
 
-The timer appears to run too fast/race on 64 bit systems.
-
-Using msecs_to_jiffies seems to cause a deadlock on 64 bit.
-
-A calculation of (MSecond * HZ) / 1000 appears to run satisfactory.
-
-Change BSSIDInfoCount to u32.
-
-After this patch the driver can be successfully connect on little endian 64/32 bit systems.
+Fixes long issues.
 
 Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/wcmd.c |   20 +++++++++++---------
- drivers/staging/vt6656/wpa2.h |    4 ++--
- 2 files changed, 13 insertions(+), 11 deletions(-)
+ drivers/staging/vt6656/key.c |    6 +++---
+ drivers/staging/vt6656/key.h |    8 ++++----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/staging/vt6656/wcmd.c
-+++ b/drivers/staging/vt6656/wcmd.c
-@@ -316,17 +316,19 @@ s_MgrMakeProbeRequest(
-     return pTxPacket;
- }
- 
--void vCommandTimerWait(void *hDeviceContext, unsigned int MSecond)
-+void vCommandTimerWait(void *hDeviceContext, unsigned long MSecond)
+--- a/drivers/staging/vt6656/key.c
++++ b/drivers/staging/vt6656/key.c
+@@ -223,7 +223,7 @@ BOOL KeybSetKey(
+     PSKeyManagement pTable,
+     PBYTE           pbyBSSID,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -675,7 +675,7 @@ BOOL KeybSetDefaultKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -791,7 +791,7 @@ BOOL KeybSetAllGroupKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+--- a/drivers/staging/vt6656/key.h
++++ b/drivers/staging/vt6656/key.h
+@@ -58,7 +58,7 @@
+ typedef struct tagSKeyItem
  {
--    PSDevice        pDevice = (PSDevice)hDeviceContext;
-+	PSDevice pDevice = (PSDevice)hDeviceContext;
- 
--    init_timer(&pDevice->sTimerCommand);
--    pDevice->sTimerCommand.data = (unsigned long)pDevice;
--    pDevice->sTimerCommand.function = (TimerFunction)vRunCommand;
--    // RUN_AT :1 msec ~= (HZ/1024)
--    pDevice->sTimerCommand.expires = (unsigned int)RUN_AT((MSecond * HZ) >> 10);
--    add_timer(&pDevice->sTimerCommand);
--    return;
-+	init_timer(&pDevice->sTimerCommand);
-+
-+	pDevice->sTimerCommand.data = (unsigned long)pDevice;
-+	pDevice->sTimerCommand.function = (TimerFunction)vRunCommand;
-+	pDevice->sTimerCommand.expires = RUN_AT((MSecond * HZ) / 1000);
-+
-+	add_timer(&pDevice->sTimerCommand);
-+
-+	return;
- }
- 
- void vRunCommand(void *hDeviceContext)
---- a/drivers/staging/vt6656/wpa2.h
-+++ b/drivers/staging/vt6656/wpa2.h
-@@ -45,8 +45,8 @@ typedef struct tagsPMKIDInfo {
- } PMKIDInfo, *PPMKIDInfo;
- 
- typedef struct tagSPMKIDCache {
--    unsigned long       BSSIDInfoCount;
--    PMKIDInfo   BSSIDInfo[MAX_PMKID_CACHE];
-+	u32 BSSIDInfoCount;
-+	PMKIDInfo BSSIDInfo[MAX_PMKID_CACHE];
- } SPMKIDCache, *PSPMKIDCache;
- 
- 
+     BOOL        bKeyValid;
+-    unsigned long       uKeyLength;
++	u32 uKeyLength;
+     BYTE        abyKey[MAX_KEY_LEN];
+     QWORD       KeyRSC;
+     DWORD       dwTSC47_16;
+@@ -107,7 +107,7 @@ BOOL KeybSetKey(
+     PSKeyManagement pTable,
+     PBYTE           pbyBSSID,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -146,7 +146,7 @@ BOOL KeybSetDefaultKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -156,7 +156,7 @@ BOOL KeybSetAllGroupKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
 
 
