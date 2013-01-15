@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758299Ab3APAWr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:22:47 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42003 "EHLO mail.kernel.org"
+	id S1758244Ab3AOWaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:30:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41970 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758254Ab3AOWaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:30:14 -0500
+	id S1758197Ab3AOWaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:30:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
-        Roland Dreier <roland@purestorage.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 089/221] RDMA/nes: Fix for crash when registering zero length MR for CQ
-Date: Tue, 15 Jan 2013 10:50:16 -0800
-Message-Id: <20130115185004.461014089@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Norbert Preining <preining@logic.at>
+Subject: [ 086/221] drm: Only evict the blocks required to create the requested hole
+Date: Tue, 15 Jan 2013 10:50:13 -0800
+Message-Id: <20130115185004.243946301@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,32 +27,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 7d9c199a55200c9b9fcad08e150470d02fb385be upstream.
+commit 901593f2bf221659a605bdc1dcb11376ea934163 upstream.
 
-Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Avoid clobbering adjacent blocks if they happen to expire earlier and
+amalgamate together to form the requested hole.
+
+In passing this fixes a regression from
+commit ea7b1dd44867e9cd6bac67e7c9fc3f128b5b255c
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri Feb 18 17:59:12 2011 +0100
+
+    drm: mm: track free areas implicitly
+
+which swaps the end address for size (with a potential overflow) and
+effectively causes the eviction code to clobber almost all earlier
+buffers above the evictee.
+
+v2: Check the original hole not the adjusted as the coloring may confuse
+us when later searching for the overlapping nodes. Also make sure that
+we do apply the range restriction and color adjustment in the same
+order for both scanning, searching and insertion.
+
+v3: Send the version that was actually tested.
+
+Note that this seems to be ducttape of decent quality ot paper over
+some of our unbind related gpu hangs reported since 3.7. It is not
+fully effective though, and certainly doesn't fix the underlying bug.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+[danvet: Added note plus bugzilla link and tested-by.]
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=55984
+Tested-by:  Norbert Preining <preining@logic.at>
+Acked-by: Dave Airlie <airlied@gmail.com
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/nes/nes_verbs.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/drm_mm.c |   45 +++++++++++++++++----------------------------
+ include/drm/drm_mm.h     |    2 +-
+ 2 files changed, 18 insertions(+), 29 deletions(-)
 
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -2559,6 +2559,11 @@ static struct ib_mr *nes_reg_user_mr(str
- 			return ibmr;
- 		case IWNES_MEMREG_TYPE_QP:
- 		case IWNES_MEMREG_TYPE_CQ:
-+			if (!region->length) {
-+				nes_debug(NES_DBG_MR, "Unable to register zero length region for CQ\n");
-+				ib_umem_release(region);
-+				return ERR_PTR(-EINVAL);
-+			}
- 			nespbl = kzalloc(sizeof(*nespbl), GFP_KERNEL);
- 			if (!nespbl) {
- 				nes_debug(NES_DBG_MR, "Unable to allocate PBL\n");
+--- a/drivers/gpu/drm/drm_mm.c
++++ b/drivers/gpu/drm/drm_mm.c
+@@ -213,11 +213,13 @@ static void drm_mm_insert_helper_range(s
+ 
+ 	BUG_ON(!hole_node->hole_follows || node->allocated);
+ 
+-	if (mm->color_adjust)
+-		mm->color_adjust(hole_node, color, &adj_start, &adj_end);
+-
+ 	if (adj_start < start)
+ 		adj_start = start;
++	if (adj_end > end)
++		adj_end = end;
++
++	if (mm->color_adjust)
++		mm->color_adjust(hole_node, color, &adj_start, &adj_end);
+ 
+ 	if (alignment) {
+ 		unsigned tmp = adj_start % alignment;
+@@ -489,7 +491,7 @@ void drm_mm_init_scan(struct drm_mm *mm,
+ 	mm->scan_size = size;
+ 	mm->scanned_blocks = 0;
+ 	mm->scan_hit_start = 0;
+-	mm->scan_hit_size = 0;
++	mm->scan_hit_end = 0;
+ 	mm->scan_check_range = 0;
+ 	mm->prev_scanned_node = NULL;
+ }
+@@ -516,7 +518,7 @@ void drm_mm_init_scan_with_range(struct
+ 	mm->scan_size = size;
+ 	mm->scanned_blocks = 0;
+ 	mm->scan_hit_start = 0;
+-	mm->scan_hit_size = 0;
++	mm->scan_hit_end = 0;
+ 	mm->scan_start = start;
+ 	mm->scan_end = end;
+ 	mm->scan_check_range = 1;
+@@ -535,8 +537,7 @@ int drm_mm_scan_add_block(struct drm_mm_
+ 	struct drm_mm *mm = node->mm;
+ 	struct drm_mm_node *prev_node;
+ 	unsigned long hole_start, hole_end;
+-	unsigned long adj_start;
+-	unsigned long adj_end;
++	unsigned long adj_start, adj_end;
+ 
+ 	mm->scanned_blocks++;
+ 
+@@ -553,14 +554,8 @@ int drm_mm_scan_add_block(struct drm_mm_
+ 	node->node_list.next = &mm->prev_scanned_node->node_list;
+ 	mm->prev_scanned_node = node;
+ 
+-	hole_start = drm_mm_hole_node_start(prev_node);
+-	hole_end = drm_mm_hole_node_end(prev_node);
+-
+-	adj_start = hole_start;
+-	adj_end = hole_end;
+-
+-	if (mm->color_adjust)
+-		mm->color_adjust(prev_node, mm->scan_color, &adj_start, &adj_end);
++	adj_start = hole_start = drm_mm_hole_node_start(prev_node);
++	adj_end = hole_end = drm_mm_hole_node_end(prev_node);
+ 
+ 	if (mm->scan_check_range) {
+ 		if (adj_start < mm->scan_start)
+@@ -569,11 +564,14 @@ int drm_mm_scan_add_block(struct drm_mm_
+ 			adj_end = mm->scan_end;
+ 	}
+ 
++	if (mm->color_adjust)
++		mm->color_adjust(prev_node, mm->scan_color,
++				 &adj_start, &adj_end);
++
+ 	if (check_free_hole(adj_start, adj_end,
+ 			    mm->scan_size, mm->scan_alignment)) {
+ 		mm->scan_hit_start = hole_start;
+-		mm->scan_hit_size = hole_end;
+-
++		mm->scan_hit_end = hole_end;
+ 		return 1;
+ 	}
+ 
+@@ -609,19 +607,10 @@ int drm_mm_scan_remove_block(struct drm_
+ 			       node_list);
+ 
+ 	prev_node->hole_follows = node->scanned_preceeds_hole;
+-	INIT_LIST_HEAD(&node->node_list);
+ 	list_add(&node->node_list, &prev_node->node_list);
+ 
+-	/* Only need to check for containement because start&size for the
+-	 * complete resulting free block (not just the desired part) is
+-	 * stored. */
+-	if (node->start >= mm->scan_hit_start &&
+-	    node->start + node->size
+-	    		<= mm->scan_hit_start + mm->scan_hit_size) {
+-		return 1;
+-	}
+-
+-	return 0;
++	 return (drm_mm_hole_node_end(node) > mm->scan_hit_start &&
++		 node->start < mm->scan_hit_end);
+ }
+ EXPORT_SYMBOL(drm_mm_scan_remove_block);
+ 
+--- a/include/drm/drm_mm.h
++++ b/include/drm/drm_mm.h
+@@ -70,7 +70,7 @@ struct drm_mm {
+ 	unsigned long scan_color;
+ 	unsigned long scan_size;
+ 	unsigned long scan_hit_start;
+-	unsigned scan_hit_size;
++	unsigned long scan_hit_end;
+ 	unsigned scanned_blocks;
+ 	unsigned long scan_start;
+ 	unsigned long scan_end;
 
 
