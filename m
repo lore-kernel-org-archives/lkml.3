@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab3AOIIx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 03:08:53 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:41130 "EHLO relay.sw.ru"
+	id S1756746Ab3AOIJD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 03:09:03 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:5466 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756341Ab3AOIIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 03:08:51 -0500
-Subject: [PATCH 1/4] SUNRPC: introduce cache_detail->cache_request callback
+	id S1756341Ab3AOII7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 03:08:59 -0500
+Subject: [PATCH 4/4] SUNRPC: move cache_detail->cache_request callback call to
+	cache_read()
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 15 Jan 2013 11:09:31 +0300
-Message-ID: <20130115080931.2996.44386.stgit@localhost.localdomain>
+Date: Tue, 15 Jan 2013 11:09:46 +0300
+Message-ID: <20130115080946.2996.96945.stgit@localhost.localdomain>
 In-Reply-To: <20130115080402.2996.74320.stgit@localhost.localdomain>
 References: <20130115080402.2996.74320.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,180 +24,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This callback will allow to simplify upcalls in further patches in this
-series.
+function
+
+The reason to move cache_request() callback call from
+sunrpc_cache_pipe_upcall() to cache_read() is that this garantees, that cache
+access will be done userspace process context (only userspace process have
+proper root context).
+This is required for NFSd support in container: svc_export_request() (which is
+cache_request callback) calls d_path(), which, in turn, traverse dentry up to
+current->fs->root. Kernel threads always have global root, while container
+have be in "root jail" - i.e. have it's own nested root.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfs/dns_resolve.c              |    2 +-
- fs/nfsd/export.c                  |    6 ++++--
- fs/nfsd/nfs4idmap.c               |    6 ++++--
- include/linux/sunrpc/cache.h      |    4 ++++
- net/sunrpc/auth_gss/svcauth_gss.c |    3 ++-
- net/sunrpc/svcauth_unix.c         |    6 ++++--
- 6 files changed, 19 insertions(+), 8 deletions(-)
+ net/sunrpc/cache.c |   32 ++++++++++++++++++++------------
+ 1 files changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-index 31c26c4..90edbd0 100644
---- a/fs/nfs/dns_resolve.c
-+++ b/fs/nfs/dns_resolve.c
-@@ -142,7 +142,7 @@ static int nfs_dns_upcall(struct cache_detail *cd,
+diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+index 901fdca..55f044c 100644
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -750,6 +750,18 @@ struct cache_reader {
+ 	int			offset;	/* if non-0, we have a refcnt on next request */
+ };
  
- 	ret = nfs_cache_upcall(cd, key->hostname);
- 	if (ret)
--		ret = sunrpc_cache_pipe_upcall(cd, ch, nfs_dns_request);
-+		ret = sunrpc_cache_pipe_upcall(cd, ch, cd->cache_request);
- 	return ret;
- }
- 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index a3946cf..63ee3bc 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -69,7 +69,7 @@ static void expkey_request(struct cache_detail *cd,
- 
- static int expkey_upcall(struct cache_detail *cd, struct cache_head *h)
- {
--	return sunrpc_cache_pipe_upcall(cd, h, expkey_request);
-+	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
- }
- 
- static struct svc_expkey *svc_expkey_update(struct cache_detail *cd, struct svc_expkey *new,
-@@ -246,6 +246,7 @@ static struct cache_detail svc_expkey_cache_template = {
- 	.name		= "nfsd.fh",
- 	.cache_put	= expkey_put,
- 	.cache_upcall	= expkey_upcall,
-+	.cache_request	= expkey_request,
- 	.cache_parse	= expkey_parse,
- 	.cache_show	= expkey_show,
- 	.match		= expkey_match,
-@@ -339,7 +340,7 @@ static void svc_export_request(struct cache_detail *cd,
- 
- static int svc_export_upcall(struct cache_detail *cd, struct cache_head *h)
- {
--	return sunrpc_cache_pipe_upcall(cd, h, svc_export_request);
-+	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
- }
- 
- static struct svc_export *svc_export_update(struct svc_export *new,
-@@ -712,6 +713,7 @@ static struct cache_detail svc_export_cache_template = {
- 	.name		= "nfsd.export",
- 	.cache_put	= svc_export_put,
- 	.cache_upcall	= svc_export_upcall,
-+	.cache_request	= svc_export_request,
- 	.cache_parse	= svc_export_parse,
- 	.cache_show	= svc_export_show,
- 	.match		= svc_export_match,
-diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-index a1f10c0..9033dfd 100644
---- a/fs/nfsd/nfs4idmap.c
-+++ b/fs/nfsd/nfs4idmap.c
-@@ -142,7 +142,7 @@ idtoname_request(struct cache_detail *cd, struct cache_head *ch, char **bpp,
- static int
- idtoname_upcall(struct cache_detail *cd, struct cache_head *ch)
- {
--	return sunrpc_cache_pipe_upcall(cd, ch, idtoname_request);
-+	return sunrpc_cache_pipe_upcall(cd, ch, cd->cache_request);
- }
- 
- static int
-@@ -193,6 +193,7 @@ static struct cache_detail idtoname_cache_template = {
- 	.name		= "nfs4.idtoname",
- 	.cache_put	= ent_put,
- 	.cache_upcall	= idtoname_upcall,
-+	.cache_request	= idtoname_request,
- 	.cache_parse	= idtoname_parse,
- 	.cache_show	= idtoname_show,
- 	.warn_no_listener = warn_no_idmapd,
-@@ -323,7 +324,7 @@ nametoid_request(struct cache_detail *cd, struct cache_head *ch, char **bpp,
- static int
- nametoid_upcall(struct cache_detail *cd, struct cache_head *ch)
- {
--	return sunrpc_cache_pipe_upcall(cd, ch, nametoid_request);
-+	return sunrpc_cache_pipe_upcall(cd, ch, cd->cache_request);
- }
- 
- static int
-@@ -366,6 +367,7 @@ static struct cache_detail nametoid_cache_template = {
- 	.name		= "nfs4.nametoid",
- 	.cache_put	= ent_put,
- 	.cache_upcall	= nametoid_upcall,
-+	.cache_request	= nametoid_request,
- 	.cache_parse	= nametoid_parse,
- 	.cache_show	= nametoid_show,
- 	.warn_no_listener = warn_no_idmapd,
-diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
-index 5dc9ee4..4f1c858 100644
---- a/include/linux/sunrpc/cache.h
-+++ b/include/linux/sunrpc/cache.h
-@@ -83,6 +83,10 @@ struct cache_detail {
- 	int			(*cache_upcall)(struct cache_detail *,
- 						struct cache_head *);
- 
-+	void			(*cache_request)(struct cache_detail *cd,
-+						 struct cache_head *ch,
-+						 char **bpp, int *blen);
++static int cache_request(struct cache_detail *detail,
++			       struct cache_request *crq)
++{
++	char *bp = crq->buf;
++	int len = PAGE_SIZE;
 +
- 	int			(*cache_parse)(struct cache_detail *,
- 					       char *buf, int len);
- 
-diff --git a/net/sunrpc/auth_gss/svcauth_gss.c b/net/sunrpc/auth_gss/svcauth_gss.c
-index 73e9573..82437f9 100644
---- a/net/sunrpc/auth_gss/svcauth_gss.c
-+++ b/net/sunrpc/auth_gss/svcauth_gss.c
-@@ -184,7 +184,7 @@ static void rsi_request(struct cache_detail *cd,
- 
- static int rsi_upcall(struct cache_detail *cd, struct cache_head *h)
++	detail->cache_request(detail, crq->item, &bp, &len);
++	if (len < 0)
++		return -EAGAIN;
++	return PAGE_SIZE - len;
++}
++
+ static ssize_t cache_read(struct file *filp, char __user *buf, size_t count,
+ 			  loff_t *ppos, struct cache_detail *cd)
  {
--	return sunrpc_cache_pipe_upcall(cd, h, rsi_request);
-+	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
- }
+@@ -784,6 +796,13 @@ static ssize_t cache_read(struct file *filp, char __user *buf, size_t count,
+ 		rq->readers++;
+ 	spin_unlock(&queue_lock);
  
++	if (rq->len == 0) {
++		err = cache_request(cd, rq);
++		if (err < 0)
++			goto out;
++		rq->len = err;
++	}
++
+ 	if (rp->offset == 0 && !test_bit(CACHE_PENDING, &rq->item->flags)) {
+ 		err = -EAGAIN;
+ 		spin_lock(&queue_lock);
+@@ -1145,8 +1164,6 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h)
  
-@@ -276,6 +276,7 @@ static struct cache_detail rsi_cache_template = {
- 	.name           = "auth.rpcsec.init",
- 	.cache_put      = rsi_put,
- 	.cache_upcall   = rsi_upcall,
-+	.cache_request  = rsi_request,
- 	.cache_parse    = rsi_parse,
- 	.match		= rsi_match,
- 	.init		= rsi_init,
-diff --git a/net/sunrpc/svcauth_unix.c b/net/sunrpc/svcauth_unix.c
-index 4d01292..6b03cc1 100644
---- a/net/sunrpc/svcauth_unix.c
-+++ b/net/sunrpc/svcauth_unix.c
-@@ -159,7 +159,7 @@ static void ip_map_request(struct cache_detail *cd,
+ 	char *buf;
+ 	struct cache_request *crq;
+-	char *bp;
+-	int len;
  
- static int ip_map_upcall(struct cache_detail *cd, struct cache_head *h)
- {
--	return sunrpc_cache_pipe_upcall(cd, h, ip_map_request);
-+	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
- }
+ 	if (!cache_listeners_exist(detail)) {
+ 		warn_no_listener(detail);
+@@ -1163,19 +1180,10 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h)
+ 		return -EAGAIN;
+ 	}
  
- static struct ip_map *__ip_map_lookup(struct cache_detail *cd, char *class, struct in6_addr *addr);
-@@ -472,7 +472,7 @@ static void unix_gid_request(struct cache_detail *cd,
- 
- static int unix_gid_upcall(struct cache_detail *cd, struct cache_head *h)
- {
--	return sunrpc_cache_pipe_upcall(cd, h, unix_gid_request);
-+	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
- }
- 
- static struct unix_gid *unix_gid_lookup(struct cache_detail *cd, uid_t uid);
-@@ -578,6 +578,7 @@ static struct cache_detail unix_gid_cache_template = {
- 	.name		= "auth.unix.gid",
- 	.cache_put	= unix_gid_put,
- 	.cache_upcall	= unix_gid_upcall,
-+	.cache_request	= unix_gid_request,
- 	.cache_parse	= unix_gid_parse,
- 	.cache_show	= unix_gid_show,
- 	.match		= unix_gid_match,
-@@ -875,6 +876,7 @@ static struct cache_detail ip_map_cache_template = {
- 	.name		= "auth.unix.ip",
- 	.cache_put	= ip_map_put,
- 	.cache_upcall	= ip_map_upcall,
-+	.cache_request	= ip_map_request,
- 	.cache_parse	= ip_map_parse,
- 	.cache_show	= ip_map_show,
- 	.match		= ip_map_match,
+-	bp = buf; len = PAGE_SIZE;
+-
+-	detail->cache_request(detail, h, &bp, &len);
+-
+-	if (len < 0) {
+-		kfree(buf);
+-		kfree(crq);
+-		return -EAGAIN;
+-	}
+ 	crq->q.reader = 0;
+ 	crq->item = cache_get(h);
+ 	crq->buf = buf;
+-	crq->len = PAGE_SIZE - len;
++	crq->len = 0;
+ 	crq->readers = 0;
+ 	spin_lock(&queue_lock);
+ 	list_add_tail(&crq->q.list, &detail->queue);
 
