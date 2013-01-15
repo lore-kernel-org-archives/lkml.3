@@ -1,461 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab3AOSgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:36:39 -0500
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:63180 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756699Ab3AOSgi (ORCPT
+	id S1757536Ab3AOSgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:36:50 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42954 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757439Ab3AOSgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:36:38 -0500
-Date: Tue, 15 Jan 2013 15:31:10 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 06/13] perf ui/hist: Add support for event group view
-Message-ID: <20130115183110.GB5826@ghostprotocols.net>
-References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
- <1358235117-12803-7-git-send-email-namhyung@kernel.org>
+	Tue, 15 Jan 2013 13:36:43 -0500
+Message-ID: <50F5A1B7.20504@wwwdotorg.org>
+Date: Tue, 15 Jan 2013 11:36:39 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358235117-12803-7-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 3/4] pinctrl: add abx500 pinctrl driver core
+References: <1358242984-5160-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1358242984-5160-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jan 15, 2013 at 04:31:50PM +0900, Namhyung Kim escreveu:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+On 01/15/2013 02:43 AM, Linus Walleij wrote:
+> From: Patrice Chotard <patrice.chotard@st.com>
 > 
-> Show group members' overhead also when showing the leader's if event
-> group is enabled.  Use macro for defining hpp functions which looks
-> almost identical.
-> 
-> Thanks to Arnaldo for suggesting a better way to print group members
-> without allocating temporary array.
+> This adds the AB8500 core driver, which will be utilized by
+> the follow-on drivers for different ABx500 variants.
+> Sselect the driver from the DBX500_SOC, as this chip is
+> powering and clocking that SoC.
 
-Thanks! Its a pity the patch ended up mixing up things, I'll have to
-apply it and look at the end result.
- 
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/ui/hist.c       | 311 +++++++++++++++++++++++----------------------
->  tools/perf/ui/stdio/hist.c |   2 +
->  2 files changed, 164 insertions(+), 149 deletions(-)
-> 
-> diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-> index 1889c12ca81f..ec14335a9713 100644
-> --- a/tools/perf/ui/hist.c
-> +++ b/tools/perf/ui/hist.c
-> @@ -3,151 +3,190 @@
->  #include "../util/hist.h"
->  #include "../util/util.h"
->  #include "../util/sort.h"
-> -
-> +#include "../util/evsel.h"
->  
->  /* hist period print (hpp) functions */
-> -static int hpp__header_overhead(struct perf_hpp *hpp)
-> -{
-> -	return scnprintf(hpp->buf, hpp->size, "Overhead");
-> -}
->  
-> -static int hpp__width_overhead(struct perf_hpp *hpp __maybe_unused)
-> -{
-> -	return 8;
-> -}
-> +typedef int (*hpp_snprint_fn)(char *buf, size_t size, const char *fmt, ...);
->  
-> -static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
-> +static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
-> +			      u64 (*get_field)(struct hist_entry *),
-> +			      const char *fmt, hpp_snprint_fn print_fn)
->  {
-> +	int ret;
-> +	double percent = 0.0;
->  	struct hists *hists = he->hists;
-> -	double percent = 100.0 * he->stat.period / hists->stats.total_period;
->  
-> -	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
-> -}
-> +	if (hists->stats.total_period)
-> +		percent = 100.0 * get_field(he) / hists->stats.total_period;
->  
-> -static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
-> -{
-> -	struct hists *hists = he->hists;
-> -	double percent = 100.0 * he->stat.period / hists->stats.total_period;
-> -	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
-> +	ret = print_fn(hpp->buf, hpp->size, fmt, percent);
->  
-> -	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-> -}
-> +	if (symbol_conf.event_group) {
-> +		int prev_idx, idx_delta, i;
-> +		struct perf_evsel *evsel = hists_to_evsel(hists);
-> +		struct hist_entry *pair;
-> +		int nr_members = evsel->nr_members;
->  
-> -static int hpp__header_overhead_sys(struct perf_hpp *hpp)
-> -{
-> -	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
-> +		if (nr_members <= 1)
-> +			return ret;
->  
-> -	return scnprintf(hpp->buf, hpp->size, fmt, "sys");
-> -}
-> +		prev_idx = perf_evsel__group_idx(evsel);
->  
-> -static int hpp__width_overhead_sys(struct perf_hpp *hpp __maybe_unused)
-> -{
-> -	return 7;
-> -}
-> +		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
-> +			u64 period = get_field(pair);
-> +			u64 total = pair->hists->stats.total_period;
->  
-> -static int hpp__color_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
-> -{
-> -	struct hists *hists = he->hists;
-> -	double percent = 100.0 * he->stat.period_sys / hists->stats.total_period;
-> +			if (!total)
-> +				continue;
->  
-> -	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
-> -}
-> +			evsel = hists_to_evsel(pair->hists);
-> +			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
->  
-> -static int hpp__entry_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
-> -{
-> -	struct hists *hists = he->hists;
-> -	double percent = 100.0 * he->stat.period_sys / hists->stats.total_period;
-> -	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
-> +			for (i = 0; i < idx_delta; i++) {
-> +				ret += print_fn(hpp->buf + ret, hpp->size - ret,
-> +						fmt, 0.0);
-> +			}
->  
-> -	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-> -}
-> +			ret += print_fn(hpp->buf + ret, hpp->size - ret,
-> +					fmt, 100.0 * period / total);
->  
-> -static int hpp__header_overhead_us(struct perf_hpp *hpp)
-> -{
-> -	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
-> +			prev_idx += 1 + idx_delta;
-> +		}
->  
-> -	return scnprintf(hpp->buf, hpp->size, fmt, "user");
-> -}
-> +		idx_delta = nr_members - prev_idx - 1;
->  
-> -static int hpp__width_overhead_us(struct perf_hpp *hpp __maybe_unused)
-> -{
-> -	return 7;
-> +		for (i = 0; i < idx_delta; i++) {
-> +			ret += print_fn(hpp->buf + ret, hpp->size - ret,
-> +					fmt, 0.0);
-> +		}
+> diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
+
+> +static int abx500_gpio_get(struct gpio_chip *chip, unsigned offset)
+
+Shouldn't this call abx500_gpio_get_bit(), just like abx500_gpio_set()
+calls abx500_gpio_set_bit()?
+
+> +static int abx500_gpio_direction_output(struct gpio_chip *chip,
+> +					unsigned offset,
+> +					int val)
+...
+> +	/* disable pull down */
+...
+> +	/* if supported, disable both pull down and pull up */
+
+Why the need to override those options?
+
+> +static u8 abx500_get_mode(struct pinctrl_dev *pctldev, struct gpio_chip *chip,
+> +		unsigned gpio)
+
+> +	if (af.gpiosel_bit == UNUSED)
+> +		return ABX500_DEFAULT;
+
+That's odd; abx500_set_mode() seems to allow setting the mode to
+something other than default even if (af.gpiosel_bit == UNUSED). Are
+set_mode/get_mode actually correct inverses of each-other?
+
+> +static int abx500_gpio_irq_init(struct abx500_pinctrl *pct)
+...
+> +#ifdef CONFIG_ARM
+> +		set_irq_flags(irq, IRQF_VALID);
+> +#else
+> +		irq_set_noprobe(irq);
+> +#endif
+
+I assume that ifdef is always set one particular way?
+
+> +static void abx500_gpio_irq_remove(struct abx500_pinctrl *pct)
+...
+> +#ifdef CONFIG_ARM
+> +		set_irq_flags(irq, 0);
+> +#endif
+
+Same there.
+
+> +static void abx500_pmx_disable(struct pinctrl_dev *pctldev,
+> +			    unsigned function, unsigned group)
+> +{
+> +	struct abx500_pinctrl *pct = pinctrl_dev_get_drvdata(pctldev);
+> +	const struct abx500_pingroup *g;
+> +
+> +	g = &pct->soc->groups[group];
+> +	if (g->altsetting < 0)
+> +		return;
+> +
+> +	/* Poke out the mux, set the pin to some default state? */
+> +	dev_dbg(pct->dev, "disable group %s, %u pins\n", g->name, g->npins);
+> +}
+
+That looks basically unimplemented, and the comment seems like a FIXME?
+
+> +int abx500_gpio_request_enable(struct pinctrl_dev *pctldev,
+> +			    struct pinctrl_gpio_range *range,
+> +			    unsigned offset)
+...
+> +	/*
+> +	 * by default, for ABx5xx family, GPIO mode is selected by
+> +	 * writing 1 in GPIOSELx registers
+> +	 */
+> +	ret = abx500_mask_and_set_register_interruptible(pct->dev,
+> +		AB8500_MISC, reg, 1 << pos, 1 << pos);
+
+It sounds like this should be implemented using abx500_set_mode()?
+
+> +int abx500_pin_config_set(struct pinctrl_dev *pctldev,
+> +		       unsigned pin,
+> +		       unsigned long config)
+
+> +	switch (param) {
+> +	case PIN_CONFIG_BIAS_PULL_DOWN:
+> +		/*
+> +		 * if argument = 1 set the pull down
+> +		 * else clear the pull down
+> +		 */
+> +		ret = abx500_gpio_direction_input(chip, offset);
+
+That looks odd; why force the pin to be a GPIO just to enable a pull down?
+
+> +		/* check if pin supports pull updown feature */
+> +		if (pullud && pin >= pullud->first_pin	&& pin <= pullud->last_pin)
+> +			ret = abx500_config_pull_updown(pct,
+> +				offset,
+> +				argument ? ABX500_GPIO_PULL_DOWN : ABX500_GPIO_PULL_NONE);
+> +		else
+> +			ret = abx500_gpio_set_bits(chip, AB8500_GPIO_PUD1_REG,
+> +				offset, argument ? 0 : 1);
+
+Hmm. Wouldn't it be better to remove the if statement, and just store
+ABX500_GPIO_PULL_DOWN or 0, and ABX500_GPIO_PULL_NONE or 1, in the soc_data?
+
+> +static int __devinit abx500_gpio_probe(struct platform_device *pdev)
+
+> +	/* Poke in other ASIC variants here */
+> +	switch (platid->driver_data) {
+> +	case PINCTRL_AB8500:
+> +		abx500_pinctrl_ab8500_init(&pct->soc);
+> +		break;
+> +	case PINCTRL_AB8540:
+> +		abx500_pinctrl_ab8540_init(&pct->soc);
+> +		break;
+> +	case PINCTRL_AB9540:
+> +		abx500_pinctrl_ab9540_init(&pct->soc);
+> +		break;
+> +	case PINCTRL_AB8505:
+> +		abx500_pinctrl_ab8505_init(&pct->soc);
+> +		break;
+> +	default:
+> +		dev_err(&pdev->dev, "Unsupported pinctrl sub driver (%d)\n",
+> +				(int) platid->driver_data);
+> +		return -EINVAL;
 > +	}
-> +	return ret;
->  }
->  
-> -static int hpp__color_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
-> +static int __hpp__raw_fmt(struct perf_hpp *hpp, struct hist_entry *he,
-> +			  u64 (*get_field)(struct hist_entry *),
-> +			  const char *fmt, hpp_snprint_fn print_fn)
->  {
-> -	struct hists *hists = he->hists;
-> -	double percent = 100.0 * he->stat.period_us / hists->stats.total_period;
-> -
-> -	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
-> -}
-> +	int ret;
-> +	ret = print_fn(hpp->buf, hpp->size, fmt, get_field(he));
->  
-> -static int hpp__entry_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
-> -{
-> -	struct hists *hists = he->hists;
-> -	double percent = 100.0 * he->stat.period_us / hists->stats.total_period;
-> -	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
-> +	if (symbol_conf.event_group) {
-> +		int prev_idx, idx_delta, i;
-> +		struct perf_evsel *evsel = hists_to_evsel(he->hists);
-> +		struct hist_entry *pair;
-> +		int nr_members = evsel->nr_members;
->  
-> -	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-> -}
-> +		if (nr_members <= 1)
-> +			return ret;
->  
-> -static int hpp__header_overhead_guest_sys(struct perf_hpp *hpp)
-> -{
-> -	return scnprintf(hpp->buf, hpp->size, "guest sys");
-> -}
-> +		prev_idx = perf_evsel__group_idx(evsel);
->  
-> -static int hpp__width_overhead_guest_sys(struct perf_hpp *hpp __maybe_unused)
-> -{
-> -	return 9;
-> -}
-> +		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
-> +			evsel = hists_to_evsel(pair->hists);
-> +			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
->  
-> -static int hpp__color_overhead_guest_sys(struct perf_hpp *hpp,
-> -					 struct hist_entry *he)
-> -{
-> -	struct hists *hists = he->hists;
-> -	double percent = 100.0 * he->stat.period_guest_sys / hists->stats.total_period;
-> +			for (i = 0; i < idx_delta; i++) {
-> +				ret += print_fn(hpp->buf + ret, hpp->size - ret,
-> +						fmt, 0.0);
-> +			}
->  
-> -	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
-> -}
-> +			ret += print_fn(hpp->buf + ret, hpp->size - ret,
-> +					fmt, get_field(pair));
->  
-> -static int hpp__entry_overhead_guest_sys(struct perf_hpp *hpp,
-> -					 struct hist_entry *he)
-> -{
-> -	struct hists *hists = he->hists;
-> -	double percent = 100.0 * he->stat.period_guest_sys / hists->stats.total_period;
-> -	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
-> -
-> -	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-> -}
-> +			prev_idx += 1 + idx_delta;
-> +		}
->  
-> -static int hpp__header_overhead_guest_us(struct perf_hpp *hpp)
-> -{
-> -	return scnprintf(hpp->buf, hpp->size, "guest usr");
-> -}
-> +		idx_delta = nr_members - prev_idx - 1;
->  
-> -static int hpp__width_overhead_guest_us(struct perf_hpp *hpp __maybe_unused)
-> -{
-> -	return 9;
-> +		for (i = 0; i < idx_delta; i++) {
-> +			ret += print_fn(hpp->buf + ret, hpp->size - ret,
-> +					fmt, 0.0);
-> +		}
-> +	}
-> +	return ret;
->  }
->  
-> -static int hpp__color_overhead_guest_us(struct perf_hpp *hpp,
-> -					struct hist_entry *he)
-> -{
-> -	struct hists *hists = he->hists;
-> -	double percent = 100.0 * he->stat.period_guest_us / hists->stats.total_period;
-> -
-> -	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
-> -}
->  
-> -static int hpp__entry_overhead_guest_us(struct perf_hpp *hpp,
-> -					struct hist_entry *he)
-> -{
-> -	struct hists *hists = he->hists;
-> -	double percent = 100.0 * he->stat.period_guest_us / hists->stats.total_period;
-> -	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
-> +#define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
-> +static int hpp__header_##_type(struct perf_hpp *hpp)			\
-> +{									\
-> +	int len = _min_width;						\
-> +									\
-> +	if (symbol_conf.event_group) {					\
-> +		struct perf_evsel *evsel = hpp->ptr;			\
-> +									\
-> +		len = max(len, evsel->nr_members * _unit_width);	\
-> +	}								\
-> +	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);	\
-> +}
-> +
-> +#define __HPP_WIDTH_FN(_type, _min_width, _unit_width) 			\
-> +static int hpp__width_##_type(struct perf_hpp *hpp)			\
-> +{									\
-> +	int len = _min_width;						\
-> +									\
-> +	if (symbol_conf.event_group) {					\
-> +		struct perf_evsel *evsel = hpp->ptr;			\
-> +									\
-> +		len = max(len, evsel->nr_members * _unit_width);	\
-> +	}								\
-> +	return len;							\
-> +}
-> +
-> +#define __HPP_COLOR_PERCENT_FN(_type, _field)					\
-> +static u64 he_get_##_field(struct hist_entry *he)				\
-> +{										\
-> +	return he->stat._field;							\
-> +}										\
-> +										\
-> +static int hpp__color_##_type(struct perf_hpp *hpp, struct hist_entry *he) 	\
-> +{										\
-> +	return __hpp__percent_fmt(hpp, he, he_get_##_field, " %6.2f%%",		\
-> +				  (hpp_snprint_fn)percent_color_snprintf); 	\
-> +}
-> +
-> +#define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
-> +static int hpp__entry_##_type(struct perf_hpp *hpp, struct hist_entry *he) 	\
-> +{										\
-> +	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
-> +	return __hpp__percent_fmt(hpp, he, he_get_##_field, fmt,		\
-> +				  scnprintf);					\
-> +}
-> +
-> +#define __HPP_ENTRY_RAW_FN(_type, _field)					\
-> +static u64 he_get_raw_##_field(struct hist_entry *he)				\
-> +{										\
-> +	return he->stat._field;							\
-> +}										\
-> +										\
-> +static int hpp__entry_##_type(struct perf_hpp *hpp, struct hist_entry *he) 	\
-> +{										\
-> +	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
-> +	return __hpp__raw_fmt(hpp, he, he_get_raw_##_field, fmt, scnprintf);	\
-> +}
-> +
-> +#define HPP_PERCENT_FNS(_type, _str, _field, _min_width, _unit_width)	\
-> +__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
-> +__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
-> +__HPP_COLOR_PERCENT_FN(_type, _field)					\
-> +__HPP_ENTRY_PERCENT_FN(_type, _field)
-> +
-> +#define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
-> +__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
-> +__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
-> +__HPP_ENTRY_RAW_FN(_type, _field)
-> +
-> +
-> +HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
-> +HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
-> +HPP_PERCENT_FNS(overhead_us, "usr", period_us, 8, 8)
-> +HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys, 9, 8)
-> +HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
-> +
-> +HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
-> +HPP_RAW_FNS(period, "Period", period, 12, 12)
->  
-> -	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-> -}
->  
->  static int hpp__header_baseline(struct perf_hpp *hpp)
->  {
-> @@ -179,7 +218,7 @@ static int hpp__color_baseline(struct perf_hpp *hpp, struct hist_entry *he)
->  {
->  	double percent = baseline_percent(he);
->  
-> -	if (hist_entry__has_pairs(he))
-> +	if (hist_entry__has_pairs(he) || symbol_conf.field_sep)
->  		return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
->  	else
->  		return scnprintf(hpp->buf, hpp->size, "        ");
-> @@ -196,44 +235,6 @@ static int hpp__entry_baseline(struct perf_hpp *hpp, struct hist_entry *he)
->  		return scnprintf(hpp->buf, hpp->size, "            ");
->  }
->  
-> -static int hpp__header_samples(struct perf_hpp *hpp)
-> -{
-> -	const char *fmt = symbol_conf.field_sep ? "%s" : "%11s";
-> -
-> -	return scnprintf(hpp->buf, hpp->size, fmt, "Samples");
-> -}
-> -
-> -static int hpp__width_samples(struct perf_hpp *hpp __maybe_unused)
-> -{
-> -	return 11;
-> -}
-> -
-> -static int hpp__entry_samples(struct perf_hpp *hpp, struct hist_entry *he)
-> -{
-> -	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%11" PRIu64;
-> -
-> -	return scnprintf(hpp->buf, hpp->size, fmt, he->stat.nr_events);
-> -}
-> -
-> -static int hpp__header_period(struct perf_hpp *hpp)
-> -{
-> -	const char *fmt = symbol_conf.field_sep ? "%s" : "%12s";
-> -
-> -	return scnprintf(hpp->buf, hpp->size, fmt, "Period");
-> -}
-> -
-> -static int hpp__width_period(struct perf_hpp *hpp __maybe_unused)
-> -{
-> -	return 12;
-> -}
-> -
-> -static int hpp__entry_period(struct perf_hpp *hpp, struct hist_entry *he)
-> -{
-> -	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%12" PRIu64;
-> -
-> -	return scnprintf(hpp->buf, hpp->size, fmt, he->stat.period);
-> -}
-> -
->  static int hpp__header_period_baseline(struct perf_hpp *hpp)
->  {
->  	const char *fmt = symbol_conf.field_sep ? "%s" : "%12s";
-> @@ -254,6 +255,7 @@ static int hpp__entry_period_baseline(struct perf_hpp *hpp, struct hist_entry *h
->  
->  	return scnprintf(hpp->buf, hpp->size, fmt, period);
->  }
-> +
->  static int hpp__header_delta(struct perf_hpp *hpp)
->  {
->  	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
-> @@ -408,9 +410,20 @@ struct perf_hpp_fmt perf_hpp__format[] = {
->  
->  LIST_HEAD(perf_hpp__list);
->  
-> +
->  #undef HPP__COLOR_PRINT_FNS
->  #undef HPP__PRINT_FNS
->  
-> +#undef HPP_PERCENT_FNS
-> +#undef HPP_RAW_FNS
-> +
-> +#undef __HPP_HEADER_FN
-> +#undef __HPP_WIDTH_FN
-> +#undef __HPP_COLOR_PERCENT_FN
-> +#undef __HPP_ENTRY_PERCENT_FN
-> +#undef __HPP_ENTRY_RAW_FN
-> +
-> +
->  void perf_hpp__init(void)
->  {
->  	if (symbol_conf.show_cpu_utilization) {
-> diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-> index f9798298e3e0..ff1f60cf442e 100644
-> --- a/tools/perf/ui/stdio/hist.c
-> +++ b/tools/perf/ui/stdio/hist.c
-> @@ -3,6 +3,7 @@
->  #include "../../util/util.h"
->  #include "../../util/hist.h"
->  #include "../../util/sort.h"
-> +#include "../../util/evsel.h"
->  
->  
->  static size_t callchain__fprintf_left_margin(FILE *fp, int left_margin)
-> @@ -347,6 +348,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
->  	struct perf_hpp dummy_hpp = {
->  		.buf	= bf,
->  		.size	= sizeof(bf),
-> +		.ptr	= hists_to_evsel(hists),
->  	};
->  	bool first = true;
->  
-> -- 
-> 1.7.11.7
+
+Most of those functions don't exist yet. I see there are dummy inlines
+below for them if the /config/ options aren't turned on, but what's to
+stop somebody turning on the config option before the real
+implementation exists?
+
+In the past, Arnd requested that each variant had a separate top-level
+driver object that called into a utility probe() function, rather than
+having a probe() function that knew about all the SoC variants, and
+dispatched out to a variant-specific function.
+
+> +static int __devexit abx500_gpio_remove(struct platform_device *pdev)
+
+> +	platform_set_drvdata(pdev, NULL);
+
+There's no point doing that; nothing should touch the drvdata while the
+device doesn't exist (or isn't probed rather).
+
+> +	mutex_destroy(&pct->lock);
+> +	kfree(pct);
+
+That was allocated using devm_kzalloc(). There's no point freeing it
+here, and if there were, devm_kfree() should be used, or a double-free
+will occur.
