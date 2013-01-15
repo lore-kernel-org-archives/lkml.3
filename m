@@ -1,121 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406Ab3AONnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:43:46 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44845 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757447Ab3AONlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:41:37 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sekhar Nori <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 04/12] video: da8xx-fb: use devres
-Date: Tue, 15 Jan 2013 19:12:22 +0530
-Message-ID: <527f3adc41ba0090dd1362adde550eb0e7595e28.1358251447.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1358251447.git.afzal@ti.com>
-References: <cover.1358251447.git.afzal@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757250Ab3AONp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:45:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7793 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756752Ab3AONp6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:45:58 -0500
+X-Authority-Analysis: v=2.0 cv=UsXhxpMB c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DbEw_xh21akA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=C8D8j3Lp6psA:10 a=57SyGIRnAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=hxKhD864DLpISpfytw0A:9 a=PUjeQqilurYA:10 a=TIV7c6GJmisA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358257555.4068.11.camel@gandalf.local.home>
+Subject: Re: [PATCH] tools lib traceevent: Fix warning on '>=' operator
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Date: Tue, 15 Jan 2013 08:45:55 -0500
+In-Reply-To: <1358236939-17393-1-git-send-email-namhyung@kernel.org>
+References: <1358236939-17393-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace existing resource handling in the driver with managed device
-resource.
+On Tue, 2013-01-15 at 17:02 +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Although the '>=' (and '<=') operator is handled properly in
+> libtraceevent, it emitted following spurious warnings on perf test:
+> 
+>  $ perf test
+>  5: parse events tests                                     :
+>   ...
+>   Warning: unknown op '>='
+>   Warning: unknown op '>='
+>   Warning: unknown op '>='
+>   Warning: unknown op '>='
+>   Warning: unknown op '>='
+>   Warning: unknown op '>='
+>   ...
+> 
+> Add the operator to the checks.
+> 
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- drivers/video/da8xx-fb.c |   35 ++++++-----------------------------
- 1 file changed, 6 insertions(+), 29 deletions(-)
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index ca69e01..7a32e83 100644
---- a/drivers/video/da8xx-fb.c
-+++ b/drivers/video/da8xx-fb.c
-@@ -1036,12 +1036,9 @@ static int fb_remove(struct platform_device *dev)
- 				  par->p_palette_base);
- 		dma_free_coherent(NULL, par->vram_size, par->vram_virt,
- 				  par->vram_phys);
--		free_irq(par->irq, par);
- 		pm_runtime_put_sync(&dev->dev);
- 		pm_runtime_disable(&dev->dev);
- 		framebuffer_release(info);
--		iounmap(da8xx_fb_reg_base);
--		release_mem_region(lcdc_regs->start, resource_size(lcdc_regs));
- 
- 	}
- 	return 0;
-@@ -1265,7 +1262,6 @@ static int fb_probe(struct platform_device *device)
- 	struct fb_info *da8xx_fb_info;
- 	struct clk *fb_clk = NULL;
- 	struct da8xx_fb_par *par;
--	resource_size_t len;
- 	int ret, i;
- 	unsigned long ulcm;
- 
-@@ -1275,29 +1271,16 @@ static int fb_probe(struct platform_device *device)
- 	}
- 
- 	lcdc_regs = platform_get_resource(device, IORESOURCE_MEM, 0);
--	if (!lcdc_regs) {
--		dev_err(&device->dev,
--			"Can not get memory resource for LCD controller\n");
--		return -ENOENT;
--	}
--
--	len = resource_size(lcdc_regs);
--
--	lcdc_regs = request_mem_region(lcdc_regs->start, len, lcdc_regs->name);
--	if (!lcdc_regs)
--		return -EBUSY;
--
--	da8xx_fb_reg_base = ioremap(lcdc_regs->start, len);
-+	da8xx_fb_reg_base = devm_request_and_ioremap(&device->dev, lcdc_regs);
- 	if (!da8xx_fb_reg_base) {
--		ret = -EBUSY;
--		goto err_request_mem;
-+		dev_err(&device->dev, "memory resource setup failed\n");
-+		return -EADDRNOTAVAIL;
- 	}
- 
--	fb_clk = clk_get(&device->dev, "fck");
-+	fb_clk = devm_clk_get(&device->dev, "fck");
- 	if (IS_ERR(fb_clk)) {
- 		dev_err(&device->dev, "Can not get device clock\n");
--		ret = -ENODEV;
--		goto err_ioremap;
-+		return -ENODEV;
- 	}
- 
- 	pm_runtime_enable(&device->dev);
-@@ -1458,7 +1441,7 @@ static int fb_probe(struct platform_device *device)
- 		lcdc_irq_handler = lcdc_irq_handler_rev02;
- 	}
- 
--	ret = request_irq(par->irq, lcdc_irq_handler, 0,
-+	ret = devm_request_irq(&device->dev, par->irq, lcdc_irq_handler, 0,
- 			DRIVER_NAME, par);
- 	if (ret)
- 		goto irq_freq;
-@@ -1488,12 +1471,6 @@ err_pm_runtime_disable:
- 	pm_runtime_put_sync(&device->dev);
- 	pm_runtime_disable(&device->dev);
- 
--err_ioremap:
--	iounmap(da8xx_fb_reg_base);
--
--err_request_mem:
--	release_mem_region(lcdc_regs->start, len);
--
- 	return ret;
- }
- 
--- 
-1.7.9.5
+-- Steve
+
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/lib/traceevent/event-parse.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+> index 5a824e355d04..7286f0e82c29 100644
+> --- a/tools/lib/traceevent/event-parse.c
+> +++ b/tools/lib/traceevent/event-parse.c
+> @@ -1785,6 +1785,8 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+>  		   strcmp(token, "/") == 0 ||
+>  		   strcmp(token, "<") == 0 ||
+>  		   strcmp(token, ">") == 0 ||
+> +		   strcmp(token, "<=") == 0 ||
+> +		   strcmp(token, ">=") == 0 ||
+>  		   strcmp(token, "==") == 0 ||
+>  		   strcmp(token, "!=") == 0) {
+>  
+
 
