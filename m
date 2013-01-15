@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab3AOS5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:57:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34897 "EHLO mail.kernel.org"
+	id S1758063Ab3AOS5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:57:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34909 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757185Ab3AOS5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:57:43 -0500
+	id S1757185Ab3AOS5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:57:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Jeffery <djeffery@redhat.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 034/221] SCSI: qla2xxx: Test and clear FCPORT_UPDATE_NEEDED atomically.
-Date: Tue, 15 Jan 2013 10:49:21 -0800
-Message-Id: <20130115185000.489622579@linuxfoundation.org>
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 044/221] mlx4_core: Fix potential deadlock in mlx4_eq_int()
+Date: Tue, 15 Jan 2013 10:49:31 -0800
+Message-Id: <20130115185001.199365023@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -28,55 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Jack Morgenstein <jackm@dev.mellanox.co.il>
 
-commit a394aac88506159e047630fc90dc2242568382d8 upstream.
+commit 311f813a2daefcba03f706a692fe0c67888d7622 upstream.
 
-When the qla2xxx driver loses access to multiple, remote ports, there is a race
-condition which can occur which will keep the request stuck on a scsi request
-queue indefinitely.
+The slave_state_lock spinlock is used in both interrupt context and
+process context, hence irq locking must be used.  Found by lockdep.
 
-This bad state occurred do to a race condition with how the FCPORT_UPDATE_NEEDED
-bit is set in qla2x00_schedule_rport_del(), and how it is cleared in
-qla2x00_do_dpc().  The problem port has its drport pointer set, but it has never
-been processed by the driver to inform the fc transport that the port has been
-lost.  qla2x00_schedule_rport_del() sets drport, and then sets the
-FCPORT_UPDATE_NEEDED bit.  In qla2x00_do_dpc(), the port lists are walked and
-any drport pointer is handled and the fc transport informed of the port loss,
-then the FCPORT_UPDATE_NEEDED bit is cleared.  This leaves a race where the
-dpc thread is processing one port removal, another port removal is marked
-with a call to qla2x00_schedule_rport_del(), and the dpc thread clears the
-bit for both removals, even though only the first removal was actually
-handled.  Until another event occurs to set FCPORT_UPDATE_NEEDED, the later
-port removal is never finished and qla2xxx stays in a bad state which causes
-requests to become stuck on request queues.
-
-This patch updates the driver to test and clear FCPORT_UPDATE_NEEDED
-atomically.  This ensures the port state changes are processed and not lost.
-
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Signed-off-by: Chad Dupuis <chad.dupuis@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_os.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/cmd.c |    9 +++++----
+ drivers/net/ethernet/mellanox/mlx4/eq.c  |   10 ++++++----
+ 2 files changed, 11 insertions(+), 8 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -4505,9 +4505,9 @@ qla2x00_do_dpc(void *data)
- 			    "ISP abort end.\n");
- 		}
+--- a/drivers/net/ethernet/mellanox/mlx4/cmd.c
++++ b/drivers/net/ethernet/mellanox/mlx4/cmd.c
+@@ -1498,6 +1498,7 @@ static void mlx4_master_do_cmd(struct ml
+ 	u32 reply;
+ 	u8 is_going_down = 0;
+ 	int i;
++	unsigned long flags;
  
--		if (test_bit(FCPORT_UPDATE_NEEDED, &base_vha->dpc_flags)) {
-+		if (test_and_clear_bit(FCPORT_UPDATE_NEEDED,
-+		    &base_vha->dpc_flags)) {
- 			qla2x00_update_fcports(base_vha);
--			clear_bit(FCPORT_UPDATE_NEEDED, &base_vha->dpc_flags);
- 		}
+ 	slave_state[slave].comm_toggle ^= 1;
+ 	reply = (u32) slave_state[slave].comm_toggle << 31;
+@@ -1576,12 +1577,12 @@ static void mlx4_master_do_cmd(struct ml
+ 		mlx4_warn(dev, "Bad comm cmd:%d from slave:%d\n", cmd, slave);
+ 		goto reset_slave;
+ 	}
+-	spin_lock(&priv->mfunc.master.slave_state_lock);
++	spin_lock_irqsave(&priv->mfunc.master.slave_state_lock, flags);
+ 	if (!slave_state[slave].is_slave_going_down)
+ 		slave_state[slave].last_cmd = cmd;
+ 	else
+ 		is_going_down = 1;
+-	spin_unlock(&priv->mfunc.master.slave_state_lock);
++	spin_unlock_irqrestore(&priv->mfunc.master.slave_state_lock, flags);
+ 	if (is_going_down) {
+ 		mlx4_warn(dev, "Slave is going down aborting command(%d)"
+ 			  " executing from slave:%d\n",
+@@ -1597,10 +1598,10 @@ static void mlx4_master_do_cmd(struct ml
+ reset_slave:
+ 	/* cleanup any slave resources */
+ 	mlx4_delete_all_resources_for_slave(dev, slave);
+-	spin_lock(&priv->mfunc.master.slave_state_lock);
++	spin_lock_irqsave(&priv->mfunc.master.slave_state_lock, flags);
+ 	if (!slave_state[slave].is_slave_going_down)
+ 		slave_state[slave].last_cmd = MLX4_COMM_CMD_RESET;
+-	spin_unlock(&priv->mfunc.master.slave_state_lock);
++	spin_unlock_irqrestore(&priv->mfunc.master.slave_state_lock, flags);
+ 	/*with slave in the middle of flr, no need to clean resources again.*/
+ inform_slave_state:
+ 	memset(&slave_state[slave].event_eq, 0,
+--- a/drivers/net/ethernet/mellanox/mlx4/eq.c
++++ b/drivers/net/ethernet/mellanox/mlx4/eq.c
+@@ -401,6 +401,7 @@ void mlx4_master_handle_slave_flr(struct
+ 	struct mlx4_slave_state *slave_state = priv->mfunc.master.slave_state;
+ 	int i;
+ 	int err;
++	unsigned long flags;
  
- 		if (test_bit(SCR_PENDING, &base_vha->dpc_flags)) {
+ 	mlx4_dbg(dev, "mlx4_handle_slave_flr\n");
+ 
+@@ -412,10 +413,10 @@ void mlx4_master_handle_slave_flr(struct
+ 
+ 			mlx4_delete_all_resources_for_slave(dev, i);
+ 			/*return the slave to running mode*/
+-			spin_lock(&priv->mfunc.master.slave_state_lock);
++			spin_lock_irqsave(&priv->mfunc.master.slave_state_lock, flags);
+ 			slave_state[i].last_cmd = MLX4_COMM_CMD_RESET;
+ 			slave_state[i].is_slave_going_down = 0;
+-			spin_unlock(&priv->mfunc.master.slave_state_lock);
++			spin_unlock_irqrestore(&priv->mfunc.master.slave_state_lock, flags);
+ 			/*notify the FW:*/
+ 			err = mlx4_cmd(dev, 0, i, 0, MLX4_CMD_INFORM_FLR_DONE,
+ 				       MLX4_CMD_TIME_CLASS_A, MLX4_CMD_WRAPPED);
+@@ -440,6 +441,7 @@ static int mlx4_eq_int(struct mlx4_dev *
+ 	u8 update_slave_state;
+ 	int i;
+ 	enum slave_port_gen_event gen_event;
++	unsigned long flags;
+ 
+ 	while ((eqe = next_eqe_sw(eq))) {
+ 		/*
+@@ -647,13 +649,13 @@ static int mlx4_eq_int(struct mlx4_dev *
+ 			} else
+ 				update_slave_state = 1;
+ 
+-			spin_lock(&priv->mfunc.master.slave_state_lock);
++			spin_lock_irqsave(&priv->mfunc.master.slave_state_lock, flags);
+ 			if (update_slave_state) {
+ 				priv->mfunc.master.slave_state[flr_slave].active = false;
+ 				priv->mfunc.master.slave_state[flr_slave].last_cmd = MLX4_COMM_CMD_FLR;
+ 				priv->mfunc.master.slave_state[flr_slave].is_slave_going_down = 1;
+ 			}
+-			spin_unlock(&priv->mfunc.master.slave_state_lock);
++			spin_unlock_irqrestore(&priv->mfunc.master.slave_state_lock, flags);
+ 			queue_work(priv->mfunc.master.comm_wq,
+ 				   &priv->mfunc.master.slave_flr_event_work);
+ 			break;
 
 
