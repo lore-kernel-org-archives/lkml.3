@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880Ab3AOWt2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:49:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45582 "EHLO mail.kernel.org"
+	id S933043Ab3AOWti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:49:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45674 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758765Ab3AOWtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:49:20 -0500
+	id S932896Ab3AOWtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Perl <chris.perl@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 034/171] SUNRPC: Ensure we release the socket write lock if the rpc_task exits early
-Date: Tue, 15 Jan 2013 14:43:19 -0800
-Message-Id: <20130115224315.872766335@linuxfoundation.org>
+        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 040/171] drm/radeon: Properly handle DDC probe for DP bridges
+Date: Tue, 15 Jan 2013 14:43:25 -0800
+Message-Id: <20130115224316.294056070@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,64 +26,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Niels Ole Salscheider <niels_ole@salscheider-online.de>
 
-commit 87ed50036b866db2ec2ba16b2a7aec4a2b0b7c39 upstream.
+commit 0a9069d34918659bc8a89e21e69e60b2b83291a3 upstream.
 
-If the rpc_task exits while holding the socket write lock before it has
-allocated an rpc slot, then the usual mechanism for releasing the write
-lock in xprt_release() is defeated.
+DDC information can be accessed using AUX CH
 
-The problem occurs if the call to xprt_lock_write() initially fails, so
-that the rpc_task is put on the xprt->sending wait queue. If the task
-exits after being assigned the lock by __xprt_lock_write_func, but
-before it has retried the call to xprt_lock_and_alloc_slot(), then
-it calls xprt_release() while holding the write lock, but will
-immediately exit due to the test for task->tk_rqstp != NULL.
+Fixes failure to probe monitors on some systems with
+DP bridge chips.
 
-Reported-by: Chris Perl <chris.perl@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+agd5f: minor fixes
+
+Signed-off-by: Niels Ole Salscheider <niels_ole@salscheider-online.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/sched.c |    3 +--
- net/sunrpc/xprt.c  |   12 ++++++++++--
- 2 files changed, 11 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   10 ++++++----
+ drivers/gpu/drm/radeon/radeon_display.c    |   13 +++++++++----
+ drivers/gpu/drm/radeon/radeon_i2c.c        |   10 ++++++++--
+ drivers/gpu/drm/radeon/radeon_mode.h       |    2 +-
+ 4 files changed, 24 insertions(+), 11 deletions(-)
 
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -953,8 +953,7 @@ static void rpc_async_release(struct wor
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -689,7 +689,7 @@ radeon_vga_detect(struct drm_connector *
+ 		ret = connector_status_disconnected;
  
- static void rpc_release_resources_task(struct rpc_task *task)
- {
--	if (task->tk_rqstp)
--		xprt_release(task);
-+	xprt_release(task);
- 	if (task->tk_msg.rpc_cred) {
- 		put_rpccred(task->tk_msg.rpc_cred);
- 		task->tk_msg.rpc_cred = NULL;
---- a/net/sunrpc/xprt.c
-+++ b/net/sunrpc/xprt.c
-@@ -1139,10 +1139,18 @@ static void xprt_request_init(struct rpc
- void xprt_release(struct rpc_task *task)
- {
- 	struct rpc_xprt	*xprt;
--	struct rpc_rqst	*req;
-+	struct rpc_rqst	*req = task->tk_rqstp;
+ 	if (radeon_connector->ddc_bus)
+-		dret = radeon_ddc_probe(radeon_connector);
++		dret = radeon_ddc_probe(radeon_connector, false);
+ 	if (dret) {
+ 		radeon_connector->detected_by_load = false;
+ 		if (radeon_connector->edid) {
+@@ -895,7 +895,7 @@ radeon_dvi_detect(struct drm_connector *
+ 		return connector->status;
  
--	if (!(req = task->tk_rqstp))
-+	if (req == NULL) {
-+		if (task->tk_client) {
-+			rcu_read_lock();
-+			xprt = rcu_dereference(task->tk_client->cl_xprt);
-+			if (xprt->snd_task == task)
-+				xprt_release_write(xprt, task);
-+			rcu_read_unlock();
-+		}
- 		return;
+ 	if (radeon_connector->ddc_bus)
+-		dret = radeon_ddc_probe(radeon_connector);
++		dret = radeon_ddc_probe(radeon_connector, false);
+ 	if (dret) {
+ 		radeon_connector->detected_by_load = false;
+ 		if (radeon_connector->edid) {
+@@ -1335,7 +1335,8 @@ radeon_dp_detect(struct drm_connector *c
+ 		if (encoder) {
+ 			/* setup ddc on the bridge */
+ 			radeon_atom_ext_encoder_setup_ddc(encoder);
+-			if (radeon_ddc_probe(radeon_connector)) /* try DDC */
++			/* bridge chips are always aux */
++			if (radeon_ddc_probe(radeon_connector, true)) /* try DDC */
+ 				ret = connector_status_connected;
+ 			else if (radeon_connector->dac_load_detect) { /* try load detection */
+ 				struct drm_encoder_helper_funcs *encoder_funcs = encoder->helper_private;
+@@ -1353,7 +1354,8 @@ radeon_dp_detect(struct drm_connector *c
+ 				if (radeon_dp_getdpcd(radeon_connector))
+ 					ret = connector_status_connected;
+ 			} else {
+-				if (radeon_ddc_probe(radeon_connector))
++				/* try non-aux ddc (DP to DVI/HMDI/etc. adapter) */
++				if (radeon_ddc_probe(radeon_connector, false))
+ 					ret = connector_status_connected;
+ 			}
+ 		}
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -713,10 +713,15 @@ int radeon_ddc_get_modes(struct radeon_c
+ 	if (radeon_connector->router.ddc_valid)
+ 		radeon_router_select_ddc_port(radeon_connector);
+ 
+-	if ((radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_DisplayPort) ||
+-	    (radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_eDP) ||
+-	    (radeon_connector_encoder_get_dp_bridge_encoder_id(&radeon_connector->base) !=
+-	     ENCODER_OBJECT_ID_NONE)) {
++	if (radeon_connector_encoder_get_dp_bridge_encoder_id(&radeon_connector->base) !=
++	    ENCODER_OBJECT_ID_NONE) {
++		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
++
++		if (dig->dp_i2c_bus)
++			radeon_connector->edid = drm_get_edid(&radeon_connector->base,
++							      &dig->dp_i2c_bus->adapter);
++	} else if ((radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_DisplayPort) ||
++		   (radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_eDP)) {
+ 		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
+ 
+ 		if ((dig->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT ||
+--- a/drivers/gpu/drm/radeon/radeon_i2c.c
++++ b/drivers/gpu/drm/radeon/radeon_i2c.c
+@@ -39,7 +39,7 @@ extern u32 radeon_atom_hw_i2c_func(struc
+  * radeon_ddc_probe
+  *
+  */
+-bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
++bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool use_aux)
+ {
+ 	u8 out = 0x0;
+ 	u8 buf[8];
+@@ -63,7 +63,13 @@ bool radeon_ddc_probe(struct radeon_conn
+ 	if (radeon_connector->router.ddc_valid)
+ 		radeon_router_select_ddc_port(radeon_connector);
+ 
+-	ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
++	if (use_aux) {
++		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
++		ret = i2c_transfer(&dig->dp_i2c_bus->adapter, msgs, 2);
++	} else {
++		ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
 +	}
++
+ 	if (ret != 2)
+ 		/* Couldn't find an accessible DDC on this connector */
+ 		return false;
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -527,7 +527,7 @@ extern void radeon_i2c_put_byte(struct r
+ 				u8 val);
+ extern void radeon_router_select_ddc_port(struct radeon_connector *radeon_connector);
+ extern void radeon_router_select_cd_port(struct radeon_connector *radeon_connector);
+-extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector);
++extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool use_aux);
+ extern int radeon_ddc_get_modes(struct radeon_connector *radeon_connector);
  
- 	xprt = req->rq_xprt;
- 	if (task->tk_ops->rpc_count_stats != NULL)
+ extern struct drm_encoder *radeon_best_encoder(struct drm_connector *connector);
 
 
