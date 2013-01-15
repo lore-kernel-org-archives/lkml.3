@@ -1,182 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab3AOMaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 07:30:24 -0500
-Received: from mga14.intel.com ([143.182.124.37]:23472 "EHLO mga14.intel.com"
+	id S1755600Ab3AOMbv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:31:51 -0500
+Received: from mga03.intel.com ([143.182.124.21]:53130 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750777Ab3AOMaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:30:23 -0500
+	id S1754772Ab3AOMbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 07:31:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,473,1355126400"; 
-   d="scan'208,223";a="244084702"
+   d="scan'208,223";a="191309136"
 From: "Liu, Jinsong" <jinsong.liu@intel.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 CC: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: [PATCH V1 1/3] Xen stub driver for CPU hotplug
-Thread-Topic: [PATCH V1 1/3] Xen stub driver for CPU hotplug
-Thread-Index: Ac3zHBQL8PY/7ecyRCyznwJrYWrqNg==
-Date: Tue, 15 Jan 2013 12:30:19 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923353C3DB4@SHSMSX101.ccr.corp.intel.com>
+Subject: [PATCH V1 2/3] Move xen_acpi_get_pxm to Xen acpi.h
+Thread-Topic: [PATCH V1 2/3] Move xen_acpi_get_pxm to Xen acpi.h
+Thread-Index: Ac3zHEfaFx+WnqICQZeNdLNYmByf4A==
+Date: Tue, 15 Jan 2013 12:31:45 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923353C3DCA@SHSMSX101.ccr.corp.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: yes
 X-MS-TNEF-Correlator: 
 x-originating-ip: [10.239.127.40]
 Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC82923353C3DB4SHSMSX101ccrcorpi_"
+	boundary="_002_DE8DF0795D48FD4CA783C40EC82923353C3DCASHSMSX101ccrcorpi_"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC82923353C3DB4SHSMSX101ccrcorpi_
+--_002_DE8DF0795D48FD4CA783C40EC82923353C3DCASHSMSX101ccrcorpi_
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
 
->From 110b4ef3b8ebefeaf68832dd8ef8aa916a782e89 Mon Sep 17 00:00:00 2001
+>From 398b5a92a407aeaf5d1497e4060490d135d4897a Mon Sep 17 00:00:00 2001
 From: Liu Jinsong <jinsong.liu@intel.com>
-Date: Mon, 14 Jan 2013 15:19:30 +0800
-Subject: [PATCH 1/3] Xen stub driver for CPU hotplug
+Date: Mon, 14 Jan 2013 20:31:04 +0800
+Subject: [PATCH 2/3] Move xen_acpi_get_pxm to Xen acpi.h
 
-Add Xen stub driver for CPU hotplug, early occupy to block native,
-will be replaced later by real Xen processor driver module.
+So that it could be reused by Xen CPU hotplug logic.
 
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
 ---
- drivers/xen/xen-stub.c |   34 ++++++++++++++++++++++++++++++++--
- include/xen/acpi.h     |    6 ++++++
- 2 files changed, 38 insertions(+), 2 deletions(-)
+ drivers/xen/xen-acpi-memhotplug.c |   18 ------------------
+ include/xen/acpi.h                |   18 ++++++++++++++++++
+ 2 files changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/xen/xen-stub.c b/drivers/xen/xen-stub.c
-index 01a49e3..681e9cc 100644
---- a/drivers/xen/xen-stub.c
-+++ b/drivers/xen/xen-stub.c
-@@ -28,12 +28,13 @@
- #include <acpi/acpi_drivers.h>
- #include <xen/acpi.h>
-=20
-+
-+#ifdef CONFIG_ACPI
-+
- /*--------------------------------------------
- 	stub driver for Xen memory hotplug
- --------------------------------------------*/
-=20
--#ifdef CONFIG_ACPI
--
- static const struct acpi_device_id memory_device_ids[] =3D {
- 	{ACPI_MEMORY_DEVICE_HID, 0},
- 	{"", 0},
-@@ -57,4 +58,33 @@ static int __init xen_stub_memory_device_init(void)
+diff --git a/drivers/xen/xen-acpi-memhotplug.c b/drivers/xen/xen-acpi-memho=
+tplug.c
+index 346d80b..f01d425 100644
+--- a/drivers/xen/xen-acpi-memhotplug.c
++++ b/drivers/xen/xen-acpi-memhotplug.c
+@@ -65,24 +65,6 @@ static int xen_hotadd_memory(int pxm, struct acpi_memory=
+_info *info)
+ 	return rc;
  }
- subsys_initcall(xen_stub_memory_device_init);
 =20
-+
-+/*--------------------------------------------
-+	stub driver for Xen cpu hotplug
-+--------------------------------------------*/
-+
-+static const struct acpi_device_id processor_device_ids[] =3D {
-+	{ACPI_PROCESSOR_OBJECT_HID, 0},
-+	{ACPI_PROCESSOR_DEVICE_HID, 0},
-+	{"", 0},
-+};
-+
-+struct acpi_driver xen_stub_processor_driver =3D {
-+	/* same name as native processor driver to block native loaded */
-+	.name =3D "processor",
-+	.class =3D ACPI_PROCESSOR_CLASS,
-+	.ids =3D processor_device_ids,
-+};
-+EXPORT_SYMBOL_GPL(xen_stub_processor_driver);
-+
-+static int __init xen_stub_processor_init(void)
-+{
-+	if (!xen_initial_domain())
-+		return -ENODEV;
-+
-+	/* just reserve space for Xen, block native driver loaded */
-+	return acpi_bus_register_driver(&xen_stub_processor_driver);
-+}
-+subsys_initcall(xen_stub_processor_init);
-+
- #endif
+-static int xen_acpi_get_pxm(acpi_handle h)
+-{
+-	unsigned long long pxm;
+-	acpi_status status;
+-	acpi_handle handle;
+-	acpi_handle phandle =3D h;
+-
+-	do {
+-		handle =3D phandle;
+-		status =3D acpi_evaluate_integer(handle, "_PXM", NULL, &pxm);
+-		if (ACPI_SUCCESS(status))
+-			return pxm;
+-		status =3D acpi_get_parent(handle, &phandle);
+-	} while (ACPI_SUCCESS(status));
+-
+-	return -ENXIO;
+-}
+-
+ static int xen_acpi_memory_enable_device(struct acpi_memory_device *mem_de=
+vice)
+ {
+ 	int pxm, result;
 diff --git a/include/xen/acpi.h b/include/xen/acpi.h
-index 7366e58..1c99eb5 100644
+index 1c99eb5..5ac46d3 100644
 --- a/include/xen/acpi.h
 +++ b/include/xen/acpi.h
-@@ -46,6 +46,12 @@
+@@ -46,6 +46,24 @@
 =20
  extern struct acpi_driver xen_stub_memory_device_driver;
 =20
-+#define ACPI_PROCESSOR_CLASS            "processor"
-+#define ACPI_PROCESSOR_DEVICE_HID       "ACPI0007"
-+#define ACPI_PROCESSOR_DEVICE_NAME      "Processor"
++static inline int xen_acpi_get_pxm(acpi_handle h)
++{
++	unsigned long long pxm;
++	acpi_status status;
++	acpi_handle handle;
++	acpi_handle phandle =3D h;
 +
-+extern struct acpi_driver xen_stub_processor_driver;
++	do {
++		handle =3D phandle;
++		status =3D acpi_evaluate_integer(handle, "_PXM", NULL, &pxm);
++		if (ACPI_SUCCESS(status))
++			return pxm;
++		status =3D acpi_get_parent(handle, &phandle);
++	} while (ACPI_SUCCESS(status));
 +
- int xen_acpi_notify_hypervisor_state(u8 sleep_state,
- 				     u32 pm1a_cnt, u32 pm1b_cnd);
-=20
++	return -ENXIO;
++}
++
+ #define ACPI_PROCESSOR_CLASS            "processor"
+ #define ACPI_PROCESSOR_DEVICE_HID       "ACPI0007"
+ #define ACPI_PROCESSOR_DEVICE_NAME      "Processor"
 --=20
 1.7.1
 
---_002_DE8DF0795D48FD4CA783C40EC82923353C3DB4SHSMSX101ccrcorpi_
+--_002_DE8DF0795D48FD4CA783C40EC82923353C3DCASHSMSX101ccrcorpi_
 Content-Type: application/octet-stream;
-	name="0001-Xen-stub-driver-for-CPU-hotplug.patch"
-Content-Description: 0001-Xen-stub-driver-for-CPU-hotplug.patch
+	name="0002-Move-xen_acpi_get_pxm-to-Xen-acpi.h.patch"
+Content-Description: 0002-Move-xen_acpi_get_pxm-to-Xen-acpi.h.patch
 Content-Disposition: attachment;
-	filename="0001-Xen-stub-driver-for-CPU-hotplug.patch"; size=2536;
+	filename="0002-Move-xen_acpi_get_pxm-to-Xen-acpi.h.patch"; size=2060;
 	creation-date="Tue, 15 Jan 2013 12:28:09 GMT";
-	modification-date="Tue, 15 Jan 2013 20:17:14 GMT"
+	modification-date="Tue, 15 Jan 2013 20:17:12 GMT"
 Content-Transfer-Encoding: base64
 
-RnJvbSAxMTBiNGVmM2I4ZWJlZmVhZjY4ODMyZGQ4ZWY4YWE5MTZhNzgyZTg5IE1vbiBTZXAgMTcg
+RnJvbSAzOThiNWE5MmE0MDdhZWFmNWQxNDk3ZTQwNjA0OTBkMTM1ZDQ4OTdhIE1vbiBTZXAgMTcg
 MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUgSmluc29uZyA8amluc29uZy5saXVAaW50ZWwuY29tPgpE
-YXRlOiBNb24sIDE0IEphbiAyMDEzIDE1OjE5OjMwICswODAwClN1YmplY3Q6IFtQQVRDSCAxLzNd
-IFhlbiBzdHViIGRyaXZlciBmb3IgQ1BVIGhvdHBsdWcKCkFkZCBYZW4gc3R1YiBkcml2ZXIgZm9y
-IENQVSBob3RwbHVnLCBlYXJseSBvY2N1cHkgdG8gYmxvY2sgbmF0aXZlLAp3aWxsIGJlIHJlcGxh
-Y2VkIGxhdGVyIGJ5IHJlYWwgWGVuIHByb2Nlc3NvciBkcml2ZXIgbW9kdWxlLgoKU2lnbmVkLW9m
-Zi1ieTogTGl1IEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4KLS0tCiBkcml2ZXJzL3hl
-bi94ZW4tc3R1Yi5jIHwgICAzNCArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKy0tCiBp
-bmNsdWRlL3hlbi9hY3BpLmggICAgIHwgICAgNiArKysrKysKIDIgZmlsZXMgY2hhbmdlZCwgMzgg
-aW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL3hlbi94
-ZW4tc3R1Yi5jIGIvZHJpdmVycy94ZW4veGVuLXN0dWIuYwppbmRleCAwMWE0OWUzLi42ODFlOWNj
-IDEwMDY0NAotLS0gYS9kcml2ZXJzL3hlbi94ZW4tc3R1Yi5jCisrKyBiL2RyaXZlcnMveGVuL3hl
-bi1zdHViLmMKQEAgLTI4LDEyICsyOCwxMyBAQAogI2luY2x1ZGUgPGFjcGkvYWNwaV9kcml2ZXJz
-Lmg+CiAjaW5jbHVkZSA8eGVuL2FjcGkuaD4KIAorCisjaWZkZWYgQ09ORklHX0FDUEkKKwogLyot
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogCXN0dWIgZHJpdmVy
-IGZvciBYZW4gbWVtb3J5IGhvdHBsdWcKIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tKi8KIAotI2lmZGVmIENPTkZJR19BQ1BJCi0KIHN0YXRpYyBjb25zdCBzdHJ1
-Y3QgYWNwaV9kZXZpY2VfaWQgbWVtb3J5X2RldmljZV9pZHNbXSA9IHsKIAl7QUNQSV9NRU1PUllf
-REVWSUNFX0hJRCwgMH0sCiAJeyIiLCAwfSwKQEAgLTU3LDQgKzU4LDMzIEBAIHN0YXRpYyBpbnQg
-X19pbml0IHhlbl9zdHViX21lbW9yeV9kZXZpY2VfaW5pdCh2b2lkKQogfQogc3Vic3lzX2luaXRj
-YWxsKHhlbl9zdHViX21lbW9yeV9kZXZpY2VfaW5pdCk7CiAKKworLyotLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQorCXN0dWIgZHJpdmVyIGZvciBYZW4gY3B1IGhv
-dHBsdWcKKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tKi8KKwor
-c3RhdGljIGNvbnN0IHN0cnVjdCBhY3BpX2RldmljZV9pZCBwcm9jZXNzb3JfZGV2aWNlX2lkc1td
-ID0geworCXtBQ1BJX1BST0NFU1NPUl9PQkpFQ1RfSElELCAwfSwKKwl7QUNQSV9QUk9DRVNTT1Jf
-REVWSUNFX0hJRCwgMH0sCisJeyIiLCAwfSwKK307CisKK3N0cnVjdCBhY3BpX2RyaXZlciB4ZW5f
-c3R1Yl9wcm9jZXNzb3JfZHJpdmVyID0geworCS8qIHNhbWUgbmFtZSBhcyBuYXRpdmUgcHJvY2Vz
-c29yIGRyaXZlciB0byBibG9jayBuYXRpdmUgbG9hZGVkICovCisJLm5hbWUgPSAicHJvY2Vzc29y
-IiwKKwkuY2xhc3MgPSBBQ1BJX1BST0NFU1NPUl9DTEFTUywKKwkuaWRzID0gcHJvY2Vzc29yX2Rl
-dmljZV9pZHMsCit9OworRVhQT1JUX1NZTUJPTF9HUEwoeGVuX3N0dWJfcHJvY2Vzc29yX2RyaXZl
-cik7CisKK3N0YXRpYyBpbnQgX19pbml0IHhlbl9zdHViX3Byb2Nlc3Nvcl9pbml0KHZvaWQpCit7
-CisJaWYgKCF4ZW5faW5pdGlhbF9kb21haW4oKSkKKwkJcmV0dXJuIC1FTk9ERVY7CisKKwkvKiBq
-dXN0IHJlc2VydmUgc3BhY2UgZm9yIFhlbiwgYmxvY2sgbmF0aXZlIGRyaXZlciBsb2FkZWQgKi8K
-KwlyZXR1cm4gYWNwaV9idXNfcmVnaXN0ZXJfZHJpdmVyKCZ4ZW5fc3R1Yl9wcm9jZXNzb3JfZHJp
-dmVyKTsKK30KK3N1YnN5c19pbml0Y2FsbCh4ZW5fc3R1Yl9wcm9jZXNzb3JfaW5pdCk7CisKICNl
-bmRpZgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS94ZW4vYWNwaS5oIGIvaW5jbHVkZS94ZW4vYWNwaS5o
-CmluZGV4IDczNjZlNTguLjFjOTllYjUgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUveGVuL2FjcGkuaAor
-KysgYi9pbmNsdWRlL3hlbi9hY3BpLmgKQEAgLTQ2LDYgKzQ2LDEyIEBACiAKIGV4dGVybiBzdHJ1
-Y3QgYWNwaV9kcml2ZXIgeGVuX3N0dWJfbWVtb3J5X2RldmljZV9kcml2ZXI7CiAKKyNkZWZpbmUg
-QUNQSV9QUk9DRVNTT1JfQ0xBU1MgICAgICAgICAgICAicHJvY2Vzc29yIgorI2RlZmluZSBBQ1BJ
-X1BST0NFU1NPUl9ERVZJQ0VfSElEICAgICAgICJBQ1BJMDAwNyIKKyNkZWZpbmUgQUNQSV9QUk9D
-RVNTT1JfREVWSUNFX05BTUUgICAgICAiUHJvY2Vzc29yIgorCitleHRlcm4gc3RydWN0IGFjcGlf
-ZHJpdmVyIHhlbl9zdHViX3Byb2Nlc3Nvcl9kcml2ZXI7CisKIGludCB4ZW5fYWNwaV9ub3RpZnlf
-aHlwZXJ2aXNvcl9zdGF0ZSh1OCBzbGVlcF9zdGF0ZSwKIAkJCQkgICAgIHUzMiBwbTFhX2NudCwg
-dTMyIHBtMWJfY25kKTsKIAotLSAKMS43LjEKCg==
+YXRlOiBNb24sIDE0IEphbiAyMDEzIDIwOjMxOjA0ICswODAwClN1YmplY3Q6IFtQQVRDSCAyLzNd
+IE1vdmUgeGVuX2FjcGlfZ2V0X3B4bSB0byBYZW4gYWNwaS5oCgpTbyB0aGF0IGl0IGNvdWxkIGJl
+IHJldXNlZCBieSBYZW4gQ1BVIGhvdHBsdWcgbG9naWMuCgpTaWduZWQtb2ZmLWJ5OiBMaXUsIEpp
+bnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4KLS0tCiBkcml2ZXJzL3hlbi94ZW4tYWNwaS1t
+ZW1ob3RwbHVnLmMgfCAgIDE4IC0tLS0tLS0tLS0tLS0tLS0tLQogaW5jbHVkZS94ZW4vYWNwaS5o
+ICAgICAgICAgICAgICAgIHwgICAxOCArKysrKysrKysrKysrKysrKysKIDIgZmlsZXMgY2hhbmdl
+ZCwgMTggaW5zZXJ0aW9ucygrKSwgMTggZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVy
+cy94ZW4veGVuLWFjcGktbWVtaG90cGx1Zy5jIGIvZHJpdmVycy94ZW4veGVuLWFjcGktbWVtaG90
+cGx1Zy5jCmluZGV4IDM0NmQ4MGIuLmYwMWQ0MjUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMveGVuL3hl
+bi1hY3BpLW1lbWhvdHBsdWcuYworKysgYi9kcml2ZXJzL3hlbi94ZW4tYWNwaS1tZW1ob3RwbHVn
+LmMKQEAgLTY1LDI0ICs2NSw2IEBAIHN0YXRpYyBpbnQgeGVuX2hvdGFkZF9tZW1vcnkoaW50IHB4
+bSwgc3RydWN0IGFjcGlfbWVtb3J5X2luZm8gKmluZm8pCiAJcmV0dXJuIHJjOwogfQogCi1zdGF0
+aWMgaW50IHhlbl9hY3BpX2dldF9weG0oYWNwaV9oYW5kbGUgaCkKLXsKLQl1bnNpZ25lZCBsb25n
+IGxvbmcgcHhtOwotCWFjcGlfc3RhdHVzIHN0YXR1czsKLQlhY3BpX2hhbmRsZSBoYW5kbGU7Ci0J
+YWNwaV9oYW5kbGUgcGhhbmRsZSA9IGg7Ci0KLQlkbyB7Ci0JCWhhbmRsZSA9IHBoYW5kbGU7Ci0J
+CXN0YXR1cyA9IGFjcGlfZXZhbHVhdGVfaW50ZWdlcihoYW5kbGUsICJfUFhNIiwgTlVMTCwgJnB4
+bSk7Ci0JCWlmIChBQ1BJX1NVQ0NFU1Moc3RhdHVzKSkKLQkJCXJldHVybiBweG07Ci0JCXN0YXR1
+cyA9IGFjcGlfZ2V0X3BhcmVudChoYW5kbGUsICZwaGFuZGxlKTsKLQl9IHdoaWxlIChBQ1BJX1NV
+Q0NFU1Moc3RhdHVzKSk7Ci0KLQlyZXR1cm4gLUVOWElPOwotfQotCiBzdGF0aWMgaW50IHhlbl9h
+Y3BpX21lbW9yeV9lbmFibGVfZGV2aWNlKHN0cnVjdCBhY3BpX21lbW9yeV9kZXZpY2UgKm1lbV9k
+ZXZpY2UpCiB7CiAJaW50IHB4bSwgcmVzdWx0OwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS94ZW4vYWNw
+aS5oIGIvaW5jbHVkZS94ZW4vYWNwaS5oCmluZGV4IDFjOTllYjUuLjVhYzQ2ZDMgMTAwNjQ0Ci0t
+LSBhL2luY2x1ZGUveGVuL2FjcGkuaAorKysgYi9pbmNsdWRlL3hlbi9hY3BpLmgKQEAgLTQ2LDYg
+KzQ2LDI0IEBACiAKIGV4dGVybiBzdHJ1Y3QgYWNwaV9kcml2ZXIgeGVuX3N0dWJfbWVtb3J5X2Rl
+dmljZV9kcml2ZXI7CiAKK3N0YXRpYyBpbmxpbmUgaW50IHhlbl9hY3BpX2dldF9weG0oYWNwaV9o
+YW5kbGUgaCkKK3sKKwl1bnNpZ25lZCBsb25nIGxvbmcgcHhtOworCWFjcGlfc3RhdHVzIHN0YXR1
+czsKKwlhY3BpX2hhbmRsZSBoYW5kbGU7CisJYWNwaV9oYW5kbGUgcGhhbmRsZSA9IGg7CisKKwlk
+byB7CisJCWhhbmRsZSA9IHBoYW5kbGU7CisJCXN0YXR1cyA9IGFjcGlfZXZhbHVhdGVfaW50ZWdl
+cihoYW5kbGUsICJfUFhNIiwgTlVMTCwgJnB4bSk7CisJCWlmIChBQ1BJX1NVQ0NFU1Moc3RhdHVz
+KSkKKwkJCXJldHVybiBweG07CisJCXN0YXR1cyA9IGFjcGlfZ2V0X3BhcmVudChoYW5kbGUsICZw
+aGFuZGxlKTsKKwl9IHdoaWxlIChBQ1BJX1NVQ0NFU1Moc3RhdHVzKSk7CisKKwlyZXR1cm4gLUVO
+WElPOworfQorCiAjZGVmaW5lIEFDUElfUFJPQ0VTU09SX0NMQVNTICAgICAgICAgICAgInByb2Nl
+c3NvciIKICNkZWZpbmUgQUNQSV9QUk9DRVNTT1JfREVWSUNFX0hJRCAgICAgICAiQUNQSTAwMDci
+CiAjZGVmaW5lIEFDUElfUFJPQ0VTU09SX0RFVklDRV9OQU1FICAgICAgIlByb2Nlc3NvciIKLS0g
+CjEuNy4xCgo=
 
---_002_DE8DF0795D48FD4CA783C40EC82923353C3DB4SHSMSX101ccrcorpi_--
+--_002_DE8DF0795D48FD4CA783C40EC82923353C3DCASHSMSX101ccrcorpi_--
