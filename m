@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758867Ab3AOXsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:48:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45902 "EHLO mail.kernel.org"
+	id S933119Ab3AOWuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:50:05 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45838 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933130Ab3AOWuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:10 -0500
+	id S933091Ab3AOWuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Forrest Liu <forrestl@synology.com>, "Theodore Tso" <tytso@mit.edu>,
-        Ashish Sangwan <ashishsangwan2@gmail.com>
-Subject: [ 057/171] ext4: fix extent tree corruption caused by hole punch
-Date: Tue, 15 Jan 2013 14:43:42 -0800
-Message-Id: <20130115224317.535739341@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [ 051/171] staging: vt6656: 64 bit fixes: fix long warning messages.
+Date: Tue, 15 Jan 2013 14:43:36 -0800
+Message-Id: <20130115224317.105664078@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,78 +25,247 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Forrest Liu <forrestl@synology.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit c36575e663e302dbaa4d16b9c72d2c9a913a9aef upstream.
+commit b4dc03af5513774277c9c36b12a25cd3f25f4404 upstream.
 
-When depth of extent tree is greater than 1, logical start value of
-interior node is not correctly updated in ext4_ext_rm_idx.
+Fixes long warning messages from patch
+[PATCH 08/14] staging: vt6656: 64 bit fixes : correct all type sizes
 
-Signed-off-by: Forrest Liu <forrestl@synology.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Ashish Sangwan <ashishsangwan2@gmail.com>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ drivers/staging/vt6656/dpc.c  |    4 +--
+ drivers/staging/vt6656/key.c  |   47 +++++++++++++++++++++++++++++-------------
+ drivers/staging/vt6656/mac.c  |    6 +++--
+ drivers/staging/vt6656/rxtx.c |   18 ++++++++++------
+ 4 files changed, 51 insertions(+), 24 deletions(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2110,13 +2110,14 @@ ext4_ext_in_cache(struct inode *inode, e
-  * removes index from the index block.
-  */
- static int ext4_ext_rm_idx(handle_t *handle, struct inode *inode,
--			struct ext4_ext_path *path)
-+			struct ext4_ext_path *path, int depth)
- {
- 	int err;
- 	ext4_fsblk_t leaf;
+--- a/drivers/staging/vt6656/dpc.c
++++ b/drivers/staging/vt6656/dpc.c
+@@ -1238,7 +1238,7 @@ static BOOL s_bHandleRxEncryption (
  
- 	/* free index block */
--	path--;
-+	depth--;
-+	path = path + depth;
- 	leaf = ext4_idx_pblock(path->p_idx);
- 	if (unlikely(path->p_hdr->eh_entries == 0)) {
- 		EXT4_ERROR_INODE(inode, "path->p_hdr->eh_entries == 0");
-@@ -2141,6 +2142,19 @@ static int ext4_ext_rm_idx(handle_t *han
+         PayloadLen -= (WLAN_HDR_ADDR3_LEN + 8 + 4); // 24 is 802.11 header, 8 is IV&ExtIV, 4 is crc
+         *pdwRxTSC47_16 = cpu_to_le32(*(PDWORD)(pbyIV + 4));
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"ExtIV: %lx\n",*pdwRxTSC47_16);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"ExtIV: %x\n", *pdwRxTSC47_16);
+         if (byDecMode == KEY_CTL_TKIP) {
+             *pwRxTSC15_0 = cpu_to_le16(MAKEWORD(*(pbyIV+2), *pbyIV));
+         } else {
+@@ -1349,7 +1349,7 @@ static BOOL s_bHostWepRxEncryption (
  
- 	ext4_free_blocks(handle, inode, NULL, leaf, 1,
- 			 EXT4_FREE_BLOCKS_METADATA | EXT4_FREE_BLOCKS_FORGET);
-+
-+	while (--depth >= 0) {
-+		if (path->p_idx != EXT_FIRST_INDEX(path->p_hdr))
-+			break;
-+		path--;
-+		err = ext4_ext_get_access(handle, inode, path);
-+		if (err)
-+			break;
-+		path->p_idx->ei_block = (path+1)->p_idx->ei_block;
-+		err = ext4_ext_dirty(handle, inode, path);
-+		if (err)
-+			break;
-+	}
- 	return err;
+         PayloadLen -= (WLAN_HDR_ADDR3_LEN + 8 + 4); // 24 is 802.11 header, 8 is IV&ExtIV, 4 is crc
+         *pdwRxTSC47_16 = cpu_to_le32(*(PDWORD)(pbyIV + 4));
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"ExtIV: %lx\n",*pdwRxTSC47_16);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"ExtIV: %x\n", *pdwRxTSC47_16);
+ 
+         if (byDecMode == KEY_CTL_TKIP) {
+             *pwRxTSC15_0 = cpu_to_le16(MAKEWORD(*(pbyIV+2), *pbyIV));
+--- a/drivers/staging/vt6656/key.c
++++ b/drivers/staging/vt6656/key.c
+@@ -235,7 +235,8 @@ BOOL KeybSetKey(
+     PSKeyItem   pKey;
+     unsigned int        uKeyIdx;
+ 
+-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Enter KeybSetKey: %lX\n", dwKeyIndex);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
++		"Enter KeybSetKey: %X\n", dwKeyIndex);
+ 
+     j = (MAX_KEY_TABLE-1);
+     for (i=0;i<(MAX_KEY_TABLE-1);i++) {
+@@ -261,7 +262,9 @@ BOOL KeybSetKey(
+                 if ((dwKeyIndex & TRANSMIT_KEY) != 0)  {
+                     // Group transmit key
+                     pTable->KeyTable[i].dwGTKeyIndex = dwKeyIndex;
+-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Group transmit key(R)[%lX]: %d\n", pTable->KeyTable[i].dwGTKeyIndex, i);
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
++				"Group transmit key(R)[%X]: %d\n",
++					pTable->KeyTable[i].dwGTKeyIndex, i);
+                 }
+                 pTable->KeyTable[i].wKeyCtl &= 0xFF0F;          // clear group key control filed
+                 pTable->KeyTable[i].wKeyCtl |= (byKeyDecMode << 4);
+@@ -302,9 +305,12 @@ BOOL KeybSetKey(
+             }
+             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"\n");
+ 
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwTSC47_16: %lx\n ", pKey->dwTSC47_16);
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->wTSC15_0: %x\n ", pKey->wTSC15_0);
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwKeyIndex: %lx\n ", pKey->dwKeyIndex);
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwTSC47_16: %x\n ",
++			pKey->dwTSC47_16);
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->wTSC15_0: %x\n ",
++			pKey->wTSC15_0);
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwKeyIndex: %x\n ",
++			pKey->dwKeyIndex);
+ 
+             return (TRUE);
+         }
+@@ -326,7 +332,9 @@ BOOL KeybSetKey(
+             if ((dwKeyIndex & TRANSMIT_KEY) != 0)  {
+                 // Group transmit key
+                 pTable->KeyTable[j].dwGTKeyIndex = dwKeyIndex;
+-                DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Group transmit key(N)[%lX]: %d\n", pTable->KeyTable[j].dwGTKeyIndex, j);
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
++			"Group transmit key(N)[%X]: %d\n",
++				pTable->KeyTable[j].dwGTKeyIndex, j);
+             }
+             pTable->KeyTable[j].wKeyCtl &= 0xFF0F;          // clear group key control filed
+             pTable->KeyTable[j].wKeyCtl |= (byKeyDecMode << 4);
+@@ -367,9 +375,11 @@ BOOL KeybSetKey(
+         }
+         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"\n");
+ 
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwTSC47_16: %lx\n ", pKey->dwTSC47_16);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwTSC47_16: %x\n ",
++		pKey->dwTSC47_16);
+         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->wTSC15_0: %x\n ", pKey->wTSC15_0);
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwKeyIndex: %lx\n ", pKey->dwKeyIndex);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwKeyIndex: %x\n ",
++		pKey->dwKeyIndex);
+ 
+         return (TRUE);
+     }
+@@ -597,7 +607,8 @@ BOOL KeybGetTransmitKey(PSKeyManagement
+                             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"%x ", pTable->KeyTable[i].abyBSSID[ii]);
+                         }
+                         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"\n");
+-                        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"dwGTKeyIndex: %lX\n", pTable->KeyTable[i].dwGTKeyIndex);
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"dwGTKeyIndex: %X\n",
++				pTable->KeyTable[i].dwGTKeyIndex);
+ 
+                     return (TRUE);
+                 }
+@@ -696,7 +707,10 @@ BOOL KeybSetDefaultKey(
+     if ((dwKeyIndex & TRANSMIT_KEY) != 0)  {
+         // Group transmit key
+         pTable->KeyTable[MAX_KEY_TABLE-1].dwGTKeyIndex = dwKeyIndex;
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Group transmit key(R)[%lX]: %d\n", pTable->KeyTable[MAX_KEY_TABLE-1].dwGTKeyIndex, MAX_KEY_TABLE-1);
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
++		"Group transmit key(R)[%X]: %d\n",
++		pTable->KeyTable[MAX_KEY_TABLE-1].dwGTKeyIndex,
++		MAX_KEY_TABLE-1);
+ 
+     }
+     pTable->KeyTable[MAX_KEY_TABLE-1].wKeyCtl &= 0x7F00;          // clear all key control filed
+@@ -747,9 +761,11 @@ BOOL KeybSetDefaultKey(
+     }
+     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"\n");
+ 
+-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwTSC47_16: %lx\n", pKey->dwTSC47_16);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwTSC47_16: %x\n",
++		pKey->dwTSC47_16);
+     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->wTSC15_0: %x\n", pKey->wTSC15_0);
+-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwKeyIndex: %lx\n", pKey->dwKeyIndex);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"pKey->dwKeyIndex: %x\n",
++		pKey->dwKeyIndex);
+ 
+     return (TRUE);
  }
+@@ -787,7 +803,8 @@ BOOL KeybSetAllGroupKey(
+     PSKeyItem   pKey;
+     unsigned int        uKeyIdx;
  
-@@ -2474,7 +2488,7 @@ ext4_ext_rm_leaf(handle_t *handle, struc
- 	/* if this leaf is free, then we should
- 	 * remove it from index block above */
- 	if (err == 0 && eh->eh_entries == 0 && path[depth].p_bh != NULL)
--		err = ext4_ext_rm_idx(handle, inode, path + depth);
-+		err = ext4_ext_rm_idx(handle, inode, path, depth);
+-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Enter KeybSetAllGroupKey: %lX\n", dwKeyIndex);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Enter KeybSetAllGroupKey: %X\n",
++		dwKeyIndex);
  
- out:
- 	return err;
-@@ -2675,7 +2689,7 @@ cont:
- 				/* index is empty, remove it;
- 				 * handle must be already prepared by the
- 				 * truncatei_leaf() */
--				err = ext4_ext_rm_idx(handle, inode, path + i);
-+				err = ext4_ext_rm_idx(handle, inode, path, i);
- 			}
- 			/* root level has p_bh == NULL, brelse() eats this */
- 			brelse(path[i].p_bh);
+ 
+     if ((dwKeyIndex & PAIRWISE_KEY) != 0) {                  // Pairwise key
+@@ -804,7 +821,9 @@ BOOL KeybSetAllGroupKey(
+             if ((dwKeyIndex & TRANSMIT_KEY) != 0)  {
+                 // Group transmit key
+                 pTable->KeyTable[i].dwGTKeyIndex = dwKeyIndex;
+-                DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Group transmit key(R)[%lX]: %d\n", pTable->KeyTable[i].dwGTKeyIndex, i);
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
++			"Group transmit key(R)[%X]: %d\n",
++			pTable->KeyTable[i].dwGTKeyIndex, i);
+ 
+             }
+             pTable->KeyTable[i].wKeyCtl &= 0xFF0F;          // clear group key control filed
+--- a/drivers/staging/vt6656/mac.c
++++ b/drivers/staging/vt6656/mac.c
+@@ -260,7 +260,8 @@ BYTE            pbyData[24];
+     dwData1 <<= 16;
+     dwData1 |= MAKEWORD(*(pbyAddr+4), *(pbyAddr+5));
+ 
+-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"1. wOffset: %d, Data: %lX, KeyCtl:%X\n", wOffset, dwData1, wKeyCtl);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"1. wOffset: %d, Data: %X,"\
++		" KeyCtl:%X\n", wOffset, dwData1, wKeyCtl);
+ 
+     //VNSvOutPortW(dwIoBase + MAC_REG_MISCFFNDEX, wOffset);
+     //VNSvOutPortD(dwIoBase + MAC_REG_MISCFFDATA, dwData);
+@@ -277,7 +278,8 @@ BYTE            pbyData[24];
+     dwData2 <<= 8;
+     dwData2 |= *(pbyAddr+0);
+ 
+-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"2. wOffset: %d, Data: %lX\n", wOffset, dwData2);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"2. wOffset: %d, Data: %X\n",
++		wOffset, dwData2);
+ 
+     //VNSvOutPortW(dwIoBase + MAC_REG_MISCFFNDEX, wOffset);
+     //VNSvOutPortD(dwIoBase + MAC_REG_MISCFFDATA, dwData);
+--- a/drivers/staging/vt6656/rxtx.c
++++ b/drivers/staging/vt6656/rxtx.c
+@@ -377,7 +377,8 @@ s_vFillTxKey (
+         *(pbyIVHead+3) = (BYTE)(((pDevice->byKeyIndex << 6) & 0xc0) | 0x20); // 0x20 is ExtIV
+         // Append IV&ExtIV after Mac Header
+         *pdwExtIV = cpu_to_le32(pTransmitKey->dwTSC47_16);
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"vFillTxKey()---- pdwExtIV: %lx\n", *pdwExtIV);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"vFillTxKey()---- pdwExtIV: %x\n",
++		*pdwExtIV);
+ 
+     } else if (pTransmitKey->byCipherSuite == KEY_CTL_CCMP) {
+         pTransmitKey->wTSC15_0++;
+@@ -1753,7 +1754,8 @@ s_bPacketToWirelessUsb(
+         MIC_vAppend((PBYTE)&(psEthHeader->abyDstAddr[0]), 12);
+         dwMIC_Priority = 0;
+         MIC_vAppend((PBYTE)&dwMIC_Priority, 4);
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"MIC KEY: %lX, %lX\n", dwMICKey0, dwMICKey1);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"MIC KEY: %X, %X\n",
++		dwMICKey0, dwMICKey1);
+ 
+         ///////////////////////////////////////////////////////////////////
+ 
+@@ -2635,7 +2637,8 @@ vDMA0_tx_80211(PSDevice  pDevice, struct
+             MIC_vAppend((PBYTE)&(sEthHeader.abyDstAddr[0]), 12);
+             dwMIC_Priority = 0;
+             MIC_vAppend((PBYTE)&dwMIC_Priority, 4);
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"DMA0_tx_8021:MIC KEY: %lX, %lX\n", dwMICKey0, dwMICKey1);
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"DMA0_tx_8021:MIC KEY:"\
++			" %X, %X\n", dwMICKey0, dwMICKey1);
+ 
+             uLength = cbHeaderSize + cbMacHdLen + uPadding + cbIVlen;
+ 
+@@ -2655,7 +2658,8 @@ vDMA0_tx_80211(PSDevice  pDevice, struct
+ 
+             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"uLength: %d, %d\n", uLength, cbFrameBodySize);
+             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"cbReqCount:%d, %d, %d, %d\n", cbReqCount, cbHeaderSize, uPadding, cbIVlen);
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"MIC:%lx, %lx\n", *pdwMIC_L, *pdwMIC_R);
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"MIC:%x, %x\n",
++			*pdwMIC_L, *pdwMIC_R);
+ 
+         }
+ 
+@@ -3029,7 +3033,8 @@ int nsDMA_tx_packet(PSDevice pDevice, un
+                         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"error: KEY is GTK!!~~\n");
+                     }
+                     else {
+-                        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Find PTK [%lX]\n", pTransmitKey->dwKeyIndex);
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Find PTK [%X]\n",
++				pTransmitKey->dwKeyIndex);
+                         bNeedEncryption = TRUE;
+                     }
+                 }
+@@ -3043,7 +3048,8 @@ int nsDMA_tx_packet(PSDevice pDevice, un
+             if (pDevice->bEnableHostWEP) {
+                 if ((uNodeIndex != 0) &&
+                     (pMgmt->sNodeDBTable[uNodeIndex].dwKeyIndex & PAIRWISE_KEY)) {
+-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Find PTK [%lX]\n", pTransmitKey->dwKeyIndex);
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Find PTK [%X]\n",
++				pTransmitKey->dwKeyIndex);
+                     bNeedEncryption = TRUE;
+                  }
+              }
 
 
