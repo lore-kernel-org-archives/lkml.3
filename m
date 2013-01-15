@@ -1,163 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab3AOMbv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 07:31:51 -0500
-Received: from mga03.intel.com ([143.182.124.21]:53130 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754772Ab3AOMbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:31:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,473,1355126400"; 
-   d="scan'208,223";a="191309136"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: [PATCH V1 2/3] Move xen_acpi_get_pxm to Xen acpi.h
-Thread-Topic: [PATCH V1 2/3] Move xen_acpi_get_pxm to Xen acpi.h
-Thread-Index: Ac3zHEfaFx+WnqICQZeNdLNYmByf4A==
-Date: Tue, 15 Jan 2013 12:31:45 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923353C3DCA@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC82923353C3DCASHSMSX101ccrcorpi_"
+	id S1755931Ab3AOMcj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:32:39 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:41571 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755706Ab3AOMci (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 07:32:38 -0500
+Date: Tue, 15 Jan 2013 04:33:31 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Mitch Harder <mitch.harder@sabayonlinux.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: zram: fix invalid memory references during disk write
+Message-ID: <20130115123331.GA31707@kroah.com>
+References: <CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com>
+ <20121219034949.GA22281@kroah.com>
+ <50D16AF8.7030401@vflare.org>
+ <20121219150826.GA23953@kroah.com>
+ <50D1E300.4000006@vflare.org>
+ <20121219161705.GA24251@kroah.com>
+ <50D1F799.4060800@vflare.org>
+ <CAKcLGm9eFRQrAc_Nm0Z658ct46psVemWt4c8NbpETjhMF3A+jQ@mail.gmail.com>
+ <20130114191953.GA6588@kroah.com>
+ <CAPkvG_ccOt8vQwPev0FNyywstNszpECTN9+2OU_VDwzEvwb6bQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPkvG_ccOt8vQwPev0FNyywstNszpECTN9+2OU_VDwzEvwb6bQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC82923353C3DCASHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 14, 2013 at 04:48:18PM -0800, Nitin Gupta wrote:
+> On Mon, Jan 14, 2013 at 11:19 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Wed, Dec 19, 2012 at 11:39:15AM -0600, Mitch Harder wrote:
+> >> On Wed, Dec 19, 2012 at 11:21 AM, Nitin Gupta <ngupta@vflare.org> wrote:
+> >> > On 12/19/2012 08:17 AM, Greg KH wrote:
+> >> >> On Wed, Dec 19, 2012 at 07:53:36AM -0800, Nitin Gupta wrote:
+> >> >>> On 12/19/2012 07:08 AM, Greg KH wrote:
+> >> >>>> On Tue, Dec 18, 2012 at 11:21:28PM -0800, Nitin Gupta wrote:
+> >> >>>>> On 12/18/2012 07:49 PM, Greg KH wrote:
+> >> >>>>>> On Tue, Dec 18, 2012 at 01:12:05PM -0800, Nitin Gupta wrote:
+> >> >>>>>>> On Tue, Dec 11, 2012 at 10:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> >>>>>>>> On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
+> >> >>>>>>>>> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
+> >> >>>>>>>>> of incompressible pages") which caused invalid memory references
+> >> >>>>>>>>> during disk write. Invalid references could occur in two cases:
+> >> >>>>>>>>>  - Incoming data expands on compression: In this case, reference was
+> >> >>>>>>>>> made to kunmap()'ed bio page.
+> >> >>>>>>>>>  - Partial (non PAGE_SIZE) write with incompressible data: In this
+> >> >>>>>>>>> case, reference was made to a kfree()'ed buffer.
+> >> >>>>>>>>>
+> >> >>>>>>>>> Fixes bug 50081:
+> >> >>>>>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=50081
+> >> >>>>>>>>>
+> >> >>>>>>>>> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
+> >> >>>>>>>>> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
+> >> >>>>>>>>>
+> >> >>>>>>>>> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
+> >> >>>>>>>>>                               # zram_decompress_page() function
+> >> >>>>>>>>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> >> >>>>>>>>> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
+> >> >>>>>>>>> Reported-by: Tomas M <tomas@slax.org>
+> >> >>>>>>>>> Reviewed-by: Minchan Kim <minchan@kernel.org>
+> >> >>>>>>>>> ---
+> >> >>>>>>>>>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
+> >> >>>>>>>>>  1 file changed, 24 insertions(+), 15 deletions(-)
+> >> >>>>>>>>
+> >> >>>>>>>> This patch fails to apply to 3.6.10:
+> >> >>>>>>>>
+> >> >>>>>>>> patching file drivers/staging/zram/zram_drv.c
+> >> >>>>>>>> Hunk #1 succeeded at 282 (offset 17 lines).
+> >> >>>>>>>> Hunk #2 FAILED at 286.
+> >> >>>>>>>> Hunk #3 succeeded at 319 (offset 17 lines).
+> >> >>>>>>>> Hunk #4 succeeded at 340 (offset 17 lines).
+> >> >>>>>>>> Hunk #5 succeeded at 353 (offset 17 lines).
+> >> >>>>>>>> Hunk #6 succeeded at 368 (offset 17 lines).
+> >> >>>>>>>> Hunk #7 succeeded at 385 (offset 17 lines).
+> >> >>>>>>>> 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
+> >> >>>>>>>>
+> >> >>>>>>>> Please redo this patch and resend it if you wish for it to be applied to
+> >> >>>>>>>> the 3.6-stable tree.
+> >> >>>>>>>>
+> >> >>>>>>>>
+> >> >>>>>>>
+> >> >>>>>>> Please apply this patch to stable tree asap.
+> >> >>>>>>
+> >> >>>>>> 3.6 is now end-of-life, there will not be any more releases for that
+> >> >>>>>> kernel series anymore, sorry.
+> >> >>>>>>
+> >> >>>>>
+> >> >>>>> Then please apply to 3.7.
+> >> >>>>
+> >> >>>> That is impossible to do so, for the obvious reason.
+> >> >>>>
+> >> >>>
+> >> >>> I meant to include it in whatever 3.7.x is released in future. Or put it
+> >> >>> in staging, so it may eventually make it to mainline (by 3.8?).
+> >> >>
+> >> >> {sigh}
+> >> >>
+> >> >> Please think for a moment for how it would be impossible for me to add
+> >> >> this patch to either the 3.7-stable tree, or the 3.8 tree, _again_.
+> >> >>
+> >> >
+> >> > I'm simply not getting it, I'm sorry, I must be missing something
+> >> > obvious -- what's really the problem with this: "whenever 3.8 is
+> >> > released, sometime in the future, just make sure that this fix is
+> >> > included in it" ?  Also, what's stopping it from staging, at least?
+> >> >
+> >>
+> >> Greg:
+> >>
+> >> I think there is still some residual confusion from the mix of patches
+> >> sent out for this issue.
+> >>
+> >> You appear to be saying that this patch as well as "37b51fd: zram:
+> >> factor-out  zram_decompress_page() function" have already been
+> >> applied.
+> >>
+> >> But I do not see either patch in 3.7.0 or in your message for
+> >> "3.7.1-stable review"
+> >>
+> >> I see the "37b51fd: zram: factor-out  zram_decompress_page() function"
+> >> patch in Linus' tree for 3.8_rc, but not the patch discussed in this
+> >> thread.
+> >
+> > Ok, I'm totally confused.
+> >
+> > Please, can someone tell me _exactly_ what commits they wish to see
+> > applied to the 3.7-stable tree.
+> >
+> > thanks,
+> >
+> > greg k-h
+> 
+> These two needs to be applied to 3.7-stable:
+> 
+> 1) 37b51fd: "staging: zram: factor-out zram_decompress_page() function"
+> 
+> and then...
+> 
+> 2) 397c606: "staging: zram: fix invalid memory references during disk write"
 
->From 398b5a92a407aeaf5d1497e4060490d135d4897a Mon Sep 17 00:00:00 2001
-From: Liu Jinsong <jinsong.liu@intel.com>
-Date: Mon, 14 Jan 2013 20:31:04 +0800
-Subject: [PATCH 2/3] Move xen_acpi_get_pxm to Xen acpi.h
+Thanks, that makes sense.
 
-So that it could be reused by Xen CPU hotplug logic.
+But note, until today, I could not have done this at all, as the last
+commit here was not in Linus's tree.  So I was right to be confused,
+there was nothing I could do at the time.
 
-Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
----
- drivers/xen/xen-acpi-memhotplug.c |   18 ------------------
- include/xen/acpi.h                |   18 ++++++++++++++++++
- 2 files changed, 18 insertions(+), 18 deletions(-)
+Please be more careful in the future, developer's time is limited,
+causing confusion doesn't help.
 
-diff --git a/drivers/xen/xen-acpi-memhotplug.c b/drivers/xen/xen-acpi-memho=
-tplug.c
-index 346d80b..f01d425 100644
---- a/drivers/xen/xen-acpi-memhotplug.c
-+++ b/drivers/xen/xen-acpi-memhotplug.c
-@@ -65,24 +65,6 @@ static int xen_hotadd_memory(int pxm, struct acpi_memory=
-_info *info)
- 	return rc;
- }
-=20
--static int xen_acpi_get_pxm(acpi_handle h)
--{
--	unsigned long long pxm;
--	acpi_status status;
--	acpi_handle handle;
--	acpi_handle phandle =3D h;
--
--	do {
--		handle =3D phandle;
--		status =3D acpi_evaluate_integer(handle, "_PXM", NULL, &pxm);
--		if (ACPI_SUCCESS(status))
--			return pxm;
--		status =3D acpi_get_parent(handle, &phandle);
--	} while (ACPI_SUCCESS(status));
--
--	return -ENXIO;
--}
--
- static int xen_acpi_memory_enable_device(struct acpi_memory_device *mem_de=
-vice)
- {
- 	int pxm, result;
-diff --git a/include/xen/acpi.h b/include/xen/acpi.h
-index 1c99eb5..5ac46d3 100644
---- a/include/xen/acpi.h
-+++ b/include/xen/acpi.h
-@@ -46,6 +46,24 @@
-=20
- extern struct acpi_driver xen_stub_memory_device_driver;
-=20
-+static inline int xen_acpi_get_pxm(acpi_handle h)
-+{
-+	unsigned long long pxm;
-+	acpi_status status;
-+	acpi_handle handle;
-+	acpi_handle phandle =3D h;
-+
-+	do {
-+		handle =3D phandle;
-+		status =3D acpi_evaluate_integer(handle, "_PXM", NULL, &pxm);
-+		if (ACPI_SUCCESS(status))
-+			return pxm;
-+		status =3D acpi_get_parent(handle, &phandle);
-+	} while (ACPI_SUCCESS(status));
-+
-+	return -ENXIO;
-+}
-+
- #define ACPI_PROCESSOR_CLASS            "processor"
- #define ACPI_PROCESSOR_DEVICE_HID       "ACPI0007"
- #define ACPI_PROCESSOR_DEVICE_NAME      "Processor"
---=20
-1.7.1
-
---_002_DE8DF0795D48FD4CA783C40EC82923353C3DCASHSMSX101ccrcorpi_
-Content-Type: application/octet-stream;
-	name="0002-Move-xen_acpi_get_pxm-to-Xen-acpi.h.patch"
-Content-Description: 0002-Move-xen_acpi_get_pxm-to-Xen-acpi.h.patch
-Content-Disposition: attachment;
-	filename="0002-Move-xen_acpi_get_pxm-to-Xen-acpi.h.patch"; size=2060;
-	creation-date="Tue, 15 Jan 2013 12:28:09 GMT";
-	modification-date="Tue, 15 Jan 2013 20:17:12 GMT"
-Content-Transfer-Encoding: base64
-
-RnJvbSAzOThiNWE5MmE0MDdhZWFmNWQxNDk3ZTQwNjA0OTBkMTM1ZDQ4OTdhIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUgSmluc29uZyA8amluc29uZy5saXVAaW50ZWwuY29tPgpE
-YXRlOiBNb24sIDE0IEphbiAyMDEzIDIwOjMxOjA0ICswODAwClN1YmplY3Q6IFtQQVRDSCAyLzNd
-IE1vdmUgeGVuX2FjcGlfZ2V0X3B4bSB0byBYZW4gYWNwaS5oCgpTbyB0aGF0IGl0IGNvdWxkIGJl
-IHJldXNlZCBieSBYZW4gQ1BVIGhvdHBsdWcgbG9naWMuCgpTaWduZWQtb2ZmLWJ5OiBMaXUsIEpp
-bnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4KLS0tCiBkcml2ZXJzL3hlbi94ZW4tYWNwaS1t
-ZW1ob3RwbHVnLmMgfCAgIDE4IC0tLS0tLS0tLS0tLS0tLS0tLQogaW5jbHVkZS94ZW4vYWNwaS5o
-ICAgICAgICAgICAgICAgIHwgICAxOCArKysrKysrKysrKysrKysrKysKIDIgZmlsZXMgY2hhbmdl
-ZCwgMTggaW5zZXJ0aW9ucygrKSwgMTggZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVy
-cy94ZW4veGVuLWFjcGktbWVtaG90cGx1Zy5jIGIvZHJpdmVycy94ZW4veGVuLWFjcGktbWVtaG90
-cGx1Zy5jCmluZGV4IDM0NmQ4MGIuLmYwMWQ0MjUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMveGVuL3hl
-bi1hY3BpLW1lbWhvdHBsdWcuYworKysgYi9kcml2ZXJzL3hlbi94ZW4tYWNwaS1tZW1ob3RwbHVn
-LmMKQEAgLTY1LDI0ICs2NSw2IEBAIHN0YXRpYyBpbnQgeGVuX2hvdGFkZF9tZW1vcnkoaW50IHB4
-bSwgc3RydWN0IGFjcGlfbWVtb3J5X2luZm8gKmluZm8pCiAJcmV0dXJuIHJjOwogfQogCi1zdGF0
-aWMgaW50IHhlbl9hY3BpX2dldF9weG0oYWNwaV9oYW5kbGUgaCkKLXsKLQl1bnNpZ25lZCBsb25n
-IGxvbmcgcHhtOwotCWFjcGlfc3RhdHVzIHN0YXR1czsKLQlhY3BpX2hhbmRsZSBoYW5kbGU7Ci0J
-YWNwaV9oYW5kbGUgcGhhbmRsZSA9IGg7Ci0KLQlkbyB7Ci0JCWhhbmRsZSA9IHBoYW5kbGU7Ci0J
-CXN0YXR1cyA9IGFjcGlfZXZhbHVhdGVfaW50ZWdlcihoYW5kbGUsICJfUFhNIiwgTlVMTCwgJnB4
-bSk7Ci0JCWlmIChBQ1BJX1NVQ0NFU1Moc3RhdHVzKSkKLQkJCXJldHVybiBweG07Ci0JCXN0YXR1
-cyA9IGFjcGlfZ2V0X3BhcmVudChoYW5kbGUsICZwaGFuZGxlKTsKLQl9IHdoaWxlIChBQ1BJX1NV
-Q0NFU1Moc3RhdHVzKSk7Ci0KLQlyZXR1cm4gLUVOWElPOwotfQotCiBzdGF0aWMgaW50IHhlbl9h
-Y3BpX21lbW9yeV9lbmFibGVfZGV2aWNlKHN0cnVjdCBhY3BpX21lbW9yeV9kZXZpY2UgKm1lbV9k
-ZXZpY2UpCiB7CiAJaW50IHB4bSwgcmVzdWx0OwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS94ZW4vYWNw
-aS5oIGIvaW5jbHVkZS94ZW4vYWNwaS5oCmluZGV4IDFjOTllYjUuLjVhYzQ2ZDMgMTAwNjQ0Ci0t
-LSBhL2luY2x1ZGUveGVuL2FjcGkuaAorKysgYi9pbmNsdWRlL3hlbi9hY3BpLmgKQEAgLTQ2LDYg
-KzQ2LDI0IEBACiAKIGV4dGVybiBzdHJ1Y3QgYWNwaV9kcml2ZXIgeGVuX3N0dWJfbWVtb3J5X2Rl
-dmljZV9kcml2ZXI7CiAKK3N0YXRpYyBpbmxpbmUgaW50IHhlbl9hY3BpX2dldF9weG0oYWNwaV9o
-YW5kbGUgaCkKK3sKKwl1bnNpZ25lZCBsb25nIGxvbmcgcHhtOworCWFjcGlfc3RhdHVzIHN0YXR1
-czsKKwlhY3BpX2hhbmRsZSBoYW5kbGU7CisJYWNwaV9oYW5kbGUgcGhhbmRsZSA9IGg7CisKKwlk
-byB7CisJCWhhbmRsZSA9IHBoYW5kbGU7CisJCXN0YXR1cyA9IGFjcGlfZXZhbHVhdGVfaW50ZWdl
-cihoYW5kbGUsICJfUFhNIiwgTlVMTCwgJnB4bSk7CisJCWlmIChBQ1BJX1NVQ0NFU1Moc3RhdHVz
-KSkKKwkJCXJldHVybiBweG07CisJCXN0YXR1cyA9IGFjcGlfZ2V0X3BhcmVudChoYW5kbGUsICZw
-aGFuZGxlKTsKKwl9IHdoaWxlIChBQ1BJX1NVQ0NFU1Moc3RhdHVzKSk7CisKKwlyZXR1cm4gLUVO
-WElPOworfQorCiAjZGVmaW5lIEFDUElfUFJPQ0VTU09SX0NMQVNTICAgICAgICAgICAgInByb2Nl
-c3NvciIKICNkZWZpbmUgQUNQSV9QUk9DRVNTT1JfREVWSUNFX0hJRCAgICAgICAiQUNQSTAwMDci
-CiAjZGVmaW5lIEFDUElfUFJPQ0VTU09SX0RFVklDRV9OQU1FICAgICAgIlByb2Nlc3NvciIKLS0g
-CjEuNy4xCgo=
-
---_002_DE8DF0795D48FD4CA783C40EC82923353C3DCASHSMSX101ccrcorpi_--
+greg k-h
