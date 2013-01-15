@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932863Ab3AOWpH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:45:07 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44836 "EHLO mail.kernel.org"
+	id S1758673Ab3AOWpT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:45:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44910 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932764Ab3AOWo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:44:56 -0500
+	id S932512Ab3AOWpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:45:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 004/171] powerpc: Fix CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n build
-Date: Tue, 15 Jan 2013 14:42:49 -0800
-Message-Id: <20130115224313.726940123@linuxfoundation.org>
+        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>, Yong Zhang <yong.zhang@windriver.com>,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [ 009/171] MIPS: Fix poweroff failure when HOTPLUG_CPU configured.
+Date: Tue, 15 Jan 2013 14:42:54 -0800
+Message-Id: <20130115224314.085680764@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,33 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 11ee7e99f35ecb15f59b21da6a82d96d2cd3fcc8 upstream.
+commit 8add1ecb81f541ef2fcb0b85a5470ad9ecfb4a84 upstream.
 
-If we build a kernel with CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n,
-the kernel fails when we run at a non zero offset. It turns out
-we were incorrectly wrapping some of the relocatable kernel code
-with CONFIG_CRASH_DUMP.
+When poweroff machine, kernel_power_off() call disable_nonboot_cpus().
+And if we have HOTPLUG_CPU configured, disable_nonboot_cpus() is not an
+empty function but attempt to actually disable the nonboot cpus. Since
+system state is SYSTEM_POWER_OFF, play_dead() won't be called and thus
+disable_nonboot_cpus() hangs. Therefore, we make this patch to avoid
+poweroff failure.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Hongliang Tao <taohl@lemote.com>
+Signed-off-by: Hua Yan <yanh@lemote.com>
+Cc: Yong Zhang <yong.zhang@windriver.com>
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/4211/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/head_64.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/kernel/process.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -422,7 +422,7 @@ _STATIC(__after_prom_start)
- 	tovirt(r6,r6)			/* on booke, we already run at PAGE_OFFSET */
+--- a/arch/mips/kernel/process.c
++++ b/arch/mips/kernel/process.c
+@@ -72,9 +72,7 @@ void __noreturn cpu_idle(void)
+ 			}
+ 		}
+ #ifdef CONFIG_HOTPLUG_CPU
+-		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map) &&
+-		    (system_state == SYSTEM_RUNNING ||
+-		     system_state == SYSTEM_BOOTING))
++		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
+ 			play_dead();
  #endif
- 
--#ifdef CONFIG_CRASH_DUMP
-+#ifdef CONFIG_RELOCATABLE
- /*
-  * Check if the kernel has to be running as relocatable kernel based on the
-  * variable __run_at_load, if it is set the kernel is treated as relocatable
+ 		rcu_idle_exit();
 
 
