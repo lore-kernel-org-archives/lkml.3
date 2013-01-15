@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014Ab3AOWgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:36:53 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44121 "EHLO mail.kernel.org"
+	id S933046Ab3AOWhP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:37:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44134 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758171Ab3AOWgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:36:48 -0500
+	id S932984Ab3AOWgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:36:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 221/221] drm/i915: Treat crtc->mode.clock == 0 as disabled
-Date: Tue, 15 Jan 2013 10:52:28 -0800
-Message-Id: <20130115185013.999699137@linuxfoundation.org>
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
+Subject: [ 214/221] ceph: Fix infinite loop in __wake_requests
+Date: Tue, 15 Jan 2013 10:52:21 -0800
+Message-Id: <20130115185013.486942614@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -28,116 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 3490ea5de6ac4af309c3df8a26a5cca61306334c upstream.
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Prevent a divide-by-zero by consistently treating an 'active' CRTC
-without a mode set as actually disabled.
+(cherry picked from commit ed75ec2cd19b47efcd292b6e23f58e56f4c5bc34)
 
-This looks to have been first introduced with
+__wake_requests() will enter infinite loop if we use it to wake
+requests in the session->s_waiting list. __wake_requests() deletes
+requests from the list and __do_request() adds requests back to
+the list.
 
-commit 24929352481f085c5f85d4d4cbc919ddf106d381
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Jul 2 20:28:59 2012 +0200
-
-    drm/i915: read out the modeset hw state at load and resume time
-
-but then combined with
-
-commit b0a2658acb5bf9ca86b4aab011b7106de3af0add
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Tue Dec 18 09:37:54 2012 +0100
-
-    drm/i915: don't disable disconnected outputs
-
-it finally started oopsing.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reported-and-tested-by: Alexey Zaytsev <alexey.zaytsev@gmail.com>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/i915/intel_pm.c |   23 +++++++++++++++--------
- 1 file changed, 15 insertions(+), 8 deletions(-)
+ fs/ceph/mds_client.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -44,6 +44,14 @@
-  * i915.i915_enable_fbc parameter
-  */
- 
-+static bool intel_crtc_active(struct drm_crtc *crtc)
-+{
-+	/* Be paranoid as we can arrive here with only partial
-+	 * state retrieved from the hardware during setup.
-+	 */
-+	return to_intel_crtc(crtc)->active && crtc->fb && crtc->mode.clock;
-+}
-+
- static void i8xx_disable_fbc(struct drm_device *dev)
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -1876,9 +1876,14 @@ finish:
+ static void __wake_requests(struct ceph_mds_client *mdsc,
+ 			    struct list_head *head)
  {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -405,9 +413,8 @@ void intel_update_fbc(struct drm_device
- 	 *   - going to an unsupported config (interlace, pixel multiply, etc.)
- 	 */
- 	list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head) {
--		if (tmp_crtc->enabled &&
--		    !to_intel_crtc(tmp_crtc)->primary_disabled &&
--		    tmp_crtc->fb) {
-+		if (intel_crtc_active(tmp_crtc) &&
-+		    !to_intel_crtc(tmp_crtc)->primary_disabled) {
- 			if (crtc) {
- 				DRM_DEBUG_KMS("more than one pipe active, disabling compression\n");
- 				dev_priv->no_fbc_reason = FBC_MULTIPLE_PIPES;
-@@ -992,7 +999,7 @@ static struct drm_crtc *single_enabled_c
- 	struct drm_crtc *crtc, *enabled = NULL;
+-	struct ceph_mds_request *req, *nreq;
++	struct ceph_mds_request *req;
++	LIST_HEAD(tmp_list);
  
- 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
--		if (crtc->enabled && crtc->fb) {
-+		if (intel_crtc_active(crtc)) {
- 			if (enabled)
- 				return NULL;
- 			enabled = crtc;
-@@ -1086,7 +1093,7 @@ static bool g4x_compute_wm0(struct drm_d
- 	int entries, tlb_miss;
- 
- 	crtc = intel_get_crtc_for_plane(dev, plane);
--	if (crtc->fb == NULL || !crtc->enabled) {
-+	if (!intel_crtc_active(crtc)) {
- 		*cursor_wm = cursor->guard_size;
- 		*plane_wm = display->guard_size;
- 		return false;
-@@ -1215,7 +1222,7 @@ static bool vlv_compute_drain_latency(st
- 	int entries;
- 
- 	crtc = intel_get_crtc_for_plane(dev, plane);
--	if (crtc->fb == NULL || !crtc->enabled)
-+	if (!intel_crtc_active(crtc))
- 		return false;
- 
- 	clock = crtc->mode.clock;	/* VESA DOT Clock */
-@@ -1478,7 +1485,7 @@ static void i9xx_update_wm(struct drm_de
- 
- 	fifo_size = dev_priv->display.get_fifo_size(dev, 1);
- 	crtc = intel_get_crtc_for_plane(dev, 1);
--	if (crtc->enabled && crtc->fb) {
-+	if (intel_crtc_active(crtc)) {
- 		planeb_wm = intel_calculate_wm(crtc->mode.clock,
- 					       wm_info, fifo_size,
- 					       crtc->fb->bits_per_pixel / 8,
-@@ -1923,7 +1930,7 @@ sandybridge_compute_sprite_wm(struct drm
- 	int entries, tlb_miss;
- 
- 	crtc = intel_get_crtc_for_plane(dev, plane);
--	if (crtc->fb == NULL || !crtc->enabled) {
-+	if (!intel_crtc_active(crtc)) {
- 		*sprite_wm = display->guard_size;
- 		return false;
+-	list_for_each_entry_safe(req, nreq, head, r_wait) {
++	list_splice_init(head, &tmp_list);
++
++	while (!list_empty(&tmp_list)) {
++		req = list_entry(tmp_list.next,
++				 struct ceph_mds_request, r_wait);
+ 		list_del_init(&req->r_wait);
+ 		__do_request(mdsc, req);
  	}
 
 
