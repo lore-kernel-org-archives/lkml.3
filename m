@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932800Ab3AOWfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:35:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43707 "EHLO mail.kernel.org"
+	id S932370Ab3AOWnQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:43:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43820 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932248Ab3AOWfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:35:40 -0500
+	id S932248Ab3AOWft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:35:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 193/221] libceph: init event->node in ceph_osdc_create_event()
-Date: Tue, 15 Jan 2013 10:52:00 -0800
-Message-Id: <20130115185011.971130023@linuxfoundation.org>
+Subject: [ 197/221] libceph: always reset osds when kicking
+Date: Tue, 15 Jan 2013 10:52:04 -0800
+Message-Id: <20130115185012.251939402@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,29 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit 3ee5234df68d253c415ba4f2db72ad250d9c21a9)
+(cherry picked from commit e6d50f67a6b1a6252a616e6e629473b5c4277218)
 
-The red-black node node in the ceph osd event structure is not
-initialized in create_osdc_create_event().  Because this node can
-be the subject of a RB_EMPTY_NODE() call later on, we should ensure
-the node is initialized properly for that.
+When ceph_osdc_handle_map() is called to process a new osd map,
+kick_requests() is called to ensure all affected requests are
+updated if necessary to reflect changes in the osd map.  This
+happens in two cases:  whenever an incremental map update is
+processed; and when a full map update (or the last one if there is
+more than one) gets processed.
+
+In the former case, the kick_requests() call is followed immediately
+by a call to reset_changed_osds() to ensure any connections to osds
+affected by the map change are reset.  But for full map updates
+this isn't done.
+
+Both cases should be doing this osd reset.
+
+Rather than duplicating the reset_changed_osds() call, move it into
+the end of kick_requests().
 
 Signed-off-by: Alex Elder <elder@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ceph/osd_client.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ceph/osd_client.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 --- a/net/ceph/osd_client.c
 +++ b/net/ceph/osd_client.c
-@@ -1600,6 +1600,7 @@ int ceph_osdc_create_event(struct ceph_o
- 	event->data = data;
- 	event->osdc = osdc;
- 	INIT_LIST_HEAD(&event->osd_node);
-+	RB_CLEAR_NODE(&event->node);
- 	kref_init(&event->kref);   /* one ref for us */
- 	kref_get(&event->kref);    /* one ref for the caller */
- 	init_completion(&event->completion);
+@@ -1308,7 +1308,7 @@ static void reset_changed_osds(struct ce
+  * Requeue requests whose mapping to an OSD has changed.  If requests map to
+  * no osd, request a new map.
+  *
+- * Caller should hold map_sem for read and request_mutex.
++ * Caller should hold map_sem for read.
+  */
+ static void kick_requests(struct ceph_osd_client *osdc, int force_resend)
+ {
+@@ -1383,6 +1383,7 @@ static void kick_requests(struct ceph_os
+ 		dout("%d requests for down osds, need new map\n", needmap);
+ 		ceph_monc_request_next_osdmap(&osdc->client->monc);
+ 	}
++	reset_changed_osds(osdc);
+ }
+ 
+ 
+@@ -1439,7 +1440,6 @@ void ceph_osdc_handle_map(struct ceph_os
+ 				osdc->osdmap = newmap;
+ 			}
+ 			kick_requests(osdc, 0);
+-			reset_changed_osds(osdc);
+ 		} else {
+ 			dout("ignoring incremental map %u len %d\n",
+ 			     epoch, maplen);
 
 
