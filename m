@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757985Ab3AOS51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:57:27 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34810 "EHLO mail.kernel.org"
+	id S1757965Ab3AOS5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:57:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34793 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757537Ab3AOS5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:57:21 -0500
+	id S1757947Ab3AOS5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:57:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Steve Hodgson <steve@purestorage.com>,
         Roland Dreier <roland@purestorage.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 038/221] iscsi-target: Always send a response before terminating iSCSI connection
-Date: Tue, 15 Jan 2013 10:49:25 -0800
-Message-Id: <20130115185000.779390168@linuxfoundation.org>
+Subject: [ 037/221] iscsi-target: Fix bug in handling of ExpStatSN ACK during u32 wrap-around
+Date: Tue, 15 Jan 2013 10:49:24 -0800
+Message-Id: <20130115185000.709964724@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,72 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Steve Hodgson <steve@purestorage.com>
 
-commit 1c5c12c666fda27c7c494b34934a0a0631a48130 upstream.
+commit 64c13330a38935120501b19c97a3e6095747c7a1 upstream.
 
-There are some cases, for example when the initiator sends an
-out-of-bounds ErrorRecoveryLevel value, where the iSCSI target
-terminates the connection without sending back any error.  Audit the
-login path and add appropriate iscsit_tx_login_rsp() calls to make
-sure this doesn't happen.
+This patch fixes a bug in the hanlding of initiator provided ExpStatSN and
+individual iscsi_cmd->stat_sn comparision during iscsi_conn->stat_sn
+wrap-around within iscsit_ack_from_expstatsn() code.
 
+This bug would manifest itself as iscsi_cmd descriptors not being Acked
+by a lower ExpStatSn, causing them to be leaked until an iSCSI connection
+or session reinstatement event occurs to release all commands.
+
+Also fix up two other uses of incorrect CmdSN SNA comparison to use wrapper
+usage from include/scsi/iscsi_proto.h.
+
+Signed-off-by: Steve Hodgson <steve@purestorage.com>
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_login.c |    8 ++++----
- drivers/target/iscsi/iscsi_target_nego.c  |   10 ++++++++--
- 2 files changed, 12 insertions(+), 6 deletions(-)
+ drivers/target/iscsi/iscsi_target.c      |    2 +-
+ drivers/target/iscsi/iscsi_target_erl2.c |    2 +-
+ drivers/target/iscsi/iscsi_target_tmr.c  |    4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -127,13 +127,13 @@ int iscsi_check_for_session_reinstatemen
- 
- 	initiatorname_param = iscsi_find_param_from_key(
- 			INITIATORNAME, conn->param_list);
--	if (!initiatorname_param)
--		return -1;
--
- 	sessiontype_param = iscsi_find_param_from_key(
- 			SESSIONTYPE, conn->param_list);
--	if (!sessiontype_param)
-+	if (!initiatorname_param || !sessiontype_param) {
-+		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_INITIATOR_ERR,
-+			ISCSI_LOGIN_STATUS_MISSING_FIELDS);
- 		return -1;
-+	}
- 
- 	sessiontype = (strncmp(sessiontype_param->value, NORMAL, 6)) ? 1 : 0;
- 
---- a/drivers/target/iscsi/iscsi_target_nego.c
-+++ b/drivers/target/iscsi/iscsi_target_nego.c
-@@ -620,8 +620,11 @@ static int iscsi_target_handle_csg_one(s
- 			login->req_buf,
- 			payload_length,
- 			conn);
--	if (ret < 0)
-+	if (ret < 0) {
-+		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_INITIATOR_ERR,
-+				ISCSI_LOGIN_STATUS_INIT_ERR);
- 		return -1;
-+	}
- 
- 	if (login->first_request)
- 		if (iscsi_target_check_first_request(conn, login) < 0)
-@@ -636,8 +639,11 @@ static int iscsi_target_handle_csg_one(s
- 			login->rsp_buf,
- 			&login->rsp_length,
- 			conn->param_list);
--	if (ret < 0)
-+	if (ret < 0) {
-+		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_INITIATOR_ERR,
-+				ISCSI_LOGIN_STATUS_INIT_ERR);
- 		return -1;
-+	}
- 
- 	if (!login->auth_complete &&
- 	     ISCSI_TPG_ATTRIB(ISCSI_TPG_C(conn))->authentication) {
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -735,7 +735,7 @@ static void iscsit_ack_from_expstatsn(st
+ 	list_for_each_entry(cmd, &conn->conn_cmd_list, i_conn_node) {
+ 		spin_lock(&cmd->istate_lock);
+ 		if ((cmd->i_state == ISTATE_SENT_STATUS) &&
+-		    (cmd->stat_sn < exp_statsn)) {
++		    iscsi_sna_lt(cmd->stat_sn, exp_statsn)) {
+ 			cmd->i_state = ISTATE_REMOVE;
+ 			spin_unlock(&cmd->istate_lock);
+ 			iscsit_add_cmd_to_immediate_queue(cmd, conn,
+--- a/drivers/target/iscsi/iscsi_target_erl2.c
++++ b/drivers/target/iscsi/iscsi_target_erl2.c
+@@ -372,7 +372,7 @@ int iscsit_prepare_cmds_for_realligance(
+ 		 * made generic here.
+ 		 */
+ 		if (!(cmd->cmd_flags & ICF_OOO_CMDSN) && !cmd->immediate_cmd &&
+-		     (cmd->cmd_sn >= conn->sess->exp_cmd_sn)) {
++		     iscsi_sna_gte(cmd->stat_sn, conn->sess->exp_cmd_sn)) {
+ 			list_del(&cmd->i_conn_node);
+ 			spin_unlock_bh(&conn->cmd_lock);
+ 			iscsit_free_cmd(cmd);
+--- a/drivers/target/iscsi/iscsi_target_tmr.c
++++ b/drivers/target/iscsi/iscsi_target_tmr.c
+@@ -50,8 +50,8 @@ u8 iscsit_tmr_abort_task(
+ 	if (!ref_cmd) {
+ 		pr_err("Unable to locate RefTaskTag: 0x%08x on CID:"
+ 			" %hu.\n", hdr->rtt, conn->cid);
+-		return (be32_to_cpu(hdr->refcmdsn) >= conn->sess->exp_cmd_sn &&
+-			be32_to_cpu(hdr->refcmdsn) <= conn->sess->max_cmd_sn) ?
++		return (iscsi_sna_gte(be32_to_cpu(hdr->refcmdsn), conn->sess->exp_cmd_sn) &&
++			iscsi_sna_lte(be32_to_cpu(hdr->refcmdsn), conn->sess->max_cmd_sn)) ?
+ 			ISCSI_TMF_RSP_COMPLETE : ISCSI_TMF_RSP_NO_TASK;
+ 	}
+ 	if (ref_cmd->cmd_sn != be32_to_cpu(hdr->refcmdsn)) {
 
 
