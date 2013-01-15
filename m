@@ -1,125 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab3AOGud (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 01:50:33 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:54352 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678Ab3AOGuc (ORCPT
+	id S1756182Ab3AOGzx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 01:55:53 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:63697 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755930Ab3AOGzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 01:50:32 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: olof@lixom.net, arm@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com, swarren@wwwdotorg.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH] timer: vt8500: Convert vt8500 to use CLKSRC_OF
-Date: Tue, 15 Jan 2013 19:50:49 +1300
-Message-Id: <1358232649-19964-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 15 Jan 2013 01:55:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <1908840.G1WFmde11m@vostro.rjw.lan>
+References: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
+	<1357944049-29620-15-git-send-email-yinghai@kernel.org>
+	<1908840.G1WFmde11m@vostro.rjw.lan>
+Date: Mon, 14 Jan 2013 22:55:49 -0800
+X-Google-Sender-Auth: Ue1rOHgSq3f1Jq0z0eleMUVsFIs
+Message-ID: <CAE9FiQUb7d2Sud6gGkqW+aJ-rVi2nUF=nGK6_Afzf8VE7K-dDw@mail.gmail.com>
+Subject: Re: [PATCH v8 14/22] ACPI: update ej_event interface to take acpi_device
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts arch-vt8500 to make use of CLKSRC_OF. Doing so
-removes the need for include/linux/vt8500_timer.h as vt8500_timer_init
-no longer needs to be visible outside vt8500_timer.c
+On Sat, Jan 12, 2013 at 3:40 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, January 11, 2013 02:40:41 PM Yinghai Lu wrote:
+>> Should use acpi_device pointer directly instead of use handle and
+>> get the device pointer again later.
+>
+> Looks good.
+>
+> I can take this one right now if you want.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
-Hi Olof,
+yes, in acpi-scan branch?
 
-Here is the fix as requested by Stephen Warren, based on vt8500/timer.
+othewise i can not base on pci/next again.
 
- arch/arm/mach-vt8500/Kconfig       |    1 +
- arch/arm/mach-vt8500/vt8500.c      |    4 ++--
- drivers/clocksource/vt8500_timer.c |    3 ++-
- include/linux/vt8500_timer.h       |   22 ----------------------
- 4 files changed, 5 insertions(+), 25 deletions(-)
- delete mode 100644 include/linux/vt8500_timer.h
-
-diff --git a/arch/arm/mach-vt8500/Kconfig b/arch/arm/mach-vt8500/Kconfig
-index 570a801..d1cbda6 100644
---- a/arch/arm/mach-vt8500/Kconfig
-+++ b/arch/arm/mach-vt8500/Kconfig
-@@ -4,6 +4,7 @@ config ARCH_VT8500
- 	select ARCH_HAS_CPUFREQ
- 	select ARCH_REQUIRE_GPIOLIB
- 	select CLKDEV_LOOKUP
-+	select CLKSRC_OF
- 	select CPU_ARM926T
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_GPIO
-diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
-index b9fd9d3..fe99b70 100644
---- a/arch/arm/mach-vt8500/vt8500.c
-+++ b/arch/arm/mach-vt8500/vt8500.c
-@@ -18,9 +18,9 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
- 
-+#include <linux/clocksource.h>
- #include <linux/io.h>
- #include <linux/pm.h>
--#include <linux/vt8500_timer.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -186,8 +186,8 @@ DT_MACHINE_START(WMT_DT, "VIA/Wondermedia SoC (Device Tree Support)")
- 	.dt_compat	= vt8500_dt_compat,
- 	.map_io		= vt8500_map_io,
- 	.init_irq	= vt8500_init_irq,
--	.init_time	= vt8500_timer_init,
- 	.init_machine	= vt8500_init,
-+	.init_time	= clocksource_of_init,
- 	.restart	= vt8500_restart,
- 	.handle_irq	= vt8500_handle_irq,
- MACHINE_END
-diff --git a/drivers/clocksource/vt8500_timer.c b/drivers/clocksource/vt8500_timer.c
-index 3dd21a4..b75b8e3 100644
---- a/drivers/clocksource/vt8500_timer.c
-+++ b/drivers/clocksource/vt8500_timer.c
-@@ -134,7 +134,7 @@ static struct of_device_id vt8500_timer_ids[] = {
- 	{ }
- };
- 
--void __init vt8500_timer_init(void)
-+static void __init vt8500_timer_init(void)
- {
- 	struct device_node *np;
- 	int timer_irq;
-@@ -182,3 +182,4 @@ void __init vt8500_timer_init(void)
- 	clockevents_register_device(&clockevent);
- }
- 
-+CLOCKSOURCE_OF_DECLARE(vt8500, "via,vt8500-timer", vt8500_timer_init)
-diff --git a/include/linux/vt8500_timer.h b/include/linux/vt8500_timer.h
-deleted file mode 100644
-index 33b0ee8..0000000
---- a/include/linux/vt8500_timer.h
-+++ /dev/null
-@@ -1,22 +0,0 @@
--/*
-- * Copyright 2012 Tony Prisk <linux@prisktech.co.nz>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#ifndef __VT8500_TIMER_H
--#define __VT8500_TIMER_H
--
--#include <asm/mach/time.h>
--
--void vt8500_timer_init(void);
--
--#endif
--- 
-1.7.9.5
-
+>
+> Thanks,
+> Rafael
+>
+>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  drivers/acpi/acpi_memhotplug.c  |    2 +-
+>>  drivers/acpi/processor_driver.c |    2 +-
+>>  drivers/acpi/scan.c             |   14 ++++----------
+>>  include/acpi/acpi_bus.h         |    2 +-
+>>  4 files changed, 7 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+>> index 327ab44..eaddb7a 100644
+>> --- a/drivers/acpi/acpi_memhotplug.c
+>> +++ b/drivers/acpi/acpi_memhotplug.c
+>> @@ -361,7 +361,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+>>                       break;
+>>               }
+>>
+>> -             ej_event->handle = handle;
+>> +             ej_event->device = device;
+>>               ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+>>               acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+>>                                       (void *)ej_event);
+>> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+>> index 0777663..a24ee43 100644
+>> --- a/drivers/acpi/processor_driver.c
+>> +++ b/drivers/acpi/processor_driver.c
+>> @@ -733,7 +733,7 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+>>                       break;
+>>               }
+>>
+>> -             ej_event->handle = handle;
+>> +             ej_event->device = device;
+>>               ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+>>               acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+>>                                       (void *)ej_event);
+>> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+>> index 8883539..f4c6305 100644
+>> --- a/drivers/acpi/scan.c
+>> +++ b/drivers/acpi/scan.c
+>> @@ -116,20 +116,14 @@ static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+>>  void acpi_bus_hot_remove_device(void *context)
+>>  {
+>>       struct acpi_eject_event *ej_event = (struct acpi_eject_event *) context;
+>> -     struct acpi_device *device;
+>> -     acpi_handle handle = ej_event->handle;
+>> +     struct acpi_device *device = ej_event->device;
+>> +     acpi_handle handle = device->handle;
+>>       acpi_handle temp;
+>>       struct acpi_object_list arg_list;
+>>       union acpi_object arg;
+>>       acpi_status status = AE_OK;
+>>       u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+>>
+>> -     if (acpi_bus_get_device(handle, &device))
+>> -             goto err_out;
+>> -
+>> -     if (!device)
+>> -             goto err_out;
+>> -
+>>       ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>>               "Hot-removing device %s...\n", dev_name(&device->dev)));
+>>
+>> @@ -215,7 +209,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
+>>               goto err;
+>>       }
+>>
+>> -     ej_event->handle = acpi_device->handle;
+>> +     ej_event->device = acpi_device;
+>>       if (acpi_device->flags.eject_pending) {
+>>               /* event originated from ACPI eject notification */
+>>               ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+>> @@ -223,7 +217,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
+>>       } else {
+>>               /* event originated from user */
+>>               ej_event->event = ACPI_OST_EC_OSPM_EJECT;
+>> -             (void) acpi_evaluate_hotplug_ost(ej_event->handle,
+>> +             (void) acpi_evaluate_hotplug_ost(acpi_device->handle,
+>>                       ej_event->event, ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+>>       }
+>>
+>> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+>> index 2246ba9..181ff2d 100644
+>> --- a/include/acpi/acpi_bus.h
+>> +++ b/include/acpi/acpi_bus.h
+>> @@ -309,7 +309,7 @@ struct acpi_bus_event {
+>>  };
+>>
+>>  struct acpi_eject_event {
+>> -     acpi_handle     handle;
+>> +     struct acpi_device      *device;
+>>       u32             event;
+>>  };
+>>
+>>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
