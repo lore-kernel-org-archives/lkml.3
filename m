@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986Ab3AOWte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:49:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45663 "EHLO mail.kernel.org"
+	id S933037Ab3AOXw7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:52:59 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45683 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932895Ab3AOWta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:49:30 -0500
+	id S932928Ab3AOWtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Subject: [ 039/171] drm/radeon: add WAIT_UNTIL to evergreen VM safe reg list
-Date: Tue, 15 Jan 2013 14:43:24 -0800
-Message-Id: <20130115224316.225699968@linuxfoundation.org>
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Damien Lespiau <damien.lespiau@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 041/171] drm/i915: make the panel fitter work on pipes B and C on IVB
+Date: Tue, 15 Jan 2013 14:43:26 -0800
+Message-Id: <20130115224316.384098286@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,31 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit 668bbc81baf0f34df832d8aca5c7d5e19a493c68 upstream.
+commit 13888d78c664a1f61d7b09d282f5916993827a40 upstream.
 
-It's used in a recent mesa commit:
-http://cgit.freedesktop.org/mesa/mesa/commit/?id=24b1206ab2dcd506aaac3ef656aebc8bc20cd27a
-and there may be some other cases in the future where it's required.
+I actually found this problem on Haswell, but then discovered Ivy
+Bridge also has it by reading the spec.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+I don't have the hardware to test this.
+
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen_cs.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/i915/i915_reg.h      |    2 ++
+ drivers/gpu/drm/i915/intel_display.c |    6 +++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/evergreen_cs.c
-+++ b/drivers/gpu/drm/radeon/evergreen_cs.c
-@@ -2670,6 +2670,7 @@ static bool evergreen_vm_reg_valid(u32 r
- 
- 	/* check config regs */
- 	switch (reg) {
-+	case WAIT_UNTIL:
- 	case GRBM_GFX_INDEX:
- 	case CP_STRMOUT_CNTL:
- 	case CP_COHER_CNTL:
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3015,6 +3015,8 @@
+ #define _PFA_CTL_1               0x68080
+ #define _PFB_CTL_1               0x68880
+ #define  PF_ENABLE              (1<<31)
++#define  PF_PIPE_SEL_MASK_IVB	(3<<29)
++#define  PF_PIPE_SEL_IVB(pipe)	((pipe)<<29)
+ #define  PF_FILTER_MASK		(3<<23)
+ #define  PF_FILTER_PROGRAMMED	(0<<23)
+ #define  PF_FILTER_MED_3x3	(1<<23)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3095,7 +3095,11 @@ static void ironlake_crtc_enable(struct
+ 		 * as some pre-programmed values are broken,
+ 		 * e.g. x201.
+ 		 */
+-		I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3);
++		if (IS_IVYBRIDGE(dev))
++			I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3 |
++						 PF_PIPE_SEL_IVB(pipe));
++		else
++			I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3);
+ 		I915_WRITE(PF_WIN_POS(pipe), dev_priv->pch_pf_pos);
+ 		I915_WRITE(PF_WIN_SZ(pipe), dev_priv->pch_pf_size);
+ 	}
 
 
