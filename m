@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933628Ab3AOXdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:33:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46642 "EHLO mail.kernel.org"
+	id S933610Ab3AOXdh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:33:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46630 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933563Ab3AOWwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:05 -0500
+	id S933556Ab3AOWwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Adam Jackson <ajax@redhat.com>, Dave Airlie <airlied@redhat.com>,
         Julien Cristau <jcristau@debian.org>
-Subject: [ 113/171] drm/i915: Unpin the flip target if we fail to queue the flip
-Date: Tue, 15 Jan 2013 14:44:38 -0800
-Message-Id: <20130115224321.515917239@linuxfoundation.org>
+Subject: [ 112/171] drm/edid/quirks: ViewSonic VA2026w
+Date: Tue, 15 Jan 2013 14:44:37 -0800
+Message-Id: <20130115224321.445479841@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -28,159 +26,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Adam Jackson <ajax@redhat.com>
 
-commit 83d4092b0381e5dd6f312b2ec57121dcf0fcbade upstream.
+commit bc42aabc6a01b92b0f961d65671564e0e1cd7592 upstream.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Entirely new class of fail for this one.  The detailed timings are for
+normal CVT but the monitor really wanted CVT-R.
+
+Bugzilla: http://bugzilla.redhat/com/516471
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Julien Cristau <jcristau@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/gpu/drm/i915/intel_display.c |   50 ++++++++++++++++++++++++-----------
- 1 file changed, 35 insertions(+), 15 deletions(-)
+ drivers/gpu/drm/drm_edid.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7313,14 +7313,14 @@ static int intel_gen2_queue_flip(struct
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -66,6 +66,8 @@
+ #define EDID_QUIRK_FIRST_DETAILED_PREFERRED	(1 << 5)
+ /* use +hsync +vsync for detailed mode */
+ #define EDID_QUIRK_DETAILED_SYNC_PP		(1 << 6)
++/* Force reduced-blanking timings for detailed modes */
++#define EDID_QUIRK_FORCE_REDUCED_BLANKING	(1 << 7)
  
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
- 	if (ret)
--		goto out;
-+		goto err;
- 
- 	/* Offset into the new buffer for cases of shared fbs between CRTCs */
- 	offset = crtc->y * fb->pitches[0] + crtc->x * fb->bits_per_pixel/8;
- 
- 	ret = BEGIN_LP_RING(6);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
- 
- 	/* Can't queue multiple flips, so wait for the previous
- 	 * one to finish before executing the next.
-@@ -7337,7 +7337,11 @@ static int intel_gen2_queue_flip(struct
- 	OUT_RING(obj->gtt_offset + offset);
- 	OUT_RING(0); /* aux display base address, unused */
- 	ADVANCE_LP_RING();
--out:
-+	return 0;
+ struct detailed_mode_closure {
+ 	struct drm_connector *connector;
+@@ -120,6 +122,9 @@ static struct edid_quirk {
+ 	/* Samsung SyncMaster 22[5-6]BW */
+ 	{ "SAM", 596, EDID_QUIRK_PREFER_LARGE_60 },
+ 	{ "SAM", 638, EDID_QUIRK_PREFER_LARGE_60 },
 +
-+err_unpin:
-+	intel_unpin_fb_obj(obj);
-+err:
- 	return ret;
- }
++	/* ViewSonic VA2026w */
++	{ "VSC", 5020, EDID_QUIRK_FORCE_REDUCED_BLANKING },
+ };
  
-@@ -7354,14 +7358,14 @@ static int intel_gen3_queue_flip(struct
- 
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
- 	if (ret)
--		goto out;
-+		goto err;
- 
- 	/* Offset into the new buffer for cases of shared fbs between CRTCs */
- 	offset = crtc->y * fb->pitches[0] + crtc->x * fb->bits_per_pixel/8;
- 
- 	ret = BEGIN_LP_RING(6);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
- 
- 	if (intel_crtc->plane)
- 		flip_mask = MI_WAIT_FOR_PLANE_B_FLIP;
-@@ -7376,7 +7380,11 @@ static int intel_gen3_queue_flip(struct
- 	OUT_RING(MI_NOOP);
- 
- 	ADVANCE_LP_RING();
--out:
-+	return 0;
+ /*** DDC fetch and block validation ***/
+@@ -852,12 +857,19 @@ static struct drm_display_mode *drm_mode
+ 				"Wrong Hsync/Vsync pulse width\n");
+ 		return NULL;
+ 	}
 +
-+err_unpin:
-+	intel_unpin_fb_obj(obj);
-+err:
- 	return ret;
- }
- 
-@@ -7392,11 +7400,11 @@ static int intel_gen4_queue_flip(struct
- 
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
- 	if (ret)
--		goto out;
-+		goto err;
- 
- 	ret = BEGIN_LP_RING(4);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
- 
- 	/* i965+ uses the linear or tiled offsets from the
- 	 * Display Registers (which do not change across a page-flip)
-@@ -7415,7 +7423,11 @@ static int intel_gen4_queue_flip(struct
- 	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
- 	OUT_RING(pf | pipesrc);
- 	ADVANCE_LP_RING();
--out:
-+	return 0;
++	if (quirks & EDID_QUIRK_FORCE_REDUCED_BLANKING) {
++		mode = drm_cvt_mode(dev, hactive, vactive, 60, true, false, false);
++		if (!mode)
++			return NULL;
 +
-+err_unpin:
-+	intel_unpin_fb_obj(obj);
-+err:
- 	return ret;
- }
- 
-@@ -7431,11 +7443,11 @@ static int intel_gen6_queue_flip(struct
- 
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
- 	if (ret)
--		goto out;
-+		goto err;
- 
- 	ret = BEGIN_LP_RING(4);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
- 
- 	OUT_RING(MI_DISPLAY_FLIP |
- 		 MI_DISPLAY_FLIP_PLANE(intel_crtc->plane));
-@@ -7452,7 +7464,11 @@ static int intel_gen6_queue_flip(struct
- 	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
- 	OUT_RING(pf | pipesrc);
- 	ADVANCE_LP_RING();
--out:
-+	return 0;
++		goto set_size;
++	}
 +
-+err_unpin:
-+	intel_unpin_fb_obj(obj);
-+err:
- 	return ret;
- }
+ 	mode = drm_mode_create(dev);
+ 	if (!mode)
+ 		return NULL;
  
-@@ -7474,18 +7490,22 @@ static int intel_gen7_queue_flip(struct
+-	mode->type = DRM_MODE_TYPE_DRIVER;
+-
+ 	if (quirks & EDID_QUIRK_135_CLOCK_TOO_HIGH)
+ 		timing->pixel_clock = cpu_to_le16(1088);
  
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
- 	if (ret)
--		goto out;
-+		goto err;
+@@ -881,8 +893,6 @@ static struct drm_display_mode *drm_mode
  
- 	ret = intel_ring_begin(ring, 4);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
+ 	drm_mode_do_interlace_quirk(mode, pt);
  
- 	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | (intel_crtc->plane << 19));
- 	intel_ring_emit(ring, (fb->pitches[0] | obj->tiling_mode));
- 	intel_ring_emit(ring, (obj->gtt_offset));
- 	intel_ring_emit(ring, (MI_NOOP));
- 	intel_ring_advance(ring);
--out:
-+	return 0;
+-	drm_mode_set_name(mode);
+-
+ 	if (quirks & EDID_QUIRK_DETAILED_SYNC_PP) {
+ 		pt->misc |= DRM_EDID_PT_HSYNC_POSITIVE | DRM_EDID_PT_VSYNC_POSITIVE;
+ 	}
+@@ -892,6 +902,7 @@ static struct drm_display_mode *drm_mode
+ 	mode->flags |= (pt->misc & DRM_EDID_PT_VSYNC_POSITIVE) ?
+ 		DRM_MODE_FLAG_PVSYNC : DRM_MODE_FLAG_NVSYNC;
+ 
++set_size:
+ 	mode->width_mm = pt->width_mm_lo | (pt->width_height_mm_hi & 0xf0) << 4;
+ 	mode->height_mm = pt->height_mm_lo | (pt->width_height_mm_hi & 0xf) << 8;
+ 
+@@ -905,6 +916,9 @@ static struct drm_display_mode *drm_mode
+ 		mode->height_mm = edid->height_cm * 10;
+ 	}
+ 
++	mode->type = DRM_MODE_TYPE_DRIVER;
++	drm_mode_set_name(mode);
 +
-+err_unpin:
-+	intel_unpin_fb_obj(obj);
-+err:
- 	return ret;
+ 	return mode;
  }
  
 
