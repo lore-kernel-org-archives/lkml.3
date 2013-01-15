@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934303Ab3AOXIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:08:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48200 "EHLO mail.kernel.org"
+	id S934238Ab3AOW4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:56:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48096 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934258Ab3AOW4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:56:45 -0500
+	id S933995Ab3AOW4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Forrest Liu <forrestl@synology.com>, "Theodore Tso" <tytso@mit.edu>,
-        Ashish Sangwan <ashishsangwan2@gmail.com>
-Subject: [ 33/71] ext4: fix extent tree corruption caused by hole punch
-Date: Tue, 15 Jan 2013 14:54:30 -0800
-Message-Id: <20130115225342.816075720@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 25/71] dm ioctl: prevent unsafe change to dm_ioctl data_size
+Date: Tue, 15 Jan 2013 14:54:22 -0800
+Message-Id: <20130115225342.244493202@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,78 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Forrest Liu <forrestl@synology.com>
+From: Alasdair G Kergon <agk@redhat.com>
 
-commit c36575e663e302dbaa4d16b9c72d2c9a913a9aef upstream.
+commit e910d7ebecd1aac43125944a8641b6cb1a0dfabe upstream.
 
-When depth of extent tree is greater than 1, logical start value of
-interior node is not correctly updated in ext4_ext_rm_idx.
+Abort dm ioctl processing if userspace changes the data_size parameter
+after we validated it but before we finished copying the data buffer
+from userspace.
 
-Signed-off-by: Forrest Liu <forrestl@synology.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Ashish Sangwan <ashishsangwan2@gmail.com>
+The dm ioctl parameters are processed in the following sequence:
+ 1. ctl_ioctl() calls copy_params();
+ 2. copy_params() makes a first copy of the fixed-sized portion of the
+    userspace parameters into the local variable "tmp";
+ 3. copy_params() then validates tmp.data_size and allocates a new
+    structure big enough to hold the complete data and copies the whole
+    userspace buffer there;
+ 4. ctl_ioctl() reads userspace data the second time and copies the whole
+    buffer into the pointer "param";
+ 5. ctl_ioctl() reads param->data_size without any validation and stores it
+    in the variable "input_param_size";
+ 6. "input_param_size" is further used as the authoritative size of the
+    kernel buffer.
+
+The problem is that userspace code could change the contents of user
+memory between steps 2 and 4.  In particular, the data_size parameter
+can be changed to an invalid value after the kernel has validated it.
+This lets userspace force the kernel to access invalid kernel memory.
+
+The fix is to ensure that the size has not changed at step 4.
+
+This patch shouldn't have a security impact because CAP_SYS_ADMIN is
+required to run this code, but it should be fixed anyway.
+
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ drivers/md/dm-ioctl.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2140,13 +2140,14 @@ ext4_ext_in_cache(struct inode *inode, e
-  * last index in the block only.
-  */
- static int ext4_ext_rm_idx(handle_t *handle, struct inode *inode,
--			struct ext4_ext_path *path)
-+			struct ext4_ext_path *path, int depth)
- {
- 	int err;
- 	ext4_fsblk_t leaf;
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -1524,6 +1524,14 @@ static int copy_params(struct dm_ioctl _
+ 	if (copy_from_user(dmi, user, tmp.data_size))
+ 		goto bad;
  
- 	/* free index block */
--	path--;
-+	depth--;
-+	path = path + depth;
- 	leaf = ext4_idx_pblock(path->p_idx);
- 	if (unlikely(path->p_hdr->eh_entries == 0)) {
- 		EXT4_ERROR_INODE(inode, "path->p_hdr->eh_entries == 0");
-@@ -2162,6 +2163,19 @@ static int ext4_ext_rm_idx(handle_t *han
- 	ext_debug("index is empty, remove it, free block %llu\n", leaf);
- 	ext4_free_blocks(handle, inode, NULL, leaf, 1,
- 			 EXT4_FREE_BLOCKS_METADATA | EXT4_FREE_BLOCKS_FORGET);
-+
-+	while (--depth >= 0) {
-+		if (path->p_idx != EXT_FIRST_INDEX(path->p_hdr))
-+			break;
-+		path--;
-+		err = ext4_ext_get_access(handle, inode, path);
-+		if (err)
-+			break;
-+		path->p_idx->ei_block = (path+1)->p_idx->ei_block;
-+		err = ext4_ext_dirty(handle, inode, path);
-+		if (err)
-+			break;
++	/*
++	 * Abort if something changed the ioctl data while it was being copied.
++	 */
++	if (dmi->data_size != tmp.data_size) {
++		DMERR("rejecting ioctl: data size modified while processing parameters");
++		goto bad;
 +	}
- 	return err;
- }
- 
-@@ -2509,7 +2523,7 @@ ext4_ext_rm_leaf(handle_t *handle, struc
- 	/* if this leaf is free, then we should
- 	 * remove it from index block above */
- 	if (err == 0 && eh->eh_entries == 0 && path[depth].p_bh != NULL)
--		err = ext4_ext_rm_idx(handle, inode, path + depth);
-+		err = ext4_ext_rm_idx(handle, inode, path, depth);
- 
- out:
- 	return err;
-@@ -2639,7 +2653,7 @@ again:
- 				/* index is empty, remove it;
- 				 * handle must be already prepared by the
- 				 * truncatei_leaf() */
--				err = ext4_ext_rm_idx(handle, inode, path + i);
-+				err = ext4_ext_rm_idx(handle, inode, path, i);
- 			}
- 			/* root level has p_bh == NULL, brelse() eats this */
- 			brelse(path[i].p_bh);
++
+ 	/* Wipe the user buffer so we do not return it to userspace */
+ 	if (secure_data && clear_user(user, tmp.data_size))
+ 		goto bad;
 
 
