@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab3AOWcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:32:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42693 "EHLO mail.kernel.org"
+	id S932502Ab3APANl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:13:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42769 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758376Ab3AOWcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:32:16 -0500
+	id S1758428Ab3AOWcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Axel Lin <axel.lin@ingics.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 124/221] ASoC: arizona: Do proper shift for setting AIF rate
-Date: Tue, 15 Jan 2013 10:50:51 -0800
-Message-Id: <20130115185006.981143990@linuxfoundation.org>
+        Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>
+Subject: [ 119/221] ACPI : do not use Lid and Sleep button for S5 wakeup
+Date: Tue, 15 Jan 2013 10:50:46 -0800
+Message-Id: <20130115185006.628023120@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,32 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 7110a287ff2b1f3780905d1686a1a4edccb95133 upstream.
+commit b7e383046c2c7c13ad928cd7407eafff758ddd4b upstream.
 
-ARIZONA_AIF1_RATE_MASK is 0x7800 /* AIF1_RATE - [14:11] */
-Thus we need left shift ARIZONA_AIF1_RATE_SHIFT when setting aif1 rate.
+When system enters power off, the _PSW of Lid device is enabled.
+But this may cause the system to reboot instead of power off.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+A proper way to fix this is to always disable lid wakeup capability for S5.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=35262
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/arizona.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/acpi/scan.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/arizona.c
-+++ b/sound/soc/codecs/arizona.c
-@@ -677,7 +677,8 @@ static int arizona_hw_params(struct snd_
- 		snd_soc_update_bits(codec, ARIZONA_ASYNC_SAMPLE_RATE_1,
- 				    ARIZONA_ASYNC_SAMPLE_RATE_MASK, sr_val);
- 		snd_soc_update_bits(codec, base + ARIZONA_AIF_RATE_CTRL,
--				    ARIZONA_AIF1_RATE_MASK, 8);
-+				    ARIZONA_AIF1_RATE_MASK,
-+				    8 << ARIZONA_AIF1_RATE_SHIFT);
- 		break;
- 	default:
- 		arizona_aif_err(dai, "Invalid clock %d\n", dai_priv->clk);
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -859,8 +859,8 @@ acpi_bus_extract_wakeup_device_power_pac
+ static void acpi_bus_set_run_wake_flags(struct acpi_device *device)
+ {
+ 	struct acpi_device_id button_device_ids[] = {
+-		{"PNP0C0D", 0},
+ 		{"PNP0C0C", 0},
++		{"PNP0C0D", 0},
+ 		{"PNP0C0E", 0},
+ 		{"", 0},
+ 	};
+@@ -872,6 +872,11 @@ static void acpi_bus_set_run_wake_flags(
+ 	/* Power button, Lid switch always enable wakeup */
+ 	if (!acpi_match_device_ids(device, button_device_ids)) {
+ 		device->wakeup.flags.run_wake = 1;
++		if (!acpi_match_device_ids(device, &button_device_ids[1])) {
++			/* Do not use Lid/sleep button for S5 wakeup */
++			if (device->wakeup.sleep_state == ACPI_STATE_S5)
++				device->wakeup.sleep_state = ACPI_STATE_S4;
++		}
+ 		device_set_wakeup_capable(&device->dev, true);
+ 		return;
+ 	}
 
 
