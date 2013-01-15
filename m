@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab3AOU2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:28:41 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:38575 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757138Ab3AOU2f (ORCPT
+	id S1757398Ab3AOUae (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:30:34 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:37057 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757147Ab3AOU2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:28:35 -0500
+	Tue, 15 Jan 2013 15:28:39 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v5 10/14] mmc: omap_hsmmc: add generic DMA request support to the DT binding
-Date: Tue, 15 Jan 2013 15:32:50 -0500
-Message-Id: <1358281974-8411-11-git-send-email-mporter@ti.com>
+Subject: [PATCH v5 11/14] ARM: dts: add AM33XX MMC support
+Date: Tue, 15 Jan 2013 15:32:51 -0500
+Message-Id: <1358281974-8411-12-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358281974-8411-1-git-send-email-mporter@ti.com>
 References: <1358281974-8411-1-git-send-email-mporter@ti.com>
@@ -37,56 +37,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The binding definition is based on the generic DMA request binding.
+Adds AM33XX MMC support for am335x-bone, am335x-evm, and
+am335x-evmsk.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |   25 +++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/am335x-bone.dts  |    7 +++++++
+ arch/arm/boot/dts/am335x-evm.dts   |    7 +++++++
+ arch/arm/boot/dts/am335x-evmsk.dts |    7 +++++++
+ arch/arm/boot/dts/am33xx.dtsi      |   28 ++++++++++++++++++++++++++++
+ 4 files changed, 49 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
-index ed271fc..826cc51 100644
---- a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
-+++ b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
-@@ -20,8 +20,28 @@ ti,dual-volt: boolean, supports dual voltage cards
- ti,non-removable: non-removable slot (like eMMC)
- ti,needs-special-reset: Requires a special softreset sequence
- ti,needs-special-hs-handling: HSMMC IP needs special setting for handling High Speed
-+dmas: DMA controller phandle and DMA request value ordered pair
-+One tx and one rx pair is required.
-+dma-names: DMA request names. These strings correspond 1:1 with
-+the ordered pairs in dmas. The RX request must be "rx" and the
-+TX request must be "tx".
-+
-+Examples:
-+
-+[hwmod populated DMA resources]
-+
-+	mmc1: mmc@0x4809c000 {
-+		compatible = "ti,omap4-hsmmc";
-+		reg = <0x4809c000 0x400>;
-+		ti,hwmods = "mmc1";
-+		ti,dual-volt;
-+		bus-width = <4>;
-+		vmmc-supply = <&vmmc>; /* phandle to regulator node */
-+		ti,non-removable;
-+	};
-+
-+[generic DMA request binding]
+diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
+index 11b240c..a154ce0 100644
+--- a/arch/arm/boot/dts/am335x-bone.dts
++++ b/arch/arm/boot/dts/am335x-bone.dts
+@@ -120,6 +120,8 @@
+ 		};
  
--Example:
- 	mmc1: mmc@0x4809c000 {
- 		compatible = "ti,omap4-hsmmc";
- 		reg = <0x4809c000 0x400>;
-@@ -30,4 +50,7 @@ Example:
- 		bus-width = <4>;
- 		vmmc-supply = <&vmmc>; /* phandle to regulator node */
- 		ti,non-removable;
-+		dmas = <&edma 24
-+			&edma 25>;
-+		dma-names = "tx", "rx";
+ 		ldo3_reg: regulator@5 {
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <3300000>;
+ 			regulator-always-on;
+ 		};
+ 
+@@ -136,3 +138,8 @@
+ &cpsw_emac1 {
+ 	phy_id = <&davinci_mdio>, <1>;
+ };
++
++&mmc1 {
++	status = "okay";
++	vmmc-supply = <&ldo3_reg>;
++};
+diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
+index d649644..2907da6 100644
+--- a/arch/arm/boot/dts/am335x-evm.dts
++++ b/arch/arm/boot/dts/am335x-evm.dts
+@@ -232,6 +232,8 @@
+ 		};
+ 
+ 		vmmc_reg: regulator@12 {
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <3300000>;
+ 			regulator-always-on;
+ 		};
  	};
+@@ -244,3 +246,8 @@
+ &cpsw_emac1 {
+ 	phy_id = <&davinci_mdio>, <1>;
+ };
++
++&mmc1 {
++	status = "okay";
++	vmmc-supply = <&vmmc_reg>;
++};
+diff --git a/arch/arm/boot/dts/am335x-evmsk.dts b/arch/arm/boot/dts/am335x-evmsk.dts
+index f5a6162..f050c46 100644
+--- a/arch/arm/boot/dts/am335x-evmsk.dts
++++ b/arch/arm/boot/dts/am335x-evmsk.dts
+@@ -244,7 +244,14 @@
+ 		};
+ 
+ 		vmmc_reg: regulator@12 {
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <3300000>;
+ 			regulator-always-on;
+ 		};
+ 	};
+ };
++
++&mmc1 {
++	status = "okay";
++	vmmc-supply = <&vmmc_reg>;
++};
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index e711ffb..278b75d 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -235,6 +235,34 @@
+ 			status = "disabled";
+ 		};
+ 
++		mmc1: mmc@48060000 {
++			compatible = "ti,omap3-hsmmc";
++			ti,hwmods = "mmc1";
++			ti,dual-volt;
++			ti,needs-special-reset;
++			dmas = <&edma 24
++				&edma 25>;
++			dma-names = "tx", "rx";
++			status = "disabled";
++		};
++
++		mmc2: mmc@481d8000 {
++			compatible = "ti,omap3-hsmmc";
++			ti,hwmods = "mmc2";
++			ti,needs-special-reset;
++			dmas = <&edma 2
++				&edma 3>;
++			dma-names = "tx", "rx";
++			status = "disabled";
++		};
++
++		mmc3: mmc@47810000 {
++			compatible = "ti,omap3-hsmmc";
++			ti,hwmods = "mmc3";
++			ti,needs-special-reset;
++			status = "disabled";
++		};
++
+ 		wdt2: wdt@44e35000 {
+ 			compatible = "ti,omap3-wdt";
+ 			ti,hwmods = "wd_timer2";
 -- 
 1.7.9.5
 
