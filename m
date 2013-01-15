@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab3AOPuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 10:50:23 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:33481 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757244Ab3AOPuU (ORCPT
+	id S1757290Ab3AOPu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 10:50:59 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:32992 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756246Ab3AOPuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 10:50:20 -0500
-Date: Tue, 15 Jan 2013 10:50:18 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] PM / Runtime: Fix the twice judgement in rpm_suspend/resume()
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A20400F@SHSMSX101.ccr.corp.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1301151044560.6514-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 15 Jan 2013 10:50:04 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH v6 17/18] perf tools: Ignore ABS symbols when loading data maps
+Date: Tue, 15 Jan 2013 16:39:45 +0100
+Message-Id: <1358264386-24633-18-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358264386-24633-1-git-send-email-eranian@google.com>
+References: <1358264386-24633-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013, Liu, Chuansheng wrote:
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-> > Indeed, this patch introduces a race.  If runtime_status changes from
-> > RPM_SUSPENDING and power.wait_queue is signalled in between the test at
-> > the end of the loop and the prepare_to_wait() call, the loop will never
-> > end.
-> Checking the race case, it should not happen?
-> Updating runtime_status and wake_up wait_queue are protected by power.lock.
-> spin_lock(&power.lock)
-> ...
-> __update_runtime_status()
-> ...
-> wake_up_all(&dev->power.wait_queue)
-> ...
-> spin_unlock(&power.lock)
+When loading symbols in a data mapping, ABS symbols (which has a value
+of SHN_ABS in its st_shndx) failed at elf_getscn().  And it marks the
+loading as a failure so already loaded symbols cannot be fixed up.
 
-You're right, the lock prevents this race from happening.
+I'm not sure what should be done. Just ignore them for now. :)
 
-On the other hand, with your change we would end up calling finish_wait()
-without calling prepare_to_wait() first.  And as Rafael mentioned, the
-current code fits the pattern that people expect to see.
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/symbol-elf.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Alan Stern
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index db0cc92..00cf128 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -719,6 +719,9 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 			used_opd = true;
+ 		}
+ 
++		if (sym.st_shndx == SHN_ABS)
++			continue;
++
+ 		sec = elf_getscn(runtime_ss->elf, sym.st_shndx);
+ 		if (!sec)
+ 			goto out_elf_end;
+-- 
+1.7.9.5
 
