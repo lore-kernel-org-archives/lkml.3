@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758042Ab3AOS5j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:57:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34886 "EHLO mail.kernel.org"
+	id S1758046Ab3AOS5q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:57:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34897 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757951Ab3AOS5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:57:37 -0500
+	id S1757185Ab3AOS5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:57:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Fabrizio Narni <shibotto@gmail.com>, mus.svz@gmail.com,
-        Mattia Dongili <malattia@linux.it>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [ 042/221] sony-laptop: fix SNC buffer calls when SN06 returns Integers
-Date: Tue, 15 Jan 2013 10:49:29 -0800
-Message-Id: <20130115185001.059674137@linuxfoundation.org>
+        David Jeffery <djeffery@redhat.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 034/221] SCSI: qla2xxx: Test and clear FCPORT_UPDATE_NEEDED atomically.
+Date: Tue, 15 Jan 2013 10:49:21 -0800
+Message-Id: <20130115185000.489622579@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,65 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mattia Dongili <malattia@linux.it>
+From: David Jeffery <djeffery@redhat.com>
 
-commit dcbeec264d73b7228ffdfe767eab69b2353099b1 upstream.
+commit a394aac88506159e047630fc90dc2242568382d8 upstream.
 
-SN06 in some cases returns an Integer instead of a buffer. While the
-code handling the return value was trying to cope with the difference,
-the memcpy call was not making any difference between the two types of
-acpi_object union. This regression was introduced in 3.5.
-While there also rework the return value logic to improve readability.
+When the qla2xxx driver loses access to multiple, remote ports, there is a race
+condition which can occur which will keep the request stuck on a scsi request
+queue indefinitely.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=48671
-Cc: Fabrizio Narni <shibotto@gmail.com>
-Cc: <mus.svz@gmail.com>
-Signed-off-by: Mattia Dongili <malattia@linux.it>
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+This bad state occurred do to a race condition with how the FCPORT_UPDATE_NEEDED
+bit is set in qla2x00_schedule_rport_del(), and how it is cleared in
+qla2x00_do_dpc().  The problem port has its drport pointer set, but it has never
+been processed by the driver to inform the fc transport that the port has been
+lost.  qla2x00_schedule_rport_del() sets drport, and then sets the
+FCPORT_UPDATE_NEEDED bit.  In qla2x00_do_dpc(), the port lists are walked and
+any drport pointer is handled and the fc transport informed of the port loss,
+then the FCPORT_UPDATE_NEEDED bit is cleared.  This leaves a race where the
+dpc thread is processing one port removal, another port removal is marked
+with a call to qla2x00_schedule_rport_del(), and the dpc thread clears the
+bit for both removals, even though only the first removal was actually
+handled.  Until another event occurs to set FCPORT_UPDATE_NEEDED, the later
+port removal is never finished and qla2xxx stays in a bad state which causes
+requests to become stuck on request queues.
+
+This patch updates the driver to test and clear FCPORT_UPDATE_NEEDED
+atomically.  This ensures the port state changes are processed and not lost.
+
+Signed-off-by: David Jeffery <djeffery@redhat.com>
+Signed-off-by: Chad Dupuis <chad.dupuis@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/sony-laptop.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/scsi/qla2xxx/qla_os.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/platform/x86/sony-laptop.c
-+++ b/drivers/platform/x86/sony-laptop.c
-@@ -786,28 +786,29 @@ static int sony_nc_int_call(acpi_handle
- static int sony_nc_buffer_call(acpi_handle handle, char *name, u64 *value,
- 		void *buffer, size_t buflen)
- {
-+	int ret = 0;
- 	size_t len = len;
- 	union acpi_object *object = __call_snc_method(handle, name, value);
+--- a/drivers/scsi/qla2xxx/qla_os.c
++++ b/drivers/scsi/qla2xxx/qla_os.c
+@@ -4505,9 +4505,9 @@ qla2x00_do_dpc(void *data)
+ 			    "ISP abort end.\n");
+ 		}
  
- 	if (!object)
- 		return -EINVAL;
+-		if (test_bit(FCPORT_UPDATE_NEEDED, &base_vha->dpc_flags)) {
++		if (test_and_clear_bit(FCPORT_UPDATE_NEEDED,
++		    &base_vha->dpc_flags)) {
+ 			qla2x00_update_fcports(base_vha);
+-			clear_bit(FCPORT_UPDATE_NEEDED, &base_vha->dpc_flags);
+ 		}
  
--	if (object->type == ACPI_TYPE_BUFFER)
-+	if (object->type == ACPI_TYPE_BUFFER) {
- 		len = MIN(buflen, object->buffer.length);
-+		memcpy(buffer, object->buffer.pointer, len);
- 
--	else if (object->type == ACPI_TYPE_INTEGER)
-+	} else if (object->type == ACPI_TYPE_INTEGER) {
- 		len = MIN(buflen, sizeof(object->integer.value));
-+		memcpy(buffer, &object->integer.value, len);
- 
--	else {
-+	} else {
- 		pr_warn("Invalid acpi_object: expected 0x%x got 0x%x\n",
- 				ACPI_TYPE_BUFFER, object->type);
--		kfree(object);
--		return -EINVAL;
-+		ret = -EINVAL;
- 	}
- 
--	memcpy(buffer, object->buffer.pointer, len);
- 	kfree(object);
--	return 0;
-+	return ret;
- }
- 
- struct sony_nc_handles {
+ 		if (test_bit(SCR_PENDING, &base_vha->dpc_flags)) {
 
 
