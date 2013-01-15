@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757636Ab3AOW2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:28:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41364 "EHLO mail.kernel.org"
+	id S1757713Ab3AOW2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:28:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41461 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757609Ab3AOW2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:28:17 -0500
+	id S1757672Ab3AOW2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:28:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chen Gang <gang.chen@asianux.com>, Chris Boot <bootc@bootc.net>,
-        Andy Grover <agrover@redhat.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: [ 050/221] sbp-target: fix error path in sbp_make_tpg()
-Date: Tue, 15 Jan 2013 10:49:37 -0800
-Message-Id: <20130115185001.639180193@linuxfoundation.org>
+        Lukas Czerner <lczerner@redhat.com>,
+        Eugene Shatokhin <eugene.shatokhin@rosalab.ru>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 054/221] ext4: fix memory leak in ext4_xattr_set_acl()s error path
+Date: Tue, 15 Jan 2013 10:49:41 -0800
+Message-Id: <20130115185001.929990428@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,58 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Boot <bootc@bootc.net>
+From: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
 
-commit e1fe2060d7e8f58a69374135e32e90f0bb79a7fd upstream.
+commit 24ec19b0ae83a385ad9c55520716da671274b96c upstream.
 
-If the TPG memory is allocated successfully, but we fail further along
-in the function, a dangling pointer to freed memory is left in the TPort
-structure. This is mostly harmless, but does prevent re-trying the
-operation without first removing the TPort altogether.
+In ext4_xattr_set_acl(), if ext4_journal_start() returns an error,
+posix_acl_release() will not be called for 'acl' which may result in a
+memory leak.
 
-Reported-by: Chen Gang <gang.chen@asianux.com>
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+This patch fixes that.
+
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/sbp/sbp_target.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ fs/ext4/acl.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/target/sbp/sbp_target.c
-+++ b/drivers/target/sbp/sbp_target.c
-@@ -2207,20 +2207,23 @@ static struct se_portal_group *sbp_make_
- 	tport->mgt_agt = sbp_management_agent_register(tport);
- 	if (IS_ERR(tport->mgt_agt)) {
- 		ret = PTR_ERR(tport->mgt_agt);
--		kfree(tpg);
--		return ERR_PTR(ret);
-+		goto out_free_tpg;
- 	}
+--- a/fs/ext4/acl.c
++++ b/fs/ext4/acl.c
+@@ -423,8 +423,10 @@ ext4_xattr_set_acl(struct dentry *dentry
  
- 	ret = core_tpg_register(&sbp_fabric_configfs->tf_ops, wwn,
- 			&tpg->se_tpg, (void *)tpg,
- 			TRANSPORT_TPG_TYPE_NORMAL);
--	if (ret < 0) {
--		sbp_management_agent_unregister(tport->mgt_agt);
--		kfree(tpg);
--		return ERR_PTR(ret);
--	}
-+	if (ret < 0)
-+		goto out_unreg_mgt_agt;
- 
- 	return &tpg->se_tpg;
-+
-+out_unreg_mgt_agt:
-+	sbp_management_agent_unregister(tport->mgt_agt);
-+out_free_tpg:
-+	tport->tpg = NULL;
-+	kfree(tpg);
-+	return ERR_PTR(ret);
- }
- 
- static void sbp_drop_tpg(struct se_portal_group *se_tpg)
+ retry:
+ 	handle = ext4_journal_start(inode, EXT4_DATA_TRANS_BLOCKS(inode->i_sb));
+-	if (IS_ERR(handle))
+-		return PTR_ERR(handle);
++	if (IS_ERR(handle)) {
++		error = PTR_ERR(handle);
++		goto release_and_out;
++	}
+ 	error = ext4_set_acl(handle, inode, type, acl);
+ 	ext4_journal_stop(handle);
+ 	if (error == -ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
 
 
