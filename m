@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934208Ab3AOW4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:56:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48120 "EHLO mail.kernel.org"
+	id S1758765Ab3AOXJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:09:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48133 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934156Ab3AOW4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:56:34 -0500
+	id S934196Ab3AOW4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 27/71] staging: vt6656: 64 bit fixes: use u32 for QWORD definition.
-Date: Tue, 15 Jan 2013 14:54:24 -0800
-Message-Id: <20130115225342.384349823@linuxfoundation.org>
+Subject: [ 28/71] staging: vt6656: 64 bit fixes : correct all type sizes
+Date: Tue, 15 Jan 2013 14:54:25 -0800
+Message-Id: <20130115225342.455694709@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,38 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit a552397d5e4ef0cc0bd3e9595d6acc9a3b381171 upstream.
+commit 7730492855a2f9c828599bcd8d62760f96d319e4 upstream.
 
-Size of long issues replace with u32.
+After this patch all BYTE/WORD/DWORD types can be replaced with the appropriate u sizes.
 
 Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/ttype.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/staging/vt6656/ttype.h |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 --- a/drivers/staging/vt6656/ttype.h
 +++ b/drivers/staging/vt6656/ttype.h
-@@ -29,6 +29,8 @@
- #ifndef __TTYPE_H__
- #define __TTYPE_H__
+@@ -44,9 +44,9 @@ typedef int             BOOL;
  
-+#include <linux/types.h>
-+
- /******* Common definitions and typedefs ***********************************/
+ /****** Simple typedefs  ***************************************************/
  
- typedef int             BOOL;
-@@ -51,8 +53,8 @@ typedef unsigned long   DWORD;
- // which is NOT really a floating point number.
- typedef union tagUQuadWord {
-     struct {
--        DWORD   dwLowDword;
--        DWORD   dwHighDword;
-+	u32 dwLowDword;
-+	u32 dwHighDword;
-     } u;
-     double      DoNotUseThisField;
- } UQuadWord;
+-typedef unsigned char   BYTE;           //  8-bit
+-typedef unsigned short  WORD;           // 16-bit
+-typedef unsigned long   DWORD;          // 32-bit
++typedef u8 BYTE;
++typedef u16 WORD;
++typedef u32 DWORD;
+ 
+ // QWORD is for those situation that we want
+ // an 8-byte-aligned 8 byte long structure
+@@ -62,8 +62,8 @@ typedef UQuadWord       QWORD;
+ 
+ /****** Common pointer types ***********************************************/
+ 
+-typedef unsigned long   ULONG_PTR;      // 32-bit
+-typedef unsigned long   DWORD_PTR;      // 32-bit
++typedef u32 ULONG_PTR;
++typedef u32 DWORD_PTR;
+ 
+ // boolean pointer
+ 
 
 
