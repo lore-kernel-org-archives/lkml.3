@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab3AOWdm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:33:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43167 "EHLO mail.kernel.org"
+	id S1758557Ab3AOWd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:33:59 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43218 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932471Ab3AOWdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:33:35 -0500
+	id S932544Ab3AOWdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:33:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Greear <greearb@candelatech.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 153/221] mac80211: fix station destruction in AP/mesh modes
-Date: Tue, 15 Jan 2013 10:51:20 -0800
-Message-Id: <20130115185009.099919418@linuxfoundation.org>
+        Chris Paulson-Ellis <chris@edesix.com>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 166/221] drm/nouveau: fix blank LVDS screen regression on pre-nv50 cards
+Date: Tue, 15 Jan 2013 10:51:33 -0800
+Message-Id: <20130115185010.020649626@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,202 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit 97f97b1f5fe0878b35c8e314f98591771696321b upstream.
+commit 92441b2263866c27ef48137be5aa6c8c692652fc upstream.
 
-Unfortunately, commit b22cfcfcae5b, intended to speed up roaming
-by avoiding the synchronize_rcu() broke AP/mesh modes as it moved
-some code into that work item that will still call into the driver
-at a time where it's no longer expected to handle this: after the
-AP or mesh has been stopped.
+Commit 2a44e499 ("drm/nouveau/disp: introduce proper init/fini, separate
+from create/destroy") started to call display init routines on pre-nv50
+hardware on module load. But LVDS init code sets driver state in a way
+which prevents modesetting code from operating properly.
 
-To fix this problem remove the per-station work struct, maintain a
-station cleanup list instead and flush this list when stations are
-flushed. To keep this patch smaller for stable, do this when the
-stations are flushed (sta_info_flush()). This unfortunately brings
-back the original roaming delay; I'll fix that again in a separate
-patch.
+nv04_display_init calls nv04_dfp_restore, which sets encoder->last_dpms to
+NV_DPMS_CLEARED.
 
-Also, Ben reported that the original commit could sometimes (with
-many interfaces) cause long delays when an interface is set down,
-due to blocking on flush_workqueue(). Since we now maintain the
-cleanup list, this particular change of the original patch can be
-reverted.
+drm_crtc_helper_set_mode
+  nv04_dfp_prepare
+    nv04_lvds_dpms(DRM_MODE_DPMS_OFF)
 
-Reported-by: Ben Greear <greearb@candelatech.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+nv04_lvds_dpms checks last_dpms mode (which is NV_DPMS_CLEARED) and wrongly
+assumes it's a "powersaving mode", the new one (DRM_MODE_DPMS_OFF) is too,
+so it skips calling some crucial lvds scripts.
+
+Reported-by: Chris Paulson-Ellis <chris@edesix.com>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/ieee80211_i.h |    4 ++++
- net/mac80211/iface.c       |   28 ++++++++++++++++------------
- net/mac80211/sta_info.c    |   44 ++++++++++++++++++++++++++++++++++++++++----
- net/mac80211/sta_info.h    |    3 ++-
- 4 files changed, 62 insertions(+), 17 deletions(-)
+ drivers/gpu/drm/nouveau/nv04_dfp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -730,6 +730,10 @@ struct ieee80211_sub_if_data {
- 		u32 mntr_flags;
- 	} u;
+--- a/drivers/gpu/drm/nouveau/nv04_dfp.c
++++ b/drivers/gpu/drm/nouveau/nv04_dfp.c
+@@ -505,7 +505,7 @@ static void nv04_dfp_update_backlight(st
  
-+	spinlock_t cleanup_stations_lock;
-+	struct list_head cleanup_stations;
-+	struct work_struct cleanup_stations_wk;
-+
- #ifdef CONFIG_MAC80211_DEBUGFS
- 	struct {
- 		struct dentry *dir;
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -793,20 +793,11 @@ static void ieee80211_do_stop(struct iee
- 		flush_work(&sdata->work);
- 		/*
- 		 * When we get here, the interface is marked down.
--		 * Call rcu_barrier() to wait both for the RX path
-+		 * Call synchronize_rcu() to wait for the RX path
- 		 * should it be using the interface and enqueuing
--		 * frames at this very time on another CPU, and
--		 * for the sta free call_rcu callbacks.
-+		 * frames at this very time on another CPU.
- 		 */
--		rcu_barrier();
--
--		/*
--		 * free_sta_rcu() enqueues a work for the actual
--		 * sta cleanup, so we need to flush it while
--		 * sdata is still valid.
--		 */
--		flush_workqueue(local->workqueue);
--
-+		synchronize_rcu();
- 		skb_queue_purge(&sdata->skb_queue);
- 
- 		/*
-@@ -1432,6 +1423,15 @@ static void ieee80211_assign_perm_addr(s
- 	mutex_unlock(&local->iflist_mtx);
- }
- 
-+static void ieee80211_cleanup_sdata_stas_wk(struct work_struct *wk)
-+{
-+	struct ieee80211_sub_if_data *sdata;
-+
-+	sdata = container_of(wk, struct ieee80211_sub_if_data, cleanup_stations_wk);
-+
-+	ieee80211_cleanup_sdata_stas(sdata);
-+}
-+
- int ieee80211_if_add(struct ieee80211_local *local, const char *name,
- 		     struct wireless_dev **new_wdev, enum nl80211_iftype type,
- 		     struct vif_params *params)
-@@ -1507,6 +1507,10 @@ int ieee80211_if_add(struct ieee80211_lo
- 
- 	INIT_LIST_HEAD(&sdata->key_list);
- 
-+	spin_lock_init(&sdata->cleanup_stations_lock);
-+	INIT_LIST_HEAD(&sdata->cleanup_stations);
-+	INIT_WORK(&sdata->cleanup_stations_wk, ieee80211_cleanup_sdata_stas_wk);
-+
- 	for (i = 0; i < IEEE80211_NUM_BANDS; i++) {
- 		struct ieee80211_supported_band *sband;
- 		sband = local->hw.wiphy->bands[i];
---- a/net/mac80211/sta_info.c
-+++ b/net/mac80211/sta_info.c
-@@ -91,9 +91,8 @@ static int sta_info_hash_del(struct ieee
- 	return -ENOENT;
- }
- 
--static void free_sta_work(struct work_struct *wk)
-+static void cleanup_single_sta(struct sta_info *sta)
+ static inline bool is_powersaving_dpms(int mode)
  {
--	struct sta_info *sta = container_of(wk, struct sta_info, free_sta_wk);
- 	int ac, i;
- 	struct tid_ampdu_tx *tid_tx;
- 	struct ieee80211_sub_if_data *sdata = sta->sdata;
-@@ -148,11 +147,35 @@ static void free_sta_work(struct work_st
- 	sta_info_free(local, sta);
+-	return (mode != DRM_MODE_DPMS_ON);
++	return mode != DRM_MODE_DPMS_ON && mode != NV_DPMS_CLEARED;
  }
  
-+void ieee80211_cleanup_sdata_stas(struct ieee80211_sub_if_data *sdata)
-+{
-+	struct sta_info *sta;
-+
-+	spin_lock_bh(&sdata->cleanup_stations_lock);
-+	while (!list_empty(&sdata->cleanup_stations)) {
-+		sta = list_first_entry(&sdata->cleanup_stations,
-+				       struct sta_info, list);
-+		list_del(&sta->list);
-+		spin_unlock_bh(&sdata->cleanup_stations_lock);
-+
-+		cleanup_single_sta(sta);
-+
-+		spin_lock_bh(&sdata->cleanup_stations_lock);
-+	}
-+
-+	spin_unlock_bh(&sdata->cleanup_stations_lock);
-+}
-+
- static void free_sta_rcu(struct rcu_head *h)
- {
- 	struct sta_info *sta = container_of(h, struct sta_info, rcu_head);
-+	struct ieee80211_sub_if_data *sdata = sta->sdata;
- 
--	ieee80211_queue_work(&sta->local->hw, &sta->free_sta_wk);
-+	spin_lock(&sdata->cleanup_stations_lock);
-+	list_add_tail(&sta->list, &sdata->cleanup_stations);
-+	spin_unlock(&sdata->cleanup_stations_lock);
-+
-+	ieee80211_queue_work(&sdata->local->hw, &sdata->cleanup_stations_wk);
- }
- 
- /* protected by RCU */
-@@ -305,7 +328,6 @@ struct sta_info *sta_info_alloc(struct i
- 
- 	spin_lock_init(&sta->lock);
- 	INIT_WORK(&sta->drv_unblock_wk, sta_unblock);
--	INIT_WORK(&sta->free_sta_wk, free_sta_work);
- 	INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
- 	mutex_init(&sta->ampdu_mlme.mtx);
- 
-@@ -877,6 +899,20 @@ int sta_info_flush(struct ieee80211_loca
- 	}
- 	mutex_unlock(&local->sta_mtx);
- 
-+	rcu_barrier();
-+
-+	if (sdata) {
-+		ieee80211_cleanup_sdata_stas(sdata);
-+		cancel_work_sync(&sdata->cleanup_stations_wk);
-+	} else {
-+		mutex_lock(&local->iflist_mtx);
-+		list_for_each_entry(sdata, &local->interfaces, list) {
-+			ieee80211_cleanup_sdata_stas(sdata);
-+			cancel_work_sync(&sdata->cleanup_stations_wk);
-+		}
-+		mutex_unlock(&local->iflist_mtx);
-+	}
-+
- 	return ret;
- }
- 
---- a/net/mac80211/sta_info.h
-+++ b/net/mac80211/sta_info.h
-@@ -298,7 +298,6 @@ struct sta_info {
- 	spinlock_t lock;
- 
- 	struct work_struct drv_unblock_wk;
--	struct work_struct free_sta_wk;
- 
- 	u16 listen_interval;
- 
-@@ -558,4 +557,6 @@ void ieee80211_sta_ps_deliver_wakeup(str
- void ieee80211_sta_ps_deliver_poll_response(struct sta_info *sta);
- void ieee80211_sta_ps_deliver_uapsd(struct sta_info *sta);
- 
-+void ieee80211_cleanup_sdata_stas(struct ieee80211_sub_if_data *sdata);
-+
- #endif /* STA_INFO_H */
+ static void nv04_lvds_dpms(struct drm_encoder *encoder, int mode)
 
 
