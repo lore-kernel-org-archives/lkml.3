@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab3AOVyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 16:54:35 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:41443 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756721Ab3AOVyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 16:54:33 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v8 08/22] PCI, acpiphp: Separate out hot-add support of pci host bridge
-Date: Tue, 15 Jan 2013 23:00:25 +0100
-Message-ID: <2763397.yFrgeYvBXr@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQWCg9ZF8mXF-fMKUhOXF=EDeS07BWKvUSDxWUxikrQu4w@mail.gmail.com>
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <CAE9FiQX6q-tbQuq_0mc0kBFC-bb0zKRDyg=aGLkrAeh5Y7FkYg@mail.gmail.com> <CAE9FiQWCg9ZF8mXF-fMKUhOXF=EDeS07BWKvUSDxWUxikrQu4w@mail.gmail.com>
+	id S1756549Ab3AOV5F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 16:57:05 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:39055 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752637Ab3AOV5D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 16:57:03 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19gOUCevVhT5qqxE5eWoOk43rK8WsgLzOg=
+Date: Tue, 15 Jan 2013 16:56:02 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Soeren Moch <smoch@web.de>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20130115215602.GF25500@titan.lakedaemon.net>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
+ <50F3F289.3090402@web.de>
+ <20130115165642.GA25500@titan.lakedaemon.net>
+ <20130115175020.GA3764@kroah.com>
+ <20130115201617.GC25500@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115201617.GC25500@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 15, 2013 07:54:22 AM Yinghai Lu wrote:
-> On Mon, Jan 14, 2013 at 10:44 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > On Sat, Jan 12, 2013 at 3:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >>> @@ -673,3 +673,223 @@ int __init acpi_pci_root_init(void)
-> >>>
-> >>>       return 0;
-> >>>  }
-> >>> +
-> >>> +/*
-> >>> + * Separated from drivers/pci/hotplug/acpiphp_glue.c
-> >>> + *   only support root bridge
-> >>> + */
-> >>
-> >> This comment will be useless after applying the patch.
-> >>
-> >>> +
-> >>> +static LIST_HEAD(acpi_root_bridge_list);
-> >>> +struct acpi_root_bridge {
-> >>> +     struct list_head list;
-> >>> +     acpi_handle handle;
-> >>> +     u32 flags;
-> >>> +};
-> >>
-> >> We have struct acpi_pci_root already.  Why do we need this in addition?
-> >
-> > will address that in following patch.
-> 
-> please check if you are ok with merging attached 5 patches in to one
-> patches instead.
+Soeren,
 
-Do I understand correctly that you're asking whether to merge the attached
-patches together, so as to obtain one combined patch?
+On Tue, Jan 15, 2013 at 03:16:17PM -0500, Jason Cooper wrote:
+> If my understanding is correct, one of the drivers (most likely one)
+> either asks for too small of a dma buffer, or is not properly
+> deallocating blocks from the per-device pool.  Either case leads to
+> exhaustion, and falling back to the atomic pool.  Which subsequently
+> gets wiped out as well.
 
-If so, yes, I'd like that to be done.
+If my hunch is right, could you please try each of the three dvb drivers
+in turn and see which one (or more than one) causes the error?
 
-Thanks,
-Rafael
+thx,
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jason.
