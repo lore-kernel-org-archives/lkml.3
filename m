@@ -1,184 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab3AOSgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:36:50 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42954 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757439Ab3AOSgn (ORCPT
+	id S1757515Ab3AOSgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:36:49 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:35178 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757443Ab3AOSgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:36:43 -0500
-Message-ID: <50F5A1B7.20504@wwwdotorg.org>
-Date: Tue, 15 Jan 2013 11:36:39 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 15 Jan 2013 13:36:44 -0500
+Message-ID: <50F5A1A9.2030803@free-electrons.com>
+Date: Tue, 15 Jan 2013 19:36:25 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 3/4] pinctrl: add abx500 pinctrl driver core
-References: <1358242984-5160-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1358242984-5160-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.4.6
+To: Cong Ding <dinggnu@gmail.com>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] clk: mvebu/clk-cpu.c: fix memory leakage
+References: <1358183892-28928-1-git-send-email-dinggnu@gmail.com> <50F563EC.3030804@free-electrons.com> <20130115152307.GA25615@gmail.com> <20130115153716.GF13433@titan.lakedaemon.net> <50F584F5.6030007@free-electrons.com> <20130115182629.GB7211@gmail.com>
+In-Reply-To: <20130115182629.GB7211@gmail.com>
+X-Enigmail-Version: 1.5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2013 02:43 AM, Linus Walleij wrote:
-> From: Patrice Chotard <patrice.chotard@st.com>
+On 01/15/2013 07:26 PM, Cong Ding wrote:
+> On Tue, Jan 15, 2013 at 05:33:57PM +0100, Gregory CLEMENT wrote:
+>> On 01/15/2013 04:37 PM, Jason Cooper wrote:
+>>> Mike,
+>>>
+>>> On Tue, Jan 15, 2013 at 03:23:08PM +0000, Cong Ding wrote:
+>>>> From 75c73077905b822be6e8a32a09d6b0cdb5e61763 Mon Sep 17 00:00:00 2001
+>>>> From: Cong Ding <dinggnu@gmail.com>
+>>>> Date: Mon, 14 Jan 2013 18:06:26 +0100
+>>>> Subject: [PATCH v2] clk: mvebu/clk-cpu.c: fix memory leakage
+>>>>
+>>>> the variable cpuclk and clk_name should be properly freed when error happens.
+>>>>
+>>>> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+>>>> ---
+>>>>  drivers/clk/mvebu/clk-cpu.c |   15 ++++++++++-----
+>>>>  1 file changed, 10 insertions(+), 5 deletions(-)
+>>>
+>>>
+>>> Do you want to take this fix through the clock tree?  If so,
+>>>
+>>> Acked-by: Jason Cooper <jason@lakedaemon.net>
+>>>
+>>
+>> I also think it should go through the clock tree but before this
+>> I'd like we fix the last issue.
+>>
+>> Cong Ding,
+>>
+>> you didn't take in account the case when the allocation of the 1st clocks
+>> when the 2nd cpu clock failed. In this case there is still a memory leak with
+>> the clock_name of the first cpu clock. See below for my proposal:
+>>
+>>> Otherwise, just let me know.
+>>>
+>>> thx,
+>>>
+>>> Jason.
+>>>
+>>>> diff --git a/drivers/clk/mvebu/clk-cpu.c b/drivers/clk/mvebu/clk-cpu.c
+>>>> index ff004578..1066a43 100644
+>>>> --- a/drivers/clk/mvebu/clk-cpu.c
+>>>> +++ b/drivers/clk/mvebu/clk-cpu.c
+>>>> @@ -124,7 +124,7 @@ void __init of_cpu_clk_setup(struct device_node *node)
+>>>>  
+>>>>  	clks = kzalloc(ncpus * sizeof(*clks), GFP_KERNEL);
+>>>>  	if (WARN_ON(!clks))
+>>>> -		return;
+>>>> +		goto clks_out;
+>>>>  
+>>>>  	for_each_node_by_type(dn, "cpu") {
+>>>>  		struct clk_init_data init;
+>>>> @@ -134,11 +134,13 @@ void __init of_cpu_clk_setup(struct device_node *node)
+>>>>  		int cpu, err;
+>>>>  
+>>>>  		if (WARN_ON(!clk_name))
+>>>> -			return;
+>>>> +			goto bail_out;
+>>>>  
+>>>>  		err = of_property_read_u32(dn, "reg", &cpu);
+>>>> -		if (WARN_ON(err))
+>>>> -			return;
+>>>> +		if (WARN_ON(err)) {
+>>
+>>>> +			kfree(clk_name);
+>> we can free it later
+>>
+>>>> +			goto bail_out;
+>>>> +		}
+>>>>  
+>>>>  		sprintf(clk_name, "cpu%d", cpu);
+>>>>  		parent_clk = of_clk_get(node, 0);
+>>>> @@ -156,8 +158,10 @@ void __init of_cpu_clk_setup(struct device_node *node)
+>>>>  		init.num_parents = 1;
+>>>>  
+>>>>  		clk = clk_register(NULL, &cpuclk[cpu].hw);
+>>>> -		if (WARN_ON(IS_ERR(clk)))
+>>>> +		if (WARN_ON(IS_ERR(clk))) {
+>>
+>>>> +			kfree(clk_name);
+>> we can free it later
+>>
+>>>>  			goto bail_out;
+>>>> +		}
+>>>>  		clks[cpu] = clk;
+>>>>  	}
+>>>>  	clk_data.clk_num = MAX_CPU;
+>>>> @@ -167,6 +171,7 @@ void __init of_cpu_clk_setup(struct device_node *node)
+>>>>  	return;
+>>>>  bail_out:
+>>>>  	kfree(clks);
+>>>> +clks_out:
+>>
+>> as cpuclk is allocated with all its member set to 0, and kfree(0) is a valid call.
+>> We can add the following lines:
+>> while(ncpus--)
+>> 	kfree(cpuclk[ncpus].clk_name);
+>>
+>>>>  	kfree(cpuclk);
+>>>>  }
+> I agree the version 2 patch still includes memory leakage in terms of clk_name,
+> but I am wondering whether it is safe to call kfree(cpuclk[ncpus].clkname)
+> directly or not. It's true that kfree(0) is valid, but cpuclk[ncpus].clkname
+> might not be 0 when it is allocated by kzalloc. kzalloc just allocates the
+> memory while doesn't ensure the initial value in this memory area is 0. So I
+
+I think that you describe the behavior of kmalloc, but the main difference
+with kmalloc and kzalloc, is that kzalloc allocates _zeroed_ paged, so I am
+pretty sure that all the memory space allocated should be set to zero.
+
+> am thinking we should call memset after the alloction or use a counter to
+> remember the number of clk_names allocated?
 > 
-> This adds the AB8500 core driver, which will be utilized by
-> the follow-on drivers for different ABx500 variants.
-> Sselect the driver from the DBX500_SOC, as this chip is
-> powering and clocking that SoC.
+> - cong
+> 
 
-> diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
 
-> +static int abx500_gpio_get(struct gpio_chip *chip, unsigned offset)
-
-Shouldn't this call abx500_gpio_get_bit(), just like abx500_gpio_set()
-calls abx500_gpio_set_bit()?
-
-> +static int abx500_gpio_direction_output(struct gpio_chip *chip,
-> +					unsigned offset,
-> +					int val)
-...
-> +	/* disable pull down */
-...
-> +	/* if supported, disable both pull down and pull up */
-
-Why the need to override those options?
-
-> +static u8 abx500_get_mode(struct pinctrl_dev *pctldev, struct gpio_chip *chip,
-> +		unsigned gpio)
-
-> +	if (af.gpiosel_bit == UNUSED)
-> +		return ABX500_DEFAULT;
-
-That's odd; abx500_set_mode() seems to allow setting the mode to
-something other than default even if (af.gpiosel_bit == UNUSED). Are
-set_mode/get_mode actually correct inverses of each-other?
-
-> +static int abx500_gpio_irq_init(struct abx500_pinctrl *pct)
-...
-> +#ifdef CONFIG_ARM
-> +		set_irq_flags(irq, IRQF_VALID);
-> +#else
-> +		irq_set_noprobe(irq);
-> +#endif
-
-I assume that ifdef is always set one particular way?
-
-> +static void abx500_gpio_irq_remove(struct abx500_pinctrl *pct)
-...
-> +#ifdef CONFIG_ARM
-> +		set_irq_flags(irq, 0);
-> +#endif
-
-Same there.
-
-> +static void abx500_pmx_disable(struct pinctrl_dev *pctldev,
-> +			    unsigned function, unsigned group)
-> +{
-> +	struct abx500_pinctrl *pct = pinctrl_dev_get_drvdata(pctldev);
-> +	const struct abx500_pingroup *g;
-> +
-> +	g = &pct->soc->groups[group];
-> +	if (g->altsetting < 0)
-> +		return;
-> +
-> +	/* Poke out the mux, set the pin to some default state? */
-> +	dev_dbg(pct->dev, "disable group %s, %u pins\n", g->name, g->npins);
-> +}
-
-That looks basically unimplemented, and the comment seems like a FIXME?
-
-> +int abx500_gpio_request_enable(struct pinctrl_dev *pctldev,
-> +			    struct pinctrl_gpio_range *range,
-> +			    unsigned offset)
-...
-> +	/*
-> +	 * by default, for ABx5xx family, GPIO mode is selected by
-> +	 * writing 1 in GPIOSELx registers
-> +	 */
-> +	ret = abx500_mask_and_set_register_interruptible(pct->dev,
-> +		AB8500_MISC, reg, 1 << pos, 1 << pos);
-
-It sounds like this should be implemented using abx500_set_mode()?
-
-> +int abx500_pin_config_set(struct pinctrl_dev *pctldev,
-> +		       unsigned pin,
-> +		       unsigned long config)
-
-> +	switch (param) {
-> +	case PIN_CONFIG_BIAS_PULL_DOWN:
-> +		/*
-> +		 * if argument = 1 set the pull down
-> +		 * else clear the pull down
-> +		 */
-> +		ret = abx500_gpio_direction_input(chip, offset);
-
-That looks odd; why force the pin to be a GPIO just to enable a pull down?
-
-> +		/* check if pin supports pull updown feature */
-> +		if (pullud && pin >= pullud->first_pin	&& pin <= pullud->last_pin)
-> +			ret = abx500_config_pull_updown(pct,
-> +				offset,
-> +				argument ? ABX500_GPIO_PULL_DOWN : ABX500_GPIO_PULL_NONE);
-> +		else
-> +			ret = abx500_gpio_set_bits(chip, AB8500_GPIO_PUD1_REG,
-> +				offset, argument ? 0 : 1);
-
-Hmm. Wouldn't it be better to remove the if statement, and just store
-ABX500_GPIO_PULL_DOWN or 0, and ABX500_GPIO_PULL_NONE or 1, in the soc_data?
-
-> +static int __devinit abx500_gpio_probe(struct platform_device *pdev)
-
-> +	/* Poke in other ASIC variants here */
-> +	switch (platid->driver_data) {
-> +	case PINCTRL_AB8500:
-> +		abx500_pinctrl_ab8500_init(&pct->soc);
-> +		break;
-> +	case PINCTRL_AB8540:
-> +		abx500_pinctrl_ab8540_init(&pct->soc);
-> +		break;
-> +	case PINCTRL_AB9540:
-> +		abx500_pinctrl_ab9540_init(&pct->soc);
-> +		break;
-> +	case PINCTRL_AB8505:
-> +		abx500_pinctrl_ab8505_init(&pct->soc);
-> +		break;
-> +	default:
-> +		dev_err(&pdev->dev, "Unsupported pinctrl sub driver (%d)\n",
-> +				(int) platid->driver_data);
-> +		return -EINVAL;
-> +	}
-
-Most of those functions don't exist yet. I see there are dummy inlines
-below for them if the /config/ options aren't turned on, but what's to
-stop somebody turning on the config option before the real
-implementation exists?
-
-In the past, Arnd requested that each variant had a separate top-level
-driver object that called into a utility probe() function, rather than
-having a probe() function that knew about all the SoC variants, and
-dispatched out to a variant-specific function.
-
-> +static int __devexit abx500_gpio_remove(struct platform_device *pdev)
-
-> +	platform_set_drvdata(pdev, NULL);
-
-There's no point doing that; nothing should touch the drvdata while the
-device doesn't exist (or isn't probed rather).
-
-> +	mutex_destroy(&pct->lock);
-> +	kfree(pct);
-
-That was allocated using devm_kzalloc(). There's no point freeing it
-here, and if there were, devm_kfree() should be used, or a double-free
-will occur.
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
