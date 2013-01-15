@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab3AOLjz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 06:39:55 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11722 "EHLO
+	id S1756695Ab3AOLjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 06:39:05 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11710 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756699Ab3AOLjG (ORCPT
+	with ESMTP id S1756515Ab3AOLjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 06:39:06 -0500
+	Tue, 15 Jan 2013 06:39:02 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 15 Jan 2013 03:37:55 -0800
+	by hqnvupgp08.nvidia.com on Tue, 15 Jan 2013 03:38:18 -0800
 From: Terje Bergstrom <tbergstrom@nvidia.com>
 To: <amerilainen@nvidia.com>, <airlied@linux.ie>,
         <thierry.reding@avionic-design.de>
 CC: <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>,
         Terje Bergstrom <tbergstrom@nvidia.com>
-Subject: [PATCHv5,RESEND 8/8] drm: tegra: Add gr2d device
-Date: Tue, 15 Jan 2013 13:44:04 +0200
-Message-ID: <1358250244-9678-9-git-send-email-tbergstrom@nvidia.com>
+Subject: [PATCHv5,RESEND 2/8] gpu: host1x: Add syncpoint wait and interrupts
+Date: Tue, 15 Jan 2013 13:43:58 +0200
+Message-ID: <1358250244-9678-3-git-send-email-tbergstrom@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com>
 References: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com>
@@ -28,405 +28,248 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add client driver for 2D device, and IOCTLs to pass work to host1x
-channel for 2D.
-
-Also adds functions that can be called to access sync points from DRM.
+Add support for sync point interrupts, and sync point wait. Sync
+point wait used interrupts for unblocking wait.
 
 Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
 ---
- drivers/gpu/host1x/Makefile   |    1 +
- drivers/gpu/host1x/dev.c      |    7 +
- drivers/gpu/host1x/drm/drm.c  |  226 +++++++++++++++++++++++++++-
- drivers/gpu/host1x/drm/drm.h  |   28 ++++
- drivers/gpu/host1x/drm/gr2d.c |  325 +++++++++++++++++++++++++++++++++++++++++
- drivers/gpu/host1x/syncpt.c   |    5 +
- drivers/gpu/host1x/syncpt.h   |    3 +
- include/drm/tegra_drm.h       |  131 +++++++++++++++++
- 8 files changed, 725 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/host1x/drm/gr2d.c
- create mode 100644 include/drm/tegra_drm.h
+ drivers/gpu/host1x/Makefile              |    1 +
+ drivers/gpu/host1x/dev.c                 |   21 +-
+ drivers/gpu/host1x/dev.h                 |   17 +-
+ drivers/gpu/host1x/hw/host1x01.c         |    2 +
+ drivers/gpu/host1x/hw/hw_host1x01_sync.h |   42 ++++
+ drivers/gpu/host1x/hw/intr_hw.c          |  178 +++++++++++++++
+ drivers/gpu/host1x/intr.c                |  356 ++++++++++++++++++++++++++++++
+ drivers/gpu/host1x/intr.h                |  103 +++++++++
+ drivers/gpu/host1x/syncpt.c              |  163 ++++++++++++++
+ drivers/gpu/host1x/syncpt.h              |    5 +
+ 10 files changed, 883 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/gpu/host1x/hw/intr_hw.c
+ create mode 100644 drivers/gpu/host1x/intr.c
+ create mode 100644 drivers/gpu/host1x/intr.h
 
 diff --git a/drivers/gpu/host1x/Makefile b/drivers/gpu/host1x/Makefile
-index c35ee19..c2120ad 100644
+index 363e6ab..5ef47ff 100644
 --- a/drivers/gpu/host1x/Makefile
 +++ b/drivers/gpu/host1x/Makefile
-@@ -18,4 +18,5 @@ ccflags-$(CONFIG_DRM_TEGRA_DEBUG) += -DDEBUG
+@@ -3,6 +3,7 @@ ccflags-y = -Idrivers/gpu/host1x
+ host1x-y = \
+ 	syncpt.o \
+ 	dev.o \
++	intr.o \
+ 	hw/host1x01.o
  
- host1x-$(CONFIG_DRM_TEGRA) += drm/drm.o drm/fb.o drm/dc.o
- host1x-$(CONFIG_DRM_TEGRA) += drm/output.o drm/rgb.o drm/hdmi.o
-+host1x-$(CONFIG_DRM_TEGRA) += drm/gr2d.o
  obj-$(CONFIG_TEGRA_HOST1X) += host1x.o
 diff --git a/drivers/gpu/host1x/dev.c b/drivers/gpu/host1x/dev.c
-index 17ee01c..40d9938 100644
+index cd2b1ef..7f9f389 100644
 --- a/drivers/gpu/host1x/dev.c
 +++ b/drivers/gpu/host1x/dev.c
-@@ -214,11 +214,17 @@ static int __init tegra_host1x_init(void)
- 	err = platform_driver_register(&tegra_hdmi_driver);
- 	if (err < 0)
- 		goto unregister_dc;
+@@ -24,6 +24,7 @@
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ #include "dev.h"
++#include "intr.h"
+ #include "hw/host1x01.h"
+ 
+ #define CREATE_TRACE_POINTS
+@@ -95,7 +96,6 @@ static int host1x_probe(struct platform_device *dev)
+ 
+ 	/* set common host1x device data */
+ 	platform_set_drvdata(dev, host);
+-
+ 	host->regs = devm_request_and_ioremap(&dev->dev, regs);
+ 	if (!host->regs) {
+ 		dev_err(&dev->dev, "failed to remap host registers\n");
+@@ -109,28 +109,40 @@ static int host1x_probe(struct platform_device *dev)
+ 	}
+ 
+ 	err = host1x_syncpt_init(host);
+-	if (err)
++	if (err) {
++		dev_err(&dev->dev, "failed to init sync points");
+ 		return err;
++	}
 +
-+	err = platform_driver_register(&tegra_gr2d_driver);
-+	if (err < 0)
-+		goto unregister_hdmi;
- #endif
++	err = host1x_intr_init(&host->intr, syncpt_irq);
++	if (err) {
++		dev_err(&dev->dev, "failed to init irq");
++		goto fail_deinit_syncpt;
++	}
+ 
+ 	host->clk = devm_clk_get(&dev->dev, NULL);
+ 	if (IS_ERR(host->clk)) {
+ 		dev_err(&dev->dev, "failed to get clock\n");
+ 		err = PTR_ERR(host->clk);
+-		goto fail_deinit_syncpt;
++		goto fail_deinit_intr;
+ 	}
+ 
+ 	err = clk_prepare_enable(host->clk);
+ 	if (err < 0) {
+ 		dev_err(&dev->dev, "failed to enable clock\n");
+-		goto fail_deinit_syncpt;
++		goto fail_deinit_intr;
+ 	}
+ 
+ 	host1x_syncpt_reset(host);
+ 
++	host1x_intr_start(&host->intr, clk_get_rate(host->clk));
++
+ 	dev_info(&dev->dev, "initialized\n");
  
  	return 0;
  
- #ifdef CONFIG_TEGRA_DRM
-+unregister_hdmi:
-+	platform_driver_unregister(&tegra_hdmi_driver);
- unregister_dc:
- 	platform_driver_unregister(&tegra_dc_driver);
- unregister_host1x:
-@@ -231,6 +237,7 @@ module_init(tegra_host1x_init);
- static void __exit tegra_host1x_exit(void)
++fail_deinit_intr:
++	host1x_intr_deinit(&host->intr);
+ fail_deinit_syncpt:
+ 	host1x_syncpt_deinit(host);
+ 	return err;
+@@ -139,6 +151,7 @@ fail_deinit_syncpt:
+ static int __exit host1x_remove(struct platform_device *dev)
  {
- #ifdef CONFIG_TEGRA_DRM
-+	platform_driver_unregister(&tegra_gr2d_driver);
- 	platform_driver_unregister(&tegra_hdmi_driver);
- 	platform_driver_unregister(&tegra_dc_driver);
- #endif
-diff --git a/drivers/gpu/host1x/drm/drm.c b/drivers/gpu/host1x/drm/drm.c
-index bef9051..f8f8508 100644
---- a/drivers/gpu/host1x/drm/drm.c
-+++ b/drivers/gpu/host1x/drm/drm.c
-@@ -14,9 +14,11 @@
- #include <mach/clk.h>
- #include <linux/dma-mapping.h>
- #include <asm/dma-iommu.h>
-+#include <drm/tegra_drm.h>
+ 	struct host1x *host = platform_get_drvdata(dev);
++	host1x_intr_deinit(&host->intr);
+ 	host1x_syncpt_deinit(host);
+ 	clk_disable_unprepare(host->clk);
+ 	return 0;
+diff --git a/drivers/gpu/host1x/dev.h b/drivers/gpu/host1x/dev.h
+index d8f5979..8376092 100644
+--- a/drivers/gpu/host1x/dev.h
++++ b/drivers/gpu/host1x/dev.h
+@@ -17,11 +17,12 @@
+ #ifndef HOST1X_DEV_H
+ #define HOST1X_DEV_H
  
- #include "drm.h"
- #include "host1x_client.h"
-+#include "syncpt.h"
++#include <linux/platform_device.h>
+ #include "syncpt.h"
++#include "intr.h"
  
- #define DRIVER_NAME "tegra"
- #define DRIVER_DESC "NVIDIA Tegra graphics"
-@@ -78,8 +80,10 @@ static int host1x_parse_dt(struct host1x *host1x)
- 	static const char * const compat[] = {
- 		"nvidia,tegra20-dc",
- 		"nvidia,tegra20-hdmi",
-+		"nvidia,tegra20-gr2d",
- 		"nvidia,tegra30-dc",
- 		"nvidia,tegra30-hdmi",
-+		"nvidia,tegra30-gr2d",
- 	};
- 	unsigned int i;
- 	int err;
-@@ -270,7 +274,29 @@ static int tegra_drm_unload(struct drm_device *drm)
+ struct host1x;
+ struct host1x_syncpt;
+-struct platform_device;
  
- static int tegra_drm_open(struct drm_device *drm, struct drm_file *filp)
- {
--	return 0;
-+	struct host1x_drm_fpriv *fpriv;
-+	int err = 0;
-+
-+	fpriv = kzalloc(sizeof(*fpriv), GFP_KERNEL);
-+	if (!fpriv)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&fpriv->contexts);
-+	filp->driver_priv = fpriv;
-+
-+	return err;
-+}
-+
-+static void tegra_drm_close(struct drm_device *drm, struct drm_file *filp)
-+{
-+	struct host1x_drm_fpriv *fpriv = host1x_drm_fpriv(filp);
-+	struct host1x_drm_context *context, *tmp;
-+
-+	list_for_each_entry_safe(context, tmp, &fpriv->contexts, list) {
-+		context->client->ops->close_channel(context);
-+		kfree(context);
-+	}
-+	kfree(fpriv);
- }
- 
- static void tegra_drm_lastclose(struct drm_device *drm)
-@@ -280,7 +306,204 @@ static void tegra_drm_lastclose(struct drm_device *drm)
- 	drm_fbdev_cma_restore_mode(host1x->fbdev);
- }
- 
-+static int
-+tegra_drm_ioctl_syncpt_read(struct drm_device *drm, void *data,
-+			 struct drm_file *file_priv)
-+{
-+	struct host1x *host1x = drm->dev_private;
-+	struct tegra_drm_syncpt_read_args *args = data;
-+	struct host1x_syncpt *sp =
-+		host1x_syncpt_get_bydev(host1x->dev, args->id);
-+
-+	if (!sp)
-+		return -EINVAL;
-+
-+	args->value = host1x_syncpt_read_min(sp);
-+	return 0;
-+}
-+
-+static int
-+tegra_drm_ioctl_syncpt_incr(struct drm_device *drm, void *data,
-+			 struct drm_file *file_priv)
-+{
-+	struct host1x *host1x = drm->dev_private;
-+	struct tegra_drm_syncpt_incr_args *args = data;
-+	struct host1x_syncpt *sp =
-+		host1x_syncpt_get_bydev(host1x->dev, args->id);
-+
-+	if (!sp)
-+		return -EINVAL;
-+
-+	host1x_syncpt_incr(sp);
-+	return 0;
-+}
-+
-+static int
-+tegra_drm_ioctl_syncpt_wait(struct drm_device *drm, void *data,
-+			 struct drm_file *file_priv)
-+{
-+	struct host1x *host1x = drm->dev_private;
-+	struct tegra_drm_syncpt_wait_args *args = data;
-+	struct host1x_syncpt *sp =
-+		host1x_syncpt_get_bydev(host1x->dev, args->id);
-+
-+	if (!sp)
-+		return -EINVAL;
-+
-+	return host1x_syncpt_wait(sp, args->thresh,
-+			args->timeout, &args->value);
-+}
-+
-+static int
-+tegra_drm_ioctl_open_channel(struct drm_device *drm, void *data,
-+			 struct drm_file *file_priv)
-+{
-+	struct tegra_drm_open_channel_args *args = data;
-+	struct host1x_client *client;
-+	struct host1x_drm_context *context;
-+	struct host1x_drm_fpriv *fpriv = host1x_drm_fpriv(file_priv);
-+	struct host1x *host1x = drm->dev_private;
-+	int err = 0;
-+
-+	context = kzalloc(sizeof(*context), GFP_KERNEL);
-+	if (!context)
-+		return -ENOMEM;
-+
-+	list_for_each_entry(client, &host1x->clients, list) {
-+		if (client->class == args->class) {
-+			context->client = client;
-+			err = client->ops->open_channel(client, context);
-+			if (err)
-+				goto out;
-+
-+			list_add(&context->list, &fpriv->contexts);
-+			args->context = (uintptr_t)context;
-+			goto out;
-+		}
-+	}
-+	err = -ENODEV;
-+
-+out:
-+	if (err)
-+		kfree(context);
-+
-+	return err;
-+}
-+
-+static int
-+tegra_drm_ioctl_close_channel(struct drm_device *drm, void *data,
-+			 struct drm_file *file_priv)
-+{
-+	struct tegra_drm_open_channel_args *args = data;
-+	struct host1x_drm_context *context, *tmp;
-+	struct host1x_drm_fpriv *fpriv = host1x_drm_fpriv(file_priv);
-+	int err = 0;
-+
-+	list_for_each_entry_safe(context, tmp, &fpriv->contexts, list) {
-+		if ((uintptr_t)context == args->context) {
-+			context->client->ops->close_channel(context);
-+			list_del(&context->list);
-+			kfree(context);
-+			goto out;
-+		}
-+	}
-+	err = -EINVAL;
-+
-+out:
-+	return err;
-+}
-+
-+static int
-+tegra_drm_ioctl_get_syncpoint(struct drm_device *drm, void *data,
-+			 struct drm_file *file_priv)
-+{
-+	struct tegra_drm_get_channel_param_args *args = data;
-+	struct host1x_drm_context *context;
-+	struct host1x_drm_fpriv *fpriv = host1x_drm_fpriv(file_priv);
-+	int err = 0;
-+
-+	list_for_each_entry(context, &fpriv->contexts, list) {
-+		if ((uintptr_t)context == args->context) {
-+			args->value =
-+				context->client->ops->get_syncpoint(context,
-+						args->param);
-+			goto out;
-+		}
-+	}
-+	err = -ENODEV;
-+
-+out:
-+	return err;
-+}
-+
-+static int
-+tegra_drm_ioctl_submit(struct drm_device *drm, void *data,
-+			 struct drm_file *file_priv)
-+{
-+	struct tegra_drm_submit_args *args = data;
-+	struct host1x_drm_context *context;
-+	struct host1x_drm_fpriv *fpriv = host1x_drm_fpriv(file_priv);
-+	int err = 0;
-+
-+	list_for_each_entry(context, &fpriv->contexts, list) {
-+		if ((uintptr_t)context == args->context) {
-+			err = context->client->ops->submit(context, args, drm,
-+				file_priv);
-+			goto out;
-+		}
-+	}
-+	err = -ENODEV;
-+
-+out:
-+	return err;
-+
-+}
-+
-+static int
-+tegra_drm_create_ioctl(struct drm_device *drm, void *data,
-+			 struct drm_file *file_priv)
-+{
-+	struct tegra_gem_create *args = data;
-+	struct drm_gem_cma_object *cma_obj;
-+	int ret;
-+
-+	cma_obj = drm_gem_cma_create(drm, args->size);
-+	if (IS_ERR(cma_obj))
-+		goto err_cma_create;
-+
-+	ret = drm_gem_handle_create(file_priv, &cma_obj->base, &args->handle);
-+	if (ret)
-+		goto err_handle_create;
-+
-+	args->offset = cma_obj->base.map_list.hash.key << PAGE_SHIFT;
-+
-+	drm_gem_object_unreference(&cma_obj->base);
-+
-+	return 0;
-+
-+err_handle_create:
-+	drm_gem_cma_free_object(&cma_obj->base);
-+err_cma_create:
-+	return -ENOMEM;
-+}
-+
- static struct drm_ioctl_desc tegra_drm_ioctls[] = {
-+	DRM_IOCTL_DEF_DRV(TEGRA_GEM_CREATE,
-+			tegra_drm_create_ioctl, DRM_UNLOCKED | DRM_AUTH),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_SYNCPT_READ,
-+			tegra_drm_ioctl_syncpt_read, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_SYNCPT_INCR,
-+			tegra_drm_ioctl_syncpt_incr, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_SYNCPT_WAIT,
-+			tegra_drm_ioctl_syncpt_wait, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_OPEN_CHANNEL,
-+			tegra_drm_ioctl_open_channel, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_CLOSE_CHANNEL,
-+			tegra_drm_ioctl_close_channel, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_GET_SYNCPOINT,
-+			tegra_drm_ioctl_get_syncpoint, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_SUBMIT,
-+			tegra_drm_ioctl_submit, DRM_UNLOCKED),
+ struct host1x_syncpt_ops {
+ 	void (*reset)(struct host1x_syncpt *);
+@@ -34,6 +35,18 @@ struct host1x_syncpt_ops {
+ 	const char * (*name)(struct host1x_syncpt *);
  };
  
- static const struct file_operations tegra_drm_fops = {
-@@ -303,6 +526,7 @@ struct drm_driver tegra_drm_driver = {
- 	.load = tegra_drm_load,
- 	.unload = tegra_drm_unload,
- 	.open = tegra_drm_open,
-+	.preclose = tegra_drm_close,
- 	.lastclose = tegra_drm_lastclose,
- 
- 	.gem_free_object = drm_gem_cma_free_object,
-diff --git a/drivers/gpu/host1x/drm/drm.h b/drivers/gpu/host1x/drm/drm.h
-index e7101d5..dc4c128 100644
---- a/drivers/gpu/host1x/drm/drm.h
-+++ b/drivers/gpu/host1x/drm/drm.h
-@@ -17,6 +17,7 @@
- #include <drm/drm_gem_cma_helper.h>
- #include <drm/drm_fb_cma_helper.h>
- #include <drm/drm_fixed.h>
-+#include <drm/tegra_drm.h>
- 
- struct tegra_framebuffer {
- 	struct drm_framebuffer base;
-@@ -49,17 +50,44 @@ struct host1x {
- 
- struct host1x_client;
- 
-+struct host1x_drm_context {
-+	struct host1x_client *client;
-+	struct host1x_channel *channel;
-+	struct list_head list;
++struct host1x_intr_ops {
++	void (*init_host_sync)(struct host1x_intr *);
++	void (*set_host_clocks_per_usec)(
++		struct host1x_intr *, u32 clocks);
++	void (*set_syncpt_threshold)(
++		struct host1x_intr *, u32 id, u32 thresh);
++	void (*enable_syncpt_intr)(struct host1x_intr *, u32 id);
++	void (*disable_syncpt_intr)(struct host1x_intr *, u32 id);
++	void (*disable_all_syncpt_intrs)(struct host1x_intr *);
++	int (*free_syncpt_irq)(struct host1x_intr *);
 +};
 +
- struct host1x_client_ops {
- 	int (*drm_init)(struct host1x_client *client, struct drm_device *drm);
- 	int (*drm_exit)(struct host1x_client *client);
-+	int (*open_channel)(struct host1x_client *,
-+			struct host1x_drm_context *);
-+	void (*close_channel)(struct host1x_drm_context *);
-+	u32 (*get_syncpoint)(struct host1x_drm_context *, int index);
-+	int (*submit)(struct host1x_drm_context *,
-+			struct tegra_drm_submit_args *,
-+			struct drm_device *,
-+			struct drm_file *);
-+};
-+
-+struct host1x_drm_fpriv {
-+	struct list_head contexts;
- };
+ struct host1x_device_info {
+ 	int	nb_channels;		/* host1x: num channels supported */
+ 	int	nb_pts;			/* host1x: num syncpoints supported */
+@@ -46,11 +59,13 @@ struct host1x_device_info {
+ struct host1x {
+ 	void __iomem *regs;
+ 	struct host1x_syncpt *syncpt;
++	struct host1x_intr intr;
+ 	struct platform_device *dev;
+ 	struct host1x_device_info info;
+ 	struct clk *clk;
  
-+static inline struct host1x_drm_fpriv *
-+host1x_drm_fpriv(struct drm_file *file_priv)
+ 	struct host1x_syncpt_ops syncpt_op;
++	struct host1x_intr_ops intr_op;
+ 
+ 	struct dentry *debugfs;
+ };
+diff --git a/drivers/gpu/host1x/hw/host1x01.c b/drivers/gpu/host1x/hw/host1x01.c
+index ea6e604..3d633a3 100644
+--- a/drivers/gpu/host1x/hw/host1x01.c
++++ b/drivers/gpu/host1x/hw/host1x01.c
+@@ -26,10 +26,12 @@
+ #include "hw/host1x01_hardware.h"
+ 
+ #include "hw/syncpt_hw.c"
++#include "hw/intr_hw.c"
+ 
+ int host1x01_init(struct host1x *host)
+ {
+ 	host->syncpt_op = host1x_syncpt_ops;
++	host->intr_op = host1x_intr_ops;
+ 
+ 	return 0;
+ }
+diff --git a/drivers/gpu/host1x/hw/hw_host1x01_sync.h b/drivers/gpu/host1x/hw/hw_host1x01_sync.h
+index b12c1a4..5da9afb 100644
+--- a/drivers/gpu/host1x/hw/hw_host1x01_sync.h
++++ b/drivers/gpu/host1x/hw/hw_host1x01_sync.h
+@@ -51,12 +51,54 @@
+ #ifndef __hw_host1x01_sync_h__
+ #define __hw_host1x01_sync_h__
+ 
++static inline u32 host1x_sync_syncpt_thresh_cpu0_int_status_r(void)
 +{
-+	return file_priv ? file_priv->driver_priv : NULL;
++	return 0x40;
 +}
-+
- struct host1x_client {
- 	struct host1x *host1x;
- 	struct device *dev;
- 
- 	const struct host1x_client_ops *ops;
- 
-+	u32 class;
-+	struct host1x_channel *channel;
-+
- 	struct list_head list;
- };
- 
-diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
++#define HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS \
++	host1x_sync_syncpt_thresh_cpu0_int_status_r()
++static inline u32 host1x_sync_syncpt_thresh_int_disable_r(void)
++{
++	return 0x60;
++}
++#define HOST1X_SYNC_SYNCPT_THRESH_INT_DISABLE \
++	host1x_sync_syncpt_thresh_int_disable_r()
++static inline u32 host1x_sync_syncpt_thresh_int_enable_cpu0_r(void)
++{
++	return 0x68;
++}
++#define HOST1X_SYNC_SYNCPT_THRESH_INT_ENABLE_CPU0 \
++	host1x_sync_syncpt_thresh_int_enable_cpu0_r()
++static inline u32 host1x_sync_usec_clk_r(void)
++{
++	return 0x1a4;
++}
++#define HOST1X_SYNC_USEC_CLK \
++	host1x_sync_usec_clk_r()
++static inline u32 host1x_sync_ctxsw_timeout_cfg_r(void)
++{
++	return 0x1a8;
++}
++#define HOST1X_SYNC_CTXSW_TIMEOUT_CFG \
++	host1x_sync_ctxsw_timeout_cfg_r()
++static inline u32 host1x_sync_ip_busy_timeout_r(void)
++{
++	return 0x1bc;
++}
++#define HOST1X_SYNC_IP_BUSY_TIMEOUT \
++	host1x_sync_ip_busy_timeout_r()
+ static inline u32 host1x_sync_syncpt_0_r(void)
+ {
+ 	return 0x400;
+ }
+ #define HOST1X_SYNC_SYNCPT_0 \
+ 	host1x_sync_syncpt_0_r()
++static inline u32 host1x_sync_syncpt_int_thresh_0_r(void)
++{
++	return 0x500;
++}
++#define HOST1X_SYNC_SYNCPT_INT_THRESH_0 \
++	host1x_sync_syncpt_int_thresh_0_r()
+ static inline u32 host1x_sync_syncpt_base_0_r(void)
+ {
+ 	return 0x600;
+diff --git a/drivers/gpu/host1x/hw/intr_hw.c b/drivers/gpu/host1x/hw/intr_hw.c
 new file mode 100644
-index 0000000..dc7d6c6
+index 0000000..12488e2
 --- /dev/null
-+++ b/drivers/gpu/host1x/drm/gr2d.c
-@@ -0,0 +1,325 @@
++++ b/drivers/gpu/host1x/hw/intr_hw.c
+@@ -0,0 +1,178 @@
 +/*
-+ * drivers/video/tegra/host/gr2d/gr2d.c
++ * Tegra host1x Interrupt Management
 + *
-+ * Tegra Graphics 2D
-+ *
-+ * Copyright (c) 2012, NVIDIA Corporation.
++ * Copyright (C) 2010 Google, Inc.
++ * Copyright (c) 2010-2013, NVIDIA Corporation.
 + *
 + * This program is free software; you can redistribute it and/or modify it
 + * under the terms and conditions of the GNU General Public License,
@@ -441,475 +284,843 @@ index 0000000..dc7d6c6
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#include <linux/export.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/clk.h>
-+#include <drm/tegra_drm.h>
-+#include "drm.h"
-+#include "job.h"
-+#include "channel.h"
-+#include "host1x.h"
-+#include "syncpt.h"
-+#include "memmgr.h"
-+#include "host1x_client.h"
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/io.h>
++#include <asm/mach/irq.h>
 +
-+struct gr2d {
-+	struct host1x_client client;
-+	struct clk *clk;
-+	struct host1x_syncpt *syncpt;
-+	struct host1x_channel *channel;
-+};
++#include "intr.h"
++#include "dev.h"
 +
-+static int gr2d_is_addr_reg(struct platform_device *dev, u32 class, u32 reg);
++/* Spacing between sync registers */
++#define REGISTER_STRIDE 4
 +
-+static int gr2d_client_init(struct host1x_client *client,
-+		struct drm_device *drm)
++static void host1x_intr_syncpt_thresh_isr(struct host1x_intr_syncpt *syncpt);
++
++static void syncpt_thresh_cascade_fn(struct work_struct *work)
 +{
-+	return 0;
++	struct host1x_intr_syncpt *sp =
++		container_of(work, struct host1x_intr_syncpt, work);
++	host1x_syncpt_thresh_fn(sp);
 +}
 +
-+static int gr2d_client_exit(struct host1x_client *client)
++static irqreturn_t syncpt_thresh_cascade_isr(int irq, void *dev_id)
 +{
-+	return 0;
-+}
++	struct host1x *host1x = dev_id;
++	struct host1x_intr *intr = &host1x->intr;
++	unsigned long reg;
++	int i, id;
 +
-+static int gr2d_open_channel(struct host1x_client *client,
-+		struct host1x_drm_context *context)
-+{
-+	struct gr2d *gr2d = dev_get_drvdata(client->dev);
-+	context->channel = host1x_channel_get(gr2d->channel);
-+
-+	if (!context->channel)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static void gr2d_close_channel(struct host1x_drm_context *context)
-+{
-+	host1x_channel_put(context->channel);
-+}
-+
-+static u32 gr2d_get_syncpoint(struct host1x_drm_context *context, int index)
-+{
-+	struct gr2d *gr2d = dev_get_drvdata(context->client->dev);
-+	if (index != 0)
-+		return UINT_MAX;
-+
-+	return host1x_syncpt_id(gr2d->syncpt);
-+}
-+
-+static u32 handle_cma_to_host1x(struct drm_device *drm,
-+				struct drm_file *file_priv, u32 gem_handle)
-+{
-+	struct drm_gem_object *obj;
-+	struct drm_gem_cma_object *cma_obj;
-+	u32 host1x_handle;
-+
-+	obj = drm_gem_object_lookup(drm, file_priv, gem_handle);
-+	if (!obj)
-+		return 0;
-+
-+	cma_obj = to_drm_gem_cma_obj(obj);
-+	host1x_handle = host1x_memmgr_host1x_id(mem_mgr_type_cma, (u32)cma_obj);
-+	drm_gem_object_unreference(obj);
-+
-+	return host1x_handle;
-+}
-+
-+static int gr2d_submit(struct host1x_drm_context *context,
-+		struct tegra_drm_submit_args *args,
-+		struct drm_device *drm,
-+		struct drm_file *file_priv)
-+{
-+	struct host1x_job *job;
-+	int num_cmdbufs = args->num_cmdbufs;
-+	int num_relocs = args->num_relocs;
-+	int num_waitchks = args->num_waitchks;
-+	struct tegra_drm_cmdbuf __user *cmdbufs =
-+		(void * __user)(uintptr_t)args->cmdbufs;
-+	struct tegra_drm_reloc __user *relocs =
-+		(void * __user)(uintptr_t)args->relocs;
-+	struct tegra_drm_waitchk __user *waitchks =
-+		(void * __user)(uintptr_t)args->waitchks;
-+	struct tegra_drm_syncpt_incr syncpt_incr;
-+	int err;
-+
-+	/* We don't yet support other than one syncpt_incr struct per submit */
-+	if (args->num_syncpt_incrs != 1)
-+		return -EINVAL;
-+
-+	job = host1x_job_alloc(context->channel,
-+			args->num_cmdbufs,
-+			args->num_relocs,
-+			args->num_waitchks);
-+	if (!job)
-+		return -ENOMEM;
-+
-+	job->num_relocs = args->num_relocs;
-+	job->num_waitchk = args->num_waitchks;
-+	job->clientid = (u32)args->context;
-+	job->class = context->client->class;
-+	job->serialize = true;
-+
-+	while (num_cmdbufs) {
-+		struct tegra_drm_cmdbuf cmdbuf;
-+		err = copy_from_user(&cmdbuf, cmdbufs, sizeof(cmdbuf));
-+		if (err)
-+			goto fail;
-+
-+		cmdbuf.mem = handle_cma_to_host1x(drm, file_priv, cmdbuf.mem);
-+		if (!cmdbuf.mem)
-+			goto fail;
-+
-+		host1x_job_add_gather(job,
-+				cmdbuf.mem, cmdbuf.words, cmdbuf.offset);
-+		num_cmdbufs--;
-+		cmdbufs++;
++	for (i = 0; i < host1x->info.nb_pts / BITS_PER_LONG; i++) {
++		reg = host1x_sync_readl(host1x,
++				HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS +
++				i * REGISTER_STRIDE);
++		for_each_set_bit(id, &reg, BITS_PER_LONG) {
++			struct host1x_intr_syncpt *sp =
++				intr->syncpt + (i * BITS_PER_LONG + id);
++			host1x_intr_syncpt_thresh_isr(sp);
++			queue_work(intr->wq, &sp->work);
++		}
 +	}
 +
-+	err = copy_from_user(job->relocarray,
-+			relocs, sizeof(*relocs) * num_relocs);
-+	if (err)
-+		goto fail;
-+
-+	while (num_relocs--) {
-+		job->relocarray[num_relocs].cmdbuf_mem =
-+			handle_cma_to_host1x(drm, file_priv,
-+			job->relocarray[num_relocs].cmdbuf_mem);
-+		job->relocarray[num_relocs].target =
-+			handle_cma_to_host1x(drm, file_priv,
-+			job->relocarray[num_relocs].target);
-+
-+		if (!job->relocarray[num_relocs].target ||
-+			!job->relocarray[num_relocs].cmdbuf_mem)
-+			goto fail;
-+	}
-+
-+	err = copy_from_user(job->waitchk,
-+			waitchks, sizeof(*waitchks) * num_waitchks);
-+	if (err)
-+		goto fail;
-+
-+	err = host1x_job_pin(job, to_platform_device(context->client->dev));
-+	if (err)
-+		goto fail;
-+
-+	err = copy_from_user(&syncpt_incr,
-+			(void * __user)(uintptr_t)args->syncpt_incrs,
-+			sizeof(syncpt_incr));
-+	if (err)
-+		goto fail;
-+
-+	job->syncpt_id = syncpt_incr.syncpt_id;
-+	job->syncpt_incrs = syncpt_incr.syncpt_incrs;
-+	job->timeout = 10000;
-+	job->is_addr_reg = gr2d_is_addr_reg;
-+	if (args->timeout && args->timeout < 10000)
-+		job->timeout = args->timeout;
-+
-+	err = host1x_channel_submit(job);
-+	if (err)
-+		goto fail_submit;
-+
-+	args->fence = job->syncpt_end;
-+
-+	host1x_job_put(job);
-+	return 0;
-+
-+fail_submit:
-+	host1x_job_unpin(job);
-+fail:
-+	host1x_job_put(job);
-+	return err;
++	return IRQ_HANDLED;
 +}
 +
-+static struct host1x_client_ops gr2d_client_ops = {
-+	.drm_init = gr2d_client_init,
-+	.drm_exit = gr2d_client_exit,
-+	.open_channel = gr2d_open_channel,
-+	.close_channel = gr2d_close_channel,
-+	.get_syncpoint = gr2d_get_syncpoint,
-+	.submit = gr2d_submit,
++static void host1x_intr_init_host_sync(struct host1x_intr *intr)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++	int i, err;
++
++	host1x_sync_writel(host1x, 0xffffffffUL,
++		HOST1X_SYNC_SYNCPT_THRESH_INT_DISABLE);
++	host1x_sync_writel(host1x, 0xffffffffUL,
++		HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS);
++
++	for (i = 0; i < host1x->info.nb_pts; i++)
++		INIT_WORK(&intr->syncpt[i].work, syncpt_thresh_cascade_fn);
++
++	err = devm_request_irq(&host1x->dev->dev, intr->syncpt_irq,
++				syncpt_thresh_cascade_isr,
++				IRQF_SHARED, "host1x_syncpt", host1x);
++	WARN_ON(IS_ERR_VALUE(err));
++
++	/* disable the ip_busy_timeout. this prevents write drops */
++	host1x_sync_writel(host1x, 0, HOST1X_SYNC_IP_BUSY_TIMEOUT);
++
++	/*
++	 * increase the auto-ack timout to the maximum value. 2d will hang
++	 * otherwise on Tegra2.
++	 */
++	host1x_sync_writel(host1x, 0xff, HOST1X_SYNC_CTXSW_TIMEOUT_CFG);
++}
++
++static void host1x_intr_set_host_clocks_per_usec(struct host1x_intr *intr,
++		u32 cpm)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++	/* write microsecond clock register */
++	host1x_sync_writel(host1x, cpm, HOST1X_SYNC_USEC_CLK);
++}
++
++static void host1x_intr_set_syncpt_threshold(struct host1x_intr *intr,
++	u32 id, u32 thresh)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++	host1x_sync_writel(host1x, thresh,
++		HOST1X_SYNC_SYNCPT_INT_THRESH_0 + id * REGISTER_STRIDE);
++}
++
++static void host1x_intr_enable_syncpt_intr(struct host1x_intr *intr, u32 id)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++
++	host1x_sync_writel(host1x, BIT_MASK(id),
++			HOST1X_SYNC_SYNCPT_THRESH_INT_ENABLE_CPU0 +
++			BIT_WORD(id) * REGISTER_STRIDE);
++}
++
++static void host1x_intr_disable_syncpt_intr(struct host1x_intr *intr, u32 id)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++
++	host1x_sync_writel(host1x, BIT_MASK(id),
++			HOST1X_SYNC_SYNCPT_THRESH_INT_DISABLE +
++			BIT_WORD(id) * REGISTER_STRIDE);
++
++	host1x_sync_writel(host1x, BIT_MASK(id),
++		HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS +
++		BIT_WORD(id) * REGISTER_STRIDE);
++}
++
++static void host1x_intr_disable_all_syncpt_intrs(struct host1x_intr *intr)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++	u32 reg;
++
++	for (reg = 0; reg <= BIT_WORD(host1x->info.nb_pts) * REGISTER_STRIDE;
++			reg += REGISTER_STRIDE) {
++		host1x_sync_writel(host1x, 0xffffffffu,
++				HOST1X_SYNC_SYNCPT_THRESH_INT_DISABLE +
++				reg);
++
++		host1x_sync_writel(host1x, 0xffffffffu,
++			HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS + reg);
++	}
++}
++
++/*
++ * Sync point threshold interrupt service function
++ * Handles sync point threshold triggers, in interrupt context
++ */
++static void host1x_intr_syncpt_thresh_isr(struct host1x_intr_syncpt *syncpt)
++{
++	unsigned int id = syncpt->id;
++	struct host1x_intr *intr = intr_syncpt_to_intr(syncpt);
++	struct host1x *host1x = intr_to_host1x(intr);
++	u32 reg = BIT_WORD(id) * REGISTER_STRIDE;
++
++	host1x_sync_writel(host1x, BIT_MASK(id),
++		HOST1X_SYNC_SYNCPT_THRESH_INT_DISABLE + reg);
++	host1x_sync_writel(host1x, BIT_MASK(id),
++		HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS + reg);
++}
++
++static int host1x_free_syncpt_irq(struct host1x_intr *intr)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++
++	devm_free_irq(&host1x->dev->dev, intr->syncpt_irq, host1x);
++	flush_workqueue(intr->wq);
++	return 0;
++}
++
++static const struct host1x_intr_ops host1x_intr_ops = {
++	.init_host_sync = host1x_intr_init_host_sync,
++	.set_host_clocks_per_usec = host1x_intr_set_host_clocks_per_usec,
++	.set_syncpt_threshold = host1x_intr_set_syncpt_threshold,
++	.enable_syncpt_intr = host1x_intr_enable_syncpt_intr,
++	.disable_syncpt_intr = host1x_intr_disable_syncpt_intr,
++	.disable_all_syncpt_intrs = host1x_intr_disable_all_syncpt_intrs,
++	.free_syncpt_irq = host1x_free_syncpt_irq,
++};
+diff --git a/drivers/gpu/host1x/intr.c b/drivers/gpu/host1x/intr.c
+new file mode 100644
+index 0000000..26099b8
+--- /dev/null
++++ b/drivers/gpu/host1x/intr.c
+@@ -0,0 +1,356 @@
++/*
++ * Tegra host1x Interrupt Management
++ *
++ * Copyright (c) 2010-2013, NVIDIA Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include "intr.h"
++#include <linux/interrupt.h>
++#include <linux/slab.h>
++#include <linux/irq.h>
++#include "dev.h"
++
++/* Wait list management */
++
++struct host1x_waitlist {
++	struct list_head list;
++	struct kref refcount;
++	u32 thresh;
++	enum host1x_intr_action action;
++	atomic_t state;
++	void *data;
++	int count;
 +};
 +
-+static int gr2d_is_addr_reg(struct platform_device *dev, u32 class, u32 reg)
-+{
-+	int ret;
++enum waitlist_state {
++	WLS_PENDING,
++	WLS_REMOVED,
++	WLS_CANCELLED,
++	WLS_HANDLED
++};
 +
-+	if (class == NV_HOST1X_CLASS_ID)
-+		ret = reg == 0x2b;
-+	else
-+		switch (reg) {
-+		case 0x1a:
-+		case 0x1b:
-+		case 0x26:
-+		case 0x2b:
-+		case 0x2c:
-+		case 0x2d:
-+		case 0x31:
-+		case 0x32:
-+		case 0x48:
-+		case 0x49:
-+		case 0x4a:
-+		case 0x4b:
-+		case 0x4c:
-+			ret = 1;
-+			break;
-+		default:
-+			ret = 0;
-+			break;
++static void waiter_release(struct kref *kref)
++{
++	kfree(container_of(kref, struct host1x_waitlist, refcount));
++}
++
++/*
++ * add a waiter to a waiter queue, sorted by threshold
++ * returns true if it was added at the head of the queue
++ */
++static bool add_waiter_to_queue(struct host1x_waitlist *waiter,
++				struct list_head *queue)
++{
++	struct host1x_waitlist *pos;
++	u32 thresh = waiter->thresh;
++
++	list_for_each_entry_reverse(pos, queue, list)
++		if ((s32)(pos->thresh - thresh) <= 0) {
++			list_add(&waiter->list, &pos->list);
++			return false;
 +		}
 +
-+	return ret;
++	list_add(&waiter->list, queue);
++	return true;
 +}
 +
-+static struct of_device_id gr2d_match[] = {
-+	{ .compatible = "nvidia,tegra30-gr2d" },
-+	{ .compatible = "nvidia,tegra20-gr2d" },
-+	{ },
++/*
++ * run through a waiter queue for a single sync point ID
++ * and gather all completed waiters into lists by actions
++ */
++static void remove_completed_waiters(struct list_head *head, u32 sync,
++			struct list_head completed[HOST1X_INTR_ACTION_COUNT])
++{
++	struct list_head *dest;
++	struct host1x_waitlist *waiter, *next;
++
++	list_for_each_entry_safe(waiter, next, head, list) {
++		if ((s32)(waiter->thresh - sync) > 0)
++			break;
++
++		dest = completed + waiter->action;
++
++		/* PENDING->REMOVED or CANCELLED->HANDLED */
++		if (atomic_inc_return(&waiter->state) == WLS_HANDLED || !dest) {
++			list_del(&waiter->list);
++			kref_put(&waiter->refcount, waiter_release);
++		} else {
++			list_move_tail(&waiter->list, dest);
++		}
++	}
++}
++
++static void reset_threshold_interrupt(struct host1x_intr *intr,
++			       struct list_head *head,
++			       unsigned int id)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++	u32 thresh = list_first_entry(head,
++				struct host1x_waitlist, list)->thresh;
++
++	host1x->intr_op.set_syncpt_threshold(intr, id, thresh);
++	host1x->intr_op.enable_syncpt_intr(intr, id);
++}
++
++static void action_wakeup(struct host1x_waitlist *waiter)
++{
++	wait_queue_head_t *wq = waiter->data;
++
++	wake_up(wq);
++}
++
++static void action_wakeup_interruptible(struct host1x_waitlist *waiter)
++{
++	wait_queue_head_t *wq = waiter->data;
++
++	wake_up_interruptible(wq);
++}
++
++typedef void (*action_handler)(struct host1x_waitlist *waiter);
++
++static action_handler action_handlers[HOST1X_INTR_ACTION_COUNT] = {
++	action_wakeup,
++	action_wakeup_interruptible,
 +};
 +
-+static int gr2d_probe(struct platform_device *dev)
++static void run_handlers(struct list_head completed[HOST1X_INTR_ACTION_COUNT])
 +{
-+	struct host1x *host1x =
-+		host1x_get_drm_data(to_platform_device(dev->dev.parent));
-+	int err;
-+	struct gr2d *gr2d = NULL;
++	struct list_head *head = completed;
++	int i;
 +
-+	gr2d = devm_kzalloc(&dev->dev, sizeof(*gr2d), GFP_KERNEL);
-+	if (!gr2d)
-+		return -ENOMEM;
++	for (i = 0; i < HOST1X_INTR_ACTION_COUNT; ++i, ++head) {
++		action_handler handler = action_handlers[i];
++		struct host1x_waitlist *waiter, *next;
 +
-+	gr2d->clk = devm_clk_get(&dev->dev, "gr2d");
-+	if (IS_ERR(gr2d->clk)) {
-+		dev_err(&dev->dev, "cannot get clock\n");
-+		return PTR_ERR(gr2d->clk);
++		list_for_each_entry_safe(waiter, next, head, list) {
++			list_del(&waiter->list);
++			handler(waiter);
++			WARN_ON(atomic_xchg(&waiter->state, WLS_HANDLED)
++					!= WLS_REMOVED);
++			kref_put(&waiter->refcount, waiter_release);
++		}
++	}
++}
++
++/*
++ * Remove & handle all waiters that have completed for the given syncpt
++ */
++static int process_wait_list(struct host1x_intr *intr,
++			     struct host1x_intr_syncpt *syncpt,
++			     u32 threshold)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++	struct list_head completed[HOST1X_INTR_ACTION_COUNT];
++	unsigned int i;
++	int empty;
++
++	for (i = 0; i < HOST1X_INTR_ACTION_COUNT; ++i)
++		INIT_LIST_HEAD(completed + i);
++
++	spin_lock(&syncpt->lock);
++
++	remove_completed_waiters(&syncpt->wait_head, threshold, completed);
++
++	empty = list_empty(&syncpt->wait_head);
++	if (empty)
++		host1x->intr_op.disable_syncpt_intr(intr, syncpt->id);
++	else
++		reset_threshold_interrupt(intr, &syncpt->wait_head,
++					  syncpt->id);
++
++	spin_unlock(&syncpt->lock);
++
++	run_handlers(completed);
++
++	return empty;
++}
++
++/*
++ * Sync point threshold interrupt service thread function
++ * Handles sync point threshold triggers, in thread context
++ */
++irqreturn_t host1x_syncpt_thresh_fn(void *dev_id)
++{
++	struct host1x_intr_syncpt *syncpt = dev_id;
++	unsigned int id = syncpt->id;
++	struct host1x_intr *intr = intr_syncpt_to_intr(syncpt);
++	struct host1x *host1x = intr_to_host1x(intr);
++
++	(void)process_wait_list(intr, syncpt,
++				host1x_syncpt_load_min(host1x->syncpt + id));
++
++	return IRQ_HANDLED;
++}
++
++int host1x_intr_add_action(struct host1x_intr *intr, u32 id, u32 thresh,
++			enum host1x_intr_action action, void *data,
++			void *_waiter,
++			void **ref)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++	struct host1x_waitlist *waiter = _waiter;
++	struct host1x_intr_syncpt *syncpt;
++	int queue_was_empty;
++
++	if (waiter == NULL) {
++		pr_warn("%s: NULL waiter\n", __func__);
++		return -EINVAL;
 +	}
 +
-+	err = clk_prepare_enable(gr2d->clk);
-+	if (err) {
-+		dev_err(&dev->dev, "cannot turn on clock\n");
-+		return err;
++	/* initialize a new waiter */
++	INIT_LIST_HEAD(&waiter->list);
++	kref_init(&waiter->refcount);
++	if (ref)
++		kref_get(&waiter->refcount);
++	waiter->thresh = thresh;
++	waiter->action = action;
++	atomic_set(&waiter->state, WLS_PENDING);
++	waiter->data = data;
++	waiter->count = 1;
++
++	syncpt = intr->syncpt + id;
++
++	spin_lock(&syncpt->lock);
++
++	queue_was_empty = list_empty(&syncpt->wait_head);
++
++	if (add_waiter_to_queue(waiter, &syncpt->wait_head)) {
++		/* added at head of list - new threshold value */
++		host1x->intr_op.set_syncpt_threshold(intr, id, thresh);
++
++		/* added as first waiter - enable interrupt */
++		if (queue_was_empty)
++			host1x->intr_op.enable_syncpt_intr(intr, id);
 +	}
 +
-+	gr2d->channel = host1x_channel_alloc(dev);
-+	if (!gr2d->channel)
-+		return -ENOMEM;
++	spin_unlock(&syncpt->lock);
 +
-+	gr2d->syncpt = host1x_syncpt_alloc(dev, 0);
-+	if (!gr2d->syncpt) {
-+		host1x_channel_free(gr2d->channel);
-+		return -ENOMEM;
-+	}
-+
-+	gr2d->client.ops = &gr2d_client_ops;
-+	gr2d->client.dev = &dev->dev;
-+	gr2d->client.class = NV_GRAPHICS_2D_CLASS_ID;
-+
-+	err = host1x_register_client(host1x, &gr2d->client);
-+	if (err < 0) {
-+		dev_err(&dev->dev, "failed to register host1x client: %d\n",
-+			err);
-+		return err;
-+	}
-+
-+	platform_set_drvdata(dev, gr2d);
++	if (ref)
++		*ref = waiter;
 +	return 0;
 +}
 +
-+static int __exit gr2d_remove(struct platform_device *dev)
++void *host1x_intr_alloc_waiter(void)
 +{
-+	struct host1x *host1x =
-+		host1x_get_drm_data(to_platform_device(dev->dev.parent));
-+	struct gr2d *gr2d = platform_get_drvdata(dev);
-+	int err;
++	return kzalloc(sizeof(struct host1x_waitlist), GFP_KERNEL);
++}
 +
-+	err = host1x_unregister_client(host1x, &gr2d->client);
-+	if (err < 0) {
-+		dev_err(&dev->dev, "failed to unregister host1x client: %d\n",
-+			err);
-+		return err;
++void host1x_intr_put_ref(struct host1x_intr *intr, u32 id, void *ref)
++{
++	struct host1x_waitlist *waiter = ref;
++	struct host1x_intr_syncpt *syncpt;
++	struct host1x *host1x = intr_to_host1x(intr);
++
++	while (atomic_cmpxchg(&waiter->state,
++				WLS_PENDING, WLS_CANCELLED) == WLS_REMOVED)
++		schedule();
++
++	syncpt = intr->syncpt + id;
++	(void)process_wait_list(intr, syncpt,
++				host1x_syncpt_load_min(host1x->syncpt + id));
++
++	kref_put(&waiter->refcount, waiter_release);
++}
++
++int host1x_intr_init(struct host1x_intr *intr, u32 irq_sync)
++{
++	unsigned int id;
++	struct host1x *host1x = intr_to_host1x(intr);
++	u32 nb_pts = host1x_syncpt_nb_pts(host1x);
++
++	intr->syncpt = devm_kzalloc(&host1x->dev->dev,
++			sizeof(struct host1x_intr_syncpt) *
++			host1x->info.nb_pts,
++			GFP_KERNEL);
++
++	if (!host1x->intr.syncpt)
++		return -ENOMEM;
++
++	mutex_init(&intr->mutex);
++	intr->syncpt_irq = irq_sync;
++	intr->wq = create_workqueue("host_syncpt");
++	if (!intr->wq)
++		return -ENOMEM;
++
++	for (id = 0; id < nb_pts; ++id) {
++		struct host1x_intr_syncpt *syncpt = &intr->syncpt[id];
++
++		syncpt->intr = &host1x->intr;
++		syncpt->id = id;
++		spin_lock_init(&syncpt->lock);
++		INIT_LIST_HEAD(&syncpt->wait_head);
++		snprintf(syncpt->thresh_irq_name,
++			sizeof(syncpt->thresh_irq_name),
++			"host1x_sp_%02d", id);
 +	}
 +
-+	host1x_syncpt_free(gr2d->syncpt);
 +	return 0;
 +}
 +
-+struct platform_driver tegra_gr2d_driver = {
-+	.probe = gr2d_probe,
-+	.remove = __exit_p(gr2d_remove),
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = "gr2d",
-+		.of_match_table = gr2d_match,
++void host1x_intr_deinit(struct host1x_intr *intr)
++{
++	host1x_intr_stop(intr);
++	destroy_workqueue(intr->wq);
++}
++
++void host1x_intr_start(struct host1x_intr *intr, u32 hz)
++{
++	struct host1x *host1x = intr_to_host1x(intr);
++	mutex_lock(&intr->mutex);
++
++	host1x->intr_op.init_host_sync(intr);
++	host1x->intr_op.set_host_clocks_per_usec(intr,
++			DIV_ROUND_UP(hz, 1000000));
++
++	mutex_unlock(&intr->mutex);
++}
++
++void host1x_intr_stop(struct host1x_intr *intr)
++{
++	unsigned int id;
++	struct host1x *host1x = intr_to_host1x(intr);
++	struct host1x_intr_syncpt *syncpt;
++	u32 nb_pts = host1x_syncpt_nb_pts(intr_to_host1x(intr));
++
++	mutex_lock(&intr->mutex);
++
++	host1x->intr_op.disable_all_syncpt_intrs(intr);
++
++	for (id = 0, syncpt = intr->syncpt;
++	     id < nb_pts;
++	     ++id, ++syncpt) {
++		struct host1x_waitlist *waiter, *next;
++		list_for_each_entry_safe(waiter, next,
++				&syncpt->wait_head, list) {
++			if (atomic_cmpxchg(&waiter->state,
++						WLS_CANCELLED, WLS_HANDLED)
++				== WLS_CANCELLED) {
++				list_del(&waiter->list);
++				kref_put(&waiter->refcount, waiter_release);
++			}
++		}
++
++		if (!list_empty(&syncpt->wait_head)) {  /* output diagnostics */
++			mutex_unlock(&intr->mutex);
++			pr_warn("%s cannot stop syncpt intr id=%d\n",
++					__func__, id);
++			return;
++		}
 +	}
++
++	host1x->intr_op.free_syncpt_irq(intr);
++
++	mutex_unlock(&intr->mutex);
++}
+diff --git a/drivers/gpu/host1x/intr.h b/drivers/gpu/host1x/intr.h
+new file mode 100644
+index 0000000..679a7b4
+--- /dev/null
++++ b/drivers/gpu/host1x/intr.h
+@@ -0,0 +1,103 @@
++/*
++ * Tegra host1x Interrupt Management
++ *
++ * Copyright (c) 2010-2013, NVIDIA Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef __HOST1X_INTR_H
++#define __HOST1X_INTR_H
++
++#include <linux/interrupt.h>
++#include <linux/workqueue.h>
++
++enum host1x_intr_action {
++	/*
++	 * Wake up a  task.
++	 * 'data' points to a wait_queue_head_t
++	 */
++	HOST1X_INTR_ACTION_WAKEUP,
++
++	/*
++	 * Wake up a interruptible task.
++	 * 'data' points to a wait_queue_head_t
++	 */
++	HOST1X_INTR_ACTION_WAKEUP_INTERRUPTIBLE,
++
++	HOST1X_INTR_ACTION_COUNT
 +};
++
++struct host1x_intr;
++
++struct host1x_intr_syncpt {
++	struct host1x_intr *intr;
++	u8 id;
++	spinlock_t lock;
++	struct list_head wait_head;
++	char thresh_irq_name[12];
++	struct work_struct work;
++};
++
++struct host1x_intr {
++	struct host1x_intr_syncpt *syncpt;
++	struct mutex mutex;
++	int syncpt_irq;
++	struct workqueue_struct *wq;
++};
++#define intr_to_host1x(x) container_of(x, struct host1x, intr)
++#define intr_syncpt_to_intr(is) (is->intr)
++
++/*
++ * Schedule an action to be taken when a sync point reaches the given threshold.
++ *
++ * @id the sync point
++ * @thresh the threshold
++ * @action the action to take
++ * @data a pointer to extra data depending on action, see above
++ * @waiter waiter allocated with host1x_intr_alloc_waiter - assumes ownership
++ * @ref must be passed if cancellation is possible, else NULL
++ *
++ * This is a non-blocking api.
++ */
++int host1x_intr_add_action(struct host1x_intr *intr, u32 id, u32 thresh,
++			enum host1x_intr_action action, void *data,
++			void *waiter,
++			void **ref);
++
++/*
++ * Allocate a waiter.
++ */
++void *host1x_intr_alloc_waiter(void);
++
++/*
++ * Unreference an action submitted to host1x_intr_add_action().
++ * You must call this if you passed non-NULL as ref.
++ * @ref the ref returned from host1x_intr_add_action()
++ */
++void host1x_intr_put_ref(struct host1x_intr *intr, u32 id, void *ref);
++
++/* Initialize host1x sync point interrupt */
++int host1x_intr_init(struct host1x_intr *intr, u32 irq_sync);
++
++/* Deinitialize host1x sync point interrupt */
++void host1x_intr_deinit(struct host1x_intr *intr);
++
++/* Enable host1x sync point interrupt */
++void host1x_intr_start(struct host1x_intr *intr, u32 hz);
++
++/* Disable host1x sync point interrupt */
++void host1x_intr_stop(struct host1x_intr *intr);
++
++irqreturn_t host1x_syncpt_thresh_fn(void *dev_id);
++#endif
 diff --git a/drivers/gpu/host1x/syncpt.c b/drivers/gpu/host1x/syncpt.c
-index 191f65f..ccaaece 100644
+index b45651f..32e2b42 100644
 --- a/drivers/gpu/host1x/syncpt.c
 +++ b/drivers/gpu/host1x/syncpt.c
-@@ -392,3 +392,8 @@ struct host1x_syncpt *host1x_syncpt_get(struct host1x *dev, u32 id)
- {
- 	return dev->syncpt + id;
+@@ -22,9 +22,12 @@
+ #include <linux/module.h>
+ #include "syncpt.h"
+ #include "dev.h"
++#include "intr.h"
+ #include <trace/events/host1x.h>
+ 
+ #define MAX_SYNCPT_LENGTH	5
++#define SYNCPT_CHECK_PERIOD (2 * HZ)
++#define MAX_STUCK_CHECK_COUNT 15
+ 
+ static struct host1x_syncpt *_host1x_syncpt_alloc(struct host1x *host,
+ 		struct platform_device *pdev,
+@@ -119,6 +122,166 @@ void host1x_syncpt_incr(struct host1x_syncpt *sp)
+ 	host1x_syncpt_cpu_incr(sp);
  }
-+
-+struct host1x_syncpt *host1x_syncpt_get_bydev(struct device *dev, u32 id)
+ 
++/*
++ * Updated sync point form hardware, and returns true if syncpoint is expired,
++ * false if we may need to wait
++ */
++static bool syncpt_load_min_is_expired(
++	struct host1x_syncpt *sp,
++	u32 thresh)
 +{
-+	return host1x_syncpt_get(dev_get_drvdata(dev), id);
++	sp->dev->syncpt_op.load_min(sp);
++	return host1x_syncpt_is_expired(sp, thresh);
 +}
++
++/*
++ * Main entrypoint for syncpoint value waits.
++ */
++int host1x_syncpt_wait(struct host1x_syncpt *sp,
++			u32 thresh, long timeout, u32 *value)
++{
++	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(wq);
++	void *ref;
++	void *waiter;
++	int err = 0, check_count = 0;
++	u32 val;
++
++	if (value)
++		*value = 0;
++
++	/* first check cache */
++	if (host1x_syncpt_is_expired(sp, thresh)) {
++		if (value)
++			*value = host1x_syncpt_read_min(sp);
++		return 0;
++	}
++
++	/* try to read from register */
++	val = sp->dev->syncpt_op.load_min(sp);
++	if (host1x_syncpt_is_expired(sp, thresh)) {
++		if (value)
++			*value = val;
++		goto done;
++	}
++
++	if (!timeout) {
++		err = -EAGAIN;
++		goto done;
++	}
++
++	/* schedule a wakeup when the syncpoint value is reached */
++	waiter = host1x_intr_alloc_waiter();
++	if (!waiter) {
++		err = -ENOMEM;
++		goto done;
++	}
++
++	err = host1x_intr_add_action(&(sp->dev->intr), sp->id, thresh,
++				HOST1X_INTR_ACTION_WAKEUP_INTERRUPTIBLE, &wq,
++				waiter,
++				&ref);
++	if (err)
++		goto done;
++
++	err = -EAGAIN;
++	/* Caller-specified timeout may be impractically low */
++	if (timeout < 0)
++		timeout = LONG_MAX;
++
++	/* wait for the syncpoint, or timeout, or signal */
++	while (timeout) {
++		long check = min_t(long, SYNCPT_CHECK_PERIOD, timeout);
++		int remain = wait_event_interruptible_timeout(wq,
++				syncpt_load_min_is_expired(sp, thresh),
++				check);
++		if (remain > 0 || host1x_syncpt_is_expired(sp, thresh)) {
++			if (value)
++				*value = host1x_syncpt_read_min(sp);
++			err = 0;
++			break;
++		}
++		if (remain < 0) {
++			err = remain;
++			break;
++		}
++		timeout -= check;
++		if (timeout && check_count <= MAX_STUCK_CHECK_COUNT) {
++			dev_warn(&sp->dev->dev->dev,
++				"%s: syncpoint id %d (%s) stuck waiting %d, timeout=%ld\n",
++				 current->comm, sp->id, sp->name,
++				 thresh, timeout);
++			sp->dev->syncpt_op.debug(sp);
++			check_count++;
++		}
++	}
++	host1x_intr_put_ref(&(sp->dev->intr), sp->id, ref);
++
++done:
++	return err;
++}
++EXPORT_SYMBOL(host1x_syncpt_wait);
++
++/*
++ * Returns true if syncpoint is expired, false if we may need to wait
++ */
++bool host1x_syncpt_is_expired(
++	struct host1x_syncpt *sp,
++	u32 thresh)
++{
++	u32 current_val;
++	u32 future_val;
++	smp_rmb();
++	current_val = (u32)atomic_read(&sp->min_val);
++	future_val = (u32)atomic_read(&sp->max_val);
++
++	/* Note the use of unsigned arithmetic here (mod 1<<32).
++	 *
++	 * c = current_val = min_val	= the current value of the syncpoint.
++	 * t = thresh			= the value we are checking
++	 * f = future_val  = max_val	= the value c will reach when all
++	 *				  outstanding increments have completed.
++	 *
++	 * Note that c always chases f until it reaches f.
++	 *
++	 * Dtf = (f - t)
++	 * Dtc = (c - t)
++	 *
++	 *  Consider all cases:
++	 *
++	 *	A) .....c..t..f.....	Dtf < Dtc	need to wait
++	 *	B) .....c.....f..t..	Dtf > Dtc	expired
++	 *	C) ..t..c.....f.....	Dtf > Dtc	expired	   (Dct very large)
++	 *
++	 *  Any case where f==c: always expired (for any t).	Dtf == Dcf
++	 *  Any case where t==c: always expired (for any f).	Dtf >= Dtc (because Dtc==0)
++	 *  Any case where t==f!=c: always wait.		Dtf <  Dtc (because Dtf==0,
++	 *							Dtc!=0)
++	 *
++	 *  Other cases:
++	 *
++	 *	A) .....t..f..c.....	Dtf < Dtc	need to wait
++	 *	A) .....f..c..t.....	Dtf < Dtc	need to wait
++	 *	A) .....f..t..c.....	Dtf > Dtc	expired
++	 *
++	 *   So:
++	 *	   Dtf >= Dtc implies EXPIRED	(return true)
++	 *	   Dtf <  Dtc implies WAIT	(return false)
++	 *
++	 * Note: If t is expired then we *cannot* wait on it. We would wait
++	 * forever (hang the system).
++	 *
++	 * Note: do NOT get clever and remove the -thresh from both sides. It
++	 * is NOT the same.
++	 *
++	 * If future valueis zero, we have a client managed sync point. In that
++	 * case we do a direct comparison.
++	 */
++	if (!host1x_syncpt_client_managed(sp))
++		return future_val - thresh >= current_val - thresh;
++	else
++		return (s32)(current_val - thresh) >= 0;
++}
++
+ void host1x_syncpt_debug(struct host1x_syncpt *sp)
+ {
+ 	sp->dev->syncpt_op.debug(sp);
 diff --git a/drivers/gpu/host1x/syncpt.h b/drivers/gpu/host1x/syncpt.h
-index 255a3a3..d15d4c5 100644
+index d9b9b0a..b46d044 100644
 --- a/drivers/gpu/host1x/syncpt.h
 +++ b/drivers/gpu/host1x/syncpt.h
-@@ -110,6 +110,9 @@ static inline bool host1x_syncpt_min_eq_max(struct host1x_syncpt *sp)
- /* Return pointer to struct denoting sync point id. */
- struct host1x_syncpt *host1x_syncpt_get(struct host1x *dev, u32 id);
+@@ -114,6 +114,7 @@ void host1x_syncpt_cpu_incr(struct host1x_syncpt *sp);
  
-+/* Return pointer to struct denoting sync point id, when given client pdev. */
-+struct host1x_syncpt *host1x_syncpt_get_bydev(struct device *dev, u32 id);
-+
- /* Request incrementing a sync point. */
- void host1x_syncpt_cpu_incr(struct host1x_syncpt *sp);
+ /* Load current value from hardware to the shadow register. */
+ u32 host1x_syncpt_load_min(struct host1x_syncpt *sp);
++bool host1x_syncpt_is_expired(struct host1x_syncpt *sp, u32 thresh);
  
-diff --git a/include/drm/tegra_drm.h b/include/drm/tegra_drm.h
-new file mode 100644
-index 0000000..11fb019
---- /dev/null
-+++ b/include/drm/tegra_drm.h
-@@ -0,0 +1,131 @@
-+/*
-+ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
+ /* Save host1x sync point state into shadow registers. */
+ void host1x_syncpt_save(struct host1x *dev);
+@@ -133,6 +134,10 @@ u32 host1x_syncpt_incr_max(struct host1x_syncpt *sp, u32 incrs);
+ /* Do a debug dump of sync point values. */
+ void host1x_syncpt_debug(struct host1x_syncpt *sp);
+ 
++/* Wait until sync point reaches a threshold value, or a timeout. */
++int host1x_syncpt_wait(struct host1x_syncpt *sp, u32 thresh,
++			long timeout, u32 *value);
 +
-+#ifndef _TEGRA_DRM_H_
-+#define _TEGRA_DRM_H_
-+
-+struct tegra_gem_create {
-+	__u64 size;
-+	unsigned int flags;
-+	unsigned int handle;
-+	unsigned int offset;
-+};
-+
-+struct tegra_gem_invalidate {
-+	unsigned int handle;
-+};
-+
-+struct tegra_gem_flush {
-+	unsigned int handle;
-+};
-+
-+struct tegra_drm_syncpt_read_args {
-+	__u32 id;
-+	__u32 value;
-+};
-+
-+struct tegra_drm_syncpt_incr_args {
-+	__u32 id;
-+	__u32 pad;
-+};
-+
-+struct tegra_drm_syncpt_wait_args {
-+	__u32 id;
-+	__u32 thresh;
-+	__s32 timeout;
-+	__u32 value;
-+};
-+
-+#define DRM_TEGRA_NO_TIMEOUT	(-1)
-+
-+struct tegra_drm_open_channel_args {
-+	__u32 class;
-+	__u32 pad;
-+	__u64 context;
-+};
-+
-+struct tegra_drm_get_channel_param_args {
-+	__u64 context;
-+	__u32 param;
-+	__u32 value;
-+};
-+
-+struct tegra_drm_syncpt_incr {
-+	__u32 syncpt_id;
-+	__u32 syncpt_incrs;
-+};
-+
-+struct tegra_drm_cmdbuf {
-+	__u32 mem;
-+	__u32 offset;
-+	__u32 words;
-+	__u32 pad;
-+};
-+
-+struct tegra_drm_reloc {
-+	__u32 cmdbuf_mem;
-+	__u32 cmdbuf_offset;
-+	__u32 target;
-+	__u32 target_offset;
-+	__u32 shift;
-+	__u32 pad;
-+};
-+
-+struct tegra_drm_waitchk {
-+	__u32 mem;
-+	__u32 offset;
-+	__u32 syncpt_id;
-+	__u32 thresh;
-+};
-+
-+struct tegra_drm_submit_args {
-+	__u64 context;
-+	__u32 num_syncpt_incrs;
-+	__u32 num_cmdbufs;
-+	__u32 num_relocs;
-+	__u32 submit_version;
-+	__u32 num_waitchks;
-+	__u32 waitchk_mask;
-+	__u32 timeout;
-+	__u32 pad;
-+	__u64 syncpt_incrs;
-+	__u64 cmdbufs;
-+	__u64 relocs;
-+	__u64 waitchks;
-+	__u32 fence;		/* Return value */
-+
-+	__u32 reserved[5];	/* future expansion */
-+};
-+
-+#define DRM_TEGRA_GEM_CREATE		0x00
-+#define DRM_TEGRA_DRM_SYNCPT_READ	0x01
-+#define DRM_TEGRA_DRM_SYNCPT_INCR	0x02
-+#define DRM_TEGRA_DRM_SYNCPT_WAIT	0x03
-+#define DRM_TEGRA_DRM_OPEN_CHANNEL	0x04
-+#define DRM_TEGRA_DRM_CLOSE_CHANNEL	0x05
-+#define DRM_TEGRA_DRM_GET_SYNCPOINT	0x06
-+#define DRM_TEGRA_DRM_SUBMIT		0x08
-+
-+#define DRM_IOCTL_TEGRA_GEM_CREATE DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_GEM_CREATE, struct tegra_gem_create)
-+#define DRM_IOCTL_TEGRA_DRM_SYNCPT_READ DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SYNCPT_READ, struct tegra_drm_syncpt_read_args)
-+#define DRM_IOCTL_TEGRA_DRM_SYNCPT_INCR DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SYNCPT_INCR, struct tegra_drm_syncpt_incr_args)
-+#define DRM_IOCTL_TEGRA_DRM_SYNCPT_WAIT DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SYNCPT_WAIT, struct tegra_drm_syncpt_wait_args)
-+#define DRM_IOCTL_TEGRA_DRM_OPEN_CHANNEL DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_OPEN_CHANNEL, struct tegra_drm_open_channel_args)
-+#define DRM_IOCTL_TEGRA_DRM_CLOSE_CHANNEL DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_CLOSE_CHANNEL, struct tegra_drm_open_channel_args)
-+#define DRM_IOCTL_TEGRA_DRM_GET_SYNCPOINT DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_GET_SYNCPOINT, struct tegra_drm_get_channel_param_args)
-+#define DRM_IOCTL_TEGRA_DRM_SUBMIT DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SUBMIT, struct tegra_drm_submit_args)
-+
-+#endif
+ /* Check if sync point id is valid. */
+ static inline int host1x_syncpt_is_valid(struct host1x_syncpt *sp)
+ {
 -- 
 1.7.9.5
 
