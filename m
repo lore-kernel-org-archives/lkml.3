@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab3APAK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:10:26 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42960 "EHLO mail.kernel.org"
+	id S932584Ab3APAK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:10:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42931 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758495Ab3AOWc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:32:57 -0500
+	id S1758320Ab3AOWct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>,
-        =?ISO-8859-15?q?=C3=89ric=20Piel?= <piel@delmic.com>
-Subject: [ 143/221] staging: comedi: comedi_test: fix race when cancelling command
-Date: Tue, 15 Jan 2013 10:51:10 -0800
-Message-Id: <20130115185008.389751752@linuxfoundation.org>
+        =?ISO-8859-15?q?=C3=89ric=20Piel?= <piel@delmic.com>,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 141/221] staging: comedi: fix minimum AO period for NI 625x and NI 628x
+Date: Tue, 15 Jan 2013 10:51:08 -0800
+Message-Id: <20130115185008.242447264@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -29,45 +29,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Éric Piel <piel@delmic.com>
 
-commit c0729eeefdcd76db338f635162bf0739fd2c5f6f upstream.
+commit 34b55d8c48f4f76044d8f4d6ec3dc786cf210312 upstream.
 
-Éric Piel reported a kernel oops in the "comedi_test" module.  It was a
-NULL pointer dereference within `waveform_ai_interrupt()` (actually a
-timer function) that sometimes occurred when a running asynchronous
-command is cancelled (either by the `COMEDI_CANCEL` ioctl or by closing
-the device file).
+The minimum period was set to 357 ns, while the divider for these boards is 50
+ns. This prevented to output at maximum speed as ni_ao_cmdtest() would return
+357 but would not accept it.
 
-This seems to be a race between the caller of `waveform_ai_cancel()`
-which on return from that function goes and tears down the running
-command, and the timer function which uses the command.  In particular,
-`async->cmd.chanlist` gets freed (and the pointer set to NULL) by
-`do_become_nonbusy()` in "comedi_fops.c" but a previously scheduled
-`waveform_ai_interrupt()` timer function will dereference that pointer
-regardless, leading to the oops.
+Not sure why it was set to 357 ns (this was done before the git history,
+which starts 5 years ago). My guess is that it comes from reading the
+specification stating a 2.8 MHz rate (~ 357 ns). The latest
+specification states a 2.86 MHz rate (~ 350 ns), which makes a lot
+more sense.
 
-Fix it by replacing the `del_timer()` call in `waveform_ai_cancel()`
-with `del_timer_sync()`.
+Tested on a pci-6251.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Reported-by: Éric Piel <piel@delmic.com>
+Signed-off-by: Éric Piel <piel@delmic.com>
+Acked-By: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/comedi_test.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/ni_pcimio.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/comedi/drivers/comedi_test.c
-+++ b/drivers/staging/comedi/drivers/comedi_test.c
-@@ -372,7 +372,7 @@ static int waveform_ai_cancel(struct com
- 	struct waveform_private *devpriv = dev->private;
- 
- 	devpriv->timer_running = 0;
--	del_timer(&devpriv->timer);
-+	del_timer_sync(&devpriv->timer);
- 	return 0;
- }
- 
+--- a/drivers/staging/comedi/drivers/ni_pcimio.c
++++ b/drivers/staging/comedi/drivers/ni_pcimio.c
+@@ -963,7 +963,7 @@ static const struct ni_board_struct ni_b
+ 	 .ao_range_table = &range_ni_M_625x_ao,
+ 	 .reg_type = ni_reg_625x,
+ 	 .ao_unipolar = 0,
+-	 .ao_speed = 357,
++	 .ao_speed = 350,
+ 	 .num_p0_dio_channels = 8,
+ 	 .caldac = {caldac_none},
+ 	 .has_8255 = 0,
+@@ -982,7 +982,7 @@ static const struct ni_board_struct ni_b
+ 	 .ao_range_table = &range_ni_M_625x_ao,
+ 	 .reg_type = ni_reg_625x,
+ 	 .ao_unipolar = 0,
+-	 .ao_speed = 357,
++	 .ao_speed = 350,
+ 	 .num_p0_dio_channels = 8,
+ 	 .caldac = {caldac_none},
+ 	 .has_8255 = 0,
+@@ -1001,7 +1001,7 @@ static const struct ni_board_struct ni_b
+ 	 .ao_range_table = &range_ni_M_625x_ao,
+ 	 .reg_type = ni_reg_625x,
+ 	 .ao_unipolar = 0,
+-	 .ao_speed = 357,
++	 .ao_speed = 350,
+ 	 .num_p0_dio_channels = 8,
+ 	 .caldac = {caldac_none},
+ 	 .has_8255 = 0,
+@@ -1037,7 +1037,7 @@ static const struct ni_board_struct ni_b
+ 	 .ao_range_table = &range_ni_M_625x_ao,
+ 	 .reg_type = ni_reg_625x,
+ 	 .ao_unipolar = 0,
+-	 .ao_speed = 357,
++	 .ao_speed = 350,
+ 	 .num_p0_dio_channels = 32,
+ 	 .caldac = {caldac_none},
+ 	 .has_8255 = 0,
+@@ -1056,7 +1056,7 @@ static const struct ni_board_struct ni_b
+ 	 .ao_range_table = &range_ni_M_625x_ao,
+ 	 .reg_type = ni_reg_625x,
+ 	 .ao_unipolar = 0,
+-	 .ao_speed = 357,
++	 .ao_speed = 350,
+ 	 .num_p0_dio_channels = 32,
+ 	 .caldac = {caldac_none},
+ 	 .has_8255 = 0,
+@@ -1092,7 +1092,7 @@ static const struct ni_board_struct ni_b
+ 	 .ao_range_table = &range_ni_M_628x_ao,
+ 	 .reg_type = ni_reg_628x,
+ 	 .ao_unipolar = 1,
+-	 .ao_speed = 357,
++	 .ao_speed = 350,
+ 	 .num_p0_dio_channels = 8,
+ 	 .caldac = {caldac_none},
+ 	 .has_8255 = 0,
+@@ -1111,7 +1111,7 @@ static const struct ni_board_struct ni_b
+ 	 .ao_range_table = &range_ni_M_628x_ao,
+ 	 .reg_type = ni_reg_628x,
+ 	 .ao_unipolar = 1,
+-	 .ao_speed = 357,
++	 .ao_speed = 350,
+ 	 .num_p0_dio_channels = 8,
+ 	 .caldac = {caldac_none},
+ 	 .has_8255 = 0,
+@@ -1147,7 +1147,7 @@ static const struct ni_board_struct ni_b
+ 	 .ao_range_table = &range_ni_M_628x_ao,
+ 	 .reg_type = ni_reg_628x,
+ 	 .ao_unipolar = 1,
+-	 .ao_speed = 357,
++	 .ao_speed = 350,
+ 	 .num_p0_dio_channels = 32,
+ 	 .caldac = {caldac_none},
+ 	 .has_8255 = 0,
 
 
