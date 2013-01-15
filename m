@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab3AOHfD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 02:35:03 -0500
+	id S1756434Ab3AOHfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 02:35:48 -0500
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48134 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756113Ab3AOHcK (ORCPT
+	with ESMTP id S1756105Ab3AOHcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 02:32:10 -0500
-X-AuditID: 9c930179-b7b0cae0000065b4-94-50f505f7de97
+	Tue, 15 Jan 2013 02:32:08 -0500
+X-AuditID: 9c930179-b7b0cae0000065b4-8e-50f505f680ea
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
         Namhyung Kim <namhyung.kim@lge.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/13] perf header: Add HEADER_GROUP_DESC feature
-Date: Tue, 15 Jan 2013 16:31:47 +0900
-Message-Id: <1358235117-12803-4-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 01/13] perf tools: Keep group information
+Date: Tue, 15 Jan 2013 16:31:45 +0900
+Message-Id: <1358235117-12803-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
 References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
@@ -28,8 +28,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Save group relationship information so that it can be restored when perf
-report is running.
+Add a few of group-related field in struct perf_{evlist,evsel} so that
+the group information in a evlist can be known easily.  It only counts
+groups which have more than 1 members since leader-only groups are
+treated as non-group events.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
@@ -38,244 +40,136 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1355726345-29553-5-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1355726345-29553-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |   3 +
- tools/perf/util/header.c    | 164 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h    |   2 +
- 3 files changed, 169 insertions(+)
+ tools/perf/util/evlist.c       |  7 ++++++-
+ tools/perf/util/evlist.h       |  1 +
+ tools/perf/util/evsel.h        |  6 ++++++
+ tools/perf/util/parse-events.c |  1 +
+ tools/perf/util/parse-events.h |  1 +
+ tools/perf/util/parse-events.y | 10 ++++++++++
+ 6 files changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 2ac690cad411..774c90713a53 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -486,6 +486,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		goto out_delete_session;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index dc8aee97a488..eddd5ebcd690 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -117,6 +117,9 @@ void __perf_evlist__set_leader(struct list_head *list)
+ 	struct perf_evsel *evsel, *leader;
+ 
+ 	leader = list_entry(list->next, struct perf_evsel, node);
++	evsel = list_entry(list->prev, struct perf_evsel, node);
++
++	leader->nr_members = evsel->idx - leader->idx + 1;
+ 
+ 	list_for_each_entry(evsel, list, node) {
+ 		if (evsel != leader)
+@@ -126,8 +129,10 @@ void __perf_evlist__set_leader(struct list_head *list)
+ 
+ void perf_evlist__set_leader(struct perf_evlist *evlist)
+ {
+-	if (evlist->nr_entries)
++	if (evlist->nr_entries) {
++		evlist->nr_groups = evlist->nr_entries > 1 ? 1 : 0;
+ 		__perf_evlist__set_leader(&evlist->entries);
++	}
+ }
+ 
+ int perf_evlist__add_default(struct perf_evlist *evlist)
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 457e2350d21d..73579a25a93e 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -21,6 +21,7 @@ struct perf_evlist {
+ 	struct list_head entries;
+ 	struct hlist_head heads[PERF_EVLIST__HLIST_SIZE];
+ 	int		 nr_entries;
++	int		 nr_groups;
+ 	int		 nr_fds;
+ 	int		 nr_mmaps;
+ 	int		 mmap_len;
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index c68d1b82e843..f5d22f12ccd8 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -73,6 +73,7 @@ struct perf_evsel {
+ 	bool 			needs_swap;
+ 	/* parse modifier helper */
+ 	int			exclude_GH;
++	int			nr_members;
+ 	struct perf_evsel	*leader;
+ 	char			*group_name;
+ };
+@@ -257,4 +258,9 @@ bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
+ int perf_evsel__open_strerror(struct perf_evsel *evsel,
+ 			      struct perf_target *target,
+ 			      int err, char *msg, size_t size);
++
++static inline int perf_evsel__group_idx(struct perf_evsel *evsel)
++{
++	return evsel->idx - evsel->leader->idx;
++}
+ #endif /* __PERF_EVSEL_H */
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 626c120f00da..64d663192495 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -885,6 +885,7 @@ int parse_events(struct perf_evlist *evlist, const char *str,
+ 	if (!ret) {
+ 		int entries = data.idx - evlist->nr_entries;
+ 		perf_evlist__splice_list_tail(evlist, &data.list, entries);
++		evlist->nr_groups += data.nr_groups;
+ 		return 0;
  	}
  
-+	if (!evsel_list->nr_groups)
-+		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
-+
- 	/*
- 	 * perf_session__delete(session) will be called at perf_record__exit()
- 	 */
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index fccd69dbbbb9..b614c9638fd5 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1082,6 +1082,52 @@ static int write_pmu_mappings(int fd, struct perf_header *h __maybe_unused,
- }
- 
- /*
-+ * File format:
-+ *
-+ * struct group_descs {
-+ *	u32	nr_groups;
-+ *	struct group_desc {
-+ *		char	name[];
-+ *		u32	leader_idx;
-+ *		u32	nr_members;
-+ *	}[nr_groups];
-+ * };
-+ */
-+static int write_group_desc(int fd, struct perf_header *h __maybe_unused,
-+			    struct perf_evlist *evlist)
-+{
-+	u32 nr_groups = evlist->nr_groups;
-+	struct perf_evsel *evsel;
-+	int ret;
-+
-+	ret = do_write(fd, &nr_groups, sizeof(nr_groups));
-+	if (ret < 0)
-+		return ret;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (perf_evsel__is_group_leader(evsel) &&
-+		    evsel->nr_members > 1) {
-+			const char *name = evsel->group_name ?: "{anon_group}";
-+			u32 leader_idx = evsel->idx;
-+			u32 nr_members = evsel->nr_members;
-+
-+			ret = do_write_string(fd, name);
-+			if (ret < 0)
-+				return ret;
-+
-+			ret = do_write(fd, &leader_idx, sizeof(leader_idx));
-+			if (ret < 0)
-+				return ret;
-+
-+			ret = do_write(fd, &nr_members, sizeof(nr_members));
-+			if (ret < 0)
-+				return ret;
-+		}
-+	}
-+	return 0;
-+}
-+
-+/*
-  * default get_cpuid(): nothing gets recorded
-  * actual implementation must be in arch/$(ARCH)/util/header.c
-  */
-@@ -1444,6 +1490,31 @@ error:
- 	fprintf(fp, "# pmu mappings: unable to read\n");
- }
- 
-+static void print_group_desc(struct perf_header *ph, int fd __maybe_unused,
-+			     FILE *fp)
-+{
-+	struct perf_session *session;
-+	struct perf_evsel *evsel;
-+	u32 nr = 0;
-+
-+	session = container_of(ph, struct perf_session, header);
-+
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (perf_evsel__is_group_leader(evsel) &&
-+		    evsel->nr_members > 1) {
-+			fprintf(fp, "# group: %s{%s", evsel->group_name ?: "",
-+				perf_evsel__name(evsel));
-+
-+			nr = evsel->nr_members - 1;
-+		} else if (nr) {
-+			fprintf(fp, ",%s", perf_evsel__name(evsel));
-+
-+			if (--nr == 0)
-+				fprintf(fp, "}\n");
-+		}
-+	}
-+}
-+
- static int __event_process_build_id(struct build_id_event *bev,
- 				    char *filename,
- 				    struct perf_session *session)
-@@ -1958,6 +2029,98 @@ error:
- 	return -1;
- }
- 
-+static int process_group_desc(struct perf_file_section *section __maybe_unused,
-+			      struct perf_header *ph, int fd,
-+			      void *data __maybe_unused)
-+{
-+	size_t ret = -1;
-+	u32 i, nr, nr_groups;
-+	struct perf_session *session;
-+	struct perf_evsel *evsel, *leader = NULL;
-+	struct group_desc {
-+		char *name;
-+		u32 leader_idx;
-+		u32 nr_members;
-+	} *desc;
-+
-+	if (readn(fd, &nr_groups, sizeof(nr_groups)) != sizeof(nr_groups))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		nr_groups = bswap_32(nr_groups);
-+
-+	ph->env.nr_groups = nr_groups;
-+	if (!nr_groups) {
-+		pr_debug("group desc not available\n");
-+		return 0;
-+	}
-+
-+	desc = calloc(nr_groups, sizeof(*desc));
-+	if (!desc)
-+		return -1;
-+
-+	for (i = 0; i < nr_groups; i++) {
-+		desc[i].name = do_read_string(fd, ph);
-+		if (!desc[i].name)
-+			goto out_free;
-+
-+		if (readn(fd, &desc[i].leader_idx, sizeof(u32)) != sizeof(u32))
-+			goto out_free;
-+
-+		if (readn(fd, &desc[i].nr_members, sizeof(u32)) != sizeof(u32))
-+			goto out_free;
-+
-+		if (ph->needs_swap) {
-+			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
-+			desc[i].nr_members = bswap_32(desc[i].nr_members);
-+		}
-+	}
-+
-+	/*
-+	 * Rebuild group relationship based on the group_desc
-+	 */
-+	session = container_of(ph, struct perf_session, header);
-+	session->evlist->nr_groups = nr_groups;
-+
-+	i = nr = 0;
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (evsel->idx == (int) desc[i].leader_idx) {
-+			evsel->leader = evsel;
-+			/* {anon_group} is a dummy name */
-+			if (strcmp(desc[i].name, "{anon_group}"))
-+				evsel->group_name = desc[i].name;
-+			evsel->nr_members = desc[i].nr_members;
-+
-+			if (i >= nr_groups || nr > 0) {
-+				pr_debug("invalid group desc\n");
-+				goto out_free;
-+			}
-+
-+			leader = evsel;
-+			nr = evsel->nr_members - 1;
-+			i++;
-+		} else if (nr) {
-+			/* This is a group member */
-+			evsel->leader = leader;
-+
-+			nr--;
-+		}
-+	}
-+
-+	if (i != nr_groups || nr != 0) {
-+		pr_debug("invalid group desc\n");
-+		goto out_free;
-+	}
-+
-+	ret = 0;
-+out_free:
-+	while ((int) --i >= 0)
-+		free(desc[i].name);
-+	free(desc);
-+
-+	return ret;
-+}
-+
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-@@ -1997,6 +2160,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
- 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
- 	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
-+	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index b7af80b8bdda..330b8896876b 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -65,6 +65,7 @@ struct parse_events__term {
+ struct parse_events_data__events {
+ 	struct list_head list;
+ 	int idx;
++	int nr_groups;
  };
  
- struct header_print_data {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 20f0344accb1..c9fc55cada6d 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -29,6 +29,7 @@ enum {
- 	HEADER_NUMA_TOPOLOGY,
- 	HEADER_BRANCH_STACK,
- 	HEADER_PMU_MAPPINGS,
-+	HEADER_GROUP_DESC,
- 	HEADER_LAST_FEATURE,
- 	HEADER_FEAT_BITS	= 256,
- };
-@@ -79,6 +80,7 @@ struct perf_session_env {
- 	char			*numa_nodes;
- 	int			nr_pmu_mappings;
- 	char			*pmu_mappings;
-+	int			nr_groups;
- };
+ struct parse_events_data__terms {
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 0f9914ae6bac..7f2d63afcf38 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -23,6 +23,14 @@ do { \
+ 		YYABORT; \
+ } while (0)
  
- struct perf_header {
++static inc_group_count(struct list_head *list,
++		       struct parse_events_data__events *data)
++{
++	/* Count groups only have more than 1 members */
++	if (!list_is_last(list->next, list))
++		data->nr_groups++;
++}
++
+ %}
+ 
+ %token PE_START_EVENTS PE_START_TERMS
+@@ -123,6 +131,7 @@ PE_NAME '{' events '}'
+ {
+ 	struct list_head *list = $3;
+ 
++	inc_group_count(list, _data);
+ 	parse_events__set_leader($1, list);
+ 	$$ = list;
+ }
+@@ -131,6 +140,7 @@ PE_NAME '{' events '}'
+ {
+ 	struct list_head *list = $2;
+ 
++	inc_group_count(list, _data);
+ 	parse_events__set_leader(NULL, list);
+ 	$$ = list;
+ }
 -- 
 1.7.11.7
 
