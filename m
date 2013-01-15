@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442Ab3APANU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:13:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42824 "EHLO mail.kernel.org"
+	id S932345Ab3AOWcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:32:21 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42693 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932348Ab3AOWc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:32:29 -0500
+	id S1758376Ab3AOWcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Axel Lin <axel.lin@ingics.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 131/221] ASoC: wm5100: Remove DSP B and left justified formats
-Date: Tue, 15 Jan 2013 10:50:58 -0800
-Message-Id: <20130115185007.498813725@linuxfoundation.org>
+Subject: [ 124/221] ASoC: arizona: Do proper shift for setting AIF rate
+Date: Tue, 15 Jan 2013 10:50:51 -0800
+Message-Id: <20130115185006.981143990@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,36 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 5f960294e2031d12f10c8488c3446fecbf59628d upstream.
+commit 7110a287ff2b1f3780905d1686a1a4edccb95133 upstream.
 
-These are not supported
+ARIZONA_AIF1_RATE_MASK is 0x7800 /* AIF1_RATE - [14:11] */
+Thus we need left shift ARIZONA_AIF1_RATE_SHIFT when setting aif1 rate.
 
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm5100.c |    6 ------
- 1 file changed, 6 deletions(-)
+ sound/soc/codecs/arizona.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm5100.c
-+++ b/sound/soc/codecs/wm5100.c
-@@ -1279,15 +1279,9 @@ static int wm5100_set_fmt(struct snd_soc
- 	case SND_SOC_DAIFMT_DSP_A:
- 		mask = 0;
+--- a/sound/soc/codecs/arizona.c
++++ b/sound/soc/codecs/arizona.c
+@@ -677,7 +677,8 @@ static int arizona_hw_params(struct snd_
+ 		snd_soc_update_bits(codec, ARIZONA_ASYNC_SAMPLE_RATE_1,
+ 				    ARIZONA_ASYNC_SAMPLE_RATE_MASK, sr_val);
+ 		snd_soc_update_bits(codec, base + ARIZONA_AIF_RATE_CTRL,
+-				    ARIZONA_AIF1_RATE_MASK, 8);
++				    ARIZONA_AIF1_RATE_MASK,
++				    8 << ARIZONA_AIF1_RATE_SHIFT);
  		break;
--	case SND_SOC_DAIFMT_DSP_B:
--		mask = 1;
--		break;
- 	case SND_SOC_DAIFMT_I2S:
- 		mask = 2;
- 		break;
--	case SND_SOC_DAIFMT_LEFT_J:
--		mask = 3;
--		break;
  	default:
- 		dev_err(codec->dev, "Unsupported DAI format %d\n",
- 			fmt & SND_SOC_DAIFMT_FORMAT_MASK);
+ 		arizona_aif_err(dai, "Invalid clock %d\n", dai_priv->clk);
 
 
