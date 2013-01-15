@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758557Ab3AOWd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:33:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43218 "EHLO mail.kernel.org"
+	id S932531Ab3AOWdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:33:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43178 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932544Ab3AOWdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:33:42 -0500
+	id S932513Ab3AOWdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:33:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Paulson-Ellis <chris@edesix.com>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 166/221] drm/nouveau: fix blank LVDS screen regression on pre-nv50 cards
-Date: Tue, 15 Jan 2013 10:51:33 -0800
-Message-Id: <20130115185010.020649626@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
+Subject: [ 163/221] usb: gadget: dummy: fix enumeration with g_multi
+Date: Tue, 15 Jan 2013 10:51:30 -0800
+Message-Id: <20130115185009.821520376@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,45 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 92441b2263866c27ef48137be5aa6c8c692652fc upstream.
+commit 1d16638e3b9cc195bac18a8fcbca748f33c1bc24 upstream.
 
-Commit 2a44e499 ("drm/nouveau/disp: introduce proper init/fini, separate
-from create/destroy") started to call display init routines on pre-nv50
-hardware on module load. But LVDS init code sets driver state in a way
-which prevents modesetting code from operating properly.
+If we do have endpoints named like "ep-a" then bEndpointAddress is
+counted internally by the gadget framework.
 
-nv04_display_init calls nv04_dfp_restore, which sets encoder->last_dpms to
-NV_DPMS_CLEARED.
+If we do have endpoints named like "ep-1" then bEndpointAddress is
+assigned from the digit after "ep-".
 
-drm_crtc_helper_set_mode
-  nv04_dfp_prepare
-    nv04_lvds_dpms(DRM_MODE_DPMS_OFF)
+If we do have both, then it is likely that after we used up the
+"generic" endpoints we will use the digits and thus assign one
+bEndpointAddress to multiple endpoints.
 
-nv04_lvds_dpms checks last_dpms mode (which is NV_DPMS_CLEARED) and wrongly
-assumes it's a "powersaving mode", the new one (DRM_MODE_DPMS_OFF) is too,
-so it skips calling some crucial lvds scripts.
+This theory can be proofed by using the completely enabled g_multi.
+Without this patch, the mass storage won't enumerate and times out
+because it shares endpoints with RNDIS.
 
-Reported-by: Chris Paulson-Ellis <chris@edesix.com>
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+This patch also adds fills up the endpoints list so we have in total
+endpoints 1 to 15 in + out available while some of them are restricted
+to certain types like BULK or ISO. Without this change the nokia gadget
+won't load because the system does not provide enough (BULK) endpoints
+but it did before ep-a - ep-f were removed.
+
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nv04_dfp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/gadget/dummy_hcd.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nv04_dfp.c
-+++ b/drivers/gpu/drm/nouveau/nv04_dfp.c
-@@ -505,7 +505,7 @@ static void nv04_dfp_update_backlight(st
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -126,10 +126,7 @@ static const char ep0name[] = "ep0";
+ static const char *const ep_name[] = {
+ 	ep0name,				/* everyone has ep0 */
  
- static inline bool is_powersaving_dpms(int mode)
- {
--	return (mode != DRM_MODE_DPMS_ON);
-+	return mode != DRM_MODE_DPMS_ON && mode != NV_DPMS_CLEARED;
- }
+-	/* act like a net2280: high speed, six configurable endpoints */
+-	"ep-a", "ep-b", "ep-c", "ep-d", "ep-e", "ep-f",
+-
+-	/* or like pxa250: fifteen fixed function endpoints */
++	/* act like a pxa250: fifteen fixed function endpoints */
+ 	"ep1in-bulk", "ep2out-bulk", "ep3in-iso", "ep4out-iso", "ep5in-int",
+ 	"ep6in-bulk", "ep7out-bulk", "ep8in-iso", "ep9out-iso", "ep10in-int",
+ 	"ep11in-bulk", "ep12out-bulk", "ep13in-iso", "ep14out-iso",
+@@ -137,6 +134,10 @@ static const char *const ep_name[] = {
  
- static void nv04_lvds_dpms(struct drm_encoder *encoder, int mode)
+ 	/* or like sa1100: two fixed function endpoints */
+ 	"ep1out-bulk", "ep2in-bulk",
++
++	/* and now some generic EPs so we have enough in multi config */
++	"ep3out", "ep4in", "ep5out", "ep6out", "ep7in", "ep8out", "ep9in",
++	"ep10out", "ep11out", "ep12in", "ep13out", "ep14in", "ep15out",
+ };
+ #define DUMMY_ENDPOINTS	ARRAY_SIZE(ep_name)
+ 
 
 
