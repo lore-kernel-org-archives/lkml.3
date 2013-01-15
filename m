@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967Ab3AOWr6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:47:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45278 "EHLO mail.kernel.org"
+	id S932995Ab3AOWsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:48:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45293 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932852Ab3AOWrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:47:55 -0500
+	id S932852Ab3AOWr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:47:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xiaotian Feng <dannyfeng@tencent.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 024/171] libata: fix Null pointer dereference on disk error
-Date: Tue, 15 Jan 2013 14:43:09 -0800
-Message-Id: <20130115224315.145668209@linuxfoundation.org>
+        Yi Zou <yi.zou@intel.com>, Open-FCoE <devel@open-fcoe.org>,
+        "Nicholas A. Bellinger" <nab@risingtidesystems.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 025/171] target/tcm_fc: fix the lockdep warning due to inconsistent lock state
+Date: Tue, 15 Jan 2013 14:43:10 -0800
+Message-Id: <20130115224315.209601140@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,56 +27,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiaotian Feng <xtfeng@gmail.com>
+From: Yi Zou <yi.zou@intel.com>
 
-commit 26cd4d65deba587f3cf2329b6869ce02bcbe68ec upstream.
+commit 9f4ad44b264f8bb61ffdd607148215566568430d upstream.
 
-Following oops were observed when disk error happened:
+The lockdep warning below is in theory correct but it will be in really weird
+rare situation that ends up that deadlock since the tcm fc session is hashed
+based the rport id. Nonetheless, the complaining below is about rcu callback
+that does the transport_deregister_session() is happening in softirq, where
+transport_register_session() that happens earlier is not. This triggers the
+lockdep warning below. So, just fix this to make lockdep happy by disabling
+the soft irq before calling transport_register_session() in ft_prli.
 
-[ 4272.896937] sd 0:0:0:0: [sda] Unhandled error code
-[ 4272.896939] sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
-[ 4272.896942] sd 0:0:0:0: [sda] CDB: Read(10): 28 00 00 5a de a7 00 00 08 00
-[ 4272.896951] end_request: I/O error, dev sda, sector 5955239
-[ 4291.574947] BUG: unable to handle kernel NULL pointer dereference at (null)
-[ 4291.658305] IP: [] ahci_activity_show+0x1/0x40
-[ 4291.730090] PGD 76dbbc067 PUD 6c4fba067 PMD 0
-[ 4291.783408] Oops: 0000 [#1] SMP
-[ 4291.822100] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/sw_activity
-[ 4291.934235] CPU 9
-[ 4291.958301] Pid: 27942, comm: hwinfo ......
+BTW, this was found in FCoE VN2VN over two VMs, couple of create and destroy
+would get this triggered.
 
-ata_scsi_find_dev could return NULL, so ata_scsi_activity_{show,store} should check if atadev is NULL.
+v1: was enforcing register to be in softirq context which was not righ. See,
+http://www.spinics.net/lists/target-devel/msg03614.html
 
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+v2: following comments from Roland&Nick (thanks), it seems we don't have to
+do transport_deregister_session() in rcu callback, so move it into ft_sess_free()
+but still do kfree() of the corresponding ft_sess struct in rcu callback to
+make sure the ft_sess is not freed till the rcu callback.
+
+...
+[ 1328.370592] scsi2 : FCoE Driver
+[ 1328.383429] fcoe: No FDMI support.
+[ 1328.384509] host2: libfc: Link up on port (000000)
+[ 1328.934229] host2: Assigned Port ID 00a292
+[ 1357.232132] host2: rport 00a393: Remove port
+[ 1357.232568] host2: rport 00a393: Port sending LOGO from Ready state
+[ 1357.233692] host2: rport 00a393: Delete port
+[ 1357.234472] host2: rport 00a393: work event 3
+[ 1357.234969] host2: rport 00a393: callback ev 3
+[ 1357.235979] host2: rport 00a393: Received a LOGO response closed
+[ 1357.236706] host2: rport 00a393: work delete
+[ 1357.237481]
+[ 1357.237631] =================================
+[ 1357.238064] [ INFO: inconsistent lock state ]
+[ 1357.238450] 3.7.0-rc7-yikvm+ #3 Tainted: G           O
+[ 1357.238450] ---------------------------------
+[ 1357.238450] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+[ 1357.238450] ksoftirqd/0/3 [HC0[0]:SC1[1]:HE0:SE0] takes:
+[ 1357.238450]  (&(&se_tpg->session_lock)->rlock){+.?...}, at: [<ffffffffa01eacd4>] transport_deregister_session+0x41/0x148 [target_core_mod]
+[ 1357.238450] {SOFTIRQ-ON-W} state was registered at:
+[ 1357.238450]   [<ffffffff810834f5>] mark_held_locks+0x6d/0x95
+[ 1357.238450]   [<ffffffff8108364a>] trace_hardirqs_on_caller+0x12d/0x197
+[ 1357.238450]   [<ffffffff810836c1>] trace_hardirqs_on+0xd/0xf
+[ 1357.238450]   [<ffffffff8149caba>] _raw_spin_unlock_irq+0x2d/0x45
+[ 1357.238450]   [<ffffffffa01e8d10>] __transport_register_session+0xb8/0x122 [target_core_mod]
+[ 1357.238450]   [<ffffffffa01e8dbe>] transport_register_session+0x44/0x5a [target_core_mod]
+[ 1357.238450]   [<ffffffffa018e32c>] ft_prli+0x1e3/0x275 [tcm_fc]
+[ 1357.238450]   [<ffffffffa0160e8d>] fc_rport_recv_req+0x95e/0xdc5 [libfc]
+[ 1357.238450]   [<ffffffffa015be88>] fc_lport_recv_els_req+0xc4/0xd5 [libfc]
+[ 1357.238450]   [<ffffffffa015c778>] fc_lport_recv_req+0x12f/0x18f [libfc]
+[ 1357.238450]   [<ffffffffa015a6d7>] fc_exch_recv+0x8ba/0x981 [libfc]
+[ 1357.238450]   [<ffffffffa0176d7a>] fcoe_percpu_receive_thread+0x47a/0x4e2 [fcoe]
+[ 1357.238450]   [<ffffffff810549f1>] kthread+0xb1/0xb9
+[ 1357.238450]   [<ffffffff814a40ec>] ret_from_fork+0x7c/0xb0
+[ 1357.238450] irq event stamp: 275411
+[ 1357.238450] hardirqs last  enabled at (275410): [<ffffffff810bb6a0>] rcu_process_callbacks+0x229/0x42a
+[ 1357.238450] hardirqs last disabled at (275411): [<ffffffff8149c2f7>] _raw_spin_lock_irqsave+0x22/0x8e
+[ 1357.238450] softirqs last  enabled at (275394): [<ffffffff8103d669>] __do_softirq+0x246/0x26f
+[ 1357.238450] softirqs last disabled at (275399): [<ffffffff8103d6bb>] run_ksoftirqd+0x29/0x62
+[ 1357.238450]
+[ 1357.238450] other info that might help us debug this:
+[ 1357.238450]  Possible unsafe locking scenario:
+[ 1357.238450]
+[ 1357.238450]        CPU0
+[ 1357.238450]        ----
+[ 1357.238450]   lock(&(&se_tpg->session_lock)->rlock);
+[ 1357.238450]   <Interrupt>
+[ 1357.238450]     lock(&(&se_tpg->session_lock)->rlock);
+[ 1357.238450]
+[ 1357.238450]  *** DEADLOCK ***
+[ 1357.238450]
+[ 1357.238450] no locks held by ksoftirqd/0/3.
+[ 1357.238450]
+[ 1357.238450] stack backtrace:
+[ 1357.238450] Pid: 3, comm: ksoftirqd/0 Tainted: G           O 3.7.0-rc7-yikvm+ #3
+[ 1357.238450] Call Trace:
+[ 1357.238450]  [<ffffffff8149399a>] print_usage_bug+0x1f5/0x206
+[ 1357.238450]  [<ffffffff8100da59>] ? save_stack_trace+0x2c/0x49
+[ 1357.238450]  [<ffffffff81082aae>] ? print_irq_inversion_bug.part.14+0x1ae/0x1ae
+[ 1357.238450]  [<ffffffff81083336>] mark_lock+0x106/0x258
+[ 1357.238450]  [<ffffffff81084e34>] __lock_acquire+0x2e7/0xe53
+[ 1357.238450]  [<ffffffff8102903d>] ? pvclock_clocksource_read+0x48/0xb4
+[ 1357.238450]  [<ffffffff810ba6a3>] ? rcu_process_gp_end+0xc0/0xc9
+[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
+[ 1357.238450]  [<ffffffff81085ef1>] lock_acquire+0x119/0x143
+[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
+[ 1357.238450]  [<ffffffff8149c329>] _raw_spin_lock_irqsave+0x54/0x8e
+[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
+[ 1357.238450]  [<ffffffffa01eacd4>] transport_deregister_session+0x41/0x148 [target_core_mod]
+[ 1357.238450]  [<ffffffff810bb6a0>] ? rcu_process_callbacks+0x229/0x42a
+[ 1357.238450]  [<ffffffffa018ddc5>] ft_sess_rcu_free+0x17/0x24 [tcm_fc]
+[ 1357.238450]  [<ffffffffa018ddae>] ? ft_sess_free+0x1b/0x1b [tcm_fc]
+[ 1357.238450]  [<ffffffff810bb6d7>] rcu_process_callbacks+0x260/0x42a
+[ 1357.238450]  [<ffffffff8103d55d>] __do_softirq+0x13a/0x26f
+[ 1357.238450]  [<ffffffff8149b34e>] ? __schedule+0x65f/0x68e
+[ 1357.238450]  [<ffffffff8103d6bb>] run_ksoftirqd+0x29/0x62
+[ 1357.238450]  [<ffffffff8105c83c>] smpboot_thread_fn+0x1a5/0x1aa
+[ 1357.238450]  [<ffffffff8105c697>] ? smpboot_unregister_percpu_thread+0x47/0x47
+[ 1357.238450]  [<ffffffff810549f1>] kthread+0xb1/0xb9
+[ 1357.238450]  [<ffffffff8149b49d>] ? wait_for_common+0xbb/0x10a
+[ 1357.238450]  [<ffffffff81054940>] ? __init_kthread_worker+0x59/0x59
+[ 1357.238450]  [<ffffffff814a40ec>] ret_from_fork+0x7c/0xb0
+[ 1357.238450]  [<ffffffff81054940>] ? __init_kthread_worker+0x59/0x59
+[ 1417.440099]  rport-2:0-0: blocked FC remote port time out: removing rport
+
+Signed-off-by: Yi Zou <yi.zou@intel.com>
+Cc: Open-FCoE <devel@open-fcoe.org>
+Cc: Nicholas A. Bellinger <nab@risingtidesystems.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-scsi.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/target/tcm_fc/tfc_sess.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -309,7 +309,8 @@ ata_scsi_activity_show(struct device *de
- 	struct ata_port *ap = ata_shost_to_port(sdev->host);
- 	struct ata_device *atadev = ata_scsi_find_dev(ap, sdev);
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -431,7 +431,6 @@ static void ft_sess_rcu_free(struct rcu_
+ {
+ 	struct ft_sess *sess = container_of(rcu, struct ft_sess, rcu);
  
--	if (ap->ops->sw_activity_show && (ap->flags & ATA_FLAG_SW_ACTIVITY))
-+	if (atadev && ap->ops->sw_activity_show &&
-+	    (ap->flags & ATA_FLAG_SW_ACTIVITY))
- 		return ap->ops->sw_activity_show(atadev, buf);
- 	return -EINVAL;
+-	transport_deregister_session(sess->se_sess);
+ 	kfree(sess);
  }
-@@ -324,7 +325,8 @@ ata_scsi_activity_store(struct device *d
- 	enum sw_activity val;
- 	int rc;
  
--	if (ap->ops->sw_activity_store && (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
-+	if (atadev && ap->ops->sw_activity_store &&
-+	    (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
- 		val = simple_strtoul(buf, NULL, 0);
- 		switch (val) {
- 		case OFF: case BLINK_ON: case BLINK_OFF:
+@@ -439,6 +438,7 @@ static void ft_sess_free(struct kref *kr
+ {
+ 	struct ft_sess *sess = container_of(kref, struct ft_sess, kref);
+ 
++	transport_deregister_session(sess->se_sess);
+ 	call_rcu(&sess->rcu, ft_sess_rcu_free);
+ }
+ 
 
 
