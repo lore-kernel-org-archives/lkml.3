@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab3AOIs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 03:48:28 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:62276 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565Ab3AOIs0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 03:48:26 -0500
-Date: Tue, 15 Jan 2013 08:48:21 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com, cbouatmailru@gmail.com,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
-Subject: Re: [PATCH 04/18] power: ab8500_fg: Replace msleep() with
- usleep_range() for greater accuracy
-Message-ID: <20130115084821.GT12385@gmail.com>
-References: <1357909986-9262-1-git-send-email-lee.jones@linaro.org>
- <1357909986-9262-5-git-send-email-lee.jones@linaro.org>
- <1358183857.19400.13.camel@joe-AO722>
+	id S1756288Ab3AOIyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 03:54:04 -0500
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:33012
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752205Ab3AOIyC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 03:54:02 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zzc89bh1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h1155h)
+Message-ID: <50F5190D.9050700@freescale.com>
+Date: Tue, 15 Jan 2013 16:53:33 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1358183857.19400.13.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>
+Subject: Re: [PATCH] mtd: apply tPROG delay for ONFI nand's page program
+References: <1358147853-31826-1-git-send-email-b32955@freescale.com> <50F3FA09.3080405@parrot.com>
+In-Reply-To: <50F3FA09.3080405@parrot.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013, Joe Perches wrote:
+于 2013年01月14日 20:28, Matthieu CASTET 写道:
+> Huang Shijie a écrit :
+>> With some latest Micron's onfi nand(such as MT29F64G08CBABAWP),
+>> I find that if we do not apply the tPROG delay as the datasheet tells us,
+>> the page program may fails. You will read out the all 0xff from this page
+>> in this case.
+>>
+>> This patch adds the tPROG delay for page program when it is an onfi nand.
+>>
+>> Signed-off-by: Huang Shijie<b32955@freescale.com>
+>> ---
+>>   drivers/mtd/nand/nand_base.c |    4 ++++
+>>   1 files changed, 4 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+>> index 8323ac9..b628dd5 100644
+>> --- a/drivers/mtd/nand/nand_base.c
+>> +++ b/drivers/mtd/nand/nand_base.c
+>> @@ -841,6 +841,10 @@ static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
+>>   	 */
+>>   	ndelay(100);
+>>
+>> +	/* Apply the tPROG delay for ONFI nand program. */
+>> +	if (chip->onfi_version&&  state == FL_WRITING)
+>> +		udelay(le16_to_cpu(chip->onfi_params.t_prog));
+>> +
+>>   	if ((state == FL_ERASING)&&  (chip->options&  NAND_IS_AND))
+>>   		chip->cmdfunc(mtd, NAND_CMD_STATUS_MULTI, -1, -1);
+>>   	else
+> It looks wrong : why should be wait tPROG before using status command to monitor
+> program end ?
+>
+> tPROG is the Page program time (Measured from the falling edge of SR[6] to the
+> rising edge of SR[6]), but because we monitor SR[6] with status command, we
+> already wait for that time.
+>
+thanks. you are right. Please ignore this patch.
+> Are you sure that it is not a bug in your nand driver with status command ?
+>
+>
+I will try to find the bug in the driver.
 
-> On Fri, 2013-01-11 at 13:12 +0000, Lee Jones wrote:
-> > Doing so provides a greater degree of accuracy when dealing with
-> > time-frames between 1us and 20ms. msleep() is only accurate for
-> > wake-ups greater than 20ms.
-> []
-> > diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
-> []
-> > @@ -956,7 +956,7 @@ static int ab8500_fg_load_comp_volt_to_capacity(struct ab8500_fg *di)
-> >  	do {
-> >  		vbat += ab8500_fg_bat_voltage(di);
-> >  		i++;
-> > -		msleep(5);
-> > +		usleep_range(5000, 5001);
-> 
-> If you're going to give a range that small
-> you might as well use usleep instead.
-> 
-> Otherwise, add some tolerance to allow any
-> other coalesced wakeup to occur.
+thanks
+Huang Shijie
+> Matthieu
+>
 
-I can't increase the tolerance, as I don't know how that would
-effect the running of the system, and the person who would know
-is off on parental leave.
 
-What I can tell you is we're only using usleep_range() because
-there is no usleep in the kernel. At least that's what we've
-been led to believe:
-
-Documentation/timers/timers-howto.txt:
-
-                - Why is there no "usleep" / What is a good range?
-                        Since usleep_range is built on top of hrtimers, the
-                        wakeup will be very precise (ish), thus a simple
-                        usleep function would likely introduce a large number
-                        of undesired interrupts.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
