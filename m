@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933613Ab3AOXdy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:33:54 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:58370 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932102Ab3AOXdv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 18:33:51 -0500
-Date: Tue, 15 Jan 2013 15:33:47 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk,
-        snitzer@redhat.com, agk@redhat.com, neilb@suse.de
-Subject: Re: Bcache v. whatever
-Message-ID: <20130115233347.GD26407@google.com>
-References: <20130114223202.GV26407@google.com>
- <1358241656.2383.2.camel@dabdike.int.hansenpartnership.com>
- <20130115205912.GA26407@google.com>
- <1358291738.10591.23.camel@dabdike.int.hansenpartnership.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358291738.10591.23.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933636Ab3AOXeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:34:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46588 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933395Ab3AOWv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:51:56 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Vincent Pelletier <plr.vincent@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 108/171] xhci: Handle HS bulk/ctrl endpoints that dont NAK.
+Date: Tue, 15 Jan 2013 14:44:33 -0800
+Message-Id: <20130115224321.171636602@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
+References: <20130115224313.394976595@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 11:15:38PM +0000, James Bottomley wrote:
-> I think md integration would be a bit of a mistake, since md is pretty
-> much only a raid engine at this point in time.  There are also a couple
-> of other dm cache targets, so it would be nice to have one rather than
-> three.  This all, however, seems to be under discussion on the dm list.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-The raid vs. caching bit is a bit beside the point IMO; they both
-aggregate block devices and expose virtual block devices, and the
-mechanism for doing so isn't part of the generic framework.
+------------------
 
-I'm not morally opposed to dm integration, I'm just more comfortable
-with the md code and find it easier to understand and work with.
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-And the goal I care about is just commonality of userspace interfaces
-and tooling, which integration with either would accomplish.
+commit 55c1945edaac94c5338a3647bc2e85ff75d9cf36 upstream.
 
-> > So I'm not sure why it'd go in via dm, it seems to me it'd make just as
-> > much sense for it to go in via Neil Brown's tree. Unless there's
-> > something I'm missing?
-> 
-> Um, well there's no caching patches in the md tree; it's RAID only.  The
-> basic caching stuff is all in the dm tree, which is why it's the natural
-> one.
-> 
-> It seems to me that your stuff is progressing on the dm list, so I don't
-> really see a need to circumvent the process in the dm tree ... unless
-> there's some problem I'm not seeing?
+A high speed control or bulk endpoint may have bInterval set to zero,
+which means it does not NAK.  If bInterval is non-zero, it means the
+endpoint NAKs at a rate of 2^(bInterval - 1).
 
-I haven't been active on dm-devel, besides the occasional cross
-posting... not sure what activity you're referring to on the dm list,
+The xHCI code to compute the NAK interval does not handle the special
+case of zero properly.  The current code unconditionally subtracts one
+from bInterval and uses it as an exponent.  This causes a very large
+bInterval to be used, and warning messages like these will be printed:
 
-But if Alasdair wants to pick it up I'm not complaining, I don't
-particularly care who merges it.
+usb 1-1: ep 0x1 - rounding interval to 32768 microframes, ep desc says 0 microframes
+
+This may cause the xHCI host hardware to reject the Configure Endpoint
+command, which means the HS device will be unusable under xHCI ports.
+
+This patch should be backported to kernels as old as 2.6.31, that contain
+commit dfa49c4ad120a784ef1ff0717168aa79f55a483a "USB: xhci - fix math in
+xhci_get_endpoint_interval()".
+
+Reported-by: Vincent Pelletier <plr.vincent@gmail.com>
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/host/xhci-mem.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1250,6 +1250,8 @@ static unsigned int xhci_microframes_to_
+ static unsigned int xhci_parse_microframe_interval(struct usb_device *udev,
+ 		struct usb_host_endpoint *ep)
+ {
++	if (ep->desc.bInterval == 0)
++		return 0;
+ 	return xhci_microframes_to_exponent(udev, ep,
+ 			ep->desc.bInterval, 0, 15);
+ }
+
+
