@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab3AOTS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 14:18:56 -0500
-Received: from mail.us.es ([193.147.175.20]:43681 "EHLO mail.us.es"
+	id S1756436Ab3AOTU6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 14:20:58 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:54641 "EHLO mxout2.iskon.hr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752720Ab3AOTSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 14:18:54 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.6/16496. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-99.2/7.5):. 
- Processed in 1.915988 secs); 15 Jan 2013 19:18:51 -0000
-X-Envelope-From: pneira@us.es
-Date: Tue, 15 Jan 2013 20:18:49 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: netfilter/xt_CT.c: fix uninitialized variable
-Message-ID: <20130115191849.GA17140@1984>
-References: <1358276314-9536-1-git-send-email-dinggnu@gmail.com>
+	id S1752064Ab3AOTU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 14:20:57 -0500
+X-Remote-IP: 213.191.128.133
+Date: Tue, 15 Jan 2013 20:20:51 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358276314-9536-1-git-send-email-dinggnu@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Clayton <andrew@digital-domain.net>,
+        Rik van Riel <riel@redhat.com>
+References: <alpine.LNX.2.00.1301152010040.14768@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1301152010040.14768@pobox.suse.cz>
+Message-ID: <50F5AC13.1040508@iskon.hr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] lockdep, rwsem: fix down_write_nest_lock() if !CONFIG_DEBUG_LOCK_ALLOC
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20130115 #9067708, check: 20130115 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 41509 [Jan 15 2013]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cong,
+On 15.01.2013 20:12, Jiri Kosina wrote:
+> Commit 1b963c81b1 ("lockdep, rwsem: provide down_write_nest_lock()")
+> contains a bug in a codepath when CONFIG_DEBUG_LOCK_ALLOC is disabled,
+> which causes down_read() to be called instead of down_write() by mistake
+> on such configurations. Fix that.
+>
+> Reported-by: Andrew Clayton <andrew@digital-domain.net>
+> Reported-by: Zlatko Calusic <zlatko.calusic@iskon.hr>
+> Tested-by: Andrew Clayton <andrew@digital-domain.net>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 
-On Tue, Jan 15, 2013 at 07:58:34PM +0100, Cong Ding wrote:
-> If CONFIG_NF_CONNTRACK_ZONES is not defined, the variable ret might be
-> uninitialized when it goes to err1 through line 125 and 263 respectively.
-> So I change these goto err1 to return -EINVAL directly.
+Reported-and-tested-by: Zlatko Calusic <zlatko.calusic@iskon.hr>
 
-This is already fixed in the net tree.
+kvm starts just fine now. Thanks Jiri!
 
-http://git.kernel.org/?p=linux/kernel/git/davem/net.git;a=commit;h=4610476d89d53714ca94aae081fa035908bc137a
+-- 
+Zlatko
