@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab3AOXkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:40:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46227 "EHLO mail.kernel.org"
+	id S933289Ab3AOWut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:50:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46135 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933051Ab3AOWu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:56 -0500
+	id S933051Ab3AOWup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 073/171] ASoC: wm2200: Remove DSP B and left justified AIF modes
-Date: Tue, 15 Jan 2013 14:43:58 -0800
-Message-Id: <20130115224318.667359339@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 077/171] udldrmfb: udl_get_edid: drop unneeded i--
+Date: Tue, 15 Jan 2013 14:44:02 -0800
+Message-Id: <20130115224318.962648456@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,36 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 0cc411b934c4317b363d1af993549f391852b980 upstream.
+commit 7b4cf994e4c6ba48872bb25253cc393b7fb74c82 upstream.
 
-These are not supported.
+This is a left-over from when udl_get_edid returned the amount of bytes
+successfully read, which it no longer does.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm2200.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/gpu/drm/udl/udl_connector.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/sound/soc/codecs/wm2200.c
-+++ b/sound/soc/codecs/wm2200.c
-@@ -1380,15 +1380,9 @@ static int wm2200_set_fmt(struct snd_soc
- 	case SND_SOC_DAIFMT_DSP_A:
- 		fmt_val = 0;
- 		break;
--	case SND_SOC_DAIFMT_DSP_B:
--		fmt_val = 1;
--		break;
- 	case SND_SOC_DAIFMT_I2S:
- 		fmt_val = 2;
- 		break;
--	case SND_SOC_DAIFMT_LEFT_J:
--		fmt_val = 3;
--		break;
- 	default:
- 		dev_err(codec->dev, "Unsupported DAI format %d\n",
- 			fmt & SND_SOC_DAIFMT_FORMAT_MASK);
+--- a/drivers/gpu/drm/udl/udl_connector.c
++++ b/drivers/gpu/drm/udl/udl_connector.c
+@@ -40,7 +40,6 @@ static u8 *udl_get_edid(struct udl_devic
+ 				      HZ);
+ 		if (ret < 1) {
+ 			DRM_ERROR("Read EDID byte %d failed err %x\n", i, ret);
+-			i--;
+ 			goto error;
+ 		}
+ 		block[i] = rbuf[1];
 
 
