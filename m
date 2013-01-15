@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757561Ab3AONmX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:42:23 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60049 "EHLO bear.ext.ti.com"
+	id S1757506Ab3AONnE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:43:04 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60022 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755077Ab3AONmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:42:19 -0500
+	id S1757029Ab3AONlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:41:52 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>,
@@ -14,9 +14,9 @@ To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Sekhar Nori <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-fbdev@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 11/12] video: da8xx-fb: setup struct lcd_ctrl_config for dt
-Date: Tue, 15 Jan 2013 19:13:14 +0530
-Message-ID: <6d09674a99d62d752f87dfd0e6bb625d142c68ba.1358251448.git.afzal@ti.com>
+Subject: [PATCH v2 06/12] video: da8xx-fb: reorganize panel detection
+Date: Tue, 15 Jan 2013 19:12:34 +0530
+Message-ID: <08858a7cd96fd3a603316f7c09f3cb9232a4f0f8.1358251447.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1358251447.git.afzal@ti.com>
 References: <cover.1358251447.git.afzal@ti.com>
@@ -26,68 +26,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-strcut lcd_ctrl_config information required for driver is currently
-obtained via platform data. To handle DT probing, create
-lcd_ctrl_config and populate it with default values, these values are
-sufficient for the panels so far used with this controller to work.
+Move panel detection to a separate function, this helps in readability
+as well as makes DT support cleaner.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- drivers/video/da8xx-fb.c |   34 +++++++++++++++++++++++++++++++++-
- 1 file changed, 33 insertions(+), 1 deletion(-)
+ drivers/video/da8xx-fb.c |   42 ++++++++++++++++++++++++++----------------
+ 1 file changed, 26 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index 1c1a616..5455682 100644
+index 3b146bc..b6ea5e9 100644
 --- a/drivers/video/da8xx-fb.c
 +++ b/drivers/video/da8xx-fb.c
-@@ -1254,6 +1254,35 @@ static struct fb_ops da8xx_fb_ops = {
+@@ -1253,6 +1253,27 @@ static struct fb_ops da8xx_fb_ops = {
  	.fb_blank = cfb_blank,
  };
  
-+static struct lcd_ctrl_config *da8xx_fb_create_cfg(struct platform_device *dev)
++static struct fb_videomode *da8xx_fb_get_videomode(struct platform_device *dev)
 +{
-+	struct lcd_ctrl_config *cfg;
++	struct da8xx_lcdc_platform_data *fb_pdata = dev->dev.platform_data;
++	struct fb_videomode *lcdc_info;
++	int i;
 +
-+	cfg = devm_kzalloc(&dev->dev, sizeof(struct fb_videomode), GFP_KERNEL);
-+	if (!cfg) {
-+		dev_err(&dev->dev, "memory allocation failed\n");
-+		return NULL;
++	for (i = 0, lcdc_info = known_lcd_panels;
++		i < ARRAY_SIZE(known_lcd_panels); i++, lcdc_info++) {
++		if (strcmp(fb_pdata->type, lcdc_info->name) == 0)
++			break;
 +	}
 +
-+	/* default values */
++	if (i == ARRAY_SIZE(known_lcd_panels)) {
++		dev_err(&dev->dev, "no panel found\n");
++		return NULL;
++	}
++	dev_info(&dev->dev, "found %s panel\n", lcdc_info->name);
 +
-+	if (lcd_revision == LCD_VERSION_1)
-+		cfg->bpp = 16;
-+	else
-+		cfg->bpp = 32;
-+
-+	/*
-+	 * For panels so far used with this LCDC, below statement is sufficient.
-+	 * For new panels, if required, struct lcd_ctrl_cfg fields to be updated
-+	 * with additional/modified values. Those values would have to be then
-+	 * obtained from dt(requiring new dt bindings).
-+	 */
-+
-+	cfg->panel_shade = COLOR_ACTIVE;
-+
-+	return cfg;
++	return lcdc_info;
 +}
 +
- static struct fb_videomode *da8xx_fb_get_videomode(struct platform_device *dev)
+ static int fb_probe(struct platform_device *device)
  {
- 	struct da8xx_lcdc_platform_data *fb_pdata = dev->dev.platform_data;
-@@ -1345,7 +1374,10 @@ static int fb_probe(struct platform_device *device)
+ 	struct da8xx_lcdc_platform_data *fb_pdata =
+@@ -1262,7 +1283,7 @@ static int fb_probe(struct platform_device *device)
+ 	struct fb_info *da8xx_fb_info;
+ 	struct clk *fb_clk = NULL;
+ 	struct da8xx_fb_par *par;
+-	int ret, i;
++	int ret;
+ 	unsigned long ulcm;
+ 
+ 	if (fb_pdata == NULL) {
+@@ -1270,6 +1291,10 @@ static int fb_probe(struct platform_device *device)
+ 		return -ENOENT;
+ 	}
+ 
++	lcdc_info = da8xx_fb_get_videomode(device);
++	if (lcdc_info == NULL)
++		return -ENODEV;
++
+ 	lcdc_regs = platform_get_resource(device, IORESOURCE_MEM, 0);
+ 	da8xx_fb_reg_base = devm_request_and_ioremap(&device->dev, lcdc_regs);
+ 	if (!da8xx_fb_reg_base) {
+@@ -1303,21 +1328,6 @@ static int fb_probe(struct platform_device *device)
  		break;
  	}
  
--	lcd_cfg = (struct lcd_ctrl_config *)fb_pdata->controller_data;
-+	if (device->dev.of_node)
-+		lcd_cfg = da8xx_fb_create_cfg(device);
-+	else
-+		lcd_cfg = (struct lcd_ctrl_config *)fb_pdata->controller_data;
+-	for (i = 0, lcdc_info = known_lcd_panels;
+-		i < ARRAY_SIZE(known_lcd_panels);
+-		i++, lcdc_info++) {
+-		if (strcmp(fb_pdata->type, lcdc_info->name) == 0)
+-			break;
+-	}
+-
+-	if (i == ARRAY_SIZE(known_lcd_panels)) {
+-		dev_err(&device->dev, "GLCD: No valid panel found\n");
+-		ret = -ENODEV;
+-		goto err_pm_runtime_disable;
+-	} else
+-		dev_info(&device->dev, "GLCD: Found %s panel\n",
+-					fb_pdata->type);
+-
+ 	lcd_cfg = (struct lcd_ctrl_config *)fb_pdata->controller_data;
  
  	if (!lcd_cfg) {
- 		ret = -EINVAL;
 -- 
 1.7.9.5
 
