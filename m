@@ -1,105 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab3AOGq6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 01:46:58 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:64772 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368Ab3AOGqz (ORCPT
+	id S1756134Ab3AOGud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 01:50:33 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:54352 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678Ab3AOGuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 01:46:55 -0500
-Message-ID: <50F4FB24.80200@huawei.com>
-Date: Tue, 15 Jan 2013 14:45:56 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v8 01/22] PCI, acpiphp: Add is_hotplug_bridge detection
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-2-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1357944049-29620-2-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+	Tue, 15 Jan 2013 01:50:32 -0500
+From: Tony Prisk <linux@prisktech.co.nz>
+To: olof@lixom.net, arm@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com, swarren@wwwdotorg.org,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH] timer: vt8500: Convert vt8500 to use CLKSRC_OF
+Date: Tue, 15 Jan 2013 19:50:49 +1300
+Message-Id: <1358232649-19964-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/12 6:40, Yinghai Lu wrote:
-> When system support hotplug bridge with children hotplug slots, we need
-> to make sure that parent bridge get preallocated resource so later when
-> device is plugged into children slot, those children devices will get
-> resource allocated.
-> 
-> We do not meet this problem, because for pcie hotplug card, when acpiphp
-> is used, pci_scan_bridge will set that for us when detect hotplug bit in
-> slot cap.
-> 
-> Reported-and-tested-by: Jason Baron <jbaron@redhat.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Acked-by: Jason Baron <jbaron@redhat.com>
-> ---
->  drivers/pci/hotplug/acpiphp_glue.c |   27 ++++++++++++++++++++++++++-
->  1 file changed, 26 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index 91b5ad8..1e5c5df 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -797,6 +797,29 @@ static void acpiphp_set_acpi_region(struct acpiphp_slot *slot)
->  	}
->  }
->  
-> +static void check_hotplug_bridge(struct acpiphp_slot *slot, struct pci_dev *dev)
-> +{
-> +	struct acpiphp_func *func;
-> +
-> +	if (!dev->subordinate)
-> +		return;
-> +
-> +	/* quirk, or pcie could set it already */
-> +	if (dev->is_hotplug_bridge)
-> +		return;
-> +
-> +	if (PCI_SLOT(dev->devfn) != slot->device)
-> +		return;
-> +
-> +	list_for_each_entry(func, &slot->funcs, sibling) {
-> +		if (PCI_FUNC(dev->devfn) == func->function) {
-> +			/* check if this bridge has ejectable slots */
-> +			if ((detect_ejectable_slots(func->handle) > 0))
-> +				dev->is_hotplug_bridge = 1;
-> +			break;
+This patch converts arch-vt8500 to make use of CLKSRC_OF. Doing so
+removes the need for include/linux/vt8500_timer.h as vt8500_timer_init
+no longer needs to be visible outside vt8500_timer.c
 
-Hi Yinghai,
-   Need to put the "break" in parentheses of "if"? If the first func which device number == dev->devfn has't ejectable slot,
-don't check the rest funcs whether have ejectable slots?
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+Hi Olof,
 
-> +		}
-> +	}
-> +}
->  /**
->   * enable_device - enable, configure a slot
->   * @slot: slot to be enabled
-> @@ -831,8 +854,10 @@ static int __ref enable_device(struct acpiphp_slot *slot)
->  			if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
->  			    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
->  				max = pci_scan_bridge(bus, dev, max, pass);
-> -				if (pass && dev->subordinate)
-> +				if (pass && dev->subordinate) {
-> +					check_hotplug_bridge(slot, dev);
->  					pci_bus_size_bridges(dev->subordinate);
-> +				}
->  			}
->  		}
->  	}
-> 
+Here is the fix as requested by Stephen Warren, based on vt8500/timer.
 
+ arch/arm/mach-vt8500/Kconfig       |    1 +
+ arch/arm/mach-vt8500/vt8500.c      |    4 ++--
+ drivers/clocksource/vt8500_timer.c |    3 ++-
+ include/linux/vt8500_timer.h       |   22 ----------------------
+ 4 files changed, 5 insertions(+), 25 deletions(-)
+ delete mode 100644 include/linux/vt8500_timer.h
 
+diff --git a/arch/arm/mach-vt8500/Kconfig b/arch/arm/mach-vt8500/Kconfig
+index 570a801..d1cbda6 100644
+--- a/arch/arm/mach-vt8500/Kconfig
++++ b/arch/arm/mach-vt8500/Kconfig
+@@ -4,6 +4,7 @@ config ARCH_VT8500
+ 	select ARCH_HAS_CPUFREQ
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select CLKDEV_LOOKUP
++	select CLKSRC_OF
+ 	select CPU_ARM926T
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_GPIO
+diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
+index b9fd9d3..fe99b70 100644
+--- a/arch/arm/mach-vt8500/vt8500.c
++++ b/arch/arm/mach-vt8500/vt8500.c
+@@ -18,9 +18,9 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+ 
++#include <linux/clocksource.h>
+ #include <linux/io.h>
+ #include <linux/pm.h>
+-#include <linux/vt8500_timer.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -186,8 +186,8 @@ DT_MACHINE_START(WMT_DT, "VIA/Wondermedia SoC (Device Tree Support)")
+ 	.dt_compat	= vt8500_dt_compat,
+ 	.map_io		= vt8500_map_io,
+ 	.init_irq	= vt8500_init_irq,
+-	.init_time	= vt8500_timer_init,
+ 	.init_machine	= vt8500_init,
++	.init_time	= clocksource_of_init,
+ 	.restart	= vt8500_restart,
+ 	.handle_irq	= vt8500_handle_irq,
+ MACHINE_END
+diff --git a/drivers/clocksource/vt8500_timer.c b/drivers/clocksource/vt8500_timer.c
+index 3dd21a4..b75b8e3 100644
+--- a/drivers/clocksource/vt8500_timer.c
++++ b/drivers/clocksource/vt8500_timer.c
+@@ -134,7 +134,7 @@ static struct of_device_id vt8500_timer_ids[] = {
+ 	{ }
+ };
+ 
+-void __init vt8500_timer_init(void)
++static void __init vt8500_timer_init(void)
+ {
+ 	struct device_node *np;
+ 	int timer_irq;
+@@ -182,3 +182,4 @@ void __init vt8500_timer_init(void)
+ 	clockevents_register_device(&clockevent);
+ }
+ 
++CLOCKSOURCE_OF_DECLARE(vt8500, "via,vt8500-timer", vt8500_timer_init)
+diff --git a/include/linux/vt8500_timer.h b/include/linux/vt8500_timer.h
+deleted file mode 100644
+index 33b0ee8..0000000
+--- a/include/linux/vt8500_timer.h
++++ /dev/null
+@@ -1,22 +0,0 @@
+-/*
+- * Copyright 2012 Tony Prisk <linux@prisktech.co.nz>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-
+-#ifndef __VT8500_TIMER_H
+-#define __VT8500_TIMER_H
+-
+-#include <asm/mach/time.h>
+-
+-void vt8500_timer_init(void);
+-
+-#endif
 -- 
-Thanks!
-Yijing
+1.7.9.5
 
