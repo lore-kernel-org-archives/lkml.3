@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932865Ab3AOWqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:46:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45095 "EHLO mail.kernel.org"
+	id S932883Ab3AOWqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:46:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45106 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932576Ab3AOWqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:46:34 -0500
+	id S932576Ab3AOWqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:46:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stephan Gatzka <stephan.gatzka@gmail.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [ 015/171] firewire: net: Fix handling of fragmented multicast/broadcast packets.
-Date: Tue, 15 Jan 2013 14:43:00 -0800
-Message-Id: <20130115224314.504974155@linuxfoundation.org>
+        Peter Oberparleiter <peter.oberparleiter@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 008/171] s390/cio: fix pgid reserved check
+Date: Tue, 15 Jan 2013 14:42:53 -0800
+Message-Id: <20130115224314.014750747@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,70 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephan Gatzka <stephan.gatzka@gmail.com>
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-commit 9d2373420900a39f5212a3b289331aa3535b1000 upstream.
+commit d99e79ec5574fc556c988f613ed6175f6de66f4a upstream.
 
-This patch fixes both the transmit and receive portion of sending
-fragmented mutlicast and broadcast packets.
+The check to whom a device is reserved is done by checking the path
+state of the affected channel paths. If it turns out that one path is
+flagged as reserved by someone else the whole device is marked as such.
 
-The transmit section was broken because the offset for INTFRAG and
-LASTFRAG packets were just miscalculated by IEEE1394_GASP_HDR_SIZE (which
-was reserved with skb_push() in fwnet_send_packet).
+However the meaning of the RESVD_ELSE bit is that the addressed device
+is reserved to a different pathgroup (and not reserved to a different
+LPAR). If we do this test on a path which is currently not a member of
+the pathgroup we could erroneously mark the device as reserved to
+someone else.
 
-The receive section was broken because in fwnet_incoming_packet is a call
-to fwnet_peer_find_by_node_id(). Called with generation == -1 it will
-not find a peer and the partial datagrams are associated to a peer.
+To fix this collect the reserved state for all potential members of the
+pathgroup and only mark the device as reserved if all of those potential
+members have the RESVD_ELSE bit set.
 
-[Stefan R:  The fix to use context->card->generation is not perfect.
-It relies on the IR tasklet which processes packets from the prior bus
-generation to run before the self-ID-complete worklet which sets the
-current card generation.  Alas, there is no simple way of a race-free
-implementation.  Let's do it this way for now.]
-
-Signed-off-by: Stephan Gatzka <stephan.gatzka@gmail.com>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Acked-by: Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/net.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/s390/cio/device_pgid.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/firewire/net.c
-+++ b/drivers/firewire/net.c
-@@ -861,8 +861,8 @@ static void fwnet_receive_broadcast(stru
- 	if (specifier_id == IANA_SPECIFIER_ID && ver == RFC2734_SW_VERSION) {
- 		buf_ptr += 2;
- 		length -= IEEE1394_GASP_HDR_SIZE;
--		fwnet_incoming_packet(dev, buf_ptr, length,
--				      source_node_id, -1, true);
-+		fwnet_incoming_packet(dev, buf_ptr, length, source_node_id,
-+				      context->card->generation, true);
+--- a/drivers/s390/cio/device_pgid.c
++++ b/drivers/s390/cio/device_pgid.c
+@@ -234,7 +234,7 @@ static int pgid_cmp(struct pgid *p1, str
+  * Determine pathgroup state from PGID data.
+  */
+ static void pgid_analyze(struct ccw_device *cdev, struct pgid **p,
+-			 int *mismatch, int *reserved, u8 *reset)
++			 int *mismatch, u8 *reserved, u8 *reset)
+ {
+ 	struct pgid *pgid = &cdev->private->pgid[0];
+ 	struct pgid *first = NULL;
+@@ -248,7 +248,7 @@ static void pgid_analyze(struct ccw_devi
+ 		if ((cdev->private->pgid_valid_mask & lpm) == 0)
+ 			continue;
+ 		if (pgid->inf.ps.state2 == SNID_STATE2_RESVD_ELSE)
+-			*reserved = 1;
++			*reserved |= lpm;
+ 		if (pgid_is_reset(pgid)) {
+ 			*reset |= lpm;
+ 			continue;
+@@ -316,14 +316,14 @@ static void snid_done(struct ccw_device
+ 	struct subchannel *sch = to_subchannel(cdev->dev.parent);
+ 	struct pgid *pgid;
+ 	int mismatch = 0;
+-	int reserved = 0;
++	u8 reserved = 0;
+ 	u8 reset = 0;
+ 	u8 donepm;
+ 
+ 	if (rc)
+ 		goto out;
+ 	pgid_analyze(cdev, &pgid, &mismatch, &reserved, &reset);
+-	if (reserved)
++	if (reserved == cdev->private->pgid_valid_mask)
+ 		rc = -EUSERS;
+ 	else if (mismatch)
+ 		rc = -EOPNOTSUPP;
+@@ -336,7 +336,7 @@ static void snid_done(struct ccw_device
  	}
- 
- 	packet.payload_length = dev->rcv_buffer_size;
-@@ -958,7 +958,12 @@ static void fwnet_transmit_packet_done(s
- 			break;
- 		}
- 
--		skb_pull(skb, ptask->max_payload);
-+		if (ptask->dest_node == IEEE1394_ALL_NODES) {
-+			skb_pull(skb,
-+				 ptask->max_payload + IEEE1394_GASP_HDR_SIZE);
-+		} else {
-+			skb_pull(skb, ptask->max_payload);
-+		}
- 		if (ptask->outstanding_pkts > 1) {
- 			fwnet_make_sf_hdr(&ptask->hdr, RFC2374_HDR_INTFRAG,
- 					  dg_size, fg_off, datagram_label);
-@@ -1062,7 +1067,7 @@ static int fwnet_send_packet(struct fwne
- 		smp_rmb();
- 		node_id = dev->card->node_id;
- 
--		p = skb_push(ptask->skb, 8);
-+		p = skb_push(ptask->skb, IEEE1394_GASP_HDR_SIZE);
- 		put_unaligned_be32(node_id << 16 | IANA_SPECIFIER_ID >> 8, p);
- 		put_unaligned_be32((IANA_SPECIFIER_ID & 0xff) << 24
- 						| RFC2734_SW_VERSION, &p[4]);
+ out:
+ 	CIO_MSG_EVENT(2, "snid: device 0.%x.%04x: rc=%d pvm=%02x vpm=%02x "
+-		      "todo=%02x mism=%d rsvd=%d reset=%02x\n", id->ssid,
++		      "todo=%02x mism=%d rsvd=%02x reset=%02x\n", id->ssid,
+ 		      id->devno, rc, cdev->private->pgid_valid_mask, sch->vpm,
+ 		      cdev->private->pgid_todo_mask, mismatch, reserved, reset);
+ 	switch (rc) {
 
 
