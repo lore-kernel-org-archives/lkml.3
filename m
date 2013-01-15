@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab3AOU2X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:28:23 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:33495 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756264Ab3AOU2R (ORCPT
+	id S1756979Ab3AOUb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:31:59 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:64577 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756811Ab3AOU2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:28:17 -0500
+	Tue, 15 Jan 2013 15:28:23 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v5 04/14] dmaengine: edma: enable build for AM33XX
-Date: Tue, 15 Jan 2013 15:32:44 -0500
-Message-Id: <1358281974-8411-5-git-send-email-mporter@ti.com>
+Subject: [PATCH v5 06/14] ARM: dts: add AM33XX EDMA support
+Date: Tue, 15 Jan 2013 15:32:46 -0500
+Message-Id: <1358281974-8411-7-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358281974-8411-1-git-send-email-mporter@ti.com>
 References: <1358281974-8411-1-git-send-email-mporter@ti.com>
@@ -37,26 +37,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable TI EDMA option on OMAP.
+Adds AM33XX EDMA support to the am33xx.dtsi as documented in
+Documentation/devicetree/bindings/dma/ti-edma.txt
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- drivers/dma/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/am33xx.dtsi |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index d4c1218..20ef955 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -221,7 +221,7 @@ config SIRF_DMA
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index c2f14e8..e711ffb 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -87,6 +87,26 @@
+ 			reg = <0x48200000 0x1000>;
+ 		};
  
- config TI_EDMA
- 	tristate "TI EDMA support"
--	depends on ARCH_DAVINCI
-+	depends on ARCH_DAVINCI || ARCH_OMAP
- 	select DMA_ENGINE
- 	select DMA_VIRTUAL_CHANNELS
- 	default n
++		edma: edma@49000000 {
++			compatible = "ti,edma3";
++			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
++			reg =	<0x49000000 0x10000>,
++				<0x44e10f90 0x10>;
++			interrupt-parent = <&intc>;
++			interrupts = <12 13 14>;
++			#dma-cells = <1>;
++			dma-channels = <64>;
++			ti,edma-regions = <4>;
++			ti,edma-slots = <256>;
++			ti,edma-queue-tc-map = <0 0
++						1 1
++						2 2>;
++			ti,edma-queue-priority-map = <0 0
++						      1 1
++						      2 2>;
++			ti,edma-default-queue = <0>;
++		};
++
+ 		gpio1: gpio@44e07000 {
+ 			compatible = "ti,omap4-gpio";
+ 			ti,hwmods = "gpio1";
 -- 
 1.7.9.5
 
