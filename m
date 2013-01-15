@@ -1,199 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668Ab3AOLVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 06:21:21 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10529 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab3AOLVQ (ORCPT
+	id S1756694Ab3AOLV2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 06:21:28 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:37086 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab3AOLVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 06:21:16 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 15 Jan 2013 03:20:30 -0800
-From: Terje Bergstrom <tbergstrom@nvidia.com>
-To: <amerilainen@nvidia.com>, <airlied@linux.ie>,
-        <thierry.reding@avionic-design.de>
-CC: <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Terje Bergstrom <tbergstrom@nvidia.com>
-Subject: [PATCHv5 0/8] Support for Tegra 2D hardware
-Date: Tue, 15 Jan 2013 13:26:14 +0200
-Message-ID: <1358249182-17486-1-git-send-email-tbergstrom@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	Tue, 15 Jan 2013 06:21:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAJ0PZbTAOdQrUjefOpc2MDam1hHLjSEDLHw3VrP+9=OAbgQ8ug@mail.gmail.com>
+References: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
+	<CAJ0PZbTAOdQrUjefOpc2MDam1hHLjSEDLHw3VrP+9=OAbgQ8ug@mail.gmail.com>
+Date: Tue, 15 Jan 2013 16:51:20 +0530
+Message-ID: <CA+Z25wVnFMkXvSOvetipBEFkZgSKe2Qjn1wYf-x5i7skGQ-XSA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] PM / devfreq: set min/max freq limit from freq table
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: myungjoo.ham@gmail.com
+Cc: kyungmin.park@samsung.com, mturquette@linaro.org, rjw@sisk.pl,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches adds support for Tegra20 and Tegra30 host1x and
-2D. It is based on linux-next-20130114.
+On 14 January 2013 20:06, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+> On Tue, Jan 8, 2013 at 2:50 PM, Rajagopal Venkat
+> <rajagopal.venkat@linaro.org> wrote:
+>> Set devfreq device min and max frequency limits when device
+>> is added to devfreq, provided frequency table is supplied.
+>> This helps governors to suggest target frequency with in
+>> limits.
+>>
+>> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+>
+> Could you please elaborate the benefit of the patch?
+>
 
-The fifth version merges DRM and host1x drivers into one driver. This
-allowed moving include/linux/host1x.h back into the driver and removed
-the need for a dummy platform device. This version also uses the code
-from tegradrm driver almost as is, so there are a lot less actual code
-changes.
+When freq table is supplied, it's unreasonable to suggest the target frequency
+which is - target_freq < min_freq and target_freq > max_freq. It avoids
+unnecessary checks at devfreq drivers.
 
-This patch set does not have the host1x allocator, but it uses CMA
-helpers for memory management.
+> The devfreq device drivers are required to choose proper frequencies
+> anyway regardless which values the governors may give (hopefully by
+> choosing the closest value that can support the required performance).
+>
 
-host1x is the driver that controls host1x hardware. It supports
-host1x command channels, synchronization, and memory management. It
-is sectioned into logical driver under drivers/gpu/host1x and
-physical driver under drivers/host1x/hw. The physical driver is
-compiled with the hardware headers of the particular host1x version.
+Yes. but then each driver needs to have conditional checks for choosing
+closet value even though freq table is provided.
 
-The hardware units are described (briefly) in the Tegra2 TRM. Wiki
-page https://gitorious.org/linux-tegra-drm/pages/Host1xIntroduction
-also contains a short description of the functionality.
+> Besides, the min/max values are to be set by userspace. Users may
+> enter 0 in order to express that they do not want to limit the
+> behaviors of governors.
+>
+>
+> Cheers,
+> MyungJoo.
+>
+>> ---
+>>  drivers/devfreq/devfreq.c |   24 ++++++++++++++++++++++++
+>>  1 file changed, 24 insertions(+)
+>>
+>> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+>> index a8f0173..5782c9b 100644
+>> --- a/drivers/devfreq/devfreq.c
+>> +++ b/drivers/devfreq/devfreq.c
+>> @@ -69,6 +69,29 @@ static struct devfreq *find_device_devfreq(struct device *dev)
+>>  }
+>>
+>>  /**
+>> + * devfreq_set_freq_limits() - Set min and max frequency from freq_table
+>> + * @devfreq:   the devfreq instance
+>> + */
+>> +static void devfreq_set_freq_limits(struct devfreq *devfreq)
+>> +{
+>> +       int idx;
+>> +       unsigned long min = ~0, max = 0;
+>> +
+>> +       if (!devfreq->profile->freq_table)
+>> +               return;
+>> +
+>> +       for (idx = 0; idx < devfreq->profile->max_state; idx++) {
+>> +               if (min > devfreq->profile->freq_table[idx])
+>> +                       min = devfreq->profile->freq_table[idx];
+>> +               if (max < devfreq->profile->freq_table[idx])
+>> +                       max = devfreq->profile->freq_table[idx];
+>> +       }
+>> +
+>> +       devfreq->min_freq = min;
+>> +       devfreq->max_freq = max;
+>> +}
+>> +
+>> +/**
+>>   * devfreq_get_freq_level() - Lookup freq_table for the frequency
+>>   * @devfreq:   the devfreq instance
+>>   * @freq:      the target frequency
+>> @@ -476,6 +499,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+>>                                                 devfreq->profile->max_state,
+>>                                                 GFP_KERNEL);
+>>         devfreq->last_stat_updated = jiffies;
+>> +       devfreq_set_freq_limits(devfreq);
+>>
+>>         dev_set_name(&devfreq->dev, dev_name(dev));
+>>         err = device_register(&devfreq->dev);
+>> --
+>> 1.7.10.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+> --
+> MyungJoo Ham, Ph.D.
+> Mobile Software Platform Lab, DMC Business, Samsung Electronics
 
-The patch set merges tegradrm into host1x and adds 2D driver, which
-uses host1x channels and sync points. The patch set also adds user
-space API to tegradrm for accessing host1x and 2D.
 
-Terje Bergstrom (8):
-  gpu: host1x: Add host1x driver
-  gpu: host1x: Add syncpoint wait and interrupts
-  gpu: host1x: Add channel support
-  gpu: host1x: Add debug support
-  drm: tegra: Move drm to live under host1x
-  gpu: host1x: Remove second host1x driver
-  ARM: tegra: Add board data and 2D clocks
-  drm: tegra: Add gr2d device
-
- arch/arm/mach-tegra/board-dt-tegra20.c      |    1 +
- arch/arm/mach-tegra/board-dt-tegra30.c      |    1 +
- arch/arm/mach-tegra/tegra20_clocks_data.c   |    2 +-
- arch/arm/mach-tegra/tegra30_clocks_data.c   |    1 +
- drivers/gpu/Makefile                        |    1 +
- drivers/gpu/drm/Kconfig                     |    2 -
- drivers/gpu/drm/Makefile                    |    1 -
- drivers/gpu/drm/tegra/Kconfig               |   23 -
- drivers/gpu/drm/tegra/Makefile              |    7 -
- drivers/gpu/drm/tegra/dc.c                  |  833 -----------------
- drivers/gpu/drm/tegra/dc.h                  |  388 --------
- drivers/gpu/drm/tegra/drm.c                 |  115 ---
- drivers/gpu/drm/tegra/drm.h                 |  216 -----
- drivers/gpu/drm/tegra/fb.c                  |   56 --
- drivers/gpu/drm/tegra/hdmi.c                | 1321 --------------------------
- drivers/gpu/drm/tegra/hdmi.h                |  575 ------------
- drivers/gpu/drm/tegra/host1x.c              |  327 -------
- drivers/gpu/drm/tegra/output.c              |  272 ------
- drivers/gpu/drm/tegra/rgb.c                 |  228 -----
- drivers/gpu/host1x/Kconfig                  |   32 +
- drivers/gpu/host1x/Makefile                 |   22 +
- drivers/gpu/host1x/cdma.c                   |  473 ++++++++++
- drivers/gpu/host1x/cdma.h                   |  107 +++
- drivers/gpu/host1x/channel.c                |  140 +++
- drivers/gpu/host1x/channel.h                |   58 ++
- drivers/gpu/host1x/cma.c                    |  116 +++
- drivers/gpu/host1x/cma.h                    |   43 +
- drivers/gpu/host1x/debug.c                  |  215 +++++
- drivers/gpu/host1x/debug.h                  |   50 +
- drivers/gpu/host1x/dev.c                    |  251 +++++
- drivers/gpu/host1x/dev.h                    |  170 ++++
- drivers/gpu/host1x/drm/Kconfig              |   23 +
- drivers/gpu/host1x/drm/dc.c                 |  836 +++++++++++++++++
- drivers/gpu/host1x/drm/dc.h                 |  388 ++++++++
- drivers/gpu/host1x/drm/drm.c                |  548 +++++++++++
- drivers/gpu/host1x/drm/drm.h                |  241 +++++
- drivers/gpu/host1x/drm/fb.c                 |   56 ++
- drivers/gpu/host1x/drm/gr2d.c               |  325 +++++++
- drivers/gpu/host1x/drm/hdmi.c               | 1324 +++++++++++++++++++++++++++
- drivers/gpu/host1x/drm/hdmi.h               |  575 ++++++++++++
- drivers/gpu/host1x/drm/host1x.c             |  327 +++++++
- drivers/gpu/host1x/drm/output.c             |  272 ++++++
- drivers/gpu/host1x/drm/rgb.c                |  228 +++++
- drivers/gpu/host1x/host1x.h                 |   29 +
- drivers/gpu/host1x/host1x_client.h          |   34 +
- drivers/gpu/host1x/hw/Makefile              |    6 +
- drivers/gpu/host1x/hw/cdma_hw.c             |  478 ++++++++++
- drivers/gpu/host1x/hw/cdma_hw.h             |   37 +
- drivers/gpu/host1x/hw/channel_hw.c          |  148 +++
- drivers/gpu/host1x/hw/debug_hw.c            |  400 ++++++++
- drivers/gpu/host1x/hw/host1x01.c            |   45 +
- drivers/gpu/host1x/hw/host1x01.h            |   25 +
- drivers/gpu/host1x/hw/host1x01_hardware.h   |  150 +++
- drivers/gpu/host1x/hw/hw_host1x01_channel.h |  120 +++
- drivers/gpu/host1x/hw/hw_host1x01_sync.h    |  241 +++++
- drivers/gpu/host1x/hw/hw_host1x01_uclass.h  |  168 ++++
- drivers/gpu/host1x/hw/intr_hw.c             |  178 ++++
- drivers/gpu/host1x/hw/syncpt_hw.c           |  157 ++++
- drivers/gpu/host1x/intr.c                   |  383 ++++++++
- drivers/gpu/host1x/intr.h                   |  109 +++
- drivers/gpu/host1x/job.c                    |  612 +++++++++++++
- drivers/gpu/host1x/job.h                    |  164 ++++
- drivers/gpu/host1x/memmgr.c                 |  173 ++++
- drivers/gpu/host1x/memmgr.h                 |   72 ++
- drivers/gpu/host1x/syncpt.c                 |  399 ++++++++
- drivers/gpu/host1x/syncpt.h                 |  165 ++++
- drivers/video/Kconfig                       |    2 +
- include/drm/tegra_drm.h                     |  131 +++
- include/trace/events/host1x.h               |  272 ++++++
- 69 files changed, 11523 insertions(+), 4365 deletions(-)
- delete mode 100644 drivers/gpu/drm/tegra/Kconfig
- delete mode 100644 drivers/gpu/drm/tegra/Makefile
- delete mode 100644 drivers/gpu/drm/tegra/dc.c
- delete mode 100644 drivers/gpu/drm/tegra/dc.h
- delete mode 100644 drivers/gpu/drm/tegra/drm.c
- delete mode 100644 drivers/gpu/drm/tegra/drm.h
- delete mode 100644 drivers/gpu/drm/tegra/fb.c
- delete mode 100644 drivers/gpu/drm/tegra/hdmi.c
- delete mode 100644 drivers/gpu/drm/tegra/hdmi.h
- delete mode 100644 drivers/gpu/drm/tegra/host1x.c
- delete mode 100644 drivers/gpu/drm/tegra/output.c
- delete mode 100644 drivers/gpu/drm/tegra/rgb.c
- create mode 100644 drivers/gpu/host1x/Kconfig
- create mode 100644 drivers/gpu/host1x/Makefile
- create mode 100644 drivers/gpu/host1x/cdma.c
- create mode 100644 drivers/gpu/host1x/cdma.h
- create mode 100644 drivers/gpu/host1x/channel.c
- create mode 100644 drivers/gpu/host1x/channel.h
- create mode 100644 drivers/gpu/host1x/cma.c
- create mode 100644 drivers/gpu/host1x/cma.h
- create mode 100644 drivers/gpu/host1x/debug.c
- create mode 100644 drivers/gpu/host1x/debug.h
- create mode 100644 drivers/gpu/host1x/dev.c
- create mode 100644 drivers/gpu/host1x/dev.h
- create mode 100644 drivers/gpu/host1x/drm/Kconfig
- create mode 100644 drivers/gpu/host1x/drm/dc.c
- create mode 100644 drivers/gpu/host1x/drm/dc.h
- create mode 100644 drivers/gpu/host1x/drm/drm.c
- create mode 100644 drivers/gpu/host1x/drm/drm.h
- create mode 100644 drivers/gpu/host1x/drm/fb.c
- create mode 100644 drivers/gpu/host1x/drm/gr2d.c
- create mode 100644 drivers/gpu/host1x/drm/hdmi.c
- create mode 100644 drivers/gpu/host1x/drm/hdmi.h
- create mode 100644 drivers/gpu/host1x/drm/host1x.c
- create mode 100644 drivers/gpu/host1x/drm/output.c
- create mode 100644 drivers/gpu/host1x/drm/rgb.c
- create mode 100644 drivers/gpu/host1x/host1x.h
- create mode 100644 drivers/gpu/host1x/host1x_client.h
- create mode 100644 drivers/gpu/host1x/hw/Makefile
- create mode 100644 drivers/gpu/host1x/hw/cdma_hw.c
- create mode 100644 drivers/gpu/host1x/hw/cdma_hw.h
- create mode 100644 drivers/gpu/host1x/hw/channel_hw.c
- create mode 100644 drivers/gpu/host1x/hw/debug_hw.c
- create mode 100644 drivers/gpu/host1x/hw/host1x01.c
- create mode 100644 drivers/gpu/host1x/hw/host1x01.h
- create mode 100644 drivers/gpu/host1x/hw/host1x01_hardware.h
- create mode 100644 drivers/gpu/host1x/hw/hw_host1x01_channel.h
- create mode 100644 drivers/gpu/host1x/hw/hw_host1x01_sync.h
- create mode 100644 drivers/gpu/host1x/hw/hw_host1x01_uclass.h
- create mode 100644 drivers/gpu/host1x/hw/intr_hw.c
- create mode 100644 drivers/gpu/host1x/hw/syncpt_hw.c
- create mode 100644 drivers/gpu/host1x/intr.c
- create mode 100644 drivers/gpu/host1x/intr.h
- create mode 100644 drivers/gpu/host1x/job.c
- create mode 100644 drivers/gpu/host1x/job.h
- create mode 100644 drivers/gpu/host1x/memmgr.c
- create mode 100644 drivers/gpu/host1x/memmgr.h
- create mode 100644 drivers/gpu/host1x/syncpt.c
- create mode 100644 drivers/gpu/host1x/syncpt.h
- create mode 100644 include/drm/tegra_drm.h
- create mode 100644 include/trace/events/host1x.h
 
 -- 
-1.7.9.5
-
+Regards,
+Rajagopal
