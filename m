@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab3AOHcP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 02:32:15 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49155 "EHLO
+	id S1756296Ab3AOHdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 02:33:05 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48134 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756173Ab3AOHcN (ORCPT
+	with ESMTP id S1756194Ab3AOHcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 02:32:13 -0500
-X-AuditID: 9c930179-b7b0cae0000065b4-a5-50f505f8c0c8
+	Tue, 15 Jan 2013 02:32:15 -0500
+X-AuditID: 9c930179-b7b0cae0000065b4-b7-50f505faec90
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 07/13] perf hist browser: Add support for event group view
-Date: Tue, 15 Jan 2013 16:31:51 +0900
-Message-Id: <1358235117-12803-8-git-send-email-namhyung@kernel.org>
+        Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 11/13] perf report: Show group description when event group is enabled
+Date: Tue, 15 Jan 2013 16:31:55 +0900
+Message-Id: <1358235117-12803-12-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
 References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
@@ -27,240 +27,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Show group members' overhead also when showing the leader's if event
-group is enabled.  Use macro for defining hpp functions which looks
-almost identical.
+When using event group viewer, it's better to show the group
+description rather than the leader information alone.
 
-Also move coloring logic into the hpp function so that each value can
-be colored independently.
+If a leader did not contain any member, it's a non-group event.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/browsers/hists.c | 153 ++++++++++++++++++++++++++++++++---------
- tools/perf/ui/hist.c           |   5 +-
- 2 files changed, 126 insertions(+), 32 deletions(-)
+ tools/perf/builtin-report.c    | 15 +++++++++++++++
+ tools/perf/ui/browsers/hists.c | 25 +++++++++++++++++++++++++
+ tools/perf/ui/gtk/hists.c      | 14 +++++++++++---
+ tools/perf/util/evsel.c        | 25 +++++++++++++++++++++++++
+ tools/perf/util/evsel.h        |  8 ++++++++
+ 5 files changed, 84 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 57b82c26cd05..65e6c005f8e9 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -567,23 +567,126 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- 	return row - first_row;
- }
- 
--#define HPP__COLOR_FN(_name, _field)					\
--static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
--					     struct hist_entry *he)	\
-+struct hpp_arg {
-+	struct ui_browser *b;
-+	char folded_sign;
-+	bool current_entry;
-+};
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 9cc768ecacad..ce518c48a525 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -299,6 +299,21 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+ 	char unit;
+ 	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
+ 	u64 nr_events = self->stats.total_period;
++	struct perf_evsel *evsel = hists_to_evsel(self);
++	char buf[512];
++	size_t size = sizeof(buf);
 +
-+static int hist_browser__hpp_color_callchain(struct hpp_arg *arg)
-+{
-+	if (!symbol_conf.use_callchain)
-+		return 0;
++	if (symbol_conf.event_group && evsel->nr_members > 1) {
++		struct perf_evsel *pos;
 +
-+	slsmg_printf("%c ", arg->folded_sign);
-+	return 2;
-+}
++		perf_evsel__group_desc(evsel, buf, size);
++		evname = buf;
 +
-+static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
-+			    u64 (*get_field)(struct hist_entry *),
-+			    int (*callchain_cb)(struct hpp_arg *))
-+{
-+	int ret = 0;
-+	double percent = 0.0;
-+	struct hists *hists = he->hists;
-+	struct hpp_arg *arg = hpp->ptr;
-+
-+	if (hists->stats.total_period)
-+		percent = 100.0 * get_field(he) / hists->stats.total_period;
-+
-+	ui_browser__set_percent_color(arg->b, percent, arg->current_entry);
-+
-+	if (callchain_cb)
-+		ret += callchain_cb(arg);
-+
-+	ret += scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
-+	slsmg_printf("%s", hpp->buf);
-+
-+	if (symbol_conf.event_group) {
-+		int prev_idx, idx_delta, i;
-+		struct perf_evsel *evsel = hists_to_evsel(hists);
-+		struct hist_entry *pair;
-+		int nr_members = evsel->nr_members;
-+
-+		if (nr_members <= 1)
-+			goto out;
-+
-+		prev_idx = perf_evsel__group_idx(evsel);
-+
-+		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
-+			u64 period = get_field(pair);
-+			u64 total = pair->hists->stats.total_period;
-+
-+			if (!total)
-+				continue;
-+
-+			evsel = hists_to_evsel(pair->hists);
-+			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
-+
-+			for (i = 0; i < idx_delta; i++) {
-+				ui_browser__set_percent_color(arg->b, 0.0,
-+							arg->current_entry);
-+				ret += scnprintf(hpp->buf, hpp->size,
-+						 " %6.2f%%", 0.0);
-+				slsmg_printf("%s", hpp->buf);
-+			}
-+
-+			percent = 100.0 * period / total;
-+			ui_browser__set_percent_color(arg->b, percent,
-+						      arg->current_entry);
-+			ret += scnprintf(hpp->buf, hpp->size,
-+					 " %6.2f%%", percent);
-+			slsmg_printf("%s", hpp->buf);
-+
-+			prev_idx += 1 + idx_delta;
-+		}
-+
-+		idx_delta = nr_members - prev_idx - 1;
-+
-+		for (i = 0; i < idx_delta; i++) {
-+			ui_browser__set_percent_color(arg->b, 0.0,
-+						      arg->current_entry);
-+			ret += scnprintf(hpp->buf, hpp->size, " %6.2f%%", 0.0);
-+			slsmg_printf("%s", hpp->buf);
++		for_each_group_member(pos, evsel) {
++			nr_samples += pos->hists.stats.nr_events[PERF_RECORD_SAMPLE];
++			nr_events += pos->hists.stats.total_period;
 +		}
 +	}
-+out:
-+	if (!arg->current_entry || !arg->b->navkeypressed)
-+		ui_browser__set_color(arg->b, HE_COLORSET_NORMAL);
+ 
+ 	nr_samples = convert_unit(nr_samples, &unit);
+ 	ret = fprintf(fp, "# Samples: %lu%c", nr_samples, unit);
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 17c1753d5fe1..7a132fc3a4c9 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1193,6 +1193,21 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ 	const struct thread *thread = hists->thread_filter;
+ 	unsigned long nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
+ 	u64 nr_events = hists->stats.total_period;
++	struct perf_evsel *evsel = hists_to_evsel(hists);
++	char buf[512];
++	size_t buflen = sizeof(buf);
++
++	if (symbol_conf.event_group && evsel->nr_members > 1) {
++		struct perf_evsel *pos;
++
++		perf_evsel__group_desc(evsel, buf, buflen);
++		ev_name = buf;
++
++		for_each_group_member(pos, evsel) {
++			nr_samples += pos->hists.stats.nr_events[PERF_RECORD_SAMPLE];
++			nr_events += pos->hists.stats.total_period;
++		}
++	}
+ 
+ 	nr_samples = convert_unit(nr_samples, &unit);
+ 	printed = scnprintf(bf, size,
+@@ -1589,6 +1604,16 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
+ 	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
+ 						       HE_COLORSET_NORMAL);
+ 
++	if (symbol_conf.event_group && evsel->nr_members > 1) {
++		struct perf_evsel *pos;
++
++		ev_name = perf_evsel__group_name(evsel);
++
++		for_each_group_member(pos, evsel) {
++			nr_events += pos->hists.stats.nr_events[PERF_RECORD_SAMPLE];
++		}
++	}
++
+ 	nr_events = convert_unit(nr_events, &unit);
+ 	printed = scnprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
+ 			   unit, unit == ' ' ? "" : " ", ev_name);
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index d6eb50d2aa26..101a208e1b95 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -266,10 +266,18 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
+ 		const char *evname = perf_evsel__name(pos);
+ 		GtkWidget *scrolled_window;
+ 		GtkWidget *tab_label;
++		char buf[512];
++		size_t size = sizeof(buf);
+ 
+-		if (symbol_conf.event_group &&
+-		    !perf_evsel__is_group_leader(pos))
+-			continue;
++		if (symbol_conf.event_group) {
++			if (!perf_evsel__is_group_leader(pos))
++				continue;
++
++			if (pos->nr_members > 1) {
++				perf_evsel__group_desc(pos, buf, size);
++				evname = buf;
++			}
++		}
+ 
+ 		scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index e45332d08a58..35b2a0a0a490 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -434,6 +434,31 @@ const char *perf_evsel__name(struct perf_evsel *evsel)
+ 	return evsel->name ?: "unknown";
+ }
+ 
++const char *perf_evsel__group_name(struct perf_evsel *evsel)
++{
++	return evsel->group_name ?: "anon group";
++}
++
++int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size)
++{
++	int ret;
++	struct perf_evsel *pos;
++	const char *group_name = perf_evsel__group_name(evsel);
++
++	ret = scnprintf(buf, size, "%s", group_name);
++
++	ret += scnprintf(buf + ret, size - ret, " { %s",
++			 perf_evsel__name(evsel));
++
++	for_each_group_member(pos, evsel)
++		ret += scnprintf(buf + ret, size - ret, ", %s",
++				 perf_evsel__name(pos));
++
++	ret += scnprintf(buf + ret, size - ret, " }");
 +
 +	return ret;
 +}
 +
-+static u64 __hpp_get_period(struct hist_entry *he)
-+{
-+	return he->stat.period;
-+}
-+
-+static int hist_browser__hpp_color_overhead(struct perf_hpp *hpp,
-+					    struct hist_entry *he)
-+{
-+	return __hpp__color_fmt(hpp, he, __hpp_get_period,
-+				hist_browser__hpp_color_callchain);
-+}
-+
-+#define __HPP_COLOR_PERCENT_FN(_type, _field)				\
-+static u64 __hpp_get_##_field(struct hist_entry *he)			\
-+{									\
-+	return he->stat._field;						\
-+}									\
-+									\
-+static int hist_browser__hpp_color_##_type(struct perf_hpp *hpp,	\
-+					   struct hist_entry *he)	\
- {									\
--	struct hists *hists = he->hists;				\
--	double percent = 100.0 * he->stat._field / hists->stats.total_period; \
--	*(double *)hpp->ptr = percent;					\
--	return scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);	\
-+	return __hpp__color_fmt(hpp, he, __hpp_get_##_field, NULL);	\
+ /*
+  * The enable_on_exec/disabled value strategy:
+  *
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 24225d728ba4..491e17242e78 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -113,6 +113,8 @@ extern const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX];
+ int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
+ 					    char *bf, size_t size);
+ const char *perf_evsel__name(struct perf_evsel *evsel);
++const char *perf_evsel__group_name(struct perf_evsel *evsel);
++int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size);
+ 
+ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
+@@ -265,4 +267,10 @@ static inline int perf_evsel__group_idx(struct perf_evsel *evsel)
+ {
+ 	return evsel->idx - evsel->leader->idx;
  }
- 
--HPP__COLOR_FN(overhead, period)
--HPP__COLOR_FN(overhead_sys, period_sys)
--HPP__COLOR_FN(overhead_us, period_us)
--HPP__COLOR_FN(overhead_guest_sys, period_guest_sys)
--HPP__COLOR_FN(overhead_guest_us, period_guest_us)
-+__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
-+__HPP_COLOR_PERCENT_FN(overhead_us, period_us)
-+__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
-+__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
- 
--#undef HPP__COLOR_FN
-+#undef __HPP_COLOR_PERCENT_FN
- 
- void hist_browser__init_hpp(void)
- {
-@@ -608,7 +711,6 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 				    unsigned short row)
- {
- 	char s[256];
--	double percent;
- 	int printed = 0;
- 	int width = browser->b.width;
- 	char folded_sign = ' ';
-@@ -628,11 +730,16 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 	}
- 
- 	if (row_offset == 0) {
-+		struct hpp_arg arg = {
-+			.b		= &browser->b,
-+			.folded_sign	= folded_sign,
-+			.current_entry	= current_entry,
-+		};
- 		struct perf_hpp hpp = {
- 			.buf		= s,
- 			.size		= sizeof(s),
-+			.ptr		= &arg,
- 		};
--		int i = 0;
- 
- 		ui_browser__gotorc(&browser->b, row, 0);
- 
-@@ -645,27 +752,11 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 			first = false;
- 
- 			if (fmt->color) {
--				hpp.ptr = &percent;
--				/* It will set percent for us. See HPP__COLOR_FN above. */
- 				width -= fmt->color(&hpp, entry);
--
--				ui_browser__set_percent_color(&browser->b, percent, current_entry);
--
--				if (!i && symbol_conf.use_callchain) {
--					slsmg_printf("%c ", folded_sign);
--					width -= 2;
--				}
--
--				slsmg_printf("%s", s);
--
--				if (!current_entry || !browser->b.navkeypressed)
--					ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
- 			} else {
- 				width -= fmt->entry(&hpp, entry);
- 				slsmg_printf("%s", s);
- 			}
--
--			i++;
- 		}
- 
- 		/* The scroll bar isn't being used */
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index ec14335a9713..be9152cd4c76 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -521,12 +521,15 @@ unsigned int hists__sort_list_width(struct hists *hists)
- 	struct perf_hpp_fmt *fmt;
- 	struct sort_entry *se;
- 	int i = 0, ret = 0;
-+	struct perf_hpp dummy_hpp = {
-+		.ptr	= hists_to_evsel(hists),
-+	};
- 
- 	perf_hpp__for_each_format(fmt) {
- 		if (i)
- 			ret += 2;
- 
--		ret += fmt->width(NULL);
-+		ret += fmt->width(&dummy_hpp);
- 	}
- 
- 	list_for_each_entry(se, &hist_entry__sort_list, list)
++
++#define for_each_group_member(_evsel, _leader) 					\
++for ((_evsel) = list_entry((_leader)->node.next, struct perf_evsel, node); 	\
++     (_evsel) && (_evsel)->leader == (_leader);					\
++     (_evsel) = list_entry((_evsel)->node.next, struct perf_evsel, node))
++
+ #endif /* __PERF_EVSEL_H */
 -- 
 1.7.11.7
 
