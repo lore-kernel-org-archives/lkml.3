@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934054Ab3AOWyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:54:49 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47602 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933925Ab3AOWyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934037Ab3AOWyr (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 15 Jan 2013 17:54:47 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47581 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933925Ab3AOWym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:54:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Oberparleiter <peter.oberparleiter@de.ibm.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 03/71] s390/cio: fix pgid reserved check
-Date: Tue, 15 Jan 2013 14:54:00 -0800
-Message-Id: <20130115225340.634562767@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 01/71] powerpc: Fix CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n build
+Date: Tue, 15 Jan 2013 14:53:58 -0800
+Message-Id: <20130115225340.482941857@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,78 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit d99e79ec5574fc556c988f613ed6175f6de66f4a upstream.
+commit 11ee7e99f35ecb15f59b21da6a82d96d2cd3fcc8 upstream.
 
-The check to whom a device is reserved is done by checking the path
-state of the affected channel paths. If it turns out that one path is
-flagged as reserved by someone else the whole device is marked as such.
+If we build a kernel with CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n,
+the kernel fails when we run at a non zero offset. It turns out
+we were incorrectly wrapping some of the relocatable kernel code
+with CONFIG_CRASH_DUMP.
 
-However the meaning of the RESVD_ELSE bit is that the addressed device
-is reserved to a different pathgroup (and not reserved to a different
-LPAR). If we do this test on a path which is currently not a member of
-the pathgroup we could erroneously mark the device as reserved to
-someone else.
-
-To fix this collect the reserved state for all potential members of the
-pathgroup and only mark the device as reserved if all of those potential
-members have the RESVD_ELSE bit set.
-
-Acked-by: Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/cio/device_pgid.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/powerpc/kernel/head_64.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/s390/cio/device_pgid.c
-+++ b/drivers/s390/cio/device_pgid.c
-@@ -234,7 +234,7 @@ static int pgid_cmp(struct pgid *p1, str
-  * Determine pathgroup state from PGID data.
-  */
- static void pgid_analyze(struct ccw_device *cdev, struct pgid **p,
--			 int *mismatch, int *reserved, u8 *reset)
-+			 int *mismatch, u8 *reserved, u8 *reset)
- {
- 	struct pgid *pgid = &cdev->private->pgid[0];
- 	struct pgid *first = NULL;
-@@ -248,7 +248,7 @@ static void pgid_analyze(struct ccw_devi
- 		if ((cdev->private->pgid_valid_mask & lpm) == 0)
- 			continue;
- 		if (pgid->inf.ps.state2 == SNID_STATE2_RESVD_ELSE)
--			*reserved = 1;
-+			*reserved |= lpm;
- 		if (pgid_is_reset(pgid)) {
- 			*reset |= lpm;
- 			continue;
-@@ -316,14 +316,14 @@ static void snid_done(struct ccw_device
- 	struct subchannel *sch = to_subchannel(cdev->dev.parent);
- 	struct pgid *pgid;
- 	int mismatch = 0;
--	int reserved = 0;
-+	u8 reserved = 0;
- 	u8 reset = 0;
- 	u8 donepm;
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -425,7 +425,7 @@ _STATIC(__after_prom_start)
+ 	tovirt(r6,r6)			/* on booke, we already run at PAGE_OFFSET */
+ #endif
  
- 	if (rc)
- 		goto out;
- 	pgid_analyze(cdev, &pgid, &mismatch, &reserved, &reset);
--	if (reserved)
-+	if (reserved == cdev->private->pgid_valid_mask)
- 		rc = -EUSERS;
- 	else if (mismatch)
- 		rc = -EOPNOTSUPP;
-@@ -336,7 +336,7 @@ static void snid_done(struct ccw_device
- 	}
- out:
- 	CIO_MSG_EVENT(2, "snid: device 0.%x.%04x: rc=%d pvm=%02x vpm=%02x "
--		      "todo=%02x mism=%d rsvd=%d reset=%02x\n", id->ssid,
-+		      "todo=%02x mism=%d rsvd=%02x reset=%02x\n", id->ssid,
- 		      id->devno, rc, cdev->private->pgid_valid_mask, sch->vpm,
- 		      cdev->private->pgid_todo_mask, mismatch, reserved, reset);
- 	switch (rc) {
+-#ifdef CONFIG_CRASH_DUMP
++#ifdef CONFIG_RELOCATABLE
+ /*
+  * Check if the kernel has to be running as relocatable kernel based on the
+  * variable __run_at_load, if it is set the kernel is treated as relocatable
 
 
