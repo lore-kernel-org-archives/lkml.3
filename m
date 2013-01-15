@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932726Ab3AOWot (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:44:49 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44813 "EHLO mail.kernel.org"
+	id S932769Ab3AOX7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:59:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44822 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758395Ab3AOWor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:44:47 -0500
+	id S932678Ab3AOWot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:44:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
+        =?ISO-8859-15?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 002/171] ath5k: fix tx path skb leaks
-Date: Tue, 15 Jan 2013 14:42:47 -0800
-Message-Id: <20130115224313.583290910@linuxfoundation.org>
+Subject: [ 003/171] bcma: mips: fix clearing device IRQ
+Date: Tue, 15 Jan 2013 14:42:48 -0800
+Message-Id: <20130115224313.655337154@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,52 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit 596ab5ec3bf10a22be30d7cb1d903a4b83fd607c upstream.
+commit cbbc0138efe1dcd5426b8fc5d87741f5057aee72 upstream.
 
-ieee80211_free_txskb() needs to be used instead of dev_kfree_skb_any for
-tx packets passed to the driver from mac80211
+We were using wrong IRQ number so clearing wasn't working at all.
+Depending on a platform this could result in a one device having two
+interrupts assigned. On BCM4706 this resulted in all IRQs being broken.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Cc: Hauke Mehrtens <hauke@hauke-m.de>
+Acked-by: Hauke Mehrtens <hauke@hauke-m.de>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath5k/base.c         |    4 ++--
- drivers/net/wireless/ath/ath5k/mac80211-ops.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/bcma/driver_mips.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -843,7 +843,7 @@ ath5k_txbuf_free_skb(struct ath5k_hw *ah
- 		return;
- 	dma_unmap_single(ah->dev, bf->skbaddr, bf->skb->len,
- 			DMA_TO_DEVICE);
--	dev_kfree_skb_any(bf->skb);
-+	ieee80211_free_txskb(ah->hw, bf->skb);
- 	bf->skb = NULL;
- 	bf->skbaddr = 0;
- 	bf->desc->ds_data = 0;
-@@ -1570,7 +1570,7 @@ ath5k_tx_queue(struct ieee80211_hw *hw,
- 	return;
+--- a/drivers/bcma/driver_mips.c
++++ b/drivers/bcma/driver_mips.c
+@@ -115,7 +115,7 @@ static void bcma_core_mips_set_irq(struc
+ 			    bcma_read32(mdev, BCMA_MIPS_MIPS74K_INTMASK(0)) &
+ 			    ~(1 << irqflag));
+ 	else
+-		bcma_write32(mdev, BCMA_MIPS_MIPS74K_INTMASK(irq), 0);
++		bcma_write32(mdev, BCMA_MIPS_MIPS74K_INTMASK(oldirq), 0);
  
- drop_packet:
--	dev_kfree_skb_any(skb);
-+	ieee80211_free_txskb(hw, skb);
- }
- 
- static void
---- a/drivers/net/wireless/ath/ath5k/mac80211-ops.c
-+++ b/drivers/net/wireless/ath/ath5k/mac80211-ops.c
-@@ -59,7 +59,7 @@ ath5k_tx(struct ieee80211_hw *hw, struct
- 	u16 qnum = skb_get_queue_mapping(skb);
- 
- 	if (WARN_ON(qnum >= ah->ah_capabilities.cap_queues.q_tx_num)) {
--		dev_kfree_skb_any(skb);
-+		ieee80211_free_txskb(hw, skb);
- 		return;
- 	}
- 
+ 	/* assign the new one */
+ 	if (irq == 0) {
 
 
