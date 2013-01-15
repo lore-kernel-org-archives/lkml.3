@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757040Ab3AOOju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 09:39:50 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:34116 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916Ab3AOOjt (ORCPT
+	id S1757175Ab3AOOlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 09:41:49 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:52443 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756533Ab3AOOls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 09:39:49 -0500
-Message-ID: <50F56A1A.3040504@ti.com>
-Date: Tue, 15 Jan 2013 20:09:22 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Tue, 15 Jan 2013 09:41:48 -0500
+Date: Tue, 15 Jan 2013 14:41:41 +0000
+From: Cong Ding <dinggnu@gmail.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: mvebu/clk-cpu.c: fix memory leakage
+Message-ID: <20130115144140.GA1160@gmail.com>
+References: <1358183892-28928-1-git-send-email-dinggnu@gmail.com>
+ <50F563EC.3030804@free-electrons.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <balbi@ti.com>
-CC: <grant.likely@secretlab.ca>, <b-cousson@ti.com>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <tony@atomide.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/7] usb: musb: add driver for control module
-References: <1358239378-10030-1-git-send-email-kishon@ti.com> <201301151341.08297.arnd@arndb.de>
-In-Reply-To: <201301151341.08297.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50F563EC.3030804@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Tue, Jan 15, 2013 at 03:13:00PM +0100, Gregory CLEMENT wrote:
+> Dear Cong Ding,
+> 
+> On 01/14/2013 06:18 PM, Cong Ding wrote:
+> > the variable cpuclk and clk_name should be properly freed.
+> > 
+> 
+> Thanks for reporting this memory leak and for your patch but I think
+> we could do even better, see below:
+> 
+> > Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> > ---
+> >  drivers/clk/mvebu/clk-cpu.c |    9 ++++++---
+> >  1 file changed, 6 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/clk/mvebu/clk-cpu.c b/drivers/clk/mvebu/clk-cpu.c
+> > index ff004578..1a0d84f 100644
+> > --- a/drivers/clk/mvebu/clk-cpu.c
+> > +++ b/drivers/clk/mvebu/clk-cpu.c
+> > @@ -124,7 +124,7 @@ void __init of_cpu_clk_setup(struct device_node *node)
+> >  
+> >  	clks = kzalloc(ncpus * sizeof(*clks), GFP_KERNEL);
+> >  	if (WARN_ON(!clks))
+> > -		return;
+> > +		goto clks_out;
+> >  
+> >  	for_each_node_by_type(dn, "cpu") {
+> >  		struct clk_init_data init;
+> > @@ -134,11 +134,11 @@ void __init of_cpu_clk_setup(struct device_node *node)
+> >  		int cpu, err;
+> >  
+> >  		if (WARN_ON(!clk_name))
+> > -			return;
+> > +			goto clk_name_out;
+> 
+> I agree
+> 
+> >  
+> >  		err = of_property_read_u32(dn, "reg", &cpu);
+> >  		if (WARN_ON(err))
+> > -			return;
+> > +			goto bail_out;
+> 
+> I agree
+> 
+> >  
+> >  		sprintf(clk_name, "cpu%d", cpu);
+> >  		parent_clk = of_clk_get(node, 0);
+> > @@ -166,7 +166,10 @@ void __init of_cpu_clk_setup(struct device_node *node)
+> >  
+> >  	return;
+> >  bail_out:
+> > +	kfree(clk_name);
+> 
+> Here you free only one clk_name whereas we could have previous clk_name which have
+> been already allocated during the for_each_node_by_type loop.
+> 
+> A more annoying thing is that you use clk_name whereas it is only valid in the
+> for_each_node_by_type statement and then this patch breaks the compilation:
+> 
+> drivers/clk/mvebu/clk-cpu.c: In function ‘of_cpu_clk_setup’:
+> drivers/clk/mvebu/clk-cpu.c:169:8: error: ‘clk_name’ undeclared (first use in this function)
+> drivers/clk/mvebu/clk-cpu.c:169:8: note: each undeclared identifier is reported only once for each function it appears in
+sorry for the mistake, I am sending version 2.
 
-On Tuesday 15 January 2013 07:11 PM, Arnd Bergmann wrote:
-> On Tuesday 15 January 2013, Kishon Vijay Abraham I wrote:
->> Added a new driver for the usb part of control module. This has an API
->> to power on the USB2 phy and an API to write to the mailbox depending on
->> whether MUSB has to act in host mode or in device mode.
->>
->> Writing to control module registers for doing the above task which was
->> previously done in omap glue and in omap-usb2 phy is removed.
->>
->> Also added the dt data to get MUSB working in OMAP platforms.
->> This series has patches for both drivers and ARCH folders, so If it has to
->> be split I'll do it.
->>
->
-> The series looks good to me, I just had a minor comment on one patch.
->
-> One a somewhat related topic, I wonder whether there are any plans
-> on your side to change this driver to support multiple bus glues
-> to be built for one kernel image. With a multiplatform kernel, we
-> may need all of TUSB6010/OMAP2PLUS/DSPS/UX500 for instance.
+thanks,
+- cong
 
-We don't have plans as of now. I actually don't expect any changes in 
-the driver other than the Kconfig changes. Anyways the probe of glue's 
-other than the platform it's running won't get called. right Felipe?
-
-Thanks
-Kishon
