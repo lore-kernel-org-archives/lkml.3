@@ -1,96 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab3AOQ44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 11:56:56 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51745 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755471Ab3AOQ4w (ORCPT
+	id S1756770Ab3AOQ5l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 11:57:41 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:60387 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755751Ab3AOQ5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 11:56:52 -0500
-Message-ID: <1358269008.10591.11.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [Linux-c6x-dev] [PATCH 3/9] c6x: Provide dma_mmap_coherent()
- and dma_get_sgtable()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mark Salter <msalter@redhat.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>, linux-arch@vger.kernel.org,
-        linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org
-Date: Tue, 15 Jan 2013 16:56:48 +0000
-In-Reply-To: <50F56286.8070200@samsung.com>
-References: <1358073890-3610-1-git-send-email-geert@linux-m68k.org>
-	 <1358073890-3610-3-git-send-email-geert@linux-m68k.org>
-	 <1358177872.4357.53.camel@t520.localdomain> <50F4D83A.7020803@synopsys.com>
-	 <CAMuHMdWjZAY19GPpjoXKfWb3pOp2RbZXDvb4nr5pMmjEMFuB4w@mail.gmail.com>
-	 <50F56286.8070200@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Tue, 15 Jan 2013 11:57:39 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX187wW1tKdKVASR4M0R4bInd0qXszj6fM80=
+Date: Tue, 15 Jan 2013 11:56:42 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Soeren Moch <smoch@web.de>, Greg KH <gregkh@linuxfoundation.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20130115165642.GA25500@titan.lakedaemon.net>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
+ <50F3F289.3090402@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F3F289.3090402@web.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-15 at 15:07 +0100, Marek Szyprowski wrote:
-> Hello,
-> 
-> On 1/15/2013 10:13 AM, Geert Uytterhoeven wrote:
-> > Marek?
+Greg,
+
+I've added you to the this thread hoping for a little insight into USB
+drivers and their use of coherent and GFP_ATOMIC.  Am I barking up the
+wrong tree by looking a the drivers?
+
+On Mon, Jan 14, 2013 at 12:56:57PM +0100, Soeren Moch wrote:
+> On 20.11.2012 15:31, Marek Szyprowski wrote:
+> >dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
+> >regardless the flags provided by the caller. This causes excessive
+> >pruning of emergency memory pools without any good reason. Additionaly,
+> >on ARM architecture any driver which is using dmapools will sooner or
+> >later  trigger the following error:
+> >"ERROR: 256 KiB atomic DMA coherent pool is too small!
+> >Please increase it with coherent_pool= kernel parameter!".
+> >Increasing the coherent pool size usually doesn't help much and only
+> >delays such error, because all GFP_ATOMIC DMA allocations are always
+> >served from the special, very limited memory pool.
 > >
-> > On Tue, Jan 15, 2013 at 5:16 AM, Vineet Gupta
-> > <Vineet.Gupta1@synopsys.com> wrote:
-> > > On Monday 14 January 2013 09:07 PM, Mark Salter wrote:
-> > >> On Sun, 2013-01-13 at 11:44 +0100, Geert Uytterhoeven wrote:
-> > >>> c6x/allmodconfig (assumed):
-> > >>>
-> > >>> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
-> > >>> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
-> > >>> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
-> > >>> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
-> > >>>
-> > >>> For architectures using dma_map_ops, dma_mmap_coherent() and
-> > >>> dma_get_sgtable() are provided in <asm-generic/dma-mapping-common.h>.
-> > >>>
-> > >>> C6x does not use dma_map_ops, hence it should implement them as inline
-> > >>> stubs using dma_common_mmap() and dma_common_get_sgtable().
-> > >>>
-> > >> So are dma_mmap_coherent() and dma_get_sgtable() part of the DMA API
-> > >> now? I don't them in Documentation/DMA*.txt anywhere.
-> > >>
-> > >> Why does the default dma_common_mmap() for !CONFIG_MMU return an
-> > >> error?
-> > >>
-> > >> Wouldn't it be better to provide default implementations that an arch
-> > >> could override rather than having to patch all "no dma_map_ops"
-> > >> architectures?
-> > >>
-> > > Speaking for the still-reviewed ARC Port, I completely agree with Mark.
+> >This patch changes the dmapool code to correctly use gfp flags provided
+> >by the dmapool caller.
+> >
+> >Reported-by: Soeren Moch <smoch@web.de>
+> >Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> >Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> >Tested-by: Andrew Lunn <andrew@lunn.ch>
+> >Tested-by: Soeren Moch <smoch@web.de>
 > 
-> dma_mmap_coherent() was partially in the DMA mapping API for some time, but
-> it was available only on a few architectures (afair ARM, powerpc and avr32).
-> This caused significant problems for writing unified device drivers or some
-> device helper modules which were aimed to work on more than one 
-> architecture.
+> Now I tested linux-3.7.1 (this patch is included there) on my Marvell
+> Kirkwood system. I still see
 > 
-> dma_get_sgtable() is an extension discussed during the Linaro meetings. It
-> is required to correctly implement buffer sharing between device driver
-> without hacks or any assumptions about memory layout in the device drivers.
+>   ERROR: 1024 KiB atomic DMA coherent pool is too small!
+>   Please increase it with coherent_pool= kernel parameter!
 > 
-> I have implemented some generic code for both of those two functions, 
-> keeping
-> in mind that on some hardware architectures (like already mentioned VIVT)
-> it might be not possible to provide coherent mapping to userspace. It is
-> perfectly fine for those functions to return an error in such case.
+> after several hours of runtime under heavy load with SATA and
+> DVB-Sticks (em28xx / drxk and dib0700).
 
-It's not possible on VIPT either.  This means that the API is unusable
-on quite a large number of architectures.  Surely, if we're starting to
-write drivers using this, we need to fix the API before more people try
-to use it.
+Could you try running the system w/o the em28xx stick and see how it
+goes with v3.7.1?
 
-For PA-RISC (and all other VIPT, I assume) I need an API which allows me
-to remap the virtual address of the kernel component (probably using the
-kmap area) so the user space and kernel space addresses are congruent.
+thx,
 
-James
+Jason.
 
-
+> As already reported earlier this patch improved the behavior
+> compared to linux-3.6.x and 3.7.0 (error after several ten minutes
+> runtime), but
+> I still see a regression compared to linux-3.5.x. With this kernel the
+> same system with same workload runs flawlessly.
+> 
+> Regards,
+> Soeren
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
