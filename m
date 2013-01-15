@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432Ab3AONuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:50:21 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:47229 "EHLO comal.ext.ti.com"
+	id S1757415Ab3AONvD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:51:03 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45233 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757079Ab3AONuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:50:18 -0500
+	id S1757042Ab3AONuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:50:09 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
         Russell King <linux@arm.linux.org.uk>, Sekhar Nori <nsekhar@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 5/5] ARM: dts: AM33XX: Add am335x-evmsk lcdc pincontrol info
-Date: Tue, 15 Jan 2013 19:21:10 +0530
-Message-ID: <b107ecb6ed8a1cb8650cf771499bf011b0d3074e.1358252955.git.afzal@ti.com>
+CC: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Subject: [PATCH v2 3/5] ARM: dts: AM33XX: Add am335x-evm lcdc pincontrol info
+Date: Tue, 15 Jan 2013 19:20:56 +0530
+Message-ID: <9294624b48887e118e2a421abc7ba7224e4a45fb.1358252955.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1358252955.git.afzal@ti.com>
 References: <cover.1358252955.git.afzal@ti.com>
@@ -24,31 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update pin mux information for lcd panel on AM335X-EVMSK.
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
 
+Update pin mux information for lcd panel on AM335X-EVM
+
+[afzal@ti.com: comment specifying user understandable pinmux details]
+
+Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
 
-v2: add comment on pinmux entries
+v2: correct authorship, add comment on pinmux
 
- arch/arm/boot/dts/am335x-evmsk.dts |   35 ++++++++++++++++++++++++++++++++++-
+ arch/arm/boot/dts/am335x-evm.dts |   35 ++++++++++++++++++++++++++++++++++-
  1 file changed, 34 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/am335x-evmsk.dts b/arch/arm/boot/dts/am335x-evmsk.dts
-index a7e017b..24dde1d 100644
---- a/arch/arm/boot/dts/am335x-evmsk.dts
-+++ b/arch/arm/boot/dts/am335x-evmsk.dts
-@@ -32,7 +32,7 @@
+diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
+index a4229aa..0527885 100644
+--- a/arch/arm/boot/dts/am335x-evm.dts
++++ b/arch/arm/boot/dts/am335x-evm.dts
+@@ -26,7 +26,7 @@
  
  	am33xx_pinmux: pinmux@44e10800 {
  		pinctrl-names = "default";
--		pinctrl-0 = <&user_leds_s0 &gpio_keys_s0>;
-+		pinctrl-0 = <&user_leds_s0 &gpio_keys_s0 &lcd_pins_s0>;
+-		pinctrl-0 = <&matrix_keypad_s0 &volume_keys_s0>;
++		pinctrl-0 = <&matrix_keypad_s0 &volume_keys_s0 &lcd_pins_s0>;
  
- 		user_leds_s0: user_leds_s0 {
+ 		matrix_keypad_s0: matrix_keypad_s0 {
  			pinctrl-single,pins = <
-@@ -51,6 +51,39 @@
- 				0x9c 0x27	/* gpmc_ben0_cle.gpio2_5, INPUT | MODE7 */
+@@ -44,6 +44,39 @@
+ 				0x154 0x27	/* spi0_d0.gpio0_3, INPUT | MODE7 */
  			>;
  		};
 +
