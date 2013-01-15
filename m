@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933241Ab3AOWui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:50:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46045 "EHLO mail.kernel.org"
+	id S1758834Ab3AOXmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:42:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46094 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933221Ab3AOWud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:33 -0500
+	id S933244Ab3AOWuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Wong <normalperson@yhbt.net>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Olsa <jolsa@redhat.com>,
-        Jonathan Corbet <corbet@lwn.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Voellmy <andreas.voellmy@yale.edu>,
-        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [ 069/171] epoll: prevent missed events on EPOLL_CTL_MOD
-Date: Tue, 15 Jan 2013 14:43:54 -0800
-Message-Id: <20130115224318.378490097@linuxfoundation.org>
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>, Jan Kara <jack@suse.cz>,
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 064/171] udf: dont increment lenExtents while writing to a hole
+Date: Tue, 15 Jan 2013 14:43:49 -0800
+Message-Id: <20130115224318.035357229@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -37,81 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Wong <normalperson@yhbt.net>
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-commit 128dd1759d96ad36c379240f8b9463e8acfd37a1 upstream.
+commit fb719c59bdb4fca86ee1fd1f42ab3735ca12b6b2 upstream.
 
-EPOLL_CTL_MOD sets the interest mask before calling f_op->poll() to
-ensure events are not missed.  Since the modifications to the interest
-mask are not protected by the same lock as ep_poll_callback, we need to
-ensure the change is visible to other CPUs calling ep_poll_callback.
+Incrementing lenExtents even while writing to a hole is bad
+for performance as calls to udf_discard_prealloc and
+udf_truncate_tail_extent would not return from start if
+isize != lenExtents
 
-We also need to ensure f_op->poll() has an up-to-date view of past
-events which occured before we modified the interest mask.  So this
-barrier also pairs with the barrier in wq_has_sleeper().
-
-This should guarantee either ep_poll_callback or f_op->poll() (or both)
-will notice the readiness of a recently-ready/modified item.
-
-This issue was encountered by Andreas Voellmy and Junchang(Jason) Wang in:
-http://thread.gmane.org/gmane.linux.kernel/1408782/
-
-Signed-off-by: Eric Wong <normalperson@yhbt.net>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Voellmy <andreas.voellmy@yale.edu>
-Tested-by: "Junchang(Jason) Wang" <junchang.wang@yale.edu>
-Cc: netdev@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/eventpoll.c |   22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ fs/udf/inode.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1226,11 +1226,31 @@ static int ep_modify(struct eventpoll *e
- 	 * otherwise we might miss an event that happens between the
- 	 * f_op->poll() call and the new event set registering.
- 	 */
--	epi->event.events = event->events;
-+	epi->event.events = event->events; /* need barrier below */
- 	pt._key = event->events;
- 	epi->event.data = event->data; /* protected by mtx */
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -574,6 +574,7 @@ static sector_t inode_getblk(struct inod
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
+ 	int goal = 0, pgoal = iinfo->i_location.logicalBlockNum;
+ 	int lastblock = 0;
++	bool isBeyondEOF;
  
- 	/*
-+	 * The following barrier has two effects:
-+	 *
-+	 * 1) Flush epi changes above to other CPUs.  This ensures
-+	 *    we do not miss events from ep_poll_callback if an
-+	 *    event occurs immediately after we call f_op->poll().
-+	 *    We need this because we did not take ep->lock while
-+	 *    changing epi above (but ep_poll_callback does take
-+	 *    ep->lock).
-+	 *
-+	 * 2) We also need to ensure we do not miss _past_ events
-+	 *    when calling f_op->poll().  This barrier also
-+	 *    pairs with the barrier in wq_has_sleeper (see
-+	 *    comments for wq_has_sleeper).
-+	 *
-+	 * This barrier will now guarantee ep_poll_callback or f_op->poll
-+	 * (or both) will notice the readiness of an item.
-+	 */
-+	smp_mb();
-+
-+	/*
- 	 * Get current event bits. We can safely use the file* here because
- 	 * its usage count has been increased by the caller of this function.
- 	 */
+ 	*err = 0;
+ 	*new = 0;
+@@ -653,7 +654,7 @@ static sector_t inode_getblk(struct inod
+ 	/* Are we beyond EOF? */
+ 	if (etype == -1) {
+ 		int ret;
+-
++		isBeyondEOF = 1;
+ 		if (count) {
+ 			if (c)
+ 				laarr[0] = laarr[1];
+@@ -696,6 +697,7 @@ static sector_t inode_getblk(struct inod
+ 		endnum = c + 1;
+ 		lastblock = 1;
+ 	} else {
++		isBeyondEOF = 0;
+ 		endnum = startnum = ((count > 2) ? 2 : count);
+ 
+ 		/* if the current extent is in position 0,
+@@ -743,7 +745,8 @@ static sector_t inode_getblk(struct inod
+ 			*err = -ENOSPC;
+ 			return 0;
+ 		}
+-		iinfo->i_lenExtents += inode->i_sb->s_blocksize;
++		if (isBeyondEOF)
++			iinfo->i_lenExtents += inode->i_sb->s_blocksize;
+ 	}
+ 
+ 	/* if the extent the requsted block is located in contains multiple
 
 
