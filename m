@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab3AONnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:43:55 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46899 "EHLO comal.ext.ti.com"
+	id S1757406Ab3AONnq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:43:46 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44845 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756752Ab3AONnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:43:51 -0500
+	id S1757447Ab3AONlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:41:37 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@linaro.org>, Sekhar Nori <nsekhar@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 12/12] video: da8xx-fb: set upstream clock rate (if reqd)
-Date: Tue, 15 Jan 2013 19:14:36 +0530
-Message-ID: <26e787b021cda89a080f80657c2094b9ff2decaf.1358251448.git.afzal@ti.com>
+        Sekhar Nori <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 04/12] video: da8xx-fb: use devres
+Date: Tue, 15 Jan 2013 19:12:22 +0530
+Message-ID: <527f3adc41ba0090dd1362adde550eb0e7595e28.1358251447.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1358251447.git.afzal@ti.com>
 References: <cover.1358251447.git.afzal@ti.com>
@@ -27,155 +26,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LCDC IP has a clock divider to adjust pixel clock, this limits pixel
-clock range to fck/255 - fck/2(fck - rate of input clock to LCDC IP).
-In the case of AM335x, where this IP is present, default fck is not
-sufficient to provide normal pixel clock rates, hence rendering this
-driver unusable on AM335x.
-
-If input clock too is configurable, allowable range of pixel clock
-would increase. Here initially it is checked whether with present fck,
-divider in IP could be configured to obtain required rate, if not,
-fck is adjusted. This makes it usable on AM335x.
-
-Note:
-A better (if allowable) solution may be to represent clock divider in
-LCDC IP as a basic divider clock - the one defined in common clock
-framework. But for this to happen, all the platform's using this driver
-should be using common clock framework (DaVinci is yet to be converted
-to use common clock framework). And it has to be determined whether
-common clock framework allows this kind of a clock modelling inside a
-driver and for this to be part of clock tree. Advantage of doing so
-would be better resolution for pixel clock, even though without this
-existing use cases are working properly. Or another extreme alternative
-would be to replicate clk-divider of common clock framework inside the
-driver, but that probably is not preferred and not worth as it would be
-duplication and without much advantage to existing users.
+Replace existing resource handling in the driver with managed device
+resource.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
-
-v2: new patch
-
- drivers/video/da8xx-fb.c |   76 +++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 58 insertions(+), 18 deletions(-)
+ drivers/video/da8xx-fb.c |   35 ++++++-----------------------------
+ 1 file changed, 6 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index 5455682..09dfa12 100644
+index ca69e01..7a32e83 100644
 --- a/drivers/video/da8xx-fb.c
 +++ b/drivers/video/da8xx-fb.c
-@@ -133,6 +133,9 @@
- #define WSI_TIMEOUT	50
- #define PALETTE_SIZE	256
+@@ -1036,12 +1036,9 @@ static int fb_remove(struct platform_device *dev)
+ 				  par->p_palette_base);
+ 		dma_free_coherent(NULL, par->vram_size, par->vram_virt,
+ 				  par->vram_phys);
+-		free_irq(par->irq, par);
+ 		pm_runtime_put_sync(&dev->dev);
+ 		pm_runtime_disable(&dev->dev);
+ 		framebuffer_release(info);
+-		iounmap(da8xx_fb_reg_base);
+-		release_mem_region(lcdc_regs->start, resource_size(lcdc_regs));
  
-+#define	CLK_MIN_DIV	2
-+#define	CLK_MAX_DIV	255
-+
- static void __iomem *da8xx_fb_reg_base;
- static struct resource *lcdc_regs;
- static unsigned int lcd_revision;
-@@ -683,23 +686,21 @@ static void da8xx_fb_lcd_reset(void)
  	}
- }
+ 	return 0;
+@@ -1265,7 +1262,6 @@ static int fb_probe(struct platform_device *device)
+ 	struct fb_info *da8xx_fb_info;
+ 	struct clk *fb_clk = NULL;
+ 	struct da8xx_fb_par *par;
+-	resource_size_t len;
+ 	int ret, i;
+ 	unsigned long ulcm;
  
--static inline unsigned da8xx_fb_calc_clk_divider(struct da8xx_fb_par *par,
--						 unsigned pixclock)
--{
--	return par->lcd_fck_rate / (PICOS2KHZ(pixclock) * 1000);
--}
+@@ -1275,29 +1271,16 @@ static int fb_probe(struct platform_device *device)
+ 	}
+ 
+ 	lcdc_regs = platform_get_resource(device, IORESOURCE_MEM, 0);
+-	if (!lcdc_regs) {
+-		dev_err(&device->dev,
+-			"Can not get memory resource for LCD controller\n");
+-		return -ENOENT;
+-	}
 -
--static inline unsigned da8xx_fb_round_clk(struct da8xx_fb_par *par,
--					  unsigned pixclock)
-+static int da8xx_fb_config_clk_divider(struct da8xx_fb_par *par,
-+					      unsigned div, unsigned rate)
- {
--	unsigned div;
-+	int ret;
+-	len = resource_size(lcdc_regs);
+-
+-	lcdc_regs = request_mem_region(lcdc_regs->start, len, lcdc_regs->name);
+-	if (!lcdc_regs)
+-		return -EBUSY;
+-
+-	da8xx_fb_reg_base = ioremap(lcdc_regs->start, len);
++	da8xx_fb_reg_base = devm_request_and_ioremap(&device->dev, lcdc_regs);
+ 	if (!da8xx_fb_reg_base) {
+-		ret = -EBUSY;
+-		goto err_request_mem;
++		dev_err(&device->dev, "memory resource setup failed\n");
++		return -EADDRNOTAVAIL;
+ 	}
  
--	div = da8xx_fb_calc_clk_divider(par, pixclock);
--	return KHZ2PICOS(par->lcd_fck_rate / (1000 * div));
--}
-+	if (par->lcd_fck_rate != rate) {
-+		ret = clk_set_rate(par->lcdc_clk, rate);
-+		if (IS_ERR_VALUE(ret)) {
-+			dev_err(par->dev,
-+				"unable to set clock rate at %u\n", rate);
-+			return ret;
-+		}
-+		par->lcd_fck_rate = clk_get_rate(par->lcdc_clk);
-+	}
+-	fb_clk = clk_get(&device->dev, "fck");
++	fb_clk = devm_clk_get(&device->dev, "fck");
+ 	if (IS_ERR(fb_clk)) {
+ 		dev_err(&device->dev, "Can not get device clock\n");
+-		ret = -ENODEV;
+-		goto err_ioremap;
++		return -ENODEV;
+ 	}
  
--static inline void da8xx_fb_config_clk_divider(unsigned div)
--{
- 	/* Configure the LCD clock divisor. */
- 	lcdc_write(LCD_CLK_DIVISOR(div) |
- 			(LCD_RASTER_MODE & 0x1), LCD_CTRL_REG);
-@@ -707,14 +708,49 @@ static inline void da8xx_fb_config_clk_divider(unsigned div)
- 	if (lcd_revision == LCD_VERSION_2)
- 		lcdc_write(LCD_V2_DMA_CLK_EN | LCD_V2_LIDD_CLK_EN |
- 				LCD_V2_CORE_CLK_EN, LCD_CLK_ENABLE_REG);
-+
-+	return 0;
-+}
-+
-+static unsigned int da8xx_fb_calc_clk_divider(struct da8xx_fb_par *par,
-+					      unsigned pixclock,
-+					      unsigned *rate)
-+{
-+	unsigned div;
-+
-+	pixclock = PICOS2KHZ(pixclock) * 1000;
-+
-+	*rate = par->lcd_fck_rate;
-+
-+	if (pixclock < (*rate / CLK_MAX_DIV)) {
-+		*rate = clk_round_rate(par->lcdc_clk, pixclock * CLK_MAX_DIV);
-+		div = CLK_MAX_DIV;
-+	} else if (pixclock > (*rate / CLK_MIN_DIV)) {
-+		*rate = clk_round_rate(par->lcdc_clk, pixclock * CLK_MIN_DIV);
-+		div = CLK_MIN_DIV;
-+	} else {
-+		div = *rate / pixclock;
-+	}
-+
-+	return div;
+ 	pm_runtime_enable(&device->dev);
+@@ -1458,7 +1441,7 @@ static int fb_probe(struct platform_device *device)
+ 		lcdc_irq_handler = lcdc_irq_handler_rev02;
+ 	}
+ 
+-	ret = request_irq(par->irq, lcdc_irq_handler, 0,
++	ret = devm_request_irq(&device->dev, par->irq, lcdc_irq_handler, 0,
+ 			DRIVER_NAME, par);
+ 	if (ret)
+ 		goto irq_freq;
+@@ -1488,12 +1471,6 @@ err_pm_runtime_disable:
+ 	pm_runtime_put_sync(&device->dev);
+ 	pm_runtime_disable(&device->dev);
+ 
+-err_ioremap:
+-	iounmap(da8xx_fb_reg_base);
+-
+-err_request_mem:
+-	release_mem_region(lcdc_regs->start, len);
+-
+ 	return ret;
  }
  
--static inline void da8xx_fb_calc_config_clk_divider(struct da8xx_fb_par *par,
-+static inline int da8xx_fb_calc_config_clk_divider(struct da8xx_fb_par *par,
- 						    struct fb_videomode *mode)
- {
--	unsigned div = da8xx_fb_calc_clk_divider(par, mode->pixclock);
-+	unsigned rate;
-+	unsigned div = da8xx_fb_calc_clk_divider(par, mode->pixclock, &rate);
- 
--	da8xx_fb_config_clk_divider(div);
-+	return da8xx_fb_config_clk_divider(par, div, rate);
-+}
-+
-+static inline unsigned da8xx_fb_round_clk(struct da8xx_fb_par *par,
-+					  unsigned pixclock)
-+{
-+	unsigned div, rate;
-+
-+	div = da8xx_fb_calc_clk_divider(par, pixclock, &rate);
-+	return KHZ2PICOS(rate / (1000 * div));
- }
- 
- static int lcd_init(struct da8xx_fb_par *par, const struct lcd_ctrl_config *cfg,
-@@ -723,7 +759,11 @@ static int lcd_init(struct da8xx_fb_par *par, const struct lcd_ctrl_config *cfg,
- 	u32 bpp;
- 	int ret = 0;
- 
--	da8xx_fb_calc_config_clk_divider(par, panel);
-+	ret = da8xx_fb_calc_config_clk_divider(par, panel);
-+	if (IS_ERR_VALUE(ret)) {
-+		dev_err(par->dev, "unable to configure clock\n");
-+		return ret;
-+	}
- 
- 	if (panel->sync & FB_SYNC_CLK_INVERT)
- 		lcdc_write((lcdc_read(LCD_RASTER_TIMING_2_REG) |
 -- 
 1.7.9.5
 
