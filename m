@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab3AOWqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:46:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59500 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756520Ab3AOWqK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:46:10 -0500
-Date: Tue, 15 Jan 2013 14:46:08 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
-        tytso@mit.edu, viro@zeniv.linux.org.uk, rminnich@sandia.gov,
-        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
-        gnehzuil.liu@gmail.com, linux-kernel@vger.kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
-        linux-ext4@vger.kernel.org, hirofumi@mail.parknet.co.jp
-Subject: Re: [PATCH v2.4 0/3] mm/fs: Remove unnecessary waiting for stable
- pages
-Message-Id: <20130115144608.722180b7.akpm@linux-foundation.org>
-In-Reply-To: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
-References: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932786Ab3AOWqW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:46:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45053 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932576Ab3AOWqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:46:19 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 014/171] ath9k_hw: Fix signal strength / channel noise reporting
+Date: Tue, 15 Jan 2013 14:42:59 -0800
+Message-Id: <20130115224314.434336086@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
+References: <20130115224313.394976595@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013 21:42:35 -0800
-"Darrick J. Wong" <darrick.wong@oracle.com> wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> This patchset ("stable page writes, part 2") makes some key modifications to
-> the original 'stable page writes' patchset.  First, it provides creators
-> (devices and filesystems) of a backing_dev_info a flag that declares whether or
-> not it is necessary to ensure that page contents cannot change during writeout.
-> It is no longer assumed that this is true of all devices (which was never true
-> anyway).  Second, the flag is used to relaxed the wait_on_page_writeback calls
-> so that wait only occurs if the device needs it.  Third, it fixes up the
-> remaining disk-backed filesystems to use this improved conditional-wait logic
-> to provide stable page writes on those filesystems.
-> 
-> It is hoped that (for people not using checksumming devices, anyway) this
-> patchset will give back unnecessary performance decreases since the original
-> stable page write patchset went into 3.0.  Sorry about not fixing it sooner.
-> 
-> Complaints were registered by several people about the long write latencies
-> introduced by the original stable page write patchset.  Generally speaking, the
-> kernel ought to allocate as little extra memory as possible to facilitate
-> writeout, but for people who simply cannot wait, a second page stability
-> strategy is (re)introduced: snapshotting page contents.  The waiting behavior
-> is still the default strategy; to enable page snapshotting, a superblock flag
-> (MS_SNAP_STABLE) must be set.  This flag is used to bandaid^Henable stable page
-> writeback on ext3[1], and is not used anywhere else.
-> 
-> Given that there are already a few storage devices and network FSes that have
-> rolled their own page stability wait/page snapshot code, it would be nice to
-> move towards consolidating all of these.  It seems possible that iscsi and
-> raid5 may wish to use the new stable page write support to enable zero-copy
-> writeout.
-> 
-> Thank you to Jan Kara for helping fix a couple more filesystems.
+------------------
 
-I have to say that 3d08bcc887 ("mm: Wait for writeback when grabbing
-pages to begin a write") was a massive faceplant.  How the heck did that
-happen?
+From: Felix Fietkau <nbd@openwrt.org>
 
-Looking back at the 19 May 2011 patchset, I see that we all managed to
-avoid cc'ing the guy who wrote and designed that code and who introduced
-the PageWriteback/wait_on_page_writeback() infrastructure to avoid exactly
-the problem which 3d08bcc887 added.  Sigh.
+commit b7c0c238898d200e80487516e2b67aba2a522cc0 upstream.
 
-> This patchset has been tested on 3.8.0-rc3 on x64 with ext3, ext4, and xfs.
-> What does everyone think about queueing this for 3.9?
+While AR_PHY_CCA_NOM_VAL_* does contain the expected internal noise floor
+for a chip measured in clean air, it refers to the lowest expected reading.
 
-This patchset lacks any performance testing results.
+Depending on the frequency, this measurement can vary by about 6db, thus
+causing a higher reported channel noise and signal strength.
+
+Factor in the 6db offset when converting internal noisefloor to channel noise.
+
+This patch makes the reported values more accurate for all chips without
+affecting NF calibration behavior.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/ath/ath9k/calib.c |    1 +
+ drivers/net/wireless/ath/ath9k/calib.h |    3 +++
+ 2 files changed, 4 insertions(+)
+
+--- a/drivers/net/wireless/ath/ath9k/calib.c
++++ b/drivers/net/wireless/ath/ath9k/calib.c
+@@ -69,6 +69,7 @@ s16 ath9k_hw_getchan_noise(struct ath_hw
+ 
+ 	if (chan && chan->noisefloor) {
+ 		s8 delta = chan->noisefloor -
++			   ATH9K_NF_CAL_NOISE_THRESH -
+ 			   ath9k_hw_get_default_nf(ah, chan);
+ 		if (delta > 0)
+ 			noise += delta;
+--- a/drivers/net/wireless/ath/ath9k/calib.h
++++ b/drivers/net/wireless/ath/ath9k/calib.h
+@@ -21,6 +21,9 @@
+ 
+ #define AR_PHY_CCA_FILTERWINDOW_LENGTH          5
+ 
++/* Internal noise floor can vary by about 6db depending on the frequency */
++#define ATH9K_NF_CAL_NOISE_THRESH		6
++
+ #define NUM_NF_READINGS       6
+ #define ATH9K_NF_CAL_HIST_MAX 5
+ 
 
 
-The patchset looks OK to me, but one thing I find unclear:
-
-For clarity's sake, please provide a description of which filesystems
-(and under which circumstances) will block behind writeback when
-userspace is attempting to dirty a page.  Both before and, particularly,
-after this patchset.  IOW, did everything get fixed?
