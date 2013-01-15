@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab3AONh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:37:28 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62699 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756079Ab3AONh0 (ORCPT
+	id S1756701Ab3AONkE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:40:04 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:62809 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755259Ab3AONkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:37:26 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [RFC PATCH 1/7] drivers: usb: phy: add a new driver for usb part of control module
-Date: Tue, 15 Jan 2013 13:36:47 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: grant.likely@secretlab.ca, b-cousson@ti.com, rob.herring@calxeda.com,
-        rob@landley.net, linux@arm.linux.org.uk, balbi@ti.com,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org
-References: <1358239378-10030-1-git-send-email-kishon@ti.com> <1358239378-10030-2-git-send-email-kishon@ti.com>
-In-Reply-To: <1358239378-10030-2-git-send-email-kishon@ti.com>
+	Tue, 15 Jan 2013 08:40:02 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301151336.47546.arnd@arndb.de>
-X-Provags-ID: V02:K0:RyQ25e6EYqi3FvALUVFxRIx4Sjia493PRL5sWBeBIJy
- 5A5I5KTIRX6koPyR9jXj7m8JqrcOA1iHtl7JSSknq8Me2EvacP
- AWl1wu0T7MDbeTv5aSr0h9DGu6tCsJfYuUp3bQCpOfzbymV5oI
- P8ONueZUCM9rqwg7eCsQ5MREkrRPEq6lfu4dasuYuqz+3h/Mns
- LHMkLWpqlUkFSmWPhRpPi+agmMnBbG+915BEd7Di2Fr8Xb5gSn
- iIJDZ/gXYvqSonhEzWmlR4T3fK2IKIaN7ecidzxjmFbttmlHd2
- huz0Z5VoLBAhqW4vfz6A1id5uiF7j9K5aQEVsaHc8TLug5FPTh
- d2XFpcHl/ZUwiNstUpLo=
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6E1A6F0BED@BGMAIL02.nvidia.com>
+References: <CA+icZUV=-=DALJRpzrmKrC6oK-CwCyRbHE1VmjrLfmGcemx2JQ@mail.gmail.com>
+	<D958900912E20642BCBC71664EFECE3E6E1A6F0BED@BGMAIL02.nvidia.com>
+Date: Tue, 15 Jan 2013 14:40:01 +0100
+Message-ID: <CA+icZUUxURMi6Qc+FHCa_sP8LPH4pyOJwTZzv11MJZ9ZdEkxkA@mail.gmail.com>
+Subject: Re: linux-next: Why no Tree for Jan 15?
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 January 2013, Kishon Vijay Abraham I wrote:
-> +OMAP CONTROL USB
-> +
-> +Required properties:
-> + - compatible: Should be "ti,omap-control-usb"
-> + - reg : Address and length of the register set for the device. It contains
-> +   the address of "control_dev_conf" and "otghs_control".
-> + - reg-names: The names of the register addresses corresponding to the registers
-> +   filled in "reg".
-> + - ti,has_mailbox: This is used to specify if the platform uses mailbox in
-> +   control module.
+On Tue, Jan 15, 2013 at 2:34 PM, Venu Byravarasu <vbyravarasu@nvidia.com> wrote:
+>> -----Original Message-----
+>> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+>> owner@vger.kernel.org] On Behalf Of Sedat Dilek
+>> Sent: Tuesday, January 15, 2013 6:51 PM
+>> To: Stephen Rothwell
+>> Cc: linux-next; LKML
+>> Subject: linux-next: Why no Tree for Jan 15?
+>>
+>> Hi Stephen,
+>>
+>> any reason why there is no Linux-Next for today?
+>
+> Seems Stephen created tree but did not announce it via mail, because
+> when I synced to linux-next today, am seeing below commit from him:
+>
+> commit 371450db41f86a409fc0b6da7b3b8ab9b55f617c
+> Author: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date:   Tue Jan 15 14:25:58 2013 +1100
+>
+>     Add linux-next specific files for 20130115
+>
+>     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+>
 
-I wonder whether we need to have a phandle here to connect the control device
-to the actual usb device. What happens if you have multiple instances of
-each?
+OK, I see.
+This release has two important fixes for me in char-misc-next (mei
+driver) and "mm: fix BUG on madvise early failure".
+Thanks for the information!
 
-	Arnd
+- Sedat -
+
+[1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=12dd7dcc8e3159591dc8d63d75eefa6f049cf0b1
+
+> Thanks,
+> Venu
+>
+>
+>>
+>> Regards,
+>> - Sedat -
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
