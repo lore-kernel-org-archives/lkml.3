@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab3AOWqW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:46:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45053 "EHLO mail.kernel.org"
+	id S932865Ab3AOWqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:46:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45095 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932576Ab3AOWqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:46:19 -0500
+	id S932576Ab3AOWqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:46:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 014/171] ath9k_hw: Fix signal strength / channel noise reporting
-Date: Tue, 15 Jan 2013 14:42:59 -0800
-Message-Id: <20130115224314.434336086@linuxfoundation.org>
+        Stephan Gatzka <stephan.gatzka@gmail.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 015/171] firewire: net: Fix handling of fragmented multicast/broadcast packets.
+Date: Tue, 15 Jan 2013 14:43:00 -0800
+Message-Id: <20130115224314.504974155@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,51 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Stephan Gatzka <stephan.gatzka@gmail.com>
 
-commit b7c0c238898d200e80487516e2b67aba2a522cc0 upstream.
+commit 9d2373420900a39f5212a3b289331aa3535b1000 upstream.
 
-While AR_PHY_CCA_NOM_VAL_* does contain the expected internal noise floor
-for a chip measured in clean air, it refers to the lowest expected reading.
+This patch fixes both the transmit and receive portion of sending
+fragmented mutlicast and broadcast packets.
 
-Depending on the frequency, this measurement can vary by about 6db, thus
-causing a higher reported channel noise and signal strength.
+The transmit section was broken because the offset for INTFRAG and
+LASTFRAG packets were just miscalculated by IEEE1394_GASP_HDR_SIZE (which
+was reserved with skb_push() in fwnet_send_packet).
 
-Factor in the 6db offset when converting internal noisefloor to channel noise.
+The receive section was broken because in fwnet_incoming_packet is a call
+to fwnet_peer_find_by_node_id(). Called with generation == -1 it will
+not find a peer and the partial datagrams are associated to a peer.
 
-This patch makes the reported values more accurate for all chips without
-affecting NF calibration behavior.
+[Stefan R:  The fix to use context->card->generation is not perfect.
+It relies on the IR tasklet which processes packets from the prior bus
+generation to run before the self-ID-complete worklet which sets the
+current card generation.  Alas, there is no simple way of a race-free
+implementation.  Let's do it this way for now.]
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Stephan Gatzka <stephan.gatzka@gmail.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/calib.c |    1 +
- drivers/net/wireless/ath/ath9k/calib.h |    3 +++
- 2 files changed, 4 insertions(+)
+ drivers/firewire/net.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/calib.c
-+++ b/drivers/net/wireless/ath/ath9k/calib.c
-@@ -69,6 +69,7 @@ s16 ath9k_hw_getchan_noise(struct ath_hw
+--- a/drivers/firewire/net.c
++++ b/drivers/firewire/net.c
+@@ -861,8 +861,8 @@ static void fwnet_receive_broadcast(stru
+ 	if (specifier_id == IANA_SPECIFIER_ID && ver == RFC2734_SW_VERSION) {
+ 		buf_ptr += 2;
+ 		length -= IEEE1394_GASP_HDR_SIZE;
+-		fwnet_incoming_packet(dev, buf_ptr, length,
+-				      source_node_id, -1, true);
++		fwnet_incoming_packet(dev, buf_ptr, length, source_node_id,
++				      context->card->generation, true);
+ 	}
  
- 	if (chan && chan->noisefloor) {
- 		s8 delta = chan->noisefloor -
-+			   ATH9K_NF_CAL_NOISE_THRESH -
- 			   ath9k_hw_get_default_nf(ah, chan);
- 		if (delta > 0)
- 			noise += delta;
---- a/drivers/net/wireless/ath/ath9k/calib.h
-+++ b/drivers/net/wireless/ath/ath9k/calib.h
-@@ -21,6 +21,9 @@
+ 	packet.payload_length = dev->rcv_buffer_size;
+@@ -958,7 +958,12 @@ static void fwnet_transmit_packet_done(s
+ 			break;
+ 		}
  
- #define AR_PHY_CCA_FILTERWINDOW_LENGTH          5
+-		skb_pull(skb, ptask->max_payload);
++		if (ptask->dest_node == IEEE1394_ALL_NODES) {
++			skb_pull(skb,
++				 ptask->max_payload + IEEE1394_GASP_HDR_SIZE);
++		} else {
++			skb_pull(skb, ptask->max_payload);
++		}
+ 		if (ptask->outstanding_pkts > 1) {
+ 			fwnet_make_sf_hdr(&ptask->hdr, RFC2374_HDR_INTFRAG,
+ 					  dg_size, fg_off, datagram_label);
+@@ -1062,7 +1067,7 @@ static int fwnet_send_packet(struct fwne
+ 		smp_rmb();
+ 		node_id = dev->card->node_id;
  
-+/* Internal noise floor can vary by about 6db depending on the frequency */
-+#define ATH9K_NF_CAL_NOISE_THRESH		6
-+
- #define NUM_NF_READINGS       6
- #define ATH9K_NF_CAL_HIST_MAX 5
- 
+-		p = skb_push(ptask->skb, 8);
++		p = skb_push(ptask->skb, IEEE1394_GASP_HDR_SIZE);
+ 		put_unaligned_be32(node_id << 16 | IANA_SPECIFIER_ID >> 8, p);
+ 		put_unaligned_be32((IANA_SPECIFIER_ID & 0xff) << 24
+ 						| RFC2734_SW_VERSION, &p[4]);
 
 
