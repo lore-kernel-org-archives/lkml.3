@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab3AOMvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 07:51:35 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:42764 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab3AOMve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:51:34 -0500
-Date: Tue, 15 Jan 2013 13:51:19 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Stefan Peter <s.peter@mpl.ch>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, jason@lakedaemon.net, andrew@lunn.ch,
-        dwmw2@infradead.org, jm@lentin.co.uk, arnd@arndb.de,
-        sebastian.hesselbarth@googlemail.com, iwamatsu@nigauri.org,
-        artem.bityutskiy@linux.intel.com, wfp5p@virginia.edu,
-        gregkh@linuxfoundation.org, broonie@opensource.wolfsonmicro.com,
-        mchehab@redhat.com, nico@linaro.org
-Subject: Re: [PATCH 3/4] Enable ecc-mode selection in the driver
-Message-ID: <20130115125119.GH13482@lunn.ch>
-References: <cover.1358242644.git.s.peter@mpl.ch>
- <2d08c4c072fd4922a6056362adb96a455307d583.1358242644.git.s.peter@mpl.ch>
+	id S1755842Ab3AOMxq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:53:46 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:43480 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab3AOMxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 07:53:44 -0500
+Message-ID: <50F5514A.2040207@mvista.com>
+Date: Tue, 15 Jan 2013 16:53:30 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2d08c4c072fd4922a6056362adb96a455307d583.1358242644.git.s.peter@mpl.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: grant.likely@secretlab.ca, b-cousson@ti.com, rob.herring@calxeda.com,
+        rob@landley.net, linux@arm.linux.org.uk, arnd@arndb.de, balbi@ti.com,
+        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [RFC PATCH 2/7] ARM: OMAP: devices: create device for usb part
+ of control module
+References: <1358239378-10030-1-git-send-email-kishon@ti.com> <1358239378-10030-3-git-send-email-kishon@ti.com>
+In-Reply-To: <1358239378-10030-3-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 01:13:12PM +0100, Stefan Peter wrote:
-> In order to be able to use the ecc-mode, add the bch module to the default
-> settings for the kirwood boards and enable the activation in orin-nand.c
-> 
-> Signed-off-by: Stefan Peter <s.peter@mpl.ch>
+Hello.
+
+On 15-01-2013 12:42, Kishon Vijay Abraham I wrote:
+
+> A seperate driver has been added to handle the usb part of control
+> module. A device for the above driver is created here, using the register
+> address information to be used by the driver for powering on the PHY and
+> for writing to the mailbox.
+
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 > ---
-> diff --git a/arch/arm/configs/kirkwood_defconfig b/arch/arm/configs/kirkwood_defconfig
-> index 93f3794..4a9d3f7 100644
-> --- a/arch/arm/configs/kirkwood_defconfig
-> +++ b/arch/arm/configs/kirkwood_defconfig
-> @@ -84,6 +84,7 @@ CONFIG_MTD_CFI_STAA=y
->  CONFIG_MTD_PHYSMAP=y
->  CONFIG_MTD_M25P80=y
->  CONFIG_MTD_NAND=y
-> +CONFIG_MTD_NAND_ECC_BCH=y
->  CONFIG_MTD_NAND_ORION=y
->  CONFIG_BLK_DEV_LOOP=y
->  # CONFIG_SCSI_PROC_FS is not set
-> diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
-> index cd72b92..1a35257 100644
-> --- a/drivers/mtd/nand/orion_nand.c
-> +++ b/drivers/mtd/nand/orion_nand.c
-> @@ -14,6 +14,7 @@
->  #include <linux/module.h>
->  #include <linux/platform_device.h>
->  #include <linux/of.h>
-> +#include <linux/of_mtd.h>
->  #include <linux/mtd/mtd.h>
->  #include <linux/mtd/nand.h>
->  #include <linux/mtd/partitions.h>
-> @@ -130,6 +131,7 @@ static int __init orion_nand_probe(struct platform_device *pdev)
->  		if (!of_property_read_u32(pdev->dev.of_node,
->  						"chip-delay", &val))
->  			board->chip_delay = (u8)val;
-> +		board->ecc_mode = of_get_nand_ecc_mode(pdev->dev.of_node);
+>   arch/arm/mach-omap2/devices.c |   50 +++++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 50 insertions(+)
 
->  	} else
->  		board = pdev->dev.platform_data;
->  
-> @@ -140,7 +142,8 @@ static int __init orion_nand_probe(struct platform_device *pdev)
->  	nc->IO_ADDR_R = nc->IO_ADDR_W = io_base;
->  	nc->cmd_ctrl = orion_nand_cmd_ctrl;
->  	nc->read_buf = orion_nand_read_buf;
-> -	nc->ecc.mode = NAND_ECC_SOFT;
-> +	nc->ecc.mode = board->ecc_mode == NAND_ECC_SOFT_BCH ?
-> +		NAND_ECC_SOFT_BCH : NAND_ECC_SOFT;
+> diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+> index 5e304d0..a761faf4 100644
+> --- a/arch/arm/mach-omap2/devices.c
+> +++ b/arch/arm/mach-omap2/devices.c
+[...]
+> @@ -254,6 +255,54 @@ static inline void omap_init_camera(void)
+>   #endif
+>   }
+>
+> +#if (defined(CONFIG_OMAP_CONTROL_USB) || \
+> +				defined(CONFIG_OMAP_CONTROL_USB_MODULE))
 
-Hi Stefan
+    () around || not needed, and you're indenting the second line too much.
 
-What about a user that wants one of the other valid values?
-NAND_ECC_OOB_FIRST, NAND_ECC_HW_SYNDROME, etc.
+> +static inline void __init omap_init_control_usb(void)
+> +{
+> +	int ret = 0;
 
-Would:
+    Initializer not needed.
 
-	if (IS_ERR(board->ecc_mode)) {
-		nc->ecc.mode = NAND_ECC_SOFT;
-		dev_info(&pdev->dev, "Defaulting to NAND_ECC_SOFT");
-	} else
-		nc->ecc.mode = board->ecc_mode
+> +
+> +	if (cpu_is_omap44xx()) {
+> +		ret = platform_device_register(&omap4_control_usb);
+> +		if (ret)
+> +			pr_err("Error registering omap_control_usb device: %d\n"
+> +			    , ret);
 
-be better?
+    Please leave the comma on the previous line.
 
-   Andrew
+WBR, Sergei
+
