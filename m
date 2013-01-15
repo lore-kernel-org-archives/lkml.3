@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab3AOBUK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 20:20:10 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52169 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757043Ab3AOBUI convert rfc822-to-8bit (ORCPT
+	id S1757618Ab3AOBX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 20:23:57 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34327 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756944Ab3AOBX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 20:20:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,469,1355126400"; 
-   d="scan'208";a="273751024"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] PM / Runtime: Fix the twice judgement in
- rpm_suspend/resume()
-Thread-Topic: [PATCH] PM / Runtime: Fix the twice judgement in
- rpm_suspend/resume()
-Thread-Index: AQHN8lJieUVG+2Dfu0GWMeDBWvwC/JhIbU+AgAElWYA=
-Date: Tue, 15 Jan 2013 01:20:05 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A20400F@SHSMSX101.ccr.corp.intel.com>
-References: <2969423.iZ1VgpHf54@vostro.rjw.lan>
- <Pine.LNX.4.44L0.1301141027290.1782-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1301141027290.1782-100000@iolanthe.rowland.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Jan 2013 20:23:56 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50F4AF88.9090201@jp.fujitsu.com>
+Date: Tue, 15 Jan 2013 10:23:20 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wujianguo@huawei.com" <wujianguo@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "lliubbo@gmail.com" <lliubbo@gmail.com>,
+        "jaegeuk.hanse@gmail.com" <jaegeuk.hanse@gmail.com>,
+        "glommer@parallels.com" <glommer@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com> <50F440F5.3030006@zytor.com> <20130114143456.3962f3bd.akpm@linux-foundation.org> <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/01/15 7:41, Luck, Tony wrote:
+>> hm, why.  Obviously SRAT support will improve things, but is it
+>> actually unusable/unuseful with the command line configuration?
+>
 
+> Users will want to set these moveable zones along node boundaries
+> (the whole purpose is to be able to remove a node by making sure
+> the kernel won't allocate anything tricky in it, right?)
 
-> -----Original Message-----
-> From: Alan Stern [mailto:stern@rowland.harvard.edu]
-> Sent: Monday, January 14, 2013 11:30 PM
-> To: Rafael J. Wysocki
-> Cc: Liu, Chuansheng; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] PM / Runtime: Fix the twice judgement in
-> rpm_suspend/resume()
-> 
-> On Mon, 14 Jan 2013, Rafael J. Wysocki wrote:
-> 
-> > On Tuesday, January 15, 2013 01:48:18 AM Chuansheng Liu wrote:
-> > >
-> > > In function rpm_suspend/resume(), when going into the for(;;),
-> > > the pre-condition judgement has been done, and the variable
-> runtime_status
-> > > are always protected by &power.lock, so it is not necessary to judge
-> > > them again before unlock_irq &power.lock in for(;;).
-> > >
-> > > This patch clean them up.
-> >
-> > Well, I don't really think this fixes anything.  Yes, we may save one check
-> > here and there, but the current code follows the wait_event() convention.
-OK, thanks.
+Yes
 
-> 
-> Indeed, this patch introduces a race.  If runtime_status changes from
-> RPM_SUSPENDING and power.wait_queue is signalled in between the test at
-> the end of the loop and the prepare_to_wait() call, the loop will never
-> end.
-Checking the race case, it should not happen?
-Updating runtime_status and wake_up wait_queue are protected by power.lock.
-spin_lock(&power.lock)
-...
-__update_runtime_status()
-...
-wake_up_all(&dev->power.wait_queue)
-...
-spin_unlock(&power.lock)
+> So raw addresses
+> are usable ... but to get them right the user will have to go parse the
+> SRAT table manually to come up with the addresses.
 
+I don't think so because user can easily get raw address by kernel
+message in x86.
 
-> 
-> Alan Stern
-> 
-> > Thanks,
-> > Rafael
-> >
-> >
-> > > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> > > ---
-> > >  drivers/base/power/runtime.c |   18 +++++++++---------
-> > >  1 files changed, 9 insertions(+), 9 deletions(-)
-> > >
-> > > diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> > > index 3148b10..32d6497 100644
-> > > --- a/drivers/base/power/runtime.c
-> > > +++ b/drivers/base/power/runtime.c
-> > > @@ -377,14 +377,14 @@ static int rpm_suspend(struct device *dev, int
-> rpmflags)
-> > >  		for (;;) {
-> > >  			prepare_to_wait(&dev->power.wait_queue, &wait,
-> > >  					TASK_UNINTERRUPTIBLE);
-> > > -			if (dev->power.runtime_status != RPM_SUSPENDING)
-> > > -				break;
-> > >
-> > >  			spin_unlock_irq(&dev->power.lock);
-> > >
-> > >  			schedule();
-> > >
-> > >  			spin_lock_irq(&dev->power.lock);
-> > > +			if (dev->power.runtime_status != RPM_SUSPENDING)
-> > > +				break;
-> > >  		}
+Here are kernel messages of x86 architecture.
+---
+[    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
+[    0.000000] SRAT: Node 0 PXM 0 [mem 0x100000000-0x7ffffffff]
+[    0.000000] SRAT: Node 1 PXM 2 [mem 0x1000000000-0x17ffffffff]
+[    0.000000] SRAT: Node 2 PXM 3 [mem 0x1800000000-0x1fffffffff]
+[    0.000000] SRAT: Node 3 PXM 4 [mem 0x2000000000-0x27ffffffff]
+[    0.000000] SRAT: Node 4 PXM 5 [mem 0x2800000000-0x2fffffffff]
+[    0.000000] SRAT: Node 5 PXM 6 [mem 0x3000000000-0x37ffffffff]
+[    0.000000] SRAT: Node 6 PXM 7 [mem 0x3800000000-0x3fffffffff]
+[    0.000000] SRAT: Node 7 PXM 1 [mem 0x800000000-0xfffffffff]
+---
+
+Thanks,
+Yasuaki Ishimatsu
+
+> Any time you
+> make the user go off and do some tedious calculation that the computer
+> should have done for them is user-abuse.
+>
+> -Tony
+>
+
 
