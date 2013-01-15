@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613Ab3AODkK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 22:40:10 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18308 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab3AODkI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 22:40:08 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=79wlbEtt-9EA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=pX4miy-IAAsA:10 a=zIuCNmsNwhn0J9T5-rMA:9 a=CjuIK1q_8ugA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Date: Mon, 14 Jan 2013 22:40:06 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Al Cooper <alcooperx@gmail.com>, ralf@linux-mips.org,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mips: function tracer: Fix broken function tracing
-Message-ID: <20130115034006.GA3854@home.goodmis.org>
-References: <y>
- <1357914810-20656-1-git-send-email-alcooperx@gmail.com>
- <50F0454D.5060109@gmail.com>
+	id S1751944Ab3AODqF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 22:46:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33855 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085Ab3AODqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 22:46:03 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <50F4AF88.9090201@jp.fujitsu.com>
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com> <50F440F5.3030006@zytor.com> <20130114143456.3962f3bd.akpm@linux-foundation.org> <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com> <50F4AF88.9090201@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F0454D.5060109@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 14 Jan 2013 19:44:32 -0800
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wujianguo@huawei.com" <wujianguo@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "lliubbo@gmail.com" <lliubbo@gmail.com>,
+        "jaegeuk.hanse@gmail.com" <jaegeuk.hanse@gmail.com>,
+        "glommer@parallels.com" <glommer@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Message-ID: <f0b491ad-e520-4b32-8506-1a85a15b2924@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 09:01:01AM -0800, David Daney wrote:
-> 
-> I thought all CPUs were in stop_machine() when the modifications
-> were done, so that there is no issue with multi-word instruction
-> patching.
-> 
-> Am I wrong about this?
-> 
-> So really I think you can do two NOP just as easily.
+That *is* user abuse.
 
-The problem with double NOPs is that it can only work if there's no
-problem executing one nop and a non NOP. Which I think is an issue here.
+Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
 
+>2013/01/15 7:41, Luck, Tony wrote:
+>>> hm, why.  Obviously SRAT support will improve things, but is it
+>>> actually unusable/unuseful with the command line configuration?
+>>
+>
+>> Users will want to set these moveable zones along node boundaries
+>> (the whole purpose is to be able to remove a node by making sure
+>> the kernel won't allocate anything tricky in it, right?)
+>
+>Yes
+>
+>> So raw addresses
+>> are usable ... but to get them right the user will have to go parse
+>the
+>> SRAT table manually to come up with the addresses.
+>
+>I don't think so because user can easily get raw address by kernel
+>message in x86.
+>
+>Here are kernel messages of x86 architecture.
+>---
+>[    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
+>[    0.000000] SRAT: Node 0 PXM 0 [mem 0x100000000-0x7ffffffff]
+>[    0.000000] SRAT: Node 1 PXM 2 [mem 0x1000000000-0x17ffffffff]
+>[    0.000000] SRAT: Node 2 PXM 3 [mem 0x1800000000-0x1fffffffff]
+>[    0.000000] SRAT: Node 3 PXM 4 [mem 0x2000000000-0x27ffffffff]
+>[    0.000000] SRAT: Node 4 PXM 5 [mem 0x2800000000-0x2fffffffff]
+>[    0.000000] SRAT: Node 5 PXM 6 [mem 0x3000000000-0x37ffffffff]
+>[    0.000000] SRAT: Node 6 PXM 7 [mem 0x3800000000-0x3fffffffff]
+>[    0.000000] SRAT: Node 7 PXM 1 [mem 0x800000000-0xfffffffff]
+>---
+>
+>Thanks,
+>Yasuaki Ishimatsu
+>
+>> Any time you
+>> make the user go off and do some tedious calculation that the
+>computer
+>> should have done for them is user-abuse.
+>>
+>> -Tony
+>>
 
-If you have something like:
-
-	bl	_mcount
-	addiu	sp,sp,-8
-
-And you convert that to:
-
-	nop
-	nop
-
-Now if you convert that back to:
-
-	bl	ftrace_caller
-	addiu	sp,sp,-8
-
-then you can have an issue if the task was preempted after that first
-nop. Because stop_machine() doesn't wait for tasks to exit kernel space.
-If you have a CONFIG_PREEMPT kernel, a task can be sleeping anywhere.
-Thus you have a task execute the first nop, get preempted. You update
-the code to be:
-
-	bl	ftrace_caller
-	addiu	sp,sp,-8
-
-When that task gets scheduled back in, it will act like it just
-executed:
-
-	nop
-	addiu	sp,sp,-8
-
-Which is the problem you're trying to solve in the first place.
-
-Now that said, There's no reason we need that addiu sp,sp,-8 there.
-That's just what the mips defined mcount requires. But as you can see
-above, with dynamic ftrace, the defined mcount is only called at boot
-up, and never again. That means at boot up you can convert to:
-
-	nop
-	nop
-
-and then when you enable tracing just convert it to:
-
-	bl	ftrace_caller
-	nop
-
-There's nothing that states what the ftrace caller must be. We can have
-it do a proper stack update. That is, only at boot up do we need to
-handle the defined mcount. After that, those instructions are just place
-holders for our own algorithms. If the addiu was needed for the defined
-mcount, there's no reason to keep it for our own ftrace_caller.
-
-Would that work?
-
--- Steve
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
