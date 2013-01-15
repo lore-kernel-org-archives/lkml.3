@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933Ab3AOS5Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:57:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34768 "EHLO mail.kernel.org"
+	id S1757875Ab3AOS4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:56:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34704 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757786Ab3AOS5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:57:13 -0500
+	id S1757828Ab3AOS4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:56:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 035/221] SCSI: qla2xxx: Change in setting UNLOADING flag and FC vports logout sequence while unloading qla2xxx driver.
-Date: Tue, 15 Jan 2013 10:49:22 -0800
-Message-Id: <20130115185000.560894375@linuxfoundation.org>
+Subject: [ 032/221] SCSI: prevent stack buffer overflow in host_reset
+Date: Tue, 15 Jan 2013 10:49:19 -0800
+Message-Id: <20130115185000.349282994@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,50 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Giridhar Malavali <giridhar.malavali@qlogic.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 220d36b4c2d96446e88d561714829ec5801b4fc7 upstream.
+commit 072f19b4bea31cdd482d79f805413f2f9ac9e233 upstream.
 
-Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+store_host_reset() has tried to re-invent the wheel to compare sysfs strings.
+Unfortunately it did so poorly and never bothered to check the input from
+userspace before overwriting stack with it, so something simple as:
+
+echo "WoopsieWoopsie" >
+/sys/devices/pseudo_0/adapter0/host0/scsi_host/host0/host_reset
+
+would result in:
+
+[  316.310101] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff81f5bac7
+[  316.310101]
+[  316.320051] Pid: 6655, comm: sh Tainted: G        W    3.7.0-rc5-next-20121114-sasha-00016-g5c9d68d-dirty #129
+[  316.320051] Call Trace:
+[  316.340058] pps pps0: PPS event at 1352918752.620355751
+[  316.340062] pps pps0: capture assert seq #303
+[  316.320051]  [<ffffffff83b3856b>] panic+0xcd/0x1f4
+[  316.320051]  [<ffffffff81f5bac7>] ? store_host_reset+0xd7/0x100
+[  316.320051]  [<ffffffff8110b996>] __stack_chk_fail+0x16/0x20
+[  316.320051]  [<ffffffff81f5bac7>] store_host_reset+0xd7/0x100
+[  316.320051]  [<ffffffff81e55bb3>] dev_attr_store+0x13/0x30
+[  316.320051]  [<ffffffff812f7db1>] sysfs_write_file+0x101/0x170
+[  316.320051]  [<ffffffff8127acc8>] vfs_write+0xb8/0x180
+[  316.320051]  [<ffffffff8127ae80>] sys_write+0x50/0xa0
+[  316.320051]  [<ffffffff83c03418>] tracesys+0xe1/0xe6
+
+Fix this by uninventing whatever was going on there and just use sysfs_streq.
+
+Bug introduced by 29443691 ("[SCSI] scsi: Added support for adapter and
+firmware reset").
+
+[jejb: added necessary const to prevent compile warnings]
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_attr.c |    3 +--
- drivers/scsi/qla2xxx/qla_os.c   |    3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/scsi/scsi_sysfs.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_attr.c
-+++ b/drivers/scsi/qla2xxx/qla_attr.c
-@@ -1615,8 +1615,7 @@ qla2x00_terminate_rport_io(struct fc_rpo
- 	 * At this point all fcport's software-states are cleared.  Perform any
- 	 * final cleanup of firmware resources (PCBs and XCBs).
- 	 */
--	if (fcport->loop_id != FC_NO_LOOP_ID &&
--	    !test_bit(UNLOADING, &fcport->vha->dpc_flags)) {
-+	if (fcport->loop_id != FC_NO_LOOP_ID) {
- 		if (IS_FWI2_CAPABLE(fcport->vha->hw))
- 			fcport->vha->hw->isp_ops->fabric_logout(fcport->vha,
- 			    fcport->loop_id, fcport->d_id.b.domain,
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -2755,6 +2755,7 @@ qla2x00_remove_one(struct pci_dev *pdev)
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -247,11 +247,11 @@ show_shost_active_mode(struct device *de
  
- 	ha->flags.host_shutting_down = 1;
+ static DEVICE_ATTR(active_mode, S_IRUGO | S_IWUSR, show_shost_active_mode, NULL);
  
-+	set_bit(UNLOADING, &base_vha->dpc_flags);
- 	mutex_lock(&ha->vport_lock);
- 	while (ha->cur_vport_count) {
- 		struct Scsi_Host *scsi_host;
-@@ -2784,8 +2785,6 @@ qla2x00_remove_one(struct pci_dev *pdev)
- 			    "Error while clearing DRV-Presence.\n");
- 	}
+-static int check_reset_type(char *str)
++static int check_reset_type(const char *str)
+ {
+-	if (strncmp(str, "adapter", 10) == 0)
++	if (sysfs_streq(str, "adapter"))
+ 		return SCSI_ADAPTER_RESET;
+-	else if (strncmp(str, "firmware", 10) == 0)
++	else if (sysfs_streq(str, "firmware"))
+ 		return SCSI_FIRMWARE_RESET;
+ 	else
+ 		return 0;
+@@ -264,12 +264,9 @@ store_host_reset(struct device *dev, str
+ 	struct Scsi_Host *shost = class_to_shost(dev);
+ 	struct scsi_host_template *sht = shost->hostt;
+ 	int ret = -EINVAL;
+-	char str[10];
+ 	int type;
  
--	set_bit(UNLOADING, &base_vha->dpc_flags);
+-	sscanf(buf, "%s", str);
+-	type = check_reset_type(str);
 -
- 	qla2x00_abort_all_cmds(base_vha, DID_NO_CONNECT << 16);
++	type = check_reset_type(buf);
+ 	if (!type)
+ 		goto exit_store_host_reset;
  
- 	qla2x00_dfs_remove(base_vha);
 
 
