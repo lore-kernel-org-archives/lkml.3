@@ -1,111 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757111Ab3AOQ2U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 11:28:20 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:38583 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756726Ab3AOQ2S (ORCPT
+	id S1756768Ab3AOQaz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 11:30:55 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:47508 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753933Ab3AOQay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 11:28:18 -0500
-Date: Tue, 15 Jan 2013 08:28:13 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, chavey@google.com, fengguang.wu@intel.com,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH v2] writeback: mark sysctl vm.block_dump for removal
-Message-ID: <20130115162813.GB2668@htj.dyndns.org>
-References: <1357938397-5413-1-git-send-email-tj@kernel.org>
- <20130114140227.GB2441@kernel.dk>
- <20130114174318.GD27942@mtj.dyndns.org>
- <20130114182203.GE27942@mtj.dyndns.org>
+	Tue, 15 Jan 2013 11:30:54 -0500
+Date: Tue, 15 Jan 2013 16:30:52 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Liu Bo <bo.li.liu@oracle.com>
+cc: linux-mm@kvack.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH] mm/slab: add a leak decoder callback
+In-Reply-To: <1358143419-13074-1-git-send-email-bo.li.liu@oracle.com>
+Message-ID: <0000013c3f0c8af2-361e64b5-f822-4a93-a67e-b2902bb336fc-000000@email.amazonses.com>
+References: <1358143419-13074-1-git-send-email-bo.li.liu@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130114182203.GE27942@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vm.block_dump is nasty in that it dumps IO traces directly to printk.
-It isn't scalable and can easily lead to looping behavior - IO
-generating kernel message which in turn genreates log IO, ad
-infinitum.
+On Mon, 14 Jan 2013, Liu Bo wrote:
 
-Now that proper tracepoints are in place, vm.block_dump isn't
-necessary.  Generate a warning if used so that it can be removed down
-the road.
+> This adds a leak decoder callback so that kmem_cache_destroy()
+> can use to generate debugging output for the allocated objects.
 
-Cc: Added contact info as suggested by Jan.
+Interesting idea.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>
----
- include/linux/writeback.h |    3 +++
- kernel/sysctl.c           |    2 +-
- mm/page-writeback.c       |   15 +++++++++++++++
- patches/series            |    1 +
- 4 files changed, 20 insertions(+), 1 deletion(-)
+> @@ -3787,6 +3789,9 @@ static int slab_unmergeable(struct kmem_cache *s)
+>  	if (s->ctor)
+>  		return 1;
+>
+> +	if (s->decoder)
+> +		return 1;
+> +
+>  	/*
+>  	 * We may have set a slab to be unmergeable during bootstrap.
+>  	 */
 
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index b82a83a..678ee6d 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -143,6 +143,9 @@ extern int dirty_ratio_handler(struct ctl_table *table, int write,
- extern int dirty_bytes_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos);
-+extern int block_dump_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp,
-+		loff_t *ppos);
- 
- struct ctl_table;
- int dirty_writeback_centisecs_handler(struct ctl_table *, int,
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c88878d..9e7f7b5 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1288,7 +1288,7 @@ static struct ctl_table vm_table[] = {
- 		.data		= &block_dump,
- 		.maxlen		= sizeof(block_dump),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= block_dump_handler,
- 		.extra1		= &zero,
- 	},
- 	{
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 6f42712..605632d 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -390,6 +390,21 @@ int dirty_bytes_handler(struct ctl_table *table, int write,
- 	return ret;
- }
- 
-+int block_dump_handler(struct ctl_table *table, int write,
-+		       void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	static bool warned = false;
-+	int ret;
-+
-+	ret = proc_dointvec(table, write, buffer, lenp, ppos);
-+	if (!warned && block_dump) {
-+		pr_warning("sysctl: vm.block_dump is scheduled for removal. Use tracepoints instead.\n");
-+		pr_warning("sysctl: Please contact Jens Axboe <axboe@kernel.dk> if you require this.\n");
-+		warned = true;
-+	}
-+	return ret;
-+}
-+
- static unsigned long wp_next_time(unsigned long cur_time)
- {
- 	cur_time += VM_COMPLETIONS_PERIOD_LEN;
-diff --git a/patches/series b/patches/series
-index 9fb9bfe..b2582cb 100644
---- a/patches/series
-+++ b/patches/series
-@@ -18,3 +18,4 @@ kill-pool-gcwq
- remove-gcwq
- rename-nr_running
- cleanup-leftovers
-+dbg
+The merge processing occurs during kmem_cache_create and you are setting
+up the decoder field afterwards! Wont work.
+
+
