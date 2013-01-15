@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab3APAMc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:12:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42843 "EHLO mail.kernel.org"
+	id S932368Ab3AOWcb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:32:31 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42799 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758455Ab3AOWce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:32:34 -0500
+	id S1758446Ab3AOWc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Hans de Goede <hdegoede@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 133/221] udldrmfb: udl_get_edid: usb_control_msg buffer must not be on the stack
-Date: Tue, 15 Jan 2013 10:51:00 -0800
-Message-Id: <20130115185007.640355261@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Rajeev Kumar <rajeev-dlh.kumar@st.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 129/221] ASoC: sta529: Fix update register bits in sta529_set_dai_fmt
+Date: Tue, 15 Jan 2013 10:50:56 -0800
+Message-Id: <20130115185007.344170381@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,55 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 242187b362555849e8c971dfbbfd55f8bd9fa717 upstream.
+commit ad1937cdd59c412097ec2bb8f38c12a5640f1f9a upstream.
 
-The buffer passed to usb_control_msg may end up in scatter-gather list, and
-may thus not be on the stack. Having it on the stack usually works on x86, but
-not on other archs.
+Both the mask and mode settings are wrong in current code.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+According to the datasheet:
+
+S2PCFG0 (0x0A)
+BIT[3:1] DATA_FORMAT
+        serial interface protocol format:
+        000: left Justified
+        001: I2S (default)
+        010: right justified
+        100: PCM no delay
+        101: PCM delay
+        111: DSP
+
+Thus fixes the defines for LEFT_J_DATA_FORMAT, I2S_DATA_FORMAT, and
+RIGHT_J_DATA_FORMAT.
+Also adds define for DATA_FORMAT_MSK.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Rajeev Kumar <rajeev-dlh.kumar@st.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/udl/udl_connector.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ sound/soc/codecs/sta529.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/udl/udl_connector.c
-+++ b/drivers/gpu/drm/udl/udl_connector.c
-@@ -22,13 +22,17 @@
- static u8 *udl_get_edid(struct udl_device *udl)
- {
- 	u8 *block;
--	char rbuf[3];
-+	char *rbuf;
- 	int ret, i;
+--- a/sound/soc/codecs/sta529.c
++++ b/sound/soc/codecs/sta529.c
+@@ -74,9 +74,10 @@
+ 				SNDRV_PCM_FMTBIT_S32_LE)
+ #define	S2PC_VALUE		0x98
+ #define CLOCK_OUT		0x60
+-#define LEFT_J_DATA_FORMAT	0x10
+-#define I2S_DATA_FORMAT		0x12
+-#define RIGHT_J_DATA_FORMAT	0x14
++#define DATA_FORMAT_MSK		0x0E
++#define LEFT_J_DATA_FORMAT	0x00
++#define I2S_DATA_FORMAT		0x02
++#define RIGHT_J_DATA_FORMAT	0x04
+ #define CODEC_MUTE_VAL		0x80
  
- 	block = kmalloc(EDID_LENGTH, GFP_KERNEL);
- 	if (block == NULL)
- 		return NULL;
- 
-+	rbuf = kmalloc(2, GFP_KERNEL);
-+	if (rbuf == NULL)
-+		goto error;
-+
- 	for (i = 0; i < EDID_LENGTH; i++) {
- 		ret = usb_control_msg(udl->ddev->usbdev,
- 				      usb_rcvctrlpipe(udl->ddev->usbdev, 0), (0x02),
-@@ -42,10 +46,12 @@ static u8 *udl_get_edid(struct udl_devic
- 		block[i] = rbuf[1];
+ #define POWER_CNTLMSAK		0x40
+@@ -289,7 +290,7 @@ static int sta529_set_dai_fmt(struct snd
+ 		return -EINVAL;
  	}
  
-+	kfree(rbuf);
- 	return block;
+-	snd_soc_update_bits(codec, STA529_S2PCFG0, 0x0D, mode);
++	snd_soc_update_bits(codec, STA529_S2PCFG0, DATA_FORMAT_MSK, mode);
  
- error:
- 	kfree(block);
-+	kfree(rbuf);
- 	return NULL;
+ 	return 0;
  }
- 
 
 
