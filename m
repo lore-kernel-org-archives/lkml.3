@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932912Ab3AOX4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:56:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45507 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758741Ab3AOWtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:49:07 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>
-Subject: [ 029/171] ext4: fix possible use after free with metadata csum
-Date: Tue, 15 Jan 2013 14:43:14 -0800
-Message-Id: <20130115224315.514942838@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
-References: <20130115224313.394976595@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S932961Ab3AOX4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:56:48 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:57567 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932914Ab3AOX4q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 18:56:46 -0500
+Date: Tue, 15 Jan 2013 18:56:42 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: lttng-dev@lists.lttng.org, linux-kernel@vger.kernel.org,
+        rp@svcs.cs.pdx.edu, khlebnikov@openvz.org, stern@rowland.harvard.edu,
+        shemminger@vyatta.com
+Subject: Re: [lttng-dev] [PATCH] Add ACCESS_ONCE() to avoid compiler
+	splitting assignments
+Message-ID: <20130115235642.GA31367@Krystal>
+References: <20130115181936.GA30319@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115181936.GA30319@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> As noted by Konstantin Khlebnikov, gcc can split assignment of
+> constants to long variables (https://lkml.org/lkml/2013/1/15/141),
+> though assignment of NULL (0) is OK.  Assuming that a gcc bug is
+> fixed (http://gcc.gnu.org/bugzilla/attachment.cgi?id=29169&action=diff
+> has a patch), making the store be volatile keeps gcc from splitting.
+> 
+> This commit therefore applies ACCESS_ONCE() to CMM_STORE_SHARED(),
+> which is the underlying primitive used by rcu_assign_pointer().
 
-------------------
+Hi Paul,
 
-From: Theodore Ts'o <tytso@mit.edu>
+I recognise that this is an issue in the Linux kernel, since a simple
+store is used and expected to be performed atomically when aligned.
+However, I think this does not affect liburcu, see below:
 
-commit aeb1e5d69a5be592e86a926be73efb38c55af404 upstream.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/urcu/system.h b/urcu/system.h
+> index 2a45f22..7a1887e 100644
+> --- a/urcu/system.h
+> +++ b/urcu/system.h
+> @@ -49,7 +49,7 @@
+>   */
+>  #define CMM_STORE_SHARED(x, v)		\
+>  	({				\
+> -		__typeof__(x) _v = _CMM_STORE_SHARED(x, v);	\
+> +		__typeof__(x) CMM_ACCESS_ONCE(_v) = _CMM_STORE_SHARED(x, v);	\
 
-Commit fa77dcfafeaa introduces block bitmap checksum calculation into
-ext4_new_inode() in the case that block group was uninitialized.
-However we brelse() the bitmap buffer before we attempt to checksum it
-so we have no guarantee that the buffer is still there.
+Here, the macro "_CMM_STORE_SHARED(x, v)" is doing the actual store.
+It stores v into "x". So adding a CMM_ACCESS_ONCE(_v), as you propose
+here, is really only making sure the return value (usually unused),
+located on the stack, is accessed with a volatile access, which does not
+make much sense.
 
-Fix this by releasing the buffer after the possible checksum
-computation.
+What really matters is the _CMM_STORE_SHARED() macro:
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Acked-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+#define _CMM_STORE_SHARED(x, v) ({ CMM_ACCESS_ONCE(x) = (v); })
 
----
- fs/ext4/ialloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+which already uses a volatile access for the store. So this seems to be
+a case where our preemptive use of volatile for stores in addition to
+loads made us bug-free for a gcc behavior unexpected at the time we
+implemented this macro. Just a touch of paranoia seems to be a good
+thing sometimes. ;-)
 
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -734,7 +734,6 @@ got:
- 
- 		BUFFER_TRACE(block_bitmap_bh, "dirty block bitmap");
- 		err = ext4_handle_dirty_metadata(handle, NULL, block_bitmap_bh);
--		brelse(block_bitmap_bh);
- 
- 		/* recheck and clear flag under lock if we still need to */
- 		ext4_lock_group(sb, group);
-@@ -746,6 +745,7 @@ got:
- 								gdp);
- 		}
- 		ext4_unlock_group(sb, group);
-+		brelse(block_bitmap_bh);
- 
- 		if (err)
- 			goto fail;
+Thoughts ?
 
+Thanks,
 
+Mathieu
+
+>  		cmm_smp_wmc();		\
+>  		_v;			\
+>  	})
+> 
+> 
+> _______________________________________________
+> lttng-dev mailing list
+> lttng-dev@lists.lttng.org
+> http://lists.lttng.org/cgi-bin/mailman/listinfo/lttng-dev
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
