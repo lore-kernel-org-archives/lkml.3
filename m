@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab3AOLMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 06:12:22 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39297 "EHLO arroyo.ext.ti.com"
+	id S1756218Ab3AOLOJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 06:14:09 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:41145 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872Ab3AOLMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 06:12:21 -0500
-Message-ID: <50F53979.4050509@ti.com>
-Date: Tue, 15 Jan 2013 16:41:53 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1750892Ab3AOLOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 06:14:07 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v8 22/22] PCI: move device_add out of pci_bus_add_device()
+Date: Tue, 15 Jan 2013 12:19:57 +0100
+Message-ID: <4095307.lo3tHnmrev@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQVrUkMTP8yFcXVgq3SW9tv6r0WBxfHbV=yT0vYbO=zmFQ@mail.gmail.com>
+References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1620774.KjdX6JUoJy@vostro.rjw.lan> <CAE9FiQVrUkMTP8yFcXVgq3SW9tv6r0WBxfHbV=yT0vYbO=zmFQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "Kumar, Anil" <anilkumar.v@ti.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>, "hs@denx.de" <hs@denx.de>
-Subject: Re: [PATCH V2 3/3] ARM: davinci: da850: add NAND driver entries
-References: <1357633220-29827-1-git-send-email-anilkumar.v@ti.com> <1357633220-29827-4-git-send-email-anilkumar.v@ti.com> <50ED66F2.8050006@ti.com> <F3DBB1B3EF102E4994C89758CFCA32412B80CA@DBDE01.ent.ti.com> <50EEB1C1.9060306@ti.com> <F3DBB1B3EF102E4994C89758CFCA32412B96F9@DBDE01.ent.ti.com>
-In-Reply-To: <F3DBB1B3EF102E4994C89758CFCA32412B96F9@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/15/2013 4:06 PM, Kumar, Anil wrote:
-> On Thu, Jan 10, 2013 at 17:49:13, Nori, Sekhar wrote:
->> On 1/10/2013 1:07 PM, Kumar, Anil wrote:
->>> On Wed, Jan 09, 2013 at 18:17:46, Nori, Sekhar wrote:
->>
->>> I do not think that it is good idea to move NAND pin mux information
->>> into da850.dtsi because this information is evm specific.
->>> if we will use this approach then we must use the same approach for
->>> other modules also as ASoC etc.   
->>
->> Why do you consider this EVM specific. IOW, which pins do you see
->> changing on another board? BTW, if there are additional pins needed than
->> what are listed, we can always add more pinux entries in the .dts files.
->> The pins present in dtsi file should the base case.
->  
-> Ok, we can use this approach for DaVinci as its SoC modules do not
-> have multiple pin configuration option. I will do the changes in 
-> next patch series.
+On Monday, January 14, 2013 11:10:36 PM Yinghai Lu wrote:
+> On Sat, Jan 12, 2013 at 3:54 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> Move out device registering out of pci_bus_add_devices, so we could
+> >> put new created pci devices in device tree early.
+> >>
+> >> new pci_bus_add_devices will do the device_attach work to load pci drivers
+> >> instead.
+> >
+> > I wonder what problem it solves?
+> 
+> we want to put created pci device in the device tree as soon as possible.
+> so for_pci_dev will not miss them.
+> 
+> but at that time, we can not load driver for them yet. need to after
+> pci_assign_unsigned_resources etc to make sure all pci devices get
+> resource allocated at first.
+> 
+> so only move adding to device tree early, and leave loading driver on
+> the old places.
 
-You could do this even if this was the case by defining multiple pin groups.
+I see, thanks.
+
+Perhaps you can put that explanation into the changelog? It would help people
+to understand the reason for the change in the future.
 
 Thanks,
-Sekhar
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
