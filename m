@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab3AOK2X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:28:23 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56706 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753834Ab3AOK2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:28:20 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 1/1] clk-divider: fix is_power_of_two()
-Date: Tue, 15 Jan 2013 10:28:05 +0000
-Message-ID: <1358245685-4392-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1756555Ab3AOKai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:30:38 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:39830 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab3AOKah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:30:37 -0500
+Message-ID: <50F52FC8.4000701@openvz.org>
+Date: Tue, 15 Jan 2013 14:30:32 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_01_15_10_28_17
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: RCU: non-atomic assignment to long/pointer variables in gcc
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The macro is_power_of_two() in clk-divider.c was defined as !(i & ~i)
-which is always true. Correct it to !(i & (i - 1)).
+Documentation/atomic_ops.txt (182dd4b277177e8465ad11cd9f85f282946b5578)
+says that pointers, longs, ints, and chars are stored and loaded atomically.
 
-Also add brackets around the macro arguments in div_mask and
-is_power_of_two, as well as around the is_power_of_two expression as a
-whole to avoid any future operator precedence problems.
+But GCC actually may split assignment to 'long' variable into two instructions.
+see example in http://gcc.gnu.org/bugzilla/show_bug.cgi?id=55981
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Mike Turquette <mturquette@linaro.org>
----
-I haven't tested this other than with a couple of compile time asserts.
+GCC also splits assignments to 'volatile' variables and this is actually a bug in gcc.
 
- drivers/clk/clk-divider.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+volatile unsigned long y;
 
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index a9204c6..13bca0c 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -29,8 +29,8 @@
- 
- #define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
- 
--#define div_mask(d)	((1 << (d->width)) - 1)
--#define is_power_of_two(i)	!(i & ~i)
-+#define div_mask(d)	((1 << ((d)->width)) - 1)
-+#define is_power_of_two(i)	(!((i) & ((i) - 1)))
- 
- static unsigned int _get_table_maxdiv(const struct clk_div_table *table)
- {
--- 
-1.7.7.6
+y = 0x100000001ul;
 
+   400728:	c7 05 66 06 20 00 01 	movl   $0x1,0x200666(%rip)        # 600d98 <y>
+   40072f:	00 00 00
+   400732:	c7 05 60 06 20 00 01 	movl   $0x1,0x200660(%rip)        # 600d9c <y+0x4>
+   400739:	00 00 00
 
+fortunately for y = 0; it generates this:
+
+   40071d:	48 c7 05 70 06 20 00 	movq   $0x0,0x200670(%rip)        # 600d98 <y>
+   400724:	00 00 00 00
+
+Thus NULL is safe, but constant ERR_PTR may be dangerous.
+
+Probably rcu_assign_pointer() should use ACCESS_ONCE() around lvalue, because
+splitting assignment for non-volatile variable seems like completely valid,
+but this may help only after fixing that bug in GCC.
