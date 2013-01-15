@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933601Ab3AOWwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:52:12 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46662 "EHLO mail.kernel.org"
+	id S933650Ab3AOWw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:52:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46752 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933574Ab3AOWwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:07 -0500
+	id S933617Ab3AOWwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?ISO-8859-15?q?Christian=20K=C3=83=C2=B6nig?= 
+	<christian.koenig@amd.com>,
         Julien Cristau <jcristau@debian.org>
-Subject: [ 114/171] drm/i915: fix up ivb plane 3 pageflips
-Date: Tue, 15 Jan 2013 14:44:39 -0800
-Message-Id: <20130115224321.586292048@linuxfoundation.org>
+Subject: [ 121/171] drm/radeon: fix up pll selection on DCE5/6
+Date: Tue, 15 Jan 2013 14:44:46 -0800
+Message-Id: <20130115224322.082328642@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,88 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit cb05d8dedefa3066bf5d74ef88c6ca6cf4bd1c87 upstream.
+commit 26fe45a0a76f165425f332a5aaa298f149f9db22 upstream.
 
-Or at least plug another gapping hole. Apparrently hw desingers only
-moved the bit field, but did not bother ot re-enumerate the planes
-when adding support for a 3rd pipe.
+Selecting ATOM_PPLL_INVALID should be equivalent as the
+DCPLL or PPLL0 are already programmed for the DISPCLK, but
+the preferred method is to always specify the PLL selected.
+SetPixelClock will check the parameters and skip the
+programming if the PLL is already set up.
 
-Discovered by i-g-t/flip_test.
-
-This may or may not fix the reference bugzilla, because that one
-smells like we have still larger fish to fry.
-
-v2: Fixup the impossible case to catch programming errors, noticed by
-Chris Wilson.
-
-References: https://bugs.freedesktop.org/show_bug.cgi?id=50069
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Christian KÃ¶nig <christian.koenig@amd.com>
 Signed-off-by: Julien Cristau <jcristau@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/gpu/drm/i915/i915_reg.h      |    8 ++++++++
- drivers/gpu/drm/i915/intel_display.c |   19 ++++++++++++++++++-
- 2 files changed, 26 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -197,6 +197,14 @@
- #define MI_DISPLAY_FLIP		MI_INSTR(0x14, 2)
- #define MI_DISPLAY_FLIP_I915	MI_INSTR(0x14, 1)
- #define   MI_DISPLAY_FLIP_PLANE(n) ((n) << 20)
-+/* IVB has funny definitions for which plane to flip. */
-+#define   MI_DISPLAY_FLIP_IVB_PLANE_A  (0 << 19)
-+#define   MI_DISPLAY_FLIP_IVB_PLANE_B  (1 << 19)
-+#define   MI_DISPLAY_FLIP_IVB_SPRITE_A (2 << 19)
-+#define   MI_DISPLAY_FLIP_IVB_SPRITE_B (3 << 19)
-+#define   MI_DISPLAY_FLIP_IVB_PLANE_C  (4 << 19)
-+#define   MI_DISPLAY_FLIP_IVB_SPRITE_C (5 << 19)
-+
- #define MI_SET_CONTEXT		MI_INSTR(0x18, 0)
- #define   MI_MM_SPACE_GTT		(1<<8)
- #define   MI_MM_SPACE_PHYSICAL		(0<<8)
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7486,17 +7486,34 @@ static int intel_gen7_queue_flip(struct
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
- 	struct intel_ring_buffer *ring = &dev_priv->ring[BCS];
-+	uint32_t plane_bit = 0;
- 	int ret;
- 
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
- 	if (ret)
- 		goto err;
- 
-+	switch(intel_crtc->plane) {
-+	case PLANE_A:
-+		plane_bit = MI_DISPLAY_FLIP_IVB_PLANE_A;
-+		break;
-+	case PLANE_B:
-+		plane_bit = MI_DISPLAY_FLIP_IVB_PLANE_B;
-+		break;
-+	case PLANE_C:
-+		plane_bit = MI_DISPLAY_FLIP_IVB_PLANE_C;
-+		break;
-+	default:
-+		WARN_ONCE(1, "unknown plane in flip command\n");
-+		ret = -ENODEV;
-+		goto err;
-+	}
-+
- 	ret = intel_ring_begin(ring, 4);
- 	if (ret)
- 		goto err_unpin;
- 
--	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | (intel_crtc->plane << 19));
-+	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | plane_bit);
- 	intel_ring_emit(ring, (fb->pitches[0] | obj->tiling_mode));
- 	intel_ring_emit(ring, (obj->gtt_offset));
- 	intel_ring_emit(ring, (MI_NOOP));
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -1533,7 +1533,11 @@ static int radeon_atom_pick_pll(struct d
+ 				 * crtc virtual pixel clock.
+ 				 */
+ 				if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(test_encoder))) {
+-					if (ASIC_IS_DCE5(rdev) || rdev->clock.dp_extclk)
++					if (ASIC_IS_DCE5(rdev))
++						return ATOM_DCPLL;
++					else if (ASIC_IS_DCE6(rdev))
++						return ATOM_PPLL0;
++					else if (rdev->clock.dp_extclk)
+ 						return ATOM_PPLL_INVALID;
+ 				}
+ 			}
 
 
