@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505Ab3AOXgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:36:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46496 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933461Ab3AOWvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:51:40 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Denis Kaganovich <mahatma@eu.by>
-Subject: [ 091/171] USB: option: add Nexpring NP10T terminal id
-Date: Tue, 15 Jan 2013 14:44:16 -0800
-Message-Id: <20130115224319.944467767@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
-References: <20130115224313.394976595@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1758460Ab3AOXg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:36:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59746 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758113Ab3AOXg1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 18:36:27 -0500
+Date: Tue, 15 Jan 2013 15:36:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH v2] mm: remove MIGRATE_ISOLATE check in hotpath
+Message-Id: <20130115153625.96265439.akpm@linux-foundation.org>
+In-Reply-To: <1358209006-18859-1-git-send-email-minchan@kernel.org>
+References: <1358209006-18859-1-git-send-email-minchan@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 15 Jan 2013 09:16:46 +0900
+Minchan Kim <minchan@kernel.org> wrote:
 
-------------------
+> Now mm several functions test MIGRATE_ISOLATE and some of those
+> are hotpath but MIGRATE_ISOLATE is used only if we enable
+> CONFIG_MEMORY_ISOLATION(ie, CMA, memory-hotplug and memory-failure)
+> which are not common config option. So let's not add unnecessary
+> overhead and code when we don't enable CONFIG_MEMORY_ISOLATION.
 
-From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
+ugh.  Better than nothing, I guess.
 
-commit ad86e58661b38b279b7519d4e49c7a19dc1654bb upstream.
+There remain call sites which do open-coded
 
-Hyundai Petatel Inc. Nexpring NP10T terminal (EV-DO rev.A USB modem) ID
+	get_pageblock_migratetype(page) != MIGRATE_ISOLATE
 
-Signed-off-by: Denis Kaganovich <mahatma@eu.by>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+(undo_isolate_page_range() is one).  Wanna clean these up as well?
 
----
- drivers/usb/serial/option.c |    5 +++++
- 1 file changed, 5 insertions(+)
+>
+> ...
+>
+> @@ -683,7 +683,7 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+>  	zone->pages_scanned = 0;
+>  
+>  	__free_one_page(page, zone, order, migratetype);
+> -	if (unlikely(migratetype != MIGRATE_ISOLATE))
+> +	if (unlikely(!is_migrate_isolate(migratetype)))
+>  		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+>  	spin_unlock(&zone->lock);
+>  }
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -441,6 +441,10 @@ static void option_instat_callback(struc
- #define CELLIENT_VENDOR_ID			0x2692
- #define CELLIENT_PRODUCT_MEN200			0x9005
- 
-+/* Hyundai Petatel Inc. products */
-+#define PETATEL_VENDOR_ID			0x1ff4
-+#define PETATEL_PRODUCT_NP10T			0x600e
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1295,6 +1299,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FPDC_1COM, 0x0a, 0x00, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FPDC_2COM, 0x0a, 0x00, 0x00) },
- 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
-+	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
-
+The code both before and after this patch is assuming that the
+migratetype in free_one_page is likely to be MIGRATE_ISOLATE.  Seems
+wrong.  If CONFIG_MEMORY_ISOLATION=n this ends up doing
+if(unlikely(true)) which is harmless-but-amusing.
 
