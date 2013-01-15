@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883Ab3AOWqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:46:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45106 "EHLO mail.kernel.org"
+	id S932901Ab3AOWrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:47:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45119 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932576Ab3AOWqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:46:44 -0500
+	id S932523Ab3AOWq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:46:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Oberparleiter <peter.oberparleiter@de.ibm.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 008/171] s390/cio: fix pgid reserved check
-Date: Tue, 15 Jan 2013 14:42:53 -0800
-Message-Id: <20130115224314.014750747@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 016/171] ASoC: sigmadsp: Fix endianness conversion issue
+Date: Tue, 15 Jan 2013 14:43:01 -0800
+Message-Id: <20130115224314.575247183@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,78 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit d99e79ec5574fc556c988f613ed6175f6de66f4a upstream.
+commit a3adb1432d7a3ad86bb17a1638e44414537e4118 upstream.
 
-The check to whom a device is reserved is done by checking the path
-state of the affected channel paths. If it turns out that one path is
-flagged as reserved by someone else the whole device is marked as such.
+The 'addr' field of the sigma_action struct is stored as big endian in the
+firmware file.
 
-However the meaning of the RESVD_ELSE bit is that the addressed device
-is reserved to a different pathgroup (and not reserved to a different
-LPAR). If we do this test on a path which is currently not a member of
-the pathgroup we could erroneously mark the device as reserved to
-someone else.
-
-To fix this collect the reserved state for all potential members of the
-pathgroup and only mark the device as reserved if all of those potential
-members have the RESVD_ELSE bit set.
-
-Acked-by: Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/cio/device_pgid.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ sound/soc/codecs/sigmadsp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/s390/cio/device_pgid.c
-+++ b/drivers/s390/cio/device_pgid.c
-@@ -234,7 +234,7 @@ static int pgid_cmp(struct pgid *p1, str
-  * Determine pathgroup state from PGID data.
-  */
- static void pgid_analyze(struct ccw_device *cdev, struct pgid **p,
--			 int *mismatch, int *reserved, u8 *reset)
-+			 int *mismatch, u8 *reserved, u8 *reset)
+--- a/sound/soc/codecs/sigmadsp.c
++++ b/sound/soc/codecs/sigmadsp.c
+@@ -225,7 +225,7 @@ EXPORT_SYMBOL(process_sigma_firmware);
+ static int sigma_action_write_regmap(void *control_data,
+ 	const struct sigma_action *sa, size_t len)
  {
- 	struct pgid *pgid = &cdev->private->pgid[0];
- 	struct pgid *first = NULL;
-@@ -248,7 +248,7 @@ static void pgid_analyze(struct ccw_devi
- 		if ((cdev->private->pgid_valid_mask & lpm) == 0)
- 			continue;
- 		if (pgid->inf.ps.state2 == SNID_STATE2_RESVD_ELSE)
--			*reserved = 1;
-+			*reserved |= lpm;
- 		if (pgid_is_reset(pgid)) {
- 			*reset |= lpm;
- 			continue;
-@@ -316,14 +316,14 @@ static void snid_done(struct ccw_device
- 	struct subchannel *sch = to_subchannel(cdev->dev.parent);
- 	struct pgid *pgid;
- 	int mismatch = 0;
--	int reserved = 0;
-+	u8 reserved = 0;
- 	u8 reset = 0;
- 	u8 donepm;
+-	return regmap_raw_write(control_data, le16_to_cpu(sa->addr),
++	return regmap_raw_write(control_data, be16_to_cpu(sa->addr),
+ 		sa->payload, len - 2);
+ }
  
- 	if (rc)
- 		goto out;
- 	pgid_analyze(cdev, &pgid, &mismatch, &reserved, &reset);
--	if (reserved)
-+	if (reserved == cdev->private->pgid_valid_mask)
- 		rc = -EUSERS;
- 	else if (mismatch)
- 		rc = -EOPNOTSUPP;
-@@ -336,7 +336,7 @@ static void snid_done(struct ccw_device
- 	}
- out:
- 	CIO_MSG_EVENT(2, "snid: device 0.%x.%04x: rc=%d pvm=%02x vpm=%02x "
--		      "todo=%02x mism=%d rsvd=%d reset=%02x\n", id->ssid,
-+		      "todo=%02x mism=%d rsvd=%02x reset=%02x\n", id->ssid,
- 		      id->devno, rc, cdev->private->pgid_valid_mask, sch->vpm,
- 		      cdev->private->pgid_todo_mask, mismatch, reserved, reset);
- 	switch (rc) {
 
 
