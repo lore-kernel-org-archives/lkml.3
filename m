@@ -1,134 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab3AOW1i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:27:38 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:41467 "EHLO hydra.sisk.pl"
+	id S1757447Ab3AOW1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:27:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41244 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757157Ab3AOW1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:27:36 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        konrad@kernel.org, xen-devel@lists.xensource.com,
-        stable@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Len Brown <len.brown@intel.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 1/2] ACPI: intel-idle: Don't register CPU notifier if we are not running.
-Date: Tue, 15 Jan 2013 23:33:28 +0100
-Message-ID: <3054986.Zvqovl9UBj@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1358288604-24620-2-git-send-email-konrad.wilk@oracle.com>
-References: <1358288604-24620-1-git-send-email-konrad.wilk@oracle.com> <1358288604-24620-2-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1757013Ab3AOW1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:27:48 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Xi Wang <xi.wang@gmail.com>, Xiangliang Yu <yuxiangl@marvell.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 031/221] SCSI: mvsas: fix undefined bit shift
+Date: Tue, 15 Jan 2013 10:49:18 -0800
+Message-Id: <20130115185000.279975091@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
+References: <20130115184958.025580322@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 15, 2013 05:23:23 PM Konrad Rzeszutek Wilk wrote:
-> The 'intel_idle_probe' probes the CPU and sets the CPU notifier.
-> But if later on during the module initialization we fail (say
-> in cpuidle_register_driver) we stop loading but we neglected
-> to unregister the CPU notifier. This means that during CPU
-> hotplug events the system will fail:
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-This really is for Len, but it appears to be obviously correct, so I'll
-take it as a v3.8 fix if Len doesn't object.
+------------------
 
-I suppose we need that in -stable too?
+From: Xi Wang <xi.wang@gmail.com>
 
-Rafael
+commit beecadea1b8d67f591b13f7099559f32f3fd601d upstream.
+
+The macro bit(n) is defined as ((u32)1 << n), and thus it doesn't work
+with n >= 32, such as in mvs_94xx_assign_reg_set():
+
+	if (i >= 32) {
+		mvi->sata_reg_set |= bit(i);
+		...
+	}
+
+The shift ((u32)1 << n) with n >= 32 also leads to undefined behavior.
+The result varies depending on the architecture.
+
+This patch changes bit(n) to do a 64-bit shift.  It also simplifies
+mv_ffc64() using __ffs64(), since invoking ffz() with ~0 is undefined.
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Acked-by: Xiangliang Yu <yuxiangl@marvell.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/scsi/mvsas/mv_94xx.h |   14 ++------------
+ drivers/scsi/mvsas/mv_sas.h  |    2 +-
+ 2 files changed, 3 insertions(+), 13 deletions(-)
+
+--- a/drivers/scsi/mvsas/mv_94xx.h
++++ b/drivers/scsi/mvsas/mv_94xx.h
+@@ -258,21 +258,11 @@ enum sas_sata_phy_regs {
+ #define SPI_ADDR_VLD_94XX         	(1U << 1)
+ #define SPI_CTRL_SpiStart_94XX     	(1U << 0)
+ 
+-#define mv_ffc(x)   ffz(x)
+-
+ static inline int
+ mv_ffc64(u64 v)
+ {
+-	int i;
+-	i = mv_ffc((u32)v);
+-	if (i >= 0)
+-		return i;
+-	i = mv_ffc((u32)(v>>32));
+-
+-	if (i != 0)
+-		return 32 + i;
+-
+-	return -1;
++	u64 x = ~v;
++	return x ? __ffs64(x) : -1;
+ }
+ 
+ #define r_reg_set_enable(i) \
+--- a/drivers/scsi/mvsas/mv_sas.h
++++ b/drivers/scsi/mvsas/mv_sas.h
+@@ -69,7 +69,7 @@ extern struct kmem_cache *mvs_task_list_
+ #define DEV_IS_EXPANDER(type)	\
+ 	((type == EDGE_DEV) || (type == FANOUT_DEV))
+ 
+-#define bit(n) ((u32)1 << n)
++#define bit(n) ((u64)1 << n)
+ 
+ #define for_each_phy(__lseq_mask, __mc, __lseq)			\
+ 	for ((__mc) = (__lseq_mask), (__lseq) = 0;		\
 
 
-> calling  intel_idle_init+0x0/0x326 @ 1
-> intel_idle: MWAIT substates: 0x1120
-> intel_idle: v0.4 model 0x2A
-> intel_idle: lapic_timer_reliable_states 0xffffffff
-> intel_idle: intel_idle yielding to none
-> initcall intel_idle_init+0x0/0x326 returned -19 after 14 usecs
-> 
-> ... some time later, offlining and onlining a CPU:
-> 
-> cpu 3 spinlock event irq 62
-> BUG: unable to ] __cpuidle_register_device+0x1c/0x120
-> PGD 99b8b067 PUD 99b95067 PMD 0
-> Oops: 0000 [#1] SMP
-> Modules linked in: xen_evtchn nouveau mxm_wmi wmi radeon ttm i915 fbcon tileblit font atl1c bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
-> CPU 0
-> Pid: 2302, comm: udevd Not tainted 3.8.0-rc3upstream-00249-g09ad159 #1 MSI MS-7680/H61M-P23 (MS-7680)
-> RIP: e030:[<ffffffff814d956c>]  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
-> RSP: e02b:ffff88009dacfcb8  EFLAGS: 00010286
-> RAX: 0000000000000000 RBX: ffff880105380000 RCX: 000000000000001c
-> RDX: 0000000000000000 RSI: 0000000000000055 RDI: ffff880105380000
-> RBP: ffff88009dacfce8 R08: ffffffff81a4f048 R09: 0000000000000008
-> R10: 0000000000000008 R11: 0000000000000000 R12: ffff880105380000
-> R13: 00000000ffffffdd R14: 0000000000000000 R15: ffffffff81a523d0
-> FS:  00007f37bd83b7a0(0000) GS:ffff880105200000(0000) knlGS:0000000000000000
-> CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 0000000000000008 CR3: 00000000a09ea000 CR4: 0000000000042660
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process udevd (pid: 2302, threadinfo ffff88009dace000, task ffff88009afb47f0)
-> Stack:
->  ffffffff8107f2d0 ffffffff810c2fb7 ffff88009dacfce8 00000000ffffffea
->  ffff880105380000 00000000ffffffdd ffff88009dacfd08 ffffffff814d9882
->  0000000000000003 ffff880105380000 ffff88009dacfd28 ffffffff81340afd
-> Call Trace:
->  [<ffffffff8107f2d0>] ? collect_cpu_info_local+0x30/0x30
->  [<ffffffff810c2fb7>] ? __might_sleep+0xe7/0x100
->  [<ffffffff814d9882>] cpuidle_register_device+0x32/0x70
->  [<ffffffff81340afd>] intel_idle_cpu_init+0xad/0x110
->  [<ffffffff81340bc8>] cpu_hotplug_notify+0x68/0x80
->  [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
->  [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
->  [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
->  [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
->  [<ffffffff81652e18>] cpu_up+0xd9/0xec
->  [<ffffffff8164a254>] store_online+0x94/0xd0
->  [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
->  [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
->  [<ffffffff811a1024>] vfs_write+0xb4/0x130
->  [<ffffffff811a17ea>] sys_write+0x5a/0xa0
->  [<ffffffff816643a9>] system_call_fastpath+0x16/0x1b
-> Code: 03 18 00 c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 30 48 89 5d e8 4c 89 65 f0 48 89 fb 4c 89 6d f8 e8 84 08 00 00 <48> 8b 78 08 49 89 c4 e8 f8 7f c1 ff 89 c2 b8 ea ff ff ff 84 d2
-> RIP  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
->  RSP <ffff88009dacfcb8>
-> 
-> This patch fixes it by moving the CPU notifier registration
-> as the last item to be done by the module.
-> 
-> Cc: stable@vger.kernel.org # for 3.6 and above
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/idle/intel_idle.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index 4ba384f..2df9414 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -448,8 +448,6 @@ static int intel_idle_probe(void)
->  	else
->  		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
->  
-> -	register_cpu_notifier(&cpu_hotplug_notifier);
-> -
->  	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
->  		" model 0x%X\n", boot_cpu_data.x86_model);
->  
-> @@ -612,6 +610,7 @@ static int __init intel_idle_init(void)
->  			return retval;
->  		}
->  	}
-> +	register_cpu_notifier(&cpu_hotplug_notifier);
->  
->  	return 0;
->  }
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
