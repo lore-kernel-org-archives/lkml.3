@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab3AOUtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:49:41 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:55388 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989Ab3AOUtj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:49:39 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>, Antti Palosaari <crope@iki.fi>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Evgeny Plehov <EvgenyPlehov@ukr.net>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] media: dvb-frontends/stv0900_core.c: remove unnecessary null pointer check
-Date: Tue, 15 Jan 2013 21:48:13 +0100
-Message-Id: <1358282897-8530-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756804Ab3AOU42 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:56:28 -0500
+Received: from fieldses.org ([174.143.236.118]:36989 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756416Ab3AOU40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 15:56:26 -0500
+Date: Tue, 15 Jan 2013 15:56:25 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
+Message-ID: <20130115205625.GH4940@fieldses.org>
+References: <50F42F85.50907@teksavvy.com>
+ <20130114203711.GA29982@fieldses.org>
+ <50F4D800.5040703@teksavvy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F4D800.5040703@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address of a variable is impossible to be null, so we remove the check.
+On Mon, Jan 14, 2013 at 11:16:00PM -0500, Mark Lord wrote:
+> On 13-01-14 03:37 PM, J. Bruce Fields wrote:
+> > Thanks for the report.
+> > 
+> > On Mon, Jan 14, 2013 at 11:17:09AM -0500, Mark Lord wrote:
+> >> Since upgrading to 3.7, and now 3.7.2, my AMD-450E based server
+> > 
+> > It's acting as an NFS client, right?
+> 
+> Client and server, with other Linux boxes all running 3.something kernels.
+> 
+> > What did you upgrade from?
+> 
+> 3.4.something, I believe.
+> 
+> >> is getting these BUG complaints.  The .config file is gzip'd/attached.
+> > 
+> > Is this easy to reproduce?
+> 
+> So far, it seems to pop up within a day or so of any reboot.
+> I normally only reboot that system for a kernel upgrade,
+> but can do so a bit more often if there's useful info to collect.
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- drivers/media/dvb-frontends/stv0900_core.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+So this means svc_delete_xprt was called on an xprt twice.
 
-diff --git a/drivers/media/dvb-frontends/stv0900_core.c b/drivers/media/dvb-frontends/stv0900_core.c
-index 0fb34e1..612b872 100644
---- a/drivers/media/dvb-frontends/stv0900_core.c
-+++ b/drivers/media/dvb-frontends/stv0900_core.c
-@@ -524,11 +524,8 @@ void stv0900_set_tuner(struct dvb_frontend *fe, u32 frequency,
- 	struct dvb_frontend_ops *frontend_ops = NULL;
- 	struct dvb_tuner_ops *tuner_ops = NULL;
- 
--	if (&fe->ops)
--		frontend_ops = &fe->ops;
--
--	if (&frontend_ops->tuner_ops)
--		tuner_ops = &frontend_ops->tuner_ops;
-+	frontend_ops = &fe->ops;
-+	tuner_ops = &frontend_ops->tuner_ops;
- 
- 	if (tuner_ops->set_frequency) {
- 		if ((tuner_ops->set_frequency(fe, frequency)) < 0)
--- 
-1.7.10.4
+That could happen if server threads are still running (and calling
+svc_recv) after we start shutting down the server: svc_shutdown_net
+assumes that server threads are already shut down, but that isn't true
+any more after the containerization work.
 
+I thought that would only be a bug for users actually running multiple
+containers, but looking at nfs_callback_down, I don't think that's
+true--it seems to always shut down the thread last.
+
+--b.
