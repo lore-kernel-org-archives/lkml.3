@@ -1,115 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757023Ab3AORzd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 12:55:33 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52967 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab3AORzc (ORCPT
+	id S1757150Ab3AORzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 12:55:52 -0500
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:35862 "EHLO
+	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751396Ab3AORzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 12:55:32 -0500
-Message-ID: <50F59812.6040806@gmail.com>
-Date: Tue, 15 Jan 2013 09:55:30 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 15 Jan 2013 12:55:51 -0500
+From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: =?UTF-8?q?=5BPATCH=5D=20Support=20Jess/Saitek=20Color=20Rumble=20Pad?=
+Date: Tue, 15 Jan 2013 18:57:47 +0100
+Message-Id: <1358272668-5124-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <alpine.LNX.2.00.1301031042530.27348@pobox.suse.cz>
+References: <alpine.LNX.2.00.1301031042530.27348@pobox.suse.cz>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, Al Cooper <alcooperx@gmail.com>,
-        ralf@linux-mips.org
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mips: function tracer: Fix broken function tracing
-References: <y> <1357914810-20656-1-git-send-email-alcooperx@gmail.com> <50F0454D.5060109@gmail.com> <20130115034006.GA3854@home.goodmis.org>
-In-Reply-To: <20130115034006.GA3854@home.goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="------------1.7.10.4"
+In-Reply-To: <alpine.LNX.2.00.1301031042530.27348@pobox.suse.cz>
+X-Originating-IP: 92.204.106.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2013 07:40 PM, Steven Rostedt wrote:
-> On Fri, Jan 11, 2013 at 09:01:01AM -0800, David Daney wrote:
->>
->> I thought all CPUs were in stop_machine() when the modifications
->> were done, so that there is no issue with multi-word instruction
->> patching.
->>
->> Am I wrong about this?
->>
->> So really I think you can do two NOP just as easily.
->
-> The problem with double NOPs is that it can only work if there's no
-> problem executing one nop and a non NOP. Which I think is an issue here.
->
->
-> If you have something like:
->
-> 	bl	_mcount
-> 	addiu	sp,sp,-8
->
-> And you convert that to:
->
-> 	nop
-> 	nop
->
-> Now if you convert that back to:
->
-> 	bl	ftrace_caller
-> 	addiu	sp,sp,-8
->
-> then you can have an issue if the task was preempted after that first
-> nop. Because stop_machine() doesn't wait for tasks to exit kernel space.
-> If you have a CONFIG_PREEMPT kernel, a task can be sleeping anywhere.
-> Thus you have a task execute the first nop, get preempted. You update
-> the code to be:
-
-Thanks for the explanation Steven.  This is the part I was missing.
+This is a multi-part message in MIME format.
+--------------1.7.10.4
+Content-Type: text/plain; charset=UTF-8; format=fixed
+Content-Transfer-Encoding: 8bit
 
 
-Given all of this, I think the most expedient course for the short term 
-is to use the branch-likely-false trick.  Although the performance will 
-probably not be great, I think it is probably race free.
+Add support for another gamepad to the hid-pl driver.
+The "color rumble pad P580" marketed using the "Saitek" brand in
+Germany, and using a USB Vendor ID attributed to "Jess" seems to be
+electronically identical to the 4-field variant of the "Green Asia"
+gamepad.
 
-In the longer term...
+The pad has been tested to support rumble strengths up to 255, not
+just 127.
 
->
-> 	bl	ftrace_caller
-> 	addiu	sp,sp,-8
->
-> When that task gets scheduled back in, it will act like it just
-> executed:
->
-> 	nop
-> 	addiu	sp,sp,-8
->
-> Which is the problem you're trying to solve in the first place.
->
-> Now that said, There's no reason we need that addiu sp,sp,-8 there.
-> That's just what the mips defined mcount requires. But as you can see
-> above, with dynamic ftrace, the defined mcount is only called at boot
-> up, and never again. That means at boot up you can convert to:
->
-> 	nop
-> 	nop
->
-> and then when you enable tracing just convert it to:
->
-> 	bl	ftrace_caller
-> 	nop
->
-> There's nothing that states what the ftrace caller must be. We can have
-> it do a proper stack update. That is, only at boot up do we need to
-> handle the defined mcount. After that, those instructions are just place
-> holders for our own algorithms. If the addiu was needed for the defined
-> mcount, there's no reason to keep it for our own ftrace_caller.
->
-> Would that work?
-
-... either do as you suggest and dynamically change the ABI of the 
-target function.
-
-Or add support to GCC for a better tracing ABI (as I already said we did 
-for mips64).
+Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+---
+ drivers/hid/hid-core.c |    1 +
+ drivers/hid/hid-ids.h  |    3 +++
+ drivers/hid/hid-pl.c   |   13 +++++++++++--
+ 3 files changed, 15 insertions(+), 2 deletions(-)
 
 
-Thanks,
-David Daney
+--------------1.7.10.4
+Content-Type: text/x-patch; name="0001-Support-Jess-Saitek-Color-Rumble-Pad.patch"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="0001-Support-Jess-Saitek-Color-Rumble-Pad.patch"
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index eb2ee11..aad2627 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1599,6 +1599,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK, USB_DEVICE_ID_HOLTEK_ON_LINE_GRIP) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_JESS2, USB_DEVICE_ID_JESS2_COLOR_RUMBLE_PAD) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ION, USB_DEVICE_ID_ICADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYTOUCH, USB_DEVICE_ID_KEYTOUCH_IEC) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 4dfa605..3a49334 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -442,6 +442,9 @@
+ #define USB_VENDOR_ID_JESS		0x0c45
+ #define USB_DEVICE_ID_JESS_YUREX	0x1010
+ 
++#define USB_VENDOR_ID_JESS2		0x0f30
++#define USB_DEVICE_ID_JESS2_COLOR_RUMBLE_PAD 0x0111
++
+ #define USB_VENDOR_ID_KBGEAR		0x084e
+ #define USB_DEVICE_ID_KBGEAR_JAMSTUDIO	0x1001
+ 
+diff --git a/drivers/hid/hid-pl.c b/drivers/hid/hid-pl.c
+index 47ed74c..1768414 100644
+--- a/drivers/hid/hid-pl.c
++++ b/drivers/hid/hid-pl.c
+@@ -14,6 +14,8 @@
+  *  0e8f:0003 "GASIA USB Gamepad"
+  *   - another version of the König gamepad
+  *
++ *  0f30:0111 "Saitek Color Rumble Pad"
++ *
+  *  Copyright (c) 2007, 2009 Anssi Hannula <anssi.hannula@gmail.com>
+  */
+ 
+@@ -51,6 +53,7 @@
+ 
+ struct plff_device {
+ 	struct hid_report *report;
++	s32 maxval;
+ 	s32 *strong;
+ 	s32 *weak;
+ };
+@@ -66,8 +69,8 @@ static int hid_plff_play(struct input_dev *dev, void *data,
+ 	right = effect->u.rumble.weak_magnitude;
+ 	debug("called with 0x%04x 0x%04x", left, right);
+ 
+-	left = left * 0x7f / 0xffff;
+-	right = right * 0x7f / 0xffff;
++	left = left * plff->maxval / 0xffff;
++	right = right * plff->maxval / 0xffff;
+ 
+ 	*plff->strong = left;
+ 	*plff->weak = right;
+@@ -87,6 +90,7 @@ static int plff_init(struct hid_device *hid)
+ 	struct list_head *report_ptr = report_list;
+ 	struct input_dev *dev;
+ 	int error;
++	s32 maxval;
+ 	s32 *strong;
+ 	s32 *weak;
+ 
+@@ -123,6 +127,7 @@ static int plff_init(struct hid_device *hid)
+ 			return -ENODEV;
+ 		}
+ 
++		maxval = 0x7f;
+ 		if (report->field[0]->report_count >= 4) {
+ 			report->field[0]->value[0] = 0x00;
+ 			report->field[0]->value[1] = 0x00;
+@@ -135,6 +140,8 @@ static int plff_init(struct hid_device *hid)
+ 			report->field[1]->value[0] = 0x00;
+ 			strong = &report->field[2]->value[0];
+ 			weak = &report->field[3]->value[0];
++			if (hid->vendor == USB_VENDOR_ID_JESS2)
++				maxval = 0xff;
+ 			debug("detected 4-field device");
+ 		} else {
+ 			hid_err(hid, "not enough fields or values\n");
+@@ -158,6 +165,7 @@ static int plff_init(struct hid_device *hid)
+ 		plff->report = report;
+ 		plff->strong = strong;
+ 		plff->weak = weak;
++		plff->maxval = maxval;
+ 
+ 		*strong = 0x00;
+ 		*weak = 0x00;
+@@ -207,6 +215,7 @@ static const struct hid_device_id pl_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GAMERON, USB_DEVICE_ID_GAMERON_DUAL_PCS_ADAPTOR),
+ 		.driver_data = 1 }, /* Twin USB Joystick */
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GREENASIA, 0x0003), },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_JESS2, USB_DEVICE_ID_JESS2_COLOR_RUMBLE_PAD), },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, pl_devices);
+
+--------------1.7.10.4--
 
 
