@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab3APAGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:06:11 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:37574 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932595Ab3APAGG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 19:06:06 -0500
-MIME-Version: 1.0
+	id S932687Ab3APAGg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:06:36 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43136 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932492Ab3AOWdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:33:31 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 160/221] USB: option: add Telekom Speedstick LTE II
+Date: Tue, 15 Jan 2013 10:51:27 -0800
+Message-Id: <20130115185009.610026805@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
-Date: Tue, 15 Jan 2013 17:06:04 -0700
-Message-ID: <CAKocOOM8=czH=ZNwjv_uBGf9qbzvPFKJuxonncSv_xzKt7t4kA@mail.gmail.com>
-Subject: Re: [ 000/221] 3.7.3-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 11:48 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.7.3 release.
-> There are 221 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Jan 17 18:49:23 UTC 2013.
-> Anything received after that time might be too late.
->
-> greg k-h
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-3.7.3 rc patch applied cleanly. Compiled and booted on the following systems:
-HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+------------------
 
-Cross-compile tests:
+From: Bjørn Mork <bjorn@mork.no>
 
-alpha: defconfig passed
-arm: defconfig passed
-arm64: defconfig passed
-c6x: defconfig passed
-mips: defconfig passed
-mipsel: defconfig passed
-powerpc: wii_defconfig passed
-sh: defconfig passed
-sparc: defconfig passed
-tile: tilegx_defconfig passed
+commit 5ec0085440ef8c2cf50002b34d5a504ee12aa2bf upstream.
 
--- Shuah
+also known as Alcatel One Touch L100V LTE
+
+The driver description files gives these names to the vendor specific
+functions on this modem:
+
+ Application1: VID_1BBB&PID_011E&MI_00
+ Application2: VID_1BBB&PID_011E&MI_01
+ Modem:        VID_1BBB&PID_011E&MI_03
+ Ethernet:     VID_1BBB&PID_011E&MI_04
+
+Reported-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -289,6 +289,7 @@ static void option_instat_callback(struc
+ #define ALCATEL_VENDOR_ID			0x1bbb
+ #define ALCATEL_PRODUCT_X060S_X200		0x0000
+ #define ALCATEL_PRODUCT_X220_X500D		0x0017
++#define ALCATEL_PRODUCT_L100V			0x011e
+ 
+ #define PIRELLI_VENDOR_ID			0x1266
+ #define PIRELLI_PRODUCT_C100_1			0x1002
+@@ -1199,6 +1200,8 @@ static const struct usb_device_id option
+ 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
+ 	},
+ 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
+ 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+
+
