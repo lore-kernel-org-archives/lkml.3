@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933553Ab3AOWwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:52:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46600 "EHLO mail.kernel.org"
+	id S933601Ab3AOWwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:52:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46662 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933121Ab3AOWv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:51:58 -0500
+	id S933574Ab3AOWwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 100/171] USB: Handle auto-transition from hot to warm reset.
-Date: Tue, 15 Jan 2013 14:44:25 -0800
-Message-Id: <20130115224320.582239200@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Julien Cristau <jcristau@debian.org>
+Subject: [ 114/171] drm/i915: fix up ivb plane 3 pageflips
+Date: Tue, 15 Jan 2013 14:44:39 -0800
+Message-Id: <20130115224321.586292048@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,50 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 1c7439c61fa6516419c32a9824976334ea969d47 upstream.
+commit cb05d8dedefa3066bf5d74ef88c6ca6cf4bd1c87 upstream.
 
-USB 3.0 hubs and roothubs will automatically transition a failed hot
-reset to a warm (BH) reset.  In that case, the warm reset change bit
-will be set, and the link state change bit may also be set.  Change
-hub_port_finish_reset to unconditionally clear those change bits for USB
-3.0 hubs.  If these bits are not cleared, we may lose port change events
-from the roothub.
+Or at least plug another gapping hole. Apparrently hw desingers only
+moved the bit field, but did not bother ot re-enumerate the planes
+when adding support for a 3rd pipe.
 
-This commit should be backported to kernels as old as 3.2, that contain
-the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine
-warm reset logic".
+Discovered by i-g-t/flip_test.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+This may or may not fix the reference bugzilla, because that one
+smells like we have still larger fish to fry.
+
+v2: Fixup the impossible case to catch programming errors, noticed by
+Chris Wilson.
+
+References: https://bugs.freedesktop.org/show_bug.cgi?id=50069
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Julien Cristau <jcristau@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/core/hub.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h      |    8 ++++++++
+ drivers/gpu/drm/i915/intel_display.c |   19 ++++++++++++++++++-
+ 2 files changed, 26 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2249,16 +2249,16 @@ static void hub_port_finish_reset(struct
- 		clear_port_feature(hub->hdev,
- 				port1, USB_PORT_FEAT_C_RESET);
- 		/* FIXME need disconnect() for NOTATTACHED device */
--		if (warm) {
-+		if (hub_is_superspeed(hub->hdev)) {
- 			clear_port_feature(hub->hdev, port1,
- 					USB_PORT_FEAT_C_BH_PORT_RESET);
- 			clear_port_feature(hub->hdev, port1,
- 					USB_PORT_FEAT_C_PORT_LINK_STATE);
--		} else {
-+		}
-+		if (!warm)
- 			usb_set_device_state(udev, *status
- 					? USB_STATE_NOTATTACHED
- 					: USB_STATE_DEFAULT);
--		}
- 		break;
- 	}
- }
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -197,6 +197,14 @@
+ #define MI_DISPLAY_FLIP		MI_INSTR(0x14, 2)
+ #define MI_DISPLAY_FLIP_I915	MI_INSTR(0x14, 1)
+ #define   MI_DISPLAY_FLIP_PLANE(n) ((n) << 20)
++/* IVB has funny definitions for which plane to flip. */
++#define   MI_DISPLAY_FLIP_IVB_PLANE_A  (0 << 19)
++#define   MI_DISPLAY_FLIP_IVB_PLANE_B  (1 << 19)
++#define   MI_DISPLAY_FLIP_IVB_SPRITE_A (2 << 19)
++#define   MI_DISPLAY_FLIP_IVB_SPRITE_B (3 << 19)
++#define   MI_DISPLAY_FLIP_IVB_PLANE_C  (4 << 19)
++#define   MI_DISPLAY_FLIP_IVB_SPRITE_C (5 << 19)
++
+ #define MI_SET_CONTEXT		MI_INSTR(0x18, 0)
+ #define   MI_MM_SPACE_GTT		(1<<8)
+ #define   MI_MM_SPACE_PHYSICAL		(0<<8)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7486,17 +7486,34 @@ static int intel_gen7_queue_flip(struct
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	struct intel_ring_buffer *ring = &dev_priv->ring[BCS];
++	uint32_t plane_bit = 0;
+ 	int ret;
+ 
+ 	ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
+ 	if (ret)
+ 		goto err;
+ 
++	switch(intel_crtc->plane) {
++	case PLANE_A:
++		plane_bit = MI_DISPLAY_FLIP_IVB_PLANE_A;
++		break;
++	case PLANE_B:
++		plane_bit = MI_DISPLAY_FLIP_IVB_PLANE_B;
++		break;
++	case PLANE_C:
++		plane_bit = MI_DISPLAY_FLIP_IVB_PLANE_C;
++		break;
++	default:
++		WARN_ONCE(1, "unknown plane in flip command\n");
++		ret = -ENODEV;
++		goto err;
++	}
++
+ 	ret = intel_ring_begin(ring, 4);
+ 	if (ret)
+ 		goto err_unpin;
+ 
+-	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | (intel_crtc->plane << 19));
++	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | plane_bit);
+ 	intel_ring_emit(ring, (fb->pitches[0] | obj->tiling_mode));
+ 	intel_ring_emit(ring, (obj->gtt_offset));
+ 	intel_ring_emit(ring, (MI_NOOP));
 
 
