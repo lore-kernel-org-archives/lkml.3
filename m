@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775Ab3AOBqG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 20:46:06 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:55752 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756479Ab3AOBqE (ORCPT
+	id S1757804Ab3AOBsm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 20:48:42 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:55017 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756152Ab3AOBsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 20:46:04 -0500
-Message-ID: <50F4B506.8000509@gmail.com>
-Date: Tue, 15 Jan 2013 09:46:46 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 14 Jan 2013 20:48:41 -0500
+Date: Mon, 14 Jan 2013 17:49:31 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk,
+        James.Bottomley@hansenpartnership.com, snitzer@redhat.com
+Subject: Re: Bcache v. whatever
+Message-ID: <20130115014931.GA19373@kroah.com>
+References: <20130114223202.GV26407@google.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Sedat Dilek <sedat.dilek@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tomas Winkler <tomas.winkler@intel.com>, arnd@arndb.de,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next V2] mei: drop the warning when cl is not initialized
- during unlinking
-References: <1357831934-31610-1-git-send-email-tomas.winkler@intel.com> <CA+icZUXa-cgNPTYAKjXDSkoqNhto7jz89yUMJAvYxa-jGtMbjg@mail.gmail.com> <20130114143238.GC20384@kroah.com> <CA+icZUXLFp_oZnVPcVDwuy_dvbywKgqHKknzg6qyF3o=mw-p+A@mail.gmail.com> <20130114151220.GA20610@kroah.com>
-In-Reply-To: <20130114151220.GA20610@kroah.com>
-Content-Type: multipart/mixed;
- boundary="------------080901020602060502040003"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130114223202.GV26407@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080901020602060502040003
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+On Mon, Jan 14, 2013 at 02:32:02PM -0800, Kent Overstreet wrote:
+> Bcache: a block layer SSD cache
+> 
+> Does writethrough and writeback, handles unclean shutdown, and has
+> various other nifty features. See the wiki and the documentation for
+> more:
+> 
+> http://bcache.evilpiepirate.org
+> 
+> Over the Christmas break I finally got the tree into a self contained
+> state that ought to be suitable for merging; this tree is fairly close
+> to the previous stable tree that people have been running on production
+> servers for awhile (and that I've been running on this workstation), 
+> 
+> So, I think this is ready for mainline and I'd like to get it in. I
+> should've tried to push it ages ago, but I was hoping to get in various
+> block layer cleanups first; I finally deided to work around them in the
+> meantime since I haven't had time to finish the block layer stuff.
+> 
+> Not everything has been addressed since I last posted for review
+> feedback - notably the closure code was controversial and for now I've
+> just moved that into drivers/block/bcache (though I've been refactoring
+> stuff to make it less asynchronous lately; most of that work is in the
+> testing/dev branches). The bigger issue IMO is the userspace interface -
+> I'd like to finish the md integration so it doesn't need userspace stuff
+> for probing/bootup. So, I'd be fine with it going into staging if that's
+> the consensus, but it's stable tested code.
 
-于 2013年01月14日 23:12, Greg KH 写道:
-> If you think you can do better than that, wonderful, I would love for
-> you to start out reviewing code and helping with handling stuff like
-> that.  Please do so before complaining about anything.
+If it goes into staging, I need a reason why it can't be merged into the
+"real" part of the kernel, and what will be done to get it there.
 
-  it seems, he is not complaining, maybe for him, he has to treat it as
-an urgent thing.
+Oh, and you will need to get acks from the people who's symbols you are
+wanting to export, usually staging patches are self-contained.
 
-  and for every member, it is necessary to have a rest, so can keep our
-contributes (work) with efficiency and sustainable.
+thanks,
 
-  so, please give more understanding with each other, so can make our
-cooperation better and better.
-
-by the way:
-  maybe it is necessary to think of a backup working flow to process
-such kind of issues: "how to make the negative effect lowest, when
-important members have to have a necessary rest".
-
-
--- 
-Chen Gang
-
-Flying Transformer
-
---------------080901020602060502040003
-Content-Type: text/x-vcard; charset=utf-8;
- name="chen_gang_flying_transformer.vcf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="chen_gang_flying_transformer.vcf"
-
-YmVnaW46dmNhcmQNCmZuOkNoZW4gR2FuZw0Kbjo7Q2hlbiBHYW5nDQp2ZXJzaW9uOjIuMQ0K
-ZW5kOnZjYXJkDQoNCg==
---------------080901020602060502040003--
+greg k-h
