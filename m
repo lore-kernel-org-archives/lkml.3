@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071Ab3AOWtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:49:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45727 "EHLO mail.kernel.org"
+	id S1758931Ab3AOXvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:51:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45703 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932881Ab3AOWtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:49:43 -0500
+	id S932890Ab3AOWth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 036/171] i2400m: add Intel 6150 device IDs
-Date: Tue, 15 Jan 2013 14:43:21 -0800
-Message-Id: <20130115224316.009982836@linuxfoundation.org>
+        Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
+        Roland Dreier <roland@purestorage.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 043/171] RDMA/nes: Fix for crash when registering zero length MR for CQ
+Date: Tue, 15 Jan 2013 14:43:28 -0800
+Message-Id: <20130115224316.526888667@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,54 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
 
-commit 999a7c5776a0ed2133645fa7e008bec05bda9254 upstream.
+commit 7d9c199a55200c9b9fcad08e150470d02fb385be upstream.
 
-Add device IDs for WiMAX function of Intel 6150 cards.
-
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wimax/i2400m/i2400m-usb.h |    3 +++
- drivers/net/wimax/i2400m/usb.c        |    6 ++++++
- 2 files changed, 9 insertions(+)
+ drivers/infiniband/hw/nes/nes_verbs.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/net/wimax/i2400m/i2400m-usb.h
-+++ b/drivers/net/wimax/i2400m/i2400m-usb.h
-@@ -152,6 +152,9 @@ enum {
- 	/* Device IDs */
- 	USB_DEVICE_ID_I6050 = 0x0186,
- 	USB_DEVICE_ID_I6050_2 = 0x0188,
-+	USB_DEVICE_ID_I6150 = 0x07d6,
-+	USB_DEVICE_ID_I6150_2 = 0x07d7,
-+	USB_DEVICE_ID_I6150_3 = 0x07d9,
- 	USB_DEVICE_ID_I6250 = 0x0187,
- };
- 
---- a/drivers/net/wimax/i2400m/usb.c
-+++ b/drivers/net/wimax/i2400m/usb.c
-@@ -510,6 +510,9 @@ int i2400mu_probe(struct usb_interface *
- 	switch (id->idProduct) {
- 	case USB_DEVICE_ID_I6050:
- 	case USB_DEVICE_ID_I6050_2:
-+	case USB_DEVICE_ID_I6150:
-+	case USB_DEVICE_ID_I6150_2:
-+	case USB_DEVICE_ID_I6150_3:
- 	case USB_DEVICE_ID_I6250:
- 		i2400mu->i6050 = 1;
- 		break;
-@@ -759,6 +762,9 @@ static
- struct usb_device_id i2400mu_id_table[] = {
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050) },
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050_2) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_2) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_3) },
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6250) },
- 	{ USB_DEVICE(0x8086, 0x0181) },
- 	{ USB_DEVICE(0x8086, 0x1403) },
+--- a/drivers/infiniband/hw/nes/nes_verbs.c
++++ b/drivers/infiniband/hw/nes/nes_verbs.c
+@@ -2559,6 +2559,11 @@ static struct ib_mr *nes_reg_user_mr(str
+ 			return ibmr;
+ 		case IWNES_MEMREG_TYPE_QP:
+ 		case IWNES_MEMREG_TYPE_CQ:
++			if (!region->length) {
++				nes_debug(NES_DBG_MR, "Unable to register zero length region for CQ\n");
++				ib_umem_release(region);
++				return ERR_PTR(-EINVAL);
++			}
+ 			nespbl = kzalloc(sizeof(*nespbl), GFP_KERNEL);
+ 			if (!nespbl) {
+ 				nes_debug(NES_DBG_MR, "Unable to allocate PBL\n");
 
 
