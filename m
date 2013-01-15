@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933037Ab3AOXw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:52:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45683 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932928Ab3AOWtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:49:33 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Damien Lespiau <damien.lespiau@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 041/171] drm/i915: make the panel fitter work on pipes B and C on IVB
-Date: Tue, 15 Jan 2013 14:43:26 -0800
-Message-Id: <20130115224316.384098286@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
-References: <20130115224313.394976595@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S933063Ab3AOXxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:53:04 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38395 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932928Ab3AOXxA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 18:53:00 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1355937587-31730-2-git-send-email-lee.jones@linaro.org>
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Lee Jones <lee.jones@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>
+References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
+ <1355937587-31730-2-git-send-email-lee.jones@linaro.org>
+Message-ID: <20130115235252.23734.21408@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH 2/4] clk: ux500: Ensure the FMSC clock is obtainable
+Date: Tue, 15 Jan 2013 15:52:52 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Quoting Lee Jones (2012-12-19 09:19:45)
+> The FMSC clock is traditionally used for NAND flash devices when
+> used on the ux500 series platforms. This patch makes it searchable
+> during a clock-name search.
+> 
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-------------------
+Acked-by: Mike Turquette <mturquette@linaro.org>
 
-From: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Who do you want this series to go through?
 
-commit 13888d78c664a1f61d7b09d282f5916993827a40 upstream.
+Regards,
+Mike
 
-I actually found this problem on Haswell, but then discovered Ivy
-Bridge also has it by reading the spec.
-
-I don't have the hardware to test this.
-
-Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/i915/i915_reg.h      |    2 ++
- drivers/gpu/drm/i915/intel_display.c |    6 +++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
-
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3015,6 +3015,8 @@
- #define _PFA_CTL_1               0x68080
- #define _PFB_CTL_1               0x68880
- #define  PF_ENABLE              (1<<31)
-+#define  PF_PIPE_SEL_MASK_IVB	(3<<29)
-+#define  PF_PIPE_SEL_IVB(pipe)	((pipe)<<29)
- #define  PF_FILTER_MASK		(3<<23)
- #define  PF_FILTER_PROGRAMMED	(0<<23)
- #define  PF_FILTER_MED_3x3	(1<<23)
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -3095,7 +3095,11 @@ static void ironlake_crtc_enable(struct
- 		 * as some pre-programmed values are broken,
- 		 * e.g. x201.
- 		 */
--		I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3);
-+		if (IS_IVYBRIDGE(dev))
-+			I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3 |
-+						 PF_PIPE_SEL_IVB(pipe));
-+		else
-+			I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3);
- 		I915_WRITE(PF_WIN_POS(pipe), dev_priv->pch_pf_pos);
- 		I915_WRITE(PF_WIN_SZ(pipe), dev_priv->pch_pf_size);
- 	}
-
-
+> ---
+>  drivers/clk/ux500/u8500_clk.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
+> index 6b889a0..a601802 100644
+> --- a/drivers/clk/ux500/u8500_clk.c
+> +++ b/drivers/clk/ux500/u8500_clk.c
+> @@ -324,7 +324,7 @@ void u8500_clk_init(void)
+>  
+>         clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", U8500_CLKRST3_BASE,
+>                                 BIT(0), 0);
+> -       clk_register_clkdev(clk, NULL, "fsmc");
+> +       clk_register_clkdev(clk, "fsmc", NULL);
+>  
+>         clk = clk_reg_prcc_pclk("p3_pclk1", "per3clk", U8500_CLKRST3_BASE,
+>                                 BIT(1), 0);
+> -- 
+> 1.7.9.5
