@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757782Ab3AOW2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:28:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41510 "EHLO mail.kernel.org"
+	id S1758005Ab3APAdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:33:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41499 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757754Ab3AOW2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:28:44 -0500
+	id S1757737Ab3AOW2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:28:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Pawel Moll <pawel.moll@arm.com>, Michal Marek <mmarek@suse.cz>
-Subject: [ 058/221] kbuild: Do not remove vmlinux when cleaning external module
-Date: Tue, 15 Jan 2013 10:49:45 -0800
-Message-Id: <20130115185002.229167956@linuxfoundation.org>
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Huang Shijie <b32955@freescale.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 057/221] mtd: nand: gpmi: reset BCH earlier, too, to avoid NAND startup problems
+Date: Tue, 15 Jan 2013 10:49:44 -0800
+Message-Id: <20130115185002.149980063@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,54 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pawel Moll <pawel.moll@arm.com>
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-commit bd1ee804af8bdf2fd5131234330615f8aecbd9ed upstream.
+commit 6f2a6a52560ad8d85710aabd92b7a3239b3a6b07 upstream.
 
-Since commit 1f2bfbd00e466ff3489b2ca5cc75b1cccd14c123 "kbuild:
-link of vmlinux moved to a script" make clean with M=<dir>
-argument (so cleaning external module) removes vmlinux,
-System.map and couple of other files from the *main* kernel
-build directory! This not what was happening before and almost
-certainly not what one would expect.
+It could happen (1 out of 100 times) that NAND did not start up
+correctly after warm rebooting, so the kernel could not find the UBI or
+DMA timed out due to a stalled BCH. When resetting BCH together with
+GPMI, the issue could not be observed anymore (after 10000+ reboots). We
+probably need the consistent state already before sending any command to
+NAND, even when no ECC is needed. I chose to keep the extra reset for
+BCH when changing the flash layout to be on the safe side.
 
-This patch moves makes the clean target of the script called
-only when !KBUILD_EXTMOD.
-
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Acked-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Makefile |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/mtd/nand/gpmi-nand/gpmi-lib.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/Makefile
-+++ b/Makefile
-@@ -1021,11 +1021,14 @@ clean: rm-dirs  := $(CLEAN_DIRS)
- clean: rm-files := $(CLEAN_FILES)
- clean-dirs      := $(addprefix _clean_, . $(vmlinux-alldirs) Documentation samples)
+--- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
++++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+@@ -166,6 +166,15 @@ int gpmi_init(struct gpmi_nand_data *thi
+ 	if (ret)
+ 		goto err_out;
  
--PHONY += $(clean-dirs) clean archclean
-+PHONY += $(clean-dirs) clean archclean vmlinuxclean
- $(clean-dirs):
- 	$(Q)$(MAKE) $(clean)=$(patsubst _clean_%,%,$@)
- 
--clean: archclean
-+vmlinuxclean:
-+	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/link-vmlinux.sh clean
++	/*
++	 * Reset BCH here, too. We got failures otherwise :(
++	 * See later BCH reset for explanation of MX23 handling
++	 */
++	ret = gpmi_reset_block(r->bch_regs, GPMI_IS_MX23(this));
++	if (ret)
++		goto err_out;
 +
-+clean: archclean vmlinuxclean
++
+ 	/* Choose NAND mode. */
+ 	writel(BM_GPMI_CTRL1_GPMI_MODE, r->gpmi_regs + HW_GPMI_CTRL1_CLR);
  
- # mrproper - Delete all generated files, including .config
- #
-@@ -1252,7 +1255,6 @@ scripts: ;
- endif # KBUILD_EXTMOD
- 
- clean: $(clean-dirs)
--	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/link-vmlinux.sh clean
- 	$(call cmd,rmdirs)
- 	$(call cmd,rmfiles)
- 	@find $(if $(KBUILD_EXTMOD), $(KBUILD_EXTMOD), .) $(RCS_FIND_IGNORE) \
 
 
