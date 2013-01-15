@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934514Ab3AOW7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:59:13 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48749 "EHLO mail.kernel.org"
+	id S934538Ab3AOW7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:59:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48728 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934006Ab3AOW6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:58:00 -0500
+	id S934507Ab3AOW55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tomasz Mloduchowski <q@qdot.me>
-Subject: [ 60/71] usb: ftdi_sio: Crucible Technologies COMET Caller ID - pid added
-Date: Tue, 15 Jan 2013 14:54:57 -0800
-Message-Id: <20130115225344.714649158@linuxfoundation.org>
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Ravi Murty <Ravi.Murty@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 67/71] intel-iommu: Free old page tables before creating superpage
+Date: Tue, 15 Jan 2013 14:55:04 -0800
+Message-Id: <20130115225345.235085702@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -25,48 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomasz Mloduchowski <q@qdot.me>
+From: "Woodhouse, David" <david.woodhouse@intel.com>
 
-commit 8cf65dc386f3634a43312f436cc7a935476a40c4 upstream.
+commit 6491d4d02893d9787ba67279595990217177b351 upstream.
 
-Simple fix to add support for Crucible Technologies COMET Caller ID
-USB decoder - a device containing FTDI USB/Serial converter chip,
-handling 1200bps CallerID messages decoded from the phone line -
-adding correct USB PID is sufficient.
+The dma_pte_free_pagetable() function will only free a page table page
+if it is asked to free the *entire* 2MiB range that it covers. So if a
+page table page was used for one or more small mappings, it's likely to
+end up still present in the page tables... but with no valid PTEs.
 
-Tested to apply cleanly and work flawlessly against 3.6.9, 3.7.0-rc8
-and 3.8.0-rc3 on both amd64 and x86 arches.
+This was fine when we'd only be repopulating it with 4KiB PTEs anyway
+but the same virtual address range can end up being reused for a
+*large-page* mapping. And in that case were were trying to insert the
+large page into the second-level page table, and getting a complaint
+from the sanity check in __domain_mapping() because there was already a
+corresponding entry. This was *relatively* harmless; it led to a memory
+leak of the old page table page, but no other ill-effects.
 
-Signed-off-by: Tomasz Mloduchowski <q@qdot.me>
+Fix it by calling dma_pte_clear_range (hopefully redundant) and
+dma_pte_free_pagetable() before setting up the new large page.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Tested-by: Ravi Murty <Ravi.Murty@intel.com>
+Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 8 insertions(+)
+ drivers/pci/intel-iommu.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -879,6 +879,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
-+	/* Crucible Devices */
-+	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1259,3 +1259,9 @@
-  * ATI command output: Cinterion MC55i
-  */
- #define FTDI_CINTERION_MC55I_PID	0xA951
-+
-+/*
-+ * Product: Comet Caller ID decoder
-+ * Manufacturer: Crucible Technologies
-+ */
-+#define FTDI_CT_COMET_PID	0x8e08
+--- a/drivers/pci/intel-iommu.c
++++ b/drivers/pci/intel-iommu.c
+@@ -1793,10 +1793,17 @@ static int __domain_mapping(struct dmar_
+ 			if (!pte)
+ 				return -ENOMEM;
+ 			/* It is large page*/
+-			if (largepage_lvl > 1)
++			if (largepage_lvl > 1) {
+ 				pteval |= DMA_PTE_LARGE_PAGE;
+-			else
++				/* Ensure that old small page tables are removed to make room
++				   for superpage, if they exist. */
++				dma_pte_clear_range(domain, iov_pfn,
++						    iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
++				dma_pte_free_pagetable(domain, iov_pfn,
++						       iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
++			} else {
+ 				pteval &= ~(uint64_t)DMA_PTE_LARGE_PAGE;
++			}
+ 
+ 		}
+ 		/* We don't need lock here, nobody else
 
 
