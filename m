@@ -1,404 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab3AOIqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 03:46:16 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:45624 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756497Ab3AOInf (ORCPT
+	id S1756540Ab3AOIs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 03:48:28 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:62276 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab3AOIs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 03:43:35 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@secretlab.ca>, <b-cousson@ti.com>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <arnd@arndb.de>,
-        <balbi@ti.com>, <tony@atomide.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [RFC PATCH 1/7] drivers: usb: phy: add a new driver for usb part of control module
-Date: Tue, 15 Jan 2013 14:12:52 +0530
-Message-ID: <1358239378-10030-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358239378-10030-1-git-send-email-kishon@ti.com>
-References: <1358239378-10030-1-git-send-email-kishon@ti.com>
+	Tue, 15 Jan 2013 03:48:26 -0500
+Date: Tue, 15 Jan 2013 08:48:21 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com, cbouatmailru@gmail.com,
+        Jonas Aaberg <jonas.aberg@stericsson.com>
+Subject: Re: [PATCH 04/18] power: ab8500_fg: Replace msleep() with
+ usleep_range() for greater accuracy
+Message-ID: <20130115084821.GT12385@gmail.com>
+References: <1357909986-9262-1-git-send-email-lee.jones@linaro.org>
+ <1357909986-9262-5-git-send-email-lee.jones@linaro.org>
+ <1358183857.19400.13.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1358183857.19400.13.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a new driver for the usb part of control module. This has an API
-to power on the USB2 phy and an API to write to the mailbox depending on
-whether MUSB has to act in host mode or in device mode.
+On Mon, 14 Jan 2013, Joe Perches wrote:
 
-Writing to control module registers for doing the above task which was
-previously done in omap glue and in omap-usb2 phy will be removed.
+> On Fri, 2013-01-11 at 13:12 +0000, Lee Jones wrote:
+> > Doing so provides a greater degree of accuracy when dealing with
+> > time-frames between 1us and 20ms. msleep() is only accurate for
+> > wake-ups greater than 20ms.
+> []
+> > diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+> []
+> > @@ -956,7 +956,7 @@ static int ab8500_fg_load_comp_volt_to_capacity(struct ab8500_fg *di)
+> >  	do {
+> >  		vbat += ab8500_fg_bat_voltage(di);
+> >  		i++;
+> > -		msleep(5);
+> > +		usleep_range(5000, 5001);
+> 
+> If you're going to give a range that small
+> you might as well use usleep instead.
+> 
+> Otherwise, add some tolerance to allow any
+> other coalesced wakeup to occur.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- Documentation/devicetree/bindings/usb/omap-usb.txt |   21 +-
- drivers/usb/phy/Kconfig                            |    9 +
- drivers/usb/phy/Makefile                           |    1 +
- drivers/usb/phy/omap-control-usb.c                 |  204 ++++++++++++++++++++
- include/linux/usb/omap_control_usb.h               |   73 +++++++
- 5 files changed, 307 insertions(+), 1 deletion(-)
- create mode 100644 drivers/usb/phy/omap-control-usb.c
- create mode 100644 include/linux/usb/omap_control_usb.h
+I can't increase the tolerance, as I don't know how that would
+effect the running of the system, and the person who would know
+is off on parental leave.
 
-diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-index 29a043e..d58dae3 100644
---- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-@@ -1,4 +1,4 @@
--OMAP GLUE
-+OMAP GLUE AND OTHER OMAP SPECIFIC COMPONENTS
- 
- OMAP MUSB GLUE
-  - compatible : Should be "ti,omap4-musb" or "ti,omap3-musb"
-@@ -31,3 +31,22 @@ Board specific device node entry
- 	mode = <3>;
- 	power = <50>;
- };
-+
-+OMAP CONTROL USB
-+
-+Required properties:
-+ - compatible: Should be "ti,omap-control-usb"
-+ - reg : Address and length of the register set for the device. It contains
-+   the address of "control_dev_conf" and "otghs_control".
-+ - reg-names: The names of the register addresses corresponding to the registers
-+   filled in "reg".
-+ - ti,has_mailbox: This is used to specify if the platform uses mailbox in
-+   control module.
-+
-+omap_control_usb@4a002300 {
-+	compatible = "ti,omap-control-usb";
-+	reg = <0x4a002300 0x4>,
-+	      <0x4a00233c 0x4>;
-+	reg-names = "control_dev_conf", "otghs_control";
-+	ti,has_mailbox;
-+};
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index 5de6e7f..a7277ee 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -14,6 +14,15 @@ config OMAP_USB2
- 	  The USB OTG controller communicates with the comparator using this
- 	  driver.
- 
-+config OMAP_CONTROL_USB
-+	tristate "OMAP CONTROL USB Driver"
-+	depends on ARCH_OMAP2PLUS
-+	help
-+	  Enable this to add support for the USB part present in the control
-+	  module. This driver has API to power on the PHY and to write to the
-+	  mailbox. The mailbox is present only in omap4 and the register to
-+	  power on the PHY is present in omap4 and omap5.
-+
- config USB_ISP1301
- 	tristate "NXP ISP1301 USB transceiver support"
- 	depends on USB || USB_GADGET
-diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-index 1a579a8..0dea4d2 100644
---- a/drivers/usb/phy/Makefile
-+++ b/drivers/usb/phy/Makefile
-@@ -5,6 +5,7 @@
- ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
- 
- obj-$(CONFIG_OMAP_USB2)			+= omap-usb2.o
-+obj-$(CONFIG_OMAP_CONTROL_USB)		+= omap-control-usb.o
- obj-$(CONFIG_USB_ISP1301)		+= isp1301.o
- obj-$(CONFIG_MV_U3D_PHY)		+= mv_u3d_phy.o
- obj-$(CONFIG_USB_EHCI_TEGRA)	+= tegra_usb_phy.o
-diff --git a/drivers/usb/phy/omap-control-usb.c b/drivers/usb/phy/omap-control-usb.c
-new file mode 100644
-index 0000000..bed41a9
---- /dev/null
-+++ b/drivers/usb/phy/omap-control-usb.c
-@@ -0,0 +1,204 @@
-+/*
-+ * omap-control-usb.c - The USB part of control module.
-+ *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * Author: Kishon Vijay Abraham I <kishon@ti.com>
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/of.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/usb/omap_control_usb.h>
-+
-+static struct omap_control_usb *control_usb;
-+
-+/**
-+ * get_omap_control_dev - returns the device pointer for this control device
-+ *
-+ * This API should be called to get the device pointer for this control
-+ * module device. This device pointer should be passed to all other API's
-+ * in this driver.
-+ *
-+ * To be used by PHY driver and glue driver
-+ */
-+struct device *get_omap_control_dev(void)
-+{
-+	if (!control_usb)
-+		return ERR_PTR(-ENODEV);
-+
-+	return control_usb->dev;
-+}
-+EXPORT_SYMBOL_GPL(get_omap_control_dev);
-+
-+/**
-+ * omap_control_usb_phy_power - power on/off the phy using control module reg
-+ * @dev: the control module device
-+ * @on: 0 or 1, based on powering on or off the PHY
-+ */
-+void omap_control_usb_phy_power(struct device *dev, int on)
-+{
-+	u32 val;
-+	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
-+
-+	if (on) {
-+		val = readl(control_usb->dev_conf);
-+		if (val & PHY_PD)
-+			writel(~PHY_PD, control_usb->dev_conf);
-+	} else {
-+		writel(PHY_PD, control_usb->dev_conf);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(omap_control_usb_phy_power);
-+
-+/**
-+ * omap_control_usb_host_mode - set AVALID, VBUSVALID and ID pin in grounded
-+ * @dev: struct device *
-+ *
-+ * This is an API to write to the mailbox register to notify the usb core that
-+ * a usb device has been connected.
-+ */
-+void omap_control_usb_host_mode(struct device *dev)
-+{
-+	u32 val;
-+	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
-+
-+	val = AVALID | VBUSVALID;
-+
-+	writel(val, control_usb->otghs_control);
-+}
-+EXPORT_SYMBOL_GPL(omap_control_usb_host_mode);
-+
-+/**
-+ * omap_control_usb_device_mode - set AVALID, VBUSVALID and ID pin in high
-+ * impedance
-+ * @dev: struct device *
-+ *
-+ * This is an API to write to the mailbox register to notify the usb core that
-+ * it has been connected to a usb host.
-+ */
-+void omap_control_usb_device_mode(struct device *dev)
-+{
-+	u32 val;
-+	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
-+
-+	val = IDDIG | AVALID | VBUSVALID;
-+
-+	writel(val, control_usb->otghs_control);
-+}
-+EXPORT_SYMBOL_GPL(omap_control_usb_device_mode);
-+
-+/**
-+ * omap_control_usb_set_sessionend - Enable SESSIONEND and IDIG to high
-+ * impedance
-+ * @dev: struct device *
-+ *
-+ * This is an API to write to the mailbox register to notify the usb core
-+ * it's now in disconnected state.
-+ */
-+void omap_control_usb_set_sessionend(struct device *dev)
-+{
-+	u32 val;
-+	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
-+
-+	val = SESSEND | IDDIG;
-+
-+	writel(val, control_usb->otghs_control);
-+}
-+EXPORT_SYMBOL_GPL(omap_control_usb_set_sessionend);
-+
-+static int omap_control_usb_probe(struct platform_device *pdev)
-+{
-+	struct resource	*res;
-+	struct device_node *np = pdev->dev.of_node;
-+	struct omap_control_usb_platform_data *pdata = pdev->dev.platform_data;
-+
-+	control_usb = devm_kzalloc(&pdev->dev, sizeof(*control_usb),
-+	    GFP_KERNEL);
-+	if (!control_usb) {
-+		dev_err(&pdev->dev, "unable to alloc memory for control usb\n");
-+		return -ENOMEM;
-+	}
-+
-+	if (np) {
-+		control_usb->has_mailbox = of_property_read_bool(np,
-+		    "ti,has_mailbox");
-+	} else if (pdata) {
-+		control_usb->has_mailbox = pdata->has_mailbox;
-+	} else {
-+		dev_err(&pdev->dev, "no pdata present\n");
-+		return -EINVAL;
-+	}
-+
-+	control_usb->dev	= &pdev->dev;
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-+	    "control_dev_conf");
-+	control_usb->dev_conf = devm_request_and_ioremap(&pdev->dev, res);
-+	if (control_usb->dev_conf == NULL) {
-+		dev_err(&pdev->dev, "Failed to obtain io memory\n");
-+		return -ENXIO;
-+	}
-+
-+	if (control_usb->has_mailbox) {
-+		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-+		    "otghs_control");
-+		control_usb->otghs_control = devm_request_and_ioremap(
-+		    &pdev->dev, res);
-+		if (control_usb->otghs_control == NULL) {
-+			dev_err(&pdev->dev, "Failed to obtain io memory\n");
-+			return -ENXIO;
-+		}
-+	}
-+
-+	dev_set_drvdata(control_usb->dev, control_usb);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id omap_control_usb_id_table[] = {
-+	{ .compatible = "ti,omap-control-usb" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, omap_control_usb_id_table);
-+#endif
-+
-+static struct platform_driver omap_control_usb_driver = {
-+	.probe		= omap_control_usb_probe,
-+	.driver		= {
-+		.name	= "omap-control-usb",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(omap_control_usb_id_table),
-+	},
-+};
-+
-+static int __init omap_control_usb_init(void)
-+{
-+	return platform_driver_register(&omap_control_usb_driver);
-+}
-+subsys_initcall(omap_control_usb_init);
-+
-+static void __exit omap_control_usb_exit(void)
-+{
-+	platform_driver_unregister(&omap_control_usb_driver);
-+}
-+module_exit(omap_control_usb_exit);
-+
-+MODULE_ALIAS("platform: omap_control_usb");
-+MODULE_AUTHOR("Texas Instruments Inc.");
-+MODULE_DESCRIPTION("OMAP CONTROL USB DRIVER");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
-new file mode 100644
-index 0000000..fbc7407
---- /dev/null
-+++ b/include/linux/usb/omap_control_usb.h
-@@ -0,0 +1,73 @@
-+/*
-+ * omap_control_usb.h - Header file for the USB part of control module.
-+ *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * Author: Kishon Vijay Abraham I <kishon@ti.com>
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __OMAP_CONTROL_USB_H__
-+#define __OMAP_CONTROL_USB_H__
-+
-+struct omap_control_usb {
-+	struct device *dev;
-+
-+	u32 __iomem *dev_conf;
-+	u32 __iomem *otghs_control;
-+
-+	u8 has_mailbox:1;
-+};
-+
-+struct omap_control_usb_platform_data {
-+	u8 has_mailbox:1;
-+};
-+
-+#define	PHY_PD		BIT(0)
-+
-+#define	AVALID		BIT(0)
-+#define	BVALID		BIT(1)
-+#define	VBUSVALID	BIT(2)
-+#define	SESSEND		BIT(3)
-+#define	IDDIG		BIT(4)
-+
-+#if (defined(CONFIG_OMAP_CONTROL_USB) || \
-+				defined(CONFIG_OMAP_CONTROL_USB_MODULE))
-+extern struct device *get_omap_control_dev(void);
-+extern void omap_control_usb_phy_power(struct device *dev, int on);
-+extern void omap_control_usb_host_mode(struct device *dev);
-+extern void omap_control_usb_device_mode(struct device *dev);
-+extern void omap_control_usb_set_sessionend(struct device *dev);
-+#else
-+static inline struct device *get_omap_control_dev()
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+
-+static inline void omap_control_usb_phy_power(struct device *dev, int on)
-+{
-+}
-+
-+static inline void omap_control_usb_host_mode(struct device *dev)
-+{
-+}
-+
-+static inline void omap_control_usb_device_mode(struct device *dev)
-+{
-+}
-+
-+static inline void omap_control_usb_set_sessionend(struct device *dev)
-+{
-+}
-+#endif
-+
-+#endif	/* __OMAP_CONTROL_USB_H__ */
+What I can tell you is we're only using usleep_range() because
+there is no usleep in the kernel. At least that's what we've
+been led to believe:
+
+Documentation/timers/timers-howto.txt:
+
+                - Why is there no "usleep" / What is a good range?
+                        Since usleep_range is built on top of hrtimers, the
+                        wakeup will be very precise (ish), thus a simple
+                        usleep function would likely introduce a large number
+                        of undesired interrupts.
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
