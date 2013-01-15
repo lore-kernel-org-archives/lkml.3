@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab3AOKMj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:12:39 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:42673 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205Ab3AOKMh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:12:37 -0500
-Date: Tue, 15 Jan 2013 10:12:30 +0000
-From: Cong Ding <dinggnu@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Harvey Yang <harvey.huawei.yang@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] net: ipv4: refine the logic for determining daddr in
- ip_queue_xmit.
-Message-ID: <20130115101229.GA27222@gmail.com>
-References: <1358225255-30973-1-git-send-email-harvey.huawei.yang@gmail.com>
- <1358225829.8744.4508.camel@edumazet-glaptop>
+	id S1756429Ab3AOKPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:15:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43229 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750963Ab3AOKPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:15:13 -0500
+Date: Tue, 15 Jan 2013 11:15:06 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        tytso@mit.edu, viro@zeniv.linux.org.uk, rminnich@sandia.gov,
+        martin.petersen@oracle.com, neilb@suse.de,
+        Mark Fasheh <mfasheh@suse.com>, david@fromorbit.com,
+        gnehzuil.liu@gmail.com, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, ocfs2-devel@oss.oracle.com,
+        bharrosh@panasas.com, jlayton@samba.org, linux-ext4@vger.kernel.org,
+        hirofumi@mail.parknet.co.jp, Joel Becker <jlbec@evilplan.org>
+Subject: Re: [PATCH 5/6] ocfs2: Wait for page writeback to provide stable
+ pages
+Message-ID: <20130115101506.GB1778@quack.suse.cz>
+References: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
+ <20130115054313.1563.70148.stgit@blackbox.djwong.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358225829.8744.4508.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130115054313.1563.70148.stgit@blackbox.djwong.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 08:57:09PM -0800, Eric Dumazet wrote:
-> On Tue, 2013-01-15 at 12:47 +0800, Harvey Yang wrote:
-> > The destination address daddr is faddr if source route option is set, otherwise it is inet_daddr. So use if-else to assign the value.
-> > 
-> > Signed-off-by: Harvey Yang <harvey.huawei.yang@gmail.com>
-> > ---
-> >  net/ipv4/ip_output.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-> > index 3e98ed2..22b738c 100644
-> > --- a/net/ipv4/ip_output.c
-> > +++ b/net/ipv4/ip_output.c
-> > @@ -349,10 +349,10 @@ int ip_queue_xmit(struct sk_buff *skb, struct flowi *fl)
-> >  		__be32 daddr;
-> >  
-> >  		/* Use correct destination address if we have options. */
-> > -		daddr = inet->inet_daddr;
-> >  		if (inet_opt && inet_opt->opt.srr)
-> >  			daddr = inet_opt->opt.faddr;
-> > -
-> > +		else
-> > +			daddr = inet->inet_daddr;
-> >  		/* If this fails, retransmit mechanism of transport layer will
-> >  		 * keep trying until route appears or the connection times
-> >  		 * itself out.
+On Mon 14-01-13 21:43:13, Darrick J. Wong wrote:
+> When stable pages are required, we have to wait if the page is just
+> going to disk and we want to modify it. Add proper callback to
+> ocfs2_grab_pages_for_write().
 > 
-> Current code is faster, srr is not often used.
-If you turn on O2 option in GCC, both versions behave the same (generate same
-binary code). If srr is not often used, why not use unlikely() macro?
-- cong
+> CC: ocfs2-devel@oss.oracle.com
+> CC: Joel Becker <jlbec@evilplan.org>
+> CC: Mark Fasheh <mfasheh@suse.com>
+> From: Jan Kara <jack@suse.cz>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+  Darrick, to satisfy the kernel patch submission process you should also
+add your Signed-off-by to the patch...
 
+								Honza
+> ---
+>  fs/ocfs2/aops.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> 
+> diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+> index 6577432..9796330 100644
+> --- a/fs/ocfs2/aops.c
+> +++ b/fs/ocfs2/aops.c
+> @@ -1194,6 +1194,7 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
+>  				goto out;
+>  			}
+>  		}
+> +		wait_for_stable_page(wc->w_pages[i]);
+>  
+>  		if (index == target_index)
+>  			wc->w_target_page = wc->w_pages[i];
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
