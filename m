@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab3APASU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:18:20 -0500
-Received: from mout.web.de ([212.227.17.11]:58574 "EHLO mout.web.de"
+	id S932414Ab3APASi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:18:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42304 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758355Ab3APASS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 19:18:18 -0500
-Message-ID: <50F5F1B7.3040201@web.de>
-Date: Wed, 16 Jan 2013 01:17:59 +0100
-From: Soeren Moch <smoch@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all dma_alloc_coherent()
- calls
-References: <20121119144826.f59667b2.akpm@linux-foundation.org> <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com> <50F3F289.3090402@web.de> <20130115165642.GA25500@titan.lakedaemon.net> <20130115175020.GA3764@kroah.com> <20130115201617.GC25500@titan.lakedaemon.net> <20130115215602.GF25500@titan.lakedaemon.net>
-In-Reply-To: <20130115215602.GF25500@titan.lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:eCxafcB4zhTtfVr/QLqJlb0cA1mIUMKTQcS/8ykDHit
- l+uOkFyHA1atwegp3R5bmxmwYH3Uu6EMCIDGm+Q/FEjw+bfgEm
- e541M8h6RGEK6vjmSD1/xV6Iwv1u4D/9PnmGBHB/K44evzXXkS
- wFEuCLhIm3xuJ56QnFffO3O/R/04chTJT4KGa9zy3FYgd3KZrC
- VCRrVfKc/J4enqjAq2J6g==
+	id S1758313Ab3AOWbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:31:34 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>,
+        Eric Sandeen <sandeen@redhat.com>
+Subject: [ 110/221] ext4: check dioread_nolock on remount
+Date: Tue, 15 Jan 2013 10:50:37 -0800
+Message-Id: <20130115185005.989893625@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
+References: <20130115184958.025580322@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.01.2013 22:56, Jason Cooper wrote:
-> Soeren,
->
-> On Tue, Jan 15, 2013 at 03:16:17PM -0500, Jason Cooper wrote:
->> If my understanding is correct, one of the drivers (most likely one)
->> either asks for too small of a dma buffer, or is not properly
->> deallocating blocks from the per-device pool.  Either case leads to
->> exhaustion, and falling back to the atomic pool.  Which subsequently
->> gets wiped out as well.
->
-> If my hunch is right, could you please try each of the three dvb drivers
-> in turn and see which one (or more than one) causes the error?
->
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-In fact I use only 2 types of DVB sticks: em28xx usb bridge plus drxk
-demodulator, and dib0700 usb bridge plus dib7000p demod.
+------------------
 
-I would bet for em28xx causing the error, but this is not thoroughly
-tested. Unfortunately testing with removed sticks is not easy, because
-this is a production system and disabling some services for the long
-time we need to trigger this error will certainly result in unhappy
-users.
+From: Jan Kara <jack@suse.cz>
 
-I will see what I can do here. Is there an easy way to track the buffer
-usage without having to wait for complete exhaustion?
+commit 261cb20cb2f0737a247aaf08dff7eb065e3e5b66 upstream.
 
-In linux-3.5.x there is no such problem. Can we use all available memory
-for dma buffers here on armv5 architectures, in contrast to newer
-kernels?
+Currently we allow enabling dioread_nolock mount option on remount for
+filesystems where blocksize < PAGE_CACHE_SIZE.  This isn't really
+supported so fix the bug by moving the check for blocksize !=
+PAGE_CACHE_SIZE into parse_options(). Change the original PAGE_SIZE to
+PAGE_CACHE_SIZE along the way because that's what we are really
+interested in.
 
-Regards,
-Soeren
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/super.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1650,9 +1650,7 @@ static int parse_options(char *options,
+ 			 unsigned int *journal_ioprio,
+ 			 int is_remount)
+ {
+-#ifdef CONFIG_QUOTA
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+-#endif
+ 	char *p;
+ 	substring_t args[MAX_OPT_ARGS];
+ 	int token;
+@@ -1701,6 +1699,16 @@ static int parse_options(char *options,
+ 		}
+ 	}
+ #endif
++	if (test_opt(sb, DIOREAD_NOLOCK)) {
++		int blocksize =
++			BLOCK_SIZE << le32_to_cpu(sbi->s_es->s_log_block_size);
++
++		if (blocksize < PAGE_CACHE_SIZE) {
++			ext4_msg(sb, KERN_ERR, "can't mount with "
++				 "dioread_nolock if block size != PAGE_SIZE");
++			return 0;
++		}
++	}
+ 	return 1;
+ }
+ 
+@@ -3446,15 +3454,6 @@ static int ext4_fill_super(struct super_
+ 			clear_opt(sb, DELALLOC);
+ 	}
+ 
+-	blocksize = BLOCK_SIZE << le32_to_cpu(es->s_log_block_size);
+-	if (test_opt(sb, DIOREAD_NOLOCK)) {
+-		if (blocksize < PAGE_SIZE) {
+-			ext4_msg(sb, KERN_ERR, "can't mount with "
+-				 "dioread_nolock if block size != PAGE_SIZE");
+-			goto failed_mount;
+-		}
+-	}
+-
+ 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+ 		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
+ 
+@@ -3496,6 +3495,7 @@ static int ext4_fill_super(struct super_
+ 	if (!ext4_feature_set_ok(sb, (sb->s_flags & MS_RDONLY)))
+ 		goto failed_mount;
+ 
++	blocksize = BLOCK_SIZE << le32_to_cpu(es->s_log_block_size);
+ 	if (blocksize < EXT4_MIN_BLOCK_SIZE ||
+ 	    blocksize > EXT4_MAX_BLOCK_SIZE) {
+ 		ext4_msg(sb, KERN_ERR,
+
 
