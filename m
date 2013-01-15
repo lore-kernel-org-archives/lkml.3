@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691Ab3AOSwY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:52:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34060 "EHLO mail.kernel.org"
+	id S1757655Ab3AOSwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:52:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34012 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756678Ab3AOSwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:52:21 -0500
+	id S1757640Ab3AOSwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:52:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shan Hai <shan.hai@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 010/221] powerpc/vdso: Remove redundant locking in update_vsyscall_tz()
-Date: Tue, 15 Jan 2013 10:48:57 -0800
-Message-Id: <20130115184958.800749237@linuxfoundation.org>
+        =?ISO-8859-15?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 005/221] bcma: mips: fix clearing device IRQ
+Date: Tue, 15 Jan 2013 10:48:52 -0800
+Message-Id: <20130115184958.430116245@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,65 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit ce73ec6db47af84d1466402781ae0872a9e7873c upstream.
+commit cbbc0138efe1dcd5426b8fc5d87741f5057aee72 upstream.
 
-The locking in update_vsyscall_tz() is not only unnecessary because the vdso
-code copies the data unproteced in __kernel_gettimeofday() but also
-introduces a hard to reproduce race condition between update_vsyscall()
-and update_vsyscall_tz(), which causes user space process to loop
-forever in vdso code.
+We were using wrong IRQ number so clearing wasn't working at all.
+Depending on a platform this could result in a one device having two
+interrupts assigned. On BCM4706 this resulted in all IRQs being broken.
 
-The following patch removes the locking from update_vsyscall_tz().
-
-Locking is not only unnecessary because the vdso code copies the data
-unprotected in __kernel_gettimeofday() but also erroneous because updating
-the tb_update_count is not atomic and introduces a hard to reproduce race
-condition between update_vsyscall() and update_vsyscall_tz(), which further
-causes user space process to loop forever in vdso code.
-
-The below scenario describes the race condition,
-x==0	Boot CPU			other CPU
-	proc_P: x==0
-	    timer interrupt
-		update_vsyscall
-x==1		    x++;sync		settimeofday
-					    update_vsyscall_tz
-x==2						x++;sync
-x==3		    sync;x++
-						sync;x++
-	proc_P: x==3 (loops until x becomes even)
-
-Because the ++ operator would be implemented as three instructions and not
-atomic on powerpc.
-
-A similar change was made for x86 in commit 6c260d58634
-("x86: vdso: Remove bogus locking in update_vsyscall_tz")
-
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Cc: Hauke Mehrtens <hauke@hauke-m.de>
+Acked-by: Hauke Mehrtens <hauke@hauke-m.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/time.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/bcma/driver_mips.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -774,13 +774,8 @@ void update_vsyscall_old(struct timespec
+--- a/drivers/bcma/driver_mips.c
++++ b/drivers/bcma/driver_mips.c
+@@ -115,7 +115,7 @@ static void bcma_core_mips_set_irq(struc
+ 			    bcma_read32(mdev, BCMA_MIPS_MIPS74K_INTMASK(0)) &
+ 			    ~(1 << irqflag));
+ 	else
+-		bcma_write32(mdev, BCMA_MIPS_MIPS74K_INTMASK(irq), 0);
++		bcma_write32(mdev, BCMA_MIPS_MIPS74K_INTMASK(oldirq), 0);
  
- void update_vsyscall_tz(void)
- {
--	/* Make userspace gettimeofday spin until we're done. */
--	++vdso_data->tb_update_count;
--	smp_mb();
- 	vdso_data->tz_minuteswest = sys_tz.tz_minuteswest;
- 	vdso_data->tz_dsttime = sys_tz.tz_dsttime;
--	smp_mb();
--	++vdso_data->tb_update_count;
- }
- 
- static void __init clocksource_init(void)
+ 	/* assign the new one */
+ 	if (irq == 0) {
 
 
