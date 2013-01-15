@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab3AONwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:52:55 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:58061 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756113Ab3AONwy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:52:54 -0500
-Date: Tue, 15 Jan 2013 13:52:48 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        cbouatmailru@gmail.com, Jonas Aaberg <jonas.aberg@stericsson.com>
-Subject: Re: [PATCH 04/18] power: ab8500_fg: Replace msleep() with
- usleep_range() for greater accuracy
-Message-ID: <20130115135248.GB9379@gmail.com>
-References: <1357909986-9262-1-git-send-email-lee.jones@linaro.org>
- <1358183857.19400.13.camel@joe-AO722>
- <20130115084821.GT12385@gmail.com>
- <201301151323.28879.arnd@arndb.de>
+	id S1756672Ab3AON7o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:59:44 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60865 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756166Ab3AON7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:59:42 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "Nori, Sekhar" <nsekhar@ti.com>, "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [PATCH 08/10] video: da8xx-fb: obtain fb_videomode info from dt
+Thread-Topic: [PATCH 08/10] video: da8xx-fb: obtain fb_videomode info from dt
+Thread-Index: AQHN6olgYao2ec3g5EedwyKq/6QVMZg9PLCAgABdw5CADN+xEA==
+Date: Tue, 15 Jan 2013 13:59:03 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA85B05@DBDE01.ent.ti.com>
+References: <cover.1357304090.git.afzal@ti.com>
+ <78e026555731e0bbe8475610279d3e5265d124b9.1357304090.git.afzal@ti.com>
+ <20130107091131.GC23478@pengutronix.de>
+ <C8443D0743D26F4388EA172BF4E2A7A93EA7FC7A@DBDE01.ent.ti.com>
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EA7FC7A@DBDE01.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201301151323.28879.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0FDxm1d009202
 
-> > > > @@ -956,7 +956,7 @@ static int ab8500_fg_load_comp_volt_to_capacity(struct ab8500_fg *di)
-> > > >     do {
-> > > >             vbat += ab8500_fg_bat_voltage(di);
-> > > >             i++;
-> > > > -           msleep(5);
-> > > > +           usleep_range(5000, 5001);
-> > > 
-> > > If you're going to give a range that small
-> > > you might as well use usleep instead.
-> > > 
-> > > Otherwise, add some tolerance to allow any
-> > > other coalesced wakeup to occur.
-> > 
-> > I can't increase the tolerance, as I don't know how that would
-> > effect the running of the system, and the person who would know
-> > is off on parental leave.
+Hi Steffen,
+
+On Mon, Jan 07, 2013 at 14:51:15, Mohammed, Afzal wrote:
+> On Mon, Jan 07, 2013 at 14:41:31, Steffen Trumtrar wrote:
+> > On Mon, Jan 07, 2013 at 10:41:30AM +0530, Afzal Mohammed wrote:
+
+> > > +- display-timings: list of different videomodes supported by the lcd
+> > > +  panel, represented as childs, can have multiple modes supported, if
+> > > +  only one, then it is considered native mode, if multiple modes are
+> > > +  provided, native mode can be set explicitly, more details available
+> > > +  @Documentation/devicetree/bindings/video/display-timing.txt
 > 
-> The function only averages the voltage between a couple of readings.
-> It won't change much if those register reads are slightly more
-> uniformly timed. Note that the thread can still be preempted for
-> a much longer time if anything else is running, and
+> > Keep in mind that the text combined with...
+> 
+> > > +		if (of_get_fb_videomode(np, lcdc_info, 0)) {
+> > > +			dev_err(&dev->dev, "timings not available in DT\n");
+> > > +			return NULL;
+> > > +		}
+> > > +		return lcdc_info;
+> > > +	}
+> > 
+> > ... this is not correct. You are just supporting the first display-timings
+> > subnode (of_get_fb_videomode(..., 0)).
+> 
+> 
+> Yes right, I will modify the text to reflect what the driver does.
 
-Okay, I'll fixup to have a more sensible range.
+Thinking about it further, it seems the right thing to do
+in this case would be to invoke as,
 
-> the entire
-> interrupt handling in this driver looks so fragile that I would
-> not rely on the interrupt actually happening at the right time
-> anyway. I think it should first be debugged properly to remove
-> the need for the enable_irq/disable_irq calls.
+"of_get_fb_videomode(np, lcd_info, OF_USE_NATIVE_MODE)".
 
-Yes, I remember discussing this with you before and I've since
-placed it on my TODO list. However, I'm really shying away from
-it for the moment, as this patch-set only applies <20 out of the
-70+ outstanding patches left in the internal kernel's delta. To
-avoid any unnecessary fixups, I'll apply those kinds of fixes at
-the end of the set.
+Updated version has been posted to the lists (forgot to cc you)
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards
+Afzal
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
