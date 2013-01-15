@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758562Ab3AOWeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:34:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43245 "EHLO mail.kernel.org"
+	id S932586Ab3AOWex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:34:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43268 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757588Ab3AOWer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:34:47 -0500
+	id S1757588Ab3AOWeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:34:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Aleksi Torhamo <aleksi@torhamo.net>,
+        Roy Spliet <r.spliet@student.tudelft.nl>,
         Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 167/221] drm/nouveau: add locking around instobj list operations
-Date: Tue, 15 Jan 2013 10:51:34 -0800
-Message-Id: <20130115185010.093399757@linuxfoundation.org>
+Subject: [ 169/221] drm/nvc0/fb: fix crash when different mutex is used to protect same list
+Date: Tue, 15 Jan 2013 10:51:36 -0800
+Message-Id: <20130115185010.240198388@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,97 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: Aleksi Torhamo <aleksi@torhamo.net>
 
-commit 4c4101d29fb6c63f78791d02c437702b11e1d4f0 upstream.
+commit 43f789792e2c7ea2bff37195e4c4b4239e9e02b7 upstream.
 
-Fixes memory corruptions, oopses, etc. when multiple gpuobjs are
-simultaneously created or destroyed.
+Fixes regression introduced in commit 861d2107
+"drm/nouveau/fb: merge fb/vram and port to subdev interfaces"
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+nv50_fb_vram_{new,del} functions were changed to use
+nouveau_subdev->mutex instead of the old nouveau_mm->mutex.
+nvc0_fb_vram_new still uses the nouveau_mm->mutex, but nvc0 doesn't
+have its own fb_vram_del function, using nv50_fb_vram_del instead.
+Because of this, on nvc0 a different mutex ends up being used to protect
+additions and deletions to the same list.
+
+This patch is a -stable candidate for 3.7.
+
+Signed-off-by: Aleksi Torhamo <aleksi@torhamo.net>
+Reported-by: Roy Spliet <r.spliet@student.tudelft.nl>
+Tested-by: Roy Spliet <r.spliet@student.tudelft.nl>
 Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/subdev/instmem/base.c |   35 ++++++++++++++++-----
- 1 file changed, 27 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/core/subdev/instmem/base.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/instmem/base.c
-@@ -40,15 +40,21 @@ nouveau_instobj_create_(struct nouveau_o
- 	if (ret)
- 		return ret;
+--- a/drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c
+@@ -86,14 +86,14 @@ nvc0_fb_vram_new(struct nouveau_fb *pfb,
+ 	mem->memtype = type;
+ 	mem->size = size;
  
-+	mutex_lock(&imem->base.mutex);
- 	list_add(&iobj->head, &imem->list);
-+	mutex_unlock(&imem->base.mutex);
- 	return 0;
- }
- 
- void
- nouveau_instobj_destroy(struct nouveau_instobj *iobj)
- {
--	if (iobj->head.prev)
--		list_del(&iobj->head);
-+	struct nouveau_subdev *subdev = nv_subdev(iobj->base.engine);
-+
-+	mutex_lock(&subdev->mutex);
-+	list_del(&iobj->head);
-+	mutex_unlock(&subdev->mutex);
-+
- 	return nouveau_object_destroy(&iobj->base);
- }
- 
-@@ -88,6 +94,8 @@ nouveau_instmem_init(struct nouveau_inst
- 	if (ret)
- 		return ret;
- 
-+	mutex_lock(&imem->base.mutex);
-+
- 	list_for_each_entry(iobj, &imem->list, head) {
- 		if (iobj->suspend) {
- 			for (i = 0; i < iobj->size; i += 4)
-@@ -97,6 +105,8 @@ nouveau_instmem_init(struct nouveau_inst
+-	mutex_lock(&mm->mutex);
++	mutex_lock(&pfb->base.mutex);
+ 	do {
+ 		if (back)
+ 			ret = nouveau_mm_tail(mm, 1, size, ncmin, align, &r);
+ 		else
+ 			ret = nouveau_mm_head(mm, 1, size, ncmin, align, &r);
+ 		if (ret) {
+-			mutex_unlock(&mm->mutex);
++			mutex_unlock(&pfb->base.mutex);
+ 			pfb->ram.put(pfb, &mem);
+ 			return ret;
  		}
- 	}
+@@ -101,7 +101,7 @@ nvc0_fb_vram_new(struct nouveau_fb *pfb,
+ 		list_add_tail(&r->rl_entry, &mem->regions);
+ 		size -= r->length;
+ 	} while (size);
+-	mutex_unlock(&mm->mutex);
++	mutex_unlock(&pfb->base.mutex);
  
-+	mutex_unlock(&imem->base.mutex);
-+
- 	return 0;
- }
- 
-@@ -104,17 +114,26 @@ int
- nouveau_instmem_fini(struct nouveau_instmem *imem, bool suspend)
- {
- 	struct nouveau_instobj *iobj;
--	int i;
-+	int i, ret = 0;
- 
- 	if (suspend) {
-+		mutex_lock(&imem->base.mutex);
-+
- 		list_for_each_entry(iobj, &imem->list, head) {
- 			iobj->suspend = vmalloc(iobj->size);
--			if (iobj->suspend) {
--				for (i = 0; i < iobj->size; i += 4)
--					iobj->suspend[i / 4] = nv_ro32(iobj, i);
--			} else
--				return -ENOMEM;
-+			if (!iobj->suspend) {
-+				ret = -ENOMEM;
-+				break;
-+			}
-+
-+			for (i = 0; i < iobj->size; i += 4)
-+				iobj->suspend[i / 4] = nv_ro32(iobj, i);
- 		}
-+
-+		mutex_unlock(&imem->base.mutex);
-+
-+		if (ret)
-+			return ret;
- 	}
- 
- 	return nouveau_subdev_fini(&imem->base, suspend);
+ 	r = list_first_entry(&mem->regions, struct nouveau_mm_node, rl_entry);
+ 	mem->offset = (u64)r->offset << 12;
 
 
