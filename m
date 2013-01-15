@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab3AOEQE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 23:16:04 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:25566 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751288Ab3AOEQD (ORCPT
+	id S1755655Ab3AOERO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 23:17:14 -0500
+Received: from hermes.synopsys.com ([198.182.44.81]:58183 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab3AOERN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 23:16:03 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkECAG6Zu08YNOOE/2dsb2JhbAANN4F7gzKrG4ZmAQEBAQIBI1UBBQsLGAICBRYLAgIJAwIBAgFFBg0BBwEBiAWnE5J7gSaKCIQCgRQDiEKVd4lZgTo
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="212573517"
-Message-ID: <50F4D800.5040703@teksavvy.com>
-Date: Mon, 14 Jan 2013 23:16:00 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Mon, 14 Jan 2013 23:17:13 -0500
+Message-ID: <50F4D83A.7020803@synopsys.com>
+Date: Tue, 15 Jan 2013 09:46:58 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org>
-In-Reply-To: <20130114203711.GA29982@fieldses.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
+To: Mark Salter <msalter@redhat.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-arch@vger.kernel.org>,
+        <linux-c6x-dev@linux-c6x.org>, <linux-kernel@vger.kernel.org>,
+        "Marek Szyprowski" <m.szyprowski@samsung.com>
+Subject: Re: [Linux-c6x-dev] [PATCH 3/9] c6x: Provide dma_mmap_coherent()
+ and dma_get_sgtable()
+References: <1358073890-3610-1-git-send-email-geert@linux-m68k.org>  <1358073890-3610-3-git-send-email-geert@linux-m68k.org> <1358177872.4357.53.camel@t520.localdomain>
+In-Reply-To: <1358177872.4357.53.camel@t520.localdomain>
+Content-Type: text/plain; charset="ISO-8859-7"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-01-14 03:37 PM, J. Bruce Fields wrote:
-> Thanks for the report.
+On Monday 14 January 2013 09:07 PM, Mark Salter wrote:
+> On Sun, 2013-01-13 at 11:44 +0100, Geert Uytterhoeven wrote:
+>> c6x/allmodconfig (assumed):
+>>
+>> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ¡vb2_dc_mmap¢:
+>> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ¡dma_mmap_coherent¢
+>> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ¡vb2_dc_get_base_sgt¢:
+>> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ¡dma_get_sgtable¢
+>>
+>> For architectures using dma_map_ops, dma_mmap_coherent() and
+>> dma_get_sgtable() are provided in <asm-generic/dma-mapping-common.h>.
+>>
+>> C6x does not use dma_map_ops, hence it should implement them as inline
+>> stubs using dma_common_mmap() and dma_common_get_sgtable().
+>>
 > 
-> On Mon, Jan 14, 2013 at 11:17:09AM -0500, Mark Lord wrote:
->> Since upgrading to 3.7, and now 3.7.2, my AMD-450E based server
+> So are dma_mmap_coherent() and dma_get_sgtable() part of the DMA API
+> now? I don't them in Documentation/DMA*.txt anywhere.
 > 
-> It's acting as an NFS client, right?
-
-Client and server, with other Linux boxes all running 3.something kernels.
-
-> What did you upgrade from?
-
-3.4.something, I believe.
-
->> is getting these BUG complaints.  The .config file is gzip'd/attached.
+> Why does the default dma_common_mmap() for !CONFIG_MMU return an
+> error?
 > 
-> Is this easy to reproduce?
+> Wouldn't it be better to provide default implementations that an arch
+> could override rather than having to patch all "no dma_map_ops"
+> architectures?
+> 
+> --Mark
+> 
+> 
 
-So far, it seems to pop up within a day or so of any reboot.
-I normally only reboot that system for a kernel upgrade,
-but can do so a bit more often if there's useful info to collect.
+Speaking for the still-reviewed ARC Port, I completely agree with Mark.
 
-Cheers
+-Vineet
