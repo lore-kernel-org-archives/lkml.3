@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab3APAPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:15:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42652 "EHLO mail.kernel.org"
+	id S932700Ab3APAQC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:16:02 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42570 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758387Ab3AOWcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:32:13 -0500
+	id S1758367Ab3AOWcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Marek Vasut <marex@denx.de>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 122/221] HID: add quirk for Freescale i.MX23 ROM recovery
-Date: Tue, 15 Jan 2013 10:50:49 -0800
-Message-Id: <20130115185006.840794740@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 111/221] jbd2: fix assertion failure in jbd2_journal_flush()
+Date: Tue, 15 Jan 2013 10:50:38 -0800
+Message-Id: <20130115185006.061661488@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,47 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Vasut <marex@denx.de>
+From: Jan Kara <jack@suse.cz>
 
-commit 436136cec650d661eb662fcb508a99878606d050 upstream.
+commit d7961c7fa4d2e3c3f12be67e21ba8799b5a7238a upstream.
 
-The USB recovery mode present in i.MX23 ROM emulates USB HID.  It needs this
-quirk to behave properly.
+The following race is possible between start_this_handle() and someone
+calling jbd2_journal_flush().
 
-Even if the official branding of the chip is Freescale i.MX23, I named it
-Sigmatel STMP3780 since that's what the chip really is and it even reports
-itself as STMP3780.
+Process A                              Process B
+start_this_handle().
+  if (journal->j_barrier_count) # false
+  if (!journal->j_running_transaction) { #true
+    read_unlock(&journal->j_state_lock);
+                                       jbd2_journal_lock_updates()
+                                       jbd2_journal_flush()
+                                         write_lock(&journal->j_state_lock);
+                                         if (journal->j_running_transaction) {
+                                           # false
+                                         ... wait for committing trans ...
+                                         write_unlock(&journal->j_state_lock);
+    ...
+    write_lock(&journal->j_state_lock);
+    if (!journal->j_running_transaction) { # true
+      jbd2_get_transaction(journal, new_transaction);
+    write_unlock(&journal->j_state_lock);
+    goto repeat; # eventually blocks on j_barrier_count > 0
+                                         ...
+                                         J_ASSERT(!journal->j_running_transaction);
+                                           # fails
 
-Signed-off-by: Marek Vasut <marex@denx.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+We fix the race by rechecking j_barrier_count after reacquiring j_state_lock
+in exclusive mode.
+
+Reported-by: yjwsignal@empal.com
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ fs/jbd2/transaction.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -696,6 +696,9 @@
- #define USB_VENDOR_ID_SIGMA_MICRO	0x1c4f
- #define USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD	0x0002
- 
-+#define USB_VENDOR_ID_SIGMATEL		0x066F
-+#define USB_DEVICE_ID_SIGMATEL_STMP3780	0x3780
-+
- #define USB_VENDOR_ID_SKYCABLE			0x1223
- #define	USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER	0x3F07
- 
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -79,6 +79,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SENNHEISER, USB_DEVICE_ID_SENNHEISER_BTD500USB, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_SIGMATEL, USB_DEVICE_ID_SIGMATEL_STMP3780, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -209,7 +209,8 @@ repeat:
+ 		if (!new_transaction)
+ 			goto alloc_transaction;
+ 		write_lock(&journal->j_state_lock);
+-		if (!journal->j_running_transaction) {
++		if (!journal->j_running_transaction &&
++		    !journal->j_barrier_count) {
+ 			jbd2_get_transaction(journal, new_transaction);
+ 			new_transaction = NULL;
+ 		}
 
 
