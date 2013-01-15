@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933901Ab3AOXVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:21:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47320 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933855Ab3AOWx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933853Ab3AOWx3 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 15 Jan 2013 17:53:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47280 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933835Ab3AOWxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:53:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>
-Subject: [ 155/171] rbd: add read_only rbd map option
-Date: Tue, 15 Jan 2013 14:45:20 -0800
-Message-Id: <20130115224324.524913315@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 152/171] libceph: fix osdmap decode error paths
+Date: Tue, 15 Jan 2013 14:45:17 -0800
+Message-Id: <20130115224324.305951358@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,118 +26,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Alex Elder <elder@inktank.com>
+From: Sage Weil <sage@inktank.com>
 
-Add the ability to map an rbd image read-only, by specifying either
-"read_only" or "ro" as an option on the rbd "command line."  Also
-allow the inverse to be explicitly specified using "read_write" or
-"rw".
+Ensure that we set the err value correctly so that we do not pass a 0
+value to ERR_PTR and confuse the calling code.  (In particular,
+osd_client.c handle_map() will BUG(!newmap)).
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Yehuda Sadeh <yehuda@inktank.com>
-(based on commit cc0538b62c839c2df7b9f8378bb37e3b35faa608)
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+(cherry picked from commit 0ed7285e0001b960c888e5455ae982025210ed3d)
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/block/rbd.c |   28 ++++++++++++++++++++++++----
- 1 file changed, 24 insertions(+), 4 deletions(-)
+ net/ceph/osdmap.c |   31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -71,7 +71,8 @@
- #define DEV_NAME_LEN		32
- #define MAX_INT_FORMAT_WIDTH	((5 * sizeof (int)) / 2 + 1)
- 
--#define RBD_NOTIFY_TIMEOUT_DEFAULT 10
-+#define RBD_NOTIFY_TIMEOUT_DEFAULT	10
-+#define RBD_READ_ONLY_DEFAULT		false
- 
- /*
-  * block device image metadata (in-memory version)
-@@ -95,6 +96,7 @@ struct rbd_image_header {
- 
- struct rbd_options {
- 	int	notify_timeout;
-+	bool	read_only;
- };
- 
- /*
-@@ -180,7 +182,7 @@ struct rbd_device {
- 	u64                     snap_id;	/* current snapshot id */
- 	/* whether the snap_id this device reads from still exists */
- 	bool                    snap_exists;
--	int                     read_only;
-+	bool			read_only;
- 
- 	struct list_head	node;
- 
-@@ -346,12 +348,21 @@ enum {
- 	/* int args above */
- 	Opt_last_string,
- 	/* string args above */
-+	Opt_read_only,
-+	Opt_read_write,
-+	/* Boolean args above */
-+	Opt_last_bool,
- };
- 
- static match_table_t rbdopt_tokens = {
- 	{Opt_notify_timeout, "notify_timeout=%d"},
- 	/* int args above */
- 	/* string args above */
-+	{Opt_read_only, "read_only"},
-+	{Opt_read_only, "ro"},		/* Alternate spelling */
-+	{Opt_read_write, "read_write"},
-+	{Opt_read_write, "rw"},		/* Alternate spelling */
-+	/* Boolean args above */
- 	{-1, NULL}
- };
- 
-@@ -376,6 +387,8 @@ static int parse_rbd_opts_token(char *c,
- 	} else if (token > Opt_last_int && token < Opt_last_string) {
- 		dout("got string token %d val %s\n", token,
- 		     argstr[0].from);
-+	} else if (token > Opt_last_string && token < Opt_last_bool) {
-+		dout("got Boolean token %d\n", token);
- 	} else {
- 		dout("got token %d\n", token);
- 	}
-@@ -384,6 +397,12 @@ static int parse_rbd_opts_token(char *c,
- 	case Opt_notify_timeout:
- 		rbdopt->notify_timeout = intval;
- 		break;
-+	case Opt_read_only:
-+		rbdopt->read_only = true;
-+		break;
-+	case Opt_read_write:
-+		rbdopt->read_only = false;
-+		break;
- 	default:
- 		BUG_ON(token);
- 	}
-@@ -407,6 +426,7 @@ static struct rbd_client *rbd_get_client
- 		return ERR_PTR(-ENOMEM);
- 
- 	rbd_opts->notify_timeout = RBD_NOTIFY_TIMEOUT_DEFAULT;
-+	rbd_opts->read_only = RBD_READ_ONLY_DEFAULT;
- 
- 	opt = ceph_parse_options(options, mon_addr,
- 				mon_addr + mon_addr_len,
-@@ -590,7 +610,7 @@ static int rbd_header_set_snap(struct rb
- 			snapc->seq = 0;
- 		dev->snap_id = CEPH_NOSNAP;
- 		dev->snap_exists = false;
--		dev->read_only = 0;
-+		dev->read_only = dev->rbd_client->rbd_opts->read_only;
- 		if (size)
- 			*size = header->image_size;
- 	} else {
-@@ -599,7 +619,7 @@ static int rbd_header_set_snap(struct rb
- 			goto done;
- 		dev->snap_id = snapc->seq;
- 		dev->snap_exists = true;
--		dev->read_only = 1;
-+		dev->read_only = true;	/* No choice for snapshots */
+--- a/net/ceph/osdmap.c
++++ b/net/ceph/osdmap.c
+@@ -613,10 +613,12 @@ struct ceph_osdmap *osdmap_decode(void *
+ 	ceph_decode_32_safe(p, end, max, bad);
+ 	while (max--) {
+ 		ceph_decode_need(p, end, 4 + 1 + sizeof(pi->v), bad);
++		err = -ENOMEM;
+ 		pi = kzalloc(sizeof(*pi), GFP_NOFS);
+ 		if (!pi)
+ 			goto bad;
+ 		pi->id = ceph_decode_32(p);
++		err = -EINVAL;
+ 		ev = ceph_decode_8(p); /* encoding version */
+ 		if (ev > CEPH_PG_POOL_VERSION) {
+ 			pr_warning("got unknown v %d > %d of ceph_pg_pool\n",
+@@ -632,8 +634,13 @@ struct ceph_osdmap *osdmap_decode(void *
+ 		__insert_pg_pool(&map->pg_pools, pi);
  	}
  
- 	ret = 0;
+-	if (version >= 5 && __decode_pool_names(p, end, map) < 0)
+-		goto bad;
++	if (version >= 5) {
++		err = __decode_pool_names(p, end, map);
++		if (err < 0) {
++			dout("fail to decode pool names");
++			goto bad;
++		}
++	}
+ 
+ 	ceph_decode_32_safe(p, end, map->pool_max, bad);
+ 
+@@ -713,7 +720,7 @@ struct ceph_osdmap *osdmap_decode(void *
+ 	return map;
+ 
+ bad:
+-	dout("osdmap_decode fail\n");
++	dout("osdmap_decode fail err %d\n", err);
+ 	ceph_osdmap_destroy(map);
+ 	return ERR_PTR(err);
+ }
+@@ -807,6 +814,7 @@ struct ceph_osdmap *osdmap_apply_increme
+ 		if (ev > CEPH_PG_POOL_VERSION) {
+ 			pr_warning("got unknown v %d > %d of ceph_pg_pool\n",
+ 				   ev, CEPH_PG_POOL_VERSION);
++			err = -EINVAL;
+ 			goto bad;
+ 		}
+ 		pi = __lookup_pg_pool(&map->pg_pools, pool);
+@@ -823,8 +831,11 @@ struct ceph_osdmap *osdmap_apply_increme
+ 		if (err < 0)
+ 			goto bad;
+ 	}
+-	if (version >= 5 && __decode_pool_names(p, end, map) < 0)
+-		goto bad;
++	if (version >= 5) {
++		err = __decode_pool_names(p, end, map);
++		if (err < 0)
++			goto bad;
++	}
+ 
+ 	/* old_pool */
+ 	ceph_decode_32_safe(p, end, len, bad);
+@@ -900,15 +911,13 @@ struct ceph_osdmap *osdmap_apply_increme
+ 			(void) __remove_pg_mapping(&map->pg_temp, pgid);
+ 
+ 			/* insert */
+-			if (pglen > (UINT_MAX - sizeof(*pg)) / sizeof(u32)) {
+-				err = -EINVAL;
++			err = -EINVAL;
++			if (pglen > (UINT_MAX - sizeof(*pg)) / sizeof(u32))
+ 				goto bad;
+-			}
++			err = -ENOMEM;
+ 			pg = kmalloc(sizeof(*pg) + sizeof(u32)*pglen, GFP_NOFS);
+-			if (!pg) {
+-				err = -ENOMEM;
++			if (!pg)
+ 				goto bad;
+-			}
+ 			pg->pgid = pgid;
+ 			pg->len = pglen;
+ 			for (j = 0; j < pglen; j++)
 
 
