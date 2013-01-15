@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758765Ab3AOXJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:09:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48133 "EHLO mail.kernel.org"
+	id S934215Ab3AOXKP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:10:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48086 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934196Ab3AOW4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:56:35 -0500
+	id S934186Ab3AOW42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 28/71] staging: vt6656: 64 bit fixes : correct all type sizes
-Date: Tue, 15 Jan 2013 14:54:25 -0800
-Message-Id: <20130115225342.455694709@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 24/71] ring-buffer: Fix race between integrity check and readers
+Date: Tue, 15 Jan 2013 14:54:21 -0800
+Message-Id: <20130115225342.176297340@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -25,44 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 7730492855a2f9c828599bcd8d62760f96d319e4 upstream.
+commit 9366c1ba13fbc41bdb57702e75ca4382f209c82f upstream.
 
-After this patch all BYTE/WORD/DWORD types can be replaced with the appropriate u sizes.
+The function rb_check_pages() was added to make sure the ring buffer's
+pages were sane. This check is done when the ring buffer size is modified
+as well as when the iterator is released (closing the "trace" file),
+as that was considered a non fast path and a good place to do a sanity
+check.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+The problem is that the check does not have any locks around it.
+If one process were to read the trace file, and another were to read
+the raw binary file, the check could happen while the reader is reading
+the file.
+
+The issues with this is that the check requires to clear the HEAD page
+before doing the full check and it restores it afterward. But readers
+require the HEAD page to exist before it can read the buffer, otherwise
+it gives a nasty warning and disables the buffer.
+
+By adding the reader lock around the check, this keeps the race from
+happening.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/ttype.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ kernel/trace/ring_buffer.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/staging/vt6656/ttype.h
-+++ b/drivers/staging/vt6656/ttype.h
-@@ -44,9 +44,9 @@ typedef int             BOOL;
- 
- /****** Simple typedefs  ***************************************************/
- 
--typedef unsigned char   BYTE;           //  8-bit
--typedef unsigned short  WORD;           // 16-bit
--typedef unsigned long   DWORD;          // 32-bit
-+typedef u8 BYTE;
-+typedef u16 WORD;
-+typedef u32 DWORD;
- 
- // QWORD is for those situation that we want
- // an 8-byte-aligned 8 byte long structure
-@@ -62,8 +62,8 @@ typedef UQuadWord       QWORD;
- 
- /****** Common pointer types ***********************************************/
- 
--typedef unsigned long   ULONG_PTR;      // 32-bit
--typedef unsigned long   DWORD_PTR;      // 32-bit
-+typedef u32 ULONG_PTR;
-+typedef u32 DWORD_PTR;
- 
- // boolean pointer
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2926,6 +2926,8 @@ rb_get_reader_page(struct ring_buffer_pe
+ 	 * Splice the empty reader page into the list around the head.
+ 	 */
+ 	reader = rb_set_head_page(cpu_buffer);
++	if (!reader)
++		goto out;
+ 	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
+ 	cpu_buffer->reader_page->list.prev = reader->list.prev;
  
 
 
