@@ -1,62 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab3AOVq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 16:46:59 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:41428 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754976Ab3AOVq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 16:46:56 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v8 02/22] PCI: Add root bus children dev's res to fail list
-Date: Tue, 15 Jan 2013 22:52:47 +0100
-Message-ID: <10292702.MPeC4p1tfP@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQV1pvteSymLp=pHi=fNjHcfGe+TA84s2Ob9Tfne54fOmg@mail.gmail.com>
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <5313709.Qx2p1IPKbV@vostro.rjw.lan> <CAE9FiQV1pvteSymLp=pHi=fNjHcfGe+TA84s2Ob9Tfne54fOmg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1757008Ab3AOVqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 16:46:15 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:47981 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752370Ab3AOVqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 16:46:13 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        johnstul@us.ibm.com
+Cc: linux-kernel@vger.kernel.org, Nathan Zimmer <nzimmer@sgi.com>
+Subject: [PATCH RESEND 1/4] sched: /proc/sched_stat fails on very very large machines.
+Date: Tue, 15 Jan 2013 15:46:09 -0600
+Message-Id: <1358286372-13777-2-git-send-email-nzimmer@sgi.com>
+X-Mailer: git-send-email 1.6.0.2
+In-Reply-To: <1358286372-13777-1-git-send-email-nzimmer@sgi.com>
+References: <1358286372-13777-1-git-send-email-nzimmer@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 15, 2013 07:44:21 AM Yinghai Lu wrote:
-> On Tue, Jan 15, 2013 at 3:21 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, January 14, 2013 10:23:47 PM Yinghai Lu wrote:
-> >> On Sat, Jan 12, 2013 at 1:37 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Friday, January 11, 2013 02:40:29 PM Yinghai Lu wrote:
-> >> >> We can stop trying according to try number now and do not need to use
-> >> >> root_bus checking as stop sign anymore.
-> >> >>
-> >> >> In extreme case we could need to reallocate resource for device just
-> >> >> under root bus.
-> >> >
-> >> > Well, the above says that we _can_ do the change, but it doesn't explain why it
-> >> > is needed.  So what's the reason why we need to do that?
-> >>
-> >> In extreme case we could need to reallocate resource for device just
-> >> under root bus.
-> >>
-> >> otherwise, those devices just under root bus will not be assigned
-> >> resources again.
-> >
-> > IOW, our current code will not cover the case when we hot plug a host bridge
-> > and need to reassign resources for devices integrated into it?
-> 
-> yes. in extreme case if _CRS range is not big enough.
+On systems with 4096 cores doing a cat /proc/sched_stat fails.
+We are trying to push all the data into a single kmalloc buffer.
+The issue is on these very large machines all the data will not fit in 4mb.
 
-It would be good to say that in the changelog too.  It's a clear justification
-for the change if we're going to support root bridge hotplug (which we are).
+A better solution is to not us the single_open mechanism but to provide
+our own seq_operations.
 
-Thanks,
-Rafael
+The output should be identical to previous version and thus not need the
+version number.
 
+CC: Ingo Molnar <mingo@redhat.com> 
+CC: Peter Zijlstra <peterz@infradead.org> 
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+---
+ kernel/sched/stats.c |   73 ++++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 53 insertions(+), 20 deletions(-)
 
+diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
+index 903ffa9..33a85c9 100644
+--- a/kernel/sched/stats.c
++++ b/kernel/sched/stats.c
+@@ -21,9 +21,13 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 	if (mask_str == NULL)
+ 		return -ENOMEM;
+ 
+-	seq_printf(seq, "version %d\n", SCHEDSTAT_VERSION);
+-	seq_printf(seq, "timestamp %lu\n", jiffies);
+-	for_each_online_cpu(cpu) {
++	if (v == (void *)1) {
++		seq_printf(seq, "version %d\n", SCHEDSTAT_VERSION);
++		seq_printf(seq, "timestamp %lu\n", jiffies);
++	} else {
++
++		cpu = (unsigned long)(v - 2);
++
+ 		struct rq *rq = cpu_rq(cpu);
+ #ifdef CONFIG_SMP
+ 		struct sched_domain *sd;
+@@ -72,35 +76,64 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 		}
+ 		rcu_read_unlock();
+ #endif
++		kfree(mask_str);
+ 	}
+-	kfree(mask_str);
+ 	return 0;
+ }
+ 
+-static int schedstat_open(struct inode *inode, struct file *file)
++static void *schedstat_start(struct seq_file *file, loff_t *offset)
+ {
+-	unsigned int size = PAGE_SIZE * (1 + num_online_cpus() / 32);
+-	char *buf = kmalloc(size, GFP_KERNEL);
+-	struct seq_file *m;
+-	int res;
++	unsigned long n = *offset;
+ 
+-	if (!buf)
+-		return -ENOMEM;
+-	res = single_open(file, show_schedstat, NULL);
+-	if (!res) {
+-		m = file->private_data;
+-		m->buf = buf;
+-		m->size = size;
+-	} else
+-		kfree(buf);
+-	return res;
++	if (n == 0)
++		return (void *) 1;
++
++	n--;
++
++	if (n > 0)
++		n = cpumask_next(n - 1, cpu_online_mask);
++	else
++		n = cpumask_first(cpu_online_mask);
++
++	*offset = n + 1;
++
++	if (n < nr_cpu_ids)
++		return (void *)(unsigned long)(n + 2);
++	return NULL;
++}
++
++static void *schedstat_next(struct seq_file *file, void *data, loff_t *offset)
++{
++	(*offset)++;
++	return schedstat_start(file, offset);
++}
++
++static void schedstat_stop(struct seq_file *file, void *data)
++{
++}
++
++static const struct seq_operations schedstat_sops = {
++	.start = schedstat_start,
++	.next  = schedstat_next,
++	.stop  = schedstat_stop,
++	.show  = show_schedstat,
++};
++
++static int schedstat_open(struct inode *inode, struct file *file)
++{
++	return seq_open(file, &schedstat_sops);
+ }
+ 
++static int schedstat_release(struct inode *inode, struct file *file)
++{
++	return 0;
++};
++
+ static const struct file_operations proc_schedstat_operations = {
+ 	.open    = schedstat_open,
+ 	.read    = seq_read,
+ 	.llseek  = seq_lseek,
+-	.release = single_release,
++	.release = schedstat_release,
+ };
+ 
+ static int __init proc_schedstat_init(void)
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.6.0.2
+
