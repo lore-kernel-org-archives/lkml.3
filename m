@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab3AOSVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:21:00 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:45410 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756861Ab3AOSU7 (ORCPT
+	id S1757393Ab3AOSV6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:21:58 -0500
+Received: from mailfw02.zoner.fi ([84.34.147.249]:39581 "EHLO
+	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755202Ab3AOSV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:20:59 -0500
-Date: Tue, 15 Jan 2013 13:20:58 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Ming Lei <ming.lei@canonical.com>, Tejun Heo <tj@kernel.org>,
-        Alex Riesen <raa.lkml@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: USB device cannot be reconnected and khubd "blocked for more
- than 120 seconds"
-In-Reply-To: <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1301151300200.11786-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 15 Jan 2013 13:21:57 -0500
+X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jan 2013 13:21:56 EST
+Date: Tue, 15 Jan 2013 20:11:17 +0200
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] decompressors: make the default XZ_BCJ_* config
+ match the selected architecture
+Message-ID: <20130115201117.5ce0a690@tukaani.org>
+In-Reply-To: <1358266931-23401-2-git-send-email-florian@openwrt.org>
+References: <1358266931-23401-1-git-send-email-florian@openwrt.org>
+	<1358266931-23401-2-git-send-email-florian@openwrt.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013, Linus Torvalds wrote:
+On 2013-01-15 Florian Fainelli wrote:
+> This patch changes the defautl XZ_BCJ_* config symbol to match the
+> configured architecture. It is perfectly legitimate to support
+> multiple XZ BCJ filters for different architectures (e.g.: to mount
+> foreign squashfs/xz compressed filesystems), it is however more
+> natural not to select them all by default, but only the one matching
+> the configured architecture.
 
-> Tejun, comments? You can see the whole thread on lkml, but the basic
-> problem is that the module loading doing the unconditional
-> async_synchronize_full() has caused problems, because we have
-> 
->  - load module A
->    - module A does per-controller async discovery of its devices (eg
-> scsi or ata probing)
->    - in the async thread, it initializes somethign that needs another
-> module B (in this case the default IO scheduler module)
->       - modprobe for B loads the IO scheduler module successfully
->           at the end of the module load, it does
-> async_synchronize_full() to make sure load_module won't return before
-> the module is ready
->           *DEADLOCK*, because the async_synchronize_full() thing
-> actually waits for not the module B async code (it didn't have any),
-> but for the module *A* async code, which is waiting for module B to
-> finish.
-> 
-> Now, I'll happily argue that we shouldn't have this kind of "load
-> modules from random context" behavior in the kernel, and I think the
-> block layer is to blame for doing the IO scheduler load at an insane
-> time. So "don't do that then" would be the best solution.
+I don't have a strong opinion on what is the best default setting, so
+it's fine to me that the default is changed if that's what people
+prefer.
 
-It may not be so easy.  When the SCSI async thread probes the new disk, 
-it has to do I/O.  So it needs to use a scheduler.
+>  config XZ_DEC_X86
+>  	bool "x86 BCJ filter decoder" if EXPERT
+> -	default y
+> +	default y if X86
+>  	select XZ_DEC_BCJ
+[...]
 
-But maybe it could use a built-in trivial scheduler until the proper 
-one is loaded.  Then the loading could be asynchronous.
+I think the "if EXPERT" strings should be dropped when all BCJ filters
+aren't enabled by default. One should be able to enable all filters
+without enabling EXPERT.
 
-Alan Stern
-
+-- 
+Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
