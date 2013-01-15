@@ -1,154 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3AOAOD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 19:14:03 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:53291 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284Ab3AOAOA (ORCPT
+	id S1755513Ab3AOAOz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 19:14:55 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:44936 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755368Ab3AOAOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 19:14:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <50F482D1.4090301@gmail.com>
-References: <1357914810-20656-1-git-send-email-alcooperx@gmail.com>
-	<50F0454D.5060109@gmail.com>
-	<CAOGqxeU3zZuFfL_M1u-hgjbPHgm6MrzoCK1KqpbazwKC4td4ww@mail.gmail.com>
-	<50F482D1.4090301@gmail.com>
-Date: Mon, 14 Jan 2013 19:13:59 -0500
-Message-ID: <CAOGqxeW+roq4opj_1+bFTeFk1=75qooBxNLB9JGJWrfs-GG7hQ@mail.gmail.com>
-Subject: Re: [PATCH] mips: function tracer: Fix broken function tracing
-From: Alan Cooper <alcooperx@gmail.com>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: ralf@linux-mips.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 14 Jan 2013 19:14:54 -0500
+Message-ID: <1358208301.14145.118.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        jiang.liu@huawei.com, wujianguo@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Mon, 14 Jan 2013 17:05:01 -0700
+In-Reply-To: <20130114143456.3962f3bd.akpm@linux-foundation.org>
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <50F440F5.3030006@zytor.com>
+	 <20130114143456.3962f3bd.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 5:12 PM, David Daney <ddaney.cavm@gmail.com> wrote:
-> On 01/14/2013 01:10 PM, Alan Cooper wrote:
->>
->> I already tried using "adddiu sp, sp, 8" and it caused the kernel to
->> randomly crash. After many hours of debugging the reason occurred to
->> me while in bed in the middle of the night. The problem is that if we
->> get an interrupt between the add 8 and the add -8 instructions, we
->> trash the existing stack.
->>
->> The problem with the 2 nop approach is that there are a series of
->> subroutines used to write each nop and these nested subroutines are
->> traceable.
->
->
-> This seems like a bug.  The low-level code used to do code patching probably
-> should be CFLAGS_REMOVE_file.o = -pg
+On Mon, 2013-01-14 at 14:34 -0800, Andrew Morton wrote:
+> On Mon, 14 Jan 2013 09:31:33 -0800
+> "H. Peter Anvin" <hpa@zytor.com> wrote:
+> 
+> > On 01/14/2013 01:15 AM, Tang Chen wrote:
+> > >
+> > > For now, users can disable this functionality by not specifying the boot option.
+> > > Later, we will post SRAT support, and add another option value "movablecore_map=acpi"
+> > > to using SRAT.
+> > >
+> > 
+> > I still think the option "movablecore_map" is uglier than hell.  "core" 
+> > could just as easily refer to CPU cores there, but it is a memory mem. 
+> > "movablemem" seems more appropriate.
+> > 
+> > Again, without SRAT I consider this patchset to be largely useless for 
+> > anything other than prototyping work.
+> > 
+> 
+> hm, why.  Obviously SRAT support will improve things, but is it
+> actually unusable/unuseful with the command line configuration?
 
-While tracing mcount cannot be done because it's recursive, allowing
-tracing of the code to enable/disable the call to mcount can be done
-and seems useful. Also, fixing the 2 nop solution this way will still
-not allow us to stop using stop_machine() which is hugely disruptive
-to a running system. Remember that when tracing is enabled and
-disabled we end up modifying 20 to 30 thousand functions. Moving this
-functionality out of stop_machine() seems like a big benefit.
+I think it is useful for prototyping and testing.  I do not think it is
+suitable for regular users.
 
->
->
->
->> This means on the second call to these subroutines they
->> execute with only one nop and crash. I could  write  some new code
->> that wrote the 2 nops at once, but (now that I understand
->> "stop_machine") with the branch likely solution we should be able to
->> stop using "stop_machine" when we write nops to the 20-30 thousand
->> Linux functions. It looks like other platforms have stopped using
->> stop_machine.
->
->
-> I don't particularly object to the 'branch likely solution', but I think the
-> failures of the other approaches indicates underlying bugs in the tracing
-> code.  Those bugs should probably be fixed.
+> Also, "But even if we can use SRAT, users still need an interface to
+> enable/disable this functionality if they don't want to loose their
+> NUMA performance.  So I think, an user interface is always needed."
 
-If a solution can be found that modifies a single 32bit instruction to
-enable/disable tracing, I don't see any bugs in the underlying code.
-Plus we can avoid using stop_machine().
+Yes, but such user interface could be provided through the management
+interface (GUI/CLI) of the platforms (or VMs).  If user sets for
+performance, SRAT could be generated with no hot-pluggable memory.  If
+user sets node N to be hot-removable, SRAT could be generated in such
+way that all memory ranges in node N are hot-pluggable.
 
->
-> David Daney
->
->
->
->>
->> Al
->>
->> On Fri, Jan 11, 2013 at 12:01 PM, David Daney <ddaney.cavm@gmail.com>
->> wrote:
->>>
->>> On 01/11/2013 06:33 AM, Al Cooper wrote:
->>>>
->>>>
->>>> Function tracing is currently broken for all 32 bit MIPS platforms.
->>>> When tracing is enabled, the kernel immediately hangs on boot.
->>>> This is a result of commit b732d439cb43336cd6d7e804ecb2c81193ef63b0
->>>> that changes the kernel/trace/Kconfig file so that is no longer
->>>> forces FRAME_POINTER when FUNCTION_TRACING is enabled.
->>>>
->>>> MIPS frame pointers are generally considered to be useless because
->>>> they cannot be used to unwind the stack. Unfortunately the MIPS
->>>> function tracing code has bugs that are masked by the use of frame
->>>> pointers. This commit fixes the bugs so that MIPS frame pointers do
->>>> not need to be enabled.
->>>>
->>>> The bugs are a result of the odd calling sequence used to call the trace
->>>> routine. This calling sequence is inserted into every tracable function
->>>> when the tracing CONFIG option is enabled. This sequence is generated
->>>> for 32bit MIPS platforms by the compiler via the "-pg" flag.
->>>> Part of the sequence is "addiu sp,sp,-8" in the delay slot after every
->>>> call to the trace routine "_mcount" (some legacy thing where 2 arguments
->>>> used to be pushed on the stack). The _mcount routine is expected to
->>>> adjust the sp by +8 before returning.
->>>>
->>>> One of the bugs is that when tracing is disabled for a function, the
->>>> "jalr _mcount" instruction is replaced with a nop, but the
->>>> "addiu sp,sp,-8" is still executed and the stack pointer is left
->>>> trashed. When frame pointers are enabled the problem is masked
->>>> because any access to the stack is done through the frame
->>>> pointer and the stack pointer is restored from the frame pointer when
->>>> the function returns. This patch uses a branch likely instruction
->>>> "bltzl zero, f1" instead of "nop" to disable the call because this
->>>> instruction will not execute the "addiu sp,sp,-8" instruction in
->>>> the delay slot. The other possible solution would be to nop out both
->>>> the jalr and the "addiu sp,sp,-8", but this would need to be interrupt
->>>> and SMP safe and would be much more intrusive.
->>>
->>>
->>>
->>> I thought all CPUs were in stop_machine() when the modifications were
->>> done,
->>> so that there is no issue with multi-word instruction patching.
->>>
->>> Am I wrong about this?
->>>
->>> So really I think you can do two NOP just as easily.
->>>
->>> The only reason I bring this up is that I am not sure all 32-bit CPUs
->>> implement the 'Likely' branch variants. Also there may be an affect on
->>> the
->>> branch predictor.
->>>
->>> A third possibility would be to replace the JALR with 'ADDIU SP,SP,8'
->>> That
->>> way the following adjustment would be canceled out.  This would work well
->>> on
->>> single-issue CPUs, but the instructions may not be able to dual-issue on
->>> a
->>> multi issue machine due to data dependencies.
->>>
->>> David Daney
->>>
->>>
->>>>
->>>> A few other bugs were fixed where the _mcount routine itself did not
->>>> always fix the sp on return.
->>>>
->>>
->>
->>
->
+Thanks,
+-Toshi
+
+
+> There's also the matter of other architectures.  Has any thought been
+> given to how (eg) powerpc would hook into here?
+> 
+> And what about VMs (xen, KVM)?  I wonder if there is a case for those
+> to implement memory hotplug.  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
