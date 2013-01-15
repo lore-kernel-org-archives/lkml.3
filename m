@@ -1,19 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab3APAOA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:14:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42748 "EHLO mail.kernel.org"
+	id S932330Ab3AOWcT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:32:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42618 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932335Ab3AOWcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:32:21 -0500
+	id S1757850Ab3AOWcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Axel Lin <axel.lin@ingics.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 127/221] ASoC: wm2200: Fix setting dai format in wm2200_set_fmt
-Date: Tue, 15 Jan 2013 10:50:54 -0800
-Message-Id: <20130115185007.191744271@linuxfoundation.org>
+        Eric Wong <normalperson@yhbt.net>,
+        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Olsa <jolsa@redhat.com>,
+        Jonathan Corbet <corbet@lwn.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Voellmy <andreas.voellmy@yale.edu>,
+        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [ 121/221] epoll: prevent missed events on EPOLL_CTL_MOD
+Date: Tue, 15 Jan 2013 10:50:48 -0800
+Message-Id: <20130115185006.770590630@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,35 +37,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Eric Wong <normalperson@yhbt.net>
 
-commit 2a5f431592343b78896013b055582f94c12a5049 upstream.
+commit 128dd1759d96ad36c379240f8b9463e8acfd37a1 upstream.
 
-According to the defines in wm2200.h:
-/*
- * R1284 (0x504) - Audio IF 1_5
- */
+EPOLL_CTL_MOD sets the interest mask before calling f_op->poll() to
+ensure events are not missed.  Since the modifications to the interest
+mask are not protected by the same lock as ep_poll_callback, we need to
+ensure the change is visible to other CPUs calling ep_poll_callback.
 
-We should not left shift 1 bit for fmt_val when setting dai format.
+We also need to ensure f_op->poll() has an up-to-date view of past
+events which occured before we modified the interest mask.  So this
+barrier also pairs with the barrier in wq_has_sleeper().
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+This should guarantee either ep_poll_callback or f_op->poll() (or both)
+will notice the readiness of a recently-ready/modified item.
+
+This issue was encountered by Andreas Voellmy and Junchang(Jason) Wang in:
+http://thread.gmane.org/gmane.linux.kernel/1408782/
+
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Davide Libenzi <davidel@xmailserver.org>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Voellmy <andreas.voellmy@yale.edu>
+Tested-by: "Junchang(Jason) Wang" <junchang.wang@yale.edu>
+Cc: netdev@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm2200.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/eventpoll.c |   22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm2200.c
-+++ b/sound/soc/codecs/wm2200.c
-@@ -1440,7 +1440,7 @@ static int wm2200_set_fmt(struct snd_soc
- 			    WM2200_AIF1TX_LRCLK_MSTR | WM2200_AIF1TX_LRCLK_INV,
- 			    lrclk);
- 	snd_soc_update_bits(codec, WM2200_AUDIO_IF_1_5,
--			    WM2200_AIF1_FMT_MASK << 1, fmt_val << 1);
-+			    WM2200_AIF1_FMT_MASK, fmt_val);
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -1285,7 +1285,7 @@ static int ep_modify(struct eventpoll *e
+ 	 * otherwise we might miss an event that happens between the
+ 	 * f_op->poll() call and the new event set registering.
+ 	 */
+-	epi->event.events = event->events;
++	epi->event.events = event->events; /* need barrier below */
+ 	pt._key = event->events;
+ 	epi->event.data = event->data; /* protected by mtx */
+ 	if (epi->event.events & EPOLLWAKEUP) {
+@@ -1296,6 +1296,26 @@ static int ep_modify(struct eventpoll *e
+ 	}
  
- 	return 0;
- }
+ 	/*
++	 * The following barrier has two effects:
++	 *
++	 * 1) Flush epi changes above to other CPUs.  This ensures
++	 *    we do not miss events from ep_poll_callback if an
++	 *    event occurs immediately after we call f_op->poll().
++	 *    We need this because we did not take ep->lock while
++	 *    changing epi above (but ep_poll_callback does take
++	 *    ep->lock).
++	 *
++	 * 2) We also need to ensure we do not miss _past_ events
++	 *    when calling f_op->poll().  This barrier also
++	 *    pairs with the barrier in wq_has_sleeper (see
++	 *    comments for wq_has_sleeper).
++	 *
++	 * This barrier will now guarantee ep_poll_callback or f_op->poll
++	 * (or both) will notice the readiness of an item.
++	 */
++	smp_mb();
++
++	/*
+ 	 * Get current event bits. We can safely use the file* here because
+ 	 * its usage count has been increased by the caller of this function.
+ 	 */
 
 
