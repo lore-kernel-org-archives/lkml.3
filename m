@@ -1,93 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab3AOVpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 16:45:21 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:20402 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756105Ab3AOVpT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 16:45:19 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-ef-50f5cded49bb
-From: Byungho An <bh74.an@samsung.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "'Giuseppe CAVALLARO'" <peppe.cavallaro@st.com>, davem@davemloft.net,
-        jeffrey.t.kirsher@intel.com, kgene.kim@samsung.com
-Subject: [PATCH net-next 3/3] net: stmmac: add gmac autonego set for ethtool
- support
-Date: Tue, 15 Jan 2013 13:45:16 -0800
-Message-id: <00c101cdf369$9c366aa0$d4a33fe0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac3zaZo5c0I6UdKPRnW6X3SJ/2QUtw==
-Content-language: en-zw
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t8zQ923Z78GGDydr2xxedccNotjC8Qc
-	mDw+b5ILYIzisklJzcksSy3St0vgyviw8wVrwVPOipb1+Q2MMzm6GDk5JARMJG7/m8YEYYtJ
-	XLi3nq2LkYtDSGAZo0T7hiusMEUXj75igUhMZ5TYsWE/O4Tzm1Hi866tYO1sAmoSzTMvA7Vz
-	cIgIWEicaMsCCTML1EhcvXyDEcQWFgiTeH2xhwWkhEVAVeLzAT2QMK+ApcT1p/uYIGxBiR+T
-	77FAtGpJrN95nAnClpfYvOYtM8Q9ChI7zr4GGykioCdx9jfEVmYBcYlpTUUgYRYBAYlvkw+B
-	bZIQkJXYdIAZ5GAJgW52iSdPb7FAjJGUOLjiBssERrFZSDbPQrJ5FpLNsxA2LGBkWcUomlqQ
-	XFCclJ5rpFecmFtcmpeul5yfu4kREivSOxhXNVgcYhTgYFTi4fUs/BogxJpYVlyZe4hRgoNZ
-	SYQ3bCFQiDclsbIqtSg/vqg0J7X4EKMP0OETmaVEk/OBcZxXEm9obGxiZmJqYm5pam6KQ1hJ
-	nJfx1JMAIYH0xJLU7NTUgtQimHFMHJxSDYzT2QOOL+S/cFKdUcOckbmlKClmp09oz/w7i73K
-	zf0kGqdfZPXfPDdznsmV1aYpy6IFJux6PvdUxN2arC+JFdcOpd7bPevwBD154aZzz/zMwxSW
-	9T3rX+UzQ7VwlcHj5emrYq2aNU5WLNc8y8WjK7l1s9vHIK3QXp6Nq8S+hkQs4Cg7sVre+5oS
-	S3FGoqEWc1FxIgAClOyNwgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t9jQd23Z78GGMw7K2txedccNotjC8Qc
-	mDw+b5ILYIxqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQ
-	dcvMAZqspFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8z4sPMFa8FTzoqW
-	9fkNjDM5uhg5OSQETCQuHn3FAmGLSVy4t56ti5GLQ0hgOqPEjg372SGc34wSn3dtZQKpYhNQ
-	k2ieeRmoioNDRMBC4kRbFkiYWaBG4urlG4wgtrBAmMTriz0sICUsAqoSnw/ogYR5BSwlrj/d
-	xwRhC0r8mHyPBaJVS2L9zuNMELa8xOY1b5kh7lGQ2HH2NdhIEQE9ibO/IbYyC4hLTGsqmsAo
-	MAvJpFlIJs1CMmkWQscCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMGR+Ex6B+OqBotD
-	jAIcjEo8vJ6FXwOEWBPLiitzDzFKcDArifCGLQQK8aYkVlalFuXHF5XmpBYfYvQBenMis5Ro
-	cj4wSeSVxBsam5gZWRqZWRiZmJvjEFYS52U89SRASCA9sSQ1OzW1ILUIZhwTB6dUA2OwR9fW
-	21O891+fKPLUzkh9m+Pl6xbXbczmNJbONKybuKmUicF2xTKNg1IvL+2XcpZel2u1QEJir8js
-	I7WK2R3LFYNinvC3TPG7+mBO56q77bstdvuVdqkeSrU/ff/M5Ktid1+fMY+2npbQ2K1dJqHh
-	t3rpeoat1qkpE5PMTfQD3wQEXJVrPaXEUpyRaKjFXFScCACUz0oc8QIAAA==
-X-CFilter-Loop: Reflected
+	id S1757328Ab3AOVqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 16:46:19 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:35550 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754976Ab3AOVqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 16:46:14 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        johnstul@us.ibm.com
+Cc: linux-kernel@vger.kernel.org, Nathan Zimmer <nzimmer@sgi.com>
+Subject: [PATCH RESEND 2/4] sched: /proc/sched_debug fails on very very large machines.
+Date: Tue, 15 Jan 2013 15:46:10 -0600
+Message-Id: <1358286372-13777-3-git-send-email-nzimmer@sgi.com>
+X-Mailer: git-send-email 1.6.0.2
+In-Reply-To: <1358286372-13777-1-git-send-email-nzimmer@sgi.com>
+References: <1358286372-13777-1-git-send-email-nzimmer@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On systems with 4096 cores attemping to read /proc/sched_debug fails.
+We are trying to push all the data into a single kmalloc buffer.
+The issue is on these very large machines all the data will not fit in 4mb.
 
-This patch adds gmac auto-negotiation setting for ethtool.
-If interface is SGMII, TBI or RTBI, gmac's auto-negotiation
-enable bit is need to set.
+A better solution is to not us the single_open mechanism but to provide
+our own seq_operations and treat each cpu as an individual record.
 
-Signed-off-by: Byungho An <bh74.an@samsung.com>
+The output should be identical to previous version.
+
+CC: Ingo Molnar <mingo@redhat.com> 
+CC: Peter Zijlstra <peterz@infradead.org>)
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
 ---
- drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/sched/debug.c |   84 +++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 73 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-index 1372ce2..457c1a4 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-@@ -335,6 +335,7 @@ stmmac_set_pauseparam(struct net_device *netdev,
- 	struct phy_device *phy = priv->phydev;
- 	int new_pause = FLOW_OFF;
- 	int ret = 0;
-+	int interface = priv->plat->interface;
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 6f79596..1ffdd42 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -253,11 +253,11 @@ static void print_cpu(struct seq_file *m, int cpu)
+ 	{
+ 		unsigned int freq = cpu_khz ? : 1;
  
- 	spin_lock(&priv->lock);
+-		SEQ_printf(m, "\ncpu#%d, %u.%03u MHz\n",
++		SEQ_printf(m, "cpu#%d, %u.%03u MHz\n",
+ 			   cpu, freq / 1000, (freq % 1000));
+ 	}
+ #else
+-	SEQ_printf(m, "\ncpu#%d\n", cpu);
++	SEQ_printf(m, "cpu#%d\n", cpu);
+ #endif
  
-@@ -348,6 +349,10 @@ stmmac_set_pauseparam(struct net_device *netdev,
+ #define P(x)								\
+@@ -314,6 +314,7 @@ do {									\
+ 	print_rq(m, rq, cpu);
+ 	rcu_read_unlock();
+ 	spin_unlock_irqrestore(&sched_debug_lock, flags);
++	SEQ_printf(m, "\n");
+ }
  
- 	if (phy->autoneg) {
- 		if (netif_running(netdev))
-+			if (interface == PHY_INTERFACE_MODE_SGMII ||
-+			    interface == PHY_INTERFACE_MODE_TBI ||
-+			    interface == PHY_INTERFACE_MODE_RTBI)
-+				priv->hw->mac->set_autoneg(priv->ioaddr);
- 			ret = phy_start_aneg(phy);
- 	} else
- 		priv->hw->mac->flow_ctrl(priv->ioaddr, phy->duplex,
+ static const char *sched_tunable_scaling_names[] = {
+@@ -322,11 +323,10 @@ static const char *sched_tunable_scaling_names[] = {
+ 	"linear"
+ };
+ 
+-static int sched_debug_show(struct seq_file *m, void *v)
++static void sched_debug_header(struct seq_file *m)
+ {
+ 	u64 ktime, sched_clk, cpu_clk;
+ 	unsigned long flags;
+-	int cpu;
+ 
+ 	local_irq_save(flags);
+ 	ktime = ktime_to_ns(ktime_get());
+@@ -368,33 +368,95 @@ static int sched_debug_show(struct seq_file *m, void *v)
+ #undef PN
+ #undef P
+ 
+-	SEQ_printf(m, "  .%-40s: %d (%s)\n", "sysctl_sched_tunable_scaling",
++	SEQ_printf(m, "  .%-40s: %d (%s)\n",
++		"sysctl_sched_tunable_scaling",
+ 		sysctl_sched_tunable_scaling,
+ 		sched_tunable_scaling_names[sysctl_sched_tunable_scaling]);
++	SEQ_printf(m, "\n");
++}
+ 
+-	for_each_online_cpu(cpu)
+-		print_cpu(m, cpu);
++static int sched_debug_show(struct seq_file *m, void *v)
++{
++	int cpu = (unsigned long)(v - 2);
+ 
+-	SEQ_printf(m, "\n");
++	if (cpu != -1)
++		print_cpu(m, cpu);
++	else
++		sched_debug_header(m);
+ 
+ 	return 0;
+ }
+ 
+ void sysrq_sched_debug_show(void)
+ {
+-	sched_debug_show(NULL, NULL);
++	int cpu;
++
++	sched_debug_header(NULL);
++	for_each_online_cpu(cpu)
++		print_cpu(NULL, cpu);
++
++}
++
++static void *sched_debug_start(struct seq_file *file, loff_t *offset)
++{
++	unsigned long n = *offset;
++
++	if (n == 0)
++		return (void *) 1;
++
++	n--;
++
++	if (n > 0)
++		n = cpumask_next(n - 1, cpu_online_mask);
++	else
++		n = cpumask_first(cpu_online_mask);
++
++	*offset = n + 1;
++
++	if (n < nr_cpu_ids)
++		return (void *)(unsigned long)(n + 2);
++	return NULL;
++}
++
++static void *sched_debug_next(struct seq_file *file, void *data, loff_t *offset)
++{
++	(*offset)++;
++	return sched_debug_start(file, offset);
++}
++
++static void sched_debug_stop(struct seq_file *file, void *data)
++{
++}
++
++
++static const struct seq_operations sched_debug_sops = {
++	.start = sched_debug_start,
++	.next = sched_debug_next,
++	.stop = sched_debug_stop,
++	.show = sched_debug_show,
++};
++
++static int sched_debug_release(struct inode *inode, struct file *file)
++{
++	seq_release(inode, file);
++
++	return 0;
+ }
+ 
+ static int sched_debug_open(struct inode *inode, struct file *filp)
+ {
+-	return single_open(filp, sched_debug_show, NULL);
++	int ret = 0;
++
++	ret = seq_open(filp, &sched_debug_sops);
++
++	return ret;
+ }
+ 
+ static const struct file_operations sched_debug_fops = {
+ 	.open		= sched_debug_open,
+ 	.read		= seq_read,
+ 	.llseek		= seq_lseek,
+-	.release	= single_release,
++	.release	= sched_debug_release,
+ };
+ 
+ static int __init init_sched_debug_procfs(void)
 -- 
-1.7.10.4
-
+1.6.0.2
 
