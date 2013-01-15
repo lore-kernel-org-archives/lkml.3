@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab3AOTB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 14:01:26 -0500
-Received: from a.painless.aa.net.uk ([81.187.30.51]:37468 "EHLO
-	a.painless.aa.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757557Ab3AOTBV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 14:01:21 -0500
-Date: Tue, 15 Jan 2013 19:01:12 +0000
-From: Andrew Clayton <andrew@digital-domain.net>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Rik van Riel <riel@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: qemu-kvm hangs at start up under 3.8.0-rc3-00074-gb719f43
- (works with CONFIG_LOCKDEP)
-Message-ID: <20130115190112.6f171c54@omega.digital-domain.net>
-In-Reply-To: <alpine.LNX.2.00.1301151939400.14538@pobox.suse.cz>
-References: <20130113222958.64840242@omega.digital-domain.net>
-	<20130114132736.GA12489@redhat.com>
-	<20130114182449.5a163101@omega.digital-domain.net>
-	<50F58867.6010507@redhat.com>
-	<20130115171756.36566374@zeus.pccl.info>
-	<alpine.LNX.2.00.1301151939400.14538@pobox.suse.cz>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757949Ab3AOS5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:57:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34779 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757919Ab3AOS5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:57:15 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Steve Hodgson <steve@purestorage.com>,
+        Armen Baloyan <armen.baloyan@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 036/221] SCSI: qla2xxx: Free rsp_data even on error in qla2x00_process_loopback()
+Date: Tue, 15 Jan 2013 10:49:23 -0800
+Message-Id: <20130115185000.636435563@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
+References: <20130115184958.025580322@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013 19:41:32 +0100 (CET), Jiri Kosina wrote:
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-[snip]
+------------------
 
-> Could you please try the patch below and report backt? Thanks.
-> 
-> 
-> 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] lockdep, rwsem: fix down_write_nest_lock()
-> if !CONFIG_DEBUG_LOCK_ALLOC
-> 
-> Commit 1b963c81b1 ("lockdep, rwsem: provide down_write_nest_lock()") 
-> contains a bug in a codepath when CONFIG_DEBUG_LOCK_ALLOC is
-> disabled, which causes down_read() to be called instead of
-> down_write() by mistake on such configurations. Fix that.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  include/linux/rwsem.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-> index 413cc11..8da67d6 100644
-> --- a/include/linux/rwsem.h
-> +++ b/include/linux/rwsem.h
-> @@ -135,7 +135,7 @@ do
-> {								\ 
->  #else
->  # define down_read_nested(sem, subclass)
-> down_read(sem) -# define down_write_nest_lock(sem, nest_lock)
-> down_read(sem) +# define down_write_nest_lock(sem, nest_lock)
-> down_write(sem) # define down_write_nested(sem, subclass)
-> down_write(sem) #endif
->  
+From: Steve Hodgson <steve@purestorage.com>
 
-Heh, indeed, that fix's it.
+commit 9bceab4e08c5e329e9def7fe1cab41c467236517 upstream.
 
-Tested-by: Andrew Clayton <andrew@digital-domain.net>
+Signed-off-by: Steve Hodgson <steve@purestorage.com>
+Signed-off-by: Armen Baloyan <armen.baloyan@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Cheers,
-Andrew
+---
+ drivers/scsi/qla2xxx/qla_bsg.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+--- a/drivers/scsi/qla2xxx/qla_bsg.c
++++ b/drivers/scsi/qla2xxx/qla_bsg.c
+@@ -743,7 +743,7 @@ qla2x00_process_loopback(struct fc_bsg_j
+ 				ql_log(ql_log_warn, vha, 0x701f,
+ 				    "Get port config failed.\n");
+ 				rval = -EPERM;
+-				goto done_free_dma_req;
++				goto done_free_dma_rsp;
+ 			}
+ 
+ 			ql_dbg(ql_dbg_user, vha, 0x70c0,
+@@ -762,7 +762,7 @@ qla2x00_process_loopback(struct fc_bsg_j
+ 
+ 			if (rval) {
+ 				rval = -EPERM;
+-				goto done_free_dma_req;
++				goto done_free_dma_rsp;
+ 			}
+ 
+ 			type = "FC_BSG_HST_VENDOR_LOOPBACK";
+@@ -795,7 +795,7 @@ qla2x00_process_loopback(struct fc_bsg_j
+ 				}
+ 
+ 				rval = -EIO;
+-				goto done_free_dma_req;
++				goto done_free_dma_rsp;
+ 			}
+ 		} else {
+ 			type = "FC_BSG_HST_VENDOR_LOOPBACK";
+@@ -830,6 +830,7 @@ qla2x00_process_loopback(struct fc_bsg_j
+ 	fw_sts_ptr += sizeof(response);
+ 	*fw_sts_ptr = command_sent;
+ 
++done_free_dma_rsp:
+ 	dma_free_coherent(&ha->pdev->dev, rsp_data_len,
+ 		rsp_data, rsp_data_dma);
+ done_free_dma_req:
+
+
