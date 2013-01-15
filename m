@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab3AOE5O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 23:57:14 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:62768 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755501Ab3AOE5N (ORCPT
+	id S1756158Ab3AOE5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 23:57:53 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:58093 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755526Ab3AOE5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 23:57:13 -0500
-Subject: Re: [PATCH 1/1] net: ipv4: refine the logic for determining daddr
- in ip_queue_xmit.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Harvey Yang <harvey.huawei.yang@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1358225255-30973-1-git-send-email-harvey.huawei.yang@gmail.com>
-References: <1358225255-30973-1-git-send-email-harvey.huawei.yang@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jan 2013 20:57:09 -0800
-Message-ID: <1358225829.8744.4508.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jan 2013 23:57:49 -0500
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: vt8500-wm8505-linux-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH 2/4] serial: vt8500: ioremap'd resource is never freed
+Date: Tue, 15 Jan 2013 17:58:04 +1300
+Message-Id: <1358225886-5686-3-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358225886-5686-1-git-send-email-linux@prisktech.co.nz>
+References: <1358225886-5686-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-15 at 12:47 +0800, Harvey Yang wrote:
-> The destination address daddr is faddr if source route option is set, otherwise it is inet_daddr. So use if-else to assign the value.
-> 
-> Signed-off-by: Harvey Yang <harvey.huawei.yang@gmail.com>
-> ---
->  net/ipv4/ip_output.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-> index 3e98ed2..22b738c 100644
-> --- a/net/ipv4/ip_output.c
-> +++ b/net/ipv4/ip_output.c
-> @@ -349,10 +349,10 @@ int ip_queue_xmit(struct sk_buff *skb, struct flowi *fl)
->  		__be32 daddr;
->  
->  		/* Use correct destination address if we have options. */
-> -		daddr = inet->inet_daddr;
->  		if (inet_opt && inet_opt->opt.srr)
->  			daddr = inet_opt->opt.faddr;
-> -
-> +		else
-> +			daddr = inet->inet_daddr;
->  		/* If this fails, retransmit mechanism of transport layer will
->  		 * keep trying until route appears or the connection times
->  		 * itself out.
+Memory mapped via ioremap call is never released. Rather than add an
+iounmap call, change allocation function to devm_request_and_ioremap.
 
-Current code is faster, srr is not often used.
+Also, change the error on failure for this call to -EBUSY rather than
+-EADDRNOTAVAIL.
 
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+ drivers/tty/serial/vt8500_serial.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
+index 4c4a58d..3e76dff 100644
+--- a/drivers/tty/serial/vt8500_serial.c
++++ b/drivers/tty/serial/vt8500_serial.c
+@@ -615,9 +615,9 @@ static int vt8500_serial_probe(struct platform_device *pdev)
+ 	snprintf(vt8500_port->name, sizeof(vt8500_port->name),
+ 		 "VT8500 UART%d", pdev->id);
+ 
+-	vt8500_port->uart.membase = ioremap(mmres->start, resource_size(mmres));
++	vt8500_port->uart.membase = devm_request_and_ioremap(&pdev->dev, mmres);
+ 	if (!vt8500_port->uart.membase) {
+-		ret = -ENOMEM;
++		ret = -EADDRNOTAVAIL;
+ 		goto err;
+ 	}
+ 
+-- 
+1.7.9.5
 
