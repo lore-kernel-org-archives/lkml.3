@@ -1,154 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100Ab3AOAsV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 19:48:21 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:49064 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025Ab3AOAsS (ORCPT
+	id S1756918Ab3AOAyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 19:54:12 -0500
+Received: from mga14.intel.com ([143.182.124.37]:11855 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756216Ab3AOAyL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 19:48:18 -0500
+	Mon, 14 Jan 2013 19:54:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,469,1355126400"; 
+   d="scan'208";a="191087623"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] genirq: Give warning when setup an already-setup
+ non-shared irq
+Thread-Topic: [PATCH] genirq: Give warning when setup an already-setup
+ non-shared irq
+Thread-Index: AQHN8kikefkpUiL9mkmDdP3wIMIbnZhJjo1w
+Date: Tue, 15 Jan 2013 00:54:06 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A203FC1@SHSMSX101.ccr.corp.intel.com>
+References: <1357833301.21958.10.camel@cliu38-desktop-build>
+ <alpine.LFD.2.02.1301141211500.7475@ionos>
+In-Reply-To: <alpine.LFD.2.02.1301141211500.7475@ionos>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20130114191953.GA6588@kroah.com>
-References: <1354257909-2380-1-git-send-email-ngupta@vflare.org>
-	<20121211182720.GC29421@kroah.com>
-	<CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com>
-	<20121219034949.GA22281@kroah.com>
-	<50D16AF8.7030401@vflare.org>
-	<20121219150826.GA23953@kroah.com>
-	<50D1E300.4000006@vflare.org>
-	<20121219161705.GA24251@kroah.com>
-	<50D1F799.4060800@vflare.org>
-	<CAKcLGm9eFRQrAc_Nm0Z658ct46psVemWt4c8NbpETjhMF3A+jQ@mail.gmail.com>
-	<20130114191953.GA6588@kroah.com>
-Date: Mon, 14 Jan 2013 16:48:18 -0800
-Message-ID: <CAPkvG_ccOt8vQwPev0FNyywstNszpECTN9+2OU_VDwzEvwb6bQ@mail.gmail.com>
-Subject: Re: zram: fix invalid memory references during disk write
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Mitch Harder <mitch.harder@sabayonlinux.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 11:19 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, Dec 19, 2012 at 11:39:15AM -0600, Mitch Harder wrote:
->> On Wed, Dec 19, 2012 at 11:21 AM, Nitin Gupta <ngupta@vflare.org> wrote:
->> > On 12/19/2012 08:17 AM, Greg KH wrote:
->> >> On Wed, Dec 19, 2012 at 07:53:36AM -0800, Nitin Gupta wrote:
->> >>> On 12/19/2012 07:08 AM, Greg KH wrote:
->> >>>> On Tue, Dec 18, 2012 at 11:21:28PM -0800, Nitin Gupta wrote:
->> >>>>> On 12/18/2012 07:49 PM, Greg KH wrote:
->> >>>>>> On Tue, Dec 18, 2012 at 01:12:05PM -0800, Nitin Gupta wrote:
->> >>>>>>> On Tue, Dec 11, 2012 at 10:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> >>>>>>>> On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
->> >>>>>>>>> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
->> >>>>>>>>> of incompressible pages") which caused invalid memory references
->> >>>>>>>>> during disk write. Invalid references could occur in two cases:
->> >>>>>>>>>  - Incoming data expands on compression: In this case, reference was
->> >>>>>>>>> made to kunmap()'ed bio page.
->> >>>>>>>>>  - Partial (non PAGE_SIZE) write with incompressible data: In this
->> >>>>>>>>> case, reference was made to a kfree()'ed buffer.
->> >>>>>>>>>
->> >>>>>>>>> Fixes bug 50081:
->> >>>>>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=50081
->> >>>>>>>>>
->> >>>>>>>>> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
->> >>>>>>>>> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
->> >>>>>>>>>
->> >>>>>>>>> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
->> >>>>>>>>>                               # zram_decompress_page() function
->> >>>>>>>>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
->> >>>>>>>>> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
->> >>>>>>>>> Reported-by: Tomas M <tomas@slax.org>
->> >>>>>>>>> Reviewed-by: Minchan Kim <minchan@kernel.org>
->> >>>>>>>>> ---
->> >>>>>>>>>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
->> >>>>>>>>>  1 file changed, 24 insertions(+), 15 deletions(-)
->> >>>>>>>>
->> >>>>>>>> This patch fails to apply to 3.6.10:
->> >>>>>>>>
->> >>>>>>>> patching file drivers/staging/zram/zram_drv.c
->> >>>>>>>> Hunk #1 succeeded at 282 (offset 17 lines).
->> >>>>>>>> Hunk #2 FAILED at 286.
->> >>>>>>>> Hunk #3 succeeded at 319 (offset 17 lines).
->> >>>>>>>> Hunk #4 succeeded at 340 (offset 17 lines).
->> >>>>>>>> Hunk #5 succeeded at 353 (offset 17 lines).
->> >>>>>>>> Hunk #6 succeeded at 368 (offset 17 lines).
->> >>>>>>>> Hunk #7 succeeded at 385 (offset 17 lines).
->> >>>>>>>> 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
->> >>>>>>>>
->> >>>>>>>> Please redo this patch and resend it if you wish for it to be applied to
->> >>>>>>>> the 3.6-stable tree.
->> >>>>>>>>
->> >>>>>>>>
->> >>>>>>>
->> >>>>>>> Please apply this patch to stable tree asap.
->> >>>>>>
->> >>>>>> 3.6 is now end-of-life, there will not be any more releases for that
->> >>>>>> kernel series anymore, sorry.
->> >>>>>>
->> >>>>>
->> >>>>> Then please apply to 3.7.
->> >>>>
->> >>>> That is impossible to do so, for the obvious reason.
->> >>>>
->> >>>
->> >>> I meant to include it in whatever 3.7.x is released in future. Or put it
->> >>> in staging, so it may eventually make it to mainline (by 3.8?).
->> >>
->> >> {sigh}
->> >>
->> >> Please think for a moment for how it would be impossible for me to add
->> >> this patch to either the 3.7-stable tree, or the 3.8 tree, _again_.
->> >>
->> >
->> > I'm simply not getting it, I'm sorry, I must be missing something
->> > obvious -- what's really the problem with this: "whenever 3.8 is
->> > released, sometime in the future, just make sure that this fix is
->> > included in it" ?  Also, what's stopping it from staging, at least?
->> >
->>
->> Greg:
->>
->> I think there is still some residual confusion from the mix of patches
->> sent out for this issue.
->>
->> You appear to be saying that this patch as well as "37b51fd: zram:
->> factor-out  zram_decompress_page() function" have already been
->> applied.
->>
->> But I do not see either patch in 3.7.0 or in your message for
->> "3.7.1-stable review"
->>
->> I see the "37b51fd: zram: factor-out  zram_decompress_page() function"
->> patch in Linus' tree for 3.8_rc, but not the patch discussed in this
->> thread.
->
-> Ok, I'm totally confused.
->
-> Please, can someone tell me _exactly_ what commits they wish to see
-> applied to the 3.7-stable tree.
->
-> thanks,
->
-> greg k-h
-
-These two needs to be applied to 3.7-stable:
-
-1) 37b51fd: "staging: zram: factor-out zram_decompress_page() function"
-
-and then...
-
-2) 397c606: "staging: zram: fix invalid memory references during disk write"
 
 
-Thanks,
-Nitin
+> -----Original Message-----
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Sent: Monday, January 14, 2013 7:16 PM
+> To: Liu, Chuansheng
+> Cc: linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] genirq: Give warning when setup an already-setup
+> non-shared irq
+> 
+> On Thu, 10 Jan 2013, Chuansheng Liu wrote:
+> >
+> > Meet the case when the request_threaded_irq() with the same irq
+> > is called twice continually, get the below mismatch info:
+> > "IRQ handler type mismatch for IRQ 323"
+> 
+> I have no idea where you get that from. The mismatch is printed with:
+> 
+>         if (!(new->flags & IRQF_PROBE_SHARED)) {
+> 	   pr_err("Flags mismatch irq %d. %08x (%s) vs. %08x (%s)\n",
+>                        irq, new->flags, new->name, old->flags,
+> old->name);
+	if (!(new->flags & IRQF_PROBE_SHARED)) {
+		printk(KERN_ERR "IRQ handler type mismatch for IRQ %d\n", irq);
+		if (old_name)
+			printk(KERN_ERR "current handler: %s\n", old_name);
+		dump_stack();
+	}
+The "IRQ handler type mismatch for IRQ 323" message is coming from the above code,
+which is something older than you pasted, but it is the same place.
+
+> 
+> And its only printed when IRQF_PROBE_SHARED is not set. Your change
+> would cause printouts where no printouts are due and it'd change the
+> return value from EBUSY to EINVAL.
+My test case is below:
+request_irq(323, func1,
+				IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING,
+				name, dev);
+After succeeded, then called it again:
+request_irq(323, func1,
+				IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING,
+				name, dev);
+
+After the test case, I will get the "mismatch" info.
+But in this case, it should not be the "mismatch" case, so I want to give another warning
+in case of duplicated setup the same irq with non-shared.
+Not sure if it is right. Thanks your pointing out.
+> 
+> Thanks,
+> 
+> 	tglx
