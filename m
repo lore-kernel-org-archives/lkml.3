@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3AOEf5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 23:35:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48173 "EHLO arroyo.ext.ti.com"
+	id S1755970Ab3AOEgF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 23:36:05 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46211 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab3AOEfx convert rfc822-to-8bit (ORCPT
+	id S1751202Ab3AOEf7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 23:35:53 -0500
+	Mon, 14 Jan 2013 23:35:59 -0500
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: Axel Lin <axel.lin@ingics.com>, "Girdwood, Liam" <lrg@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/4] regulator-core: manage enable GPIO list
-Thread-Topic: [PATCH v2 2/4] regulator-core: manage enable GPIO list
-Thread-Index: Ac3y2clJXPFFYHnFTxynIulr371zMw==
-Date: Tue, 15 Jan 2013 04:35:46 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E12B35@DQHE02.ent.ti.com>
+Subject: [PATCH v2 4/4] lp8788-ldo: use ena_pin of regulator-core for
+ external control
+Thread-Topic: [PATCH v2 4/4] lp8788-ldo: use ena_pin of regulator-core for
+ external control
+Thread-Index: Ac3y2c1nALdSeT8MS6i2fkpY3F7aZQ==
+Date: Tue, 15 Jan 2013 04:35:53 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E12B45@DQHE02.ent.ti.com>
 Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -28,104 +30,169 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- To support shared enable GPIO pin, replace GPIO code with new static functions
-
- regulator_ena_gpio_ctrl()
-   Find a GPIO information in the enable GPIO list and control the pin.
-
- _do_ena_gpio_ctrl()
-   Balance the reference count of each GPIO and actual pin control.
-   The count is incremented with enabling GPIO.
-   On the other hand, it is decremented on disabling GPIO.
-   Actual GPIO pin is enabled at the initial use.(enable_count = 0)
-   The pin is disabled if it is not used(shared) any more. (enable_count = 1)
-   This concept is derived from the 'use_count' of regulator.
-   Regardless of the enable count, update GPIO state of the regulator.
+ Regulator core driver provides enable GPIO control for enabling/disabling a
+ regulator. Now, enable GPIO is shared among regulators.
+ Use this internal working, so unnecessary code are removed.
+ GPIO enable pin configurations are added in digital LDO and analog LDO drivers.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/regulator/core.c |   54 ++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 47 insertions(+), 7 deletions(-)
+ drivers/regulator/lp8788-ldo.c |   98 +++++++---------------------------------
+ 1 file changed, 17 insertions(+), 81 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 1273090..dc713c4 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1501,6 +1501,51 @@ static int regulator_ena_gpio_request(struct regulator_dev *rdev,
- 	return 0;
- }
+diff --git a/drivers/regulator/lp8788-ldo.c b/drivers/regulator/lp8788-ldo.c
+index cd5a14a..fcba90a 100644
+--- a/drivers/regulator/lp8788-ldo.c
++++ b/drivers/regulator/lp8788-ldo.c
+@@ -184,40 +184,6 @@ static enum lp8788_ldo_id lp8788_aldo_id[] = {
+ 	ALDO10,
+ };
  
-+/**
-+ * Balance enable_count of each GPIO and actual GPIO pin control.
-+ * GPIO is enabled in case of initial use. (enable_count is 0)
-+ * GPIO is disabled when it is not shared any more. (enable_count is 1)
-+ */
-+static void _do_ena_gpio_ctrl(struct regulator_enable_gpio *pin,
-+			struct regulator_dev *rdev, bool enable)
-+{
-+	if (enable) {
-+		/* Enable GPIO at initial use */
-+		if (pin->enable_count == 0)
-+			gpio_set_value_cansleep(rdev->ena_gpio,
-+						!rdev->ena_gpio_invert);
-+
-+		rdev->ena_gpio_state = 1;
-+		pin->enable_count++;
-+
-+	} else {
-+		rdev->ena_gpio_state = 0;
-+		if (pin->enable_count > 1) {
-+			pin->enable_count--;
-+			return;
-+		}
-+
-+		/* Disable GPIO if not used */
-+		if (pin->enable_count == 1) {
-+			gpio_set_value_cansleep(rdev->ena_gpio,
-+						rdev->ena_gpio_invert);
-+			pin->enable_count = 0;
-+		}
-+	}
-+}
-+
-+static void regulator_ena_gpio_ctrl(struct regulator_dev *rdev, bool enable)
-+{
-+	struct regulator_enable_gpio *pin;
-+
-+	list_for_each_entry(pin, &regulator_ena_gpio_list, list) {
-+		if (pin->gpio == rdev->ena_gpio) {
-+			_do_ena_gpio_ctrl(pin, rdev, enable);
-+			return;
-+		}
-+	}
-+}
-+
- static int _regulator_do_enable(struct regulator_dev *rdev)
- {
- 	int ret, delay;
-@@ -1517,9 +1562,7 @@ static int _regulator_do_enable(struct regulator_dev *rdev)
- 	trace_regulator_enable(rdev_get_name(rdev));
- 
- 	if (rdev->ena_gpio) {
--		gpio_set_value_cansleep(rdev->ena_gpio,
--					!rdev->ena_gpio_invert);
--		rdev->ena_gpio_state = 1;
-+		regulator_ena_gpio_ctrl(rdev, true);
- 	} else if (rdev->desc->ops->enable) {
- 		ret = rdev->desc->ops->enable(rdev);
- 		if (ret < 0)
-@@ -1621,10 +1664,7 @@ static int _regulator_do_disable(struct regulator_dev *rdev)
- 	trace_regulator_disable(rdev_get_name(rdev));
- 
- 	if (rdev->ena_gpio) {
--		gpio_set_value_cansleep(rdev->ena_gpio,
--					rdev->ena_gpio_invert);
--		rdev->ena_gpio_state = 0;
+-static int lp8788_ldo_enable(struct regulator_dev *rdev)
+-{
+-	struct lp8788_ldo *ldo = rdev_get_drvdata(rdev);
 -
-+		regulator_ena_gpio_ctrl(rdev, false);
- 	} else if (rdev->desc->ops->disable) {
- 		ret = rdev->desc->ops->disable(rdev);
- 		if (ret != 0)
+-	if (ldo->en_pin) {
+-		gpio_set_value(ldo->en_pin->gpio, ENABLE);
+-		return 0;
+-	} else {
+-		return regulator_enable_regmap(rdev);
+-	}
+-}
+-
+-static int lp8788_ldo_disable(struct regulator_dev *rdev)
+-{
+-	struct lp8788_ldo *ldo = rdev_get_drvdata(rdev);
+-
+-	if (ldo->en_pin) {
+-		gpio_set_value(ldo->en_pin->gpio, DISABLE);
+-		return 0;
+-	} else {
+-		return regulator_disable_regmap(rdev);
+-	}
+-}
+-
+-static int lp8788_ldo_is_enabled(struct regulator_dev *rdev)
+-{
+-	struct lp8788_ldo *ldo = rdev_get_drvdata(rdev);
+-
+-	if (ldo->en_pin)
+-		return gpio_get_value(ldo->en_pin->gpio) ? 1 : 0;
+-	else
+-		return regulator_is_enabled_regmap(rdev);
+-}
+-
+ static int lp8788_ldo_enable_time(struct regulator_dev *rdev)
+ {
+ 	struct lp8788_ldo *ldo = rdev_get_drvdata(rdev);
+@@ -253,17 +219,17 @@ static struct regulator_ops lp8788_ldo_voltage_table_ops = {
+ 	.list_voltage = regulator_list_voltage_table,
+ 	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+-	.enable = lp8788_ldo_enable,
+-	.disable = lp8788_ldo_disable,
+-	.is_enabled = lp8788_ldo_is_enabled,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
+ 	.enable_time = lp8788_ldo_enable_time,
+ };
+ 
+ static struct regulator_ops lp8788_ldo_voltage_fixed_ops = {
+ 	.get_voltage = lp8788_ldo_fixed_get_voltage,
+-	.enable = lp8788_ldo_enable,
+-	.disable = lp8788_ldo_disable,
+-	.is_enabled = lp8788_ldo_is_enabled,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
+ 	.enable_time = lp8788_ldo_enable_time,
+ };
+ 
+@@ -535,43 +501,10 @@ static struct regulator_desc lp8788_aldo_desc[] = {
+ 	},
+ };
+ 
+-static int lp8788_gpio_request_ldo_en(struct platform_device *pdev,
+-				struct lp8788_ldo *ldo,
+-				enum lp8788_ext_ldo_en_id id)
+-{
+-	struct device *dev = &pdev->dev;
+-	struct lp8788_ldo_enable_pin *pin = ldo->en_pin;
+-	int ret, gpio, pinstate;
+-	char *name[] = {
+-		[EN_ALDO1]   = "LP8788_EN_ALDO1",
+-		[EN_ALDO234] = "LP8788_EN_ALDO234",
+-		[EN_ALDO5]   = "LP8788_EN_ALDO5",
+-		[EN_ALDO7]   = "LP8788_EN_ALDO7",
+-		[EN_DLDO7]   = "LP8788_EN_DLDO7",
+-		[EN_DLDO911] = "LP8788_EN_DLDO911",
+-	};
+-
+-	gpio = pin->gpio;
+-	if (!gpio_is_valid(gpio)) {
+-		dev_err(dev, "invalid gpio: %d\n", gpio);
+-		return -EINVAL;
+-	}
+-
+-	pinstate = pin->init_state;
+-	ret = devm_gpio_request_one(dev, gpio, pinstate, name[id]);
+-	if (ret == -EBUSY) {
+-		dev_warn(dev, "gpio%d already used\n", gpio);
+-		return 0;
+-	}
+-
+-	return ret;
+-}
+-
+ static int lp8788_config_ldo_enable_mode(struct platform_device *pdev,
+ 					struct lp8788_ldo *ldo,
+ 					enum lp8788_ldo_id id)
+ {
+-	int ret;
+ 	struct lp8788 *lp = ldo->lp;
+ 	struct lp8788_platform_data *pdata = lp->pdata;
+ 	enum lp8788_ext_ldo_en_id enable_id;
+@@ -613,14 +546,7 @@ static int lp8788_config_ldo_enable_mode(struct platform_device *pdev,
+ 		goto set_default_ldo_enable_mode;
+ 
+ 	ldo->en_pin = pdata->ldo_pin[enable_id];
+-
+-	ret = lp8788_gpio_request_ldo_en(pdev, ldo, enable_id);
+-	if (ret) {
+-		ldo->en_pin = NULL;
+-		goto set_default_ldo_enable_mode;
+-	}
+-
+-	return ret;
++	return 0;
+ 
+ set_default_ldo_enable_mode:
+ 	return lp8788_update_bits(lp, LP8788_EN_SEL, en_mask[enable_id], 0);
+@@ -644,6 +570,11 @@ static int lp8788_dldo_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
++	if (ldo->en_pin) {
++		cfg.ena_gpio = ldo->en_pin->gpio;
++		cfg.ena_gpio_flags = ldo->en_pin->init_state;
++	}
++
+ 	cfg.dev = pdev->dev.parent;
+ 	cfg.init_data = lp->pdata ? lp->pdata->dldo_data[id] : NULL;
+ 	cfg.driver_data = ldo;
+@@ -700,6 +631,11 @@ static int lp8788_aldo_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
++	if (ldo->en_pin) {
++		cfg.ena_gpio = ldo->en_pin->gpio;
++		cfg.ena_gpio_flags = ldo->en_pin->init_state;
++	}
++
+ 	cfg.dev = pdev->dev.parent;
+ 	cfg.init_data = lp->pdata ? lp->pdata->aldo_data[id] : NULL;
+ 	cfg.driver_data = ldo;
 -- 
 1.7.9.5
 
