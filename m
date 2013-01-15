@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab3AOWgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:36:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43978 "EHLO mail.kernel.org"
+	id S932969Ab3AOWgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:36:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44066 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932895Ab3AOWgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:36:17 -0500
+	id S932956Ab3AOWgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:36:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Dan Mick <dan.mick@inktank.com>,
-        Josh Durgin <josh.durgin@inktank.com>
-Subject: [ 207/221] rbd: fix read-only option name
-Date: Tue, 15 Jan 2013 10:52:14 -0800
-Message-Id: <20130115185012.991177439@linuxfoundation.org>
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
+Subject: [ 216/221] ceph: Fix __ceph_do_pending_vmtruncate
+Date: Tue, 15 Jan 2013 10:52:23 -0800
+Message-Id: <20130115185013.627528419@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,35 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Alex Elder <elder@inktank.com>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-(cherry picked from commit be466c1cc36621590ef17b05a6d342dfd33f7280)
+(cherry picked from commit a85f50b6ef93fbbb2ae932ce9b2376509d172796)
 
-The name of the "read-only" mapping option was inadvertently changed
-in this commit:
+we should set i_truncate_pending to 0 after page cache is truncated
+to i_truncate_size
 
-    f84344f3 rbd: separate mapping info in rbd_dev
-
-Revert that hunk to return it to what it should be.
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Dan Mick <dan.mick@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/block/rbd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ceph/inode.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -388,7 +388,7 @@ enum {
- static match_table_t rbd_opts_tokens = {
- 	/* int args above */
- 	/* string args above */
--	{Opt_read_only, "mapping.read_only"},
-+	{Opt_read_only, "read_only"},
- 	{Opt_read_only, "ro"},		/* Alternate spelling */
- 	{Opt_read_write, "read_write"},
- 	{Opt_read_write, "rw"},		/* Alternate spelling */
+--- a/fs/ceph/inode.c
++++ b/fs/ceph/inode.c
+@@ -1466,7 +1466,7 @@ void __ceph_do_pending_vmtruncate(struct
+ {
+ 	struct ceph_inode_info *ci = ceph_inode(inode);
+ 	u64 to;
+-	int wrbuffer_refs, wake = 0;
++	int wrbuffer_refs, finish = 0;
+ 
+ retry:
+ 	spin_lock(&ci->i_ceph_lock);
+@@ -1498,15 +1498,18 @@ retry:
+ 	truncate_inode_pages(inode->i_mapping, to);
+ 
+ 	spin_lock(&ci->i_ceph_lock);
+-	ci->i_truncate_pending--;
+-	if (ci->i_truncate_pending == 0)
+-		wake = 1;
++	if (to == ci->i_truncate_size) {
++		ci->i_truncate_pending = 0;
++		finish = 1;
++	}
+ 	spin_unlock(&ci->i_ceph_lock);
++	if (!finish)
++		goto retry;
+ 
+ 	if (wrbuffer_refs == 0)
+ 		ceph_check_caps(ci, CHECK_CAPS_AUTHONLY, NULL);
+-	if (wake)
+-		wake_up_all(&ci->i_cap_wq);
++
++	wake_up_all(&ci->i_cap_wq);
+ }
+ 
+ 
 
 
