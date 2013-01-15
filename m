@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab3AOWaM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:30:12 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41970 "EHLO mail.kernel.org"
+	id S932174Ab3APAXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:23:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41991 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758197Ab3AOWaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:30:08 -0500
+	id S1758245Ab3AOWaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:30:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
         Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Norbert Preining <preining@logic.at>
-Subject: [ 086/221] drm: Only evict the blocks required to create the requested hole
-Date: Tue, 15 Jan 2013 10:50:13 -0800
-Message-Id: <20130115185004.243946301@linuxfoundation.org>
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 088/221] drm/i915: Revert shrinker changes from "Track unbound pages"
+Date: Tue, 15 Jan 2013 10:50:15 -0800
+Message-Id: <20130115185004.391280433@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,162 +27,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 901593f2bf221659a605bdc1dcb11376ea934163 upstream.
+commit 93927ca52a55c23e0a6a305e7e9082e8411ac9fa upstream.
 
-Avoid clobbering adjacent blocks if they happen to expire earlier and
-amalgamate together to form the requested hole.
+This partially reverts
 
-In passing this fixes a regression from
-commit ea7b1dd44867e9cd6bac67e7c9fc3f128b5b255c
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Fri Feb 18 17:59:12 2011 +0100
+commit 6c085a728cf000ac1865d66f8c9b52935558b328
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Mon Aug 20 11:40:46 2012 +0200
 
-    drm: mm: track free areas implicitly
+    drm/i915: Track unbound pages
 
-which swaps the end address for size (with a potential overflow) and
-effectively causes the eviction code to clobber almost all earlier
-buffers above the evictee.
+Closer inspection of that patch revealed a bunch of unrelated changes
+in the shrinker:
+- The shrinker count is now in pages instead of objects.
+- For counting the shrinkable objects the old code only looked at the
+  inactive list, the new code looks at all bounds objects (including
+  pinned ones). That is obviously in addition to the new unbound list.
+- The shrinker cound is no longer scaled with
+  sysctl_vfs_cache_pressure. Note though that with the default tuning
+  value of vfs_cache_pressue = 100 this doesn't affect the shrinker
+  behaviour.
+- When actually shrinking objects, the old code first dropped
+  purgeable objects, then normal (inactive) objects. Only then did it,
+  in a last-ditch effort idle the gpu and evict everything. The new
+  code omits the intermediate step of evicting normal inactive
+  objects.
 
-v2: Check the original hole not the adjusted as the coloring may confuse
-us when later searching for the overlapping nodes. Also make sure that
-we do apply the range restriction and color adjustment in the same
-order for both scanning, searching and insertion.
+Safe for the first change, which seems benign, and the shrinker count
+scaling, which is a bit a different story, the endresult of all these
+changes is that the shrinker is _much_ more likely to fall back to the
+last-ditch resort of idling the gpu and evicting everything.  The old
+code could only do that if something else evicted lots of objects
+meanwhile (since without any other changes the nr_to_scan will be
+smaller than the object count).
 
-v3: Send the version that was actually tested.
+Reverting the vfs_cache_pressure behaviour itself is a bit bogus: Only
+dentry/inode object caches should scale their shrinker counts with
+vfs_cache_pressure. Originally I've had that change reverted, too. But
+Chris Wilson insisted that it's too bogus and shouldn't again see the
+light of day.
 
-Note that this seems to be ducttape of decent quality ot paper over
-some of our unbind related gpu hangs reported since 3.7. It is not
-fully effective though, and certainly doesn't fix the underlying bug.
+Hence revert all these other changes and restore the old shrinker
+behaviour, with the minor adjustment that we now first scan the
+unbound list, then the inactive list for each object category
+(purgeable or normal).
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-[danvet: Added note plus bugzilla link and tested-by.]
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=55984
-Tested-by:  Norbert Preining <preining@logic.at>
-Acked-by: Dave Airlie <airlied@gmail.com
+A similar patch has been tested by a few people affected by the gen4/5
+hangs which started to appear in 3.7, which some people bisected to
+the "drm/i915: Track unbound pages" commit. But just disabling the
+unbound logic alone didn't change things at all.
+
+Note that this patch doesn't fix the referenced bugs, it only hides
+the underlying bug(s) well enough to restore pre-3.7 behaviour. The
+key to achieve that is to massively reduce the likelyhood of going
+into a full gpu stall and evicting everything.
+
+v2: Reword commit message a bit, taking Chris Wilson's comment into
+account.
+
+v3: On Chris Wilson's insistency, do not reinstate the rather bogus
+vfs_cache_pressure change.
+
+Tested-by: Greg KH <gregkh@linuxfoundation.org>
+Tested-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+References: https://bugs.freedesktop.org/show_bug.cgi?id=55984
+References: https://bugs.freedesktop.org/show_bug.cgi?id=57122
+References: https://bugs.freedesktop.org/show_bug.cgi?id=56916
+References: https://bugs.freedesktop.org/show_bug.cgi?id=57136
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_mm.c |   45 +++++++++++++++++----------------------------
- include/drm/drm_mm.h     |    2 +-
- 2 files changed, 18 insertions(+), 29 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/drm_mm.c
-+++ b/drivers/gpu/drm/drm_mm.c
-@@ -213,11 +213,13 @@ static void drm_mm_insert_helper_range(s
- 
- 	BUG_ON(!hole_node->hole_follows || node->allocated);
- 
--	if (mm->color_adjust)
--		mm->color_adjust(hole_node, color, &adj_start, &adj_end);
--
- 	if (adj_start < start)
- 		adj_start = start;
-+	if (adj_end > end)
-+		adj_end = end;
-+
-+	if (mm->color_adjust)
-+		mm->color_adjust(hole_node, color, &adj_start, &adj_end);
- 
- 	if (alignment) {
- 		unsigned tmp = adj_start % alignment;
-@@ -489,7 +491,7 @@ void drm_mm_init_scan(struct drm_mm *mm,
- 	mm->scan_size = size;
- 	mm->scanned_blocks = 0;
- 	mm->scan_hit_start = 0;
--	mm->scan_hit_size = 0;
-+	mm->scan_hit_end = 0;
- 	mm->scan_check_range = 0;
- 	mm->prev_scanned_node = NULL;
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1718,7 +1718,8 @@ i915_gem_object_put_pages(struct drm_i91
  }
-@@ -516,7 +518,7 @@ void drm_mm_init_scan_with_range(struct
- 	mm->scan_size = size;
- 	mm->scanned_blocks = 0;
- 	mm->scan_hit_start = 0;
--	mm->scan_hit_size = 0;
-+	mm->scan_hit_end = 0;
- 	mm->scan_start = start;
- 	mm->scan_end = end;
- 	mm->scan_check_range = 1;
-@@ -535,8 +537,7 @@ int drm_mm_scan_add_block(struct drm_mm_
- 	struct drm_mm *mm = node->mm;
- 	struct drm_mm_node *prev_node;
- 	unsigned long hole_start, hole_end;
--	unsigned long adj_start;
--	unsigned long adj_end;
-+	unsigned long adj_start, adj_end;
  
- 	mm->scanned_blocks++;
+ static long
+-i915_gem_purge(struct drm_i915_private *dev_priv, long target)
++__i915_gem_shrink(struct drm_i915_private *dev_priv, long target,
++		  bool purgeable_only)
+ {
+ 	struct drm_i915_gem_object *obj, *next;
+ 	long count = 0;
+@@ -1726,7 +1727,7 @@ i915_gem_purge(struct drm_i915_private *
+ 	list_for_each_entry_safe(obj, next,
+ 				 &dev_priv->mm.unbound_list,
+ 				 gtt_list) {
+-		if (i915_gem_object_is_purgeable(obj) &&
++		if ((i915_gem_object_is_purgeable(obj) || !purgeable_only) &&
+ 		    i915_gem_object_put_pages(obj) == 0) {
+ 			count += obj->base.size >> PAGE_SHIFT;
+ 			if (count >= target)
+@@ -1737,7 +1738,7 @@ i915_gem_purge(struct drm_i915_private *
+ 	list_for_each_entry_safe(obj, next,
+ 				 &dev_priv->mm.inactive_list,
+ 				 mm_list) {
+-		if (i915_gem_object_is_purgeable(obj) &&
++		if ((i915_gem_object_is_purgeable(obj) || !purgeable_only) &&
+ 		    i915_gem_object_unbind(obj) == 0 &&
+ 		    i915_gem_object_put_pages(obj) == 0) {
+ 			count += obj->base.size >> PAGE_SHIFT;
+@@ -1749,6 +1750,12 @@ i915_gem_purge(struct drm_i915_private *
+ 	return count;
+ }
  
-@@ -553,14 +554,8 @@ int drm_mm_scan_add_block(struct drm_mm_
- 	node->node_list.next = &mm->prev_scanned_node->node_list;
- 	mm->prev_scanned_node = node;
- 
--	hole_start = drm_mm_hole_node_start(prev_node);
--	hole_end = drm_mm_hole_node_end(prev_node);
--
--	adj_start = hole_start;
--	adj_end = hole_end;
--
--	if (mm->color_adjust)
--		mm->color_adjust(prev_node, mm->scan_color, &adj_start, &adj_end);
-+	adj_start = hole_start = drm_mm_hole_node_start(prev_node);
-+	adj_end = hole_end = drm_mm_hole_node_end(prev_node);
- 
- 	if (mm->scan_check_range) {
- 		if (adj_start < mm->scan_start)
-@@ -569,11 +564,14 @@ int drm_mm_scan_add_block(struct drm_mm_
- 			adj_end = mm->scan_end;
++static long
++i915_gem_purge(struct drm_i915_private *dev_priv, long target)
++{
++	return __i915_gem_shrink(dev_priv, target, true);
++}
++
+ static void
+ i915_gem_shrink_all(struct drm_i915_private *dev_priv)
+ {
+@@ -4426,6 +4433,9 @@ i915_gem_inactive_shrink(struct shrinker
+ 	if (nr_to_scan) {
+ 		nr_to_scan -= i915_gem_purge(dev_priv, nr_to_scan);
+ 		if (nr_to_scan > 0)
++			nr_to_scan -= __i915_gem_shrink(dev_priv, nr_to_scan,
++							false);
++		if (nr_to_scan > 0)
+ 			i915_gem_shrink_all(dev_priv);
  	}
  
-+	if (mm->color_adjust)
-+		mm->color_adjust(prev_node, mm->scan_color,
-+				 &adj_start, &adj_end);
-+
- 	if (check_free_hole(adj_start, adj_end,
- 			    mm->scan_size, mm->scan_alignment)) {
- 		mm->scan_hit_start = hole_start;
--		mm->scan_hit_size = hole_end;
--
-+		mm->scan_hit_end = hole_end;
- 		return 1;
- 	}
+@@ -4433,7 +4443,7 @@ i915_gem_inactive_shrink(struct shrinker
+ 	list_for_each_entry(obj, &dev_priv->mm.unbound_list, gtt_list)
+ 		if (obj->pages_pin_count == 0)
+ 			cnt += obj->base.size >> PAGE_SHIFT;
+-	list_for_each_entry(obj, &dev_priv->mm.bound_list, gtt_list)
++	list_for_each_entry(obj, &dev_priv->mm.inactive_list, gtt_list)
+ 		if (obj->pin_count == 0 && obj->pages_pin_count == 0)
+ 			cnt += obj->base.size >> PAGE_SHIFT;
  
-@@ -609,19 +607,10 @@ int drm_mm_scan_remove_block(struct drm_
- 			       node_list);
- 
- 	prev_node->hole_follows = node->scanned_preceeds_hole;
--	INIT_LIST_HEAD(&node->node_list);
- 	list_add(&node->node_list, &prev_node->node_list);
- 
--	/* Only need to check for containement because start&size for the
--	 * complete resulting free block (not just the desired part) is
--	 * stored. */
--	if (node->start >= mm->scan_hit_start &&
--	    node->start + node->size
--	    		<= mm->scan_hit_start + mm->scan_hit_size) {
--		return 1;
--	}
--
--	return 0;
-+	 return (drm_mm_hole_node_end(node) > mm->scan_hit_start &&
-+		 node->start < mm->scan_hit_end);
- }
- EXPORT_SYMBOL(drm_mm_scan_remove_block);
- 
---- a/include/drm/drm_mm.h
-+++ b/include/drm/drm_mm.h
-@@ -70,7 +70,7 @@ struct drm_mm {
- 	unsigned long scan_color;
- 	unsigned long scan_size;
- 	unsigned long scan_hit_start;
--	unsigned scan_hit_size;
-+	unsigned long scan_hit_end;
- 	unsigned scanned_blocks;
- 	unsigned long scan_start;
- 	unsigned long scan_end;
 
 
