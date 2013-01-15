@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932999Ab3AOWgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:36:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44098 "EHLO mail.kernel.org"
+	id S933014Ab3AOWgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:36:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44121 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932984Ab3AOWgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:36:43 -0500
+	id S1758171Ab3AOWgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:36:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Krzysztof Mazur <krzysiek@podlesie.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, CAI Qian <caiqian@redhat.com>
-Subject: [ 219/221] drm/i915: force restore on lid open
-Date: Tue, 15 Jan 2013 10:52:26 -0800
-Message-Id: <20130115185013.856740069@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [ 221/221] drm/i915: Treat crtc->mode.clock == 0 as disabled
+Date: Tue, 15 Jan 2013 10:52:28 -0800
+Message-Id: <20130115185013.999699137@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,119 +28,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 45e2b5f640b3766da3eda48f6c35f088155c06f3 upstream.
+commit 3490ea5de6ac4af309c3df8a26a5cca61306334c upstream.
 
-There seem to be indeed some awkwards machines around, mostly those
-without OpRegion support, where the firmware changes the display hw
-state behind our backs when closing the lid.
+Prevent a divide-by-zero by consistently treating an 'active' CRTC
+without a mode set as actually disabled.
 
-This force-restore logic has been originally introduced in
+This looks to have been first introduced with
 
-commit c1c7af60892070e4b82ad63bbfb95ae745056de0
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Thu Sep 10 15:28:03 2009 -0700
-
-    drm/i915: force mode set at lid open time
-
-but after the modeset-rework we've disabled it in the vain hope that
-it's no longer required:
-
-commit 3b7a89fce3e3dc96b549d6d829387b4439044d0d
+commit 24929352481f085c5f85d4d4cbc919ddf106d381
 Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Sep 17 22:27:21 2012 +0200
+Date:   Mon Jul 2 20:28:59 2012 +0200
 
-    drm/i915: fix OOPS in lid_notify
+    drm/i915: read out the modeset hw state at load and resume time
 
-Alas, no.
+but then combined with
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=54677
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=57434
-Tested-by: Krzysztof Mazur <krzysiek@podlesie.net>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+commit b0a2658acb5bf9ca86b4aab011b7106de3af0add
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Tue Dec 18 09:37:54 2012 +0100
+
+    drm/i915: don't disable disconnected outputs
+
+it finally started oopsing.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-and-tested-by: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c      |    2 +-
- drivers/gpu/drm/i915/i915_drv.h      |    3 ++-
- drivers/gpu/drm/i915/intel_display.c |   15 ++++++++++++---
- drivers/gpu/drm/i915/intel_lvds.c    |    2 +-
- 4 files changed, 16 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_pm.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -552,7 +552,7 @@ static int i915_drm_thaw(struct drm_devi
- 		mutex_unlock(&dev->struct_mutex);
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -44,6 +44,14 @@
+  * i915.i915_enable_fbc parameter
+  */
  
- 		intel_modeset_init_hw(dev);
--		intel_modeset_setup_hw_state(dev);
-+		intel_modeset_setup_hw_state(dev, false);
- 		drm_mode_config_reset(dev);
- 		drm_irq_install(dev);
- 	}
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1595,7 +1595,8 @@ extern void intel_modeset_init(struct dr
- extern void intel_modeset_gem_init(struct drm_device *dev);
- extern void intel_modeset_cleanup(struct drm_device *dev);
- extern int intel_modeset_vga_set_state(struct drm_device *dev, bool state);
--extern void intel_modeset_setup_hw_state(struct drm_device *dev);
-+extern void intel_modeset_setup_hw_state(struct drm_device *dev,
-+					 bool force_restore);
- extern bool intel_fbc_enabled(struct drm_device *dev);
- extern void intel_disable_fbc(struct drm_device *dev);
- extern bool ironlake_set_drps(struct drm_device *dev, u8 val);
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8250,7 +8250,8 @@ static void intel_sanitize_encoder(struc
- 
- /* Scan out the current hw modeset state, sanitizes it and maps it into the drm
-  * and i915 state tracking structures. */
--void intel_modeset_setup_hw_state(struct drm_device *dev)
-+void intel_modeset_setup_hw_state(struct drm_device *dev,
-+				  bool force_restore)
++static bool intel_crtc_active(struct drm_crtc *crtc)
++{
++	/* Be paranoid as we can arrive here with only partial
++	 * state retrieved from the hardware during setup.
++	 */
++	return to_intel_crtc(crtc)->active && crtc->fb && crtc->mode.clock;
++}
++
+ static void i8xx_disable_fbc(struct drm_device *dev)
  {
  	struct drm_i915_private *dev_priv = dev->dev_private;
- 	enum pipe pipe;
-@@ -8321,7 +8322,15 @@ void intel_modeset_setup_hw_state(struct
- 		intel_sanitize_crtc(crtc);
+@@ -405,9 +413,8 @@ void intel_update_fbc(struct drm_device
+ 	 *   - going to an unsupported config (interlace, pixel multiply, etc.)
+ 	 */
+ 	list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head) {
+-		if (tmp_crtc->enabled &&
+-		    !to_intel_crtc(tmp_crtc)->primary_disabled &&
+-		    tmp_crtc->fb) {
++		if (intel_crtc_active(tmp_crtc) &&
++		    !to_intel_crtc(tmp_crtc)->primary_disabled) {
+ 			if (crtc) {
+ 				DRM_DEBUG_KMS("more than one pipe active, disabling compression\n");
+ 				dev_priv->no_fbc_reason = FBC_MULTIPLE_PIPES;
+@@ -992,7 +999,7 @@ static struct drm_crtc *single_enabled_c
+ 	struct drm_crtc *crtc, *enabled = NULL;
+ 
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
+-		if (crtc->enabled && crtc->fb) {
++		if (intel_crtc_active(crtc)) {
+ 			if (enabled)
+ 				return NULL;
+ 			enabled = crtc;
+@@ -1086,7 +1093,7 @@ static bool g4x_compute_wm0(struct drm_d
+ 	int entries, tlb_miss;
+ 
+ 	crtc = intel_get_crtc_for_plane(dev, plane);
+-	if (crtc->fb == NULL || !crtc->enabled) {
++	if (!intel_crtc_active(crtc)) {
+ 		*cursor_wm = cursor->guard_size;
+ 		*plane_wm = display->guard_size;
+ 		return false;
+@@ -1215,7 +1222,7 @@ static bool vlv_compute_drain_latency(st
+ 	int entries;
+ 
+ 	crtc = intel_get_crtc_for_plane(dev, plane);
+-	if (crtc->fb == NULL || !crtc->enabled)
++	if (!intel_crtc_active(crtc))
+ 		return false;
+ 
+ 	clock = crtc->mode.clock;	/* VESA DOT Clock */
+@@ -1478,7 +1485,7 @@ static void i9xx_update_wm(struct drm_de
+ 
+ 	fifo_size = dev_priv->display.get_fifo_size(dev, 1);
+ 	crtc = intel_get_crtc_for_plane(dev, 1);
+-	if (crtc->enabled && crtc->fb) {
++	if (intel_crtc_active(crtc)) {
+ 		planeb_wm = intel_calculate_wm(crtc->mode.clock,
+ 					       wm_info, fifo_size,
+ 					       crtc->fb->bits_per_pixel / 8,
+@@ -1923,7 +1930,7 @@ sandybridge_compute_sprite_wm(struct drm
+ 	int entries, tlb_miss;
+ 
+ 	crtc = intel_get_crtc_for_plane(dev, plane);
+-	if (crtc->fb == NULL || !crtc->enabled) {
++	if (!intel_crtc_active(crtc)) {
+ 		*sprite_wm = display->guard_size;
+ 		return false;
  	}
- 
--	intel_modeset_update_staged_output_state(dev);
-+	if (force_restore) {
-+		for_each_pipe(pipe) {
-+			crtc = to_intel_crtc(dev_priv->pipe_to_crtc_mapping[pipe]);
-+			intel_set_mode(&crtc->base, &crtc->base.mode,
-+				       crtc->base.x, crtc->base.y, crtc->base.fb);
-+		}
-+	} else {
-+		intel_modeset_update_staged_output_state(dev);
-+	}
- 
- 	intel_modeset_check_state(dev);
- }
-@@ -8332,7 +8341,7 @@ void intel_modeset_gem_init(struct drm_d
- 
- 	intel_setup_overlay(dev);
- 
--	intel_modeset_setup_hw_state(dev);
-+	intel_modeset_setup_hw_state(dev, false);
- }
- 
- void intel_modeset_cleanup(struct drm_device *dev)
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -526,7 +526,7 @@ static int intel_lid_notify(struct notif
- 	dev_priv->modeset_on_lid = 0;
- 
- 	mutex_lock(&dev->mode_config.mutex);
--	intel_modeset_check_state(dev);
-+	intel_modeset_setup_hw_state(dev, true);
- 	mutex_unlock(&dev->mode_config.mutex);
- 
- 	return NOTIFY_OK;
 
 
