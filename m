@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932961Ab3AOX4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:56:48 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:57567 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932914Ab3AOX4q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 18:56:46 -0500
-Date: Tue, 15 Jan 2013 18:56:42 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: lttng-dev@lists.lttng.org, linux-kernel@vger.kernel.org,
-        rp@svcs.cs.pdx.edu, khlebnikov@openvz.org, stern@rowland.harvard.edu,
-        shemminger@vyatta.com
-Subject: Re: [lttng-dev] [PATCH] Add ACCESS_ONCE() to avoid compiler
-	splitting assignments
-Message-ID: <20130115235642.GA31367@Krystal>
-References: <20130115181936.GA30319@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130115181936.GA30319@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758659Ab3AOWpE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:45:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44855 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932470Ab3AOWo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:44:58 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Shan Hai <shan.hai@windriver.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 005/171] powerpc/vdso: Remove redundant locking in update_vsyscall_tz()
+Date: Tue, 15 Jan 2013 14:42:50 -0800
+Message-Id: <20130115224313.797053808@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
+References: <20130115224313.394976595@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> As noted by Konstantin Khlebnikov, gcc can split assignment of
-> constants to long variables (https://lkml.org/lkml/2013/1/15/141),
-> though assignment of NULL (0) is OK.  Assuming that a gcc bug is
-> fixed (http://gcc.gnu.org/bugzilla/attachment.cgi?id=29169&action=diff
-> has a patch), making the store be volatile keeps gcc from splitting.
-> 
-> This commit therefore applies ACCESS_ONCE() to CMM_STORE_SHARED(),
-> which is the underlying primitive used by rcu_assign_pointer().
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Paul,
+------------------
 
-I recognise that this is an issue in the Linux kernel, since a simple
-store is used and expected to be performed atomically when aligned.
-However, I think this does not affect liburcu, see below:
+From: Shan Hai <shan.hai@windriver.com>
 
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/urcu/system.h b/urcu/system.h
-> index 2a45f22..7a1887e 100644
-> --- a/urcu/system.h
-> +++ b/urcu/system.h
-> @@ -49,7 +49,7 @@
->   */
->  #define CMM_STORE_SHARED(x, v)		\
->  	({				\
-> -		__typeof__(x) _v = _CMM_STORE_SHARED(x, v);	\
-> +		__typeof__(x) CMM_ACCESS_ONCE(_v) = _CMM_STORE_SHARED(x, v);	\
+commit ce73ec6db47af84d1466402781ae0872a9e7873c upstream.
 
-Here, the macro "_CMM_STORE_SHARED(x, v)" is doing the actual store.
-It stores v into "x". So adding a CMM_ACCESS_ONCE(_v), as you propose
-here, is really only making sure the return value (usually unused),
-located on the stack, is accessed with a volatile access, which does not
-make much sense.
+The locking in update_vsyscall_tz() is not only unnecessary because the vdso
+code copies the data unproteced in __kernel_gettimeofday() but also
+introduces a hard to reproduce race condition between update_vsyscall()
+and update_vsyscall_tz(), which causes user space process to loop
+forever in vdso code.
 
-What really matters is the _CMM_STORE_SHARED() macro:
+The following patch removes the locking from update_vsyscall_tz().
 
-#define _CMM_STORE_SHARED(x, v) ({ CMM_ACCESS_ONCE(x) = (v); })
+Locking is not only unnecessary because the vdso code copies the data
+unprotected in __kernel_gettimeofday() but also erroneous because updating
+the tb_update_count is not atomic and introduces a hard to reproduce race
+condition between update_vsyscall() and update_vsyscall_tz(), which further
+causes user space process to loop forever in vdso code.
 
-which already uses a volatile access for the store. So this seems to be
-a case where our preemptive use of volatile for stores in addition to
-loads made us bug-free for a gcc behavior unexpected at the time we
-implemented this macro. Just a touch of paranoia seems to be a good
-thing sometimes. ;-)
+The below scenario describes the race condition,
+x==0	Boot CPU			other CPU
+	proc_P: x==0
+	    timer interrupt
+		update_vsyscall
+x==1		    x++;sync		settimeofday
+					    update_vsyscall_tz
+x==2						x++;sync
+x==3		    sync;x++
+						sync;x++
+	proc_P: x==3 (loops until x becomes even)
 
-Thoughts ?
+Because the ++ operator would be implemented as three instructions and not
+atomic on powerpc.
 
-Thanks,
+A similar change was made for x86 in commit 6c260d58634
+("x86: vdso: Remove bogus locking in update_vsyscall_tz")
 
-Mathieu
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
->  		cmm_smp_wmc();		\
->  		_v;			\
->  	})
-> 
-> 
-> _______________________________________________
-> lttng-dev mailing list
-> lttng-dev@lists.lttng.org
-> http://lists.lttng.org/cgi-bin/mailman/listinfo/lttng-dev
+---
+ arch/powerpc/kernel/time.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -749,13 +749,8 @@ void update_vsyscall(struct timespec *wa
+ 
+ void update_vsyscall_tz(void)
+ {
+-	/* Make userspace gettimeofday spin until we're done. */
+-	++vdso_data->tb_update_count;
+-	smp_mb();
+ 	vdso_data->tz_minuteswest = sys_tz.tz_minuteswest;
+ 	vdso_data->tz_dsttime = sys_tz.tz_dsttime;
+-	smp_mb();
+-	++vdso_data->tb_update_count;
+ }
+ 
+ static void __init clocksource_init(void)
+
+
