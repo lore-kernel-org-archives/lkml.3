@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933433Ab3AOXin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:38:43 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46413 "EHLO mail.kernel.org"
+	id S1758603Ab3AOXjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:39:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46380 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933402Ab3AOWv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:51:26 -0500
+	id S933274Ab3AOWvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:51:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 092/171] USB: option: blacklist network interface on ZTE MF880
-Date: Tue, 15 Jan 2013 14:44:17 -0800
-Message-Id: <20130115224320.014579332@linuxfoundation.org>
+        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 089/171] mwifiex: check wait_event_interruptible return value
+Date: Tue, 15 Jan 2013 14:44:14 -0800
+Message-Id: <20130115224319.805264758@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,37 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit fab38246f318edcd0dcb8fd3852a47cf8938878a upstream.
+commit 9c969d8ccb1e17bd20742f4ac9f00c1a64487234 upstream.
 
-The driver description files gives these names to the vendor specific
-functions on this modem:
+wait_event_interruptible function returns -ERESTARTSYS if it's
+interrupted by a signal. Driver should check the return value
+and handle this case properly.
 
- diag: VID_19D2&PID_0284&MI_00
- nmea: VID_19D2&PID_0284&MI_01
- at:   VID_19D2&PID_0284&MI_02
- mdm:  VID_19D2&PID_0284&MI_03
- net:  VID_19D2&PID_0284&MI_04
+In mwifiex_wait_queue_complete() routine, as we are now checking
+wait_event_interruptible return value, the condition check is not
+required. Also, we have removed mwifiex_cancel_pending_ioctl()
+call to avoid a chance of sending second command to FW by other path
+as soon as we clear current command node. FW can not handle two
+commands simultaneously.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/sta_ioctl.c |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -927,7 +927,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0257, 0xff, 0xff, 0xff), /* ZTE MF821 */
- 	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0265, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff), /* ZTE MF880 */
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0317, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0326, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+--- a/drivers/net/wireless/mwifiex/sta_ioctl.c
++++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
+@@ -53,7 +53,6 @@ int mwifiex_copy_mcast_addr(struct mwifi
+  */
+ int mwifiex_wait_queue_complete(struct mwifiex_adapter *adapter)
+ {
+-	bool cancel_flag = false;
+ 	int status;
+ 	struct cmd_ctrl_node *cmd_queued;
+ 
+@@ -70,14 +69,11 @@ int mwifiex_wait_queue_complete(struct m
+ 	queue_work(adapter->workqueue, &adapter->main_work);
+ 
+ 	/* Wait for completion */
+-	wait_event_interruptible(adapter->cmd_wait_q.wait,
+-				 *(cmd_queued->condition));
+-	if (!*(cmd_queued->condition))
+-		cancel_flag = true;
+-
+-	if (cancel_flag) {
+-		mwifiex_cancel_pending_ioctl(adapter);
+-		dev_dbg(adapter->dev, "cmd cancel\n");
++	status = wait_event_interruptible(adapter->cmd_wait_q.wait,
++					  *(cmd_queued->condition));
++	if (status) {
++		dev_err(adapter->dev, "cmd_wait_q terminated: %d\n", status);
++		return status;
+ 	}
+ 
+ 	status = adapter->cmd_wait_q.status;
+@@ -436,8 +432,11 @@ int mwifiex_enable_hs(struct mwifiex_ada
+ 		return false;
+ 	}
+ 
+-	wait_event_interruptible(adapter->hs_activate_wait_q,
+-				 adapter->hs_activate_wait_q_woken);
++	if (wait_event_interruptible(adapter->hs_activate_wait_q,
++				     adapter->hs_activate_wait_q_woken)) {
++		dev_err(adapter->dev, "hs_activate_wait_q terminated\n");
++		return false;
++	}
+ 
+ 	return true;
+ }
 
 
