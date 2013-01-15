@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab3AOQBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 11:01:49 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:27912 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab3AOQBr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 11:01:47 -0500
-X-IronPort-AV: E=Sophos;i="4.84,473,1355126400"; 
-   d="scan'208";a="19985805"
-From: Subhash Jadavani <subhashj@codeaurora.org>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Subhash Jadavani <subhashj@codeaurora.org>
-Subject: [PATCH v2 1/1] block: blk-merge: don't merge the pages with non-contiguous descriptors
-Date: Tue, 15 Jan 2013 21:31:21 +0530
-Message-Id: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	id S1756819Ab3AOQCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 11:02:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60075 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754175Ab3AOQCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 11:02:31 -0500
+Date: Tue, 15 Jan 2013 17:02:24 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Fernando_Luis_V=E1zquez_Cao?= 
+	<fernando_b1@lab.ntt.co.jp>
+Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Antonio Ospite <ospite@studenti.unina.it>
+Subject: Re: [PATCH v2] HID: add support for Sony RF receiver with USB product
+ id 0x0374
+In-Reply-To: <1358246448.4897.3.camel@nexus.lab.ntt.co.jp>
+Message-ID: <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
+References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>  <50F52986.2080002@lab.ntt.co.jp> <1358246448.4897.3.camel@nexus.lab.ntt.co.jp>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk_rq_map_sg() function merges the physically contiguous pages to use same
-scatter-gather node without checking if their page descriptors are
-contiguous or not.
+On Tue, 15 Jan 2013, Fernando Luis Vázquez Cao wrote:
 
-Now when dma_map_sg() is called on the scatter gather list, it would
-take the base page pointer from each node (one by one) and iterates
-through all of the pages in same sg node by keep incrementing the base
-page pointer with the assumption that physically contiguous pages will
-have their page descriptor address contiguous which may not be true
-if SPARSEMEM config is enabled. So here we may end referring to invalid
-page descriptor.
+> Some Vaio desktop computers, among them the VGC-LN51JGB multimedia PC, have
+> a RF receiver, multi-interface USB device 054c:0374, that is used to connect
+> a wireless keyboard and a wireless mouse.
+> 
+> The keyboard works flawlessly, but the mouse (VGP-WMS3 in my case) does not
+> seem to be generating any pointer events. The problem is that the mouse pointer
+> is wrongly declared as a constant non-data variable in the report descriptor
+> (see lsusb and usbhid-dump output below), with the consequence that it is
+> ignored by the HID code.
+> 
+> Add this device to the have-special-driver list and fix up the report
+> descriptor in the Sony-specific driver which happens to already have a fixup
+> for a similar firmware bug.
 
-Following table shows the example of physically contiguous pages but
-their page descriptor addresses non-contiguous.
--------------------------------------------
-| Page Descriptor    |   Physical Address |
-------------------------------------------
-| 0xc1e43fdc         |   0xdffff000       |
-| 0xc2052000         |   0xe0000000       |
--------------------------------------------
+Applied, thanks.
 
-With this patch, relevant blk-merge functions will also check if the
-physically contiguous pages are having page descriptors address contiguous
-or not? If not then, these pages are separated to be in different
-scatter-gather nodes.
-
-Signed-off-by: Subhash Jadavani <subhashj@codeaurora.org>
----
- block/blk-merge.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index 936a110..6eaef3d4 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -42,6 +42,9 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
- 					goto new_segment;
- 				if (!BIOVEC_SEG_BOUNDARY(q, bvprv, bv))
- 					goto new_segment;
-+				if ((bvprv->bv_page != bv->bv_page) &&
-+				    (bvprv->bv_page + 1) != bv->bv_page)
-+					goto new_segment;
- 
- 				seg_size += bv->bv_len;
- 				bvprv = bv;
-@@ -126,6 +129,9 @@ __blk_segment_map_sg(struct request_queue *q, struct bio_vec *bvec,
- 			goto new_segment;
- 		if (!BIOVEC_SEG_BOUNDARY(q, *bvprv, bvec))
- 			goto new_segment;
-+		if (((*bvprv)->bv_page != bvec->bv_page) &&
-+		    (((*bvprv)->bv_page + 1) != bvec->bv_page))
-+			goto new_segment;
- 
- 		(*sg)->length += nbytes;
- 	} else {
 -- 
---
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Jiri Kosina
+SUSE Labs
