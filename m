@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934409Ab3AOXDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:03:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48428 "EHLO mail.kernel.org"
+	id S934402Ab3AOXEQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:04:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48410 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934371Ab3AOW5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:20 -0500
+	id S934159Ab3AOW5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andre Przywara <osp@andrep.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 41/71] x86, amd: Disable way access filter on Piledriver CPUs
-Date: Tue, 15 Jan 2013 14:54:38 -0800
-Message-Id: <20130115225343.385209352@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 49/71] staging: comedi: prevent auto-unconfig of manually configured devices
+Date: Tue, 15 Jan 2013 14:54:46 -0800
+Message-Id: <20130115225343.944569377@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,70 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 2bbf0a1427c377350f001fbc6260995334739ad7 upstream.
+commit 7d3135af399e92cf4c9bbc5f86b6c140aab3b88c upstream.
 
-The Way Access Filter in recent AMD CPUs may hurt the performance of
-some workloads, caused by aliasing issues in the L1 cache.
-This patch disables it on the affected CPUs.
+When a low-level comedi driver auto-configures a device, a `struct
+comedi_dev_file_info` is allocated (as well as a `struct
+comedi_device`) by `comedi_alloc_board_minor()`.  A pointer to the
+hardware `struct device` is stored as a cookie in the `struct
+comedi_dev_file_info`.  When the low-level comedi driver
+auto-unconfigures the device, `comedi_auto_unconfig()` uses the cookie
+to find the `struct comedi_dev_file_info` so it can detach the comedi
+device from the driver, clean it up and free it.
 
-The issue is similar to that one of last year:
-http://lkml.indiana.edu/hypermail/linux/kernel/1107.3/00041.html
-This new patch does not replace the old one, we just need another
-quirk for newer CPUs.
+A problem arises if the user manually unconfigures and reconfigures the
+comedi device using the `COMEDI_DEVCONFIG` ioctl so that is no longer
+associated with the original hardware device.  The problem is that the
+cookie is not cleared, so that a call to `comedi_auto_unconfig()` from
+the low-level driver will still find it, detach it, clean it up and free
+it.
 
-The performance penalty without the patch depends on the
-circumstances, but is a bit less than the last year's 3%.
+Stop this problem occurring by always clearing the `hardware_device`
+cookie in the `struct comedi_dev_file_info` whenever the
+`COMEDI_DEVCONFIG` ioctl call is successful.
 
-The workloads affected would be those that access code from the same
-physical page under different virtual addresses, so different
-processes using the same libraries with ASLR or multiple instances of
-PIE-binaries. The code needs to be accessed simultaneously from both
-cores of the same compute unit.
-
-More details can be found here:
-http://developer.amd.com/Assets/SharedL1InstructionCacheonAMD15hCPU.pdf
-
-CPUs affected are anything with the core known as Piledriver.
-That includes the new parts of the AMD A-Series (aka Trinity) and the
-just released new CPUs of the FX-Series (aka Vishera).
-The model numbering is a bit odd here: FX CPUs have model 2,
-A-Series has model 10h, with possible extensions to 1Fh. Hence the
-range of model ids.
-
-Signed-off-by: Andre Przywara <osp@andrep.de>
-Link: http://lkml.kernel.org/r/1351700450-9277-1-git-send-email-osp@andrep.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/amd.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/staging/comedi/comedi_fops.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -568,6 +568,20 @@ static void __cpuinit init_amd(struct cp
- 		}
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -138,6 +138,9 @@ static long comedi_unlocked_ioctl(struct
+ 	if (cmd == COMEDI_DEVCONFIG) {
+ 		rc = do_devconfig_ioctl(dev,
+ 					(struct comedi_devconfig __user *)arg);
++		if (rc == 0)
++			/* Evade comedi_auto_unconfig(). */
++			dev_file_info->hardware_device = NULL;
+ 		goto done;
  	}
  
-+	/*
-+	 * The way access filter has a performance penalty on some workloads.
-+	 * Disable it on the affected CPUs.
-+	 */
-+	if ((c->x86 == 0x15) &&
-+	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
-+		u64 val;
-+
-+		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
-+			val |= 0x1E;
-+			checking_wrmsrl(0xc0011021, val);
-+		}
-+	}
-+
- 	cpu_detect_cache_sizes(c);
- 
- 	/* Multi core CPU? */
 
 
