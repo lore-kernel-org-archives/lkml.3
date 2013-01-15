@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab3APASi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:18:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42304 "EHLO mail.kernel.org"
+	id S932609Ab3APAS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:18:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42281 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758313Ab3AOWbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:31:34 -0500
+	id S932250Ab3AOWb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:31:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>,
-        Eric Sandeen <sandeen@redhat.com>
-Subject: [ 110/221] ext4: check dioread_nolock on remount
-Date: Tue, 15 Jan 2013 10:50:37 -0800
-Message-Id: <20130115185005.989893625@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Subject: [ 108/221] PM: Move disabling/enabling runtime PM to late suspend/early resume
+Date: Tue, 15 Jan 2013 10:50:35 -0800
+Message-Id: <20130115185005.846134876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,78 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 261cb20cb2f0737a247aaf08dff7eb065e3e5b66 upstream.
+commit 9f6d8f6ab26b42620a914d67f29822f9bba90233 upstream.
 
-Currently we allow enabling dioread_nolock mount option on remount for
-filesystems where blocksize < PAGE_CACHE_SIZE.  This isn't really
-supported so fix the bug by moving the check for blocksize !=
-PAGE_CACHE_SIZE into parse_options(). Change the original PAGE_SIZE to
-PAGE_CACHE_SIZE along the way because that's what we are really
-interested in.
+Currently, the PM core disables runtime PM for all devices right
+after executing subsystem/driver .suspend() callbacks for them
+and re-enables it right before executing subsystem/driver .resume()
+callbacks for them.  This may lead to problems when there are
+two devices such that the .suspend() callback executed for one of
+them depends on runtime PM working for the other.  In that case,
+if runtime PM has already been disabled for the second device,
+the first one's .suspend() won't work correctly (and analogously
+for resume).
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+To make those issues go away, make the PM core disable runtime PM
+for devices right before executing subsystem/driver .suspend_late()
+callbacks for them and enable runtime PM for them right after
+executing subsystem/driver .resume_early() callbacks for them.  This
+way the potential conflitcs between .suspend_late()/.resume_early()
+and their runtime PM counterparts are still prevented from happening,
+but the subtle ordering issues related to disabling/enabling runtime
+PM for devices during system suspend/resume are much easier to avoid.
+
+Reported-and-tested-by: Jan-Matthias Braun <jan_braun@gmx.net>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+Reviewed-by: Kevin Hilman <khilman@deeprootsystems.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ Documentation/power/runtime_pm.txt |    9 +++++----
+ drivers/base/power/main.c          |    9 ++++-----
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1650,9 +1650,7 @@ static int parse_options(char *options,
- 			 unsigned int *journal_ioprio,
- 			 int is_remount)
- {
--#ifdef CONFIG_QUOTA
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
--#endif
- 	char *p;
- 	substring_t args[MAX_OPT_ARGS];
- 	int token;
-@@ -1701,6 +1699,16 @@ static int parse_options(char *options,
- 		}
- 	}
- #endif
-+	if (test_opt(sb, DIOREAD_NOLOCK)) {
-+		int blocksize =
-+			BLOCK_SIZE << le32_to_cpu(sbi->s_es->s_log_block_size);
+--- a/Documentation/power/runtime_pm.txt
++++ b/Documentation/power/runtime_pm.txt
+@@ -642,12 +642,13 @@ out the following operations:
+   * During system suspend it calls pm_runtime_get_noresume() and
+     pm_runtime_barrier() for every device right before executing the
+     subsystem-level .suspend() callback for it.  In addition to that it calls
+-    pm_runtime_disable() for every device right after executing the
+-    subsystem-level .suspend() callback for it.
++    __pm_runtime_disable() with 'false' as the second argument for every device
++    right before executing the subsystem-level .suspend_late() callback for it.
+ 
+   * During system resume it calls pm_runtime_enable() and pm_runtime_put_sync()
+-    for every device right before and right after executing the subsystem-level
+-    .resume() callback for it, respectively.
++    for every device right after executing the subsystem-level .resume_early()
++    callback and right after executing the subsystem-level .resume() callback
++    for it, respectively.
+ 
+ 7. Generic subsystem callbacks
+ 
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -513,6 +513,8 @@ static int device_resume_early(struct de
+ 
+  Out:
+ 	TRACE_RESUME(error);
 +
-+		if (blocksize < PAGE_CACHE_SIZE) {
-+			ext4_msg(sb, KERN_ERR, "can't mount with "
-+				 "dioread_nolock if block size != PAGE_SIZE");
-+			return 0;
-+		}
-+	}
- 	return 1;
++	pm_runtime_enable(dev);
+ 	return error;
  }
  
-@@ -3446,15 +3454,6 @@ static int ext4_fill_super(struct super_
- 			clear_opt(sb, DELALLOC);
- 	}
+@@ -589,8 +591,6 @@ static int device_resume(struct device *
+ 	if (!dev->power.is_suspended)
+ 		goto Unlock;
  
--	blocksize = BLOCK_SIZE << le32_to_cpu(es->s_log_block_size);
--	if (test_opt(sb, DIOREAD_NOLOCK)) {
--		if (blocksize < PAGE_SIZE) {
--			ext4_msg(sb, KERN_ERR, "can't mount with "
--				 "dioread_nolock if block size != PAGE_SIZE");
--			goto failed_mount;
--		}
--	}
+-	pm_runtime_enable(dev);
 -
- 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
- 		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
+ 	if (dev->pm_domain) {
+ 		info = "power domain ";
+ 		callback = pm_op(&dev->pm_domain->ops, state);
+@@ -930,6 +930,8 @@ static int device_suspend_late(struct de
+ 	pm_callback_t callback = NULL;
+ 	char *info = NULL;
  
-@@ -3496,6 +3495,7 @@ static int ext4_fill_super(struct super_
- 	if (!ext4_feature_set_ok(sb, (sb->s_flags & MS_RDONLY)))
- 		goto failed_mount;
++	__pm_runtime_disable(dev, false);
++
+ 	if (dev->power.syscore)
+ 		return 0;
  
-+	blocksize = BLOCK_SIZE << le32_to_cpu(es->s_log_block_size);
- 	if (blocksize < EXT4_MIN_BLOCK_SIZE ||
- 	    blocksize > EXT4_MAX_BLOCK_SIZE) {
- 		ext4_msg(sb, KERN_ERR,
+@@ -1133,11 +1135,8 @@ static int __device_suspend(struct devic
+ 
+  Complete:
+ 	complete_all(&dev->power.completion);
+-
+ 	if (error)
+ 		async_error = error;
+-	else if (dev->power.is_suspended)
+-		__pm_runtime_disable(dev, false);
+ 
+ 	return error;
+ }
 
 
