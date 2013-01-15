@@ -1,91 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939Ab3AONsr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:48:47 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:63884 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756066Ab3AONsq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:48:46 -0500
-Date: Tue, 15 Jan 2013 05:49:41 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: cw00.choi@samsung.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [GIT PULL] extcon for 3.8-rc4
-Message-ID: <20130115134941.GA25473@kroah.com>
-References: <50F5067A.2060104@samsung.com>
- <20130115113719.GD1748@kroah.com>
- <CAGTfZH2r9TaNEPQ5am-UFwQd9t_qegxfo3MMOwJxvfctid7=-Q@mail.gmail.com>
- <20130115121356.GA2349@kroah.com>
- <CAGTfZH27VUuqqx5b4trMSDDDceWqwHE2wqPZdLbWvvBvbrzpKg@mail.gmail.com>
+	id S1757214Ab3AONsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:48:52 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:55519 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756066Ab3AONss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:48:48 -0500
+X-IronPort-AV: E=Sophos;i="4.84,473,1355097600"; 
+   d="scan'208";a="3788770"
+Date: Tue, 15 Jan 2013 13:48:45 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v7u1 10/31] x86, 64bit: Don't set max_pfn_mapped wrong
+ value early on native path
+In-Reply-To: <1357260531-11115-11-git-send-email-yinghai@kernel.org>
+Message-ID: <alpine.DEB.2.02.1301151242000.4978@kaball.uk.xensource.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org> <1357260531-11115-11-git-send-email-yinghai@kernel.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGTfZH27VUuqqx5b4trMSDDDceWqwHE2wqPZdLbWvvBvbrzpKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 10:23:44PM +0900, Chanwoo Choi wrote:
-> On Tuesday, January 15, 2013, Greg KH wrote:
+On Fri, 4 Jan 2013, Yinghai Lu wrote:
+> We are not having max_pfn_mapped set correctly until init_memory_mapping.
 > 
->     On Tue, Jan 15, 2013 at 09:09:20PM +0900, Chanwoo Choi wrote:
->     > On Tuesday, January 15, 2013, Greg KH wrote:
->     >
->     >     On Tue, Jan 15, 2013 at 04:34:18PM +0900, Chanwoo Choi wrote:
->     >     > Hi Greg,
->     >     >
->     >     > This is the extcon pull request for Linux 3.8-rc4.
->     >     >
->     >     > Please pull extcon with following updates:
->     >     >
->     >     > Update to max77693/max8997 extcon driver:
->     >     > - Using MHL_TA cable for charging.
->     >     > - Support JIG cable.
->     >     > - Support Dock-Audio device for playing music and button of device.
->     >     > - Support Dock-Smart device for desktop mode with mouse/keyboard.
->     >     > - Set default UART/USB path on probe().
->     >     > - Check the state/type of cable after completing initialization.
->     >     > - Code clean to remove duplicate code and bug fix related to
->     sequence of
->     >     interrupt.
->     >     > - Fix irq_flag of max8997/max77693 driver.
->     >     >
->     >     > Update to arizona extcon driver:
->     >     > - Headphone measurements.
->     >     > - Alternative detection mechanism for non-default system designs.
->     >     > - Microphone clamp integration.
->     >     > - Support for additional detection pin.
->     >     > - MICBIAS rise time configuration.
->     >     >
->     >     > Thanks in advance for pulling,
->     >
->     >     This request is for inclusion in 3.9, right?  This seems much too big
->     >     for 3.8 at the moment.
->     >
->     >  
->     > If you think that, I agree your opinion about including this request in
->     3.9.
+> so don't print it initial value for 64bit
 > 
->     That's really up to you, as a subsystem maintainer, to decide about.
->     You need to take bugfixes and ask for them to be included in the 3.8,
->     and new features and other work, for 3.9.
+> Also need to use KERNEL_IMAGE_SIZE directly for highmap cleanup.
 > 
->  OK, I will resend pull-request to include only bugfixes patch in 3.8.
-> After released v3.8-rc7 or 3.8-rc8 kernel, I will send pull-request of extcon
-> to include new feature patches of extcon driver in 3.9.
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  arch/x86/kernel/head64.c |    3 ---
+>  arch/x86/kernel/setup.c  |    2 ++
+>  arch/x86/mm/init_64.c    |    6 +++++-
+>  3 files changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+> index a3fc233..7061d8b 100644
+> --- a/arch/x86/kernel/head64.c
+> +++ b/arch/x86/kernel/head64.c
+> @@ -146,9 +146,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
+>  	/* clear bss before set_intr_gate with early_idt_handler */
+>  	clear_bss();
+>  
+> -	/* XXX - this is wrong... we need to build page tables from scratch */
+> -	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+> -
+>  	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+>  #ifdef CONFIG_EARLY_PRINTK
+>  		set_intr_gate(i, &early_idt_handlers[i]);
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 63160c6..04797e78 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -910,8 +910,10 @@ void __init setup_arch(char **cmdline_p)
+>  	setup_bios_corruption_check();
+>  #endif
+>  
+> +#ifdef CONFIG_X86_32
+>  	printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
+>  			(max_pfn_mapped<<PAGE_SHIFT) - 1);
+> +#endif
+>  
+>  	reserve_real_mode();
+>  
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 9c5f2b1..98385a2 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -394,10 +394,14 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+>  void __init cleanup_highmap(void)
+>  {
+>  	unsigned long vaddr = __START_KERNEL_map;
+> -	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
+> +	unsigned long vaddr_end = __START_KERNEL_map + KERNEL_IMAGE_SIZE;
+>  	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
+>  	pmd_t *pmd = level2_kernel_pgt;
+>  
+> +	/* Xen has its own end somehow with abused max_pfn_mapped */
+> +	if (max_pfn_mapped)
+> +		vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
 
-No, you can send me that pull request now as well, I have two different
-branches, one to go to Linus for this release, and one for the next one.
-Both of them show up in linux-next.  You should have the same.
+If you are going to put a comment like that in the code, could you
+please at least add some useful details, rather than a generic
+"somehow"? It doesn't seem very helpful to me or to any other hackers
+looking at the code.
 
-So you can send me two pull requests now, does that make more sense?
+The issue is even described as a comment in the code at the beginning of
+arch/x86/xen/mmu.c:xen_setup_kernel_pagetable:
 
-thanks,
+/* max_pfn_mapped is the last pfn mapped in the initial memory
+ * mappings. Considering that on Xen after the kernel mappings we
+ * have the mappings of some pages that don't exist in pfn space, we
+ * set max_pfn_mapped to the last real pfn mapped. */
 
-greg k-h
+Now if max_pfn_mapped is supposed to represent the last pfn mapped in
+the initial memory mapping, then I think that the way Xen uses
+max_pfn_mapped is actually correct.
+
+
+The question is: has max_pfn_mapped actually changed meaning?
+Because if it hasn't I don't see why you need this change.
+
+
+
+>  	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
+>  		if (pmd_none(*pmd))
+>  			continue;
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
