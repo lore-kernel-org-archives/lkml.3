@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757784Ab3AOS7V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:59:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34821 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757295Ab3AOS5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:57:24 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 039/221] iscsit: use GFP_ATOMIC under spin lock
-Date: Tue, 15 Jan 2013 10:49:26 -0800
-Message-Id: <20130115185000.851487671@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
-References: <20130115184958.025580322@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1758022Ab3AOS7b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:59:31 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:53400 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757810Ab3AOS72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:59:28 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] net: netfilter/xt_CT.c: fix uninitialized variable
+Date: Tue, 15 Jan 2013 19:58:34 +0100
+Message-Id: <1358276314-9536-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+If CONFIG_NF_CONNTRACK_ZONES is not defined, the variable ret might be
+uninitialized when it goes to err1 through line 125 and 263 respectively.
+So I change these goto err1 to return -EINVAL directly.
 
-------------------
-
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-
-commit 3c989d7603872bf878840f7ce3ea49b73bea4c6c upstream.
-
-The function iscsit_build_conn_drop_async_message() is called
-from iscsit_close_connection() with spin lock 'sess->conn_lock'
-held, so we should use GFP_ATOMIC instead of GFP_KERNEL.
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
 ---
- drivers/target/iscsi/iscsi_target.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/netfilter/xt_CT.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -2360,7 +2360,7 @@ static void iscsit_build_conn_drop_async
- 	if (!conn_p)
- 		return;
+diff --git a/net/netfilter/xt_CT.c b/net/netfilter/xt_CT.c
+index 2a08430..941f600 100644
+--- a/net/netfilter/xt_CT.c
++++ b/net/netfilter/xt_CT.c
+@@ -122,7 +122,7 @@ static int xt_ct_tg_check_v0(const struct xt_tgchk_param *par)
  
--	cmd = iscsit_allocate_cmd(conn_p, GFP_KERNEL);
-+	cmd = iscsit_allocate_cmd(conn_p, GFP_ATOMIC);
- 	if (!cmd) {
- 		iscsit_dec_conn_usage_count(conn_p);
- 		return;
-
+ #ifndef CONFIG_NF_CONNTRACK_ZONES
+ 	if (info->zone)
+-		goto err1;
++		return -EINVAL;
+ #endif
+ 
+ 	ret = nf_ct_l3proto_try_module_get(par->family);
+@@ -260,7 +260,7 @@ static int xt_ct_tg_check_v1(const struct xt_tgchk_param *par)
+ 
+ #ifndef CONFIG_NF_CONNTRACK_ZONES
+ 	if (info->zone)
+-		goto err1;
++		return -EINVAL;
+ #endif
+ 
+ 	ret = nf_ct_l3proto_try_module_get(par->family);
+-- 
+1.7.10.4
 
