@@ -1,126 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab3AOT2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 14:28:47 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:58098 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab3AOT2q (ORCPT
+	id S1755278Ab3AOTgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 14:36:14 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:55469 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759Ab3AOTgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 14:28:46 -0500
+	Tue, 15 Jan 2013 14:36:13 -0500
+X-Originating-IP: 108.223.40.66
+Date: Tue, 15 Jan 2013 11:36:11 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com
+Subject: Re: [PATCH v2] hwmon: (sht15) check GPIO directions
+Message-ID: <20130115193611.GA22507@roeck-us.net>
+References: <1358274786-30521-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQV1uxeHDVMcgNij7qAta+r2A52Jqwzb32Y1qgM13jUOeQ@mail.gmail.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1301151214480.4978@kaball.uk.xensource.com>
-	<CAE9FiQV1uxeHDVMcgNij7qAta+r2A52Jqwzb32Y1qgM13jUOeQ@mail.gmail.com>
-Date: Tue, 15 Jan 2013 11:28:43 -0800
-X-Google-Sender-Auth: GaTZYhnx7dyGzuBPJ13YzFa5Pdw
-Message-ID: <CAE9FiQVhk4jc5WaOC5b+dn6Jo1w7s01MUBL16P43tNxav4kJzA@mail.gmail.com>
-Subject: Re: [PATCH v7u1 00/31] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: multipart/mixed; boundary=000e0cd1e2221aa4ce04d358c5db
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358274786-30521-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd1e2221aa4ce04d358c5db
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, Jan 15, 2013 at 01:33:06PM -0500, Vivien Didelot wrote:
+> Without this patch, the SHT15 driver may fail silently with a
+> non-bidirectional data line and/or an input-only clock line.
+> 
+> This patch checks the return value of gpio_direction_* function calls
+> and returns the error code (if any) to the caller. If an error occurs in
+> the read work function (work_funct_t), we wake the queue up directly
+> without updating the data->state flag, to notice the waiter of the I/O
+> error.
+> 
+> The patch also makes minor cleanups: s/error_ret/unlock for some labels
+> and uses devm_gpio_request_one() for the clock line.
+> 
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 
-On Tue, Jan 15, 2013 at 8:43 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Jan 15, 2013 at 4:19 AM, Stefano Stabellini
-> <stefano.stabellini@eu.citrix.com> wrote:
->>> could be found at:
->>>
->>>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
->>
->> I tried to boot this kernel as PV guest with 2GB of RAM, but
->> unfortunately it crashes early on at boot (earlyprintk=xen log
->> appended).
->>
->>
->>
->> mapping kernel into physical memory
->> about to get started...
->> [    0.000000] Initializing cgroup subsys cpuset
->> [    0.000000] Linux version 3.8.0-rc3+ (sstabellini@st22) (gcc version 4.4.5 (Debian 4.4.5-8) ) #4 SMP Tue Jan 15 12:11:59 UTC 2013
->> [    0.000000] Command line: root=/dev/xvda1 rw loglevel=9 debug console=hvc0 earlyprintk=xen
->> [    0.000000] ACPI in unprivileged domain disabled
->> [    0.000000] e820: BIOS-provided physical RAM map:
->> [    0.000000] Xen: [mem 0x0000000000000000-0x000000000009ffff] usable
->> [    0.000000] Xen: [mem 0x00000000000a0000-0x00000000000fffff] reserved
->> [    0.000000] Xen: [mem 0x0000000000100000-0x000000007fffffff] usable
->> [    0.000000] bootconsole [xenboot0] enabled
->> [    0.000000] NX (Execute Disable) protection: active
->> [    0.000000] DMI not present or invalid.
->> [    0.000000] e820: update [mem 0x00000000-0x0000ffff] usable ==> reserved
->> [    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
->> [    0.000000] No AGP bridge found
->> [    0.000000] e820: last_pfn = 0x80000 max_arch_pfn = 0x400000000
->> [    0.000000] Base memory trampoline at [ffff88000009a000] 9a000 size 24576
->> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
->> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
->> [    0.000000] init_memory_mapping: [mem 0x7fe00000-0x7fffffff]
->> [    0.000000]  [mem 0x7fe00000-0x7fffffff] page 4k
->> [    0.000000] BRK [0x023b8000, 0x023b8fff] PGTABLE
->> [    0.000000] BRK [0x023b9000, 0x023b9fff] PGTABLE
->> [    0.000000] init_memory_mapping: [mem 0x7c000000-0x7fdfffff]
->> [    0.000000]  [mem 0x7c000000-0x7fdfffff] page 4k
->> [    0.000000] BRK [0x023ba000, 0x023bafff] PGTABLE
->> [    0.000000] BRK [0x023bb000, 0x023bbfff] PGTABLE
->> [    0.000000] BRK [0x023bc000, 0x023bcfff] PGTABLE
->> [    0.000000] init_memory_mapping: [mem 0x00100000-0x7bffffff]
->> [    0.000000]  [mem 0x00100000-0x7bffffff] page 4k
->> (XEN) d15:v0: unhandled page fault (ec=0000)
->> (XEN) Pagetable walk from ffffea0000080330:
->> (XEN)  L4[0x1d4] = 0000000000000000 ffffffffffffffff
->> (XEN) domain_crash_sync called from entry.S
->> (XEN) Domain 15 (vcpu#0) crashed on cpu#3:
->> (XEN) ----[ Xen-4.3-unstable  x86_64  debug=y  Not tainted ]----
->
-> ok, i think i know the cause for now,  will check if there is good way
-> to fix it.
+Applied to -next.
 
-Can you please test attached patch?
-
-Thanks
-
-Yinghai
-
---000e0cd1e2221aa4ce04d358c5db
-Content-Type: application/octet-stream; name="fix_xen_2g.patch"
-Content-Disposition: attachment; filename="fix_xen_2g.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hbzfpoz50
-
-LS0tCiBhcmNoL3g4Ni9tbS9pbml0LmMgfCAgIDExICsrKysrKysrKystCiAxIGZpbGUgY2hhbmdl
-ZCwgMTAgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbigtKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNo
-L3g4Ni9tbS9pbml0LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvbW0v
-aW5pdC5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYvbW0vaW5pdC5jCkBAIC0yNSw2ICsyNSw4IEBA
-IHN0YXRpYyB1bnNpZ25lZCBsb25nIF9faW5pdGRhdGEgcGd0X2J1Zl8KIAogc3RhdGljIHVuc2ln
-bmVkIGxvbmcgbWluX3Bmbl9tYXBwZWQ7CiAKK3N0YXRpYyBib29sIF9faW5pdGRhdGEgY2FuX3Vz
-ZV9icmtfcGd0ID0gdHJ1ZTsKKwogLyoKICAqIFBhZ2VzIHJldHVybmVkIGFyZSBhbHJlYWR5IGRp
-cmVjdGx5IG1hcHBlZC4KICAqCkBAIC00Nyw3ICs0OSw3IEBAIF9fcmVmIHZvaWQgKmFsbG9jX2xv
-d19wYWdlcyh1bnNpZ25lZCBpbnQKIAkJCQkJCV9fR0ZQX1pFUk8sIG9yZGVyKTsKIAl9CiAKLQlp
-ZiAoKHBndF9idWZfZW5kICsgbnVtKSA+IHBndF9idWZfdG9wKSB7CisJaWYgKChwZ3RfYnVmX2Vu
-ZCArIG51bSkgPiBwZ3RfYnVmX3RvcCB8fCAhY2FuX3VzZV9icmtfcGd0KSB7CiAJCXVuc2lnbmVk
-IGxvbmcgcmV0OwogCQlpZiAobWluX3Bmbl9tYXBwZWQgPj0gbWF4X3Bmbl9tYXBwZWQpCiAJCQlw
-YW5pYygiYWxsb2NfbG93X3BhZ2U6IHJhbiBvdXQgb2YgbWVtb3J5Iik7CkBAIC0zNzIsOCArMzc0
-LDE1IEBAIHN0YXRpYyB1bnNpZ25lZCBsb25nIF9faW5pdCBpbml0X3JhbmdlX20KIAkJaWYgKHN0
-YXJ0ID49IGVuZCkKIAkJCWNvbnRpbnVlOwogCisJCS8qCisJCSAqIGlmIGl0IGlzIG92ZXJsYXBw
-aW5nIHdpdGggYnJrIHBndCwgd2UgbmVlZCB0bworCQkgKiBhbGxvYyBwZ3QgYnVmIGZyb20gbWVt
-YmxvY2sgaW5zdGVhZC4KKwkJICovCisJCWNhbl91c2VfYnJrX3BndCA9IG1heChzdGFydCwgKHU2
-NClwZ3RfYnVmX2VuZDw8UEFHRV9TSElGVCkgPj0KKwkJCQkgICAgbWluKGVuZCwgKHU2NClwZ3Rf
-YnVmX3RvcDw8UEFHRV9TSElGVCk7CiAJCWluaXRfbWVtb3J5X21hcHBpbmcoc3RhcnQsIGVuZCk7
-CiAJCW1hcHBlZF9yYW1fc2l6ZSArPSBlbmQgLSBzdGFydDsKKwkJY2FuX3VzZV9icmtfcGd0ID0g
-dHJ1ZTsKIAl9CiAKIAlyZXR1cm4gbWFwcGVkX3JhbV9zaXplOwo=
---000e0cd1e2221aa4ce04d358c5db--
+Thanks,
+Guenter
