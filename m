@@ -1,141 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab3AOKgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:36:52 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:58723 "EHLO mail.mev.co.uk"
+	id S1756794Ab3AOKhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:37:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7131 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205Ab3AOKgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:36:51 -0500
-Message-ID: <50F5313C.8040506@mev.co.uk>
-Date: Tue, 15 Jan 2013 10:36:44 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Peter Huewe <peterhuewe@gmx.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/8 v2] staging/comedi: Add macro for registering a comedi
- PCMCIA driver
-References: <ADE657CA350FB648AAC2C43247A983F00207A6CBADD1@AUSP01VMBX24.collaborationhost.net> <1358197255-17542-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1358197255-17542-1-git-send-email-peterhuewe@gmx.de>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756416Ab3AOKhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:37:12 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH V4 0/3] handle polling erros in vhost/vhost_net
+Date: Tue, 15 Jan 2013 18:28:43 +0800
+Message-Id: <1358245726-16250-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-01-14 21:00, Peter Huewe wrote:
-> This patch introduces a new macro 'module_comedi_pcmcia_driver'
-> for comedi PCMCIA drivers which do not do anything special in module
-> init/exit. This eliminates a lot of boilerplate.
->
-> Adapted from 'module_comedi_pci_driver'
->
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
-> v2:
-> Removed unnecessary stuff. Thanks Hartley&Ian
+This is an update version of last version to fix the handling of polling errors
+in vhost/vhost_net.
 
-This looks (and builds with and without PCMCIA support) fine.  Thanks!
+Currently, vhost and vhost_net ignore polling errors which can lead kernel
+crashing when it tries to remove itself from waitqueue after the polling
+failure. Fix this by:
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-(all 8 patches)
+- examing the POLLERR when set backend and report erros to userspace
+- let tun always add to waitqueue in .poll() after the queue is created even if
+  it was detached.
 
->
->   drivers/staging/comedi/comedidev.h |   21 +++++++++++++++++++++
->   drivers/staging/comedi/drivers.c   |   32 ++++++++++++++++++++++++++++++++
->   2 files changed, 53 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-> index 34a85d3..d0248ed 100644
-> --- a/drivers/staging/comedi/comedidev.h
-> +++ b/drivers/staging/comedi/comedidev.h
-> @@ -316,6 +316,27 @@ void comedi_pci_driver_unregister(struct comedi_driver *, struct pci_driver *);
->   	module_driver(__comedi_driver, comedi_pci_driver_register, \
->   			comedi_pci_driver_unregister, &(__pci_driver))
->
-> +struct pcmcia_driver;
-> +
-> +int comedi_pcmcia_driver_register(struct comedi_driver *,
-> +					struct pcmcia_driver *);
-> +void comedi_pcmcia_driver_unregister(struct comedi_driver *,
-> +					struct pcmcia_driver *);
-> +
-> +/**
-> + * module_comedi_pcmcia_driver() - Helper macro for registering a comedi PCMCIA driver
-> + * @__comedi_driver: comedi_driver struct
-> + * @__pcmcia_driver: pcmcia_driver struct
-> + *
-> + * Helper macro for comedi PCMCIA drivers which do not do anything special
-> + * in module init/exit. This eliminates a lot of boilerplate. Each
-> + * module may only use this macro once, and calling it replaces
-> + * module_init() and module_exit()
-> + */
-> +#define module_comedi_pcmcia_driver(__comedi_driver, __pcmcia_driver) \
-> +	module_driver(__comedi_driver, comedi_pcmcia_driver_register, \
-> +			comedi_pcmcia_driver_unregister, &(__pcmcia_driver))
-> +
->   struct usb_driver;
->
->   int comedi_usb_driver_register(struct comedi_driver *, struct usb_driver *);
-> diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-> index b67a0c9..bd9c678 100644
-> --- a/drivers/staging/comedi/drivers.c
-> +++ b/drivers/staging/comedi/drivers.c
-> @@ -24,6 +24,8 @@
->   #include <linux/device.h>
->   #include <linux/module.h>
->   #include <linux/pci.h>
-> +#include <pcmcia/cistpl.h>
-> +#include <pcmcia/ds.h>
->   #include <linux/usb.h>
->   #include <linux/errno.h>
->   #include <linux/kconfig.h>
-> @@ -954,6 +956,36 @@ void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
->   }
->   EXPORT_SYMBOL_GPL(comedi_pci_driver_unregister);
->
-> +#if IS_ENABLED(CONFIG_PCMCIA)
-> +int comedi_pcmcia_driver_register(struct comedi_driver *comedi_driver,
-> +		struct pcmcia_driver *pcmcia_driver)
-> +{
-> +	int ret;
-> +
-> +	ret = comedi_driver_register(comedi_driver);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = pcmcia_register_driver(pcmcia_driver);
-> +	if (ret < 0) {
-> +		comedi_driver_unregister(comedi_driver);
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_register);
-> +
-> +void comedi_pcmcia_driver_unregister(struct comedi_driver *comedi_driver,
-> +		struct pcmcia_driver *pcmcia_driver)
-> +{
-> +	pcmcia_unregister_driver(pcmcia_driver);
-> +	comedi_driver_unregister(comedi_driver);
-> +}
-> +EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_unregister);
-> +
-> +#endif
-> +
->   #if IS_ENABLED(CONFIG_USB)
->
->   int comedi_usb_driver_register(struct comedi_driver *comedi_driver,
->
+Changes from V3:
+- make a smaller patch that doesn't touch the whole polling state and only check
+  the polliner errors in backend setting.
+- add a patch that allows tuntap to do polling/reading/writing when detached
+  which could simplify the work of its user.
 
+Changes from v2:
+- check poll->wqh instead of the wrong assumption about POLLERR and waitqueue
+- drop the whole tx polling state check since it was replaced by the wqh
+  checking
+- drop the buggy tuntap patch
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+Changes from v1:
+- restore the state before the ioctl when vhost_init_used() fails
+- log the error when meet polling errors in the data path
+- don't put into waitqueue when tun_chr_poll() return POLLERR
+
+Jason Wang (3):
+  vhost_net: correct error handling in vhost_net_set_backend()
+  vhost_net: handle polling errors when setting backend
+  tuntap: allow polling/writing/reading when detached
+
+ drivers/net/tun.c     |   18 +++++++++++-------
+ drivers/vhost/net.c   |   41 ++++++++++++++++++++++++++++-------------
+ drivers/vhost/vhost.c |   18 +++++++++++++++---
+ drivers/vhost/vhost.h |    2 +-
+ 4 files changed, 55 insertions(+), 24 deletions(-)
+
