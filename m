@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716Ab3AOWfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:35:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43533 "EHLO mail.kernel.org"
+	id S1758640Ab3APAAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:00:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43597 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932698Ab3AOWfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:35:25 -0500
+	id S932710Ab3AOWf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:35:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 185/221] dm thin: fix race between simultaneous io and discards to same block
-Date: Tue, 15 Jan 2013 10:51:52 -0800
-Message-Id: <20130115185011.380103235@linuxfoundation.org>
+        Vincent Pelletier <plr.vincent@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 179/221] xhci: Handle HS bulk/ctrl endpoints that dont NAK.
+Date: Tue, 15 Jan 2013 10:51:46 -0800
+Message-Id: <20130115185010.947557902@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,287 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit e8088073c9610af017fd47fddd104a2c3afb32e8 upstream.
+commit 55c1945edaac94c5338a3647bc2e85ff75d9cf36 upstream.
 
-There is a race when discard bios and non-discard bios are issued
-simultaneously to the same block.
+A high speed control or bulk endpoint may have bInterval set to zero,
+which means it does not NAK.  If bInterval is non-zero, it means the
+endpoint NAKs at a rate of 2^(bInterval - 1).
 
-Discard support is expensive for all thin devices precisely because you
-have to be careful to quiesce the area you're discarding.  DM thin must
-handle this conflicting IO pattern (simultaneous non-discard vs discard)
-even though a sane application shouldn't be issuing such IO.
+The xHCI code to compute the NAK interval does not handle the special
+case of zero properly.  The current code unconditionally subtracts one
+from bInterval and uses it as an exponent.  This causes a very large
+bInterval to be used, and warning messages like these will be printed:
 
-The race manifests as follows:
+usb 1-1: ep 0x1 - rounding interval to 32768 microframes, ep desc says 0 microframes
 
-1. A non-discard bio is mapped in thin_bio_map.
-   This doesn't lock out parallel activity to the same block.
+This may cause the xHCI host hardware to reject the Configure Endpoint
+command, which means the HS device will be unusable under xHCI ports.
 
-2. A discard bio is issued to the same block as the non-discard bio.
+This patch should be backported to kernels as old as 2.6.31, that contain
+commit dfa49c4ad120a784ef1ff0717168aa79f55a483a "USB: xhci - fix math in
+xhci_get_endpoint_interval()".
 
-3. The discard bio is locked in a dm_bio_prison_cell in process_discard
-   to lock out parallel activity against the same block.
-
-4. The non-discard bio's mapping continues and its all_io_entry is
-   incremented so the bio is accounted for in the thin pool's all_io_ds
-   which is a dm_deferred_set used to track time locality of non-discard IO.
-
-5. The non-discard bio is finally locked in a dm_bio_prison_cell in
-   process_bio.
-
-The race can result in deadlock, leaving the block layer hanging waiting
-for completion of a discard bio that never completes, e.g.:
-
-INFO: task ruby:15354 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-ruby            D ffffffff8160f0e0     0 15354  15314 0x00000000
- ffff8802fb08bc58 0000000000000082 ffff8802fb08bfd8 0000000000012900
- ffff8802fb08a010 0000000000012900 0000000000012900 0000000000012900
- ffff8802fb08bfd8 0000000000012900 ffff8803324b9480 ffff88032c6f14c0
-Call Trace:
- [<ffffffff814e5a19>] schedule+0x29/0x70
- [<ffffffff814e3d85>] schedule_timeout+0x195/0x220
- [<ffffffffa06b9bc1>] ? _dm_request+0x111/0x160 [dm_mod]
- [<ffffffff814e589e>] wait_for_common+0x11e/0x190
- [<ffffffff8107a170>] ? try_to_wake_up+0x2b0/0x2b0
- [<ffffffff814e59ed>] wait_for_completion+0x1d/0x20
- [<ffffffff81233289>] blkdev_issue_discard+0x219/0x260
- [<ffffffff81233e79>] blkdev_ioctl+0x6e9/0x7b0
- [<ffffffff8119a65c>] block_ioctl+0x3c/0x40
- [<ffffffff8117539c>] do_vfs_ioctl+0x8c/0x340
- [<ffffffff8119a547>] ? block_llseek+0x67/0xb0
- [<ffffffff811756f1>] sys_ioctl+0xa1/0xb0
- [<ffffffff810561f6>] ? sys_rt_sigprocmask+0x86/0xd0
- [<ffffffff814ef099>] system_call_fastpath+0x16/0x1b
-
-The thinp-test-suite's test_discard_random_sectors reliably hits this
-deadlock on fast SSD storage.
-
-The fix for this race is that the all_io_entry for a bio must be
-incremented whilst the dm_bio_prison_cell is held for the bio's
-associated virtual and physical blocks.  That cell locking wasn't
-occurring early enough in thin_bio_map.  This patch fixes this.
-
-Care is taken to always call the new function inc_all_io_entry() with
-the relevant cells locked, but they are generally unlocked before
-calling issue() to try to avoid holding the cells locked across
-generic_submit_request.
-
-Also, now that thin_bio_map may lock bios in a cell, process_bio() is no
-longer the only thread that will do so.  Because of this we must be sure
-to use cell_defer_except() to release all non-holder entries, that
-were added by the other thread, because they must be deferred.
-
-This patch depends on "dm thin: replace dm_cell_release_singleton with
-cell_defer_except".
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Reported-by: Vincent Pelletier <plr.vincent@gmail.com>
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |   84 +++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 59 insertions(+), 25 deletions(-)
+ drivers/usb/host/xhci-mem.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -368,6 +368,17 @@ static int bio_triggers_commit(struct th
- 		dm_thin_changed_this_transaction(tc->td);
- }
- 
-+static void inc_all_io_entry(struct pool *pool, struct bio *bio)
-+{
-+	struct dm_thin_endio_hook *h;
-+
-+	if (bio->bi_rw & REQ_DISCARD)
-+		return;
-+
-+	h = dm_get_mapinfo(bio)->ptr;
-+	h->all_io_entry = dm_deferred_entry_inc(pool->all_io_ds);
-+}
-+
- static void issue(struct thin_c *tc, struct bio *bio)
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1250,6 +1250,8 @@ static unsigned int xhci_microframes_to_
+ static unsigned int xhci_parse_microframe_interval(struct usb_device *udev,
+ 		struct usb_host_endpoint *ep)
  {
- 	struct pool *pool = tc->pool;
-@@ -596,13 +607,15 @@ static void process_prepared_discard_pas
- {
- 	struct thin_c *tc = m->tc;
- 
-+	inc_all_io_entry(tc->pool, m->bio);
-+	cell_defer_except(tc, m->cell);
-+	cell_defer_except(tc, m->cell2);
-+
- 	if (m->pass_discard)
- 		remap_and_issue(tc, m->bio, m->data_block);
- 	else
- 		bio_endio(m->bio, 0);
- 
--	cell_defer_except(tc, m->cell);
--	cell_defer_except(tc, m->cell2);
- 	mempool_free(m, tc->pool->mapping_pool);
++	if (ep->desc.bInterval == 0)
++		return 0;
+ 	return xhci_microframes_to_exponent(udev, ep,
+ 			ep->desc.bInterval, 0, 15);
  }
- 
-@@ -710,6 +723,7 @@ static void schedule_copy(struct thin_c
- 		h->overwrite_mapping = m;
- 		m->bio = bio;
- 		save_and_set_endio(bio, &m->saved_bi_end_io, overwrite_endio);
-+		inc_all_io_entry(pool, bio);
- 		remap_and_issue(tc, bio, data_dest);
- 	} else {
- 		struct dm_io_region from, to;
-@@ -779,6 +793,7 @@ static void schedule_zero(struct thin_c
- 		h->overwrite_mapping = m;
- 		m->bio = bio;
- 		save_and_set_endio(bio, &m->saved_bi_end_io, overwrite_endio);
-+		inc_all_io_entry(pool, bio);
- 		remap_and_issue(tc, bio, data_block);
- 	} else {
- 		int r;
-@@ -961,13 +976,15 @@ static void process_discard(struct thin_
- 				wake_worker(pool);
- 			}
- 		} else {
-+			inc_all_io_entry(pool, bio);
-+			cell_defer_except(tc, cell);
-+			cell_defer_except(tc, cell2);
-+
- 			/*
- 			 * The DM core makes sure that the discard doesn't span
- 			 * a block boundary.  So we submit the discard of a
- 			 * partial block appropriately.
- 			 */
--			cell_defer_except(tc, cell);
--			cell_defer_except(tc, cell2);
- 			if ((!lookup_result.shared) && pool->pf.discard_passdown)
- 				remap_and_issue(tc, bio, lookup_result.block);
- 			else
-@@ -1039,8 +1056,9 @@ static void process_shared_bio(struct th
- 		struct dm_thin_endio_hook *h = dm_get_mapinfo(bio)->ptr;
- 
- 		h->shared_read_entry = dm_deferred_entry_inc(pool->shared_read_ds);
--
-+		inc_all_io_entry(pool, bio);
- 		cell_defer_except(tc, cell);
-+
- 		remap_and_issue(tc, bio, lookup_result->block);
- 	}
- }
-@@ -1055,7 +1073,9 @@ static void provision_block(struct thin_
- 	 * Remap empty bios (flushes) immediately, without provisioning.
- 	 */
- 	if (!bio->bi_size) {
-+		inc_all_io_entry(tc->pool, bio);
- 		cell_defer_except(tc, cell);
-+
- 		remap_and_issue(tc, bio, 0);
- 		return;
- 	}
-@@ -1110,26 +1130,22 @@ static void process_bio(struct thin_c *t
- 	r = dm_thin_find_block(tc->td, block, 1, &lookup_result);
- 	switch (r) {
- 	case 0:
--		/*
--		 * We can release this cell now.  This thread is the only
--		 * one that puts bios into a cell, and we know there were
--		 * no preceding bios.
--		 */
--		/*
--		 * TODO: this will probably have to change when discard goes
--		 * back in.
--		 */
--		cell_defer_except(tc, cell);
--
--		if (lookup_result.shared)
-+		if (lookup_result.shared) {
- 			process_shared_bio(tc, bio, block, &lookup_result);
--		else
-+			cell_defer_except(tc, cell);
-+		} else {
-+			inc_all_io_entry(tc->pool, bio);
-+			cell_defer_except(tc, cell);
-+
- 			remap_and_issue(tc, bio, lookup_result.block);
-+		}
- 		break;
- 
- 	case -ENODATA:
- 		if (bio_data_dir(bio) == READ && tc->origin_dev) {
-+			inc_all_io_entry(tc->pool, bio);
- 			cell_defer_except(tc, cell);
-+
- 			remap_to_origin_and_issue(tc, bio);
- 		} else
- 			provision_block(tc, bio, block, cell);
-@@ -1155,8 +1171,10 @@ static void process_bio_read_only(struct
- 	case 0:
- 		if (lookup_result.shared && (rw == WRITE) && bio->bi_size)
- 			bio_io_error(bio);
--		else
-+		else {
-+			inc_all_io_entry(tc->pool, bio);
- 			remap_and_issue(tc, bio, lookup_result.block);
-+		}
- 		break;
- 
- 	case -ENODATA:
-@@ -1166,6 +1184,7 @@ static void process_bio_read_only(struct
- 		}
- 
- 		if (tc->origin_dev) {
-+			inc_all_io_entry(tc->pool, bio);
- 			remap_to_origin_and_issue(tc, bio);
- 			break;
- 		}
-@@ -1346,7 +1365,7 @@ static struct dm_thin_endio_hook *thin_h
- 
- 	h->tc = tc;
- 	h->shared_read_entry = NULL;
--	h->all_io_entry = bio->bi_rw & REQ_DISCARD ? NULL : dm_deferred_entry_inc(pool->all_io_ds);
-+	h->all_io_entry = NULL;
- 	h->overwrite_mapping = NULL;
- 
- 	return h;
-@@ -1363,6 +1382,8 @@ static int thin_bio_map(struct dm_target
- 	dm_block_t block = get_bio_block(tc, bio);
- 	struct dm_thin_device *td = tc->td;
- 	struct dm_thin_lookup_result result;
-+	struct dm_bio_prison_cell *cell1, *cell2;
-+	struct dm_cell_key key;
- 
- 	map_context->ptr = thin_hook_bio(tc, bio);
- 
-@@ -1399,12 +1420,25 @@ static int thin_bio_map(struct dm_target
- 			 * shared flag will be set in their case.
- 			 */
- 			thin_defer_bio(tc, bio);
--			r = DM_MAPIO_SUBMITTED;
--		} else {
--			remap(tc, bio, result.block);
--			r = DM_MAPIO_REMAPPED;
-+			return DM_MAPIO_SUBMITTED;
- 		}
--		break;
-+
-+		build_virtual_key(tc->td, block, &key);
-+		if (dm_bio_detain(tc->pool->prison, &key, bio, &cell1))
-+			return DM_MAPIO_SUBMITTED;
-+
-+		build_data_key(tc->td, result.block, &key);
-+		if (dm_bio_detain(tc->pool->prison, &key, bio, &cell2)) {
-+			cell_defer_except(tc, cell1);
-+			return DM_MAPIO_SUBMITTED;
-+		}
-+
-+		inc_all_io_entry(tc->pool, bio);
-+		cell_defer_except(tc, cell2);
-+		cell_defer_except(tc, cell1);
-+
-+		remap(tc, bio, result.block);
-+		return DM_MAPIO_REMAPPED;
- 
- 	case -ENODATA:
- 		if (get_pool_mode(tc->pool) == PM_READ_ONLY) {
 
 
