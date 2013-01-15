@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab3AOQUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 11:20:00 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51670 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755803Ab3AOQT6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 11:19:58 -0500
-Message-ID: <1358266794.10591.8.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH v2 1/1] block: blk-merge: don't merge the pages with
- non-contiguous descriptors
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Subhash Jadavani <subhashj@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Tue, 15 Jan 2013 16:19:54 +0000
-In-Reply-To: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org>
-References: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756714Ab3AOQZE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 11:25:04 -0500
+Received: from zmc.proxad.net ([212.27.53.206]:34449 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755648Ab3AOQZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 11:25:01 -0500
+From: Florian Fainelli <florian@openwrt.org>
+To: lasse.collin@tukaani.org
+Cc: linux-kernel@vger.kernel.org, Florian Fainelli <florian@openwrt.org>
+Subject: [PATCH 1/2] decompressors: group XZ_DEC_* symbols under an if XZ_BCJ / endif
+Date: Tue, 15 Jan 2013 17:22:09 +0100
+Message-Id: <1358266931-23401-1-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-15 at 21:31 +0530, Subhash Jadavani wrote:
-> blk_rq_map_sg() function merges the physically contiguous pages to use same
-> scatter-gather node without checking if their page descriptors are
-> contiguous or not.
-> 
-> Now when dma_map_sg() is called on the scatter gather list, it would
-> take the base page pointer from each node (one by one) and iterates
-> through all of the pages in same sg node by keep incrementing the base
-> page pointer with the assumption that physically contiguous pages will
-> have their page descriptor address contiguous which may not be true
-> if SPARSEMEM config is enabled. So here we may end referring to invalid
-> page descriptor.
-> 
-> Following table shows the example of physically contiguous pages but
-> their page descriptor addresses non-contiguous.
-> -------------------------------------------
-> | Page Descriptor    |   Physical Address |
-> ------------------------------------------
-> | 0xc1e43fdc         |   0xdffff000       |
-> | 0xc2052000         |   0xe0000000       |
-> -------------------------------------------
-> 
-> With this patch, relevant blk-merge functions will also check if the
-> physically contiguous pages are having page descriptors address contiguous
-> or not? If not then, these pages are separated to be in different
-> scatter-gather nodes.
+This patch groups all architecture-specific BCJ filter configuration
+symbols under an if XZ_BCJ / endif statement.
 
-How does this manifest as a bug?
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+ lib/xz/Kconfig |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-The discontinuity is in struct page arrays, which hardware doesn't care
-about.  All we need is to get from struct page to the physical address
-for programming the hardware, for which we use the sg_phys() inline
-function.
-
-Even given we have a two page physical contiguity at 0xdffff000 in your
-example, the sg list entry contains a length of 8192 and a page_link of
-0xc1e43fdc, which we transform to the correct physical address and
-length.
-
-James
-
+diff --git a/lib/xz/Kconfig b/lib/xz/Kconfig
+index 60a6088..12d2d777 100644
+--- a/lib/xz/Kconfig
++++ b/lib/xz/Kconfig
+@@ -6,42 +6,40 @@ config XZ_DEC
+ 	  the .xz file format as the container. For integrity checking,
+ 	  CRC32 is supported. See Documentation/xz.txt for more information.
+ 
++if XZ_DEC
++
+ config XZ_DEC_X86
+ 	bool "x86 BCJ filter decoder" if EXPERT
+ 	default y
+-	depends on XZ_DEC
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_POWERPC
+ 	bool "PowerPC BCJ filter decoder" if EXPERT
+ 	default y
+-	depends on XZ_DEC
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_IA64
+ 	bool "IA-64 BCJ filter decoder" if EXPERT
+ 	default y
+-	depends on XZ_DEC
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_ARM
+ 	bool "ARM BCJ filter decoder" if EXPERT
+ 	default y
+-	depends on XZ_DEC
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_ARMTHUMB
+ 	bool "ARM-Thumb BCJ filter decoder" if EXPERT
+ 	default y
+-	depends on XZ_DEC
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_SPARC
+ 	bool "SPARC BCJ filter decoder" if EXPERT
+ 	default y
+-	depends on XZ_DEC
+ 	select XZ_DEC_BCJ
+ 
++endif
++
+ config XZ_DEC_BCJ
+ 	bool
+ 	default n
+-- 
+1.7.10.4
 
