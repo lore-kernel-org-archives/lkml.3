@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933131Ab3AOWuK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:50:10 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45880 "EHLO mail.kernel.org"
+	id S1758867Ab3AOXsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:48:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45902 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932934Ab3AOWuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:07 -0500
+	id S933130Ab3AOWuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 045/171] ring-buffer: Fix race between integrity check and readers
-Date: Tue, 15 Jan 2013 14:43:30 -0800
-Message-Id: <20130115224316.666468287@linuxfoundation.org>
+        Forrest Liu <forrestl@synology.com>, "Theodore Tso" <tytso@mit.edu>,
+        Ashish Sangwan <ashishsangwan2@gmail.com>
+Subject: [ 057/171] ext4: fix extent tree corruption caused by hole punch
+Date: Tue, 15 Jan 2013 14:43:42 -0800
+Message-Id: <20130115224317.535739341@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,65 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Forrest Liu <forrestl@synology.com>
 
-commit 9366c1ba13fbc41bdb57702e75ca4382f209c82f upstream.
+commit c36575e663e302dbaa4d16b9c72d2c9a913a9aef upstream.
 
-The function rb_check_pages() was added to make sure the ring buffer's
-pages were sane. This check is done when the ring buffer size is modified
-as well as when the iterator is released (closing the "trace" file),
-as that was considered a non fast path and a good place to do a sanity
-check.
+When depth of extent tree is greater than 1, logical start value of
+interior node is not correctly updated in ext4_ext_rm_idx.
 
-The problem is that the check does not have any locks around it.
-If one process were to read the trace file, and another were to read
-the raw binary file, the check could happen while the reader is reading
-the file.
-
-The issues with this is that the check requires to clear the HEAD page
-before doing the full check and it restores it afterward. But readers
-require the HEAD page to exist before it can read the buffer, otherwise
-it gives a nasty warning and disables the buffer.
-
-By adding the reader lock around the check, this keeps the race from
-happening.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Forrest Liu <forrestl@synology.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Ashish Sangwan <ashishsangwan2@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ fs/ext4/extents.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2708,7 +2708,7 @@ unsigned long ring_buffer_oldest_event_t
- 	unsigned long flags;
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	struct buffer_page *bpage;
--	unsigned long ret;
-+	unsigned long ret = 0;
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2110,13 +2110,14 @@ ext4_ext_in_cache(struct inode *inode, e
+  * removes index from the index block.
+  */
+ static int ext4_ext_rm_idx(handle_t *handle, struct inode *inode,
+-			struct ext4_ext_path *path)
++			struct ext4_ext_path *path, int depth)
+ {
+ 	int err;
+ 	ext4_fsblk_t leaf;
  
- 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
- 		return 0;
-@@ -2723,7 +2723,8 @@ unsigned long ring_buffer_oldest_event_t
- 		bpage = cpu_buffer->reader_page;
- 	else
- 		bpage = rb_set_head_page(cpu_buffer);
--	ret = bpage->page->time_stamp;
-+	if (bpage)
-+		ret = bpage->page->time_stamp;
- 	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ 	/* free index block */
+-	path--;
++	depth--;
++	path = path + depth;
+ 	leaf = ext4_idx_pblock(path->p_idx);
+ 	if (unlikely(path->p_hdr->eh_entries == 0)) {
+ 		EXT4_ERROR_INODE(inode, "path->p_hdr->eh_entries == 0");
+@@ -2141,6 +2142,19 @@ static int ext4_ext_rm_idx(handle_t *han
  
- 	return ret;
-@@ -3030,6 +3031,8 @@ rb_get_reader_page(struct ring_buffer_pe
- 	 * Splice the empty reader page into the list around the head.
- 	 */
- 	reader = rb_set_head_page(cpu_buffer);
-+	if (!reader)
-+		goto out;
- 	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
- 	cpu_buffer->reader_page->list.prev = reader->list.prev;
+ 	ext4_free_blocks(handle, inode, NULL, leaf, 1,
+ 			 EXT4_FREE_BLOCKS_METADATA | EXT4_FREE_BLOCKS_FORGET);
++
++	while (--depth >= 0) {
++		if (path->p_idx != EXT_FIRST_INDEX(path->p_hdr))
++			break;
++		path--;
++		err = ext4_ext_get_access(handle, inode, path);
++		if (err)
++			break;
++		path->p_idx->ei_block = (path+1)->p_idx->ei_block;
++		err = ext4_ext_dirty(handle, inode, path);
++		if (err)
++			break;
++	}
+ 	return err;
+ }
  
+@@ -2474,7 +2488,7 @@ ext4_ext_rm_leaf(handle_t *handle, struc
+ 	/* if this leaf is free, then we should
+ 	 * remove it from index block above */
+ 	if (err == 0 && eh->eh_entries == 0 && path[depth].p_bh != NULL)
+-		err = ext4_ext_rm_idx(handle, inode, path + depth);
++		err = ext4_ext_rm_idx(handle, inode, path, depth);
+ 
+ out:
+ 	return err;
+@@ -2675,7 +2689,7 @@ cont:
+ 				/* index is empty, remove it;
+ 				 * handle must be already prepared by the
+ 				 * truncatei_leaf() */
+-				err = ext4_ext_rm_idx(handle, inode, path + i);
++				err = ext4_ext_rm_idx(handle, inode, path, i);
+ 			}
+ 			/* root level has p_bh == NULL, brelse() eats this */
+ 			brelse(path[i].p_bh);
 
 
