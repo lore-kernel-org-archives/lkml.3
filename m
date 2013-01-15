@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab3AOMdI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 07:33:08 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43903 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756105Ab3AOMdD (ORCPT
+	id S1756202Ab3AOMdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:33:52 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:40214 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750777Ab3AOMdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:33:03 -0500
-Date: Tue, 15 Jan 2013 13:32:48 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, swarren@nvidia.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource
- allocation
-Message-ID: <20130115123248.GB2625@pengutronix.de>
-References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com>
- <20130114161644.GC14721@kroah.com>
- <20130114221551.GA30020@avionic-0098.adnet.avionic-design.de>
- <201301142224.11243.arnd@arndb.de>
+	Tue, 15 Jan 2013 07:33:51 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19IjsZCP3t0fXxS21NXFxTNEG9f7sPsLPo=
+Date: Tue, 15 Jan 2013 07:33:07 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Stefan Peter <s.peter@mpl.ch>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, andrew@lunn.ch, dwmw2@infradead.org,
+        jm@lentin.co.uk, arnd@arndb.de, sebastian.hesselbarth@googlemail.com,
+        iwamatsu@nigauri.org, artem.bityutskiy@linux.intel.com,
+        wfp5p@virginia.edu, gregkh@linuxfoundation.org,
+        broonie@opensource.wolfsonmicro.com, mchehab@redhat.com,
+        nico@linaro.org
+Subject: Re: [PATCH 3/4] Enable ecc-mode selection in the driver
+Message-ID: <20130115123307.GA13433@titan.lakedaemon.net>
+References: <cover.1358242644.git.s.peter@mpl.ch>
+ <2d08c4c072fd4922a6056362adb96a455307d583.1358242644.git.s.peter@mpl.ch>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bCsyhTFzCvuiizWE"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201301142224.11243.arnd@arndb.de>
+In-Reply-To: <2d08c4c072fd4922a6056362adb96a455307d583.1358242644.git.s.peter@mpl.ch>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Stefan,
 
---bCsyhTFzCvuiizWE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a good-looking patch series, nice and small!  A few comments:
 
-On Mon, Jan 14, 2013 at 10:24:11PM +0000, Arnd Bergmann wrote:
-> On Monday 14 January 2013, Thierry Reding wrote:
-> > It certainly sounds like a less complicated way to do it. But it also
-> > involves adding a function with a made up name and drop a function with
-> > a perfectly good name instead. I wouldn't even know what name to choose
-> > for the new API.
-> >=20
->=20
-> How about devm_ioremap_resource()? Sounds equally fitting, and is shorter.
+On Tue, Jan 15, 2013 at 01:13:12PM +0100, Stefan Peter wrote:
+> In order to be able to use the ecc-mode, add the bch module to the default
+> settings for the kirwood boards and enable the activation in orin-nand.c
 
-2 cents, I wrote back then:
+s/orin-nand/orion-nand/
 
-* the new function is not named 'devm_ioremap_resource' because it does mor=
-e than
-  just ioremap, namely request_mem_region. I didn't want to create implicit
-  knowledge here.
+> 
+> Signed-off-by: Stefan Peter <s.peter@mpl.ch>
+> ---
+> diff --git a/arch/arm/configs/kirkwood_defconfig b/arch/arm/configs/kirkwood_defconfig
+> index 93f3794..4a9d3f7 100644
+> --- a/arch/arm/configs/kirkwood_defconfig
+> +++ b/arch/arm/configs/kirkwood_defconfig
+> @@ -84,6 +84,7 @@ CONFIG_MTD_CFI_STAA=y
+>  CONFIG_MTD_PHYSMAP=y
+>  CONFIG_MTD_M25P80=y
+>  CONFIG_MTD_NAND=y
+> +CONFIG_MTD_NAND_ECC_BCH=y
+>  CONFIG_MTD_NAND_ORION=y
+>  CONFIG_BLK_DEV_LOOP=y
+>  # CONFIG_SCSI_PROC_FS is not set
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Please make the defconfig change a separate patch.
 
---bCsyhTFzCvuiizWE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+As a general note (this series shouldn't be a problem), please sort the
+series so that you add the driver feature first, then enable it in
+defconfig, then use it in DT.  This way, a future bisection won't run
+into any nasty surprises, other than what they're looking for. ;-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+thx,
 
-iEYEARECAAYFAlD1THAACgkQD27XaX1/VRsbUQCeO3T9fGRUTenwPGNdf2Wfow+S
-2yQAnjkdp45Tk8czgujiurdGGiEEMDvr
-=LQve
------END PGP SIGNATURE-----
-
---bCsyhTFzCvuiizWE--
+Jason.
