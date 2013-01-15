@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab3AOHfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 02:35:04 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57266 "EHLO
+	id S1756542Ab3AOHfD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 02:35:03 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48134 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756107Ab3AOHcK (ORCPT
+	with ESMTP id S1756113Ab3AOHcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jan 2013 02:32:10 -0500
-X-AuditID: 9c930179-b7b0cae0000065b4-91-50f505f76d29
+X-AuditID: 9c930179-b7b0cae0000065b4-94-50f505f7de97
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
         Namhyung Kim <namhyung.kim@lge.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/13] perf tests: Add group test conditions
-Date: Tue, 15 Jan 2013 16:31:46 +0900
-Message-Id: <1358235117-12803-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 03/13] perf header: Add HEADER_GROUP_DESC feature
+Date: Tue, 15 Jan 2013 16:31:47 +0900
+Message-Id: <1358235117-12803-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
 References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
@@ -28,8 +28,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-As some new fields for handling groups added, check them to be sure to
-have valid values in test__group* cases.
+Save group relationship information so that it can be restored when perf
+report is running.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
@@ -38,191 +38,244 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1355726345-29553-3-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1355726345-29553-5-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/parse-events.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ tools/perf/builtin-record.c |   3 +
+ tools/perf/util/header.c    | 164 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/header.h    |   2 +
+ 3 files changed, 169 insertions(+)
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index e7eb708da32c..257d60f5cfc7 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -23,6 +23,7 @@ static int test__checkevent_tracepoint(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel = perf_evlist__first(evlist);
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 2ac690cad411..774c90713a53 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -486,6 +486,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		goto out_delete_session;
+ 	}
  
- 	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 0 == evlist->nr_groups);
- 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_TRACEPOINT == evsel->attr.type);
- 	TEST_ASSERT_VAL("wrong sample_type",
- 		PERF_TP_SAMPLE_TYPE == evsel->attr.sample_type);
-@@ -35,6 +36,7 @@ static int test__checkevent_tracepoint_multi(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel;
- 
- 	TEST_ASSERT_VAL("wrong number of entries", evlist->nr_entries > 1);
-+	TEST_ASSERT_VAL("wrong number of groups", 0 == evlist->nr_groups);
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		TEST_ASSERT_VAL("wrong type",
-@@ -510,6 +512,7 @@ static int test__group1(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel, *leader;
- 
- 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
- 
- 	/* instructions:k */
- 	evsel = leader = perf_evlist__first(evlist);
-@@ -523,6 +526,8 @@ static int test__group1(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* cycles:upp */
- 	evsel = perf_evsel__next(evsel);
-@@ -537,6 +542,7 @@ static int test__group1(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 2);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	return 0;
++	if (!evsel_list->nr_groups)
++		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
++
+ 	/*
+ 	 * perf_session__delete(session) will be called at perf_record__exit()
+ 	 */
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index fccd69dbbbb9..b614c9638fd5 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1082,6 +1082,52 @@ static int write_pmu_mappings(int fd, struct perf_header *h __maybe_unused,
  }
-@@ -546,6 +552,7 @@ static int test__group2(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel, *leader;
  
- 	TEST_ASSERT_VAL("wrong number of entries", 3 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
- 
- 	/* faults + :ku modifier */
- 	evsel = leader = perf_evlist__first(evlist);
-@@ -559,6 +566,8 @@ static int test__group2(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* cache-references + :u modifier */
- 	evsel = perf_evsel__next(evsel);
-@@ -572,6 +581,7 @@ static int test__group2(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	/* cycles:k */
- 	evsel = perf_evsel__next(evsel);
-@@ -594,6 +604,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	struct perf_evsel *evsel, *leader;
- 
- 	TEST_ASSERT_VAL("wrong number of entries", 5 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 2 == evlist->nr_groups);
- 
- 	/* group1 syscalls:sys_enter_open:H */
- 	evsel = leader = perf_evlist__first(evlist);
-@@ -610,6 +621,8 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 	TEST_ASSERT_VAL("wrong group name",
- 		!strcmp(leader->group_name, "group1"));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* group1 cycles:kppp */
- 	evsel = perf_evsel__next(evsel);
-@@ -625,6 +638,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 3);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	/* group2 cycles + G modifier */
- 	evsel = leader = perf_evsel__next(evsel);
-@@ -640,6 +654,8 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 	TEST_ASSERT_VAL("wrong group name",
- 		!strcmp(leader->group_name, "group2"));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* group2 1:3 + G modifier */
- 	evsel = perf_evsel__next(evsel);
-@@ -652,6 +668,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	/* instructions:u */
- 	evsel = perf_evsel__next(evsel);
-@@ -674,6 +691,7 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
- 	struct perf_evsel *evsel, *leader;
- 
- 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
- 
- 	/* cycles:u + p */
- 	evsel = leader = perf_evlist__first(evlist);
-@@ -689,6 +707,8 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 1);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* instructions:kp + p */
- 	evsel = perf_evsel__next(evsel);
-@@ -703,6 +723,7 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 2);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	return 0;
+ /*
++ * File format:
++ *
++ * struct group_descs {
++ *	u32	nr_groups;
++ *	struct group_desc {
++ *		char	name[];
++ *		u32	leader_idx;
++ *		u32	nr_members;
++ *	}[nr_groups];
++ * };
++ */
++static int write_group_desc(int fd, struct perf_header *h __maybe_unused,
++			    struct perf_evlist *evlist)
++{
++	u32 nr_groups = evlist->nr_groups;
++	struct perf_evsel *evsel;
++	int ret;
++
++	ret = do_write(fd, &nr_groups, sizeof(nr_groups));
++	if (ret < 0)
++		return ret;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (perf_evsel__is_group_leader(evsel) &&
++		    evsel->nr_members > 1) {
++			const char *name = evsel->group_name ?: "{anon_group}";
++			u32 leader_idx = evsel->idx;
++			u32 nr_members = evsel->nr_members;
++
++			ret = do_write_string(fd, name);
++			if (ret < 0)
++				return ret;
++
++			ret = do_write(fd, &leader_idx, sizeof(leader_idx));
++			if (ret < 0)
++				return ret;
++
++			ret = do_write(fd, &nr_members, sizeof(nr_members));
++			if (ret < 0)
++				return ret;
++		}
++	}
++	return 0;
++}
++
++/*
+  * default get_cpuid(): nothing gets recorded
+  * actual implementation must be in arch/$(ARCH)/util/header.c
+  */
+@@ -1444,6 +1490,31 @@ error:
+ 	fprintf(fp, "# pmu mappings: unable to read\n");
  }
-@@ -712,6 +733,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	struct perf_evsel *evsel, *leader;
  
- 	TEST_ASSERT_VAL("wrong number of entries", 5 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 2 == evlist->nr_groups);
++static void print_group_desc(struct perf_header *ph, int fd __maybe_unused,
++			     FILE *fp)
++{
++	struct perf_session *session;
++	struct perf_evsel *evsel;
++	u32 nr = 0;
++
++	session = container_of(ph, struct perf_session, header);
++
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		if (perf_evsel__is_group_leader(evsel) &&
++		    evsel->nr_members > 1) {
++			fprintf(fp, "# group: %s{%s", evsel->group_name ?: "",
++				perf_evsel__name(evsel));
++
++			nr = evsel->nr_members - 1;
++		} else if (nr) {
++			fprintf(fp, ",%s", perf_evsel__name(evsel));
++
++			if (--nr == 0)
++				fprintf(fp, "}\n");
++		}
++	}
++}
++
+ static int __event_process_build_id(struct build_id_event *bev,
+ 				    char *filename,
+ 				    struct perf_session *session)
+@@ -1958,6 +2029,98 @@ error:
+ 	return -1;
+ }
  
- 	/* cycles + G */
- 	evsel = leader = perf_evlist__first(evlist);
-@@ -726,6 +748,8 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++static int process_group_desc(struct perf_file_section *section __maybe_unused,
++			      struct perf_header *ph, int fd,
++			      void *data __maybe_unused)
++{
++	size_t ret = -1;
++	u32 i, nr, nr_groups;
++	struct perf_session *session;
++	struct perf_evsel *evsel, *leader = NULL;
++	struct group_desc {
++		char *name;
++		u32 leader_idx;
++		u32 nr_members;
++	} *desc;
++
++	if (readn(fd, &nr_groups, sizeof(nr_groups)) != sizeof(nr_groups))
++		return -1;
++
++	if (ph->needs_swap)
++		nr_groups = bswap_32(nr_groups);
++
++	ph->env.nr_groups = nr_groups;
++	if (!nr_groups) {
++		pr_debug("group desc not available\n");
++		return 0;
++	}
++
++	desc = calloc(nr_groups, sizeof(*desc));
++	if (!desc)
++		return -1;
++
++	for (i = 0; i < nr_groups; i++) {
++		desc[i].name = do_read_string(fd, ph);
++		if (!desc[i].name)
++			goto out_free;
++
++		if (readn(fd, &desc[i].leader_idx, sizeof(u32)) != sizeof(u32))
++			goto out_free;
++
++		if (readn(fd, &desc[i].nr_members, sizeof(u32)) != sizeof(u32))
++			goto out_free;
++
++		if (ph->needs_swap) {
++			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
++			desc[i].nr_members = bswap_32(desc[i].nr_members);
++		}
++	}
++
++	/*
++	 * Rebuild group relationship based on the group_desc
++	 */
++	session = container_of(ph, struct perf_session, header);
++	session->evlist->nr_groups = nr_groups;
++
++	i = nr = 0;
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		if (evsel->idx == (int) desc[i].leader_idx) {
++			evsel->leader = evsel;
++			/* {anon_group} is a dummy name */
++			if (strcmp(desc[i].name, "{anon_group}"))
++				evsel->group_name = desc[i].name;
++			evsel->nr_members = desc[i].nr_members;
++
++			if (i >= nr_groups || nr > 0) {
++				pr_debug("invalid group desc\n");
++				goto out_free;
++			}
++
++			leader = evsel;
++			nr = evsel->nr_members - 1;
++			i++;
++		} else if (nr) {
++			/* This is a group member */
++			evsel->leader = leader;
++
++			nr--;
++		}
++	}
++
++	if (i != nr_groups || nr != 0) {
++		pr_debug("invalid group desc\n");
++		goto out_free;
++	}
++
++	ret = 0;
++out_free:
++	while ((int) --i >= 0)
++		free(desc[i].name);
++	free(desc);
++
++	return ret;
++}
++
+ struct feature_ops {
+ 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
+ 	void (*print)(struct perf_header *h, int fd, FILE *fp);
+@@ -1997,6 +2160,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+ 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
+ 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
+ 	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
++	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
+ };
  
- 	/* instructions + G */
- 	evsel = perf_evsel__next(evsel);
-@@ -739,6 +763,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
+ struct header_print_data {
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 20f0344accb1..c9fc55cada6d 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -29,6 +29,7 @@ enum {
+ 	HEADER_NUMA_TOPOLOGY,
+ 	HEADER_BRANCH_STACK,
+ 	HEADER_PMU_MAPPINGS,
++	HEADER_GROUP_DESC,
+ 	HEADER_LAST_FEATURE,
+ 	HEADER_FEAT_BITS	= 256,
+ };
+@@ -79,6 +80,7 @@ struct perf_session_env {
+ 	char			*numa_nodes;
+ 	int			nr_pmu_mappings;
+ 	char			*pmu_mappings;
++	int			nr_groups;
+ };
  
- 	/* cycles:G */
- 	evsel = leader = perf_evsel__next(evsel);
-@@ -753,6 +778,8 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
- 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
- 
- 	/* instructions:G */
- 	evsel = perf_evsel__next(evsel);
-@@ -766,6 +793,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
- 
- 	/* cycles */
- 	evsel = perf_evsel__next(evsel);
+ struct perf_header {
 -- 
 1.7.11.7
 
