@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933030Ab3AOWtf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:49:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45652 "EHLO mail.kernel.org"
+	id S932987Ab3AOXwc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:52:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45694 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932876Ab3AOWt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:49:28 -0500
+	id S933028Ab3AOWtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Subject: [ 038/171] drm/radeon: fix eDP clk and lane setup for scaled modes
-Date: Tue, 15 Jan 2013 14:43:23 -0800
-Message-Id: <20130115224316.157021149@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Subject: [ 042/171] SUNRPC: Fix validity issues with rpc_pipefs sb->s_fs_info
+Date: Tue, 15 Jan 2013 14:43:27 -0800
+Message-Id: <20130115224316.455938534@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,31 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 93927f9c1db5f55085457e820f0631064c7bfa34 upstream.
+commit 642fe4d00db56d65060ce2fd4c105884414acb16 upstream.
 
-Need to use the adjusted mode since we are sending native
-timing and using the scaler for non-native modes.
+rpc_kill_sb() must defer calling put_net() until after the notifier
+has been called, since most (all?) of the notifier callbacks assume
+that sb->s_fs_info points to a valid net namespace. It also must not
+call put_net() if the call to rpc_fill_super was unsuccessful.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=48421
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sunrpc/rpc_pipe.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -95,7 +95,7 @@ static bool radeon_atom_mode_fixup(struc
- 	    ((radeon_encoder->active_device & (ATOM_DEVICE_DFP_SUPPORT | ATOM_DEVICE_LCD_SUPPORT)) ||
- 	     (radeon_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_OBJECT_ID_NONE))) {
- 		struct drm_connector *connector = radeon_get_connector_for_encoder(encoder);
--		radeon_dp_set_link_config(connector, mode);
-+		radeon_dp_set_link_config(connector, adjusted_mode);
- 	}
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -1157,14 +1157,19 @@ static void rpc_kill_sb(struct super_blo
+ 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
  
- 	return true;
+ 	mutex_lock(&sn->pipefs_sb_lock);
++	if (sn->pipefs_sb != sb) {
++		mutex_unlock(&sn->pipefs_sb_lock);
++		goto out;
++	}
+ 	sn->pipefs_sb = NULL;
+ 	mutex_unlock(&sn->pipefs_sb_lock);
+-	put_net(net);
+ 	dprintk("RPC:	sending pipefs UMOUNT notification for net %p%s\n", net,
+ 								NET_NAME(net));
+ 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+ 					   RPC_PIPEFS_UMOUNT,
+ 					   sb);
++	put_net(net);
++out:
+ 	kill_litter_super(sb);
+ }
+ 
 
 
