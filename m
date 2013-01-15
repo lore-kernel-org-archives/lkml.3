@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674Ab3APABL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:01:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43559 "EHLO mail.kernel.org"
+	id S932679Ab3AOWfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:35:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43437 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932683Ab3AOWf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:35:27 -0500
+	id S1756520Ab3AOWfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:35:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 186/221] Revert: "rt2x00: Dont let mac80211 send a BAR when an AMPDU subframe fails"
-Date: Tue, 15 Jan 2013 10:51:53 -0800
-Message-Id: <20130115185011.450421993@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 183/221] regulator: max8998: Ensure enough delay time for max8998_set_voltage_buck_time_sel
+Date: Tue, 15 Jan 2013 10:51:50 -0800
+Message-Id: <20130115185011.219262776@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,60 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit ab9d6e4ffe192427ce9e93d4f927b0faaa8a941e upstream.
+commit 81d0a6ae7befb24c06f4aa4856af7f8d1f612171 upstream.
 
-This revert:
+Use DIV_ROUND_UP to prevent truncation by integer division issue.
+This ensures we return enough delay time.
 
-commit be03d4a45c09ee5100d3aaaedd087f19bc20d01f
-Author: Andreas Hartmann <andihartmann@01019freenet.de>
-Date:   Tue Apr 17 00:25:28 2012 +0200
-
-    rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails
-
-To fix problem workaround by above commit use
-IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL flag (see change log for
-"mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL" patch).
-
-Resolve: https://bugzilla.kernel.org/show_bug.cgi?id=42828
-Bisected-by: Francisco Pina Martins <f.pinamartins@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c |    3 ++-
- drivers/net/wireless/rt2x00/rt2x00dev.c |    7 +++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/regulator/max8998.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -5036,7 +5036,8 @@ static int rt2800_probe_hw_mode(struct r
- 	    IEEE80211_HW_SUPPORTS_PS |
- 	    IEEE80211_HW_PS_NULLFUNC_STACK |
- 	    IEEE80211_HW_AMPDU_AGGREGATION |
--	    IEEE80211_HW_REPORTS_TX_ACK_STATUS;
-+	    IEEE80211_HW_REPORTS_TX_ACK_STATUS |
-+	    IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL;
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -447,7 +447,7 @@ static int max8998_set_voltage_buck_time
  
- 	/*
- 	 * Don't set IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING for USB devices
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -391,10 +391,9 @@ void rt2x00lib_txdone(struct queue_entry
- 		tx_info->flags |= IEEE80211_TX_STAT_AMPDU;
- 		tx_info->status.ampdu_len = 1;
- 		tx_info->status.ampdu_ack_len = success ? 1 : 0;
--		/*
--		 * TODO: Need to tear down BA session here
--		 * if not successful.
--		 */
-+
-+		if (!success)
-+			tx_info->flags |= IEEE80211_TX_STAT_AMPDU_NO_BACK;
- 	}
+ 	difference = (new_selector - old_selector) * desc->step / 1000;
+ 	if (difference > 0)
+-		return difference / ((val & 0x0f) + 1);
++		return DIV_ROUND_UP(difference, (val & 0x0f) + 1);
  
- 	if (rate_flags & IEEE80211_TX_RC_USE_RTS_CTS) {
+ 	return 0;
+ }
 
 
