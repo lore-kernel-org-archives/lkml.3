@@ -1,129 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab3AOHeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 02:34:14 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:44816 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756491Ab3AOHeL (ORCPT
+	id S1756455Ab3AOHeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 02:34:00 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57266 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144Ab3AOHcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 02:34:11 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-d1-50f5067141e6
-Message-id: <50F5067A.2060104@samsung.com>
-Date: Tue, 15 Jan 2013 16:34:18 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, cwchoi00@gmail.com
-Subject: [GIT PULL] extcon for 3.8-rc4
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42I5/e+Znm4h29cAgzWrJCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGsg8HmQreS1bcaeFoYLwl0sXIySEhYCLRd38RE4QtJnHh3nq2
-	LkYuDiGBZYwSG9/uY4cp+nhsChNEYhGjxMd5S6GcLiaJ55u2g7XzCmhJHNj3GMxmEVCVuPz5
-	EVg3G1B8/4sbQGM5OEQFIiR+9XNAlAtK/Jh8jwXEFhHIlJjYsYUVZCazwDpGiVOPzoH1Cguo
-	SWzYfwisiFlAR2J/6zQ2CFteYvOat8wQuwQkvk0GqeEAulRWYtMBZpA5EgKv2SS+b7/NCPGB
-	pMTBFTdYJjCKzEKyexaSsbOQjF3AyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIyTEpXcw
-	rmqwOMQowMGoxMN7U/dLgBBrYllxZe4hRgkOZiURXp93QCHelMTKqtSi/Pii0pzU4kOMPkDX
-	TmSWEk3OB8ZfXkm8obGBsaGhpaGZqaWpAQ5hJXFexlNPAoQE0hNLUrNTUwtSi2DGMXFwSjUw
-	RmUm/n+46pQG2+LY/6mMIsrz3349+lw7sD513kvh1QlyPkus56yJCV0bEmXMaHPCN0IwMevg
-	tL3OFS+0ZX3E2ebXJr/ImMSR6dSy1aK6cEFXbJD9vVxdhqKor9s1p6nn+kT2nfktFtDC1qu6
-	qL5b49yp/Yxhn3bXrkmy9c0QDIj5eNF4ZY8SS3FGoqEWc1FxIgA/YeKVngIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAd1Ctq8BBuvOC1lc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjGUfDjIVvJesuNPC0cB4
-	S6SLkZNDQsBE4uOxKUwQtpjEhXvr2boYuTiEBBYxSnyct5QJwulikni+aTtYFa+AlsSBfY/B
-	bBYBVYnLnx+xg9hsQPH9L24AdXNwiApESPzq54AoF5T4MfkeC4gtIpApMbFjCyvITGaBdYwS
-	px6dA+sVFlCT2LD/EFgRs4COxP7WaWwQtrzE5jVvmScw8s1CMmsWkrJZSMoWMDKvYhRNLUgu
-	KE5KzzXSK07MLS7NS9dLzs/dxAiOoGfSOxhXNVgcYhTgYFTi4b2p+yVAiDWxrLgy9xCjBAez
-	kgivzzugEG9KYmVValF+fFFpTmrxIUYfoE8nMkuJJucDozuvJN7Q2MTMyNLIzNjE3NgYh7CS
-	OC/jqScBQgLpiSWp2ampBalFMOOYODilGhiTXh0REzFkV5oU9FZp9hvRpfeO/Fao0GcRsBTl
-	mnzgq1D9Ir4VU1hjPOXUKrf8ztO/O/nprcfzy/dMelmQsf6ArIthVfnyW76yJzim3LH5+dN6
-	nuurhElNFhOz5H1/Gx7iUdiY5bv+tpi5jXprhI2KXOeEmXO/1nxT/KErV3Cf6UbMHqnPi5OU
-	WIozEg21mIuKEwF6J/p8zQIAAA==
-X-CFilter-Loop: Reflected
+	Tue, 15 Jan 2013 02:32:11 -0500
+X-AuditID: 9c930179-b7b0cae0000065b4-a0-50f505f8caa9
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 05/13] perf hists: Resort hist entries using group members for output
+Date: Tue, 15 Jan 2013 16:31:49 +0900
+Message-Id: <1358235117-12803-6-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
+References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This is the extcon pull request for Linux 3.8-rc4.
+When event group is enabled, sorting hist entries on periods for output
+should consider groups members' period also.  To do that, build period
+table using link/pair information and compare the table.
 
-Please pull extcon with following updates:
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1355726345-29553-7-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evsel.h |  2 ++
+ tools/perf/util/hist.c  | 59 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 60 insertions(+), 1 deletion(-)
 
-Update to max77693/max8997 extcon driver:
-- Using MHL_TA cable for charging.
-- Support JIG cable.
-- Support Dock-Audio device for playing music and button of device.
-- Support Dock-Smart device for desktop mode with mouse/keyboard.
-- Set default UART/USB path on probe().
-- Check the state/type of cable after completing initialization.
-- Code clean to remove duplicate code and bug fix related to sequence of interrupt.
-- Fix irq_flag of max8997/max77693 driver.
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index f5d22f12ccd8..24225d728ba4 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -78,6 +78,8 @@ struct perf_evsel {
+ 	char			*group_name;
+ };
+ 
++#define hists_to_evsel(h) container_of(h, struct perf_evsel, hists)
++
+ struct cpu_map;
+ struct thread_map;
+ struct perf_evlist;
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 8170a3d11ffa..f855941bebea 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -4,6 +4,7 @@
+ #include "hist.h"
+ #include "session.h"
+ #include "sort.h"
++#include "evsel.h"
+ #include <math.h>
+ 
+ static bool hists__filter_entry_by_dso(struct hists *hists,
+@@ -540,6 +541,62 @@ void hists__collapse_resort_threaded(struct hists *hists)
+  * reverse the map, sort on period.
+  */
+ 
++static int period_cmp(u64 period_a, u64 period_b)
++{
++	if (period_a > period_b)
++		return 1;
++	if (period_a < period_b)
++		return -1;
++	return 0;
++}
++
++static int hist_entry__sort_on_period(struct hist_entry *a,
++				      struct hist_entry *b)
++{
++	int ret;
++	int i, nr_members;
++	struct perf_evsel *evsel;
++	struct hist_entry *pair;
++	u64 *periods_a, *periods_b;
++
++	ret = period_cmp(a->stat.period, b->stat.period);
++	if (ret || !symbol_conf.event_group)
++		return ret;
++
++	evsel = hists_to_evsel(a->hists);
++	nr_members = evsel->nr_members;
++	if (nr_members <= 1)
++		return ret;
++
++	periods_a = zalloc(sizeof(periods_a) * nr_members);
++	periods_b = zalloc(sizeof(periods_b) * nr_members);
++
++	if (!periods_a || !periods_b)
++		goto out;
++
++	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
++		evsel = hists_to_evsel(pair->hists);
++		periods_a[perf_evsel__group_idx(evsel)] = pair->stat.period;
++	}
++
++	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
++		evsel = hists_to_evsel(pair->hists);
++		periods_b[perf_evsel__group_idx(evsel)] = pair->stat.period;
++	}
++
++	for (i = 1; i < nr_members; i++) {
++		ret = period_cmp(periods_a[i], periods_b[i]);
++		if (ret)
++			break;
++	}
++
++out:
++	free(periods_a);
++	free(periods_b);
++
++	return ret;
++}
++
+ static void __hists__insert_output_entry(struct rb_root *entries,
+ 					 struct hist_entry *he,
+ 					 u64 min_callchain_hits)
+@@ -556,7 +613,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
+ 		parent = *p;
+ 		iter = rb_entry(parent, struct hist_entry, rb_node);
+ 
+-		if (he->stat.period > iter->stat.period)
++		if (hist_entry__sort_on_period(he, iter) > 0)
+ 			p = &(*p)->rb_left;
+ 		else
+ 			p = &(*p)->rb_right;
+-- 
+1.7.11.7
 
-Update to arizona extcon driver:
-- Headphone measurements.
-- Alternative detection mechanism for non-default system designs.
-- Microphone clamp integration.
-- Support for additional detection pin.
-- MICBIAS rise time configuration.
-
-Thanks in advance for pulling,
-
-Best regards,
-Chanwoo Choi
-
-The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
-
-  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-3.8-rc4
-
-for you to fetch changes up to 689557d3c7045320958d5bc4141088f7b4dff7ba:
-
-  mfd: wm5102: Add microphone clamp control registers (2013-01-15 15:42:18 +0900)
-
-----------------------------------------------------------------
-Chanwoo Choi (9):
-      extcon: max77693: Remove duplicate code by making function
-      extcon: max77693: Add support MHL_TA cable for charging battery
-      extcon: max77693: Add support jig cable
-      extcon: max77693: Add support dock device and buttons
-      extcon: max77693: Check the state/type of cable after boot completed
-      extcon: max8997/max77693: Support IRQF_NO_SUSPEND flag for interrupt
-      extcon: max77693: Set default uart/usb path by using platform data
-      extcon: max77693: Fix bug when detecting MHL/Dock-Audio with USB/TA cable
-      extcon: max77693: Add support Dock-Smart device for desktop mode
-
-Mark Brown (11):
-      extcon: arizona: Convert to devm_input_allocate_device()
-      extcon: arizona: Remove duplicate mic ramp configuration
-      extcon: arizona: Only set GPIO if it has been requested
-      extcon: arizona: Allow configuration of MICBIAS rise time
-      extcon: arizona: Use microphone clamp function if available
-      extcon: arizona: Support use of GPIO5 as an input to jack detection
-      extcon: arizona: Enable basic headphone identification
-      extcon: Simple code motion supporting future work.
-      extcon: arizona: Support HPDET based accessory identification
-      extcon: arizona: Support direct microphone measurement via HPDET
-      mfd: wm5102: Add microphone clamp control registers
-
- drivers/extcon/extcon-arizona.c       | 634 +++++++++++++++++++++--
- drivers/extcon/extcon-max77693.c      | 920 +++++++++++++++++++++++++---------
- drivers/extcon/extcon-max8997.c       |   6 +-
- drivers/mfd/wm5102-tables.c           |  10 +
- include/linux/mfd/arizona/core.h      |   4 +-
- include/linux/mfd/arizona/pdata.h     |  12 +
- include/linux/mfd/arizona/registers.h |  48 ++
- include/linux/mfd/max77693-private.h  |  86 ++++
- include/linux/mfd/max77693.h          |   9 +
- 9 files changed, 1439 insertions(+), 290 deletions(-)
