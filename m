@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933954Ab3AOWx4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:53:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47420 "EHLO mail.kernel.org"
+	id S934001Ab3AOWyL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:54:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47461 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933926Ab3AOWxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:53:53 -0500
+	id S933709Ab3AOWyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:54:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
-Subject: [ 165/171] ceph: Dont add dirty inode to dirty list if caps is in migration
-Date: Tue, 15 Jan 2013 14:45:30 -0800
-Message-Id: <20130115224325.223499549@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 169/171] staging: comedi: dont hijack hardware device private data
+Date: Tue, 15 Jan 2013 14:45:34 -0800
+Message-Id: <20130115224325.503057783@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,40 +25,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Ian Abbott <abbotti@mev.co.uk>
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+commit c43435d7722134ed1fda58ce1025f41029bd58ad upstream.
 
-Add dirty inode to cap_dirty_migrating list instead, this can avoid
-ceph_flush_dirty_caps() entering infinite loop.
+comedi_auto_config() associates a Comedi minor device number with an
+auto-configured hardware device and comedi_auto_unconfig() disassociates
+it.  Currently, these use the hardware device's private data pointer to
+point to some allocated storage holding the minor device number.  This
+is a bit of a waste of the hardware device's private data pointer,
+preventing it from being used for something more useful by the low-level
+comedi device drivers.  For example, it would make more sense if
+comedi_usb_auto_config() was passed a pointer to the struct
+usb_interface instead of the struct usb_device, but this cannot be done
+currently because the low-level comedi drivers already use the private
+data pointer in the struct usb_interface for something more useful.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
-(cherry picked from commit 0685235ffd9dbdb9ccbda587f8a3c83ad1d5a921)
+This patch stops the comedi core hijacking the hardware device's private
+data pointer.  Instead, comedi_auto_config() stores a pointer to the
+hardware device's struct device in the struct comedi_device_file_info
+associated with the minor device number, and comedi_auto_unconfig()
+calls new function comedi_find_board_minor() to recover the minor device
+number associated with the hardware device.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/ceph/caps.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/fs/ceph/caps.c
-+++ b/fs/ceph/caps.c
-@@ -1349,11 +1349,15 @@ int __ceph_mark_dirty_caps(struct ceph_i
- 		if (!ci->i_head_snapc)
- 			ci->i_head_snapc = ceph_get_snap_context(
- 				ci->i_snap_realm->cached_context);
--		dout(" inode %p now dirty snapc %p\n", &ci->vfs_inode,
--			ci->i_head_snapc);
-+		dout(" inode %p now dirty snapc %p auth cap %p\n",
-+		     &ci->vfs_inode, ci->i_head_snapc, ci->i_auth_cap);
- 		BUG_ON(!list_empty(&ci->i_dirty_item));
- 		spin_lock(&mdsc->cap_dirty_lock);
--		list_add(&ci->i_dirty_item, &mdsc->cap_dirty);
-+		if (ci->i_auth_cap)
-+			list_add(&ci->i_dirty_item, &mdsc->cap_dirty);
-+		else
-+			list_add(&ci->i_dirty_item,
-+				 &mdsc->cap_dirty_migrating);
- 		spin_unlock(&mdsc->cap_dirty_lock);
- 		if (ci->i_flushing_caps == 0) {
- 			ihold(inode);
+---
+ drivers/staging/comedi/comedi_fops.c |   18 ++++++++++++++++++
+ drivers/staging/comedi/comedidev.h   |    1 +
+ drivers/staging/comedi/drivers.c     |   34 ++++++++++------------------------
+ drivers/staging/comedi/internal.h    |    1 +
+ 4 files changed, 30 insertions(+), 24 deletions(-)
+
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -2210,6 +2210,7 @@ int comedi_alloc_board_minor(struct devi
+ 		kfree(info);
+ 		return -ENOMEM;
+ 	}
++	info->hardware_device = hardware_device;
+ 	comedi_device_init(info->device);
+ 	spin_lock_irqsave(&comedi_file_info_table_lock, flags);
+ 	for (i = 0; i < COMEDI_NUM_BOARD_MINORS; ++i) {
+@@ -2298,6 +2299,23 @@ void comedi_free_board_minor(unsigned mi
+ 	}
+ }
+ 
++int comedi_find_board_minor(struct device *hardware_device)
++{
++	int minor;
++	struct comedi_device_file_info *info;
++
++	for (minor = 0; minor < COMEDI_NUM_BOARD_MINORS; minor++) {
++		spin_lock(&comedi_file_info_table_lock);
++		info = comedi_file_info_table[minor];
++		if (info && info->hardware_device == hardware_device) {
++			spin_unlock(&comedi_file_info_table_lock);
++			return minor;
++		}
++		spin_unlock(&comedi_file_info_table_lock);
++	}
++	return -ENODEV;
++}
++
+ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
+ 				 struct comedi_subdevice *s)
+ {
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -234,6 +234,7 @@ struct comedi_device_file_info {
+ 	struct comedi_device *device;
+ 	struct comedi_subdevice *read_subdevice;
+ 	struct comedi_subdevice *write_subdevice;
++	struct device *hardware_device;
+ };
+ 
+ #ifdef CONFIG_COMEDI_DEBUG
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -822,25 +822,14 @@ static int comedi_auto_config(struct dev
+ 	int minor;
+ 	struct comedi_device_file_info *dev_file_info;
+ 	int retval;
+-	unsigned *private_data = NULL;
+ 
+-	if (!comedi_autoconfig) {
+-		dev_set_drvdata(hardware_device, NULL);
++	if (!comedi_autoconfig)
+ 		return 0;
+-	}
+ 
+ 	minor = comedi_alloc_board_minor(hardware_device);
+ 	if (minor < 0)
+ 		return minor;
+ 
+-	private_data = kmalloc(sizeof(unsigned), GFP_KERNEL);
+-	if (private_data == NULL) {
+-		retval = -ENOMEM;
+-		goto cleanup;
+-	}
+-	*private_data = minor;
+-	dev_set_drvdata(hardware_device, private_data);
+-
+ 	dev_file_info = comedi_get_device_file_info(minor);
+ 
+ 	memset(&it, 0, sizeof(it));
+@@ -853,25 +842,22 @@ static int comedi_auto_config(struct dev
+ 	retval = comedi_device_attach(dev_file_info->device, &it);
+ 	mutex_unlock(&dev_file_info->device->mutex);
+ 
+-cleanup:
+-	if (retval < 0) {
+-		kfree(private_data);
++	if (retval < 0)
+ 		comedi_free_board_minor(minor);
+-	}
+ 	return retval;
+ }
+ 
+ static void comedi_auto_unconfig(struct device *hardware_device)
+ {
+-	unsigned *minor = (unsigned *)dev_get_drvdata(hardware_device);
+-	if (minor == NULL)
+-		return;
+-
+-	BUG_ON(*minor >= COMEDI_NUM_BOARD_MINORS);
++	int minor;
+ 
+-	comedi_free_board_minor(*minor);
+-	dev_set_drvdata(hardware_device, NULL);
+-	kfree(minor);
++	if (hardware_device == NULL)
++		return;
++	minor = comedi_find_board_minor(hardware_device);
++	if (minor < 0)
++		return;
++	BUG_ON(minor >= COMEDI_NUM_BOARD_MINORS);
++	comedi_free_board_minor(minor);
+ }
+ 
+ int comedi_pci_auto_config(struct pci_dev *pcidev, const char *board_name)
+--- a/drivers/staging/comedi/internal.h
++++ b/drivers/staging/comedi/internal.h
+@@ -7,6 +7,7 @@ int insn_inval(struct comedi_device *dev
+ 	       struct comedi_insn *insn, unsigned int *data);
+ int comedi_alloc_board_minor(struct device *hardware_device);
+ void comedi_free_board_minor(unsigned minor);
++int comedi_find_board_minor(struct device *hardware_device);
+ void comedi_reset_async_buf(struct comedi_async *async);
+ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		     unsigned long new_size);
 
 
