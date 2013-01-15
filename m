@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab3AOW2C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:28:02 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41305 "EHLO mail.kernel.org"
+	id S1757587Ab3AOW2I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:28:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41319 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757551Ab3AOW17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:27:59 -0500
+	id S1757254Ab3AOW2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:28:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xiaotian Feng <dannyfeng@tencent.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 047/221] libata: fix Null pointer dereference on disk error
-Date: Tue, 15 Jan 2013 10:49:34 -0800
-Message-Id: <20130115185001.417548552@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 048/221] target/file: Fix 32-bit highmem breakage for SGL -> iovec mapping
+Date: Tue, 15 Jan 2013 10:49:35 -0800
+Message-Id: <20130115185001.500186170@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,56 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiaotian Feng <xtfeng@gmail.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 26cd4d65deba587f3cf2329b6869ce02bcbe68ec upstream.
+commit 40ff2c3b3da35dd3a00ac6722056a59b4b3f2caf upstream.
 
-Following oops were observed when disk error happened:
+This patch changes vectored file I/O to use kmap + kunmap when mapping
+incoming SGL memory -> struct iovec in order to properly support 32-bit
+highmem configurations.  This is because an extra bounce buffer may be
+required when processing scatterlist pages allocated with GFP_KERNEL.
 
-[ 4272.896937] sd 0:0:0:0: [sda] Unhandled error code
-[ 4272.896939] sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
-[ 4272.896942] sd 0:0:0:0: [sda] CDB: Read(10): 28 00 00 5a de a7 00 00 08 00
-[ 4272.896951] end_request: I/O error, dev sda, sector 5955239
-[ 4291.574947] BUG: unable to handle kernel NULL pointer dereference at (null)
-[ 4291.658305] IP: [] ahci_activity_show+0x1/0x40
-[ 4291.730090] PGD 76dbbc067 PUD 6c4fba067 PMD 0
-[ 4291.783408] Oops: 0000 [#1] SMP
-[ 4291.822100] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/sw_activity
-[ 4291.934235] CPU 9
-[ 4291.958301] Pid: 27942, comm: hwinfo ......
-
-ata_scsi_find_dev could return NULL, so ata_scsi_activity_{show,store} should check if atadev is NULL.
-
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-scsi.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/target/target_core_file.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -309,7 +309,8 @@ ata_scsi_activity_show(struct device *de
- 	struct ata_port *ap = ata_shost_to_port(sdev->host);
- 	struct ata_device *atadev = ata_scsi_find_dev(ap, sdev);
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -260,7 +260,7 @@ static int fd_do_readv(struct se_cmd *cm
  
--	if (ap->ops->sw_activity_show && (ap->flags & ATA_FLAG_SW_ACTIVITY))
-+	if (atadev && ap->ops->sw_activity_show &&
-+	    (ap->flags & ATA_FLAG_SW_ACTIVITY))
- 		return ap->ops->sw_activity_show(atadev, buf);
- 	return -EINVAL;
- }
-@@ -324,7 +325,8 @@ ata_scsi_activity_store(struct device *d
- 	enum sw_activity val;
- 	int rc;
+ 	for_each_sg(sgl, sg, sgl_nents, i) {
+ 		iov[i].iov_len = sg->length;
+-		iov[i].iov_base = sg_virt(sg);
++		iov[i].iov_base = kmap(sg_page(sg)) + sg->offset;
+ 	}
  
--	if (ap->ops->sw_activity_store && (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
-+	if (atadev && ap->ops->sw_activity_store &&
-+	    (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
- 		val = simple_strtoul(buf, NULL, 0);
- 		switch (val) {
- 		case OFF: case BLINK_ON: case BLINK_OFF:
+ 	old_fs = get_fs();
+@@ -268,6 +268,8 @@ static int fd_do_readv(struct se_cmd *cm
+ 	ret = vfs_readv(fd, &iov[0], sgl_nents, &pos);
+ 	set_fs(old_fs);
+ 
++	for_each_sg(sgl, sg, sgl_nents, i)
++		kunmap(sg_page(sg));
+ 	kfree(iov);
+ 	/*
+ 	 * Return zeros and GOOD status even if the READ did not return
+@@ -313,7 +315,7 @@ static int fd_do_writev(struct se_cmd *c
+ 
+ 	for_each_sg(sgl, sg, sgl_nents, i) {
+ 		iov[i].iov_len = sg->length;
+-		iov[i].iov_base = sg_virt(sg);
++		iov[i].iov_base = kmap(sg_page(sg)) + sg->offset;
+ 	}
+ 
+ 	old_fs = get_fs();
+@@ -321,6 +323,9 @@ static int fd_do_writev(struct se_cmd *c
+ 	ret = vfs_writev(fd, &iov[0], sgl_nents, &pos);
+ 	set_fs(old_fs);
+ 
++	for_each_sg(sgl, sg, sgl_nents, i)
++		kunmap(sg_page(sg));
++
+ 	kfree(iov);
+ 
+ 	if (ret < 0 || ret != cmd->data_length) {
 
 
