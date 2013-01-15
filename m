@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757847Ab3AOW2y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:28:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41551 "EHLO mail.kernel.org"
+	id S1757876Ab3AOW27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:28:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47902 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751280Ab3AOW2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:28:52 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 061/221] SUNRPC: continue run over clients list on PipeFS event instead of break
-Date: Tue, 15 Jan 2013 10:49:48 -0800
-Message-Id: <20130115185002.461077571@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
-References: <20130115184958.025580322@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1757832Ab3AOW2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:28:53 -0500
+Message-ID: <50F5D81C.1070702@suse.cz>
+Date: Tue, 15 Jan 2013 23:28:44 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Wang YanQing <udknight@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rdunlap@xenotime.net, bp@alien8.de,
+        sakiwit@gmail.com, lacombar@gmail.com, lucas.demarchi@profusion.mobi,
+        dave@gnu.org, paul.gortmaker@windriver.com, crquan@gmail.com,
+        bpoirier@suse.de
+Subject: Re: [PATCH] menuconfig:inputbox: support navigate input position
+References: <20121217143802.GB16993@udknight> <201212171922.59669.yann.morin.1998@free.fr>
+In-Reply-To: <201212171922.59669.yann.morin.1998@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On 17.12.2012 19:22, Yann E. MORIN wrote:
+> Wang, All,
+> 
+> On Monday 17 December 2012 Wang YanQing wrote:
+>> This patch add support navigate input position *inside* the input
+>> field with LEFT/RIGHT, so it is possible to modify the text in place.
+>>
+>> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> 
+> Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+> 
+> I am not knowledgeable enough in ncurses and the dialog code-base
+> to add any reviewed-by tag. All I can say, is that it works as
+> advertised.
 
-------------------
+I merged this into kbuild.git#kconfig.
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-
-commit cd6c5968582a273561464fe6b1e8cc8214be02df upstream.
-
-There are SUNRPC clients, which program doesn't have pipe_dir_name. These
-clients can be skipped on PipeFS events, because nothing have to be created or
-destroyed. But instead of breaking in case of such a client was found, search
-for suitable client over clients list have to be continued. Otherwise some
-clients could not be covered by PipeFS event handler.
-
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/sunrpc/clnt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -234,7 +234,7 @@ static struct rpc_clnt *rpc_get_client_f
- 	spin_lock(&sn->rpc_client_lock);
- 	list_for_each_entry(clnt, &sn->all_clients, cl_clients) {
- 		if (clnt->cl_program->pipe_dir_name == NULL)
--			break;
-+			continue;
- 		if (rpc_clnt_skip_event(clnt, event))
- 			continue;
- 		if (atomic_inc_not_zero(&clnt->cl_count) == 0)
-
+Thanks,
+Michal
 
