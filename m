@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757030Ab3AOOy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 09:54:27 -0500
-Received: from mga03.intel.com ([143.182.124.21]:25308 "EHLO mga03.intel.com"
+	id S1756135Ab3AOO7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 09:59:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59701 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756114Ab3AOOyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 09:54:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,473,1355126400"; 
-   d="asc'?scan'208";a="244154792"
-Message-ID: <1358261750.2731.148.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v2] mtd: vt8500: Add support for Wondermedia Serial
- Flash Controller
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Tue, 15 Jan 2013 16:55:50 +0200
-In-Reply-To: <1356901207-13536-1-git-send-email-linux@prisktech.co.nz>
-References: <1356901207-13536-1-git-send-email-linux@prisktech.co.nz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-1mrfJBD60TFdLJ5zAm6a"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1751795Ab3AOO67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 09:58:59 -0500
+Date: Tue, 15 Jan 2013 11:58:45 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [BUG] perf record: --uid=x fails
+Message-ID: <20130115145845.GC8768@infradead.org>
+References: <CABPqkBStWUyv_vwb9jgWe0hirMNe=J1g_V7z69piajr1pTPt=g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBStWUyv_vwb9jgWe0hirMNe=J1g_V7z69piajr1pTPt=g@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Mon, Jan 14, 2013 at 03:14:02PM +0100, Stephane Eranian escreveu:
+> Hi,
+> 
+> I was trying to use the --uid option of perf record but it fails for
+> me no matter
+> what I tried. Looks like the goal of this option is to measure ALL the processes
+> owned by the specified uid. Each process is measured in per-thread mode.
+> 
+> However for me it failed on all my attempts when running with 3.8.0-rc3 on
+> Ubuntu Quantal.
+> 
+> $ perf record --uid=eranian sleep 4
+> Error:
+> Permission error - are you root?
+> Consider tweaking /proc/sys/kernel/perf_event_paranoid:
+>  -1 - Not paranoid at all
+>   0 - Disallow raw tracepoint access for unpriv
+>   1 - Disallow cpu events for unpriv
+>   2 - Disallow kernel profiling for unpriv
+> sleep: Terminated
+> 
+> You don't want to be root to run this command.  Should not require
 
---=-1mrfJBD60TFdLJ5zAm6a
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+But you have to due to the problem you noticed below.
 
-On Mon, 2012-12-31 at 10:00 +1300, Tony Prisk wrote:
-> This patch adds support for the Wondermedia serial flash controller
-> found on WM8505, WM8650 and WM8850 SoCs.
->=20
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> ---
-> v2: Whitespace tidyup
+> to measure the processes I own. So the error message is confusing
+> here.
 
-Hi, would you please take a look at these warings, identified by aiaiai:
+indeed
+ 
+> After some debugging, I came to the conclusion that this command
+> fails when it hits the sshd daemon:
+> 
+> eranian   2439  0.0  0.0 110424  1968 ?        S    15:07   0:00 sshd:
+> eranian@pts/2
+> root      2301  0.0  0.0 110424  4420 ?        Ss   15:07   0:00 sshd:
+> eranian [priv]
+> 
+> I mean the sshd process owned by me. It is owned by me but I cannot attached
+> an event to it. I get EACCES and I suspect it's because of missing
+> ptrace privilege.
+> The sshd binary is obviously not setuid. So there is something else preventing
+> ptrace. In fact, even strace -p 2349 fails. Looked online and there
+> were a couple
+> of mentions to the Yama security model and the ptrace_scope sysctl
+> control. I tried
+> that and it did not help.
+> 
+> So looks to me that something is broken somewhere. If the kernel
+> restrictions are
+> normal, then I think perf record should warn that it has to skip the
+> sshd process and
+> continue with the other processes owned by me. That  seems more useful than the
+> current situation. But I may be missing something here. If so please
+> explain to me.
 
-Successfully built configuration "x86_64_defconfig,x86_64,", results:
+Right, I need to resume working on properly fixing this, I got
+sidetracked when I got the same point as you in the above analysis :-\
 
---- before_patching.log
-+++ after_patching.log
-@@ @@
-+drivers/mtd/devices/wmt_sflash.c: In function =E2=80=98sf_read=E2=80=99:
-+drivers/mtd/devices/wmt_sflash.c:425:9: warning: format =E2=80=98%d=E2=80=
-=99 expects argument of type =E2=80=98int=E2=80=99, but argument 4 has type=
- =E2=80=98size_t=E2=80=99 [-Wformat]
-+drivers/mtd/devices/wmt_sflash.c: In function =E2=80=98sf_sector_write=E2=
-=80=99:
-+drivers/mtd/devices/wmt_sflash.c:442:16: warning: cast from pointer to int=
-eger of different size [-Wpointer-to-int-cast]
-+drivers/mtd/devices/wmt_sflash.c:442:24: warning: cast removes address spa=
-ce of expression [sparse]
-+drivers/mtd/devices/wmt_sflash.c:458:16: warning: cast to pointer from int=
-eger of different size [-Wint-to-pointer-cast]
-+drivers/mtd/devices/wmt_sflash.c:458:31: warning: incorrect type in argume=
-nt 1 (different address spaces) [sparse]
-+drivers/mtd/devices/wmt_sflash.c:458:31:    expected void volatile [nodere=
-f] <asn:2>*dst [sparse]
-+drivers/mtd/devices/wmt_sflash.c:458:31:    got unsigned char [usertype] *=
-<noident> [sparse]
-+drivers/mtd/devices/wmt_sflash.c:465:17: warning: cast to pointer from int=
-eger of different size [-Wint-to-pointer-cast]
-+drivers/mtd/devices/wmt_sflash.c:465:39: warning: incorrect type in argume=
-nt 1 (different address spaces) [sparse]
-+drivers/mtd/devices/wmt_sflash.c:465:39:    expected void volatile [nodere=
-f] <asn:2>*dst [sparse]
-+drivers/mtd/devices/wmt_sflash.c:465:39:    got unsigned char [usertype] *=
-<noident> [sparse]
+Will try to recover the conversations I had about this.
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-1mrfJBD60TFdLJ5zAm6a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ9W32AAoJECmIfjd9wqK0yg4P/RRDYWiUiei1m+Am2dlLdA43
-kCkfiZCmClUznLGZCi1LxcWspwpqA7Cu2IRpKz98K8jfWpNwLjRixmzG4hu/iMfC
-+WlQ9o0vJAyBjmu66ToMYHl4GzAl0NYFhhrUflKgZDzgOlTWjNWOiEf1erQHwZf9
-teJJOhh2BoLmrbhPDx7WBPFmhaENW0OYYb1hE6AtnU4/c0jnCaXV+Xb0YjstjqA1
-GZm9MOJf5Avt8Jaz5IlimR22jmGg2ETqs6biRpZUoQIJnOs9BCNITmlBG1bf1e8I
-Ph2SM5dh25jDLqp5FxT4/CFIBNXmVRhZpN7AL7p3iYyTP/tDASZ02H0VZ2/x+uqJ
-BphJYAn9aFIwJ7yPqvaczq9xsfbXMt4vbOb6QcoYovJPxhVvY6Ft+UaVHVJmu4dL
-loZo4isj7X/09XPfjvi7P/65DkR2sjO4Zm517vyZ1jk4/D4i0KsagNl4E/rbgKme
-k/HKbm02F2llVoXMNQ98XMX1rdgi8uBdfumMoW7LRm2cJ85zHb6DNzD6Hvly+hr7
-cYyJTpwF8L+ynV+piE2LbrSmsJJPZ7nue0OBvpBwpis5BuaNbOzgryUXl1ipmIrS
-VfwsDv0aS3HEfTFZL+yDus2hJnBus8WaXmmPdSsPbCZ2x574rO3+CvSKKl/nWnb/
-dvZB9pd9PnwIlfNgEZ/l
-=zTUr
------END PGP SIGNATURE-----
-
---=-1mrfJBD60TFdLJ5zAm6a--
-
+- Arnaldo
