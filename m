@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933144Ab3AOWuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:50:13 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45871 "EHLO mail.kernel.org"
+	id S1758849Ab3AOXrT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:47:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45925 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933117Ab3AOWuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:05 -0500
+	id S933145Ab3AOWuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Verges <kg4ysn@gmail.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [ 054/171] hwmon: (lm73} Detect and report i2c bus errors
-Date: Tue, 15 Jan 2013 14:43:39 -0800
-Message-Id: <20130115224317.316572400@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 059/171] jbd2: fix assertion failure in jbd2_journal_flush()
+Date: Tue, 15 Jan 2013 14:43:44 -0800
+Message-Id: <20130115224317.676268728@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,81 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Verges <kg4ysn@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 0602934f302e016e2ea5dc6951681bfac77455ef upstream.
+commit d7961c7fa4d2e3c3f12be67e21ba8799b5a7238a upstream.
 
-If an LM73 device does not exist on an I2C bus, attempts to communicate
-with the device result in an error code returned from the i2c read/write
-functions.  The current lm73 driver casts that return value from a s32
-type to a s16 type, then converts it to a temperature in celsius.
-Because negative temperatures are valid, it is difficult to distinguish
-between an error code printed to the response buffer and a negative
-temperature recorded by the sensor.
+The following race is possible between start_this_handle() and someone
+calling jbd2_journal_flush().
 
-The solution is to evaluate the return value from the i2c functions
-before performing any temperature calculations.  If the i2c function did
-not succeed, the error code should be passed back through the virtual
-file system layer instead of being printed into the response buffer.
+Process A                              Process B
+start_this_handle().
+  if (journal->j_barrier_count) # false
+  if (!journal->j_running_transaction) { #true
+    read_unlock(&journal->j_state_lock);
+                                       jbd2_journal_lock_updates()
+                                       jbd2_journal_flush()
+                                         write_lock(&journal->j_state_lock);
+                                         if (journal->j_running_transaction) {
+                                           # false
+                                         ... wait for committing trans ...
+                                         write_unlock(&journal->j_state_lock);
+    ...
+    write_lock(&journal->j_state_lock);
+    if (!journal->j_running_transaction) { # true
+      jbd2_get_transaction(journal, new_transaction);
+    write_unlock(&journal->j_state_lock);
+    goto repeat; # eventually blocks on j_barrier_count > 0
+                                         ...
+                                         J_ASSERT(!journal->j_running_transaction);
+                                           # fails
 
-Before:
+We fix the race by rechecking j_barrier_count after reacquiring j_state_lock
+in exclusive mode.
 
-   $ cat /sys/class/hwmon/hwmon0/device/temp1_input
-   -46
-
-After:
-
-   $ cat /sys/class/hwmon/hwmon0/device/temp1_input
-   cat: read error: No such device or address
-
-Signed-off-by: Chris Verges <kg4ysn@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Reported-by: yjwsignal@empal.com
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/lm73.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ fs/jbd2/transaction.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/lm73.c
-+++ b/drivers/hwmon/lm73.c
-@@ -49,6 +49,7 @@ static ssize_t set_temp(struct device *d
- 	struct i2c_client *client = to_i2c_client(dev);
- 	long temp;
- 	short value;
-+	s32 err;
- 
- 	int status = kstrtol(buf, 10, &temp);
- 	if (status < 0)
-@@ -57,8 +58,8 @@ static ssize_t set_temp(struct device *d
- 	/* Write value */
- 	value = (short) SENSORS_LIMIT(temp/250, (LM73_TEMP_MIN*4),
- 		(LM73_TEMP_MAX*4)) << 5;
--	i2c_smbus_write_word_swapped(client, attr->index, value);
--	return count;
-+	err = i2c_smbus_write_word_swapped(client, attr->index, value);
-+	return (err < 0) ? err : count;
- }
- 
- static ssize_t show_temp(struct device *dev, struct device_attribute *da,
-@@ -66,11 +67,16 @@ static ssize_t show_temp(struct device *
- {
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
- 	struct i2c_client *client = to_i2c_client(dev);
-+	int temp;
-+
-+	s32 err = i2c_smbus_read_word_swapped(client, attr->index);
-+	if (err < 0)
-+		return err;
-+
- 	/* use integer division instead of equivalent right shift to
- 	   guarantee arithmetic shift and preserve the sign */
--	int temp = ((s16) (i2c_smbus_read_word_swapped(client,
--		    attr->index))*250) / 32;
--	return sprintf(buf, "%d\n", temp);
-+	temp = (((s16) err) * 250) / 32;
-+	return scnprintf(buf, PAGE_SIZE, "%d\n", temp);
- }
- 
- 
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -209,7 +209,8 @@ repeat:
+ 		if (!new_transaction)
+ 			goto alloc_transaction;
+ 		write_lock(&journal->j_state_lock);
+-		if (!journal->j_running_transaction) {
++		if (!journal->j_running_transaction &&
++		    !journal->j_barrier_count) {
+ 			jbd2_get_transaction(journal, new_transaction);
+ 			new_transaction = NULL;
+ 		}
 
 
