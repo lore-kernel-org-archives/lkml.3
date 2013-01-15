@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758545Ab3APAIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:08:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43039 "EHLO mail.kernel.org"
+	id S1758667Ab3APAJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:09:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43029 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758513Ab3AOWdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:33:09 -0500
+	id S1758364Ab3AOWdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:33:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 150/221] iwlwifi: fix PCIe interrupt handle return value
-Date: Tue, 15 Jan 2013 10:51:17 -0800
-Message-Id: <20130115185008.880257833@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 149/221] radeon/kms: force rn50 chip to always report connected on analog output
+Date: Tue, 15 Jan 2013 10:51:16 -0800
+Message-Id: <20130115185008.805892956@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,34 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 392d4cad7907f6cb4ffc85e135a01abfddc89027 upstream.
+commit 51861d4eebc2ddc25c77084343d060fa79f6e291 upstream.
 
-By accident, commit eb6476441bc2fecf6232a87d0313a85f8e3da7f4
-("iwlwifi: protect use_ict with irq_lock") changed the return
-value of the iwl_pcie_isr() function in case it handles an
-interrupt -- it now returns IRQ_NONE instead of IRQ_HANDLED.
+Those rn50 chip are often connected to console remoting hw and load
+detection often fails with those. Just don't try to load detect and
+report connect.
 
-Put back the correct return value.
-
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/pcie/rx.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/pcie/rx.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/rx.c
-@@ -971,6 +971,7 @@ static irqreturn_t iwl_isr(int irq, void
- 	else if (test_bit(STATUS_INT_ENABLED, &trans_pcie->status) &&
- 		 !trans_pcie->inta)
- 		iwl_enable_interrupts(trans);
-+	return IRQ_HANDLED;
+--- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+@@ -640,6 +640,14 @@ static enum drm_connector_status radeon_
+ 	enum drm_connector_status found = connector_status_disconnected;
+ 	bool color = true;
  
- none:
- 	/* re-enable interrupts here since we don't have anything to service. */
++	/* just don't bother on RN50 those chip are often connected to remoting
++	 * console hw and often we get failure to load detect those. So to make
++	 * everyone happy report the encoder as always connected.
++	 */
++	if (ASIC_IS_RN50(rdev)) {
++		return connector_status_connected;
++	}
++
+ 	/* save the regs we need */
+ 	vclk_ecp_cntl = RREG32_PLL(RADEON_VCLK_ECP_CNTL);
+ 	crtc_ext_cntl = RREG32(RADEON_CRTC_EXT_CNTL);
 
 
