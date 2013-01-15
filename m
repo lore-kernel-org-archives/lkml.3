@@ -1,60 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab3AOCdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 21:33:16 -0500
-Received: from mga14.intel.com ([143.182.124.37]:28921 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023Ab3AOCdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 21:33:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,469,1355126400"; 
-   d="scan'208";a="243827052"
-Message-ID: <50F4C027.1080806@intel.com>
-Date: Tue, 15 Jan 2013 10:34:15 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1756953Ab3AOCd0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 21:33:26 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:36213 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023Ab3AOCdY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jan 2013 21:33:24 -0500
+Message-ID: <50F4BFE5.7030504@linux.vnet.ibm.com>
+Date: Tue, 15 Jan 2013 10:33:09 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: li guang <lig.fnst@cn.fujitsu.com>
-CC: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 05/22] sched: remove domain iterations in fork/exec/wake
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>  <1357375071-11793-6-git-send-email-alex.shi@intel.com>  <20130109182102.GC2046@e103034-lin>  <50EF9B69.3000201@linux.vnet.ibm.com>  <1357891316.2860.6.camel@liguang.fnst.cn.fujitsu.com>  <50F02823.1070909@intel.com> <1358154191.8818.15.camel@liguang.fnst.cn.fujitsu.com>
-In-Reply-To: <1358154191.8818.15.camel@liguang.fnst.cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+To: Namhyung Kim <namhyung@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Tejun Heo <tj@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 1/2] sched: schedule balance map foundation
+References: <50EFCA29.8020801@linux.vnet.ibm.com> <50EFCAA7.8080302@linux.vnet.ibm.com> <87libwnpa7.fsf@sejong.aot.lge.com>
+In-Reply-To: <87libwnpa7.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011502-2674-0000-0000-0000077617A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2013 05:03 PM, li guang wrote:
->>> > > This corner case may occur after "[PATCH v3 03/22] sched: fix
->>> > > find_idlest_group mess logical" brought in the local sched_group bias,
->>> > > and assume balancing runs on cpux2.
->>> > > ideally,  find_idlest_group should find the real idlest(this case: sgy),
->>> > > then, this patch is reasonable.
->>> > > 
->> > 
->> > Sure. but seems it is a bit hard to go down the idlest group.
->> > 
->> > and the old logical is real cost too much, on my 2 socket NHM/SNB
->> > server, hackbench can increase 2~5% performance. and no clean
->> > performance on kbuild/aim7 etc.
-> what about remove local group bias?
+Hi, Namhyung
 
+Thanks for your reply.
 
-Any theory profit for non local group? Usually, bias toward local group
-will has cache locality profit.
+On 01/14/2013 04:26 PM, Namhyung Kim wrote:
+> Hi Michael,
+> 
 
--- 
-Thanks Alex
+[snip]
+
+>> +	while (sd) {
+>> +		if (sd->flags & SD_LOAD_BALANCE) {
+>> +			if (sd->flags & SD_BALANCE_EXEC) {
+>> +				sbm->top_level[SBM_EXEC_TYPE] = sd->level;
+>> +				sbm->sd[SBM_EXEC_TYPE][sd->level] = sd;
+>> +			}
+>> +
+>> +			if (sd->flags & SD_BALANCE_FORK) {
+>> +				sbm->top_level[SBM_FORK_TYPE] = sd->level;
+>> +				sbm->sd[SBM_FORK_TYPE][sd->level] = sd;
+>> +			}
+>> +
+>> +			if (sd->flags & SD_BALANCE_WAKE) {
+>> +				sbm->top_level[SBM_WAKE_TYPE] = sd->level;
+>> +				sbm->sd[SBM_WAKE_TYPE][sd->level] = sd;
+>> +			}
+>> +
+>> +			if (sd->flags & SD_WAKE_AFFINE) {
+>> +				for_each_cpu(i, sched_domain_span(sd)) {
+>> +					if (!sbm->affine_map[i])
+>> +						sbm->affine_map[i] = sd;
+>> +				}
+>> +			}
+>> +		}
+>> +		sd = sd->parent;
+>> +	}
+> 
+> It seems that it can be done like:
+> 
+> 	for_each_domain(cpu, sd) {
+> 		if (!(sd->flags & SD_LOAD_BALANCE))
+>                 	continue;
+> 
+> 		if (sd->flags & SD_BALANCE_EXEC)
+> 		...
+> 	}
+> 
+> 
+
+That's right, will correct it.
+
+>> +
+>> +	/*
+>> +	 * fill the hole to get lower level sd easily.
+>> +	 */
+>> +	for (type = 0; type < SBM_MAX_TYPE; type++) {
+>> +		level = sbm->top_level[type];
+>> +		top_sd = sbm->sd[type][level];
+>> +		if ((++level != SBM_MAX_LEVEL) && top_sd) {
+>> +			for (; level < SBM_MAX_LEVEL; level++)
+>> +				sbm->sd[type][level] = top_sd;
+>> +		}
+>> +	}
+>> +}
+> [snip]
+>> +#ifdef CONFIG_SCHED_SMT
+>> +#define SBM_MAX_LEVEL	4
+>> +#else
+>> +#ifdef CONFIG_SCHED_MC
+>> +#define SBM_MAX_LEVEL	3
+>> +#else
+>> +#ifdef CONFIG_SCHED_BOOK
+>> +#define SBM_MAX_LEVEL	2
+>> +#else
+>> +#define SBM_MAX_LEVEL	1
+>> +#endif
+>> +#endif
+>> +#endif
+> 
+> Looks like this fixed level constants does not consider NUMA domains.
+> Doesn't accessing sbm->sd[type][level] in the above while loop cause a
+> problem on big NUMA machines?
+
+Yes, that's true, this patch is based on 3.7.0-rc6 without NUMA merged,
+in order to make the topic a little easier to be started, I will
+consider about the NUMA thing in next version, and please let me know if
+you have any suggestions.
+
+Regards,
+Michael Wang
+
+> 
+> Thanks,
+> Namhyung
+> 
+>> +
+>> +enum {
+>> +	SBM_EXEC_TYPE,
+>> +	SBM_FORK_TYPE,
+>> +	SBM_WAKE_TYPE,
+>> +	SBM_MAX_TYPE
+>> +};
+>> +
+>> +struct sched_balance_map {
+>> +	struct sched_domain *sd[SBM_MAX_TYPE][SBM_MAX_LEVEL];
+>> +	int top_level[SBM_MAX_TYPE];
+>> +	struct sched_domain *affine_map[NR_CPUS];
+>> +};
+>> +
+>>  #endif /* CONFIG_SMP */
+>>  
+>>  /*
+>> @@ -403,6 +430,7 @@ struct rq {
+>>  #ifdef CONFIG_SMP
+>>  	struct root_domain *rd;
+>>  	struct sched_domain *sd;
+>> +	struct sched_balance_map *sbm;
+>>  
+>>  	unsigned long cpu_power;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
