@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab3AOMc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 07:32:59 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:37027 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756068Ab3AOMc6 (ORCPT
+	id S1756258Ab3AOMdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:33:08 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43903 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756105Ab3AOMdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:32:58 -0500
-Date: Tue, 15 Jan 2013 04:32:50 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: RCU: non-atomic assignment to long/pointer variables in gcc
-Message-ID: <20130115123250.GK3384@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <50F52FC8.4000701@openvz.org>
+	Tue, 15 Jan 2013 07:33:03 -0500
+Date: Tue, 15 Jan 2013 13:32:48 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, swarren@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource
+ allocation
+Message-ID: <20130115123248.GB2625@pengutronix.de>
+References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com>
+ <20130114161644.GC14721@kroah.com>
+ <20130114221551.GA30020@avionic-0098.adnet.avionic-design.de>
+ <201301142224.11243.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bCsyhTFzCvuiizWE"
 Content-Disposition: inline
-In-Reply-To: <50F52FC8.4000701@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011512-4834-0000-0000-00000297CE11
+In-Reply-To: <201301142224.11243.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 02:30:32PM +0400, Konstantin Khlebnikov wrote:
-> Documentation/atomic_ops.txt (182dd4b277177e8465ad11cd9f85f282946b5578)
-> says that pointers, longs, ints, and chars are stored and loaded atomically.
-> 
-> But GCC actually may split assignment to 'long' variable into two instructions.
-> see example in http://gcc.gnu.org/bugzilla/show_bug.cgi?id=55981
-> 
-> GCC also splits assignments to 'volatile' variables and this is actually a bug in gcc.
-> 
-> volatile unsigned long y;
-> 
-> y = 0x100000001ul;
-> 
->   400728:	c7 05 66 06 20 00 01 	movl   $0x1,0x200666(%rip)        # 600d98 <y>
->   40072f:	00 00 00
->   400732:	c7 05 60 06 20 00 01 	movl   $0x1,0x200660(%rip)        # 600d9c <y+0x4>
->   400739:	00 00 00
-> 
-> fortunately for y = 0; it generates this:
-> 
->   40071d:	48 c7 05 70 06 20 00 	movq   $0x0,0x200670(%rip)        # 600d98 <y>
->   400724:	00 00 00 00
-> 
-> Thus NULL is safe, but constant ERR_PTR may be dangerous.
-> 
-> Probably rcu_assign_pointer() should use ACCESS_ONCE() around lvalue, because
-> splitting assignment for non-volatile variable seems like completely valid,
-> but this may help only after fixing that bug in GCC.
 
-Good catch!  I has queued the following patch.
+--bCsyhTFzCvuiizWE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-							Thanx, Paul
+On Mon, Jan 14, 2013 at 10:24:11PM +0000, Arnd Bergmann wrote:
+> On Monday 14 January 2013, Thierry Reding wrote:
+> > It certainly sounds like a less complicated way to do it. But it also
+> > involves adding a function with a made up name and drop a function with
+> > a perfectly good name instead. I wouldn't even know what name to choose
+> > for the new API.
+> >=20
+>=20
+> How about devm_ioremap_resource()? Sounds equally fitting, and is shorter.
 
-------------------------------------------------------------------------
+2 cents, I wrote back then:
 
-rcu: Add ACCESS_ONCE() to rcu_assign_pointer()
+* the new function is not named 'devm_ioremap_resource' because it does mor=
+e than
+  just ioremap, namely request_mem_region. I didn't want to create implicit
+  knowledge here.
 
-GCC may split assignment to 'long' variable into two instructions:
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-volatile unsigned long y;
+--bCsyhTFzCvuiizWE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-y = 0x100000001ul;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-	movl   $0x1,0x200666(%rip)
-	movl   $0x1,0x200660(%rip)
+iEYEARECAAYFAlD1THAACgkQD27XaX1/VRsbUQCeO3T9fGRUTenwPGNdf2Wfow+S
+2yQAnjkdp45Tk8czgujiurdGGiEEMDvr
+=LQve
+-----END PGP SIGNATURE-----
 
-This commit fixes this by applying ACCESS_ONCE() within
-__rcu_assign_pointer(), but note that some versions and architectures
-of GCC have a bug that defeats ACCESS_ONCE():
-
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=55981
-
-I added a comment to this bug report asking that the bug be fixed for
-volatiles as well as atomics, citing a device driver storing a constant
-into a 64-bit device register as motivation.
-
-Reported-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 9ed2c9a..3435174 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -556,7 +556,7 @@ static inline void rcu_preempt_sleep_check(void)
- #define __rcu_assign_pointer(p, v, space) \
- 	do { \
- 		smp_wmb(); \
--		(p) = (typeof(*v) __force space *)(v); \
-+		ACCESS_ONCE(p) = (typeof(*v) __force space *)(v); \
- 	} while (0)
- 
- 
-
+--bCsyhTFzCvuiizWE--
