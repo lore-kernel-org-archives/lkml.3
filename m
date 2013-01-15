@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab3AOWbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:31:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42183 "EHLO mail.kernel.org"
+	id S932184Ab3AOWbR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:31:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42204 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932142Ab3AOWbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:31:09 -0500
+	id S932152Ab3AOWbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:31:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Verges <kg4ysn@gmail.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [ 101/221] hwmon: (lm73} Detect and report i2c bus errors
-Date: Tue, 15 Jan 2013 10:50:28 -0800
-Message-Id: <20130115185005.319740071@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 094/221] dm thin: replace dm_cell_release_singleton with cell_defer_except
+Date: Tue, 15 Jan 2013 10:50:21 -0800
+Message-Id: <20130115185004.823185605@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,81 +26,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Verges <kg4ysn@gmail.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 0602934f302e016e2ea5dc6951681bfac77455ef upstream.
+commit b7ca9c9273e5eebd63880dd8a6e4e5c18fc7901d upstream.
 
-If an LM73 device does not exist on an I2C bus, attempts to communicate
-with the device result in an error code returned from the i2c read/write
-functions.  The current lm73 driver casts that return value from a s32
-type to a s16 type, then converts it to a temperature in celsius.
-Because negative temperatures are valid, it is difficult to distinguish
-between an error code printed to the response buffer and a negative
-temperature recorded by the sensor.
+Change existing users of the function dm_cell_release_singleton to share
+cell_defer_except instead, and then remove the now-unused function.
 
-The solution is to evaluate the return value from the i2c functions
-before performing any temperature calculations.  If the i2c function did
-not succeed, the error code should be passed back through the virtual
-file system layer instead of being printed into the response buffer.
+Everywhere that calls dm_cell_release_singleton, the bio in question
+is the holder of the cell.
 
-Before:
+If there are no non-holder entries in the cell then cell_defer_except
+behaves exactly like dm_cell_release_singleton.  Conversely, if there
+*are* non-holder entries then dm_cell_release_singleton must not be used
+because those entries would need to be deferred.
 
-   $ cat /sys/class/hwmon/hwmon0/device/temp1_input
-   -46
+Consequently, it is safe to replace use of dm_cell_release_singleton
+with cell_defer_except.
 
-After:
+This patch is a pre-requisite for "dm thin: fix race between
+simultaneous io and discards to same block".
 
-   $ cat /sys/class/hwmon/hwmon0/device/temp1_input
-   cat: read error: No such device or address
-
-Signed-off-by: Chris Verges <kg4ysn@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/lm73.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ drivers/md/dm-bio-prison.c |   25 -------------------------
+ drivers/md/dm-bio-prison.h |    1 -
+ drivers/md/dm-thin.c       |   25 ++++++++++++-------------
+ 3 files changed, 12 insertions(+), 39 deletions(-)
 
---- a/drivers/hwmon/lm73.c
-+++ b/drivers/hwmon/lm73.c
-@@ -49,6 +49,7 @@ static ssize_t set_temp(struct device *d
- 	struct i2c_client *client = to_i2c_client(dev);
- 	long temp;
- 	short value;
-+	s32 err;
+--- a/drivers/md/dm-bio-prison.c
++++ b/drivers/md/dm-bio-prison.c
+@@ -208,31 +208,6 @@ void dm_cell_release(struct dm_bio_priso
+ EXPORT_SYMBOL_GPL(dm_cell_release);
  
- 	int status = kstrtol(buf, 10, &temp);
- 	if (status < 0)
-@@ -57,8 +58,8 @@ static ssize_t set_temp(struct device *d
- 	/* Write value */
- 	value = (short) SENSORS_LIMIT(temp/250, (LM73_TEMP_MIN*4),
- 		(LM73_TEMP_MAX*4)) << 5;
--	i2c_smbus_write_word_swapped(client, attr->index, value);
--	return count;
-+	err = i2c_smbus_write_word_swapped(client, attr->index, value);
-+	return (err < 0) ? err : count;
+ /*
+- * There are a couple of places where we put a bio into a cell briefly
+- * before taking it out again.  In these situations we know that no other
+- * bio may be in the cell.  This function releases the cell, and also does
+- * a sanity check.
+- */
+-static void __cell_release_singleton(struct dm_bio_prison_cell *cell, struct bio *bio)
+-{
+-	BUG_ON(cell->holder != bio);
+-	BUG_ON(!bio_list_empty(&cell->bios));
+-
+-	__cell_release(cell, NULL);
+-}
+-
+-void dm_cell_release_singleton(struct dm_bio_prison_cell *cell, struct bio *bio)
+-{
+-	unsigned long flags;
+-	struct dm_bio_prison *prison = cell->prison;
+-
+-	spin_lock_irqsave(&prison->lock, flags);
+-	__cell_release_singleton(cell, bio);
+-	spin_unlock_irqrestore(&prison->lock, flags);
+-}
+-EXPORT_SYMBOL_GPL(dm_cell_release_singleton);
+-
+-/*
+  * Sometimes we don't want the holder, just the additional bios.
+  */
+ static void __cell_release_no_holder(struct dm_bio_prison_cell *cell, struct bio_list *inmates)
+--- a/drivers/md/dm-bio-prison.h
++++ b/drivers/md/dm-bio-prison.h
+@@ -44,7 +44,6 @@ int dm_bio_detain(struct dm_bio_prison *
+ 		  struct bio *inmate, struct dm_bio_prison_cell **ref);
+ 
+ void dm_cell_release(struct dm_bio_prison_cell *cell, struct bio_list *bios);
+-void dm_cell_release_singleton(struct dm_bio_prison_cell *cell, struct bio *bio); // FIXME: bio arg not needed
+ void dm_cell_release_no_holder(struct dm_bio_prison_cell *cell, struct bio_list *inmates);
+ void dm_cell_error(struct dm_bio_prison_cell *cell);
+ 
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -513,8 +513,7 @@ static void cell_defer(struct thin_c *tc
  }
  
- static ssize_t show_temp(struct device *dev, struct device_attribute *da,
-@@ -66,11 +67,16 @@ static ssize_t show_temp(struct device *
+ /*
+- * Same as cell_defer above, except it omits one particular detainee,
+- * a write bio that covers the block and has already been processed.
++ * Same as cell_defer except it omits the original holder of the cell.
+  */
+ static void cell_defer_except(struct thin_c *tc, struct dm_bio_prison_cell *cell)
  {
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
- 	struct i2c_client *client = to_i2c_client(dev);
-+	int temp;
-+
-+	s32 err = i2c_smbus_read_word_swapped(client, attr->index);
-+	if (err < 0)
-+		return err;
-+
- 	/* use integer division instead of equivalent right shift to
- 	   guarantee arithmetic shift and preserve the sign */
--	int temp = ((s16) (i2c_smbus_read_word_swapped(client,
--		    attr->index))*250) / 32;
--	return sprintf(buf, "%d\n", temp);
-+	temp = (((s16) err) * 250) / 32;
-+	return scnprintf(buf, PAGE_SIZE, "%d\n", temp);
+@@ -936,7 +935,7 @@ static void process_discard(struct thin_
+ 		 */
+ 		build_data_key(tc->td, lookup_result.block, &key2);
+ 		if (dm_bio_detain(tc->pool->prison, &key2, bio, &cell2)) {
+-			dm_cell_release_singleton(cell, bio);
++			cell_defer_except(tc, cell);
+ 			break;
+ 		}
+ 
+@@ -967,8 +966,8 @@ static void process_discard(struct thin_
+ 			 * a block boundary.  So we submit the discard of a
+ 			 * partial block appropriately.
+ 			 */
+-			dm_cell_release_singleton(cell, bio);
+-			dm_cell_release_singleton(cell2, bio);
++			cell_defer_except(tc, cell);
++			cell_defer_except(tc, cell2);
+ 			if ((!lookup_result.shared) && pool->pf.discard_passdown)
+ 				remap_and_issue(tc, bio, lookup_result.block);
+ 			else
+@@ -980,13 +979,13 @@ static void process_discard(struct thin_
+ 		/*
+ 		 * It isn't provisioned, just forget it.
+ 		 */
+-		dm_cell_release_singleton(cell, bio);
++		cell_defer_except(tc, cell);
+ 		bio_endio(bio, 0);
+ 		break;
+ 
+ 	default:
+ 		DMERR("discard: find block unexpectedly returned %d", r);
+-		dm_cell_release_singleton(cell, bio);
++		cell_defer_except(tc, cell);
+ 		bio_io_error(bio);
+ 		break;
+ 	}
+@@ -1041,7 +1040,7 @@ static void process_shared_bio(struct th
+ 
+ 		h->shared_read_entry = dm_deferred_entry_inc(pool->shared_read_ds);
+ 
+-		dm_cell_release_singleton(cell, bio);
++		cell_defer_except(tc, cell);
+ 		remap_and_issue(tc, bio, lookup_result->block);
+ 	}
  }
+@@ -1056,7 +1055,7 @@ static void provision_block(struct thin_
+ 	 * Remap empty bios (flushes) immediately, without provisioning.
+ 	 */
+ 	if (!bio->bi_size) {
+-		dm_cell_release_singleton(cell, bio);
++		cell_defer_except(tc, cell);
+ 		remap_and_issue(tc, bio, 0);
+ 		return;
+ 	}
+@@ -1066,7 +1065,7 @@ static void provision_block(struct thin_
+ 	 */
+ 	if (bio_data_dir(bio) == READ) {
+ 		zero_fill_bio(bio);
+-		dm_cell_release_singleton(cell, bio);
++		cell_defer_except(tc, cell);
+ 		bio_endio(bio, 0);
+ 		return;
+ 	}
+@@ -1120,7 +1119,7 @@ static void process_bio(struct thin_c *t
+ 		 * TODO: this will probably have to change when discard goes
+ 		 * back in.
+ 		 */
+-		dm_cell_release_singleton(cell, bio);
++		cell_defer_except(tc, cell);
  
+ 		if (lookup_result.shared)
+ 			process_shared_bio(tc, bio, block, &lookup_result);
+@@ -1130,7 +1129,7 @@ static void process_bio(struct thin_c *t
  
+ 	case -ENODATA:
+ 		if (bio_data_dir(bio) == READ && tc->origin_dev) {
+-			dm_cell_release_singleton(cell, bio);
++			cell_defer_except(tc, cell);
+ 			remap_to_origin_and_issue(tc, bio);
+ 		} else
+ 			provision_block(tc, bio, block, cell);
+@@ -1138,7 +1137,7 @@ static void process_bio(struct thin_c *t
+ 
+ 	default:
+ 		DMERR("dm_thin_find_block() failed, error = %d", r);
+-		dm_cell_release_singleton(cell, bio);
++		cell_defer_except(tc, cell);
+ 		bio_io_error(bio);
+ 		break;
+ 	}
 
 
