@@ -1,44 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933928Ab3AOXTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:19:10 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16113 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933757Ab3AOXTI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 18:19:08 -0500
-X-Authority-Analysis: v=2.0 cv=e+OEuNV/ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=uNd_0Ub4VdcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Y3YARPKVEf4A:10 a=gGVSv6bN_6za9MbbwZUA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358291944.4068.26.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/5] jump label: constify lookup functions
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, fweisbec@gmail.com, rusty@rustcorp.com.au,
-        ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        masami.hiramatsu.pt@hitachi.com, jbaron@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 15 Jan 2013 18:19:04 -0500
-In-Reply-To: <CA+1xoqcRBHL3WwaQadL1+NCa_XwqMHxz3HL1WjRddYdmxutwYA@mail.gmail.com>
-References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com>
-	 <1357772960-4436-2-git-send-email-sasha.levin@oracle.com>
-	 <CA+1xoqcRBHL3WwaQadL1+NCa_XwqMHxz3HL1WjRddYdmxutwYA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933881Ab3AOWxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:53:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47340 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933645Ab3AOWxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:53:33 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 157/171] libceph: remove osdtimeout option
+Date: Tue, 15 Jan 2013 14:45:22 -0800
+Message-Id: <20130115224324.665887483@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
+References: <20130115224313.394976595@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-15 at 15:46 -0500, Sasha Levin wrote:
-> ping?
-> 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I'm still pretty busy. I'll try to take a look at it sometime this week.
+------------------
 
--- Steve
+
+From: Sage Weil <sage@inktank.com>
+
+This would reset a connection with any OSD that had an outstanding
+request that was taking more than N seconds.  The idea was that if the
+OSD was buggy, the client could compensate by resending the request.
+
+In reality, this only served to hide server bugs, and we haven't
+actually seen such a bug in quite a while.  Moreover, the userspace
+client code never did this.
+
+More importantly, often the request is taking a long time because the
+OSD is trying to recover, or overloaded, and killing the connection
+and retrying would only make the situation worse by giving the OSD
+more work to do.
+
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+(cherry picked from commit 83aff95eb9d60aff5497e9f44a2ae906b86d8e88)
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/ceph/super.c              |    2 -
+ include/linux/ceph/libceph.h |    2 -
+ net/ceph/ceph_common.c       |    3 --
+ net/ceph/osd_client.c        |   47 +++----------------------------------------
+ 4 files changed, 5 insertions(+), 49 deletions(-)
+
+--- a/fs/ceph/super.c
++++ b/fs/ceph/super.c
+@@ -387,8 +387,6 @@ static int ceph_show_options(struct seq_
+ 		seq_printf(m, ",mount_timeout=%d", opt->mount_timeout);
+ 	if (opt->osd_idle_ttl != CEPH_OSD_IDLE_TTL_DEFAULT)
+ 		seq_printf(m, ",osd_idle_ttl=%d", opt->osd_idle_ttl);
+-	if (opt->osd_timeout != CEPH_OSD_TIMEOUT_DEFAULT)
+-		seq_printf(m, ",osdtimeout=%d", opt->osd_timeout);
+ 	if (opt->osd_keepalive_timeout != CEPH_OSD_KEEPALIVE_DEFAULT)
+ 		seq_printf(m, ",osdkeepalivetimeout=%d",
+ 			   opt->osd_keepalive_timeout);
+--- a/include/linux/ceph/libceph.h
++++ b/include/linux/ceph/libceph.h
+@@ -49,7 +49,6 @@ struct ceph_options {
+ 	struct ceph_entity_addr my_addr;
+ 	int mount_timeout;
+ 	int osd_idle_ttl;
+-	int osd_timeout;
+ 	int osd_keepalive_timeout;
+ 
+ 	/*
+@@ -69,7 +68,6 @@ struct ceph_options {
+  * defaults
+  */
+ #define CEPH_MOUNT_TIMEOUT_DEFAULT  60
+-#define CEPH_OSD_TIMEOUT_DEFAULT    60  /* seconds */
+ #define CEPH_OSD_KEEPALIVE_DEFAULT  5
+ #define CEPH_OSD_IDLE_TTL_DEFAULT    60
+ 
+--- a/net/ceph/ceph_common.c
++++ b/net/ceph/ceph_common.c
+@@ -304,7 +304,6 @@ ceph_parse_options(char *options, const
+ 
+ 	/* start with defaults */
+ 	opt->flags = CEPH_OPT_DEFAULT;
+-	opt->osd_timeout = CEPH_OSD_TIMEOUT_DEFAULT;
+ 	opt->osd_keepalive_timeout = CEPH_OSD_KEEPALIVE_DEFAULT;
+ 	opt->mount_timeout = CEPH_MOUNT_TIMEOUT_DEFAULT; /* seconds */
+ 	opt->osd_idle_ttl = CEPH_OSD_IDLE_TTL_DEFAULT;   /* seconds */
+@@ -390,7 +389,7 @@ ceph_parse_options(char *options, const
+ 
+ 			/* misc */
+ 		case Opt_osdtimeout:
+-			opt->osd_timeout = intval;
++			pr_warning("ignoring deprecated osdtimeout option\n");
+ 			break;
+ 		case Opt_osdkeepalivetimeout:
+ 			opt->osd_keepalive_timeout = intval;
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -606,14 +606,6 @@ static void __kick_osd_requests(struct c
+ 	}
+ }
+ 
+-static void kick_osd_requests(struct ceph_osd_client *osdc,
+-			      struct ceph_osd *kickosd)
+-{
+-	mutex_lock(&osdc->request_mutex);
+-	__kick_osd_requests(osdc, kickosd);
+-	mutex_unlock(&osdc->request_mutex);
+-}
+-
+ /*
+  * If the osd connection drops, we need to resubmit all requests.
+  */
+@@ -627,7 +619,9 @@ static void osd_reset(struct ceph_connec
+ 	dout("osd_reset osd%d\n", osd->o_osd);
+ 	osdc = osd->o_osdc;
+ 	down_read(&osdc->map_sem);
+-	kick_osd_requests(osdc, osd);
++	mutex_lock(&osdc->request_mutex);
++	__kick_osd_requests(osdc, osd);
++	mutex_unlock(&osdc->request_mutex);
+ 	send_queued(osdc);
+ 	up_read(&osdc->map_sem);
+ }
+@@ -1091,12 +1085,10 @@ static void handle_timeout(struct work_s
+ {
+ 	struct ceph_osd_client *osdc =
+ 		container_of(work, struct ceph_osd_client, timeout_work.work);
+-	struct ceph_osd_request *req, *last_req = NULL;
++	struct ceph_osd_request *req;
+ 	struct ceph_osd *osd;
+-	unsigned long timeout = osdc->client->options->osd_timeout * HZ;
+ 	unsigned long keepalive =
+ 		osdc->client->options->osd_keepalive_timeout * HZ;
+-	unsigned long last_stamp = 0;
+ 	struct list_head slow_osds;
+ 	dout("timeout\n");
+ 	down_read(&osdc->map_sem);
+@@ -1106,37 +1098,6 @@ static void handle_timeout(struct work_s
+ 	mutex_lock(&osdc->request_mutex);
+ 
+ 	/*
+-	 * reset osds that appear to be _really_ unresponsive.  this
+-	 * is a failsafe measure.. we really shouldn't be getting to
+-	 * this point if the system is working properly.  the monitors
+-	 * should mark the osd as failed and we should find out about
+-	 * it from an updated osd map.
+-	 */
+-	while (timeout && !list_empty(&osdc->req_lru)) {
+-		req = list_entry(osdc->req_lru.next, struct ceph_osd_request,
+-				 r_req_lru_item);
+-
+-		/* hasn't been long enough since we sent it? */
+-		if (time_before(jiffies, req->r_stamp + timeout))
+-			break;
+-
+-		/* hasn't been long enough since it was acked? */
+-		if (req->r_request->ack_stamp == 0 ||
+-		    time_before(jiffies, req->r_request->ack_stamp + timeout))
+-			break;
+-
+-		BUG_ON(req == last_req && req->r_stamp == last_stamp);
+-		last_req = req;
+-		last_stamp = req->r_stamp;
+-
+-		osd = req->r_osd;
+-		BUG_ON(!osd);
+-		pr_warning(" tid %llu timed out on osd%d, will reset osd\n",
+-			   req->r_tid, osd->o_osd);
+-		__kick_osd_requests(osdc, osd);
+-	}
+-
+-	/*
+ 	 * ping osds that are a bit slow.  this ensures that if there
+ 	 * is a break in the TCP connection we will notice, and reopen
+ 	 * a connection with that osd (from the fault callback).
 
 
