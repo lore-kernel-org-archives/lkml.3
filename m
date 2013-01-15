@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672Ab3APARh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:17:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42461 "EHLO mail.kernel.org"
+	id S932689Ab3APAR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:17:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42330 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758355Ab3AOWb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:31:58 -0500
+	id S932269Ab3AOWbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:31:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Guo Chao <yan@linux.vnet.ibm.com>, "Theodore Tso" <tytso@mit.edu>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>
-Subject: [ 115/221] ext4: release buffer in failed path in dx_probe()
-Date: Tue, 15 Jan 2013 10:50:42 -0800
-Message-Id: <20130115185006.340332175@linuxfoundation.org>
+        Michael Tokarev <mjt@tls.msk.ru>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 112/221] ext4: do not try to write superblock on ro remount w/o journal
+Date: Tue, 15 Jan 2013 10:50:39 -0800
+Message-Id: <20130115185006.129937451@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,32 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guo Chao <yan@linux.vnet.ibm.com>
+From: Michael Tokarev <mjt@tls.msk.ru>
 
-commit 0ecaef0644973e9006fdbc6974301047aaff9bc6 upstream.
+commit d096ad0f79a782935d2e06ae8fb235e8c5397775 upstream.
 
-If checksum fails, we should also release the buffer
-read from previous iteration.
+When a journal-less ext4 filesystem is mounted on a read-only block
+device (blockdev --setro will do), each remount (for other, unrelated,
+flags, like suid=>nosuid etc) results in a series of scary messages
+from kernel telling about I/O errors on the device.
 
-Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+This is becauese of the following code ext4_remount():
+
+       if (sbi->s_journal == NULL)
+                ext4_commit_super(sb, 1);
+
+at the end of remount procedure, which forces writing (flushing) of
+a superblock regardless whenever it is dirty or not, if the filesystem
+is readonly or not, and whenever the device itself is readonly or not.
+
+We only need call ext4_commit_super when the file system had been
+previously mounted read/write.
+
+Thanks to Eric Sandeen for help in diagnosing this issue.
+
+Signed-off-By: Michael Tokarev <mjt@tls.msk.ru>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: "Darrick J. Wong" <darrick.wong@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/namei.c |    2 +-
+ fs/ext4/super.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -725,7 +725,7 @@ dx_probe(const struct qstr *d_name, stru
- 			ext4_warning(dir->i_sb, "Node failed checksum");
- 			brelse(bh);
- 			*err = ERR_BAD_DX_DIR;
--			goto fail;
-+			goto fail2;
- 		}
- 		set_buffer_verified(bh);
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4729,7 +4729,7 @@ static int ext4_remount(struct super_blo
+ 	}
  
+ 	ext4_setup_system_zone(sb);
+-	if (sbi->s_journal == NULL)
++	if (sbi->s_journal == NULL && !(old_sb_flags & MS_RDONLY))
+ 		ext4_commit_super(sb, 1);
+ 
+ #ifdef CONFIG_QUOTA
 
 
