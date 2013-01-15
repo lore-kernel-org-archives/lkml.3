@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab3AOWX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:23:59 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44220 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756721Ab3AOWXg (ORCPT
+	id S1757232Ab3AOW0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:26:25 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:36909 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755137Ab3AOW0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:23:36 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: konrad@kernel.org, xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/2] ACPI / cpuidle: Fix NULL pointer issues when cpuidle is disabled
-Date: Tue, 15 Jan 2013 17:23:24 -0500
-Message-Id: <1358288604-24620-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1358288604-24620-1-git-send-email-konrad.wilk@oracle.com>
-References: <1358288604-24620-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 15 Jan 2013 17:26:23 -0500
+Date: Wed, 16 Jan 2013 09:26:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: sedat.dilek@gmail.com
+Cc: Venu Byravarasu <vbyravarasu@nvidia.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Why no Tree for Jan 15?
+Message-Id: <20130116092615.6695554671dffee8a58d3ce9@canb.auug.org.au>
+In-Reply-To: <CA+icZUUxURMi6Qc+FHCa_sP8LPH4pyOJwTZzv11MJZ9ZdEkxkA@mail.gmail.com>
+References: <CA+icZUV=-=DALJRpzrmKrC6oK-CwCyRbHE1VmjrLfmGcemx2JQ@mail.gmail.com>
+	<D958900912E20642BCBC71664EFECE3E6E1A6F0BED@BGMAIL02.nvidia.com>
+	<CA+icZUUxURMi6Qc+FHCa_sP8LPH4pyOJwTZzv11MJZ9ZdEkxkA@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__16_Jan_2013_09_26_15_+1100_.JV+V876uaiHK4Zu"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If cpuidle is disabled, that means the:
+--Signature=_Wed__16_Jan_2013_09_26_15_+1100_.JV+V876uaiHK4Zu
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	per_cpu(acpi_cpuidle_device, pr->id)
+Hi Sedat,
 
-is set to NULL as the acpi_processor_power_init ends up failing at
+On Tue, 15 Jan 2013 14:40:01 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrot=
+e:
+>
+> On Tue, Jan 15, 2013 at 2:34 PM, Venu Byravarasu <vbyravarasu@nvidia.com>=
+ wrote:
+> >>
+> >> any reason why there is no Linux-Next for today?
+> >
+> > Seems Stephen created tree but did not announce it via mail, because
+> > when I synced to linux-next today, am seeing below commit from him:
+>
+> OK, I see.
+> This release has two important fixes for me in char-misc-next (mei
+> driver) and "mm: fix BUG on madvise early failure".
+> Thanks for the information!
 
-	 retval = cpuidle_register_driver(&acpi_idle_driver)
+Yeah, due to a glitch at my ISP (me :-() the announcement was sent, but
+did not leave my ISP's mail server until this morning.
 
-(in acpi_processor_power_init) and never sets the per_cpu idle
-device. So when acpi_processor_hotplug on CPU online notification tries
-to reference said device it crashes:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-cpu 3 spinlock event irq 62
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-IP: [<ffffffff81381013>] acpi_processor_setup_cpuidle_cx+0x3f/0x105
-PGD a259b067 PUD ab38b067 PMD 0
-Oops: 0002 [#1] SMP
-odules linked in: dm_multipath dm_mod xen_evtchn iscsi_boot_sysfs iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi libcrc32c crc32c nouveau mxm_wmi wmi radeon ttm sg sr_mod sd_mod cdrom ata_generic ata_piix libata crc32c_intel scsi_mod atl1c i915 fbcon tileblit font bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
-CPU 1
-Pid: 3047, comm: bash Not tainted 3.8.0-rc3upstream-00250-g165c029 #1 MSI MS-7680/H61M-P23 (MS-7680)
-RIP: e030:[<ffffffff81381013>]  [<ffffffff81381013>] acpi_processor_setup_cpuidle_cx+0x3f/0x105
-RSP: e02b:ffff88001742dca8  EFLAGS: 00010202
-RAX: 0000000000010be9 RBX: ffff8800a0a61800 RCX: ffff880105380000
-RDX: 0000000000000003 RSI: 0000000000000200 RDI: ffff8800a0a61800
-RBP: ffff88001742dce8 R08: ffffffff81812360 R09: 0000000000000200
-R10: aaaaaaaaaaaaaaaa R11: 0000000000000001 R12: ffff8800a0a61800
-R13: 00000000ffffff01 R14: 0000000000000000 R15: ffffffff81a907a0
-FS:  00007fd6942f7700(0000) GS:ffff880105280000(0000) knlGS:0000000000000000
-CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000004 CR3: 00000000a6773000 CR4: 0000000000042660
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process bash (pid: 3047, threadinfo ffff88001742c000, task ffff880017944000)
-Stack:
- 0000000000000150 ffff880100f59e00 ffff88001742dcd8 ffff8800a0a61800
- 0000000000000000 00000000ffffff01 0000000000000000 ffffffff81a907a0
- ffff88001742dd18 ffffffff813815b1 ffff88001742dd08 ffffffff810ae336
-Call Trace:
- [<ffffffff813815b1>] acpi_processor_hotplug+0x7c/0x9f
- [<ffffffff810ae336>] ? schedule_delayed_work_on+0x16/0x20
- [<ffffffff8137ee8f>] acpi_cpu_soft_notify+0x90/0xca
- [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
- [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
- [<ffffffff81652e18>] cpu_up+0xd9/0xec
- [<ffffffff8164a254>] store_online+0x94/0xd0
- [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
- [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
+--Signature=_Wed__16_Jan_2013_09_26_15_+1100_.JV+V876uaiHK4Zu
+Content-Type: application/pgp-signature
 
-This patch fixes it.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/acpi/processor_idle.c | 3 +++
- 1 file changed, 3 insertions(+)
+iQIcBAEBCAAGBQJQ9deHAAoJEECxmPOUX5FE3KQP/1GMnUH8x/Rjg410XchNjarO
+m7lD3TYdgcDgXUJrwkgFK8Gfni1Ica3Eb2fluzu/3jeXo/Qgfrb3edV8m7kDYCLi
+QhaoPFKvdz8QBaW1SRF1nghqmsC0SGYfyJzFc/06yEYiB15Lajq1eP/Up7DoXT1Y
+Dx+WetduboEcYXDdODfZgLGbKYHg1VotKj3kSqdjYQuZQdKgT05FtLCgmWWfY4Jb
+s4ClUbY6tB1yGsYZqayQ89Pw3LS1TIg6xSNu64Z8YxkmQWL7D1GG4ZNiGfeIXccP
+vaD4rexLQvAwSiusWsaGnC0OXDqDErB7y7deO3uOYkjnyafclHhb7N9rX+OgRS8A
+i5f88bAiLLDIa0TUw3zmHmJk4mGhg3+tDy5r1AVUUIGFkK6xBnArAOrCFrPZ/+lc
+0TMMswq+8nuMO5LIQqZTigJidO7WKFNX/tMeVE18xM6WLXGxcIkIi/EZdKt3GXkA
+gXPOfFYMW8hSN09s3ODXKMc+naaetI9T2QeccgK5QBfoAcAfOVCThlaaTjVIldoz
+oRefqhAGorSD/iDWjFMHB1r1syc1mIMSIvyyRY7XwStk1vKfJn95wd/ltLq5Jdnu
+5hHPsMNhPMV26TipNiSYtEm8iw4TxtytEonmasono4HD9E0d2M8p8k8B0CnFmxWY
+bI753BZfPYebiSQlr2mX
+=yUt5
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index f1a5da4..fea6f8d 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -958,6 +958,9 @@ static int acpi_processor_setup_cpuidle_cx(struct acpi_processor *pr)
- 		return -EINVAL;
- 	}
- 
-+	if (!dev)
-+		return -EINVAL;
-+
- 	dev->cpu = pr->id;
- 
- 	if (max_cstate == 0)
--- 
-1.8.0.2
-
+--Signature=_Wed__16_Jan_2013_09_26_15_+1100_.JV+V876uaiHK4Zu--
