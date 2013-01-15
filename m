@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934510Ab3AOW55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:57:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48698 "EHLO mail.kernel.org"
+	id S934523Ab3AOW6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:58:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48740 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934494Ab3AOW5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:52 -0500
+	id S934494Ab3AOW56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oliver Neukum <oneukum@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 64/71] USB: hub: handle claim of enabled remote wakeup after reset
-Date: Tue, 15 Jan 2013 14:55:01 -0800
-Message-Id: <20130115225345.011080297@linuxfoundation.org>
+        Alexander Graf <agraf@suse.de>, CAI Qian <caiqian@redhat.com>
+Subject: [ 68/71] KVM: PPC: 44x: fix DCR read/write
+Date: Tue, 15 Jan 2013 14:55:05 -0800
+Message-Id: <20130115225345.305260361@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,50 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Alexander Graf <agraf@suse.de>
 
-commit 07e72b95f5038cc82304b9a4a2eb7f9fc391ea68 upstream.
+commit e43a028752fed049e4bd94ef895542f96d79fa74 upstream.
 
-Some touchscreens have buggy firmware which claims
-remote wakeup to be enabled after a reset. They nevertheless
-crash if the feature is cleared by the host.
-Add a check for reset resume before checking for
-an enabled remote wakeup feature. On compliant
-devices the feature must be cleared after a reset anyway.
+When remembering the direction of a DCR transaction, we should write
+to the same variable that we interpret on later when doing vcpu_run
+again.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ arch/powerpc/kvm/44x_emulate.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2413,7 +2413,7 @@ int usb_port_suspend(struct usb_device *
- static int finish_port_resume(struct usb_device *udev)
- {
- 	int	status = 0;
--	u16	devstatus;
-+	u16	devstatus = 0;
- 
- 	/* caller owns the udev device lock */
- 	dev_dbg(&udev->dev, "%s\n",
-@@ -2458,7 +2458,13 @@ static int finish_port_resume(struct usb
- 	if (status) {
- 		dev_dbg(&udev->dev, "gone after usb resume? status %d\n",
- 				status);
--	} else if (udev->actconfig) {
-+	/*
-+	 * There are a few quirky devices which violate the standard
-+	 * by claiming to have remote wakeup enabled after a reset,
-+	 * which crash if the feature is cleared, hence check for
-+	 * udev->reset_resume
-+	 */
-+	} else if (udev->actconfig && !udev->reset_resume) {
- 		le16_to_cpus(&devstatus);
- 		if (devstatus & (1 << USB_DEVICE_REMOTE_WAKEUP)) {
- 			status = usb_control_msg(udev,
+--- a/arch/powerpc/kvm/44x_emulate.c
++++ b/arch/powerpc/kvm/44x_emulate.c
+@@ -79,6 +79,7 @@ int kvmppc_core_emulate_op(struct kvm_ru
+ 				run->dcr.dcrn = dcrn;
+ 				run->dcr.data =  0;
+ 				run->dcr.is_write = 0;
++				vcpu->arch.dcr_is_write = 0;
+ 				vcpu->arch.io_gpr = rt;
+ 				vcpu->arch.dcr_needed = 1;
+ 				kvmppc_account_exit(vcpu, DCR_EXITS);
+@@ -100,6 +101,7 @@ int kvmppc_core_emulate_op(struct kvm_ru
+ 				run->dcr.dcrn = dcrn;
+ 				run->dcr.data = kvmppc_get_gpr(vcpu, rs);
+ 				run->dcr.is_write = 1;
++				vcpu->arch.dcr_is_write = 1;
+ 				vcpu->arch.dcr_needed = 1;
+ 				kvmppc_account_exit(vcpu, DCR_EXITS);
+ 				emulated = EMULATE_DO_DCR;
 
 
