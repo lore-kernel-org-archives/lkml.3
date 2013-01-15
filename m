@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901Ab3AOS46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:56:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34716 "EHLO mail.kernel.org"
+	id S1757911Ab3AOS5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:57:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34757 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757544Ab3AOS4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:56:54 -0500
+	id S1757377Ab3AOS5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:57:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steve Hodgson <steve@purestorage.com>,
-        Armen Baloyan <armen.baloyan@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 033/221] SCSI: qla2xxx: Properly set result field of bsg_job reply structure for success and failure.
-Date: Tue, 15 Jan 2013 10:49:20 -0800
-Message-Id: <20130115185000.420796110@linuxfoundation.org>
+        Stephan Gatzka <stephan.gatzka@gmail.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 026/221] firewire: net: Fix handling of fragmented multicast/broadcast packets.
+Date: Tue, 15 Jan 2013 10:49:13 -0800
+Message-Id: <20130115184959.930124155@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -28,235 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Armen Baloyan <armen.baloyan@qlogic.com>
+From: Stephan Gatzka <stephan.gatzka@gmail.com>
 
-commit 63ea923a97cb0d78efcbbd229950e101588f0ddb upstream.
+commit 9d2373420900a39f5212a3b289331aa3535b1000 upstream.
 
-FC transport on receiving bsg_job submission failure, calls bsg_job->job_done()
-and sets the bsg_job->reply->result the returned value. In contrast, when the
-success code (0) is returned fc transport doesn't call bsg_job->job_done() and
-doesn't populate bsg_job->reply->result.
+This patch fixes both the transmit and receive portion of sending
+fragmented mutlicast and broadcast packets.
 
-Signed-off-by: Steve Hodgson <steve@purestorage.com>
-Signed-off-by: Armen Baloyan <armen.baloyan@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+The transmit section was broken because the offset for INTFRAG and
+LASTFRAG packets were just miscalculated by IEEE1394_GASP_HDR_SIZE (which
+was reserved with skb_push() in fwnet_send_packet).
+
+The receive section was broken because in fwnet_incoming_packet is a call
+to fwnet_peer_find_by_node_id(). Called with generation == -1 it will
+not find a peer and the partial datagrams are associated to a peer.
+
+[Stefan R:  The fix to use context->card->generation is not perfect.
+It relies on the IR tasklet which processes packets from the prior bus
+generation to run before the self-ID-complete worklet which sets the
+current card generation.  Alas, there is no simple way of a race-free
+implementation.  Let's do it this way for now.]
+
+Signed-off-by: Stephan Gatzka <stephan.gatzka@gmail.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_bsg.c |   65 +++++++++++++++--------------------------
- 1 file changed, 24 insertions(+), 41 deletions(-)
+ drivers/firewire/net.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_bsg.c
-+++ b/drivers/scsi/qla2xxx/qla_bsg.c
-@@ -219,7 +219,8 @@ qla24xx_proc_fcp_prio_cfg_cmd(struct fc_
- 		break;
- 	}
- exit_fcp_prio_cfg:
--	bsg_job->job_done(bsg_job);
-+	if (!ret)
-+		bsg_job->job_done(bsg_job);
- 	return ret;
- }
- 
-@@ -741,7 +742,6 @@ qla2x00_process_loopback(struct fc_bsg_j
- 			if (qla81xx_get_port_config(vha, config)) {
- 				ql_log(ql_log_warn, vha, 0x701f,
- 				    "Get port config failed.\n");
--				bsg_job->reply->result = (DID_ERROR << 16);
- 				rval = -EPERM;
- 				goto done_free_dma_req;
- 			}
-@@ -761,7 +761,6 @@ qla2x00_process_loopback(struct fc_bsg_j
- 				    new_config, elreq.options);
- 
- 			if (rval) {
--				bsg_job->reply->result = (DID_ERROR << 16);
- 				rval = -EPERM;
- 				goto done_free_dma_req;
- 			}
-@@ -795,7 +794,6 @@ qla2x00_process_loopback(struct fc_bsg_j
- 					    "MPI reset failed.\n");
- 				}
- 
--				bsg_job->reply->result = (DID_ERROR << 16);
- 				rval = -EIO;
- 				goto done_free_dma_req;
- 			}
-@@ -812,33 +810,25 @@ qla2x00_process_loopback(struct fc_bsg_j
- 		ql_log(ql_log_warn, vha, 0x702c,
- 		    "Vendor request %s failed.\n", type);
- 
--		fw_sts_ptr = ((uint8_t *)bsg_job->req->sense) +
--		    sizeof(struct fc_bsg_reply);
--
--		memcpy(fw_sts_ptr, response, sizeof(response));
--		fw_sts_ptr += sizeof(response);
--		*fw_sts_ptr = command_sent;
- 		rval = 0;
- 		bsg_job->reply->result = (DID_ERROR << 16);
-+		bsg_job->reply->reply_payload_rcv_len = 0;
- 	} else {
- 		ql_dbg(ql_dbg_user, vha, 0x702d,
- 		    "Vendor request %s completed.\n", type);
--
--		bsg_job->reply_len = sizeof(struct fc_bsg_reply) +
--			sizeof(response) + sizeof(uint8_t);
--		bsg_job->reply->reply_payload_rcv_len =
--			bsg_job->reply_payload.payload_len;
--		fw_sts_ptr = ((uint8_t *)bsg_job->req->sense) +
--			sizeof(struct fc_bsg_reply);
--		memcpy(fw_sts_ptr, response, sizeof(response));
--		fw_sts_ptr += sizeof(response);
--		*fw_sts_ptr = command_sent;
--		bsg_job->reply->result = DID_OK;
-+		bsg_job->reply->result = (DID_OK << 16);
- 		sg_copy_from_buffer(bsg_job->reply_payload.sg_list,
- 			bsg_job->reply_payload.sg_cnt, rsp_data,
- 			rsp_data_len);
- 	}
--	bsg_job->job_done(bsg_job);
-+
-+	bsg_job->reply_len = sizeof(struct fc_bsg_reply) +
-+	    sizeof(response) + sizeof(uint8_t);
-+	fw_sts_ptr = ((uint8_t *)bsg_job->req->sense) +
-+	    sizeof(struct fc_bsg_reply);
-+	memcpy(fw_sts_ptr, response, sizeof(response));
-+	fw_sts_ptr += sizeof(response);
-+	*fw_sts_ptr = command_sent;
- 
- 	dma_free_coherent(&ha->pdev->dev, rsp_data_len,
- 		rsp_data, rsp_data_dma);
-@@ -853,6 +843,8 @@ done_unmap_req_sg:
- 	dma_unmap_sg(&ha->pdev->dev,
- 	    bsg_job->request_payload.sg_list,
- 	    bsg_job->request_payload.sg_cnt, DMA_TO_DEVICE);
-+	if (!rval)
-+		bsg_job->job_done(bsg_job);
- 	return rval;
- }
- 
-@@ -877,16 +869,15 @@ qla84xx_reset(struct fc_bsg_job *bsg_job
- 	if (rval) {
- 		ql_log(ql_log_warn, vha, 0x7030,
- 		    "Vendor request 84xx reset failed.\n");
--		rval = 0;
--		bsg_job->reply->result = (DID_ERROR << 16);
-+		rval = (DID_ERROR << 16);
- 
- 	} else {
- 		ql_dbg(ql_dbg_user, vha, 0x7031,
- 		    "Vendor request 84xx reset completed.\n");
- 		bsg_job->reply->result = DID_OK;
-+		bsg_job->job_done(bsg_job);
+--- a/drivers/firewire/net.c
++++ b/drivers/firewire/net.c
+@@ -861,8 +861,8 @@ static void fwnet_receive_broadcast(stru
+ 	if (specifier_id == IANA_SPECIFIER_ID && ver == RFC2734_SW_VERSION) {
+ 		buf_ptr += 2;
+ 		length -= IEEE1394_GASP_HDR_SIZE;
+-		fwnet_incoming_packet(dev, buf_ptr, length,
+-				      source_node_id, -1, true);
++		fwnet_incoming_packet(dev, buf_ptr, length, source_node_id,
++				      context->card->generation, true);
  	}
  
--	bsg_job->job_done(bsg_job);
- 	return rval;
- }
- 
-@@ -976,8 +967,7 @@ qla84xx_updatefw(struct fc_bsg_job *bsg_
- 		ql_log(ql_log_warn, vha, 0x7037,
- 		    "Vendor request 84xx updatefw failed.\n");
- 
--		rval = 0;
--		bsg_job->reply->result = (DID_ERROR << 16);
-+		rval = (DID_ERROR << 16);
- 	} else {
- 		ql_dbg(ql_dbg_user, vha, 0x7038,
- 		    "Vendor request 84xx updatefw completed.\n");
-@@ -986,7 +976,6 @@ qla84xx_updatefw(struct fc_bsg_job *bsg_
- 		bsg_job->reply->result = DID_OK;
- 	}
- 
--	bsg_job->job_done(bsg_job);
- 	dma_pool_free(ha->s_dma_pool, mn, mn_dma);
- 
- done_free_fw_buf:
-@@ -996,6 +985,8 @@ done_unmap_sg:
- 	dma_unmap_sg(&ha->pdev->dev, bsg_job->request_payload.sg_list,
- 		bsg_job->request_payload.sg_cnt, DMA_TO_DEVICE);
- 
-+	if (!rval)
-+		bsg_job->job_done(bsg_job);
- 	return rval;
- }
- 
-@@ -1163,8 +1154,7 @@ qla84xx_mgmt_cmd(struct fc_bsg_job *bsg_
- 		ql_log(ql_log_warn, vha, 0x7043,
- 		    "Vendor request 84xx mgmt failed.\n");
- 
--		rval = 0;
--		bsg_job->reply->result = (DID_ERROR << 16);
-+		rval = (DID_ERROR << 16);
- 
- 	} else {
- 		ql_dbg(ql_dbg_user, vha, 0x7044,
-@@ -1184,8 +1174,6 @@ qla84xx_mgmt_cmd(struct fc_bsg_job *bsg_
- 		}
- 	}
- 
--	bsg_job->job_done(bsg_job);
--
- done_unmap_sg:
- 	if (mgmt_b)
- 		dma_free_coherent(&ha->pdev->dev, data_len, mgmt_b, mgmt_dma);
-@@ -1200,6 +1188,8 @@ done_unmap_sg:
- exit_mgmt:
- 	dma_pool_free(ha->s_dma_pool, mn, mn_dma);
- 
-+	if (!rval)
-+		bsg_job->job_done(bsg_job);
- 	return rval;
- }
- 
-@@ -1276,9 +1266,7 @@ qla24xx_iidma(struct fc_bsg_job *bsg_job
- 		    fcport->port_name[3], fcport->port_name[4],
- 		    fcport->port_name[5], fcport->port_name[6],
- 		    fcport->port_name[7], rval, fcport->fp_speed, mb[0], mb[1]);
--		rval = 0;
--		bsg_job->reply->result = (DID_ERROR << 16);
--
-+		rval = (DID_ERROR << 16);
- 	} else {
- 		if (!port_param->mode) {
- 			bsg_job->reply_len = sizeof(struct fc_bsg_reply) +
-@@ -1292,9 +1280,9 @@ qla24xx_iidma(struct fc_bsg_job *bsg_job
+ 	packet.payload_length = dev->rcv_buffer_size;
+@@ -958,7 +958,12 @@ static void fwnet_transmit_packet_done(s
+ 			break;
  		}
  
- 		bsg_job->reply->result = DID_OK;
-+		bsg_job->job_done(bsg_job);
- 	}
+-		skb_pull(skb, ptask->max_payload);
++		if (ptask->dest_node == IEEE1394_ALL_NODES) {
++			skb_pull(skb,
++				 ptask->max_payload + IEEE1394_GASP_HDR_SIZE);
++		} else {
++			skb_pull(skb, ptask->max_payload);
++		}
+ 		if (ptask->outstanding_pkts > 1) {
+ 			fwnet_make_sf_hdr(&ptask->hdr, RFC2374_HDR_INTFRAG,
+ 					  dg_size, fg_off, datagram_label);
+@@ -1062,7 +1067,7 @@ static int fwnet_send_packet(struct fwne
+ 		smp_rmb();
+ 		node_id = dev->card->node_id;
  
--	bsg_job->job_done(bsg_job);
- 	return rval;
- }
- 
-@@ -1887,8 +1875,6 @@ qla2x00_process_vendor_specific(struct f
- 		return qla24xx_process_bidir_cmd(bsg_job);
- 
- 	default:
--		bsg_job->reply->result = (DID_ERROR << 16);
--		bsg_job->job_done(bsg_job);
- 		return -ENOSYS;
- 	}
- }
-@@ -1919,8 +1905,6 @@ qla24xx_bsg_request(struct fc_bsg_job *b
- 		ql_dbg(ql_dbg_user, vha, 0x709f,
- 		    "BSG: ISP abort active/needed -- cmd=%d.\n",
- 		    bsg_job->request->msgcode);
--		bsg_job->reply->result = (DID_ERROR << 16);
--		bsg_job->job_done(bsg_job);
- 		return -EBUSY;
- 	}
- 
-@@ -1943,7 +1927,6 @@ qla24xx_bsg_request(struct fc_bsg_job *b
- 	case FC_BSG_RPT_CT:
- 	default:
- 		ql_log(ql_log_warn, vha, 0x705a, "Unsupported BSG request.\n");
--		bsg_job->reply->result = ret;
- 		break;
- 	}
- 	return ret;
+-		p = skb_push(ptask->skb, 8);
++		p = skb_push(ptask->skb, IEEE1394_GASP_HDR_SIZE);
+ 		put_unaligned_be32(node_id << 16 | IANA_SPECIFIER_ID >> 8, p);
+ 		put_unaligned_be32((IANA_SPECIFIER_ID & 0xff) << 24
+ 						| RFC2734_SW_VERSION, &p[4]);
 
 
