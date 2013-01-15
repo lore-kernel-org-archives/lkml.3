@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab3AOWtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:49:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45551 "EHLO mail.kernel.org"
+	id S1758803Ab3AOX4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:56:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45519 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758228Ab3AOWtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:49:17 -0500
+	id S1758755Ab3AOWtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 032/171] SUNRPC: continue run over clients list on PipeFS event instead of break
-Date: Tue, 15 Jan 2013 14:43:17 -0800
-Message-Id: <20130115224315.730729378@linuxfoundation.org>
+        Nathan Williams <nathan@traverse.com.au>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Mike Dunn <mikedunn@newsguy.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 030/171] mtd cs553x_nand: Initialise ecc.strength before nand_scan()
+Date: Tue, 15 Jan 2013 14:43:15 -0800
+Message-Id: <20130115224315.586447376@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,34 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Nathan Williams <nathan@traverse.com.au>
 
-commit cd6c5968582a273561464fe6b1e8cc8214be02df upstream.
+commit d1f3b65d2d6fdb4bf0edd4b67e86e191af48daee upstream.
 
-There are SUNRPC clients, which program doesn't have pipe_dir_name. These
-clients can be skipped on PipeFS events, because nothing have to be created or
-destroyed. But instead of breaking in case of such a client was found, search
-for suitable client over clients list have to be continued. Otherwise some
-clients could not be covered by PipeFS event handler.
+Loading cs553x_nand with Hynix H27U1G8F2BTR NAND flash causes this bug:
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+kernel BUG at drivers/mtd/nand/nand_base.c:3345!
+invalid opcode: 0000 [#1]
+Modules linked in: cs553x_nand(+) vfat fat usb_storage ehci_hcd usbcore usb_comr
+Pid: 436, comm: modprobe Not tainted 3.6.7 #1
+EIP: 0060:[<c118d205>] EFLAGS: 00010296 CPU: 0
+EIP is at nand_scan_tail+0x64c/0x69c
+EAX: 00000034 EBX: cea6ed98 ECX: 00000000 EDX: 00000000
+ESI: cea6ec00 EDI: cea6ec00 EBP: 20000000 ESP: cdd17e48
+ DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+CR0: 8005003b CR2: 0804e119 CR3: 0d850000 CR4: 00000090
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process modprobe (pid: 436, ti=cdd16000 task=cdd1c320 task.ti=cdd16000)
+Stack:
+ c12e962c c118f7ef 00000003 cea6ed98 d014b25c 20000000 fffff007 00000001
+ 00000000 cdd53b00 d014b000 c1001021 cdd53b00 d01493c0 cdd53b00 cdd53b00
+ d01493c0 c1047f83 d014b4a0 00000000 cdd17f9c ce4be454 cdd17f48 cdd1c320
+Call Trace:
+ [<c118f7ef>] ? nand_scan+0x1b/0x4d
+ [<d014b25c>] ? init_module+0x25c/0x2de [cs553x_nand]
+ [<d014b000>] ? 0xd014afff
+ [<c1001021>] ? do_one_initcall+0x21/0x111
+ [<c1047f83>] ? sys_init_module+0xe4/0x1261
+ [<c1031207>] ? task_work_run+0x36/0x43
+ [<c1265ced>] ? syscall_call+0x7/0xb
+Code: fa ff ff c7 86 d8 00 00 00 01 00 00 00 e9 5f fc ff ff 68 f8 26 2e c1 e8 a7
+EIP: [<c118d205>] nand_scan_tail+0x64c/0x69c SS:ESP 0068:cdd17e48
+
+Initialising ecc.strength before the call to nand_scan() fixes this.
+
+Signed-off-by: Nathan Williams <nathan@traverse.com.au>
+Acked-by: Brian Norris <computersforpeace@gmail.com>
+Acked-by: Mike Dunn <mikedunn@newsguy.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/clnt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mtd/nand/cs553x_nand.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -236,7 +236,7 @@ static struct rpc_clnt *rpc_get_client_f
- 	spin_lock(&sn->rpc_client_lock);
- 	list_for_each_entry(clnt, &sn->all_clients, cl_clients) {
- 		if (clnt->cl_program->pipe_dir_name == NULL)
--			break;
-+			continue;
- 		if (rpc_clnt_skip_event(clnt, event))
- 			continue;
- 		if (atomic_inc_not_zero(&clnt->cl_count) == 0)
+--- a/drivers/mtd/nand/cs553x_nand.c
++++ b/drivers/mtd/nand/cs553x_nand.c
+@@ -237,6 +237,7 @@ static int __init cs553x_init_one(int cs
+ 	this->ecc.hwctl  = cs_enable_hwecc;
+ 	this->ecc.calculate = cs_calculate_ecc;
+ 	this->ecc.correct  = nand_correct_data;
++	this->ecc.strength = 1;
+ 
+ 	/* Enable the following for a flash based bad block table */
+ 	this->bbt_options = NAND_BBT_USE_FLASH;
+@@ -248,8 +249,6 @@ static int __init cs553x_init_one(int cs
+ 		goto out_ior;
+ 	}
+ 
+-	this->ecc.strength = 1;
+-
+ 	new_mtd->name = kasprintf(GFP_KERNEL, "cs553x_nand_cs%d", cs);
+ 
+ 	cs553x_mtd[cs] = new_mtd;
 
 
