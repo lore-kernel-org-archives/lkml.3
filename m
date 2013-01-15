@@ -1,136 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab3AOPXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 10:23:36 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:29714 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756606Ab3AOPXf (ORCPT
+	id S1756144Ab3AOPcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 10:32:33 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36769 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755803Ab3AOPca convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 10:23:35 -0500
-Date: Tue, 15 Jan 2013 10:22:54 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7u1 10/31] x86, 64bit: Don't set max_pfn_mapped wrong
- value early on native path
-Message-ID: <20130115152254.GC2682@phenom.dumpdata.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
- <1357260531-11115-11-git-send-email-yinghai@kernel.org>
- <alpine.DEB.2.02.1301151242000.4978@kaball.uk.xensource.com>
+	Tue, 15 Jan 2013 10:32:30 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1301151242000.4978@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Transfer-Encoding: 8BIT
+From: Mike Turquette <mturquette@linaro.org>
+User-Agent: alot/0.3.3+
+To: Afzal Mohammed <afzal@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sekhar Nori <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <cover.1358251447.git.afzal@ti.com>
+ <26e787b021cda89a080f80657c2094b9ff2decaf.1358251448.git.afzal@ti.com>
+In-Reply-To: <26e787b021cda89a080f80657c2094b9ff2decaf.1358251448.git.afzal@ti.com>
+Message-ID: <20130115153222.23734.7924@quantum>
+Subject: Re: [PATCH v2 12/12] video: da8xx-fb: set upstream clock rate (if reqd)
+Date: Tue, 15 Jan 2013 07:32:22 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 01:48:45PM +0000, Stefano Stabellini wrote:
-> On Fri, 4 Jan 2013, Yinghai Lu wrote:
-> > We are not having max_pfn_mapped set correctly until init_memory_mapping.
-> > 
-> > so don't print it initial value for 64bit
-> > 
-> > Also need to use KERNEL_IMAGE_SIZE directly for highmap cleanup.
-> > 
-> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> > ---
-> >  arch/x86/kernel/head64.c |    3 ---
-> >  arch/x86/kernel/setup.c  |    2 ++
-> >  arch/x86/mm/init_64.c    |    6 +++++-
-> >  3 files changed, 7 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-> > index a3fc233..7061d8b 100644
-> > --- a/arch/x86/kernel/head64.c
-> > +++ b/arch/x86/kernel/head64.c
-> > @@ -146,9 +146,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
-> >  	/* clear bss before set_intr_gate with early_idt_handler */
-> >  	clear_bss();
-> >  
-> > -	/* XXX - this is wrong... we need to build page tables from scratch */
-> > -	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
-> > -
-> >  	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
-> >  #ifdef CONFIG_EARLY_PRINTK
-> >  		set_intr_gate(i, &early_idt_handlers[i]);
-> > diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> > index 63160c6..04797e78 100644
-> > --- a/arch/x86/kernel/setup.c
-> > +++ b/arch/x86/kernel/setup.c
-> > @@ -910,8 +910,10 @@ void __init setup_arch(char **cmdline_p)
-> >  	setup_bios_corruption_check();
-> >  #endif
-> >  
-> > +#ifdef CONFIG_X86_32
-> >  	printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
-> >  			(max_pfn_mapped<<PAGE_SHIFT) - 1);
-> > +#endif
-> >  
-> >  	reserve_real_mode();
-> >  
-> > diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> > index 9c5f2b1..98385a2 100644
-> > --- a/arch/x86/mm/init_64.c
-> > +++ b/arch/x86/mm/init_64.c
-> > @@ -394,10 +394,14 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
-> >  void __init cleanup_highmap(void)
-> >  {
-> >  	unsigned long vaddr = __START_KERNEL_map;
-> > -	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
-> > +	unsigned long vaddr_end = __START_KERNEL_map + KERNEL_IMAGE_SIZE;
-> >  	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
-> >  	pmd_t *pmd = level2_kernel_pgt;
-> >  
-> > +	/* Xen has its own end somehow with abused max_pfn_mapped */
-> > +	if (max_pfn_mapped)
-> > +		vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
+Quoting Afzal Mohammed (2013-01-15 05:44:36)
+> LCDC IP has a clock divider to adjust pixel clock, this limits pixel
+> clock range to fck/255 - fck/2(fck - rate of input clock to LCDC IP).
+> In the case of AM335x, where this IP is present, default fck is not
+> sufficient to provide normal pixel clock rates, hence rendering this
+> driver unusable on AM335x.
 > 
-> If you are going to put a comment like that in the code, could you
-> please at least add some useful details, rather than a generic
-> "somehow"? It doesn't seem very helpful to me or to any other hackers
-> looking at the code.
+> If input clock too is configurable, allowable range of pixel clock
+> would increase. Here initially it is checked whether with present fck,
+> divider in IP could be configured to obtain required rate, if not,
+> fck is adjusted. This makes it usable on AM335x.
+> 
+> Note:
+> A better (if allowable) solution may be to represent clock divider in
+> LCDC IP as a basic divider clock - the one defined in common clock
+> framework. But for this to happen, all the platform's using this driver
+> should be using common clock framework (DaVinci is yet to be converted
+> to use common clock framework). And it has to be determined whether
+> common clock framework allows this kind of a clock modelling inside a
+> driver and for this to be part of clock tree. Advantage of doing so
+> would be better resolution for pixel clock, even though without this
+> existing use cases are working properly. Or another extreme alternative
+> would be to replicate clk-divider of common clock framework inside the
+> driver, but that probably is not preferred and not worth as it would be
+> duplication and without much advantage to existing users.
+> 
 
-Hm I think I actually pointed out to him in the previous reviews how
-we alter it and that he should ingest some of those comments in this
-patch.
+Afzal,
 
+Modeling the divider inside your IP block as a clock is supported in the
+common clock framework.  Linking up these sorts of clocks to the clock
+tree was one of the original design goals of CCF.
+
+Regarding DaVinci: converting that platform over to use CCF would be the
+best approach.  An alternative would be that you could break
+single-image boot for AM335x and DaVinci, by having AM335x use CCF and
+DaVinci use the legacy clock framework.  From the LCDC driver's
+perspective this should not matter and is indeed the purpose of the
+clk.h api and clkdev interfaces, however looking at this driver I can
+see there would still be a lot ifdef-ery going on... better to just
+convert everything over to CCF.
+
+Regards,
+Mike
+
+> Signed-off-by: Afzal Mohammed <afzal@ti.com>
+> ---
 > 
-> The issue is even described as a comment in the code at the beginning of
-> arch/x86/xen/mmu.c:xen_setup_kernel_pagetable:
+> v2: new patch
 > 
-> /* max_pfn_mapped is the last pfn mapped in the initial memory
->  * mappings. Considering that on Xen after the kernel mappings we
->  * have the mappings of some pages that don't exist in pfn space, we
->  * set max_pfn_mapped to the last real pfn mapped. */
+>  drivers/video/da8xx-fb.c |   76 +++++++++++++++++++++++++++++++++++-----------
+>  1 file changed, 58 insertions(+), 18 deletions(-)
 > 
-> Now if max_pfn_mapped is supposed to represent the last pfn mapped in
-> the initial memory mapping, then I think that the way Xen uses
-> max_pfn_mapped is actually correct.
-> 
-> 
-> The question is: has max_pfn_mapped actually changed meaning?
-> Because if it hasn't I don't see why you need this change.
-> 
-> 
-> 
-> >  	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
-> >  		if (pmd_none(*pmd))
-> >  			continue;
-> > -- 
-> > 1.7.10.4
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
+> diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+> index 5455682..09dfa12 100644
+> --- a/drivers/video/da8xx-fb.c
+> +++ b/drivers/video/da8xx-fb.c
+> @@ -133,6 +133,9 @@
+>  #define WSI_TIMEOUT    50
+>  #define PALETTE_SIZE   256
+>  
+> +#define        CLK_MIN_DIV     2
+> +#define        CLK_MAX_DIV     255
+> +
+>  static void __iomem *da8xx_fb_reg_base;
+>  static struct resource *lcdc_regs;
+>  static unsigned int lcd_revision;
+> @@ -683,23 +686,21 @@ static void da8xx_fb_lcd_reset(void)
+>         }
+>  }
+>  
+> -static inline unsigned da8xx_fb_calc_clk_divider(struct da8xx_fb_par *par,
+> -                                                unsigned pixclock)
+> -{
+> -       return par->lcd_fck_rate / (PICOS2KHZ(pixclock) * 1000);
+> -}
+> -
+> -static inline unsigned da8xx_fb_round_clk(struct da8xx_fb_par *par,
+> -                                         unsigned pixclock)
+> +static int da8xx_fb_config_clk_divider(struct da8xx_fb_par *par,
+> +                                             unsigned div, unsigned rate)
+>  {
+> -       unsigned div;
+> +       int ret;
+>  
+> -       div = da8xx_fb_calc_clk_divider(par, pixclock);
+> -       return KHZ2PICOS(par->lcd_fck_rate / (1000 * div));
+> -}
+> +       if (par->lcd_fck_rate != rate) {
+> +               ret = clk_set_rate(par->lcdc_clk, rate);
+> +               if (IS_ERR_VALUE(ret)) {
+> +                       dev_err(par->dev,
+> +                               "unable to set clock rate at %u\n", rate);
+> +                       return ret;
+> +               }
+> +               par->lcd_fck_rate = clk_get_rate(par->lcdc_clk);
+> +       }
+>  
+> -static inline void da8xx_fb_config_clk_divider(unsigned div)
+> -{
+>         /* Configure the LCD clock divisor. */
+>         lcdc_write(LCD_CLK_DIVISOR(div) |
+>                         (LCD_RASTER_MODE & 0x1), LCD_CTRL_REG);
+> @@ -707,14 +708,49 @@ static inline void da8xx_fb_config_clk_divider(unsigned div)
+>         if (lcd_revision == LCD_VERSION_2)
+>                 lcdc_write(LCD_V2_DMA_CLK_EN | LCD_V2_LIDD_CLK_EN |
+>                                 LCD_V2_CORE_CLK_EN, LCD_CLK_ENABLE_REG);
+> +
+> +       return 0;
+> +}
+> +
+> +static unsigned int da8xx_fb_calc_clk_divider(struct da8xx_fb_par *par,
+> +                                             unsigned pixclock,
+> +                                             unsigned *rate)
+> +{
+> +       unsigned div;
+> +
+> +       pixclock = PICOS2KHZ(pixclock) * 1000;
+> +
+> +       *rate = par->lcd_fck_rate;
+> +
+> +       if (pixclock < (*rate / CLK_MAX_DIV)) {
+> +               *rate = clk_round_rate(par->lcdc_clk, pixclock * CLK_MAX_DIV);
+> +               div = CLK_MAX_DIV;
+> +       } else if (pixclock > (*rate / CLK_MIN_DIV)) {
+> +               *rate = clk_round_rate(par->lcdc_clk, pixclock * CLK_MIN_DIV);
+> +               div = CLK_MIN_DIV;
+> +       } else {
+> +               div = *rate / pixclock;
+> +       }
+> +
+> +       return div;
+>  }
+>  
+> -static inline void da8xx_fb_calc_config_clk_divider(struct da8xx_fb_par *par,
+> +static inline int da8xx_fb_calc_config_clk_divider(struct da8xx_fb_par *par,
+>                                                     struct fb_videomode *mode)
+>  {
+> -       unsigned div = da8xx_fb_calc_clk_divider(par, mode->pixclock);
+> +       unsigned rate;
+> +       unsigned div = da8xx_fb_calc_clk_divider(par, mode->pixclock, &rate);
+>  
+> -       da8xx_fb_config_clk_divider(div);
+> +       return da8xx_fb_config_clk_divider(par, div, rate);
+> +}
+> +
+> +static inline unsigned da8xx_fb_round_clk(struct da8xx_fb_par *par,
+> +                                         unsigned pixclock)
+> +{
+> +       unsigned div, rate;
+> +
+> +       div = da8xx_fb_calc_clk_divider(par, pixclock, &rate);
+> +       return KHZ2PICOS(rate / (1000 * div));
+>  }
+>  
+>  static int lcd_init(struct da8xx_fb_par *par, const struct lcd_ctrl_config *cfg,
+> @@ -723,7 +759,11 @@ static int lcd_init(struct da8xx_fb_par *par, const struct lcd_ctrl_config *cfg,
+>         u32 bpp;
+>         int ret = 0;
+>  
+> -       da8xx_fb_calc_config_clk_divider(par, panel);
+> +       ret = da8xx_fb_calc_config_clk_divider(par, panel);
+> +       if (IS_ERR_VALUE(ret)) {
+> +               dev_err(par->dev, "unable to configure clock\n");
+> +               return ret;
+> +       }
+>  
+>         if (panel->sync & FB_SYNC_CLK_INVERT)
+>                 lcdc_write((lcdc_read(LCD_RASTER_TIMING_2_REG) |
+> -- 
+> 1.7.9.5
