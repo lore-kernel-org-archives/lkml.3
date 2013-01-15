@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab3APAdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:33:15 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:59492 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757809Ab3APAdL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 19:33:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <1357731938-8417-1-git-send-email-glommer@parallels.com>
-References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
-Date: Tue, 15 Jan 2013 16:33:10 -0800
-Message-ID: <CAMbhsRQ7B4Uu1Wukfay+m4K7CVXtVbsTTEd6JHrwC2s+NcEFNA@mail.gmail.com>
-Subject: Re: [PATCH v5 00/11] per-cgroup cpu-stat
-From: Colin Cross <ccross@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: cgroups@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757782Ab3AOW2q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:28:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41510 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757754Ab3AOW2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:28:44 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Pawel Moll <pawel.moll@arm.com>, Michal Marek <mmarek@suse.cz>
+Subject: [ 058/221] kbuild: Do not remove vmlinux when cleaning external module
+Date: Tue, 15 Jan 2013 10:49:45 -0800
+Message-Id: <20130115185002.229167956@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
+References: <20130115184958.025580322@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 3:45 AM, Glauber Costa <glommer@parallels.com> wrote:
-> [ update: I thought I posted this already before leaving for holidays. However,
->   now that I am checking for replies, I can't find nor replies nor the original
->   mail in my boxes or archives. I am posting again for safety sake, but sorry
->   you are getting this twice by any chance ]
->
-> Hi all,
->
-> This is an attempt to provide userspace with enough information to reconstruct
-> per-container version of files like "/proc/stat". In particular, we are
-> interested in knowing the per-cgroup slices of user time, system time, wait
-> time, number of processes, and a variety of statistics.
->
-> This task is made more complicated by the fact that multiple controllers are
-> involved in collecting those statistics: cpu and cpuacct. So the first thing I
-> am doing here, is ressurecting Tejun's patches that aim at deprecating cpuacct.
->
-> This is one of the major differences from earlier attempts: all data is provided
-> by the cpu controller, resulting in greater simplicity.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-Android userspace is currently using both cpu and cpuacct, and not
-co-mounting them.  They are used for fundamentally different uses such
-that creating a single hierarchy for both of them while maintaining
-the existing behavior is not possible.
+------------------
 
-We use the cpu cgroup primarily as a priority container.  A simple
-view is that each thread is assigned to a foreground cgroup when it is
-user-visible, and a background cgroup when it is not.  The foreground
-cgroup is assigned a significantly higher cpu.shares value such that
-when each group is fully loaded the background group will get 5% and
-the foreground group will get 95%.
+From: Pawel Moll <pawel.moll@arm.com>
 
-We use the cpuacct cgroup to measure cpu usage per uid, primarily to
-estimate one cause of battery usage.  Each uid gets a cgroup, and when
-spawning a task for a new uid we put it in the appropriate cgroup.
+commit bd1ee804af8bdf2fd5131234330615f8aecbd9ed upstream.
 
-We could create a new uid cgroup for cpuacct inside the foreground and
-background cgroups used for scheduling, but that would drastically
-change the way scheduling works when multiple uids have active
-threads.  With separate cpu and cpuacct mounts, every active
-foreground thread will get equal cpu time.  With co-mounted cpu and
-cpuacct cgroups, cpu time will be shared between each accounting
-group, and then sub-shared inside that group.
+Since commit 1f2bfbd00e466ff3489b2ca5cc75b1cccd14c123 "kbuild:
+link of vmlinux moved to a script" make clean with M=<dir>
+argument (so cleaning external module) removes vmlinux,
+System.map and couple of other files from the *main* kernel
+build directory! This not what was happening before and almost
+certainly not what one would expect.
 
-A concrete example:
-Two uids, 1 and 2.  Uid 1 has one thread A, uid 2 has two threads B
-and C.  All threads are foreground and running continuously.
+This patch moves makes the clean target of the script called
+only when !KBUILD_EXTMOD.
 
-With separate cpu and cpuacct mounts, we have:
-/cpu/foreground/tasks:
-A
-B
-C
-/cpuacct/uid/1/tasks:
-A
-/cpuacct/uid/2/tasks:
-B
-C
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-A, B, and C each will get 33% of the cpu time.
+---
+ Makefile |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-With co-mounted cpu and cpuacct mounts:
-/cpu/foreground/1/tasks:
-A
-/cpu/foreground/2/tasks
-B
-C
+--- a/Makefile
++++ b/Makefile
+@@ -1021,11 +1021,14 @@ clean: rm-dirs  := $(CLEAN_DIRS)
+ clean: rm-files := $(CLEAN_FILES)
+ clean-dirs      := $(addprefix _clean_, . $(vmlinux-alldirs) Documentation samples)
+ 
+-PHONY += $(clean-dirs) clean archclean
++PHONY += $(clean-dirs) clean archclean vmlinuxclean
+ $(clean-dirs):
+ 	$(Q)$(MAKE) $(clean)=$(patsubst _clean_%,%,$@)
+ 
+-clean: archclean
++vmlinuxclean:
++	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/link-vmlinux.sh clean
++
++clean: archclean vmlinuxclean
+ 
+ # mrproper - Delete all generated files, including .config
+ #
+@@ -1252,7 +1255,6 @@ scripts: ;
+ endif # KBUILD_EXTMOD
+ 
+ clean: $(clean-dirs)
+-	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/link-vmlinux.sh clean
+ 	$(call cmd,rmdirs)
+ 	$(call cmd,rmfiles)
+ 	@find $(if $(KBUILD_EXTMOD), $(KBUILD_EXTMOD), .) $(RCS_FIND_IGNORE) \
 
-A will get 50% of the cpu time, B and C will get 25% of the cpu time.
-I don't see any way to add new subgroups for accounting without
-partitioning the cpu time for each subgroup.
+
