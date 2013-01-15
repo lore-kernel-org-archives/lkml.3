@@ -1,55 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757523Ab3AOSja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:39:30 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:47133 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab3AOSj2 (ORCPT
+	id S1757448Ab3AOSkw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:40:52 -0500
+Received: from a.painless.aa.net.uk ([81.187.30.51]:40769 "EHLO
+	a.painless.aa.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755462Ab3AOSkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:39:28 -0500
-Date: Tue, 15 Jan 2013 10:39:24 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Jens Axboe <axboe@kernel.dk>, USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: USB device cannot be reconnected and khubd "blocked for more
- than 120 seconds"
-Message-ID: <20130115183924.GF2668@htj.dyndns.org>
-References: <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
- <Pine.LNX.4.44L0.1301151300200.11786-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1301151300200.11786-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Jan 2013 13:40:51 -0500
+Date: Tue, 15 Jan 2013 18:40:45 +0000
+From: Andrew Clayton <andrew@digital-domain.net>
+To: Rik van Riel <riel@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: qemu-kvm hangs at start up under 3.8.0-rc3-00074-gb719f43
+ (works with CONFIG_LOCKDEP)
+Message-ID: <20130115184045.574a0fd7@omega.digital-domain.net>
+In-Reply-To: <20130115171756.36566374@zeus.pccl.info>
+References: <20130113222958.64840242@omega.digital-domain.net>
+	<20130114132736.GA12489@redhat.com>
+	<20130114182449.5a163101@omega.digital-domain.net>
+	<50F58867.6010507@redhat.com>
+	<20130115171756.36566374@zeus.pccl.info>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Alan.
+On Tue, 15 Jan 2013 17:17:56 +0000, Andrew Clayton wrote:
 
-On Tue, Jan 15, 2013 at 01:20:58PM -0500, Alan Stern wrote:
-> It may not be so easy.  When the SCSI async thread probes the new disk, 
-> it has to do I/O.  So it needs to use a scheduler.
+> On Tue, 15 Jan 2013 11:48:39 -0500, Rik van Riel wrote:
 > 
-> But maybe it could use a built-in trivial scheduler until the proper 
-> one is loaded.  Then the loading could be asynchronous.
+> > On 01/14/2013 01:24 PM, Andrew Clayton wrote:
+> 
+> [snip]
+> 
+> > >
+> > > bash            S ffff88013b2b0d00     0  3203   3133 0x00000000
+> > >   ffff880114dabe58 0000000000000082 8000000113558065
+> > > ffff880114dabfd8 ffff880114dabfd8 0000000000004000
+> > > ffff88013b0c5b00 ffff88013b2b0d00 ffff880114dabd88
+> > > ffffffff8109067d ffffea0004536670 ffffea0004536640 Call Trace:
+> > >   [<ffffffff8109067d>] ? default_wake_function+0xd/0x10
+> > >   [<ffffffff8108a315>] ? atomic_notifier_call_chain+0x15/0x20
+> > >   [<ffffffff8133d84f>] ? tty_get_pgrp+0x3f/0x50
+> > >   [<ffffffff810819ac>] ? pid_vnr+0x2c/0x30
+> > >   [<ffffffff8133fe54>] ? tty_ioctl+0x7b4/0xbd0
+> > >   [<ffffffff8106bf62>] ? wait_consider_task+0x102/0xaf0
+> > >   [<ffffffff815c00e4>] schedule+0x24/0x70
+> > >   [<ffffffff8106cb24>] do_wait+0x1d4/0x200
+> > >   [<ffffffff8106d9cb>] sys_wait4+0x9b/0xf0
+> > >   [<ffffffff8106b9f0>] ? task_stopped_code+0x50/0x50
+> > >   [<ffffffff815c1ad2>] system_call_fastpath+0x16/0x1b
+> > >
+> > > qemu-kvm        D ffff88011ab8c8b8     0  3345   3203 0x00000000
+> > >   ffff880112129cd8 0000000000000082 ffff880112129c50
+> > > ffff880112129fd8 ffff880112129fd8 0000000000004000
+> > > ffff88013b04ce00 ffff880139da1a00 0000000000000000
+> > > 00000000000280da ffff880112129d38 ffffffff810d3300 Call Trace:
+> > >   [<ffffffff810d3300>] ? __alloc_pages_nodemask+0xf0/0x7c0
+> > >   [<ffffffff811273c6>] ? touch_atime+0x66/0x170
+> > >   [<ffffffff810cdabf>] ? generic_file_aio_read+0x5bf/0x730
+> > >   [<ffffffff815c00e4>] schedule+0x24/0x70
+> > >   [<ffffffff815c0cdd>] rwsem_down_failed_common+0xbd/0x150
+> > >   [<ffffffff815c0da3>] rwsem_down_write_failed+0x13/0x15
+> > >   [<ffffffff812d1be3>] call_rwsem_down_write_failed+0x13/0x20
+> > >   [<ffffffff815bf4dd>] ? down_write+0x2d/0x34
+> > >   [<ffffffff810f0724>] vma_adjust+0xe4/0x610
+> > >   [<ffffffff810f0fa4>] vma_merge+0x1b4/0x270
+> > >   [<ffffffff810f1fa6>] do_brk+0x196/0x330
+> > >   [<ffffffff810f2217>] sys_brk+0xd7/0x130
+> > >   [<ffffffff815c1ad2>] system_call_fastpath+0x16/0x1b
+> > 
+> > This looks like qemu-kvm getting stuck trying to get the anon_vma
+> > lock.
+> > 
+> > That leads to the obvious question: what is holding the lock, and/or
+> > failed to release it?
+> > 
+> > Do you have any other (qemu-kvm?) processes on your system that have
+> > any code in the VM (or strace/ptrace/...) in the backtrace, that
+> > might be holding this lock?
+> 
+> I don't think so. The above was done having just logged into
+> gnome-shell and opened up a couple of gnome-terminals.
+>  
+> > Do you have anything in your dmesg showing threads that had a BUG_ON
+> > (and exited) while holding the lock?
+> 
+> I never noticed anything like that.
+> 
+> The interesting thing is that if I use basically the same kernel but
+> with CONFIG_LOCKDEP enabled, it works fine.
+> 
+> Hmm, I wonder if it's the same as this?
+> http://lkml.indiana.edu/hypermail/linux/kernel/1301.1/02810.html
+> 
+> When I get home, I'll try a kernel with those two patches reverted.
+> They seem to be
+> 
+> 572043c90db65b45a4efd959db7458edcf6411ad
+> 1b963c81b14509e330e0fe3218b645ece2738dc5
 
-It can be done.  Noop is always built-in and block IO can do IOs with
-noop.  The problem here is that request_module() is done synchronously
-during evelator_init().  We can punt that to a work item so that the
-elevator is switched on load completion.  There are some nastiness
-involved tho - if module probing returns before elevator switch
-happens, the userland can observe elevator being switched after some
-indetermined short period of time, which can, for example, break
-scripts adjusting elevator knobs and etc...
+Just checked the issue is still there in Linus' latest,
+3.8.0-rc3-00293-g406089d, it is.
 
-I *think* it'll be best to allow scoped synchronization of async ops.
-Looking into it.
+However, building a kernel with those two commits reverted does indeed
+get it going again.
 
-Thanks.
-
--- 
-tejun
+Andrew
