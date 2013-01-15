@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934169Ab3AOW4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:56:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48052 "EHLO mail.kernel.org"
+	id S934191Ab3AOW42 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:56:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48074 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933995Ab3AOW4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:56:22 -0500
+	id S933995Ab3AOW4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 19/71] jffs2: hold erase_completion_lock on exit
-Date: Tue, 15 Jan 2013 14:54:16 -0800
-Message-Id: <20130115225341.825591694@linuxfoundation.org>
+        Mikael Pettersson <mikpe@it.uu.se>, Adko Branil <adkobranil@yahoo.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 11/71] sata_promise: fix hardreset lockdep error
+Date: Tue, 15 Jan 2013 14:54:08 -0800
+Message-Id: <20130115225341.247151087@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,45 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: Mikael Pettersson <mikpe@it.uu.se>
 
-commit 2cbba75a56ea78e6876b4e2547a882f10b3fe72b upstream.
+commit 3100d49d3cd236443faae9d81137c81b22d36003 upstream.
 
-Users of jffs2_do_reserve_space() expect they still held
-erase_completion_lock after call to it. But there is a path
-where jffs2_do_reserve_space() leaves erase_completion_lock unlocked.
-The patch fixes it.
+sata_promise's pdc_hard_reset_port() needs to serialize because it
+flips a port-specific bit in controller register that's shared by
+all ports. The code takes the ata host lock for this, but that's
+broken because an interrupt may arrive on our irq during the hard
+reset sequence, and that too will take the ata host lock. With
+lockdep enabled a big nasty warning is seen.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Fixed by adding private state to the ata host structure, containing
+a second lock used only for serializing the hard reset sequences.
+This eliminated the lockdep warnings both on my test rig and on
+the original reporter's machine.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
+Tested-by: Adko Branil <adkobranil@yahoo.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/nodemgmt.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/ata/sata_promise.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -355,14 +355,16 @@ static int jffs2_do_reserve_space(struct
- 			spin_unlock(&c->erase_completion_lock);
+--- a/drivers/ata/sata_promise.c
++++ b/drivers/ata/sata_promise.c
+@@ -147,6 +147,10 @@ struct pdc_port_priv {
+ 	dma_addr_t		pkt_dma;
+ };
  
- 			ret = jffs2_prealloc_raw_node_refs(c, jeb, 1);
--			if (ret)
--				return ret;
++struct pdc_host_priv {
++	spinlock_t hard_reset_lock;
++};
 +
- 			/* Just lock it again and continue. Nothing much can change because
- 			   we hold c->alloc_sem anyway. In fact, it's not entirely clear why
- 			   we hold c->erase_completion_lock in the majority of this function...
- 			   but that's a question for another (more caffeine-rich) day. */
- 			spin_lock(&c->erase_completion_lock);
+ static int pdc_sata_scr_read(struct ata_link *link, unsigned int sc_reg, u32 *val);
+ static int pdc_sata_scr_write(struct ata_link *link, unsigned int sc_reg, u32 val);
+ static int pdc_ata_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
+@@ -801,9 +805,10 @@ static void pdc_hard_reset_port(struct a
+ 	void __iomem *host_mmio = ap->host->iomap[PDC_MMIO_BAR];
+ 	void __iomem *pcictl_b1_mmio = host_mmio + PDC_PCI_CTL + 1;
+ 	unsigned int ata_no = pdc_ata_port_to_ata_no(ap);
++	struct pdc_host_priv *hpriv = ap->host->private_data;
+ 	u8 tmp;
  
-+			if (ret)
-+				return ret;
-+
- 			waste = jeb->free_size;
- 			jffs2_link_node_ref(c, jeb,
- 					    (jeb->offset + c->sector_size - waste) | REF_OBSOLETE,
+-	spin_lock(&ap->host->lock);
++	spin_lock(&hpriv->hard_reset_lock);
+ 
+ 	tmp = readb(pcictl_b1_mmio);
+ 	tmp &= ~(0x10 << ata_no);
+@@ -814,7 +819,7 @@ static void pdc_hard_reset_port(struct a
+ 	writeb(tmp, pcictl_b1_mmio);
+ 	readb(pcictl_b1_mmio); /* flush */
+ 
+-	spin_unlock(&ap->host->lock);
++	spin_unlock(&hpriv->hard_reset_lock);
+ }
+ 
+ static int pdc_sata_hardreset(struct ata_link *link, unsigned int *class,
+@@ -1183,6 +1188,7 @@ static int pdc_ata_init_one(struct pci_d
+ 	const struct ata_port_info *pi = &pdc_port_info[ent->driver_data];
+ 	const struct ata_port_info *ppi[PDC_MAX_PORTS];
+ 	struct ata_host *host;
++	struct pdc_host_priv *hpriv;
+ 	void __iomem *host_mmio;
+ 	int n_ports, i, rc;
+ 	int is_sataii_tx4;
+@@ -1220,6 +1226,11 @@ static int pdc_ata_init_one(struct pci_d
+ 		dev_printk(KERN_ERR, &pdev->dev, "failed to allocate host\n");
+ 		return -ENOMEM;
+ 	}
++	hpriv = devm_kzalloc(&pdev->dev, sizeof *hpriv, GFP_KERNEL);
++	if (!hpriv)
++		return -ENOMEM;
++	spin_lock_init(&hpriv->hard_reset_lock);
++	host->private_data = hpriv;
+ 	host->iomap = pcim_iomap_table(pdev);
+ 
+ 	is_sataii_tx4 = pdc_is_sataii_tx4(pi->flags);
 
 
