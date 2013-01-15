@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab3AOW0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:26:25 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:36909 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755137Ab3AOW0X (ORCPT
+	id S1757291Ab3AOW0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:26:34 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:49861 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755137Ab3AOW0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:26:23 -0500
-Date: Wed, 16 Jan 2013 09:26:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: sedat.dilek@gmail.com
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Why no Tree for Jan 15?
-Message-Id: <20130116092615.6695554671dffee8a58d3ce9@canb.auug.org.au>
-In-Reply-To: <CA+icZUUxURMi6Qc+FHCa_sP8LPH4pyOJwTZzv11MJZ9ZdEkxkA@mail.gmail.com>
-References: <CA+icZUV=-=DALJRpzrmKrC6oK-CwCyRbHE1VmjrLfmGcemx2JQ@mail.gmail.com>
-	<D958900912E20642BCBC71664EFECE3E6E1A6F0BED@BGMAIL02.nvidia.com>
-	<CA+icZUUxURMi6Qc+FHCa_sP8LPH4pyOJwTZzv11MJZ9ZdEkxkA@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_Jan_2013_09_26_15_+1100_.JV+V876uaiHK4Zu"
+	Tue, 15 Jan 2013 17:26:32 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Bryan Mason <bmason@redhat.com>
+Subject: [PATCH] TTY: do not reset master's packet mode
+Date: Tue, 15 Jan 2013 23:26:22 +0100
+Message-Id: <1358288782-2946-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_Jan_2013_09_26_15_+1100_.JV+V876uaiHK4Zu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Now that login from util-linux is forced to drop all references to a
+TTY which it wants to hangup (to reach reference count 1) we are
+seeing issues with telnet. When login closes its last reference to the
+slave PTY, it also resets packet mode on the *master* side. And we
+have a race here.
 
-Hi Sedat,
+What telnet does is fork+exec of `login'. Then there are two
+scenarios:
+* `login' closes the slave TTY and resets thus master's packet mode,
+  but even now telnet properly sets the mode, or
+* `telnetd' sets packet mode on the master, `login' closes the slave
+  TTY and resets master's packet mode.
 
-On Tue, 15 Jan 2013 14:40:01 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrot=
-e:
->
-> On Tue, Jan 15, 2013 at 2:34 PM, Venu Byravarasu <vbyravarasu@nvidia.com>=
- wrote:
-> >>
-> >> any reason why there is no Linux-Next for today?
-> >
-> > Seems Stephen created tree but did not announce it via mail, because
-> > when I synced to linux-next today, am seeing below commit from him:
->
-> OK, I see.
-> This release has two important fixes for me in char-misc-next (mei
-> driver) and "mm: fix BUG on madvise early failure".
-> Thanks for the information!
+The former case is OK. However the latter happens in much more cases,
+by the order of magnitude to be precise. So when one tries to login to
+such a messed telnet setup, they see the following:
+inux login:
+            ogin incorrect
 
-Yeah, due to a glitch at my ISP (me :-() the announcement was sent, but
-did not leave my ISP's mail server until this morning.
+Note the missing first letters -- telnet thinks it is still in the
+packet mode, so when it receives "linux login" from `login', it
+considers "l" as the type of the packet and strips it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+SuS does not mention how the implementation should behave. Both BSDs I
+checked (Free and Net) do not reset the flag upon the last close.
 
---Signature=_Wed__16_Jan_2013_09_26_15_+1100_.JV+V876uaiHK4Zu
-Content-Type: application/pgp-signature
+By this I am resurrecting an old bug, see References. We are hitting
+it regularly now, i.e. with updated util-linux, ergo login.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Here, I am changing a behavior introduced back in 2.1 times. It would
+better have a long time testing before goes upstream.
 
-iQIcBAEBCAAGBQJQ9deHAAoJEECxmPOUX5FE3KQP/1GMnUH8x/Rjg410XchNjarO
-m7lD3TYdgcDgXUJrwkgFK8Gfni1Ica3Eb2fluzu/3jeXo/Qgfrb3edV8m7kDYCLi
-QhaoPFKvdz8QBaW1SRF1nghqmsC0SGYfyJzFc/06yEYiB15Lajq1eP/Up7DoXT1Y
-Dx+WetduboEcYXDdODfZgLGbKYHg1VotKj3kSqdjYQuZQdKgT05FtLCgmWWfY4Jb
-s4ClUbY6tB1yGsYZqayQ89Pw3LS1TIg6xSNu64Z8YxkmQWL7D1GG4ZNiGfeIXccP
-vaD4rexLQvAwSiusWsaGnC0OXDqDErB7y7deO3uOYkjnyafclHhb7N9rX+OgRS8A
-i5f88bAiLLDIa0TUw3zmHmJk4mGhg3+tDy5r1AVUUIGFkK6xBnArAOrCFrPZ/+lc
-0TMMswq+8nuMO5LIQqZTigJidO7WKFNX/tMeVE18xM6WLXGxcIkIi/EZdKt3GXkA
-gXPOfFYMW8hSN09s3ODXKMc+naaetI9T2QeccgK5QBfoAcAfOVCThlaaTjVIldoz
-oRefqhAGorSD/iDWjFMHB1r1syc1mIMSIvyyRY7XwStk1vKfJn95wd/ltLq5Jdnu
-5hHPsMNhPMV26TipNiSYtEm8iw4TxtytEonmasono4HD9E0d2M8p8k8B0CnFmxWY
-bI753BZfPYebiSQlr2mX
-=yUt5
------END PGP SIGNATURE-----
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Bryan Mason <bmason@redhat.com>
+References: https://lkml.org/lkml/2009/11/11/223
+References: https://bugzilla.redhat.com/show_bug.cgi?id=504703
+References: https://bugzilla.novell.com/show_bug.cgi?id=797042
+---
+ drivers/tty/pty.c | 1 -
+ 1 file changed, 1 deletion(-)
 
---Signature=_Wed__16_Jan_2013_09_26_15_+1100_.JV+V876uaiHK4Zu--
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index d2fd6f0..d7690dcf 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -47,7 +47,6 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
+ 	/* Review - krefs on tty_link ?? */
+ 	if (!tty->link)
+ 		return;
+-	tty->link->packet = 0;
+ 	set_bit(TTY_OTHER_CLOSED, &tty->link->flags);
+ 	wake_up_interruptible(&tty->link->read_wait);
+ 	wake_up_interruptible(&tty->link->write_wait);
+-- 
+1.8.1
+
+
