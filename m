@@ -1,102 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab3AOIJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 03:09:46 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:40493 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756705Ab3AOII5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 03:08:57 -0500
-Subject: [PATCH 3/4] SUNRPC: remove "cache_request" argument in
-	sunrpc_cache_pipe_upcall() function
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 15 Jan 2013 11:09:41 +0300
-Message-ID: <20130115080941.2996.98012.stgit@localhost.localdomain>
-In-Reply-To: <20130115080402.2996.74320.stgit@localhost.localdomain>
-References: <20130115080402.2996.74320.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1756782Ab3AOILk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 03:11:40 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:47652 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755896Ab3AOILi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 03:11:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1358236943.8234.56.camel@kjgkr>
+References: <1357969323-9396-1-git-send-email-linkinjeon@gmail.com>
+	<1358128249.23942.6.camel@kjgkr>
+	<CAKYAXd-f_rLJ5YdtsOX40XiGcNFivPTiXJ5kt03E-AOpuinMMQ@mail.gmail.com>
+	<1358217615.8234.35.camel@kjgkr>
+	<CAKYAXd_tnM1arONxpx0pvnftGHvdxwLWJSFXVfdzrAUJe5taWQ@mail.gmail.com>
+	<1358236943.8234.56.camel@kjgkr>
+Date: Tue, 15 Jan 2013 17:11:37 +0900
+Message-ID: <CAKYAXd8yUoLP8FT_4KZxCV=3zP9Tqj9=WdbUJy9D7D5_DS5GBg@mail.gmail.com>
+Subject: Re: [PATCH 4/4] f2fs: add blk plugging support in f2fs
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Passing this pointer is redundant since it's stored on cache_detail structure,
-which is also passed to sunrpc_cache_pipe_upcall () function.
-
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfs/dns_resolve.c         |    2 +-
- include/linux/sunrpc/cache.h |    6 +-----
- net/sunrpc/cache.c           |   10 +++-------
- 3 files changed, 5 insertions(+), 13 deletions(-)
-
-diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-index 90edbd0..f5c4c35 100644
---- a/fs/nfs/dns_resolve.c
-+++ b/fs/nfs/dns_resolve.c
-@@ -142,7 +142,7 @@ static int nfs_dns_upcall(struct cache_detail *cd,
- 
- 	ret = nfs_cache_upcall(cd, key->hostname);
- 	if (ret)
--		ret = sunrpc_cache_pipe_upcall(cd, ch, cd->cache_request);
-+		ret = sunrpc_cache_pipe_upcall(cd, ch);
- 	return ret;
- }
- 
-diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
-index 249e73a..ea927ea 100644
---- a/include/linux/sunrpc/cache.h
-+++ b/include/linux/sunrpc/cache.h
-@@ -158,11 +158,7 @@ sunrpc_cache_update(struct cache_detail *detail,
- 		    struct cache_head *new, struct cache_head *old, int hash);
- 
- extern int
--sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h,
--		void (*cache_request)(struct cache_detail *,
--				      struct cache_head *,
--				      char **,
--				      int *));
-+sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h);
- 
- 
- extern void cache_clean_deferred(void *owner);
-diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index ee6b5dd..901fdca 100644
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -198,7 +198,7 @@ static int cache_make_upcall(struct cache_detail *cd, struct cache_head *h)
- {
- 	if (!cd->cache_request)
- 		return -EINVAL;
--	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
-+	return sunrpc_cache_pipe_upcall(cd, h);
- }
- 
- static inline int cache_is_valid(struct cache_detail *detail, struct cache_head *h)
-@@ -1140,11 +1140,7 @@ static bool cache_listeners_exist(struct cache_detail *detail)
-  *
-  * Each request is at most one page long.
-  */
--int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h,
--		void (*cache_request)(struct cache_detail *,
--				      struct cache_head *,
--				      char **,
--				      int *))
-+int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h)
- {
- 
- 	char *buf;
-@@ -1169,7 +1165,7 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h,
- 
- 	bp = buf; len = PAGE_SIZE;
- 
--	cache_request(detail, h, &bp, &len);
-+	detail->cache_request(detail, h, &bp, &len);
- 
- 	if (len < 0) {
- 		kfree(buf);
-
+2013/1/15, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>> Yes, You're right. I agree block plug is not needed in f2fs. So plz
+>> ignore this patch.
+>> note => Regardless of the intent in the patch, it has already been
+>> used in writepages (f2fs uses generic_writepages).
+>> So to make the overall code consistent, either we should remove blk
+>> plug from entire F2FS write part or change f2fs_write_data_pages to
+>> include blk plug properly - like the code change for this part we
+>> share in the patch.
+>
+> Agreed. :)
+> How about this patch?
+Looks good to me!
+Thanks a lot!
