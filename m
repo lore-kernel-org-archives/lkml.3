@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab3AOPwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 10:52:21 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:43226 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756954Ab3AOPt3 (ORCPT
+	id S1757297Ab3AOPws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 10:52:48 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:42938 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756705Ab3AOPtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 10:49:29 -0500
+	Tue, 15 Jan 2013 10:49:16 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v6 09/18] perf/x86: export PEBS load latency threshold register to sysfs
-Date: Tue, 15 Jan 2013 16:39:37 +0100
-Message-Id: <1358264386-24633-10-git-send-email-eranian@google.com>
+Subject: [PATCH v6 06/18] perf: add support for PERF_SAMPLE_ADDR in dump_sampple()
+Date: Tue, 15 Jan 2013 16:39:34 +0100
+Message-Id: <1358264386-24633-7-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358264386-24633-1-git-send-email-eranian@google.com>
 References: <1358264386-24633-1-git-send-email-eranian@google.com>
@@ -21,35 +21,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the PEBS Load Latency threshold register layout
-and encoding visible to user level tools.
+Was missing from current code yet PERF_SAMPLE_ADDR has
+been present for a long time. Needed for PEBS-LL mode.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |    3 +++
- 1 file changed, 3 insertions(+)
+ tools/perf/util/session.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 1d2a7ca..8eced4c 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1755,6 +1755,8 @@ static void intel_pmu_flush_branch_stack(void)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 117983e..9900778 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1009,6 +1009,10 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
  
- PMU_FORMAT_ATTR(offcore_rsp, "config1:0-63");
- 
-+PMU_FORMAT_ATTR(ldlat, "config1:0-15");
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		printf(" ... weight: %"PRIu64"\n", sample->weight);
 +
- static struct attribute *intel_arch3_formats_attr[] = {
- 	&format_attr_event.attr,
- 	&format_attr_umask.attr,
-@@ -1765,6 +1767,7 @@ static struct attribute *intel_arch3_formats_attr[] = {
- 	&format_attr_cmask.attr,
++	if (sample_type & PERF_SAMPLE_ADDR)
++		printf(" ..... data: 0x%"PRIx64"\n", sample->addr);
++
+ }
  
- 	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
-+	&format_attr_ldlat.attr, /* PEBS load latency */
- 	NULL,
- };
- 
+ static struct machine *
 -- 
 1.7.9.5
 
