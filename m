@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab3AOWfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:35:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43437 "EHLO mail.kernel.org"
+	id S932665Ab3AOWfR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:35:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43410 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756520Ab3AOWfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:35:14 -0500
+	id S932604Ab3AOWfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:35:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Axel Lin <axel.lin@ingics.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 183/221] regulator: max8998: Ensure enough delay time for max8998_set_voltage_buck_time_sel
-Date: Tue, 15 Jan 2013 10:51:50 -0800
-Message-Id: <20130115185011.219262776@linuxfoundation.org>
+Subject: [ 181/221] regulator: max8997: Use uV in voltage_map_desc
+Date: Tue, 15 Jan 2013 10:51:48 -0800
+Message-Id: <20130115185011.081546819@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -28,29 +28,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Axel Lin <axel.lin@ingics.com>
 
-commit 81d0a6ae7befb24c06f4aa4856af7f8d1f612171 upstream.
+commit bc3b7756b5ff66828acf7bc24f148d28b8d61108 upstream.
 
-Use DIV_ROUND_UP to prevent truncation by integer division issue.
-This ensures we return enough delay time.
+Current code does integer division (min_vol = min_uV / 1000) before pass
+min_vol to max8997_get_voltage_proper_val().
+So it is possible min_vol is truncated to a smaller value.
+
+For example, if the request min_uV is 800900 for ldo.
+min_vol = 800900 / 1000 = 800 (mV)
+Then max8997_get_voltage_proper_val returns 800 mV for this case which is lower
+than the requested voltage.
+
+Use uV rather than mV in voltage_map_desc to prevent truncation by integer
+division.
 
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/max8998.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/max8997.c |   36 +++++++++++++++++-------------------
+ 1 file changed, 17 insertions(+), 19 deletions(-)
 
---- a/drivers/regulator/max8998.c
-+++ b/drivers/regulator/max8998.c
-@@ -447,7 +447,7 @@ static int max8998_set_voltage_buck_time
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -69,26 +69,26 @@ struct voltage_map_desc {
+ 	int step;
+ };
  
- 	difference = (new_selector - old_selector) * desc->step / 1000;
- 	if (difference > 0)
--		return difference / ((val & 0x0f) + 1);
-+		return DIV_ROUND_UP(difference, (val & 0x0f) + 1);
+-/* Voltage maps in mV */
++/* Voltage maps in uV */
+ static const struct voltage_map_desc ldo_voltage_map_desc = {
+-	.min = 800,	.max = 3950,	.step = 50,
++	.min = 800000,	.max = 3950000,	.step = 50000,
+ }; /* LDO1 ~ 18, 21 all */
+ 
+ static const struct voltage_map_desc buck1245_voltage_map_desc = {
+-	.min = 650,	.max = 2225,	.step = 25,
++	.min = 650000,	.max = 2225000,	.step = 25000,
+ }; /* Buck1, 2, 4, 5 */
+ 
+ static const struct voltage_map_desc buck37_voltage_map_desc = {
+-	.min = 750,	.max = 3900,	.step = 50,
++	.min = 750000,	.max = 3900000,	.step = 50000,
+ }; /* Buck3, 7 */
+ 
+-/* current map in mA */
++/* current map in uA */
+ static const struct voltage_map_desc charger_current_map_desc = {
+-	.min = 200,	.max = 950,	.step = 50,
++	.min = 200000,	.max = 950000,	.step = 50000,
+ };
+ 
+ static const struct voltage_map_desc topoff_current_map_desc = {
+-	.min = 50,	.max = 200,	.step = 10,
++	.min = 50000,	.max = 200000,	.step = 10000,
+ };
+ 
+ static const struct voltage_map_desc *reg_voltage_map[] = {
+@@ -192,7 +192,7 @@ static int max8997_list_voltage(struct r
+ 	if (val > desc->max)
+ 		return -EINVAL;
+ 
+-	return val * 1000;
++	return val;
+ }
+ 
+ static int max8997_get_enable_register(struct regulator_dev *rdev,
+@@ -483,7 +483,6 @@ static int max8997_set_voltage_ldobuck(s
+ {
+ 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
+ 	struct i2c_client *i2c = max8997->iodev->i2c;
+-	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+ 	const struct voltage_map_desc *desc;
+ 	int rid = rdev_get_id(rdev);
+ 	int i, reg, shift, mask, ret;
+@@ -507,7 +506,7 @@ static int max8997_set_voltage_ldobuck(s
+ 
+ 	desc = reg_voltage_map[rid];
+ 
+-	i = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
++	i = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
+ 	if (i < 0)
+ 		return i;
+ 
+@@ -555,7 +554,7 @@ static int max8997_set_voltage_ldobuck_t
+ 	case MAX8997_BUCK4:
+ 	case MAX8997_BUCK5:
+ 		return DIV_ROUND_UP(desc->step * (new_selector - old_selector),
+-				    max8997->ramp_delay);
++				    max8997->ramp_delay * 1000);
+ 	}
  
  	return 0;
- }
+@@ -654,7 +653,6 @@ static int max8997_set_voltage_buck(stru
+ 	const struct voltage_map_desc *desc;
+ 	int new_val, new_idx, damage, tmp_val, tmp_idx, tmp_dmg;
+ 	bool gpio_dvs_mode = false;
+-	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+ 
+ 	if (rid < MAX8997_BUCK1 || rid > MAX8997_BUCK7)
+ 		return -EINVAL;
+@@ -679,7 +677,7 @@ static int max8997_set_voltage_buck(stru
+ 						selector);
+ 
+ 	desc = reg_voltage_map[rid];
+-	new_val = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
++	new_val = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
+ 	if (new_val < 0)
+ 		return new_val;
+ 
+@@ -977,8 +975,8 @@ static __devinit int max8997_pmic_probe(
+ 		max8997->buck1_vol[i] = ret =
+ 			max8997_get_voltage_proper_val(
+ 					&buck1245_voltage_map_desc,
+-					pdata->buck1_voltage[i] / 1000,
+-					pdata->buck1_voltage[i] / 1000 +
++					pdata->buck1_voltage[i],
++					pdata->buck1_voltage[i] +
+ 					buck1245_voltage_map_desc.step);
+ 		if (ret < 0)
+ 			goto err_out;
+@@ -986,8 +984,8 @@ static __devinit int max8997_pmic_probe(
+ 		max8997->buck2_vol[i] = ret =
+ 			max8997_get_voltage_proper_val(
+ 					&buck1245_voltage_map_desc,
+-					pdata->buck2_voltage[i] / 1000,
+-					pdata->buck2_voltage[i] / 1000 +
++					pdata->buck2_voltage[i],
++					pdata->buck2_voltage[i] +
+ 					buck1245_voltage_map_desc.step);
+ 		if (ret < 0)
+ 			goto err_out;
+@@ -995,8 +993,8 @@ static __devinit int max8997_pmic_probe(
+ 		max8997->buck5_vol[i] = ret =
+ 			max8997_get_voltage_proper_val(
+ 					&buck1245_voltage_map_desc,
+-					pdata->buck5_voltage[i] / 1000,
+-					pdata->buck5_voltage[i] / 1000 +
++					pdata->buck5_voltage[i],
++					pdata->buck5_voltage[i] +
+ 					buck1245_voltage_map_desc.step);
+ 		if (ret < 0)
+ 			goto err_out;
 
 
