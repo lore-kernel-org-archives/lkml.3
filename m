@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758726Ab3AOXq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:46:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44505 "EHLO mail.zytor.com"
+	id S1758842Ab3AOXq5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:46:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45936 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933105Ab3AOXqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 18:46:22 -0500
-Message-ID: <50F5EA3F.70002@zytor.com>
-Date: Tue, 15 Jan 2013 15:46:07 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [RFCv3][PATCH 1/3] create slow_virt_to_phys()
-References: <20130109185904.DD641DCE@kernel.stglabs.ibm.com> <50F5B214.5060604@zytor.com> <50F5DD45.4060603@linux.vnet.ibm.com>
-In-Reply-To: <50F5DD45.4060603@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933149Ab3AOWuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:15 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Michael Tokarev <mjt@tls.msk.ru>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 060/171] ext4: do not try to write superblock on ro remount w/o journal
+Date: Tue, 15 Jan 2013 14:43:45 -0800
+Message-Id: <20130115224317.738621533@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
+References: <20130115224313.394976595@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2013 02:50 PM, Dave Hansen wrote:
->
->> static inline unsigned long page_level_size(int level)
->> {
->>      return (PAGE_SIZE/PGDIR_SIZE) << (PGDIR_SHIFT*level);
->> }
->> static inline unsigned long page_level_shift(int level)
->> {
->>      return (PAGE_SHIFT-PGDIR_SHIFT) + (PGDIR_SHIFT*level);
->> }
->
-> (PAGE_SHIFT-PGDIR_SHIFT) == -27, so this can't possibly work, right?
->
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Ah right... sorry, got messed up in my head what that constant is about.
+------------------
 
-> How about something like this?
->
-> /*
->   * Note: this only holds true for pagetable levels where PTEs can be
->   * present.  It would break if you used it on the PGD level where PAE
->   * is in use.  It basically assumes that the shift between _all_
->   * adjacent levels of the pagetables are the same as the lowest-level
->   * shift.
->   */
+From: Michael Tokarev <mjt@tls.msk.ru>
 
-This comment is totally misleading.  What it refers to is the separation 
-between various levels of the page hierarchy; in x86 it is always the same.
+commit d096ad0f79a782935d2e06ae8fb235e8c5397775 upstream.
 
-Perhaps a cleaner way to do this is:
+When a journal-less ext4 filesystem is mounted on a read-only block
+device (blockdev --setro will do), each remount (for other, unrelated,
+flags, like suid=>nosuid etc) results in a series of scary messages
+from kernel telling about I/O errors on the device.
 
-#define PTRS_PER_PTE_SHIFT	ilog2(PTRS_PER_PTE)
+This is becauese of the following code ext4_remount():
 
-> #define PG_SHIFT_PER_LEVEL (PMD_SHIFT-PAGE_SHIFT)
->
-> static inline unsigned long page_level_shift(int level)
-> {
-> 	return PAGE_SHIFT + (level - PG_LEVEL_4K) * PG_SHIFT_PER_LEVEL;
-> }
-> static inline unsigned long page_level_size(int level)
-> {
-> 	return 1 << page_level_shift(level);
-> }
->
-> The generated code for page_level_size() looks pretty good, despite it
-> depending on page_level_shift(), so we might as well leave it defined
-> this way for simplicity:
->
+       if (sbi->s_journal == NULL)
+                ext4_commit_super(sb, 1);
 
-Make sure to make that 1UL instead of 1; page_level_shift() should 
-return int.  See below.
+at the end of remount procedure, which forces writing (flushing) of
+a superblock regardless whenever it is dirty or not, if the filesystem
+is readonly or not, and whenever the device itself is readonly or not.
 
-> 0000000000400610 <plsize>:
->    400610:       8d 7c bf fb             lea    -0x5(%rdi,%rdi,4),%edi
->    400614:       b8 01 00 00 00          mov    $0x1,%eax
->    400619:       8d 4c 3f 0c             lea    0xc(%rdi,%rdi,1),%ecx
->    40061d:       d3 e0                   shl    %cl,%eax
->    40061f:       c3                      retq
+We only need call ext4_commit_super when the file system had been
+previously mounted read/write.
 
-We get better code with:
+Thanks to Eric Sandeen for help in diagnosing this issue.
 
-static inline int page_level_shift(int level)
-{
-	return (PAGE_SHIFT - PTRS_PER_PTE_SHIFT) +
-		level * PTRS_PER_PTE_SHIFT;
-}
-static inline unsigned long page_level_size(int level)
-{
-	return 1UL << page_level_shift(level);
-}
+Signed-off-By: Michael Tokarev <mjt@tls.msk.ru>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-... the resulting code has one lea instead of two:
+---
+ fs/ext4/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-0000000000000000 <plsize>:
-    0:   8d 4c ff 03             lea    0x3(%rdi,%rdi,8),%ecx
-    4:   b8 01 00 00 00          mov    $0x1,%eax
-    9:   48 d3 e0                shl    %cl,%rax
-    c:   c3                      retq
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4506,7 +4506,7 @@ static int ext4_remount(struct super_blo
+ 	}
+ 
+ 	ext4_setup_system_zone(sb);
+-	if (sbi->s_journal == NULL)
++	if (sbi->s_journal == NULL && !(old_sb_flags & MS_RDONLY))
+ 		ext4_commit_super(sb, 1);
+ 
+ #ifdef CONFIG_QUOTA
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
 
