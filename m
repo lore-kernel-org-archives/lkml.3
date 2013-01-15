@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab3AOWpf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:45:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44935 "EHLO mail.kernel.org"
+	id S1758691Ab3AOWpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:45:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44987 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756193Ab3AOWpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:45:30 -0500
+	id S1756193Ab3AOWpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:45:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jason Liu <r64343@freescale.com>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 010/171] mm: compaction: fix echo 1 > compact_memory return error issue
-Date: Tue, 15 Jan 2013 14:42:55 -0800
-Message-Id: <20130115224314.154461212@linuxfoundation.org>
+Subject: [ 011/171] mm: use aligned zone start for pfn_to_bitidx calculation
+Date: Tue, 15 Jan 2013 14:42:56 -0800
+Message-Id: <20130115224314.225368694@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -30,72 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Liu <r64343@freescale.com>
+From: Laura Abbott <lauraa@codeaurora.org>
 
-commit 7964c06d66c76507d8b6b662bffea770c29ef0ce upstream.
+commit c060f943d0929f3e429c5d9522290584f6281d6e upstream.
 
-when run the folloing command under shell, it will return error
+The current calculation in pfn_to_bitidx assumes that (pfn -
+zone->zone_start_pfn) >> pageblock_order will return the same bit for
+all pfn in a pageblock.  If zone_start_pfn is not aligned to
+pageblock_nr_pages, this may not always be correct.
 
-  sh/$ echo 1 > /proc/sys/vm/compact_memory
-  sh/$ sh: write error: Bad address
+Consider the following with pageblock order = 10, zone start 2MB:
 
-After strace, I found the following log:
+  pfn     | pfn - zone start | (pfn - zone start) >> page block order
+  ----------------------------------------------------------------
+  0x26000 | 0x25e00	   |  0x97
+  0x26100 | 0x25f00	   |  0x97
+  0x26200 | 0x26000	   |  0x98
+  0x26300 | 0x26100	   |  0x98
 
-  ...
-  write(1, "1\n", 2)               = 3
-  write(1, "", 4294967295)         = -1 EFAULT (Bad address)
-  write(2, "echo: write error: Bad address\n", 31echo: write error: Bad address
-  ) = 31
+This means that calling {get,set}_pageblock_migratetype on a single page
+will not set the migratetype for the full block.  Fix this by rounding
+down zone_start_pfn when doing the bitidx calculation.
 
-This tells system return 3(COMPACT_COMPLETE) after write data to
-compact_memory.
+For our use case, the effects of this bug were mostly tied to the fact
+that CMA allocations would either take a long time or fail to happen.
+Depending on the driver using CMA, this could result in anything from
+visual glitches to application failures.
 
-The fix is to make the system just return 0 instead 3(COMPACT_COMPLETE)
-from sysctl_compaction_handler after compaction_nodes finished.
-
-Signed-off-by: Jason Liu <r64343@freescale.com>
-Suggested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/compaction.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -736,7 +736,7 @@ static int compact_node(int nid)
- }
- 
- /* Compact all nodes in the system */
--static int compact_nodes(void)
-+static void compact_nodes(void)
- {
- 	int nid;
- 
-@@ -745,8 +745,6 @@ static int compact_nodes(void)
- 
- 	for_each_online_node(nid)
- 		compact_node(nid);
--
--	return COMPACT_COMPLETE;
- }
- 
- /* The written value is actually unused, all memory is compacted */
-@@ -757,7 +755,7 @@ int sysctl_compaction_handler(struct ctl
- 			void __user *buffer, size_t *length, loff_t *ppos)
- {
- 	if (write)
--		return compact_nodes();
-+		compact_nodes();
- 
- 	return 0;
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5340,7 +5340,7 @@ static inline int pfn_to_bitidx(struct z
+ 	pfn &= (PAGES_PER_SECTION-1);
+ 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
+ #else
+-	pfn = pfn - zone->zone_start_pfn;
++	pfn = pfn - round_down(zone->zone_start_pfn, pageblock_nr_pages);
+ 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
+ #endif /* CONFIG_SPARSEMEM */
  }
 
 
