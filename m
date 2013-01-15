@@ -1,71 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab3AOFeR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 00:34:17 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:50824 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab3AOFeQ (ORCPT
+	id S1752120Ab3AOFiU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 00:38:20 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:47522 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab3AOFiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 00:34:16 -0500
-Message-ID: <50F4EA14.5070708@huawei.com>
-Date: Tue, 15 Jan 2013 13:33:08 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 15 Jan 2013 00:38:18 -0500
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: cpuset: lockdep spew on proc_cpuset_show
-References: <50F4C32E.4020509@oracle.com>
-In-Reply-To: <50F4C32E.4020509@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <CAD=FV=Vxdjo5aOU25a-iDNDaiGZCu0+G-p5y1NifXHUJBF0AHg@mail.gmail.com>
+References: <1357891738-26259-1-git-send-email-gautam.vivek@samsung.com>
+	<CAD=FV=Vxdjo5aOU25a-iDNDaiGZCu0+G-p5y1NifXHUJBF0AHg@mail.gmail.com>
+Date: Tue, 15 Jan 2013 11:08:16 +0530
+Message-ID: <CAFp+6iE7zEJ7E_pRCOYz5mQqbk-MFE6Hwr02pRRT1yP+X3z7kQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: phy: samsung: Add support to set pmu isolation
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, l.majewski@samsung.com,
+        linux-samsung-soc@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Praveen Paneri <p.paneri@samsung.com>, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org, linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        balbi@ti.com, Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/15 10:47, Sasha Levin wrote:
-> Hi Tejun,
-> 
-> I've stumbled on the following:
-> 
-> [   75.972016] ===============================
-> [   75.977317] [ INFO: suspicious RCU usage. ]
-> [   76.041031] 3.8.0-rc3-next-20130114-sasha-00016-ga107525-dirty #262 Tainted: G        W
-> [   76.057535] -------------------------------
-> [   76.063397] include/linux/cgroup.h:534 suspicious rcu_dereference_check() usage!
-> [   76.076333]
-> [   76.076333] other info that might help us debug this:
-> [   76.076333]
-> [   76.087091]
-> [   76.087091] rcu_scheduler_active = 1, debug_locks = 1
-> [   76.098682] 2 locks held by trinity/7514:
-> [   76.104154]  #0:  (&p->lock){+.+.+.}, at: [<ffffffff812b06aa>] seq_read+0x3a/0x3e0
-> [   76.119533]  #1:  (cpuset_mutex){+.+...}, at: [<ffffffff811abae4>] proc_cpuset_show+0x84/0x190
-> [   76.151167]
-> [   76.151167] stack backtrace:
-> [   76.156853] Pid: 7514, comm: trinity Tainted: G        W    3.8.0-rc3-next-20130114-sasha-00016-ga107525-dirty #262
-> [   76.180547] Call Trace:
-> [   76.183754]  [<ffffffff81182cab>] lockdep_rcu_suspicious+0x10b/0x120
-> [   76.191885]  [<ffffffff811abb71>] proc_cpuset_show+0x111/0x190
-> [   76.200572]  [<ffffffff812b0827>] seq_read+0x1b7/0x3e0
-> [   76.206843]  [<ffffffff812b0670>] ? seq_lseek+0x110/0x110
-> [   76.213562]  [<ffffffff8128b4fb>] do_loop_readv_writev+0x4b/0x90
-> [   76.220961]  [<ffffffff8128b776>] do_readv_writev+0xf6/0x1d0
-> [   76.227940]  [<ffffffff8128b8ee>] vfs_readv+0x3e/0x60
-> [   76.235971]  [<ffffffff8128b960>] sys_readv+0x50/0xd0
-> [   76.241945]  [<ffffffff83d33d18>] tracesys+0xe1/0xe6
-> 
-> This is the result of "cpuset: replace cgroup_mutex locking with cpuset internal locking"
-> which remove the cgroup_lock() before calling task_subsys_state(), which now complains since
-> one of the debug conditions in the rcu_dereference_check() there is cgroup_lock_is_held().
-> 
-> I'm not sure if this is an actual issue, but I do see that task_subsys_state() gets called
-> from other places as well, so I think that possibly lockdep is right here and we do need
-> to fix up locking there, but again, I'm not sure...
-> 
+Hi Doug,
 
-I've prepared a fix.
 
+On Tue, Jan 15, 2013 at 3:41 AM, Doug Anderson <dianders@chromium.org> wrote:
+> Vivek,
+>
+> Sorry for being so absent from these reviews.  I'll try to look over a
+> few patches today, but please don't hold up anything on account of my
+> reviews.  I'm definitely a bit of an interested bystander in USB land.
+>  ;)
+>
+> In general things look pretty good here.  :)  One last comment below...
+>
+> On Fri, Jan 11, 2013 at 12:08 AM, Vivek Gautam
+> <gautam.vivek@samsung.com> wrote:> +static int
+> samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
+>> +{
+>> +       struct device_node *usbphy_sys;
+>> +
+>> +       /* Getting node for system controller interface for usb-phy */
+>> +       usbphy_sys = of_get_child_by_name(sphy->dev->of_node, "usbphy-sys");
+>> +       if (!usbphy_sys)
+>> +               dev_warn(sphy->dev, "No sys-controller interface for usb-phy\n");
+>
+> Seems like you ought to return with an error here.  Calling of_iomap()
+> with a NULL value seems undesirable.
+>
+
+Yeah, true. This should have been returning error value alongwith dev_err().
+
+>> +
+>> +       sphy->pmuregs = of_iomap(usbphy_sys, 0);
+>> +
+>> +       of_node_put(usbphy_sys);
+>> +
+>> +       if (sphy->pmuregs == NULL) {
+>> +               dev_err(sphy->dev, "Can't get usb-phy pmu control register\n");
+>> +               return -ENODEV;
+>> +       }
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +/*
+>> + * Set isolation here for phy.
+>> + * Here 'on = true' would mean USB PHY block is isolated, hence
+>> + * de-activated and vice-versa.
+>> + */
+>
+> Thank you very much for this comment.  :)  This explains one of the
+> confusions I had earlier...
+>
+Your welcome :-)
+>
+> Once you fix the one error condition above you can add my
+> "Reviewed-by".  Thanks!
+>
+Sure, thanks !!
+
+
+
+-- 
+Thanks & Regards
+Vivek
