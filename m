@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757773Ab3AOSwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:52:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34104 "EHLO mail.kernel.org"
+	id S1757814Ab3AOSww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:52:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34169 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757730Ab3AOSwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:52:32 -0500
+	id S1757104Ab3AOSwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:52:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Oberparleiter <peter.oberparleiter@de.ibm.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 014/221] s390/cio: fix pgid reserved check
-Date: Tue, 15 Jan 2013 10:49:01 -0800
-Message-Id: <20130115184959.080973647@linuxfoundation.org>
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        Paul Stewart <pstew@chromium.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 019/221] ath9k_hw: Enable hw PLL power save for AR9462
+Date: Tue, 15 Jan 2013 10:49:06 -0800
+Message-Id: <20130115184959.439286684@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,78 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 
-commit d99e79ec5574fc556c988f613ed6175f6de66f4a upstream.
+commit 1680260226a8fd2aab590319da83ad8e610da9bd upstream.
 
-The check to whom a device is reserved is done by checking the path
-state of the affected channel paths. If it turns out that one path is
-flagged as reserved by someone else the whole device is marked as such.
+This reduced the power consumption to half in full and network sleep.
 
-However the meaning of the RESVD_ELSE bit is that the addressed device
-is reserved to a different pathgroup (and not reserved to a different
-LPAR). If we do this test on a path which is currently not a member of
-the pathgroup we could erroneously mark the device as reserved to
-someone else.
-
-To fix this collect the reserved state for all potential members of the
-pathgroup and only mark the device as reserved if all of those potential
-members have the RESVD_ELSE bit set.
-
-Acked-by: Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Cc: Paul Stewart <pstew@chromium.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/cio/device_pgid.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_hw.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/s390/cio/device_pgid.c
-+++ b/drivers/s390/cio/device_pgid.c
-@@ -234,7 +234,7 @@ static int pgid_cmp(struct pgid *p1, str
-  * Determine pathgroup state from PGID data.
-  */
- static void pgid_analyze(struct ccw_device *cdev, struct pgid **p,
--			 int *mismatch, int *reserved, u8 *reset)
-+			 int *mismatch, u8 *reserved, u8 *reset)
- {
- 	struct pgid *pgid = &cdev->private->pgid[0];
- 	struct pgid *first = NULL;
-@@ -248,7 +248,7 @@ static void pgid_analyze(struct ccw_devi
- 		if ((cdev->private->pgid_valid_mask & lpm) == 0)
- 			continue;
- 		if (pgid->inf.ps.state2 == SNID_STATE2_RESVD_ELSE)
--			*reserved = 1;
-+			*reserved |= lpm;
- 		if (pgid_is_reset(pgid)) {
- 			*reset |= lpm;
- 			continue;
-@@ -316,14 +316,14 @@ static void snid_done(struct ccw_device
- 	struct subchannel *sch = to_subchannel(cdev->dev.parent);
- 	struct pgid *pgid;
- 	int mismatch = 0;
--	int reserved = 0;
-+	u8 reserved = 0;
- 	u8 reset = 0;
- 	u8 donepm;
+--- a/drivers/net/wireless/ath/ath9k/ar9003_hw.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
+@@ -219,10 +219,10 @@ static void ar9003_hw_init_mode_regs(str
  
- 	if (rc)
- 		goto out;
- 	pgid_analyze(cdev, &pgid, &mismatch, &reserved, &reset);
--	if (reserved)
-+	if (reserved == cdev->private->pgid_valid_mask)
- 		rc = -EUSERS;
- 	else if (mismatch)
- 		rc = -EOPNOTSUPP;
-@@ -336,7 +336,7 @@ static void snid_done(struct ccw_device
- 	}
- out:
- 	CIO_MSG_EVENT(2, "snid: device 0.%x.%04x: rc=%d pvm=%02x vpm=%02x "
--		      "todo=%02x mism=%d rsvd=%d reset=%02x\n", id->ssid,
-+		      "todo=%02x mism=%d rsvd=%02x reset=%02x\n", id->ssid,
- 		      id->devno, rc, cdev->private->pgid_valid_mask, sch->vpm,
- 		      cdev->private->pgid_todo_mask, mismatch, reserved, reset);
- 	switch (rc) {
+ 		/* Awake -> Sleep Setting */
+ 		INIT_INI_ARRAY(&ah->iniPcieSerdes,
+-			       ar9462_pciephy_pll_on_clkreq_disable_L1_2p0);
++			       ar9462_pciephy_clkreq_disable_L1_2p0);
+ 		/* Sleep -> Awake Setting */
+ 		INIT_INI_ARRAY(&ah->iniPcieSerdesLowPower,
+-			       ar9462_pciephy_pll_on_clkreq_disable_L1_2p0);
++			       ar9462_pciephy_clkreq_disable_L1_2p0);
+ 
+ 		/* Fast clock modal settings */
+ 		INIT_INI_ARRAY(&ah->iniModesFastClock,
 
 
