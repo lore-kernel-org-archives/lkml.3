@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab3AOWao (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:30:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42082 "EHLO mail.kernel.org"
+	id S1758326Ab3AOWau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:30:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42106 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758304Ab3AOWaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:30:39 -0500
+	id S1758313Ab3AOWap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:30:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 095/221] staging: vt6656: [BUG] out of bound array reference in RFbSetPower.
-Date: Tue, 15 Jan 2013 10:50:22 -0800
-Message-Id: <20130115185004.886027245@linuxfoundation.org>
+Subject: [ 096/221] staging: vt6656: 64 bit fixes: use u32 for QWORD definition.
+Date: Tue, 15 Jan 2013 10:50:23 -0800
+Message-Id: <20130115185004.962089129@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,33 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit ab1dd9963137a1e122004d5378a581bf16ae9bc8 upstream.
+commit a552397d5e4ef0cc0bd3e9595d6acc9a3b381171 upstream.
 
-Calling RFbSetPower with uCH zero value will cause out of bound array reference.
-
-This causes 64 bit kernels to oops on boot.
-
-Note: Driver does not function on 64 bit kernels and should be
-blacklisted on them.
+Size of long issues replace with u32.
 
 Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/rf.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/staging/vt6656/ttype.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/vt6656/rf.c
-+++ b/drivers/staging/vt6656/rf.c
-@@ -769,6 +769,9 @@ BYTE    byPwr = pDevice->byCCKPwr;
-         return TRUE;
-     }
+--- a/drivers/staging/vt6656/ttype.h
++++ b/drivers/staging/vt6656/ttype.h
+@@ -29,6 +29,8 @@
+ #ifndef __TTYPE_H__
+ #define __TTYPE_H__
  
-+	if (uCH == 0)
-+		return -EINVAL;
++#include <linux/types.h>
 +
-     switch (uRATE) {
-     case RATE_1M:
-     case RATE_2M:
+ /******* Common definitions and typedefs ***********************************/
+ 
+ typedef int             BOOL;
+@@ -51,8 +53,8 @@ typedef unsigned long   DWORD;
+ // which is NOT really a floating point number.
+ typedef union tagUQuadWord {
+     struct {
+-        DWORD   dwLowDword;
+-        DWORD   dwHighDword;
++	u32 dwLowDword;
++	u32 dwHighDword;
+     } u;
+     double      DoNotUseThisField;
+ } UQuadWord;
 
 
