@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933690Ab3AOXb7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:31:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46703 "EHLO mail.kernel.org"
+	id S933588Ab3AOWwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:52:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46608 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933574Ab3AOWwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:14 -0500
+	id S933552Ab3AOWwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>, Adam Jackson <ajax@redhat.com>,
-        Takashi Iwai <tiwai@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Julien Cristau <jcristau@debian.org>
-Subject: [ 117/171] drm/i915: Check VBIOS value for determining LVDS dual channel mode, too
-Date: Tue, 15 Jan 2013 14:44:42 -0800
-Message-Id: <20130115224321.795072373@linuxfoundation.org>
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Runyan, Arthur J" <arthur.j.runyan@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, CAI Qian <caiqian@redhat.com>
+Subject: [ 110/171] drm/i915: disable cpt phase pointer fdi rx workaround
+Date: Tue, 15 Jan 2013 14:44:35 -0800
+Message-Id: <20130115224321.315428659@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -28,164 +27,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit b03543857fd75876b96e10d4320b775e95041bb7 upstream.
+commit 539526b4137bc0e7a8806c38c8522f226814a0e6 upstream.
 
-Currently i915 driver checks [PCH_]LVDS register bits to decide
-whether to set up the dual-link or the single-link mode.  This relies
-implicitly on that BIOS initializes the register properly at boot.
-However, BIOS doesn't initialize it always.  When the machine is
-booted with the closed lid, BIOS skips the LVDS reg initialization.
-This ends up in blank output on a machine with a dual-link LVDS when
-you open the lid after the boot.
+We've originally added this in
 
-This patch adds a workaround for that problem by checking the initial
-LVDS register value in VBT.
+commit 291427f5fdadec6e4be2924172e83588880e1539
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Fri Jul 29 12:42:37 2011 -0700
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=37742
-Tested-By: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Reviewed-by: Adam Jackson <ajax@redhat.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+    drm/i915: apply phase pointer override on SNB+ too
+
+and then copy-pasted it over to ivb/ppt. The w/a was originally added
+for ilk/ibx in
+
+commit 5b2adf897146edeac6a1e438fb67b5a53dbbdf34
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Thu Oct 7 16:01:15 2010 -0700
+
+    drm/i915: add Ironlake clock gating workaround for FDI link training
+
+and fixed up a bit in
+
+commit 6f06ce184c765fd8d50669a8d12fdd566c920859
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Tue Jan 4 15:09:38 2011 -0800
+
+    drm/i915: set phase sync pointer override enable before setting phase sync pointer
+
+It turns out that this w/a isn't actually required on cpt/ppt and
+positively harmful on ivb/ppt when using fdi B/C links - it results in
+a black screen occasionally, with seemingfully everything working as
+it should. The only failure indication I've found in the hw is that
+eventually (but not right after the modeset completes) a pipe underrun
+is signalled.
+
+Big thanks to Arthur Runyan for all the ideas for registers to check
+and changes to test, otherwise I couldn't ever have tracked this down!
+
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: "Runyan, Arthur J" <arthur.j.runyan@intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Julien Cristau <jcristau@debian.org>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/gpu/drm/i915/i915_drv.h      |    2 +
- drivers/gpu/drm/i915/intel_bios.c    |   36 +++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/i915/intel_display.c |   30 +++++++++++++++++++++++------
- 3 files changed, 62 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -406,6 +406,8 @@ typedef struct drm_i915_private {
- 	unsigned int lvds_use_ssc:1;
- 	unsigned int display_clock_mode:1;
- 	int lvds_ssc_freq;
-+	unsigned int bios_lvds_val; /* initial [PCH_]LVDS reg val in VBIOS */
-+	unsigned int lvds_val; /* used for checking LVDS channel mode */
- 	struct {
- 		int rate;
- 		int lanes;
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -174,6 +174,28 @@ get_lvds_dvo_timing(const struct bdb_lvd
- 	return (struct lvds_dvo_timing *)(entry + dvo_timing_offset);
- }
- 
-+/* get lvds_fp_timing entry
-+ * this function may return NULL if the corresponding entry is invalid
-+ */
-+static const struct lvds_fp_timing *
-+get_lvds_fp_timing(const struct bdb_header *bdb,
-+		   const struct bdb_lvds_lfp_data *data,
-+		   const struct bdb_lvds_lfp_data_ptrs *ptrs,
-+		   int index)
-+{
-+	size_t data_ofs = (const u8 *)data - (const u8 *)bdb;
-+	u16 data_size = ((const u16 *)data)[-1]; /* stored in header */
-+	size_t ofs;
-+
-+	if (index >= ARRAY_SIZE(ptrs->ptr))
-+		return NULL;
-+	ofs = ptrs->ptr[index].fp_timing_offset;
-+	if (ofs < data_ofs ||
-+	    ofs + sizeof(struct lvds_fp_timing) > data_ofs + data_size)
-+		return NULL;
-+	return (const struct lvds_fp_timing *)((const u8 *)bdb + ofs);
-+}
-+
- /* Try to find integrated panel data */
- static void
- parse_lfp_panel_data(struct drm_i915_private *dev_priv,
-@@ -183,6 +205,7 @@ parse_lfp_panel_data(struct drm_i915_pri
- 	const struct bdb_lvds_lfp_data *lvds_lfp_data;
- 	const struct bdb_lvds_lfp_data_ptrs *lvds_lfp_data_ptrs;
- 	const struct lvds_dvo_timing *panel_dvo_timing;
-+	const struct lvds_fp_timing *fp_timing;
- 	struct drm_display_mode *panel_fixed_mode;
- 	int i, downclock;
- 
-@@ -244,6 +267,19 @@ parse_lfp_panel_data(struct drm_i915_pri
- 			      "Normal Clock %dKHz, downclock %dKHz\n",
- 			      panel_fixed_mode->clock, 10*downclock);
- 	}
-+
-+	fp_timing = get_lvds_fp_timing(bdb, lvds_lfp_data,
-+				       lvds_lfp_data_ptrs,
-+				       lvds_options->panel_type);
-+	if (fp_timing) {
-+		/* check the resolution, just to be sure */
-+		if (fp_timing->x_res == panel_fixed_mode->hdisplay &&
-+		    fp_timing->y_res == panel_fixed_mode->vdisplay) {
-+			dev_priv->bios_lvds_val = fp_timing->lvds_reg_val;
-+			DRM_DEBUG_KMS("VBT initial LVDS value %x\n",
-+				      dev_priv->bios_lvds_val);
-+		}
-+	}
- }
- 
- /* Try to find sdvo panel data */
+---
+ drivers/gpu/drm/i915/intel_display.c |   31 -------------------------------
+ 1 file changed, 31 deletions(-)
+
 --- a/drivers/gpu/drm/i915/intel_display.c
 +++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -360,6 +360,27 @@ static const intel_limit_t intel_limits_
- 	.find_pll = intel_find_pll_ironlake_dp,
- };
+@@ -2424,18 +2424,6 @@ static void intel_fdi_normal_train(struc
+ 			   FDI_FE_ERRC_ENABLE);
+ }
  
-+static bool is_dual_link_lvds(struct drm_i915_private *dev_priv,
-+			      unsigned int reg)
-+{
-+	unsigned int val;
-+
-+	if (dev_priv->lvds_val)
-+		val = dev_priv->lvds_val;
-+	else {
-+		/* BIOS should set the proper LVDS register value at boot, but
-+		 * in reality, it doesn't set the value when the lid is closed;
-+		 * we need to check "the value to be set" in VBT when LVDS
-+		 * register is uninitialized.
-+		 */
-+		val = I915_READ(reg);
-+		if (!(val & ~LVDS_DETECTED))
-+			val = dev_priv->bios_lvds_val;
-+		dev_priv->lvds_val = val;
-+	}
-+	return (val & LVDS_CLKB_POWER_MASK) == LVDS_CLKB_POWER_UP;
-+}
-+
- static const intel_limit_t *intel_ironlake_limit(struct drm_crtc *crtc,
- 						int refclk)
+-static void cpt_phase_pointer_enable(struct drm_device *dev, int pipe)
+-{
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-	u32 flags = I915_READ(SOUTH_CHICKEN1);
+-
+-	flags |= FDI_PHASE_SYNC_OVR(pipe);
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* once to unlock... */
+-	flags |= FDI_PHASE_SYNC_EN(pipe);
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* then again to enable */
+-	POSTING_READ(SOUTH_CHICKEN1);
+-}
+-
+ /* The FDI link training functions for ILK/Ibexpeak. */
+ static void ironlake_fdi_link_train(struct drm_crtc *crtc)
  {
-@@ -368,8 +389,7 @@ static const intel_limit_t *intel_ironla
- 	const intel_limit_t *limit;
+@@ -2586,9 +2574,6 @@ static void gen6_fdi_link_train(struct d
+ 	POSTING_READ(reg);
+ 	udelay(150);
  
- 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_LVDS)) {
--		if ((I915_READ(PCH_LVDS) & LVDS_CLKB_POWER_MASK) ==
--		    LVDS_CLKB_POWER_UP) {
-+		if (is_dual_link_lvds(dev_priv, PCH_LVDS)) {
- 			/* LVDS dual channel */
- 			if (refclk == 100000)
- 				limit = &intel_limits_ironlake_dual_lvds_100m;
-@@ -397,8 +417,7 @@ static const intel_limit_t *intel_g4x_li
- 	const intel_limit_t *limit;
+-	if (HAS_PCH_CPT(dev))
+-		cpt_phase_pointer_enable(dev, pipe);
+-
+ 	for (i = 0; i < 4; i++) {
+ 		reg = FDI_TX_CTL(pipe);
+ 		temp = I915_READ(reg);
+@@ -2707,9 +2692,6 @@ static void ivb_manual_fdi_link_train(st
+ 	POSTING_READ(reg);
+ 	udelay(150);
  
- 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_LVDS)) {
--		if ((I915_READ(LVDS) & LVDS_CLKB_POWER_MASK) ==
--		    LVDS_CLKB_POWER_UP)
-+		if (is_dual_link_lvds(dev_priv, LVDS))
- 			/* LVDS with dual channel */
- 			limit = &intel_limits_g4x_dual_channel_lvds;
- 		else
-@@ -536,8 +555,7 @@ intel_find_best_PLL(const intel_limit_t
- 		 * reliably set up different single/dual channel state, if we
- 		 * even can.
- 		 */
--		if ((I915_READ(LVDS) & LVDS_CLKB_POWER_MASK) ==
--		    LVDS_CLKB_POWER_UP)
-+		if (is_dual_link_lvds(dev_priv, LVDS))
- 			clock.p2 = limit->p2.p2_fast;
- 		else
- 			clock.p2 = limit->p2.p2_slow;
+-	if (HAS_PCH_CPT(dev))
+-		cpt_phase_pointer_enable(dev, pipe);
+-
+ 	for (i = 0; i < 4; i++) {
+ 		reg = FDI_TX_CTL(pipe);
+ 		temp = I915_READ(reg);
+@@ -2819,17 +2801,6 @@ static void ironlake_fdi_pll_enable(stru
+ 	}
+ }
+ 
+-static void cpt_phase_pointer_disable(struct drm_device *dev, int pipe)
+-{
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-	u32 flags = I915_READ(SOUTH_CHICKEN1);
+-
+-	flags &= ~(FDI_PHASE_SYNC_EN(pipe));
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* once to disable... */
+-	flags &= ~(FDI_PHASE_SYNC_OVR(pipe));
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* then again to lock */
+-	POSTING_READ(SOUTH_CHICKEN1);
+-}
+ static void ironlake_fdi_disable(struct drm_crtc *crtc)
+ {
+ 	struct drm_device *dev = crtc->dev;
+@@ -2859,8 +2830,6 @@ static void ironlake_fdi_disable(struct
+ 		I915_WRITE(FDI_RX_CHICKEN(pipe),
+ 			   I915_READ(FDI_RX_CHICKEN(pipe) &
+ 				     ~FDI_RX_PHASE_SYNC_POINTER_EN));
+-	} else if (HAS_PCH_CPT(dev)) {
+-		cpt_phase_pointer_disable(dev, pipe);
+ 	}
+ 
+ 	/* still set train pattern 1 */
 
 
