@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab3AOUbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:31:37 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:57794 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756929Ab3AOU20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:28:26 -0500
-Date: Tue, 15 Jan 2013 21:28:24 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Gokul Caushik <caushik1@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>
-Subject: Re: [PATCH v7u1 22/31] x86, boot: add fields to support load bzImage
- and ramdisk above 4G
-Message-ID: <20130115202824.GE8101@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jan Kiszka <jan.kiszka@web.de>,
-	Jason Wessel <jason.wessel@windriver.com>,
-	linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-	Matt Fleming <matt.fleming@intel.com>,
-	Gokul Caushik <caushik1@gmail.com>,
-	Josh Triplett <josh@joshtriplett.org>,
-	Joe Millenbach <jmillenbach@gmail.com>
-References: <CAE9FiQUtbpo0njyPjPED=esKKnSdFs9ry4pFjG1y0LvHxkqV4w@mail.gmail.com>
- <50F46304.3010108@zytor.com>
- <CAE9FiQU_8ngBbXbwrqC1SaR3fScoDNvO_nKOhDYBV_bjOzjwJg@mail.gmail.com>
- <CAE9FiQWxWdeGB-DZp7W2rmukG-KPahF8SQbBcHUWbbUAJA2MhA@mail.gmail.com>
- <20130115155053.GA8101@liondog.tnic>
- <CAE9FiQUyinyu_DxLF_kXO82cMnRmt0fmbkh11vEw2Wr0SAWw_A@mail.gmail.com>
- <20130115164843.GB8101@liondog.tnic>
- <CAE9FiQUz6t_hK11X9ra5pj2DwJsNCu=cZJ7TYGR1ry-rvwSmjg@mail.gmail.com>
- <20130115194918.GD8101@liondog.tnic>
- <CAE9FiQWytQmKNzo6BApNqj0FDtMS3CBqHy-ou1KmgF4beefEFw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQWytQmKNzo6BApNqj0FDtMS3CBqHy-ou1KmgF4beefEFw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756882Ab3AOU2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:28:23 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:33495 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756264Ab3AOU2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 15:28:17 -0500
+From: Matt Porter <mporter@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>
+Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v5 04/14] dmaengine: edma: enable build for AM33XX
+Date: Tue, 15 Jan 2013 15:32:44 -0500
+Message-Id: <1358281974-8411-5-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358281974-8411-1-git-send-email-mporter@ti.com>
+References: <1358281974-8411-1-git-send-email-mporter@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 12:16:11PM -0800, Yinghai Lu wrote:
-> then stop coding.
+Enable TI EDMA option on OMAP.
 
-I'll stop coding when you write one correct sentence in English.
+Signed-off-by: Matt Porter <mporter@ti.com>
+---
+ drivers/dma/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index d4c1218..20ef955 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -221,7 +221,7 @@ config SIRF_DMA
+ 
+ config TI_EDMA
+ 	tristate "TI EDMA support"
+-	depends on ARCH_DAVINCI
++	depends on ARCH_DAVINCI || ARCH_OMAP
+ 	select DMA_ENGINE
+ 	select DMA_VIRTUAL_CHANNELS
+ 	default n
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
