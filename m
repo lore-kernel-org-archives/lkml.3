@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab3AOJIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 04:08:09 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:34541 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756251Ab3AOJIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 04:08:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAOh2x=mzcxT=8=RS1Fa_Vn3Frixj9BNEeYGQ0NH+00YV1i-VHw@mail.gmail.com>
-References: <1358173253-680-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x==d46_R2btWmi1KnmY-TfAGRxHrwSzT6NFVFP-Hp0-0Kw@mail.gmail.com>
-	<CAHp75VdF7twFTFJvUgRZW+jk6cSc_y_DSc4VcCvjBcTYYJGhRQ@mail.gmail.com>
-	<CAOh2x=mzcxT=8=RS1Fa_Vn3Frixj9BNEeYGQ0NH+00YV1i-VHw@mail.gmail.com>
-Date: Tue, 15 Jan 2013 11:08:04 +0200
-Message-ID: <CAHp75VegokmDnXTPHYE=kKzwAgiuD9ySg4wRxxZFGkuXdQoStw@mail.gmail.com>
-Subject: Re: [PATCH] dw_dmac: don't exceed AHB master number in dwc_get_data_width
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756473Ab3AOJIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 04:08:48 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:49439 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750872Ab3AOJIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 04:08:46 -0500
+X-IronPort-AV: E=Sophos;i="4.84,473,1355068800"; 
+   d="scan'208";a="6590646"
+From: liguang <lig.fnst@cn.fujitsu.com>
+To: mingo@redhat.com, peterz@infradead.org, Morten.Rasmussen@arm.com,
+        linux-kernel@vger.kernel.org
+Cc: liguang <lig.fnst@cn.fujitsu.com>
+Subject: [PATCH] sched: reduce sched_domain_topology space
+Date: Tue, 15 Jan 2013 17:06:38 +0800
+Message-Id: <1358240798-19988-1-git-send-email-lig.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.2.5
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/15 17:08:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/15 17:08:01,
+	Serialize complete at 2013/01/15 17:08:01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 11:01 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On Tue, Jan 15, 2013 at 12:35 PM, Andy Shevchenko
-> <andy.shevchenko@gmail.com> wrote:
->>> The details of the patch are fine, but i didn't get how do you get
->>> master 1 selected
->>> on a system where you have only 1 master?
->>
->> min_t(..., nr_masters - 1, m) defines this. m is returned value with
->> default settings, let's say 1. In that case if nr_masters is also 1
->> the min_t(..., 1-1, 1) returns 0.
->>
->> The value of nr_masters itself is come from autoconfig or platform data.
->
-> :)
-> You didn't get me. How this code would work is pretty easy to understand.
-> What i wanted to know is, the master information is coming from slave drivers
-> and they must select master zero always. How would master 1 be selected ever
-> in this driver.
+sched_domain_topology space was allocated by the size
+ARRAY_SIZE(default_topology) + sched_domains_numa_levels,
+suppose CONFIG_SCHED_SMT, CONFIG_SCHED_MC were y,
+"static struct sched_domain_topology_level default_topology[] = {
+         { sd_init_SIBLING, cpu_smt_mask, },
+         { sd_init_MC, cpu_coregroup_mask, },
+         { sd_init_CPU, cpu_cpu_mask, },
+         { NULL, },
+};"
+then, ARRAY_SIZE(default_topology) equals to 4,
+default_topology's NULL entry was accounted,
+but, the following allocation for other sched_domains_numa_levels
+entries was startd at 3(for default_topology[3].init is NULL),
+so, 1 entry was forgot.
 
-You forgot the mem2mem type of transfers where we have no information
-about masters except default settings. Otherwise there is the case of
-custom slave config absence when we supply only request line via
-slave_id.
+Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+---
+ kernel/sched/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-In the rest you are right.
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 257002c..83f947e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6241,7 +6241,7 @@ static void sched_init_numa(void)
+ 		}
+ 	}
+ 
+-	tl = kzalloc((ARRAY_SIZE(default_topology) + level) *
++	tl = kzalloc((ARRAY_SIZE(default_topology) + level - 1 ) *
+ 			sizeof(struct sched_domain_topology_level), GFP_KERNEL);
+ 	if (!tl)
+ 		return;
 -- 
-With Best Regards,
-Andy Shevchenko
+1.7.2.5
+
