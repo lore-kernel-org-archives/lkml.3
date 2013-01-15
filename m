@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab3AOF0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 00:26:09 -0500
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:41925 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab3AOF0H (ORCPT
+	id S1752229Ab3AOFeR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 00:34:17 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:50824 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab3AOFeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 00:26:07 -0500
+	Tue, 15 Jan 2013 00:34:16 -0500
+Message-ID: <50F4EA14.5070708@huawei.com>
+Date: Tue, 15 Jan 2013 13:33:08 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130115051005.GA14198@localhost>
-References: <20130115051005.GA14198@localhost>
-Date: Tue, 15 Jan 2013 00:26:05 -0500
-Message-ID: <CAHdPZaNjw5S597L9p35JeZihiD4bOCV91ZSYrzDP2g3r_wXfAw@mail.gmail.com>
-Subject: Re: [dgrp_register_proc] BUG: unable to handle kernel NULL pointer
- dereference at 0000000000000040
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Bill Pemberton <wfp5p@virginia.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: cpuset: lockdep spew on proc_cpuset_show
+References: <50F4C32E.4020509@oracle.com>
+In-Reply-To: <50F4C32E.4020509@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 12:10 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> 7b6d45c211a401a9bdeebfa96f8a4c811bd3eeaf is the first bad commit
->
-> commit 7b6d45c211a401a9bdeebfa96f8a4c811bd3eeaf
-> Author: Bill Pemberton <wfp5p@virginia.edu>
-> Date:   Thu Sep 20 16:55:28 2012 -0400
->
->     staging: dgrp: add dgrp to the build
->
->     Kconfig and Makefile changes to add dgrp to the build system.
->
->     Signed-off-by: Bill Pemberton <wfp5p@virginia.edu>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> [    7.904899] i2c-core: driver [isl29018] registered
-> [    7.906424] i2c-core: driver [tsl2583] registered
-> [    7.908289] BUG: unable to handle kernel NULL pointer dereference at 0000000000000040
-> [    7.909055] IP: [<ffffffff814f5147>] register_proc_table+0xe0/0x26f
-> [    7.909055] PGD 0
-> [    7.909055] Oops: 0000 [#1] SMP
-> [    7.909055] CPU 0
-> [    7.909055] Pid: 1, comm: swapper/0 Not tainted 3.8.0-rc3-00051-gc83dcb9 #16
-> [    7.909055] RIP: 0010:[<ffffffff814f5147>]  [<ffffffff814f5147>] register_proc_table+0xe0/0x26f
-> [    7.909055] RSP: 0000:ffff88000d0c1e78  EFLAGS: 00010246
-> [    7.909055] RAX: 0000000000000003 RBX: 0000000000000000 RCX: 0000000000000003
-> [    7.909055] RDX: 0000000000000002 RSI: 0000000000000000 RDI: ffffffff81989648
-> [    7.909055] RBP: ffff88000d0c1eb8 R08: 0000000000000000 R09: 0000000000000000
-> [    7.909055] R10: ffff88000f4fed68 R11: ffff88000f4fecb8 R12: ffffffff81a9f008
-> [    7.909055] R13: 0000000000000000 R14: ffffffff82b3a710 R15: ffffffff81989644
-> [    7.909055] FS:  0000000000000000(0000) GS:ffff88000da00000(0000) knlGS:0000000000000000
-> [    7.909055] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [    7.909055] CR2: 0000000000000040 CR3: 00000000019a4000 CR4: 00000000000006f0
-> [    7.909055] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [    7.927424] tsc: Refined TSC clocksource calibration: 2666.662 MHz
->
-> Thanks,
-> Fengguang
+On 2013/1/15 10:47, Sasha Levin wrote:
+> Hi Tejun,
+> 
+> I've stumbled on the following:
+> 
+> [   75.972016] ===============================
+> [   75.977317] [ INFO: suspicious RCU usage. ]
+> [   76.041031] 3.8.0-rc3-next-20130114-sasha-00016-ga107525-dirty #262 Tainted: G        W
+> [   76.057535] -------------------------------
+> [   76.063397] include/linux/cgroup.h:534 suspicious rcu_dereference_check() usage!
+> [   76.076333]
+> [   76.076333] other info that might help us debug this:
+> [   76.076333]
+> [   76.087091]
+> [   76.087091] rcu_scheduler_active = 1, debug_locks = 1
+> [   76.098682] 2 locks held by trinity/7514:
+> [   76.104154]  #0:  (&p->lock){+.+.+.}, at: [<ffffffff812b06aa>] seq_read+0x3a/0x3e0
+> [   76.119533]  #1:  (cpuset_mutex){+.+...}, at: [<ffffffff811abae4>] proc_cpuset_show+0x84/0x190
+> [   76.151167]
+> [   76.151167] stack backtrace:
+> [   76.156853] Pid: 7514, comm: trinity Tainted: G        W    3.8.0-rc3-next-20130114-sasha-00016-ga107525-dirty #262
+> [   76.180547] Call Trace:
+> [   76.183754]  [<ffffffff81182cab>] lockdep_rcu_suspicious+0x10b/0x120
+> [   76.191885]  [<ffffffff811abb71>] proc_cpuset_show+0x111/0x190
+> [   76.200572]  [<ffffffff812b0827>] seq_read+0x1b7/0x3e0
+> [   76.206843]  [<ffffffff812b0670>] ? seq_lseek+0x110/0x110
+> [   76.213562]  [<ffffffff8128b4fb>] do_loop_readv_writev+0x4b/0x90
+> [   76.220961]  [<ffffffff8128b776>] do_readv_writev+0xf6/0x1d0
+> [   76.227940]  [<ffffffff8128b8ee>] vfs_readv+0x3e/0x60
+> [   76.235971]  [<ffffffff8128b960>] sys_readv+0x50/0xd0
+> [   76.241945]  [<ffffffff83d33d18>] tracesys+0xe1/0xe6
+> 
+> This is the result of "cpuset: replace cgroup_mutex locking with cpuset internal locking"
+> which remove the cgroup_lock() before calling task_subsys_state(), which now complains since
+> one of the debug conditions in the rcu_dereference_check() there is cgroup_lock_is_held().
+> 
+> I'm not sure if this is an actual issue, but I do see that task_subsys_state() gets called
+> from other places as well, so I think that possibly lockdep is right here and we do need
+> to fix up locking there, but again, I'm not sure...
+> 
 
+I've prepared a fix.
 
-Hello Fengguang,
-
-Will you try the patch below please...
-
-diff --git a/drivers/staging/dgrp/dgrp_specproc.c
-b/drivers/staging/dgrp/dgrp_specproc.c
-index c214078..f5845a7 100644
---- a/drivers/staging/dgrp/dgrp_specproc.c
-+++ b/drivers/staging/dgrp/dgrp_specproc.c
-@@ -231,6 +231,8 @@ static void register_proc_table(struct
-dgrp_proc_entry *table,
-
-        if (table == NULL)
-                return;
-+       if (root == NULL)
-+               return;
-
-        for (; table->id; table++) {
-                /* Can't do anything without a proc name. */
-
-Applies on current linus's head at 406089d01562f1e2bf9f089fd7637009ebaad589.
-
-I am thinking of the case where you dont have any proc entry.
-
-thanks,
