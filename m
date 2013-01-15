@@ -1,86 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab3AOVfG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 16:35:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46013 "EHLO mx1.redhat.com"
+	id S1756858Ab3AOVfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 16:35:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11545 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756398Ab3AOVe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 16:34:59 -0500
+	id S1756369Ab3AOVe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 16:34:58 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: ebiederm@xmission.com, zohar@linux.vnet.ibm.com, pjones@redhat.com,
         hpa@zytor.com, dhowells@redhat.com, jwboyer@redhat.com,
         vgoyal@redhat.com
-Subject: [PATCH 1/3] module: export couple of functions for use in process signature verification
-Date: Tue, 15 Jan 2013 16:34:53 -0500
-Message-Id: <1358285695-26173-2-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
-References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 0/3] ELF executable signing and verification
+Date: Tue, 15 Jan 2013 16:34:52 -0500
+Message-Id: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This probably is not the right thing to do. May be module keyring and
-functions to retrieve key and mpi array should be moved into separate file
-so that it could be shared.
+Hi,
 
-But for the time being as quick RFC, just export couple of functions
-from module_signing.c
+This is a very crude RFC for ELF executable signing and verification. This
+has been done along the lines of module signature verification.
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- include/linux/module.h  |    8 ++++++++
- kernel/module_signing.c |    4 ++--
- 2 files changed, 10 insertions(+), 2 deletions(-)
+Why do we need it
+=================
+With arrival of secureboot, sys_kexec() is deemed dangerous. One can
+effectively bypass the secureboot feature and run its own kernel. So
+matthew garret proposed disabling sys_kexec() in secureboot mode.
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 7760c6d..fd121f9 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -17,6 +17,7 @@
- #include <linux/moduleparam.h>
- #include <linux/tracepoint.h>
- #include <linux/export.h>
-+#include <crypto/public_key.h>
- 
- #include <linux/percpu.h>
- #include <asm/module.h>
-@@ -450,6 +451,13 @@ extern void __module_put_and_exit(struct module *mod, long code)
- 	__attribute__((noreturn));
- #define module_put_and_exit(code) __module_put_and_exit(THIS_MODULE, code);
- 
-+#ifdef CONFIG_MODULE_SIG
-+extern struct key *request_asymmetric_key(const char *signer, size_t signer_len,
-+				const u8 *key_id, size_t key_id_len);
-+extern int mod_extract_mpi_array(struct public_key_signature *pks,
-+				const void *data, size_t len);
-+#endif
-+
- #ifdef CONFIG_MODULE_UNLOAD
- unsigned long module_refcount(struct module *mod);
- void __symbol_put(const char *symbol);
-diff --git a/kernel/module_signing.c b/kernel/module_signing.c
-index f2970bd..4362a35 100644
---- a/kernel/module_signing.c
-+++ b/kernel/module_signing.c
-@@ -104,7 +104,7 @@ error_no_pks:
-  *
-  * RSA signatures only have one MPI, so currently we only read one.
-  */
--static int mod_extract_mpi_array(struct public_key_signature *pks,
-+int mod_extract_mpi_array(struct public_key_signature *pks,
- 				 const void *data, size_t len)
- {
- 	size_t nbytes;
-@@ -129,7 +129,7 @@ static int mod_extract_mpi_array(struct public_key_signature *pks,
- /*
-  * Request an asymmetric key.
-  */
--static struct key *request_asymmetric_key(const char *signer, size_t signer_len,
-+struct key *request_asymmetric_key(const char *signer, size_t signer_len,
- 					  const u8 *key_id, size_t key_id_len)
- {
- 	key_ref_t key;
+https://lkml.org/lkml/2012/9/4/225
+
+Later in a separate thread it was discussed how to handle the issue
+of sys_kexec() with secureboot.
+
+https://lkml.org/lkml/2012/10/24/451
+
+My takeaway from discussion was that we need to sign /sbin/kexec. Signed
+executable can get extra capability and we can allow/disallow access to
+sys_kexec() based on that capability (Thanks to Eric Biederman for the
+idea).
+
+So that's my motivation to make user space signing work so that I can
+get kdump working with secureboot enabled. There might be other people
+who might find it useful in general.
+
+What does it do
+===============
+I have written a utility "signelf" which can take a private key and
+an x509 certificate and sign an ELF executable. This is very much done
+along the lines of module signing. There are two major differences.
+Signature are put in a section ".signature" instead of being appended
+to executable. And we calculate digest of only PT_LOAD segments and not
+the whole executable file.
+
+Upon exec(), we determine if executable is signed. If it is, then locks
+down the pages in memory (using MAP_LOCKED) and verfies the signature.
+If signature does not match, process is killed. Unsigned processes
+don't get affected at all.
+
+Currently it is expected to use these patches only for statically linked
+executables. No dynamic linking. In fact patches specifically disable
+calling interpreter. This does not prevent against somebody using dlopen()
+sutff. So don't sign binaries which do that.
+
+HOWTO
+=====
+Currently module signing keys are automatically loaded in module keyring
+so it is easiest to sign executable using the keys generated for module
+signing.
+
+- Compile and boot into kernel with following options enabled. 
+	- CONFIG_MODULE_SIG=y
+	- CONFIG_BINFMT_ELF_SIGNATURE=y
+	- CONFIG_CRYPTO_SHA256=y
+
+- Compile "signelf" utility (Attached in a patch)
+
+- Install glibc-static
+
+- Compile a test program (say hello-world.c). Link statically with glibc
+	gcc hello-world.c -o hello-world -static
+
+- Sign hello_world using keys generated during kernel build.
+	signelf -i hello-world -o hello-world.signed -p linux-2.6/signing_key.priv -c linux-2.6/signing_key.x509
+
+- Run signed executable
+	./hello-world.signed 
+
+This should run successfully. Now one can generate another pair of keys
+and certificate and sign same binary using new keys. This new binary should
+fail to execute as corresponding keys are not loaded in kernel.
+
+	openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 -config linux-2.6/x509.genkey -outform DER -out new_signing_key.x509 -keyout new_signing_key.priv
+
+	signelf -i hello-world -o hello-world.signed.new -p new_signing_key.priv -c new_signing_key.x509
+
+- Run this signed executable
+	./hello-world.signed.new
+	Killed
+
+TODO
+====
+- kexec related patches are yet to be done.
+- Disable ptrace to signed processes so that one can not modify code/data
+  of signed process.
+- Sort out issues related to how key used for user space signing is loaded
+  in kernel keyring.
+- Sort out issues related to sharing keyring with modules.
+
+Thanks
+Vivek
+Vivek Goyal (3):
+  module: export couple of functions for use in process signature
+    verification
+  binfmt_elf: Verify signature of signed elf binary
+  binfmt_elf: Do not allow exec() if signed binary has intepreter
+
+ fs/Kconfig.binfmt       |    7 +
+ fs/binfmt_elf.c         |  465 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/module.h  |    8 +
+ kernel/module_signing.c |    4 +-
+ 4 files changed, 482 insertions(+), 2 deletions(-)
+
 -- 
 1.7.7.6
 
