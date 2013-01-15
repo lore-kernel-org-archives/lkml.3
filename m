@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718Ab3AOSwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:52:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34084 "EHLO mail.kernel.org"
+	id S1757905Ab3AOTDb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 14:03:31 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34095 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757414Ab3AOSw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:52:27 -0500
+	id S1757716Ab3AOSw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:52:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Scott Wood <scottwood@freescale.com>, Alexander Graf <agraf@suse.de>
-Subject: [ 012/221] KVM: PPC: e500: fix allocation size error on g2h_tlb1_map
-Date: Tue, 15 Jan 2013 10:48:59 -0800
-Message-Id: <20130115184958.938137425@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [ 013/221] KVM: Fix user memslot overlap check
+Date: Tue, 15 Jan 2013 10:49:00 -0800
+Message-Id: <20130115184959.010555552@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,31 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Wood <scottwood@freescale.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit e400e72f250d2567e89c9bafb47ab91e8d9a15a2 upstream.
+commit 5419369ed6bd4cf711fdda5e52a5999b940413f5 upstream.
 
-We were only allocating half the bytes we need, which was made more
-obvious by a recent fix to the memset in  clear_tlb1_bitmap().
+Prior to memory slot sorting this loop compared all of the user memory
+slots for overlap with new entries.  With memory slot sorting, we're
+just checking some number of entries in the array that may or may not
+be user slots.  Instead, walk all the slots with kvm_for_each_memslot,
+which has the added benefit of terminating early when we hit the first
+empty slot, and skip comparison to private slots.
 
-Signed-off-by: Scott Wood <scottwood@freescale.com>
-Signed-off-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kvm/e500_tlb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ virt/kvm/kvm_main.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/arch/powerpc/kvm/e500_tlb.c
-+++ b/arch/powerpc/kvm/e500_tlb.c
-@@ -1332,7 +1332,7 @@ int kvmppc_e500_tlb_init(struct kvmppc_v
- 	if (!vcpu_e500->gtlb_priv[1])
- 		goto err;
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -709,8 +709,7 @@ int __kvm_set_memory_region(struct kvm *
+ 	int r;
+ 	gfn_t base_gfn;
+ 	unsigned long npages;
+-	unsigned long i;
+-	struct kvm_memory_slot *memslot;
++	struct kvm_memory_slot *memslot, *slot;
+ 	struct kvm_memory_slot old, new;
+ 	struct kvm_memslots *slots, *old_memslots;
  
--	vcpu_e500->g2h_tlb1_map = kzalloc(sizeof(unsigned int) *
-+	vcpu_e500->g2h_tlb1_map = kzalloc(sizeof(u64) *
- 					  vcpu_e500->gtlb_params[1].entries,
- 					  GFP_KERNEL);
- 	if (!vcpu_e500->g2h_tlb1_map)
+@@ -761,13 +760,11 @@ int __kvm_set_memory_region(struct kvm *
+ 
+ 	/* Check for overlaps */
+ 	r = -EEXIST;
+-	for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
+-		struct kvm_memory_slot *s = &kvm->memslots->memslots[i];
+-
+-		if (s == memslot || !s->npages)
++	kvm_for_each_memslot(slot, kvm->memslots) {
++		if (slot->id >= KVM_MEMORY_SLOTS || slot == memslot)
+ 			continue;
+-		if (!((base_gfn + npages <= s->base_gfn) ||
+-		      (base_gfn >= s->base_gfn + s->npages)))
++		if (!((base_gfn + npages <= slot->base_gfn) ||
++		      (base_gfn >= slot->base_gfn + slot->npages)))
+ 			goto out_free;
+ 	}
+ 
 
 
