@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934405Ab3AOW51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:57:27 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48462 "EHLO mail.kernel.org"
+	id S934420Ab3AOW5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:57:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48520 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934145Ab3AOW5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:23 -0500
+	id S934145Ab3AOW51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Hartmann <hartmann@ict.tuwien.ac.at>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [ 51/71] staging: r8712u: Add new device ID
-Date: Tue, 15 Jan 2013 14:54:48 -0800
-Message-Id: <20130115225344.079603892@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 54/71] radeon/kms: force rn50 chip to always report connected on analog output
+Date: Tue, 15 Jan 2013 14:54:51 -0800
+Message-Id: <20130115225344.275419854@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,32 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit da849a92d3bafaf24d770e971c2c9e5c3f60b5d1 upstream.
+commit 51861d4eebc2ddc25c77084343d060fa79f6e291 upstream.
 
-The ISY IWL 1000 USB WLAN stick with USB ID 050d:11f1 is a clone of
-the Belkin F7D1101 V1 device.
+Those rn50 chip are often connected to console remoting hw and load
+detection often fails with those. Just don't try to load detect and
+report connect.
 
-Reported-by: Thomas Hartmann <hartmann@ict.tuwien.ac.at>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Thomas Hartmann <hartmann@ict.tuwien.ac.at>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8712/usb_intf.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -62,6 +62,8 @@ static struct usb_device_id rtl871x_usb_
- 	{USB_DEVICE(0x0B05, 0x1791)}, /* 11n mode disable */
- 	/* Belkin */
- 	{USB_DEVICE(0x050D, 0x945A)},
-+	/* ISY IWL - Belkin clone */
-+	{USB_DEVICE(0x050D, 0x11F1)},
- 	/* Corega */
- 	{USB_DEVICE(0x07AA, 0x0047)},
- 	/* D-Link */
+--- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+@@ -617,6 +617,14 @@ static enum drm_connector_status radeon_
+ 	enum drm_connector_status found = connector_status_disconnected;
+ 	bool color = true;
+ 
++	/* just don't bother on RN50 those chip are often connected to remoting
++	 * console hw and often we get failure to load detect those. So to make
++	 * everyone happy report the encoder as always connected.
++	 */
++	if (ASIC_IS_RN50(rdev)) {
++		return connector_status_connected;
++	}
++
+ 	/* save the regs we need */
+ 	vclk_ecp_cntl = RREG32_PLL(RADEON_VCLK_ECP_CNTL);
+ 	crtc_ext_cntl = RREG32(RADEON_CRTC_EXT_CNTL);
 
 
