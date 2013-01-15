@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934538Ab3AOW7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:59:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48728 "EHLO mail.kernel.org"
+	id S934549Ab3AOW7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:59:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48718 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934507Ab3AOW55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:57 -0500
+	id S934398Ab3AOW54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Ravi Murty <Ravi.Murty@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 67/71] intel-iommu: Free old page tables before creating superpage
-Date: Tue, 15 Jan 2013 14:55:04 -0800
-Message-Id: <20130115225345.235085702@linuxfoundation.org>
+        Benjamin Marzinski <bmarzins@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 66/71] GFS2: Test bufdata with buffer locked and gfs2_log_lock held
+Date: Tue, 15 Jan 2013 14:55:03 -0800
+Message-Id: <20130115225345.165916454@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -28,58 +27,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Woodhouse, David" <david.woodhouse@intel.com>
+commit 96e5d1d3adf56f1c7eeb07258f6a1a0a7ae9c489 upstream.
 
-commit 6491d4d02893d9787ba67279595990217177b351 upstream.
+In gfs2_trans_add_bh(), gfs2 was testing if a there was a bd attached to the
+buffer without having the gfs2_log_lock held. It was then assuming it would
+stay attached for the rest of the function. However, without either the log
+lock being held of the buffer locked, __gfs2_ail_flush() could detach bd at any
+time.  This patch moves the locking before the test.  If there isn't a bd
+already attached, gfs2 can safely allocate one and attach it before locking.
+There is no way that the newly allocated bd could be on the ail list,
+and thus no way for __gfs2_ail_flush() to detach it.
 
-The dma_pte_free_pagetable() function will only free a page table page
-if it is asked to free the *entire* 2MiB range that it covers. So if a
-page table page was used for one or more small mappings, it's likely to
-end up still present in the page tables... but with no valid PTEs.
-
-This was fine when we'd only be repopulating it with 4KiB PTEs anyway
-but the same virtual address range can end up being reused for a
-*large-page* mapping. And in that case were were trying to insert the
-large page into the second-level page table, and getting a complaint
-from the sanity check in __domain_mapping() because there was already a
-corresponding entry. This was *relatively* harmless; it led to a memory
-leak of the old page table page, but no other ill-effects.
-
-Fix it by calling dma_pte_clear_range (hopefully redundant) and
-dma_pte_free_pagetable() before setting up the new large page.
-
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Tested-by: Ravi Murty <Ravi.Murty@intel.com>
-Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/intel-iommu.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ fs/gfs2/lops.c  |   18 ++++--------------
+ fs/gfs2/trans.c |    8 ++++++++
+ 2 files changed, 12 insertions(+), 14 deletions(-)
 
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -1793,10 +1793,17 @@ static int __domain_mapping(struct dmar_
- 			if (!pte)
- 				return -ENOMEM;
- 			/* It is large page*/
--			if (largepage_lvl > 1)
-+			if (largepage_lvl > 1) {
- 				pteval |= DMA_PTE_LARGE_PAGE;
--			else
-+				/* Ensure that old small page tables are removed to make room
-+				   for superpage, if they exist. */
-+				dma_pte_clear_range(domain, iov_pfn,
-+						    iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
-+				dma_pte_free_pagetable(domain, iov_pfn,
-+						       iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
-+			} else {
- 				pteval &= ~(uint64_t)DMA_PTE_LARGE_PAGE;
-+			}
+--- a/fs/gfs2/lops.c
++++ b/fs/gfs2/lops.c
+@@ -139,16 +139,14 @@ static void buf_lo_add(struct gfs2_sbd *
+ 	struct gfs2_meta_header *mh;
+ 	struct gfs2_trans *tr;
  
+-	lock_buffer(bd->bd_bh);
+-	gfs2_log_lock(sdp);
+ 	if (!list_empty(&bd->bd_list_tr))
+-		goto out;
++		return;
+ 	tr = current->journal_info;
+ 	tr->tr_touched = 1;
+ 	tr->tr_num_buf++;
+ 	list_add(&bd->bd_list_tr, &tr->tr_list_buf);
+ 	if (!list_empty(&le->le_list))
+-		goto out;
++		return;
+ 	set_bit(GLF_LFLUSH, &bd->bd_gl->gl_flags);
+ 	set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
+ 	gfs2_meta_check(sdp, bd->bd_bh);
+@@ -159,9 +157,6 @@ static void buf_lo_add(struct gfs2_sbd *
+ 	sdp->sd_log_num_buf++;
+ 	list_add(&le->le_list, &sdp->sd_log_le_buf);
+ 	tr->tr_num_buf_new++;
+-out:
+-	gfs2_log_unlock(sdp);
+-	unlock_buffer(bd->bd_bh);
+ }
+ 
+ static void buf_lo_before_commit(struct gfs2_sbd *sdp)
+@@ -528,11 +523,9 @@ static void databuf_lo_add(struct gfs2_s
+ 	struct address_space *mapping = bd->bd_bh->b_page->mapping;
+ 	struct gfs2_inode *ip = GFS2_I(mapping->host);
+ 
+-	lock_buffer(bd->bd_bh);
+-	gfs2_log_lock(sdp);
+ 	if (tr) {
+ 		if (!list_empty(&bd->bd_list_tr))
+-			goto out;
++			return;
+ 		tr->tr_touched = 1;
+ 		if (gfs2_is_jdata(ip)) {
+ 			tr->tr_num_buf++;
+@@ -540,7 +533,7 @@ static void databuf_lo_add(struct gfs2_s
  		}
- 		/* We don't need lock here, nobody else
+ 	}
+ 	if (!list_empty(&le->le_list))
+-		goto out;
++		return;
+ 
+ 	set_bit(GLF_LFLUSH, &bd->bd_gl->gl_flags);
+ 	set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
+@@ -552,9 +545,6 @@ static void databuf_lo_add(struct gfs2_s
+ 	} else {
+ 		list_add_tail(&le->le_list, &sdp->sd_log_le_ordered);
+ 	}
+-out:
+-	gfs2_log_unlock(sdp);
+-	unlock_buffer(bd->bd_bh);
+ }
+ 
+ static void gfs2_check_magic(struct buffer_head *bh)
+--- a/fs/gfs2/trans.c
++++ b/fs/gfs2/trans.c
+@@ -145,14 +145,22 @@ void gfs2_trans_add_bh(struct gfs2_glock
+ 	struct gfs2_sbd *sdp = gl->gl_sbd;
+ 	struct gfs2_bufdata *bd;
+ 
++	lock_buffer(bh);
++	gfs2_log_lock(sdp);
+ 	bd = bh->b_private;
+ 	if (bd)
+ 		gfs2_assert(sdp, bd->bd_gl == gl);
+ 	else {
++		gfs2_log_unlock(sdp);
++		unlock_buffer(bh);
+ 		gfs2_attach_bufdata(gl, bh, meta);
+ 		bd = bh->b_private;
++		lock_buffer(bh);
++		gfs2_log_lock(sdp);
+ 	}
+ 	lops_add(sdp, &bd->bd_le);
++	gfs2_log_unlock(sdp);
++	unlock_buffer(bh);
+ }
+ 
+ void gfs2_trans_add_revoke(struct gfs2_sbd *sdp, struct gfs2_bufdata *bd)
 
 
