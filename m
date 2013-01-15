@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682Ab3APAES (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:04:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43282 "EHLO mail.kernel.org"
+	id S932605Ab3APAEz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:04:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43256 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932484Ab3AOWew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:34:52 -0500
+	id S1758278Ab3AOWet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:34:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 170/221] USB: Handle auto-transition from hot to warm reset.
-Date: Tue, 15 Jan 2013 10:51:37 -0800
-Message-Id: <20130115185010.318921310@linuxfoundation.org>
+        Aleksi Torhamo <aleksi@torhamo.net>,
+        Sean Santos <quantheory@gmail.com>, Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 168/221] drm/nouveau/clock: fix support for more than 2 monitors on nve0
+Date: Tue, 15 Jan 2013 10:51:35 -0800
+Message-Id: <20130115185010.166509399@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,50 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Aleksi Torhamo <aleksi@torhamo.net>
 
-commit 1c7439c61fa6516419c32a9824976334ea969d47 upstream.
+commit d19528a9e4f220519c2cb3f56ef0c84ead3ee440 upstream.
 
-USB 3.0 hubs and roothubs will automatically transition a failed hot
-reset to a warm (BH) reset.  In that case, the warm reset change bit
-will be set, and the link state change bit may also be set.  Change
-hub_port_finish_reset to unconditionally clear those change bits for USB
-3.0 hubs.  If these bits are not cleared, we may lose port change events
-from the roothub.
+Fixes regression introduced in commit 70790f4f
+"drm/nouveau/clock: pull in the implementation from all over the place"
 
-This commit should be backported to kernels as old as 3.2, that contain
-the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine
-warm reset logic".
+When code was moved from nv50_crtc_set_clock to nvc0_clock_pll_set,
+the PLLs it is used for got limited to only the first two VPLLs.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+nv50_crtc_set_clock was only called to change VPLLs, so it didn't
+limit what it was used for in any way. Since nvc0_clock_pll_set is
+used for all PLLs, it has to specify which PLLs the code is used for,
+and only listed the first two VPLLs.
+
+Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=58735
+
+This patch is a -stable candidate for 3.7.
+
+Signed-off-by: Aleksi Torhamo <aleksi@torhamo.net>
+Tested-by: Aleksi Torhamo <aleksi@torhamo.net>
+Tested-by: Sean Santos <quantheory@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/nouveau/core/include/subdev/bios/pll.h |    2 ++
+ drivers/gpu/drm/nouveau/core/subdev/clock/nvc0.c       |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2541,16 +2541,16 @@ static void hub_port_finish_reset(struct
- 		clear_port_feature(hub->hdev,
- 				port1, USB_PORT_FEAT_C_RESET);
- 		/* FIXME need disconnect() for NOTATTACHED device */
--		if (warm) {
-+		if (hub_is_superspeed(hub->hdev)) {
- 			clear_port_feature(hub->hdev, port1,
- 					USB_PORT_FEAT_C_BH_PORT_RESET);
- 			clear_port_feature(hub->hdev, port1,
- 					USB_PORT_FEAT_C_PORT_LINK_STATE);
--		} else {
-+		}
-+		if (!warm)
- 			usb_set_device_state(udev, *status
- 					? USB_STATE_NOTATTACHED
- 					: USB_STATE_DEFAULT);
--		}
- 		break;
- 	}
- }
+--- a/drivers/gpu/drm/nouveau/core/include/subdev/bios/pll.h
++++ b/drivers/gpu/drm/nouveau/core/include/subdev/bios/pll.h
+@@ -38,6 +38,8 @@ enum nvbios_pll_type {
+ 	PLL_UNK42  = 0x42,
+ 	PLL_VPLL0  = 0x80,
+ 	PLL_VPLL1  = 0x81,
++	PLL_VPLL2  = 0x82,
++	PLL_VPLL3  = 0x83,
+ 	PLL_MAX    = 0xff
+ };
+ 
+--- a/drivers/gpu/drm/nouveau/core/subdev/clock/nvc0.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/clock/nvc0.c
+@@ -52,6 +52,8 @@ nvc0_clock_pll_set(struct nouveau_clock
+ 	switch (info.type) {
+ 	case PLL_VPLL0:
+ 	case PLL_VPLL1:
++	case PLL_VPLL2:
++	case PLL_VPLL3:
+ 		nv_mask(priv, info.reg + 0x0c, 0x00000000, 0x00000100);
+ 		nv_wr32(priv, info.reg + 0x04, (P << 16) | (N << 8) | M);
+ 		nv_wr32(priv, info.reg + 0x10, fN << 16);
 
 
