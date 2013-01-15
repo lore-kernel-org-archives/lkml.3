@@ -1,284 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab3AOUQO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:16:14 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:59623 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab3AOUQN (ORCPT
+	id S1756325Ab3AOURQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:17:16 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:58457 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750963Ab3AOURP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:16:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130115194918.GD8101@liondog.tnic>
-References: <CAE9FiQXkgoLKp3ZnOcM9gLDJNGNxUE8WSRXiQy1G_v5Os5_v2A@mail.gmail.com>
-	<50F455A3.4070706@zytor.com>
-	<CAE9FiQUtbpo0njyPjPED=esKKnSdFs9ry4pFjG1y0LvHxkqV4w@mail.gmail.com>
-	<50F46304.3010108@zytor.com>
-	<CAE9FiQU_8ngBbXbwrqC1SaR3fScoDNvO_nKOhDYBV_bjOzjwJg@mail.gmail.com>
-	<CAE9FiQWxWdeGB-DZp7W2rmukG-KPahF8SQbBcHUWbbUAJA2MhA@mail.gmail.com>
-	<20130115155053.GA8101@liondog.tnic>
-	<CAE9FiQUyinyu_DxLF_kXO82cMnRmt0fmbkh11vEw2Wr0SAWw_A@mail.gmail.com>
-	<20130115164843.GB8101@liondog.tnic>
-	<CAE9FiQUz6t_hK11X9ra5pj2DwJsNCu=cZJ7TYGR1ry-rvwSmjg@mail.gmail.com>
-	<20130115194918.GD8101@liondog.tnic>
-Date: Tue, 15 Jan 2013 12:16:11 -0800
-X-Google-Sender-Auth: wv67OIcLXeTTzhqge1-csrzU-d4
-Message-ID: <CAE9FiQWytQmKNzo6BApNqj0FDtMS3CBqHy-ou1KmgF4beefEFw@mail.gmail.com>
-Subject: Re: [PATCH v7u1 22/31] x86, boot: add fields to support load bzImage
- and ramdisk above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+	Tue, 15 Jan 2013 15:17:15 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX181yDVvUT+CjbDJTAWmVKsN+NfG4LSWORQ=
+Date: Tue, 15 Jan 2013 15:16:17 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, Soeren Moch <smoch@web.de>,
+        Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Gokul Caushik <caushik1@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linaro-mm-sig@lists.linaro.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20130115201617.GC25500@titan.lakedaemon.net>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
+ <50F3F289.3090402@web.de>
+ <20130115165642.GA25500@titan.lakedaemon.net>
+ <20130115175020.GA3764@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115175020.GA3764@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 11:49 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Jan 15, 2013 at 10:43:38AM -0800, Yinghai Lu wrote:
->> I only change lines according to the response that i could understand
->> and i think that is right.
->
-> And those you don't understand and/or don't think are right, you simply
-> ignore? How about asking if you don't understand them? How about saying
-> that you don't agree with them so that we can talk it out as it is the
-> case on lkml normally?
->
->> are you looking wrong place?
->>
->> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=fd6da054a055aea9cf265a005563073ada6e1af0
->>
->>  x86, 64bit, realmode: Use init_level4_pgt to set trapmoline_pgd directly
->> author        Yinghai Lu <yinghai@kernel.org>
->>       Tue, 15 Jan 2013 05:11:07 +0000 (21:11 -0800)
->> committer     Yinghai Lu <yinghai@kernel.org>
->>       Tue, 15 Jan 2013 05:11:07 +0000 (21:11 -0800)
->> with #PF handler way to set early page table, level3_ident will go away with
->> 64bit native path.
->>
->> So just use entries in init_level4_pgt to set them in tramopline_pgd
->                                                         ^^^^^^^^^^^^^^
-> No, I'm looking at the right place, you're not seeing it:
->
-> Let me show you once again:
->
-> tramopline_pgd
-> trapmoline_pgd
->
-> See the letter swap?
+On Tue, Jan 15, 2013 at 09:50:20AM -0800, Greg KH wrote:
+> On Tue, Jan 15, 2013 at 11:56:42AM -0500, Jason Cooper wrote:
+> > Greg,
+> > 
+> > I've added you to the this thread hoping for a little insight into USB
+> > drivers and their use of coherent and GFP_ATOMIC.  Am I barking up the
+> > wrong tree by looking a the drivers?
+> 
+> I don't understand, which drivers are you referring to?  USB host
+> controller drivers, or the "normal" drivers?
 
-oh, I only changed trampoline_pgt to tramoplint_pgd.
+Sorry I wasn't clear, I was referring specifically to the usb dvb
+drivers em28xx, drxk and dib0700.  These are the drivers reported to be
+in heavy use when the error occurs.
 
->
->> > * [PATCH 08/31] x86, 64bit: early #PF handler set page table
->> >         - almost no changes, SOB chain still wrong
->>
->> HPA and I have explained that to you.
->
-> No, hpa commented only on the handful commits without SOB. But if he's
-> fine with having only your SOB, then ok.
+sata_mv is also in use, however no other users of sata_mv have reported
+problems.  Including myself. ;-)
 
-what is point that he comment that?
+> Most USB drivers use GFP_ATOMIC if they are creating memory during
+> their URB callback path, as that is interrupt context.  But it
+> shouldn't be all that bad, and the USB core hasn't changed in a while,
+> so something else must be causing this.
 
->
->> http://lkml.org/lkml/2013/1/12/115
->>
->> >
->> > * [PATCH 12/31] x86: add get_ramdisk_image/size()
->> >        - no change
->>
->> I respond: will insert other lines between them.
->
-> Again: I'm not talking about spacing the functions (but that would be
-> good too). Here's what I would like to see (btw, I'm explaining this for
-> the third time):
->
-> static u64 __init get_ramdisk_image(void)
-> {
->        return (u64)boot_params.hdr.ramdisk_image;
-> }
->
-> static u64 __init get_ramdisk_size(void)
-> {
->        return (u64)boot_params.hdr.ramdisk_size;
-> }
->
-> No need for the useless variable declaration and improved readability -
-> a win-win situation.
+Agreed, so I went and did more reading.  The key piece of the puzzle
+that I was missing was in arch/arm/mm/dma-mapping.c 660-684.
 
-no,
+/*
+ * Allocate DMA-coherent memory space and return both the kernel
+ * remapped
+ * virtual and bus address for that space.
+ */
+void *arm_dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
+                    gfp_t gfp, struct dma_attrs *attrs)
+{
+        pgprot_t prot = __get_dma_pgprot(attrs, pgprot_kernel);
+        void *memory;
 
-I mean later in following path, i have
+        if (dma_alloc_from_coherent(dev, size, handle, &memory))
+                return memory;
 
-Index: linux-2.6/arch/x86/kernel/setup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup.c
-+++ linux-2.6/arch/x86/kernel/setup.c
-@@ -298,12 +298,16 @@ static u64 __init get_ramdisk_image(void
- {
-        u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+        return __dma_alloc(dev, size, handle, gfp, prot, false,
+                           __builtin_return_address(0));
+}
 
-+       ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
-+
-        return ramdisk_image;
- }
- static u64 __init get_ramdisk_size(void)
- {
-        u64 ramdisk_size = boot_params.hdr.ramdisk_size;
+static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
+        dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs)
+{
+        pgprot_t prot = __get_dma_pgprot(attrs, pgprot_kernel);
+        void *memory;
 
-+       ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
-+
-        return ramdisk_size;
- }
+        if (dma_alloc_from_coherent(dev, size, handle, &memory))
+                return memory;
+
+        return __dma_alloc(dev, size, handle, gfp, prot, true,
+                           __builtin_return_address(0));
+}
 
 
->
->> > * [PATCH 13/31] x86, boot: add get_cmd_line_ptr()
->> >         - no change
->>
->> same above
->
-> And I say too "same as above".
->
->> > * [PATCH 14/31] x86, boot: move checking of cmd_line_ptr out of common path
->> >         - no change
->>
->> same above
->
-> No, this is not same as above - I'd simply like to have the comment
-> explaining why we do the >= 0x100000 check in the code.
+My understanding of this code is that when a driver requests dma memory,
+we will first try to alloc from the per-driver pool.  If that fails, we
+will then attempt to allocate from the atomic_pool.
 
-I moved that code, and kept the "/* inaccessible */"
+Once the atomic_pool is exhausted, we get the error:
 
- int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
- static inline int cmdline_find_option(const char *option, char
-*buffer, int bufsize)
- {
--       return __cmdline_find_option(boot_params.hdr.cmd_line_ptr,
-option, buffer, bufsize);
-+       u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+
-+       if (cmd_line_ptr >= 0x100000)
-+               return -1;      /* inaccessible */
-+
-+       return __cmdline_find_option(cmd_line_ptr, option, buffer, bufsize);
+  ERROR: 1024 KiB atomic DMA coherent pool is too small!
+  Please increase it with coherent_pool= kernel parameter!
 
---- linux-2.6.orig/arch/x86/boot/cmdline.c
-+++ linux-2.6/arch/x86/boot/cmdline.c
-@@ -41,8 +41,8 @@ int __cmdline_find_option(u32 cmdline_pt
-                st_bufcpy       /* Copying this to buffer */
-        } state = st_wordstart;
+If my understanding is correct, one of the drivers (most likely one)
+either asks for too small of a dma buffer, or is not properly
+deallocating blocks from the per-device pool.  Either case leads to
+exhaustion, and falling back to the atomic pool.  Which subsequently
+gets wiped out as well.
 
--       if (!cmdline_ptr || cmdline_ptr >= 0x100000)
--               return -1;      /* No command line, or inaccessible */
-+       if (!cmdline_ptr)
-+               return -1;      /* No command line */
+Am I on the right track?
 
+thx,
 
-
->
->> > * [PATCH 20/31] x86, kexec: replace ident_mapping_init and init_level4_page
->> >         - no change
->>
->> https://patchwork.kernel.org/patch/1930741/
->>
->> I pointed you about the grammar. ...
->
-> And I said:
->
-> "And yet, this is not the point - the point is that this code is
-> complicated enough as it is so why not make the easy things trivial so
-> that people looking at it months or even years from now can still try to
-> understand it.
-
-then stop coding.
-
->
-> So what it is defined by the standard?! Just add that line anyway! Then
-> there's no need to go check what was meant. This way it is *there*,
-> *explicit* and everyone *knows* what is meant - even people who don't
-> sleep with C99std under their pillow."
->
-> IOW, add the initialization *anyways*!
-
-No.
-
->
->> > * [PATCH 21/31] x86, kexec: only set ident mapping for ram.
->> >         - almost
->>
->> almost what?
->
-> That it is almost fixed:
->
-> "This patch exposes THE pfn_mapped array..."
->
-> "This patch relies on new THE kernel_ident_mapping_init..."
->
-> The "THE" in capital letters are missing.
->
-> This is what I mean: you take my comments but not really - you still
-> change them on the way and make the text funny.
->
->> > * [PATCH 22/31] x86, boot: add fields to support load bzImage and ramdisk above 4G
->> >         - except sentinel, almost no change
->>
->> ?
->
-> Well, I'm not going to repeat myself ad infinitum and ad absurdum - go
-> look at the mail thread and read my comments I had and then look at your
-> commit message again.
->
->> > * [PATCH 23/31] x86, boot: update comments about entries for 64bit image
->> >         - almost no change
->>
->> I explained that i copied that from 32bit, and if you want to change
->> with 32bit need to do that later.
->
-> You're adding new text and we want it to be as clean as possible.
-> According to your logic, if you copy/paste code from the kernel and it
-> has a bug, the newly pasted portion would have that same bug too and you
-> won't fix it and let someone else fix it? Even though I told you how to
-> fix it?
->
-> So why don't you simply integrate my suggestions verbatim into the text
-> instead of opposing so much? I'm not forcing you to do anything bad -
-> I'm simply commenting on your work so that it can get better. Why the
-> hell are you still opposing to that?
-
-why ? your understanding is not right every time.
-
->
->> >> +The memory for struct boot_params should be allocated under or above
->> >> +4G and initialized to all zero.
->> >
->> > I suggested:
->> >
->> > "Memory for struct boot_params may be allocated anywhere (even above
->> > 4G). This memory must be zeroed out."
->> >
->> > You changed it to:
->> >
->> > "The memory for struct boot_params could be allocated anywhere (even
->> > above 4G) and initialized to all zero."
->> >
->> > which still reads funny and has a couple of issues.
->>
->> did not see anything wrong.
->
-> That's why I'M POINTING IT TO YOU! TO FUCKING SEE IT! So if you still
-
-this is second time that you use F that in this.
-
-I'm going to put your email in the spam filter.
-
-Bye.
+Jason.
