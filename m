@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933046Ab3AOWhP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:37:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44134 "EHLO mail.kernel.org"
+	id S933032Ab3AOWhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:37:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44110 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932984Ab3AOWgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:36:49 -0500
+	id S932994Ab3AOWgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:36:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
-Subject: [ 214/221] ceph: Fix infinite loop in __wake_requests
-Date: Tue, 15 Jan 2013 10:52:21 -0800
-Message-Id: <20130115185013.486942614@linuxfoundation.org>
+        Krzysztof Mazur <krzysiek@podlesie.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 220/221] i915: ensure that VGA plane is disabled
+Date: Tue, 15 Jan 2013 10:52:27 -0800
+Message-Id: <20130115185013.929783424@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,41 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Krzysztof Mazur <krzysiek@podlesie.net>
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+commit 0fde901f1ddd2ce0e380a6444f1fb7ca555859e9 upstream.
 
-(cherry picked from commit ed75ec2cd19b47efcd292b6e23f58e56f4c5bc34)
+Some broken systems (like HP nc6120) in some cases, usually after LID
+close/open, enable VGA plane, making display unusable (black screen on LVDS,
+some strange mode on VGA output). We used to disable VGA plane only once at
+startup. Now we also check, if VGA plane is still disabled while changing
+mode, and fix that if something changed it.
 
-__wake_requests() will enter infinite loop if we use it to wake
-requests in the session->s_waiting list. __wake_requests() deletes
-requests from the list and __do_request() adds requests back to
-the list.
-
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=57434
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/ceph/mds_client.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -1876,9 +1876,14 @@ finish:
- static void __wake_requests(struct ceph_mds_client *mdsc,
- 			    struct list_head *head)
- {
--	struct ceph_mds_request *req, *nreq;
-+	struct ceph_mds_request *req;
-+	LIST_HEAD(tmp_list);
+---
+ drivers/gpu/drm/i915/intel_display.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8248,6 +8248,23 @@ static void intel_sanitize_encoder(struc
+ 	 * the crtc fixup. */
+ }
  
--	list_for_each_entry_safe(req, nreq, head, r_wait) {
-+	list_splice_init(head, &tmp_list);
++static void i915_redisable_vga(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	u32 vga_reg;
 +
-+	while (!list_empty(&tmp_list)) {
-+		req = list_entry(tmp_list.next,
-+				 struct ceph_mds_request, r_wait);
- 		list_del_init(&req->r_wait);
- 		__do_request(mdsc, req);
++	if (HAS_PCH_SPLIT(dev))
++		vga_reg = CPU_VGACNTRL;
++	else
++		vga_reg = VGACNTRL;
++
++	if (I915_READ(vga_reg) != VGA_DISP_DISABLE) {
++		DRM_DEBUG_KMS("Something enabled VGA plane, disabling it\n");
++		I915_WRITE(vga_reg, VGA_DISP_DISABLE);
++		POSTING_READ(vga_reg);
++	}
++}
++
+ /* Scan out the current hw modeset state, sanitizes it and maps it into the drm
+  * and i915 state tracking structures. */
+ void intel_modeset_setup_hw_state(struct drm_device *dev,
+@@ -8328,6 +8345,8 @@ void intel_modeset_setup_hw_state(struct
+ 			intel_set_mode(&crtc->base, &crtc->base.mode,
+ 				       crtc->base.x, crtc->base.y, crtc->base.fb);
+ 		}
++
++		i915_redisable_vga(dev);
+ 	} else {
+ 		intel_modeset_update_staged_output_state(dev);
  	}
 
 
