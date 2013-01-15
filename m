@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933767Ab3AOX1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:27:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46911 "EHLO mail.kernel.org"
+	id S933710Ab3AOX1v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:27:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46884 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933694Ab3AOWwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:39 -0500
+	id S933685Ab3AOWwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        John Tapsell <johnflux@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [ 131/171] Revert "drm/i915: no lvds quirk for Zotac ZDBOX SD ID12/ID13"
-Date: Tue, 15 Jan 2013 14:44:56 -0800
-Message-Id: <20130115224322.783100972@linuxfoundation.org>
+        Julien Cristau <jcristau@debian.org>
+Subject: [ 130/171] drm/i915: Flush the pending flips on the CRTC before modification
+Date: Tue, 15 Jan 2013 14:44:55 -0800
+Message-Id: <20130115224322.715289519@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,43 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 48e858340dae43189a4e55647f6eac736766f828 upstream.
+commit 5bb61643f6a70d48de9cfe91ad0fee0d618b6816 upstream.
 
-This reverts commit 9756fe38d10b2bf90c81dc4d2f17d5632e135364.
+This was meant to be the purpose of the
+intel_crtc_wait_for_pending_flips() function which is called whilst
+preparing the CRTC for a modeset or before disabling. However, as Ville
+Syrjala pointed out, we set the pending flip notification on the old
+framebuffer that is no longer attached to the CRTC by the time we come
+to flush the pending operations. Instead, we can simply wait on the
+pending unpin work to be finished on this CRTC, knowning that the
+hardware has therefore finished modifying the registers, before proceeding
+with our direct access.
 
-The bogus lvds output is actually a lvds->hdmi bridge, which we don't
-really support. But unconditionally disabling it breaks some existing
-setups.
+Fixes i-g-t/flip_test on non-pch platforms. pch platforms simply
+schedule the flip immediately when the pipe is disabled, leading
+to other funny issues.
 
-Reported-by: John Tapsell <johnflux@gmail.com>
-References: http://permalink.gmane.org/gmane.comp.freedesktop.xorg.drivers.intel/17237
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: Added i-g-t note and cc: stable]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Julien Cristau <jcristau@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |   24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -779,14 +779,6 @@ static const struct dmi_system_id intel_
- 	},
- 	{
- 		.callback = intel_no_lvds_dmi_callback,
--		.ident = "ZOTAC ZBOXSD-ID12/ID13",
--		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "ZOTAC"),
--			DMI_MATCH(DMI_BOARD_NAME, "ZBOXSD-ID12/ID13"),
--		},
--	},
--	{
--		.callback = intel_no_lvds_dmi_callback,
- 		.ident = "Gigabyte GA-D525TUD",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2895,13 +2895,34 @@ static void intel_clear_scanline_wait(st
+ 		I915_WRITE_CTL(ring, tmp);
+ }
+ 
++static bool intel_crtc_has_pending_flip(struct drm_crtc *crtc)
++{
++	struct drm_device *dev = crtc->dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	unsigned long flags;
++	bool pending;
++
++	if (atomic_read(&dev_priv->mm.wedged))
++		return false;
++
++	spin_lock_irqsave(&dev->event_lock, flags);
++	pending = to_intel_crtc(crtc)->unpin_work != NULL;
++	spin_unlock_irqrestore(&dev->event_lock, flags);
++
++	return pending;
++}
++
+ static void intel_crtc_wait_for_pending_flips(struct drm_crtc *crtc)
+ {
+ 	struct drm_device *dev = crtc->dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
+ 	if (crtc->fb == NULL)
+ 		return;
+ 
++	wait_event(dev_priv->pending_flip_queue,
++		   !intel_crtc_has_pending_flip(crtc));
++
+ 	mutex_lock(&dev->struct_mutex);
+ 	intel_finish_fb(crtc->fb);
+ 	mutex_unlock(&dev->struct_mutex);
+@@ -7258,9 +7279,8 @@ static void do_intel_finish_page_flip(st
+ 
+ 	atomic_clear_mask(1 << intel_crtc->plane,
+ 			  &obj->pending_flip.counter);
+-	if (atomic_read(&obj->pending_flip) == 0)
+-		wake_up(&dev_priv->pending_flip_queue);
+ 
++	wake_up(&dev_priv->pending_flip_queue);
+ 	schedule_work(&work->work);
+ 
+ 	trace_i915_flip_complete(intel_crtc->plane, work->pending_flip_obj);
 
 
