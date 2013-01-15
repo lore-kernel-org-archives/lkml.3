@@ -1,109 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab3AOW16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:27:58 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:50632 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757125Ab3AOW1z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:27:55 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: Roland Eggner <edvx1@systemanalysen.net>
-Subject: Re: [PATCH v2 1/2] nconf:  add keybindings for vi-style menu navigation, rewrite help texts
-Date: Tue, 15 Jan 2013 23:27:48 +0100
-User-Agent: KMail/1.13.5 (Linux/3.6.11-treguer; KDE/4.4.5; x86_64; ; )
-Cc: linux-kbuild@vger.kernel.org, Dmitry Voytik <dvv.kernel@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org
-References: <20121228185108.GA13644@voyt-hp> <20130115161031.GA5513@mobil.systemanalysen.net> <20130115162632.GB5513@mobil.systemanalysen.net>
-In-Reply-To: <20130115162632.GB5513@mobil.systemanalysen.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201301152327.49010.yann.morin.1998@free.fr>
+	id S1757573Ab3AOW2C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:28:02 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41305 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757551Ab3AOW17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:27:59 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Xiaotian Feng <dannyfeng@tencent.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 047/221] libata: fix Null pointer dereference on disk error
+Date: Tue, 15 Jan 2013 10:49:34 -0800
+Message-Id: <20130115185001.417548552@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
+References: <20130115184958.025580322@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roland, All,
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-On Tuesday 15 January 2013 Roland Eggner wrote:
-> >From: Roland Eggner <edvx1@systemanalysen.net>
+------------------
 
-OK, now I've had time to test it. Works OK.
+From: Xiaotian Feng <xtfeng@gmail.com>
 
-However, this patch mixes different things: feature changes, help-texts
-rewrite...
+commit 26cd4d65deba587f3cf2329b6869ce02bcbe68ec upstream.
 
-Could you split it into multiple patches, each do a single, well-defined
-change? See below.
+Following oops were observed when disk error happened:
 
-> •  Implemented vi-style navigation <k> <j> <l> <h>, based on initial work by
->    Dmitry Voytik.  Using <?> <H> instead of <?> <h> for help related to current
->    menu entry avoids conflict.
-> 
-> •  Added keybindings <C-n> <C-p> additionally to <C-f> <C-b> for moving pagewise
->    down and up.  <C-f> <C-b> is used for characterwise right and left movement
->    by libreadline (bash, xfsprogs, bc, gdb, python, ruby, hunspell, mysql,
->    sqlite, gnupg, xine-ui, parted …).  Thus pagewise movement by <C-n> <C-p> is
->    less confusing than by <C-f> <C-b> for my fingers.
+[ 4272.896937] sd 0:0:0:0: [sda] Unhandled error code
+[ 4272.896939] sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+[ 4272.896942] sd 0:0:0:0: [sda] CDB: Read(10): 28 00 00 5a de a7 00 00 08 00
+[ 4272.896951] end_request: I/O error, dev sda, sector 5955239
+[ 4291.574947] BUG: unable to handle kernel NULL pointer dereference at (null)
+[ 4291.658305] IP: [] ahci_activity_show+0x1/0x40
+[ 4291.730090] PGD 76dbbc067 PUD 6c4fba067 PMD 0
+[ 4291.783408] Oops: 0000 [#1] SMP
+[ 4291.822100] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/sw_activity
+[ 4291.934235] CPU 9
+[ 4291.958301] Pid: 27942, comm: hwinfo ......
 
-I think we should only retain the more "natural" key bindings: <C-f> and
-<C-b> for left/right. <C-p> and <C-n> are not for PAge-Up/Down, but for
-previous-in-history and next-in-history (which, IMHO, is not the same
-meaning).
+ata_scsi_find_dev could return NULL, so ata_scsi_activity_{show,store} should check if atadev is NULL.
 
-However, I wonder how many such *-like keys we should have.
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-The up/down and Page-Up/Down keys are really trivially understood. It's
-been a long while ago they were introduced in vim (rather than using the
-oldish hjkl). Readline also understands those arrow-keys keys. So, really,
-I wonder what the point of having these new keys is.
+---
+ drivers/ata/libata-scsi.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-> •  Rewrote all help texts.  During several years lazy (incomplete) updates had
->    left behind a rather thick layer of dust.  Intentions:
->    (1)  Global help called by <F1> should document all  _currently_  implemented
->         keybindings.
->    (2)  Different help texts called by <F3> resp. <F8><F1> should be consistent
->         with (1) and with implementation:
->         •  on plain menu entry
->         •  in radiolist window
->         •  in input windows for text, decimal or hexadecimal values
->         •  in filename selection windows <F6> <F7>
->         •  SymSearch specific help called by <F8> followed by <F1>
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -309,7 +309,8 @@ ata_scsi_activity_show(struct device *de
+ 	struct ata_port *ap = ata_shost_to_port(sdev->host);
+ 	struct ata_device *atadev = ata_scsi_find_dev(ap, sdev);
+ 
+-	if (ap->ops->sw_activity_show && (ap->flags & ATA_FLAG_SW_ACTIVITY))
++	if (atadev && ap->ops->sw_activity_show &&
++	    (ap->flags & ATA_FLAG_SW_ACTIVITY))
+ 		return ap->ops->sw_activity_show(atadev, buf);
+ 	return -EINVAL;
+ }
+@@ -324,7 +325,8 @@ ata_scsi_activity_store(struct device *d
+ 	enum sw_activity val;
+ 	int rc;
+ 
+-	if (ap->ops->sw_activity_store && (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
++	if (atadev && ap->ops->sw_activity_store &&
++	    (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
+ 		val = simple_strtoul(buf, NULL, 0);
+ 		switch (val) {
+ 		case OFF: case BLINK_ON: case BLINK_OFF:
 
-This one does indeed give an easier to read, more precise and more complete
-help. This should be a separate patch.
 
-> •  Function keys line:  “Help 2” instead of “Insts” and “ShowAll” instead of
->    “Config” should be more intuitiv.
-
-Ditto, a separate patch.
-
-I'd suggest that you add the least controversial patches first, and submit
-them as four patches:
-  - help rewrite
-  - labels rewrite (update help accordingly)
-  - vi-like keys
-  - readline-like keys
-
-(Or the other way around for the last two patches.)
-
-With this patch ordering, each patch is easier to review, the fixes ones
-(help and labels rewrites) can be easily applied, and we can discuss the
-last two separately.
-
-Thank you!
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
