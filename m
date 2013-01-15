@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934420Ab3AOW5a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:57:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48520 "EHLO mail.kernel.org"
+	id S934437Ab3AOW5g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:57:36 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48557 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934145Ab3AOW51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:27 -0500
+	id S934424Ab3AOW5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 54/71] radeon/kms: force rn50 chip to always report connected on analog output
-Date: Tue, 15 Jan 2013 14:54:51 -0800
-Message-Id: <20130115225344.275419854@linuxfoundation.org>
+        Ben Greear <greearb@candelatech.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 55/71] mac80211: use del_timer_sync for final sta cleanup timer deletion
+Date: Tue, 15 Jan 2013 14:54:52 -0800
+Message-Id: <20130115225344.355566338@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,38 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 51861d4eebc2ddc25c77084343d060fa79f6e291 upstream.
+commit a56f992cdabc63f56b4b142885deebebf936ff76 upstream.
 
-Those rn50 chip are often connected to console remoting hw and load
-detection often fails with those. Just don't try to load detect and
-report connect.
+This is a very old bug, but there's nothing that prevents the
+timer from running while the module is being removed when we
+only do del_timer() instead of del_timer_sync().
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+The timer should normally not be running at this point, but
+it's not clearly impossible (or we could just remove this.)
+
+Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/mac80211/sta_info.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-@@ -617,6 +617,14 @@ static enum drm_connector_status radeon_
- 	enum drm_connector_status found = connector_status_disconnected;
- 	bool color = true;
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -793,7 +793,7 @@ void sta_info_init(struct ieee80211_loca
  
-+	/* just don't bother on RN50 those chip are often connected to remoting
-+	 * console hw and often we get failure to load detect those. So to make
-+	 * everyone happy report the encoder as always connected.
-+	 */
-+	if (ASIC_IS_RN50(rdev)) {
-+		return connector_status_connected;
-+	}
-+
- 	/* save the regs we need */
- 	vclk_ecp_cntl = RREG32_PLL(RADEON_VCLK_ECP_CNTL);
- 	crtc_ext_cntl = RREG32(RADEON_CRTC_EXT_CNTL);
+ void sta_info_stop(struct ieee80211_local *local)
+ {
+-	del_timer(&local->sta_cleanup);
++	del_timer_sync(&local->sta_cleanup);
+ 	sta_info_flush(local, NULL);
+ }
+ 
 
 
