@@ -1,95 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933217Ab3AOXqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:46:20 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:41508 "EHLO hydra.sisk.pl"
+	id S1758726Ab3AOXq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:46:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44505 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933163Ab3AOXqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 18:46:07 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: stern@rowland.harvard.edu, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PM / Runtime: return the right value when deferred_resume is true in rpm_suspend()
-Date: Wed, 16 Jan 2013 00:51:58 +0100
-Message-ID: <5832238.gzeSCHdU79@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1358263571.1223.26.camel@cliu38-desktop-build>
-References: <1358263571.1223.26.camel@cliu38-desktop-build>
+	id S933105Ab3AOXqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 18:46:22 -0500
+Message-ID: <50F5EA3F.70002@zytor.com>
+Date: Tue, 15 Jan 2013 15:46:07 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [RFCv3][PATCH 1/3] create slow_virt_to_phys()
+References: <20130109185904.DD641DCE@kernel.stglabs.ibm.com> <50F5B214.5060604@zytor.com> <50F5DD45.4060603@linux.vnet.ibm.com>
+In-Reply-To: <50F5DD45.4060603@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 15, 2013 11:26:11 PM Chuansheng Liu wrote:
-> 
-> For the case that in rpm_suspend() and deferred_resume is true,
-> the rpm_resume() will be called, and if rpm_resume() return error,
-> at this time, the device is still in SUSPENDED state.
-> 
-> In this case it is still an suspend succeeding case, we should
-> return non-error instead of EAGAIN.
-> 
-> An example like below for this case:
-> CPU1:                                                      CPU2:
-> pm_runtime_get_sync()
-> pm_runtime_put_sync_suspend()
->   rpm_suspend()
->     __update_runtime_status(dev, RPM_SUSPENDING)
->     rpm_callback()
->         spin_unlock_irq()
->           ...                                               pm_runtime_get()
->                                                               spin_lock_irqsave()
->           cb()                                                rpm_resume()
->           ...                                                   dev->power.deferred_resume = true
->                                                               spin_unlock_irqrestore()
->         spin_lock_irq()
->     __update_runtime_status(dev, RPM_SUSPENDED)
->     rpm_resume() is called due to deferred_resume is true
-> 
-> Here if rpm_resume() failed in CPU1, the runtime_status is still SUSPENDED,
-> we should return 0 in this case.
+On 01/15/2013 02:50 PM, Dave Hansen wrote:
+>
+>> static inline unsigned long page_level_size(int level)
+>> {
+>>      return (PAGE_SIZE/PGDIR_SIZE) << (PGDIR_SHIFT*level);
+>> }
+>> static inline unsigned long page_level_shift(int level)
+>> {
+>>      return (PAGE_SHIFT-PGDIR_SHIFT) + (PGDIR_SHIFT*level);
+>> }
+>
+> (PAGE_SHIFT-PGDIR_SHIFT) == -27, so this can't possibly work, right?
+>
 
-No, we shouldn't.
+Ah right... sorry, got messed up in my head what that constant is about.
 
-Please note that rpm_resume() may fail for multiple reasons and some of them
-actually mean real errors, in which case we shouldn't return 0, because that
-may confuse the caller.
+> How about something like this?
+>
+> /*
+>   * Note: this only holds true for pagetable levels where PTEs can be
+>   * present.  It would break if you used it on the PGD level where PAE
+>   * is in use.  It basically assumes that the shift between _all_
+>   * adjacent levels of the pagetables are the same as the lowest-level
+>   * shift.
+>   */
 
-However, if we return -EAGAIN regardless, whatever the caller does next will
-be fine.
+This comment is totally misleading.  What it refers to is the separation 
+between various levels of the page hierarchy; in x86 it is always the same.
 
-Thanks,
-Rafael
+Perhaps a cleaner way to do this is:
 
+#define PTRS_PER_PTE_SHIFT	ilog2(PTRS_PER_PTE)
 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> ---
->  drivers/base/power/runtime.c |    8 +++++---
->  1 files changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> index 3148b10..0adc713 100644
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -436,9 +436,11 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->  
->  	if (dev->power.deferred_resume) {
->  		dev->power.deferred_resume = false;
-> -		rpm_resume(dev, 0);
-> -		retval = -EAGAIN;
-> -		goto out;
-> +		if (rpm_resume(dev, 0) >= 0) {
-> +			/* In case resuming succeeded, return EAGAIN error */
-> +			retval = -EAGAIN;
-> +			goto out;
-> +		}
->  	}
->  
->  	/* Maybe the parent is now able to suspend. */
-> 
+> #define PG_SHIFT_PER_LEVEL (PMD_SHIFT-PAGE_SHIFT)
+>
+> static inline unsigned long page_level_shift(int level)
+> {
+> 	return PAGE_SHIFT + (level - PG_LEVEL_4K) * PG_SHIFT_PER_LEVEL;
+> }
+> static inline unsigned long page_level_size(int level)
+> {
+> 	return 1 << page_level_shift(level);
+> }
+>
+> The generated code for page_level_size() looks pretty good, despite it
+> depending on page_level_shift(), so we might as well leave it defined
+> this way for simplicity:
+>
+
+Make sure to make that 1UL instead of 1; page_level_shift() should 
+return int.  See below.
+
+> 0000000000400610 <plsize>:
+>    400610:       8d 7c bf fb             lea    -0x5(%rdi,%rdi,4),%edi
+>    400614:       b8 01 00 00 00          mov    $0x1,%eax
+>    400619:       8d 4c 3f 0c             lea    0xc(%rdi,%rdi,1),%ecx
+>    40061d:       d3 e0                   shl    %cl,%eax
+>    40061f:       c3                      retq
+
+We get better code with:
+
+static inline int page_level_shift(int level)
+{
+	return (PAGE_SHIFT - PTRS_PER_PTE_SHIFT) +
+		level * PTRS_PER_PTE_SHIFT;
+}
+static inline unsigned long page_level_size(int level)
+{
+	return 1UL << page_level_shift(level);
+}
+
+... the resulting code has one lea instead of two:
+
+0000000000000000 <plsize>:
+    0:   8d 4c ff 03             lea    0x3(%rdi,%rdi,8),%ecx
+    4:   b8 01 00 00 00          mov    $0x1,%eax
+    9:   48 d3 e0                shl    %cl,%rax
+    c:   c3                      retq
+
+	-hpa
+
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
