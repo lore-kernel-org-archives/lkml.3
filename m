@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab3AOPSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 10:18:55 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:54108 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab3AOPSx (ORCPT
+	id S1757505Ab3AOPTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 10:19:07 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:53737 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab3AOPTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 10:18:53 -0500
+	Tue, 15 Jan 2013 10:19:04 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Wen Congyang <wency@cn.fujitsu.com>,
@@ -19,9 +19,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH v3 2/3] mm: set zone->present_pages to number of existing pages in the zone
-Date: Tue, 15 Jan 2013 23:18:16 +0800
-Message-Id: <1358263097-11038-2-git-send-email-jiang.liu@huawei.com>
+Subject: [RESEND PATCH v3 3/3] mm: increase totalram_pages when free pages allocated by bootmem allocator
+Date: Tue, 15 Jan 2013 23:18:17 +0800
+Message-Id: <1358263097-11038-3-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358263097-11038-1-git-send-email-jiang.liu@huawei.com>
 References: <1358263097-11038-1-git-send-email-jiang.liu@huawei.com>
@@ -29,29 +29,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now all users of "number of pages managed by the buddy system" have been
-converted to use zone->managed_pages, so set zone->present_pages to what
-it should be:
-	present_pages = spanned_pages - absent_pages;
+Function put_page_bootmem() is used to free pages allocated by bootmem
+allocator, so it should increase totalram_pages when freeing pages into
+the buddy system.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memory_hotplug.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index fed01fd..595e655 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4565,7 +4565,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		nr_all_pages += freesize;
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index d04ed87..b52df74 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -124,6 +124,7 @@ void __ref put_page_bootmem(struct page *page)
+ 		mutex_lock(&ppb_lock);
+ 		__free_pages_bootmem(page, 0);
+ 		mutex_unlock(&ppb_lock);
++		totalram_pages++;
+ 	}
  
- 		zone->spanned_pages = size;
--		zone->present_pages = freesize;
-+		zone->present_pages = realsize;
- 		/*
- 		 * Set an approximate value for lowmem here, it will be adjusted
- 		 * when the bootmem allocator frees pages into the buddy system.
+ }
 -- 
 1.7.9.5
 
