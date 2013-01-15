@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934302Ab3AOXF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:05:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48317 "EHLO mail.kernel.org"
+	id S934315Ab3AOW46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:56:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48280 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934301Ab3AOW5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:04 -0500
+	id S934301Ab3AOW4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>
-Subject: [ 42/71] ACPI : do not use Lid and Sleep button for S5 wakeup
-Date: Tue, 15 Jan 2013 14:54:39 -0800
-Message-Id: <20130115225343.455104233@linuxfoundation.org>
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>, Jan Kara <jack@suse.cz>,
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 39/71] udf: dont increment lenExtents while writing to a hole
+Date: Tue, 15 Jan 2013 14:54:36 -0800
+Message-Id: <20130115225343.242358853@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,48 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-commit b7e383046c2c7c13ad928cd7407eafff758ddd4b upstream.
+commit fb719c59bdb4fca86ee1fd1f42ab3735ca12b6b2 upstream.
 
-When system enters power off, the _PSW of Lid device is enabled.
-But this may cause the system to reboot instead of power off.
+Incrementing lenExtents even while writing to a hole is bad
+for performance as calls to udf_discard_prealloc and
+udf_truncate_tail_extent would not return from start if
+isize != lenExtents
 
-A proper way to fix this is to always disable lid wakeup capability for S5.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=35262
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/scan.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/udf/inode.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -789,8 +789,8 @@ acpi_bus_extract_wakeup_device_power_pac
- static void acpi_bus_set_run_wake_flags(struct acpi_device *device)
- {
- 	struct acpi_device_id button_device_ids[] = {
--		{"PNP0C0D", 0},
- 		{"PNP0C0C", 0},
-+		{"PNP0C0D", 0},
- 		{"PNP0C0E", 0},
- 		{"", 0},
- 	};
-@@ -802,6 +802,11 @@ static void acpi_bus_set_run_wake_flags(
- 	/* Power button, Lid switch always enable wakeup */
- 	if (!acpi_match_device_ids(device, button_device_ids)) {
- 		device->wakeup.flags.run_wake = 1;
-+		if (!acpi_match_device_ids(device, &button_device_ids[1])) {
-+			/* Do not use Lid/sleep button for S5 wakeup */
-+			if (device->wakeup.sleep_state == ACPI_STATE_S5)
-+				device->wakeup.sleep_state = ACPI_STATE_S4;
-+		}
- 		device_set_wakeup_capable(&device->dev, true);
- 		return;
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -575,6 +575,7 @@ static struct buffer_head *inode_getblk(
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
+ 	int goal = 0, pgoal = iinfo->i_location.logicalBlockNum;
+ 	int lastblock = 0;
++	bool isBeyondEOF;
+ 
+ 	prev_epos.offset = udf_file_entry_alloc_offset(inode);
+ 	prev_epos.block = iinfo->i_location;
+@@ -653,7 +654,7 @@ static struct buffer_head *inode_getblk(
+ 	/* Are we beyond EOF? */
+ 	if (etype == -1) {
+ 		int ret;
+-
++		isBeyondEOF = 1;
+ 		if (count) {
+ 			if (c)
+ 				laarr[0] = laarr[1];
+@@ -696,6 +697,7 @@ static struct buffer_head *inode_getblk(
+ 		endnum = c + 1;
+ 		lastblock = 1;
+ 	} else {
++		isBeyondEOF = 0;
+ 		endnum = startnum = ((count > 2) ? 2 : count);
+ 
+ 		/* if the current extent is in position 0,
+@@ -743,7 +745,8 @@ static struct buffer_head *inode_getblk(
+ 			*err = -ENOSPC;
+ 			return NULL;
+ 		}
+-		iinfo->i_lenExtents += inode->i_sb->s_blocksize;
++		if (isBeyondEOF)
++			iinfo->i_lenExtents += inode->i_sb->s_blocksize;
  	}
+ 
+ 	/* if the extent the requsted block is located in contains multiple
 
 
