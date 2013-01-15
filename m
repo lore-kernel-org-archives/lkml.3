@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758818Ab3AOXmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:42:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46123 "EHLO mail.kernel.org"
+	id S1758827Ab3AOXmb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:42:31 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46104 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933264Ab3AOWun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:43 -0500
+	id S933253Ab3AOWuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Hans de Goede <hdegoede@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 076/171] udldrmfb: udl_get_edid: usb_control_msg buffer must not be on the stack
-Date: Tue, 15 Jan 2013 14:44:01 -0800
-Message-Id: <20130115224318.895474353@linuxfoundation.org>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 074/171] ASoC: wm5100: Remove DSP B and left justified formats
+Date: Tue, 15 Jan 2013 14:43:59 -0800
+Message-Id: <20130115224318.735866341@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,55 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 242187b362555849e8c971dfbbfd55f8bd9fa717 upstream.
+commit 5f960294e2031d12f10c8488c3446fecbf59628d upstream.
 
-The buffer passed to usb_control_msg may end up in scatter-gather list, and
-may thus not be on the stack. Having it on the stack usually works on x86, but
-not on other archs.
+These are not supported
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/udl/udl_connector.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm5100.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/drivers/gpu/drm/udl/udl_connector.c
-+++ b/drivers/gpu/drm/udl/udl_connector.c
-@@ -22,13 +22,17 @@
- static u8 *udl_get_edid(struct udl_device *udl)
- {
- 	u8 *block;
--	char rbuf[3];
-+	char *rbuf;
- 	int ret, i;
- 
- 	block = kmalloc(EDID_LENGTH, GFP_KERNEL);
- 	if (block == NULL)
- 		return NULL;
- 
-+	rbuf = kmalloc(2, GFP_KERNEL);
-+	if (rbuf == NULL)
-+		goto error;
-+
- 	for (i = 0; i < EDID_LENGTH; i++) {
- 		ret = usb_control_msg(udl->ddev->usbdev,
- 				      usb_rcvctrlpipe(udl->ddev->usbdev, 0), (0x02),
-@@ -42,10 +46,12 @@ static u8 *udl_get_edid(struct udl_devic
- 		block[i] = rbuf[1];
- 	}
- 
-+	kfree(rbuf);
- 	return block;
- 
- error:
- 	kfree(block);
-+	kfree(rbuf);
- 	return NULL;
- }
- 
+--- a/sound/soc/codecs/wm5100.c
++++ b/sound/soc/codecs/wm5100.c
+@@ -1296,15 +1296,9 @@ static int wm5100_set_fmt(struct snd_soc
+ 	case SND_SOC_DAIFMT_DSP_A:
+ 		mask = 0;
+ 		break;
+-	case SND_SOC_DAIFMT_DSP_B:
+-		mask = 1;
+-		break;
+ 	case SND_SOC_DAIFMT_I2S:
+ 		mask = 2;
+ 		break;
+-	case SND_SOC_DAIFMT_LEFT_J:
+-		mask = 3;
+-		break;
+ 	default:
+ 		dev_err(codec->dev, "Unsupported DAI format %d\n",
+ 			fmt & SND_SOC_DAIFMT_FORMAT_MASK);
 
 
