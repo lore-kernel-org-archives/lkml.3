@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab3AOU3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:29:07 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:42719 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757222Ab3AOU2s (ORCPT
+	id S1757336Ab3AOU3T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:29:19 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:61464 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756776Ab3AOU3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:28:48 -0500
-From: Matt Porter <mporter@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>
-Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v5 14/14] ARM: dts: add AM33XX SPI DMA support
-Date: Tue, 15 Jan 2013 15:32:54 -0500
-Message-Id: <1358281974-8411-15-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358281974-8411-1-git-send-email-mporter@ti.com>
-References: <1358281974-8411-1-git-send-email-mporter@ti.com>
+	Tue, 15 Jan 2013 15:29:15 -0500
+Date: Tue, 15 Jan 2013 21:29:04 +0100
+From: =?ISO-8859-2?B?QWfzY3MgUOFs?= <agocs.pal.86@gmail.com>
+To: Aaron Sierra <asierra@xes-inc.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] lpc_ich: fix gpio base and control offsets
+Message-ID: <20130115212904.6c8e96ad@palee-debian>
+In-Reply-To: <a858277c-6164-4d43-abee-a3d34ad8b04c@zimbra>
+References: <fe420c78-bf1b-40f0-b3f0-09ea26986de2@zimbra>
+	<a858277c-6164-4d43-abee-a3d34ad8b04c@zimbra>
+X-Mailer: Claws Mail 3.9.0cvs55 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds DMA resources to the AM33XX SPI nodes.
+Tue, 15 Jan 2013 13:12:15 -0600 (CST) -n
+Aaron Sierra <asierra@xes-inc.com> wrote:
 
-Signed-off-by: Matt Porter <mporter@ti.com>
----
- arch/arm/boot/dts/am33xx.dtsi |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+>  #define ACPIBASE_GCS_END	0x3414
+>  
+>  #define GPIOBASE		0x48
+> +#define GPIOBASE_ICH5		0x58
+>  #define GPIOCTRL		0x4C
+> +#define GPIOCTRL_ICH5		0x58
+>  
+>  #define RCBABASE		0xf0
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 278b75d..8fd3648 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -356,6 +356,11 @@
- 			interrupt = <65>;
- 			ti,spi-num-cs = <2>;
- 			ti,hwmods = "spi0";
-+			dmas = <&edma 16
-+				&edma 17
-+				&edma 18
-+				&edma 19>;
-+			dma-names = "tx0", "rx0", "tx1", "rx1";
- 			status = "disabled";
- 		};
- 
-@@ -367,6 +372,11 @@
- 			interrupt = <125>;
- 			ti,spi-num-cs = <2>;
- 			ti,hwmods = "spi1";
-+			dmas = <&edma 42
-+				&edma 43
-+				&edma 44
-+				&edma 45>;
-+			dma-names = "tx0", "rx0", "tx1", "rx1";
- 			status = "disabled";
- 		};
- 
--- 
-1.7.9.5
+Aaron,
+A like this corrected patch and a little fix that GPIOCTRL_ICH5 is 0x5C
+Is this correct? Thanks!
 
+--
