@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab3AOUbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:31:13 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:55101 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756921Ab3AOU20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757388Ab3AOUbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:31:37 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:57794 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756929Ab3AOU20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Jan 2013 15:28:26 -0500
-From: Matt Porter <mporter@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>
-Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v5 07/14] dmaengine: add dma_request_slave_channel_compat()
-Date: Tue, 15 Jan 2013 15:32:47 -0500
-Message-Id: <1358281974-8411-8-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358281974-8411-1-git-send-email-mporter@ti.com>
-References: <1358281974-8411-1-git-send-email-mporter@ti.com>
+Date: Tue, 15 Jan 2013 21:28:24 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>
+Subject: Re: [PATCH v7u1 22/31] x86, boot: add fields to support load bzImage
+ and ramdisk above 4G
+Message-ID: <20130115202824.GE8101@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+	Matt Fleming <matt.fleming@intel.com>,
+	Gokul Caushik <caushik1@gmail.com>,
+	Josh Triplett <josh@joshtriplett.org>,
+	Joe Millenbach <jmillenbach@gmail.com>
+References: <CAE9FiQUtbpo0njyPjPED=esKKnSdFs9ry4pFjG1y0LvHxkqV4w@mail.gmail.com>
+ <50F46304.3010108@zytor.com>
+ <CAE9FiQU_8ngBbXbwrqC1SaR3fScoDNvO_nKOhDYBV_bjOzjwJg@mail.gmail.com>
+ <CAE9FiQWxWdeGB-DZp7W2rmukG-KPahF8SQbBcHUWbbUAJA2MhA@mail.gmail.com>
+ <20130115155053.GA8101@liondog.tnic>
+ <CAE9FiQUyinyu_DxLF_kXO82cMnRmt0fmbkh11vEw2Wr0SAWw_A@mail.gmail.com>
+ <20130115164843.GB8101@liondog.tnic>
+ <CAE9FiQUz6t_hK11X9ra5pj2DwJsNCu=cZJ7TYGR1ry-rvwSmjg@mail.gmail.com>
+ <20130115194918.GD8101@liondog.tnic>
+ <CAE9FiQWytQmKNzo6BApNqj0FDtMS3CBqHy-ou1KmgF4beefEFw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQWytQmKNzo6BApNqj0FDtMS3CBqHy-ou1KmgF4beefEFw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a dma_request_slave_channel_compat() wrapper which accepts
-both the arguments from dma_request_channel() and
-dma_request_slave_channel(). Based on whether the driver is
-instantiated via DT, the appropriate channel request call will be
-made.
+On Tue, Jan 15, 2013 at 12:16:11PM -0800, Yinghai Lu wrote:
+> then stop coding.
 
-This allows for a much cleaner migration of drivers to the
-dmaengine DT API as platforms continue to be mixed between those
-that boot using DT and those that do not.
+I'll stop coding when you write one correct sentence in English.
 
-Suggested-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Matt Porter <mporter@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
----
- include/linux/dmaengine.h |   10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 9fd0c5b..64f9f69 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -1047,6 +1047,16 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
- struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
- struct dma_chan *net_dma_find_channel(void);
- #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
-+static inline struct dma_chan
-+*dma_request_slave_channel_compat(dma_cap_mask_t mask, dma_filter_fn fn,
-+				  void *fn_param, struct device *dev,
-+				  char *name)
-+{
-+	if (dev->of_node)
-+		return dma_request_slave_channel(dev, name);
-+	else
-+		return dma_request_channel(mask, fn, fn_param);
-+}
- 
- /* --- Helper iov-locking functions --- */
- 
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
