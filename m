@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab3AOSwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:52:49 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34153 "EHLO mail.kernel.org"
+	id S1757895Ab3AOS4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:56:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34143 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757695Ab3AOSwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:52:43 -0500
+	id S1757761Ab3AOSwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:52:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        Prasad Koya <prasad.koya@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 018/221] mm: bootmem: fix free_all_bootmem_core() with odd bitmap alignment
-Date: Tue, 15 Jan 2013 10:49:05 -0800
-Message-Id: <20130115184959.369708102@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 009/221] powerpc: Fix CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n build
+Date: Tue, 15 Jan 2013 10:48:56 -0800
+Message-Id: <20130115184958.729509200@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -31,111 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 10d73e655cef6e86ea8589dca3df4e495e4900b0 upstream.
+commit 11ee7e99f35ecb15f59b21da6a82d96d2cd3fcc8 upstream.
 
-Currently free_all_bootmem_core ignores that node_min_pfn may be not
-multiple of BITS_PER_LONG.  Eg commit 6dccdcbe2c3e ("mm: bootmem: fix
-checking the bitmap when finally freeing bootmem") shifts vec by lower
-bits of start instead of lower bits of idx.  Also
+If we build a kernel with CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n,
+the kernel fails when we run at a non zero offset. It turns out
+we were incorrectly wrapping some of the relocatable kernel code
+with CONFIG_CRASH_DUMP.
 
-  if (IS_ALIGNED(start, BITS_PER_LONG) && vec == ~0UL)
-
-assumes that vec bit 0 corresponds to start pfn, which is only true when
-node_min_pfn is a multiple of BITS_PER_LONG.  Also loop in the else
-clause can double-free pages (e.g.  with node_min_pfn == start == 1,
-map[0] == ~0 on 32-bit machine page 32 will be double-freed).
-
-This bug causes the following message during xtensa kernel boot:
-
-  bootmem::free_all_bootmem_core nid=0 start=1 end=8000
-  BUG: Bad page state in process swapper  pfn:00001
-  page:d04bd020 count:0 mapcount:-127 mapping:  (null) index:0x2
-  page flags: 0x0()
-  Call Trace:
-    bad_page+0x8c/0x9c
-    free_pages_prepare+0x5e/0x88
-    free_hot_cold_page+0xc/0xa0
-    __free_pages+0x24/0x38
-    __free_pages_bootmem+0x54/0x56
-    free_all_bootmem_core$part$11+0xeb/0x138
-    free_all_bootmem+0x46/0x58
-    mem_init+0x25/0xa4
-    start_kernel+0x11e/0x25c
-    should_never_return+0x0/0x3be7
-
-The fix is the following:
- - always align vec so that its bit 0 corresponds to start
- - provide BITS_PER_LONG bits in vec, if those bits are available in the
-   map
- - don't free pages past next start position in the else clause.
-
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Joonsoo Kim <js1304@gmail.com>
-Cc: Prasad Koya <prasad.koya@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/bootmem.c |   24 ++++++++++++++++++------
- 1 file changed, 18 insertions(+), 6 deletions(-)
+ arch/powerpc/kernel/head_64.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -185,10 +185,23 @@ static unsigned long __init free_all_boo
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -422,7 +422,7 @@ _STATIC(__after_prom_start)
+ 	tovirt(r6,r6)			/* on booke, we already run at PAGE_OFFSET */
+ #endif
  
- 	while (start < end) {
- 		unsigned long *map, idx, vec;
-+		unsigned shift;
- 
- 		map = bdata->node_bootmem_map;
- 		idx = start - bdata->node_min_pfn;
-+		shift = idx & (BITS_PER_LONG - 1);
-+		/*
-+		 * vec holds at most BITS_PER_LONG map bits,
-+		 * bit 0 corresponds to start.
-+		 */
- 		vec = ~map[idx / BITS_PER_LONG];
-+
-+		if (shift) {
-+			vec >>= shift;
-+			if (end - start >= BITS_PER_LONG)
-+				vec |= ~map[idx / BITS_PER_LONG + 1] <<
-+					(BITS_PER_LONG - shift);
-+		}
- 		/*
- 		 * If we have a properly aligned and fully unreserved
- 		 * BITS_PER_LONG block of pages in front of us, free
-@@ -201,19 +214,18 @@ static unsigned long __init free_all_boo
- 			count += BITS_PER_LONG;
- 			start += BITS_PER_LONG;
- 		} else {
--			unsigned long off = 0;
-+			unsigned long cur = start;
- 
--			vec >>= start & (BITS_PER_LONG - 1);
--			while (vec) {
-+			start = ALIGN(start + 1, BITS_PER_LONG);
-+			while (vec && cur != start) {
- 				if (vec & 1) {
--					page = pfn_to_page(start + off);
-+					page = pfn_to_page(cur);
- 					__free_pages_bootmem(page, 0);
- 					count++;
- 				}
- 				vec >>= 1;
--				off++;
-+				++cur;
- 			}
--			start = ALIGN(start + 1, BITS_PER_LONG);
- 		}
- 	}
- 
+-#ifdef CONFIG_CRASH_DUMP
++#ifdef CONFIG_RELOCATABLE
+ /*
+  * Check if the kernel has to be running as relocatable kernel based on the
+  * variable __run_at_load, if it is set the kernel is treated as relocatable
 
 
