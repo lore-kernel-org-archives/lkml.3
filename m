@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab3AOPtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 10:49:13 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:41194 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756705Ab3AOPtI (ORCPT
+	id S1756899Ab3AOPtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 10:49:18 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:47613 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756789Ab3AOPtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 10:49:08 -0500
+	Tue, 15 Jan 2013 10:49:12 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v6 04/18] perf, core: Add a concept of a weightened sample
-Date: Tue, 15 Jan 2013 16:39:32 +0100
-Message-Id: <1358264386-24633-5-git-send-email-eranian@google.com>
+Subject: [PATCH v6 05/18] perf: add minimal support for PERF_SAMPLE_WEIGHT
+Date: Tue, 15 Jan 2013 16:39:33 +0100
+Message-Id: <1358264386-24633-6-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358264386-24633-1-git-send-email-eranian@google.com>
 References: <1358264386-24633-1-git-send-email-eranian@google.com>
@@ -21,102 +21,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Ensure we grab the weight from  raw sample struct
+and that we can dump it via perf report -D.
 
-For some events it's useful to weight sample with a hardware
-provided number. This expresses how expensive the action the
-sample represent was.  This allows the profiler to scale
-the samples to be more informative to the programmer.
-
-There is already the period which is used similarly, but it means
-something different, so I chose to not overload it. Instead
-a new sample type for WEIGHT is added.
-
-Can be used for multiple things. Initially it is used for TSX abort costs
-and profiling by memory latencies (so to make expensive load appear higher
-up in the histograms)  The concept is quite generic and can be extended
-to many other kinds of events or architectures, as long as the hardware
-provides suitable auxillary values. In principle it could be also
-used for software tracpoints.
-
-This adds the generic glue. A new optional sample format for a 64bit
-weight value.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |    5 ++++-
- kernel/events/core.c            |    6 ++++++
- 3 files changed, 12 insertions(+), 1 deletion(-)
+ tools/perf/util/event.h   |    1 +
+ tools/perf/util/evsel.c   |    5 +++++
+ tools/perf/util/session.c |    3 +++
+ 3 files changed, 9 insertions(+)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 484cfbc..bb2429d 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -584,6 +584,7 @@ struct perf_sample_data {
- 	struct perf_branch_stack	*br_stack;
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
-+	u64				weight;
- };
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 0d573ff..cf52977 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -90,6 +90,7 @@ struct perf_sample {
+ 	u64 period;
+ 	u32 cpu;
+ 	u32 raw_size;
++	u64 weight;
+ 	void *raw_data;
+ 	struct ip_callchain *callchain;
+ 	struct branch_stack *branch_stack;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 1b16dd1..e08ce12 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1058,6 +1058,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		}
+ 	}
  
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -597,6 +598,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
-+	data->weight = 0;
++	if (type & PERF_SAMPLE_WEIGHT) {
++		data->weight = *array;
++		array++;
++	}
++
+ 	return 0;
  }
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 4f63c05..7e24641 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -132,8 +132,10 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
-+	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+
-+	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index ce6f511..117983e 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1006,6 +1006,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
  
--	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
- };
- 
- /*
-@@ -587,6 +589,7 @@ enum perf_event_type {
- 	 * 	{ u64			size;
- 	 * 	  char			data[size];
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
-+	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 301079d..bc2ce07 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -955,6 +955,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		size += sizeof(data->weight);
-+
- 	event->header_size = size;
- }
- 
-@@ -4169,6 +4172,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		perf_output_sample_ustack(handle,
- 					  data->stack_user_size,
- 					  data->regs_user.regs);
+ 	if (sample_type & PERF_SAMPLE_STACK_USER)
+ 		stack_user__printf(&sample->user_stack);
 +
 +	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		perf_output_put(handle, data->weight);
++		printf(" ... weight: %"PRIu64"\n", sample->weight);
  }
  
- void perf_prepare_sample(struct perf_event_header *header,
+ static struct machine *
 -- 
 1.7.9.5
 
