@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933707Ab3AOXaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:30:25 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:58592 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932879Ab3AOXaT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 18:30:19 -0500
-Message-ID: <1358292641.11794.1.camel@gitbox>
-Subject: Re: [PATCH v2] mtd: vt8500: Add support for Wondermedia Serial
- Flash Controller
-From: Tony Prisk <linux@prisktech.co.nz>
-To: dedekind1@gmail.com
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 16 Jan 2013 12:30:41 +1300
-In-Reply-To: <1358277072.1668.2.camel@kyv>
-References: <1356901207-13536-1-git-send-email-linux@prisktech.co.nz>
-	 <1358261750.2731.148.camel@sauron.fi.intel.com>
-	 <1358271907.31593.1.camel@gitbox> <1358277072.1668.2.camel@kyv>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S933763Ab3AOXbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:31:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46728 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933621Ab3AOWwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:18 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Julien Cristau <jcristau@debian.org>
+Subject: [ 119/171] drm/i915: Wait for all pending operations to the fb before disabling the pipe
+Date: Tue, 15 Jan 2013 14:44:44 -0800
+Message-Id: <20130115224321.935069611@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
+References: <20130115224313.394976595@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-15 at 21:11 +0200, Artem Bityutskiy wrote:
-> On Wed, 2013-01-16 at 06:45 +1300, Tony Prisk wrote:
-> > On Tue, 2013-01-15 at 16:55 +0200, Artem Bityutskiy wrote:
-> > > On Mon, 2012-12-31 at 10:00 +1300, Tony Prisk wrote:
-> > > > This patch adds support for the Wondermedia serial flash controller
-> > > > found on WM8505, WM8650 and WM8850 SoCs.
-> > > > 
-> > > > Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> > > > ---
-> > > > v2: Whitespace tidyup
-> > > 
-> > > Hi, would you please take a look at these warings, identified by aiaiai:
-> > > 
-> > > Successfully built configuration "x86_64_defconfig,x86_64,", results:
-> > > 
-> > > --- before_patching.log
-> > > +++ after_patching.log
-> > > @@ @@
-> > > +drivers/mtd/devices/wmt_sflash.c: In function ‘sf_read’:
-> > > +drivers/mtd/devices/wmt_sflash.c:425:9: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘size_t’ [-Wformat]
-> > > +drivers/mtd/devices/wmt_sflash.c: In function ‘sf_sector_write’:
-> > > +drivers/mtd/devices/wmt_sflash.c:442:16: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-> > > +drivers/mtd/devices/wmt_sflash.c:442:24: warning: cast removes address space of expression [sparse]
-> > > +drivers/mtd/devices/wmt_sflash.c:458:16: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> > > +drivers/mtd/devices/wmt_sflash.c:458:31: warning: incorrect type in argument 1 (different address spaces) [sparse]
-> > > +drivers/mtd/devices/wmt_sflash.c:458:31:    expected void volatile [noderef] <asn:2>*dst [sparse]
-> > > +drivers/mtd/devices/wmt_sflash.c:458:31:    got unsigned char [usertype] *<noident> [sparse]
-> > > +drivers/mtd/devices/wmt_sflash.c:465:17: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> > > +drivers/mtd/devices/wmt_sflash.c:465:39: warning: incorrect type in argument 1 (different address spaces) [sparse]
-> > > +drivers/mtd/devices/wmt_sflash.c:465:39:    expected void volatile [noderef] <asn:2>*dst [sparse]
-> > > +drivers/mtd/devices/wmt_sflash.c:465:39:    got unsigned char [usertype] *<noident> [sparse]
-> > > 
-> > 
-> > Apologies - This driver shouldn't be selectable for x86_64.
-> > It is an ARM driver for an embedded device. Will fix.
-> 
-> Note, there are also warnings when it is compiled for other platforms,
-> not only x86_64. Take a look at them. Also note, than many warnings come
-> from sparse, you probably just did not run it.
-> 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I posted the patch for this problem this morning. It should only be
-selectable on arch-vt8500 and the new patch fixes this problem.
+------------------
 
-It incorrectly depended on MTD rather than ARCH_VT8500
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-Regards
-Tony P
+commit 0f91128d88bbb8b0a8e7bb93df2c40680871d45a upstream.
+
+During modeset we have to disable the pipe to reconfigure its timings
+and maybe its size. Userspace may have queued up command buffers that
+depend upon the pipe running in a certain configuration and so the
+commands may become confused across the modeset. At the moment, we use a
+less than satisfactory kick-scanline-waits should the GPU hang during
+the modeset. It should be more reliable to wait for the pending
+operations to complete first, even though we still have a window for
+userspace to submit a broken command buffer during the modeset.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Julien Cristau <jcristau@debian.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/gpu/drm/i915/intel_display.c |   27 ++++-----------------------
+ 1 file changed, 4 insertions(+), 23 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2897,16 +2897,14 @@ static void intel_clear_scanline_wait(st
+ 
+ static void intel_crtc_wait_for_pending_flips(struct drm_crtc *crtc)
+ {
+-	struct drm_i915_gem_object *obj;
+-	struct drm_i915_private *dev_priv;
++	struct drm_device *dev = crtc->dev;
+ 
+ 	if (crtc->fb == NULL)
+ 		return;
+ 
+-	obj = to_intel_framebuffer(crtc->fb)->obj;
+-	dev_priv = crtc->dev->dev_private;
+-	wait_event(dev_priv->pending_flip_queue,
+-		   atomic_read(&obj->pending_flip) == 0);
++	mutex_lock(&dev->struct_mutex);
++	intel_finish_fb(crtc->fb);
++	mutex_unlock(&dev->struct_mutex);
+ }
+ 
+ static bool intel_crtc_driving_pch(struct drm_crtc *crtc)
+@@ -3372,23 +3370,6 @@ static void intel_crtc_disable(struct dr
+ 	struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
+ 	struct drm_device *dev = crtc->dev;
+ 
+-	/* Flush any pending WAITs before we disable the pipe. Note that
+-	 * we need to drop the struct_mutex in order to acquire it again
+-	 * during the lowlevel dpms routines around a couple of the
+-	 * operations. It does not look trivial nor desirable to move
+-	 * that locking higher. So instead we leave a window for the
+-	 * submission of further commands on the fb before we can actually
+-	 * disable it. This race with userspace exists anyway, and we can
+-	 * only rely on the pipe being disabled by userspace after it
+-	 * receives the hotplug notification and has flushed any pending
+-	 * batches.
+-	 */
+-	if (crtc->fb) {
+-		mutex_lock(&dev->struct_mutex);
+-		intel_finish_fb(crtc->fb);
+-		mutex_unlock(&dev->struct_mutex);
+-	}
+-
+ 	crtc_funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
+ 	assert_plane_disabled(dev->dev_private, to_intel_crtc(crtc)->plane);
+ 	assert_pipe_disabled(dev->dev_private, to_intel_crtc(crtc)->pipe);
+
 
