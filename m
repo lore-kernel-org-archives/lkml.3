@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933473Ab3AOWvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:51:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46473 "EHLO mail.kernel.org"
+	id S933441Ab3AOWvd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:51:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46432 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933444Ab3AOWvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:51:35 -0500
+	id S933425Ab3AOWv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:51:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 098/171] usb: musb: core: print new line in the driver banner again
-Date: Tue, 15 Jan 2013 14:44:23 -0800
-Message-Id: <20130115224320.436202183@linuxfoundation.org>
+        =?ISO-8859-15?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 094/171] USB: option: add Telekom Speedstick LTE II
+Date: Tue, 15 Jan 2013 14:44:19 -0800
+Message-Id: <20130115224320.154930754@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,35 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 2ac788f705e5118dd45204e7a5bc8d5bb6873835 upstream.
+commit 5ec0085440ef8c2cf50002b34d5a504ee12aa2bf upstream.
 
-Commit 5c8a86e10a7c164f44537fabdc169fd8b4e7a440 (usb: musb: drop unneeded
-musb_debug trickery) erroneously removed '\n' from the driver's banner.
-Concatenate all the banner substrings while adding it back...
+also known as Alcatel One Touch L100V LTE
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+The driver description files gives these names to the vendor specific
+functions on this modem:
+
+ Application1: VID_1BBB&PID_011E&MI_00
+ Application2: VID_1BBB&PID_011E&MI_01
+ Modem:        VID_1BBB&PID_011E&MI_03
+ Ethernet:     VID_1BBB&PID_011E&MI_04
+
+Reported-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_core.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -2400,10 +2400,7 @@ static int __init musb_init(void)
- 	if (usb_disabled())
- 		return 0;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -288,6 +288,7 @@ static void option_instat_callback(struc
+ #define ALCATEL_VENDOR_ID			0x1bbb
+ #define ALCATEL_PRODUCT_X060S_X200		0x0000
+ #define ALCATEL_PRODUCT_X220_X500D		0x0017
++#define ALCATEL_PRODUCT_L100V			0x011e
  
--	pr_info("%s: version " MUSB_VERSION ", "
--		"?dma?"
--		", "
--		"otg (peripheral+host)",
-+	pr_info("%s: version " MUSB_VERSION ", ?dma?, otg (peripheral+host)\n",
- 		musb_driver_name);
- 	return platform_driver_register(&musb_driver);
- }
+ #define PIRELLI_VENDOR_ID			0x1266
+ #define PIRELLI_PRODUCT_C100_1			0x1002
+@@ -1198,6 +1199,8 @@ static const struct usb_device_id option
+ 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
+ 	},
+ 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
+ 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
 
 
