@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266Ab3AOWbb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:31:31 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42270 "EHLO mail.kernel.org"
+	id S932301Ab3AOWbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:31:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42315 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932222Ab3AOWb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:31:27 -0500
+	id S932273Ab3AOWbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:31:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [ 107/221] samsung-laptop: Add quirk for broken acpi_video backlight on N250P
-Date: Tue, 15 Jan 2013 10:50:34 -0800
-Message-Id: <20130115185005.771343712@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Eric Paris <eparis@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Steve Grubb <sgrubb@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 102/221] audit: create explicit AUDIT_SECCOMP event type
+Date: Tue, 15 Jan 2013 10:50:29 -0800
+Message-Id: <20130115185005.390877017@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,37 +32,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit e04c200f1f2de8eaa2f5af6d97e7e213a1abb424 upstream.
+commit 7b9205bd775afc4439ed86d617f9042ee9e76a71 upstream.
 
-BugLink: http://bugs.launchpad.net/bugs/1086921
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+The seccomp path was using AUDIT_ANOM_ABEND from when seccomp mode 1
+could only kill a process.  While we still want to make sure an audit
+record is forced on a kill, this should use a separate record type since
+seccomp mode 2 introduces other behaviors.
+
+In the case of "handled" behaviors (process wasn't killed), only emit a
+record if the process is under inspection.  This change also fixes
+userspace examination of seccomp audit events, since it was considered
+malformed due to missing fields of the AUDIT_ANOM_ABEND event type.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Jeff Layton <jlayton@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Julien Tinnes <jln@google.com>
+Acked-by: Will Drewry <wad@chromium.org>
+Acked-by: Steve Grubb <sgrubb@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/samsung-laptop.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ include/linux/audit.h      |    3 ++-
+ include/uapi/linux/audit.h |    1 +
+ kernel/auditsc.c           |   14 +++++++++++---
+ 3 files changed, 14 insertions(+), 4 deletions(-)
 
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -1523,6 +1523,16 @@ static struct dmi_system_id __initdata s
- 		},
- 	 .driver_data = &samsung_broken_acpi_video,
- 	},
-+	{
-+	 .callback = samsung_dmi_matched,
-+	 .ident = "N250P",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N250P"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N250P"),
-+		},
-+	 .driver_data = &samsung_broken_acpi_video,
-+	},
- 	{ },
- };
- MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -157,7 +157,8 @@ void audit_core_dumps(long signr);
+ 
+ static inline void audit_seccomp(unsigned long syscall, long signr, int code)
+ {
+-	if (unlikely(!audit_dummy_context()))
++	/* Force a record to be reported if a signal was delivered. */
++	if (signr || unlikely(!audit_dummy_context()))
+ 		__audit_seccomp(syscall, signr, code);
+ }
+ 
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -106,6 +106,7 @@
+ #define AUDIT_MMAP		1323	/* Record showing descriptor and flags in mmap */
+ #define AUDIT_NETFILTER_PKT	1324	/* Packets traversing netfilter chains */
+ #define AUDIT_NETFILTER_CFG	1325	/* Netfilter chain modifications */
++#define AUDIT_SECCOMP		1326	/* Secure Computing event */
+ 
+ #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
+ #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -2735,7 +2735,7 @@ void __audit_mmap_fd(int fd, int flags)
+ 	context->type = AUDIT_MMAP;
+ }
+ 
+-static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
++static void audit_log_task(struct audit_buffer *ab)
+ {
+ 	kuid_t auid, uid;
+ 	kgid_t gid;
+@@ -2753,6 +2753,11 @@ static void audit_log_abend(struct audit
+ 	audit_log_task_context(ab);
+ 	audit_log_format(ab, " pid=%d comm=", current->pid);
+ 	audit_log_untrustedstring(ab, current->comm);
++}
++
++static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
++{
++	audit_log_task(ab);
+ 	audit_log_format(ab, " reason=");
+ 	audit_log_string(ab, reason);
+ 	audit_log_format(ab, " sig=%ld", signr);
+@@ -2783,8 +2788,11 @@ void __audit_seccomp(unsigned long sysca
+ {
+ 	struct audit_buffer *ab;
+ 
+-	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
+-	audit_log_abend(ab, "seccomp", signr);
++	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_SECCOMP);
++	if (unlikely(!ab))
++		return;
++	audit_log_task(ab);
++	audit_log_format(ab, " sig=%ld", signr);
+ 	audit_log_format(ab, " syscall=%ld", syscall);
+ 	audit_log_format(ab, " compat=%d", is_compat_task());
+ 	audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
 
 
