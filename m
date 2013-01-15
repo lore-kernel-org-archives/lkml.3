@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab3AOKZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:25:43 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:45735 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab3AOKZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:25:42 -0500
+	id S1756671Ab3AOK2I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:28:08 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:48302 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755667Ab3AOK2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:28:07 -0500
+X-IronPort-AV: E=Sophos;i="4.84,473,1355068800"; 
+   d="scan'208";a="6591206"
+Message-ID: <50F52EF8.7050605@cn.fujitsu.com>
+Date: Tue, 15 Jan 2013 18:27:04 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Tue, 15 Jan 2013 11:25:41 +0100
-Message-ID: <CA+icZUUkvBDGkC8x5tUoWmOe6f8sTjLPoadTFhqgUOb91SPC9w@mail.gmail.com>
-Subject: Re: [RFC] Reproducible OOM with just a few sleeps
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: paul.szabo@sydney.edu.au, Paul Szabo <psz@maths.usyd.edu.au>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8
+To: Michal Hocko <mhocko@suse.cz>
+CC: akpm@linux-foundation.org, linux-mm@kvack.org, wency@cn.fujitsu.com,
+        jiang.liu@huawei.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        tangchen@cn.fujitsu.com
+Subject: Re: [PATCH] memory-hotplug: revert register_page_bootmem_info_node()
+ to empty when platform related code is not implemented
+References: <1358160835-30617-1-git-send-email-linfeng@cn.fujitsu.com> <20130114184308.GD5126@dhcp22.suse.cz>
+In-Reply-To: <20130114184308.GD5126@dhcp22.suse.cz>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/15 18:27:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/15 18:27:22,
+	Serialize complete at 2013/01/15 18:27:22
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hi Michal,
 
-I followed a bit the thread you started in [1].
+I have updated to V2 version according to what you said, would you please take a look 
+if it conforms to what you think? 
 
-As you might know i386 got eliminated in Linux-3.8.
+thanks,
+linfeng
 
-I had several discussions with the Debian kernel-team about the iN86
-(N=4..6) and PAE kernel-flavours.
-On the one hand I can understand the reduction of linux-images
-especially for iN86.
-Even i486 is a bit unfirm as there is no much hardware around, but
-Debian will keep i486 for a while (release maintenance).
-
-Topic PAE:
-Unfortunately, I had a notebook with a Intel Centrino Banias CPU (no
-PAE) which should use the -486 kernel-flavour due to the Debian
-kernel-team.
-I played with some different kernel-setup which did not give me more
-benefit (openssl benchmarks etc.)
-The -686-pae kernel did run on my hardware, but as known with all the
-SMP-NO-OPs.
-
-Depending on the hardware, it really makes sense to switch to x86_64
-(amd64) architecture when you have a modern computer.
-Switching makes even more sense when you have more than 4GiB RAM.
-IMHO using a -686-amd64 Debian kernel makes ZERO sense, real 64-Bit or die!
-
-I switched to 64-bit... and I switched from Debian/sid to
-Ubuntu/precise as well :-).
-( NOTE: I am working here since April 2012 in a WUBI environment (no
-native Ubuntu Linux) :-). )
-
-And I am building my kernels by myself.
-So I know very well whom to blame :-).
-
-Some last words: I had several fruitful or fruitless discussions with
-the Debian kernel-team, but I can confirm (with all my heart) this
-team makes a fantastic job.
-I can recommend you Ben's blog (recently I read a series about news in
-the Debian/wheezy kernel) if your world is Debian or Ubuntu (Debian !=
-Ubuntu).
-
-Just my 0.02EUR (no British pound, here as well: when you are a member
-of the EU chose EUR not pound!).
-
-Regards,
-- Sedat -
-
-
-[1] http://marc.info/?t=135796172200001&r=1&w=2
+On 01/15/2013 02:43 AM, Michal Hocko wrote:
+> This is just ugly. Could you please add something like HAVE_BOOTMEM_INFO_NODE
+> or something with a bettern name and let CONFIG_MEMORY_HOTPLUG select it
+> for supported architectures and configurations (e.g.
+> CONFIG_SPARSEMEM_VMEMMAP doesn't need a special arch support, right?).
+> These Todo things are just too messy.
+> -- 
