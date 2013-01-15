@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933289Ab3AOWut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:50:49 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46135 "EHLO mail.kernel.org"
+	id S1758736Ab3AOXlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:41:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46159 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933051Ab3AOWup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:45 -0500
+	id S933282Ab3AOWus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Hans de Goede <hdegoede@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 077/171] udldrmfb: udl_get_edid: drop unneeded i--
-Date: Tue, 15 Jan 2013 14:44:02 -0800
-Message-Id: <20130115224318.962648456@linuxfoundation.org>
+        Mike Dunn <mikedunn@newsguy.com>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 079/171] ALSA: pxa27x: fix ac97 warm reset
+Date: Tue, 15 Jan 2013 14:44:04 -0800
+Message-Id: <20130115224319.106329532@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,30 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Mike Dunn <mikedunn@newsguy.com>
 
-commit 7b4cf994e4c6ba48872bb25253cc393b7fb74c82 upstream.
+commit 3b4bc7bccc7857274705b05cf81a0c72cfd0b0dd upstream.
 
-This is a left-over from when udl_get_edid returned the amount of bytes
-successfully read, which it no longer does.
+This patch fixes some code that implements a work-around to a hardware bug in
+the ac97 controller on the pxa27x.  A bug in the controller's warm reset
+functionality requires that the mfp used by the controller as the AC97_nRESET
+line be temporarily reconfigured as a generic output gpio (AF0) and manually
+held high for the duration of the warm reset cycle.  This is what was done in
+the original code, but it was broken long ago by commit fb1bf8cd
+    ([ARM] pxa: introduce processor specific pxa27x_assert_ac97reset())
+which changed the mfp to a GPIO input instead of a high output.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+The fix requires the ac97 controller to obtain the gpio via gpio_request_one(),
+with arguments that configure the gpio as an output initially driven high.
+
+Tested on a palm treo 680 machine.  Reportedly, this broken code only prevents a
+warm reset on hardware that lacks a pull-up on the line, which appears to be the
+case for me.
+
+Signed-off-by: Mike Dunn <mikedunn@newsguy.com>
+Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/udl/udl_connector.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/mach-pxa/include/mach/mfp-pxa27x.h |    3 +++
+ arch/arm/mach-pxa/pxa27x.c                  |    4 ++--
+ sound/arm/pxa2xx-ac97-lib.c                 |   18 +++++++++++++++++-
+ 3 files changed, 22 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/udl/udl_connector.c
-+++ b/drivers/gpu/drm/udl/udl_connector.c
-@@ -40,7 +40,6 @@ static u8 *udl_get_edid(struct udl_devic
- 				      HZ);
- 		if (ret < 1) {
- 			DRM_ERROR("Read EDID byte %d failed err %x\n", i, ret);
--			i--;
- 			goto error;
- 		}
- 		block[i] = rbuf[1];
+--- a/arch/arm/mach-pxa/include/mach/mfp-pxa27x.h
++++ b/arch/arm/mach-pxa/include/mach/mfp-pxa27x.h
+@@ -462,6 +462,9 @@
+ 	GPIO76_LCD_PCLK,	\
+ 	GPIO77_LCD_BIAS
+ 
++/* these enable a work-around for a hw bug in pxa27x during ac97 warm reset */
++#define GPIO113_AC97_nRESET_GPIO_HIGH MFP_CFG_OUT(GPIO113, AF0, DEFAULT)
++#define GPIO95_AC97_nRESET_GPIO_HIGH MFP_CFG_OUT(GPIO95, AF0, DEFAULT)
+ 
+ extern int keypad_set_wake(unsigned int on);
+ #endif /* __ASM_ARCH_MFP_PXA27X_H */
+--- a/arch/arm/mach-pxa/pxa27x.c
++++ b/arch/arm/mach-pxa/pxa27x.c
+@@ -47,9 +47,9 @@ void pxa27x_clear_otgph(void)
+ EXPORT_SYMBOL(pxa27x_clear_otgph);
+ 
+ static unsigned long ac97_reset_config[] = {
+-	GPIO113_GPIO,
++	GPIO113_AC97_nRESET_GPIO_HIGH,
+ 	GPIO113_AC97_nRESET,
+-	GPIO95_GPIO,
++	GPIO95_AC97_nRESET_GPIO_HIGH,
+ 	GPIO95_AC97_nRESET,
+ };
+ 
+--- a/sound/arm/pxa2xx-ac97-lib.c
++++ b/sound/arm/pxa2xx-ac97-lib.c
+@@ -18,6 +18,7 @@
+ #include <linux/delay.h>
+ #include <linux/module.h>
+ #include <linux/io.h>
++#include <linux/gpio.h>
+ 
+ #include <sound/ac97_codec.h>
+ #include <sound/pxa2xx-lib.h>
+@@ -344,8 +345,21 @@ int __devinit pxa2xx_ac97_hw_probe(struc
+ 	}
+ 
+ 	if (cpu_is_pxa27x()) {
+-		/* Use GPIO 113 as AC97 Reset on Bulverde */
++		/*
++		 * This gpio is needed for a work-around to a bug in the ac97
++		 * controller during warm reset.  The direction and level is set
++		 * here so that it is an output driven high when switching from
++		 * AC97_nRESET alt function to generic gpio.
++		 */
++		ret = gpio_request_one(reset_gpio, GPIOF_OUT_INIT_HIGH,
++				       "pxa27x ac97 reset");
++		if (ret < 0) {
++			pr_err("%s: gpio_request_one() failed: %d\n",
++			       __func__, ret);
++			goto err_conf;
++		}
+ 		pxa27x_assert_ac97reset(reset_gpio, 0);
++
+ 		ac97conf_clk = clk_get(&dev->dev, "AC97CONFCLK");
+ 		if (IS_ERR(ac97conf_clk)) {
+ 			ret = PTR_ERR(ac97conf_clk);
+@@ -388,6 +402,8 @@ EXPORT_SYMBOL_GPL(pxa2xx_ac97_hw_probe);
+ 
+ void pxa2xx_ac97_hw_remove(struct platform_device *dev)
+ {
++	if (cpu_is_pxa27x())
++		gpio_free(reset_gpio);
+ 	GCR |= GCR_ACLINK_OFF;
+ 	free_irq(IRQ_AC97, NULL);
+ 	if (ac97conf_clk) {
 
 
