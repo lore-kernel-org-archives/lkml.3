@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934016Ab3AOXRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:17:51 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47431 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933949Ab3AOWxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:53:55 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
-Subject: [ 166/171] ceph: Fix __ceph_do_pending_vmtruncate
-Date: Tue, 15 Jan 2013 14:45:31 -0800
-Message-Id: <20130115224325.295830336@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
-References: <20130115224313.394976595@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S934065Ab3AOXRz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:17:55 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:34045 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933949Ab3AOXRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 18:17:52 -0500
+Date: Tue, 15 Jan 2013 15:17:47 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: USB device cannot be reconnected and khubd "blocked for more
+ than 120 seconds"
+Message-ID: <20130115231747.GI2668@htj.dyndns.org>
+References: <CALxABCaE3=XpGmgNJs1pre11aJ8T0pntVzf_mA6_OYNzis9nvQ@mail.gmail.com>
+ <Pine.LNX.4.44L0.1301131153520.17578-100000@netrider.rowland.org>
+ <CALxABCYtKJD4YrPxy6p+Frim8erccp3ine7SVEV9ReoaRh1BWQ@mail.gmail.com>
+ <CACVXFVPMH-CHGw2EVwgYK5ozn1NAygT0f9=Df4vhSJmYYOZBMw@mail.gmail.com>
+ <CACVXFVNvBeHG2TgfNY-wRQYtqsd6v-3AAiQVPAECuRnJ--ON-g@mail.gmail.com>
+ <CA+55aFxV40V2WvNtJY3EC0F-B9wPk8CV2o1TTTyoF4CoWH7rhQ@mail.gmail.com>
+ <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
+ <CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com>
+ <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
+ <CA+55aFy_7mng3fgKdYM_h3c1=etKhX5JqEvFVE23X8kNYJQkpw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy_7mng3fgKdYM_h3c1=etKhX5JqEvFVE23X8kNYJQkpw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Hello, Linus
 
-------------------
+Will continue on another reply but this one is relevant so...
 
+On Tue, Jan 15, 2013 at 10:18:45AM -0800, Linus Torvalds wrote:
+> Tejun, is there a good way for code to see "I'm running in async
+> context"? Then we could do something like
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+Almost.  With a bit of modification we can ask whether current is a
+kworker, reach struct worker_struct via kthread_data() if so and then
+test worker->current_func against the async workfn.
 
-we should set i_truncate_pending to 0 after page cache is truncated
-to i_truncate_size
+Thanks.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
-(cherry picked from commit a85f50b6ef93fbbb2ae932ce9b2376509d172796)
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/ceph/inode.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
-
---- a/fs/ceph/inode.c
-+++ b/fs/ceph/inode.c
-@@ -1466,7 +1466,7 @@ void __ceph_do_pending_vmtruncate(struct
- {
- 	struct ceph_inode_info *ci = ceph_inode(inode);
- 	u64 to;
--	int wrbuffer_refs, wake = 0;
-+	int wrbuffer_refs, finish = 0;
- 
- retry:
- 	spin_lock(&ci->i_ceph_lock);
-@@ -1498,15 +1498,18 @@ retry:
- 	truncate_inode_pages(inode->i_mapping, to);
- 
- 	spin_lock(&ci->i_ceph_lock);
--	ci->i_truncate_pending--;
--	if (ci->i_truncate_pending == 0)
--		wake = 1;
-+	if (to == ci->i_truncate_size) {
-+		ci->i_truncate_pending = 0;
-+		finish = 1;
-+	}
- 	spin_unlock(&ci->i_ceph_lock);
-+	if (!finish)
-+		goto retry;
- 
- 	if (wrbuffer_refs == 0)
- 		ceph_check_caps(ci, CHECK_CAPS_AUTHONLY, NULL);
--	if (wake)
--		wake_up_all(&ci->i_cap_wq);
-+
-+	wake_up_all(&ci->i_cap_wq);
- }
- 
- 
-
-
+-- 
+tejun
