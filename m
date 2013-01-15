@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934031Ab3AOXQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:16:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47498 "EHLO mail.kernel.org"
+	id S933987Ab3AOWyG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:54:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47472 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933983Ab3AOWyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:54:05 -0500
+	id S933788Ab3AOWyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:54:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
-Subject: [ 163/171] ceph: Dont update i_max_size when handling non-auth cap
-Date: Tue, 15 Jan 2013 14:45:28 -0800
-Message-Id: <20130115224325.084820820@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 170/171] staging: comedi: Kconfig: COMEDI_NI_AT_A2150 should select COMEDI_FC
+Date: Tue, 15 Jan 2013 14:45:35 -0800
+Message-Id: <20130115224325.567892032@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,29 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Ian Abbott <abbotti@mev.co.uk>
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+commit 34ffb33e09132401872fe79e95c30824ce194d23 upstream.
 
-The cap from non-auth mds doesn't have a meaningful max_size value.
+The 'ni_at_a2150' module links to `cfc_write_to_buffer` in the
+'comedi_fc' module, so selecting 'COMEDI_NI_AT_A2150' in the kernel config
+needs to also select 'COMEDI_FC'.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
-(cherry picked from commit 5e62ad30157d0da04cf40c6d1a2f4bc840948b9c)
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/ceph/caps.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ceph/caps.c
-+++ b/fs/ceph/caps.c
-@@ -2388,7 +2388,7 @@ static void handle_cap_grant(struct inod
- 			    &atime);
+---
+ drivers/staging/comedi/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/staging/comedi/Kconfig
++++ b/drivers/staging/comedi/Kconfig
+@@ -424,6 +424,7 @@ config COMEDI_ADQ12B
  
- 	/* max size increase? */
--	if (max_size != ci->i_max_size) {
-+	if (ci->i_auth_cap == cap && max_size != ci->i_max_size) {
- 		dout("max_size %lld -> %llu\n", ci->i_max_size, max_size);
- 		ci->i_max_size = max_size;
- 		if (max_size >= ci->i_wanted_max_size) {
+ config COMEDI_NI_AT_A2150
+ 	tristate "NI AT-A2150 ISA card support"
++	select COMEDI_FC
+ 	depends on COMEDI_NI_COMMON
+ 	depends on VIRT_TO_BUS
+ 	default N
 
 
