@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab3AOQCd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 11:02:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60075 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab3AOQCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 11:02:31 -0500
-Date: Tue, 15 Jan 2013 17:02:24 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Fernando_Luis_V=E1zquez_Cao?= 
-	<fernando_b1@lab.ntt.co.jp>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Antonio Ospite <ospite@studenti.unina.it>
-Subject: Re: [PATCH v2] HID: add support for Sony RF receiver with USB product
- id 0x0374
-In-Reply-To: <1358246448.4897.3.camel@nexus.lab.ntt.co.jp>
-Message-ID: <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
-References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>  <50F52986.2080002@lab.ntt.co.jp> <1358246448.4897.3.camel@nexus.lab.ntt.co.jp>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756546Ab3AOQDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 11:03:52 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:39583 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab3AOQDv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 11:03:51 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130115155053.GA8101@liondog.tnic>
+References: <1357260531-11115-23-git-send-email-yinghai@kernel.org>
+	<20130113214132.GB17200@liondog.tnic>
+	<CAE9FiQVQRAOtw7kiPJO3xszJx9uPFjgK82PjbvTyqzJgujdicw@mail.gmail.com>
+	<50F4452D.2060000@zytor.com>
+	<CAE9FiQXkgoLKp3ZnOcM9gLDJNGNxUE8WSRXiQy1G_v5Os5_v2A@mail.gmail.com>
+	<50F455A3.4070706@zytor.com>
+	<CAE9FiQUtbpo0njyPjPED=esKKnSdFs9ry4pFjG1y0LvHxkqV4w@mail.gmail.com>
+	<50F46304.3010108@zytor.com>
+	<CAE9FiQU_8ngBbXbwrqC1SaR3fScoDNvO_nKOhDYBV_bjOzjwJg@mail.gmail.com>
+	<CAE9FiQWxWdeGB-DZp7W2rmukG-KPahF8SQbBcHUWbbUAJA2MhA@mail.gmail.com>
+	<20130115155053.GA8101@liondog.tnic>
+Date: Tue, 15 Jan 2013 08:03:49 -0800
+X-Google-Sender-Auth: KGS1wayKPhXxV-661eWpY33sBUw
+Message-ID: <CAE9FiQUyinyu_DxLF_kXO82cMnRmt0fmbkh11vEw2Wr0SAWw_A@mail.gmail.com>
+Subject: Re: [PATCH v7u1 22/31] x86, boot: add fields to support load bzImage
+ and ramdisk above 4G
+From: Yinghai Lu <yinghai@kernel.org>
+To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013, Fernando Luis Vázquez Cao wrote:
+On Tue, Jan 15, 2013 at 7:50 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Mon, Jan 14, 2013 at 10:17:10PM -0800, Yinghai Lu wrote:
+>> Please check if I miss anything that must be addressed.
+>
+> Well, I'm staring at your for-x86-boot branch with top-commit
+> e6bee79e9f177991a35f1bda9ed704cfbcb8e4a3 and well, you've missed almost
+> everything.
+>
+> I've made a gazillion comments to your patches in the last week and
+> you've taken almost none of it. It's like I've been talking to myself
+> the whole time, but with audience.
 
-> Some Vaio desktop computers, among them the VGC-LN51JGB multimedia PC, have
-> a RF receiver, multi-interface USB device 054c:0374, that is used to connect
-> a wireless keyboard and a wireless mouse.
-> 
-> The keyboard works flawlessly, but the mouse (VGP-WMS3 in my case) does not
-> seem to be generating any pointer events. The problem is that the mouse pointer
-> is wrongly declared as a constant non-data variable in the report descriptor
-> (see lsusb and usbhid-dump output below), with the consequence that it is
-> ignored by the HID code.
-> 
-> Add this device to the have-special-driver list and fix up the report
-> descriptor in the Sony-specific driver which happens to already have a fixup
-> for a similar firmware bug.
+Come on, are you serious? almost none?
 
-Applied, thanks.
-
--- 
-Jiri Kosina
-SUSE Labs
+I took the comments about sentinel.
+but did not take your comments about change kernel_ident_mapping_init.
