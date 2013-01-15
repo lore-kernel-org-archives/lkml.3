@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465Ab3APAKC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:10:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59887 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758513Ab3APAJ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 19:09:59 -0500
-Date: Tue, 15 Jan 2013 16:09:57 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 2/2] mm: forcely swapout when we are out of page cache
-Message-Id: <20130115160957.9ef860d7.akpm@linux-foundation.org>
-In-Reply-To: <20130111044327.GB6183@blaptop>
-References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
-	<1357712474-27595-3-git-send-email-minchan@kernel.org>
-	<20130109162602.53a60e77.akpm@linux-foundation.org>
-	<20130110022306.GB14685@blaptop>
-	<20130110135828.c88bcaf1.akpm@linux-foundation.org>
-	<20130111044327.GB6183@blaptop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932519Ab3APAK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:10:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42960 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758495Ab3AOWc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:57 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Ian Abbott <abbotti@mev.co.uk>,
+        =?ISO-8859-15?q?=C3=89ric=20Piel?= <piel@delmic.com>
+Subject: [ 143/221] staging: comedi: comedi_test: fix race when cancelling command
+Date: Tue, 15 Jan 2013 10:51:10 -0800
+Message-Id: <20130115185008.389751752@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.336.g94702dd
+In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
+References: <20130115184958.025580322@linuxfoundation.org>
+User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jan 2013 13:43:27 +0900
-Minchan Kim <minchan@kernel.org> wrote:
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-> Hi Andrew,
-> 
-> On Thu, Jan 10, 2013 at 01:58:28PM -0800, Andrew Morton wrote:
-> > On Thu, 10 Jan 2013 11:23:06 +0900
-> > Minchan Kim <minchan@kernel.org> wrote:
-> > 
-> > > > I have a feeling that laptop mode has bitrotted and these patches are
-> > > > kinda hacking around as-yet-not-understood failures...
-> > > 
-> > > Absolutely, this patch is last guard for unexpectable behavior.
-> > > As I mentioned in cover-letter, Luigi's problem could be solved either [1/2]
-> > > or [2/2] but I wanted to add this as last resort in case of unexpected
-> > > emergency. But you're right. It's not good to hide the problem like this path
-> > > so let's drop [2/2].
-> > > 
-> > > Also, I absolutely agree it has bitrotted so for correcting it, we need a
-> > > volunteer who have to inverstigate power saveing experiment with long time.
-> > > So [1/2] would be band-aid until that.
-> > 
-> > I'm inclined to hold off on 1/2 as well, really.
-> 
-> Then, what's your plan?
+------------------
 
-My plan is to sit here until someone gets down and fully tests and
-fixes laptop-mode.  Making it work properly, reliably and as-designed.
+From: Ian Abbott <abbotti@mev.co.uk>
 
-Or perhaps someone wants to make the case that we just don't need it
-any more (SSDs are silent!) and removes it all.
+commit c0729eeefdcd76db338f635162bf0739fd2c5f6f upstream.
 
-> > 
-> > The point of laptop_mode isn't to save power btw - it is to minimise
-> > the frequency with which the disk drive is spun up.  By deferring and
-> > then batching writeout operations, basically.
-> 
-> I don't get it. Why should we minimise such frequency?
+Éric Piel reported a kernel oops in the "comedi_test" module.  It was a
+NULL pointer dereference within `waveform_ai_interrupt()` (actually a
+timer function) that sometimes occurred when a running asynchronous
+command is cancelled (either by the `COMEDI_CANCEL` ioctl or by closing
+the device file).
 
-Because my laptop was going clickety every minute and was keeping me
-awake.
+This seems to be a race between the caller of `waveform_ai_cancel()`
+which on return from that function goes and tears down the running
+command, and the timer function which uses the command.  In particular,
+`async->cmd.chanlist` gets freed (and the pointer set to NULL) by
+`do_become_nonbusy()` in "comedi_fops.c" but a previously scheduled
+`waveform_ai_interrupt()` timer function will dereference that pointer
+regardless, leading to the oops.
 
-> It's for saving the power to increase batter life.
+Fix it by replacing the `del_timer()` call in `waveform_ai_cancel()`
+with `del_timer_sync()`.
 
-It might well have that effect, dunno.  That wasn't my intent.  Testing
-needed!
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Reported-by: Éric Piel <piel@delmic.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> As I real all document about laptop_mode, they all said about the power
-> or battery life saving.
-> 
-> 1. Documentation/laptops/laptop-mode.txt
-> 2. http://linux.die.net/man/8/laptop_mode
-> 3. http://samwel.tk/laptop_mode/
-> 3. http://www.thinkwiki.org/wiki/Laptop-mode 
+---
+ drivers/staging/comedi/drivers/comedi_test.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Documentation creep ;)
+--- a/drivers/staging/comedi/drivers/comedi_test.c
++++ b/drivers/staging/comedi/drivers/comedi_test.c
+@@ -372,7 +372,7 @@ static int waveform_ai_cancel(struct com
+ 	struct waveform_private *devpriv = dev->private;
+ 
+ 	devpriv->timer_running = 0;
+-	del_timer(&devpriv->timer);
++	del_timer_sync(&devpriv->timer);
+ 	return 0;
+ }
+ 
 
-Ten years ago, gad: http://lwn.net/Articles/1652/
+
