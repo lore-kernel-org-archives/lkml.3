@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933987Ab3AOWyG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:54:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47472 "EHLO mail.kernel.org"
+	id S934044Ab3AOXRB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:17:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47487 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933788Ab3AOWyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:54:02 -0500
+	id S933974Ab3AOWyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:54:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 170/171] staging: comedi: Kconfig: COMEDI_NI_AT_A2150 should select COMEDI_FC
-Date: Tue, 15 Jan 2013 14:45:35 -0800
-Message-Id: <20130115224325.567892032@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 171/171] USB: fix endpoint-disabling for failed config changes
+Date: Tue, 15 Jan 2013 14:45:36 -0800
+Message-Id: <20130115224325.635859390@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,30 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+commit 36caff5d795429c572443894e8789c2150dd796b upstream.
 
-commit 34ffb33e09132401872fe79e95c30824ce194d23 upstream.
+This patch (as1631) fixes a bug that shows up when a config change
+fails for a device under an xHCI controller.  The controller needs to
+be told to disable the endpoints that have been enabled for the new
+config.  The existing code does this, but before storing the
+information about which endpoints were enabled!  As a result, any
+second attempt to install the new config is doomed to fail because
+xhci-hcd will refuse to enable an endpoint that is already enabled.
 
-The 'ni_at_a2150' module links to `cfc_write_to_buffer` in the
-'comedi_fc' module, so selecting 'COMEDI_NI_AT_A2150' in the kernel config
-needs to also select 'COMEDI_FC'.
+The patch optimistically initializes the new endpoints' device
+structures before asking the device to switch to the new config.  If
+the request fails then the endpoint information is already stored, so
+we can use usb_hcd_alloc_bandwidth() to disable the endpoints with no
+trouble.  The rest of the error path is slightly more complex now; we
+have to disable the new interfaces and call put_device() rather than
+simply deallocating them.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Matthias Schniedermeyer <ms@citd.de>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/core/message.c |   53 ++++++++++++++++++++++++++-------------------
+ 1 file changed, 31 insertions(+), 22 deletions(-)
 
---- a/drivers/staging/comedi/Kconfig
-+++ b/drivers/staging/comedi/Kconfig
-@@ -424,6 +424,7 @@ config COMEDI_ADQ12B
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1770,28 +1770,8 @@ free_interfaces:
+ 		goto free_interfaces;
+ 	}
  
- config COMEDI_NI_AT_A2150
- 	tristate "NI AT-A2150 ISA card support"
-+	select COMEDI_FC
- 	depends on COMEDI_NI_COMMON
- 	depends on VIRT_TO_BUS
- 	default N
+-	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+-			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
+-			      NULL, 0, USB_CTRL_SET_TIMEOUT);
+-	if (ret < 0) {
+-		/* All the old state is gone, so what else can we do?
+-		 * The device is probably useless now anyway.
+-		 */
+-		cp = NULL;
+-	}
+-
+-	dev->actconfig = cp;
+-	if (!cp) {
+-		usb_set_device_state(dev, USB_STATE_ADDRESS);
+-		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
+-		mutex_unlock(hcd->bandwidth_mutex);
+-		usb_autosuspend_device(dev);
+-		goto free_interfaces;
+-	}
+-	mutex_unlock(hcd->bandwidth_mutex);
+-	usb_set_device_state(dev, USB_STATE_CONFIGURED);
+-
+-	/* Initialize the new interface structures and the
++	/*
++	 * Initialize the new interface structures and the
+ 	 * hc/hcd/usbcore interface/endpoint state.
+ 	 */
+ 	for (i = 0; i < nintf; ++i) {
+@@ -1835,6 +1815,35 @@ free_interfaces:
+ 	}
+ 	kfree(new_interfaces);
+ 
++	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
++			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
++			      NULL, 0, USB_CTRL_SET_TIMEOUT);
++	if (ret < 0 && cp) {
++		/*
++		 * All the old state is gone, so what else can we do?
++		 * The device is probably useless now anyway.
++		 */
++		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
++		for (i = 0; i < nintf; ++i) {
++			usb_disable_interface(dev, cp->interface[i], true);
++			put_device(&cp->interface[i]->dev);
++			cp->interface[i] = NULL;
++		}
++		cp = NULL;
++	}
++
++	dev->actconfig = cp;
++	mutex_unlock(hcd->bandwidth_mutex);
++
++	if (!cp) {
++		usb_set_device_state(dev, USB_STATE_ADDRESS);
++
++		/* Leave LPM disabled while the device is unconfigured. */
++		usb_autosuspend_device(dev);
++		return ret;
++	}
++	usb_set_device_state(dev, USB_STATE_CONFIGURED);
++
+ 	if (cp->string == NULL &&
+ 			!(dev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
+ 		cp->string = usb_cache_string(dev, cp->desc.iConfiguration);
 
 
