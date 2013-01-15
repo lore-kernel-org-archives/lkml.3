@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3AOSUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:20:30 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:47456 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756774Ab3AOSU3 (ORCPT
+	id S1757381Ab3AOSVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:21:00 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:45410 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756861Ab3AOSU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:20:29 -0500
-Date: Tue, 15 Jan 2013 18:20:06 +0000
-From: Catalin Marinas <Catalin.Marinas@arm.com>
+	Tue, 15 Jan 2013 13:20:59 -0500
+Date: Tue, 15 Jan 2013 13:20:58 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arm64 fixes for 3.8
-Message-ID: <20130115182005.GI2011@arm.com>
+cc: Ming Lei <ming.lei@canonical.com>, Tejun Heo <tj@kernel.org>,
+        Alex Riesen <raa.lkml@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: USB device cannot be reconnected and khubd "blocked for more
+ than 120 seconds"
+In-Reply-To: <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1301151300200.11786-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-user-agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 15 Jan 2013, Linus Torvalds wrote:
 
-Please pull the arm64 fixes below. Thanks.
+> Tejun, comments? You can see the whole thread on lkml, but the basic
+> problem is that the module loading doing the unconditional
+> async_synchronize_full() has caused problems, because we have
+> 
+>  - load module A
+>    - module A does per-controller async discovery of its devices (eg
+> scsi or ata probing)
+>    - in the async thread, it initializes somethign that needs another
+> module B (in this case the default IO scheduler module)
+>       - modprobe for B loads the IO scheduler module successfully
+>           at the end of the module load, it does
+> async_synchronize_full() to make sure load_module won't return before
+> the module is ready
+>           *DEADLOCK*, because the async_synchronize_full() thing
+> actually waits for not the module B async code (it didn't have any),
+> but for the module *A* async code, which is waiting for module B to
+> finish.
+> 
+> Now, I'll happily argue that we shouldn't have this kind of "load
+> modules from random context" behavior in the kernel, and I think the
+> block layer is to blame for doing the IO scheduler load at an insane
+> time. So "don't do that then" would be the best solution.
 
-The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
+It may not be so easy.  When the SCSI async thread probes the new disk, 
+it has to do I/O.  So it needs to use a scheduler.
 
-  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
+But maybe it could use a built-in trivial scheduler until the proper 
+one is loaded.  Then the loading could be asynchronous.
 
-are available in the git repository at:
+Alan Stern
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-fixes
-
-for you to fetch changes up to 72d0ac048f3ded4022cf1cc72f54073f6fcad72f:
-
-  arm64: compat: add syscall table entries for new syscalls (2013-01-15 17:15:16 +0000)
-
-----------------------------------------------------------------
-- Page protection fixes, including proper PAGE_NONE handling
-- Timezone vdso sequence counting fix
-- Additional compat syscall wiring
-
-----------------------------------------------------------------
-Will Deacon (4):
-      arm64: vdso: remove broken, redundant sequence counting for timezones
-      arm64: mm: only wrprotect clean ptes if they are present
-      arm64: mm: introduce present, faulting entries for PAGE_NONE
-      arm64: compat: add syscall table entries for new syscalls
-
- arch/arm64/include/asm/pgtable.h      | 36 +++++++++++++++++++----------------
- arch/arm64/include/asm/unistd32.h     |  7 ++++++-
- arch/arm64/kernel/vdso.c              |  4 ----
- arch/arm64/kernel/vdso/gettimeofday.S |  2 --
- 4 files changed, 26 insertions(+), 23 deletions(-)
