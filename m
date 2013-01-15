@@ -1,49 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab3AOGqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 01:46:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49804 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab3AOGqS (ORCPT
+	id S1756147Ab3AOGq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 01:46:58 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:64772 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755368Ab3AOGqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 01:46:18 -0500
-Date: Tue, 15 Jan 2013 07:46:15 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] (xen) stable/for-jens-3.8 - bug-fixes.
-Message-ID: <20130115064615.GC30331@kernel.dk>
-References: <20130114205001.GA6879@phenom.dumpdata.com>
+	Tue, 15 Jan 2013 01:46:55 -0500
+Message-ID: <50F4FB24.80200@huawei.com>
+Date: Tue, 15 Jan 2013 14:45:56 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130114205001.GA6879@phenom.dumpdata.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v8 01/22] PCI, acpiphp: Add is_hotplug_bridge detection
+References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-2-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1357944049-29620-2-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14 2013, Konrad Rzeszutek Wilk wrote:
-> Hey Jens,
+On 2013/1/12 6:40, Yinghai Lu wrote:
+> When system support hotplug bridge with children hotplug slots, we need
+> to make sure that parent bridge get preallocated resource so later when
+> device is plugged into children slot, those children devices will get
+> resource allocated.
 > 
-> Please git pull the following branch:
+> We do not meet this problem, because for pcie hotplug card, when acpiphp
+> is used, pci_scan_bridge will set that for us when detect hotplug bit in
+> slot cap.
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.8
+> Reported-and-tested-by: Jason Baron <jbaron@redhat.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Acked-by: Jason Baron <jbaron@redhat.com>
+> ---
+>  drivers/pci/hotplug/acpiphp_glue.c |   27 ++++++++++++++++++++++++++-
+>  1 file changed, 26 insertions(+), 1 deletion(-)
 > 
-> which has a couple of fixes that should have been pulled some time ago (my mistake
-> on not posting this earlier). There is one serious fix in there from Roger
-> which allows the blkback to handle bio's with partial data. Without that patch
-> the LVM operations on guests can fail (and often do). Please pull!
-> 
-> Thanks!
-> 
->  drivers/block/xen-blkback/blkback.c | 18 ++++++++------
->  drivers/block/xen-blkback/xenbus.c  | 49 ++++++++++++++++++-------------------
->  drivers/block/xen-blkfront.c        | 10 +++++---
->  include/linux/llist.h               | 25 +++++++++++++++++++
->  4 files changed, 66 insertions(+), 36 deletions(-)
+> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+> index 91b5ad8..1e5c5df 100644
+> --- a/drivers/pci/hotplug/acpiphp_glue.c
+> +++ b/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -797,6 +797,29 @@ static void acpiphp_set_acpi_region(struct acpiphp_slot *slot)
+>  	}
+>  }
+>  
+> +static void check_hotplug_bridge(struct acpiphp_slot *slot, struct pci_dev *dev)
+> +{
+> +	struct acpiphp_func *func;
+> +
+> +	if (!dev->subordinate)
+> +		return;
+> +
+> +	/* quirk, or pcie could set it already */
+> +	if (dev->is_hotplug_bridge)
+> +		return;
+> +
+> +	if (PCI_SLOT(dev->devfn) != slot->device)
+> +		return;
+> +
+> +	list_for_each_entry(func, &slot->funcs, sibling) {
+> +		if (PCI_FUNC(dev->devfn) == func->function) {
+> +			/* check if this bridge has ejectable slots */
+> +			if ((detect_ejectable_slots(func->handle) > 0))
+> +				dev->is_hotplug_bridge = 1;
+> +			break;
 
-Did you forget to push it out?
+Hi Yinghai,
+   Need to put the "break" in parentheses of "if"? If the first func which device number == dev->devfn has't ejectable slot,
+don't check the rest funcs whether have ejectable slots?
+
+> +		}
+> +	}
+> +}
+>  /**
+>   * enable_device - enable, configure a slot
+>   * @slot: slot to be enabled
+> @@ -831,8 +854,10 @@ static int __ref enable_device(struct acpiphp_slot *slot)
+>  			if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
+>  			    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
+>  				max = pci_scan_bridge(bus, dev, max, pass);
+> -				if (pass && dev->subordinate)
+> +				if (pass && dev->subordinate) {
+> +					check_hotplug_bridge(slot, dev);
+>  					pci_bus_size_bridges(dev->subordinate);
+> +				}
+>  			}
+>  		}
+>  	}
+> 
+
 
 -- 
-Jens Axboe
+Thanks!
+Yijing
 
