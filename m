@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab3AOPNz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 10:13:55 -0500
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:57015 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756637Ab3AOPNy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 10:13:54 -0500
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: Ido Yariv <ido@wizery.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?iso-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>
-Date: Tue, 15 Jan 2013 16:13:45 +0100
-Subject: RE: [RFCv2 09/11] remoteproc: Add operation to find resource table
- in memory
-Thread-Topic: [RFCv2 09/11] remoteproc: Add operation to find resource table
- in memory
-Thread-Index: Ac3fIasOGv2nQAFCThG1DgbyZQRvzwPOF4nw
-Message-ID: <81C3A93C17462B4BBD7E272753C1057924588EE066@EXDCVYMBSTM005.EQ1STM.local>
-References: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
- <1355501220-4572-10-git-send-email-sjur.brandeland@stericsson.com>
- <20121221021948.GF28692@WorkStation.localnet>
-In-Reply-To: <20121221021948.GF28692@WorkStation.localnet>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1757484Ab3AOPOA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 10:14:00 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:63691 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757465Ab3AOPN5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 10:13:57 -0500
+From: Liam Girdwood <lgirdwood@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <liam.r.girdwood@intel.com>
+Subject: [PATCH] regulator: maintainers: update email address
+Date: Tue, 15 Jan 2013 15:13:27 +0000
+Message-Id: <1358262807-8511-1-git-send-email-lgirdwood@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ido,
+From: Liam Girdwood <liam.r.girdwood@intel.com>
 
-> From: Ido Yariv [mailto:ido@wizery.com]
-> > +struct resource_table *rproc_elf_get_rsctab_addr(struct rproc *rproc,
-> > +						 const struct firmware *fw)
-> > +{
-> > +	struct elf32_shdr *shdr;
-> > +
-> > +	shdr = find_rsc_shdr(&rproc->dev, (struct elf32_hdr *)fw->data);
-> > +	if (!shdr)
-> > +		return NULL;
-> 
-> Instead of traversing the headers twice, perhaps we could save the
-> address and size in advance and use it here?
+I no longer work at TI.
 
-To do that we would have to store the struct elf32_shdr in struct rproc.
-So this is a trade-off between bloating rproc structure with shdr or 
-spending some more cpu-cycles to scan the elf sections.
-It shouldn't be that many sections to scan, and as we've just parsed
-this firmware sections earlier so it might be hot in cache.
-This shouldn't be very expensive, so I'd prefer to keep this as is.
+Signed-off-by: Liam Girdwood <liam.r.girdwood@intel.com>
+---
+ MAINTAINERS |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Are you OK with that?
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 915564e..3c2e275 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7082,7 +7082,7 @@ F:	include/uapi/sound/
+ F:	sound/
+ 
+ SOUND - SOC LAYER / DYNAMIC AUDIO POWER MANAGEMENT (ASoC)
+-M:	Liam Girdwood <lrg@ti.com>
++M:	Liam Girdwood <lgirdwood@gmail.com>
+ M:	Mark Brown <broonie@opensource.wolfsonmicro.com>
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
+ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
+-- 
+1.7.10.4
 
-Regards,
-Sjur
