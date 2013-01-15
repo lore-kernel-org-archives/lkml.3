@@ -1,142 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab3AOOTy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 09:19:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39820 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755823Ab3AOOTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 09:19:53 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>
-Subject: [PATCH 1/4] perf tool: Remove unused 'unset' parameter from parse_events
-Date: Tue, 15 Jan 2013 14:39:51 +0100
-Message-Id: <1358257194-8204-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1358257194-8204-1-git-send-email-jolsa@redhat.com>
-References: <1358257194-8204-1-git-send-email-jolsa@redhat.com>
+	id S1756965Ab3AOOUG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 09:20:06 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:34147 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755823Ab3AOOUB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 09:20:01 -0500
+X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jan 2013 09:20:01 EST
+Message-ID: <50F563EC.3030804@free-electrons.com>
+Date: Tue, 15 Jan 2013 15:13:00 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Cong Ding <dinggnu@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: mvebu/clk-cpu.c: fix memory leakage
+References: <1358183892-28928-1-git-send-email-dinggnu@gmail.com>
+In-Reply-To: <1358183892-28928-1-git-send-email-dinggnu@gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'unset' parameter is option callback leftover with
-no use, removing.
+Dear Cong Ding,
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ulrich Drepper <drepper@gmail.com>
----
- tools/perf/tests/evsel-roundtrip-name.c | 4 ++--
- tools/perf/tests/hists_link.c           | 4 ++--
- tools/perf/tests/parse-events.c         | 2 +-
- tools/perf/util/parse-events.c          | 5 ++---
- tools/perf/util/parse-events.h          | 3 +--
- 5 files changed, 8 insertions(+), 10 deletions(-)
+On 01/14/2013 06:18 PM, Cong Ding wrote:
+> the variable cpuclk and clk_name should be properly freed.
+> 
 
-diff --git a/tools/perf/tests/evsel-roundtrip-name.c b/tools/perf/tests/evsel-roundtrip-name.c
-index e61fc82..0fd99a9 100644
---- a/tools/perf/tests/evsel-roundtrip-name.c
-+++ b/tools/perf/tests/evsel-roundtrip-name.c
-@@ -22,7 +22,7 @@ static int perf_evsel__roundtrip_cache_name_test(void)
- 			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
- 				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
- 									name, sizeof(name));
--				err = parse_events(evlist, name, 0);
-+				err = parse_events(evlist, name);
- 				if (err)
- 					ret = err;
- 			}
-@@ -70,7 +70,7 @@ static int __perf_evsel__name_array_test(const char *names[], int nr_names)
-                 return -ENOMEM;
- 
- 	for (i = 0; i < nr_names; ++i) {
--		err = parse_events(evlist, names[i], 0);
-+		err = parse_events(evlist, names[i]);
- 		if (err) {
- 			pr_debug("failed to parse event '%s', err %d\n",
- 				 names[i], err);
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 27860a0..0afd922 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -441,10 +441,10 @@ int test__hists_link(void)
- 	if (evlist == NULL)
-                 return -ENOMEM;
- 
--	err = parse_events(evlist, "cpu-clock", 0);
-+	err = parse_events(evlist, "cpu-clock");
- 	if (err)
- 		goto out;
--	err = parse_events(evlist, "task-clock", 0);
-+	err = parse_events(evlist, "task-clock");
- 	if (err)
- 		goto out;
- 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index e7eb708..337424d 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -1018,7 +1018,7 @@ static int test_event(struct test__event_st *e)
- 	if (evlist == NULL)
- 		return -ENOMEM;
- 
--	ret = parse_events(evlist, e->name, 0);
-+	ret = parse_events(evlist, e->name);
- 	if (ret) {
- 		pr_debug("failed to parse event '%s', err %d\n",
- 			 e->name, ret);
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 626c120..d3bf570 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -872,8 +872,7 @@ int parse_events_terms(struct list_head *terms, const char *str)
- 	return ret;
- }
- 
--int parse_events(struct perf_evlist *evlist, const char *str,
--		 int unset __maybe_unused)
-+int parse_events(struct perf_evlist *evlist, const char *str)
- {
- 	struct parse_events_data__events data = {
- 		.list = LIST_HEAD_INIT(data.list),
-@@ -900,7 +899,7 @@ int parse_events_option(const struct option *opt, const char *str,
- 			int unset __maybe_unused)
- {
- 	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
--	int ret = parse_events(evlist, str, unset);
-+	int ret = parse_events(evlist, str);
- 
- 	if (ret) {
- 		fprintf(stderr, "invalid or unsupported event: '%s'\n", str);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index b7af80b..7c5244f 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -29,8 +29,7 @@ const char *event_type(int type);
- 
- extern int parse_events_option(const struct option *opt, const char *str,
- 			       int unset);
--extern int parse_events(struct perf_evlist *evlist, const char *str,
--			int unset);
-+extern int parse_events(struct perf_evlist *evlist, const char *str);
- extern int parse_events_terms(struct list_head *terms, const char *str);
- extern int parse_filter(const struct option *opt, const char *str, int unset);
- 
--- 
-1.7.11.7
+Thanks for reporting this memory leak and for your patch but I think
+we could do even better, see below:
 
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> ---
+>  drivers/clk/mvebu/clk-cpu.c |    9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/clk/mvebu/clk-cpu.c b/drivers/clk/mvebu/clk-cpu.c
+> index ff004578..1a0d84f 100644
+> --- a/drivers/clk/mvebu/clk-cpu.c
+> +++ b/drivers/clk/mvebu/clk-cpu.c
+> @@ -124,7 +124,7 @@ void __init of_cpu_clk_setup(struct device_node *node)
+>  
+>  	clks = kzalloc(ncpus * sizeof(*clks), GFP_KERNEL);
+>  	if (WARN_ON(!clks))
+> -		return;
+> +		goto clks_out;
+>  
+>  	for_each_node_by_type(dn, "cpu") {
+>  		struct clk_init_data init;
+> @@ -134,11 +134,11 @@ void __init of_cpu_clk_setup(struct device_node *node)
+>  		int cpu, err;
+>  
+>  		if (WARN_ON(!clk_name))
+> -			return;
+> +			goto clk_name_out;
+
+I agree
+
+>  
+>  		err = of_property_read_u32(dn, "reg", &cpu);
+>  		if (WARN_ON(err))
+> -			return;
+> +			goto bail_out;
+
+I agree
+
+>  
+>  		sprintf(clk_name, "cpu%d", cpu);
+>  		parent_clk = of_clk_get(node, 0);
+> @@ -166,7 +166,10 @@ void __init of_cpu_clk_setup(struct device_node *node)
+>  
+>  	return;
+>  bail_out:
+> +	kfree(clk_name);
+
+Here you free only one clk_name whereas we could have previous clk_name which have
+been already allocated during the for_each_node_by_type loop.
+
+A more annoying thing is that you use clk_name whereas it is only valid in the
+for_each_node_by_type statement and then this patch breaks the compilation:
+
+drivers/clk/mvebu/clk-cpu.c: In function ‘of_cpu_clk_setup’:
+drivers/clk/mvebu/clk-cpu.c:169:8: error: ‘clk_name’ undeclared (first use in this function)
+drivers/clk/mvebu/clk-cpu.c:169:8: note: each undeclared identifier is reported only once for each function it appears in
+
+Thanks,
+
+Gregory
