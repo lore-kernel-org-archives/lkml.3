@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934117Ab3AOWzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:55:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47675 "EHLO mail.kernel.org"
+	id S934277Ab3AOXMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:12:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47720 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932083Ab3AOWy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:54:59 -0500
+	id S934120Ab3AOWzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:55:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xi Wang <xi.wang@gmail.com>, Xiangliang Yu <yuxiangl@marvell.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 09/71] SCSI: mvsas: fix undefined bit shift
-Date: Tue, 15 Jan 2013 14:54:06 -0800
-Message-Id: <20130115225341.084883094@linuxfoundation.org>
+        Phillip Wood <phillip.wood@dunelm.org.uk>,
+        Aaron Lu <aaron.lu@intel.com>, Szymon Janc <szymon@janc.net.pl>,
+        Dutra Julio <dutra.julio@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 12/71] libata: set dma_mode to 0xff in reset
+Date: Tue, 15 Jan 2013 14:54:09 -0800
+Message-Id: <20130115225341.325141490@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,70 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit beecadea1b8d67f591b13f7099559f32f3fd601d upstream.
+commit 5416912af75de9cba5d1c75b99a7888b0bbbd2fb upstream.
 
-The macro bit(n) is defined as ((u32)1 << n), and thus it doesn't work
-with n >= 32, such as in mvs_94xx_assign_reg_set():
+ata_device->dma_mode's initial value is zero, which is not a valid dma
+mode, but ata_dma_enabled will return true for this value. This patch
+sets dma_mode to 0xff in reset function, so that ata_dma_enabled will
+not return true for this case, or it will cause problem for pata_acpi.
 
-	if (i >= 32) {
-		mvi->sata_reg_set |= bit(i);
-		...
-	}
+The corrsponding bugzilla page is at:
+https://bugzilla.kernel.org/show_bug.cgi?id=49151
 
-The shift ((u32)1 << n) with n >= 32 also leads to undefined behavior.
-The result varies depending on the architecture.
-
-This patch changes bit(n) to do a 64-bit shift.  It also simplifies
-mv_ffc64() using __ffs64(), since invoking ffz() with ~0 is undefined.
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Acked-by: Xiangliang Yu <yuxiangl@marvell.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Phillip Wood <phillip.wood@dunelm.org.uk>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Tested-by: Szymon Janc <szymon@janc.net.pl>
+Tested-by: Dutra Julio <dutra.julio@gmail.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mvsas/mv_94xx.h |   14 ++------------
- drivers/scsi/mvsas/mv_sas.h  |    2 +-
- 2 files changed, 3 insertions(+), 13 deletions(-)
+ drivers/ata/libata-core.c |    1 +
+ drivers/ata/libata-eh.c   |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/scsi/mvsas/mv_94xx.h
-+++ b/drivers/scsi/mvsas/mv_94xx.h
-@@ -193,21 +193,11 @@ struct mvs_prd {
- #define SPI_ADDR_VLD_94XX         	(1U << 1)
- #define SPI_CTRL_SpiStart_94XX     	(1U << 0)
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -2543,6 +2543,7 @@ int ata_bus_probe(struct ata_port *ap)
+ 		 * bus as we may be talking too fast.
+ 		 */
+ 		dev->pio_mode = XFER_PIO_0;
++		dev->dma_mode = 0xff;
  
--#define mv_ffc(x)   ffz(x)
--
- static inline int
- mv_ffc64(u64 v)
- {
--	int i;
--	i = mv_ffc((u32)v);
--	if (i >= 0)
--		return i;
--	i = mv_ffc((u32)(v>>32));
--
--	if (i != 0)
--		return 32 + i;
--
--	return -1;
-+	u64 x = ~v;
-+	return x ? __ffs64(x) : -1;
- }
+ 		/* If the controller has a pio mode setup function
+ 		 * then use it to set the chipset to rights. Don't
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -2602,6 +2602,7 @@ int ata_eh_reset(struct ata_link *link,
+ 		 * bus as we may be talking too fast.
+ 		 */
+ 		dev->pio_mode = XFER_PIO_0;
++		dev->dma_mode = 0xff;
  
- #define r_reg_set_enable(i) \
---- a/drivers/scsi/mvsas/mv_sas.h
-+++ b/drivers/scsi/mvsas/mv_sas.h
-@@ -73,7 +73,7 @@ extern struct kmem_cache *mvs_task_list_
- #define DEV_IS_EXPANDER(type)	\
- 	((type == EDGE_DEV) || (type == FANOUT_DEV))
- 
--#define bit(n) ((u32)1 << n)
-+#define bit(n) ((u64)1 << n)
- 
- #define for_each_phy(__lseq_mask, __mc, __lseq)			\
- 	for ((__mc) = (__lseq_mask), (__lseq) = 0;		\
+ 		/* If the controller has a pio mode setup function
+ 		 * then use it to set the chipset to rights. Don't
 
 
