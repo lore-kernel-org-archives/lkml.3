@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953Ab3AOWgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:36:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44008 "EHLO mail.kernel.org"
+	id S932939Ab3AOWgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:36:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44017 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758384Ab3AOWgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:36:25 -0500
+	id S1758171Ab3AOWg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:36:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 210/221] rbd: do not allow remove of mounted-on image
-Date: Tue, 15 Jan 2013 10:52:17 -0800
-Message-Id: <20130115185013.200056008@linuxfoundation.org>
+Subject: [ 211/221] rbd: get rid of RBD_MAX_SEG_NAME_LEN
+Date: Tue, 15 Jan 2013 10:52:18 -0800
+Message-Id: <20130115185013.280584909@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -28,71 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit 42382b709bd1d143b9f0fa93e0a3a1f2f4210707)
+(cherry picked from commit 2fd82b9e92c2a718ae81fc987b4468ceeee6979b)
 
-There is no check in rbd_remove() to see if anybody holds open the
-image being removed.  That's not cool.
+RBD_MAX_SEG_NAME_LEN represents the maximum length of an rbd object
+name (i.e., one of the objects providing storage backing an rbd
+image).
 
-Add a simple open count that goes up and down with opens and closes
-(releases) of the device, and don't allow an rbd image to be removed
-if the count is non-zero.
+Another symbol, MAX_OBJ_NAME_SIZE, is used in the osd client code to
+define the maximum length of any object name in an osd request.
 
-Protect the updates of the open count value with ctl_mutex to ensure
-the underlying rbd device doesn't get removed while concurrently
-being opened.
+Right now they disagree, with RBD_MAX_SEG_NAME_LEN being too big.
+
+There's no real benefit at this point to defining the rbd object
+name length limit separate from any other object name, so just
+get rid of RBD_MAX_SEG_NAME_LEN and use MAX_OBJ_NAME_SIZE in its
+place.
 
 Signed-off-by: Alex Elder <elder@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/block/rbd.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/block/rbd.c       |    6 +++---
+ drivers/block/rbd_types.h |    2 --
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
 --- a/drivers/block/rbd.c
 +++ b/drivers/block/rbd.c
-@@ -207,6 +207,7 @@ struct rbd_device {
+@@ -706,13 +706,13 @@ static char *rbd_segment_name(struct rbd
+ 	u64 segment;
+ 	int ret;
  
- 	/* sysfs related */
- 	struct device		dev;
-+	unsigned long		open_count;
- };
+-	name = kmalloc(RBD_MAX_SEG_NAME_LEN + 1, GFP_NOIO);
++	name = kmalloc(MAX_OBJ_NAME_SIZE + 1, GFP_NOIO);
+ 	if (!name)
+ 		return NULL;
+ 	segment = offset >> rbd_dev->header.obj_order;
+-	ret = snprintf(name, RBD_MAX_SEG_NAME_LEN, "%s.%012llx",
++	ret = snprintf(name, MAX_OBJ_NAME_SIZE + 1, "%s.%012llx",
+ 			rbd_dev->header.object_prefix, segment);
+-	if (ret < 0 || ret >= RBD_MAX_SEG_NAME_LEN) {
++	if (ret < 0 || ret > MAX_OBJ_NAME_SIZE) {
+ 		pr_err("error formatting segment name for #%llu (%d)\n",
+ 			segment, ret);
+ 		kfree(name);
+--- a/drivers/block/rbd_types.h
++++ b/drivers/block/rbd_types.h
+@@ -46,8 +46,6 @@
+ #define RBD_MIN_OBJ_ORDER       16
+ #define RBD_MAX_OBJ_ORDER       30
  
- static DEFINE_MUTEX(ctl_mutex);	  /* Serialize open/close/setup/teardown */
-@@ -280,8 +281,11 @@ static int rbd_open(struct block_device
- 	if ((mode & FMODE_WRITE) && rbd_dev->mapping.read_only)
- 		return -EROFS;
- 
-+	mutex_lock_nested(&ctl_mutex, SINGLE_DEPTH_NESTING);
- 	rbd_get_dev(rbd_dev);
- 	set_device_ro(bdev, rbd_dev->mapping.read_only);
-+	rbd_dev->open_count++;
-+	mutex_unlock(&ctl_mutex);
- 
- 	return 0;
- }
-@@ -290,7 +294,11 @@ static int rbd_release(struct gendisk *d
- {
- 	struct rbd_device *rbd_dev = disk->private_data;
- 
-+	mutex_lock_nested(&ctl_mutex, SINGLE_DEPTH_NESTING);
-+	rbd_assert(rbd_dev->open_count > 0);
-+	rbd_dev->open_count--;
- 	rbd_put_dev(rbd_dev);
-+	mutex_unlock(&ctl_mutex);
- 
- 	return 0;
- }
-@@ -3221,6 +3229,11 @@ static ssize_t rbd_remove(struct bus_typ
- 		goto done;
- 	}
- 
-+	if (rbd_dev->open_count) {
-+		ret = -EBUSY;
-+		goto done;
-+	}
-+
- 	rbd_remove_all_snaps(rbd_dev);
- 	rbd_bus_del_dev(rbd_dev);
+-#define RBD_MAX_SEG_NAME_LEN	128
+-
+ #define RBD_COMP_NONE		0
+ #define RBD_CRYPT_NONE		0
  
 
 
