@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933618Ab3AOWwP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:52:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46689 "EHLO mail.kernel.org"
+	id S933686Ab3AOWwh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:52:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46798 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933599Ab3AOWwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:12 -0500
+	id S933617Ab3AOWw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        =?ISO-8859-15?q?Dominik=20K=C3=83=C2=B6ppl?= <dominik@devwork.org>,
+        Jani Nikula <jani.nikula@intel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ben Hutchings <ben@decadent.org.uk>,
         Julien Cristau <jcristau@debian.org>
-Subject: [ 116/171] drm/i915: hold forcewake around ring hw init
-Date: Tue, 15 Jan 2013 14:44:41 -0800
-Message-Id: <20130115224321.724017755@linuxfoundation.org>
+Subject: [ 125/171] drm/i915: only enable sdvo hotplug irq if needed
+Date: Tue, 15 Jan 2013 14:44:50 -0800
+Message-Id: <20130115224322.366751064@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,154 +31,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit b7884eb45ec98c0d34c7f49005ae9d4b4b4e38f6 upstream.
+commit fcbc50da7753b210b4442ca9abc4efbd4e481f6e upstream.
 
-Empirical evidence suggests that we need to: On at least one ivb
-machine when running the hangman i-g-t test, the rings don't properly
-initialize properly - the RING_START registers seems to be stuck at
-all zeros.
+Avoid constant wakeups caused by noisy irq lines when we don't even care
+about the irq. This should be particularly useful for i945g/gm where the
+hotplug has been disabled:
 
-Holding forcewake around this register init sequences makes chip reset
-reliable again. Note that this is not the first such issue:
+commit 768b107e4b3be0acf6f58e914afe4f337c00932b
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri May 4 11:29:56 2012 +0200
 
-commit f01db988ef6f6c70a6cc36ee71e4a98a68901229
-Author: Sean Paul <seanpaul@chromium.org>
-Date:   Fri Mar 16 12:43:22 2012 -0400
+    drm/i915: disable sdvo hotplug on i945g/gm
 
-    drm/i915: Add wait_for in init_ring_common
+v2: While at it, remove the bogus hotplug_active read, and do not mask
+hotplug_active[0] before checking whether the irq is needed, per discussion
+with Daniel on IRC.
 
-added delay loops to make RING_START and RING_CTL initialization
-reliable on the blt ring at boot-up. So I guess it won't hurt if we do
-this unconditionally for all force_wake needing gpus.
-
-To avoid copy&pasting of the HAS_FORCE_WAKE check I've added a new
-intel_info bit for that.
-
-v2: Fixup missing commas in static struct and properly handling the
-error case in init_ring_common, both noticed by Jani Nikula.
-
-Reported-and-tested-by: Yang Guang <guang.a.yang@intel.com>
-Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=50522
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2:
- - drop changes to Haswell device information
- - NEEDS_FORCE_WAKE didn't refer to Valley View anyway]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[jcristau: further context adjustments for 3.4]
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=38442
+Tested-by: Dominik KÃ¶ppl <dominik@devwork.org>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Julien Cristau <jcristau@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/gpu/drm/i915/i915_drv.c         |    6 +++++-
- drivers/gpu/drm/i915/i915_drv.h         |    3 +++
- drivers/gpu/drm/i915/intel_ringbuffer.c |   16 +++++++++++++---
- 3 files changed, 21 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/intel_sdvo.c |   15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -224,6 +224,7 @@ static const struct intel_device_info in
- 	.has_bsd_ring = 1,
- 	.has_blt_ring = 1,
- 	.has_llc = 1,
-+	.has_force_wake = 1,
- };
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -2570,7 +2570,6 @@ bool intel_sdvo_init(struct drm_device *
+ 		hotplug_mask = IS_SDVOB(sdvo_reg) ?
+ 			SDVOB_HOTPLUG_INT_STATUS_I915 : SDVOC_HOTPLUG_INT_STATUS_I915;
+ 	}
+-	dev_priv->hotplug_supported_mask |= hotplug_mask;
  
- static const struct intel_device_info intel_sandybridge_m_info = {
-@@ -233,6 +234,7 @@ static const struct intel_device_info in
- 	.has_bsd_ring = 1,
- 	.has_blt_ring = 1,
- 	.has_llc = 1,
-+	.has_force_wake = 1,
- };
+ 	drm_encoder_helper_add(&intel_encoder->base, &intel_sdvo_helper_funcs);
  
- static const struct intel_device_info intel_ivybridge_d_info = {
-@@ -241,6 +243,7 @@ static const struct intel_device_info in
- 	.has_bsd_ring = 1,
- 	.has_blt_ring = 1,
- 	.has_llc = 1,
-+	.has_force_wake = 1,
- };
+@@ -2578,14 +2577,6 @@ bool intel_sdvo_init(struct drm_device *
+ 	if (!intel_sdvo_get_capabilities(intel_sdvo, &intel_sdvo->caps))
+ 		goto err;
  
- static const struct intel_device_info intel_ivybridge_m_info = {
-@@ -250,6 +253,7 @@ static const struct intel_device_info in
- 	.has_bsd_ring = 1,
- 	.has_blt_ring = 1,
- 	.has_llc = 1,
-+	.has_force_wake = 1,
- };
- 
- static const struct pci_device_id pciidlist[] = {		/* aka */
-@@ -995,7 +999,7 @@ MODULE_LICENSE("GPL and additional right
- 
- /* We give fast paths for the really cool registers */
- #define NEEDS_FORCE_WAKE(dev_priv, reg) \
--       (((dev_priv)->info->gen >= 6) && \
-+	((HAS_FORCE_WAKE((dev_priv)->dev)) && \
-         ((reg) < 0x40000) &&            \
-         ((reg) != FORCEWAKE))
- 
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -255,6 +255,7 @@ struct intel_device_info {
- 	u8 is_broadwater:1;
- 	u8 is_crestline:1;
- 	u8 is_ivybridge:1;
-+	u8 has_force_wake:1;
- 	u8 has_fbc:1;
- 	u8 has_pipe_cxsr:1;
- 	u8 has_hotplug:1;
-@@ -1051,6 +1052,8 @@ struct drm_i915_file_private {
- #define HAS_PCH_CPT(dev) (INTEL_PCH_TYPE(dev) == PCH_CPT)
- #define HAS_PCH_IBX(dev) (INTEL_PCH_TYPE(dev) == PCH_IBX)
- 
-+#define HAS_FORCE_WAKE(dev) (INTEL_INFO(dev)->has_force_wake)
-+
- #include "i915_trace.h"
- 
- /**
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -249,10 +249,15 @@ u32 intel_ring_get_active_head(struct in
- 
- static int init_ring_common(struct intel_ring_buffer *ring)
- {
--	drm_i915_private_t *dev_priv = ring->dev->dev_private;
-+	struct drm_device *dev = ring->dev;
-+	drm_i915_private_t *dev_priv = dev->dev_private;
- 	struct drm_i915_gem_object *obj = ring->obj;
-+	int ret = 0;
- 	u32 head;
- 
-+	if (HAS_FORCE_WAKE(dev))
-+		gen6_gt_force_wake_get(dev_priv);
-+
- 	/* Stop the ring if it's running. */
- 	I915_WRITE_CTL(ring, 0);
- 	I915_WRITE_HEAD(ring, 0);
-@@ -300,7 +305,8 @@ static int init_ring_common(struct intel
- 				I915_READ_HEAD(ring),
- 				I915_READ_TAIL(ring),
- 				I915_READ_START(ring));
--		return -EIO;
-+		ret = -EIO;
-+		goto out;
+-	/* Set up hotplug command - note paranoia about contents of reply.
+-	 * We assume that the hardware is in a sane state, and only touch
+-	 * the bits we think we understand.
+-	 */
+-	intel_sdvo_get_value(intel_sdvo, SDVO_CMD_GET_ACTIVE_HOT_PLUG,
+-			     &intel_sdvo->hotplug_active, 2);
+-	intel_sdvo->hotplug_active[0] &= ~0x3;
+-
+ 	if (intel_sdvo_output_setup(intel_sdvo,
+ 				    intel_sdvo->caps.output_flags) != true) {
+ 		DRM_DEBUG_KMS("SDVO output failed to setup on SDVO%c\n",
+@@ -2593,6 +2584,12 @@ bool intel_sdvo_init(struct drm_device *
+ 		goto err;
  	}
  
- 	if (!drm_core_check_feature(ring->dev, DRIVER_MODESET))
-@@ -312,7 +318,11 @@ static int init_ring_common(struct intel
- 		ring->last_retired_head = -1;
- 	}
- 
--	return 0;
-+out:
-+	if (HAS_FORCE_WAKE(dev))
-+		gen6_gt_force_wake_put(dev_priv);
++	/* Only enable the hotplug irq if we need it, to work around noisy
++	 * hotplug lines.
++	 */
++	if (intel_sdvo->hotplug_active[0])
++		dev_priv->hotplug_supported_mask |= hotplug_mask;
 +
-+	return ret;
- }
+ 	intel_sdvo_select_ddc_bus(dev_priv, intel_sdvo, sdvo_reg);
  
- static int
+ 	/* Set the input timing to the screen. Assume always input 0. */
 
 
