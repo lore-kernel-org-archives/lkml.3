@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932566Ab3AOWdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:33:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43155 "EHLO mail.kernel.org"
+	id S932549Ab3AOWdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:33:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43167 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932508Ab3AOWdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:33:33 -0500
+	id S932471Ab3AOWdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:33:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tomasz Mloduchowski <q@qdot.me>
-Subject: [ 161/221] usb: ftdi_sio: Crucible Technologies COMET Caller ID - pid added
-Date: Tue, 15 Jan 2013 10:51:28 -0800
-Message-Id: <20130115185009.679741086@linuxfoundation.org>
+        Ben Greear <greearb@candelatech.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 153/221] mac80211: fix station destruction in AP/mesh modes
+Date: Tue, 15 Jan 2013 10:51:20 -0800
+Message-Id: <20130115185009.099919418@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,48 +26,202 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomasz Mloduchowski <q@qdot.me>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 8cf65dc386f3634a43312f436cc7a935476a40c4 upstream.
+commit 97f97b1f5fe0878b35c8e314f98591771696321b upstream.
 
-Simple fix to add support for Crucible Technologies COMET Caller ID
-USB decoder - a device containing FTDI USB/Serial converter chip,
-handling 1200bps CallerID messages decoded from the phone line -
-adding correct USB PID is sufficient.
+Unfortunately, commit b22cfcfcae5b, intended to speed up roaming
+by avoiding the synchronize_rcu() broke AP/mesh modes as it moved
+some code into that work item that will still call into the driver
+at a time where it's no longer expected to handle this: after the
+AP or mesh has been stopped.
 
-Tested to apply cleanly and work flawlessly against 3.6.9, 3.7.0-rc8
-and 3.8.0-rc3 on both amd64 and x86 arches.
+To fix this problem remove the per-station work struct, maintain a
+station cleanup list instead and flush this list when stations are
+flushed. To keep this patch smaller for stable, do this when the
+stations are flushed (sta_info_flush()). This unfortunately brings
+back the original roaming delay; I'll fix that again in a separate
+patch.
 
-Signed-off-by: Tomasz Mloduchowski <q@qdot.me>
+Also, Ben reported that the original commit could sometimes (with
+many interfaces) cause long delays when an interface is set down,
+due to blocking on flush_workqueue(). Since we now maintain the
+cleanup list, this particular change of the original patch can be
+reverted.
+
+Reported-by: Ben Greear <greearb@candelatech.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 8 insertions(+)
+ net/mac80211/ieee80211_i.h |    4 ++++
+ net/mac80211/iface.c       |   28 ++++++++++++++++------------
+ net/mac80211/sta_info.c    |   44 ++++++++++++++++++++++++++++++++++++++++----
+ net/mac80211/sta_info.h    |    3 ++-
+ 4 files changed, 62 insertions(+), 17 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -876,6 +876,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
-+	/* Crucible Devices */
-+	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1259,3 +1259,9 @@
-  * ATI command output: Cinterion MC55i
-  */
- #define FTDI_CINTERION_MC55I_PID	0xA951
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -730,6 +730,10 @@ struct ieee80211_sub_if_data {
+ 		u32 mntr_flags;
+ 	} u;
+ 
++	spinlock_t cleanup_stations_lock;
++	struct list_head cleanup_stations;
++	struct work_struct cleanup_stations_wk;
 +
-+/*
-+ * Product: Comet Caller ID decoder
-+ * Manufacturer: Crucible Technologies
-+ */
-+#define FTDI_CT_COMET_PID	0x8e08
+ #ifdef CONFIG_MAC80211_DEBUGFS
+ 	struct {
+ 		struct dentry *dir;
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -793,20 +793,11 @@ static void ieee80211_do_stop(struct iee
+ 		flush_work(&sdata->work);
+ 		/*
+ 		 * When we get here, the interface is marked down.
+-		 * Call rcu_barrier() to wait both for the RX path
++		 * Call synchronize_rcu() to wait for the RX path
+ 		 * should it be using the interface and enqueuing
+-		 * frames at this very time on another CPU, and
+-		 * for the sta free call_rcu callbacks.
++		 * frames at this very time on another CPU.
+ 		 */
+-		rcu_barrier();
+-
+-		/*
+-		 * free_sta_rcu() enqueues a work for the actual
+-		 * sta cleanup, so we need to flush it while
+-		 * sdata is still valid.
+-		 */
+-		flush_workqueue(local->workqueue);
+-
++		synchronize_rcu();
+ 		skb_queue_purge(&sdata->skb_queue);
+ 
+ 		/*
+@@ -1432,6 +1423,15 @@ static void ieee80211_assign_perm_addr(s
+ 	mutex_unlock(&local->iflist_mtx);
+ }
+ 
++static void ieee80211_cleanup_sdata_stas_wk(struct work_struct *wk)
++{
++	struct ieee80211_sub_if_data *sdata;
++
++	sdata = container_of(wk, struct ieee80211_sub_if_data, cleanup_stations_wk);
++
++	ieee80211_cleanup_sdata_stas(sdata);
++}
++
+ int ieee80211_if_add(struct ieee80211_local *local, const char *name,
+ 		     struct wireless_dev **new_wdev, enum nl80211_iftype type,
+ 		     struct vif_params *params)
+@@ -1507,6 +1507,10 @@ int ieee80211_if_add(struct ieee80211_lo
+ 
+ 	INIT_LIST_HEAD(&sdata->key_list);
+ 
++	spin_lock_init(&sdata->cleanup_stations_lock);
++	INIT_LIST_HEAD(&sdata->cleanup_stations);
++	INIT_WORK(&sdata->cleanup_stations_wk, ieee80211_cleanup_sdata_stas_wk);
++
+ 	for (i = 0; i < IEEE80211_NUM_BANDS; i++) {
+ 		struct ieee80211_supported_band *sband;
+ 		sband = local->hw.wiphy->bands[i];
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -91,9 +91,8 @@ static int sta_info_hash_del(struct ieee
+ 	return -ENOENT;
+ }
+ 
+-static void free_sta_work(struct work_struct *wk)
++static void cleanup_single_sta(struct sta_info *sta)
+ {
+-	struct sta_info *sta = container_of(wk, struct sta_info, free_sta_wk);
+ 	int ac, i;
+ 	struct tid_ampdu_tx *tid_tx;
+ 	struct ieee80211_sub_if_data *sdata = sta->sdata;
+@@ -148,11 +147,35 @@ static void free_sta_work(struct work_st
+ 	sta_info_free(local, sta);
+ }
+ 
++void ieee80211_cleanup_sdata_stas(struct ieee80211_sub_if_data *sdata)
++{
++	struct sta_info *sta;
++
++	spin_lock_bh(&sdata->cleanup_stations_lock);
++	while (!list_empty(&sdata->cleanup_stations)) {
++		sta = list_first_entry(&sdata->cleanup_stations,
++				       struct sta_info, list);
++		list_del(&sta->list);
++		spin_unlock_bh(&sdata->cleanup_stations_lock);
++
++		cleanup_single_sta(sta);
++
++		spin_lock_bh(&sdata->cleanup_stations_lock);
++	}
++
++	spin_unlock_bh(&sdata->cleanup_stations_lock);
++}
++
+ static void free_sta_rcu(struct rcu_head *h)
+ {
+ 	struct sta_info *sta = container_of(h, struct sta_info, rcu_head);
++	struct ieee80211_sub_if_data *sdata = sta->sdata;
+ 
+-	ieee80211_queue_work(&sta->local->hw, &sta->free_sta_wk);
++	spin_lock(&sdata->cleanup_stations_lock);
++	list_add_tail(&sta->list, &sdata->cleanup_stations);
++	spin_unlock(&sdata->cleanup_stations_lock);
++
++	ieee80211_queue_work(&sdata->local->hw, &sdata->cleanup_stations_wk);
+ }
+ 
+ /* protected by RCU */
+@@ -305,7 +328,6 @@ struct sta_info *sta_info_alloc(struct i
+ 
+ 	spin_lock_init(&sta->lock);
+ 	INIT_WORK(&sta->drv_unblock_wk, sta_unblock);
+-	INIT_WORK(&sta->free_sta_wk, free_sta_work);
+ 	INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
+ 	mutex_init(&sta->ampdu_mlme.mtx);
+ 
+@@ -877,6 +899,20 @@ int sta_info_flush(struct ieee80211_loca
+ 	}
+ 	mutex_unlock(&local->sta_mtx);
+ 
++	rcu_barrier();
++
++	if (sdata) {
++		ieee80211_cleanup_sdata_stas(sdata);
++		cancel_work_sync(&sdata->cleanup_stations_wk);
++	} else {
++		mutex_lock(&local->iflist_mtx);
++		list_for_each_entry(sdata, &local->interfaces, list) {
++			ieee80211_cleanup_sdata_stas(sdata);
++			cancel_work_sync(&sdata->cleanup_stations_wk);
++		}
++		mutex_unlock(&local->iflist_mtx);
++	}
++
+ 	return ret;
+ }
+ 
+--- a/net/mac80211/sta_info.h
++++ b/net/mac80211/sta_info.h
+@@ -298,7 +298,6 @@ struct sta_info {
+ 	spinlock_t lock;
+ 
+ 	struct work_struct drv_unblock_wk;
+-	struct work_struct free_sta_wk;
+ 
+ 	u16 listen_interval;
+ 
+@@ -558,4 +557,6 @@ void ieee80211_sta_ps_deliver_wakeup(str
+ void ieee80211_sta_ps_deliver_poll_response(struct sta_info *sta);
+ void ieee80211_sta_ps_deliver_uapsd(struct sta_info *sta);
+ 
++void ieee80211_cleanup_sdata_stas(struct ieee80211_sub_if_data *sdata);
++
+ #endif /* STA_INFO_H */
 
 
