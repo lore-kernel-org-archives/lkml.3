@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934308Ab3AOXHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:07:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48245 "EHLO mail.kernel.org"
+	id S934269Ab3AOW4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:56:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48187 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934273Ab3AOW4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:56:49 -0500
+	id S933995Ab3AOW4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Beregalov <a.beregalov@gmail.com>,
-        "Theodore Tso" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>
-Subject: [ 36/71] ext4: lock i_mutex when truncating orphan inodes
-Date: Tue, 15 Jan 2013 14:54:33 -0800
-Message-Id: <20130115225343.033036403@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [ 31/71] staging: vt6656: 64bit fixes: vCommandTimerWait change calculation of timer.
+Date: Tue, 15 Jan 2013 14:54:28 -0800
+Message-Id: <20130115225342.672485805@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,37 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 721e3eba21e43532e438652dd8f1fcdfce3187e7 upstream.
+commit 70e227790d4ee4590023d8041a3485f8053593fc upstream.
 
-Commit c278531d39 added a warning when ext4_flush_unwritten_io() is
-called without i_mutex being taken.  It had previously not been taken
-during orphan cleanup since races weren't possible at that point in
-the mount process, but as a result of this c278531d39, we will now see
-a kernel WARN_ON in this case.  Take the i_mutex in
-ext4_orphan_cleanup() to suppress this warning.
+The timer appears to run too fast/race on 64 bit systems.
 
-Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+Using msecs_to_jiffies seems to cause a deadlock on 64 bit.
+
+A calculation of (MSecond * HZ) / 1000 appears to run satisfactory.
+
+Change BSSIDInfoCount to u32.
+
+After this patch the driver can be successfully connect on little endian 64/32 bit systems.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/vt6656/wcmd.c |   20 +++++++++++---------
+ drivers/staging/vt6656/wpa2.h |    4 ++--
+ 2 files changed, 13 insertions(+), 11 deletions(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2204,7 +2204,9 @@ static void ext4_orphan_cleanup(struct s
- 				__func__, inode->i_ino, inode->i_size);
- 			jbd_debug(2, "truncating inode %lu to %lld bytes\n",
- 				  inode->i_ino, inode->i_size);
-+			mutex_lock(&inode->i_mutex);
- 			ext4_truncate(inode);
-+			mutex_unlock(&inode->i_mutex);
- 			nr_truncates++;
- 		} else {
- 			ext4_msg(sb, KERN_DEBUG,
+--- a/drivers/staging/vt6656/wcmd.c
++++ b/drivers/staging/vt6656/wcmd.c
+@@ -316,17 +316,19 @@ s_MgrMakeProbeRequest(
+     return pTxPacket;
+ }
+ 
+-void vCommandTimerWait(void *hDeviceContext, unsigned int MSecond)
++void vCommandTimerWait(void *hDeviceContext, unsigned long MSecond)
+ {
+-    PSDevice        pDevice = (PSDevice)hDeviceContext;
++	PSDevice pDevice = (PSDevice)hDeviceContext;
+ 
+-    init_timer(&pDevice->sTimerCommand);
+-    pDevice->sTimerCommand.data = (unsigned long)pDevice;
+-    pDevice->sTimerCommand.function = (TimerFunction)vRunCommand;
+-    // RUN_AT :1 msec ~= (HZ/1024)
+-    pDevice->sTimerCommand.expires = (unsigned int)RUN_AT((MSecond * HZ) >> 10);
+-    add_timer(&pDevice->sTimerCommand);
+-    return;
++	init_timer(&pDevice->sTimerCommand);
++
++	pDevice->sTimerCommand.data = (unsigned long)pDevice;
++	pDevice->sTimerCommand.function = (TimerFunction)vRunCommand;
++	pDevice->sTimerCommand.expires = RUN_AT((MSecond * HZ) / 1000);
++
++	add_timer(&pDevice->sTimerCommand);
++
++	return;
+ }
+ 
+ void vRunCommand(void *hDeviceContext)
+--- a/drivers/staging/vt6656/wpa2.h
++++ b/drivers/staging/vt6656/wpa2.h
+@@ -45,8 +45,8 @@ typedef struct tagsPMKIDInfo {
+ } PMKIDInfo, *PPMKIDInfo;
+ 
+ typedef struct tagSPMKIDCache {
+-    unsigned long       BSSIDInfoCount;
+-    PMKIDInfo   BSSIDInfo[MAX_PMKID_CACHE];
++	u32 BSSIDInfoCount;
++	PMKIDInfo BSSIDInfo[MAX_PMKID_CACHE];
+ } SPMKIDCache, *PSPMKIDCache;
+ 
+ 
 
 
