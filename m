@@ -1,180 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934001Ab3AOWyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:54:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47461 "EHLO mail.kernel.org"
+	id S934012Ab3AOWyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:54:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47524 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933709Ab3AOWyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:54:01 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 169/171] staging: comedi: dont hijack hardware device private data
-Date: Tue, 15 Jan 2013 14:45:34 -0800
-Message-Id: <20130115224325.503057783@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
-References: <20130115224313.394976595@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S933996Ab3AOWyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:54:10 -0500
+Date: Tue, 15 Jan 2013 14:47:18 -0800
+From: Greg KH <greg@kroah.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Anton Blanchard <anton@au1.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
+        robert.richter@amd.com, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 6/6][v3] perf: Document the ABI of perf sysfs entries
+Message-ID: <20130115224718.GC32544@kroah.com>
+References: <20130110010347.GA32590@us.ibm.com>
+ <20130110010703.GF32590@us.ibm.com>
+ <20130115185759.GG5826@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115185759.GG5826@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jan 15, 2013 at 03:57:59PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Jan 09, 2013 at 05:07:03PM -0800, Sukadev Bhattiprolu escreveu:
+> > [PATCH 6/6][v3] perf: Document the ABI of perf sysfs entries
+> > 
+> > This patchset addes two new sets of files to sysfs:
+> > 
+> > 	- generic and POWER-specific perf events in /sys/devices/cpu/events/
+> > 	- perf event config format in /sys/devices/cpu/format/event
+> > 
+> > Document the format of these files which would become part of the ABI.
+> > 
+> > Changelog[v3]:
+> > 	[Greg KH] Include ABI documentation.
+> 
+> Jiri, can I have your ack on this one too?
+> 
+> Greg, all ok now?
 
-------------------
+No objection from me, thanks.
 
-From: Ian Abbott <abbotti@mev.co.uk>
-
-commit c43435d7722134ed1fda58ce1025f41029bd58ad upstream.
-
-comedi_auto_config() associates a Comedi minor device number with an
-auto-configured hardware device and comedi_auto_unconfig() disassociates
-it.  Currently, these use the hardware device's private data pointer to
-point to some allocated storage holding the minor device number.  This
-is a bit of a waste of the hardware device's private data pointer,
-preventing it from being used for something more useful by the low-level
-comedi device drivers.  For example, it would make more sense if
-comedi_usb_auto_config() was passed a pointer to the struct
-usb_interface instead of the struct usb_device, but this cannot be done
-currently because the low-level comedi drivers already use the private
-data pointer in the struct usb_interface for something more useful.
-
-This patch stops the comedi core hijacking the hardware device's private
-data pointer.  Instead, comedi_auto_config() stores a pointer to the
-hardware device's struct device in the struct comedi_device_file_info
-associated with the minor device number, and comedi_auto_unconfig()
-calls new function comedi_find_board_minor() to recover the minor device
-number associated with the hardware device.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/staging/comedi/comedi_fops.c |   18 ++++++++++++++++++
- drivers/staging/comedi/comedidev.h   |    1 +
- drivers/staging/comedi/drivers.c     |   34 ++++++++++------------------------
- drivers/staging/comedi/internal.h    |    1 +
- 4 files changed, 30 insertions(+), 24 deletions(-)
-
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -2210,6 +2210,7 @@ int comedi_alloc_board_minor(struct devi
- 		kfree(info);
- 		return -ENOMEM;
- 	}
-+	info->hardware_device = hardware_device;
- 	comedi_device_init(info->device);
- 	spin_lock_irqsave(&comedi_file_info_table_lock, flags);
- 	for (i = 0; i < COMEDI_NUM_BOARD_MINORS; ++i) {
-@@ -2298,6 +2299,23 @@ void comedi_free_board_minor(unsigned mi
- 	}
- }
- 
-+int comedi_find_board_minor(struct device *hardware_device)
-+{
-+	int minor;
-+	struct comedi_device_file_info *info;
-+
-+	for (minor = 0; minor < COMEDI_NUM_BOARD_MINORS; minor++) {
-+		spin_lock(&comedi_file_info_table_lock);
-+		info = comedi_file_info_table[minor];
-+		if (info && info->hardware_device == hardware_device) {
-+			spin_unlock(&comedi_file_info_table_lock);
-+			return minor;
-+		}
-+		spin_unlock(&comedi_file_info_table_lock);
-+	}
-+	return -ENODEV;
-+}
-+
- int comedi_alloc_subdevice_minor(struct comedi_device *dev,
- 				 struct comedi_subdevice *s)
- {
---- a/drivers/staging/comedi/comedidev.h
-+++ b/drivers/staging/comedi/comedidev.h
-@@ -234,6 +234,7 @@ struct comedi_device_file_info {
- 	struct comedi_device *device;
- 	struct comedi_subdevice *read_subdevice;
- 	struct comedi_subdevice *write_subdevice;
-+	struct device *hardware_device;
- };
- 
- #ifdef CONFIG_COMEDI_DEBUG
---- a/drivers/staging/comedi/drivers.c
-+++ b/drivers/staging/comedi/drivers.c
-@@ -822,25 +822,14 @@ static int comedi_auto_config(struct dev
- 	int minor;
- 	struct comedi_device_file_info *dev_file_info;
- 	int retval;
--	unsigned *private_data = NULL;
- 
--	if (!comedi_autoconfig) {
--		dev_set_drvdata(hardware_device, NULL);
-+	if (!comedi_autoconfig)
- 		return 0;
--	}
- 
- 	minor = comedi_alloc_board_minor(hardware_device);
- 	if (minor < 0)
- 		return minor;
- 
--	private_data = kmalloc(sizeof(unsigned), GFP_KERNEL);
--	if (private_data == NULL) {
--		retval = -ENOMEM;
--		goto cleanup;
--	}
--	*private_data = minor;
--	dev_set_drvdata(hardware_device, private_data);
--
- 	dev_file_info = comedi_get_device_file_info(minor);
- 
- 	memset(&it, 0, sizeof(it));
-@@ -853,25 +842,22 @@ static int comedi_auto_config(struct dev
- 	retval = comedi_device_attach(dev_file_info->device, &it);
- 	mutex_unlock(&dev_file_info->device->mutex);
- 
--cleanup:
--	if (retval < 0) {
--		kfree(private_data);
-+	if (retval < 0)
- 		comedi_free_board_minor(minor);
--	}
- 	return retval;
- }
- 
- static void comedi_auto_unconfig(struct device *hardware_device)
- {
--	unsigned *minor = (unsigned *)dev_get_drvdata(hardware_device);
--	if (minor == NULL)
--		return;
--
--	BUG_ON(*minor >= COMEDI_NUM_BOARD_MINORS);
-+	int minor;
- 
--	comedi_free_board_minor(*minor);
--	dev_set_drvdata(hardware_device, NULL);
--	kfree(minor);
-+	if (hardware_device == NULL)
-+		return;
-+	minor = comedi_find_board_minor(hardware_device);
-+	if (minor < 0)
-+		return;
-+	BUG_ON(minor >= COMEDI_NUM_BOARD_MINORS);
-+	comedi_free_board_minor(minor);
- }
- 
- int comedi_pci_auto_config(struct pci_dev *pcidev, const char *board_name)
---- a/drivers/staging/comedi/internal.h
-+++ b/drivers/staging/comedi/internal.h
-@@ -7,6 +7,7 @@ int insn_inval(struct comedi_device *dev
- 	       struct comedi_insn *insn, unsigned int *data);
- int comedi_alloc_board_minor(struct device *hardware_device);
- void comedi_free_board_minor(unsigned minor);
-+int comedi_find_board_minor(struct device *hardware_device);
- void comedi_reset_async_buf(struct comedi_async *async);
- int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
- 		     unsigned long new_size);
-
-
+greg k-h
