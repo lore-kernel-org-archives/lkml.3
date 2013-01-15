@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab3AOD4y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 22:56:54 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:52289 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab3AOD4x (ORCPT
+	id S1755511Ab3AOEEE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 23:04:04 -0500
+Received: from mga09.intel.com ([134.134.136.24]:54923 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752679Ab3AOEED convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 22:56:53 -0500
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <50F19F3D.60502@gmail.com>
-References: <50F19F3D.60502@gmail.com>
-Date: Mon, 14 Jan 2013 19:56:52 -0800
-Message-ID: <CAOesGMgrAdvRqrnanfRD1gvJ-4O6pT1n2ZR+TCZADjD1ED_+UA@mail.gmail.com>
-Subject: Re: [GIT PULL] irqchip init infrastructure and GIC/VIC move
-From: Olof Johansson <olof@lixom.net>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "arm@kernel.org" <arm@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Mon, 14 Jan 2013 23:04:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,469,1355126400"; 
+   d="scan'208";a="272045427"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wujianguo@huawei.com" <wujianguo@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "lliubbo@gmail.com" <lliubbo@gmail.com>,
+        "jaegeuk.hanse@gmail.com" <jaegeuk.hanse@gmail.com>,
+        "glommer@parallels.com" <glommer@parallels.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
+Thread-Topic: [PATCH v5 0/5] Add movablecore_map boot option
+Thread-Index: AQHN8jfezP7hxPPawkaXDMerNaAcgJhJm6qAgABUxAD//3o84IAAtNAAgAAndAD//39VCw==
+Date: Tue, 15 Jan 2013 04:04:01 +0000
+Message-ID: <F1CBDF84-6A96-4D07-843F-3353E9029EE6@intel.com>
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com>
+ <50F440F5.3030006@zytor.com>
+ <20130114143456.3962f3bd.akpm@linux-foundation.org>
+ <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com>
+ <50F4AF88.9090201@jp.fujitsu.com>,<f0b491ad-e520-4b32-8506-1a85a15b2924@email.android.com>
+In-Reply-To: <f0b491ad-e520-4b32-8506-1a85a15b2924@email.android.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 12, 2013 at 9:37 AM, Rob Herring <robherring2@gmail.com> wrote:
-> Arnd, Olof,
->
-> Please pull for 3.9. This is the initial infrastructure and conversion
-> of the GIC and VIC to use it. Several people are waiting for the irqchip
-> infrastructure to go in in order to convert other irqchip code over.
->
-> I've left "static asmlinkage" in on the irq handlers. There's been no
-> more discussion, so I think we are in agreement. If asmlinkage defines
-> the procedure call convention for assembly calls, then it still makes
-> sense to have it on a static function called thru a function pointer.
->
-> Rob
->
-> The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
->
->   Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
->
-> are available in the git repository at:
->
->   git://sources.calxeda.com/kernel/linux.git tags/gic-vic-to-irqchip
 
-Ugh. This conflicts heavily with the timer cleanup from Stephen, due
-to adjacent changes in the machine descriptors.
+>> 
+>> I don't think so because user can easily get raw address by kernel
+>> message in x86.
+>> 
 
-I fixed them up, but I would appreciate a second glance at them for
-sanity checking.
+Which will fail if on some subsequent boot a DIMM fails BIST and is removed from the memory map by the BIOS which will then change all the mode boundaries for those above the failed DIMM.
 
-
--Olof
+-Tony
