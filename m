@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131Ab3AOU2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:28:33 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:45050 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757045Ab3AOU23 (ORCPT
+	id S1757228Ab3AOU2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:28:43 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:55607 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755769Ab3AOU2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:28:29 -0500
+	Tue, 15 Jan 2013 15:28:32 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v5 08/14] mmc: omap_hsmmc: convert to dma_request_slave_channel_compat()
-Date: Tue, 15 Jan 2013 15:32:48 -0500
-Message-Id: <1358281974-8411-9-git-send-email-mporter@ti.com>
+Subject: [PATCH v5 09/14] mmc: omap_hsmmc: set max_segs based on dma engine limitations
+Date: Tue, 15 Jan 2013 15:32:49 -0500
+Message-Id: <1358281974-8411-10-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358281974-8411-1-git-send-email-mporter@ti.com>
 References: <1358281974-8411-1-git-send-email-mporter@ti.com>
@@ -37,46 +37,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert dmaengine channel requests to use
-dma_request_slave_channel_compat(). This supports the DT case of
-platforms requiring channel selection from either the OMAP DMA or
-the EDMA engine. AM33xx only boots from DT and is the only user
-implementing EDMA so in the !DT case we can default to the OMAP DMA
-filter.
+The EDMA DMAC has a hardware limitation that prevents supporting
+scatter gather lists with any number of segments. The DMA Engine
+API reports the maximum number of segments a channel can support
+via the optional dma_get_channel_caps() API. If the nr_segs
+capability is present, the value is used to configure mmc->max_segs
+appropriately.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- drivers/mmc/host/omap_hsmmc.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/mmc/host/omap_hsmmc.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index bc58078..e79b12d 100644
+index e79b12d..f74bd69 100644
 --- a/drivers/mmc/host/omap_hsmmc.c
 +++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -1915,14 +1915,20 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_SLAVE, mask);
+@@ -1769,6 +1769,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 	const struct of_device_id *match;
+ 	dma_cap_mask_t mask;
+ 	unsigned tx_req, rx_req;
++	struct dmaengine_chan_caps *dma_chan_caps;
+ 	struct pinctrl *pinctrl;
  
--	host->rx_chan = dma_request_channel(mask, omap_dma_filter_fn, &rx_req);
-+	host->rx_chan =
-+		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
-+						 &rx_req, &pdev->dev, "rx");
-+
- 	if (!host->rx_chan) {
- 		dev_err(mmc_dev(host->mmc), "unable to obtain RX DMA engine channel %u\n", rx_req);
- 		ret = -ENXIO;
+ 	match = of_match_device(of_match_ptr(omap_mmc_of_match), &pdev->dev);
+@@ -1935,6 +1936,11 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
  		goto err_irq;
  	}
  
--	host->tx_chan = dma_request_channel(mask, omap_dma_filter_fn, &tx_req);
-+	host->tx_chan =
-+		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
-+						 &tx_req, &pdev->dev, "tx");
++	/* Some DMA Engines only handle a limited number of SG segments */
++	dma_chan_caps = dma_get_channel_caps(host->rx_chan, DMA_DEV_TO_MEM);
++	if (dma_chan_caps && dma_chan_caps->seg_nr)
++		mmc->max_segs = dma_chan_caps->seg_nr;
 +
- 	if (!host->tx_chan) {
- 		dev_err(mmc_dev(host->mmc), "unable to obtain TX DMA engine channel %u\n", tx_req);
- 		ret = -ENXIO;
+ 	/* Request IRQ for MMC operations */
+ 	ret = request_irq(host->irq, omap_hsmmc_irq, 0,
+ 			mmc_hostname(mmc), host);
 -- 
 1.7.9.5
 
