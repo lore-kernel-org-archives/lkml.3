@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934549Ab3AOW7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:59:53 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48718 "EHLO mail.kernel.org"
+	id S1758628Ab3AOXAR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:00:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48708 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934398Ab3AOW54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:56 -0500
+	id S934005Ab3AOW5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Benjamin Marzinski <bmarzins@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 66/71] GFS2: Test bufdata with buffer locked and gfs2_log_lock held
-Date: Tue, 15 Jan 2013 14:55:03 -0800
-Message-Id: <20130115225345.165916454@linuxfoundation.org>
+        Vincent Pelletier <plr.vincent@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 65/71] xhci: Handle HS bulk/ctrl endpoints that dont NAK.
+Date: Tue, 15 Jan 2013 14:55:02 -0800
+Message-Id: <20130115225345.093725144@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,113 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 96e5d1d3adf56f1c7eeb07258f6a1a0a7ae9c489 upstream.
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-In gfs2_trans_add_bh(), gfs2 was testing if a there was a bd attached to the
-buffer without having the gfs2_log_lock held. It was then assuming it would
-stay attached for the rest of the function. However, without either the log
-lock being held of the buffer locked, __gfs2_ail_flush() could detach bd at any
-time.  This patch moves the locking before the test.  If there isn't a bd
-already attached, gfs2 can safely allocate one and attach it before locking.
-There is no way that the newly allocated bd could be on the ail list,
-and thus no way for __gfs2_ail_flush() to detach it.
+commit 55c1945edaac94c5338a3647bc2e85ff75d9cf36 upstream.
 
-Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+A high speed control or bulk endpoint may have bInterval set to zero,
+which means it does not NAK.  If bInterval is non-zero, it means the
+endpoint NAKs at a rate of 2^(bInterval - 1).
+
+The xHCI code to compute the NAK interval does not handle the special
+case of zero properly.  The current code unconditionally subtracts one
+from bInterval and uses it as an exponent.  This causes a very large
+bInterval to be used, and warning messages like these will be printed:
+
+usb 1-1: ep 0x1 - rounding interval to 32768 microframes, ep desc says 0 microframes
+
+This may cause the xHCI host hardware to reject the Configure Endpoint
+command, which means the HS device will be unusable under xHCI ports.
+
+This patch should be backported to kernels as old as 2.6.31, that contain
+commit dfa49c4ad120a784ef1ff0717168aa79f55a483a "USB: xhci - fix math in
+xhci_get_endpoint_interval()".
+
+Reported-by: Vincent Pelletier <plr.vincent@gmail.com>
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- fs/gfs2/lops.c  |   18 ++++--------------
- fs/gfs2/trans.c |    8 ++++++++
- 2 files changed, 12 insertions(+), 14 deletions(-)
+ drivers/usb/host/xhci-mem.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/gfs2/lops.c
-+++ b/fs/gfs2/lops.c
-@@ -139,16 +139,14 @@ static void buf_lo_add(struct gfs2_sbd *
- 	struct gfs2_meta_header *mh;
- 	struct gfs2_trans *tr;
- 
--	lock_buffer(bd->bd_bh);
--	gfs2_log_lock(sdp);
- 	if (!list_empty(&bd->bd_list_tr))
--		goto out;
-+		return;
- 	tr = current->journal_info;
- 	tr->tr_touched = 1;
- 	tr->tr_num_buf++;
- 	list_add(&bd->bd_list_tr, &tr->tr_list_buf);
- 	if (!list_empty(&le->le_list))
--		goto out;
-+		return;
- 	set_bit(GLF_LFLUSH, &bd->bd_gl->gl_flags);
- 	set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
- 	gfs2_meta_check(sdp, bd->bd_bh);
-@@ -159,9 +157,6 @@ static void buf_lo_add(struct gfs2_sbd *
- 	sdp->sd_log_num_buf++;
- 	list_add(&le->le_list, &sdp->sd_log_le_buf);
- 	tr->tr_num_buf_new++;
--out:
--	gfs2_log_unlock(sdp);
--	unlock_buffer(bd->bd_bh);
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1026,6 +1026,8 @@ static unsigned int xhci_microframes_to_
+ static unsigned int xhci_parse_microframe_interval(struct usb_device *udev,
+ 		struct usb_host_endpoint *ep)
+ {
++	if (ep->desc.bInterval == 0)
++		return 0;
+ 	return xhci_microframes_to_exponent(udev, ep,
+ 			ep->desc.bInterval, 0, 15);
  }
- 
- static void buf_lo_before_commit(struct gfs2_sbd *sdp)
-@@ -528,11 +523,9 @@ static void databuf_lo_add(struct gfs2_s
- 	struct address_space *mapping = bd->bd_bh->b_page->mapping;
- 	struct gfs2_inode *ip = GFS2_I(mapping->host);
- 
--	lock_buffer(bd->bd_bh);
--	gfs2_log_lock(sdp);
- 	if (tr) {
- 		if (!list_empty(&bd->bd_list_tr))
--			goto out;
-+			return;
- 		tr->tr_touched = 1;
- 		if (gfs2_is_jdata(ip)) {
- 			tr->tr_num_buf++;
-@@ -540,7 +533,7 @@ static void databuf_lo_add(struct gfs2_s
- 		}
- 	}
- 	if (!list_empty(&le->le_list))
--		goto out;
-+		return;
- 
- 	set_bit(GLF_LFLUSH, &bd->bd_gl->gl_flags);
- 	set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
-@@ -552,9 +545,6 @@ static void databuf_lo_add(struct gfs2_s
- 	} else {
- 		list_add_tail(&le->le_list, &sdp->sd_log_le_ordered);
- 	}
--out:
--	gfs2_log_unlock(sdp);
--	unlock_buffer(bd->bd_bh);
- }
- 
- static void gfs2_check_magic(struct buffer_head *bh)
---- a/fs/gfs2/trans.c
-+++ b/fs/gfs2/trans.c
-@@ -145,14 +145,22 @@ void gfs2_trans_add_bh(struct gfs2_glock
- 	struct gfs2_sbd *sdp = gl->gl_sbd;
- 	struct gfs2_bufdata *bd;
- 
-+	lock_buffer(bh);
-+	gfs2_log_lock(sdp);
- 	bd = bh->b_private;
- 	if (bd)
- 		gfs2_assert(sdp, bd->bd_gl == gl);
- 	else {
-+		gfs2_log_unlock(sdp);
-+		unlock_buffer(bh);
- 		gfs2_attach_bufdata(gl, bh, meta);
- 		bd = bh->b_private;
-+		lock_buffer(bh);
-+		gfs2_log_lock(sdp);
- 	}
- 	lops_add(sdp, &bd->bd_le);
-+	gfs2_log_unlock(sdp);
-+	unlock_buffer(bh);
- }
- 
- void gfs2_trans_add_revoke(struct gfs2_sbd *sdp, struct gfs2_bufdata *bd)
 
 
