@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758219Ab3APA3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:29:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41859 "EHLO mail.kernel.org"
+	id S1758209Ab3APAaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:30:07 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41828 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755091Ab3AOW3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:29:47 -0500
+	id S1758098Ab3AOW3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:29:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Christian=20K=C3=B6nig?= <deathsimple@vodafone.de>,
+        Jerome Glisse <jglisse@redhat.com>,
+        =?ISO-8859-15?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 068/221] drm/radeon: stop page faults from hanging the system (v2)
-Date: Tue, 15 Jan 2013 10:49:55 -0800
-Message-Id: <20130115185002.957340205@linuxfoundation.org>
+Subject: [ 074/221] drm/radeon: avoid deadlock in pm path when waiting for fence
+Date: Tue, 15 Jan 2013 10:50:01 -0800
+Message-Id: <20130115185003.399922590@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -29,187 +30,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian König <deathsimple@vodafone.de>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit ae133a1129790ec288b429b5f08ab4701633844a upstream.
+commit 5f8f635edd8ad5a6416bff4c5ff486500357f473 upstream.
 
-Redirect invalid memory accesses to the default page
-instead of locking up the memory controller. Also
-enable the invalid memory access interrupts and
-start spamming system log with it.
+radeon_fence_wait_empty_locked should not trigger GPU reset as no
+place where it's call from would benefit from such thing and it
+actually lead to a kernel deadlock in case the reset is triggered
+from pm codepath. Instead force ring completion in place where it
+makes sense or return early in others.
 
-v2 (agd5f): fix up against 2 level PT changes
-
-Signed-off-by: Christian König <deathsimple@vodafone.de>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c  |   10 ++++++++++
- drivers/gpu/drm/radeon/evergreend.h |    3 +++
- drivers/gpu/drm/radeon/ni.c         |   16 +++++++++++++---
- drivers/gpu/drm/radeon/nid.h        |   11 +++++++++++
- drivers/gpu/drm/radeon/si.c         |   25 +++++++++++++++++++++++--
- drivers/gpu/drm/radeon/sid.h        |   14 ++++++++++++++
- 6 files changed, 74 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/radeon.h        |    2 +-
+ drivers/gpu/drm/radeon/radeon_device.c |   13 +++++++++++--
+ drivers/gpu/drm/radeon/radeon_fence.c  |   30 ++++++++++++++----------------
+ drivers/gpu/drm/radeon/radeon_pm.c     |   15 ++++++++++++---
+ 4 files changed, 38 insertions(+), 22 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -3093,6 +3093,16 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 146:
-+		case 147:
-+			dev_err(rdev->dev, "GPU fault detected: %d 0x%08x\n", src_id, src_data);
-+			dev_err(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_ADDR   0x%08X\n",
-+				RREG32(VM_CONTEXT1_PROTECTION_FAULT_ADDR));
-+			dev_err(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_STATUS 0x%08X\n",
-+				RREG32(VM_CONTEXT1_PROTECTION_FAULT_STATUS));
-+			/* reset addr and status */
-+			WREG32_P(VM_CONTEXT1_CNTL2, 1, ~1);
-+			break;
- 		case 176: /* CP_INT in ring buffer */
- 		case 177: /* CP_INT in IB1 */
- 		case 178: /* CP_INT in IB2 */
---- a/drivers/gpu/drm/radeon/evergreend.h
-+++ b/drivers/gpu/drm/radeon/evergreend.h
-@@ -651,6 +651,7 @@
- #define		PAGE_TABLE_DEPTH(x)				(((x) & 3) << 1)
- #define		RANGE_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 4)
- #define VM_CONTEXT1_CNTL				0x1414
-+#define VM_CONTEXT1_CNTL2				0x1434
- #define	VM_CONTEXT0_PAGE_TABLE_BASE_ADDR		0x153C
- #define	VM_CONTEXT0_PAGE_TABLE_END_ADDR			0x157C
- #define	VM_CONTEXT0_PAGE_TABLE_START_ADDR		0x155C
-@@ -672,6 +673,8 @@
- #define		CACHE_UPDATE_MODE(x)				((x) << 6)
- #define	VM_L2_STATUS					0x140C
- #define		L2_BUSY						(1 << 0)
-+#define	VM_CONTEXT1_PROTECTION_FAULT_ADDR		0x14FC
-+#define	VM_CONTEXT1_PROTECTION_FAULT_STATUS		0x14DC
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -226,7 +226,7 @@ void radeon_fence_process(struct radeon_
+ bool radeon_fence_signaled(struct radeon_fence *fence);
+ int radeon_fence_wait(struct radeon_fence *fence, bool interruptible);
+ int radeon_fence_wait_next_locked(struct radeon_device *rdev, int ring);
+-void radeon_fence_wait_empty_locked(struct radeon_device *rdev, int ring);
++int radeon_fence_wait_empty_locked(struct radeon_device *rdev, int ring);
+ int radeon_fence_wait_any(struct radeon_device *rdev,
+ 			  struct radeon_fence **fences,
+ 			  bool intr);
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -1163,6 +1163,7 @@ int radeon_suspend_kms(struct drm_device
+ 	struct drm_crtc *crtc;
+ 	struct drm_connector *connector;
+ 	int i, r;
++	bool force_completion = false;
  
- #define	WAIT_UNTIL					0x8040
+ 	if (dev == NULL || dev->dev_private == NULL) {
+ 		return -ENODEV;
+@@ -1205,8 +1206,16 @@ int radeon_suspend_kms(struct drm_device
  
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -784,10 +784,20 @@ static int cayman_pcie_gart_enable(struc
- 	/* enable context1-7 */
- 	WREG32(VM_CONTEXT1_PROTECTION_FAULT_DEFAULT_ADDR,
- 	       (u32)(rdev->dummy_page.addr >> 12));
--	WREG32(VM_CONTEXT1_CNTL2, 0);
--	WREG32(VM_CONTEXT1_CNTL, 0);
-+	WREG32(VM_CONTEXT1_CNTL2, 4);
- 	WREG32(VM_CONTEXT1_CNTL, ENABLE_CONTEXT | PAGE_TABLE_DEPTH(1) |
--				RANGE_PROTECTION_FAULT_ENABLE_DEFAULT);
-+				RANGE_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				RANGE_PROTECTION_FAULT_ENABLE_DEFAULT |
-+				DUMMY_PAGE_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				DUMMY_PAGE_PROTECTION_FAULT_ENABLE_DEFAULT |
-+				PDE0_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				PDE0_PROTECTION_FAULT_ENABLE_DEFAULT |
-+				VALID_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				VALID_PROTECTION_FAULT_ENABLE_DEFAULT |
-+				READ_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				READ_PROTECTION_FAULT_ENABLE_DEFAULT |
-+				WRITE_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				WRITE_PROTECTION_FAULT_ENABLE_DEFAULT);
+ 	mutex_lock(&rdev->ring_lock);
+ 	/* wait for gpu to finish processing current batch */
+-	for (i = 0; i < RADEON_NUM_RINGS; i++)
+-		radeon_fence_wait_empty_locked(rdev, i);
++	for (i = 0; i < RADEON_NUM_RINGS; i++) {
++		r = radeon_fence_wait_empty_locked(rdev, i);
++		if (r) {
++			/* delay GPU reset to resume */
++			force_completion = true;
++		}
++	}
++	if (force_completion) {
++		radeon_fence_driver_force_completion(rdev);
++	}
+ 	mutex_unlock(&rdev->ring_lock);
  
- 	cayman_pcie_gart_tlb_flush(rdev);
- 	DRM_INFO("PCIE GART of %uM enabled (table at 0x%016llX).\n",
---- a/drivers/gpu/drm/radeon/nid.h
-+++ b/drivers/gpu/drm/radeon/nid.h
-@@ -80,7 +80,18 @@
- #define VM_CONTEXT0_CNTL				0x1410
- #define		ENABLE_CONTEXT					(1 << 0)
- #define		PAGE_TABLE_DEPTH(x)				(((x) & 3) << 1)
-+#define		RANGE_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 3)
- #define		RANGE_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 4)
-+#define		DUMMY_PAGE_PROTECTION_FAULT_ENABLE_INTERRUPT	(1 << 6)
-+#define		DUMMY_PAGE_PROTECTION_FAULT_ENABLE_DEFAULT	(1 << 7)
-+#define		PDE0_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 9)
-+#define		PDE0_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 10)
-+#define		VALID_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 12)
-+#define		VALID_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 13)
-+#define		READ_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 15)
-+#define		READ_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 16)
-+#define		WRITE_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 18)
-+#define		WRITE_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 19)
- #define VM_CONTEXT1_CNTL				0x1414
- #define VM_CONTEXT0_CNTL2				0x1430
- #define VM_CONTEXT1_CNTL2				0x1434
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -2426,9 +2426,20 @@ static int si_pcie_gart_enable(struct ra
- 	/* enable context1-15 */
- 	WREG32(VM_CONTEXT1_PROTECTION_FAULT_DEFAULT_ADDR,
- 	       (u32)(rdev->dummy_page.addr >> 12));
--	WREG32(VM_CONTEXT1_CNTL2, 0);
-+	WREG32(VM_CONTEXT1_CNTL2, 4);
- 	WREG32(VM_CONTEXT1_CNTL, ENABLE_CONTEXT | PAGE_TABLE_DEPTH(1) |
--				RANGE_PROTECTION_FAULT_ENABLE_DEFAULT);
-+				RANGE_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				RANGE_PROTECTION_FAULT_ENABLE_DEFAULT |
-+				DUMMY_PAGE_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				DUMMY_PAGE_PROTECTION_FAULT_ENABLE_DEFAULT |
-+				PDE0_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				PDE0_PROTECTION_FAULT_ENABLE_DEFAULT |
-+				VALID_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				VALID_PROTECTION_FAULT_ENABLE_DEFAULT |
-+				READ_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				READ_PROTECTION_FAULT_ENABLE_DEFAULT |
-+				WRITE_PROTECTION_FAULT_ENABLE_INTERRUPT |
-+				WRITE_PROTECTION_FAULT_ENABLE_DEFAULT);
+ 	radeon_save_bios_scratch_regs(rdev);
+--- a/drivers/gpu/drm/radeon/radeon_fence.c
++++ b/drivers/gpu/drm/radeon/radeon_fence.c
+@@ -609,26 +609,20 @@ int radeon_fence_wait_next_locked(struct
+  * Returns 0 if the fences have passed, error for all other cases.
+  * Caller must hold ring lock.
+  */
+-void radeon_fence_wait_empty_locked(struct radeon_device *rdev, int ring)
++int radeon_fence_wait_empty_locked(struct radeon_device *rdev, int ring)
+ {
+ 	uint64_t seq = rdev->fence_drv[ring].sync_seq[ring];
++	int r;
  
- 	si_pcie_gart_tlb_flush(rdev);
- 	DRM_INFO("PCIE GART of %uM enabled (table at 0x%016llX).\n",
-@@ -3684,6 +3695,16 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 146:
-+		case 147:
-+			dev_err(rdev->dev, "GPU fault detected: %d 0x%08x\n", src_id, src_data);
-+			dev_err(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_ADDR   0x%08X\n",
-+				RREG32(VM_CONTEXT1_PROTECTION_FAULT_ADDR));
-+			dev_err(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_STATUS 0x%08X\n",
-+				RREG32(VM_CONTEXT1_PROTECTION_FAULT_STATUS));
-+			/* reset addr and status */
-+			WREG32_P(VM_CONTEXT1_CNTL2, 1, ~1);
-+			break;
- 		case 176: /* RINGID0 CP_INT */
- 			radeon_fence_process(rdev, RADEON_RING_TYPE_GFX_INDEX);
- 			break;
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -91,7 +91,18 @@
- #define VM_CONTEXT0_CNTL				0x1410
- #define		ENABLE_CONTEXT					(1 << 0)
- #define		PAGE_TABLE_DEPTH(x)				(((x) & 3) << 1)
-+#define		RANGE_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 3)
- #define		RANGE_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 4)
-+#define		DUMMY_PAGE_PROTECTION_FAULT_ENABLE_INTERRUPT	(1 << 6)
-+#define		DUMMY_PAGE_PROTECTION_FAULT_ENABLE_DEFAULT	(1 << 7)
-+#define		PDE0_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 9)
-+#define		PDE0_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 10)
-+#define		VALID_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 12)
-+#define		VALID_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 13)
-+#define		READ_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 15)
-+#define		READ_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 16)
-+#define		WRITE_PROTECTION_FAULT_ENABLE_INTERRUPT		(1 << 18)
-+#define		WRITE_PROTECTION_FAULT_ENABLE_DEFAULT		(1 << 19)
- #define VM_CONTEXT1_CNTL				0x1414
- #define VM_CONTEXT0_CNTL2				0x1430
- #define VM_CONTEXT1_CNTL2				0x1434
-@@ -104,6 +115,9 @@
- #define	VM_CONTEXT14_PAGE_TABLE_BASE_ADDR		0x1450
- #define	VM_CONTEXT15_PAGE_TABLE_BASE_ADDR		0x1454
+-	while(1) {
+-		int r;
+-		r = radeon_fence_wait_seq(rdev, seq, ring, false, false);
++	r = radeon_fence_wait_seq(rdev, seq, ring, false, false);
++	if (r) {
+ 		if (r == -EDEADLK) {
+-			mutex_unlock(&rdev->ring_lock);
+-			r = radeon_gpu_reset(rdev);
+-			mutex_lock(&rdev->ring_lock);
+-			if (!r)
+-				continue;
+-		}
+-		if (r) {
+-			dev_err(rdev->dev, "error waiting for ring to become"
+-				" idle (%d)\n", r);
++			return -EDEADLK;
+ 		}
+-		return;
++		dev_err(rdev->dev, "error waiting for ring[%d] to become idle (%d)\n",
++			ring, r);
+ 	}
++	return 0;
+ }
  
-+#define	VM_CONTEXT1_PROTECTION_FAULT_ADDR		0x14FC
-+#define	VM_CONTEXT1_PROTECTION_FAULT_STATUS		0x14DC
-+
- #define VM_INVALIDATE_REQUEST				0x1478
- #define VM_INVALIDATE_RESPONSE				0x147c
+ /**
+@@ -854,13 +848,17 @@ int radeon_fence_driver_init(struct rade
+  */
+ void radeon_fence_driver_fini(struct radeon_device *rdev)
+ {
+-	int ring;
++	int ring, r;
  
+ 	mutex_lock(&rdev->ring_lock);
+ 	for (ring = 0; ring < RADEON_NUM_RINGS; ring++) {
+ 		if (!rdev->fence_drv[ring].initialized)
+ 			continue;
+-		radeon_fence_wait_empty_locked(rdev, ring);
++		r = radeon_fence_wait_empty_locked(rdev, ring);
++		if (r) {
++			/* no need to trigger GPU reset as we are unloading */
++			radeon_fence_driver_force_completion(rdev);
++		}
+ 		wake_up_all(&rdev->fence_queue);
+ 		radeon_scratch_free(rdev, rdev->fence_drv[ring].scratch_reg);
+ 		rdev->fence_drv[ring].initialized = false;
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -234,7 +234,7 @@ static void radeon_set_power_state(struc
+ 
+ static void radeon_pm_set_clocks(struct radeon_device *rdev)
+ {
+-	int i;
++	int i, r;
+ 
+ 	/* no need to take locks, etc. if nothing's going to change */
+ 	if ((rdev->pm.requested_clock_mode_index == rdev->pm.current_clock_mode_index) &&
+@@ -248,8 +248,17 @@ static void radeon_pm_set_clocks(struct
+ 	/* wait for the rings to drain */
+ 	for (i = 0; i < RADEON_NUM_RINGS; i++) {
+ 		struct radeon_ring *ring = &rdev->ring[i];
+-		if (ring->ready)
+-			radeon_fence_wait_empty_locked(rdev, i);
++		if (!ring->ready) {
++			continue;
++		}
++		r = radeon_fence_wait_empty_locked(rdev, i);
++		if (r) {
++			/* needs a GPU reset dont reset here */
++			mutex_unlock(&rdev->ring_lock);
++			up_write(&rdev->pm.mclk_lock);
++			mutex_unlock(&rdev->ddev->struct_mutex);
++			return;
++		}
+ 	}
+ 
+ 	radeon_unmap_vram_bos(rdev);
 
 
