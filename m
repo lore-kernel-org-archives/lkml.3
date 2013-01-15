@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932824Ab3AOWfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:35:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43639 "EHLO mail.kernel.org"
+	id S932854Ab3AOWf7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:35:59 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43890 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932730Ab3AOWfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:35:33 -0500
+	id S932841Ab3AOWfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:35:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 190/221] libceph: socket can close in any connection state
-Date: Tue, 15 Jan 2013 10:51:57 -0800
-Message-Id: <20130115185011.741688951@linuxfoundation.org>
+        John Tapsell <johnflux@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [ 199/221] Revert "drm/i915: no lvds quirk for Zotac ZDBOX SD ID12/ID13"
+Date: Tue, 15 Jan 2013 10:52:06 -0800
+Message-Id: <20130115185012.400676916@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -25,88 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-(cherry picked from commit 7bb21d68c535ad8be38e14a715632ae398b37ac1)
+commit 48e858340dae43189a4e55647f6eac736766f828 upstream.
 
-A connection's socket can close for any reason, independent of the
-state of the connection (and without irrespective of the connection
-mutex).  As a result, the connectino can be in pretty much any state
-at the time its socket is closed.
+This reverts commit 9756fe38d10b2bf90c81dc4d2f17d5632e135364.
 
-Handle those other cases at the top of con_work().  Pull this whole
-block of code into a separate function to reduce the clutter.
+The bogus lvds output is actually a lvds->hdmi bridge, which we don't
+really support. But unconditionally disabling it breaks some existing
+setups.
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Reported-by: John Tapsell <johnflux@gmail.com>
+References: http://permalink.gmane.org/gmane.comp.freedesktop.xorg.drivers.intel/17237
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ceph/messenger.c |   47 ++++++++++++++++++++++++++++++-----------------
- 1 file changed, 30 insertions(+), 17 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -2262,6 +2262,35 @@ static void queue_con(struct ceph_connec
- 	}
- }
- 
-+static bool con_sock_closed(struct ceph_connection *con)
-+{
-+	if (!test_and_clear_bit(CON_FLAG_SOCK_CLOSED, &con->flags))
-+		return false;
-+
-+#define CASE(x)								\
-+	case CON_STATE_ ## x:						\
-+		con->error_msg = "socket closed (con state " #x ")";	\
-+		break;
-+
-+	switch (con->state) {
-+	CASE(CLOSED);
-+	CASE(PREOPEN);
-+	CASE(CONNECTING);
-+	CASE(NEGOTIATING);
-+	CASE(OPEN);
-+	CASE(STANDBY);
-+	default:
-+		pr_warning("%s con %p unrecognized state %lu\n",
-+			__func__, con, con->state);
-+		con->error_msg = "unrecognized con state";
-+		BUG();
-+		break;
-+	}
-+#undef CASE
-+
-+	return true;
-+}
-+
- /*
-  * Do some work on a connection.  Drop a connection ref when we're done.
-  */
-@@ -2273,24 +2302,8 @@ static void con_work(struct work_struct
- 
- 	mutex_lock(&con->mutex);
- restart:
--	if (test_and_clear_bit(CON_FLAG_SOCK_CLOSED, &con->flags)) {
--		switch (con->state) {
--		case CON_STATE_CONNECTING:
--			con->error_msg = "connection failed";
--			break;
--		case CON_STATE_NEGOTIATING:
--			con->error_msg = "negotiation failed";
--			break;
--		case CON_STATE_OPEN:
--			con->error_msg = "socket closed";
--			break;
--		default:
--			dout("unrecognized con state %d\n", (int)con->state);
--			con->error_msg = "unrecognized con state";
--			BUG();
--		}
-+	if (con_sock_closed(con))
- 		goto fault;
--	}
- 
- 	if (test_and_clear_bit(CON_FLAG_BACKOFF, &con->flags)) {
- 		dout("con_work %p backing off\n", con);
+
+---
+ drivers/gpu/drm/i915/intel_lvds.c |    8 --------
+ 1 file changed, 8 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -763,14 +763,6 @@ static const struct dmi_system_id intel_
+ 	},
+ 	{
+ 		.callback = intel_no_lvds_dmi_callback,
+-		.ident = "ZOTAC ZBOXSD-ID12/ID13",
+-		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "ZOTAC"),
+-			DMI_MATCH(DMI_BOARD_NAME, "ZBOXSD-ID12/ID13"),
+-		},
+-	},
+-	{
+-		.callback = intel_no_lvds_dmi_callback,
+ 		.ident = "Gigabyte GA-D525TUD",
+ 		.matches = {
+ 			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
 
 
