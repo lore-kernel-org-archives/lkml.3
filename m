@@ -1,109 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468Ab3AOQJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 11:09:39 -0500
+	id S1756853Ab3AOQJn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 11:09:43 -0500
 Received: from mga14.intel.com ([143.182.124.37]:56384 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754173Ab3AOQJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 11:09:38 -0500
+	id S1754173Ab3AOQJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 11:09:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,473,1355126400"; 
-   d="scan'208";a="191395587"
+   d="scan'208";a="191395627"
 From: Feng Tang <feng.tang@intel.com>
 To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org
 Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
         Feng Tang <feng.tang@intel.com>
-Subject: [PATCH v2 1/3] timekeeping: Add persistent_clock_exist flag
-Date: Wed, 16 Jan 2013 00:09:47 +0800
-Message-Id: <1358266189-8812-1-git-send-email-feng.tang@intel.com>
+Subject: [PATCH v2 3/3] timekeeping: Add CONFIG_HAS_PERSISTENT_CLOCK option
+Date: Wed, 16 Jan 2013 00:09:49 +0800
+Message-Id: <1358266189-8812-3-git-send-email-feng.tang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358266189-8812-1-git-send-email-feng.tang@intel.com>
+References: <1358266189-8812-1-git-send-email-feng.tang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current kernel, there are several places which need to check
-whether there is a persistent clock for the platform. Current check
-is done by calling the read_persistent_clock() and validating its
-return value.
+Make the persistent clock check a kernel config option, so that some
+platform can explicitely select it, also make CONFIG_RTC_HCTOSYS depends
+on its non-existence, which could prevent the persistent clock and RTC
+code from doing similar thing twice during system's init/suspend/resume
+phases.
 
-So one optimization is to do the check only once in timekeeping_init(),
-and use a flag persistent_clock_exist to record it.
-
-v2: Add a has_persistent_clock() helper function, as suggested by John.
+If the CONFIG_HAS_PERSISTENT_CLOCK=n, then no change happens for kernel
+which still does the persistent clock check in timekeeping_init().
 
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
+Suggested-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Feng Tang <feng.tang@intel.com>
 ---
- include/linux/time.h      |    6 ++++++
- kernel/time/timekeeping.c |   16 +++++++++++-----
- 2 files changed, 17 insertions(+), 5 deletions(-)
+ drivers/rtc/Kconfig  |    1 +
+ include/linux/time.h |    5 +++++
+ kernel/time/Kconfig  |    5 +++++
+ 3 files changed, 11 insertions(+)
 
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 923a9da..5b963c6 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -20,6 +20,7 @@ if RTC_CLASS
+ config RTC_HCTOSYS
+ 	bool "Set system time from RTC on startup and resume"
+ 	default y
++	depends on !HAS_PERSISTENT_CLOCK
+ 	help
+ 	  If you say yes here, the system time (wall clock) will be set using
+ 	  the value read from a specified RTC device. This is useful to avoid
 diff --git a/include/linux/time.h b/include/linux/time.h
-index 4d358e9..2f58603 100644
+index 2f58603..e08051c 100644
 --- a/include/linux/time.h
 +++ b/include/linux/time.h
-@@ -115,6 +115,12 @@ static inline bool timespec_valid_strict(const struct timespec *ts)
- 	return true;
+@@ -116,10 +116,15 @@ static inline bool timespec_valid_strict(const struct timespec *ts)
  }
  
-+extern bool persistent_clock_exist;
-+static inline bool has_persistent_clock(void)
-+{
-+	return persistent_clock_exist;
-+}
+ extern bool persistent_clock_exist;
 +
++#ifdef CONFIG_HAS_PERSISTENT_CLOCK
++#define has_persistent_clock()	true
++#else
+ static inline bool has_persistent_clock(void)
+ {
+ 	return persistent_clock_exist;
+ }
++#endif
+ 
  extern void read_persistent_clock(struct timespec *ts);
  extern void read_boot_clock(struct timespec *ts);
- extern int update_persistent_clock(struct timespec now);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index cbc6acb..2fd3aed 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -29,6 +29,9 @@ static struct timekeeper timekeeper;
- /* flag for if timekeeping is suspended */
- int __read_mostly timekeeping_suspended;
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 8601f0d..f7e45b9 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -12,6 +12,11 @@ config CLOCKSOURCE_WATCHDOG
+ config ARCH_CLOCKSOURCE_DATA
+ 	bool
  
-+/* Flag for if there is a persistent clock on this platform */
-+bool __read_mostly persistent_clock_exist = false;
++# Platforms has a persistent clock
++config HAS_PERSISTENT_CLOCK
++	bool
++	default n
 +
- static inline void tk_normalize_xtime(struct timekeeper *tk)
- {
- 	while (tk->xtime_nsec >= ((u64)NSEC_PER_SEC << tk->shift)) {
-@@ -640,12 +643,14 @@ void __init timekeeping_init(void)
- 	struct timespec now, boot, tmp;
- 
- 	read_persistent_clock(&now);
-+
- 	if (!timespec_valid_strict(&now)) {
- 		pr_warn("WARNING: Persistent clock returned invalid value!\n"
- 			"         Check your CMOS/BIOS settings.\n");
- 		now.tv_sec = 0;
- 		now.tv_nsec = 0;
--	}
-+	} else if (now.tv_sec || now.tv_nsec)
-+		persistent_clock_exist = true;
- 
- 	read_boot_clock(&boot);
- 	if (!timespec_valid_strict(&boot)) {
-@@ -718,11 +723,12 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- {
- 	struct timekeeper *tk = &timekeeper;
- 	unsigned long flags;
--	struct timespec ts;
- 
--	/* Make sure we don't set the clock twice */
--	read_persistent_clock(&ts);
--	if (!(ts.tv_sec == 0 && ts.tv_nsec == 0))
-+	/*
-+	 * Make sure we don't set the clock twice, as timekeeping_resume()
-+	 * already did it
-+	 */
-+	if (has_persistent_clock())
- 		return;
- 
- 	write_seqlock_irqsave(&tk->lock, flags);
+ # Timekeeping vsyscall support
+ config GENERIC_TIME_VSYSCALL
+ 	bool
 -- 
 1.7.9.5
 
