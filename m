@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab3AONlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:41:49 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60009 "EHLO bear.ext.ti.com"
+	id S1757504Ab3AONl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:41:56 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60020 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755077Ab3AONlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:41:45 -0500
+	id S1755077Ab3AONlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:41:51 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>,
@@ -14,9 +14,9 @@ To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Sekhar Nori <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-fbdev@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 07/12] video: da8xx-fb: minimal dt support
-Date: Tue, 15 Jan 2013 19:12:40 +0530
-Message-ID: <a92e91dc6260c1ad3d5fa8c8ec04234b2b16aa81.1358251448.git.afzal@ti.com>
+Subject: [PATCH v2 08/12] video: da8xx-fb: invoke platform callback safely
+Date: Tue, 15 Jan 2013 19:12:46 +0530
+Message-ID: <91fc9d3e10946a3dd1be7ee0e4af62ef8c0df684.1358251448.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1358251447.git.afzal@ti.com>
 References: <cover.1358251447.git.afzal@ti.com>
@@ -26,62 +26,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver is provided a means to have the probe triggered by DT.
+Ensure that platform data is present before checking whether platform
+callback is present (the one used to control backlight). So far this
+was not an issue as driver was purely non-DT triggered, but now DT
+support has been added.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- .../devicetree/bindings/video/fb-da8xx.txt         |   16 ++++++++++++++++
- drivers/video/da8xx-fb.c                           |    7 +++++++
- 2 files changed, 23 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/fb-da8xx.txt
+ drivers/video/da8xx-fb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/video/fb-da8xx.txt b/Documentation/devicetree/bindings/video/fb-da8xx.txt
-new file mode 100644
-index 0000000..581e014
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/fb-da8xx.txt
-@@ -0,0 +1,16 @@
-+TI LCD Controller on DA830/DA850/AM335x SoC's
-+
-+Required properties:
-+- compatible:
-+	DA830 - "ti,da830-lcdc"
-+	AM335x SoC's - "ti,am3352-lcdc", "ti,da830-lcdc"
-+- reg: Address range of lcdc register set
-+- interrupts: lcdc interrupt
-+
-+Example:
-+
-+lcdc@4830e000 {
-+	compatible = "ti,am3352-lcdc", "ti,da830-lcdc";
-+	reg =  <0x4830e000 0x1000>;
-+	interrupts = <36>;
-+};
 diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index b6ea5e9..08ee8eb 100644
+index 08ee8eb..0beed20 100644
 --- a/drivers/video/da8xx-fb.c
 +++ b/drivers/video/da8xx-fb.c
-@@ -1595,6 +1595,12 @@ static int fb_resume(struct platform_device *dev)
- #define fb_resume NULL
- #endif
- 
-+static const struct of_device_id da8xx_fb_of_match[] = {
-+	{.compatible = "ti,da830-lcdc", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, da8xx_fb_of_match);
-+
- static struct platform_driver da8xx_fb_driver = {
- 	.probe = fb_probe,
- 	.remove = fb_remove,
-@@ -1603,6 +1609,7 @@ static struct platform_driver da8xx_fb_driver = {
- 	.driver = {
- 		   .name = DRIVER_NAME,
- 		   .owner = THIS_MODULE,
-+		   .of_match_table = of_match_ptr(da8xx_fb_of_match),
- 		   },
- };
- 
+@@ -1347,7 +1347,7 @@ static int fb_probe(struct platform_device *device)
+ 	par->dev = &device->dev;
+ 	par->lcdc_clk = fb_clk;
+ 	par->lcd_fck_rate = clk_get_rate(fb_clk);
+-	if (fb_pdata->panel_power_ctrl) {
++	if (fb_pdata && fb_pdata->panel_power_ctrl) {
+ 		par->panel_power_ctrl = fb_pdata->panel_power_ctrl;
+ 		par->panel_power_ctrl(1);
+ 	}
 -- 
 1.7.9.5
 
