@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096Ab3AONb0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:31:26 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:58885 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab3AONbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:31:23 -0500
+	id S1757124Ab3AONbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:31:36 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44441 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757108Ab3AONbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:31:31 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>, Sekhar Nori <nsekhar@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 08/10] video: da8xx-fb: store struct device *
-Date: Tue, 15 Jan 2013 19:02:22 +0530
-Message-ID: <772688fb6e53edec2d27bfeca4286b84721be68d.1358250489.git.afzal@ti.com>
+Subject: [PATCH v3 09/10] video: da8xx-fb: report correct pixclock
+Date: Tue, 15 Jan 2013 19:02:28 +0530
+Message-ID: <0afcc9a2b298874ec1402db6906e0069fd072e45.1358250489.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1358250489.git.afzal@ti.com>
 References: <cover.1358250489.git.afzal@ti.com>
@@ -24,34 +23,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-store struct device pointer so that dev_dbg/err can be used outside
-of probe.
+Update "var" pixclock with the value that is configurable in hardware.
+This lets user know the actual pixclock.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- drivers/video/da8xx-fb.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/video/da8xx-fb.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
 diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index 7f08644..a5341d0 100644
+index a5341d0..0f73c76 100644
 --- a/drivers/video/da8xx-fb.c
 +++ b/drivers/video/da8xx-fb.c
-@@ -150,6 +150,7 @@ static inline void lcdc_write(unsigned int val, unsigned int addr)
+@@ -686,6 +686,15 @@ static inline unsigned da8xx_fb_calc_clk_divider(struct da8xx_fb_par *par,
+ 	return par->lcd_fck_rate / (PICOS2KHZ(pixclock) * 1000);
  }
  
- struct da8xx_fb_par {
-+	struct device		*dev;
- 	resource_size_t p_palette_base;
- 	unsigned char *v_palette_base;
- 	dma_addr_t		vram_phys;
-@@ -1291,6 +1292,7 @@ static int fb_probe(struct platform_device *device)
- 	}
++static inline unsigned da8xx_fb_round_clk(struct da8xx_fb_par *par,
++					  unsigned pixclock)
++{
++	unsigned div;
++
++	div = da8xx_fb_calc_clk_divider(par, pixclock);
++	return KHZ2PICOS(par->lcd_fck_rate / (1000 * div));
++}
++
+ static inline void da8xx_fb_config_clk_divider(unsigned div)
+ {
+ 	/* Configure the LCD clock divisor. */
+@@ -962,6 +971,8 @@ static int fb_check_var(struct fb_var_screeninfo *var,
+ 	if (var->yres + var->yoffset > var->yres_virtual)
+ 		var->yoffset = var->yres_virtual - var->yres;
  
- 	par = da8xx_fb_info->par;
-+	par->dev = &device->dev;
- 	par->lcdc_clk = fb_clk;
- 	par->lcd_fck_rate = clk_get_rate(fb_clk);
- 	if (fb_pdata->panel_power_ctrl) {
++	var->pixclock = da8xx_fb_round_clk(par, var->pixclock);
++
+ 	return err;
+ }
+ 
 -- 
 1.7.9.5
 
