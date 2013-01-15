@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933642Ab3AOXci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:32:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46674 "EHLO mail.kernel.org"
+	id S933628Ab3AOXdJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:33:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46642 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933585Ab3AOWwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:09 -0500
+	id S933563Ab3AOWwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Chris Wilson <chris@chris-wilson.co.uk>,
         Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ben Widawsky <ben@bwidawsk.net>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Julien Cristau <jcristau@debian.org>
-Subject: [ 115/171] drm/i915: move NEEDS_FORCE_WAKE to i915_drv.c
-Date: Tue, 15 Jan 2013 14:44:40 -0800
-Message-Id: <20130115224321.656209345@linuxfoundation.org>
+Subject: [ 113/171] drm/i915: Unpin the flip target if we fail to queue the flip
+Date: Tue, 15 Jan 2013 14:44:38 -0800
+Message-Id: <20130115224321.515917239@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -28,52 +28,160 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit b7d84096d3c45f4e397e913da4ce24ec9a32022e upstream.
+commit 83d4092b0381e5dd6f312b2ec57121dcf0fcbade upstream.
 
-It's only used by the main read/write functions, so we can keep it with
-them.
-
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Acked-by: Ben Widawsky <ben@bwidawsk.net>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Julien Cristau <jcristau@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/gpu/drm/i915/i915_drv.c |    6 ++++++
- drivers/gpu/drm/i915/i915_drv.h |    6 ------
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |   50 ++++++++++++++++++++++++-----------
+ 1 file changed, 35 insertions(+), 15 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -993,6 +993,12 @@ MODULE_AUTHOR(DRIVER_AUTHOR);
- MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_LICENSE("GPL and additional rights");
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7313,14 +7313,14 @@ static int intel_gen2_queue_flip(struct
  
-+/* We give fast paths for the really cool registers */
-+#define NEEDS_FORCE_WAKE(dev_priv, reg) \
-+       (((dev_priv)->info->gen >= 6) && \
-+        ((reg) < 0x40000) &&            \
-+        ((reg) != FORCEWAKE))
+ 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
+ 	if (ret)
+-		goto out;
++		goto err;
+ 
+ 	/* Offset into the new buffer for cases of shared fbs between CRTCs */
+ 	offset = crtc->y * fb->pitches[0] + crtc->x * fb->bits_per_pixel/8;
+ 
+ 	ret = BEGIN_LP_RING(6);
+ 	if (ret)
+-		goto out;
++		goto err_unpin;
+ 
+ 	/* Can't queue multiple flips, so wait for the previous
+ 	 * one to finish before executing the next.
+@@ -7337,7 +7337,11 @@ static int intel_gen2_queue_flip(struct
+ 	OUT_RING(obj->gtt_offset + offset);
+ 	OUT_RING(0); /* aux display base address, unused */
+ 	ADVANCE_LP_RING();
+-out:
++	return 0;
 +
- #define __i915_read(x, y) \
- u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
- 	u##x val = 0; \
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1450,12 +1450,6 @@ void gen6_gt_force_wake_get(struct drm_i
- void gen6_gt_force_wake_put(struct drm_i915_private *dev_priv);
- int __gen6_gt_wait_for_fifo(struct drm_i915_private *dev_priv);
++err_unpin:
++	intel_unpin_fb_obj(obj);
++err:
+ 	return ret;
+ }
  
--/* We give fast paths for the really cool registers */
--#define NEEDS_FORCE_WAKE(dev_priv, reg) \
--	(((dev_priv)->info->gen >= 6) && \
--	 ((reg) < 0x40000) &&		 \
--	 ((reg) != FORCEWAKE))
--
- #define __i915_read(x, y) \
- 	u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg);
+@@ -7354,14 +7358,14 @@ static int intel_gen3_queue_flip(struct
+ 
+ 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
+ 	if (ret)
+-		goto out;
++		goto err;
+ 
+ 	/* Offset into the new buffer for cases of shared fbs between CRTCs */
+ 	offset = crtc->y * fb->pitches[0] + crtc->x * fb->bits_per_pixel/8;
+ 
+ 	ret = BEGIN_LP_RING(6);
+ 	if (ret)
+-		goto out;
++		goto err_unpin;
+ 
+ 	if (intel_crtc->plane)
+ 		flip_mask = MI_WAIT_FOR_PLANE_B_FLIP;
+@@ -7376,7 +7380,11 @@ static int intel_gen3_queue_flip(struct
+ 	OUT_RING(MI_NOOP);
+ 
+ 	ADVANCE_LP_RING();
+-out:
++	return 0;
++
++err_unpin:
++	intel_unpin_fb_obj(obj);
++err:
+ 	return ret;
+ }
+ 
+@@ -7392,11 +7400,11 @@ static int intel_gen4_queue_flip(struct
+ 
+ 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
+ 	if (ret)
+-		goto out;
++		goto err;
+ 
+ 	ret = BEGIN_LP_RING(4);
+ 	if (ret)
+-		goto out;
++		goto err_unpin;
+ 
+ 	/* i965+ uses the linear or tiled offsets from the
+ 	 * Display Registers (which do not change across a page-flip)
+@@ -7415,7 +7423,11 @@ static int intel_gen4_queue_flip(struct
+ 	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
+ 	OUT_RING(pf | pipesrc);
+ 	ADVANCE_LP_RING();
+-out:
++	return 0;
++
++err_unpin:
++	intel_unpin_fb_obj(obj);
++err:
+ 	return ret;
+ }
+ 
+@@ -7431,11 +7443,11 @@ static int intel_gen6_queue_flip(struct
+ 
+ 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
+ 	if (ret)
+-		goto out;
++		goto err;
+ 
+ 	ret = BEGIN_LP_RING(4);
+ 	if (ret)
+-		goto out;
++		goto err_unpin;
+ 
+ 	OUT_RING(MI_DISPLAY_FLIP |
+ 		 MI_DISPLAY_FLIP_PLANE(intel_crtc->plane));
+@@ -7452,7 +7464,11 @@ static int intel_gen6_queue_flip(struct
+ 	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
+ 	OUT_RING(pf | pipesrc);
+ 	ADVANCE_LP_RING();
+-out:
++	return 0;
++
++err_unpin:
++	intel_unpin_fb_obj(obj);
++err:
+ 	return ret;
+ }
+ 
+@@ -7474,18 +7490,22 @@ static int intel_gen7_queue_flip(struct
+ 
+ 	ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
+ 	if (ret)
+-		goto out;
++		goto err;
+ 
+ 	ret = intel_ring_begin(ring, 4);
+ 	if (ret)
+-		goto out;
++		goto err_unpin;
+ 
+ 	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | (intel_crtc->plane << 19));
+ 	intel_ring_emit(ring, (fb->pitches[0] | obj->tiling_mode));
+ 	intel_ring_emit(ring, (obj->gtt_offset));
+ 	intel_ring_emit(ring, (MI_NOOP));
+ 	intel_ring_advance(ring);
+-out:
++	return 0;
++
++err_unpin:
++	intel_unpin_fb_obj(obj);
++err:
+ 	return ret;
+ }
  
 
 
