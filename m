@@ -1,96 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab3AOScM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:32:12 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:41301 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757442Ab3AOScJ (ORCPT
+	id S1757475Ab3AOSce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:32:34 -0500
+Received: from mail-ye0-f177.google.com ([209.85.213.177]:33333 "EHLO
+	mail-ye0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757118Ab3AOScd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:32:09 -0500
-Date: Tue, 15 Jan 2013 10:32:04 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: USB device cannot be reconnected and khubd "blocked for more
- than 120 seconds"
-Message-ID: <20130115183204.GE2668@htj.dyndns.org>
-References: <CALxABCaE3=XpGmgNJs1pre11aJ8T0pntVzf_mA6_OYNzis9nvQ@mail.gmail.com>
- <Pine.LNX.4.44L0.1301131153520.17578-100000@netrider.rowland.org>
- <CALxABCYtKJD4YrPxy6p+Frim8erccp3ine7SVEV9ReoaRh1BWQ@mail.gmail.com>
- <CACVXFVPMH-CHGw2EVwgYK5ozn1NAygT0f9=Df4vhSJmYYOZBMw@mail.gmail.com>
- <CACVXFVNvBeHG2TgfNY-wRQYtqsd6v-3AAiQVPAECuRnJ--ON-g@mail.gmail.com>
- <CA+55aFxV40V2WvNtJY3EC0F-B9wPk8CV2o1TTTyoF4CoWH7rhQ@mail.gmail.com>
- <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
- <CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com>
- <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
+	Tue, 15 Jan 2013 13:32:33 -0500
+Date: Tue, 15 Jan 2013 15:32:26 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 07/13] perf hist browser: Add support for event group view
+Message-ID: <20130115183226.GC5826@ghostprotocols.net>
+References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
+ <1358235117-12803-8-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
+In-Reply-To: <1358235117-12803-8-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
-
-On Tue, Jan 15, 2013 at 09:36:57AM -0800, Linus Torvalds wrote:
-> Tejun, comments? You can see the whole thread on lkml, but the basic
-> problem is that the module loading doing the unconditional
-> async_synchronize_full() has caused problems, because we have
+Em Tue, Jan 15, 2013 at 04:31:51PM +0900, Namhyung Kim escreveu:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
->  - load module A
->    - module A does per-controller async discovery of its devices (eg
-> scsi or ata probing)
->    - in the async thread, it initializes somethign that needs another
-> module B (in this case the default IO scheduler module)
->       - modprobe for B loads the IO scheduler module successfully
->           at the end of the module load, it does
-> async_synchronize_full() to make sure load_module won't return before
-> the module is ready
->           *DEADLOCK*, because the async_synchronize_full() thing
-> actually waits for not the module B async code (it didn't have any),
-> but for the module *A* async code, which is waiting for module B to
-> finish.
+> Show group members' overhead also when showing the leader's if event
+> group is enabled.  Use macro for defining hpp functions which looks
+> almost identical.
+> 
+> Also move coloring logic into the hpp function so that each value can
+> be colored independently.
 
-I think the root problem here, apart from request_module() from block
-- which is a bit nasty but making that part completely async would too
-be quite nasty albeit in a different way - is that
-async_synchronize_full() is way too indescriminate.  It's something
-only suitable for things like the end of system init.
+Just from reading the description: when we have this "Also do this extra
+thing" it smells like we need to break the patch in two... Can this be
+done?
 
-I'm wondering whether what we need is a rudimentray nesting like the
-following.
-
-finished_loading()
-{
-	blah blah;
-
-	cookie = async_current_cookie();
-
-	do init calls;
-
-	async_synchronize_upto(cookie);
-
-	blah blah;
-}
-
-The nesting here would be an approximation as the dependency recorded
-here is chronological.  I *suspect* this should be safe unless the
-module is doing something weird.  Need to think more about it.  One
-way or the other, I think what we need is some form of scoping for
-flushing async ops.
-
-BTW, the current synchronization is broken - cookie isn't transferred
-to running->domain in queueing order but __lowest_in_progress()
-assumes that.  I think I broke that while converting it to workqueue.
-
-Anyways, working on it.
-
-Thanks.
-
--- 
-tejun
+- Arnaldo
+ 
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/ui/browsers/hists.c | 153 ++++++++++++++++++++++++++++++++---------
+>  tools/perf/ui/hist.c           |   5 +-
+>  2 files changed, 126 insertions(+), 32 deletions(-)
+> 
+> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+> index 57b82c26cd05..65e6c005f8e9 100644
+> --- a/tools/perf/ui/browsers/hists.c
+> +++ b/tools/perf/ui/browsers/hists.c
+> @@ -567,23 +567,126 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+>  	return row - first_row;
+>  }
+>  
+> -#define HPP__COLOR_FN(_name, _field)					\
+> -static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
+> -					     struct hist_entry *he)	\
+> +struct hpp_arg {
+> +	struct ui_browser *b;
+> +	char folded_sign;
+> +	bool current_entry;
+> +};
+> +
+> +static int hist_browser__hpp_color_callchain(struct hpp_arg *arg)
+> +{
+> +	if (!symbol_conf.use_callchain)
+> +		return 0;
+> +
+> +	slsmg_printf("%c ", arg->folded_sign);
+> +	return 2;
+> +}
+> +
+> +static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+> +			    u64 (*get_field)(struct hist_entry *),
+> +			    int (*callchain_cb)(struct hpp_arg *))
+> +{
+> +	int ret = 0;
+> +	double percent = 0.0;
+> +	struct hists *hists = he->hists;
+> +	struct hpp_arg *arg = hpp->ptr;
+> +
+> +	if (hists->stats.total_period)
+> +		percent = 100.0 * get_field(he) / hists->stats.total_period;
+> +
+> +	ui_browser__set_percent_color(arg->b, percent, arg->current_entry);
+> +
+> +	if (callchain_cb)
+> +		ret += callchain_cb(arg);
+> +
+> +	ret += scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
+> +	slsmg_printf("%s", hpp->buf);
+> +
+> +	if (symbol_conf.event_group) {
+> +		int prev_idx, idx_delta, i;
+> +		struct perf_evsel *evsel = hists_to_evsel(hists);
+> +		struct hist_entry *pair;
+> +		int nr_members = evsel->nr_members;
+> +
+> +		if (nr_members <= 1)
+> +			goto out;
+> +
+> +		prev_idx = perf_evsel__group_idx(evsel);
+> +
+> +		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
+> +			u64 period = get_field(pair);
+> +			u64 total = pair->hists->stats.total_period;
+> +
+> +			if (!total)
+> +				continue;
+> +
+> +			evsel = hists_to_evsel(pair->hists);
+> +			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
+> +
+> +			for (i = 0; i < idx_delta; i++) {
+> +				ui_browser__set_percent_color(arg->b, 0.0,
+> +							arg->current_entry);
+> +				ret += scnprintf(hpp->buf, hpp->size,
+> +						 " %6.2f%%", 0.0);
+> +				slsmg_printf("%s", hpp->buf);
+> +			}
+> +
+> +			percent = 100.0 * period / total;
+> +			ui_browser__set_percent_color(arg->b, percent,
+> +						      arg->current_entry);
+> +			ret += scnprintf(hpp->buf, hpp->size,
+> +					 " %6.2f%%", percent);
+> +			slsmg_printf("%s", hpp->buf);
+> +
+> +			prev_idx += 1 + idx_delta;
+> +		}
+> +
+> +		idx_delta = nr_members - prev_idx - 1;
+> +
+> +		for (i = 0; i < idx_delta; i++) {
+> +			ui_browser__set_percent_color(arg->b, 0.0,
+> +						      arg->current_entry);
+> +			ret += scnprintf(hpp->buf, hpp->size, " %6.2f%%", 0.0);
+> +			slsmg_printf("%s", hpp->buf);
+> +		}
+> +	}
+> +out:
+> +	if (!arg->current_entry || !arg->b->navkeypressed)
+> +		ui_browser__set_color(arg->b, HE_COLORSET_NORMAL);
+> +
+> +	return ret;
+> +}
+> +
+> +static u64 __hpp_get_period(struct hist_entry *he)
+> +{
+> +	return he->stat.period;
+> +}
+> +
+> +static int hist_browser__hpp_color_overhead(struct perf_hpp *hpp,
+> +					    struct hist_entry *he)
+> +{
+> +	return __hpp__color_fmt(hpp, he, __hpp_get_period,
+> +				hist_browser__hpp_color_callchain);
+> +}
+> +
+> +#define __HPP_COLOR_PERCENT_FN(_type, _field)				\
+> +static u64 __hpp_get_##_field(struct hist_entry *he)			\
+> +{									\
+> +	return he->stat._field;						\
+> +}									\
+> +									\
+> +static int hist_browser__hpp_color_##_type(struct perf_hpp *hpp,	\
+> +					   struct hist_entry *he)	\
+>  {									\
+> -	struct hists *hists = he->hists;				\
+> -	double percent = 100.0 * he->stat._field / hists->stats.total_period; \
+> -	*(double *)hpp->ptr = percent;					\
+> -	return scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);	\
+> +	return __hpp__color_fmt(hpp, he, __hpp_get_##_field, NULL);	\
+>  }
+>  
+> -HPP__COLOR_FN(overhead, period)
+> -HPP__COLOR_FN(overhead_sys, period_sys)
+> -HPP__COLOR_FN(overhead_us, period_us)
+> -HPP__COLOR_FN(overhead_guest_sys, period_guest_sys)
+> -HPP__COLOR_FN(overhead_guest_us, period_guest_us)
+> +__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
+> +__HPP_COLOR_PERCENT_FN(overhead_us, period_us)
+> +__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
+> +__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
+>  
+> -#undef HPP__COLOR_FN
+> +#undef __HPP_COLOR_PERCENT_FN
+>  
+>  void hist_browser__init_hpp(void)
+>  {
+> @@ -608,7 +711,6 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+>  				    unsigned short row)
+>  {
+>  	char s[256];
+> -	double percent;
+>  	int printed = 0;
+>  	int width = browser->b.width;
+>  	char folded_sign = ' ';
+> @@ -628,11 +730,16 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+>  	}
+>  
+>  	if (row_offset == 0) {
+> +		struct hpp_arg arg = {
+> +			.b		= &browser->b,
+> +			.folded_sign	= folded_sign,
+> +			.current_entry	= current_entry,
+> +		};
+>  		struct perf_hpp hpp = {
+>  			.buf		= s,
+>  			.size		= sizeof(s),
+> +			.ptr		= &arg,
+>  		};
+> -		int i = 0;
+>  
+>  		ui_browser__gotorc(&browser->b, row, 0);
+>  
+> @@ -645,27 +752,11 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+>  			first = false;
+>  
+>  			if (fmt->color) {
+> -				hpp.ptr = &percent;
+> -				/* It will set percent for us. See HPP__COLOR_FN above. */
+>  				width -= fmt->color(&hpp, entry);
+> -
+> -				ui_browser__set_percent_color(&browser->b, percent, current_entry);
+> -
+> -				if (!i && symbol_conf.use_callchain) {
+> -					slsmg_printf("%c ", folded_sign);
+> -					width -= 2;
+> -				}
+> -
+> -				slsmg_printf("%s", s);
+> -
+> -				if (!current_entry || !browser->b.navkeypressed)
+> -					ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
+>  			} else {
+>  				width -= fmt->entry(&hpp, entry);
+>  				slsmg_printf("%s", s);
+>  			}
+> -
+> -			i++;
+>  		}
+>  
+>  		/* The scroll bar isn't being used */
+> diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+> index ec14335a9713..be9152cd4c76 100644
+> --- a/tools/perf/ui/hist.c
+> +++ b/tools/perf/ui/hist.c
+> @@ -521,12 +521,15 @@ unsigned int hists__sort_list_width(struct hists *hists)
+>  	struct perf_hpp_fmt *fmt;
+>  	struct sort_entry *se;
+>  	int i = 0, ret = 0;
+> +	struct perf_hpp dummy_hpp = {
+> +		.ptr	= hists_to_evsel(hists),
+> +	};
+>  
+>  	perf_hpp__for_each_format(fmt) {
+>  		if (i)
+>  			ret += 2;
+>  
+> -		ret += fmt->width(NULL);
+> +		ret += fmt->width(&dummy_hpp);
+>  	}
+>  
+>  	list_for_each_entry(se, &hist_entry__sort_list, list)
+> -- 
+> 1.7.11.7
