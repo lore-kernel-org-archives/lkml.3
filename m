@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab3AOS53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:57:29 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34838 "EHLO mail.kernel.org"
+	id S1758030Ab3AOS5g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:57:36 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34874 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757988Ab3AOS51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:57:27 -0500
+	id S1757951Ab3AOS5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:57:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steve Hodgson <steve@purestorage.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@risingtidesystems.com>
-Subject: [ 040/221] qla2xxx: Look up LUN for abort requests
-Date: Tue, 15 Jan 2013 10:49:27 -0800
-Message-Id: <20130115185000.919638083@linuxfoundation.org>
+        Mikael Pettersson <mikpe@it.uu.se>, Adko Branil <adkobranil@yahoo.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 041/221] sata_promise: fix hardreset lockdep error
+Date: Tue, 15 Jan 2013 10:49:28 -0800
+Message-Id: <20130115185000.991596500@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,63 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Hodgson <steve@purestorage.com>
+From: Mikael Pettersson <mikpe@it.uu.se>
 
-commit 06e97b489006f28e23bb028febfa1c01c266d676 upstream.
+commit 3100d49d3cd236443faae9d81137c81b22d36003 upstream.
 
-Search through the list of pending commands on the session list to find
-the command the initiator is actually aborting, so that we can pass the
-correct LUN to the core TMR handling code.
+sata_promise's pdc_hard_reset_port() needs to serialize because it
+flips a port-specific bit in controller register that's shared by
+all ports. The code takes the ata host lock for this, but that's
+broken because an interrupt may arrive on our irq during the hard
+reset sequence, and that too will take the ata host lock. With
+lockdep enabled a big nasty warning is seen.
 
-(nab: Allow abort requests to work to LUN=0 with mainline target code)
+Fixed by adding private state to the ata host structure, containing
+a second lock used only for serializing the hard reset sequences.
+This eliminated the lockdep warnings both on my test rig and on
+the original reporter's machine.
 
-Signed-off-by: Steve Hodgson <steve@purestorage.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@risingtidesystems.com>
+Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
+Tested-by: Adko Branil <adkobranil@yahoo.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_target.c |   21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+ drivers/ata/sata_promise.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -1264,8 +1264,27 @@ static int __qlt_24xx_handle_abts(struct
- 	struct abts_recv_from_24xx *abts, struct qla_tgt_sess *sess)
- {
- 	struct qla_hw_data *ha = vha->hw;
-+	struct se_session *se_sess = sess->se_sess;
- 	struct qla_tgt_mgmt_cmd *mcmd;
-+	struct se_cmd *se_cmd;
-+	u32 lun = 0;
- 	int rc;
-+	bool found_lun = false;
-+
-+	spin_lock(&se_sess->sess_cmd_lock);
-+	list_for_each_entry(se_cmd, &se_sess->sess_cmd_list, se_cmd_list) {
-+		struct qla_tgt_cmd *cmd =
-+			container_of(se_cmd, struct qla_tgt_cmd, se_cmd);
-+		if (cmd->tag == abts->exchange_addr_to_abort) {
-+			lun = cmd->unpacked_lun;
-+			found_lun = true;
-+			break;
-+		}
-+	}
-+	spin_unlock(&se_sess->sess_cmd_lock);
-+
-+	if (!found_lun)
-+		return -ENOENT;
+--- a/drivers/ata/sata_promise.c
++++ b/drivers/ata/sata_promise.c
+@@ -147,6 +147,10 @@ struct pdc_port_priv {
+ 	dma_addr_t		pkt_dma;
+ };
  
- 	ql_dbg(ql_dbg_tgt_mgt, vha, 0xf00f,
- 	    "qla_target(%d): task abort (tag=%d)\n",
-@@ -1283,7 +1302,7 @@ static int __qlt_24xx_handle_abts(struct
- 	mcmd->sess = sess;
- 	memcpy(&mcmd->orig_iocb.abts, abts, sizeof(mcmd->orig_iocb.abts));
++struct pdc_host_priv {
++	spinlock_t hard_reset_lock;
++};
++
+ static int pdc_sata_scr_read(struct ata_link *link, unsigned int sc_reg, u32 *val);
+ static int pdc_sata_scr_write(struct ata_link *link, unsigned int sc_reg, u32 val);
+ static int pdc_ata_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
+@@ -801,9 +805,10 @@ static void pdc_hard_reset_port(struct a
+ 	void __iomem *host_mmio = ap->host->iomap[PDC_MMIO_BAR];
+ 	void __iomem *pcictl_b1_mmio = host_mmio + PDC_PCI_CTL + 1;
+ 	unsigned int ata_no = pdc_ata_port_to_ata_no(ap);
++	struct pdc_host_priv *hpriv = ap->host->private_data;
+ 	u8 tmp;
  
--	rc = ha->tgt.tgt_ops->handle_tmr(mcmd, 0, TMR_ABORT_TASK,
-+	rc = ha->tgt.tgt_ops->handle_tmr(mcmd, lun, TMR_ABORT_TASK,
- 	    abts->exchange_addr_to_abort);
- 	if (rc != 0) {
- 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf052,
+-	spin_lock(&ap->host->lock);
++	spin_lock(&hpriv->hard_reset_lock);
+ 
+ 	tmp = readb(pcictl_b1_mmio);
+ 	tmp &= ~(0x10 << ata_no);
+@@ -814,7 +819,7 @@ static void pdc_hard_reset_port(struct a
+ 	writeb(tmp, pcictl_b1_mmio);
+ 	readb(pcictl_b1_mmio); /* flush */
+ 
+-	spin_unlock(&ap->host->lock);
++	spin_unlock(&hpriv->hard_reset_lock);
+ }
+ 
+ static int pdc_sata_hardreset(struct ata_link *link, unsigned int *class,
+@@ -1182,6 +1187,7 @@ static int pdc_ata_init_one(struct pci_d
+ 	const struct ata_port_info *pi = &pdc_port_info[ent->driver_data];
+ 	const struct ata_port_info *ppi[PDC_MAX_PORTS];
+ 	struct ata_host *host;
++	struct pdc_host_priv *hpriv;
+ 	void __iomem *host_mmio;
+ 	int n_ports, i, rc;
+ 	int is_sataii_tx4;
+@@ -1218,6 +1224,11 @@ static int pdc_ata_init_one(struct pci_d
+ 		dev_err(&pdev->dev, "failed to allocate host\n");
+ 		return -ENOMEM;
+ 	}
++	hpriv = devm_kzalloc(&pdev->dev, sizeof *hpriv, GFP_KERNEL);
++	if (!hpriv)
++		return -ENOMEM;
++	spin_lock_init(&hpriv->hard_reset_lock);
++	host->private_data = hpriv;
+ 	host->iomap = pcim_iomap_table(pdev);
+ 
+ 	is_sataii_tx4 = pdc_is_sataii_tx4(pi->flags);
 
 
