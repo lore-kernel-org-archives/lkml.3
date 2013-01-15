@@ -1,260 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab3AOFpm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 00:45:42 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45424 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab3AOFog (ORCPT
+	id S1755620Ab3AOFrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 00:47:33 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:57954 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab3AOFrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 00:44:36 -0500
-Subject: [PATCH 4/6] block: Optionally snapshot page contents to provide
- stable pages during write
-To: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, darrick.wong@oracle.com,
-        ericvh@gmail.com, tytso@mit.edu, viro@zeniv.linux.org.uk,
-        rminnich@sandia.gov
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
-        gnehzuil.liu@gmail.com, linux-kernel@vger.kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>, adilger.kernel@dilger.ca,
-        bharrosh@panasas.com, jlayton@samba.org, linux-ext4@vger.kernel.org,
-        hirofumi@mail.parknet.co.jp
-Date: Mon, 14 Jan 2013 21:43:05 -0800
-Message-ID: <20130115054305.1563.48197.stgit@blackbox.djwong.org>
-In-Reply-To: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
-References: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 15 Jan 2013 00:47:31 -0500
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, jacmet@sunsite.dk, patches@linaro.org,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH] usbnet: dm9601: Fix incorrect command
+Date: Tue, 15 Jan 2013 11:09:01 +0530
+Message-Id: <1358228341-2104-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides a band-aid to provide stable page writes on jbd without needing
-to backport the fixed locking and page writeback bit handling schemes of jbd2.
-The band-aid works by using bounce buffers to snapshot page contents instead of
-waiting.
+commit 24b1042c4eb2 ("usbnet: dm9601: apply introduced usb command
+APIs") removes the distiction between DM_WRITE_REG and DM_WRITE_REGS
+command. The distiction is reintroduced to the driver so that the
+functionality of the driver remains same.
 
-For those wondering about the ext3 bandage -- fixing the jbd locking (which was
-done as part of ext4dev years ago) is a lot of surgery, and setting
-PG_writeback on data pages when we actually hold the page lock dropped ext3
-performance by nearly an order of magnitude.  If we're going to migrate iscsi
-and raid to use stable page writes, the complaints about high latency will
-likely return.  We might as well centralize their page snapshotting thing to
-one place.
-
-Tested-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+CC: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 ---
- arch/tile/Kconfig       |    6 ------
- block/blk-core.c        |    8 +++++---
- fs/ext3/super.c         |    1 +
- include/uapi/linux/fs.h |    1 +
- mm/Kconfig              |   13 +++++++++++++
- mm/bounce.c             |   47 +++++++++++++++++++++++++++++++++++++++++++----
- mm/page-writeback.c     |    4 ++++
- 7 files changed, 67 insertions(+), 13 deletions(-)
+ drivers/net/usb/dm9601.c |   22 ++++++----------------
+ 1 files changed, 6 insertions(+), 16 deletions(-)
 
-
-diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index 875d008..c671fda 100644
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -410,12 +410,6 @@ config TILE_USB
- 	  Provides USB host adapter support for the built-in EHCI and OHCI
- 	  interfaces on TILE-Gx chips.
+diff --git a/drivers/net/usb/dm9601.c b/drivers/net/usb/dm9601.c
+index 3f554c1..011410f 100644
+--- a/drivers/net/usb/dm9601.c
++++ b/drivers/net/usb/dm9601.c
+@@ -53,7 +53,6 @@
+ #define DM_RX_OVERHEAD	7	/* 3 byte header + 4 byte crc tail */
+ #define DM_TIMEOUT	1000
  
--# USB OHCI needs the bounce pool since tilegx will often have more
--# than 4GB of memory, but we don't currently use the IOTLB to present
--# a 32-bit address to OHCI.  So we need to use a bounce pool instead.
--config NEED_BOUNCE_POOL
--	def_bool USB_OHCI_HCD
 -
- source "drivers/pci/hotplug/Kconfig"
+ static int dm_read(struct usbnet *dev, u8 reg, u16 length, void *data)
+ {
+ 	int err;
+@@ -84,32 +83,23 @@ static int dm_write(struct usbnet *dev, u8 reg, u16 length, void *data)
  
- endmenu
-diff --git a/block/blk-core.c b/block/blk-core.c
-index c973249..277134c 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1474,6 +1474,11 @@ void blk_queue_bio(struct request_queue *q, struct bio *bio)
- 	 */
- 	blk_queue_bounce(q, &bio);
+ static int dm_write_reg(struct usbnet *dev, u8 reg, u8 value)
+ {
+-	return usbnet_write_cmd(dev, DM_WRITE_REGS,
++	return usbnet_write_cmd(dev, DM_WRITE_REG,
+ 				USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+ 				value, reg, NULL, 0);
+ }
  
-+	if (bio_integrity_enabled(bio) && bio_integrity_prep(bio)) {
-+		bio_endio(bio, -EIO);
-+		return;
-+	}
-+
- 	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA)) {
- 		spin_lock_irq(q->queue_lock);
- 		where = ELEVATOR_INSERT_FLUSH;
-@@ -1714,9 +1719,6 @@ generic_make_request_checks(struct bio *bio)
- 	 */
- 	blk_partition_remap(bio);
- 
--	if (bio_integrity_enabled(bio) && bio_integrity_prep(bio))
--		goto end_io;
+-static void dm_write_async_helper(struct usbnet *dev, u8 reg, u8 value,
+-				  u16 length, void *data)
++static void dm_write_async(struct usbnet *dev, u8 reg, u16 length, void *data)
+ {
+ 	usbnet_write_cmd_async(dev, DM_WRITE_REGS,
+ 			       USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+-			       value, reg, data, length);
+-}
 -
- 	if (bio_check_eod(bio, nr_sectors))
- 		goto end_io;
- 
-diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-index 6e50223..4ba2683 100644
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -2065,6 +2065,7 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
- 		test_opt(sb,DATA_FLAGS) == EXT3_MOUNT_JOURNAL_DATA ? "journal":
- 		test_opt(sb,DATA_FLAGS) == EXT3_MOUNT_ORDERED_DATA ? "ordered":
- 		"writeback");
-+	sb->s_flags |= MS_SNAP_STABLE;
- 
- 	return 0;
- 
-diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-index 780d4c6..0144fbb 100644
---- a/include/uapi/linux/fs.h
-+++ b/include/uapi/linux/fs.h
-@@ -69,6 +69,7 @@ struct inodes_stat_t {
- #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
- #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
- #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
-+#define MS_SNAP_STABLE	256	/* Snapshot pages during writeback, if needed */
- #define MS_NOATIME	1024	/* Do not update access times. */
- #define MS_NODIRATIME	2048	/* Do not update directory access times */
- #define MS_BIND		4096
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 278e3ab..7901d83 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -258,6 +258,19 @@ config BOUNCE
- 	def_bool y
- 	depends on BLOCK && MMU && (ZONE_DMA || HIGHMEM)
- 
-+# On the 'tile' arch, USB OHCI needs the bounce pool since tilegx will often
-+# have more than 4GB of memory, but we don't currently use the IOTLB to present
-+# a 32-bit address to OHCI.  So we need to use a bounce pool instead.
-+#
-+# We also use the bounce pool to provide stable page writes for jbd.  jbd
-+# initiates buffer writeback without locking the page or setting PG_writeback,
-+# and fixing that behavior (a second time; jbd2 doesn't have this problem) is
-+# a major rework effort.  Instead, use the bounce buffer to snapshot pages
-+# (until jbd goes away).  The only jbd user is ext3.
-+config NEED_BOUNCE_POOL
-+	bool
-+	default y if (TILE && USB_OHCI_HCD) || (BLK_DEV_INTEGRITY && JBD)
-+
- config NR_QUICK
- 	int
- 	depends on QUICKLIST
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 0420867..a5b30f9 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -178,8 +178,44 @@ static void bounce_end_io_read_isa(struct bio *bio, int err)
- 	__bounce_end_io_read(bio, isa_page_pool, err);
+-static void dm_write_async(struct usbnet *dev, u8 reg, u16 length, void *data)
+-{
+-	netdev_dbg(dev->net, "dm_write_async() reg=0x%02x length=%d\n", reg, length);
+-
+-	dm_write_async_helper(dev, reg, 0, length, data);
++			       0, reg, data, length);
  }
  
-+#ifdef CONFIG_NEED_BOUNCE_POOL
-+static int must_snapshot_stable_pages(struct bio *bio)
-+{
-+	struct page *page;
-+	struct backing_dev_info *bdi;
-+	struct address_space *mapping;
-+	struct bio_vec *from;
-+	int i;
-+
-+	if (bio_data_dir(bio) != WRITE)
-+		return 0;
-+
-+	/*
-+	 * Based on the first page that has a valid mapping, decide whether or
-+	 * not we have to employ bounce buffering to guarantee stable pages.
-+	 */
-+	bio_for_each_segment(from, bio, i) {
-+		page = from->bv_page;
-+		mapping = page_mapping(page);
-+		if (!mapping)
-+			continue;
-+		bdi = mapping->backing_dev_info;
-+		if (!bdi_cap_stable_pages_required(bdi))
-+			return 0;
-+		return mapping->host->i_sb->s_flags & MS_SNAP_STABLE;
-+	}
-+
-+	return 0;
-+}
-+#else
-+static int must_snapshot_stable_pages(struct bio *bio)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_NEED_BOUNCE_POOL */
-+
- static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
--			       mempool_t *pool)
-+			       mempool_t *pool, int force)
+ static void dm_write_reg_async(struct usbnet *dev, u8 reg, u8 value)
  {
- 	struct page *page;
- 	struct bio *bio = NULL;
-@@ -192,7 +228,7 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
- 		/*
- 		 * is destination page below bounce pfn?
- 		 */
--		if (page_to_pfn(page) <= queue_bounce_pfn(q))
-+		if (page_to_pfn(page) <= queue_bounce_pfn(q) && !force)
- 			continue;
- 
- 		/*
-@@ -270,6 +306,7 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
- 
- void blk_queue_bounce(struct request_queue *q, struct bio **bio_orig)
- {
-+	int must_bounce;
- 	mempool_t *pool;
- 
- 	/*
-@@ -278,13 +315,15 @@ void blk_queue_bounce(struct request_queue *q, struct bio **bio_orig)
- 	if (!bio_has_data(*bio_orig))
- 		return;
- 
-+	must_bounce = must_snapshot_stable_pages(*bio_orig);
-+
- 	/*
- 	 * for non-isa bounce case, just check if the bounce pfn is equal
- 	 * to or bigger than the highest pfn in the system -- in that case,
- 	 * don't waste time iterating over bio segments
- 	 */
- 	if (!(q->bounce_gfp & GFP_DMA)) {
--		if (queue_bounce_pfn(q) >= blk_max_pfn)
-+		if (queue_bounce_pfn(q) >= blk_max_pfn && !must_bounce)
- 			return;
- 		pool = page_pool;
- 	} else {
-@@ -295,7 +334,7 @@ void blk_queue_bounce(struct request_queue *q, struct bio **bio_orig)
- 	/*
- 	 * slow path
- 	 */
--	__blk_queue_bounce(q, bio_orig, pool);
-+	__blk_queue_bounce(q, bio_orig, pool, must_bounce);
+-	netdev_dbg(dev->net, "dm_write_reg_async() reg=0x%02x value=0x%02x\n",
+-		   reg, value);
+-
+-	dm_write_async_helper(dev, reg, value, 0, NULL);
++	usbnet_write_cmd_async(dev, DM_WRITE_REG,
++			       USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
++			       value, reg, NULL, 0);
  }
  
- EXPORT_SYMBOL(blk_queue_bounce);
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 9c5af4d..75a13f3 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -2305,6 +2305,10 @@ void wait_for_stable_page(struct page *page)
- 
- 	if (!bdi_cap_stable_pages_required(bdi))
- 		return;
-+#ifdef CONFIG_NEED_BOUNCE_POOL
-+	if (mapping->host->i_sb->s_flags & MS_SNAP_STABLE)
-+		return;
-+#endif /* CONFIG_NEED_BOUNCE_POOL */
- 
- 	wait_on_page_writeback(page);
- }
+ static int dm_read_shared_word(struct usbnet *dev, int phy, u8 reg, __le16 *value)
+-- 
+1.7.4.1
 
