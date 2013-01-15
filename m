@@ -1,87 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab3AOBkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 20:40:33 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:50950 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279Ab3AOBkb (ORCPT
+	id S1757620Ab3AOBl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 20:41:26 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:65223 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756754Ab3AOBlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 20:40:31 -0500
+	Mon, 14 Jan 2013 20:41:25 -0500
+Date: Tue, 15 Jan 2013 09:41:15 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mingo@redhat.com, hughd@google.com
+Subject: Re: [RFC]x86: clearing access bit don't flush tlb
+Message-ID: <20130115014115.GA1497@kernel.org>
+References: <20130107081213.GA21779@kernel.org>
+ <50EAE66B.1020804@redhat.com>
+ <50EB4CB9.9010104@zytor.com>
+ <20130108045519.GB2459@kernel.org>
+ <50EBA8AB.2060003@zytor.com>
+ <50EBA9DC.9070400@redhat.com>
+ <50EBAA27.7030506@zytor.com>
+ <50EBC4BD.7010700@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMbhsRR29Zhje9mGtUwHfUsX+eFsggYkVMHPyQ+zgrGUp_rqTQ@mail.gmail.com>
-References: <1357941108-14138-1-git-send-email-ccross@android.com>
-	<20130114154914.6d69eb27.akpm@linux-foundation.org>
-	<CAMbhsRR29Zhje9mGtUwHfUsX+eFsggYkVMHPyQ+zgrGUp_rqTQ@mail.gmail.com>
-Date: Mon, 14 Jan 2013 17:40:28 -0800
-X-Google-Sender-Auth: ORD7PxoGDVkIcv8cvzTuQ-W-87c
-Message-ID: <CAMbhsRQ9orwuHYo4CwFUYnBqSyTnQX458xCr9xJfwc2Y2WVmVw@mail.gmail.com>
-Subject: Re: [PATCH v2] hardlockup: detect hard lockups without NMIs using
- secondary cpus
-From: Colin Cross <ccross@android.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50EBC4BD.7010700@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 4:19 PM, Colin Cross <ccross@android.com> wrote:
-> On Mon, Jan 14, 2013 at 3:49 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
->> On Fri, 11 Jan 2013 13:51:48 -0800
->> Colin Cross <ccross@android.com> wrote:
->>
->>> Emulate NMIs on systems where they are not available by using timer
->>> interrupts on other cpus.  Each cpu will use its softlockup hrtimer
->>> to check that the next cpu is processing hrtimer interrupts by
->>> verifying that a counter is increasing.
->>
->> Seems sensible.
->>
->>> This patch is useful on systems where the hardlockup detector is not
->>> available due to a lack of NMIs, for example most ARM SoCs.
->>> Without this patch any cpu stuck with interrupts disabled can
->>> cause a hardware watchdog reset with no debugging information,
->>> but with this patch the kernel can detect the lockup and panic,
->>> which can result in useful debugging info.
->>
->> But we don't get the target cpu's stack, yes?  That's a pretty big loss.
->
-> It's a huge loss, but its still useful.  For one, it can separate
-> "linux locked up one cpu" bugs from "the whole cpu complex stopped
-> responding" bugs, which are much more common than you would hope on
-> ARM cpus.  Also, as a separate patch I'm hoping to add reading the
-> DBGPCSR register of both cpus during panic, which will at least give
-> you the PC of the cpu that is stuck.
->
->>>
->>> ...
->>>
->>> +#ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
->>> +static unsigned int watchdog_next_cpu(unsigned int cpu)
->>> +{
->>> +     cpumask_t cpus = watchdog_cpus;
->>
->> cpumask_t can be tremendously huge and putting one on the stack is
->> risky.  Can we use watchdog_cpus directly here?  Perhaps with a lock?
->> or take a copy into a static local, with a lock?
->
-> Sure, I can use a lock around it.  I'm used to very small numbers of cpus.
->
+On Tue, Jan 08, 2013 at 02:03:25AM -0500, Rik van Riel wrote:
+> On 01/08/2013 12:09 AM, H. Peter Anvin wrote:
+> >On 01/07/2013 09:08 PM, Rik van Riel wrote:
+> >>On 01/08/2013 12:03 AM, H. Peter Anvin wrote:
+> >>>On 01/07/2013 08:55 PM, Shaohua Li wrote:
+> >>>>
+> >>>>I searched a little bit, the change (doing TLB flush to clear access
+> >>>>bit) is
+> >>>>made between 2.6.7 - 2.6.8, I can't find the changelog, but I found a
+> >>>>patch:
+> >>>>http://www.kernel.org/pub/linux/kernel/people/akpm/patches/2.6/2.6.7-rc2/2.6.7-rc2-mm2/broken-out/mm-flush-tlb-when-clearing-young.patch
+> >>>>
+> >>>>
+> >>>>The changelog declaims this is for arm/ppc/ppc64.
+> >>>>
+> >>>
+> >>>Not really.  It says that those have stumbled over it already.  It is
+> >>>true in general that this change will make very frequently used pages
+> >>>(which stick in the TLB) candidates for eviction.
+> >>
+> >>That is only true if the pages were to stay in the TLB for a
+> >>very very long time.  Probably multiple seconds.
+> >>
+> >>>x86 would seem to be just as affected, although possibly with a
+> >>>different frequency.
+> >>>
+> >>>Do we have any actual metrics on anything here?
+> >>
+> >>I suspect that if we do need to force a TLB flush for page
+> >>reclaim purposes, it may make sense to do that TLB flush
+> >>asynchronously. For example, kswapd could kick off a TLB
+> >>flush of every CPU in the system once a second, when the
+> >>system is under pageout pressure.
+> >>
+> >>We would have to do this in a smart way, so the kswapds
+> >>from multiple nodes do not duplicate the work.
+> >>
+> >>If people want that kind of functionality, I would be
+> >>happy to cook up an RFC patch.
+> >>
+> >
+> >So it sounds like you're saying that this patch should never have been
+> >applied in the first place?
+> 
+> It made sense at the time.
 
-On second thought, I'm just going to remove the local copy and read
-the global directly.  watchdog_cpus is updated with atomic bitmask
-operations, so there is no erroneous value that could be returned when
-referencing the global directly that couldn't also occur with a
-slightly different order of updates.  The local copy is also not
-completely atomic, since the bitmask could span multiple words.  All
-intermediate values during multiple sequential updates should already
-be handled by setting watchdog_nmi_touch on the appropriate cpus
-during watchdog_nmi_enable and watchdog_nmi_disable.
+So you agreed the patch is safe, right?
+ 
+> However, with larger SMP systems, we may need a different
+> mechanism to get the TLB flushes done after we clear a bunch
+> of accessed bits.
+> 
+> One thing we could do is mark bits in a bitmap, keeping track
+> of which CPUs should have their TLB flushed due to accessed bit
+> scanning.
+> 
+> Then we could set a timer for eg. a 1 second timeout, after
+> which the TLB flush IPIs get sent. If the timer is already
+> pending, we do not start it, but piggyback on the invocation
+> that is already scheduled to happen.
+> 
+> Does something like that make sense?
+
+I don't understand why larger SMP system matters here. Only if there are enough
+TLB entries in CPU matters to me. And if the system is larger, memory is
+larger. TLB entries will not be sufficient. Or you are worrying about future
+larger SMP system can have very big TLB entries?
+
+Thanks,
+Shaohua
