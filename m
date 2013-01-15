@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933741Ab3AOWwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:52:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47046 "EHLO mail.kernel.org"
+	id S933770Ab3AOWxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:53:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47154 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932834Ab3AOWwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:51 -0500
+	id S932834Ab3AOWxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:53:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Julien Cristau <jcristau@debian.org>
-Subject: [ 127/171] drm/i915: prevent possible pin leak on error path
-Date: Tue, 15 Jan 2013 14:44:52 -0800
-Message-Id: <20130115224322.504160423@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 141/171] ceph: propagate layout error on osd request creation
+Date: Tue, 15 Jan 2013 14:45:06 -0800
+Message-Id: <20130115224323.523029699@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -29,35 +25,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
 
-commit ab3951eb74e7c33a2f5b7b64d72e82f1eea61571 upstream.
+From: Sage Weil <sage@inktank.com>
 
-We should not hit this under any sane conditions, but still, this does not
-looks right.
+If we are creating an osd request and get an invalid layout, return
+an EINVAL to the caller.  We switch up the return to have an error
+code instead of NULL implying -ENOMEM.
 
-Reported-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-CC: Chris Wilson <chris@chris-wilson.co.uk>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Chris Wlison <chris@chris-wilson.co.uk>
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Julien Cristau <jcristau@debian.org>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+(cherry picked from commit 6816282dab3a72efe8c0d182c1bc2960d87f4322)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ceph/addr.c        |    8 ++++----
+ fs/ceph/file.c        |    4 ++--
+ net/ceph/osd_client.c |   15 +++++++++------
+ 3 files changed, 15 insertions(+), 12 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7505,7 +7505,7 @@ static int intel_gen7_queue_flip(struct
- 	default:
- 		WARN_ONCE(1, "unknown plane in flip command\n");
- 		ret = -ENODEV;
--		goto err;
-+		goto err_unpin;
- 	}
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -308,8 +308,8 @@ static int start_read(struct inode *inod
+ 				    NULL, 0,
+ 				    ci->i_truncate_seq, ci->i_truncate_size,
+ 				    NULL, false, 1, 0);
+-	if (!req)
+-		return -ENOMEM;
++	if (IS_ERR(req))
++		return PTR_ERR(req);
  
- 	ret = intel_ring_begin(ring, 4);
+ 	/* build page vector */
+ 	nr_pages = len >> PAGE_CACHE_SHIFT;
+@@ -831,8 +831,8 @@ get_more_pages:
+ 					    ci->i_truncate_size,
+ 					    &inode->i_mtime, true, 1, 0);
+ 
+-				if (!req) {
+-					rc = -ENOMEM;
++				if (IS_ERR(req)) {
++					rc = PTR_ERR(req);
+ 					unlock_page(page);
+ 					break;
+ 				}
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -529,8 +529,8 @@ more:
+ 				    do_sync,
+ 				    ci->i_truncate_seq, ci->i_truncate_size,
+ 				    &mtime, false, 2, page_align);
+-	if (!req)
+-		return -ENOMEM;
++	if (IS_ERR(req))
++		return PTR_ERR(req);
+ 
+ 	if (file->f_flags & O_DIRECT) {
+ 		pages = ceph_get_direct_page_vector(data, num_pages, false);
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -461,6 +461,7 @@ struct ceph_osd_request *ceph_osdc_new_r
+ {
+ 	struct ceph_osd_req_op ops[3];
+ 	struct ceph_osd_request *req;
++	int r;
+ 
+ 	ops[0].op = opcode;
+ 	ops[0].extent.truncate_seq = truncate_seq;
+@@ -479,10 +480,12 @@ struct ceph_osd_request *ceph_osdc_new_r
+ 					 use_mempool,
+ 					 GFP_NOFS, NULL, NULL);
+ 	if (!req)
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	/* calculate max write size */
+-	calc_layout(osdc, vino, layout, off, plen, req, ops);
++	r = calc_layout(osdc, vino, layout, off, plen, req, ops);
++	if (r < 0)
++		return ERR_PTR(r);
+ 	req->r_file_layout = *layout;  /* keep a copy */
+ 
+ 	/* in case it differs from natural (file) alignment that
+@@ -1925,8 +1928,8 @@ int ceph_osdc_readpages(struct ceph_osd_
+ 				    CEPH_OSD_OP_READ, CEPH_OSD_FLAG_READ,
+ 				    NULL, 0, truncate_seq, truncate_size, NULL,
+ 				    false, 1, page_align);
+-	if (!req)
+-		return -ENOMEM;
++	if (IS_ERR(req))
++		return PTR_ERR(req);
+ 
+ 	/* it may be a short read due to an object boundary */
+ 	req->r_pages = pages;
+@@ -1968,8 +1971,8 @@ int ceph_osdc_writepages(struct ceph_osd
+ 				    snapc, do_sync,
+ 				    truncate_seq, truncate_size, mtime,
+ 				    nofail, 1, page_align);
+-	if (!req)
+-		return -ENOMEM;
++	if (IS_ERR(req))
++		return PTR_ERR(req);
+ 
+ 	/* it may be a short write due to an object boundary */
+ 	req->r_pages = pages;
 
 
