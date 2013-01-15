@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3AOKUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:20:12 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13926 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756196Ab3AOKUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:20:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,473,1355126400"; 
-   d="asc'?scan'208";a="277025114"
-Message-ID: <1358245292.2731.120.camel@sauron.fi.intel.com>
-Subject: Re: linux-next: Tree for Jan 14 (mtd)
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 15 Jan 2013 12:21:32 +0200
-In-Reply-To: <874nija8ry.fsf@free.fr>
-References: <20130114154649.cb077b499876da60463fb304@canb.auug.org.au>
-	 <50F43197.6010308@infradead.org> <874nija8ry.fsf@free.fr>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-eRN9/7eR5P4w7/7S+L+o"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1756658Ab3AOKVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:21:09 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:62858 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752369Ab3AOKVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:21:07 -0500
+X-IronPort-AV: E=Sophos;i="4.84,473,1355068800"; 
+   d="scan'208";a="6591167"
+From: Lin Feng <linfeng@cn.fujitsu.com>
+To: akpm@linux-foundation.org, mhocko@suse.cz, linux-mm@kvack.org
+Cc: kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, minchan@kernel.org,
+        aquini@redhat.com, wency@cn.fujitsu.com, jiang.liu@huawei.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, Lin Feng <linfeng@cn.fujitsu.com>
+Subject: [PATCH V2] memory-hotplug: revert register_page_bootmem_info_node() to empty when platform related code is not implemented
+Date: Tue, 15 Jan 2013 18:20:03 +0800
+Message-Id: <1358245203-4181-1-git-send-email-linfeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/15 18:20:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/15 18:20:21,
+	Serialize complete at 2013/01/15 18:20:21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Memory-hotplug codes for x86_64 have been implemented by patchset:
+https://lkml.org/lkml/2013/1/9/124
+While other platforms haven't been completely implemented yet.
 
---=-eRN9/7eR5P4w7/7S+L+o
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+If we enable both CONFIG_MEMORY_HOTPLUG_SPARSE and CONFIG_SPARSEMEM_VMEMMAP,
+register_page_bootmem_info_node() may be buggy, which is a hotplug generic
+function but falling back to call platform related function
+register_page_bootmem_memmap().
 
-On Mon, 2013-01-14 at 20:01 +0100, Robert Jarzmik wrote:
-> Randy Dunlap <rdunlap@infradead.org> writes:
-> > ERROR: "byte_rev_table" [drivers/mtd/devices/docg3.ko] undefined!
->=20
-> Thanks for the report. I have a trivial patch attached. Should it go thro=
-ugh
-> Artem's tree or do you want to take it directly ?
+Other platforms such as powerpc it's not implemented, so on such platforms,
+revert them to empty as they were before.
 
-David just picked this patch to the MTD tree.
+It's implemented by adding a new Kconfig option named
+CONFIG_HAVE_BOOTMEM_INFO_NODE, which will be automatically selected by
+supported archs(currently only on x86_64).
 
---=20
-Best Regards,
-Artem Bityutskiy
+Reported-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+---
+ChangeLog v1->v2:
+- Add a Kconfig option named HAVE_BOOTMEM_INFO_NODE suggested by Michal, which
+  will be automatically selected by supported archs(currently only on x86_64).
+---
+ mm/Kconfig          |    8 ++++++++
+ mm/memory_hotplug.c |    7 +++++++
+ 2 files changed, 15 insertions(+), 0 deletions(-)
 
---=-eRN9/7eR5P4w7/7S+L+o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ9S2sAAoJECmIfjd9wqK0hmMQAIZsKXeZxrUN2qMdIU2U1GKt
-7qzVvCZ0ZrEoBB1TMV1ZFrzrjk+AFwxkWplFk67NmQbYsPb87knRf+7MtDelA/pG
-8fWYT6KQJfq8z0GazEBM1E7eBXUOeo+d8trCmHNbrDHYAT//DM99m1hUullWn6Hk
-F6RXIvcfW4mYtG7TI4v3xwFV2JLedPDC0SxdUsynQElV5r7xYLbuKQJJK1Ovd/9R
-NxAAZGncw/1t4PWQyLACNRPTK7Bs8HFkrAuB12n6byUkQGPMLCjQiFa4YJeSAhr9
-Twy++EXyODDjc8Dt98tZeizaB4kz9fGQOHSyRCgtwrW5zn2Sg91Eqg3+tNxwRk5+
-vmYeTzrvHMt0q057OmU9rcJ/SC3il/L3FuVutK5UutI1OGTEnxkw9FJH4nLbmLj1
-poYF3kHk8+XEEpy/es26Fm6v/CLAQzTyz3SllGkVqUDM/g8NUPaSyIc7Rt/G1fhR
-31SIAbwJGO0bPkwmjsW5azzEww+UHGqFIf06B1E6vMHTJAabX37vxpKlKCuLgM30
-ZXccEdVMHBaqPtVyc5lJCvrTgaD7HCG4sOv4yYxr7m64+0fpKFG8iB7Xh+zZ2w86
-sGci2ZP9xz4Wos5achyVit6v1GIVuFgE3MmcT8sZbNez7rOFjiIqyXn6gGhI8T7D
-OHk6VuUEeFw/3oWvD0cW
-=RYSJ
------END PGP SIGNATURE-----
-
---=-eRN9/7eR5P4w7/7S+L+o--
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 278e3ab..f8c5799 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -162,10 +162,18 @@ config MOVABLE_NODE
+ 	  Say Y here if you want to hotplug a whole node.
+ 	  Say N here if you want kernel to use memory on all nodes evenly.
+ 
++#
++# Only be set on architectures that have completely implemented memory hotplug
++# feature. If you are not sure, don't touch it.
++#
++config HAVE_BOOTMEM_INFO_NODE
++	def_bool n
++
+ # eventually, we can have this option just 'select SPARSEMEM'
+ config MEMORY_HOTPLUG
+ 	bool "Allow for memory hot-add"
+ 	select MEMORY_ISOLATION
++	select HAVE_BOOTMEM_INFO_NODE if X86_64
+ 	depends on SPARSEMEM || X86_64_ACPI_NUMA
+ 	depends on HOTPLUG && ARCH_ENABLE_MEMORY_HOTPLUG
+ 	depends on (IA64 || X86 || PPC_BOOK3S_64 || SUPERH || S390)
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 8aa2b56..ef7a5c8 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -189,6 +189,7 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
+ }
+ #endif
+ 
++#ifdef CONFIG_HAVE_BOOTMEM_INFO_NODE
+ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ {
+ 	unsigned long i, pfn, end_pfn, nr_pages;
+@@ -230,6 +231,12 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ 			register_page_bootmem_info_section(pfn);
+ 	}
+ }
++#else
++void register_page_bootmem_info_node(struct pglist_data *pgdat)
++{
++	/* TODO */
++}
++#endif
+ 
+ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
+ 			   unsigned long end_pfn)
+-- 
+1.7.1
 
