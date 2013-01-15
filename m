@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933588Ab3AOWwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:52:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46608 "EHLO mail.kernel.org"
+	id S933642Ab3AOXci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:32:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46674 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933552Ab3AOWwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:00 -0500
+	id S933585Ab3AOWwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:52:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Runyan, Arthur J" <arthur.j.runyan@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, CAI Qian <caiqian@redhat.com>
-Subject: [ 110/171] drm/i915: disable cpt phase pointer fdi rx workaround
-Date: Tue, 15 Jan 2013 14:44:35 -0800
-Message-Id: <20130115224321.315428659@linuxfoundation.org>
+        Ben Widawsky <ben@bwidawsk.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Julien Cristau <jcristau@debian.org>
+Subject: [ 115/171] drm/i915: move NEEDS_FORCE_WAKE to i915_drv.c
+Date: Tue, 15 Jan 2013 14:44:40 -0800
+Message-Id: <20130115224321.656209345@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,122 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit 539526b4137bc0e7a8806c38c8522f226814a0e6 upstream.
+commit b7d84096d3c45f4e397e913da4ce24ec9a32022e upstream.
 
-We've originally added this in
+It's only used by the main read/write functions, so we can keep it with
+them.
 
-commit 291427f5fdadec6e4be2924172e83588880e1539
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Fri Jul 29 12:42:37 2011 -0700
-
-    drm/i915: apply phase pointer override on SNB+ too
-
-and then copy-pasted it over to ivb/ppt. The w/a was originally added
-for ilk/ibx in
-
-commit 5b2adf897146edeac6a1e438fb67b5a53dbbdf34
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Thu Oct 7 16:01:15 2010 -0700
-
-    drm/i915: add Ironlake clock gating workaround for FDI link training
-
-and fixed up a bit in
-
-commit 6f06ce184c765fd8d50669a8d12fdd566c920859
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Tue Jan 4 15:09:38 2011 -0800
-
-    drm/i915: set phase sync pointer override enable before setting phase sync pointer
-
-It turns out that this w/a isn't actually required on cpt/ppt and
-positively harmful on ivb/ppt when using fdi B/C links - it results in
-a black screen occasionally, with seemingfully everything working as
-it should. The only failure indication I've found in the hw is that
-eventually (but not right after the modeset completes) a pipe underrun
-is signalled.
-
-Big thanks to Arthur Runyan for all the ideas for registers to check
-and changes to test, otherwise I couldn't ever have tracked this down!
-
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: "Runyan, Arthur J" <arthur.j.runyan@intel.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Acked-by: Ben Widawsky <ben@bwidawsk.net>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Julien Cristau <jcristau@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/i915/intel_display.c |   31 -------------------------------
- 1 file changed, 31 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.c |    6 ++++++
+ drivers/gpu/drm/i915/i915_drv.h |    6 ------
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -2424,18 +2424,6 @@ static void intel_fdi_normal_train(struc
- 			   FDI_FE_ERRC_ENABLE);
- }
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -993,6 +993,12 @@ MODULE_AUTHOR(DRIVER_AUTHOR);
+ MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_LICENSE("GPL and additional rights");
  
--static void cpt_phase_pointer_enable(struct drm_device *dev, int pipe)
--{
--	struct drm_i915_private *dev_priv = dev->dev_private;
--	u32 flags = I915_READ(SOUTH_CHICKEN1);
--
--	flags |= FDI_PHASE_SYNC_OVR(pipe);
--	I915_WRITE(SOUTH_CHICKEN1, flags); /* once to unlock... */
--	flags |= FDI_PHASE_SYNC_EN(pipe);
--	I915_WRITE(SOUTH_CHICKEN1, flags); /* then again to enable */
--	POSTING_READ(SOUTH_CHICKEN1);
--}
--
- /* The FDI link training functions for ILK/Ibexpeak. */
- static void ironlake_fdi_link_train(struct drm_crtc *crtc)
- {
-@@ -2586,9 +2574,6 @@ static void gen6_fdi_link_train(struct d
- 	POSTING_READ(reg);
- 	udelay(150);
++/* We give fast paths for the really cool registers */
++#define NEEDS_FORCE_WAKE(dev_priv, reg) \
++       (((dev_priv)->info->gen >= 6) && \
++        ((reg) < 0x40000) &&            \
++        ((reg) != FORCEWAKE))
++
+ #define __i915_read(x, y) \
+ u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
+ 	u##x val = 0; \
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1450,12 +1450,6 @@ void gen6_gt_force_wake_get(struct drm_i
+ void gen6_gt_force_wake_put(struct drm_i915_private *dev_priv);
+ int __gen6_gt_wait_for_fifo(struct drm_i915_private *dev_priv);
  
--	if (HAS_PCH_CPT(dev))
--		cpt_phase_pointer_enable(dev, pipe);
+-/* We give fast paths for the really cool registers */
+-#define NEEDS_FORCE_WAKE(dev_priv, reg) \
+-	(((dev_priv)->info->gen >= 6) && \
+-	 ((reg) < 0x40000) &&		 \
+-	 ((reg) != FORCEWAKE))
 -
- 	for (i = 0; i < 4; i++) {
- 		reg = FDI_TX_CTL(pipe);
- 		temp = I915_READ(reg);
-@@ -2707,9 +2692,6 @@ static void ivb_manual_fdi_link_train(st
- 	POSTING_READ(reg);
- 	udelay(150);
+ #define __i915_read(x, y) \
+ 	u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg);
  
--	if (HAS_PCH_CPT(dev))
--		cpt_phase_pointer_enable(dev, pipe);
--
- 	for (i = 0; i < 4; i++) {
- 		reg = FDI_TX_CTL(pipe);
- 		temp = I915_READ(reg);
-@@ -2819,17 +2801,6 @@ static void ironlake_fdi_pll_enable(stru
- 	}
- }
- 
--static void cpt_phase_pointer_disable(struct drm_device *dev, int pipe)
--{
--	struct drm_i915_private *dev_priv = dev->dev_private;
--	u32 flags = I915_READ(SOUTH_CHICKEN1);
--
--	flags &= ~(FDI_PHASE_SYNC_EN(pipe));
--	I915_WRITE(SOUTH_CHICKEN1, flags); /* once to disable... */
--	flags &= ~(FDI_PHASE_SYNC_OVR(pipe));
--	I915_WRITE(SOUTH_CHICKEN1, flags); /* then again to lock */
--	POSTING_READ(SOUTH_CHICKEN1);
--}
- static void ironlake_fdi_disable(struct drm_crtc *crtc)
- {
- 	struct drm_device *dev = crtc->dev;
-@@ -2859,8 +2830,6 @@ static void ironlake_fdi_disable(struct
- 		I915_WRITE(FDI_RX_CHICKEN(pipe),
- 			   I915_READ(FDI_RX_CHICKEN(pipe) &
- 				     ~FDI_RX_PHASE_SYNC_POINTER_EN));
--	} else if (HAS_PCH_CPT(dev)) {
--		cpt_phase_pointer_disable(dev, pipe);
- 	}
- 
- 	/* still set train pattern 1 */
 
 
