@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933909Ab3AOWxq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:53:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47379 "EHLO mail.kernel.org"
+	id S933923Ab3AOWxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:53:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47389 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933893Ab3AOWxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:53:42 -0500
+	id S933843Ab3AOWxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:53:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
-Subject: [ 161/171] rbd: fix bug in rbd_dev_id_put()
-Date: Tue, 15 Jan 2013 14:45:26 -0800
-Message-Id: <20130115224324.944204505@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 162/171] rbd: do not allow remove of mounted-on image
+Date: Tue, 15 Jan 2013 14:45:27 -0800
+Message-Id: <20130115224325.014069923@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -28,33 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-In rbd_dev_id_put(), there's a loop that's intended to determine
-the maximum device id in use.  But it isn't doing that at all,
-the effect of how it's written is to simply use the just-put id
-number, which ignores whole purpose of this function.
+There is no check in rbd_remove() to see if anybody holds open the
+image being removed.  That's not cool.
 
-Fix the bug.
+Add a simple open count that goes up and down with opens and closes
+(releases) of the device, and don't allow an rbd image to be removed
+if the count is non-zero.
+
+Protect the updates of the open count value with ctl_mutex to ensure
+the underlying rbd device doesn't get removed while concurrently
+being opened.
 
 Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
-(cherry picked from commit b213e0b1a62637b2a9395a34349b13d73ca2b90a)
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reviewed-by: Sage Weil <sage@inktank.com>
+(based on commit 42382b709bd1d143b9f0fa93e0a3a1f2f4210707)
 ---
- drivers/block/rbd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/rbd.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
 --- a/drivers/block/rbd.c
 +++ b/drivers/block/rbd.c
-@@ -2150,8 +2150,8 @@ static void rbd_id_put(struct rbd_device
- 		struct rbd_device *rbd_dev;
+@@ -189,6 +189,7 @@ struct rbd_device {
  
- 		rbd_dev = list_entry(tmp, struct rbd_device, node);
--		if (rbd_id > max_id)
--			max_id = rbd_id;
-+		if (rbd_dev->id > max_id)
-+			max_id = rbd_dev->id;
+ 	/* sysfs related */
+ 	struct device		dev;
++	unsigned long		open_count;
+ };
+ 
+ static DEFINE_MUTEX(ctl_mutex);	  /* Serialize open/close/setup/teardown */
+@@ -249,8 +250,11 @@ static int rbd_open(struct block_device
+ 	if ((mode & FMODE_WRITE) && rbd_dev->read_only)
+ 		return -EROFS;
+ 
++	mutex_lock_nested(&ctl_mutex, SINGLE_DEPTH_NESTING);
+ 	rbd_get_dev(rbd_dev);
+ 	set_device_ro(bdev, rbd_dev->read_only);
++	rbd_dev->open_count++;
++	mutex_unlock(&ctl_mutex);
+ 
+ 	return 0;
+ }
+@@ -259,7 +263,11 @@ static int rbd_release(struct gendisk *d
+ {
+ 	struct rbd_device *rbd_dev = disk->private_data;
+ 
++	mutex_lock_nested(&ctl_mutex, SINGLE_DEPTH_NESTING);
++	BUG_ON(!rbd_dev->open_count);
++	rbd_dev->open_count--;
+ 	rbd_put_dev(rbd_dev);
++	mutex_unlock(&ctl_mutex);
+ 
+ 	return 0;
+ }
+@@ -2448,6 +2456,11 @@ static ssize_t rbd_remove(struct bus_typ
+ 		goto done;
  	}
- 	spin_unlock(&rbd_dev_list_lock);
+ 
++	if (rbd_dev->open_count) {
++		ret = -EBUSY;
++		goto done;
++	}
++
+ 	__rbd_remove_all_snaps(rbd_dev);
+ 	rbd_bus_del_dev(rbd_dev);
  
 
 
