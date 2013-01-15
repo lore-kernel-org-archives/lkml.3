@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab3AOLg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 06:36:26 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:61413 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755167Ab3AOLgZ (ORCPT
+	id S1756534Ab3AOLhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 06:37:19 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:48333 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755077Ab3AOLhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 06:36:25 -0500
-Date: Tue, 15 Jan 2013 03:37:19 -0800
+	Tue, 15 Jan 2013 06:37:17 -0500
+Date: Tue, 15 Jan 2013 03:38:12 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, cwchoi00@gmail.com
-Subject: Re: [GIT PULL] extcon for 3.8-rc4
-Message-ID: <20130115113719.GD1748@kroah.com>
-References: <50F5067A.2060104@samsung.com>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: a.zummo@towertech.it, linux-kernel@vger.kernel.org,
+        Arm Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        arm@kernel.org, rtc-linux@googlegroups.com
+Subject: Re: rtc: vt8500: Fix year field in vt8500_rtc_set_time
+Message-ID: <20130115113812.GE1748@kroah.com>
+References: <1358234563.6868.13.camel@gitbox>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50F5067A.2060104@samsung.com>
+In-Reply-To: <1358234563.6868.13.camel@gitbox>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 04:34:18PM +0900, Chanwoo Choi wrote:
-> Hi Greg,
+On Tue, Jan 15, 2013 at 08:22:43PM +1300, Tony Prisk wrote:
+> Alessandro,
 > 
-> This is the extcon pull request for Linux 3.8-rc4.
+> This patch was sent out at the same time as two other RTC fixes for
+> vt8500 but this one seems to have stopped somewhere along the way while
+> the other two have been accepted.
 > 
-> Please pull extcon with following updates:
+> The patch is showing in the RTC patch system along with the other two:
+> http://patchwork.ozlabs.org/patch/208756/
 > 
-> Update to max77693/max8997 extcon driver:
-> - Using MHL_TA cable for charging.
-> - Support JIG cable.
-> - Support Dock-Audio device for playing music and button of device.
-> - Support Dock-Smart device for desktop mode with mouse/keyboard.
-> - Set default UART/USB path on probe().
-> - Check the state/type of cable after completing initialization.
-> - Code clean to remove duplicate code and bug fix related to sequence of interrupt.
-> - Fix irq_flag of max8997/max77693 driver.
 > 
-> Update to arizona extcon driver:
-> - Headphone measurements.
-> - Alternative detection mechanism for non-default system designs.
-> - Microphone clamp integration.
-> - Support for additional detection pin.
-> - MICBIAS rise time configuration.
-> 
-> Thanks in advance for pulling,
+> Greg,
+> How did the first two patches find their way to you - did you pick them
+> up off one of the lists?
 
-This request is for inclusion in 3.9, right?  This seems much too big
-for 3.8 at the moment.
+I have no idea, normally rtc patches go through Andrew Morton.
 
-greg k-h
