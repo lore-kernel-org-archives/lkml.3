@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab3APAK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:10:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42931 "EHLO mail.kernel.org"
+	id S932596Ab3APALP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:11:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42910 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758320Ab3AOWct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:32:49 -0500
+	id S932395Ab3AOWcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:32:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?=C3=89ric=20Piel?= <piel@delmic.com>,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 141/221] staging: comedi: fix minimum AO period for NI 625x and NI 628x
-Date: Tue, 15 Jan 2013 10:51:08 -0800
-Message-Id: <20130115185008.242447264@linuxfoundation.org>
+        Mike Dunn <mikedunn@newsguy.com>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 139/221] ALSA: pxa27x: fix ac97 warm reset
+Date: Tue, 15 Jan 2013 10:51:06 -0800
+Message-Id: <20130115185008.104639618@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,103 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Éric Piel <piel@delmic.com>
+From: Mike Dunn <mikedunn@newsguy.com>
 
-commit 34b55d8c48f4f76044d8f4d6ec3dc786cf210312 upstream.
+commit 3b4bc7bccc7857274705b05cf81a0c72cfd0b0dd upstream.
 
-The minimum period was set to 357 ns, while the divider for these boards is 50
-ns. This prevented to output at maximum speed as ni_ao_cmdtest() would return
-357 but would not accept it.
+This patch fixes some code that implements a work-around to a hardware bug in
+the ac97 controller on the pxa27x.  A bug in the controller's warm reset
+functionality requires that the mfp used by the controller as the AC97_nRESET
+line be temporarily reconfigured as a generic output gpio (AF0) and manually
+held high for the duration of the warm reset cycle.  This is what was done in
+the original code, but it was broken long ago by commit fb1bf8cd
+    ([ARM] pxa: introduce processor specific pxa27x_assert_ac97reset())
+which changed the mfp to a GPIO input instead of a high output.
 
-Not sure why it was set to 357 ns (this was done before the git history,
-which starts 5 years ago). My guess is that it comes from reading the
-specification stating a 2.8 MHz rate (~ 357 ns). The latest
-specification states a 2.86 MHz rate (~ 350 ns), which makes a lot
-more sense.
+The fix requires the ac97 controller to obtain the gpio via gpio_request_one(),
+with arguments that configure the gpio as an output initially driven high.
 
-Tested on a pci-6251.
+Tested on a palm treo 680 machine.  Reportedly, this broken code only prevents a
+warm reset on hardware that lacks a pull-up on the line, which appears to be the
+case for me.
 
-Signed-off-by: Éric Piel <piel@delmic.com>
-Acked-By: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Mike Dunn <mikedunn@newsguy.com>
+Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/ni_pcimio.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ arch/arm/mach-pxa/include/mach/mfp-pxa27x.h |    3 +++
+ arch/arm/mach-pxa/pxa27x.c                  |    4 ++--
+ sound/arm/pxa2xx-ac97-lib.c                 |   18 +++++++++++++++++-
+ 3 files changed, 22 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/comedi/drivers/ni_pcimio.c
-+++ b/drivers/staging/comedi/drivers/ni_pcimio.c
-@@ -963,7 +963,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_625x_ao,
- 	 .reg_type = ni_reg_625x,
- 	 .ao_unipolar = 0,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 8,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -982,7 +982,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_625x_ao,
- 	 .reg_type = ni_reg_625x,
- 	 .ao_unipolar = 0,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 8,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1001,7 +1001,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_625x_ao,
- 	 .reg_type = ni_reg_625x,
- 	 .ao_unipolar = 0,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 8,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1037,7 +1037,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_625x_ao,
- 	 .reg_type = ni_reg_625x,
- 	 .ao_unipolar = 0,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 32,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1056,7 +1056,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_625x_ao,
- 	 .reg_type = ni_reg_625x,
- 	 .ao_unipolar = 0,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 32,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1092,7 +1092,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_628x_ao,
- 	 .reg_type = ni_reg_628x,
- 	 .ao_unipolar = 1,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 8,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1111,7 +1111,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_628x_ao,
- 	 .reg_type = ni_reg_628x,
- 	 .ao_unipolar = 1,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 8,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
-@@ -1147,7 +1147,7 @@ static const struct ni_board_struct ni_b
- 	 .ao_range_table = &range_ni_M_628x_ao,
- 	 .reg_type = ni_reg_628x,
- 	 .ao_unipolar = 1,
--	 .ao_speed = 357,
-+	 .ao_speed = 350,
- 	 .num_p0_dio_channels = 32,
- 	 .caldac = {caldac_none},
- 	 .has_8255 = 0,
+--- a/arch/arm/mach-pxa/include/mach/mfp-pxa27x.h
++++ b/arch/arm/mach-pxa/include/mach/mfp-pxa27x.h
+@@ -463,6 +463,9 @@
+ 	GPIO76_LCD_PCLK,	\
+ 	GPIO77_LCD_BIAS
+ 
++/* these enable a work-around for a hw bug in pxa27x during ac97 warm reset */
++#define GPIO113_AC97_nRESET_GPIO_HIGH MFP_CFG_OUT(GPIO113, AF0, DEFAULT)
++#define GPIO95_AC97_nRESET_GPIO_HIGH MFP_CFG_OUT(GPIO95, AF0, DEFAULT)
+ 
+ extern int keypad_set_wake(unsigned int on);
+ #endif /* __ASM_ARCH_MFP_PXA27X_H */
+--- a/arch/arm/mach-pxa/pxa27x.c
++++ b/arch/arm/mach-pxa/pxa27x.c
+@@ -47,9 +47,9 @@ void pxa27x_clear_otgph(void)
+ EXPORT_SYMBOL(pxa27x_clear_otgph);
+ 
+ static unsigned long ac97_reset_config[] = {
+-	GPIO113_GPIO,
++	GPIO113_AC97_nRESET_GPIO_HIGH,
+ 	GPIO113_AC97_nRESET,
+-	GPIO95_GPIO,
++	GPIO95_AC97_nRESET_GPIO_HIGH,
+ 	GPIO95_AC97_nRESET,
+ };
+ 
+--- a/sound/arm/pxa2xx-ac97-lib.c
++++ b/sound/arm/pxa2xx-ac97-lib.c
+@@ -18,6 +18,7 @@
+ #include <linux/delay.h>
+ #include <linux/module.h>
+ #include <linux/io.h>
++#include <linux/gpio.h>
+ 
+ #include <sound/ac97_codec.h>
+ #include <sound/pxa2xx-lib.h>
+@@ -344,8 +345,21 @@ int __devinit pxa2xx_ac97_hw_probe(struc
+ 	}
+ 
+ 	if (cpu_is_pxa27x()) {
+-		/* Use GPIO 113 as AC97 Reset on Bulverde */
++		/*
++		 * This gpio is needed for a work-around to a bug in the ac97
++		 * controller during warm reset.  The direction and level is set
++		 * here so that it is an output driven high when switching from
++		 * AC97_nRESET alt function to generic gpio.
++		 */
++		ret = gpio_request_one(reset_gpio, GPIOF_OUT_INIT_HIGH,
++				       "pxa27x ac97 reset");
++		if (ret < 0) {
++			pr_err("%s: gpio_request_one() failed: %d\n",
++			       __func__, ret);
++			goto err_conf;
++		}
+ 		pxa27x_assert_ac97reset(reset_gpio, 0);
++
+ 		ac97conf_clk = clk_get(&dev->dev, "AC97CONFCLK");
+ 		if (IS_ERR(ac97conf_clk)) {
+ 			ret = PTR_ERR(ac97conf_clk);
+@@ -388,6 +402,8 @@ EXPORT_SYMBOL_GPL(pxa2xx_ac97_hw_probe);
+ 
+ void pxa2xx_ac97_hw_remove(struct platform_device *dev)
+ {
++	if (cpu_is_pxa27x())
++		gpio_free(reset_gpio);
+ 	GCR |= GCR_ACLINK_OFF;
+ 	free_irq(IRQ_AC97, NULL);
+ 	if (ac97conf_clk) {
 
 
