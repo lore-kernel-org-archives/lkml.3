@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934198Ab3AOXM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:12:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47708 "EHLO mail.kernel.org"
+	id S934235Ab3AOXNc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:13:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47698 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934107Ab3AOWzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:55:05 -0500
+	id S933750Ab3AOWzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:55:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
-        Roland Dreier <roland@purestorage.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 22/71] RDMA/nes: Fix for crash when registering zero length MR for CQ
-Date: Tue, 15 Jan 2013 14:54:19 -0800
-Message-Id: <20130115225342.036918159@linuxfoundation.org>
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Damien Lespiau <damien.lespiau@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 21/71] drm/i915: make the panel fitter work on pipes B and C on IVB
+Date: Tue, 15 Jan 2013 14:54:18 -0800
+Message-Id: <20130115225341.966128010@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,32 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit 7d9c199a55200c9b9fcad08e150470d02fb385be upstream.
+commit 13888d78c664a1f61d7b09d282f5916993827a40 upstream.
 
-Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+I actually found this problem on Haswell, but then discovered Ivy
+Bridge also has it by reading the spec.
+
+I don't have the hardware to test this.
+
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/nes/nes_verbs.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/i915/i915_reg.h      |    2 ++
+ drivers/gpu/drm/i915/intel_display.c |    6 +++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -2568,6 +2568,11 @@ static struct ib_mr *nes_reg_user_mr(str
- 			return ibmr;
- 		case IWNES_MEMREG_TYPE_QP:
- 		case IWNES_MEMREG_TYPE_CQ:
-+			if (!region->length) {
-+				nes_debug(NES_DBG_MR, "Unable to register zero length region for CQ\n");
-+				ib_umem_release(region);
-+				return ERR_PTR(-EINVAL);
-+			}
- 			nespbl = kzalloc(sizeof(*nespbl), GFP_KERNEL);
- 			if (!nespbl) {
- 				nes_debug(NES_DBG_MR, "Unable to allocate PBL\n");
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -2754,6 +2754,8 @@
+ #define _PFA_CTL_1               0x68080
+ #define _PFB_CTL_1               0x68880
+ #define  PF_ENABLE              (1<<31)
++#define  PF_PIPE_SEL_MASK_IVB	(3<<29)
++#define  PF_PIPE_SEL_IVB(pipe)	((pipe)<<29)
+ #define  PF_FILTER_MASK		(3<<23)
+ #define  PF_FILTER_PROGRAMMED	(0<<23)
+ #define  PF_FILTER_MED_3x3	(1<<23)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2696,7 +2696,11 @@ static void ironlake_crtc_enable(struct
+ 		 * as some pre-programmed values are broken,
+ 		 * e.g. x201.
+ 		 */
+-		I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3);
++		if (IS_IVYBRIDGE(dev))
++			I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3 |
++						 PF_PIPE_SEL_IVB(pipe));
++		else
++			I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3);
+ 		I915_WRITE(PF_WIN_POS(pipe), dev_priv->pch_pf_pos);
+ 		I915_WRITE(PF_WIN_SZ(pipe), dev_priv->pch_pf_size);
+ 	}
 
 
