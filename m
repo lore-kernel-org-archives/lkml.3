@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab3AOPHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 10:07:06 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:29949 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756114Ab3AOPHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 10:07:04 -0500
-Subject: [PATCH] fuse: enable close_wait feature (v2)
-To: miklos@szeredi.hu
-From: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
-        bfoster@redhat.com, linux-kernel@vger.kernel.org, devel@openvz.org,
-        anand.avati@gmail.com
-Date: Tue, 15 Jan 2013 19:07:01 +0400
-Message-ID: <20130115150355.18759.92630.stgit@maximpc.sw.ru>
-In-Reply-To: <20121220123204.4101.14064.stgit@maximpc.sw.ru>
-References: <20121220123204.4101.14064.stgit@maximpc.sw.ru>
-User-Agent: StGit/0.15
+	id S1757294Ab3AOPH3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 10:07:29 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:58596 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750758Ab3AOPH2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 10:07:28 -0500
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Ido Yariv <ido@wizery.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?iso-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>
+Date: Tue, 15 Jan 2013 16:07:10 +0100
+Subject: RE: [RFCv2 03/11] remoteproc: Set vring addresses in resource table
+Thread-Topic: [RFCv2 03/11] remoteproc: Set vring addresses in resource table
+Thread-Index: Ac3fINrwBSVMAC5MRJubq9RhJpjD6APU7wOg
+Message-ID: <81C3A93C17462B4BBD7E272753C1057924588EE055@EXDCVYMBSTM005.EQ1STM.local>
+References: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1355501220-4572-4-git-send-email-sjur.brandeland@stericsson.com>
+ <20121221021358.GA28692@WorkStation.localnet>
+In-Reply-To: <20121221021358.GA28692@WorkStation.localnet>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch enables feature by passing 'true' to fuse_file_put in
-fuse_release_common.
+Hi Ido,
+> > Set the vring addresses in the resource table so that
+> > the remote device can read the actual addresses used.
+> >
+> > Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> 
+> Since this new member will only be referenced in the last patch, perhaps
+> squash the two patches?
 
-Previously, this was safe only in special cases when we sure that
-multi-threaded userspace won't deadlock if we'll synchronously send
-FUSE_RELEASE in the context of read-ahead or write-back callback. Now, it's
-always safe because callbacks don't send requests to userspace anymore.
+This patch fixes two TODOs in the remoteproc_core.c so I think
+it deserves to be a separate patch.
 
-Changed in v2: update the patch to be applied cleanly on the top of
-previous modified (v2) patch of the patch-set.
-
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
----
- fs/fuse/file.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 150033a..83c8904 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -279,7 +279,8 @@ void fuse_release_common(struct file *file, int opcode)
- 	 * synchronous RELEASE is allowed (and desirable) in this case
- 	 * because the server can be trusted not to screw up.
- 	 */
--	fuse_file_put(ff, ff->fc->destroy_req != NULL);
-+	fuse_file_put(ff, ff->fc->destroy_req != NULL ||
-+			  ff->fc->close_wait);
- }
- 
- static int fuse_open(struct inode *inode, struct file *file)
-
+Regards,
+Sjur
