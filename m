@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758715Ab3AOXJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:09:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48148 "EHLO mail.kernel.org"
+	id S934208Ab3AOW4g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:56:36 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48120 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934211Ab3AOW4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:56:37 -0500
+	id S934156Ab3AOW4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
-        Roland Dreier <roland@purestorage.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 23/71] RDMA/nes: Fix for terminate timer crash
-Date: Tue, 15 Jan 2013 14:54:20 -0800
-Message-Id: <20130115225342.104582869@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [ 27/71] staging: vt6656: 64 bit fixes: use u32 for QWORD definition.
+Date: Tue, 15 Jan 2013 14:54:24 -0800
+Message-Id: <20130115225342.384349823@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,84 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 7bfcfa51c35cdd2d37e0d70fc11790642dd11fb3 upstream.
+commit a552397d5e4ef0cc0bd3e9595d6acc9a3b381171 upstream.
 
-The terminate timer needs to be initialized just once.
+Size of long issues replace with u32.
 
-Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/nes/nes.h       |    1 +
- drivers/infiniband/hw/nes/nes_hw.c    |    9 ++-------
- drivers/infiniband/hw/nes/nes_verbs.c |    4 +++-
- 3 files changed, 6 insertions(+), 8 deletions(-)
+ drivers/staging/vt6656/ttype.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/hw/nes/nes.h
-+++ b/drivers/infiniband/hw/nes/nes.h
-@@ -511,6 +511,7 @@ void nes_iwarp_ce_handler(struct nes_dev
- int nes_destroy_cqp(struct nes_device *);
- int nes_nic_cm_xmit(struct sk_buff *, struct net_device *);
- void nes_recheck_link_status(struct work_struct *work);
-+void nes_terminate_timeout(unsigned long context);
+--- a/drivers/staging/vt6656/ttype.h
++++ b/drivers/staging/vt6656/ttype.h
+@@ -29,6 +29,8 @@
+ #ifndef __TTYPE_H__
+ #define __TTYPE_H__
  
- /* nes_nic.c */
- struct net_device *nes_netdev_init(struct nes_device *, void __iomem *);
---- a/drivers/infiniband/hw/nes/nes_hw.c
-+++ b/drivers/infiniband/hw/nes/nes_hw.c
-@@ -75,7 +75,6 @@ static void nes_process_iwarp_aeqe(struc
- static void process_critical_error(struct nes_device *nesdev);
- static void nes_process_mac_intr(struct nes_device *nesdev, u32 mac_number);
- static unsigned int nes_reset_adapter_ne020(struct nes_device *nesdev, u8 *OneG_Mode);
--static void nes_terminate_timeout(unsigned long context);
- static void nes_terminate_start_timer(struct nes_qp *nesqp);
++#include <linux/types.h>
++
+ /******* Common definitions and typedefs ***********************************/
  
- #ifdef CONFIG_INFINIBAND_NES_DEBUG
-@@ -3496,7 +3495,7 @@ static void nes_terminate_received(struc
- }
- 
- /* Timeout routine in case terminate fails to complete */
--static void nes_terminate_timeout(unsigned long context)
-+void nes_terminate_timeout(unsigned long context)
- {
- 	struct nes_qp *nesqp = (struct nes_qp *)(unsigned long)context;
- 
-@@ -3506,11 +3505,7 @@ static void nes_terminate_timeout(unsign
- /* Set a timer in case hw cannot complete the terminate sequence */
- static void nes_terminate_start_timer(struct nes_qp *nesqp)
- {
--	init_timer(&nesqp->terminate_timer);
--	nesqp->terminate_timer.function = nes_terminate_timeout;
--	nesqp->terminate_timer.expires = jiffies + HZ;
--	nesqp->terminate_timer.data = (unsigned long)nesqp;
--	add_timer(&nesqp->terminate_timer);
-+	mod_timer(&nesqp->terminate_timer, (jiffies + HZ));
- }
- 
- /**
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -1414,6 +1414,9 @@ static struct ib_qp *nes_create_qp(struc
- 	}
- 
- 	nesqp->sig_all = (init_attr->sq_sig_type == IB_SIGNAL_ALL_WR);
-+	init_timer(&nesqp->terminate_timer);
-+	nesqp->terminate_timer.function = nes_terminate_timeout;
-+	nesqp->terminate_timer.data = (unsigned long)nesqp;
- 
- 	/* update the QP table */
- 	nesdev->nesadapter->qp_table[nesqp->hwqp.qp_id-NES_FIRST_QPN] = nesqp;
-@@ -1423,7 +1426,6 @@ static struct ib_qp *nes_create_qp(struc
- 	return &nesqp->ibqp;
- }
- 
--
- /**
-  * nes_clean_cq
-  */
+ typedef int             BOOL;
+@@ -51,8 +53,8 @@ typedef unsigned long   DWORD;
+ // which is NOT really a floating point number.
+ typedef union tagUQuadWord {
+     struct {
+-        DWORD   dwLowDword;
+-        DWORD   dwHighDword;
++	u32 dwLowDword;
++	u32 dwHighDword;
+     } u;
+     double      DoNotUseThisField;
+ } UQuadWord;
 
 
