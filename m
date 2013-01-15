@@ -1,54 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab3AOUUi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:20:38 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:10553 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754855Ab3AOUUh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:20:37 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19eVL+schINBhIme0mi6S2TQ+P0s3bwYn4=
-Date: Tue, 15 Jan 2013 15:19:40 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Soeren Moch <smoch@web.de>, Greg KH <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
- dma_alloc_coherent() calls
-Message-ID: <20130115201940.GD25500@titan.lakedaemon.net>
-References: <20121119144826.f59667b2.akpm@linux-foundation.org>
- <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
- <50F3F289.3090402@web.de>
- <20130115165642.GA25500@titan.lakedaemon.net>
- <50F5B69E.1070101@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F5B69E.1070101@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756637Ab3AOU05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:26:57 -0500
+Received: from muin.pair.com ([209.68.1.55]:52518 "EHLO muin.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750963Ab3AOU04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 15:26:56 -0500
+X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jan 2013 15:26:56 EST
+From: Timur Tabi <timur@tabi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] MAINTAINERS: update email address for Timur Tabi
+Date: Tue, 15 Jan 2013 14:19:45 -0600
+Message-Id: <1358281185-31656-1-git-send-email-timur@tabi.org>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 09:05:50PM +0100, Sebastian Hesselbarth wrote:
-> If we look for a mem leak in one of the above drivers (including sata_mv),
-> is there an easy way to keep track of allocated and freed kernel memory?
+From: Timur Tabi <timur@freescale.com>
 
-I'm inclined to think sata_mv is not the cause here, as there are many
-heavy users of it without error reports.  The only thing different here
-are the three usb dvb dongles.
+Timur Tabi no longer works for Freescale, so update the email address and
+status for all of his maintained projects.
 
-thx,
+Also mark the QE library as orphaned, for lack of interest in maintaining
+it.
 
-Jason.
+The CS4270 driver is marked as "Odd Fixes" because appropriate hardware is
+no longer available.
+
+Signed-off-by: Timur Tabi <timur@freescale.com>
+---
+ MAINTAINERS |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3ab0949..7a750d5 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1964,9 +1964,9 @@ S:	Maintained
+ F:	drivers/usb/host/ohci-ep93xx.c
+ 
+ CIRRUS LOGIC CS4270 SOUND DRIVER
+-M:	Timur Tabi <timur@freescale.com>
++M:	Timur Tabi <timur@tabi.org>
+ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
+-S:	Supported
++S:	Odd Fixes
+ F:	sound/soc/codecs/cs4270*
+ 
+ CLEANCACHE API
+@@ -3183,9 +3183,9 @@ F:	include/uapi/video/
+ F:	include/uapi/linux/fb.h
+ 
+ FREESCALE DIU FRAMEBUFFER DRIVER
+-M:	Timur Tabi <timur@freescale.com>
++M:	Timur Tabi <timur@tabi.org>
+ L:	linux-fbdev@vger.kernel.org
+-S:	Supported
++S:	Maintained
+ F:	drivers/video/fsl-diu-fb.*
+ 
+ FREESCALE DMA DRIVER
+@@ -3220,9 +3220,8 @@ F:	drivers/net/ethernet/freescale/fs_enet/
+ F:	include/linux/fs_enet_pd.h
+ 
+ FREESCALE QUICC ENGINE LIBRARY
+-M:	Timur Tabi <timur@freescale.com>
+ L:	linuxppc-dev@lists.ozlabs.org
+-S:	Supported
++S:	Orphan
+ F:	arch/powerpc/sysdev/qe_lib/
+ F:	arch/powerpc/include/asm/*qe.h
+ 
+@@ -3241,16 +3240,16 @@ S:	Maintained
+ F:	drivers/net/ethernet/freescale/ucc_geth*
+ 
+ FREESCALE QUICC ENGINE UCC UART DRIVER
+-M:	Timur Tabi <timur@freescale.com>
++M:	Timur Tabi <timur@tabi.org>
+ L:	linuxppc-dev@lists.ozlabs.org
+-S:	Supported
++S:	Maintained
+ F:	drivers/tty/serial/ucc_uart.c
+ 
+ FREESCALE SOC SOUND DRIVERS
+-M:	Timur Tabi <timur@freescale.com>
++M:	Timur Tabi <timur@tabi.org>
+ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
+ L:	linuxppc-dev@lists.ozlabs.org
+-S:	Supported
++S:	Maintained
+ F:	sound/soc/fsl/fsl*
+ F:	sound/soc/fsl/mpc8610_hpcd.c
+ 
+-- 
+1.7.3.4
+
