@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756990Ab3AOU21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:28:27 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:43748 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202Ab3AOU2P (ORCPT
+	id S1757071Ab3AOU23 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:28:29 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:46376 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab3AOU2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:28:15 -0500
+	Tue, 15 Jan 2013 15:28:20 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v5 03/14] ARM: edma: add AM33XX support to the private EDMA API
-Date: Tue, 15 Jan 2013 15:32:43 -0500
-Message-Id: <1358281974-8411-4-git-send-email-mporter@ti.com>
+Subject: [PATCH v5 05/14] dmaengine: edma: Add TI EDMA device tree binding
+Date: Tue, 15 Jan 2013 15:32:45 -0500
+Message-Id: <1358281974-8411-6-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358281974-8411-1-git-send-email-mporter@ti.com>
 References: <1358281974-8411-1-git-send-email-mporter@ti.com>
@@ -37,412 +37,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for parsing the TI EDMA DT data into the required
-EDMA private API platform data. Enables runtime PM support to
-initialize the EDMA hwmod. Adds AM33XX EMDA crossbar event mux
-support.
+The binding definition is based on the generic DMA controller
+binding.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- arch/arm/common/edma.c             |  314 ++++++++++++++++++++++++++++++++++--
- include/linux/platform_data/edma.h |    1 +
- 2 files changed, 306 insertions(+), 9 deletions(-)
+ Documentation/devicetree/bindings/dma/ti-edma.txt |   49 +++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
 
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index 2dce245..beeb1d2 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -24,6 +24,13 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/edma.h>
-+#include <linux/err.h>
-+#include <linux/of_address.h>
-+#include <linux/of_device.h>
-+#include <linux/of_dma.h>
-+#include <linux/of_irq.h>
-+#include <linux/pm_runtime.h>
- 
- #include <linux/platform_data/edma.h>
- 
-@@ -723,6 +730,9 @@ EXPORT_SYMBOL(edma_free_channel);
-  */
- int edma_alloc_slot(unsigned ctlr, int slot)
- {
-+	if (!edma_cc[ctlr])
-+		return -EINVAL;
+diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+new file mode 100644
+index 0000000..075a60e3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+@@ -0,0 +1,49 @@
++TI EDMA
 +
- 	if (slot >= 0)
- 		slot = EDMA_CHAN_SLOT(slot);
- 
-@@ -1366,31 +1376,291 @@ void edma_clear_event(unsigned channel)
- EXPORT_SYMBOL(edma_clear_event);
- 
- /*-----------------------------------------------------------------------*/
-+static int edma_of_read_u32_to_s8_array(const struct device_node *np,
-+					 const char *propname, s8 *out_values,
-+					 size_t sz)
-+{
-+	struct property *prop = of_find_property(np, propname, NULL);
-+	const __be32 *val;
++Required properties:
++- compatible : "ti,edma3"
++- ti,hwmods: Name of the hwmods associated to the EDMA
++- ti,edma-regions: Number of regions
++- ti,edma-slots: Number of slots
++- ti,edma-queue-tc-map: List of transfer control to queue mappings
++- ti,edma-queue-priority-map: List of queue priority mappings
++- ti,edma-default-queue: Default queue value
 +
-+	if (!prop)
-+		return -EINVAL;
-+	if (!prop->value)
-+		return -ENODATA;
-+	if ((sz * sizeof(u32)) > prop->length)
-+		return -EOVERFLOW;
++Optional properties:
++- ti,edma-reserved-channels: List of reserved channel regions
++- ti,edma-reserved-slots: List of reserved slot regions
++- ti,edma-xbar-event-map: Crossbar event to channel map
 +
-+	val = prop->value;
++Example:
 +
-+	while (sz--)
-+		*out_values++ = (s8)(be32_to_cpup(val++) & 0xff);
-+
-+	/* Terminate it */
-+	*out_values++ = -1;
-+	*out_values++ = -1;
-+
-+	return 0;
-+}
-+
-+static int edma_of_read_u32_to_s16_array(const struct device_node *np,
-+					 const char *propname, s16 *out_values,
-+					 size_t sz)
-+{
-+	struct property *prop = of_find_property(np, propname, NULL);
-+	const __be32 *val;
-+
-+	if (!prop)
-+		return -EINVAL;
-+	if (!prop->value)
-+		return -ENODATA;
-+	if ((sz * sizeof(u32)) > prop->length)
-+		return -EOVERFLOW;
-+
-+	val = prop->value;
-+
-+	while (sz--)
-+		*out_values++ = (s16)(be32_to_cpup(val++) & 0xffff);
-+
-+	/* Terminate it */
-+	*out_values++ = -1;
-+	*out_values++ = -1;
-+
-+	return 0;
-+}
-+
-+static int edma_xbar_event_map(struct device *dev,
-+			       struct device_node *node,
-+			       struct edma_soc_info *pdata, int len)
-+{
-+	int ret = 0;
-+	int i;
-+	struct resource res;
-+	void *xbar;
-+	const s16 (*xbar_chans)[2];
-+	u32 shift, offset, mux;
-+
-+	xbar_chans = devm_kzalloc(dev,
-+				  len/sizeof(s16) + 2*sizeof(s16),
-+				  GFP_KERNEL);
-+	if (!xbar_chans)
-+		return -ENOMEM;
-+
-+	ret = of_address_to_resource(node, 1, &res);
-+	if (IS_ERR_VALUE(ret))
-+		return -EIO;
-+
-+	xbar = devm_ioremap(dev, res.start, resource_size(&res));
-+	if (!xbar)
-+		return -ENOMEM;
-+
-+	ret = edma_of_read_u32_to_s16_array(node,
-+					    "ti,edma-xbar-event-map",
-+					    (s16 *)xbar_chans,
-+					    len/sizeof(u32));
-+	if (IS_ERR_VALUE(ret))
-+		return -EIO;
-+
-+	for (i = 0; xbar_chans[i][0] != -1; i++) {
-+		shift = (xbar_chans[i][1] % 4) * 8;
-+		offset = xbar_chans[i][1] >> 2;
-+		offset <<= 2;
-+		mux = readl((void *)((u32)xbar + offset));
-+		mux &= ~(0xff << shift);
-+		mux |= xbar_chans[i][0] << shift;
-+		writel(mux, (void *)((u32)xbar + offset));
-+	}
-+
-+	pdata->xbar_chans = xbar_chans;
-+
-+	return 0;
-+}
-+
-+static int edma_of_parse_dt(struct device *dev,
-+			    struct device_node *node,
-+			    struct edma_soc_info *pdata)
-+{
-+	int ret = 0;
-+	u32 value;
-+	struct property *prop;
-+	size_t sz;
-+	struct edma_rsv_info *rsv_info;
-+	const s16 (*rsv_chans)[2], (*rsv_slots)[2];
-+	const s8 (*queue_tc_map)[2], (*queue_priority_map)[2];
-+
-+	memset(pdata, 0, sizeof(struct edma_soc_info));
-+
-+	ret = of_property_read_u32(node, "dma-channels", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->n_channel = value;
-+
-+	ret = of_property_read_u32(node, "ti,edma-regions", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->n_region = value;
-+
-+	ret = of_property_read_u32(node, "ti,edma-slots", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->n_slot = value;
-+
-+	pdata->n_cc = 1;
-+	pdata->n_tc = 3;
-+
-+	rsv_info =
-+		devm_kzalloc(dev, sizeof(struct edma_rsv_info), GFP_KERNEL);
-+	if (!rsv_info)
-+		return -ENOMEM;
-+	pdata->rsv = rsv_info;
-+
-+	/* Build the reserved channel/slots arrays */
-+	prop = of_find_property(node, "ti,edma-reserved-channels", &sz);
-+	if (prop) {
-+		rsv_chans = devm_kzalloc(dev,
-+					 sz/sizeof(s16) + 2*sizeof(s16),
-+					 GFP_KERNEL);
-+		if (!rsv_chans)
-+			return -ENOMEM;
-+		pdata->rsv->rsv_chans = rsv_chans;
-+
-+		ret = edma_of_read_u32_to_s16_array(node,
-+						    "ti,edma-reserved-channels",
-+						    (s16 *)rsv_chans,
-+						    sz/sizeof(u32));
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	prop = of_find_property(node, "ti,edma-reserved-slots", &sz);
-+	if (prop) {
-+		rsv_slots = devm_kzalloc(dev,
-+					 sz/sizeof(s16) + 2*sizeof(s16),
-+					 GFP_KERNEL);
-+		if (!rsv_slots)
-+			return -ENOMEM;
-+		pdata->rsv->rsv_slots = rsv_slots;
-+
-+		ret = edma_of_read_u32_to_s16_array(node,
-+						    "ti,edma-reserved-slots",
-+						    (s16 *)rsv_slots,
-+						    sz/sizeof(u32));
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	prop = of_find_property(node, "ti,edma-queue-tc-map", &sz);
-+	if (!prop)
-+		return -EINVAL;
-+
-+	queue_tc_map = devm_kzalloc(dev,
-+				    sz/sizeof(s8) + 2*sizeof(s8),
-+				    GFP_KERNEL);
-+	if (!queue_tc_map)
-+		return -ENOMEM;
-+	pdata->queue_tc_mapping = queue_tc_map;
-+
-+	ret = edma_of_read_u32_to_s8_array(node,
-+					   "ti,edma-queue-tc-map",
-+					   (s8 *)queue_tc_map,
-+					   sz/sizeof(u32));
-+	if (ret < 0)
-+		return ret;
-+
-+	prop = of_find_property(node, "ti,edma-queue-priority-map", &sz);
-+	if (!prop)
-+		return -EINVAL;
-+
-+	queue_priority_map = devm_kzalloc(dev,
-+					  sz/sizeof(s8) + 2*sizeof(s8),
-+					  GFP_KERNEL);
-+	if (!queue_priority_map)
-+		return -ENOMEM;
-+	pdata->queue_priority_mapping = queue_priority_map;
-+
-+	ret = edma_of_read_u32_to_s8_array(node,
-+					   "ti,edma-queue-tc-map",
-+					   (s8 *)queue_priority_map,
-+					   sz/sizeof(u32));
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = of_property_read_u32(node, "ti,edma-default-queue", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->default_queue = value;
-+
-+	prop = of_find_property(node, "ti,edma-xbar-event-map", &sz);
-+	if (prop)
-+		ret = edma_xbar_event_map(dev, node, pdata, sz);
-+
-+	return ret;
-+}
-+
-+static struct of_dma_filter_info edma_filter_info = {
-+	.filter_fn = edma_filter_fn,
++edma: edma@49000000 {
++	reg = <0x49000000 0x10000>;
++	interrupt-parent = <&intc>;
++	interrupts = <12 13 14>;
++	compatible = "ti,edma3";
++	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
++	#dma-cells = <1>;
++	dma-channels = <64>;
++	ti,edma-regions = <4>;
++	ti,edma-slots = <256>;
++	ti,edma-reserved-channels = <0  2
++				     14 2
++				     26 6
++				     48 4
++				     56 8>;
++	ti,edma-reserved-slots = <0  2
++				  14 2
++				  26 6
++				  48 4
++				  56 8
++				  64 127>;
++	ti,edma-queue-tc-map = <0 0
++				1 1
++				2 2>;
++	ti,edma-queue-priority-map = <0 0
++				      1 1
++				      2 2>;
++	ti,edma-default-queue = <0>;
++	ti,edma-xbar-event-map = <1 12
++				  2 13>;
 +};
- 
- static int edma_probe(struct platform_device *pdev)
- {
- 	struct edma_soc_info	**info = pdev->dev.platform_data;
-+	struct edma_soc_info	*ninfo[EDMA_MAX_CC] = {NULL, NULL};
-+	struct edma_soc_info	tmpinfo;
- 	const s8		(*queue_priority_mapping)[2];
- 	const s8		(*queue_tc_mapping)[2];
- 	int			i, j, off, ln, found = 0;
- 	int			status = -1;
- 	const s16		(*rsv_chans)[2];
- 	const s16		(*rsv_slots)[2];
-+	const s16		(*xbar_chans)[2];
- 	int			irq[EDMA_MAX_CC] = {0, 0};
- 	int			err_irq[EDMA_MAX_CC] = {0, 0};
--	struct resource		*r[EDMA_MAX_CC] = {NULL};
-+	struct resource		*r[EDMA_MAX_CC] = {NULL, NULL};
-+	struct resource		res[EDMA_MAX_CC];
- 	resource_size_t		len[EDMA_MAX_CC];
- 	char			res_name[10];
- 	char			irq_name[10];
-+	struct device_node	*node = pdev->dev.of_node;
-+	struct device		*dev = &pdev->dev;
-+	int			ret;
-+
-+	if (node) {
-+		info = ninfo;
-+		edma_of_parse_dt(dev, node, &tmpinfo);
-+		info[0] = &tmpinfo;
-+
-+		dma_cap_set(DMA_SLAVE, edma_filter_info.dma_cap);
-+		of_dma_controller_register(dev->of_node,
-+					   of_dma_simple_xlate,
-+					   &edma_filter_info);
-+	}
- 
- 	if (!info)
- 		return -ENODEV;
- 
-+	pm_runtime_enable(dev);
-+	ret = pm_runtime_get_sync(dev);
-+	if (IS_ERR_VALUE(ret)) {
-+		dev_err(dev, "pm_runtime_get_sync() failed\n");
-+		return ret;
-+	}
-+
- 	for (j = 0; j < EDMA_MAX_CC; j++) {
--		sprintf(res_name, "edma_cc%d", j);
--		r[j] = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-+		if (!info[j]) {
-+			if (!found)
-+				return -ENODEV;
-+			break;
-+		}
-+		if (node) {
-+			ret = of_address_to_resource(node, j, &res[j]);
-+			if (!IS_ERR_VALUE(ret))
-+				r[j] = &res[j];
-+		} else {
-+			sprintf(res_name, "edma_cc%d", j);
-+			r[j] = platform_get_resource_byname(pdev,
-+						IORESOURCE_MEM,
- 						res_name);
--		if (!r[j] || !info[j]) {
-+		}
-+		if (!r[j]) {
- 			if (found)
- 				break;
- 			else
-@@ -1465,8 +1735,22 @@ static int edma_probe(struct platform_device *pdev)
- 			}
- 		}
- 
--		sprintf(irq_name, "edma%d", j);
--		irq[j] = platform_get_irq_byname(pdev, irq_name);
-+		/* Clear the xbar mapped channels in unused list */
-+		xbar_chans = info[j]->xbar_chans;
-+		if (xbar_chans) {
-+			for (i = 0; xbar_chans[i][1] != -1; i++) {
-+				off = xbar_chans[i][1];
-+				clear_bits(off, 1,
-+					edma_cc[j]->edma_unused);
-+			}
-+		}
-+
-+		if (node)
-+			irq[j] = irq_of_parse_and_map(node, 0);
-+		else {
-+			sprintf(irq_name, "edma%d", j);
-+			irq[j] = platform_get_irq_byname(pdev, irq_name);
-+		}
- 		edma_cc[j]->irq_res_start = irq[j];
- 		status = request_irq(irq[j], dma_irq_handler, 0, "edma",
- 					&pdev->dev);
-@@ -1476,8 +1760,12 @@ static int edma_probe(struct platform_device *pdev)
- 			goto fail;
- 		}
- 
--		sprintf(irq_name, "edma%d_err", j);
--		err_irq[j] = platform_get_irq_byname(pdev, irq_name);
-+		if (node)
-+			err_irq[j] = irq_of_parse_and_map(node, 2);
-+		else {
-+			sprintf(irq_name, "edma%d_err", j);
-+			err_irq[j] = platform_get_irq_byname(pdev, irq_name);
-+		}
- 		edma_cc[j]->irq_res_end = err_irq[j];
- 		status = request_irq(err_irq[j], dma_ccerr_handler, 0,
- 					"edma_error", &pdev->dev);
-@@ -1538,9 +1826,17 @@ fail1:
- 	return status;
- }
- 
-+static const struct of_device_id edma_of_ids[] = {
-+	{ .compatible = "ti,edma3", },
-+	{}
-+};
- 
- static struct platform_driver edma_driver = {
--	.driver.name	= "edma",
-+	.driver = {
-+		.name	= "edma",
-+		.of_match_table = edma_of_ids,
-+	},
-+	.probe = edma_probe,
- };
- 
- static int __init edma_init(void)
-diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
-index 2344ea2..ffc1fb2 100644
---- a/include/linux/platform_data/edma.h
-+++ b/include/linux/platform_data/edma.h
-@@ -177,6 +177,7 @@ struct edma_soc_info {
- 
- 	const s8	(*queue_tc_mapping)[2];
- 	const s8	(*queue_priority_mapping)[2];
-+	const s16	(*xbar_chans)[2];
- };
- 
- #endif
 -- 
 1.7.9.5
 
