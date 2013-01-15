@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758642Ab3AOWkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:40:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43998 "EHLO mail.kernel.org"
+	id S1758651Ab3AOWky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:40:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43988 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab3AOWgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:36:22 -0500
+	id S932900Ab3AOWgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:36:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Elder <elder@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
-Subject: [ 209/221] rbd: remove snapshots on error in rbd_add()
-Date: Tue, 15 Jan 2013 10:52:16 -0800
-Message-Id: <20130115185013.129387857@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Dan Mick <dan.mick@inktank.com>,
+        Josh Durgin <josh.durgin@inktank.com>
+Subject: [ 208/221] rbd: increase maximum snapshot name length
+Date: Tue, 15 Jan 2013 10:52:15 -0800
+Message-Id: <20130115185013.060640868@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -28,107 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit 41f38c2b2f8b66b176a0e548ef06294343a7bfa2)
+(cherry picked from commit d4b125e9eb43babd14538ba61718e3db71a98d29)
 
-If rbd_dev_snaps_update() has ever been called for an rbd device
-structure there could be snapshot structures on its snaps list.
-In rbd_add(), this function is called but a subsequent error
-path neglected to clean up any of these snapshots.
+Change RBD_MAX_SNAP_NAME_LEN to be based on NAME_MAX.  That is a
+practical limit for the length of a snapshot name (based on the
+presence of a directory using the name under /sys/bus/rbd to
+represent the snapshot).
 
-Add a call to rbd_remove_all_snaps() in the appropriate spot to
-remedy this.  Change a couple of error labels to be a little
-clearer while there.
+The /sys entry is created by prefixing it with "snap_"; define that
+prefix symbolically, and take its length into account in defining
+the snapshot name length limit.
 
-Drop the leading underscores from the function name; there's nothing
-special about that function that they might signify.  As suggested
-in review, the leading underscores in __rbd_remove_snap_dev() have
-been removed as well.
+Enforce the limit in rbd_add_parse_args().  Also delete a dout()
+call in that function that was not meant to be committed.
 
 Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Dan Mick <dan.mick@inktank.com>
 Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/block/rbd.c |   20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+ drivers/block/rbd.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
 --- a/drivers/block/rbd.c
 +++ b/drivers/block/rbd.c
-@@ -221,7 +221,7 @@ static int rbd_dev_snaps_update(struct r
- static int rbd_dev_snaps_register(struct rbd_device *rbd_dev);
+@@ -61,7 +61,10 @@
  
- static void rbd_dev_release(struct device *dev);
--static void __rbd_remove_snap_dev(struct rbd_snap *snap);
-+static void rbd_remove_snap_dev(struct rbd_snap *snap);
+ #define RBD_MINORS_PER_MAJOR	256		/* max minors per blkdev */
  
- static ssize_t rbd_add(struct bus_type *bus, const char *buf,
- 		       size_t count);
-@@ -1710,13 +1710,13 @@ static int rbd_read_header(struct rbd_de
- 	return ret;
- }
+-#define RBD_MAX_SNAP_NAME_LEN	32
++#define RBD_SNAP_DEV_NAME_PREFIX	"snap_"
++#define RBD_MAX_SNAP_NAME_LEN	\
++			(NAME_MAX - (sizeof (RBD_SNAP_DEV_NAME_PREFIX) - 1))
++
+ #define RBD_MAX_SNAP_COUNT	510	/* allows max snapc to fit in 4KB */
+ #define RBD_MAX_OPT_LEN		1024
  
--static void __rbd_remove_all_snaps(struct rbd_device *rbd_dev)
-+static void rbd_remove_all_snaps(struct rbd_device *rbd_dev)
- {
- 	struct rbd_snap *snap;
- 	struct rbd_snap *next;
+@@ -2073,7 +2076,7 @@ static int rbd_register_snap_dev(struct
+ 	dev->type = &rbd_snap_device_type;
+ 	dev->parent = parent;
+ 	dev->release = rbd_snap_dev_release;
+-	dev_set_name(dev, "snap_%s", snap->name);
++	dev_set_name(dev, "%s%s", RBD_SNAP_DEV_NAME_PREFIX, snap->name);
+ 	dout("%s: registering device for snapshot %s\n", __func__, snap->name);
  
- 	list_for_each_entry_safe(snap, next, &rbd_dev->snaps, node)
--		__rbd_remove_snap_dev(snap);
-+		rbd_remove_snap_dev(snap);
- }
+ 	ret = device_register(dev);
+@@ -2766,8 +2769,13 @@ static char *rbd_add_parse_args(struct r
+ 	if (!rbd_dev->image_name)
+ 		goto out_err;
  
- /*
-@@ -2060,7 +2060,7 @@ static bool rbd_snap_registered(struct r
- 	return ret;
- }
+-	/* Snapshot name is optional */
++	/* Snapshot name is optional; default is to use "head" */
++
+ 	len = next_token(&buf);
++	if (len > RBD_MAX_SNAP_NAME_LEN) {
++		err_ptr = ERR_PTR(-ENAMETOOLONG);
++		goto out_err;
++	}
+ 	if (!len) {
+ 		buf = RBD_SNAP_HEAD_NAME; /* No snapshot supplied */
+ 		len = sizeof (RBD_SNAP_HEAD_NAME) - 1;
+@@ -2778,8 +2786,6 @@ static char *rbd_add_parse_args(struct r
+ 	memcpy(snap_name, buf, len);
+ 	*(snap_name + len) = '\0';
  
--static void __rbd_remove_snap_dev(struct rbd_snap *snap)
-+static void rbd_remove_snap_dev(struct rbd_snap *snap)
- {
- 	list_del(&snap->node);
- 	if (device_is_registered(&snap->dev))
-@@ -2442,7 +2442,7 @@ static int rbd_dev_snaps_update(struct r
+-dout("    SNAP_NAME is <%s>, len is %zd\n", snap_name, len);
+-
+ 	return snap_name;
  
- 			if (rbd_dev->mapping.snap_id == snap->id)
- 				rbd_dev->mapping.snap_exists = false;
--			__rbd_remove_snap_dev(snap);
-+			rbd_remove_snap_dev(snap);
- 			dout("%ssnap id %llu has been removed\n",
- 				rbd_dev->mapping.snap_id == snap->id ?
- 								"mapped " : "",
-@@ -3053,11 +3053,11 @@ static ssize_t rbd_add(struct bus_type *
- 	/* no need to lock here, as rbd_dev is not registered yet */
- 	rc = rbd_dev_snaps_update(rbd_dev);
- 	if (rc)
--		goto err_out_header;
-+		goto err_out_probe;
- 
- 	rc = rbd_dev_set_mapping(rbd_dev, snap_name);
- 	if (rc)
--		goto err_out_header;
-+		goto err_out_snaps;
- 
- 	/* generate unique id: find highest unique id, add one */
- 	rbd_dev_id_get(rbd_dev);
-@@ -3121,7 +3121,9 @@ err_out_blkdev:
- 	unregister_blkdev(rbd_dev->major, rbd_dev->name);
- err_out_id:
- 	rbd_dev_id_put(rbd_dev);
--err_out_header:
-+err_out_snaps:
-+	rbd_remove_all_snaps(rbd_dev);
-+err_out_probe:
- 	rbd_header_free(&rbd_dev->header);
- err_out_client:
- 	kfree(rbd_dev->header_name);
-@@ -3219,7 +3221,7 @@ static ssize_t rbd_remove(struct bus_typ
- 		goto done;
- 	}
- 
--	__rbd_remove_all_snaps(rbd_dev);
-+	rbd_remove_all_snaps(rbd_dev);
- 	rbd_bus_del_dev(rbd_dev);
- 
- done:
+ out_err:
 
 
