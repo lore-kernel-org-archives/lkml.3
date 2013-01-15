@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206Ab3AOCsF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 21:48:05 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:41232 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756137Ab3AOCsD (ORCPT
+	id S1756281Ab3AOCs0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 21:48:26 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:32953 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756137Ab3AOCsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 21:48:03 -0500
-Message-ID: <50F4C32E.4020509@oracle.com>
-Date: Mon, 14 Jan 2013 21:47:10 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 14 Jan 2013 21:48:24 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: cpuset: lockdep spew on proc_cpuset_show
+In-Reply-To: <CAMbhsRQiK=rChiNdwM5M6t=1v_iKwYLhUn=HLW5kSkBzQdso8g@mail.gmail.com>
+References: <1357941108-14138-1-git-send-email-ccross@android.com>
+	<CAFTL4hzYkPCmkfqBafkTA5E_snkLoC_y3p9xwumj=L1xWAWK0g@mail.gmail.com>
+	<CAMbhsRQv=ogNmkK=Np6JGM-iuG=aocqb_4aMBC6CW5mpkGvpmw@mail.gmail.com>
+	<CAFTL4hxnCn13PigcWjrcnSV9RAz5gSX-VtQk9J8HEbQco7jbbQ@mail.gmail.com>
+	<CAMbhsRQiK=rChiNdwM5M6t=1v_iKwYLhUn=HLW5kSkBzQdso8g@mail.gmail.com>
+Date: Tue, 15 Jan 2013 03:48:23 +0100
+Message-ID: <CAFTL4hxCNqCAbF6+Ny_-0jfL2G2ie8O6Be_7KtYymvJzyJGyCw@mail.gmail.com>
+Subject: Re: [PATCH v2] hardlockup: detect hard lockups without NMIs using
+ secondary cpus
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Colin Cross <ccross@android.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        liu chuansheng <chuansheng.liu@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+2013/1/15 Colin Cross <ccross@android.com>:
+> On Mon, Jan 14, 2013 at 4:25 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> 2013/1/15 Colin Cross <ccross@android.com>:
+>>> On Mon, Jan 14, 2013 at 4:13 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>>> I believe this is pretty much what the RCU stall detector does
+>>>> already: checks for other CPUs being responsive. The only difference
+>>>> is on how it checks that. For RCU it's about checking for CPUs
+>>>> reporting quiescent states when requested to do so. In your case it's
+>>>> about ensuring the hrtimer interrupt is well handled.
+>>>>
+>>>> One thing you can do is to enqueue an RCU callback (cal_rcu()) every
+>>>> minute so you can force other CPUs to report quiescent states
+>>>> periodically and thus check for lockups.
+>>>
+>>> That's a good point, I'll take a look at using that.  A minute is too
+>>> long, some SoCs have maximum HW watchdog periods of under 30 seconds,
+>>> but a call_rcu every 10-20 seconds might be sufficient.
+>>
+>> Sure. And you can tune CONFIG_RCU_CPU_STALL_TIMEOUT accordingly.
+>
+> After considering this, I think the hrtimer watchdog is more useful.
+> RCU stalls are not usually panic events, and I wouldn't want to add a
+> panic on every RCU stall.  The lack of stack traces on the affected
+> cpu makes a panic important.  I'm planning to add an ARM DBGPCSR panic
+> handler, which will be able to dump the PC of a stuck cpu even if it
+> is not responding to interrupts.  kexec or kgdb on panic might also
+> allow some inspection of the stack on stuck cpu.
+>
+> Failing to process interrupts is a much more serious event than an RCU
+> stall, and being able to detect them separately may be very valuable
+> for debugging.
 
-I've stumbled on the following:
+RCU stalls can happen for different reasons: softlockup (failure to
+schedule another task), hardlockup (failure to process interrupts), or
+a bug in RCU itself. But if you have a hardlockup, it will report it.
 
-[   75.972016] ===============================
-[   75.977317] [ INFO: suspicious RCU usage. ]
-[   76.041031] 3.8.0-rc3-next-20130114-sasha-00016-ga107525-dirty #262 Tainted: G        W
-[   76.057535] -------------------------------
-[   76.063397] include/linux/cgroup.h:534 suspicious rcu_dereference_check() usage!
-[   76.076333]
-[   76.076333] other info that might help us debug this:
-[   76.076333]
-[   76.087091]
-[   76.087091] rcu_scheduler_active = 1, debug_locks = 1
-[   76.098682] 2 locks held by trinity/7514:
-[   76.104154]  #0:  (&p->lock){+.+.+.}, at: [<ffffffff812b06aa>] seq_read+0x3a/0x3e0
-[   76.119533]  #1:  (cpuset_mutex){+.+...}, at: [<ffffffff811abae4>] proc_cpuset_show+0x84/0x190
-[   76.151167]
-[   76.151167] stack backtrace:
-[   76.156853] Pid: 7514, comm: trinity Tainted: G        W    3.8.0-rc3-next-20130114-sasha-00016-ga107525-dirty #262
-[   76.180547] Call Trace:
-[   76.183754]  [<ffffffff81182cab>] lockdep_rcu_suspicious+0x10b/0x120
-[   76.191885]  [<ffffffff811abb71>] proc_cpuset_show+0x111/0x190
-[   76.200572]  [<ffffffff812b0827>] seq_read+0x1b7/0x3e0
-[   76.206843]  [<ffffffff812b0670>] ? seq_lseek+0x110/0x110
-[   76.213562]  [<ffffffff8128b4fb>] do_loop_readv_writev+0x4b/0x90
-[   76.220961]  [<ffffffff8128b776>] do_readv_writev+0xf6/0x1d0
-[   76.227940]  [<ffffffff8128b8ee>] vfs_readv+0x3e/0x60
-[   76.235971]  [<ffffffff8128b960>] sys_readv+0x50/0xd0
-[   76.241945]  [<ffffffff83d33d18>] tracesys+0xe1/0xe6
-
-This is the result of "cpuset: replace cgroup_mutex locking with cpuset internal locking"
-which remove the cgroup_lock() before calling task_subsys_state(), which now complains since
-one of the debug conditions in the rcu_dereference_check() there is cgroup_lock_is_held().
-
-I'm not sure if this is an actual issue, but I do see that task_subsys_state() gets called
-from other places as well, so I think that possibly lockdep is right here and we do need
-to fix up locking there, but again, I'm not sure...
-
-
-Thanks,
-Sasha
+Now why do you need a panic in any case? I don't know DBGPCSR, is this
+a breakpoint register? How do you plan to use it remotely from the CPU
+that detects the lockup?
