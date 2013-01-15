@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab3AOWi0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:38:26 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44076 "EHLO mail.kernel.org"
+	id S932953Ab3AOWgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:36:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44008 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932957Ab3AOWgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:36:38 -0500
+	id S1758384Ab3AOWgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:36:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
-Subject: [ 217/221] ceph: call handle_cap_grant() for cap import message
-Date: Tue, 15 Jan 2013 10:52:24 -0800
-Message-Id: <20130115185013.702613632@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 210/221] rbd: do not allow remove of mounted-on image
+Date: Tue, 15 Jan 2013 10:52:17 -0800
+Message-Id: <20130115185013.200056008@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,49 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Alex Elder <elder@inktank.com>
 
-(cherry picked from commit 0e5e1774a92e6fe9c511585de8f078b4c4c68dbb)
+(cherry picked from commit 42382b709bd1d143b9f0fa93e0a3a1f2f4210707)
 
-If client sends cap message that requests new max size during
-exporting caps, the exporting MDS will drop the message quietly.
-So the client may wait for the reply that updates the max size
-forever. call handle_cap_grant() for cap import message can
-avoid this issue.
+There is no check in rbd_remove() to see if anybody holds open the
+image being removed.  That's not cool.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+Add a simple open count that goes up and down with opens and closes
+(releases) of the device, and don't allow an rbd image to be removed
+if the count is non-zero.
+
+Protect the updates of the open count value with ctl_mutex to ensure
+the underlying rbd device doesn't get removed while concurrently
+being opened.
+
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/ceph/caps.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/rbd.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/fs/ceph/caps.c
-+++ b/fs/ceph/caps.c
-@@ -2749,6 +2749,7 @@ static void handle_cap_import(struct cep
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -207,6 +207,7 @@ struct rbd_device {
  
- 	/* make sure we re-request max_size, if necessary */
- 	spin_lock(&ci->i_ceph_lock);
-+	ci->i_wanted_max_size = 0;  /* reset */
- 	ci->i_requested_max_size = 0;
- 	spin_unlock(&ci->i_ceph_lock);
+ 	/* sysfs related */
+ 	struct device		dev;
++	unsigned long		open_count;
+ };
+ 
+ static DEFINE_MUTEX(ctl_mutex);	  /* Serialize open/close/setup/teardown */
+@@ -280,8 +281,11 @@ static int rbd_open(struct block_device
+ 	if ((mode & FMODE_WRITE) && rbd_dev->mapping.read_only)
+ 		return -EROFS;
+ 
++	mutex_lock_nested(&ctl_mutex, SINGLE_DEPTH_NESTING);
+ 	rbd_get_dev(rbd_dev);
+ 	set_device_ro(bdev, rbd_dev->mapping.read_only);
++	rbd_dev->open_count++;
++	mutex_unlock(&ctl_mutex);
+ 
+ 	return 0;
  }
-@@ -2844,8 +2845,6 @@ void ceph_handle_caps(struct ceph_mds_se
- 	case CEPH_CAP_OP_IMPORT:
- 		handle_cap_import(mdsc, inode, h, session,
- 				  snaptrace, snaptrace_len);
--		ceph_check_caps(ceph_inode(inode), 0, session);
--		goto done_unlocked;
+@@ -290,7 +294,11 @@ static int rbd_release(struct gendisk *d
+ {
+ 	struct rbd_device *rbd_dev = disk->private_data;
+ 
++	mutex_lock_nested(&ctl_mutex, SINGLE_DEPTH_NESTING);
++	rbd_assert(rbd_dev->open_count > 0);
++	rbd_dev->open_count--;
+ 	rbd_put_dev(rbd_dev);
++	mutex_unlock(&ctl_mutex);
+ 
+ 	return 0;
+ }
+@@ -3221,6 +3229,11 @@ static ssize_t rbd_remove(struct bus_typ
+ 		goto done;
  	}
  
- 	/* the rest require a cap */
-@@ -2862,6 +2861,7 @@ void ceph_handle_caps(struct ceph_mds_se
- 	switch (op) {
- 	case CEPH_CAP_OP_REVOKE:
- 	case CEPH_CAP_OP_GRANT:
-+	case CEPH_CAP_OP_IMPORT:
- 		handle_cap_grant(inode, h, session, cap, msg->middle);
- 		goto done_unlocked;
++	if (rbd_dev->open_count) {
++		ret = -EBUSY;
++		goto done;
++	}
++
+ 	rbd_remove_all_snaps(rbd_dev);
+ 	rbd_bus_del_dev(rbd_dev);
  
 
 
