@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab3AOHmY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 02:42:24 -0500
-Received: from mga11.intel.com ([192.55.52.93]:21516 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab3AOHmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 02:42:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,471,1355126400"; 
-   d="scan'208";a="276978369"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-nfs@vger.kernel.org
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] svcrpc: fix compile warning about unused variable 'buf'
-Date: Tue, 15 Jan 2013 09:43:06 +0200
-Message-Id: <1358235787-17292-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756273Ab3AOHzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 02:55:52 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:56753 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800Ab3AOHzu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 02:55:50 -0500
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Subject: [PATCH] media: tvp514x: remove field description
+Date: Tue, 15 Jan 2013 13:25:40 +0530
+Message-Id: <1358236540-2091-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7032a3dd923 (svcrpc: demote some printks to a dprintk) changed the
-printk to a dprintk() macro. Since the macro is not always available we get
-following compile warning:
+This patch removes the field description of fields that no
+longer exists, along side aligns the field description of
+fields.
 
-net/sunrpc/svc.c: In function ‘svc_printk’:
-net/sunrpc/svc.c:1050:8: warning: unused variable ‘buf’ [-Wunused-variable]
-
-Fix this by marking the 'buf' with __maybe_unused.
-
-In addition make checkpatch.pl happy by removing space before tab after
-'char'.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
 ---
- net/sunrpc/svc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/media/tvp514x.h |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index dbf12ac..2387ec8 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -1047,7 +1047,7 @@ void svc_printk(struct svc_rqst *rqstp, const char *fmt, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
--	char 	buf[RPC_MAX_ADDRBUFLEN];
-+	char	buf[RPC_MAX_ADDRBUFLEN] __maybe_unused;
+diff --git a/include/media/tvp514x.h b/include/media/tvp514x.h
+index 74387e8..86ed7e8 100644
+--- a/include/media/tvp514x.h
++++ b/include/media/tvp514x.h
+@@ -96,12 +96,9 @@ enum tvp514x_output {
  
- 	va_start(args, fmt);
- 
+ /**
+  * struct tvp514x_platform_data - Platform data values and access functions.
+- * @power_set: Power state access function, zero is off, non-zero is on.
+- * @ifparm: Interface parameters access function.
+- * @priv_data_set: Device private data (pointer) access function.
+  * @clk_polarity: Clock polarity of the current interface.
+- * @ hs_polarity: HSYNC Polarity configuration for current interface.
+- * @ vs_polarity: VSYNC Polarity configuration for current interface.
++ * @hs_polarity: HSYNC Polarity configuration for current interface.
++ * @vs_polarity: VSYNC Polarity configuration for current interface.
+  */
+ struct tvp514x_platform_data {
+ 	/* Interface control params */
 -- 
-1.7.10.4
+1.7.4.1
 
