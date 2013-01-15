@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933467Ab3AOXhd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:37:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46452 "EHLO mail.kernel.org"
+	id S933461Ab3AOXhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:37:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46442 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933433Ab3AOWvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:51:32 -0500
+	id S933358Ab3AOWvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:51:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Denis N Ladin <denladin@gmail.com>, Oliver Neukum <oneukum@suse.de>
-Subject: [ 096/171] USB: cdc-acm: Add support for "PSC Scanning, Magellan 800i"
-Date: Tue, 15 Jan 2013 14:44:21 -0800
-Message-Id: <20130115224320.294738407@linuxfoundation.org>
+        Tomasz Mloduchowski <q@qdot.me>
+Subject: [ 095/171] usb: ftdi_sio: Crucible Technologies COMET Caller ID - pid added
+Date: Tue, 15 Jan 2013 14:44:20 -0800
+Message-Id: <20130115224320.224700004@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -25,34 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis N Ladin <denladin@gmail.com>
+From: Tomasz Mloduchowski <q@qdot.me>
 
-commit 036915a7a402753c05b8d0529f5fd08805ab46d0 upstream.
+commit 8cf65dc386f3634a43312f436cc7a935476a40c4 upstream.
 
-Adding support "PSC Scanning, Magellan 800i" in cdc-acm
+Simple fix to add support for Crucible Technologies COMET Caller ID
+USB decoder - a device containing FTDI USB/Serial converter chip,
+handling 1200bps CallerID messages decoded from the phone line -
+adding correct USB PID is sufficient.
 
-Very simple, but very necessary.
-Suitable for all versions of the kernel > 2.6
+Tested to apply cleanly and work flawlessly against 3.6.9, 3.7.0-rc8
+and 3.8.0-rc3 on both amd64 and x86 arches.
 
-Signed-off-by: Denis N Ladin <denladin@gmail.com>
-Acked-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Tomasz Mloduchowski <q@qdot.me>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1602,6 +1602,9 @@ static const struct usb_device_id acm_id
- 	{ USB_DEVICE(0x0572, 0x1340), /* Conexant CX93010-2x UCMxx */
- 	.driver_info = NO_UNION_NORMAL,
- 	},
-+	{ USB_DEVICE(0x05f9, 0x4002), /* PSC Scanning, Magellan 800i */
-+	.driver_info = NO_UNION_NORMAL,
-+	},
- 	{ USB_DEVICE(0x1bbb, 0x0003), /* Alcatel OT-I650 */
- 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
- 	},
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -881,6 +881,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
++	/* Crucible Devices */
++	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1259,3 +1259,9 @@
+  * ATI command output: Cinterion MC55i
+  */
+ #define FTDI_CINTERION_MC55I_PID	0xA951
++
++/*
++ * Product: Comet Caller ID decoder
++ * Manufacturer: Crucible Technologies
++ */
++#define FTDI_CT_COMET_PID	0x8e08
 
 
