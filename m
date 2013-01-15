@@ -1,142 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab3AOGoi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 01:44:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49105 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565Ab3AOGog (ORCPT
+	id S1755662Ab3AOGoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 01:44:44 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:61357 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678Ab3AOGoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 01:44:36 -0500
-Date: Tue, 15 Jan 2013 07:44:27 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: linux-next <linux-next@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [next-20130114] Call-trace in LTP (lite) madvise02 test
- (block|mm|vfs related?)
-Message-ID: <20130115064427.GB30331@kernel.dk>
-References: <CA+icZUW1+BzWCfGkbBiekKO8b6KiyAiyXWAHFmVUey2dHnSTzw@mail.gmail.com>
- <50F454C2.6000509@kernel.dk>
- <CA+icZUX_uKSzvdhd4tMtgb+vUxqC=fS7tfSHhs29+xD_XQQjBQ@mail.gmail.com>
- <CA+icZUV_dz2Bvu6o=YRFu6324ccVr1MaOEpRcw0rguppR5rQQg@mail.gmail.com>
+	Tue, 15 Jan 2013 01:44:38 -0500
+Date: Tue, 15 Jan 2013 07:44:18 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, swarren@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource
+ allocation
+Message-ID: <20130115064418.GA31561@avionic-0098.adnet.avionic-design.de>
+References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com>
+ <20130114161644.GC14721@kroah.com>
+ <20130114221551.GA30020@avionic-0098.adnet.avionic-design.de>
+ <201301142224.11243.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
 Content-Disposition: inline
-In-Reply-To: <CA+icZUV_dz2Bvu6o=YRFu6324ccVr1MaOEpRcw0rguppR5rQQg@mail.gmail.com>
+In-Reply-To: <201301142224.11243.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:zWoxootpoLcUatGcO2m++2S3uAvn1UCiE7gY4sfbRY9
+ ugVku8Rqf9S8nHuiqaVcjs2FGowiTvrBXA1qIW3mudZqXGcXiw
+ MEArPTjDGy0PWcAgWsU/v0wIIA5XgmAcCWKXhBXU2HRO1NGN6B
+ kLrCZj3vsi8TP3CQN/29Bv0ZhaltpRyFAcnMlD54YsRLeSvi+m
+ oe/6zODONfADdbuXxNmd8bh0An3PR8GChYmH0jhvLdQBO7JYO6
+ y7VrIjQYPzgSYXVKSRrpGA/hi905BXJ4DMfRfOmKECHLyYVkZT
+ 3XgdmzN3sCIdscp++FUIb2Sp4+2TEbHZovHyxik69tYWO6GrMw
+ mSYjk151PMmXrMo4uLLDhpfknbwqt+Jvb1N8kaxfE07jgnzM96
+ SMnvByh3gXUtgfEvna+xVmldUx54x8ShVg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 14 2013, Sedat Dilek wrote:
-> On Mon, Jan 14, 2013 at 8:28 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> > On Mon, Jan 14, 2013 at 7:56 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> >> On 2013-01-14 19:33, Sedat Dilek wrote:
-> >>> Hi,
-> >>>
-> >>> while running LTP lite on my next-20130114 kernel I hit this
-> >>> call-trace (file attached).
-> >>>
-> >>> Looks to me like problem in the block layer, but not sure.
-> >>> Might one of the experts have look at it?
-> >>
-> >> Really? 600kb of data to look through? Can't you just paste the actual
-> >> error, I can't even find it...
-> >>
-> >
-> > $ cat call-trace_ltplite_madvise02_next-20130114.txt
-> > Jan 14 17:47:14 fambox kernel: [ 1263.965957] ------------[ cut here
-> > ]------------
-> > Jan 14 17:47:14 fambox kernel: [ 1263.965989] Kernel BUG at
-> > ffffffff81328b2b [verbose debug info unavailable]
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966022] invalid opcode: 0000 [#1] SMP
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966046] Modules linked in:
-> > snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel kvm
-> > snd_hda_intel snd_hda_codec arc4 iwldvm snd_hwdep snd_pcm
-> > ghash_clmulni_intel mac80211 aesni_intel i915 snd_page_alloc xts
-> > snd_seq_midi aes_x86_64 snd_seq_midi_event uvcvideo lrw gf128mul
-> > iwlwifi snd_rawmidi ablk_helper snd_seq i2c_algo_bit cryptd
-> > drm_kms_helper snd_timer videobuf2_vmalloc drm snd_seq_device
-> > videobuf2_memops psmouse parport_pc snd cfg80211 btusb rfcomm
-> > videobuf2_core bnep microcode ppdev soundcore videodev samsung_laptop
-> > wmi lp bluetooth serio_raw mei mac_hid hid_generic video lpc_ich
-> > parport usbhid hid r8169
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966377] CPU 3
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966388] Pid: 7803, comm:
-> > madvise02 Not tainted 3.8.0-rc3-next20130114-5-iniza-generic #1
-> > SAMSUNG ELECTRONICS CO., LTD.
-> > 530U3BI/530U4BI/530U4BH/530U3BI/530U4BI/530U4BH
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966450] RIP:
-> > 0010:[<ffffffff81328b2b>]  [<ffffffff81328b2b>]
-> > blk_flush_plug_list+0x1eb/0x210
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966508] RSP:
-> > 0018:ffff88000d933e58  EFLAGS: 00010287
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966532] RAX: 0000000091827364
-> > RBX: ffff88000d933e68 RCX: 0000000000000000
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966566] RDX: 0000000000000000
-> > RSI: 0000000000000000 RDI: ffff88000d933f10
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966614] RBP: ffff88000d933eb8
-> > R08: 0000000000000003 R09: 0000000000000000
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966656] R10: 00007fff3d62c9b0
-> > R11: 0000000000000206 R12: 0000000000000000
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966696] R13: 0000000000001000
-> > R14: ffff88000d933f10 R15: ffff88000d933f10
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966736] FS:
-> > 00007f56bcbc2700(0000) GS:ffff88011fac0000(0000)
-> > knlGS:0000000000000000
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966780] CS:  0010 DS: 0000 ES:
-> > 0000 CR0: 0000000080050033
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966813] CR2: 00007f56bc6ec060
-> > CR3: 000000000bf66000 CR4: 00000000000407e0
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966848] DR0: 0000000000000000
-> > DR1: 0000000000000000 DR2: 0000000000000000
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966885] DR3: 0000000000000000
-> > DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966921] Process madvise02 (pid:
-> > 7803, threadinfo ffff88000d932000, task ffff88000d9f2e40)
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966963] Stack:
-> > Jan 14 17:47:14 fambox kernel: [ 1263.966978]  0000000000000001
-> > 0000000000000001 ffff88000d933e68 ffff88000d933e68
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967024]  ffff88000d933ef8
-> > ffffffff8114b77c ffff88000d933ec0 ffff88000d933f10
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967071]  0000000000000000
-> > 0000000000001000 0000000000010000 ffff88000d933f10
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967118] Call Trace:
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967137]  [<ffffffff8114b77c>] ?
-> > vm_mmap_pgoff+0xbc/0xe0
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967173]  [<ffffffff81328b68>]
-> > blk_finish_plug+0x18/0x50
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967209]  [<ffffffff811544d8>]
-> > sys_madvise+0xc8/0x3a0
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967247]  [<ffffffff816ba0e9>] ?
-> > do_page_fault+0x39/0x50
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967288]  [<ffffffff816be79d>]
-> > system_call_fastpath+0x1a/0x1f
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967331] Code: 4d 85 ff 74 0d 44
-> > 89 e2 89 c6 4c 89 ff e8 be b5 ff ff 4c 89 ef 57 9d 66 66 90 66 90 48
-> > 83 c4 38 5b 41 5c 41 5d 41 5e 41 5f 5d c3 <0f> 0b 31 d2 be ed ff ff ff
-> > 4c 89 f7 89 45 a8 e8 91 f9 ff ff 8b
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967589] RIP
-> > [<ffffffff81328b2b>] blk_flush_plug_list+0x1eb/0x210
-> > Jan 14 17:47:14 fambox kernel: [ 1263.967630]  RSP <ffff88000d933e58>
-> > Jan 14 17:47:14 fambox kernel: [ 1263.989553] ---[ end trace
-> > 19e1575014ab42a7 ]---
-> >
-> 
-> Looks like this is the fix from Sasha [1].
-> Culprit commit is [2].
-> Testing...
-> 
-> - Sedat -
-> 
-> [1] https://patchwork.kernel.org/patch/1973481/
-> [2] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=0d18d770b9180ffc2c3f63b9eb8406ef80105e05
 
-It does indeed, let us know if it doesn't fix it.
+--LZvS9be/3tNcYl/X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Jens Axboe
+On Mon, Jan 14, 2013 at 10:24:11PM +0000, Arnd Bergmann wrote:
+> On Monday 14 January 2013, Thierry Reding wrote:
+> > It certainly sounds like a less complicated way to do it. But it also
+> > involves adding a function with a made up name and drop a function with
+> > a perfectly good name instead. I wouldn't even know what name to choose
+> > for the new API.
+> >=20
+>=20
+> How about devm_ioremap_resource()? Sounds equally fitting, and is shorter.
 
+Yes, that sounds good. Thanks for the suggestion.
+
+Thierry
+
+--LZvS9be/3tNcYl/X
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ9PrCAAoJEN0jrNd/PrOh8EUQAINqNe6OAwnG8+v2YacerpeP
+jpM0W7ng9kly+Jh7wPl2MpBEzDoKAp9AvmPmOuPZVaLBhVikJB0pB/cQgtERlLxA
+KJgtdEepQb5RInvaZ3lMO07W/OlsZyP3F16e4GO5MEN3VN93QqFgWACRl8U+52aM
+yEbUu6cHImAsxEeWTiLzAJJpTqTmvj0+BN15W4jirVJKWG6dyp6QQP0QyWONro/a
+FEH0UygwPMAz8Mv5eL3p8of87Xt07A4NMAjfTSOpLVIilX3ElJkKsKfr5IbHD+nX
+r8UODa6sM4LD1c1w0TM5so1DpsVE+YEdm6PbCOeqLa3zqJ3gpkm/psrd9Dwp6ThG
+P0FZUrjDcGucznVzRY9LuU5etPd9oLcdMsF65J6k4wXgaAFQ92lQ2yC97H6p7q2j
+k+YdPIPz8jKouwlpywHvLvmcjZv4tO8r/L5dVuT77uinWN8ZNFjfFbRylgbrLPxb
+OfVF1sBokC6kGTAww71VaNURxOFt28QkGEkr8juCO83eZR2Ms4/NQxmLHggoGPf/
+GDdDX81LW2tXRK5AFPFduXOsxt+Fek/E7R0B0EyFY6u+JLVeLhj2htZz2LOh/JHF
+hbU9kZaO44C16wx4/4XhnGsLUxhPGw0MS1aVF/EmKiq4op9QxR2BO0xpDM3i6H45
+piEnYv4jP0kNIUbOhlJm
+=n2WD
+-----END PGP SIGNATURE-----
+
+--LZvS9be/3tNcYl/X--
