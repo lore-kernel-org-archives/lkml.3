@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab3AOV1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 16:27:40 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:55857 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756118Ab3AOV1h (ORCPT
+	id S1756699Ab3AOV1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 16:27:55 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:57433 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756483Ab3AOV1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 16:27:37 -0500
+	Tue, 15 Jan 2013 16:27:39 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 Cc: Kent Overstreet <koverstreet@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 3/4] Export blk_fill_rwbs()
-Date: Tue, 15 Jan 2013 13:25:41 -0800
-Message-Id: <1358285142-10576-3-git-send-email-koverstreet@google.com>
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 4/4] Export __lockdep_no_validate__
+Date: Tue, 15 Jan 2013 13:25:42 -0800
+Message-Id: <1358285142-10576-4-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1358285142-10576-1-git-send-email-koverstreet@google.com>
 References: <1358285142-10576-1-git-send-email-koverstreet@google.com>
@@ -25,28 +23,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exported so it can be used by bcache's tracepoints
+Hack, but bcache needs a way around lockdep for locking during garbage
+collection - we need to keep multiple btree nodes locked for coalescing
+and rw_lock_nested() isn't really sufficient or appropriate here.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>
 CC: Ingo Molnar <mingo@redhat.com>
 ---
- kernel/trace/blktrace.c | 1 +
+ kernel/lockdep.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index c0bd030..dbe1667 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -1806,6 +1806,7 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 7981e5b..861fbeb 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -2997,6 +2997,7 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
+ EXPORT_SYMBOL_GPL(lockdep_init_map);
  
- 	rwbs[i] = '\0';
- }
-+EXPORT_SYMBOL_GPL(blk_fill_rwbs);
+ struct lock_class_key __lockdep_no_validate__;
++EXPORT_SYMBOL_GPL(__lockdep_no_validate__);
  
- #endif /* CONFIG_EVENT_TRACING */
- 
+ static int
+ print_lock_nested_lock_not_held(struct task_struct *curr,
 -- 
 1.7.12
 
