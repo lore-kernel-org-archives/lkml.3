@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934533Ab3AOW6I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:58:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48786 "EHLO mail.kernel.org"
+	id S934494Ab3AOW6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:58:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48776 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934265Ab3AOW6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:58:05 -0500
+	id S934522Ab3AOW6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:58:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        John Tapsell <johnflux@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [ 69/71] Revert "drm/i915: no lvds quirk for Zotac ZDBOX SD ID12/ID13"
-Date: Tue, 15 Jan 2013 14:55:06 -0800
-Message-Id: <20130115225345.373359670@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 71/71] staging: comedi: Kconfig: COMEDI_NI_AT_A2150 should select COMEDI_FC
+Date: Tue, 15 Jan 2013 14:55:08 -0800
+Message-Id: <20130115225345.529990448@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,43 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 48e858340dae43189a4e55647f6eac736766f828 upstream.
+commit 34ffb33e09132401872fe79e95c30824ce194d23 upstream.
 
-This reverts commit 9756fe38d10b2bf90c81dc4d2f17d5632e135364.
+The 'ni_at_a2150' module links to `cfc_write_to_buffer` in the
+'comedi_fc' module, so selecting 'COMEDI_NI_AT_A2150' in the kernel config
+needs to also select 'COMEDI_FC'.
 
-The bogus lvds output is actually a lvds->hdmi bridge, which we don't
-really support. But unconditionally disabling it breaks some existing
-setups.
-
-Reported-by: John Tapsell <johnflux@gmail.com>
-References: http://permalink.gmane.org/gmane.comp.freedesktop.xorg.drivers.intel/17237
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/staging/comedi/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -753,14 +753,6 @@ static const struct dmi_system_id intel_
- 	},
- 	{
- 		.callback = intel_no_lvds_dmi_callback,
--		.ident = "ZOTAC ZBOXSD-ID12/ID13",
--		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "ZOTAC"),
--			DMI_MATCH(DMI_BOARD_NAME, "ZBOXSD-ID12/ID13"),
--		},
--	},
--	{
--		.callback = intel_no_lvds_dmi_callback,
- 		.ident = "Gigabyte GA-D525TUD",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
+--- a/drivers/staging/comedi/Kconfig
++++ b/drivers/staging/comedi/Kconfig
+@@ -424,6 +424,7 @@ config COMEDI_ADQ12B
+ 
+ config COMEDI_NI_AT_A2150
+ 	tristate "NI AT-A2150 ISA card support"
++	select COMEDI_FC
+ 	depends on COMEDI_NI_COMMON
+ 	depends on VIRT_TO_BUS
+ 	default N
 
 
