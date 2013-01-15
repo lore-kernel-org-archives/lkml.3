@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934389Ab3AOW5Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:57:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48385 "EHLO mail.kernel.org"
+	id S934143Ab3AOW5V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:57:21 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48402 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934362Ab3AOW5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:57:15 -0500
+	id S934145Ab3AOW5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:57:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Mike Dunn <mikedunn@newsguy.com>,
+        Igor Grinberg <grinberg@compulab.co.il>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 47/71] ASoC: wm2000: Fix sense of speech clarity enable
-Date: Tue, 15 Jan 2013 14:54:44 -0800
-Message-Id: <20130115225343.804258000@linuxfoundation.org>
+Subject: [ 48/71] ALSA: pxa27x: fix ac97 cold reset
+Date: Tue, 15 Jan 2013 14:54:45 -0800
+Message-Id: <20130115225343.874501885@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -25,30 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Mike Dunn <mikedunn@newsguy.com>
 
-commit 267f8fa2e1eef0612b2007e1f1846bcbc35cc1fa upstream.
+commit 41b645c8624df6ace020a8863ad1449d69140f7d upstream.
 
+Cold reset on the pxa27x currently fails and
+
+     pxa2xx_ac97_try_cold_reset: cold reset timeout (GSR=0x44)
+
+appears in the kernel log.  Through trial-and-error (the pxa270 developer's
+manual is mostly incoherent on the topic of ac97 reset), I got cold reset to
+complete by setting the WARM_RST bit in the GCR register (and later noticed that
+pxa3xx does this for cold reset as well).  Also, a timeout loop is needed to
+wait for the reset to complete.
+
+Tested on a palm treo 680 machine.
+
+Signed-off-by: Mike Dunn <mikedunn@newsguy.com>
+Acked-by: Igor Grinberg <grinberg@compulab.co.il>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm2000.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/arm/pxa2xx-ac97-lib.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/wm2000.c
-+++ b/sound/soc/codecs/wm2000.c
-@@ -224,9 +224,9 @@ static int wm2000_power_up(struct i2c_cl
+--- a/sound/arm/pxa2xx-ac97-lib.c
++++ b/sound/arm/pxa2xx-ac97-lib.c
+@@ -146,6 +146,8 @@ static inline void pxa_ac97_warm_pxa27x(
  
- 	ret = wm2000_read(i2c, WM2000_REG_SPEECH_CLARITY);
- 	if (wm2000->speech_clarity)
--		ret &= ~WM2000_SPEECH_CLARITY;
--	else
- 		ret |= WM2000_SPEECH_CLARITY;
-+	else
-+		ret &= ~WM2000_SPEECH_CLARITY;
- 	wm2000_write(i2c, WM2000_REG_SPEECH_CLARITY, ret);
+ static inline void pxa_ac97_cold_pxa27x(void)
+ {
++	unsigned int timeout;
++
+ 	GCR &=  GCR_COLD_RST;  /* clear everything but nCRST */
+ 	GCR &= ~GCR_COLD_RST;  /* then assert nCRST */
  
- 	wm2000_write(i2c, WM2000_REG_SYS_START0, 0x33);
+@@ -155,8 +157,10 @@ static inline void pxa_ac97_cold_pxa27x(
+ 	clk_enable(ac97conf_clk);
+ 	udelay(5);
+ 	clk_disable(ac97conf_clk);
+-	GCR = GCR_COLD_RST;
+-	udelay(50);
++	GCR = GCR_COLD_RST | GCR_WARM_RST;
++	timeout = 100;     /* wait for the codec-ready bit to be set */
++	while (!((GSR | gsr_bits) & (GSR_PCR | GSR_SCR)) && timeout--)
++		mdelay(1);
+ }
+ #endif
+ 
 
 
