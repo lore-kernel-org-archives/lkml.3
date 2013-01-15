@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab3AOGUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 01:20:16 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:56011 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab3AOGUE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 01:20:04 -0500
-Date: Mon, 14 Jan 2013 22:20:04 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: linux-mmc@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        Will Newton <will.newton@imgtec.com>, Chris Ball <cjb@laptop.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v4 1/5] mmc: dw_mmc: Add "disable-wp" device tree property
-Message-ID: <20130115062004.GA19801@quad.lixom.net>
-References: <1357842269-15062-1-git-send-email-dianders@chromium.org>
- <1357923834-31641-1-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357923834-31641-1-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755935Ab3AOGWf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 01:22:35 -0500
+Received: from mga03.intel.com ([143.182.124.21]:42838 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750892Ab3AOGWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 01:22:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,471,1355126400"; 
+   d="scan'208";a="243888849"
+Subject: [PATCH] PM / Runtime: return the right value when deferred_resume
+ is true in rpm_suspend()
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: rjw@sisk.pl, stern@rowland.harvard.edu
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Jan 2013 23:26:11 +0800
+Message-ID: <1358263571.1223.26.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 09:03:50AM -0800, Doug Anderson wrote:
-> The "disable-wp" property is used to specify that a given SD card slot
-> doesn't have a concept of write protect.  This eliminates the need for
-> special case code for SD slots that should never be write protected
-> (like a micro SD slot or a dev board).
-> 
-> The dw_mmc driver is special in needing to specify "disable-wp"
-> because the lack of a "wp-gpios" property means to use the special
-> purpose write protect line.  On some other mmc devices the lack of
-> "wp-gpios" means that write protect should be disabled.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
 
-Acked-by: Olof Johansson <olof@lixom.net>
+For the case that in rpm_suspend() and deferred_resume is true,
+the rpm_resume() will be called, and if rpm_resume() return error,
+at this time, the device is still in SUSPENDED state.
 
-Nit below.
+In this case it is still an suspend succeeding case, we should
+return non-error instead of EAGAIN.
 
-> @@ -825,7 +828,13 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
->  	struct dw_mci_board *brd = slot->host->pdata;
->  
->  	/* Use platform get_ro function, else try on board write protect */
-> -	if (brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT)
-> +
-> +	/*
-> +	 * NOTE: DW_MCI_QUIRK_NO_WRITE_PROTECT will be removed in a future
-> +	 * patch in the series once reference to it is removed.
-> +	 */
-> +	if ((brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT) ||
-> +	    (slot->quirks & DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT))
+An example like below for this case:
+CPU1:                                                      CPU2:
+pm_runtime_get_sync()
+pm_runtime_put_sync_suspend()
+  rpm_suspend()
+    __update_runtime_status(dev, RPM_SUSPENDING)
+    rpm_callback()
+        spin_unlock_irq()
+          ...                                               pm_runtime_get()
+                                                              spin_lock_irqsave()
+          cb()                                                rpm_resume()
+          ...                                                   dev->power.deferred_resume = true
+                                                              spin_unlock_irqrestore()
+        spin_lock_irq()
+    __update_runtime_status(dev, RPM_SUSPENDED)
+    rpm_resume() is called due to deferred_resume is true
 
-Given that it never worked properly, you could have nuked it first and avoid
-the extra churn. Still, not a strong enough reason to respin the series, IMHO.
+Here if rpm_resume() failed in CPU1, the runtime_status is still SUSPENDED,
+we should return 0 in this case.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ drivers/base/power/runtime.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+index 3148b10..0adc713 100644
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -436,9 +436,11 @@ static int rpm_suspend(struct device *dev, int rpmflags)
+ 
+ 	if (dev->power.deferred_resume) {
+ 		dev->power.deferred_resume = false;
+-		rpm_resume(dev, 0);
+-		retval = -EAGAIN;
+-		goto out;
++		if (rpm_resume(dev, 0) >= 0) {
++			/* In case resuming succeeded, return EAGAIN error */
++			retval = -EAGAIN;
++			goto out;
++		}
+ 	}
+ 
+ 	/* Maybe the parent is now able to suspend. */
+-- 
+1.7.0.4
 
 
--Olof
+
