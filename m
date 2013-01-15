@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab3AOWtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:49:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45262 "EHLO mail.kernel.org"
+	id S1758779Ab3AOWtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:49:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45533 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932836Ab3AOWry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:47:54 -0500
+	id S1758228Ab3AOWtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:49:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Phillip Wood <phillip.wood@dunelm.org.uk>,
-        Aaron Lu <aaron.lu@intel.com>, Szymon Janc <szymon@janc.net.pl>,
-        Dutra Julio <dutra.julio@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 023/171] libata: set dma_mode to 0xff in reset
-Date: Tue, 15 Jan 2013 14:43:08 -0800
-Message-Id: <20130115224315.074517462@linuxfoundation.org>
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Huang Shijie <b32955@freescale.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 031/171] mtd: nand: gpmi: reset BCH earlier, too, to avoid NAND startup problems
+Date: Tue, 15 Jan 2013 14:43:16 -0800
+Message-Id: <20130115224315.656802270@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -28,50 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-commit 5416912af75de9cba5d1c75b99a7888b0bbbd2fb upstream.
+commit 6f2a6a52560ad8d85710aabd92b7a3239b3a6b07 upstream.
 
-ata_device->dma_mode's initial value is zero, which is not a valid dma
-mode, but ata_dma_enabled will return true for this value. This patch
-sets dma_mode to 0xff in reset function, so that ata_dma_enabled will
-not return true for this case, or it will cause problem for pata_acpi.
+It could happen (1 out of 100 times) that NAND did not start up
+correctly after warm rebooting, so the kernel could not find the UBI or
+DMA timed out due to a stalled BCH. When resetting BCH together with
+GPMI, the issue could not be observed anymore (after 10000+ reboots). We
+probably need the consistent state already before sending any command to
+NAND, even when no ECC is needed. I chose to keep the extra reset for
+BCH when changing the flash layout to be on the safe side.
 
-The corrsponding bugzilla page is at:
-https://bugzilla.kernel.org/show_bug.cgi?id=49151
-
-Reported-by: Phillip Wood <phillip.wood@dunelm.org.uk>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Tested-by: Szymon Janc <szymon@janc.net.pl>
-Tested-by: Dutra Julio <dutra.julio@gmail.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Acked-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    1 +
- drivers/ata/libata-eh.c   |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/mtd/nand/gpmi-nand/gpmi-lib.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -2536,6 +2536,7 @@ int ata_bus_probe(struct ata_port *ap)
- 		 * bus as we may be talking too fast.
- 		 */
- 		dev->pio_mode = XFER_PIO_0;
-+		dev->dma_mode = 0xff;
+--- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
++++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+@@ -135,6 +135,15 @@ int gpmi_init(struct gpmi_nand_data *thi
+ 	if (ret)
+ 		goto err_out;
  
- 		/* If the controller has a pio mode setup function
- 		 * then use it to set the chipset to rights. Don't
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -2600,6 +2600,7 @@ int ata_eh_reset(struct ata_link *link,
- 		 * bus as we may be talking too fast.
- 		 */
- 		dev->pio_mode = XFER_PIO_0;
-+		dev->dma_mode = 0xff;
++	/*
++	 * Reset BCH here, too. We got failures otherwise :(
++	 * See later BCH reset for explanation of MX23 handling
++	 */
++	ret = gpmi_reset_block(r->bch_regs, GPMI_IS_MX23(this));
++	if (ret)
++		goto err_out;
++
++
+ 	/* Choose NAND mode. */
+ 	writel(BM_GPMI_CTRL1_GPMI_MODE, r->gpmi_regs + HW_GPMI_CTRL1_CLR);
  
- 		/* If the controller has a pio mode setup function
- 		 * then use it to set the chipset to rights. Don't
 
 
