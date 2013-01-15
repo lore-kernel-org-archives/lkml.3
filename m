@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab3AOWry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:47:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45250 "EHLO mail.kernel.org"
+	id S932967Ab3AOWr6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:47:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45278 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932852Ab3AOWrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:47:51 -0500
+	id S932852Ab3AOWrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:47:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mikael Pettersson <mikpe@it.uu.se>, Adko Branil <adkobranil@yahoo.com>,
+        Xiaotian Feng <dannyfeng@tencent.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 022/171] sata_promise: fix hardreset lockdep error
-Date: Tue, 15 Jan 2013 14:43:07 -0800
-Message-Id: <20130115224315.004805901@linuxfoundation.org>
+Subject: [ 024/171] libata: fix Null pointer dereference on disk error
+Date: Tue, 15 Jan 2013 14:43:09 -0800
+Message-Id: <20130115224315.145668209@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -26,84 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikael Pettersson <mikpe@it.uu.se>
+From: Xiaotian Feng <xtfeng@gmail.com>
 
-commit 3100d49d3cd236443faae9d81137c81b22d36003 upstream.
+commit 26cd4d65deba587f3cf2329b6869ce02bcbe68ec upstream.
 
-sata_promise's pdc_hard_reset_port() needs to serialize because it
-flips a port-specific bit in controller register that's shared by
-all ports. The code takes the ata host lock for this, but that's
-broken because an interrupt may arrive on our irq during the hard
-reset sequence, and that too will take the ata host lock. With
-lockdep enabled a big nasty warning is seen.
+Following oops were observed when disk error happened:
 
-Fixed by adding private state to the ata host structure, containing
-a second lock used only for serializing the hard reset sequences.
-This eliminated the lockdep warnings both on my test rig and on
-the original reporter's machine.
+[ 4272.896937] sd 0:0:0:0: [sda] Unhandled error code
+[ 4272.896939] sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+[ 4272.896942] sd 0:0:0:0: [sda] CDB: Read(10): 28 00 00 5a de a7 00 00 08 00
+[ 4272.896951] end_request: I/O error, dev sda, sector 5955239
+[ 4291.574947] BUG: unable to handle kernel NULL pointer dereference at (null)
+[ 4291.658305] IP: [] ahci_activity_show+0x1/0x40
+[ 4291.730090] PGD 76dbbc067 PUD 6c4fba067 PMD 0
+[ 4291.783408] Oops: 0000 [#1] SMP
+[ 4291.822100] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/sw_activity
+[ 4291.934235] CPU 9
+[ 4291.958301] Pid: 27942, comm: hwinfo ......
 
-Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
-Tested-by: Adko Branil <adkobranil@yahoo.com>
+ata_scsi_find_dev could return NULL, so ata_scsi_activity_{show,store} should check if atadev is NULL.
+
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/sata_promise.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/ata/libata-scsi.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/sata_promise.c
-+++ b/drivers/ata/sata_promise.c
-@@ -147,6 +147,10 @@ struct pdc_port_priv {
- 	dma_addr_t		pkt_dma;
- };
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -309,7 +309,8 @@ ata_scsi_activity_show(struct device *de
+ 	struct ata_port *ap = ata_shost_to_port(sdev->host);
+ 	struct ata_device *atadev = ata_scsi_find_dev(ap, sdev);
  
-+struct pdc_host_priv {
-+	spinlock_t hard_reset_lock;
-+};
-+
- static int pdc_sata_scr_read(struct ata_link *link, unsigned int sc_reg, u32 *val);
- static int pdc_sata_scr_write(struct ata_link *link, unsigned int sc_reg, u32 val);
- static int pdc_ata_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
-@@ -801,9 +805,10 @@ static void pdc_hard_reset_port(struct a
- 	void __iomem *host_mmio = ap->host->iomap[PDC_MMIO_BAR];
- 	void __iomem *pcictl_b1_mmio = host_mmio + PDC_PCI_CTL + 1;
- 	unsigned int ata_no = pdc_ata_port_to_ata_no(ap);
-+	struct pdc_host_priv *hpriv = ap->host->private_data;
- 	u8 tmp;
- 
--	spin_lock(&ap->host->lock);
-+	spin_lock(&hpriv->hard_reset_lock);
- 
- 	tmp = readb(pcictl_b1_mmio);
- 	tmp &= ~(0x10 << ata_no);
-@@ -814,7 +819,7 @@ static void pdc_hard_reset_port(struct a
- 	writeb(tmp, pcictl_b1_mmio);
- 	readb(pcictl_b1_mmio); /* flush */
- 
--	spin_unlock(&ap->host->lock);
-+	spin_unlock(&hpriv->hard_reset_lock);
+-	if (ap->ops->sw_activity_show && (ap->flags & ATA_FLAG_SW_ACTIVITY))
++	if (atadev && ap->ops->sw_activity_show &&
++	    (ap->flags & ATA_FLAG_SW_ACTIVITY))
+ 		return ap->ops->sw_activity_show(atadev, buf);
+ 	return -EINVAL;
  }
+@@ -324,7 +325,8 @@ ata_scsi_activity_store(struct device *d
+ 	enum sw_activity val;
+ 	int rc;
  
- static int pdc_sata_hardreset(struct ata_link *link, unsigned int *class,
-@@ -1182,6 +1187,7 @@ static int pdc_ata_init_one(struct pci_d
- 	const struct ata_port_info *pi = &pdc_port_info[ent->driver_data];
- 	const struct ata_port_info *ppi[PDC_MAX_PORTS];
- 	struct ata_host *host;
-+	struct pdc_host_priv *hpriv;
- 	void __iomem *host_mmio;
- 	int n_ports, i, rc;
- 	int is_sataii_tx4;
-@@ -1218,6 +1224,11 @@ static int pdc_ata_init_one(struct pci_d
- 		dev_err(&pdev->dev, "failed to allocate host\n");
- 		return -ENOMEM;
- 	}
-+	hpriv = devm_kzalloc(&pdev->dev, sizeof *hpriv, GFP_KERNEL);
-+	if (!hpriv)
-+		return -ENOMEM;
-+	spin_lock_init(&hpriv->hard_reset_lock);
-+	host->private_data = hpriv;
- 	host->iomap = pcim_iomap_table(pdev);
- 
- 	is_sataii_tx4 = pdc_is_sataii_tx4(pi->flags);
+-	if (ap->ops->sw_activity_store && (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
++	if (atadev && ap->ops->sw_activity_store &&
++	    (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
+ 		val = simple_strtoul(buf, NULL, 0);
+ 		switch (val) {
+ 		case OFF: case BLINK_ON: case BLINK_OFF:
 
 
