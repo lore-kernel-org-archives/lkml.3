@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834Ab3AOXmu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:42:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46094 "EHLO mail.kernel.org"
+	id S1758838Ab3AOXnL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:43:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46082 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933244Ab3AOWuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:50:39 -0500
+	id S933235Ab3AOWuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:50:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>, Jan Kara <jack@suse.cz>,
-        Shuah Khan <shuah.khan@hp.com>
-Subject: [ 064/171] udf: dont increment lenExtents while writing to a hole
-Date: Tue, 15 Jan 2013 14:43:49 -0800
-Message-Id: <20130115224318.035357229@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 072/171] ASoC: wm2200: Fix setting dai format in wm2200_set_fmt
+Date: Tue, 15 Jan 2013 14:43:57 -0800
+Message-Id: <20130115224318.582060055@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
 References: <20130115224313.394976595@linuxfoundation.org>
@@ -27,61 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit fb719c59bdb4fca86ee1fd1f42ab3735ca12b6b2 upstream.
+commit 2a5f431592343b78896013b055582f94c12a5049 upstream.
 
-Incrementing lenExtents even while writing to a hole is bad
-for performance as calls to udf_discard_prealloc and
-udf_truncate_tail_extent would not return from start if
-isize != lenExtents
+According to the defines in wm2200.h:
+/*
+ * R1284 (0x504) - Audio IF 1_5
+ */
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+We should not left shift 1 bit for fmt_val when setting dai format.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/inode.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm2200.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -574,6 +574,7 @@ static sector_t inode_getblk(struct inod
- 	struct udf_inode_info *iinfo = UDF_I(inode);
- 	int goal = 0, pgoal = iinfo->i_location.logicalBlockNum;
- 	int lastblock = 0;
-+	bool isBeyondEOF;
+--- a/sound/soc/codecs/wm2200.c
++++ b/sound/soc/codecs/wm2200.c
+@@ -1440,7 +1440,7 @@ static int wm2200_set_fmt(struct snd_soc
+ 			    WM2200_AIF1TX_LRCLK_MSTR | WM2200_AIF1TX_LRCLK_INV,
+ 			    lrclk);
+ 	snd_soc_update_bits(codec, WM2200_AUDIO_IF_1_5,
+-			    WM2200_AIF1_FMT_MASK << 1, fmt_val << 1);
++			    WM2200_AIF1_FMT_MASK, fmt_val);
  
- 	*err = 0;
- 	*new = 0;
-@@ -653,7 +654,7 @@ static sector_t inode_getblk(struct inod
- 	/* Are we beyond EOF? */
- 	if (etype == -1) {
- 		int ret;
--
-+		isBeyondEOF = 1;
- 		if (count) {
- 			if (c)
- 				laarr[0] = laarr[1];
-@@ -696,6 +697,7 @@ static sector_t inode_getblk(struct inod
- 		endnum = c + 1;
- 		lastblock = 1;
- 	} else {
-+		isBeyondEOF = 0;
- 		endnum = startnum = ((count > 2) ? 2 : count);
- 
- 		/* if the current extent is in position 0,
-@@ -743,7 +745,8 @@ static sector_t inode_getblk(struct inod
- 			*err = -ENOSPC;
- 			return 0;
- 		}
--		iinfo->i_lenExtents += inode->i_sb->s_blocksize;
-+		if (isBeyondEOF)
-+			iinfo->i_lenExtents += inode->i_sb->s_blocksize;
- 	}
- 
- 	/* if the extent the requsted block is located in contains multiple
+ 	return 0;
+ }
 
 
