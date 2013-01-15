@@ -1,122 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab3AOURQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 15:17:16 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:58457 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750963Ab3AOURP (ORCPT
+	id S1756591Ab3AOUSY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 15:18:24 -0500
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:53578 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754929Ab3AOUSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 15:17:15 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX181yDVvUT+CjbDJTAWmVKsN+NfG4LSWORQ=
-Date: Tue, 15 Jan 2013 15:16:17 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, Soeren Moch <smoch@web.de>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linaro-mm-sig@lists.linaro.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
- dma_alloc_coherent() calls
-Message-ID: <20130115201617.GC25500@titan.lakedaemon.net>
-References: <20121119144826.f59667b2.akpm@linux-foundation.org>
- <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
- <50F3F289.3090402@web.de>
- <20130115165642.GA25500@titan.lakedaemon.net>
- <20130115175020.GA3764@kroah.com>
+	Tue, 15 Jan 2013 15:18:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130115175020.GA3764@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130115183204.GE2668@htj.dyndns.org>
+References: <CALxABCaE3=XpGmgNJs1pre11aJ8T0pntVzf_mA6_OYNzis9nvQ@mail.gmail.com>
+ <Pine.LNX.4.44L0.1301131153520.17578-100000@netrider.rowland.org>
+ <CALxABCYtKJD4YrPxy6p+Frim8erccp3ine7SVEV9ReoaRh1BWQ@mail.gmail.com>
+ <CACVXFVPMH-CHGw2EVwgYK5ozn1NAygT0f9=Df4vhSJmYYOZBMw@mail.gmail.com>
+ <CACVXFVNvBeHG2TgfNY-wRQYtqsd6v-3AAiQVPAECuRnJ--ON-g@mail.gmail.com>
+ <CA+55aFxV40V2WvNtJY3EC0F-B9wPk8CV2o1TTTyoF4CoWH7rhQ@mail.gmail.com>
+ <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
+ <CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com>
+ <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com> <20130115183204.GE2668@htj.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 15 Jan 2013 12:18:01 -0800
+X-Google-Sender-Auth: XDNVoGJlPNhS913i8XrTqfSndi4
+Message-ID: <CA+55aFzZ1NJz34r99N7+mU4CN5Ju4QpHrDoWv5Kbd5-Z4QzgaA@mail.gmail.com>
+Subject: Re: USB device cannot be reconnected and khubd "blocked for more than
+ 120 seconds"
+To: Tejun Heo <tj@kernel.org>
+Cc: Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 09:50:20AM -0800, Greg KH wrote:
-> On Tue, Jan 15, 2013 at 11:56:42AM -0500, Jason Cooper wrote:
-> > Greg,
-> > 
-> > I've added you to the this thread hoping for a little insight into USB
-> > drivers and their use of coherent and GFP_ATOMIC.  Am I barking up the
-> > wrong tree by looking a the drivers?
-> 
-> I don't understand, which drivers are you referring to?  USB host
-> controller drivers, or the "normal" drivers?
+On Tue, Jan 15, 2013 at 10:32 AM, Tejun Heo <tj@kernel.org> wrote:
+>
+> I think the root problem here, apart from request_module() from block
+> - which is a bit nasty but making that part completely async would too
+> be quite nasty albeit in a different way - is that
+> async_synchronize_full() is way too indescriminate.  It's something
+> only suitable for things like the end of system init.
+>
+> I'm wondering whether what we need is a rudimentray nesting like the
+> following.
 
-Sorry I wasn't clear, I was referring specifically to the usb dvb
-drivers em28xx, drxk and dib0700.  These are the drivers reported to be
-in heavy use when the error occurs.
+I think that is a good solution if it works, but look out: we need to
+synchronize across *all* domains, not just the default one.  The sd.c
+code, for example, uses its own "scsi_sd_probe_domain" for example,
+and we *do* want to synchronize with it.
 
-sata_mv is also in use, however no other users of sata_mv have reported
-problems.  Including myself. ;-)
+Can you do that with your suggested interface (ie it would have to be
+a *global* sequence number).
 
-> Most USB drivers use GFP_ATOMIC if they are creating memory during
-> their URB callback path, as that is interrupt context.  But it
-> shouldn't be all that bad, and the USB core hasn't changed in a while,
-> so something else must be causing this.
-
-Agreed, so I went and did more reading.  The key piece of the puzzle
-that I was missing was in arch/arm/mm/dma-mapping.c 660-684.
-
-/*
- * Allocate DMA-coherent memory space and return both the kernel
- * remapped
- * virtual and bus address for that space.
- */
-void *arm_dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
-                    gfp_t gfp, struct dma_attrs *attrs)
-{
-        pgprot_t prot = __get_dma_pgprot(attrs, pgprot_kernel);
-        void *memory;
-
-        if (dma_alloc_from_coherent(dev, size, handle, &memory))
-                return memory;
-
-        return __dma_alloc(dev, size, handle, gfp, prot, false,
-                           __builtin_return_address(0));
-}
-
-static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
-        dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs)
-{
-        pgprot_t prot = __get_dma_pgprot(attrs, pgprot_kernel);
-        void *memory;
-
-        if (dma_alloc_from_coherent(dev, size, handle, &memory))
-                return memory;
-
-        return __dma_alloc(dev, size, handle, gfp, prot, true,
-                           __builtin_return_address(0));
-}
-
-
-My understanding of this code is that when a driver requests dma memory,
-we will first try to alloc from the per-driver pool.  If that fails, we
-will then attempt to allocate from the atomic_pool.
-
-Once the atomic_pool is exhausted, we get the error:
-
-  ERROR: 1024 KiB atomic DMA coherent pool is too small!
-  Please increase it with coherent_pool= kernel parameter!
-
-If my understanding is correct, one of the drivers (most likely one)
-either asks for too small of a dma buffer, or is not properly
-deallocating blocks from the per-device pool.  Either case leads to
-exhaustion, and falling back to the atomic pool.  Which subsequently
-gets wiped out as well.
-
-Am I on the right track?
-
-thx,
-
-Jason.
+               Linus
