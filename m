@@ -1,106 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933710Ab3AOX1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 18:27:51 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46884 "EHLO mail.kernel.org"
+	id S933713Ab3AOX2U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:28:20 -0500
+Received: from csamuel.org ([74.50.50.137]:35268 "EHLO csamuel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933685Ab3AOWwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:52:37 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Julien Cristau <jcristau@debian.org>
-Subject: [ 130/171] drm/i915: Flush the pending flips on the CRTC before modification
-Date: Tue, 15 Jan 2013 14:44:55 -0800
-Message-Id: <20130115224322.715289519@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
-References: <20130115224313.394976595@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S932825Ab3AOX2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 18:28:17 -0500
+Message-ID: <50F5E5FE.9040304@csamuel.org>
+Date: Wed, 16 Jan 2013 10:27:58 +1100
+From: Chris Samuel <chris@csamuel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: Rusty Russell <rusty@rustcorp.com.au>, dhowells@redhat.com,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [RFC] [PATCH] Disable INSTALL_MOD_STRIP when CONFIG_MODULE_SIG
+ set
+References: <50F46C36.3060403@csamuel.org>
+In-Reply-To: <50F46C36.3060403@csamuel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+/* Please CC, not on LKML */
 
-------------------
+On 15/01/13 07:36, Chris Samuel wrote:
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+> So we set mod_strip_cmd to be true to prevent it stripping kernel
+> modules, just as happens if INSTALL_MOD_STRIP is not passed.
 
-commit 5bb61643f6a70d48de9cfe91ad0fee0d618b6816 upstream.
+Ignore this patch, sorry for the noise.
 
-This was meant to be the purpose of the
-intel_crtc_wait_for_pending_flips() function which is called whilst
-preparing the CRTC for a modeset or before disabling. However, as Ville
-Syrjala pointed out, we set the pending flip notification on the old
-framebuffer that is no longer attached to the CRTC by the time we come
-to flush the pending operations. Instead, we can simply wait on the
-pending unpin work to be finished on this CRTC, knowning that the
-hardware has therefore finished modifying the registers, before proceeding
-with our direct access.
+I'd tested by comparing the modules produced by the build system in this
+patch with the ones produced by make-kpkg and missed the fact that
+*after* doing the module install make-kpkg then runs objcopy on the
+modules to copy out the debug sections for a debug package and then uses
+objcopy to remove the same debug sections (along with the signature)
+from the ones in the main package. :-(
 
-Fixes i-g-t/flip_test on non-pch platforms. pch platforms simply
-schedule the flip immediately when the pipe is disabled, leading
-to other funny issues.
+I'd also misread the order that the strip and signing happens, so that
+the kernel signs after stripping, so there is nothing to fix.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-[danvet: Added i-g-t note and cc: stable]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Julien Cristau <jcristau@debian.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/gpu/drm/i915/intel_display.c |   24 ++++++++++++++++++++++--
- 1 file changed, 22 insertions(+), 2 deletions(-)
+Interestingly stripping them only saves 1MB out of 120MB for me, so it
+hardly seems worth doing.
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -2895,13 +2895,34 @@ static void intel_clear_scanline_wait(st
- 		I915_WRITE_CTL(ring, tmp);
- }
- 
-+static bool intel_crtc_has_pending_flip(struct drm_crtc *crtc)
-+{
-+	struct drm_device *dev = crtc->dev;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	unsigned long flags;
-+	bool pending;
-+
-+	if (atomic_read(&dev_priv->mm.wedged))
-+		return false;
-+
-+	spin_lock_irqsave(&dev->event_lock, flags);
-+	pending = to_intel_crtc(crtc)->unpin_work != NULL;
-+	spin_unlock_irqrestore(&dev->event_lock, flags);
-+
-+	return pending;
-+}
-+
- static void intel_crtc_wait_for_pending_flips(struct drm_crtc *crtc)
- {
- 	struct drm_device *dev = crtc->dev;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
- 
- 	if (crtc->fb == NULL)
- 		return;
- 
-+	wait_event(dev_priv->pending_flip_queue,
-+		   !intel_crtc_has_pending_flip(crtc));
-+
- 	mutex_lock(&dev->struct_mutex);
- 	intel_finish_fb(crtc->fb);
- 	mutex_unlock(&dev->struct_mutex);
-@@ -7258,9 +7279,8 @@ static void do_intel_finish_page_flip(st
- 
- 	atomic_clear_mask(1 << intel_crtc->plane,
- 			  &obj->pending_flip.counter);
--	if (atomic_read(&obj->pending_flip) == 0)
--		wake_up(&dev_priv->pending_flip_queue);
- 
-+	wake_up(&dev_priv->pending_flip_queue);
- 	schedule_work(&work->work);
- 
- 	trace_i915_flip_complete(intel_crtc->plane, work->pending_flip_obj);
-
-
+-- 
+ Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
