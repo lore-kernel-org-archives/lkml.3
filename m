@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934224Ab3AOW4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:56:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48107 "EHLO mail.kernel.org"
+	id S1758715Ab3AOXJZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 18:09:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48148 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934194Ab3AOW4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:56:31 -0500
+	id S934211Ab3AOW4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 26/71] staging: vt6656: [BUG] out of bound array reference in RFbSetPower.
-Date: Tue, 15 Jan 2013 14:54:23 -0800
-Message-Id: <20130115225342.314489181@linuxfoundation.org>
+        Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
+        Roland Dreier <roland@purestorage.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 23/71] RDMA/nes: Fix for terminate timer crash
+Date: Tue, 15 Jan 2013 14:54:20 -0800
+Message-Id: <20130115225342.104582869@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -25,35 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
 
-commit ab1dd9963137a1e122004d5378a581bf16ae9bc8 upstream.
+commit 7bfcfa51c35cdd2d37e0d70fc11790642dd11fb3 upstream.
 
-Calling RFbSetPower with uCH zero value will cause out of bound array reference.
+The terminate timer needs to be initialized just once.
 
-This causes 64 bit kernels to oops on boot.
-
-Note: Driver does not function on 64 bit kernels and should be
-blacklisted on them.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/rf.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/infiniband/hw/nes/nes.h       |    1 +
+ drivers/infiniband/hw/nes/nes_hw.c    |    9 ++-------
+ drivers/infiniband/hw/nes/nes_verbs.c |    4 +++-
+ 3 files changed, 6 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/vt6656/rf.c
-+++ b/drivers/staging/vt6656/rf.c
-@@ -769,6 +769,9 @@ BYTE    byPwr = pDevice->byCCKPwr;
-         return TRUE;
-     }
+--- a/drivers/infiniband/hw/nes/nes.h
++++ b/drivers/infiniband/hw/nes/nes.h
+@@ -511,6 +511,7 @@ void nes_iwarp_ce_handler(struct nes_dev
+ int nes_destroy_cqp(struct nes_device *);
+ int nes_nic_cm_xmit(struct sk_buff *, struct net_device *);
+ void nes_recheck_link_status(struct work_struct *work);
++void nes_terminate_timeout(unsigned long context);
  
-+	if (uCH == 0)
-+		return -EINVAL;
-+
-     switch (uRATE) {
-     case RATE_1M:
-     case RATE_2M:
+ /* nes_nic.c */
+ struct net_device *nes_netdev_init(struct nes_device *, void __iomem *);
+--- a/drivers/infiniband/hw/nes/nes_hw.c
++++ b/drivers/infiniband/hw/nes/nes_hw.c
+@@ -75,7 +75,6 @@ static void nes_process_iwarp_aeqe(struc
+ static void process_critical_error(struct nes_device *nesdev);
+ static void nes_process_mac_intr(struct nes_device *nesdev, u32 mac_number);
+ static unsigned int nes_reset_adapter_ne020(struct nes_device *nesdev, u8 *OneG_Mode);
+-static void nes_terminate_timeout(unsigned long context);
+ static void nes_terminate_start_timer(struct nes_qp *nesqp);
+ 
+ #ifdef CONFIG_INFINIBAND_NES_DEBUG
+@@ -3496,7 +3495,7 @@ static void nes_terminate_received(struc
+ }
+ 
+ /* Timeout routine in case terminate fails to complete */
+-static void nes_terminate_timeout(unsigned long context)
++void nes_terminate_timeout(unsigned long context)
+ {
+ 	struct nes_qp *nesqp = (struct nes_qp *)(unsigned long)context;
+ 
+@@ -3506,11 +3505,7 @@ static void nes_terminate_timeout(unsign
+ /* Set a timer in case hw cannot complete the terminate sequence */
+ static void nes_terminate_start_timer(struct nes_qp *nesqp)
+ {
+-	init_timer(&nesqp->terminate_timer);
+-	nesqp->terminate_timer.function = nes_terminate_timeout;
+-	nesqp->terminate_timer.expires = jiffies + HZ;
+-	nesqp->terminate_timer.data = (unsigned long)nesqp;
+-	add_timer(&nesqp->terminate_timer);
++	mod_timer(&nesqp->terminate_timer, (jiffies + HZ));
+ }
+ 
+ /**
+--- a/drivers/infiniband/hw/nes/nes_verbs.c
++++ b/drivers/infiniband/hw/nes/nes_verbs.c
+@@ -1414,6 +1414,9 @@ static struct ib_qp *nes_create_qp(struc
+ 	}
+ 
+ 	nesqp->sig_all = (init_attr->sq_sig_type == IB_SIGNAL_ALL_WR);
++	init_timer(&nesqp->terminate_timer);
++	nesqp->terminate_timer.function = nes_terminate_timeout;
++	nesqp->terminate_timer.data = (unsigned long)nesqp;
+ 
+ 	/* update the QP table */
+ 	nesdev->nesadapter->qp_table[nesqp->hwqp.qp_id-NES_FIRST_QPN] = nesqp;
+@@ -1423,7 +1426,6 @@ static struct ib_qp *nes_create_qp(struc
+ 	return &nesqp->ibqp;
+ }
+ 
+-
+ /**
+  * nes_clean_cq
+  */
 
 
