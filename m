@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758483Ab3AOWdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:33:13 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43015 "EHLO mail.kernel.org"
+	id S932468Ab3AOWdU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:33:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43058 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758487Ab3AOWdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:33:06 -0500
+	id S1758533Ab3AOWdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:33:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nitin Gupta <ngupta@vflare.org>,
-        Mihail Kasadjikov <hamer.mk@gmail.com>, Tomas M <tomas@slax.org>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [ 148/221] staging: zram: fix invalid memory references during disk write
-Date: Tue, 15 Jan 2013 10:51:15 -0800
-Message-Id: <20130115185008.730456372@linuxfoundation.org>
+        Jesse Kahtava <jesse_kahtava@f-m.fm>,
+        Mikko Rapeli <mikko.rapeli@iki.fi>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 152/221] mac80211: fix ibss scanning
+Date: Tue, 15 Jan 2013 10:51:19 -0800
+Message-Id: <20130115185009.022972014@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,129 +28,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nitin Gupta <ngupta@vflare.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 397c60668aa5ae7130b5ad4e73870d7b8a787085 upstream.
+commit 34bcf71502413f8903ade93746f2d0f04b937a78 upstream.
 
-Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
-of incompressible pages") which caused invalid memory references
-during disk write. Invalid references could occur in two cases:
- - Incoming data expands on compression: In this case, reference was
-made to kunmap()'ed bio page.
- - Partial (non PAGE_SIZE) write with incompressible data: In this
-case, reference was made to a kfree()'ed buffer.
+Do not scan on no-IBSS and disabled channels in IBSS mode. Doing this
+can trigger Microcode errors on iwlwifi and iwlegacy drivers.
 
-Fixes bug 50081:
-https://bugzilla.kernel.org/show_bug.cgi?id=50081
+Also rename ieee80211_request_internal_scan() function since it is only
+used in IBSS mode and simplify calling it from ieee80211_sta_find_ibss().
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
-Reported-by: Tomas M <tomas@slax.org>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+This patch should address:
+https://bugzilla.redhat.com/show_bug.cgi?id=883414
+https://bugzilla.kernel.org/show_bug.cgi?id=49411
+
+Reported-by: Jesse Kahtava <jesse_kahtava@f-m.fm>
+Reported-by: Mikko Rapeli  <mikko.rapeli@iki.fi>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
- 1 file changed, 24 insertions(+), 15 deletions(-)
+ net/mac80211/ibss.c        |    9 ++++-----
+ net/mac80211/ieee80211_i.h |    6 +++---
+ net/mac80211/scan.c        |   34 ++++++++++++++++++++++++----------
+ 3 files changed, 31 insertions(+), 18 deletions(-)
 
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -265,7 +265,7 @@ out_cleanup:
- static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			   int offset)
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -678,8 +678,8 @@ static void ieee80211_sta_merge_ibss(str
+ 	sdata_info(sdata,
+ 		   "No active IBSS STAs - trying to scan for other IBSS networks with same SSID (merge)\n");
+ 
+-	ieee80211_request_internal_scan(sdata,
+-			ifibss->ssid, ifibss->ssid_len, NULL);
++	ieee80211_request_ibss_scan(sdata, ifibss->ssid, ifibss->ssid_len,
++				    NULL);
+ }
+ 
+ static void ieee80211_sta_create_ibss(struct ieee80211_sub_if_data *sdata)
+@@ -777,9 +777,8 @@ static void ieee80211_sta_find_ibss(stru
+ 					IEEE80211_SCAN_INTERVAL)) {
+ 		sdata_info(sdata, "Trigger new scan to find an IBSS to join\n");
+ 
+-		ieee80211_request_internal_scan(sdata,
+-				ifibss->ssid, ifibss->ssid_len,
+-				ifibss->fixed_channel ? ifibss->channel : NULL);
++		ieee80211_request_ibss_scan(sdata, ifibss->ssid,
++					    ifibss->ssid_len, chan);
+ 	} else {
+ 		int interval = IEEE80211_SCAN_INTERVAL;
+ 
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1247,9 +1247,9 @@ void ieee80211_mesh_rx_queued_mgmt(struc
+ 
+ /* scan/BSS handling */
+ void ieee80211_scan_work(struct work_struct *work);
+-int ieee80211_request_internal_scan(struct ieee80211_sub_if_data *sdata,
+-				    const u8 *ssid, u8 ssid_len,
+-				    struct ieee80211_channel *chan);
++int ieee80211_request_ibss_scan(struct ieee80211_sub_if_data *sdata,
++				const u8 *ssid, u8 ssid_len,
++				struct ieee80211_channel *chan);
+ int ieee80211_request_scan(struct ieee80211_sub_if_data *sdata,
+ 			   struct cfg80211_scan_request *req);
+ void ieee80211_scan_cancel(struct ieee80211_local *local);
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -819,9 +819,9 @@ int ieee80211_request_scan(struct ieee80
+ 	return res;
+ }
+ 
+-int ieee80211_request_internal_scan(struct ieee80211_sub_if_data *sdata,
+-				    const u8 *ssid, u8 ssid_len,
+-				    struct ieee80211_channel *chan)
++int ieee80211_request_ibss_scan(struct ieee80211_sub_if_data *sdata,
++				const u8 *ssid, u8 ssid_len,
++				struct ieee80211_channel *chan)
  {
--	int ret;
-+	int ret = 0;
- 	size_t clen;
- 	unsigned long handle;
- 	struct page *page;
-@@ -286,10 +286,8 @@ static int zram_bvec_write(struct zram *
- 			goto out;
- 		}
- 		ret = zram_decompress_page(zram, uncmem, index);
--		if (ret) {
--			kfree(uncmem);
-+		if (ret)
- 			goto out;
--		}
- 	}
+ 	struct ieee80211_local *local = sdata->local;
+ 	int ret = -EBUSY;
+@@ -835,22 +835,36 @@ int ieee80211_request_internal_scan(stru
  
- 	/*
-@@ -302,16 +300,18 @@ static int zram_bvec_write(struct zram *
+ 	/* fill internal scan request */
+ 	if (!chan) {
+-		int i, nchan = 0;
++		int i, max_n;
++		int n_ch = 0;
  
- 	user_mem = kmap_atomic(page);
- 
--	if (is_partial_io(bvec))
-+	if (is_partial_io(bvec)) {
- 		memcpy(uncmem + offset, user_mem + bvec->bv_offset,
- 		       bvec->bv_len);
--	else
-+		kunmap_atomic(user_mem);
-+		user_mem = NULL;
-+	} else {
- 		uncmem = user_mem;
-+	}
- 
- 	if (page_zero_filled(uncmem)) {
--		kunmap_atomic(user_mem);
--		if (is_partial_io(bvec))
--			kfree(uncmem);
-+		if (!is_partial_io(bvec))
-+			kunmap_atomic(user_mem);
- 		zram_stat_inc(&zram->stats.pages_zero);
- 		zram_set_flag(zram, index, ZRAM_ZERO);
- 		ret = 0;
-@@ -321,9 +321,11 @@ static int zram_bvec_write(struct zram *
- 	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
- 			       zram->compress_workmem);
- 
--	kunmap_atomic(user_mem);
--	if (is_partial_io(bvec))
--			kfree(uncmem);
-+	if (!is_partial_io(bvec)) {
-+		kunmap_atomic(user_mem);
-+		user_mem = NULL;
-+		uncmem = NULL;
-+	}
- 
- 	if (unlikely(ret != LZO_E_OK)) {
- 		pr_err("Compression failed! err=%d\n", ret);
-@@ -332,8 +334,10 @@ static int zram_bvec_write(struct zram *
- 
- 	if (unlikely(clen > max_zpage_size)) {
- 		zram_stat_inc(&zram->stats.bad_compress);
--		src = uncmem;
- 		clen = PAGE_SIZE;
-+		src = NULL;
-+		if (is_partial_io(bvec))
-+			src = uncmem;
- 	}
- 
- 	handle = zs_malloc(zram->mem_pool, clen);
-@@ -345,7 +349,11 @@ static int zram_bvec_write(struct zram *
- 	}
- 	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
- 
-+	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
-+		src = kmap_atomic(page);
- 	memcpy(cmem, src, clen);
-+	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
-+		kunmap_atomic(src);
- 
- 	zs_unmap_object(zram->mem_pool, handle);
- 
-@@ -358,9 +366,10 @@ static int zram_bvec_write(struct zram *
- 	if (clen <= PAGE_SIZE / 2)
- 		zram_stat_inc(&zram->stats.good_compress);
- 
--	return 0;
--
- out:
-+	if (is_partial_io(bvec))
-+		kfree(uncmem);
+ 		for (band = 0; band < IEEE80211_NUM_BANDS; band++) {
+ 			if (!local->hw.wiphy->bands[band])
+ 				continue;
+-			for (i = 0;
+-			     i < local->hw.wiphy->bands[band]->n_channels;
+-			     i++) {
+-				local->int_scan_req->channels[nchan] =
 +
- 	if (ret)
- 		zram_stat64_inc(zram, &zram->stats.failed_writes);
- 	return ret;
++			max_n = local->hw.wiphy->bands[band]->n_channels;
++			for (i = 0; i < max_n; i++) {
++				struct ieee80211_channel *tmp_ch =
+ 				    &local->hw.wiphy->bands[band]->channels[i];
+-				nchan++;
++
++				if (tmp_ch->flags & (IEEE80211_CHAN_NO_IBSS |
++						     IEEE80211_CHAN_DISABLED))
++					continue;
++
++				local->int_scan_req->channels[n_ch] = tmp_ch;
++				n_ch++;
+ 			}
+ 		}
+ 
+-		local->int_scan_req->n_channels = nchan;
++		if (WARN_ON_ONCE(n_ch == 0))
++			goto unlock;
++
++		local->int_scan_req->n_channels = n_ch;
+ 	} else {
++		if (WARN_ON_ONCE(chan->flags & (IEEE80211_CHAN_NO_IBSS |
++						IEEE80211_CHAN_DISABLED)))
++			goto unlock;
++
+ 		local->int_scan_req->channels[0] = chan;
+ 		local->int_scan_req->n_channels = 1;
+ 	}
 
 
