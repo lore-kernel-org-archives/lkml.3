@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab3AOCs0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jan 2013 21:48:26 -0500
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:32953 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756137Ab3AOCsY (ORCPT
+	id S1755335Ab3AODIp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jan 2013 22:08:45 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12780 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab3AODIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jan 2013 21:48:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMbhsRQiK=rChiNdwM5M6t=1v_iKwYLhUn=HLW5kSkBzQdso8g@mail.gmail.com>
-References: <1357941108-14138-1-git-send-email-ccross@android.com>
-	<CAFTL4hzYkPCmkfqBafkTA5E_snkLoC_y3p9xwumj=L1xWAWK0g@mail.gmail.com>
-	<CAMbhsRQv=ogNmkK=Np6JGM-iuG=aocqb_4aMBC6CW5mpkGvpmw@mail.gmail.com>
-	<CAFTL4hxnCn13PigcWjrcnSV9RAz5gSX-VtQk9J8HEbQco7jbbQ@mail.gmail.com>
-	<CAMbhsRQiK=rChiNdwM5M6t=1v_iKwYLhUn=HLW5kSkBzQdso8g@mail.gmail.com>
-Date: Tue, 15 Jan 2013 03:48:23 +0100
-Message-ID: <CAFTL4hxCNqCAbF6+Ny_-0jfL2G2ie8O6Be_7KtYymvJzyJGyCw@mail.gmail.com>
-Subject: Re: [PATCH v2] hardlockup: detect hard lockups without NMIs using
- secondary cpus
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Colin Cross <ccross@android.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 14 Jan 2013 22:08:44 -0500
+X-Authority-Analysis: v=2.0 cv=T70Ovo2Q c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=nKwdevkgNS0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=L4JvR7MU6hkA:10 a=W2pEGsi_yxZVVERSeuAA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358219321.4068.9.camel@gandalf.local.home>
+Subject: Re: linux-next: Tree for Jan 7 (rcutorture)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 14 Jan 2013 22:08:41 -0500
+In-Reply-To: <20130114194956.GB3384@linux.vnet.ibm.com>
+References: <20130107142649.c843e0b711532dc3a631e4cf@canb.auug.org.au>
+	 <50EB252C.4010005@infradead.org> <20130107221627.GZ2525@linux.vnet.ibm.com>
+	 <20130108095959.98d83d91dbd0e9e1ac023373@canb.auug.org.au>
+	 <1357600327.5190.13.camel@gandalf.local.home>
+	 <1357605379.5190.15.camel@gandalf.local.home>
+	 <20130108035348.GF2525@linux.vnet.ibm.com> <50F43612.8080600@infradead.org>
+	 <20130114173208.GY3384@linux.vnet.ibm.com> <50F45321.50808@infradead.org>
+	 <20130114194956.GB3384@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/15 Colin Cross <ccross@android.com>:
-> On Mon, Jan 14, 2013 at 4:25 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> 2013/1/15 Colin Cross <ccross@android.com>:
->>> On Mon, Jan 14, 2013 at 4:13 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>>> I believe this is pretty much what the RCU stall detector does
->>>> already: checks for other CPUs being responsive. The only difference
->>>> is on how it checks that. For RCU it's about checking for CPUs
->>>> reporting quiescent states when requested to do so. In your case it's
->>>> about ensuring the hrtimer interrupt is well handled.
->>>>
->>>> One thing you can do is to enqueue an RCU callback (cal_rcu()) every
->>>> minute so you can force other CPUs to report quiescent states
->>>> periodically and thus check for lockups.
->>>
->>> That's a good point, I'll take a look at using that.  A minute is too
->>> long, some SoCs have maximum HW watchdog periods of under 30 seconds,
->>> but a call_rcu every 10-20 seconds might be sufficient.
->>
->> Sure. And you can tune CONFIG_RCU_CPU_STALL_TIMEOUT accordingly.
->
-> After considering this, I think the hrtimer watchdog is more useful.
-> RCU stalls are not usually panic events, and I wouldn't want to add a
-> panic on every RCU stall.  The lack of stack traces on the affected
-> cpu makes a panic important.  I'm planning to add an ARM DBGPCSR panic
-> handler, which will be able to dump the PC of a stuck cpu even if it
-> is not responding to interrupts.  kexec or kgdb on panic might also
-> allow some inspection of the stack on stuck cpu.
->
-> Failing to process interrupts is a much more serious event than an RCU
-> stall, and being able to detect them separately may be very valuable
-> for debugging.
+On Mon, 2013-01-14 at 11:49 -0800, Paul E. McKenney wrote:
 
-RCU stalls can happen for different reasons: softlockup (failure to
-schedule another task), hardlockup (failure to process interrupts), or
-a bug in RCU itself. But if you have a hardlockup, it will report it.
+> diff --git a/kernel/rcu.h b/kernel/rcu.h
+> index 7f8e759..b5d30c3 100644
+> --- a/kernel/rcu.h
+> +++ b/kernel/rcu.h
+> @@ -24,6 +24,7 @@
+>  #define __LINUX_RCU_H
+>  
+>  #ifdef CONFIG_RCU_TRACE
+> +#include <linux/trace_clock.h>
+>  #define RCU_TRACE(stmt) stmt
+>  #else /* #ifdef CONFIG_RCU_TRACE */
+>  #define RCU_TRACE(stmt)
+> @@ -118,4 +119,13 @@ int rcu_jiffies_till_stall_check(void);
+>  
+>  #endif /* #ifdef CONFIG_RCU_STALL_COMMON */
+>  
+> +static inline u64 notrace rcu_trace_clock_local(void)
 
-Now why do you need a panic in any case? I don't know DBGPCSR, is this
-a breakpoint register? How do you plan to use it remotely from the CPU
-that detects the lockup?
+"inline" now implies notrace. That is, we define inline to include
+notrace in the headers. The 'notrace' now is redundant.
+
+-- Steve
+
+> +{
+> +#ifdef CONFIG_RCU_TRACE
+> +	return trace_clock_local();
+> +#else /* #ifdef CONFIG_RCU_TRACE */
+> +	return 0;
+> +#endif /* #else #ifdef CONFIG_RCU_TRACE */
+> +}
+> +
+>  #endif /* __LINUX_RCU_H */
+
+
