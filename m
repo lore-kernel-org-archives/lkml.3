@@ -1,96 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756965Ab3AOOUG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 09:20:06 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:34147 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823Ab3AOOUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 09:20:01 -0500
-X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jan 2013 09:20:01 EST
-Message-ID: <50F563EC.3030804@free-electrons.com>
-Date: Tue, 15 Jan 2013 15:13:00 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1757029Ab3AOOVC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 09:21:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54595 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756596Ab3AOOVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 09:21:00 -0500
+Date: Tue, 15 Jan 2013 15:20:56 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, minchan@kernel.org,
+        aquini@redhat.com, wency@cn.fujitsu.com, jiang.liu@huawei.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] memory-hotplug: revert
+ register_page_bootmem_info_node() to empty when platform related code is not
+ implemented
+Message-ID: <20130115142056.GC21725@dhcp22.suse.cz>
+References: <1358245203-4181-1-git-send-email-linfeng@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Cong Ding <dinggnu@gmail.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clk: mvebu/clk-cpu.c: fix memory leakage
-References: <1358183892-28928-1-git-send-email-dinggnu@gmail.com>
-In-Reply-To: <1358183892-28928-1-git-send-email-dinggnu@gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358245203-4181-1-git-send-email-linfeng@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Cong Ding,
-
-On 01/14/2013 06:18 PM, Cong Ding wrote:
-> the variable cpuclk and clk_name should be properly freed.
+On Tue 15-01-13 18:20:03, Lin Feng wrote:
+> Memory-hotplug codes for x86_64 have been implemented by patchset:
+> https://lkml.org/lkml/2013/1/9/124
+> While other platforms haven't been completely implemented yet.
 > 
-
-Thanks for reporting this memory leak and for your patch but I think
-we could do even better, see below:
-
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> If we enable both CONFIG_MEMORY_HOTPLUG_SPARSE and CONFIG_SPARSEMEM_VMEMMAP,
+> register_page_bootmem_info_node() may be buggy, which is a hotplug generic
+> function but falling back to call platform related function
+> register_page_bootmem_memmap().
+> 
+> Other platforms such as powerpc it's not implemented, so on such platforms,
+> revert them to empty as they were before.
+> 
+> It's implemented by adding a new Kconfig option named
+> CONFIG_HAVE_BOOTMEM_INFO_NODE, which will be automatically selected by
+> supported archs(currently only on x86_64).
+> 
+> Reported-by: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
 > ---
->  drivers/clk/mvebu/clk-cpu.c |    9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
+> ChangeLog v1->v2:
+> - Add a Kconfig option named HAVE_BOOTMEM_INFO_NODE suggested by Michal, which
+>   will be automatically selected by supported archs(currently only on x86_64).
+> ---
+>  mm/Kconfig          |    8 ++++++++
+>  mm/memory_hotplug.c |    7 +++++++
+>  2 files changed, 15 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/clk/mvebu/clk-cpu.c b/drivers/clk/mvebu/clk-cpu.c
-> index ff004578..1a0d84f 100644
-> --- a/drivers/clk/mvebu/clk-cpu.c
-> +++ b/drivers/clk/mvebu/clk-cpu.c
-> @@ -124,7 +124,7 @@ void __init of_cpu_clk_setup(struct device_node *node)
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 278e3ab..f8c5799 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -162,10 +162,18 @@ config MOVABLE_NODE
+>  	  Say Y here if you want to hotplug a whole node.
+>  	  Say N here if you want kernel to use memory on all nodes evenly.
 >  
->  	clks = kzalloc(ncpus * sizeof(*clks), GFP_KERNEL);
->  	if (WARN_ON(!clks))
-> -		return;
-> +		goto clks_out;
+> +#
+> +# Only be set on architectures that have completely implemented memory hotplug
+> +# feature. If you are not sure, don't touch it.
+> +#
+> +config HAVE_BOOTMEM_INFO_NODE
+> +	def_bool n
+> +
+>  # eventually, we can have this option just 'select SPARSEMEM'
+>  config MEMORY_HOTPLUG
+>  	bool "Allow for memory hot-add"
+>  	select MEMORY_ISOLATION
+> +	select HAVE_BOOTMEM_INFO_NODE if X86_64
+>  	depends on SPARSEMEM || X86_64_ACPI_NUMA
+>  	depends on HOTPLUG && ARCH_ENABLE_MEMORY_HOTPLUG
+>  	depends on (IA64 || X86 || PPC_BOOK3S_64 || SUPERH || S390)
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 8aa2b56..ef7a5c8 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -189,6 +189,7 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
+>  }
+>  #endif
 >  
->  	for_each_node_by_type(dn, "cpu") {
->  		struct clk_init_data init;
-> @@ -134,11 +134,11 @@ void __init of_cpu_clk_setup(struct device_node *node)
->  		int cpu, err;
->  
->  		if (WARN_ON(!clk_name))
-> -			return;
-> +			goto clk_name_out;
+> +#ifdef CONFIG_HAVE_BOOTMEM_INFO_NODE
+>  void register_page_bootmem_info_node(struct pglist_data *pgdat)
+>  {
+>  	unsigned long i, pfn, end_pfn, nr_pages;
+> @@ -230,6 +231,12 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+>  			register_page_bootmem_info_section(pfn);
+>  	}
+>  }
+> +#else
+> +void register_page_bootmem_info_node(struct pglist_data *pgdat)
+> +{
+> +	/* TODO */
+> +}
 
-I agree
-
->  
->  		err = of_property_read_u32(dn, "reg", &cpu);
->  		if (WARN_ON(err))
-> -			return;
-> +			goto bail_out;
-
-I agree
-
->  
->  		sprintf(clk_name, "cpu%d", cpu);
->  		parent_clk = of_clk_get(node, 0);
-> @@ -166,7 +166,10 @@ void __init of_cpu_clk_setup(struct device_node *node)
->  
->  	return;
->  bail_out:
-> +	kfree(clk_name);
-
-Here you free only one clk_name whereas we could have previous clk_name which have
-been already allocated during the for_each_node_by_type loop.
-
-A more annoying thing is that you use clk_name whereas it is only valid in the
-for_each_node_by_type statement and then this patch breaks the compilation:
-
-drivers/clk/mvebu/clk-cpu.c: In function ‘of_cpu_clk_setup’:
-drivers/clk/mvebu/clk-cpu.c:169:8: error: ‘clk_name’ undeclared (first use in this function)
-drivers/clk/mvebu/clk-cpu.c:169:8: note: each undeclared identifier is reported only once for each function it appears in
-
-Thanks,
-
-Gregory
+I think that TODO is misleading here because the function should be
+empty if !CONFIG_HAVE_BOOTMEM_INFO_NODE. I would also suggest updating
+include/linux/memory_hotplug.h and removing the arch specific functions
+without any implementation. Something like (untested) patch below:
+---
+diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
+index 882a0fd..cb5e1ff 100644
+--- a/arch/ia64/mm/discontig.c
++++ b/arch/ia64/mm/discontig.c
+@@ -827,9 +827,4 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
+ {
+ }
+ 
+-void register_page_bootmem_memmap(unsigned long section_nr,
+-				  struct page *start_page, unsigned long size)
+-{
+-	/* TODO */
+-}
+ #endif
+diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+index 2969591..7e2246f 100644
+--- a/arch/powerpc/mm/init_64.c
++++ b/arch/powerpc/mm/init_64.c
+@@ -302,10 +302,5 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
+ {
+ }
+ 
+-void register_page_bootmem_memmap(unsigned long section_nr,
+-				  struct page *start_page, unsigned long size)
+-{
+-	/* TODO */
+-}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+diff --git a/arch/s390/mm/vmem.c b/arch/s390/mm/vmem.c
+index 4073156..139bb48 100644
+--- a/arch/s390/mm/vmem.c
++++ b/arch/s390/mm/vmem.c
+@@ -240,12 +240,6 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
+ {
+ }
+ 
+-void register_page_bootmem_memmap(unsigned long section_nr,
+-				  struct page *start_page, unsigned long size)
+-{
+-	/* TODO */
+-}
+-
+ /*
+  * Add memory segment to the segment list if it doesn't overlap with
+  * an already present segment.
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index f0ef3c2..07571a27 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2236,11 +2236,6 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
+ {
+ }
+ 
+-void register_page_bootmem_memmap(unsigned long section_nr,
+-				  struct page *start_page, unsigned long size)
+-{
+-	/* TODO */
+-}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void prot_init_common(unsigned long page_none,
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index d1b8257..defe6ee 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1317,7 +1317,7 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
++#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HAVE_BOOTMEM_INFO_NODE)
+ void register_page_bootmem_memmap(unsigned long section_nr,
+ 				  struct page *start_page, unsigned long size)
+ {
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index f60e728..34b0511 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -174,7 +174,13 @@ static inline void arch_refresh_nodedata(int nid, pg_data_t *pgdat)
+ #endif /* CONFIG_NUMA */
+ #endif /* CONFIG_HAVE_ARCH_NODEDATA_EXTENSION */
+ 
++#ifdef CONFIG_HAVE_BOOTMEM_INFO_NODE
+ extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
++#else
++static void register_page_bootmem_info_node(struct pglist_data *pgdat)
++{
++}
++#endif
+ extern void put_page_bootmem(struct page *page);
+ extern void get_page_bootmem(unsigned long ingo, struct page *page,
+ 			     unsigned long type);
+-- 
+Michal Hocko
+SUSE Labs
