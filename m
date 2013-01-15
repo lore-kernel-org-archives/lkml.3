@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865Ab3AOTER (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 14:04:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34050 "EHLO mail.kernel.org"
+	id S1757744Ab3AOTEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 14:04:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34025 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757660Ab3AOSwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:52:15 -0500
+	id S1757482Ab3AOSwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:52:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, Alex Graf <agraf@suse.de>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [ 007/221] s390/kvm: dont announce RRBM support
-Date: Tue, 15 Jan 2013 10:48:54 -0800
-Message-Id: <20130115184958.588019038@linuxfoundation.org>
+        Stefan Lippers-Hollmann <s.l-h@gmx.de>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 006/221] rt2x00: Only specify interface combinations if more then one interface is possible
+Date: Tue, 15 Jan 2013 10:48:53 -0800
+Message-Id: <20130115184958.516809179@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,59 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Helmut Schaa <helmut.schaa@googlemail.com>
 
-commit 87cac8f879a5ecd7109dbe688087e8810b3364eb upstream.
+commit f5685ba675449b072feab6a5391a9ef9f604bc94 upstream.
 
-Newer kernels (linux-next with the transparent huge page patches)
-use rrbm if the feature is announced via feature bit 66.
-RRBM will cause intercepts, so KVM does not handle it right now,
-causing an illegal instruction in the guest.
-The  easy solution is to disable the feature bit for the guest.
+Otherwise rt2500* triggers a warning in cfg80211, from net/wireless/core.c:
 
-This fixes bugs like:
-Kernel BUG at 0000000000124c2a [verbose debug info unavailable]
-illegal operation: 0001 [#1] SMP
-Modules linked in: virtio_balloon virtio_net ipv6 autofs4
-CPU: 0 Not tainted 3.5.4 #1
-Process fmempig (pid: 659, task: 000000007b712fd0, ksp: 000000007bed3670)
-Krnl PSW : 0704d00180000000 0000000000124c2a (pmdp_clear_flush_young+0x5e/0x80)
-     R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:1 PM:0 EA:3
-     00000000003cc000 0000000000000004 0000000000000000 0000000079800000
-     0000000000040000 0000000000000000 000000007bed3918 000000007cf40000
-     0000000000000001 000003fff7f00000 000003d281a94000 000000007bed383c
-     000000007bed3918 00000000005ecbf8 00000000002314a6 000000007bed36e0
- Krnl Code:>0000000000124c2a: b9810025          ogr     %r2,%r5
-           0000000000124c2e: 41343000           la      %r3,0(%r4,%r3)
-           0000000000124c32: a716fffa           brct    %r1,124c26
-           0000000000124c36: b9010022           lngr    %r2,%r2
-           0000000000124c3a: e3d0f0800004       lg      %r13,128(%r15)
-           0000000000124c40: eb22003f000c       srlg    %r2,%r2,63
-[ 2150.713198] Call Trace:
-[ 2150.713223] ([<00000000002312c4>] page_referenced_one+0x6c/0x27c)
-[ 2150.713749]  [<0000000000233812>] page_referenced+0x32a/0x410
-[...]
+	/* Combinations with just one interface aren't real */
+	if (WARN_ON(c->max_interfaces < 2))
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Alex Graf <agraf@suse.de>
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+This was introduced in commit 55d2e9da744ba11eae900b4bfc2da72eace3c1e1:
+rt2x00: Replace open coded interface checking with interface combinations.
+
+Reported-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Acked-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kvm/kvm-s390.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2x00dev.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -997,7 +997,7 @@ static int __init kvm_s390_init(void)
- 	}
- 	memcpy(facilities, S390_lowcore.stfle_fac_list, 16);
- 	facilities[0] &= 0xff00fff3f47c0000ULL;
--	facilities[1] &= 0x201c000000000000ULL;
-+	facilities[1] &= 0x001c000000000000ULL;
- 	return 0;
- }
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -1123,6 +1123,9 @@ static inline void rt2x00lib_set_if_comb
+ 	struct ieee80211_iface_limit *if_limit;
+ 	struct ieee80211_iface_combination *if_combination;
  
++	if (rt2x00dev->ops->max_ap_intf < 2)
++		return;
++
+ 	/*
+ 	 * Build up AP interface limits structure.
+ 	 */
 
 
