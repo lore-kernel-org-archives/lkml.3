@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757757Ab3AOSwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:52:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34114 "EHLO mail.kernel.org"
+	id S1757786Ab3AOTCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 14:02:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34126 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757678Ab3AOSwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:52:36 -0500
+	id S1757753Ab3AOSwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:52:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>, Yong Zhang <yong.zhang@windriver.com>,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [ 015/221] MIPS: Fix poweroff failure when HOTPLUG_CPU configured.
-Date: Tue, 15 Jan 2013 10:49:02 -0800
-Message-Id: <20130115184959.157252768@linuxfoundation.org>
+        Jason Liu <r64343@freescale.com>, David Rientjes <rientjes@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 016/221] mm: compaction: fix echo 1 > compact_memory return error issue
+Date: Tue, 15 Jan 2013 10:49:03 -0800
+Message-Id: <20130115184959.230170777@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -28,43 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huacai Chen <chenhc@lemote.com>
+From: Jason Liu <r64343@freescale.com>
 
-commit 8add1ecb81f541ef2fcb0b85a5470ad9ecfb4a84 upstream.
+commit 7964c06d66c76507d8b6b662bffea770c29ef0ce upstream.
 
-When poweroff machine, kernel_power_off() call disable_nonboot_cpus().
-And if we have HOTPLUG_CPU configured, disable_nonboot_cpus() is not an
-empty function but attempt to actually disable the nonboot cpus. Since
-system state is SYSTEM_POWER_OFF, play_dead() won't be called and thus
-disable_nonboot_cpus() hangs. Therefore, we make this patch to avoid
-poweroff failure.
+when run the folloing command under shell, it will return error
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Hongliang Tao <taohl@lemote.com>
-Signed-off-by: Hua Yan <yanh@lemote.com>
-Cc: Yong Zhang <yong.zhang@windriver.com>
-Cc: Fuxin Zhang <zhangfx@lemote.com>
-Cc: Zhangjin Wu <wuzhangjin@gmail.com>
-Patchwork: https://patchwork.linux-mips.org/patch/4211/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+  sh/$ echo 1 > /proc/sys/vm/compact_memory
+  sh/$ sh: write error: Bad address
+
+After strace, I found the following log:
+
+  ...
+  write(1, "1\n", 2)               = 3
+  write(1, "", 4294967295)         = -1 EFAULT (Bad address)
+  write(2, "echo: write error: Bad address\n", 31echo: write error: Bad address
+  ) = 31
+
+This tells system return 3(COMPACT_COMPLETE) after write data to
+compact_memory.
+
+The fix is to make the system just return 0 instead 3(COMPACT_COMPLETE)
+from sysctl_compaction_handler after compaction_nodes finished.
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+Suggested-by: David Rientjes <rientjes@google.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/process.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ mm/compaction.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/arch/mips/kernel/process.c
-+++ b/arch/mips/kernel/process.c
-@@ -72,9 +72,7 @@ void __noreturn cpu_idle(void)
- 			}
- 		}
- #ifdef CONFIG_HOTPLUG_CPU
--		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map) &&
--		    (system_state == SYSTEM_RUNNING ||
--		     system_state == SYSTEM_BOOTING))
-+		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
- 			play_dead();
- #endif
- 		rcu_idle_exit();
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -1174,7 +1174,7 @@ static int compact_node(int nid)
+ }
+ 
+ /* Compact all nodes in the system */
+-static int compact_nodes(void)
++static void compact_nodes(void)
+ {
+ 	int nid;
+ 
+@@ -1183,8 +1183,6 @@ static int compact_nodes(void)
+ 
+ 	for_each_online_node(nid)
+ 		compact_node(nid);
+-
+-	return COMPACT_COMPLETE;
+ }
+ 
+ /* The written value is actually unused, all memory is compacted */
+@@ -1195,7 +1193,7 @@ int sysctl_compaction_handler(struct ctl
+ 			void __user *buffer, size_t *length, loff_t *ppos)
+ {
+ 	if (write)
+-		return compact_nodes();
++		compact_nodes();
+ 
+ 	return 0;
+ }
 
 
