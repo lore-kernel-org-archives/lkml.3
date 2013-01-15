@@ -1,63 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab3AOKhV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:37:21 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51957 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756800Ab3AOKhR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:37:17 -0500
-From: "Kumar, Anil" <anilkumar.v@ti.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>, "hs@denx.de" <hs@denx.de>
-Subject: RE: [PATCH V2 3/3] ARM: davinci: da850: add NAND driver entries
-Thread-Topic: [PATCH V2 3/3] ARM: davinci: da850: add NAND driver entries
-Thread-Index: AQHN7XjyHRW1+KNxCk+Xv+44IjJmqJhAl+YAgAGAZICAAAn3gIAIGXAw
-Date: Tue, 15 Jan 2013 10:36:55 +0000
-Message-ID: <F3DBB1B3EF102E4994C89758CFCA32412B96F9@DBDE01.ent.ti.com>
-References: <1357633220-29827-1-git-send-email-anilkumar.v@ti.com>
- <1357633220-29827-4-git-send-email-anilkumar.v@ti.com>
- <50ED66F2.8050006@ti.com>
- <F3DBB1B3EF102E4994C89758CFCA32412B80CA@DBDE01.ent.ti.com>
- <50EEB1C1.9060306@ti.com>
-In-Reply-To: <50EEB1C1.9060306@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1756157Ab3AOKiC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:38:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37460 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756803Ab3AOKhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:37:19 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH V4 3/3] tuntap: allow polling/writing/reading when detached
+Date: Tue, 15 Jan 2013 18:28:46 +0800
+Message-Id: <1358245726-16250-4-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1358245726-16250-1-git-send-email-jasowang@redhat.com>
+References: <1358245726-16250-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0FAbhSS007403
 
-On Thu, Jan 10, 2013 at 17:49:13, Nori, Sekhar wrote:
-> On 1/10/2013 1:07 PM, Kumar, Anil wrote:
-> > On Wed, Jan 09, 2013 at 18:17:46, Nori, Sekhar wrote:
-> 
-> > I do not think that it is good idea to move NAND pin mux information
-> > into da850.dtsi because this information is evm specific.
-> > if we will use this approach then we must use the same approach for
-> > other modules also as ASoC etc.   
-> 
-> Why do you consider this EVM specific. IOW, which pins do you see
-> changing on another board? BTW, if there are additional pins needed than
-> what are listed, we can always add more pinux entries in the .dts files.
-> The pins present in dtsi file should the base case.
+We forbid polling, writing and reading when the file were detached, this may
+complex the user in several cases:
+
+- when guest pass some buffers to vhost/qemu and then disable some queues,
+  vhost/qemu needs to to its own cleanup which is complex. We can do this simply
+  by allowing a user can still write to an disabled queue to handle this. And
+  user can still do read but just nothing returned.
+- align the polling behavior with macvtap which never fails when the queue is
+  created. this can simplify the polling errors handling of its user (e.g vhost)
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/tun.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index af372d0..eb68937 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -307,7 +307,7 @@ static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
  
-Ok, we can use this approach for DaVinci as its SoC modules do not
-have multiple pin configuration option. I will do the changes in 
-next patch series.
+ 	rcu_read_lock();
+ 
+-	if (tun->numqueues == 1)
++	if (tun->numqueues == 1 || queue_index >= tun->numqueues)
+ 		goto unlock;
+ 
+ 	e = tun_flow_find(head, rxhash);
+@@ -406,21 +406,21 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+ 
+ 	tun = rtnl_dereference(tfile->tun);
+ 
+-	if (tun) {
++	if (tun && !tfile->detached) {
+ 		u16 index = tfile->queue_index;
+ 		BUG_ON(index >= tun->numqueues);
+ 		dev = tun->dev;
+ 
+ 		rcu_assign_pointer(tun->tfiles[index],
+ 				   tun->tfiles[tun->numqueues - 1]);
+-		rcu_assign_pointer(tfile->tun, NULL);
+ 		ntfile = rtnl_dereference(tun->tfiles[index]);
+ 		ntfile->queue_index = index;
+ 
+ 		--tun->numqueues;
+-		if (clean)
++		if (clean) {
++			rcu_assign_pointer(tfile->tun, NULL);
+ 			sock_put(&tfile->sk);
+-		else
++		} else
+ 			tun_disable_queue(tun, tfile);
+ 
+ 		synchronize_net();
+@@ -465,6 +465,10 @@ static void tun_detach_all(struct net_device *dev)
+ 		rcu_assign_pointer(tfile->tun, NULL);
+ 		--tun->numqueues;
+ 	}
++	list_for_each_entry(tfile, &tun->disabled, next) {
++		wake_up_all(&tfile->wq.wait);
++		rcu_assign_pointer(tfile->tun, NULL);
++	}
+ 	BUG_ON(tun->numqueues != 0);
+ 
+ 	synchronize_net();
+@@ -491,7 +495,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+ 	int err;
+ 
+ 	err = -EINVAL;
+-	if (rtnl_dereference(tfile->tun))
++	if (rtnl_dereference(tfile->tun) && !tfile->detached)
+ 		goto out;
+ 
+ 	err = -EBUSY;
+@@ -1795,7 +1799,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
+ 			ret = tun_attach(tun, file);
+ 	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
+ 		tun = rtnl_dereference(tfile->tun);
+-		if (!tun || !(tun->flags & TUN_TAP_MQ))
++		if (!tun || !(tun->flags & TUN_TAP_MQ) || tfile->detached)
+ 			ret = -EINVAL;
+ 		else
+ 			__tun_detach(tfile, false);
+-- 
+1.7.1
 
-Thanks,
-Anil
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
