@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757734Ab3AOSwd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:52:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34074 "EHLO mail.kernel.org"
+	id S1757773Ab3AOSwl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:52:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34104 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757696Ab3AOSwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:52:25 -0500
+	id S1757730Ab3AOSwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:52:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gabor Juhos <juhosg@openwrt.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 011/221] powerpc: Add missing NULL terminator to avoid boot panic on PPC40x
-Date: Tue, 15 Jan 2013 10:48:58 -0800
-Message-Id: <20130115184958.869455727@linuxfoundation.org>
+        Peter Oberparleiter <peter.oberparleiter@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 014/221] s390/cio: fix pgid reserved check
+Date: Tue, 15 Jan 2013 10:49:01 -0800
+Message-Id: <20130115184959.080973647@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,58 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-commit e6449c9b2d90c1bd9a5985bf05ddebfd1631cd6b upstream.
+commit d99e79ec5574fc556c988f613ed6175f6de66f4a upstream.
 
-The missing NULL terminator can cause a panic on
-PPC405 boards during boot:
+The check to whom a device is reserved is done by checking the path
+state of the affected channel paths. If it turns out that one path is
+flagged as reserved by someone else the whole device is marked as such.
 
-  Linux/PowerPC load: console=ttyS0,115200 root=/dev/mtdblock1 rootfstype=squashfs,jffs2 noinitrd init=/etc/preinit
-  Finalizing device tree... flat tree at 0x6a5160
-  bootconsole [udbg0] enabled
-  Page fault in user mode with in_atomic() = 1 mm = (null)
-  NIP = c0275f50  MSR = fffffffe
-  Oops: Weird page fault, sig: 11 [#1]
-  PowerPC 40x Platform
-  Modules linked in:
-  NIP: c0275f50 LR: c0275f60 CTR: c0280000
-  REGS: c0275eb0 TRAP: 636f7265   Not tainted  (3.7.1)
-  MSR: fffffffe <VEC,VSX,EE,PR,FP,ME,SE,BE,IR,DR,PMM,RI> CR: c06a6190  XER: 00000001
-  TASK = c02662a8[0] 'swapper' THREAD: c0274000
-  GPR00: c0275ec0 c000c658 c027c4bf 00000000 c0275ee0 c000a0ec c020a1a8 c020a1f0
-  GPR08: c020f631 c020f404 c025f078 c025f080 c0275f10
-   Call Trace:
-   ---[ end trace 31fd0ba7d8756001 ]---
+However the meaning of the RESVD_ELSE bit is that the addressed device
+is reserved to a different pathgroup (and not reserved to a different
+LPAR). If we do this test on a path which is currently not a member of
+the pathgroup we could erroneously mark the device as reserved to
+someone else.
 
-  Kernel panic - not syncing: Attempted to kill the idle task!
+To fix this collect the reserved state for all potential members of the
+pathgroup and only mark the device as reserved if all of those potential
+members have the RESVD_ELSE bit set.
 
-The panic happens since commit 9597abe00c1bab2aedce6b49866bf6d1e81c9eed
-(sections: fix section conflicts in arch/powerpc), however the root
-cause of this is that the NULL terminator were not added in commit
-a4f740cf33f7f6c164bbde3c0cdbcc77b0c4997c (of/flattree: Add of_flat_dt_match()
-helper function).
-
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/40x/ppc40x_simple.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/s390/cio/device_pgid.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/powerpc/platforms/40x/ppc40x_simple.c
-+++ b/arch/powerpc/platforms/40x/ppc40x_simple.c
-@@ -57,7 +57,8 @@ static const char * const board[] __init
- 	"amcc,makalu",
- 	"apm,klondike",
- 	"est,hotfoot",
--	"plathome,obs600"
-+	"plathome,obs600",
-+	NULL
- };
+--- a/drivers/s390/cio/device_pgid.c
++++ b/drivers/s390/cio/device_pgid.c
+@@ -234,7 +234,7 @@ static int pgid_cmp(struct pgid *p1, str
+  * Determine pathgroup state from PGID data.
+  */
+ static void pgid_analyze(struct ccw_device *cdev, struct pgid **p,
+-			 int *mismatch, int *reserved, u8 *reset)
++			 int *mismatch, u8 *reserved, u8 *reset)
+ {
+ 	struct pgid *pgid = &cdev->private->pgid[0];
+ 	struct pgid *first = NULL;
+@@ -248,7 +248,7 @@ static void pgid_analyze(struct ccw_devi
+ 		if ((cdev->private->pgid_valid_mask & lpm) == 0)
+ 			continue;
+ 		if (pgid->inf.ps.state2 == SNID_STATE2_RESVD_ELSE)
+-			*reserved = 1;
++			*reserved |= lpm;
+ 		if (pgid_is_reset(pgid)) {
+ 			*reset |= lpm;
+ 			continue;
+@@ -316,14 +316,14 @@ static void snid_done(struct ccw_device
+ 	struct subchannel *sch = to_subchannel(cdev->dev.parent);
+ 	struct pgid *pgid;
+ 	int mismatch = 0;
+-	int reserved = 0;
++	u8 reserved = 0;
+ 	u8 reset = 0;
+ 	u8 donepm;
  
- static int __init ppc40x_probe(void)
+ 	if (rc)
+ 		goto out;
+ 	pgid_analyze(cdev, &pgid, &mismatch, &reserved, &reset);
+-	if (reserved)
++	if (reserved == cdev->private->pgid_valid_mask)
+ 		rc = -EUSERS;
+ 	else if (mismatch)
+ 		rc = -EOPNOTSUPP;
+@@ -336,7 +336,7 @@ static void snid_done(struct ccw_device
+ 	}
+ out:
+ 	CIO_MSG_EVENT(2, "snid: device 0.%x.%04x: rc=%d pvm=%02x vpm=%02x "
+-		      "todo=%02x mism=%d rsvd=%d reset=%02x\n", id->ssid,
++		      "todo=%02x mism=%d rsvd=%02x reset=%02x\n", id->ssid,
+ 		      id->devno, rc, cdev->private->pgid_valid_mask, sch->vpm,
+ 		      cdev->private->pgid_todo_mask, mismatch, reserved, reset);
+ 	switch (rc) {
 
 
