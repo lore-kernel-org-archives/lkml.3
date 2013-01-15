@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934030Ab3AOW4J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:56:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47798 "EHLO mail.kernel.org"
+	id S934169Ab3AOW4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:56:24 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48052 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934144Ab3AOWzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:55:17 -0500
+	id S933995Ab3AOW4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Perl <chris.perl@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 18/71] SUNRPC: Ensure we release the socket write lock if the rpc_task exits early
-Date: Tue, 15 Jan 2013 14:54:15 -0800
-Message-Id: <20130115225341.755424315@linuxfoundation.org>
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 19/71] jffs2: hold erase_completion_lock on exit
+Date: Tue, 15 Jan 2013 14:54:16 -0800
+Message-Id: <20130115225341.825591694@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -26,64 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-commit 87ed50036b866db2ec2ba16b2a7aec4a2b0b7c39 upstream.
+commit 2cbba75a56ea78e6876b4e2547a882f10b3fe72b upstream.
 
-If the rpc_task exits while holding the socket write lock before it has
-allocated an rpc slot, then the usual mechanism for releasing the write
-lock in xprt_release() is defeated.
+Users of jffs2_do_reserve_space() expect they still held
+erase_completion_lock after call to it. But there is a path
+where jffs2_do_reserve_space() leaves erase_completion_lock unlocked.
+The patch fixes it.
 
-The problem occurs if the call to xprt_lock_write() initially fails, so
-that the rpc_task is put on the xprt->sending wait queue. If the task
-exits after being assigned the lock by __xprt_lock_write_func, but
-before it has retried the call to xprt_lock_and_alloc_slot(), then
-it calls xprt_release() while holding the write lock, but will
-immediately exit due to the test for task->tk_rqstp != NULL.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Reported-by: Chris Perl <chris.perl@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/sched.c |    3 +--
- net/sunrpc/xprt.c  |   12 ++++++++++--
- 2 files changed, 11 insertions(+), 4 deletions(-)
+ fs/jffs2/nodemgmt.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -882,8 +882,7 @@ static void rpc_async_release(struct wor
+--- a/fs/jffs2/nodemgmt.c
++++ b/fs/jffs2/nodemgmt.c
+@@ -355,14 +355,16 @@ static int jffs2_do_reserve_space(struct
+ 			spin_unlock(&c->erase_completion_lock);
  
- static void rpc_release_resources_task(struct rpc_task *task)
- {
--	if (task->tk_rqstp)
--		xprt_release(task);
-+	xprt_release(task);
- 	if (task->tk_msg.rpc_cred) {
- 		put_rpccred(task->tk_msg.rpc_cred);
- 		task->tk_msg.rpc_cred = NULL;
---- a/net/sunrpc/xprt.c
-+++ b/net/sunrpc/xprt.c
-@@ -1040,10 +1040,18 @@ static void xprt_request_init(struct rpc
- void xprt_release(struct rpc_task *task)
- {
- 	struct rpc_xprt	*xprt;
--	struct rpc_rqst	*req;
-+	struct rpc_rqst	*req = task->tk_rqstp;
+ 			ret = jffs2_prealloc_raw_node_refs(c, jeb, 1);
+-			if (ret)
+-				return ret;
++
+ 			/* Just lock it again and continue. Nothing much can change because
+ 			   we hold c->alloc_sem anyway. In fact, it's not entirely clear why
+ 			   we hold c->erase_completion_lock in the majority of this function...
+ 			   but that's a question for another (more caffeine-rich) day. */
+ 			spin_lock(&c->erase_completion_lock);
  
--	if (!(req = task->tk_rqstp))
-+	if (req == NULL) {
-+		if (task->tk_client) {
-+			rcu_read_lock();
-+			xprt = rcu_dereference(task->tk_client->cl_xprt);
-+			if (xprt->snd_task == task)
-+				xprt_release_write(xprt, task);
-+			rcu_read_unlock();
-+		}
- 		return;
-+	}
- 
- 	xprt = req->rq_xprt;
- 	rpc_count_iostats(task);
++			if (ret)
++				return ret;
++
+ 			waste = jeb->free_size;
+ 			jffs2_link_node_ref(c, jeb,
+ 					    (jeb->offset + c->sector_size - waste) | REF_OBSOLETE,
 
 
