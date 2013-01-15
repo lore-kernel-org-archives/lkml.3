@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab3APAT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:19:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42233 "EHLO mail.kernel.org"
+	id S932209Ab3APAUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:20:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42150 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932187Ab3AOWbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:31:18 -0500
+	id S1758331Ab3AOWbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:31:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sivaram Nair <sivaramn@nvidia.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Colin Cross <ccross@android.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 104/221] cpuidle / coupled: fix ready counter decrement
-Date: Tue, 15 Jan 2013 10:50:31 -0800
-Message-Id: <20130115185005.548383767@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [ 099/221] staging: vt6656: 64bit fixes: key.c/h change unsigned long to u32
+Date: Tue, 15 Jan 2013 10:50:26 -0800
+Message-Id: <20130115185005.179580725@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -28,34 +25,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sivaram Nair <sivaramn@nvidia.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 92638e2facc5330475c7d558acec77721c3214e4 upstream.
+commit c0d05b305b00c698b0a8c1b3d46c9380bce9db45 upstream.
 
-The ready_waiting_counts atomic variable is compared against the wrong
-online cpu count. The latter is computed incorrectly using logical-OR
-instead of bit-OR. This patch fixes that.
+Fixes long issues.
 
-Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Colin Cross <ccross@android.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpuidle/coupled.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/vt6656/key.c |    6 +++---
+ drivers/staging/vt6656/key.h |    8 ++++----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/cpuidle/coupled.c
-+++ b/drivers/cpuidle/coupled.c
-@@ -209,7 +209,7 @@ inline int cpuidle_coupled_set_not_ready
- 	int all;
- 	int ret;
- 
--	all = coupled->online_count || (coupled->online_count << WAITING_BITS);
-+	all = coupled->online_count | (coupled->online_count << WAITING_BITS);
- 	ret = atomic_add_unless(&coupled->ready_waiting_counts,
- 		-MAX_WAITING_CPUS, all);
- 
+--- a/drivers/staging/vt6656/key.c
++++ b/drivers/staging/vt6656/key.c
+@@ -223,7 +223,7 @@ BOOL KeybSetKey(
+     PSKeyManagement pTable,
+     PBYTE           pbyBSSID,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -675,7 +675,7 @@ BOOL KeybSetDefaultKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -791,7 +791,7 @@ BOOL KeybSetAllGroupKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+--- a/drivers/staging/vt6656/key.h
++++ b/drivers/staging/vt6656/key.h
+@@ -58,7 +58,7 @@
+ typedef struct tagSKeyItem
+ {
+     BOOL        bKeyValid;
+-    unsigned long       uKeyLength;
++	u32 uKeyLength;
+     BYTE        abyKey[MAX_KEY_LEN];
+     QWORD       KeyRSC;
+     DWORD       dwTSC47_16;
+@@ -107,7 +107,7 @@ BOOL KeybSetKey(
+     PSKeyManagement pTable,
+     PBYTE           pbyBSSID,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -146,7 +146,7 @@ BOOL KeybSetDefaultKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -156,7 +156,7 @@ BOOL KeybSetAllGroupKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
 
 
