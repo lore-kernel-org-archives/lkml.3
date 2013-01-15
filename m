@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab3APATS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:19:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42257 "EHLO mail.kernel.org"
+	id S932201Ab3AOWbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:31:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42183 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932234Ab3AOWbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:31:25 -0500
+	id S932142Ab3AOWbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:31:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Juergen Beisert <jbe@pengutronix.de>,
-        Lauri Hintsala <lauri.hintsala@bluegiga.net>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 106/221] video: mxsfb: fix crash when unblanking the display
-Date: Tue, 15 Jan 2013 10:50:33 -0800
-Message-Id: <20130115185005.699266742@linuxfoundation.org>
+        Chris Verges <kg4ysn@gmail.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [ 101/221] hwmon: (lm73} Detect and report i2c bus errors
+Date: Tue, 15 Jan 2013 10:50:28 -0800
+Message-Id: <20130115185005.319740071@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,36 +25,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lothar Waßmann <LW@KARO-electronics.de>
+From: Chris Verges <kg4ysn@gmail.com>
 
-commit 6c1ecba8d84841277d68140ef485335d5be28485 upstream.
+commit 0602934f302e016e2ea5dc6951681bfac77455ef upstream.
 
-The VDCTRL4 register does not provide the MXS SET/CLR/TOGGLE feature.
-The write in mxsfb_disable_controller() sets the data_cnt for the LCD
-DMA to 0 which obviously means the max. count for the LCD DMA and
-leads to overwriting arbitrary memory when the display is unblanked.
+If an LM73 device does not exist on an I2C bus, attempts to communicate
+with the device result in an error code returned from the i2c read/write
+functions.  The current lm73 driver casts that return value from a s32
+type to a s16 type, then converts it to a temperature in celsius.
+Because negative temperatures are valid, it is difficult to distinguish
+between an error code printed to the response buffer and a negative
+temperature recorded by the sensor.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-Acked-by: Juergen Beisert <jbe@pengutronix.de>
-Tested-by: Lauri Hintsala <lauri.hintsala@bluegiga.net>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+The solution is to evaluate the return value from the i2c functions
+before performing any temperature calculations.  If the i2c function did
+not succeed, the error code should be passed back through the virtual
+file system layer instead of being printed into the response buffer.
+
+Before:
+
+   $ cat /sys/class/hwmon/hwmon0/device/temp1_input
+   -46
+
+After:
+
+   $ cat /sys/class/hwmon/hwmon0/device/temp1_input
+   cat: read error: No such device or address
+
+Signed-off-by: Chris Verges <kg4ysn@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/mxsfb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/hwmon/lm73.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
---- a/drivers/video/mxsfb.c
-+++ b/drivers/video/mxsfb.c
-@@ -369,7 +369,8 @@ static void mxsfb_disable_controller(str
- 		loop--;
- 	}
+--- a/drivers/hwmon/lm73.c
++++ b/drivers/hwmon/lm73.c
+@@ -49,6 +49,7 @@ static ssize_t set_temp(struct device *d
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	long temp;
+ 	short value;
++	s32 err;
  
--	writel(VDCTRL4_SYNC_SIGNALS_ON, host->base + LCDC_VDCTRL4 + REG_CLR);
-+	reg = readl(host->base + LCDC_VDCTRL4);
-+	writel(reg & ~VDCTRL4_SYNC_SIGNALS_ON, host->base + LCDC_VDCTRL4);
+ 	int status = kstrtol(buf, 10, &temp);
+ 	if (status < 0)
+@@ -57,8 +58,8 @@ static ssize_t set_temp(struct device *d
+ 	/* Write value */
+ 	value = (short) SENSORS_LIMIT(temp/250, (LM73_TEMP_MIN*4),
+ 		(LM73_TEMP_MAX*4)) << 5;
+-	i2c_smbus_write_word_swapped(client, attr->index, value);
+-	return count;
++	err = i2c_smbus_write_word_swapped(client, attr->index, value);
++	return (err < 0) ? err : count;
+ }
  
- 	clk_disable_unprepare(host->clk);
+ static ssize_t show_temp(struct device *dev, struct device_attribute *da,
+@@ -66,11 +67,16 @@ static ssize_t show_temp(struct device *
+ {
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+ 	struct i2c_client *client = to_i2c_client(dev);
++	int temp;
++
++	s32 err = i2c_smbus_read_word_swapped(client, attr->index);
++	if (err < 0)
++		return err;
++
+ 	/* use integer division instead of equivalent right shift to
+ 	   guarantee arithmetic shift and preserve the sign */
+-	int temp = ((s16) (i2c_smbus_read_word_swapped(client,
+-		    attr->index))*250) / 32;
+-	return sprintf(buf, "%d\n", temp);
++	temp = (((s16) err) * 250) / 32;
++	return scnprintf(buf, PAGE_SIZE, "%d\n", temp);
+ }
+ 
  
 
 
