@@ -1,99 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab3AOFiU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 00:38:20 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:47522 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab3AOFiS (ORCPT
+	id S1753188Ab3AOFn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 00:43:56 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40532 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab3AOFny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 00:38:18 -0500
+	Tue, 15 Jan 2013 00:43:54 -0500
+Subject: [PATCH 2/6] mm: Only enforce stable page writes if the backing device
+ requires it
+To: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, darrick.wong@oracle.com,
+        ericvh@gmail.com, tytso@mit.edu, viro@zeniv.linux.org.uk,
+        rminnich@sandia.gov
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        gnehzuil.liu@gmail.com, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        linux-ext4@vger.kernel.org, hirofumi@mail.parknet.co.jp
+Date: Mon, 14 Jan 2013 21:42:50 -0800
+Message-ID: <20130115054250.1563.40740.stgit@blackbox.djwong.org>
+In-Reply-To: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
+References: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=Vxdjo5aOU25a-iDNDaiGZCu0+G-p5y1NifXHUJBF0AHg@mail.gmail.com>
-References: <1357891738-26259-1-git-send-email-gautam.vivek@samsung.com>
-	<CAD=FV=Vxdjo5aOU25a-iDNDaiGZCu0+G-p5y1NifXHUJBF0AHg@mail.gmail.com>
-Date: Tue, 15 Jan 2013 11:08:16 +0530
-Message-ID: <CAFp+6iE7zEJ7E_pRCOYz5mQqbk-MFE6Hwr02pRRT1yP+X3z7kQ@mail.gmail.com>
-Subject: Re: [PATCH] usb: phy: samsung: Add support to set pmu isolation
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, l.majewski@samsung.com,
-        linux-samsung-soc@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Praveen Paneri <p.paneri@samsung.com>, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org, linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        balbi@ti.com, Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+Create a helper function to check if a backing device requires stable page
+writes and, if so, performs the necessary wait.  Then, make it so that all
+points in the memory manager that handle making pages writable use the helper
+function.  This should provide stable page write support to most filesystems,
+while eliminating unnecessary waiting for devices that don't require the
+feature.
+
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+---
+ fs/buffer.c             |    2 +-
+ fs/ext4/inode.c         |    2 +-
+ fs/gfs2/file.c          |    2 +-
+ fs/nilfs2/file.c        |    2 +-
+ include/linux/pagemap.h |    1 +
+ mm/filemap.c            |    3 ++-
+ mm/page-writeback.c     |   20 ++++++++++++++++++++
+ 7 files changed, 27 insertions(+), 5 deletions(-)
 
 
-On Tue, Jan 15, 2013 at 3:41 AM, Doug Anderson <dianders@chromium.org> wrote:
-> Vivek,
->
-> Sorry for being so absent from these reviews.  I'll try to look over a
-> few patches today, but please don't hold up anything on account of my
-> reviews.  I'm definitely a bit of an interested bystander in USB land.
->  ;)
->
-> In general things look pretty good here.  :)  One last comment below...
->
-> On Fri, Jan 11, 2013 at 12:08 AM, Vivek Gautam
-> <gautam.vivek@samsung.com> wrote:> +static int
-> samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
->> +{
->> +       struct device_node *usbphy_sys;
->> +
->> +       /* Getting node for system controller interface for usb-phy */
->> +       usbphy_sys = of_get_child_by_name(sphy->dev->of_node, "usbphy-sys");
->> +       if (!usbphy_sys)
->> +               dev_warn(sphy->dev, "No sys-controller interface for usb-phy\n");
->
-> Seems like you ought to return with an error here.  Calling of_iomap()
-> with a NULL value seems undesirable.
->
+diff --git a/fs/buffer.c b/fs/buffer.c
+index c017a2d..2981449 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2359,7 +2359,7 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 	if (unlikely(ret < 0))
+ 		goto out_unlock;
+ 	set_page_dirty(page);
+-	wait_on_page_writeback(page);
++	wait_for_stable_page(page);
+ 	return 0;
+ out_unlock:
+ 	unlock_page(page);
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index cbfe13b..cd818d8b 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4968,7 +4968,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 					    0, len, NULL,
+ 					    ext4_bh_unmapped)) {
+ 			/* Wait so that we don't change page under IO */
+-			wait_on_page_writeback(page);
++			wait_for_stable_page(page);
+ 			ret = VM_FAULT_LOCKED;
+ 			goto out;
+ 		}
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index 991ab2d..b9e0ca2 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -483,7 +483,7 @@ out:
+ 	gfs2_holder_uninit(&gh);
+ 	if (ret == 0) {
+ 		set_page_dirty(page);
+-		wait_on_page_writeback(page);
++		wait_for_stable_page(page);
+ 	}
+ 	sb_end_pagefault(inode->i_sb);
+ 	return block_page_mkwrite_return(ret);
+diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
+index 6194688..bec4af6 100644
+--- a/fs/nilfs2/file.c
++++ b/fs/nilfs2/file.c
+@@ -126,7 +126,7 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	nilfs_transaction_commit(inode->i_sb);
+ 
+  mapped:
+-	wait_on_page_writeback(page);
++	wait_for_stable_page(page);
+  out:
+ 	sb_end_pagefault(inode->i_sb);
+ 	return block_page_mkwrite_return(ret);
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 6da609d..0e38e13 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -414,6 +414,7 @@ static inline void wait_on_page_writeback(struct page *page)
+ }
+ 
+ extern void end_page_writeback(struct page *page);
++void wait_for_stable_page(struct page *page);
+ 
+ /*
+  * Add an arbitrary waiter to a page's wait queue
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 83efee7..5577dc8 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1728,6 +1728,7 @@ int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	 * see the dirty page and writeprotect it again.
+ 	 */
+ 	set_page_dirty(page);
++	wait_for_stable_page(page);
+ out:
+ 	sb_end_pagefault(inode->i_sb);
+ 	return ret;
+@@ -2274,7 +2275,7 @@ repeat:
+ 		return NULL;
+ 	}
+ found:
+-	wait_on_page_writeback(page);
++	wait_for_stable_page(page);
+ 	return page;
+ }
+ EXPORT_SYMBOL(grab_cache_page_write_begin);
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 0713bfb..9c5af4d 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2289,3 +2289,23 @@ int mapping_tagged(struct address_space *mapping, int tag)
+ 	return radix_tree_tagged(&mapping->page_tree, tag);
+ }
+ EXPORT_SYMBOL(mapping_tagged);
++
++/**
++ * wait_for_stable_page() - wait for writeback to finish, if necessary.
++ * @page:	The page to wait on.
++ *
++ * This function determines if the given page is related to a backing device
++ * that requires page contents to be held stable during writeback.  If so, then
++ * it will wait for any pending writeback to complete.
++ */
++void wait_for_stable_page(struct page *page)
++{
++	struct address_space *mapping = page_mapping(page);
++	struct backing_dev_info *bdi = mapping->backing_dev_info;
++
++	if (!bdi_cap_stable_pages_required(bdi))
++		return;
++
++	wait_on_page_writeback(page);
++}
++EXPORT_SYMBOL_GPL(wait_for_stable_page);
 
-Yeah, true. This should have been returning error value alongwith dev_err().
-
->> +
->> +       sphy->pmuregs = of_iomap(usbphy_sys, 0);
->> +
->> +       of_node_put(usbphy_sys);
->> +
->> +       if (sphy->pmuregs == NULL) {
->> +               dev_err(sphy->dev, "Can't get usb-phy pmu control register\n");
->> +               return -ENODEV;
->> +       }
->> +
->> +       return 0;
->> +}
->> +
->> +/*
->> + * Set isolation here for phy.
->> + * Here 'on = true' would mean USB PHY block is isolated, hence
->> + * de-activated and vice-versa.
->> + */
->
-> Thank you very much for this comment.  :)  This explains one of the
-> confusions I had earlier...
->
-Your welcome :-)
->
-> Once you fix the one error condition above you can add my
-> "Reviewed-by".  Thanks!
->
-Sure, thanks !!
-
-
-
--- 
-Thanks & Regards
-Vivek
