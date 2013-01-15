@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab3AOHUi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 02:20:38 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45219 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698Ab3AOHUS (ORCPT
+	id S1755596Ab3AOHWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 02:22:23 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:49196 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab3AOHWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 02:20:18 -0500
-X-AuditID: 9c930179-b7b0cae0000065b4-30-50f5032ec44b
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>, js1304@gmail.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 2/3] slub: correct bootstrap() for kmem_cache, kmem_cache_node
-Date: Tue, 15 Jan 2013 16:20:01 +0900
-Message-Id: <1358234402-2615-2-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358234402-2615-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1358234402-2615-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 15 Jan 2013 02:22:22 -0500
+Message-ID: <1358234563.6868.13.camel@gitbox>
+Subject: rtc: vt8500: Fix year field in vt8500_rtc_set_time
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Greg KH <gregkh@linuxfoundation.org>, a.zummo@towertech.it
+Cc: linux-kernel@vger.kernel.org,
+        Arm Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        arm@kernel.org, rtc-linux@googlegroups.com
+Date: Tue, 15 Jan 2013 20:22:43 +1300
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current implementation of bootstrap() is not sufficient for kmem_cache
-and kmem_cache_node.
+Alessandro,
 
-First, for kmem_cache.
-bootstrap() call kmem_cache_zalloc() at first. When kmem_cache_zalloc()
-is called, kmem_cache's slab is moved to cpu slab for satisfying kmem_cache
-allocation request. In current implementation, we only consider
-n->partial slabs, so, we miss this cpu slab for kmem_cache.
+This patch was sent out at the same time as two other RTC fixes for
+vt8500 but this one seems to have stopped somewhere along the way while
+the other two have been accepted.
 
-Second, for kmem_cache_node.
-When slab_state = PARTIAL, create_boot_cache() is called. And then,
-kmem_cache_node's slab is moved to cpu slab for satisfying kmem_cache_node
-allocation request. So, we also miss this slab.
+The patch is showing in the RTC patch system along with the other two:
+http://patchwork.ozlabs.org/patch/208756/
 
-These didn't make any error previously, because we normally don't free
-objects which comes from kmem_cache's first slab and kmem_cache_node's.
 
-Problem will be solved if we consider a cpu slab in bootstrap().
-This patch implement it.
+Greg,
+How did the first two patches find their way to you - did you pick them
+up off one of the lists?
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+patch 1 - rtc: vt8500: Fix handling of data passed in struct rtc_time
+patch 2 - [fix-3.8] rtc: vt8500: Correct handling of CR_24H bitfield
 
-diff --git a/mm/slub.c b/mm/slub.c
-index abef30e..830348b 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3613,11 +3613,22 @@ static int slab_memory_callback(struct notifier_block *self,
- 
- static struct kmem_cache * __init bootstrap(struct kmem_cache *static_cache)
- {
-+	int cpu;
- 	int node;
- 	struct kmem_cache *s = kmem_cache_zalloc(kmem_cache, GFP_NOWAIT);
- 
- 	memcpy(s, static_cache, kmem_cache->object_size);
- 
-+	for_each_possible_cpu(cpu) {
-+		struct kmem_cache_cpu *c;
-+		struct page *p;
-+
-+		c = per_cpu_ptr(s->cpu_slab, cpu);
-+		p = c->page;
-+		if (p)
-+			p->slab_cache = s;
-+	}
-+
- 	for_each_node_state(node, N_NORMAL_MEMORY) {
- 		struct kmem_cache_node *n = get_node(s, node);
- 		struct page *p;
--- 
-1.7.9.5
+Hope this is enough information to help you figure out what I'm talking
+about :)
+
+
+Regards
+Tony P
 
