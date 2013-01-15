@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab3AORoq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 12:44:46 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:54995 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305Ab3AORop (ORCPT
+	id S1755930Ab3AORt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 12:49:27 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:62107 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305Ab3AORt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 12:44:45 -0500
-Message-ID: <1358271907.31593.1.camel@gitbox>
-Subject: Re: [PATCH v2] mtd: vt8500: Add support for Wondermedia Serial
- Flash Controller
-From: Tony Prisk <linux@prisktech.co.nz>
-To: dedekind1@gmail.com
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 16 Jan 2013 06:45:07 +1300
-In-Reply-To: <1358261750.2731.148.camel@sauron.fi.intel.com>
-References: <1356901207-13536-1-git-send-email-linux@prisktech.co.nz>
-	 <1358261750.2731.148.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 15 Jan 2013 12:49:26 -0500
+Date: Tue, 15 Jan 2013 09:50:20 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Soeren Moch <smoch@web.de>, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20130115175020.GA3764@kroah.com>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
+ <50F3F289.3090402@web.de>
+ <20130115165642.GA25500@titan.lakedaemon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115165642.GA25500@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-15 at 16:55 +0200, Artem Bityutskiy wrote:
-> On Mon, 2012-12-31 at 10:00 +1300, Tony Prisk wrote:
-> > This patch adds support for the Wondermedia serial flash controller
-> > found on WM8505, WM8650 and WM8850 SoCs.
-> > 
-> > Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> > ---
-> > v2: Whitespace tidyup
+On Tue, Jan 15, 2013 at 11:56:42AM -0500, Jason Cooper wrote:
+> Greg,
 > 
-> Hi, would you please take a look at these warings, identified by aiaiai:
-> 
-> Successfully built configuration "x86_64_defconfig,x86_64,", results:
-> 
-> --- before_patching.log
-> +++ after_patching.log
-> @@ @@
-> +drivers/mtd/devices/wmt_sflash.c: In function ‘sf_read’:
-> +drivers/mtd/devices/wmt_sflash.c:425:9: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘size_t’ [-Wformat]
-> +drivers/mtd/devices/wmt_sflash.c: In function ‘sf_sector_write’:
-> +drivers/mtd/devices/wmt_sflash.c:442:16: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-> +drivers/mtd/devices/wmt_sflash.c:442:24: warning: cast removes address space of expression [sparse]
-> +drivers/mtd/devices/wmt_sflash.c:458:16: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> +drivers/mtd/devices/wmt_sflash.c:458:31: warning: incorrect type in argument 1 (different address spaces) [sparse]
-> +drivers/mtd/devices/wmt_sflash.c:458:31:    expected void volatile [noderef] <asn:2>*dst [sparse]
-> +drivers/mtd/devices/wmt_sflash.c:458:31:    got unsigned char [usertype] *<noident> [sparse]
-> +drivers/mtd/devices/wmt_sflash.c:465:17: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> +drivers/mtd/devices/wmt_sflash.c:465:39: warning: incorrect type in argument 1 (different address spaces) [sparse]
-> +drivers/mtd/devices/wmt_sflash.c:465:39:    expected void volatile [noderef] <asn:2>*dst [sparse]
-> +drivers/mtd/devices/wmt_sflash.c:465:39:    got unsigned char [usertype] *<noident> [sparse]
-> 
+> I've added you to the this thread hoping for a little insight into USB
+> drivers and their use of coherent and GFP_ATOMIC.  Am I barking up the
+> wrong tree by looking a the drivers?
 
-Apologies - This driver shouldn't be selectable for x86_64.
-It is an ARM driver for an embedded device. Will fix.
+I don't understand, which drivers are you referring to?  USB host
+controller drivers, or the "normal" drivers?  Most USB drivers use
+GFP_ATOMIC if they are creating memory during their URB callback path,
+as that is interrupt context.  But it shouldn't be all that bad, and the
+USB core hasn't changed in a while, so something else must be causing
+this.
 
-Regards
-Tony P
-
+greg k-h
