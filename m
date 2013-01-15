@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934315Ab3AOW46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:56:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48280 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934301Ab3AOW4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934298Ab3AOW4z (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 15 Jan 2013 17:56:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48233 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933995Ab3AOW4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:56:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>, Jan Kara <jack@suse.cz>,
-        Shuah Khan <shuah.khan@hp.com>
-Subject: [ 39/71] udf: dont increment lenExtents while writing to a hole
-Date: Tue, 15 Jan 2013 14:54:36 -0800
-Message-Id: <20130115225343.242358853@linuxfoundation.org>
+        Michael Tokarev <mjt@tls.msk.ru>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 35/71] ext4: do not try to write superblock on ro remount w/o journal
+Date: Tue, 15 Jan 2013 14:54:32 -0800
+Message-Id: <20130115225342.963666466@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
 References: <20130115225340.367496998@linuxfoundation.org>
@@ -27,61 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+From: Michael Tokarev <mjt@tls.msk.ru>
 
-commit fb719c59bdb4fca86ee1fd1f42ab3735ca12b6b2 upstream.
+commit d096ad0f79a782935d2e06ae8fb235e8c5397775 upstream.
 
-Incrementing lenExtents even while writing to a hole is bad
-for performance as calls to udf_discard_prealloc and
-udf_truncate_tail_extent would not return from start if
-isize != lenExtents
+When a journal-less ext4 filesystem is mounted on a read-only block
+device (blockdev --setro will do), each remount (for other, unrelated,
+flags, like suid=>nosuid etc) results in a series of scary messages
+from kernel telling about I/O errors on the device.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+This is becauese of the following code ext4_remount():
+
+       if (sbi->s_journal == NULL)
+                ext4_commit_super(sb, 1);
+
+at the end of remount procedure, which forces writing (flushing) of
+a superblock regardless whenever it is dirty or not, if the filesystem
+is readonly or not, and whenever the device itself is readonly or not.
+
+We only need call ext4_commit_super when the file system had been
+previously mounted read/write.
+
+Thanks to Eric Sandeen for help in diagnosing this issue.
+
+Signed-off-By: Michael Tokarev <mjt@tls.msk.ru>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/inode.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ fs/ext4/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -575,6 +575,7 @@ static struct buffer_head *inode_getblk(
- 	struct udf_inode_info *iinfo = UDF_I(inode);
- 	int goal = 0, pgoal = iinfo->i_location.logicalBlockNum;
- 	int lastblock = 0;
-+	bool isBeyondEOF;
- 
- 	prev_epos.offset = udf_file_entry_alloc_offset(inode);
- 	prev_epos.block = iinfo->i_location;
-@@ -653,7 +654,7 @@ static struct buffer_head *inode_getblk(
- 	/* Are we beyond EOF? */
- 	if (etype == -1) {
- 		int ret;
--
-+		isBeyondEOF = 1;
- 		if (count) {
- 			if (c)
- 				laarr[0] = laarr[1];
-@@ -696,6 +697,7 @@ static struct buffer_head *inode_getblk(
- 		endnum = c + 1;
- 		lastblock = 1;
- 	} else {
-+		isBeyondEOF = 0;
- 		endnum = startnum = ((count > 2) ? 2 : count);
- 
- 		/* if the current extent is in position 0,
-@@ -743,7 +745,8 @@ static struct buffer_head *inode_getblk(
- 			*err = -ENOSPC;
- 			return NULL;
- 		}
--		iinfo->i_lenExtents += inode->i_sb->s_blocksize;
-+		if (isBeyondEOF)
-+			iinfo->i_lenExtents += inode->i_sb->s_blocksize;
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4438,7 +4438,7 @@ static int ext4_remount(struct super_blo
  	}
  
- 	/* if the extent the requsted block is located in contains multiple
+ 	ext4_setup_system_zone(sb);
+-	if (sbi->s_journal == NULL)
++	if (sbi->s_journal == NULL && !(old_sb_flags & MS_RDONLY))
+ 		ext4_commit_super(sb, 1);
+ 
+ #ifdef CONFIG_QUOTA
 
 
