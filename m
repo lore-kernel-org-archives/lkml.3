@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757903Ab3AOW3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:29:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41576 "EHLO mail.kernel.org"
+	id S1757940Ab3AOW3L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:29:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41607 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757832Ab3AOW3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:29:02 -0500
+	id S1757919Ab3AOW3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:29:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sven Geggus <lists@fuchsschwanzdomain.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 062/221] svcrpc: Revert "sunrpc/cache.h: replace simple_strtoul"
-Date: Tue, 15 Jan 2013 10:49:49 -0800
-Message-Id: <20130115185002.528495378@linuxfoundation.org>
+        Chris Perl <chris.perl@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 064/221] SUNRPC: Ensure we release the socket write lock if the rpc_task exits early
+Date: Tue, 15 Jan 2013 10:49:51 -0800
+Message-Id: <20130115185002.672233925@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,52 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 621eb19ce1ec216e03ad354cb0c4061736b2a436 upstream.
+commit 87ed50036b866db2ec2ba16b2a7aec4a2b0b7c39 upstream.
 
-Commit bbf43dc888833ac0539e437dbaeb28bfd4fbab9f "sunrpc/cache.h: replace
-simple_strtoul" introduced new range-checking which could cause get_int
-to fail on unsigned integers too large to be represented as an int.
+If the rpc_task exits while holding the socket write lock before it has
+allocated an rpc slot, then the usual mechanism for releasing the write
+lock in xprt_release() is defeated.
 
-We could parse them as unsigned instead--but it turns out svcgssd is
-actually passing down "-1" in some cases.  Which is perhaps stupid, but
-there's nothing we can do about it now.
+The problem occurs if the call to xprt_lock_write() initially fails, so
+that the rpc_task is put on the xprt->sending wait queue. If the task
+exits after being assigned the lock by __xprt_lock_write_func, but
+before it has retried the call to xprt_lock_and_alloc_slot(), then
+it calls xprt_release() while holding the write lock, but will
+immediately exit due to the test for task->tk_rqstp != NULL.
 
-So just revert back to the previous "sloppy" behavior that accepts
-either representation.
-
-Reported-by: Sven Geggus <lists@fuchsschwanzdomain.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Chris Perl <chris.perl@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/sunrpc/cache.h |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/sunrpc/sched.c |    3 +--
+ net/sunrpc/xprt.c  |   12 ++++++++++--
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
---- a/include/linux/sunrpc/cache.h
-+++ b/include/linux/sunrpc/cache.h
-@@ -217,6 +217,8 @@ extern int qword_get(char **bpp, char *d
- static inline int get_int(char **bpp, int *anint)
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -957,8 +957,7 @@ static void rpc_async_release(struct wor
+ 
+ static void rpc_release_resources_task(struct rpc_task *task)
  {
- 	char buf[50];
-+	char *ep;
-+	int rv;
- 	int len = qword_get(bpp, buf, sizeof(buf));
+-	if (task->tk_rqstp)
+-		xprt_release(task);
++	xprt_release(task);
+ 	if (task->tk_msg.rpc_cred) {
+ 		put_rpccred(task->tk_msg.rpc_cred);
+ 		task->tk_msg.rpc_cred = NULL;
+--- a/net/sunrpc/xprt.c
++++ b/net/sunrpc/xprt.c
+@@ -1136,10 +1136,18 @@ static void xprt_request_init(struct rpc
+ void xprt_release(struct rpc_task *task)
+ {
+ 	struct rpc_xprt	*xprt;
+-	struct rpc_rqst	*req;
++	struct rpc_rqst	*req = task->tk_rqstp;
  
- 	if (len < 0)
-@@ -224,9 +226,11 @@ static inline int get_int(char **bpp, in
- 	if (len == 0)
- 		return -ENOENT;
+-	if (!(req = task->tk_rqstp))
++	if (req == NULL) {
++		if (task->tk_client) {
++			rcu_read_lock();
++			xprt = rcu_dereference(task->tk_client->cl_xprt);
++			if (xprt->snd_task == task)
++				xprt_release_write(xprt, task);
++			rcu_read_unlock();
++		}
+ 		return;
++	}
  
--	if (kstrtoint(buf, 0, anint))
-+	rv = simple_strtol(buf, &ep, 0);
-+	if (*ep)
- 		return -EINVAL;
- 
-+	*anint = rv;
- 	return 0;
- }
- 
+ 	xprt = req->rq_xprt;
+ 	if (task->tk_ops->rpc_count_stats != NULL)
 
 
