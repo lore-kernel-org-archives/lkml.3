@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab3AOFrd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 00:47:33 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:57954 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab3AOFrb (ORCPT
+	id S1753686Ab3AOF7S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 00:59:18 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:38281 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab3AOF7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 00:47:31 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, jacmet@sunsite.dk, patches@linaro.org,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH] usbnet: dm9601: Fix incorrect command
-Date: Tue, 15 Jan 2013 11:09:01 +0530
-Message-Id: <1358228341-2104-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 15 Jan 2013 00:59:17 -0500
+MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <1358225583.5576.1.camel@gitbox>
+References: <1358140171-25390-1-git-send-email-linux@prisktech.co.nz>
+	<1358140171-25390-2-git-send-email-linux@prisktech.co.nz>
+	<50F433A9.8020105@wwwdotorg.org>
+	<1358225583.5576.1.camel@gitbox>
+Date: Mon, 14 Jan 2013 21:59:16 -0800
+Message-ID: <CAOesGMi-wfedDRE8M8-Gxe6e6J2Qbjc0NhkM7=n442dO8hm9dA@mail.gmail.com>
+Subject: Re: [PATCH] timer: vt8500: Move timer code to drivers/clocksource
+From: Olof Johansson <olof@lixom.net>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com, arm@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 24b1042c4eb2 ("usbnet: dm9601: apply introduced usb command
-APIs") removes the distiction between DM_WRITE_REG and DM_WRITE_REGS
-command. The distiction is reintroduced to the driver so that the
-functionality of the driver remains same.
+On Mon, Jan 14, 2013 at 8:53 PM, Tony Prisk <linux@prisktech.co.nz> wrote:
+> On Mon, 2013-01-14 at 09:34 -0700, Stephen Warren wrote:
+>> On 01/13/2013 10:09 PM, Tony Prisk wrote:
+>> > This patch moves arch-vt8500/timer.c into drivers/clocksource and
+>> > updates the necessary Kconfig/Makefile options.
+>>
+>> > diff --git a/include/linux/vt8500_timer.h b/include/linux/vt8500_timer.h
+>>
+>> > +#ifndef __VT8500_TIMER_H
+>> > +#define __VT8500_TIMER_H
+>> > +
+>> > +#include <asm/mach/time.h>
+>> > +
+>> > +void vt8500_timer_init(void);
+>> > +
+>> > +#endif
+>>
+>> Is VT8500 DT-only? If so, it'd be nice not to add this header, but
+>> instead use CLOCKSOURCE_OF_DECLARE() inside the driver C file.
+>
+> Agreed - I didn't like the header when I added it but I didn't know of
+> another way and based in on the sunxi code.
+>
+> Unfortunately Olof already pulled it into arm-soc, so I will try get
+> another patch done to undo it :)
 
-CC: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- drivers/net/usb/dm9601.c |   22 ++++++----------------
- 1 files changed, 6 insertions(+), 16 deletions(-)
+Ack, I saw the comments but somehow blanked when it came to pulling
+it. Incremental patches on top are fine though.
 
-diff --git a/drivers/net/usb/dm9601.c b/drivers/net/usb/dm9601.c
-index 3f554c1..011410f 100644
---- a/drivers/net/usb/dm9601.c
-+++ b/drivers/net/usb/dm9601.c
-@@ -53,7 +53,6 @@
- #define DM_RX_OVERHEAD	7	/* 3 byte header + 4 byte crc tail */
- #define DM_TIMEOUT	1000
- 
--
- static int dm_read(struct usbnet *dev, u8 reg, u16 length, void *data)
- {
- 	int err;
-@@ -84,32 +83,23 @@ static int dm_write(struct usbnet *dev, u8 reg, u16 length, void *data)
- 
- static int dm_write_reg(struct usbnet *dev, u8 reg, u8 value)
- {
--	return usbnet_write_cmd(dev, DM_WRITE_REGS,
-+	return usbnet_write_cmd(dev, DM_WRITE_REG,
- 				USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
- 				value, reg, NULL, 0);
- }
- 
--static void dm_write_async_helper(struct usbnet *dev, u8 reg, u8 value,
--				  u16 length, void *data)
-+static void dm_write_async(struct usbnet *dev, u8 reg, u16 length, void *data)
- {
- 	usbnet_write_cmd_async(dev, DM_WRITE_REGS,
- 			       USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
--			       value, reg, data, length);
--}
--
--static void dm_write_async(struct usbnet *dev, u8 reg, u16 length, void *data)
--{
--	netdev_dbg(dev->net, "dm_write_async() reg=0x%02x length=%d\n", reg, length);
--
--	dm_write_async_helper(dev, reg, 0, length, data);
-+			       0, reg, data, length);
- }
- 
- static void dm_write_reg_async(struct usbnet *dev, u8 reg, u8 value)
- {
--	netdev_dbg(dev->net, "dm_write_reg_async() reg=0x%02x value=0x%02x\n",
--		   reg, value);
--
--	dm_write_async_helper(dev, reg, value, 0, NULL);
-+	usbnet_write_cmd_async(dev, DM_WRITE_REG,
-+			       USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-+			       value, reg, NULL, 0);
- }
- 
- static int dm_read_shared_word(struct usbnet *dev, int phy, u8 reg, __le16 *value)
--- 
-1.7.4.1
+Sorry Stephen, I didn't mean to ignore your comments. :)
 
+
+-Olof
