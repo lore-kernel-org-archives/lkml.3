@@ -1,131 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab3AOKzV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 05:55:21 -0500
-Received: from mail.yrkesakademin.fi ([85.134.44.20]:23157 "EHLO
-	mail.yrkesakademin.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab3AOKzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 05:55:20 -0500
-Message-ID: <50F53596.4070200@mageia.org>
-Date: Tue, 15 Jan 2013 12:55:18 +0200
-From: Thomas Backlund <tmb@mageia.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: Thomas Backlund <tmb@mageia.org>, Eric Blake <eblake@redhat.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        libvirt-list@redhat.com, tgraf@suug.ch
-Subject: Re: the patch "bridge: export multicast database via netlink" broke
- kernel 3.8 uapi
-References: <50F2FF1B.3020708@mageia.org> <50F313A5.3020707@mageia.org>  <50F49B7E.50906@redhat.com> <50F52956.50201@mageia.org> <1358244688.4264.7.camel@cr0>
-In-Reply-To: <1358244688.4264.7.camel@cr0>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756739Ab3AOKzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 05:55:52 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:53763 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756216Ab3AOKzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 05:55:43 -0500
+X-IronPort-AV: E=Sophos;i="4.84,473,1355068800"; 
+   d="scan'208";a="6591339"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, hpa@zytor.com,
+        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
+        yinghai@kernel.org, glommer@parallels.com, jiang.liu@huawei.com
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Subject: [BUG Fix Patch 1/6] Bug fix: Hold spinlock across find|remove /sys/firmware/memmap/X operation.
+Date: Tue, 15 Jan 2013 18:54:22 +0800
+Message-Id: <1358247267-18089-2-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1358247267-18089-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1358247267-18089-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/15 18:54:27,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/15 18:54:29,
+	Serialize complete at 2013/01/15 18:54:29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cong Wang skrev 15.1.2013 12:11:
-> On Tue, 2013-01-15 at 12:03 +0200, Thomas Backlund wrote:
->> Eric Blake skrev 15.1.2013 01:57:
->>> On 01/13/2013 01:05 PM, Thomas Backlund wrote:
->>>> Thomas Backlund skrev 13.1.2013 20:38:
->>>>> patch both inline and attached as thunderbird tends to mess up ...
->>>>
->>>>> -----
->>>>>
->>>>> if_bridge.h uses struct in6_addr ip6; but does not include the in6.h
->>>>> header.
->>>>>
->>>>> Found by trying to build libvirt and connman against 3.8-rc3 headers.
->>>>>
->>>>
->>>> Ok,
->>>> ignore this patch, it's not the correct fix as it introduces
->>>> redefinitions...
->>>>
->>>> Btw, the error that I hit that made me suggest this fix was libvirt
->>>> config check bailing out:
->>>>
->>>> config.log:/usr/include/linux/if_bridge.h:173:20: error: field 'ip6' has
->>>> incomplete type
->>>
->>> Hmm, just now noticing this thread, after independently hitting and and
->>> having to work around the same problem in libvirt:
->>> https://www.redhat.com/archives/libvir-list/2013-January/msg00930.html
->>> https://bugzilla.redhat.com/show_bug.cgi?id=895141
->>
->>
->> Yep,
->>
->> and the commit breaking uapi headers is by using "struct in6_addr ip6" is:
->>
->>
->>   From ee07c6e7a6f8a25c18f0a6b18152fbd7499245f6 Mon Sep 17 00:00:00 2001
->> From: Cong Wang <amwang@redhat.com>
->> Date: Fri, 7 Dec 2012 00:04:48 +0000
->> Subject: [PATCH] bridge: export multicast database via netlink
->
-> Does the following patch help?
->
-> $ git diff include/uapi/linux/if_bridge.h
-> diff --git a/include/uapi/linux/if_bridge.h
-> b/include/uapi/linux/if_bridge.h
-> index 5db2975..653db23 100644
-> --- a/include/uapi/linux/if_bridge.h
-> +++ b/include/uapi/linux/if_bridge.h
-> @@ -14,6 +14,7 @@
->   #define _UAPI_LINUX_IF_BRIDGE_H
->
->   #include <linux/types.h>
-> +#include <linux/in6.h>
->
->   #define SYSFS_BRIDGE_ATTR      "bridge"
->   #define SYSFS_BRIDGE_FDB       "brforward"
->
+It is unsafe to return an entry pointer and release the map_entries_lock. So we should
+not hold the map_entries_lock separately in firmware_map_find_entry() and
+firmware_map_remove_entry(). Hold the map_entries_lock across find and remove
+/sys/firmware/memmap/X operation.
 
-Well, I suggested the same fix in the beginning of the thread
-on netdev and lkml: "if_bridge.h: include in6.h for struct in6_addr use"
+And also, users of these two functions need to be careful to hold the lock when using
+these two functions.
 
-as it seemed to fix the libvirt case
+The suggestion is from Andrew Morton <akpm@linux-foundation.org>
 
-but then asked it to be ignored after I tried to build connman,
-and hit this conflict with glibc-2.17:
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ drivers/firmware/memmap.c |   25 +++++++++++++++++--------
+ 1 files changed, 17 insertions(+), 8 deletions(-)
 
-In file included from /usr/include/arpa/inet.h:22:0,
-                  from ./include/connman/inet.h:25,
-                  from src/connman.h:128,
-                  from src/tethering.c:40:
-/usr/include/netinet/in.h:35:5: error: expected identifier before 
-numeric constant
-/usr/include/netinet/in.h:197:8: error: redefinition of 'struct in6_addr'
-In file included from /usr/include/linux/if_bridge.h:17:0,
-                  from src/tethering.c:38:
-/usr/include/linux/in6.h:30:8: note: originally defined here
-In file included from /usr/include/arpa/inet.h:22:0,
-                  from ./include/connman/inet.h:25,
-                  from src/connman.h:128,
-                  from src/tethering.c:40:
-/usr/include/netinet/in.h:238:8: error: redefinition of 'struct 
-sockaddr_in6'
-In file included from /usr/include/linux/if_bridge.h:17:0,
-                  from src/tethering.c:38:
-/usr/include/linux/in6.h:46:8: note: originally defined here
-In file included from /usr/include/arpa/inet.h:22:0,
-                  from ./include/connman/inet.h:25,
-                  from src/connman.h:128,
-                  from src/tethering.c:40:
-/usr/include/netinet/in.h:274:8: error: redefinition of 'struct ipv6_mreq'
-In file included from /usr/include/linux/if_bridge.h:17:0,
-                  from src/tethering.c:38:
-/usr/include/linux/in6.h:54:8: note: originally defined here
-make[1]: *** [src/src_connmand-tethering.o] Error 1
-
-
-So I'm not sure it's the right one...
-
-
---
-Thomas
+diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
+index 4211da5..940c4e9 100644
+--- a/drivers/firmware/memmap.c
++++ b/drivers/firmware/memmap.c
+@@ -150,12 +150,12 @@ static int firmware_map_add_entry(u64 start, u64 end,
+  * firmware_map_remove_entry() - Does the real work to remove a firmware
+  * memmap entry.
+  * @entry: removed entry.
++ *
++ * The caller must hold map_entries_lock, and release it properly.
+  **/
+ static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
+ {
+-	spin_lock(&map_entries_lock);
+ 	list_del(&entry->list);
+-	spin_unlock(&map_entries_lock);
+ }
+ 
+ /*
+@@ -188,23 +188,28 @@ static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+ }
+ 
+ /*
+- * Search memmap entry
++ * firmware_map_find_entry: Search memmap entry.
++ * @start: Start of the memory range.
++ * @end:   End of the memory range (exclusive).
++ * @type:  Type of the memory range.
++ *
++ * This function is to find the memmap entey of a given memory range.
++ * The caller must hold map_entries_lock, and must not release the lock
++ * until the processing of the returned entry has completed.
++ *
++ * Return pointer to the entry to be found on success, or NULL on failure.
+  */
+-
+ static struct firmware_map_entry * __meminit
+ firmware_map_find_entry(u64 start, u64 end, const char *type)
+ {
+ 	struct firmware_map_entry *entry;
+ 
+-	spin_lock(&map_entries_lock);
+ 	list_for_each_entry(entry, &map_entries, list)
+ 		if ((entry->start == start) && (entry->end == end) &&
+ 		    (!strcmp(entry->type, type))) {
+-			spin_unlock(&map_entries_lock);
+ 			return entry;
+ 		}
+ 
+-	spin_unlock(&map_entries_lock);
+ 	return NULL;
+ }
+ 
+@@ -274,11 +279,15 @@ int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
+ {
+ 	struct firmware_map_entry *entry;
+ 
++	spin_lock(&map_entries_lock);
+ 	entry = firmware_map_find_entry(start, end - 1, type);
+-	if (!entry)
++	if (!entry) {
++		spin_unlock(&map_entries_lock);
+ 		return -EINVAL;
++	}
+ 
+ 	firmware_map_remove_entry(entry);
++	spin_unlock(&map_entries_lock);
+ 
+ 	/* remove the memmap entry */
+ 	remove_sysfs_fw_map_entry(entry);
+-- 
+1.7.1
 
