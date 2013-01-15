@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab3AONa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 08:30:56 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59536 "EHLO bear.ext.ti.com"
+	id S1756869Ab3AONbC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 08:31:02 -0500
+Received: from antcom.de ([188.40.178.216]:54155 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756676Ab3AONax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 08:30:53 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 03/10] video: da8xx-fb: use modedb helper to update var
-Date: Tue, 15 Jan 2013 19:01:48 +0530
-Message-ID: <2ff9421c1e608ee40f456d791c9746bed90efc0f.1358250489.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1358250489.git.afzal@ti.com>
-References: <cover.1358250489.git.afzal@ti.com>
+	id S1756621Ab3AONbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 08:31:00 -0500
+Message-ID: <50F55A0F.6010303@antcom.de>
+Date: Tue, 15 Jan 2013 14:30:55 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.11) Gecko/20121123 Icedove/10.0.11
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: plagnioj@jcrosoft.com, gregkh@linuxfoundation.org,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, sr@denx.de, wg@grandegger.com,
+        tru@work-microwave.de, mark.rutland@arm.com
+Subject: Re: [PATCH RESEND 6/6 v13] gpio: Add block gpio to several gpio drivers
+References: <1358250716-21986-1-git-send-email-stigge@antcom.de> <1358250716-21986-7-git-send-email-stigge@antcom.de> <50F5573D.4060007@atmel.com>
+In-Reply-To: <50F5573D.4060007@atmel.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-modedb structure is now used to store panel information, run modedb
-helper over it for initial update of "var" information instead of
-equating each fields.
+On 01/15/2013 02:18 PM, Nicolas Ferre wrote:
+>> --- linux-2.6.orig/drivers/pinctrl/pinctrl-at91.c
+>> +++ linux-2.6/drivers/pinctrl/pinctrl-at91.c
+>> @@ -49,6 +49,7 @@ struct at91_gpio_chip {
+>>       struct clk        *clock;        /* associated clock */
+>>       struct irq_domain    *domain;    /* associated irq domain */
+>>       struct at91_pinctrl_mux_ops *ops;    /* ops */
+>> +    unsigned long        mask_cache;    /* cached mask for block gpio */
+>>   };
+>>
+>>   #define to_at91_gpio_chip(c) container_of(c, struct at91_gpio_chip,
+>> chip)
+>> @@ -1125,6 +1126,32 @@ static void at91_gpio_set(struct gpio_ch
+>>       writel_relaxed(mask, pio + (val ? PIO_SODR : PIO_CODR));
+>>   }
+>>
+>> +static unsigned long at91_gpio_get_block(struct gpio_chip *chip,
+>> +                     unsigned long mask)
+>> +{
+>> +    struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
+>> +    void __iomem *pio = at91_gpio->regbase;
+>> +    u32 pdsr;
+>> +
+>> +    pdsr = __raw_readl(pio + PIO_PDSR);
+> 
+> Maybe you should use readl_relaxed() here as it is used in the
+> at91_gpio_[get|set]() functions.
 
-While at it, remove redundant update of bits_per_pixel.
+Thanks for the note! Seem to have missed this when forward porting in
+pinctrl-at91.c was due.
 
-Note: pixclock is overridden with proper value using an existing code
-as currently modedb is having it in Hz instead of ps, this would be
-fixed in a later change and this overide would be removed.
+Will include the respective change in a subsequent update.
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- drivers/video/da8xx-fb.c |   18 ++----------------
- 1 file changed, 2 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index 52977b1..a1f6544 100644
---- a/drivers/video/da8xx-fb.c
-+++ b/drivers/video/da8xx-fb.c
-@@ -1329,6 +1329,8 @@ static int fb_probe(struct platform_device *device)
- 		par->panel_power_ctrl(1);
- 	}
- 
-+	fb_videomode_to_var(&da8xx_fb_var, lcdc_info);
-+
- 	if (lcd_init(par, lcd_cfg, lcdc_info) < 0) {
- 		dev_err(&device->dev, "lcd_init failed\n");
- 		ret = -EFAULT;
-@@ -1381,25 +1383,9 @@ static int fb_probe(struct platform_device *device)
- 		goto err_release_pl_mem;
- 	}
- 
--	/* Initialize par */
--	da8xx_fb_info->var.bits_per_pixel = lcd_cfg->bpp;
--
--	da8xx_fb_var.xres = lcdc_info->xres;
--	da8xx_fb_var.xres_virtual = lcdc_info->xres;
--
--	da8xx_fb_var.yres         = lcdc_info->yres;
--	da8xx_fb_var.yres_virtual = lcdc_info->yres * LCD_NUM_BUFFERS;
--
- 	da8xx_fb_var.grayscale =
- 	    lcd_cfg->panel_shade == MONOCHROME ? 1 : 0;
- 	da8xx_fb_var.bits_per_pixel = lcd_cfg->bpp;
--
--	da8xx_fb_var.hsync_len = lcdc_info->hsync_len;
--	da8xx_fb_var.vsync_len = lcdc_info->vsync_len;
--	da8xx_fb_var.right_margin = lcdc_info->right_margin;
--	da8xx_fb_var.left_margin  = lcdc_info->left_margin;
--	da8xx_fb_var.lower_margin = lcdc_info->lower_margin;
--	da8xx_fb_var.upper_margin = lcdc_info->upper_margin;
- 	da8xx_fb_var.pixclock = da8xxfb_pixel_clk_period(par);
- 
- 	/* Initialize fbinfo */
--- 
-1.7.9.5
-
+Roland
