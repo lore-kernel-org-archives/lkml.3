@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab3AOSSn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:18:43 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44935 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755091Ab3AOSSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:18:42 -0500
-Date: Tue, 15 Jan 2013 19:18:39 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Stefan Bader <stefan.bader@canonical.com>,
-        Andre Przywara <andre@andrep.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
-Message-ID: <20130115181839.GC8101@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Stefan Bader <stefan.bader@canonical.com>,
-	Andre Przywara <andre@andrep.de>,
-	"xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
-References: <50F42B3E.7090602@canonical.com>
- <20130114163445.GA4867@liondog.tnic>
- <20130115175305.GA12449@phenom.dumpdata.com>
+	id S1757177Ab3AOSTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:19:11 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:45081 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759Ab3AOSTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:19:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130115175305.GA12449@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
+References: <CALxABCaE3=XpGmgNJs1pre11aJ8T0pntVzf_mA6_OYNzis9nvQ@mail.gmail.com>
+ <Pine.LNX.4.44L0.1301131153520.17578-100000@netrider.rowland.org>
+ <CALxABCYtKJD4YrPxy6p+Frim8erccp3ine7SVEV9ReoaRh1BWQ@mail.gmail.com>
+ <CACVXFVPMH-CHGw2EVwgYK5ozn1NAygT0f9=Df4vhSJmYYOZBMw@mail.gmail.com>
+ <CACVXFVNvBeHG2TgfNY-wRQYtqsd6v-3AAiQVPAECuRnJ--ON-g@mail.gmail.com>
+ <CA+55aFxV40V2WvNtJY3EC0F-B9wPk8CV2o1TTTyoF4CoWH7rhQ@mail.gmail.com>
+ <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
+ <CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com> <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 15 Jan 2013 10:18:45 -0800
+X-Google-Sender-Auth: LwFjJ-F-RDh6VkBXxl7QtSDVW9Y
+Message-ID: <CA+55aFy_7mng3fgKdYM_h3c1=etKhX5JqEvFVE23X8kNYJQkpw@mail.gmail.com>
+Subject: Re: USB device cannot be reconnected and khubd "blocked for more than
+ 120 seconds"
+To: Ming Lei <ming.lei@canonical.com>, Tejun Heo <tj@kernel.org>
+Cc: Alex Riesen <raa.lkml@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Jens Axboe <axboe@kernel.dk>, USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 12:53:05PM -0500, Konrad Rzeszutek Wilk wrote:
-> > I don't think that's the right change - this is fixing baremetal so that
-> > it works on xen. And besides, this code was in powernow-k8 before so I'm
-> > wondering why did it work then.
-> 
-> Powernow-k8 only populated the cpufreq policy information. This library
-> (processor_perflib) is the generic library used for ACPI P-states parsing.
-> This specific function (acpi_processor_get_performance_states) is just
-> used to fetch and parse the P-states.
-> 
-> Xen-acpi-processor (which we use to upload the P and C-states to the
-> hypervisor) ends up calling this library to parse the P-states
-> and this unfortunate quirk clamps the P-states based on the MSRS.
+On Tue, Jan 15, 2013 at 9:36 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> This kind of "let's randomly encourage people to write subtly buggy
+> code that has magical timing dependencies, so that the developer won't
+> likely even see it because he has fast disks etc" code is totally
+> unacceptable. And this code was *designed* to be that kind of buggy.
 
-Huh? This is a fix for _PSS frequency values which are rounded and thus
-imprecise. The _PSS objects are the unfortunate ones, as most of the
-other crap BIOS produces.
+Btw, we could *possibly* do this the other way around. Wait for all
+async work by default, but then have a really hacky way to turn that
+off for modules that explicitly don't want it, because they know they
+can be loaded in async context, and they don't do any async work
+themselves. Then we could make the IO schedulers set that flag ("I
+know I'm loaded from async space, and I know I'm not myself doing any
+async init")
 
-> It is odd that this CPU specific quirk got added in this generic
-> library. Is there no ACPI quirk system similar to how DMI quirks are
-> handled?
+Quite frankly, I'd still much rather prefer the automated approach -
+or even better, just avoiding the "load modules in async context"
+entirely. But at least the "I can put a huge comment about why I don't
+want to be waited on" would be much more acceptable than the "I need
+to explicitly tell the world that it needs to wait on me".
 
-Even if there were, do you know all the boards and BIOS revisions which
-have those rounded values? The fix addresses the hardware which has
-those 50MHz multiples and simply ignores the _PSS data but reads out the
-P-states directly from the hardware.
+So Ming Lei's patch was "easily subtly buggy by mistake" (showing that
+by the fact that it was indeed buggy), while the opposite model where
+you have to explicitly ask people not to wait for you could still be
+very buggy, but at least now it needs to explicitly do extra work in
+order to be buggy.
 
-> Anyhow, I think this patch makes sense - it makes sure that the MSR
-> value is sane.
+So if an interface is fragile, it should aim to be fragile in the
+right way - making the fragility explicit, so that people can grep for
+it, and people can add comments to the particular code that marks it
+fragile. The default behavior should be the robust one.
 
-I agree to a certain degree. Testing the Valid bit is something we
-should do for P-state MSRs - and for all MSRs containing a Valid bit,
-for that matter - and the original code didn't do it.
+And if would be lovely to add a warning to the "people loaded a module
+from async context" case, so that we'd *see* this.
 
-However, you need to push down the *correct* frequencies *after* the
-quirk to the hypervisor (I'm looking at push_pxx_to_hypervisor()) so
-that it is aware of the exact P-state frequencies this CPU supports and
-not some rounded values.
+Tejun, is there a good way for code to see "I'm running in async
+context"? Then we could do something like
 
-AFAICT for the xen part, of course. But the baseline stands: you need to
-tell the thing that switches P-states the exact P-state frequencies of
-the CPU. :-).
+    WARN_ON_ONCE(wait && system_state == SYSTEM_RUNNING && in_async_thread());
 
--- 
-Regards/Gruss,
-    Boris.
+in kernel/kmod.c (__request_module()). That should at least warn about
+this whole issue happening.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+                    Linus
