@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605Ab3AOW2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:28:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41342 "EHLO mail.kernel.org"
+	id S1757636Ab3AOW2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 17:28:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41364 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757254Ab3AOW2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:28:13 -0500
+	id S1757609Ab3AOW2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:28:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Yi Zou <yi.zou@intel.com>, Open-FCoE <devel@open-fcoe.org>,
-        "Nicholas A. Bellinger" <nab@risingtidesystems.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 049/221] target/tcm_fc: fix the lockdep warning due to inconsistent lock state
-Date: Tue, 15 Jan 2013 10:49:36 -0800
-Message-Id: <20130115185001.571469126@linuxfoundation.org>
+        Chen Gang <gang.chen@asianux.com>, Chris Boot <bootc@bootc.net>,
+        Andy Grover <agrover@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: [ 050/221] sbp-target: fix error path in sbp_make_tpg()
+Date: Tue, 15 Jan 2013 10:49:37 -0800
+Message-Id: <20130115185001.639180193@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,142 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yi Zou <yi.zou@intel.com>
+From: Chris Boot <bootc@bootc.net>
 
-commit 9f4ad44b264f8bb61ffdd607148215566568430d upstream.
+commit e1fe2060d7e8f58a69374135e32e90f0bb79a7fd upstream.
 
-The lockdep warning below is in theory correct but it will be in really weird
-rare situation that ends up that deadlock since the tcm fc session is hashed
-based the rport id. Nonetheless, the complaining below is about rcu callback
-that does the transport_deregister_session() is happening in softirq, where
-transport_register_session() that happens earlier is not. This triggers the
-lockdep warning below. So, just fix this to make lockdep happy by disabling
-the soft irq before calling transport_register_session() in ft_prli.
+If the TPG memory is allocated successfully, but we fail further along
+in the function, a dangling pointer to freed memory is left in the TPort
+structure. This is mostly harmless, but does prevent re-trying the
+operation without first removing the TPort altogether.
 
-BTW, this was found in FCoE VN2VN over two VMs, couple of create and destroy
-would get this triggered.
-
-v1: was enforcing register to be in softirq context which was not righ. See,
-http://www.spinics.net/lists/target-devel/msg03614.html
-
-v2: following comments from Roland&Nick (thanks), it seems we don't have to
-do transport_deregister_session() in rcu callback, so move it into ft_sess_free()
-but still do kfree() of the corresponding ft_sess struct in rcu callback to
-make sure the ft_sess is not freed till the rcu callback.
-
-...
-[ 1328.370592] scsi2 : FCoE Driver
-[ 1328.383429] fcoe: No FDMI support.
-[ 1328.384509] host2: libfc: Link up on port (000000)
-[ 1328.934229] host2: Assigned Port ID 00a292
-[ 1357.232132] host2: rport 00a393: Remove port
-[ 1357.232568] host2: rport 00a393: Port sending LOGO from Ready state
-[ 1357.233692] host2: rport 00a393: Delete port
-[ 1357.234472] host2: rport 00a393: work event 3
-[ 1357.234969] host2: rport 00a393: callback ev 3
-[ 1357.235979] host2: rport 00a393: Received a LOGO response closed
-[ 1357.236706] host2: rport 00a393: work delete
-[ 1357.237481]
-[ 1357.237631] =================================
-[ 1357.238064] [ INFO: inconsistent lock state ]
-[ 1357.238450] 3.7.0-rc7-yikvm+ #3 Tainted: G           O
-[ 1357.238450] ---------------------------------
-[ 1357.238450] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-[ 1357.238450] ksoftirqd/0/3 [HC0[0]:SC1[1]:HE0:SE0] takes:
-[ 1357.238450]  (&(&se_tpg->session_lock)->rlock){+.?...}, at: [<ffffffffa01eacd4>] transport_deregister_session+0x41/0x148 [target_core_mod]
-[ 1357.238450] {SOFTIRQ-ON-W} state was registered at:
-[ 1357.238450]   [<ffffffff810834f5>] mark_held_locks+0x6d/0x95
-[ 1357.238450]   [<ffffffff8108364a>] trace_hardirqs_on_caller+0x12d/0x197
-[ 1357.238450]   [<ffffffff810836c1>] trace_hardirqs_on+0xd/0xf
-[ 1357.238450]   [<ffffffff8149caba>] _raw_spin_unlock_irq+0x2d/0x45
-[ 1357.238450]   [<ffffffffa01e8d10>] __transport_register_session+0xb8/0x122 [target_core_mod]
-[ 1357.238450]   [<ffffffffa01e8dbe>] transport_register_session+0x44/0x5a [target_core_mod]
-[ 1357.238450]   [<ffffffffa018e32c>] ft_prli+0x1e3/0x275 [tcm_fc]
-[ 1357.238450]   [<ffffffffa0160e8d>] fc_rport_recv_req+0x95e/0xdc5 [libfc]
-[ 1357.238450]   [<ffffffffa015be88>] fc_lport_recv_els_req+0xc4/0xd5 [libfc]
-[ 1357.238450]   [<ffffffffa015c778>] fc_lport_recv_req+0x12f/0x18f [libfc]
-[ 1357.238450]   [<ffffffffa015a6d7>] fc_exch_recv+0x8ba/0x981 [libfc]
-[ 1357.238450]   [<ffffffffa0176d7a>] fcoe_percpu_receive_thread+0x47a/0x4e2 [fcoe]
-[ 1357.238450]   [<ffffffff810549f1>] kthread+0xb1/0xb9
-[ 1357.238450]   [<ffffffff814a40ec>] ret_from_fork+0x7c/0xb0
-[ 1357.238450] irq event stamp: 275411
-[ 1357.238450] hardirqs last  enabled at (275410): [<ffffffff810bb6a0>] rcu_process_callbacks+0x229/0x42a
-[ 1357.238450] hardirqs last disabled at (275411): [<ffffffff8149c2f7>] _raw_spin_lock_irqsave+0x22/0x8e
-[ 1357.238450] softirqs last  enabled at (275394): [<ffffffff8103d669>] __do_softirq+0x246/0x26f
-[ 1357.238450] softirqs last disabled at (275399): [<ffffffff8103d6bb>] run_ksoftirqd+0x29/0x62
-[ 1357.238450]
-[ 1357.238450] other info that might help us debug this:
-[ 1357.238450]  Possible unsafe locking scenario:
-[ 1357.238450]
-[ 1357.238450]        CPU0
-[ 1357.238450]        ----
-[ 1357.238450]   lock(&(&se_tpg->session_lock)->rlock);
-[ 1357.238450]   <Interrupt>
-[ 1357.238450]     lock(&(&se_tpg->session_lock)->rlock);
-[ 1357.238450]
-[ 1357.238450]  *** DEADLOCK ***
-[ 1357.238450]
-[ 1357.238450] no locks held by ksoftirqd/0/3.
-[ 1357.238450]
-[ 1357.238450] stack backtrace:
-[ 1357.238450] Pid: 3, comm: ksoftirqd/0 Tainted: G           O 3.7.0-rc7-yikvm+ #3
-[ 1357.238450] Call Trace:
-[ 1357.238450]  [<ffffffff8149399a>] print_usage_bug+0x1f5/0x206
-[ 1357.238450]  [<ffffffff8100da59>] ? save_stack_trace+0x2c/0x49
-[ 1357.238450]  [<ffffffff81082aae>] ? print_irq_inversion_bug.part.14+0x1ae/0x1ae
-[ 1357.238450]  [<ffffffff81083336>] mark_lock+0x106/0x258
-[ 1357.238450]  [<ffffffff81084e34>] __lock_acquire+0x2e7/0xe53
-[ 1357.238450]  [<ffffffff8102903d>] ? pvclock_clocksource_read+0x48/0xb4
-[ 1357.238450]  [<ffffffff810ba6a3>] ? rcu_process_gp_end+0xc0/0xc9
-[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
-[ 1357.238450]  [<ffffffff81085ef1>] lock_acquire+0x119/0x143
-[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
-[ 1357.238450]  [<ffffffff8149c329>] _raw_spin_lock_irqsave+0x54/0x8e
-[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
-[ 1357.238450]  [<ffffffffa01eacd4>] transport_deregister_session+0x41/0x148 [target_core_mod]
-[ 1357.238450]  [<ffffffff810bb6a0>] ? rcu_process_callbacks+0x229/0x42a
-[ 1357.238450]  [<ffffffffa018ddc5>] ft_sess_rcu_free+0x17/0x24 [tcm_fc]
-[ 1357.238450]  [<ffffffffa018ddae>] ? ft_sess_free+0x1b/0x1b [tcm_fc]
-[ 1357.238450]  [<ffffffff810bb6d7>] rcu_process_callbacks+0x260/0x42a
-[ 1357.238450]  [<ffffffff8103d55d>] __do_softirq+0x13a/0x26f
-[ 1357.238450]  [<ffffffff8149b34e>] ? __schedule+0x65f/0x68e
-[ 1357.238450]  [<ffffffff8103d6bb>] run_ksoftirqd+0x29/0x62
-[ 1357.238450]  [<ffffffff8105c83c>] smpboot_thread_fn+0x1a5/0x1aa
-[ 1357.238450]  [<ffffffff8105c697>] ? smpboot_unregister_percpu_thread+0x47/0x47
-[ 1357.238450]  [<ffffffff810549f1>] kthread+0xb1/0xb9
-[ 1357.238450]  [<ffffffff8149b49d>] ? wait_for_common+0xbb/0x10a
-[ 1357.238450]  [<ffffffff81054940>] ? __init_kthread_worker+0x59/0x59
-[ 1357.238450]  [<ffffffff814a40ec>] ret_from_fork+0x7c/0xb0
-[ 1357.238450]  [<ffffffff81054940>] ? __init_kthread_worker+0x59/0x59
-[ 1417.440099]  rport-2:0-0: blocked FC remote port time out: removing rport
-
-Signed-off-by: Yi Zou <yi.zou@intel.com>
-Cc: Open-FCoE <devel@open-fcoe.org>
-Cc: Nicholas A. Bellinger <nab@risingtidesystems.com>
+Reported-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Chris Boot <bootc@bootc.net>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/tcm_fc/tfc_sess.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/sbp/sbp_target.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -430,7 +430,6 @@ static void ft_sess_rcu_free(struct rcu_
- {
- 	struct ft_sess *sess = container_of(rcu, struct ft_sess, rcu);
+--- a/drivers/target/sbp/sbp_target.c
++++ b/drivers/target/sbp/sbp_target.c
+@@ -2207,20 +2207,23 @@ static struct se_portal_group *sbp_make_
+ 	tport->mgt_agt = sbp_management_agent_register(tport);
+ 	if (IS_ERR(tport->mgt_agt)) {
+ 		ret = PTR_ERR(tport->mgt_agt);
+-		kfree(tpg);
+-		return ERR_PTR(ret);
++		goto out_free_tpg;
+ 	}
  
--	transport_deregister_session(sess->se_sess);
- 	kfree(sess);
+ 	ret = core_tpg_register(&sbp_fabric_configfs->tf_ops, wwn,
+ 			&tpg->se_tpg, (void *)tpg,
+ 			TRANSPORT_TPG_TYPE_NORMAL);
+-	if (ret < 0) {
+-		sbp_management_agent_unregister(tport->mgt_agt);
+-		kfree(tpg);
+-		return ERR_PTR(ret);
+-	}
++	if (ret < 0)
++		goto out_unreg_mgt_agt;
+ 
+ 	return &tpg->se_tpg;
++
++out_unreg_mgt_agt:
++	sbp_management_agent_unregister(tport->mgt_agt);
++out_free_tpg:
++	tport->tpg = NULL;
++	kfree(tpg);
++	return ERR_PTR(ret);
  }
  
-@@ -438,6 +437,7 @@ static void ft_sess_free(struct kref *kr
- {
- 	struct ft_sess *sess = container_of(kref, struct ft_sess, kref);
- 
-+	transport_deregister_session(sess->se_sess);
- 	call_rcu(&sess->rcu, ft_sess_rcu_free);
- }
- 
+ static void sbp_drop_tpg(struct se_portal_group *se_tpg)
 
 
