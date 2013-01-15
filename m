@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab3AOSoi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:44:38 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:36520 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305Ab3AOSog (ORCPT
+	id S1757563Ab3AOSo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:44:59 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53515 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755379Ab3AOSo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:44:36 -0500
-Date: Tue, 15 Jan 2013 19:44:26 +0100
-From: Cong Ding <dinggnu@gmail.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Jason Cooper <jason@lakedaemon.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3] clk: mvebu/clk-cpu.c: fix memory leakage
-Message-ID: <20130115184423.GC7211@gmail.com>
-References: <1358183892-28928-1-git-send-email-dinggnu@gmail.com>
- <50F563EC.3030804@free-electrons.com>
- <20130115152307.GA25615@gmail.com>
- <20130115153716.GF13433@titan.lakedaemon.net>
- <50F584F5.6030007@free-electrons.com>
- <20130115182629.GB7211@gmail.com>
- <50F5A1A9.2030803@free-electrons.com>
+	Tue, 15 Jan 2013 13:44:58 -0500
+Message-ID: <50F5A3A6.7000801@wwwdotorg.org>
+Date: Tue, 15 Jan 2013 11:44:54 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F5A1A9.2030803@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Terje Bergstrom <tbergstrom@nvidia.com>
+CC: amerilainen@nvidia.com, airlied@linux.ie, thierry.reding@avionic-design.de,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 7/8] ARM: tegra: Add board data and 2D clocks
+References: <1358249182-17486-1-git-send-email-tbergstrom@nvidia.com> <1358249182-17486-8-git-send-email-tbergstrom@nvidia.com>
+In-Reply-To: <1358249182-17486-8-git-send-email-tbergstrom@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the variable cpuclk and clk_name should be properly freed when error happens.
+On 01/15/2013 04:26 AM, Terje Bergstrom wrote:
+> Add a driver alias gr2d for Tegra 2D device, and assign a duplicate
+> of 2D clock to that driver alias.
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
----
- drivers/clk/mvebu/clk-cpu.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+FYI on this one patch - it won't be applied to the Tegra tree until
+after Prashant's common clock framework changes are applied. As such, it
+will need some rework once those patches are applied, or perhaps won't
+even be relevant any more; see below.
 
-diff --git a/drivers/clk/mvebu/clk-cpu.c b/drivers/clk/mvebu/clk-cpu.c
-index ff004578..9dd2551 100644
---- a/drivers/clk/mvebu/clk-cpu.c
-+++ b/drivers/clk/mvebu/clk-cpu.c
-@@ -124,7 +124,7 @@ void __init of_cpu_clk_setup(struct device_node *node)
- 
- 	clks = kzalloc(ncpus * sizeof(*clks), GFP_KERNEL);
- 	if (WARN_ON(!clks))
--		return;
-+		goto clks_out;
- 
- 	for_each_node_by_type(dn, "cpu") {
- 		struct clk_init_data init;
-@@ -134,11 +134,11 @@ void __init of_cpu_clk_setup(struct device_node *node)
- 		int cpu, err;
- 
- 		if (WARN_ON(!clk_name))
--			return;
-+			goto bail_out;
- 
- 		err = of_property_read_u32(dn, "reg", &cpu);
- 		if (WARN_ON(err))
--			return;
-+			goto bail_out;
- 
- 		sprintf(clk_name, "cpu%d", cpu);
- 		parent_clk = of_clk_get(node, 0);
-@@ -167,6 +167,9 @@ void __init of_cpu_clk_setup(struct device_node *node)
- 	return;
- bail_out:
- 	kfree(clks);
-+	while(ncpus--)
-+		kfree(cpuclk[ncpus].clk_name);
-+clks_out:
- 	kfree(cpuclk);
- }
- 
--- 
-1.7.10.4
+> diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
 
+> +	OF_DEV_AUXDATA("nvidia,tegra20-gr2d", 0x54140000, "gr2d", NULL),
+
+I assume the only reason to add AUXDATA is to give the device a specific
+name, which will then match the driver name in the clock driver:
+
+> -	CLK_DUPLICATE("2d",	"tegra_grhost",	"gr2d"),
+> +	CLK_DUPLICATE("2d",	"gr2d",	"gr2d"),
+
+If so, this shouldn't be needed once the common clock framework patches
+are applied, since all device clocks will be retrieved from device tree,
+and hence the device name will be irrelevant; the phandle in device tree
+is all that will matter.
