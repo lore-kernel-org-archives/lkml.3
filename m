@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab3AOMgQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 07:36:16 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:59056 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab3AOMeW (ORCPT
+	id S1756865Ab3AOMjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 07:39:51 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:46158 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755805Ab3AOMju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 07:34:22 -0500
+	Tue, 15 Jan 2013 07:39:50 -0500
 From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
 To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         linux-media@vger.kernel.org, linaro-mm-sig@lists.linaro.org
 Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Subject: [PATCH 1/7] arch: add __mutex_fastpath_lock_retval_arg to generic/sh/x86/powerpc/ia64
-Date: Tue, 15 Jan 2013 13:33:58 +0100
-Message-Id: <1358253244-11453-2-git-send-email-maarten.lankhorst@canonical.com>
+Subject: [PATCH 5/7] seqno-fence: Hardware dma-buf implementation of fencing (v4)
+Date: Tue, 15 Jan 2013 13:34:02 +0100
+Message-Id: <1358253244-11453-6-git-send-email-maarten.lankhorst@canonical.com>
 X-Mailer: git-send-email 1.8.0.3
 In-Reply-To: <1358253244-11453-1-git-send-email-maarten.lankhorst@canonical.com>
 References: <1358253244-11453-1-git-send-email-maarten.lankhorst@canonical.com>
@@ -21,248 +21,210 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Needed for reservation slowpath.
----
- arch/ia64/include/asm/mutex.h    | 20 ++++++++++++++++++++
- arch/powerpc/include/asm/mutex.h | 20 ++++++++++++++++++++
- arch/sh/include/asm/mutex-llsc.h | 20 ++++++++++++++++++++
- arch/x86/include/asm/mutex_32.h  | 20 ++++++++++++++++++++
- arch/x86/include/asm/mutex_64.h  | 20 ++++++++++++++++++++
- include/asm-generic/mutex-dec.h  | 20 ++++++++++++++++++++
- include/asm-generic/mutex-null.h |  1 +
- include/asm-generic/mutex-xchg.h | 21 +++++++++++++++++++++
- 8 files changed, 142 insertions(+)
+This type of fence can be used with hardware synchronization for simple
+hardware that can block execution until the condition
+(dma_buf[offset] - value) >= 0 has been met.
 
-diff --git a/arch/ia64/include/asm/mutex.h b/arch/ia64/include/asm/mutex.h
-index bed73a6..2510058 100644
---- a/arch/ia64/include/asm/mutex.h
-+++ b/arch/ia64/include/asm/mutex.h
-@@ -44,6 +44,26 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
- }
+A software fallback still has to be provided in case the fence is used
+with a device that doesn't support this mechanism. It is useful to expose
+this for graphics cards that have an op to support this.
+
+Some cards like i915 can export those, but don't have an option to wait,
+so they need the software fallback.
+
+I extended the original patch by Rob Clark.
+
+v1: Original
+v2: Renamed from bikeshed to seqno, moved into dma-fence.c since
+    not much was left of the file. Lots of documentation added.
+v3: Use fence_ops instead of custom callbacks. Moved to own file
+    to avoid circular dependency between dma-buf.h and fence.h
+v4: Add spinlock pointer to seqno_fence_init
+
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+---
+ Documentation/DocBook/device-drivers.tmpl |   1 +
+ drivers/base/fence.c                      |  38 +++++++++++
+ include/linux/seqno-fence.h               | 105 ++++++++++++++++++++++++++++++
+ 3 files changed, 144 insertions(+)
+ create mode 100644 include/linux/seqno-fence.h
+
+diff --git a/Documentation/DocBook/device-drivers.tmpl b/Documentation/DocBook/device-drivers.tmpl
+index 6f53fc0..ad14396 100644
+--- a/Documentation/DocBook/device-drivers.tmpl
++++ b/Documentation/DocBook/device-drivers.tmpl
+@@ -128,6 +128,7 @@ X!Edrivers/base/interface.c
+ !Edrivers/base/dma-buf.c
+ !Edrivers/base/fence.c
+ !Iinclude/linux/fence.h
++!Iinclude/linux/seqno-fence.h
+ !Edrivers/base/dma-coherent.c
+ !Edrivers/base/dma-mapping.c
+      </sect1>
+diff --git a/drivers/base/fence.c b/drivers/base/fence.c
+index 28e5ffd..1d3f29c 100644
+--- a/drivers/base/fence.c
++++ b/drivers/base/fence.c
+@@ -24,6 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/export.h>
+ #include <linux/fence.h>
++#include <linux/seqno-fence.h>
  
- /**
-+ *  __mutex_fastpath_lock_retval_arg - try to take the lock by moving the count
-+ *                                     from 1 to a 0 value
-+ *  @count: pointer of type atomic_t
-+ *  @arg: argument to pass along if fastpath fails.
-+ *  @fail_fn: function to call if the original value was not 1
-+ *
-+ * Change the count from 1 to a value lower than 1, and call <fail_fn> if
-+ * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-+ * or anything the slow path function returns.
-+ */
-+static inline int __mutex_fastpath_lock_retval_arg(atomic_t *count,
-+				void *arg, int (*fail_fn)(atomic_t *, void*))
+ atomic_t fence_context_counter = ATOMIC_INIT(0);
+ EXPORT_SYMBOL(fence_context_counter);
+@@ -284,3 +285,40 @@ out:
+ 	return ret;
+ }
+ EXPORT_SYMBOL(fence_default_wait);
++
++static bool seqno_enable_signaling(struct fence *fence)
 +{
-+	if (unlikely(ia64_fetchadd4_acq(count, -1) != 1))
-+		return fail_fn(count, arg);
++	struct seqno_fence *seqno_fence = to_seqno_fence(fence);
++	return seqno_fence->ops->enable_signaling(fence);
++}
++
++static bool seqno_signaled(struct fence *fence)
++{
++	struct seqno_fence *seqno_fence = to_seqno_fence(fence);
++	return seqno_fence->ops->signaled && seqno_fence->ops->signaled(fence);
++}
++
++static void seqno_release(struct fence *fence)
++{
++	struct seqno_fence *f = to_seqno_fence(fence);
++
++	dma_buf_put(f->sync_buf);
++	if (f->ops->release)
++		f->ops->release(fence);
 +	else
-+		return 0;
++		kfree(f);
 +}
 +
-+/**
-  *  __mutex_fastpath_unlock - try to promote the count from 0 to 1
-  *  @count: pointer of type atomic_t
-  *  @fail_fn: function to call if the original value was not 0
-diff --git a/arch/powerpc/include/asm/mutex.h b/arch/powerpc/include/asm/mutex.h
-index 5399f7e..df4bcff 100644
---- a/arch/powerpc/include/asm/mutex.h
-+++ b/arch/powerpc/include/asm/mutex.h
-@@ -97,6 +97,26 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
- }
- 
- /**
-+ *  __mutex_fastpath_lock_retval_arg - try to take the lock by moving the count
-+ *                                     from 1 to a 0 value
-+ *  @count: pointer of type atomic_t
-+ *  @arg: argument to pass along if fastpath fails.
-+ *  @fail_fn: function to call if the original value was not 1
++static long seqno_wait(struct fence *fence, bool intr, signed long timeout)
++{
++	struct seqno_fence *f = to_seqno_fence(fence);
++	return f->ops->wait(fence, intr, timeout);
++}
++
++const struct fence_ops seqno_fence_ops = {
++	.enable_signaling = seqno_enable_signaling,
++	.signaled = seqno_signaled,
++	.wait = seqno_wait,
++	.release = seqno_release
++};
++EXPORT_SYMBOL_GPL(seqno_fence_ops);
+diff --git a/include/linux/seqno-fence.h b/include/linux/seqno-fence.h
+new file mode 100644
+index 0000000..603adc0
+--- /dev/null
++++ b/include/linux/seqno-fence.h
+@@ -0,0 +1,105 @@
++/*
++ * seqno-fence, using a dma-buf to synchronize fencing
 + *
-+ * Change the count from 1 to a value lower than 1, and call <fail_fn> if
-+ * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-+ * or anything the slow path function returns.
-+ */
-+static inline int __mutex_fastpath_lock_retval_arg(atomic_t *count,
-+				void *arg, int (*fail_fn)(atomic_t *, void*))
-+{
-+	if (unlikely(__mutex_dec_return_lock(count) < 0))
-+		return fail_fn(count, arg);
-+	else
-+		return 0;
-+}
-+
-+/**
-  *  __mutex_fastpath_unlock - try to promote the count from 0 to 1
-  *  @count: pointer of type atomic_t
-  *  @fail_fn: function to call if the original value was not 0
-diff --git a/arch/sh/include/asm/mutex-llsc.h b/arch/sh/include/asm/mutex-llsc.h
-index 090358a..b68dd6d 100644
---- a/arch/sh/include/asm/mutex-llsc.h
-+++ b/arch/sh/include/asm/mutex-llsc.h
-@@ -56,6 +56,26 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
- 	return __res;
- }
- 
-+static inline int __mutex_fastpath_lock_retval_arg(atomic_t *count,
-+				void *arg, int (*fail_fn)(atomic_t *, void *))
-+{
-+	int __done, __res;
-+
-+	__asm__ __volatile__ (
-+		"movli.l	@%2, %0	\n"
-+		"add		#-1, %0	\n"
-+		"movco.l	%0, @%2	\n"
-+		"movt		%1	\n"
-+		: "=&z" (__res), "=&r" (__done)
-+		: "r" (&(count)->counter)
-+		: "t");
-+
-+	if (unlikely(!__done || __res != 0))
-+		__res = fail_fn(count, arg);
-+
-+	return __res;
-+}
-+
- static inline void
- __mutex_fastpath_unlock(atomic_t *count, void (*fail_fn)(atomic_t *))
- {
-diff --git a/arch/x86/include/asm/mutex_32.h b/arch/x86/include/asm/mutex_32.h
-index 03f90c8..34f77f9 100644
---- a/arch/x86/include/asm/mutex_32.h
-+++ b/arch/x86/include/asm/mutex_32.h
-@@ -58,6 +58,26 @@ static inline int __mutex_fastpath_lock_retval(atomic_t *count,
- }
- 
- /**
-+ *  __mutex_fastpath_lock_retval_arg - try to take the lock by moving the count
-+ *                                     from 1 to a 0 value
-+ *  @count: pointer of type atomic_t
-+ *  @arg: argument to pass along if fastpath fails.
-+ *  @fail_fn: function to call if the original value was not 1
++ * Copyright (C) 2012 Texas Instruments
++ * Copyright (C) 2012 Canonical Ltd
++ * Authors:
++ *   Rob Clark <rob.clark@linaro.org>
++ *   Maarten Lankhorst <maarten.lankhorst@canonical.com>
 + *
-+ * Change the count from 1 to a value lower than 1, and call <fail_fn> if
-+ * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-+ * or anything the slow path function returns.
-+ */
-+static inline int __mutex_fastpath_lock_retval_arg(atomic_t *count,
-+				void *arg, int (*fail_fn)(atomic_t *, void*))
-+{
-+	if (unlikely(atomic_dec_return(count) < 0))
-+		return fail_fn(count, arg);
-+	else
-+		return 0;
-+}
-+
-+/**
-  *  __mutex_fastpath_unlock - try to promote the mutex from 0 to 1
-  *  @count: pointer of type atomic_t
-  *  @fail_fn: function to call if the original value was not 0
-diff --git a/arch/x86/include/asm/mutex_64.h b/arch/x86/include/asm/mutex_64.h
-index 68a87b0..148249e 100644
---- a/arch/x86/include/asm/mutex_64.h
-+++ b/arch/x86/include/asm/mutex_64.h
-@@ -53,6 +53,26 @@ static inline int __mutex_fastpath_lock_retval(atomic_t *count,
- }
- 
- /**
-+ *  __mutex_fastpath_lock_retval_arg - try to take the lock by moving the count
-+ *                                     from 1 to a 0 value
-+ *  @count: pointer of type atomic_t
-+ *  @arg: argument to pass along if fastpath fails.
-+ *  @fail_fn: function to call if the original value was not 1
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
 + *
-+ * Change the count from 1 to a value lower than 1, and call <fail_fn> if
-+ * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-+ * or anything the slow path function returns.
-+ */
-+static inline int __mutex_fastpath_lock_retval_arg(atomic_t *count,
-+				void *arg, int (*fail_fn)(atomic_t *, void*))
-+{
-+	if (unlikely(atomic_dec_return(count) < 0))
-+		return fail_fn(count, arg);
-+	else
-+		return 0;
-+}
-+
-+/**
-  * __mutex_fastpath_unlock - increment and call function if nonpositive
-  * @v: pointer of type atomic_t
-  * @fail_fn: function to call if the result is nonpositive
-diff --git a/include/asm-generic/mutex-dec.h b/include/asm-generic/mutex-dec.h
-index f104af7..f5d027e 100644
---- a/include/asm-generic/mutex-dec.h
-+++ b/include/asm-generic/mutex-dec.h
-@@ -43,6 +43,26 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
- }
- 
- /**
-+ *  __mutex_fastpath_lock_retval_arg - try to take the lock by moving the count
-+ *                                     from 1 to a 0 value
-+ *  @count: pointer of type atomic_t
-+ *  @arg: argument to pass along if fastpath fails.
-+ *  @fail_fn: function to call if the original value was not 1
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
 + *
-+ * Change the count from 1 to a value lower than 1, and call <fail_fn> if
-+ * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-+ * or anything the slow path function returns.
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+static inline int
-+__mutex_fastpath_lock_retval_arg(atomic_t *count, void *arg,
-+				 int (*fail_fn)(atomic_t *, void*))
-+{
-+	if (unlikely(atomic_dec_return(count) < 0))
-+		return fail_fn(count, arg);
-+	return 0;
-+}
++
++#ifndef __LINUX_SEQNO_FENCE_H
++#define __LINUX_SEQNO_FENCE_H
++
++#include <linux/fence.h>
++#include <linux/dma-buf.h>
++
++struct seqno_fence {
++	struct fence base;
++
++	const struct fence_ops *ops;
++	struct dma_buf *sync_buf;
++	uint32_t seqno_ofs;
++};
++
++extern const struct fence_ops seqno_fence_ops;
 +
 +/**
-  *  __mutex_fastpath_unlock - try to promote the count from 0 to 1
-  *  @count: pointer of type atomic_t
-  *  @fail_fn: function to call if the original value was not 0
-diff --git a/include/asm-generic/mutex-null.h b/include/asm-generic/mutex-null.h
-index e1bbbc7..991e9c3 100644
---- a/include/asm-generic/mutex-null.h
-+++ b/include/asm-generic/mutex-null.h
-@@ -12,6 +12,7 @@
- 
- #define __mutex_fastpath_lock(count, fail_fn)		fail_fn(count)
- #define __mutex_fastpath_lock_retval(count, fail_fn)	fail_fn(count)
-+#define __mutex_fastpath_lock_retval_arg(count, arg, fail_fn)	fail_fn(count, arg)
- #define __mutex_fastpath_unlock(count, fail_fn)		fail_fn(count)
- #define __mutex_fastpath_trylock(count, fail_fn)	fail_fn(count)
- #define __mutex_slowpath_needs_to_unlock()		1
-diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
-index c04e0db..d9cc971 100644
---- a/include/asm-generic/mutex-xchg.h
-+++ b/include/asm-generic/mutex-xchg.h
-@@ -55,6 +55,27 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
- }
- 
- /**
-+ *  __mutex_fastpath_lock_retval_arg - try to take the lock by moving the count
-+ *                                     from 1 to a 0 value
-+ *  @count: pointer of type atomic_t
-+ *  @arg: argument to pass along if fastpath fails.
-+ *  @fail_fn: function to call if the original value was not 1
++ * to_seqno_fence - cast a fence to a seqno_fence
++ * @fence: fence to cast to a seqno_fence
 + *
-+ * Change the count from 1 to a value lower than 1, and call <fail_fn> if
-+ * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
-+ * or anything the slow path function returns.
++ * Returns NULL if the fence is not a seqno_fence,
++ * or the seqno_fence otherwise.
 + */
-+static inline int
-+__mutex_fastpath_lock_retval_arg(atomic_t *count, void *arg,
-+				 int (*fail_fn)(atomic_t *, void*))
++static inline struct seqno_fence *
++to_seqno_fence(struct fence *fence)
 +{
-+	if (unlikely(atomic_xchg(count, 0) != 1))
-+		if (likely(atomic_xchg(count, -1) != 1))
-+			return fail_fn(count, arg);
-+	return 0;
++	if (fence->ops != &seqno_fence_ops)
++		return NULL;
++	return container_of(fence, struct seqno_fence, base);
 +}
 +
 +/**
-  *  __mutex_fastpath_unlock - try to promote the mutex from 0 to 1
-  *  @count: pointer of type atomic_t
-  *  @fail_fn: function to call if the original value was not 0
++ * seqno_fence_init - initialize a seqno fence
++ * @fence: seqno_fence to initialize
++ * @lock: pointer to spinlock to use for fence
++ * @sync_buf: buffer containing the memory location to signal on
++ * @context: the execution context this fence is a part of
++ * @seqno_ofs: the offset within @sync_buf
++ * @seqno: the sequence # to signal on
++ * @ops: the fence_ops for operations on this seqno fence
++ *
++ * This function initializes a struct seqno_fence with passed parameters,
++ * and takes a reference on sync_buf which is released on fence destruction.
++ *
++ * A seqno_fence is a dma_fence which can complete in software when
++ * enable_signaling is called, but it also completes when
++ * (s32)((sync_buf)[seqno_ofs] - seqno) >= 0 is true
++ *
++ * The seqno_fence will take a refcount on the sync_buf until it's
++ * destroyed, but actual lifetime of sync_buf may be longer if one of the
++ * callers take a reference to it.
++ *
++ * Certain hardware have instructions to insert this type of wait condition
++ * in the command stream, so no intervention from software would be needed.
++ * This type of fence can be destroyed before completed, however a reference
++ * on the sync_buf dma-buf can be taken. It is encouraged to re-use the same
++ * dma-buf for sync_buf, since mapping or unmapping the sync_buf to the
++ * device's vm can be expensive.
++ *
++ * It is recommended for creators of seqno_fence to call fence_signal
++ * before destruction. This will prevent possible issues from wraparound at
++ * time of issue vs time of check, since users can check fence_is_signaled
++ * before submitting instructions for the hardware to wait on the fence.
++ * However, when ops.enable_signaling is not called, it doesn't have to be
++ * done as soon as possible, just before there's any real danger of seqno
++ * wraparound.
++ */
++static inline void
++seqno_fence_init(struct seqno_fence *fence, spinlock_t *lock,
++		 struct dma_buf *sync_buf,  uint32_t context, uint32_t seqno_ofs,
++		 uint32_t seqno, const struct fence_ops *ops)
++{
++	BUG_ON(!fence || !sync_buf || !ops->enable_signaling || !ops->wait);
++
++	__fence_init(&fence->base, &seqno_fence_ops, lock, context, seqno);
++
++	get_dma_buf(sync_buf);
++	fence->ops = ops;
++	fence->sync_buf = sync_buf;
++	fence->seqno_ofs = seqno_ofs;
++}
++
++#endif /* __LINUX_SEQNO_FENCE_H */
 -- 
 1.8.0.3
 
