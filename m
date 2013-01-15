@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab3AOWaD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 17:30:03 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41924 "EHLO mail.kernel.org"
+	id S932140Ab3APAYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:24:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41948 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756246Ab3AOW37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:29:59 -0500
+	id S1758201Ab3AOWaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 17:30:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Daniel Gnoutcheff <daniel@gnoutcheff.name>
-Subject: [ 082/221] drm/i915: Flush outstanding unpin tasks before pageflipping
-Date: Tue, 15 Jan 2013 10:50:09 -0800
-Message-Id: <20130115185003.970574304@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 084/221] drm/i915: fix flags in dma buf exporting
+Date: Tue, 15 Jan 2013 10:50:11 -0800
+Message-Id: <20130115185004.109117835@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -27,131 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Dave Airlie <airlied@redhat.com>
 
-commit b4a98e57fc27854b5938fc8b08b68e5e68b91e1f upstream.
+commit 5b42427fc38ecb9056c4e64deaff36d6d6ba1b67 upstream.
 
-If we accumulate unpin tasks because we are pageflipping faster than the
-system can schedule its workers, we can effectively create a
-pin-leak. The solution taken here is to limit the number of unpin tasks
-we have per-crtc and to flush those outstanding tasks if we accumulate
-too many. This should prevent any jitter in the normal case, and also
-prevent the hang if we should run too fast.
+As pointed out by Seung-Woo Kim this should have been
+passing flags like nouveau/radeon have.
 
-Note: It is important that we switch from the system workqueue to our
-own dev_priv->wq since all work items on that queue are guaranteed to
-only need the dev->struct_mutex and not any modeset resources. For
-otherwise if we have a work item ahead in the queue which needs the
-modeset lock (like the output detect work used by both polling or
-hpd), this work and so the unpin work will never execute since the
-pageflip code already holds that lock. Unfortunately there's no
-lockdep support for this scenario in the workqueue code.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=46991
-Reported-and-tested-by: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-[danvet: Added note about workqueu deadlock.]
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=56337
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Tested-by: Daniel Gnoutcheff <daniel@gnoutcheff.name>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   22 ++++++++++++++++------
- drivers/gpu/drm/i915/intel_drv.h     |    4 +++-
- 2 files changed, 19 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_dmabuf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6187,14 +6187,19 @@ static void intel_unpin_work_fn(struct w
+--- a/drivers/gpu/drm/i915/i915_gem_dmabuf.c
++++ b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
+@@ -226,7 +226,7 @@ struct dma_buf *i915_gem_prime_export(st
  {
- 	struct intel_unpin_work *work =
- 		container_of(__work, struct intel_unpin_work, work);
-+	struct drm_device *dev = work->crtc->dev;
+ 	struct drm_i915_gem_object *obj = to_intel_bo(gem_obj);
  
--	mutex_lock(&work->dev->struct_mutex);
-+	mutex_lock(&dev->struct_mutex);
- 	intel_unpin_fb_obj(work->old_fb_obj);
- 	drm_gem_object_unreference(&work->pending_flip_obj->base);
- 	drm_gem_object_unreference(&work->old_fb_obj->base);
- 
--	intel_update_fbc(work->dev);
--	mutex_unlock(&work->dev->struct_mutex);
-+	intel_update_fbc(dev);
-+	mutex_unlock(&dev->struct_mutex);
-+
-+	BUG_ON(atomic_read(&to_intel_crtc(work->crtc)->unpin_work_count) == 0);
-+	atomic_dec(&to_intel_crtc(work->crtc)->unpin_work_count);
-+
- 	kfree(work);
+-	return dma_buf_export(obj, &i915_dmabuf_ops, obj->base.size, 0600);
++	return dma_buf_export(obj, &i915_dmabuf_ops, obj->base.size, flags);
  }
  
-@@ -6249,9 +6254,9 @@ static void do_intel_finish_page_flip(st
- 
- 	atomic_clear_mask(1 << intel_crtc->plane,
- 			  &obj->pending_flip.counter);
--
- 	wake_up(&dev_priv->pending_flip_queue);
--	schedule_work(&work->work);
-+
-+	queue_work(dev_priv->wq, &work->work);
- 
- 	trace_i915_flip_complete(intel_crtc->plane, work->pending_flip_obj);
- }
-@@ -6570,7 +6575,7 @@ static int intel_crtc_page_flip(struct d
- 		return -ENOMEM;
- 
- 	work->event = event;
--	work->dev = crtc->dev;
-+	work->crtc = crtc;
- 	intel_fb = to_intel_framebuffer(crtc->fb);
- 	work->old_fb_obj = intel_fb->obj;
- 	INIT_WORK(&work->work, intel_unpin_work_fn);
-@@ -6595,6 +6600,9 @@ static int intel_crtc_page_flip(struct d
- 	intel_fb = to_intel_framebuffer(fb);
- 	obj = intel_fb->obj;
- 
-+	if (atomic_read(&intel_crtc->unpin_work_count) >= 2)
-+		flush_workqueue(dev_priv->wq);
-+
- 	ret = i915_mutex_lock_interruptible(dev);
- 	if (ret)
- 		goto cleanup;
-@@ -6613,6 +6621,7 @@ static int intel_crtc_page_flip(struct d
- 	 * the flip occurs and the object is no longer visible.
- 	 */
- 	atomic_add(1 << intel_crtc->plane, &work->old_fb_obj->pending_flip);
-+	atomic_inc(&intel_crtc->unpin_work_count);
- 
- 	ret = dev_priv->display.queue_flip(dev, crtc, fb, obj);
- 	if (ret)
-@@ -6627,6 +6636,7 @@ static int intel_crtc_page_flip(struct d
- 	return 0;
- 
- cleanup_pending:
-+	atomic_dec(&intel_crtc->unpin_work_count);
- 	atomic_sub(1 << intel_crtc->plane, &work->old_fb_obj->pending_flip);
- 	drm_gem_object_unreference(&work->old_fb_obj->base);
- 	drm_gem_object_unreference(&obj->base);
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -198,6 +198,8 @@ struct intel_crtc {
- 	struct intel_unpin_work *unpin_work;
- 	int fdi_lanes;
- 
-+	atomic_t unpin_work_count;
-+
- 	/* Display surface base address adjustement for pageflips. Note that on
- 	 * gen4+ this only adjusts up to a tile, offsets within a tile are
- 	 * handled in the hw itself (with the TILEOFF register). */
-@@ -380,7 +382,7 @@ intel_get_crtc_for_plane(struct drm_devi
- 
- struct intel_unpin_work {
- 	struct work_struct work;
--	struct drm_device *dev;
-+	struct drm_crtc *crtc;
- 	struct drm_i915_gem_object *old_fb_obj;
- 	struct drm_i915_gem_object *pending_flip_obj;
- 	struct drm_pending_vblank_event *event;
+ static int i915_gem_object_get_pages_dmabuf(struct drm_i915_gem_object *obj)
 
 
