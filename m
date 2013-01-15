@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758030Ab3AOS5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:57:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34874 "EHLO mail.kernel.org"
+	id S1758042Ab3AOS5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:57:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34886 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757951Ab3AOS5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:57:33 -0500
+	id S1757951Ab3AOS5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 13:57:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mikael Pettersson <mikpe@it.uu.se>, Adko Branil <adkobranil@yahoo.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 041/221] sata_promise: fix hardreset lockdep error
-Date: Tue, 15 Jan 2013 10:49:28 -0800
-Message-Id: <20130115185000.991596500@linuxfoundation.org>
+        Fabrizio Narni <shibotto@gmail.com>, mus.svz@gmail.com,
+        Mattia Dongili <malattia@linux.it>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [ 042/221] sony-laptop: fix SNC buffer calls when SN06 returns Integers
+Date: Tue, 15 Jan 2013 10:49:29 -0800
+Message-Id: <20130115185001.059674137@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.336.g94702dd
 In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
 References: <20130115184958.025580322@linuxfoundation.org>
@@ -26,84 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikael Pettersson <mikpe@it.uu.se>
+From: Mattia Dongili <malattia@linux.it>
 
-commit 3100d49d3cd236443faae9d81137c81b22d36003 upstream.
+commit dcbeec264d73b7228ffdfe767eab69b2353099b1 upstream.
 
-sata_promise's pdc_hard_reset_port() needs to serialize because it
-flips a port-specific bit in controller register that's shared by
-all ports. The code takes the ata host lock for this, but that's
-broken because an interrupt may arrive on our irq during the hard
-reset sequence, and that too will take the ata host lock. With
-lockdep enabled a big nasty warning is seen.
+SN06 in some cases returns an Integer instead of a buffer. While the
+code handling the return value was trying to cope with the difference,
+the memcpy call was not making any difference between the two types of
+acpi_object union. This regression was introduced in 3.5.
+While there also rework the return value logic to improve readability.
 
-Fixed by adding private state to the ata host structure, containing
-a second lock used only for serializing the hard reset sequences.
-This eliminated the lockdep warnings both on my test rig and on
-the original reporter's machine.
-
-Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
-Tested-by: Adko Branil <adkobranil@yahoo.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=48671
+Cc: Fabrizio Narni <shibotto@gmail.com>
+Cc: <mus.svz@gmail.com>
+Signed-off-by: Mattia Dongili <malattia@linux.it>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/sata_promise.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/platform/x86/sony-laptop.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
---- a/drivers/ata/sata_promise.c
-+++ b/drivers/ata/sata_promise.c
-@@ -147,6 +147,10 @@ struct pdc_port_priv {
- 	dma_addr_t		pkt_dma;
- };
+--- a/drivers/platform/x86/sony-laptop.c
++++ b/drivers/platform/x86/sony-laptop.c
+@@ -786,28 +786,29 @@ static int sony_nc_int_call(acpi_handle
+ static int sony_nc_buffer_call(acpi_handle handle, char *name, u64 *value,
+ 		void *buffer, size_t buflen)
+ {
++	int ret = 0;
+ 	size_t len = len;
+ 	union acpi_object *object = __call_snc_method(handle, name, value);
  
-+struct pdc_host_priv {
-+	spinlock_t hard_reset_lock;
-+};
-+
- static int pdc_sata_scr_read(struct ata_link *link, unsigned int sc_reg, u32 *val);
- static int pdc_sata_scr_write(struct ata_link *link, unsigned int sc_reg, u32 val);
- static int pdc_ata_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
-@@ -801,9 +805,10 @@ static void pdc_hard_reset_port(struct a
- 	void __iomem *host_mmio = ap->host->iomap[PDC_MMIO_BAR];
- 	void __iomem *pcictl_b1_mmio = host_mmio + PDC_PCI_CTL + 1;
- 	unsigned int ata_no = pdc_ata_port_to_ata_no(ap);
-+	struct pdc_host_priv *hpriv = ap->host->private_data;
- 	u8 tmp;
+ 	if (!object)
+ 		return -EINVAL;
  
--	spin_lock(&ap->host->lock);
-+	spin_lock(&hpriv->hard_reset_lock);
+-	if (object->type == ACPI_TYPE_BUFFER)
++	if (object->type == ACPI_TYPE_BUFFER) {
+ 		len = MIN(buflen, object->buffer.length);
++		memcpy(buffer, object->buffer.pointer, len);
  
- 	tmp = readb(pcictl_b1_mmio);
- 	tmp &= ~(0x10 << ata_no);
-@@ -814,7 +819,7 @@ static void pdc_hard_reset_port(struct a
- 	writeb(tmp, pcictl_b1_mmio);
- 	readb(pcictl_b1_mmio); /* flush */
+-	else if (object->type == ACPI_TYPE_INTEGER)
++	} else if (object->type == ACPI_TYPE_INTEGER) {
+ 		len = MIN(buflen, sizeof(object->integer.value));
++		memcpy(buffer, &object->integer.value, len);
  
--	spin_unlock(&ap->host->lock);
-+	spin_unlock(&hpriv->hard_reset_lock);
+-	else {
++	} else {
+ 		pr_warn("Invalid acpi_object: expected 0x%x got 0x%x\n",
+ 				ACPI_TYPE_BUFFER, object->type);
+-		kfree(object);
+-		return -EINVAL;
++		ret = -EINVAL;
+ 	}
+ 
+-	memcpy(buffer, object->buffer.pointer, len);
+ 	kfree(object);
+-	return 0;
++	return ret;
  }
  
- static int pdc_sata_hardreset(struct ata_link *link, unsigned int *class,
-@@ -1182,6 +1187,7 @@ static int pdc_ata_init_one(struct pci_d
- 	const struct ata_port_info *pi = &pdc_port_info[ent->driver_data];
- 	const struct ata_port_info *ppi[PDC_MAX_PORTS];
- 	struct ata_host *host;
-+	struct pdc_host_priv *hpriv;
- 	void __iomem *host_mmio;
- 	int n_ports, i, rc;
- 	int is_sataii_tx4;
-@@ -1218,6 +1224,11 @@ static int pdc_ata_init_one(struct pci_d
- 		dev_err(&pdev->dev, "failed to allocate host\n");
- 		return -ENOMEM;
- 	}
-+	hpriv = devm_kzalloc(&pdev->dev, sizeof *hpriv, GFP_KERNEL);
-+	if (!hpriv)
-+		return -ENOMEM;
-+	spin_lock_init(&hpriv->hard_reset_lock);
-+	host->private_data = hpriv;
- 	host->iomap = pcim_iomap_table(pdev);
- 
- 	is_sataii_tx4 = pdc_is_sataii_tx4(pi->flags);
+ struct sony_nc_handles {
 
 
