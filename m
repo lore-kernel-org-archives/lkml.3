@@ -1,58 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758022Ab3AOS7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 13:59:31 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:53400 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757810Ab3AOS72 (ORCPT
+	id S1758054Ab3AOS7k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 13:59:40 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51594 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758001Ab3AOS7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 13:59:28 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] net: netfilter/xt_CT.c: fix uninitialized variable
-Date: Tue, 15 Jan 2013 19:58:34 +0100
-Message-Id: <1358276314-9536-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 15 Jan 2013 13:59:31 -0500
+Message-ID: <50F5A710.2000001@wwwdotorg.org>
+Date: Tue, 15 Jan 2013 11:59:28 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] ARM: tegra: config: enable KEYBOARD_TEGRA
+References: <1357911185-11048-1-git-send-email-ldewangan@nvidia.com> <1357911185-11048-2-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1357911185-11048-2-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_NF_CONNTRACK_ZONES is not defined, the variable ret might be
-uninitialized when it goes to err1 through line 125 and 263 respectively.
-So I change these goto err1 to return -EINVAL directly.
+On 01/11/2013 06:33 AM, Laxman Dewangan wrote:
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- net/netfilter/xt_CT.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/netfilter/xt_CT.c b/net/netfilter/xt_CT.c
-index 2a08430..941f600 100644
---- a/net/netfilter/xt_CT.c
-+++ b/net/netfilter/xt_CT.c
-@@ -122,7 +122,7 @@ static int xt_ct_tg_check_v0(const struct xt_tgchk_param *par)
- 
- #ifndef CONFIG_NF_CONNTRACK_ZONES
- 	if (info->zone)
--		goto err1;
-+		return -EINVAL;
- #endif
- 
- 	ret = nf_ct_l3proto_try_module_get(par->family);
-@@ -260,7 +260,7 @@ static int xt_ct_tg_check_v1(const struct xt_tgchk_param *par)
- 
- #ifndef CONFIG_NF_CONNTRACK_ZONES
- 	if (info->zone)
--		goto err1;
-+		return -EINVAL;
- #endif
- 
- 	ret = nf_ct_l3proto_try_module_get(par->family);
--- 
-1.7.10.4
-
+Squashed into Tegra's for-3.9/defconfig branch.
