@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab3APXhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 18:37:00 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:52737 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab3APXg7 (ORCPT
+	id S1757642Ab3APXhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 18:37:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42441 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308Ab3APXhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 18:36:59 -0500
-From: Rob Herring <robherring2@gmail.com>
-To: netdev@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: calxedaxgmac: throw away overrun frames
-Date: Wed, 16 Jan 2013 17:36:37 -0600
-Message-Id: <1358379397-7152-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 16 Jan 2013 18:37:45 -0500
+Date: Wed, 16 Jan 2013 15:37:44 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v7 0/6] solve deadlock caused by memory allocation with
+ I/O
+Message-Id: <20130116153744.70210fa3.akpm@linux-foundation.org>
+In-Reply-To: <1357352744-8138-1-git-send-email-ming.lei@canonical.com>
+References: <1357352744-8138-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Sat,  5 Jan 2013 10:25:38 +0800
+Ming Lei <ming.lei@canonical.com> wrote:
 
-The xgmac driver assumes 1 frame per descriptor. If a frame larger than
-the descriptor's buffer size is received, the frame will spill over into
-the next descriptor. So check for received frames that span more than one
-descriptor and discard them. This prevents a crash if we receive erroneous
-large packets.
+> This patchset try to solve one deadlock problem which might be caused
+> by memory allocation with block I/O during runtime PM and block device
+> error handling path. Traditionly, the problem is addressed by passing
+> GFP_NOIO statically to mm, but that is not a effective solution, see
+> detailed description in patch 1's commit log.
+> 
+> This patch set introduces one process flag and trys to fix the deadlock
+> problem on block device/network device during runtime PM or usb bus reset.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/net/ethernet/calxeda/xgmac.c |    4 ++++
- 1 file changed, 4 insertions(+)
+The patchset doesn't look like the worst thing I've ever applied ;)
 
-diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
-index b407043..f7f0290 100644
---- a/drivers/net/ethernet/calxeda/xgmac.c
-+++ b/drivers/net/ethernet/calxeda/xgmac.c
-@@ -548,6 +548,10 @@ static int desc_get_rx_status(struct xgmac_priv *priv, struct xgmac_dma_desc *p)
- 		return -1;
- 	}
- 
-+	/* All frames should fit into a single buffer */
-+	if (!(status & RXDESC_FIRST_SEG) || !(status & RXDESC_LAST_SEG))
-+		return -1;
-+
- 	/* Check if packet has checksum already */
- 	if ((status & RXDESC_FRAME_TYPE) && (status & RXDESC_EXT_STATUS) &&
- 		!(ext_status & RXDESC_IP_PAYLOAD_MASK))
--- 
-1.7.10.4
+One thing I'm wondering: during suspend and resume, why are GFP_KERNEL
+allocation attempts even getting down to the device layer?  Presumably
+the page scanner is encountering dirty pagecache or dirty swapcache
+pages?
+
+If so, I wonder if we could avoid the whole problem by appropriately
+syncing all dirty memory back to storage before starting to turn devices
+off?
 
