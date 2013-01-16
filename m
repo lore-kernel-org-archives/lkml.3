@@ -1,107 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab3APRxB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 12:53:01 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62908 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752576Ab3APRw7 (ORCPT
+	id S1755330Ab3APR5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:57:04 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:38921
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752756Ab3APR5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 12:52:59 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19d1OePLPXwrFHurwwAt8iIGol5jYVULBU=
-Date: Wed, 16 Jan 2013 12:52:03 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Soeren Moch <smoch@web.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH] ata: sata_mv: fix sg_tbl_pool alignment
-Message-ID: <20130116175203.GK25500@titan.lakedaemon.net>
-References: <20130115165642.GA25500@titan.lakedaemon.net>
- <20130115175020.GA3764@kroah.com>
- <20130115201617.GC25500@titan.lakedaemon.net>
- <20130115215602.GF25500@titan.lakedaemon.net>
- <50F5F1B7.3040201@web.de>
- <20130116024014.GH25500@titan.lakedaemon.net>
- <50F61D86.4020801@web.de>
- <50F66B1B.40301@web.de>
- <20130116155045.GI25500@titan.lakedaemon.net>
- <50F6DDF7.9080605@web.de>
+	Wed, 16 Jan 2013 12:57:02 -0500
+X-Forefront-Antispam-Report: CIP:132.245.1.197;KIP:(null);UIP:(null);IPV:NLI;H:BLUPRD0712HT002.namprd07.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: PS-4(zzbb2dI98dI9371I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h1765h1155h)
+Message-ID: <50F6E9B3.5010202@caviumnetworks.com>
+Date: Wed, 16 Jan 2013 09:56:03 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F6DDF7.9080605@web.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: Cong Ding <dinggnu@gmail.com>, Jim Quinlan <jim2101024@gmail.com>,
+        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mpis: cavium-octeon/executive/cvmx-l2c.c: fix uninitialized
+ variable
+References: <1358200025-15994-1-git-send-email-dinggnu@gmail.com> <20130116105757.GB26569@linux-mips.org>
+In-Reply-To: <20130116105757.GB26569@linux-mips.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 06:05:59PM +0100, Soeren Moch wrote:
-> On 16.01.2013 16:50, Jason Cooper wrote:
-> >On Wed, Jan 16, 2013 at 09:55:55AM +0100, Soeren Moch wrote:
-> >>On 16.01.2013 04:24, Soeren Moch wrote:
-> >>>On 16.01.2013 03:40, Jason Cooper wrote:
-> >>>>On Wed, Jan 16, 2013 at 01:17:59AM +0100, Soeren Moch wrote:
-> >>>>>On 15.01.2013 22:56, Jason Cooper wrote:
-> >>>>>>On Tue, Jan 15, 2013 at 03:16:17PM -0500, Jason Cooper wrote:
-> >
-> >>OK, I could trigger the error
-> >>   ERROR: 1024 KiB atomic DMA coherent pool is too small!
-> >>   Please increase it with coherent_pool= kernel parameter!
-> >>only with em28xx sticks and sata, dib0700 sticks removed.
-> >
-> >Did you test the reverse scenario?  ie dib0700 with sata_mv and no
-> >em28xx.
-> 
-> Maybe I can test this next night.
+On 01/16/2013 02:57 AM, Ralf Baechle wrote:
+> On Mon, Jan 14, 2013 at 10:47:03PM +0100, Cong Ding wrote:
+>
+>> the variable dummy is used without initialization.
+>
+> Interesting - I wonder how you found this one.  My compiler (gcc 4.7)
+> doesn't warn about this one.
+>
 
-Please do, this will tell us if it is in the USB drivers or lower
-(something in common).
+I get no warnings either.  So I wonder what the point of churning up the 
+code is.
 
-> >>>>What would be most helpful is if you could do a git bisect between
-> >>>>v3.5.x (working) and the oldest version where you know it started
-> >>>>failing (v3.7.1 or earlier if you know it).
-> >>>>
-> >>>I did not bisect it, but Marek mentioned earlier that commit
-> >>>e9da6e9905e639b0f842a244bc770b48ad0523e9 in Linux v3.6-rc1 introduced
-> >>>new code for dma allocations. This is probably the root cause for the
-> >>>new (mis-)behavior (due to my tests 3.6.0 is not working anymore).
-> >>
-> >>I don't want to say that Mareks patch is wrong, probably it triggers a
-> >>bug somewhere else! (in em28xx?)
-> >
-> >Of the four drivers you listed, none are using dma.  sata_mv is the only
-> >one.
-> 
-> usb_core is doing the actual DMA for the usb bridge drivers, I think.
+David Daney
 
-Yes, my mistake.  I'd like to attribute that statement to pre-coffee
-rambling. :-)
+> Nor does gcc notice that the whole summing up business is wasted efford.
+>
+> So here's my counter proposal.  It works because ptr is a volatile pointer
+> so the compiler will always dereference it even if the returned value is
+> not being used.  The resulting code is a bit smaller.
+>
+>    Ralf
+>
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+>
+>   arch/mips/cavium-octeon/executive/cvmx-l2c.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/mips/cavium-octeon/executive/cvmx-l2c.c b/arch/mips/cavium-octeon/executive/cvmx-l2c.c
+> index 9f883bf..ec3e059 100644
+> --- a/arch/mips/cavium-octeon/executive/cvmx-l2c.c
+> +++ b/arch/mips/cavium-octeon/executive/cvmx-l2c.c
+> @@ -286,7 +286,7 @@ uint64_t cvmx_l2c_read_perf(uint32_t counter)
+>   static void fault_in(uint64_t addr, int len)
+>   {
+>   	volatile char *ptr;
+> -	volatile char dummy;
+> +
+>   	/*
+>   	 * Adjust addr and length so we get all cache lines even for
+>   	 * small ranges spanning two cache lines.
+> @@ -300,7 +300,7 @@ static void fault_in(uint64_t addr, int len)
+>   	 */
+>   	CVMX_DCACHE_INVALIDATE;
+>   	while (len > 0) {
+> -		dummy += *ptr;
+> +		*ptr;
+>   		len -= CVMX_CACHE_LINE_SIZE;
+>   		ptr += CVMX_CACHE_LINE_SIZE;
+>   	}
+>
+>
+>
 
-> >If one is to believe the comments in sata_mv.c:~151, then the alignment
-> >is wrong for the sg_tbl_pool.
-> >
-> >Could you please try the following patch?
-> 
-> OK, what should I test first, the setup from last night (em28xx, no
-> dib0700) plus your patch, or the reverse setup (dib0700, no em28xx)
-> without your patch, or my normal setting (all dvb sticks) plus your
-> patch?
 
-if testing time is limited, please do the test I outlined at the top of
-this email.  I've been digging more into the dma code and while I think
-the patch is correct, I don't see where it would fix your problem (yet).
-
-thx,
-
-Jason.
