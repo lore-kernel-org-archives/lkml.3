@@ -1,179 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab3APPxg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:53:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52582 "EHLO mx1.redhat.com"
+	id S1756470Ab3APPyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:54:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42154 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756246Ab3APPxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:53:09 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH V6 2/3] vhost_net: handle polling errors when setting backend
-Date: Wed, 16 Jan 2013 23:44:37 +0800
-Message-Id: <1358351078-58915-3-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1358351078-58915-1-git-send-email-jasowang@redhat.com>
-References: <1358351078-58915-1-git-send-email-jasowang@redhat.com>
+	id S1755112Ab3APPyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 10:54:10 -0500
+Date: Wed, 16 Jan 2013 10:54:06 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
+        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+Message-ID: <20130116155406.GC29845@redhat.com>
+References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+ <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
+ <871udloiku.fsf@xmission.com>
+ <1358312159.4593.37.camel@falcor1>
+ <87wqvdli1o.fsf@xmission.com>
+ <1358344859.4593.66.camel@falcor1>
+ <20130116144836.GB29845@redhat.com>
+ <1358350391.4593.112.camel@falcor1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358350391.4593.112.camel@falcor1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the polling errors were ignored, which can lead following issues:
+On Wed, Jan 16, 2013 at 10:33:11AM -0500, Mimi Zohar wrote:
 
-- vhost remove itself unconditionally from waitqueue when stopping the poll,
-  this may crash the kernel since the previous attempt of starting may fail to
-  add itself to the waitqueue
-- userspace may think the backend were successfully set even when the polling
-  failed.
+[..]
+> > - Also I really could not figure out where does the private signing key
+> >   lives. I got the impression that we need to trust installer and
+> >   signing somehow happens at installation time. And we wanted signing
+> >   to happen at build server and could not trust installer for that.
+> 
+> Dmitry's ima-evm-utils package signs files.  Depending on the options,
+> both the EVM and IMA extended attributes are created.
 
-Solve this by:
+I was going through following presentation.
 
-- check poll->wqh before trying to remove from waitqueue
-- report polling errors in vhost_poll_start(), tx_poll_start(), the return value
-  will be checked and returned when userspace want to set the backend
+http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
 
-After this fix, there still could be a polling failure after backend is set, it
-will addressed by the next patch.
+On slide 8, it mentons signing.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/vhost/net.c   |   27 ++++++++++++++++++---------
- drivers/vhost/vhost.c |   18 +++++++++++++++---
- drivers/vhost/vhost.h |    2 +-
- 3 files changed, 34 insertions(+), 13 deletions(-)
+	evmctl sign --imahash /path/to/file
+	evmctl sign --imasig /path/to/file
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index d10ad6f..959b1cd 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -165,12 +165,16 @@ static void tx_poll_stop(struct vhost_net *net)
- }
- 
- /* Caller must have TX VQ lock */
--static void tx_poll_start(struct vhost_net *net, struct socket *sock)
-+static int tx_poll_start(struct vhost_net *net, struct socket *sock)
- {
-+	int ret;
-+
- 	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
--		return;
--	vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
--	net->tx_poll_state = VHOST_NET_POLL_STARTED;
-+		return 0;
-+	ret = vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
-+	if (!ret)
-+		net->tx_poll_state = VHOST_NET_POLL_STARTED;
-+	return ret;
- }
- 
- /* In case of DMA done not in order in lower device driver for some reason.
-@@ -642,20 +646,23 @@ static void vhost_net_disable_vq(struct vhost_net *n,
- 		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
- }
- 
--static void vhost_net_enable_vq(struct vhost_net *n,
-+static int vhost_net_enable_vq(struct vhost_net *n,
- 				struct vhost_virtqueue *vq)
- {
- 	struct socket *sock;
-+	int ret;
- 
- 	sock = rcu_dereference_protected(vq->private_data,
- 					 lockdep_is_held(&vq->mutex));
- 	if (!sock)
--		return;
-+		return 0;
- 	if (vq == n->vqs + VHOST_NET_VQ_TX) {
- 		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
--		tx_poll_start(n, sock);
-+		ret = tx_poll_start(n, sock);
- 	} else
--		vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
-+		ret = vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
-+
-+	return ret;
- }
- 
- static struct socket *vhost_net_stop_vq(struct vhost_net *n,
-@@ -833,7 +840,9 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
- 		r = vhost_init_used(vq);
- 		if (r)
- 			goto err_used;
--		vhost_net_enable_vq(n, vq);
-+		r = vhost_net_enable_vq(n, vq);
-+		if (r)
-+			goto err_used;
- 
- 		oldubufs = vq->ubufs;
- 		vq->ubufs = ubufs;
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 34389f7..9759249 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -77,26 +77,38 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
- 	init_poll_funcptr(&poll->table, vhost_poll_func);
- 	poll->mask = mask;
- 	poll->dev = dev;
-+	poll->wqh = NULL;
- 
- 	vhost_work_init(&poll->work, fn);
- }
- 
- /* Start polling a file. We add ourselves to file's wait queue. The caller must
-  * keep a reference to a file until after vhost_poll_stop is called. */
--void vhost_poll_start(struct vhost_poll *poll, struct file *file)
-+int vhost_poll_start(struct vhost_poll *poll, struct file *file)
- {
- 	unsigned long mask;
-+	int ret = 0;
- 
- 	mask = file->f_op->poll(file, &poll->table);
- 	if (mask)
- 		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
-+	if (mask & POLLERR) {
-+		if (poll->wqh)
-+			remove_wait_queue(poll->wqh, &poll->wait);
-+		ret = -EINVAL;
-+	}
-+
-+	return ret;
- }
- 
- /* Stop polling a file. After this function returns, it becomes safe to drop the
-  * file reference. You must also flush afterwards. */
- void vhost_poll_stop(struct vhost_poll *poll)
- {
--	remove_wait_queue(poll->wqh, &poll->wait);
-+	if (poll->wqh) {
-+		remove_wait_queue(poll->wqh, &poll->wait);
-+		poll->wqh = NULL;
-+	}
- }
- 
- static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
-@@ -792,7 +804,7 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
- 		fput(filep);
- 
- 	if (pollstart && vq->handle_kick)
--		vhost_poll_start(&vq->poll, vq->kick);
-+		r = vhost_poll_start(&vq->poll, vq->kick);
- 
- 	mutex_unlock(&vq->mutex);
- 
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 2639c58..17261e2 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -42,7 +42,7 @@ void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work);
- 
- void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
- 		     unsigned long mask, struct vhost_dev *dev);
--void vhost_poll_start(struct vhost_poll *poll, struct file *file);
-+int vhost_poll_start(struct vhost_poll *poll, struct file *file);
- void vhost_poll_stop(struct vhost_poll *poll);
- void vhost_poll_flush(struct vhost_poll *poll);
- void vhost_poll_queue(struct vhost_poll *poll);
--- 
-1.7.1
+Can't figure out where does the key for signing come from? Is it already
+loaded in any of kernel keyrings.
 
+If yes, I think this is non-starter. One can not distribute the private
+key.
+
+Also I am assuming that this is done at installation time? If yes, then
+again it does not work as installer does not have private key.
+
+On slide 11, it talks about importing public keys in kernel keyring from
+initramfs. As we discussed this will need modification as these keys
+need to be signed and signing public key should already be part of 
+kernel keyring.
+
+So looking at the signing process, it really does not look like that
+I can sign the executable at build server. It looks it needs to be
+signed by installer at install time and private key needs to be available
+to installer?
+ 
+> 
+> >   My understanding of IMA could be wrong. So it would help if you
+> >   could list the exact steps about how to achieve the same goal using
+> >   IMA.
+> 
+> http://linux-ima.sourceforge.net/  needs to be updated, but it describes
+> the integrity subsystem and includes a link to Dave Safford's original
+> whitepaper "An Overview of the Linux Integrity subsystem".
+
+I have gone through the paper in the past and still the quetions remain
+unanswered. So it will really help, if you could take a very simple
+example of hello-world executable and list the steps needed to be
+performed to sign and verify executable.
+
+Thanks
+Vivek
