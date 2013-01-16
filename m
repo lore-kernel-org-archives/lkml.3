@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab3APSgO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 13:36:14 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:30087 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756552Ab3APSgN (ORCPT
+	id S1757096Ab3APSg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 13:36:26 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:64100 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757354Ab3APSgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 13:36:13 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18SyT9rjqHv9X/VIzQCixJXjz2aCpkeyM4=
-Date: Wed, 16 Jan 2013 13:35:18 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Soeren Moch <smoch@web.de>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linaro-mm-sig@lists.linaro.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] ata: sata_mv: fix sg_tbl_pool alignment
-Message-ID: <20130116183518.GL25500@titan.lakedaemon.net>
-References: <20130115175020.GA3764@kroah.com>
- <20130115201617.GC25500@titan.lakedaemon.net>
- <20130115215602.GF25500@titan.lakedaemon.net>
- <50F5F1B7.3040201@web.de>
- <20130116024014.GH25500@titan.lakedaemon.net>
- <50F61D86.4020801@web.de>
- <50F66B1B.40301@web.de>
- <20130116155045.GI25500@titan.lakedaemon.net>
- <50F6DDF7.9080605@web.de>
- <20130116175203.GK25500@titan.lakedaemon.net>
+	Wed, 16 Jan 2013 13:36:23 -0500
+Message-ID: <50F700C7.2020101@mvista.com>
+Date: Wed, 16 Jan 2013 22:34:31 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130116175203.GK25500@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Roger Quadros <rogerq@ti.com>
+CC: balbi@ti.com, sameo@linux.intel.com, tony@atomide.com, kishon@ti.com,
+        bjorn@mork.no, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 11/22] mfd: omap-usb-host: Use devm_kzalloc() and devm_request_and_ioremap()
+References: <1358347433-329-1-git-send-email-rogerq@ti.com> <1358347433-329-12-git-send-email-rogerq@ti.com>
+In-Reply-To: <1358347433-329-12-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > >On Wed, Jan 16, 2013 at 09:55:55AM +0100, Soeren Moch wrote:
-> > >>I don't want to say that Mareks patch is wrong, probably it triggers a
-> > >>bug somewhere else! (in em28xx?)
+Hello.
 
-Could you send the output of:
+On 01/16/2013 05:43 PM, Roger Quadros wrote:
 
-lsusb -v -d VEND:PROD
+> Use devm_ variants of kzalloc and ioremap. Also clean up error path.
 
-for the em28xx?
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+[...]
 
-thx,
+> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+> index 061366d..0f190b6 100644
+> --- a/drivers/mfd/omap-usb-host.c
+> +++ b/drivers/mfd/omap-usb-host.c
+> @@ -461,15 +461,20 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+[...]
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "uhh");
+> +	omap->uhh_base = devm_request_and_ioremap(dev, res);
+> +	if (!omap->uhh_base) {
+> +		dev_err(dev, "Resource request/ioremap failed\n");
+> +		return -ENOMEM;
 
-Jason.
+   Should be -EADDRNOTAVAIL according to the comment to
+devm_request_and_ioremap()...
+
+WBR, Sergei
+
