@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab3APOAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:00:44 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:52265 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756374Ab3APOAk (ORCPT
+	id S1756262Ab3APOC2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:02:28 -0500
+Received: from smtp.domeneshop.no ([194.63.252.54]:34673 "EHLO
+	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab3APOC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:00:40 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
-Date: Wed, 16 Jan 2013 14:00:26 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andrew Murray <andrew.murray@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <20130115154038.GA11241@arm.com> <20130115211441.GA13139@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20130115211441.GA13139@avionic-0098.adnet.avionic-design.de>
+	Wed, 16 Jan 2013 09:02:27 -0500
+Message-ID: <50F6B30F.6010207@paradoxuncreated.com>
+Date: Wed, 16 Jan 2013 15:02:55 +0100
+From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301161400.26587.arnd@arndb.de>
-X-Provags-ID: V02:K0:valu2YmzLg+QaYTd2FlKCotVeTuAcRTFL2hyJVXpZmA
- GpWyrOPW7guwXi5YyVsMbHe4knUOyaMnwdQTDTbXDeRp0Oa31J
- s5ffIjGdsD63xFXMTmyCwwccVrdEOJT/gc2JqJ9i2QqbSujeft
- 9V6tTL0kaIcglte85fJ1Ktni2u90/5BDekg+6GkuhsNZ5QvKIU
- fT75/sSnpIAdaQZ3aeh6VoB//+1Op289AhmeeGlzreiC7ykeR7
- JggOvfmxT6IUzOwQIVGnYAj3xQwayp6ZIfRjxPWXtBobhXFe0B
- 5gISSWAyMdO2qqYas9xInkaCXFIOPeitOpO41OlaUIWxei9Jkj
- WuPsEN6heihipB4GiBYc=
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: One last tweak for perfection.
+References: <50F6B254.2020801@paradoxuncreated.com>
+In-Reply-To: <50F6B254.2020801@paradoxuncreated.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 January 2013, Thierry Reding wrote:
-> Is there actually hardware that supports this? I assumed that the MSI
-> controller would have to be tightly coupled to the PCI host bridge in
-> order to raise an interrupt when an MSI is received via PCI.
+What kernelthreads _needs_ to run? So I can put them on max pri renice, 
+along with reniced X and app. And everything else on idle priority. So 
+to make the app run at max efficiency, and not be starved by 
+kernelthreads waiting. (Or any other consideration, for giving maximal 
+cpu to app. Even small tweaks.)
 
-No, as long as it's guaranteed that the MSI notification won't arrive
-at the CPU before any inbound DMA data before it, the MSI controller
-can be anywhere. Typically, the MSI controller is actually closer to
-the CPU core than to the PCI bridge. On X86, I believe the MSI address
-is on normally on the the "local APIC" on each CPU.
+To read my research so far, (and I have done much, about 2 years of 
+tweakin´ on and off.) Please see 
+http://paradoxuncreated.com/Blog/wordpress/?p=2268
 
-	Arnd
+Main points, no highres timer, 90hz timer, + a lot of smaller tweaks. 
+This makes an amazing linux-desktop, for gaming, video and audio. The 
+popular computer for everyman. Also boosts performance, for 
+resource-constrained systems.
+
+For more advanced hacking, one could also get in there, and make several 
+HZ timers, extremely low ones, for the components who only require that, 
+and 90hz for video-components, for instance (low video/frame jitter), 
+and higher if anything should require that.
+
+Also system-wide, software should be synced to hz, if required for 
+lowest jitter, such as animations and videoplayers, and videoplayers 
+automatically change refresh rate to a multiple of video framerate.
+
+Peace Be With You.
