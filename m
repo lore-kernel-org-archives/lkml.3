@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab3APAdz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:33:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41499 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757737Ab3AOW2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:28:42 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Huang Shijie <b32955@freescale.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 057/221] mtd: nand: gpmi: reset BCH earlier, too, to avoid NAND startup problems
-Date: Tue, 15 Jan 2013 10:49:44 -0800
-Message-Id: <20130115185002.149980063@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
-References: <20130115184958.025580322@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1758041Ab3APAeF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:34:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59999 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757837Ab3APAeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 19:34:01 -0500
+Date: Tue, 15 Jan 2013 16:33:59 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        tytso@mit.edu, viro@zeniv.linux.org.uk, rminnich@sandia.gov,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        gnehzuil.liu@gmail.com, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        linux-ext4@vger.kernel.org, hirofumi@mail.parknet.co.jp
+Subject: Re: [PATCH v2.4 0/3] mm/fs: Remove unnecessary waiting for stable
+ pages
+Message-Id: <20130115163359.16d64ab4.akpm@linux-foundation.org>
+In-Reply-To: <20130116002246.GI6426@blackbox.djwong.org>
+References: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
+	<20130115144608.722180b7.akpm@linux-foundation.org>
+	<20130116002246.GI6426@blackbox.djwong.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 15 Jan 2013 16:22:46 -0800
+"Darrick J. Wong" <darrick.wong@oracle.com> wrote:
 
-------------------
+> > > This patchset has been tested on 3.8.0-rc3 on x64 with ext3, ext4, and xfs.
+> > > What does everyone think about queueing this for 3.9?
+> > 
+> > This patchset lacks any performance testing results.
+> 
+> On my setup (various consumer SSDs and spinny disks, none of which support
+> T10DIF) I see that the maximum write latency with these patches applied is
+> about half of what it is without the patches.  But don't take my word for it;
+> Andy Lutomirski[1] says that his soft-rt latency-sensitive programs no longer
+> freak out when he applies the patch set.  Afaik, Google and Taobao run custom
+> kernels with all this turned off, so they should see similar latency
+> improvements too.
+> 
+> Obviously, I see no difference on the DIF disk.
 
-From: Wolfram Sang <w.sang@pengutronix.de>
+We're talking 2001 here ;) Try leaping into your retro time machine and
+run dbench on ext2 on a spinny disk and I expect you'll see significant
+performance changes.
 
-commit 6f2a6a52560ad8d85710aabd92b7a3239b3a6b07 upstream.
+The problem back in 2001 was that we held lock_page() across the
+duration of page writeback, so if another thread came in and tried to
+dirty the page, it would block on lock_page() until IO completion.  I
+can't remember whether writeback would also block read().  Maybe it did,
+in which case the effects of this patchset won't be as dramatic as were
+the effects of splitting PG_lock into PG_lock and PG_writeback.
 
-It could happen (1 out of 100 times) that NAND did not start up
-correctly after warm rebooting, so the kernel could not find the UBI or
-DMA timed out due to a stalled BCH. When resetting BCH together with
-GPMI, the issue could not be observed anymore (after 10000+ reboots). We
-probably need the consistent state already before sending any command to
-NAND, even when no ECC is needed. I chose to keep the extra reset for
-BCH when changing the flash layout to be on the safe side.
+> > For clarity's sake, please provide a description of which filesystems
+> > (and under which circumstances) will block behind writeback when
+> > userspace is attempting to dirty a page.  Both before and, particularly,
+> > after this patchset.  IOW, did everything get fixed?
+> 
+> Heh, this is complicated.
+> 
+> Before this patchset, all filesystems would block, regardless of whether or not
+> it was necessary.  ext3 would wait, but still generate occasional checksum
+> errors.  The network filesystems were left to do their own thing, so they'd
+> wait too.
+> 
+> After this patchset, all the disk filesystems except ext3 and btrfs will wait
+> only if the hardware requires it.  ext3 (if necessary) snapshots pages instead
+> of blocking, and btrfs provides its own bdi so the mm will never wait.  Network
+> filesystems haven't been touched, so either they provide their own wait code,
+> or they don't block at all.  The blocking behavior is back to what it was
+> before 3.0 if you don't have a disk requiring stable page writes.
+> 
+> (I will reconfirm this statement before sending out the next iteration.)
+> 
+> I will of course add all of this to the cover message.
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Acked-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+OK, thanks, that sounds reasonable.
 
----
- drivers/mtd/nand/gpmi-nand/gpmi-lib.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
---- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-@@ -166,6 +166,15 @@ int gpmi_init(struct gpmi_nand_data *thi
- 	if (ret)
- 		goto err_out;
- 
-+	/*
-+	 * Reset BCH here, too. We got failures otherwise :(
-+	 * See later BCH reset for explanation of MX23 handling
-+	 */
-+	ret = gpmi_reset_block(r->bch_regs, GPMI_IS_MX23(this));
-+	if (ret)
-+		goto err_out;
-+
-+
- 	/* Choose NAND mode. */
- 	writel(BM_GPMI_CTRL1_GPMI_MODE, r->gpmi_regs + HW_GPMI_CTRL1_CLR);
- 
-
-
+Do we generate nice kernel messages (at mount or device-probe time)
+which will permit people to work out which strategy their device/fs is
+using?
