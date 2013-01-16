@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab3APOoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:44:13 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:43032 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab3APOoM (ORCPT
+	id S1754153Ab3APOyh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:54:37 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:47473 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab3APOyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:44:12 -0500
-From: sjur.brandeland@stericsson.com
-To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Cc: mporter@ti.com, =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Loic Pallardy <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Suman Anna <s-anna@ti.com>, Mark Grosen <mgrosen@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv3 00/11] remoteproc: Support bi-directional vdev config space
-Date: Wed, 16 Jan 2013 15:43:39 +0100
-Message-Id: <1358347430-9243-1-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 16 Jan 2013 09:54:35 -0500
+From: yix.x.zhang@gmail.com
+To: cjb@laptop.org
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Zhang, Yi" <yix.x.zhang@gmail.com>
+Subject: [PATCH v2] mmc: correct one comment error of structure mmc_ext_csd
+Date: Wed, 16 Jan 2013 22:53:34 +0800
+Message-Id: <50f6bf2a.e2ee440a.7c4d.ffff97b8@mx.google.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <50EBD75F.7050805@codeaurora.org>
+References: <50EBD75F.7050805@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+From: "Zhang, Yi" <yix.x.zhang@gmail.com>
 
-Changes since v2:
-- Addressed review comments
-- Reworked patch "Load firmware once". 
+The right value for field raw_exception_status is 54(not 53) according
+to eMMC 4.5 specification. Also for more readable, replace all number
+values with macro symboles.
 
-This patch-set is not yet thoroughly tested, but works in my
-simulated environment.
+Signed-off-by: Zhang, Yi <yix.x.zhang@gmail.com>
+---
+ include/linux/mmc/card.h |   34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-This patch-set adds support for shared resource table between
-Linux kernel and remote devices. 
-- dynamically-allocated address of the vrings can be communicated
-- vdev statuses can be communicated
-- virtio config space becomes bi-directional
-- virtio feature negotiation is two-way 
-- Carveout can be allocated from start of device memory.
-  dma_alloc_coherent() aligns to size of memory area. So if you e.g. 
-  have 8Mb of memory, you cannot have carveout larger than 4Mb
-  unless the carveout is allocated from start of the device memory
-  area.
-
-NOTE: This change is not backwards compatible with existing
-device firmware! The memory allocation order changes. Previously
-the Virtio Rings were always allocated at start of the share memory
-area, but with this patch-set Virtio Rings are allocated after the
-Carveouts. The address of the vrings are set in the resource table.
-
-Cheers,
-Sjur
-
-Sjur Brændeland (11):
-  remoteproc: Move enable_iommu to rproc_boot
-  remoteproc: Code cleanup of resource parsing
-  remoteproc: Move check on firmware name to rproc_add
-  remoteproc: Refactor function rproc_elf_find_rsc_table
-  remoteproc: Parse ELF file to find resource table address
-  remoteproc: Parse STE-firmware and find resource table address
-  remoteproc: Add state RPROC_LOADED
-  remoteproc: Set vring addresses in resource table
-  remoteproc: Load firmware once.
-  remoteproc: Support virtio config space.
-  remoteproc: Calculate max_notifyid by counting vrings
-
- drivers/remoteproc/remoteproc_core.c       |  264 +++++++++++++---------------
- drivers/remoteproc/remoteproc_debugfs.c    |    1 +
- drivers/remoteproc/remoteproc_elf_loader.c |   96 +++++++---
- drivers/remoteproc/remoteproc_internal.h   |   16 ++
- drivers/remoteproc/remoteproc_virtio.c     |   38 ++++-
- drivers/remoteproc/ste_modem_rproc.c       |   43 +++--
- include/linux/remoteproc.h                 |    7 +-
- 7 files changed, 273 insertions(+), 192 deletions(-)
-
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index 5c69315..d270392 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -83,23 +83,23 @@ struct mmc_ext_csd {
+ 	unsigned int            data_tag_unit_size;     /* DATA TAG UNIT size */
+ 	unsigned int		boot_ro_lock;		/* ro lock support */
+ 	bool			boot_ro_lockable;
+-	u8			raw_exception_status;	/* 53 */
+-	u8			raw_partition_support;	/* 160 */
+-	u8			raw_rpmb_size_mult;	/* 168 */
+-	u8			raw_erased_mem_count;	/* 181 */
+-	u8			raw_ext_csd_structure;	/* 194 */
+-	u8			raw_card_type;		/* 196 */
+-	u8			out_of_int_time;	/* 198 */
+-	u8			raw_s_a_timeout;		/* 217 */
+-	u8			raw_hc_erase_gap_size;	/* 221 */
+-	u8			raw_erase_timeout_mult;	/* 223 */
+-	u8			raw_hc_erase_grp_size;	/* 224 */
+-	u8			raw_sec_trim_mult;	/* 229 */
+-	u8			raw_sec_erase_mult;	/* 230 */
+-	u8			raw_sec_feature_support;/* 231 */
+-	u8			raw_trim_mult;		/* 232 */
+-	u8			raw_bkops_status;	/* 246 */
+-	u8			raw_sectors[4];		/* 212 - 4 bytes */
++	u8			raw_exception_status;	/* EXT_CSD_EXP_EVENTS_STATUS */
++	u8			raw_partition_support;	/* EXT_CSD_PARTITION_SUPPORT */
++	u8			raw_rpmb_size_mult;	/* EXT_CSD_RPMB_MULT */
++	u8			raw_erased_mem_count;	/* EXT_CSD_ERASED_MEM_CONT */
++	u8			raw_ext_csd_structure;	/* EXT_CSD_STRUCTURE */
++	u8			raw_card_type;		/* EXT_CSD_CARD_TYPE */
++	u8			out_of_int_time;	/* EXT_CSD_OUT_OF_INTERRUPT_TIME */
++	u8			raw_s_a_timeout;	/* EXT_CSD_S_A_TIMEOUT */
++	u8			raw_hc_erase_gap_size;	/* EXT_CSD_HC_WP_GRP_SIZE */
++	u8			raw_erase_timeout_mult;	/* EXT_CSD_ERASE_TIMEOUT_MULT */
++	u8			raw_hc_erase_grp_size;	/* EXT_CSD_HC_ERASE_GRP_SIZE */
++	u8			raw_sec_trim_mult;	/* EXT_CSD_SEC_TRIM_MULT */
++	u8			raw_sec_erase_mult;	/* EXT_CSD_SEC_ERASE_MULT */
++	u8			raw_sec_feature_support;/* EXT_CSD_SEC_FEATURE_SUPPORT */
++	u8			raw_trim_mult;		/* EXT_CSD_TRIM_MULT */
++	u8			raw_bkops_status;	/* EXT_CSD_BKOPS_STATUS */
++	u8			raw_sectors[4];		/* EXT_CSD_SEC_CNT - 4 bytes */
+ 
+ 	unsigned int            feature_support;
+ #define MMC_DISCARD_FEATURE	BIT(0)                  /* CMD38 feature */
 -- 
-1.7.5.4
+1.7.10.4
 
