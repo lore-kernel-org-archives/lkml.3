@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab3APOfa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:35:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35067 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab3APOf3 (ORCPT
+	id S1755655Ab3APOgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:36:07 -0500
+Received: from smtp.domeneshop.no ([194.63.252.54]:42180 "EHLO
+	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914Ab3APOgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:35:29 -0500
-Message-ID: <50F6BA8C.1070709@canonical.com>
-Date: Wed, 16 Jan 2013 15:34:52 +0100
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Wed, 16 Jan 2013 09:36:05 -0500
+Message-ID: <50F6BAF0.6060508@paradoxuncreated.com>
+Date: Wed, 16 Jan 2013 15:36:32 +0100
+From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>, Andre Przywara <andre@andrep.de>,
-        xen-devel <xen-devel@lists.xen.org>, Matthew Garrett <mjg@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] kernel 3.7+ cpufreq regression on AMD system running
- as dom0
-References: <50F42B3E.7090602@canonical.com> <20130114163445.GA4867@liondog.tnic> <20130115175305.GA12449@phenom.dumpdata.com> <50F68E4902000078000B61AC@nat28.tlf.novell.com>
-In-Reply-To: <50F68E4902000078000B61AC@nat28.tlf.novell.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: One last tweak for perfection.
+References: <50F6B254.2020801@paradoxuncreated.com> <50F6B30F.6010207@paradoxuncreated.com> <50F6B868.7000304@paradoxuncreated.com> <50F6B8C3.9060500@paradoxuncreated.com> <50F6B923.3010001@paradoxuncreated.com>
+In-Reply-To: <50F6B923.3010001@paradoxuncreated.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 11:26 AM, Jan Beulich wrote:
->>>> On 15.01.13 at 18:53, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> On Mon, Jan 14, 2013 at 05:34:45PM +0100, Borislav Petkov wrote:
->>> On Mon, Jan 14, 2013 at 04:58:54PM +0100, Stefan Bader wrote:
->>>> --- a/drivers/acpi/processor_perflib.c
->>>> +++ b/drivers/acpi/processor_perflib.c
->>>> @@ -340,6 +340,9 @@ static void amd_fixup_frequency(struct acpi_processor_px *px
->>>>          if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
->>>>              || boot_cpu_data.x86 == 0x11) {
->>>>                  rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
->>>> +               /* Bit 63 indicates whether contents are valid */
->>>> +               if (!(hi & 0x8000000))
->>>> +                       return;
->>>
->>> I don't think that's the right change - this is fixing baremetal so that
->>> it works on xen. And besides, this code was in powernow-k8 before so I'm
->>> wondering why did it work then.
->>
->> Powernow-k8 only populated the cpufreq policy information. This library
->> (processor_perflib) is the generic library used for ACPI P-states parsing.
->> This specific function (acpi_processor_get_performance_states) is just
->> used to fetch and parse the P-states.
->>
->> Xen-acpi-processor (which we use to upload the P and C-states to the
->> hypervisor) ends up calling this library to parse the P-states
->> and this unfortunate quirk clamps the P-states based on the MSRS.
->>
->> It is odd that this CPU specific quirk got added in this generic
->> library. Is there no ACPI quirk system similar to how DMI quirks
->> are handled?
->>
->> Anyhow, I think this patch makes sense - it makes sure that the
->> MSR value is sane.
->>
->> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On 1/16/2013 3:28 PM, Ove Karlsen wrote:
+> On 1/16/2013 3:27 PM, Ove Karlsen wrote:
+>> On 1/16/2013 3:25 PM, Ove Karlsen wrote:
+>>> On 1/16/2013 3:02 PM, Ove Karlsen wrote:
+>>>> What kernelthreads _needs_ to run? So I can put them on max pri
+>>>> renice, along with reniced X and app. And everything else on idle
+>>>> priority. So to make the app run at max efficiency, and not be
+>>>> starved by kernelthreads waiting. (Or any other consideration, for
+>>>> giving maximal cpu to app. Even small tweaks.)
+>>>>
+>>>> To read my research so far, (and I have done much, about 2 years of
+>>>> tweakin´ on and off.) Please see
+>>>> http://paradoxuncreated.com/Blog/wordpress/?p=2268
+>>>>
+>>>> Main points, no highres timer, 90hz timer, + a lot of smaller tweaks.
+>>>> This makes an amazing linux-desktop, for gaming, video and audio. The
+>>>> popular computer for everyman. Also boosts performance, for
+>>>> resource-constrained systems.
+>>>>
+>>>> For more advanced hacking, one could also get in there, and make
+>>>> several HZ timers, extremely low ones, for the components who only
+>>>> require that, and 90hz for video-components, for instance (low
+>>>> video/frame jitter), and higher if anything should require that.
+>>>>
+>>>> Also system-wide, software should be synced to hz, if required for
+>>>> lowest jitter, such as animations and videoplayers, and videoplayers
+>>>> automatically change refresh rate to a multiple of video framerate.
+>>>>
+>>>> Peace Be With You.
+> PS: I forgot the realtime sincs of drivers. HZ is really not an issue
+> to debate for me, 90 hz is sufficient, and only to userspace, right?
+> So yea, forget the talk on HZ.
 >
-> Did someone actually _test_ that patch? I ask because the mask
-> used (0x8000000) doesn't check bit 63 as the comment says, but
-> bit 59 instead...
+> Peace Be With You.
 >
-> Jan
+> And "synced to hz" with regards to video, is the screen hz ofcourse, not
+> kernel.
 >
-Not this version which I did at the end of a day to have a cleaned up version to 
-discuss. And obviously I managed to get the number of zeros wrong. :(
+> Peace Be With You.
+>
+> (resendt due to lkml rejecting html mail)
+>
 
-The comment is right and it should be 0x80000000
+Ok, one last argument on HZ. Screenrefresh updates HZ counter, or 
+similar idea to get vsynced HZ (minimal hz needed). Ofcourse it must 
+work better than the 90hz optimal on current timing system. A screen 
+refresh of 72.7 seems optimal, (quiet non-noisy, non-flickering), and so 
+Hz could be reduced to 72.7. Peace Be With You!
