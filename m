@@ -1,123 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758061Ab3APWz1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:55:27 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:7530 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757690Ab3APWz0 (ORCPT
+	id S1758080Ab3APW4e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:56:34 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:2626 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757691Ab3APW4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:55:26 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AswbANgu91B5LIZq/2dsb2JhbABEt2mFDQKBBxdzgh4BAQQBOhwjBQsIAw4HAwklDwUlAyETG4d4BbkiFYxgY4J/YQOWC4lOhnyDCQ
-Date: Thu, 17 Jan 2013 09:55:21 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, xfs@oss.sgi.com, Greg Thelen <gthelen@google.com>,
-        Ying Han <yinghan@google.com>, Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
-Message-ID: <20130116225521.GF2498@dastard>
-References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
- <1354058086-27937-10-git-send-email-david@fromorbit.com>
- <50F6FDC8.5020909@parallels.com>
+	Wed, 16 Jan 2013 17:56:32 -0500
+From: Lance Ortiz <lance.ortiz@hp.com>
+Subject: [PATCH v10 1/3] aerdrv: Trace Event for AER
+To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 16 Jan 2013 16:51:02 -0700
+Message-ID: <20130116235102.16015.77379.stgit@grignak.americas.hpqcorp.net>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F6FDC8.5020909@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 11:21:44AM -0800, Glauber Costa wrote:
-> On 11/27/2012 03:14 PM, Dave Chinner wrote:
-> > From: Dave Chinner <dchinner@redhat.com>
-> > 
-> > Now that we have an LRU list API, we can start to enhance the
-> > implementation.  This splits the single LRU list into per-node lists
-> > and locks to enhance scalability. Items are placed on lists
-> > according to the node the memory belongs to. To make scanning the
-> > lists efficient, also track whether the per-node lists have entries
-> > in them in a active nodemask.
-> > 
-> > Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> > ---
-> >  include/linux/list_lru.h |   14 ++--
-> >  lib/list_lru.c           |  160 +++++++++++++++++++++++++++++++++++-----------
-> >  2 files changed, 129 insertions(+), 45 deletions(-)
-> > 
-> > diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
-> > index 3423949..b0e3ba2 100644
-> > --- a/include/linux/list_lru.h
-> > +++ b/include/linux/list_lru.h
-> > @@ -8,21 +8,23 @@
-> >  #define _LRU_LIST_H 0
-> >  
-> >  #include <linux/list.h>
-> > +#include <linux/nodemask.h>
-> >  
-> > -struct list_lru {
-> > +struct list_lru_node {
-> >  	spinlock_t		lock;
-> >  	struct list_head	list;
-> >  	long			nr_items;
-> > +} ____cacheline_aligned_in_smp;
-> > +
-> > +struct list_lru {
-> > +	struct list_lru_node	node[MAX_NUMNODES];
-> > +	nodemask_t		active_nodes;
-> >  };
-> >  
-> MAX_NUMNODES will default to 1 << 9, if I'm not mistaken. Your
-> list_lru_node seems to be around 32 bytes on 64-bit systems (128 with
-> debug). So we're talking about 16k per lru.
+This header file will define a new trace event that will be triggered when
+a AER event occurs.  The following data will be provided to the trace
+event.
 
-*nod*
+char * dev_name - The name of the slot where the device resides
+                  ([domain:]bus:device.function).
 
-It is relatively little compared to the number of inodes typically
-on a LRU.
+u32 status - Either the correctable or uncorrectable register
+             indicating what error or errors have been see.
 
-> The superblocks only, are present by the dozens even in a small system,
-> and I believe the whole goal of this API is to get more users to switch
-> to it. This can easily use up a respectable bunch of megs.
-> 
-> Isn't it a bit too much ?
+u8 severity - error severity 0:NONFATAL 1:FATAL 2:CORRECTED
 
-Maybe, but for active superblocks it only takes a handful of cached
-inodes to make this 16k look like noise, so I didn't care. Indeed, a
-typical active filesystem could be consuming gigabytes of memory in
-the slab, so 16k is a tiny amount of overhead to track this amount
-of memory more efficiently.
+The trace event will also provide a trace string that may look like:
 
-Most other LRU/shrinkers are tracking large objects and only have a
-single LRU instance machine wide. Hence the numbers arguments don't
-play out well in favour of a more complex, dynamic solution for
-them, either. Sometimes dumb and simple is the best approach ;)
+"0000:05:00.0 PCIe Bus Error:severity=Uncorrected (Non-Fatal), Poisoned
+TLP"
 
-> I am wondering if we can't do better in here and at least allocate+grow
-> according to the actual number of nodes.
+v1-v2 Move header from include/ras/aer_event.h to
+include/trace/events/ras.h
+v3-v4 Cleaned up comments and commit header
+v4-v5 More cleanup remove () from if statement in print.
+      Renamed string define to be more specific.
+v5-v6 change TRACE_SYSTEM define to be ras and not aer.
 
-We could add hotplug notifiers and grow/shrink the node array as
-they get hot plugged, but that seems unnecessarily complex given
-how rare such operations are.
+Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Acked-by: Tony Luck <tony.luck@intel.com>
+---
 
-If superblock proliferation is the main concern here, then doing
-somethign as simple as allowing filesystems to specify they want
-numa aware LRU lists via a mount_bdev() flag would solve this
-problem. If the flag is set, then full numa lists are created.
-Otherwise the LRU list simply has a "single node" and collapses all node
-IDs down to 0 and ignores all NUMA optimisations...
+ include/trace/events/ras.h |   77 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 77 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/ras.h
 
-That way the low item count virtual filesystems like proc, sys,
-hugetlbfs, etc won't use up memory, but filesytems that actually
-make use of NUMA awareness still get the more expensive, scalable
-implementation. Indeed, any subsystem that is not performance or
-location sensitive can use the simple single list version, so we can
-avoid overhead in that manner system wide...
+diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
+new file mode 100644
+index 0000000..88b8783
+--- /dev/null
++++ b/include/trace/events/ras.h
+@@ -0,0 +1,77 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM ras
++
++#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_AER_H
++
++#include <linux/tracepoint.h>
++#include <linux/edac.h>
++
++
++/*
++ * PCIe AER Trace event
++ *
++ * These events are generated when hardware detects a corrected or
++ * uncorrected event on a PCIe device. The event report has
++ * the following structure:
++ *
++ * char * dev_name -	The name of the slot where the device resides
++ *			([domain:]bus:device.function).
++ * u32 status -		Either the correctable or uncorrectable register
++ *			indicating what error or errors have been seen
++ * u8 severity -	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
++ */
++
++#define aer_correctable_errors		\
++	{BIT(0),	"Receiver Error"},		\
++	{BIT(6),	"Bad TLP"},			\
++	{BIT(7),	"Bad DLLP"},			\
++	{BIT(8),	"RELAY_NUM Rollover"},		\
++	{BIT(12),	"Replay Timer Timeout"},	\
++	{BIT(13),	"Advisory Non-Fatal"}
++
++#define aer_uncorrectable_errors		\
++	{BIT(4),	"Data Link Protocol"},		\
++	{BIT(12),	"Poisoned TLP"},		\
++	{BIT(13),	"Flow Control Protocol"},	\
++	{BIT(14),	"Completion Timeout"},		\
++	{BIT(15),	"Completer Abort"},		\
++	{BIT(16),	"Unexpected Completion"},	\
++	{BIT(17),	"Receiver Overflow"},		\
++	{BIT(18),	"Malformed TLP"},		\
++	{BIT(19),	"ECRC"},			\
++	{BIT(20),	"Unsupported Request"}
++
++TRACE_EVENT(aer_event,
++	TP_PROTO(const char *dev_name,
++		 const u32 status,
++		 const u8 severity),
++
++	TP_ARGS(dev_name, status, severity),
++
++	TP_STRUCT__entry(
++		__string(	dev_name,	dev_name	)
++		__field(	u32,		status		)
++		__field(	u8,		severity	)
++	),
++
++	TP_fast_assign(
++		__assign_str(dev_name, dev_name);
++		__entry->status		= status;
++		__entry->severity	= severity;
++	),
++
++	TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
++		__get_str(dev_name),
++		__entry->severity == HW_EVENT_ERR_CORRECTED ? "Corrected" :
++			__entry->severity == HW_EVENT_ERR_FATAL ?
++			"Fatal" : "Uncorrected",
++		__entry->severity == HW_EVENT_ERR_CORRECTED ?
++		__print_flags(__entry->status, "|", aer_correctable_errors) :
++		__print_flags(__entry->status, "|", aer_uncorrectable_errors))
++);
++
++#endif /* _TRACE_AER_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
