@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757881Ab3APQIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:08:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36704 "EHLO
+	id S932636Ab3APQIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:08:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36715 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932605Ab3APQIi (ORCPT
+	with ESMTP id S1758648Ab3APQIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:08:38 -0500
+	Wed, 16 Jan 2013 11:08:45 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>, Bjorn Helgaas <bhelgaas@google.com>,
-        Manoj Iyer <manoj.iyer@canonical.com>,
+Cc: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 173/222] PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz
-Date: Wed, 16 Jan 2013 13:56:13 -0200
-Message-Id: <1358351822-7675-174-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 175/222] tmpfs mempolicy: fix /proc/mounts corrupting memory
+Date: Wed, 16 Jan 2013 13:56:15 -0200
+Message-Id: <1358351822-7675-176-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,74 +28,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Hugh Dickins <hughd@google.com>
 
-commit 812089e01b9f65f90fc8fc670d8cce72a0e01fbb upstream.
+commit f2a07f40dbc603c15f8b06e6ec7f768af67b424f upstream.
 
-Otherwise it fails like this on cards like the Transcend 16GB SDHC card:
+Recently I suggested using "mount -o remount,mpol=local /tmp" in NUMA
+mempolicy testing.  Very nasty.  Reading /proc/mounts, /proc/pid/mounts
+or /proc/pid/mountinfo may then corrupt one bit of kernel memory, often
+in a page table (causing "Bad swap" or "Bad page map" warning or "Bad
+pagetable" oops), sometimes in a vm_area_struct or rbnode or somewhere
+worse.  "mpol=prefer" and "mpol=prefer:Node" are equally toxic.
 
-    mmc0: new SDHC card at address b368
-    mmcblk0: mmc0:b368 SDC   15.0 GiB
-    mmcblk0: error -110 sending status command, retrying
-    mmcblk0: error -84 transferring data, sector 0, nr 8, cmd response 0x900, card status 0xb0
+Recent NUMA enhancements are not to blame: this dates back to 2.6.35,
+when commit e17f74af351c "mempolicy: don't call mpol_set_nodemask() when
+no_context" skipped mpol_parse_str()'s call to mpol_set_nodemask(),
+which used to initialize v.preferred_node, or set MPOL_F_LOCAL in flags.
+With slab poisoning, you can then rely on mpol_to_str() to set the bit
+for node 0x6b6b, probably in the next page above the caller's stack.
 
-Tested on my Lenovo x200 laptop.
+mpol_parse_str() is only called from shmem_parse_options(): no_context
+is always true, so call it unused for now, and remove !no_context code.
+Set v.nodes or v.preferred_node or MPOL_F_LOCAL as mpol_to_str() might
+expect.  Then mpol_to_str() can ignore its no_context argument also,
+the mpol being appropriately initialized whether contextualized or not.
+Rename its no_context unused too, and let subsequent patch remove them
+(that's not needed for stable backporting, which would involve rejects).
 
-[bhelgaas: changelog]
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Chris Ball <cjb@laptop.org>
-CC: Manoj Iyer <manoj.iyer@canonical.com>
+I don't understand why MPOL_LOCAL is described as a pseudo-policy:
+it's a reasonable policy which suffers from a confusing implementation
+in terms of MPOL_PREFERRED with MPOL_F_LOCAL.  I believe this would be
+much more robust if MPOL_LOCAL were recognized in switch statements
+throughout, MPOL_F_LOCAL deleted, and MPOL_PREFERRED use the (possibly
+empty) nodes mask like everyone else, instead of its preferred_node
+variant (I presume an optimization from the days before MPOL_LOCAL).
+But that would take me too long to get right and fully tested.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/pci/quirks.c    |    7 +++++--
- include/linux/pci_ids.h |    1 +
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ mm/mempolicy.c |   64 +++++++++++++++++++++++---------------------------------
+ 1 file changed, 26 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 2a75216..777e56f 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2720,7 +2720,7 @@ static void ricoh_mmc_fixup_r5c832(struct pci_dev *dev)
- 	if (PCI_FUNC(dev->devfn))
- 		return;
- 	/*
--	 * RICOH 0xe823 SD/MMC card reader fails to recognize
-+	 * RICOH 0xe822 and 0xe823 SD/MMC card readers fail to recognize
- 	 * certain types of SD/MMC cards. Lowering the SD base
- 	 * clock frequency from 200Mhz to 50Mhz fixes this issue.
- 	 *
-@@ -2731,7 +2731,8 @@ static void ricoh_mmc_fixup_r5c832(struct pci_dev *dev)
- 	 * 0xf9  - Key register for 0x150
- 	 * 0xfc  - key register for 0xe1
- 	 */
--	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
-+	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE822 ||
-+	    dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
- 		pci_write_config_byte(dev, 0xf9, 0xfc);
- 		pci_write_config_byte(dev, 0x150, 0x10);
- 		pci_write_config_byte(dev, 0xf9, 0x00);
-@@ -2758,6 +2759,8 @@ static void ricoh_mmc_fixup_r5c832(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
-+DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
- #endif /*CONFIG_MMC_RICOH_MMC*/
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index a56c194..a3f8d6d 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1566,6 +1566,7 @@
- #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
- #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
- #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
-+#define PCI_DEVICE_ID_RICOH_R5CE822	0xe822
- #define PCI_DEVICE_ID_RICOH_R5CE823	0xe823
- #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
- #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index e65ca51..3eb8657 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2364,8 +2364,7 @@ void numa_default_policy(void)
+  */
+ 
+ /*
+- * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
+- * Used only for mpol_parse_str() and mpol_to_str()
++ * "local" is implemented internally by MPOL_PREFERRED with MPOL_F_LOCAL flag.
+  */
+ #define MPOL_LOCAL MPOL_MAX
+ static const char * const policy_modes[] =
+@@ -2380,28 +2379,21 @@ static const char * const policy_modes[] =
+ 
+ #ifdef CONFIG_TMPFS
+ /**
+- * mpol_parse_str - parse string to mempolicy
++ * mpol_parse_str - parse string to mempolicy, for tmpfs mpol mount option.
+  * @str:  string containing mempolicy to parse
+  * @mpol:  pointer to struct mempolicy pointer, returned on success.
+- * @no_context:  flag whether to "contextualize" the mempolicy
++ * @unused:  redundant argument, to be removed later.
+  *
+  * Format of input:
+  *	<mode>[=<flags>][:<nodelist>]
+  *
+- * if @no_context is true, save the input nodemask in w.user_nodemask in
+- * the returned mempolicy.  This will be used to "clone" the mempolicy in
+- * a specific context [cpuset] at a later time.  Used to parse tmpfs mpol
+- * mount option.  Note that if 'static' or 'relative' mode flags were
+- * specified, the input nodemask will already have been saved.  Saving
+- * it again is redundant, but safe.
+- *
+  * On success, returns 0, else 1
+  */
+-int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
++int mpol_parse_str(char *str, struct mempolicy **mpol, int unused)
+ {
+ 	struct mempolicy *new = NULL;
+ 	unsigned short mode;
+-	unsigned short uninitialized_var(mode_flags);
++	unsigned short mode_flags;
+ 	nodemask_t nodes;
+ 	char *nodelist = strchr(str, ':');
+ 	char *flags = strchr(str, '=');
+@@ -2489,24 +2481,23 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 	if (IS_ERR(new))
+ 		goto out;
+ 
+-	if (no_context) {
+-		/* save for contextualization */
+-		new->w.user_nodemask = nodes;
+-	} else {
+-		int ret;
+-		NODEMASK_SCRATCH(scratch);
+-		if (scratch) {
+-			task_lock(current);
+-			ret = mpol_set_nodemask(new, &nodes, scratch);
+-			task_unlock(current);
+-		} else
+-			ret = -ENOMEM;
+-		NODEMASK_SCRATCH_FREE(scratch);
+-		if (ret) {
+-			mpol_put(new);
+-			goto out;
+-		}
+-	}
++	/*
++	 * Save nodes for mpol_to_str() to show the tmpfs mount options
++	 * for /proc/mounts, /proc/pid/mounts and /proc/pid/mountinfo.
++	 */
++	if (mode != MPOL_PREFERRED)
++		new->v.nodes = nodes;
++	else if (nodelist)
++		new->v.preferred_node = first_node(nodes);
++	else
++		new->flags |= MPOL_F_LOCAL;
++
++	/*
++	 * Save nodes for contextualization: this will be used to "clone"
++	 * the mempolicy in a specific context [cpuset] at a later time.
++	 */
++	new->w.user_nodemask = nodes;
++
+ 	err = 0;
+ 
+ out:
+@@ -2526,13 +2517,13 @@ out:
+  * @buffer:  to contain formatted mempolicy string
+  * @maxlen:  length of @buffer
+  * @pol:  pointer to mempolicy to be formatted
+- * @no_context:  "context free" mempolicy - use nodemask in w.user_nodemask
++ * @unused:  redundant argument, to be removed later.
+  *
+  * Convert a mempolicy into a string.
+  * Returns the number of characters in buffer (if positive)
+  * or an error (negative)
+  */
+-int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
++int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int unused)
+ {
+ 	char *p = buffer;
+ 	int l;
+@@ -2558,7 +2549,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
+ 	case MPOL_PREFERRED:
+ 		nodes_clear(nodes);
+ 		if (flags & MPOL_F_LOCAL)
+-			mode = MPOL_LOCAL;	/* pseudo-policy */
++			mode = MPOL_LOCAL;
+ 		else
+ 			node_set(pol->v.preferred_node, nodes);
+ 		break;
+@@ -2566,10 +2557,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
+ 	case MPOL_BIND:
+ 		/* Fall through */
+ 	case MPOL_INTERLEAVE:
+-		if (no_context)
+-			nodes = pol->w.user_nodemask;
+-		else
+-			nodes = pol->v.nodes;
++		nodes = pol->v.nodes;
+ 		break;
+ 
+ 	default:
 -- 
 1.7.9.5
 
