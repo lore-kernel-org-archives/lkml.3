@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758920Ab3APKZH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:25:07 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63558 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758706Ab3APKZF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:25:05 -0500
-X-AuditID: 9c930179-b7b54ae000000e44-85-50f67ffef842
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 08/13] perf gtk/browser: Add support for event group view
-References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
-	<1358235117-12803-9-git-send-email-namhyung@kernel.org>
-	<20130115183405.GD5826@ghostprotocols.net>
-Date: Wed, 16 Jan 2013 19:25:02 +0900
-In-Reply-To: <20130115183405.GD5826@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Tue, 15 Jan 2013 15:34:05 -0300")
-Message-ID: <87a9s9mnlt.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1758945Ab3APK0G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:26:06 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:43880 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758540Ab3APK0E convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
+	Wed, 16 Jan 2013 05:26:04 -0500
+Message-Id: <50F68E4902000078000B61AC@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Wed, 16 Jan 2013 10:26:01 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Stefan Bader" <stefan.bader@canonical.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Borislav Petkov" <bp@alien8.de>, "Andre Przywara" <andre@andrep.de>,
+        "xen-devel" <xen-devel@lists.xen.org>,
+        "Matthew Garrett" <mjg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] kernel 3.7+ cpufreq regression on AMD system
+ running as dom0
+References: <50F42B3E.7090602@canonical.com>
+ <20130114163445.GA4867@liondog.tnic>
+ <20130115175305.GA12449@phenom.dumpdata.com>
+In-Reply-To: <20130115175305.GA12449@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013 15:34:05 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Jan 15, 2013 at 04:31:52PM +0900, Namhyung Kim escreveu:
->> From: Namhyung Kim <namhyung.kim@lge.com>
+>>> On 15.01.13 at 18:53, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Mon, Jan 14, 2013 at 05:34:45PM +0100, Borislav Petkov wrote:
+>> On Mon, Jan 14, 2013 at 04:58:54PM +0100, Stefan Bader wrote:
+>> > --- a/drivers/acpi/processor_perflib.c
+>> > +++ b/drivers/acpi/processor_perflib.c
+>> > @@ -340,6 +340,9 @@ static void amd_fixup_frequency(struct acpi_processor_px *px
+>> >         if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
+>> >             || boot_cpu_data.x86 == 0x11) {
+>> >                 rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
+>> > +               /* Bit 63 indicates whether contents are valid */
+>> > +               if (!(hi & 0x8000000))
+>> > +                       return;
 >> 
->> Show group members' overhead also when showing the leader's if event
->> group is enabled.  Use macro for defining hpp functions which looks
->> almost identical.
->> 
->> Unlike other hpp backend, GTK+ needs to print dummy 0.00% output since
->> it's displayed with variable width fonts.  So that simply skipping
->> with %*s trick won't work well here.
->
-> I'm illiterate on GTK+ internals, but I kinda expected that it could
-> provide a way to avoid such things, i.e. a way to position the cursor
-> in such circumstance without having to actually print the '0.00%' :-\
+>> I don't think that's the right change - this is fixing baremetal so that
+>> it works on xen. And besides, this code was in powernow-k8 before so I'm
+>> wondering why did it work then.
+> 
+> Powernow-k8 only populated the cpufreq policy information. This library
+> (processor_perflib) is the generic library used for ACPI P-states parsing.
+> This specific function (acpi_processor_get_performance_states) is just
+> used to fetch and parse the P-states.
+> 
+> Xen-acpi-processor (which we use to upload the P and C-states to the
+> hypervisor) ends up calling this library to parse the P-states
+> and this unfortunate quirk clamps the P-states based on the MSRS.
+> 
+> It is odd that this CPU specific quirk got added in this generic
+> library. Is there no ACPI quirk system similar to how DMI quirks
+> are handled?
+> 
+> Anyhow, I think this patch makes sense - it makes sure that the
+> MSR value is sane.
+> 
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-I also don't understand the internals so I just guess that it might
-(only?) be acheived by adding new columns for each group members.
+Did someone actually _test_ that patch? I ask because the mask
+used (0x8000000) doesn't check bit 63 as the comment says, but
+bit 59 instead...
 
-Of course I'm fine with this way too, but one thing I'm not sure is how
-the column header look like.  Currently "Overhead" is displayed on the
-header for period of every group members - say, there's a group consists
-of two events: {branches,branch-misses}.  It'd look like:
+Jan
 
-        Overhead  Command  Shared Object   Symbol
-  ..............  .......  .............  .......
-  98.32%  31.16%    a.out          a.out  [.] foo
-
-
-Maybe we can use simple event name for this, but it seems it makes to
-hard to recognize which one is which if other output options like
---show-total-period, --showcpuutilization and/or --show-nr-samples.
-
-Adding current header name to event name will fix the problem but it
-probably occupies too much screen width especially for long named
-tracepoint or PMU-specific events like
-"compaction:mm_compaction_isolate_migratepages".
-
-  Overhead/branches  Overhead/branch-misses  sys/branches  sys/branch-misses  usr/branches  usr/branch-misses  Command  Shared Object   Symbol
-  .................  ......................  ............  .................  ............  .................  .......  .............  .......
-             98.32%                  31.16%         0.00%              0.00%        98.32%             31.16%    a.out          a.out  [.] foo
-
-
-If you have a better idea or other way to place the cursor without
-printing bogus 0.00% on GTK, please let me know.
-
-Thanks,
-Namhyung
