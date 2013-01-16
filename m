@@ -1,338 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab3APTGV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 14:06:21 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:59536 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167Ab3APTFX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 14:05:23 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 3/4 v3] serial: vt8500: UART uses gated clock rather than 24Mhz reference
-Date: Thu, 17 Jan 2013 08:05:42 +1300
-Message-Id: <1358363143-7154-4-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358363143-7154-1-git-send-email-linux@prisktech.co.nz>
-References: <1358363143-7154-1-git-send-email-linux@prisktech.co.nz>
+	id S1756970Ab3APTS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 14:18:56 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:36063 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751869Ab3APTSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 14:18:55 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: David Miller <davem@davemloft.net>
+Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
+Date: Wed, 16 Jan 2013 14:22:16 -0500
+User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
+Cc: bhutchings@solarflare.com, libc-alpha@sourceware.org,
+        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
+        eblake@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
+        schwab@suse.de, carlos@systemhalted.org
+References: <201301161205.04502.vapier@gentoo.org> <201301161228.42592.vapier@gentoo.org> <20130116.135959.90676245194307972.davem@davemloft.net>
+In-Reply-To: <20130116.135959.90676245194307972.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2151952.n8aPA2lcy6";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301161422.19202.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UART modules on Wondermedia SoCs are connected via a gated clock
-source, rather than directly to the 24Mhz reference clock. While
-uboot enables UART0 for debugging, other UART ports are unavailable
-until the clock is enabled.
+--nextPart2151952.n8aPA2lcy6
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-This patch checks that a valid clock is actually passed from devicetree,
-enables the clock in probe. This change removes the fallback when a
-clock was not specified as it doesn't apply any longer (and would only
-work if the UART clock was already enabled).
+On Wednesday 16 January 2013 13:59:59 David Miller wrote:
+> From: Mike Frysinger <vapier@gentoo.org>
+> > if you're not calling the kernel directly, why are you including the
+> > kernel headers ?  what is the problem people are actually trying to
+> > address here (and no, "i want to include both headers" is not the
+> > answer) ?
+>=20
+> When GLIBC doesn't provide it's own definition of some networking
+> macros or interfaces that the kernel provides, people include the
+> kernel header.
 
-DTSI files are updated for VT8500, WM8505 and WM8650.
+sounds like glibc's headers are out of date and we should update them to=20
+include the missing definitions
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- arch/arm/boot/dts/vt8500.dtsi      |   40 +++++++++++++++++++++---
- arch/arm/boot/dts/wm8505.dtsi      |   60 ++++++++++++++++++++++++++++++++----
- arch/arm/boot/dts/wm8650.dtsi      |   20 ++++++++++--
- drivers/tty/serial/vt8500_serial.c |   34 +++++++++++---------
- 4 files changed, 127 insertions(+), 27 deletions(-)
+but this is still too vague.  what headers/definitions do people want to se=
+e=20
+simultaneously included ?  changes would be needed on both sides (kernel & =
+C=20
+library).
 
-diff --git a/arch/arm/boot/dts/vt8500.dtsi b/arch/arm/boot/dts/vt8500.dtsi
-index d8645e9..cf31ced 100644
---- a/arch/arm/boot/dts/vt8500.dtsi
-+++ b/arch/arm/boot/dts/vt8500.dtsi
-@@ -45,6 +45,38 @@
- 					compatible = "fixed-clock";
- 					clock-frequency = <24000000>;
- 				};
-+
-+				clkuart0: uart0 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <1>;
-+				};
-+
-+				clkuart1: uart1 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <2>;
-+				};
-+
-+				clkuart2: uart2 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <3>;
-+				};
-+
-+				clkuart3: uart3 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <4>;
-+				};
- 			};
- 		};
- 
-@@ -83,28 +115,28 @@
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd8200000 0x1040>;
- 			interrupts = <32>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart0>;
- 		};
- 
- 		uart@d82b0000 {
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd82b0000 0x1040>;
- 			interrupts = <33>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart1>;
- 		};
- 
- 		uart@d8210000 {
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd8210000 0x1040>;
- 			interrupts = <47>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart2>;
- 		};
- 
- 		uart@d82c0000 {
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd82c0000 0x1040>;
- 			interrupts = <50>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart3>;
- 		};
- 
- 		rtc@d8100000 {
-diff --git a/arch/arm/boot/dts/wm8505.dtsi b/arch/arm/boot/dts/wm8505.dtsi
-index 330f833..e74a1c0 100644
---- a/arch/arm/boot/dts/wm8505.dtsi
-+++ b/arch/arm/boot/dts/wm8505.dtsi
-@@ -59,6 +59,54 @@
- 					compatible = "fixed-clock";
- 					clock-frequency = <24000000>;
- 				};
-+
-+				clkuart0: uart0 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <1>;
-+				};
-+
-+				clkuart1: uart1 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <2>;
-+				};
-+
-+				clkuart2: uart2 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <3>;
-+				};
-+
-+				clkuart3: uart3 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <4>;
-+				};
-+
-+				clkuart4: uart4 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <22>;
-+				};
-+
-+				clkuart5: uart5 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <23>;
-+				};
- 			};
- 		};
- 
-@@ -96,42 +144,42 @@
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd8200000 0x1040>;
- 			interrupts = <32>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart0>;
- 		};
- 
- 		uart@d82b0000 {
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd82b0000 0x1040>;
- 			interrupts = <33>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart1>;
- 		};
- 
- 		uart@d8210000 {
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd8210000 0x1040>;
- 			interrupts = <47>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart2>;
- 		};
- 
- 		uart@d82c0000 {
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd82c0000 0x1040>;
- 			interrupts = <50>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart3>;
- 		};
- 
- 		uart@d8370000 {
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd8370000 0x1040>;
- 			interrupts = <31>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart4>;
- 		};
- 
- 		uart@d8380000 {
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd8380000 0x1040>;
- 			interrupts = <30>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart5>;
- 		};
- 
- 		rtc@d8100000 {
-diff --git a/arch/arm/boot/dts/wm8650.dtsi b/arch/arm/boot/dts/wm8650.dtsi
-index 83b9467..e0c42ff 100644
---- a/arch/arm/boot/dts/wm8650.dtsi
-+++ b/arch/arm/boot/dts/wm8650.dtsi
-@@ -75,6 +75,22 @@
- 					reg = <0x204>;
- 				};
- 
-+				clkuart0: uart0 {
-+ 					#clock-cells = <0>;
-+ 					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <1>;
-+ 				};
-+ 
-+				clkuart1: uart1 {
-+					#clock-cells = <0>;
-+					compatible = "via,vt8500-device-clock";
-+					clocks = <&ref24>;
-+					enable-reg = <0x250>;
-+					enable-bit = <2>;
-+				};
-+
- 				arm: arm {
- 					#clock-cells = <0>;
- 					compatible = "via,vt8500-device-clock";
-@@ -128,14 +144,14 @@
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd8200000 0x1040>;
- 			interrupts = <32>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart0>;
- 		};
- 
- 		uart@d82b0000 {
- 			compatible = "via,vt8500-uart";
- 			reg = <0xd82b0000 0x1040>;
- 			interrupts = <33>;
--			clocks = <&ref24>;
-+			clocks = <&clkuart1>;
- 		};
- 
- 		rtc@d8100000 {
-diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
-index 3e76dff..7f9e578 100644
---- a/drivers/tty/serial/vt8500_serial.c
-+++ b/drivers/tty/serial/vt8500_serial.c
-@@ -593,6 +593,23 @@ static int vt8500_serial_probe(struct platform_device *pdev)
- 	if (!vt8500_port)
- 		return -ENOMEM;
- 
-+	vt8500_port->uart.membase = devm_request_and_ioremap(&pdev->dev, mmres);
-+	if (!vt8500_port->uart.membase)
-+		return -EADDRNOTAVAIL;
-+
-+	vt8500_port->clk = of_clk_get(pdev->dev.of_node, 0);
-+	if (IS_ERR(vt8500_port->clk)) {
-+		dev_err(&pdev->dev, "failed to get clock\n");
-+		ret = -EINVAL;
-+		goto err;
-+	}
-+
-+	ret = clk_prepare_enable(vt8500_port->clk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to enable clock\n");
-+ 		goto err;
-+ 	}
-+
- 	vt8500_port->uart.type = PORT_VT8500;
- 	vt8500_port->uart.iotype = UPIO_MEM;
- 	vt8500_port->uart.mapbase = mmres->start;
-@@ -602,25 +619,11 @@ static int vt8500_serial_probe(struct platform_device *pdev)
- 	vt8500_port->uart.line = port;
- 	vt8500_port->uart.dev = &pdev->dev;
- 	vt8500_port->uart.flags = UPF_IOREMAP | UPF_BOOT_AUTOCONF;
--
--	vt8500_port->clk = of_clk_get(pdev->dev.of_node, 0);
--	if (vt8500_port->clk) {
--		vt8500_port->uart.uartclk = clk_get_rate(vt8500_port->clk);
--	} else {
--		/* use the default of 24Mhz if not specified and warn */
--		pr_warn("%s: serial clock source not specified\n", __func__);
--		vt8500_port->uart.uartclk = 24000000;
--	}
-+	vt8500_port->uart.uartclk = clk_get_rate(vt8500_port->clk);
- 
- 	snprintf(vt8500_port->name, sizeof(vt8500_port->name),
- 		 "VT8500 UART%d", pdev->id);
- 
--	vt8500_port->uart.membase = devm_request_and_ioremap(&pdev->dev, mmres);
--	if (!vt8500_port->uart.membase) {
--		ret = -EADDRNOTAVAIL;
--		goto err;
--	}
--
- 	vt8500_uart_ports[port] = vt8500_port;
- 
- 	uart_add_one_port(&vt8500_uart_driver, &vt8500_port->uart);
-@@ -639,6 +642,7 @@ static int vt8500_serial_remove(struct platform_device *pdev)
- 	struct vt8500_port *vt8500_port = platform_get_drvdata(pdev);
- 
- 	platform_set_drvdata(pdev, NULL);
-+	clk_disable_unprepare(vt8500_port->clk);
- 	uart_remove_one_port(&vt8500_uart_driver, &vt8500_port->uart);
- 	kfree(vt8500_port);
- 
--- 
-1.7.9.5
+> This has been done for decades, wake up.
 
+and it's been broken for just as long.  no need to be a dick.
+=2Dmike
+
+--nextPart2151952.n8aPA2lcy6
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJQ9v3rAAoJEEFjO5/oN/WBg74P/1+Qjn9P3o4Gzdelbg+Rvj2T
+/qPQ+4Uj+CKdMmP143DU6+Y79pARKx1q4B4OVhozSsFWMGXMHToHS8ZJ0LyL5kN/
+fgd1iHE3p5bkp9FChPr4WsPP5xXlUh+qIyRUp7K4x4gc6W6tMPDpBlhp/aZeVKYx
+s6pI3P/3EKzXTSJ2pD6H+rLGgN3zpUZEElXY0nGd8SjdcNtT5IGQ8AhLVTtnE/cx
+4vuo6GPLWQhCdC8IiLwEZvIlxaJlrAgXk1R5RPu9D8zLROGFfvHoCydA5R+Pt0B+
+kS5SMfbSJJk7tnOPvGCnvK1wt5uwLGXJIr53TN8efIhr5eg0dibDPDLDzAhM5yLi
+mLRRgaOg4rAw88EHqTWSHjORMhznE8yvDC45c81077pvDxmHxqZ/kqO9TE/shAOH
+uayqmiZkOZM5JN8et+9MZlNzGQIsYvd1UA0ODk3aVVcUyPrNRdBoWvFAEEC1Vd9s
+NDSbnN4qDGPm6ufQC5SnZnTg6uAIIuikvFVqGXQRonM5mRaaxwVPv2vsqHfFmDLA
+ODPdFrbOwBkbR8M44TuT0jfEcB0tuSE1cF5BUZlRI3cwrAw+M3rZa2ex3TTH/83L
+hh0HxAvWAVJ2sqnngcWZpuPblRjNRTJPqFaYGEz/tiRc2HpkY/W9jYEYjDk4xtBP
+MKa80jIo9+L9RIL+P7Ch
+=SGZ7
+-----END PGP SIGNATURE-----
+
+--nextPart2151952.n8aPA2lcy6--
