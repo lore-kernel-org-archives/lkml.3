@@ -1,160 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab3APOvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:51:54 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:44992 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab3APOvw (ORCPT
+	id S1756152Ab3APOo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:44:29 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46493 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033Ab3APOo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:51:52 -0500
-From: sjur.brandeland@stericsson.com
-To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Cc: mporter@ti.com, =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Loic Pallardy <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Suman Anna <s-anna@ti.com>, Mark Grosen <mgrosen@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv3 04/11] remoteproc: Refactor function rproc_elf_find_rsc_table
-Date: Wed, 16 Jan 2013 15:43:43 +0100
-Message-Id: <1358347430-9243-5-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358347430-9243-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1358347430-9243-1-git-send-email-sjur.brandeland@stericsson.com>
+	Wed, 16 Jan 2013 09:44:26 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
+CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <rogerq@ti.com>
+Subject: [PATCH v6 04/22] mfd: omap-usb-tll: Clean up clock handling
+Date: Wed, 16 Jan 2013 16:43:35 +0200
+Message-ID: <1358347433-329-5-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1358347433-329-1-git-send-email-rogerq@ti.com>
+References: <1358347433-329-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Every channel has a functional clock that is similarly named.
+It makes sense to use a for loop to manage these clocks as OMAPs
+can come with up to 3 channels.
 
-Refactor rproc_elf_find_rsc_table and split out the scanning
-for the section header named resource table. This is done to
-prepare for loading firmware once.
+Dynamically allocate and get channel clocks depending on the
+number of clocks avaiable on the platform.
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/remoteproc/remoteproc_elf_loader.c |   79 ++++++++++++++++++----------
- 1 files changed, 52 insertions(+), 27 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   89 +++++++++++++++++++++++++++----------------
+ 1 files changed, 56 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/remoteproc/remoteproc_elf_loader.c b/drivers/remoteproc/remoteproc_elf_loader.c
-index e1f89d6..32a29b8 100644
---- a/drivers/remoteproc/remoteproc_elf_loader.c
-+++ b/drivers/remoteproc/remoteproc_elf_loader.c
-@@ -208,38 +208,19 @@ rproc_elf_load_segments(struct rproc *rproc, const struct firmware *fw)
- 	return ret;
- }
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index 53ed10b..8f45322 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -96,10 +96,9 @@
+ #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
  
--/**
-- * rproc_elf_find_rsc_table() - find the resource table
-- * @rproc: the rproc handle
-- * @fw: the ELF firmware image
-- * @tablesz: place holder for providing back the table size
-- *
-- * This function finds the resource table inside the remote processor's
-- * firmware. It is used both upon the registration of @rproc (in order
-- * to look for and register the supported virito devices), and when the
-- * @rproc is booted.
-- *
-- * Returns the pointer to the resource table if it is found, and write its
-- * size into @tablesz. If a valid table isn't found, NULL is returned
-- * (and @tablesz isn't set).
-- */
--static struct resource_table *
--rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
--							int *tablesz)
-+static struct elf32_shdr *
-+find_rsc_shdr(struct device *dev, struct elf32_hdr *ehdr, size_t fw_size)
- {
--	struct elf32_hdr *ehdr;
- 	struct elf32_shdr *shdr;
-+	int i;
- 	const char *name_table;
--	struct device *dev = &rproc->dev;
- 	struct resource_table *table = NULL;
--	int i;
--	const u8 *elf_data = fw->data;
-+	const u8 *elf_data = (void *)ehdr;
+ struct usbtll_omap {
+-	struct clk				*usbtll_p1_fck;
+-	struct clk				*usbtll_p2_fck;
+ 	int					nch;	/* num. of channels */
+ 	struct usbhs_omap_platform_data		*pdata;
++	struct clk				**ch_clk;
+ 	/* secure the register updates */
+ 	spinlock_t				lock;
+ };
+@@ -225,26 +224,12 @@ static int usbtll_omap_probe(struct platform_device *pdev)
  
--	ehdr = (struct elf32_hdr *)elf_data;
-+	/* look for the resource table and handle it */
- 	shdr = (struct elf32_shdr *)(elf_data + ehdr->e_shoff);
- 	name_table = elf_data + shdr[ehdr->e_shstrndx].sh_offset;
+ 	tll->pdata = pdata;
  
--	/* look for the resource table and handle it */
- 	for (i = 0; i < ehdr->e_shnum; i++, shdr++) {
- 		int size = shdr->sh_size;
- 		int offset = shdr->sh_offset;
-@@ -250,7 +231,7 @@ rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
- 		table = (struct resource_table *)(elf_data + offset);
- 
- 		/* make sure we have the entire table */
--		if (offset + size > fw->size) {
-+		if (offset + size > fw_size) {
- 			dev_err(dev, "resource table truncated\n");
- 			return NULL;
- 		}
-@@ -280,10 +261,54 @@ rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
- 			return NULL;
- 		}
- 
--		*tablesz = shdr->sh_size;
--		break;
-+		return shdr;
+-	tll->usbtll_p1_fck = clk_get(dev, "usb_tll_hs_usb_ch0_clk");
+-	if (IS_ERR(tll->usbtll_p1_fck)) {
+-		ret = PTR_ERR(tll->usbtll_p1_fck);
+-		dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
+-		return ret;
+-	}
+-
+-	tll->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
+-	if (IS_ERR(tll->usbtll_p2_fck)) {
+-		ret = PTR_ERR(tll->usbtll_p2_fck);
+-		dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
+-		goto err_p2_fck;
+-	}
+-
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	base = devm_request_and_ioremap(dev, res);
+ 	if (!base) {
+ 		ret = -ENOMEM;
+ 		dev_err(dev, "Resource request/ioremap failed:%d\n", ret);
+-		goto err_res;
++		return ret;
  	}
  
-+	return NULL;
-+}
+ 	platform_set_drvdata(pdev, tll);
+@@ -270,6 +255,32 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		break;
+ 	}
+ 
++	spin_unlock_irqrestore(&tll->lock, flags);
 +
-+/**
-+ * rproc_elf_find_rsc_table() - find the resource table
-+ * @rproc: the rproc handle
-+ * @fw: the ELF firmware image
-+ * @tablesz: place holder for providing back the table size
-+ *
-+ * This function finds the resource table inside the remote processor's
-+ * firmware. It is used both upon the registration of @rproc (in order
-+ * to look for and register the supported virito devices), and when the
-+ * @rproc is booted.
-+ *
-+ * Returns the pointer to the resource table if it is found, and write its
-+ * size into @tablesz. If a valid table isn't found, NULL is returned
-+ * (and @tablesz isn't set).
-+ */
-+static struct resource_table *
-+rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
-+							int *tablesz)
-+{
-+	struct elf32_hdr *ehdr;
-+	struct elf32_shdr *shdr;
-+
-+	struct device *dev = &rproc->dev;
-+	struct resource_table *table = NULL;
-+
-+	const u8 *elf_data = fw->data;
-+
-+	ehdr = (struct elf32_hdr *)elf_data;
-+
-+	shdr = find_rsc_shdr(dev, ehdr, fw->size);
-+	if (!shdr)
-+		return NULL;
-+
-+	/* make sure we have the entire table */
-+	if (shdr->sh_offset + shdr->sh_size > fw->size) {
-+		dev_err(dev, "resource table truncated\n");
-+		return NULL;
++	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
++						GFP_KERNEL);
++	if (!tll->ch_clk) {
++		ret = -ENOMEM;
++		dev_err(dev, "Couldn't allocate memory for channel clocks\n");
++		goto err_clk_alloc;
 +	}
 +
-+	table = (struct resource_table *)(elf_data + shdr->sh_offset);
-+	*tablesz = shdr->sh_size;
++	spin_lock_irqsave(&tll->lock, flags);
 +
- 	return table;
++	for (i = 0; i < tll->nch; i++) {
++		char clkname[] = "usb_tll_hs_usb_chx_clk";
++		struct clk *fck;
++
++		snprintf(clkname, sizeof(clkname),
++					"usb_tll_hs_usb_ch%d_clk", i);
++		fck = clk_get(dev, clkname);
++
++		if (IS_ERR(fck))
++			dev_dbg(dev, "can't get clock : %s\n", clkname);
++		else
++			tll->ch_clk[i] = fck;
++	}
++
+ 	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
+ 	    is_ehci_tll_mode(pdata->port_mode[1]) ||
+ 	    is_ehci_tll_mode(pdata->port_mode[2]) ||
+@@ -321,11 +332,9 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-err_res:
+-	clk_put(tll->usbtll_p2_fck);
+-
+-err_p2_fck:
+-	clk_put(tll->usbtll_p1_fck);
++err_clk_alloc:
++	pm_runtime_put_sync(dev);
++	pm_runtime_disable(dev);
+ 
+ 	return ret;
  }
+@@ -339,9 +348,11 @@ err_p2_fck:
+ static int usbtll_omap_remove(struct platform_device *pdev)
+ {
+ 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < tll->nch; i++)
++		clk_put(tll->ch_clk[i]);
+ 
+-	clk_put(tll->usbtll_p2_fck);
+-	clk_put(tll->usbtll_p1_fck);
+ 	pm_runtime_disable(&pdev->dev);
+ 	return 0;
+ }
+@@ -351,6 +362,7 @@ static int usbtll_runtime_resume(struct device *dev)
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+ 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
+ 	unsigned long				flags;
++	int i;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_resume\n");
+ 
+@@ -361,11 +373,20 @@ static int usbtll_runtime_resume(struct device *dev)
+ 
+ 	spin_lock_irqsave(&tll->lock, flags);
+ 
+-	if (is_ehci_tll_mode(pdata->port_mode[0]))
+-		clk_enable(tll->usbtll_p1_fck);
++	for (i = 0; i < tll->nch; i++) {
++		if (is_ehci_tll_mode(pdata->port_mode[i])) {
++			int r;
++
++			if (!tll->ch_clk[i])
++				continue;
+ 
+-	if (is_ehci_tll_mode(pdata->port_mode[1]))
+-		clk_enable(tll->usbtll_p2_fck);
++			r = clk_enable(tll->ch_clk[i]);
++			if (r) {
++				dev_err(dev,
++				 "Error enabling ch %d clock: %d\n", i, r);
++			}
++		}
++	}
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 
+@@ -377,6 +398,7 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+ 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
+ 	unsigned long				flags;
++	int i;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_suspend\n");
+ 
+@@ -387,11 +409,12 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 
+ 	spin_lock_irqsave(&tll->lock, flags);
+ 
+-	if (is_ehci_tll_mode(pdata->port_mode[0]))
+-		clk_disable(tll->usbtll_p1_fck);
+-
+-	if (is_ehci_tll_mode(pdata->port_mode[1]))
+-		clk_disable(tll->usbtll_p2_fck);
++	for (i = 0; i < tll->nch; i++) {
++		if (is_ehci_tll_mode(pdata->port_mode[i])) {
++			if (tll->ch_clk[i])
++				clk_disable(tll->ch_clk[i]);
++		}
++	}
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
  
 -- 
-1.7.5.4
+1.7.4.1
 
