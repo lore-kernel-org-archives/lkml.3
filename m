@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758298Ab3APIJH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 03:09:07 -0500
+	id S1758484Ab3APIJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 03:09:23 -0500
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58321 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652Ab3APIJG (ORCPT
+	with ESMTP id S1758188Ab3APIJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 03:09:06 -0500
-X-AuditID: 9c930197-b7b76ae000000e7d-2c-50f6601d8480
+	Wed, 16 Jan 2013 03:09:07 -0500
+X-AuditID: 9c930197-b7b76ae000000e7d-2f-50f6601d2030
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org, js1304@gmail.com,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org, js1304@gmail.com,
         Dan Magenheimer <dan.magenheimer@oracle.com>,
         Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 2/3] staging, zcache: use zs_mem_[read/write]
-Date: Wed, 16 Jan 2013 17:08:56 +0900
-Message-Id: <1358323737-13396-2-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 3/3] staging, zram: use zs_mem_[read/write]
+Date: Wed, 16 Jan 2013 17:08:57 +0900
+Message-Id: <1358323737-13396-3-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358323737-13396-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1358323737-13396-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -30,65 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Now, we have newly introduced APIs which reduce copy overhead of
 zsmalloc for objects on page boundary.
-So use it in zcache.
+So use it in zram.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 52b43b7..d1dee76 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -704,7 +704,7 @@ static unsigned long zv_create(struct zs_pool *pool, uint32_t pool_id,
- 				struct tmem_oid *oid, uint32_t index,
- 				void *cdata, unsigned clen)
- {
--	struct zv_hdr *zv;
-+	struct zv_hdr zv;
- 	u32 size = clen + sizeof(struct zv_hdr);
- 	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
- 	unsigned long handle = 0;
-@@ -716,14 +716,13 @@ static unsigned long zv_create(struct zs_pool *pool, uint32_t pool_id,
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index fb4a7c9..554a742 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -195,13 +195,14 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+ 		return 0;
+ 	}
+ 
+-	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
+ 	if (zram->table[index].size == PAGE_SIZE)
+-		memcpy(mem, cmem, PAGE_SIZE);
+-	else
++		zs_mem_read(zram->mem_pool, handle, mem, 0, PAGE_SIZE);
++	else {
++		cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
+ 		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+ 						mem, &clen);
+-	zs_unmap_object(zram->mem_pool, handle);
++		zs_unmap_object(zram->mem_pool, handle);
++	}
+ 
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+@@ -269,7 +270,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	size_t clen;
+ 	unsigned long handle;
+ 	struct page *page;
+-	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
++	unsigned char *user_mem, *src, *uncmem = NULL;
+ 
+ 	page = bvec->bv_page;
+ 	src = zram->compress_buffer;
+@@ -343,11 +344,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		ret = -ENOMEM;
  		goto out;
- 	atomic_inc(&zv_curr_dist_counts[chunks]);
- 	atomic_inc(&zv_cumul_dist_counts[chunks]);
--	zv = zs_map_object(pool, handle, ZS_MM_WO);
--	zv->index = index;
--	zv->oid = *oid;
--	zv->pool_id = pool_id;
--	zv->size = clen;
--	SET_SENTINEL(zv, ZVH);
--	memcpy((char *)zv + sizeof(struct zv_hdr), cdata, clen);
--	zs_unmap_object(pool, handle);
-+	zv.index = index;
-+	zv.oid = *oid;
-+	zv.pool_id = pool_id;
-+	zv.size = clen;
-+	SET_SENTINEL((&zv), ZVH);
-+	zs_mem_write(pool, handle, &zv, 0, sizeof(struct zv_hdr));
-+	zs_mem_write(pool, handle, cdata, sizeof(struct zv_hdr), clen);
- out:
- 	return handle;
- }
-@@ -731,15 +730,13 @@ out:
- static void zv_free(struct zs_pool *pool, unsigned long handle)
- {
- 	unsigned long flags;
--	struct zv_hdr *zv;
-+	struct zv_hdr zv;
- 	uint16_t size;
- 	int chunks;
+ 	}
+-	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
+-
+-	memcpy(cmem, src, clen);
  
--	zv = zs_map_object(pool, handle, ZS_MM_RW);
--	ASSERT_SENTINEL(zv, ZVH);
--	size = zv->size + sizeof(struct zv_hdr);
--	INVERT_SENTINEL(zv, ZVH);
--	zs_unmap_object(pool, handle);
-+	zs_mem_read(pool, handle, &zv, 0, sizeof(struct zv_hdr));
-+	ASSERT_SENTINEL((&zv), ZVH);
-+	size = zv.size + sizeof(struct zv_hdr);
+-	zs_unmap_object(zram->mem_pool, handle);
++	zs_mem_write(zram->mem_pool, handle, src, 0, clen);
  
- 	chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
- 	BUG_ON(chunks >= NCHUNKS);
+ 	zram->table[index].handle = handle;
+ 	zram->table[index].size = clen;
 -- 
 1.7.9.5
 
