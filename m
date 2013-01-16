@@ -1,221 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758850Ab3APJVv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 04:21:51 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:58881 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758497Ab3APJVs (ORCPT
+	id S1758886Ab3APJWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 04:22:53 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58437 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758379Ab3APJWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 04:21:48 -0500
+	Wed, 16 Jan 2013 04:22:51 -0500
+X-AuditID: 9c930197-b7b76ae000000e7d-f7-50f6716960f8
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 06/13] perf ui/hist: Add support for event group view
+References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
+	<1358235117-12803-7-git-send-email-namhyung@kernel.org>
+	<20130115183110.GB5826@ghostprotocols.net>
+Date: Wed, 16 Jan 2013 18:22:49 +0900
+In-Reply-To: <20130115183110.GB5826@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Tue, 15 Jan 2013 15:31:10 -0300")
+Message-ID: <87ip6xmqhi.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <s5hpq16zfox.wl%tiwai@suse.de>
-References: <CA+icZUUxgRsGkYAmZ=JxTwPvdhTzpGLcxm6+VSq9jnfYPVXj4Q@mail.gmail.com>
-	<s5hpq16zfox.wl%tiwai@suse.de>
-Date: Wed, 16 Jan 2013 10:21:46 +0100
-Message-ID: <CA+icZUWFKzccbHrU0pxK-T2TdwyDsTTNxP_22zmGTPbcAmhMaQ@mail.gmail.com>
-Subject: Re: 3.8-rc2 lockdep complains about console_lock vs. fb_notifier_list.rwsem
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-fbdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, alan@lxorguk.ukuu.org.uk,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 3:25 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Sat, 5 Jan 2013 13:13:27 +0100,
-> Sedat Dilek wrote:
->>
->> Hi Jiri,
->>
->> ...known issue (see thread in [1]), please feel free to test patches
->> from Alan and Andrew (see [1], [2] and [3]) and report.
->>
->> Regards,
->> - Sedat -
->>
->> [1] http://marc.info/?t=135309396400003&r=1&w=2
->> [2] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
->> [3] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover-fix.patch
->> [4] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover-fix-2.patch
+On Tue, 15 Jan 2013 15:31:10 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Jan 15, 2013 at 04:31:50PM +0900, Namhyung Kim escreveu:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> Show group members' overhead also when showing the leader's if event
+>> group is enabled.  Use macro for defining hpp functions which looks
+>> almost identical.
+>> 
+>> Thanks to Arnaldo for suggesting a better way to print group members
+>> without allocating temporary array.
 >
-> I've hit this bug and tried the patch [2] ([3] and [4] are gone).
-> Unfortunately the deadlock is still reported, as seen below.
->
-> A similar fix for fbcon_unbind(), splitting an unlocked version of
-> unbind_con_driver() and call it?
->
-> (BTW, the patch [2] contains strange characters in the comments, and
->  has a few coding issues easily detected by checkpatch.pl.)
->
+> Thanks! Its a pity the patch ended up mixing up things, I'll have to
+> apply it and look at the end result.
 
-[ CCing Rafael as he asked in another thread if I had sent a patch ]
+Do you mean I have to separate this into two - one for converting to
+macro and another for event group view itself?
 
-I noticed also some these "strange" chars in the patch from Andrew and
-a patch of mine was sent as
-"fb-Rework-locking-to-fix-lock-ordering-on-takeover-fix-comments.patch"
-to the lists.
-
-It is strange to me that Andrew or other maintainers himself did not
-check with "checkpatch.pl".
-This should be a common testcase!
-Hey, noone is perfect :-).
-( /me has also not checked with that script - I just saw it. )
-
-Just as a note to the issue in general:
-Andrew took over the patch from Alan which is very honest - he is not
-the active TTY maintainer!
-Didn't Greg takeover maintenance from Alan (after a dispute and blaming Alan)?
-If this is true, why the hell is Greg not CCed?
-
-Thanks for the real patch in the followup of this thread!
-Who will take care of it :-)?
-
-- Sedat
-
->
-> thanks,
->
-> Takashi
->
-> ===
->
-> [    3.228454] [drm] Initialized drm 1.1.0 20060810
-> [    3.317144] [drm] radeon defaulting to kernel modesetting.
-> [    3.330546] [drm] radeon kernel modesetting enabled.
-> [    3.343942] checking generic (c0000000 1000000) vs hw (c0000000 10000000)
-> [    3.343946] fb: conflicting fb hw usage radeondrmfb vs VESA VGA - removing generic driver
-> [    3.357376]
-> [    3.357377] ======================================================
-> [    3.357378] [ INFO: possible circular locking dependency detected ]
-> [    3.357380] 3.8.0-rc3-test+ #82 Not tainted
-> [    3.357381] -------------------------------------------------------
-> [    3.357383] udevd/137 is trying to acquire lock:
-> [    3.357394]  (console_lock){+.+.+.}, at: [<ffffffff8140385f>] unbind_con_driver+0x3f/0x200
-> [    3.357395]
-> [    3.357395] but task is already holding lock:
-> [    3.357402]  ((fb_notifier_list).rwsem){.+.+.+}, at: [<ffffffff810799b1>] __blocking_notifier_call_chain+0x51/0xc0
-> [    3.357403]
-> [    3.357403] which lock already depends on the new lock.
-> [    3.357403]
-> [    3.357404]
-> [    3.357404] the existing dependency chain (in reverse order) is:
-> [    3.357407]
-> [    3.357407] -> #1 ((fb_notifier_list).rwsem){.+.+.+}:
-> [    3.357411]        [<ffffffff810b605a>] lock_acquire+0xaa/0x210
-> [    3.357417]        [<ffffffff81643dc2>] down_read+0x42/0x57
-> [    3.357419]        [<ffffffff810799b1>] __blocking_notifier_call_chain+0x51/0xc0
-> [    3.357422]        [<ffffffff81079a31>] blocking_notifier_call_chain+0x11/0x20
-> [    3.357426]        [<ffffffff8138cbe6>] fb_notifier_call_chain+0x16/0x20
-> [    3.357428]        [<ffffffff8138e302>] register_framebuffer+0x1c2/0x2f0
-> [    3.357433]        [<ffffffff81d1748e>] vesafb_probe+0x6e0/0x760
-> [    3.357437]        [<ffffffff8142afbe>] platform_drv_probe+0x3e/0x70
-> [    3.357440]        [<ffffffff81428d26>] driver_probe_device+0x86/0x390
-> [    3.357442]        [<ffffffff814290d3>] __driver_attach+0xa3/0xb0
-> [    3.357445]        [<ffffffff81426dbd>] bus_for_each_dev+0x4d/0x90
-> [    3.357447]        [<ffffffff814286a9>] driver_attach+0x19/0x20
-> [    3.357450]        [<ffffffff81428308>] bus_add_driver+0x1a8/0x290
-> [    3.357452]        [<ffffffff81429792>] driver_register+0x72/0x170
-> [    3.357455]        [<ffffffff8142a7e1>] platform_driver_register+0x41/0x50
-> [    3.357458]        [<ffffffff8142a806>] platform_driver_probe+0x16/0xa0
-> [    3.357460]        [<ffffffff81d16d6b>] vesafb_init+0x215/0x258
-> [    3.357464]        [<ffffffff810002e2>] do_one_initcall+0x122/0x180
-> [    3.357468]        [<ffffffff816258ec>] kernel_init+0x1fc/0x370
-> [    3.357471]        [<ffffffff8164e1fc>] ret_from_fork+0x7c/0xb0
-> [    3.357474]
-> [    3.357474] -> #0 (console_lock){+.+.+.}:
-> [    3.357476]        [<ffffffff810b5055>] __lock_acquire+0x1385/0x1cc0
-> [    3.357478]        [<ffffffff810b605a>] lock_acquire+0xaa/0x210
-> [    3.357482]        [<ffffffff81048fbf>] console_lock+0x6f/0x80
-> [    3.357485]        [<ffffffff8140385f>] unbind_con_driver+0x3f/0x200
-> [    3.357489]        [<ffffffff8139aeb7>] fbcon_event_notify+0x447/0x8b0
-> [    3.357492]        [<ffffffff8164a225>] notifier_call_chain+0x55/0x110
-> [    3.357495]        [<ffffffff810799c7>] __blocking_notifier_call_chain+0x67/0xc0
-> [    3.357497]        [<ffffffff81079a31>] blocking_notifier_call_chain+0x11/0x20
-> [    3.357500]        [<ffffffff8138cbe6>] fb_notifier_call_chain+0x16/0x20
-> [    3.357502]        [<ffffffff8138debb>] do_unregister_framebuffer+0x5b/0x110
-> [    3.357505]        [<ffffffff8138e108>] do_remove_conflicting_framebuffers+0x158/0x190
-> [    3.357507]        [<ffffffff8138e46a>] remove_conflicting_framebuffers+0x3a/0x60
-> [    3.357532]        [<ffffffffa00df16b>] radeon_pci_probe+0x8b/0xd0 [radeon]
-> [    3.357536]        [<ffffffff8136d5a6>] local_pci_probe+0x46/0x80
-> [    3.357539]        [<ffffffff8136d7f1>] pci_device_probe+0x101/0x110
-> [    3.357542]        [<ffffffff81428d26>] driver_probe_device+0x86/0x390
-> [    3.357544]        [<ffffffff814290d3>] __driver_attach+0xa3/0xb0
-> [    3.357547]        [<ffffffff81426dbd>] bus_for_each_dev+0x4d/0x90
-> [    3.357549]        [<ffffffff814286a9>] driver_attach+0x19/0x20
-> [    3.357552]        [<ffffffff81428308>] bus_add_driver+0x1a8/0x290
-> [    3.357554]        [<ffffffff81429792>] driver_register+0x72/0x170
-> [    3.357557]        [<ffffffff8136c60f>] __pci_register_driver+0x5f/0x70
-> [    3.357577]        [<ffffffffa006ec3a>] drm_pci_init+0x11a/0x130 [drm]
-> [    3.357594]        [<ffffffffa01c20ec>] radeon_init+0xec/0x1000 [radeon]
-> [    3.357597]        [<ffffffff810002e2>] do_one_initcall+0x122/0x180
-> [    3.357600]        [<ffffffff810c4b53>] load_module+0x1043/0x1510
-> [    3.357603]        [<ffffffff810c50f7>] sys_init_module+0xd7/0x120
-> [    3.357605]        [<ffffffff8164e2ad>] system_call_fastpath+0x1a/0x1f
-> [    3.357606]
-> [    3.357606] other info that might help us debug this:
-> [    3.357606]
-> [    3.357607]  Possible unsafe locking scenario:
-> [    3.357607]
-> [    3.357608]        CPU0                    CPU1
-> [    3.357609]        ----                    ----
-> [    3.357611]   lock((fb_notifier_list).rwsem);
-> [    3.357613]                                lock(console_lock);
-> [    3.357615]                                lock((fb_notifier_list).rwsem);
-> [    3.357616]   lock(console_lock);
-> [    3.357617]
-> [    3.357617]  *** DEADLOCK ***
-> [    3.357617]
-> [    3.357619] 5 locks held by udevd/137:
-> [    3.357624]  #0:  (&__lockdep_no_validate__){......}, at: [<ffffffff81429083>] __driver_attach+0x53/0xb0
-> [    3.357628]  #1:  (&__lockdep_no_validate__){......}, at: [<ffffffff81429091>] __driver_attach+0x61/0xb0
-> [    3.357633]  #2:  (registration_lock){+.+.+.}, at: [<ffffffff8138e45b>] remove_conflicting_framebuffers+0x2b/0x60
-> [    3.357637]  #3:  (&fb_info->lock){+.+.+.}, at: [<ffffffff8138d0c1>] lock_fb_info+0x21/0x60
-> [    3.357642]  #4:  ((fb_notifier_list).rwsem){.+.+.+}, at: [<ffffffff810799b1>] __blocking_notifier_call_chain+0x51/0xc0
-> [    3.357643]
-> [    3.357643] stack backtrace:
-> [    3.357645] Pid: 137, comm: udevd Not tainted 3.8.0-rc3-test+ #82
-> [    3.357646] Call Trace:
-> [    3.357652]  [<ffffffff8163b136>] print_circular_bug+0x1fb/0x20c
-> [    3.357655]  [<ffffffff810b5055>] __lock_acquire+0x1385/0x1cc0
-> [    3.357658]  [<ffffffff810b605a>] lock_acquire+0xaa/0x210
-> [    3.357661]  [<ffffffff8140385f>] ? unbind_con_driver+0x3f/0x200
-> [    3.357664]  [<ffffffff810b2b0d>] ? trace_hardirqs_on+0xd/0x10
-> [    3.357667]  [<ffffffff81048fbf>] console_lock+0x6f/0x80
-> [    3.357670]  [<ffffffff8140385f>] ? unbind_con_driver+0x3f/0x200
-> [    3.357673]  [<ffffffff8140385f>] unbind_con_driver+0x3f/0x200
-> [    3.357676]  [<ffffffff8134c01e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [    3.357680]  [<ffffffff8139aeb7>] fbcon_event_notify+0x447/0x8b0
-> [    3.357683]  [<ffffffff8164a225>] notifier_call_chain+0x55/0x110
-> [    3.357685]  [<ffffffff810799c7>] __blocking_notifier_call_chain+0x67/0xc0
-> [    3.357688]  [<ffffffff81079a31>] blocking_notifier_call_chain+0x11/0x20
-> [    3.357690]  [<ffffffff8138cbe6>] fb_notifier_call_chain+0x16/0x20
-> [    3.357693]  [<ffffffff8138debb>] do_unregister_framebuffer+0x5b/0x110
-> [    3.357696]  [<ffffffff8138e108>] do_remove_conflicting_framebuffers+0x158/0x190
-> [    3.357698]  [<ffffffff8138e46a>] remove_conflicting_framebuffers+0x3a/0x60
-> [    3.357717]  [<ffffffffa00df16b>] radeon_pci_probe+0x8b/0xd0 [radeon]
-> [    3.357721]  [<ffffffff8136d5a6>] local_pci_probe+0x46/0x80
-> [    3.357724]  [<ffffffff8136d7f1>] pci_device_probe+0x101/0x110
-> [    3.357727]  [<ffffffff81428d26>] driver_probe_device+0x86/0x390
-> [    3.357729]  [<ffffffff814290d3>] __driver_attach+0xa3/0xb0
-> [    3.357732]  [<ffffffff81429030>] ? driver_probe_device+0x390/0x390
-> [    3.357734]  [<ffffffff81426dbd>] bus_for_each_dev+0x4d/0x90
-> [    3.357737]  [<ffffffff814286a9>] driver_attach+0x19/0x20
-> [    3.357740]  [<ffffffff81428308>] bus_add_driver+0x1a8/0x290
-> [    3.357744]  [<ffffffffa01c2000>] ? 0xffffffffa01c1fff
-> [    3.357747]  [<ffffffff81429792>] driver_register+0x72/0x170
-> [    3.357749]  [<ffffffffa01c2000>] ? 0xffffffffa01c1fff
-> [    3.357752]  [<ffffffff8136c60f>] __pci_register_driver+0x5f/0x70
-> [    3.357762]  [<ffffffffa006ec3a>] drm_pci_init+0x11a/0x130 [drm]
-> [    3.357764]  [<ffffffffa01c2000>] ? 0xffffffffa01c1fff
-> [    3.357767]  [<ffffffffa01c2000>] ? 0xffffffffa01c1fff
-> [    3.357784]  [<ffffffffa01c20ec>] radeon_init+0xec/0x1000 [radeon]
-> [    3.357786]  [<ffffffff810002e2>] do_one_initcall+0x122/0x180
-> [    3.357789]  [<ffffffff810c4b53>] load_module+0x1043/0x1510
-> [    3.357792]  [<ffffffff8135d260>] ? ddebug_proc_open+0xb0/0xb0
-> [    3.357796]  [<ffffffff810c50f7>] sys_init_module+0xd7/0x120
-> [    3.357798]  [<ffffffff8164e2ad>] system_call_fastpath+0x1a/0x1f
+Thanks,
+Namhyung
