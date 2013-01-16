@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab3APWZr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:25:47 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56352 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028Ab3APWZq (ORCPT
+	id S1757183Ab3APW0D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:26:03 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:60881 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756874Ab3APW0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:25:46 -0500
-Date: Thu, 17 Jan 2013 09:25:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: error when fething the git.secretlab.ca trees
-Message-Id: <20130117092536.f1a4e0ed60610845cc919b15@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__17_Jan_2013_09_25_36_+1100_O3qN4617DVSVMS=B"
+	Wed, 16 Jan 2013 17:26:00 -0500
+Date: Wed, 16 Jan 2013 17:25:58 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: Venu Byravarasu <vbyravarasu@nvidia.com>, <gregkh@linuxfoundation.org>,
+        <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 4/4] usb: Add APIs to access host registers from Tegra
+ PHY
+In-Reply-To: <50F721F7.2030907@wwwdotorg.org>
+Message-ID: <Pine.LNX.4.44L0.1301161717041.1704-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Jan_2013_09_25_36_+1100_O3qN4617DVSVMS=B
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 16 Jan 2013, Stephen Warren wrote:
 
-Hi Grant,
+> On 01/16/2013 08:08 AM, Alan Stern wrote:
+> > On Wed, 16 Jan 2013, Venu Byravarasu wrote:
+> > 
+> >> As Tegra PHY driver needs to access one of the Host registers,
+> >> added few APIs.
+> 
+> >> --- a/drivers/usb/host/ehci-tegra.c
+> >> +++ b/drivers/usb/host/ehci-tegra.c
+> 
+> >> +void tegra_ehci_set_wakeon_events(struct usb_phy *x, bool enable)
+> >> +{
+> >> +	unsigned long val;
+> >> +	struct usb_hcd *hcd = bus_to_hcd(x->otg->host);
+> >> +	void __iomem *base = hcd->regs;
+> >> +	u32 wake = USB_PORTSC1_WKOC | USB_PORTSC1_WKDS | USB_PORTSC1_WKCN;
+> >> +
+> >> +	val = readl(base + USB_PORTSC1);
+> >> +	if (enable)
+> >> +		val |= wake;
+> >> +	else
+> >> +		val &= ~wake;
+> >> +	writel(val, base + USB_PORTSC1);
+> >> +}
+> > 
+> > Here and below, this sort of code is highly questionable.  You
+> > evidently don't realize that some of the bits in the PORTSC registers
+> > are R/WC.  This means writing a 1 to these bits will clear them.  
+> > 
+> > Consequently it is almost always wrong to read a PORTSC register and
+> > then write back the same (or a slightly modified) value.
+> 
+> Sorry I'm not familiar with USB... Are the bits being manipulated here
+> (i.e. USB_PORTSC1_WKOC | USB_PORTSC1_WKDS | USB_PORTSC1_WKCN)
+> standardized USBisms, or some custom Tegra stuff?
 
-Fetching the trees from git.secretlab.ca over the past few days has
-produced this error:
+The _symbols_ are not standard (i.e., not used in the regular ehci-hcd
+driver) but the _values_ are: compare with PORT_WKOC_E etc. in
+include/linux/usb/ehci_defs.h.  I'm not sure about the register 
+addresses, however.
 
-fatal: The remote end hung up unexpectedly
+> Anyway, is the solution here to do:
+> 
+> val = readl(addr)
+> 
+> // i.e. add the following line:
+> val &= ~(all write-to-clear bits);
+> 
+> if (enable) val |= wake; else val &= ~wake;
+> 
+> writel(val, addr)
+> 
+> ... or is there more broken than just that?
 
-This affects the following trees:
+Nope, that's the right way to do it.  There are loads of examples in 
+drivers/usb/host/ehci-hub.c; look at usages of PORT_RWC_BITS.
 
-irqdomain-current
-devicetree-current
-spi-current
-gpio-current
-devicetree
-spi
-arm-dt
-irqdomain
-gpio
+> Also note that the driver is already doing exactly what is in these new
+> functions; the code is just being split out so that only the EHCI driver
+> touches EHCI registers, and the PHY driver only touches PHY registers.
+> Still, I'll admit it's a good time to fix any mistakes in this part of
+> the code.
 
-I am using the last version of each that I fetched.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Agreed.
 
---Signature=_Thu__17_Jan_2013_09_25_36_+1100_O3qN4617DVSVMS=B
-Content-Type: application/pgp-signature
+Alan Stern
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ9yjgAAoJEECxmPOUX5FEzrcQAIxaXMYr5lKFaATs82XTzUAa
-kvp+I3ndUNHSVfsam+WictPE95RlOTw7kBp3aFlgV7AYicgbMFlb8E+fwibVu3qH
-zM/kNEa8NcivauU++3NXaieF2lOLFpZJoLbsWg1DtXHSA8+CniAUEV0XbLfZCWcM
-lB4LSzTvcbcMn/1uOZSEv1AYDHvwbSg2Fcjitrjn+pew1kdS78Q6usa9m9NmvztX
-9OcmyM1r0MHqbmujKPSumRejXzgitbfcCBwJ/O3Sm8ItmRlm4aC5OZMzl2G887q/
-jLOm92oi/SOBrWFYNE9N82aLYi67jr2GTyfypN08SYWN46DfB7GCd5kn11nwhAPJ
-Ix1knO7S7RJ0eBYBiO1Xiv4Osae5oFU6JxKrMMCSPdvyK6Nd2iQ8KG/3vcxl48mI
-OMNul2EA1tCzq+vLaFCMZc6FPkaD+vSlBOASL7pkxqfjP98W3H5OOJNe7FwNJHnm
-0hHnMg+WlbBTQHh1hJWmbOMzOyT2WJSY3PVesYWBUG88FRTGJBeiHAUICYDexYIA
-Pm7VaTsNoJhogYev6v0/7mqp6TqfBTjQZUgWX4w7AKGY3cpJd3LTZQ6YNTf6CVRU
-EQkYsY+kbY23qJEhD50MPXCc+KFEuan94p9oHjMdB5UPg5OmuHqpjdT3KdqI0csp
-lH19PCfDz60qq3d1myo3
-=glQ8
------END PGP SIGNATURE-----
-
---Signature=_Thu__17_Jan_2013_09_25_36_+1100_O3qN4617DVSVMS=B--
