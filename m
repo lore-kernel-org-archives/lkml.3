@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab3APRtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 12:49:14 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48514 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756152Ab3APRtM (ORCPT
+	id S1753672Ab3APRxB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:53:01 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62908 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752576Ab3APRw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 12:49:12 -0500
-Message-ID: <50F6E811.2040606@wwwdotorg.org>
-Date: Wed, 16 Jan 2013 10:49:05 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Simon Horman <horms@verge.net.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	Wed, 16 Jan 2013 12:52:59 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19d1OePLPXwrFHurwwAt8iIGol5jYVULBU=
+Date: Wed, 16 Jan 2013 12:52:03 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Soeren Moch <smoch@web.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device
- core
-References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com> <50EF27B4.60608@wwwdotorg.org> <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com> <9702060.jEbHySsCv0@avalon> <CACRpkdbFH6RCEEnXO=A9FVa0B5rtE9RkjXz9Hhy+w7NvwcBCgg@mail.gmail.com>
-In-Reply-To: <CACRpkdbFH6RCEEnXO=A9FVa0B5rtE9RkjXz9Hhy+w7NvwcBCgg@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] ata: sata_mv: fix sg_tbl_pool alignment
+Message-ID: <20130116175203.GK25500@titan.lakedaemon.net>
+References: <20130115165642.GA25500@titan.lakedaemon.net>
+ <20130115175020.GA3764@kroah.com>
+ <20130115201617.GC25500@titan.lakedaemon.net>
+ <20130115215602.GF25500@titan.lakedaemon.net>
+ <50F5F1B7.3040201@web.de>
+ <20130116024014.GH25500@titan.lakedaemon.net>
+ <50F61D86.4020801@web.de>
+ <50F66B1B.40301@web.de>
+ <20130116155045.GI25500@titan.lakedaemon.net>
+ <50F6DDF7.9080605@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F6DDF7.9080605@web.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2013 01:45 PM, Linus Walleij wrote:
-> On Fri, Jan 11, 2013 at 9:36 PM, Laurent Pinchart
-> <laurent.pinchart@ideasonboard.com> wrote:
+On Wed, Jan 16, 2013 at 06:05:59PM +0100, Soeren Moch wrote:
+> On 16.01.2013 16:50, Jason Cooper wrote:
+> >On Wed, Jan 16, 2013 at 09:55:55AM +0100, Soeren Moch wrote:
+> >>On 16.01.2013 04:24, Soeren Moch wrote:
+> >>>On 16.01.2013 03:40, Jason Cooper wrote:
+> >>>>On Wed, Jan 16, 2013 at 01:17:59AM +0100, Soeren Moch wrote:
+> >>>>>On 15.01.2013 22:56, Jason Cooper wrote:
+> >>>>>>On Tue, Jan 15, 2013 at 03:16:17PM -0500, Jason Cooper wrote:
+> >
+> >>OK, I could trigger the error
+> >>   ERROR: 1024 KiB atomic DMA coherent pool is too small!
+> >>   Please increase it with coherent_pool= kernel parameter!
+> >>only with em28xx sticks and sata, dib0700 sticks removed.
+> >
+> >Did you test the reverse scenario?  ie dib0700 with sata_mv and no
+> >em28xx.
 > 
->> I've sent several patch series for the SH PFC (Pin Function Controller) to the
->> linux-sh mailing list. One of the series included pinctrl core patches for
->> easier testing, but I made it clear that they should *not* be pushed to
->> mainline through the SH tree.
+> Maybe I can test this next night.
+
+Please do, this will tell us if it is in the USB drivers or lower
+(something in common).
+
+> >>>>What would be most helpful is if you could do a git bisect between
+> >>>>v3.5.x (working) and the oldest version where you know it started
+> >>>>failing (v3.7.1 or earlier if you know it).
+> >>>>
+> >>>I did not bisect it, but Marek mentioned earlier that commit
+> >>>e9da6e9905e639b0f842a244bc770b48ad0523e9 in Linux v3.6-rc1 introduced
+> >>>new code for dma allocations. This is probably the root cause for the
+> >>>new (mis-)behavior (due to my tests 3.6.0 is not working anymore).
+> >>
+> >>I don't want to say that Mareks patch is wrong, probably it triggers a
+> >>bug somewhere else! (in em28xx?)
+> >
+> >Of the four drivers you listed, none are using dma.  sata_mv is the only
+> >one.
 > 
-> No big deal, what fun is linux-next if we don't break it ;-)
+> usb_core is doing the actual DMA for the usb bridge drivers, I think.
 
-Hmm. It's causing a lot of engineers here a lot of trouble, since they
-all see linux-next won't boot, and haven't been paying enough attention
-to know which commit to revert:-(. Lots of lost productivity:-(
+Yes, my mistake.  I'd like to attribute that statement to pre-coffee
+rambling. :-)
 
-Simon, the offending commit:
+> >If one is to believe the comments in sata_mv.c:~151, then the alignment
+> >is wrong for the sg_tbl_pool.
+> >
+> >Could you please try the following patch?
+> 
+> OK, what should I test first, the setup from last night (em28xx, no
+> dib0700) plus your patch, or the reverse setup (dib0700, no em28xx)
+> without your patch, or my normal setting (all dvb sticks) plus your
+> patch?
 
-6d3ef6b drivers/pinctrl: grab default handles from device core
+if testing time is limited, please do the test I outlined at the top of
+this email.  I've been digging more into the dma code and while I think
+the patch is correct, I don't see where it would fix your problem (yet).
 
-is still in next-20130116. Can you please remove it?
+thx,
 
-Or does it make sense for Stephen Rothwell to revert it when building
-linux-next?
+Jason.
