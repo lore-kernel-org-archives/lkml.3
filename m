@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab3APOpc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:45:32 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57384 "EHLO arroyo.ext.ti.com"
+	id S1756618Ab3APOpn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:45:43 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45263 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753828Ab3APOpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:45:30 -0500
+	id S1752128Ab3APOph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 09:45:37 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <rogerq@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Rajendra Nayak <rnayak@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v6 20/22] ARM: OMAP4: clock data: get rid of unused USB host clock aliases
-Date: Wed, 16 Jan 2013 16:43:51 +0200
-Message-ID: <1358347433-329-21-git-send-email-rogerq@ti.com>
+        <linux-arm-kernel@lists.infradead.org>, <rogerq@ti.com>
+Subject: [PATCH v6 22/22] mdf: omap-usb-host: get rid of build warning
+Date: Wed, 16 Jan 2013 16:43:53 +0200
+Message-ID: <1358347433-329-23-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358347433-329-1-git-send-email-rogerq@ti.com>
 References: <1358347433-329-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need multiple aliases for the OMAP USB host clocks so remove them.
+Fixes the below build warning when driver is built-in.
 
-CC: Paul Walmsley <paul@pwsan.com>
-CC: Rajendra Nayak <rnayak@ti.com>
-CC: Benoit Cousson <b-cousson@ti.com>
-CC: Mike Turquette <mturquette@linaro.org>
+drivers/mfd/omap-usb-host.c:750:12: warning:
+‘usbhs_omap_remove’ defined but not used [-Wunused-function]
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Paul Walmsley <paul@pwsan.com>
 ---
- arch/arm/mach-omap2/cclock44xx_data.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+ drivers/mfd/omap-usb-host.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/cclock44xx_data.c b/arch/arm/mach-omap2/cclock44xx_data.c
-index 5789a5e..5ee78f3 100644
---- a/arch/arm/mach-omap2/cclock44xx_data.c
-+++ b/arch/arm/mach-omap2/cclock44xx_data.c
-@@ -1875,7 +1875,6 @@ static struct omap_clk omap44xx_clks[] = {
- 	CLK(NULL,	"uart3_fck",			&uart3_fck,	CK_443X),
- 	CLK(NULL,	"uart4_fck",			&uart4_fck,	CK_443X),
- 	CLK(NULL,	"usb_host_fs_fck",		&usb_host_fs_fck,	CK_443X),
--	CLK("usbhs_omap",	"fs_fck",		&usb_host_fs_fck,	CK_443X),
- 	CLK(NULL,	"utmi_p1_gfclk",		&utmi_p1_gfclk,	CK_443X),
- 	CLK(NULL,	"usb_host_hs_utmi_p1_clk",	&usb_host_hs_utmi_p1_clk,	CK_443X),
- 	CLK(NULL,	"utmi_p2_gfclk",		&utmi_p2_gfclk,	CK_443X),
-@@ -1887,7 +1886,6 @@ static struct omap_clk omap44xx_clks[] = {
- 	CLK(NULL,	"usb_host_hs_hsic480m_p2_clk",	&usb_host_hs_hsic480m_p2_clk,	CK_443X),
- 	CLK(NULL,	"usb_host_hs_func48mclk",	&usb_host_hs_func48mclk,	CK_443X),
- 	CLK(NULL,	"usb_host_hs_fck",		&usb_host_hs_fck,	CK_443X),
--	CLK("usbhs_omap",	"hs_fck",		&usb_host_hs_fck,	CK_443X),
- 	CLK(NULL,	"otg_60m_gfclk",		&otg_60m_gfclk,	CK_443X),
- 	CLK(NULL,	"usb_otg_hs_xclk",		&usb_otg_hs_xclk,	CK_443X),
- 	CLK(NULL,	"usb_otg_hs_ick",		&usb_otg_hs_ick,	CK_443X),
-@@ -1897,8 +1895,6 @@ static struct omap_clk omap44xx_clks[] = {
- 	CLK(NULL,	"usb_tll_hs_usb_ch0_clk",	&usb_tll_hs_usb_ch0_clk,	CK_443X),
- 	CLK(NULL,	"usb_tll_hs_usb_ch1_clk",	&usb_tll_hs_usb_ch1_clk,	CK_443X),
- 	CLK(NULL,	"usb_tll_hs_ick",		&usb_tll_hs_ick,	CK_443X),
--	CLK("usbhs_omap",	"usbtll_ick",		&usb_tll_hs_ick,	CK_443X),
--	CLK("usbhs_tll",	"usbtll_ick",		&usb_tll_hs_ick,	CK_443X),
- 	CLK(NULL,	"usim_ck",			&usim_ck,	CK_443X),
- 	CLK(NULL,	"usim_fclk",			&usim_fclk,	CK_443X),
- 	CLK(NULL,	"usim_fck",			&usim_fck,	CK_443X),
-@@ -1949,9 +1945,6 @@ static struct omap_clk omap44xx_clks[] = {
- 	CLK(NULL,	"uart2_ick",			&dummy_ck,	CK_443X),
- 	CLK(NULL,	"uart3_ick",			&dummy_ck,	CK_443X),
- 	CLK(NULL,	"uart4_ick",			&dummy_ck,	CK_443X),
--	CLK("usbhs_omap",	"usbhost_ick",		&dummy_ck,		CK_443X),
--	CLK("usbhs_omap",	"usbtll_fck",		&dummy_ck,	CK_443X),
--	CLK("usbhs_tll",	"usbtll_fck",		&dummy_ck,	CK_443X),
- 	CLK("omap_wdt",	"ick",				&dummy_ck,	CK_443X),
- 	CLK(NULL,	"timer_32k_ck",	&sys_32k_ck,	CK_443X),
- 	/* TODO: Remove "omap_timer.X" aliases once DT migration is complete */
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 56b6f69..151034f 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -778,7 +778,7 @@ static struct platform_driver usbhs_omap_driver = {
+ 		.owner		= THIS_MODULE,
+ 		.pm		= &usbhsomap_dev_pm_ops,
+ 	},
+-	.remove		= __exit_p(usbhs_omap_remove),
++	.remove		= usbhs_omap_remove,
+ };
+ 
+ MODULE_AUTHOR("Keshava Munegowda <keshava_mgowda@ti.com>");
 -- 
 1.7.4.1
 
