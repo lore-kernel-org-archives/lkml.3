@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757702Ab3APWg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:36:56 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:64428 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757639Ab3APWgy (ORCPT
+	id S1757764Ab3APWg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:36:58 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:52777 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757678Ab3APWg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:36:54 -0500
+	Wed, 16 Jan 2013 17:36:56 -0500
 From: Cong Ding <dinggnu@gmail.com>
-To: Alan Cox <alan@linux.intel.com>,
+To: Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Alan Cox <alan@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+        Jiri Slaby <jslaby@suse.cz>, linux-cris-kernel@axis.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] tty: serial/68328serial.c: remove unnecessary null pointer check
-Date: Wed, 16 Jan 2013 23:30:43 +0100
-Message-Id: <1358375444-13026-1-git-send-email-dinggnu@gmail.com>
+Subject: [PATCH] tty: serial/crisv10.c: remove unnecessary null pointer check
+Date: Wed, 16 Jan 2013 23:30:44 +0100
+Message-Id: <1358375444-13026-2-git-send-email-dinggnu@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1358375444-13026-1-git-send-email-dinggnu@gmail.com>
+References: <1358375444-13026-1-git-send-email-dinggnu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pointer info is dereferened in line 1009, so it is not necessary to check
-null again in line 1012.
+The pointer tty is dereferened in line 3135, so it is not necessary to check
+null again in line 3140.
 
 Signed-off-by: Cong Ding <dinggnu@gmail.com>
 ---
- drivers/tty/serial/68328serial.c |    2 +-
+ drivers/tty/serial/crisv10.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/68328serial.c b/drivers/tty/serial/68328serial.c
-index f99a845..4f7c0d2 100644
---- a/drivers/tty/serial/68328serial.c
-+++ b/drivers/tty/serial/68328serial.c
-@@ -1009,7 +1009,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
- 	m68328_uart *uart = &uart_addr[info->line];
- 	unsigned long flags;
+diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
+index 35ee6a2..3b24965 100644
+--- a/drivers/tty/serial/crisv10.c
++++ b/drivers/tty/serial/crisv10.c
+@@ -3137,7 +3137,7 @@ static int rs_raw_write(struct tty_struct *tty,
  
--	if (!info || serial_paranoia_check(info, tty->name, "rs_close"))
-+	if (serial_paranoia_check(info, tty->name, "rs_close"))
- 		return;
- 	
- 	local_irq_save(flags);
+ 	/* first some sanity checks */
+ 
+-	if (!tty || !info->xmit.buf)
++	if (!info->xmit.buf)
+ 		return 0;
+ 
+ #ifdef SERIAL_DEBUG_DATA
 -- 
 1.7.10.4
 
