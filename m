@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757687Ab3APCxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 21:53:32 -0500
-Received: from mga11.intel.com ([192.55.52.93]:32569 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756803Ab3APCxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 21:53:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,476,1355126400"; 
-   d="scan'208";a="274274966"
-Date: Wed, 16 Jan 2013 10:53:26 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, chavey@google.com
-Subject: Re: [PATCH v2] writeback: mark sysctl vm.block_dump for removal
-Message-ID: <20130116025326.GB10000@localhost>
-References: <1357938397-5413-1-git-send-email-tj@kernel.org>
- <20130114140227.GB2441@kernel.dk>
- <20130114174318.GD27942@mtj.dyndns.org>
- <20130114182203.GE27942@mtj.dyndns.org>
- <20130115162813.GB2668@htj.dyndns.org>
- <20130116020753.GB25806@quack.suse.cz>
+	id S1758060Ab3APCzO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 21:55:14 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:52318 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756105Ab3APCzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 21:55:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130116020753.GB25806@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1301151704100.7734@pobox.suse.cz>
+References: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com>
+	<alpine.LNX.2.00.1301031050060.27348@pobox.suse.cz>
+	<CAN+gG=GxiM-K6mSmQk4GVRbkkc5VwCW1wUeo1BEuXoZ+T-ir_A@mail.gmail.com>
+	<20130106200355.GA557@polaris.bitmath.org>
+	<alpine.LNX.2.00.1301151704100.7734@pobox.suse.cz>
+Date: Wed, 16 Jan 2013 03:55:10 +0100
+Message-ID: <CAN+gG=GhqNwiFn71NxF0ueckkh=hbKjkhix+EcaH_263Nd=sPg@mail.gmail.com>
+Subject: Re: [PATCH 00/11] Support of dual pen/multitouch and new default for
+ win 7 certified devices
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 03:07:53AM +0100, Jan Kara wrote:
-> On Tue 15-01-13 08:28:13, Tejun Heo wrote:
-> > vm.block_dump is nasty in that it dumps IO traces directly to printk.
-> > It isn't scalable and can easily lead to looping behavior - IO
-> > generating kernel message which in turn genreates log IO, ad
-> > infinitum.
-> > 
-> > Now that proper tracepoints are in place, vm.block_dump isn't
-> > necessary.  Generate a warning if used so that it can be removed down
-> > the road.
+On Tue, Jan 15, 2013 at 5:04 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Sun, 6 Jan 2013, Henrik Rydberg wrote:
+>
+>> > Henrik, you told us that you have a patch set fixing these
+>> > dependencies on all the hid drivers, will you prepare it for 3.9? Do
+>> > you want me to continue your work?
+>>
+>> Yes, no, yes. :-)
+>>
+>> That is, it would be great if you want to pick up those patches. I
+>> will send you a pm shortly.
+>
+> So, what is the status of this code now, please?
 
-> > +	if (!warned && block_dump) {
-> > +		pr_warning("sysctl: vm.block_dump is scheduled for removal. Use tracepoints instead.\n");
-> > +		pr_warning("sysctl: Please contact Jens Axboe <axboe@kernel.dk> if you require this.\n");
-> > +		warned = true;
+Hi Jiri,
 
-Looks good to me. A warning in dmesg is pertinent because the
-block_dump users will be looking at dmesg for block dump results.
+well here are my plans:
+1. polishing the support of Nexio 42" + new default class (95% done)
+2. add support for pen (it may requires more reviews) (60% done)
+3. cleanup Henrik's patches and send them. (1% done - I just went
+through them). Honestly, I don't know if I will be able to make it for
+3.9 for this series. For the time being, it only bothers me in my
+regressions tests, so depending on the work done, we may postpone it
+for later.
 
-Hmm, perhaps a more practical tip on the usage of replacement
-tracepoints or tool will help eliminate some user emails to Jens.
+Last thing, this week, I'm in Boston. The good is that I should be
+able to test tomorrow Mika's patch about i2c-hid at Intel's lab
+directly, but I won't have much time to work on hid-multitouch before
+next Wednesday (the 23rd).
 
-> > diff --git a/patches/series b/patches/series
-> > index 9fb9bfe..b2582cb 100644
-> > --- a/patches/series
-> > +++ b/patches/series
-> > @@ -18,3 +18,4 @@ kill-pool-gcwq
-> >  remove-gcwq
-> >  rename-nr_running
-> >  cleanup-leftovers
-> > +dbg
+Cheers,
+Benjamin
 
-An extra chunk.
-
-Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
-
-Thanks!
+>
+> Thanks,
+>
+> --
+> Jiri Kosina
+> SUSE Labs
