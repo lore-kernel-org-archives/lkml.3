@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab3APN4f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:56:35 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42818 "EHLO bear.ext.ti.com"
+	id S1755655Ab3APNyH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:54:07 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:35157 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755763Ab3APNyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:54:10 -0500
+	id S1751914Ab3APNyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 08:54:04 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         Tero Kristo <t-kristo@ti.com>
-Subject: [PATCH v2 06/11] mfd: twl-core: Do not try to call legacy mfd add_children() when booted with DT
-Date: Wed, 16 Jan 2013 14:53:54 +0100
-Message-ID: <1358344439-23017-7-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 01/11] ARM: OMAP: zoom-display: Remove the use of TWL4030_MODULE_PWM1
+Date: Wed, 16 Jan 2013 14:53:49 +0100
+Message-ID: <1358344439-23017-2-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1358344439-23017-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1358344439-23017-1-git-send-email-peter.ujfalusi@ti.com>
@@ -22,32 +22,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is really no point to retry to add children devices in case the
-of_platform_populate() fails.
-We do not have any information provided via pdata in this case anyways.
-Depending on the boot type (legacy or DT) only execute either one.
+Use the future proof TWL_MODULE_PWM module id instead to aim the twl-core
+cleanup planed for 3.9 kernel cycle.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- drivers/mfd/twl-core.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm/mach-omap2/board-zoom-display.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index fbff830..86cca9e 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -1305,10 +1305,9 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 		twl_i2c_write_u8(TWL4030_MODULE_INTBR, temp, REG_GPPUPDCTR1);
+diff --git a/arch/arm/mach-omap2/board-zoom-display.c b/arch/arm/mach-omap2/board-zoom-display.c
+index 1c7c834..8cef477 100644
+--- a/arch/arm/mach-omap2/board-zoom-display.c
++++ b/arch/arm/mach-omap2/board-zoom-display.c
+@@ -49,13 +49,13 @@ static void zoom_panel_disable_lcd(struct omap_dss_device *dssdev)
+ {
+ }
+ 
+-/*
+- * PWMA/B register offsets (TWL4030_MODULE_PWMA)
+- */
++/* Register offsets in TWL4030_MODULE_INTBR */
+ #define TWL_INTBR_PMBR1	0xD
+ #define TWL_INTBR_GPBR1	0xC
+-#define TWL_LED_PWMON	0x0
+-#define TWL_LED_PWMOFF	0x1
++
++/* Register offsets in TWL_MODULE_PWM */
++#define TWL_LED_PWMON	0x3
++#define TWL_LED_PWMOFF	0x4
+ 
+ static int zoom_set_bl_intensity(struct omap_dss_device *dssdev, int level)
+ {
+@@ -93,8 +93,8 @@ static int zoom_set_bl_intensity(struct omap_dss_device *dssdev, int level)
  	}
  
--	status = -ENODEV;
- 	if (node)
- 		status = of_platform_populate(node, NULL, NULL, &client->dev);
--	if (status)
-+	else
- 		status = add_children(pdata, irq_base, id->driver_data);
- 
- fail:
+ 	c = ((50 * (100 - level)) / 100) + 1;
+-	twl_i2c_write_u8(TWL4030_MODULE_PWM1, 0x7F, TWL_LED_PWMOFF);
+-	twl_i2c_write_u8(TWL4030_MODULE_PWM1, c, TWL_LED_PWMON);
++	twl_i2c_write_u8(TWL_MODULE_PWM, 0x7F, TWL_LED_PWMOFF);
++	twl_i2c_write_u8(TWL_MODULE_PWM, c, TWL_LED_PWMON);
+ #else
+ 	pr_warn("Backlight not enabled\n");
+ #endif
 -- 
 1.8.1
 
