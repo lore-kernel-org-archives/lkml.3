@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122Ab3APP70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:59:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35768 "EHLO
+	id S1757148Ab3APP7c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:59:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35774 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757103Ab3APP7W (ORCPT
+	with ESMTP id S1756944Ab3APP71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:59:22 -0500
+	Wed, 16 Jan 2013 10:59:27 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Williams <dcbw@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 031/222] cdc-acm: implement TIOCSSERIAL to avoid blocking close(2)
-Date: Wed, 16 Jan 2013 13:53:51 -0200
-Message-Id: <1358351822-7675-32-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 032/222] ACPI / battery: Correct battery capacity values on Thinkpads
+Date: Wed, 16 Jan 2013 13:53:52 -0200
+Message-Id: <1358351822-7675-33-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,91 +27,221 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Kamil Iskra <kamil@iskra.name>
 
-commit ba2d8ce9db0a61505362bb17b8899df3d3326146 upstream.
+commit 4000e626156935dfb626321ce09cae2c833eabbb upstream.
 
-Some devices (ex Nokia C7) simply don't respond at all when data is sent
-to some of their USB interfaces.  The data gets stuck in the TTYs queue
-and sits there until close(2), which them blocks because closing_wait
-defaults to 30 seconds (even though the fd is O_NONBLOCK).  This is
-rarely desired.  Implement the standard mechanism to adjust closing_wait
-and let applications handle it how they want to.
+Add a quirk to correctly report battery capacity on 2010 and 2011
+Lenovo Thinkpad models.
 
-See also 02303f73373aa1da19dbec510ec5a4e2576f9610 for usb_wwan.c.
+The affected models that I tested (x201, t410, t410s, and x220)
+exhibit a problem where, when battery capacity reporting unit is mAh,
+the values being reported are wrong.  Pre-2010 and 2012 models appear
+to always report in mWh and are thus unaffected.  Also, in mid-2012
+Lenovo issued a BIOS update for the 2011 models that fixes the issue
+(tested on x220 with a post-1.29 BIOS).  No such update is available
+for the 2010 models, so those still need this patch.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Acked-by: Oliver Neukum <oneukum@suse.de>
-Tested-by: Aleksander Morgado <aleksander@gnu.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Problem description: for some reason, the affected Thinkpads switch
+the reporting unit between mAh and mWh; generally, mAh is used when a
+laptop is plugged in and mWh when it's unplugged, although a
+suspend/resume or rmmod/modprobe is needed for the switch to take
+effect.  The values reported in mAh are *always* wrong.  This does
+not appear to be a kernel regression; I believe that the values were
+never reported correctly.  I tested back to kernel 2.6.34, with
+multiple machines and BIOS versions.
+
+Simply plugging a laptop into mains before turning it on is enough to
+reproduce the problem.  Here's a sample /proc/acpi/battery/BAT0/info
+from Thinkpad x220 (before a BIOS update) with a 4-cell battery:
+
+present:                 yes
+design capacity:         2886 mAh
+last full capacity:      2909 mAh
+battery technology:      rechargeable
+design voltage:          14800 mV
+design capacity warning: 145 mAh
+design capacity low:     13 mAh
+cycle count:              0
+capacity granularity 1:  1 mAh
+capacity granularity 2:  1 mAh
+model number:            42T4899
+serial number:           21064
+battery type:            LION
+OEM info:                SANYO
+
+Once the laptop switches the unit to mWh (unplug from mains, suspend,
+resume), the output changes to:
+
+present:                 yes
+design capacity:         28860 mWh
+last full capacity:      29090 mWh
+battery technology:      rechargeable
+design voltage:          14800 mV
+design capacity warning: 1454 mWh
+design capacity low:     200 mWh
+cycle count:              0
+capacity granularity 1:  1 mWh
+capacity granularity 2:  1 mWh
+model number:            42T4899
+serial number:           21064
+battery type:            LION
+OEM info:                SANYO
+
+Can you see how the values for "design capacity", etc., differ by a
+factor of 10 instead of 14.8 (the design voltage of this battery)?
+On the battery itself it says: 14.8V, 1.95Ah, 29Wh, so clearly the
+values reported in mWh are correct and the ones in mAh are not.
+
+My guess is that this problem has been around ever since those
+machines were released, but because the most common Thinkpad
+batteries are rated at 10.8V, the error (8%) is small enough that it
+simply hasn't been noticed or at least nobody could be bothered to
+look into it.
+
+My patch works around the problem by adjusting the incorrectly
+reported mAh values by "10000 / design_voltage".  The patch also has
+code to figure out if it should be activated or not.  It only
+activates on Lenovo Thinkpads, only when the unit is mAh, and, as an
+extra precaution, only when the battery capacity reported through
+ACPI does not match what is reported through DMI (I've never
+encountered a machine where the first two conditions would be true
+but the last would not, but better safe than sorry).
+
+I've been using this patch for close to a year on several systems
+without any problems.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=41062
+Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/class/cdc-acm.c |   38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+ drivers/acpi/battery.c |   77 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 780e0d0..d8104c4 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -788,6 +788,10 @@ static int get_serial_info(struct acm *acm, struct serial_struct __user *info)
- 	tmp.flags = ASYNC_LOW_LATENCY;
- 	tmp.xmit_fifo_size = acm->writesize;
- 	tmp.baud_base = le32_to_cpu(acm->line.dwDTERate);
-+	tmp.close_delay	= acm->port.close_delay / 10;
-+	tmp.closing_wait = acm->port.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
-+				ASYNC_CLOSING_WAIT_NONE :
-+				acm->port.closing_wait / 10;
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index 7dd3f9f..6ea287e2 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -34,6 +34,7 @@
+ #include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/suspend.h>
++#include <asm/unaligned.h>
  
- 	if (copy_to_user(info, &tmp, sizeof(tmp)))
- 		return -EFAULT;
-@@ -795,6 +799,37 @@ static int get_serial_info(struct acm *acm, struct serial_struct __user *info)
- 		return 0;
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ #include <linux/proc_fs.h>
+@@ -95,6 +96,18 @@ enum {
+ 	ACPI_BATTERY_ALARM_PRESENT,
+ 	ACPI_BATTERY_XINFO_PRESENT,
+ 	ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY,
++	/* On Lenovo Thinkpad models from 2010 and 2011, the power unit
++	   switches between mWh and mAh depending on whether the system
++	   is running on battery or not.  When mAh is the unit, most
++	   reported values are incorrect and need to be adjusted by
++	   10000/design_voltage.  Verified on x201, t410, t410s, and x220.
++	   Pre-2010 and 2012 models appear to always report in mWh and
++	   are thus unaffected (tested with t42, t61, t500, x200, x300,
++	   and x230).  Also, in mid-2012 Lenovo issued a BIOS update for
++	   the 2011 models that fixes the issue (tested on x220 with a
++	   post-1.29 BIOS), but as of Nov. 2012, no such update is
++	   available for the 2010 models.  */
++	ACPI_BATTERY_QUIRK_THINKPAD_MAH,
+ };
+ 
+ struct acpi_battery {
+@@ -429,6 +442,21 @@ static int acpi_battery_get_info(struct acpi_battery *battery)
+ 	kfree(buffer.pointer);
+ 	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags))
+ 		battery->full_charge_capacity = battery->design_capacity;
++	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags) &&
++	    battery->power_unit && battery->design_voltage) {
++		battery->design_capacity = battery->design_capacity *
++		    10000 / battery->design_voltage;
++		battery->full_charge_capacity = battery->full_charge_capacity *
++		    10000 / battery->design_voltage;
++		battery->design_capacity_warning =
++		    battery->design_capacity_warning *
++		    10000 / battery->design_voltage;
++		/* Curiously, design_capacity_low, unlike the rest of them,
++		   is correct.  */
++		/* capacity_granularity_* equal 1 on the systems tested, so
++		   it's impossible to tell if they would need an adjustment
++		   or not if their values were higher.  */
++	}
+ 	return result;
  }
  
-+static int set_serial_info(struct acm *acm,
-+				struct serial_struct __user *newinfo)
-+{
-+	struct serial_struct new_serial;
-+	unsigned int closing_wait, close_delay;
-+	int retval = 0;
-+
-+	if (copy_from_user(&new_serial, newinfo, sizeof(new_serial)))
-+		return -EFAULT;
-+
-+	close_delay = new_serial.close_delay * 10;
-+	closing_wait = new_serial.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
-+			ASYNC_CLOSING_WAIT_NONE : new_serial.closing_wait * 10;
-+
-+	mutex_lock(&acm->port.mutex);
-+
-+	if (!capable(CAP_SYS_ADMIN)) {
-+		if ((close_delay != acm->port.close_delay) ||
-+		    (closing_wait != acm->port.closing_wait))
-+			retval = -EPERM;
-+		else
-+			retval = -EOPNOTSUPP;
-+	} else {
-+		acm->port.close_delay  = close_delay;
-+		acm->port.closing_wait = closing_wait;
+@@ -477,6 +505,11 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
+ 	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
+ 		battery->capacity_now = (battery->capacity_now *
+ 				battery->full_charge_capacity) / 100;
++	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags) &&
++	    battery->power_unit && battery->design_voltage) {
++		battery->capacity_now = battery->capacity_now *
++		    10000 / battery->design_voltage;
 +	}
-+
-+	mutex_unlock(&acm->port.mutex);
-+	return retval;
+ 	return result;
+ }
+ 
+@@ -586,6 +619,24 @@ static void sysfs_remove_battery(struct acpi_battery *battery)
+ 	mutex_unlock(&battery->sysfs_lock);
+ }
+ 
++static void find_battery(const struct dmi_header *dm, void *private)
++{
++	struct acpi_battery *battery = (struct acpi_battery *)private;
++	/* Note: the hardcoded offsets below have been extracted from
++	   the source code of dmidecode.  */
++	if (dm->type == DMI_ENTRY_PORTABLE_BATTERY && dm->length >= 8) {
++		const u8 *dmi_data = (const u8 *)(dm + 1);
++		int dmi_capacity = get_unaligned((const u16 *)(dmi_data + 6));
++		if (dm->length >= 18)
++			dmi_capacity *= dmi_data[17];
++		if (battery->design_capacity * battery->design_voltage / 1000
++		    != dmi_capacity &&
++		    battery->design_capacity * 10 == dmi_capacity)
++			set_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH,
++				&battery->flags);
++	}
 +}
 +
- static int acm_tty_ioctl(struct tty_struct *tty,
- 					unsigned int cmd, unsigned long arg)
- {
-@@ -805,6 +840,9 @@ static int acm_tty_ioctl(struct tty_struct *tty,
- 	case TIOCGSERIAL: /* gets serial port data */
- 		rv = get_serial_info(acm, (struct serial_struct __user *) arg);
- 		break;
-+	case TIOCSSERIAL:
-+		rv = set_serial_info(acm, (struct serial_struct __user *) arg);
-+		break;
+ /*
+  * According to the ACPI spec, some kinds of primary batteries can
+  * report percentage battery remaining capacity directly to OS.
+@@ -611,6 +662,32 @@ static void acpi_battery_quirks(struct acpi_battery *battery)
+ 		battery->capacity_now = (battery->capacity_now *
+ 				battery->full_charge_capacity) / 100;
  	}
++
++	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags))
++		return ;
++
++	if (battery->power_unit && dmi_name_in_vendors("LENOVO")) {
++		const char *s;
++		s = dmi_get_system_info(DMI_PRODUCT_VERSION);
++		if (s && !strnicmp(s, "ThinkPad", 8)) {
++			dmi_walk(find_battery, battery);
++			if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH,
++				     &battery->flags) &&
++			    battery->design_voltage) {
++				battery->design_capacity =
++				    battery->design_capacity *
++				    10000 / battery->design_voltage;
++				battery->full_charge_capacity =
++				    battery->full_charge_capacity *
++				    10000 / battery->design_voltage;
++				battery->design_capacity_warning =
++				    battery->design_capacity_warning *
++				    10000 / battery->design_voltage;
++				battery->capacity_now = battery->capacity_now *
++				    10000 / battery->design_voltage;
++			}
++		}
++	}
+ }
  
- 	return rv;
+ static int acpi_battery_update(struct acpi_battery *battery)
 -- 
 1.7.9.5
 
