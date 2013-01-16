@@ -1,129 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758537Ab3APITN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 03:19:13 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:9038 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757591Ab3APITK convert rfc822-to-8bit (ORCPT
+	id S1758670Ab3APITk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 03:19:40 -0500
+Received: from mail-da0-f54.google.com ([209.85.210.54]:50297 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758246Ab3APITj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 03:19:10 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 16 Jan 2013 00:19:03 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 16 Jan 2013 09:19:06 +0100
-Subject: Re: [PATCH v4 2/9] clk: tegra: Add tegra specific clocks
-Thread-Topic: [PATCH v4 2/9] clk: tegra: Add tegra specific clocks
-Thread-Index: Ac3zwif2RGhUwPMrRKeQJuNxdYwFtw==
-Message-ID: <20130116.101906.399662310268585658.hdoyu@nvidia.com>
-References: <1357890387-23245-3-git-send-email-pgaikwad@nvidia.com><20130111.134820.1392079432650652356.hdoyu@nvidia.com><50F085A0.4090100@wwwdotorg.org>
-In-Reply-To: <50F085A0.4090100@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Wed, 16 Jan 2013 03:19:39 -0500
+Message-ID: <FDD61588B08145DB8618B2E05CD87865@VIU9IM6TKCWEEDX>
+From: "zhaoyilong" <registcn@gmail.com>
+To: "linux -kernel" <linux-kernel@vger.kernel.org>
+Subject: How to use DEBUG macros in compressed/head.S
+Date: Wed, 16 Jan 2013 16:18:56 +0800
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-RFC2646: Format=Flowed; Original
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren <swarren@wwwdotorg.org> wrote @ Fri, 11 Jan 2013 22:35:28 +0100:
+When I open the macro DEBUG in the front of  file
+arch/arm/boot/decompressed/head.S,the kernel runs and stops at"Uncompressing
+Linux... done, booting the kernel."
+CONFIG_DEBUG_ICEDCC is closed by default, so I am sure  the code runs tothe
+following branch:
+...........
+...........
+...........
+.macro kputc,val
+mov r0, \val
+bl putc
+.endm
 
-> On 01/11/2013 04:48 AM, Hiroshi Doyu wrote:
-> > Hi Prahant,
-> > 
-> > Some nit-pick/cosmetic comments inlined...
-> 
-> FYI, Prashant is on vacation for the next week or two, so I'll take over
-> this series to clean up any last review comments.
-> 
-> > Prashant Gaikwad <pgaikwad@nvidia.com> wrote @ Fri, 11 Jan 2013 08:46:20 +0100:
-> > 
-> >> Add tegra specific clocks, pll, pll_out, peripheral,
-> >> frac_divider, super.
-> 
-> (it's a good idea to quote as little text as possible; paging through
-> the whole patch to find your comments was slightly painful).
-> 
-> >> diff --git a/drivers/clk/tegra/clk-audio-sync.c b/drivers/clk/tegra/clk-audio-sync.c
-> 
-> >> +struct clk *tegra_clk_sync_source(const char *name, unsigned long rate,
-> >> +                                 unsigned long max_rate)
-> >> +{
-> >> +       struct tegra_clk_sync_source *sync;
-> >> +       struct clk_init_data init;
-> >> +       struct clk *clk;
-> >> +
-> >> +       sync = kzalloc(sizeof(struct tegra_clk_sync_source), GFP_KERNEL);
-> >> +       if (!sync) {
-> >> +               pr_err("%s: could not allocate sync source clk\n", __func__);
-> >> +               return ERR_PTR(-ENOMEM);
-> >> +       }
-> >> +
-> >> +       sync->rate = rate;
-> >> +       sync->max_rate = max_rate;
-> >> +
-> >> +       init.ops = &tegra_clk_sync_source_ops;
-> >> +       init.name = name;
-> >> +       init.flags = CLK_IS_ROOT;
-> >> +       init.parent_names = NULL;
-> >> +       init.num_parents = 0;
-> >> +
-> >> +       sync->hw.init = &init;
-> >> +
-> >> +       clk = clk_register(NULL, &sync->hw);
-> > 
-> > The above usage of "init" from stack may be a bit
-> > unfamilier. I can guess that its content is copied in clk_register()
-> > but it's originally defined in stack. So I just prefer to writing this
-> > as below. It may be somewhat explict that we know init is from stack.
-> 
-> The issue you mention is more about whether "init" is copied from the
-> stack or not; simplying changing the initialization to:
-> 
-> > struct clk *tegra_clk_sync_source(const char *name, unsigned long rate,
-> >                                  unsigned long max_rate)
-> > {
-> >         struct tegra_clk_sync_source *sync;
-> >         struct clk_init_data init = {
-> >                 .ops = &tegra_clk_sync_source_ops;
-> >                 .name = name;
-> >                 .flags = CLK_IS_ROOT;
-> >                 .parent_names = NULL;
-> >                 .num_parents = 0;
-> >         };
+.macro kphex,val,len
+mov r0, \val
+mov r1, #\len
+bl phex
+.endm
 
-Also since "init" is allocated from stack, members are expected to be
-initialized *zero*. The last 2 lines are not necessary in the above.
+.macro debug_reloc_start
+#ifdef DEBUG
+kputc #'\n'
+kphex r6, 8 /* processor id */
+kputc #':'
+kphex r7, 8 /* architecture id */
+...........
+...........
+...........
 
-         struct clk_init_data init = {
-                 .ops = &tegra_clk_sync_source_ops;
-                 .name = name;
-                 .flags = CLK_IS_ROOT;
-         };
+Problem is happened in a context like this:
 
-> ... doesn't really address that, although it's a perfectly reasonable
-> change.
-> 
-> To address the copying issue, why not just add a comment:
+    I have a board use cpu S5PV210,and an ok kernel provide by the factory
+anda  kernel download from kernel.org which carshed after printing "starting
+kernel..." to dnw.
+    To debug this,I want to test the macro kputc provided in this file——
+using ok kernel.
+I add a line "kputc #'a' " after the tag ".text", then make error says
+"undefined reference to `putc' ",it seems that compiler cant find "putc"
+used in
+the definition of macro “kputc”.
+    This is an ok kernel,so I cant say the serial port is not open——can
+this mean "putc" is defined already?.
 
-OK
+So I open DEBUG hoping to see debugging info by kernel itself,but it stops
+at"Uncompressing Linux... done, booting the kernel."
+Opening DEBUG will lead to the call of “kputc #'\n' ” in the code above
+which will also call putc!
 
->        /*
->         * This data pointed at by this field is copied by
->         * clk_register(), so a pointer to the stack is OK.
->         */
->        sync->hw.init = &init;
-> 
->        clk = clk_register(NULL, &sync->hw);
-> 
-> I'll make the other changes you suggested.
+Here,my questions comes:
+
+1?Why the error "  undefined reference to `putc'  " disappeared?
+2?Why it stops at"Uncompressing Linux... done, booting the kernel."?
+3?Can this error ( undefined reference to `putc'  ) mean the serial port is
+not open? Where is it defined ?
+Is it refer to the C function or just an assembly macro? 
+
+
