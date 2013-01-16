@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab3APRJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 12:09:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:4690 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757135Ab3APRJv convert rfc822-to-8bit (ORCPT
+	id S1757188Ab3APRKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:10:19 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:11059 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755823Ab3APRKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 12:09:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,480,1355126400"; 
-   d="scan'208";a="277681609"
-Date: Wed, 16 Jan 2013 09:09:50 -0800
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Joe Perches <joe@perches.com>, Rob Landley <rob@landley.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v6 3/3] PM: Introduce Intel PowerClamp Driver
-Message-ID: <20130116090950.00007e90@unknown>
-In-Reply-To: <1358338729.2252.53.camel@rzhang1-mobl4>
-References: <1357297965-17839-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1357297965-17839-4-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1358338729.2252.53.camel@rzhang1-mobl4>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.8cvs47 (GTK+ 2.16.6; i586-pc-mingw32msvc)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Jan 2013 12:10:16 -0500
+Message-ID: <1358356211.2923.25.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and
+ <linux/in6.h>
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Mike Frysinger <vapier@gentoo.org>
+CC: <libc-alpha@sourceware.org>, YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Cong Wang <amwang@redhat.com>, Thomas Backlund <tmb@mageia.org>,
+        Eric Blake <eblake@redhat.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <libvirt-list@redhat.com>,
+        <tgraf@suug.ch>, David Miller <davem@davemloft.net>, <schwab@suse.de>,
+        <carlos@systemhalted.org>
+Date: Wed, 16 Jan 2013 17:10:11 +0000
+In-Reply-To: <201301161205.04502.vapier@gentoo.org>
+References: <50F2FF1B.3020708@mageia.org> <50F6B761.8070106@linux-ipv6.org>
+	 <1358351232.2923.10.camel@bwh-desktop.uk.solarflarecom.com>
+	 <201301161205.04502.vapier@gentoo.org>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19558.004
+X-TM-AS-Result: No--30.338700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jan 2013 20:18:49 +0800
-Zhang Rui <rui.zhang@intel.com> wrote:
-
-> > +#include <linux/nmi.h>
-> > +  
-> drivers/thermal/intel_powerclamp.c: In function ‘clamp_thread’:
-> drivers/thermal/intel_powerclamp.c:435:4: error: implicit declaration
-> of function ‘local_touch_nmi’ [-Werror=implicit-function-declaration]
+On Wed, 2013-01-16 at 12:04 -0500, Mike Frysinger wrote:
+> On Wednesday 16 January 2013 10:47:12 Ben Hutchings wrote:
+> > On Wed, 2013-01-16 at 23:21 +0900, YOSHIFUJI Hideaki wrote:
+> > > Cong Wang wrote:
+> > > > (Cc'ing some glibc developers...)
+> > > > 
+> > > > Hello,
+> > > > 
+> > > > In glibc source file inet/netinet/in.h and kernel source file
+> > > > include/uapi/linux/in6.h, both define struct in6_addr, and both are
+> > > > visible to user applications. Thomas reported a conflict below.
+> > > > 
+> > > > So, how can we handle this? /me is wondering why we didn't see this
+> > > > before.
+> > 
+> > [...]
+> > 
+> > > This is not a new issue.  In addition to this,
+> > > netinet/in.h also conflits with linux/in.h.
+> > > 
+> > > We might have
+> > > 
+> > >  #if !defined(__GLIBC__) || !defined(_NETINET_IN_H)
+> > >  
+> > >  #endif
+> > > 
+> > > around those conflicting definitions in uapi/linux/in{,6}.h.
+> > 
+> > This only solves half the problem, as <netinet/in.h> might be included
+> > after <linux/in.h>.  Also, not all Linux userland uses glibc.
 > 
-> changing to 
-> #include <asm/nmi.h>
-> fixes the problem.
-good catch. I missed this in my .config tests. I had
-CONFIG_HARDLOCKUP_DETECTOR on so the problem was not shown. I will send
-you an update.
+> certainly true, but the current expectation is that you don't mix your ABIs.
 
-Thanks,
+Whose expectation?  Which ABIs are being mixed?
 
-Jacob
+> if you're programming with the C library API, then use the C library headers.  
+> if you're banging directly on the kernel, then use the kernel headers.  not 
+> saying it's a perfect solution, but it works for the vast majority of use 
+> cases.
+
+In practice most C programs for Linux will use a mixture of thinly
+wrapped system calls and higher-level APIs from the C library, and never
+really call the kernel directly (as that requires inline assembler).
+Userland programmers will work around this historical mess by tweaking
+the #include order or splitting source files.  But they shouldn't have
+to.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
