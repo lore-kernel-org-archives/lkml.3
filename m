@@ -1,122 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758774Ab3APIjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 03:39:19 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:58869 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758756Ab3APIjS convert rfc822-to-8bit (ORCPT
+	id S932117Ab3APIlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 03:41:13 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47071 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758215Ab3APIlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 03:39:18 -0500
-From: "Kumar, Anil" <anilkumar.v@ti.com>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "hs@denx.de" <hs@denx.de>, "Kumar, Anil" <anilkumar.v@ti.com>
-Subject: RE: [PATCH V4 1/3] ARM: davinci: da850: add pinctrl driver DT
- entries
-Thread-Topic: [PATCH V4 1/3] ARM: davinci: da850: add pinctrl driver DT
- entries
-Thread-Index: AQHN85wzIgYezXHEak2NU1E2jxCriZhLoUIw
-Date: Wed, 16 Jan 2013 08:38:55 +0000
-Message-ID: <F3DBB1B3EF102E4994C89758CFCA32412BACC2@DBDE01.ent.ti.com>
-References: <1358308102-8169-1-git-send-email-anilkumar.v@ti.com>
- <1358308102-8169-2-git-send-email-anilkumar.v@ti.com>
-In-Reply-To: <1358308102-8169-2-git-send-email-anilkumar.v@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Jan 2013 03:41:12 -0500
+X-AuditID: 9c930197-b7b76ae000000e7d-48-50f667a67fdb
+Date: Wed, 16 Jan 2013 17:41:14 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] slub: correct to calculate num of acquired objects
+ in get_partial_node()
+Message-ID: <20130116084114.GA13446@lge.com>
+References: <1358234402-2615-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <0000013c3ee3b69a-80cfdc68-a753-44e0-ba68-511060864128-000000@email.amazonses.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000013c3ee3b69a-80cfdc68-a753-44e0-ba68-511060864128-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 09:18:20, Kumar, Anil wrote:
-> For DT, DaVinci platform can use pinctrl-single driver for handling
-> padconf registers.
+On Tue, Jan 15, 2013 at 03:46:17PM +0000, Christoph Lameter wrote:
+> On Tue, 15 Jan 2013, Joonsoo Kim wrote:
 > 
-> Enable PINCTRL Kconfig for MACH_DA8XX_DT platform. Add required
-> pinctrl DT entries in da850 dts file.
+> > There is a subtle bug when calculating a number of acquired objects.
+> > After acquire_slab() is executed at first, page->inuse is same as
+> > page->objects, then, available is always 0. So, we always go next
+> > iteration.
 > 
->  Test procedure
->   1)Populate DT file with NAND node information.
->   2)Populate board DT file with pinmux information for NAND.
->   3)Boot and confirm NAND is detected by the kernel.
->   4)cat /proc/mtd to show partitions.
-> 
-> Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
-> ---
-> :100644 100644 37dc5a3... c7609d0... M	arch/arm/boot/dts/da850-evm.dts
-> :100644 100644 fbada87... e9c6e82... M	arch/arm/boot/dts/da850.dtsi
-> :100644 100644 0153950... a075b3e... M	arch/arm/mach-davinci/Kconfig
->  arch/arm/boot/dts/da850-evm.dts |    3 +++
->  arch/arm/boot/dts/da850.dtsi    |   10 ++++++++++
->  arch/arm/mach-davinci/Kconfig   |    1 +
->  3 files changed, 14 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-> index 37dc5a3..c7609d0 100644
-> --- a/arch/arm/boot/dts/da850-evm.dts
-> +++ b/arch/arm/boot/dts/da850-evm.dts
-> @@ -15,6 +15,9 @@
->  	model = "DA850/AM1808/OMAP-L138 EVM";
->  
->  	soc {
-> +		pmx_core:pinmux@1c14120 {
+> page->inuse is always < page->objects because the partial list is not used
+> for slabs that are fully allocated. page->inuse == page->objects means
+> that no objects are available on the slab and therefore the slab would
+> have been removed from the partial list.
 
-I have found cosmetics issue here. I will correct it and send next version.
+Currently, we calculate "available = page->objects - page->inuse",
+after acquire_slab() is called in get_partial_node().
 
-> +			status = "okay";
-> +		};
->  		serial0: serial@1c42000 {
->  			status = "okay";
->  		};
-> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
-> index fbada87..e9c6e82 100644
-> --- a/arch/arm/boot/dts/da850.dtsi
-> +++ b/arch/arm/boot/dts/da850.dtsi
-> @@ -29,6 +29,16 @@
->  		#size-cells = <1>;
->  		ranges = <0x0 0x01c00000 0x400000>;
->  
-> +		pmx_core:pinmux@1c14120 {
+In acquire_slab() with mode = 1, we always set new.inuse = page->objects.
+So
 
-I have found cosmetics issue here. I will correct it and send next version.
+		acquire_slab(s, n, page, object == NULL);
 
-> +			compatible = "pinctrl-single";
-> +			reg = <0x14120 0x50>;
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +			pinctrl-single,bit-per-mux;
-> +			pinctrl-single,register-width = <32>;
-> +			pinctrl-single,function-mask = <0xffffffff>;
-> +			status = "disabled";
-> +		};
->  		serial0: serial@1c42000 {
->  			compatible = "ns16550a";
->  			reg = <0x42000 0x100>;
-> diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
-> index 0153950..a075b3e 100644
-> --- a/arch/arm/mach-davinci/Kconfig
-> +++ b/arch/arm/mach-davinci/Kconfig
-> @@ -62,6 +62,7 @@ config MACH_DA8XX_DT
->  	bool "Support DA8XX platforms using device tree"
->  	default y
->  	depends on ARCH_DAVINCI_DA8XX
-> +	select PINCTRL
->  	help
->  	  Say y here to include support for TI DaVinci DA850 based using
->  	  Flattened Device Tree. More information at Documentation/devicetree
-> -- 
-> 1.7.4.1
+                if (!object) {
+                        c->page = page;
+                        stat(s, ALLOC_FROM_PARTIAL);
+                        object = t; 
+                        available =  page->objects - page->inuse;
+
+			!!!!!! available is always 0 !!!!!!
+
+
+                } else {
+                        available = put_cpu_partial(s, page, 0);
+                        stat(s, CPU_PARTIAL_NODE);
+                }
+
+Therefore, "available > s->cpu_partial / 2" is always false and
+we always go to second iteration.
+This patch correct this problem.
+
+> > After that, we don't need return value of put_cpu_partial().
+> > So remove it.
 > 
+> Hmmm... The code looks a bit easier to understand than what we have right now.
 > 
-
+> Could you try to explain it better?
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
