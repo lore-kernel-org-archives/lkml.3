@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758151Ab3APQvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:51:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36068 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758042Ab3APQDD (ORCPT
+	id S1758205Ab3APQvu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:51:50 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:52340 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758042Ab3APQvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:03:03 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 088/222] regmap: debugfs: Avoid overflows for very small reads
-Date: Wed, 16 Jan 2013 13:54:48 -0200
-Message-Id: <1358351822-7675-89-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 16 Jan 2013 11:51:48 -0500
+Date: Wed, 16 Jan 2013 17:51:44 +0100
+From: Cong Ding <dinggnu@gmail.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] kvm tools: close opened file
+Message-ID: <20130116165141.GA18593@gmail.com>
+References: <1358298456-18377-1-git-send-email-dinggnu@gmail.com>
+ <20130116113522.GR11529@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130116113522.GR11529@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
+The file should be closed before return.
 
-------------------
-
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-commit db04328c167ff8e7c57f4a3532214aeada3a82fd upstream.
-
-If count is less than the size of a register then we may hit integer
-wraparound when trying to move backwards to check if we're still in
-the buffer. Instead move the position forwards to check if it's still
-in the buffer, we are unlikely to be able to allocate a buffer
-sufficiently big to overflow here.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-[ herton: on 3.5, code is in regmap_map_read_file, and size in tot_len ]
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
 ---
- drivers/base/regmap/regmap-debugfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/kvm/builtin-setup.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index bb1ff17..c394041 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -90,7 +90,7 @@ static ssize_t regmap_map_read_file(struct file *file, char __user *user_buf,
- 		/* If we're in the region the user is trying to read */
- 		if (p >= *ppos) {
- 			/* ...but not beyond it */
--			if (buf_pos >= count - 1 - tot_len)
-+			if (buf_pos + 1 + tot_len >= count)
- 				break;
+diff --git a/tools/kvm/builtin-setup.c b/tools/kvm/builtin-setup.c
+index c5b0566..8b45c56 100644
+--- a/tools/kvm/builtin-setup.c
++++ b/tools/kvm/builtin-setup.c
+@@ -159,12 +159,12 @@ static int copy_passwd(const char *guestfs_name)
+ 		return -1;
  
- 			/* Format the register */
+ 	ret = fprintf(file, "root:x:0:0:root:/root:/bin/sh\n");
+-	if (ret < 0)
+-		return ret;
++	if (ret > 0)
++		ret = 0;
+ 
+ 	fclose(file);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int make_guestfs_symlink(const char *guestfs_name, const char *path)
 -- 
-1.7.9.5
+1.7.10.4
 
