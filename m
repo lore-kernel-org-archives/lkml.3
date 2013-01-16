@@ -1,76 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab3APQ16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:27:58 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:37756 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758750Ab3APQ1y (ORCPT
+	id S1758676Ab3APQ2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:28:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36644 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932481Ab3APQHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:27:54 -0500
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1358311923.537.3.camel@gitbox>
-References: <20130116141411.8fadedee54ed35dc0eddd288@canb.auug.org.au>
-	<1358308153.32106.8.camel@gitbox>
-	<50F62D69.8080100@nvidia.com>
-	<1358311923.537.3.camel@gitbox>
-Date: Wed, 16 Jan 2013 08:27:54 -0800
-Message-ID: <CAOesGMgr_f-XGHOdMW3ugfXbVaUc4EALrbfJD=XeOKixxrY8PA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the tegra tree with the arm-soc tree
-From: Olof Johansson <olof@lixom.net>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Colin Cross <ccross@android.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Jan 2013 11:07:53 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 162/222] staging: vt6656: 64bit fixes: key.c/h change unsigned long to u32
+Date: Wed, 16 Jan 2013 13:56:02 -0200
+Message-Id: <1358351822-7675-163-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, Jan 15, 2013 at 8:52 PM, Tony Prisk <linux@prisktech.co.nz> wrote:
-> On Tue, 2013-01-15 at 21:32 -0700, Stephen Warren wrote:
->> On 01/15/2013 08:49 PM, Tony Prisk wrote:
->> > On Wed, 2013-01-16 at 14:14 +1100, Stephen Rothwell wrote:
->> >> Hi all,
->> >>
->> >> Today's linux-next merge of the tegra tree got a conflict in
->> >> drivers/clocksource/Makefile between commit ff7ec345f0ec ("timer: vt8500:
->> >> Move timer code to drivers/clocksource") from the arm-soc tree and commit
->> >> ac0fd9eca3ba ("ARM: tegra: move timer.c to drivers/clocksource/") from
->> >> the tegra tree.
->> >>
->> >> I fixed it up (see below) and can carry the fix as necessary (no action
->> >> is required).
->> >>
->> >
->> > I don't know about everyone else, but I feel the preference should be to
->> > keep things alphabetized where possible to help avoid with merge
->> > conflicts later on. This is always a problem when we start tacking
->> > things on the end of lists.
->> >
->> > I realise this Kconfig is not alphabetized anyway, but it's never too
->> > early to start on the 'right' path.
->>
->> Sounds like a good idea, but the issue is: When to do the initial sort
->> so it doesn't conflict with all the adds in a kernel cycle... Post and
->> immediately commit a new patch near the end of the merge window?
->
-> Given that the maintainer can quite safely do the patch (sorry
-> maintainers), I don't see any reason why it couldn't be done at the
-> point where they stop accepting patches for the merge-window. Once the
-> patches are stopped, sort the list in one last patch.
->
-> It makes sense to get it done in this window if possible as the Kconfig
-> will only get bigger as time goes on, making sorting it more time
-> consuming.
+------------------
 
-Actually, Russell wen through and reordered these not long ago, if I
-remember correctly. The current ordering is the same as in the
-structure definition, and should be kept that way.
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
+commit c0d05b305b00c698b0a8c1b3d46c9380bce9db45 upstream.
 
--Olof
+Fixes long issues.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/staging/vt6656/key.c |    6 +++---
+ drivers/staging/vt6656/key.h |    8 ++++----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/vt6656/key.c b/drivers/staging/vt6656/key.c
+index 94b3e67..ba3a561 100644
+--- a/drivers/staging/vt6656/key.c
++++ b/drivers/staging/vt6656/key.c
+@@ -223,7 +223,7 @@ BOOL KeybSetKey(
+     PSKeyManagement pTable,
+     PBYTE           pbyBSSID,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -675,7 +675,7 @@ BOOL KeybSetDefaultKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -791,7 +791,7 @@ BOOL KeybSetAllGroupKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+diff --git a/drivers/staging/vt6656/key.h b/drivers/staging/vt6656/key.h
+index f749c7a..bd35d39 100644
+--- a/drivers/staging/vt6656/key.h
++++ b/drivers/staging/vt6656/key.h
+@@ -58,7 +58,7 @@
+ typedef struct tagSKeyItem
+ {
+     BOOL        bKeyValid;
+-    unsigned long       uKeyLength;
++	u32 uKeyLength;
+     BYTE        abyKey[MAX_KEY_LEN];
+     QWORD       KeyRSC;
+     DWORD       dwTSC47_16;
+@@ -107,7 +107,7 @@ BOOL KeybSetKey(
+     PSKeyManagement pTable,
+     PBYTE           pbyBSSID,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -146,7 +146,7 @@ BOOL KeybSetDefaultKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+@@ -156,7 +156,7 @@ BOOL KeybSetAllGroupKey(
+     void *pDeviceHandler,
+     PSKeyManagement pTable,
+     DWORD           dwKeyIndex,
+-    unsigned long           uKeyLength,
++	u32 uKeyLength,
+     PQWORD          pKeyRSC,
+     PBYTE           pbyKey,
+     BYTE            byKeyDecMode
+-- 
+1.7.9.5
+
