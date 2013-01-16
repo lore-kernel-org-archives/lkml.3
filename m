@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767Ab3APQCC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:02:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35987 "EHLO
+	id S1757838Ab3APQCN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:02:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36002 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757523Ab3APQB7 (ORCPT
+	with ESMTP id S1757774Ab3APQCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:01:59 -0500
+	Wed, 16 Jan 2013 11:02:09 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Diego Calleja <diegocg@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 071/222] s390/cio: fix pgid reserved check
-Date: Wed, 16 Jan 2013 13:54:31 -0200
-Message-Id: <1358351822-7675-72-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 074/222] Input: wacom - fix touch support for Bamboo Fun CTH-461
+Date: Wed, 16 Jan 2013 13:54:34 -0200
+Message-Id: <1358351822-7675-75-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,80 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Diego Calleja <diegocg@gmail.com>
 
-commit d99e79ec5574fc556c988f613ed6175f6de66f4a upstream.
+commit e12b3cecf221644ccab64d7c30a6df58b7630cb0 upstream.
 
-The check to whom a device is reserved is done by checking the path
-state of the affected channel paths. If it turns out that one path is
-flagged as reserved by someone else the whole device is marked as such.
+Commit f393ee2b814e3291c12565000210b3cf10aa5c1d forgot to add the
+touch_max property for Wacom Bamboo Fun CTH-461/S, ID 056a:00d2.
 
-However the meaning of the RESVD_ELSE bit is that the addressed device
-is reserved to a different pathgroup (and not reserved to a different
-LPAR). If we do this test on a path which is currently not a member of
-the pathgroup we could erroneously mark the device as reserved to
-someone else.
+This broke the touch functionality for that device. This patch,
+(done with help of Ping Cheng), adds the correct value and makes
+touch work again.
 
-To fix this collect the reserved state for all potential members of the
-pathgroup and only mark the device as reserved if all of those potential
-members have the RESVD_ELSE bit set.
-
-Acked-by: Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Diego Calleja <diegocg@gmail.com>
+Reviewed-by: Ping Cheng <pinglinux@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/s390/cio/device_pgid.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/input/tablet/wacom_wac.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/s390/cio/device_pgid.c b/drivers/s390/cio/device_pgid.c
-index 07a4fd2..daa6b90 100644
---- a/drivers/s390/cio/device_pgid.c
-+++ b/drivers/s390/cio/device_pgid.c
-@@ -234,7 +234,7 @@ static int pgid_cmp(struct pgid *p1, struct pgid *p2)
-  * Determine pathgroup state from PGID data.
-  */
- static void pgid_analyze(struct ccw_device *cdev, struct pgid **p,
--			 int *mismatch, int *reserved, u8 *reset)
-+			 int *mismatch, u8 *reserved, u8 *reset)
- {
- 	struct pgid *pgid = &cdev->private->pgid[0];
- 	struct pgid *first = NULL;
-@@ -248,7 +248,7 @@ static void pgid_analyze(struct ccw_device *cdev, struct pgid **p,
- 		if ((cdev->private->pgid_valid_mask & lpm) == 0)
- 			continue;
- 		if (pgid->inf.ps.state2 == SNID_STATE2_RESVD_ELSE)
--			*reserved = 1;
-+			*reserved |= lpm;
- 		if (pgid_is_reset(pgid)) {
- 			*reset |= lpm;
- 			continue;
-@@ -316,14 +316,14 @@ static void snid_done(struct ccw_device *cdev, int rc)
- 	struct subchannel *sch = to_subchannel(cdev->dev.parent);
- 	struct pgid *pgid;
- 	int mismatch = 0;
--	int reserved = 0;
-+	u8 reserved = 0;
- 	u8 reset = 0;
- 	u8 donepm;
- 
- 	if (rc)
- 		goto out;
- 	pgid_analyze(cdev, &pgid, &mismatch, &reserved, &reset);
--	if (reserved)
-+	if (reserved == cdev->private->pgid_valid_mask)
- 		rc = -EUSERS;
- 	else if (mismatch)
- 		rc = -EOPNOTSUPP;
-@@ -336,7 +336,7 @@ static void snid_done(struct ccw_device *cdev, int rc)
- 	}
- out:
- 	CIO_MSG_EVENT(2, "snid: device 0.%x.%04x: rc=%d pvm=%02x vpm=%02x "
--		      "todo=%02x mism=%d rsvd=%d reset=%02x\n", id->ssid,
-+		      "todo=%02x mism=%d rsvd=%02x reset=%02x\n", id->ssid,
- 		      id->devno, rc, cdev->private->pgid_valid_mask, sch->vpm,
- 		      cdev->private->pgid_todo_mask, mismatch, reserved, reset);
- 	switch (rc) {
+diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+index 05e8cb3..0aba107 100644
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -1918,7 +1918,8 @@ static const struct wacom_features wacom_features_0xD1 =
+ 	  .touch_max = 2 };
+ static const struct wacom_features wacom_features_0xD2 =
+ 	{ "Wacom Bamboo Craft",   WACOM_PKGLEN_BBFUN,     14720,  9200, 1023,
+-	  31, BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
++	  31, BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES,
++	  .touch_max = 2 };
+ static const struct wacom_features wacom_features_0xD3 =
+ 	{ "Wacom Bamboo 2FG 6x8", WACOM_PKGLEN_BBFUN,     21648, 13700, 1023,
+ 	  31, BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES,
 -- 
 1.7.9.5
 
