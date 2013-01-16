@@ -1,272 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab3APNtN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:49:13 -0500
-Received: from mga14.intel.com ([143.182.124.37]:44418 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751419Ab3APNtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:49:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,479,1355126400"; 
-   d="scan'208";a="244616838"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2] dw_dmac: allocate dma descriptors from DMA_COHERENT memory
-Date: Wed, 16 Jan 2013 15:48:50 +0200
-Message-Id: <1358344131-18097-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755645Ab3APNvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:51:24 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:43490 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab3APNvW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 08:51:22 -0500
+Message-ID: <50F6B018.2020800@pobox.com>
+Date: Wed, 16 Jan 2013 08:50:16 -0500
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: sedat.dilek@gmail.com
+CC: "Huang, Shane" <Shane.Huang@amd.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lu@intel.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [3.8-{rc1,rc2}] ata1.00: failed to get Identify Device Data,
+ Emask 0x1
+References: <CA+icZUUCB3K1=DuM6Nonu+Qc+qg3cM_ODk9TDZ-uYCfLVOhrdw@mail.gmail.com> <CA+icZUXrQ4aq+cKXj3qEwnhtTGPBfHcJ6q_zTm3xSBUUh9W8dQ@mail.gmail.com> <CA+icZUVBdsAa7ZA7e_UNpBsAOpVOXcawhUncbHNdkC-MGY4qLw@mail.gmail.com> <43EB3AB3EEFE8D43B525F4D2EAF507E107F4160E@SCYBEXDAG04.amd.com> <CA+icZUU7UmoYb5j7Pg57pMdgfw5GNA=M0aBuc5362o2t7Hqt3w@mail.gmail.com>
+In-Reply-To: <CA+icZUU7UmoYb5j7Pg57pMdgfw5GNA=M0aBuc5362o2t7Hqt3w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently descriptors are allocated from normal cacheable memory and that slows
-down filling the descriptors, as we need to call cache_coherency routines
-afterwards. It would be better to allocate memory for these descriptors from
-DMA_COHERENT memory. This would make code much cleaner too.
+On 01/16/2013 05:10 AM, Sedat Dilek wrote:
+> On Sat, Jan 5, 2013 at 3:20 AM, Huang, Shane <Shane.Huang@amd.com> wrote:
+>>> OK, I see the patch I mentioned to fix the problem was later reverted [1].
+>>> The real fix is "libata: replace sata_settings with devslp_timing" [2].
+>>
+>> Yes, please use [2] which can also be found in kernel bugzilla #51881
+>> and is pending on Jeff's acceptance. Sorry for the trouble to you guys.
+>>
+>
+> [ CCing Linus ]
+>
+> Thanks for taking care (my latest experiences on LKML/linux-next tell
+> me even this is no more the fact!)!
+>
+> Your patch finally hit Linux-Next (next-20130116) and IIRC it is also
+> marked for previous Linux-kernel releases (CC -stable).
+> I have tested your patch as said also against Linux v3.8-rcX.
+>
+> Unfortunately, the applied patch in Linux-Next does not contain any of
+> my desired Reported-by/Tested-by.
+> This makes me a bit unhappy, but I do NOT insist on it.
+>
+> Mr. Torvalds himself pointed several times to all maintainers to
+> honour people - even they report and ideally report-and-test!
+>
+> I am doing all my testings in my free-time and I am not paid for it.
+> I am raping my hardware here!
+> I can't do more than that!
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-Since v1:
- - change commit log message as Viresh suggested
- - update indentation accordingly to Viresh comments
+We definitely appreciate that.  The patch in question actually went into 
+the git repository before your report was received.  You did not see it 
+in linux-next until my local git repository was pushed out to kernel.org 
+(and thus automatically included in linux-next).
 
- drivers/dma/dw_dmac.c      |   81 ++++++++++----------------------------------
- drivers/dma/dw_dmac_regs.h |    1 +
- 2 files changed, 18 insertions(+), 64 deletions(-)
+	Jeff
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 561bb9a..6915520 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -14,6 +14,7 @@
- #include <linux/delay.h>
- #include <linux/dmaengine.h>
- #include <linux/dma-mapping.h>
-+#include <linux/dmapool.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
-@@ -98,14 +99,6 @@ static inline unsigned int dwc_get_data_width(struct dma_chan *chan, int master)
- 
- /*----------------------------------------------------------------------*/
- 
--/*
-- * Because we're not relying on writeback from the controller (it may not
-- * even be configured into the core!) we don't need to use dma_pool.  These
-- * descriptors -- and associated data -- are cacheable.  We do need to make
-- * sure their dcache entries are written back before handing them off to
-- * the controller, though.
-- */
--
- static struct device *chan2dev(struct dma_chan *chan)
- {
- 	return &chan->dev->device;
-@@ -144,19 +137,6 @@ static struct dw_desc *dwc_desc_get(struct dw_dma_chan *dwc)
- 	return ret;
- }
- 
--static void dwc_sync_desc_for_cpu(struct dw_dma_chan *dwc, struct dw_desc *desc)
--{
--	struct dw_desc	*child;
--
--	list_for_each_entry(child, &desc->tx_list, desc_node)
--		dma_sync_single_for_cpu(chan2parent(&dwc->chan),
--				child->txd.phys, sizeof(child->lli),
--				DMA_TO_DEVICE);
--	dma_sync_single_for_cpu(chan2parent(&dwc->chan),
--			desc->txd.phys, sizeof(desc->lli),
--			DMA_TO_DEVICE);
--}
--
- /*
-  * Move a descriptor, including any children, to the free list.
-  * `desc' must not be on any lists.
-@@ -168,8 +148,6 @@ static void dwc_desc_put(struct dw_dma_chan *dwc, struct dw_desc *desc)
- 	if (desc) {
- 		struct dw_desc *child;
- 
--		dwc_sync_desc_for_cpu(dwc, desc);
--
- 		spin_lock_irqsave(&dwc->lock, flags);
- 		list_for_each_entry(child, &desc->tx_list, desc_node)
- 			dev_vdbg(chan2dev(&dwc->chan),
-@@ -342,8 +320,6 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc,
- 		param = txd->callback_param;
- 	}
- 
--	dwc_sync_desc_for_cpu(dwc, desc);
--
- 	/* async_tx_ack */
- 	list_for_each_entry(child, &desc->tx_list, desc_node)
- 		async_tx_ack(&child->txd);
-@@ -777,25 +753,17 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 			first = desc;
- 		} else {
- 			prev->lli.llp = desc->txd.phys;
--			dma_sync_single_for_device(chan2parent(chan),
--					prev->txd.phys, sizeof(prev->lli),
--					DMA_TO_DEVICE);
- 			list_add_tail(&desc->desc_node,
- 					&first->tx_list);
- 		}
- 		prev = desc;
- 	}
- 
--
- 	if (flags & DMA_PREP_INTERRUPT)
- 		/* Trigger interrupt after last block */
- 		prev->lli.ctllo |= DWC_CTLL_INT_EN;
- 
- 	prev->lli.llp = 0;
--	dma_sync_single_for_device(chan2parent(chan),
--			prev->txd.phys, sizeof(prev->lli),
--			DMA_TO_DEVICE);
--
- 	first->txd.flags = flags;
- 	first->len = len;
- 
-@@ -883,10 +851,6 @@ slave_sg_todev_fill_desc:
- 				first = desc;
- 			} else {
- 				prev->lli.llp = desc->txd.phys;
--				dma_sync_single_for_device(chan2parent(chan),
--						prev->txd.phys,
--						sizeof(prev->lli),
--						DMA_TO_DEVICE);
- 				list_add_tail(&desc->desc_node,
- 						&first->tx_list);
- 			}
-@@ -945,10 +909,6 @@ slave_sg_fromdev_fill_desc:
- 				first = desc;
- 			} else {
- 				prev->lli.llp = desc->txd.phys;
--				dma_sync_single_for_device(chan2parent(chan),
--						prev->txd.phys,
--						sizeof(prev->lli),
--						DMA_TO_DEVICE);
- 				list_add_tail(&desc->desc_node,
- 						&first->tx_list);
- 			}
-@@ -968,10 +928,6 @@ slave_sg_fromdev_fill_desc:
- 		prev->lli.ctllo |= DWC_CTLL_INT_EN;
- 
- 	prev->lli.llp = 0;
--	dma_sync_single_for_device(chan2parent(chan),
--			prev->txd.phys, sizeof(prev->lli),
--			DMA_TO_DEVICE);
--
- 	first->len = total_len;
- 
- 	return &first->txd;
-@@ -1125,7 +1081,6 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
- 	struct dw_desc		*desc;
- 	int			i;
- 	unsigned long		flags;
--	int			ret;
- 
- 	dev_vdbg(chan2dev(chan), "%s\n", __func__);
- 
-@@ -1146,21 +1101,21 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
- 	spin_lock_irqsave(&dwc->lock, flags);
- 	i = dwc->descs_allocated;
- 	while (dwc->descs_allocated < NR_DESCS_PER_CHANNEL) {
-+		dma_addr_t phys;
-+
- 		spin_unlock_irqrestore(&dwc->lock, flags);
- 
--		desc = kzalloc(sizeof(struct dw_desc), GFP_KERNEL);
-+		desc = dma_pool_alloc(dw->desc_pool, GFP_ATOMIC, &phys);
- 		if (!desc)
- 			goto err_desc_alloc;
- 
-+		memset(desc, 0, sizeof(struct dw_desc));
-+
- 		INIT_LIST_HEAD(&desc->tx_list);
- 		dma_async_tx_descriptor_init(&desc->txd, chan);
- 		desc->txd.tx_submit = dwc_tx_submit;
- 		desc->txd.flags = DMA_CTRL_ACK;
--		desc->txd.phys = dma_map_single(chan2parent(chan), &desc->lli,
--				sizeof(desc->lli), DMA_TO_DEVICE);
--		ret = dma_mapping_error(chan2parent(chan), desc->txd.phys);
--		if (ret)
--			goto err_desc_alloc;
-+		desc->txd.phys = phys;
- 
- 		dwc_desc_put(dwc, desc);
- 
-@@ -1175,8 +1130,6 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
- 	return i;
- 
- err_desc_alloc:
--	kfree(desc);
--
- 	dev_info(chan2dev(chan), "only allocated %d descriptors\n", i);
- 
- 	return i;
-@@ -1211,9 +1164,7 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
- 
- 	list_for_each_entry_safe(desc, _desc, &list, desc_node) {
- 		dev_vdbg(chan2dev(chan), "  freeing descriptor %p\n", desc);
--		dma_unmap_single(chan2parent(chan), desc->txd.phys,
--				sizeof(desc->lli), DMA_TO_DEVICE);
--		kfree(desc);
-+		dma_pool_free(dw->desc_pool, desc, desc->txd.phys);
- 	}
- 
- 	dev_vdbg(chan2dev(chan), "%s: done\n", __func__);
-@@ -1458,20 +1409,14 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
- 		desc->lli.ctlhi = (period_len >> reg_width);
- 		cdesc->desc[i] = desc;
- 
--		if (last) {
-+		if (last)
- 			last->lli.llp = desc->txd.phys;
--			dma_sync_single_for_device(chan2parent(chan),
--					last->txd.phys, sizeof(last->lli),
--					DMA_TO_DEVICE);
--		}
- 
- 		last = desc;
- 	}
- 
- 	/* lets make a cyclic list */
- 	last->lli.llp = cdesc->desc[0]->txd.phys;
--	dma_sync_single_for_device(chan2parent(chan), last->txd.phys,
--			sizeof(last->lli), DMA_TO_DEVICE);
- 
- 	dev_dbg(chan2dev(&dwc->chan), "cyclic prepared buf 0x%llx len %zu "
- 			"period %zu periods %d\n", (unsigned long long)buf_addr,
-@@ -1729,6 +1674,14 @@ static int dw_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, dw);
- 
-+	/* create a pool of consistent memory blocks for hardware descriptors */
-+	dw->desc_pool = dmam_pool_create("dw_dmac_desc_pool", &pdev->dev,
-+					 sizeof(struct dw_desc), 4, 0);
-+	if (!dw->desc_pool) {
-+		dev_err(&pdev->dev, "No memory for descriptors dma pool\n");
-+		return -ENOMEM;
-+	}
-+
- 	tasklet_init(&dw->tasklet, dw_dma_tasklet, (unsigned long)dw);
- 
- 	INIT_LIST_HEAD(&dw->dma.channels);
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index 577f2dd..fef296d 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -235,6 +235,7 @@ static inline struct dw_dma_chan *to_dw_dma_chan(struct dma_chan *chan)
- struct dw_dma {
- 	struct dma_device	dma;
- 	void __iomem		*regs;
-+	struct dma_pool		*desc_pool;
- 	struct tasklet_struct	tasklet;
- 	struct clk		*clk;
- 
--- 
-1.7.10.4
+
+
 
