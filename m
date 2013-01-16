@@ -1,170 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab3APW4r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:56:47 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:43265 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757691Ab3APW4q (ORCPT
+	id S1758127Ab3APW6F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:58:05 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:11179 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757773Ab3APW6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:56:46 -0500
-From: Lance Ortiz <lance.ortiz@hp.com>
-Subject: [PATCH v10 3/3] aerdrv: Cleanup log output for AER
-To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
-        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
-        mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 16 Jan 2013 16:51:16 -0700
-Message-ID: <20130116235116.16015.62519.stgit@grignak.americas.hpqcorp.net>
-In-Reply-To: <20130116235102.16015.77379.stgit@grignak.americas.hpqcorp.net>
-References: <20130116235102.16015.77379.stgit@grignak.americas.hpqcorp.net>
-User-Agent: StGIT/0.14.3
+	Wed, 16 Jan 2013 17:58:04 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkECAG6Zu08YNOOE/2dsb2JhbAANN4F7gzKrG4ZmAQEBAQMjVQEQCw4KAgIFFgsCAgkDAgECAUUGDQEHAQGvGJJ7gSaOCoEUA4hClXeJWQ
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="212737558"
+Message-ID: <50F7307A.4090808@teksavvy.com>
+Date: Wed, 16 Jan 2013 17:58:02 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
+References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com> <50F72F03.5070806@teksavvy.com>
+In-Reply-To: <50F72F03.5070806@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These changes make cper_print_aer more consistent with aer_print_error
-and clean things up by eliminating the use of the prefix variable and
-replacing it with dev_printk.
+On 13-01-16 05:51 PM, Mark Lord wrote:
+> On 13-01-16 12:20 AM, Stanislav Kinsbursky wrote:
+>>
+>> Mark, could you provide any call traces?
+> 
+> Call traces from where/what?
+> There's this one, posted earlier in the BUG report:
+> 
+> kernel BUG at net/sunrpc/svc_xprt.c:921!
+> Call Trace:
+>  [<ffffffffa016a56a>] ? svc_recv+0xcc/0x338 [sunrpc]
+>  [<ffffffffa0318bfc>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
+>  [<ffffffffa0318c19>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
+>  [<ffffffff810407e6>] ? kthread+0x81/0x89
+>  [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
+>  [<ffffffff812ea62c>] ? ret_from_fork+0x7c/0xb0
+>  [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
+..
 
-v3-v4 remove agent id stuff and kept print the same to avoid
-compatibility issues
-v7-v8 Updated to use dev_printk instated of prefix. Changed
-log levels to KERN_ERR as per Mauro's suggestion.
-v8-v9 Changed dev_printk to dev_err since all log levels are KERN_ERR.
+This might be of some interest.
+Here are the first few lines of the same BUG occurance,
+with timestamps and the dmesg lines that immediately preceeded it.
+Perhaps they might help indicate who's triggering the action
+that results in the BUG(?).
 
-Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
-Acked-by: Tony Luck <tony.luck@intel.com>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
----
-
- drivers/pci/pcie/aer/aerdrv_errprint.c |   54 +++++++++++++++-----------------
- 1 files changed, 26 insertions(+), 28 deletions(-)
-
-diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
-index d3e5fc5..5ab1425 100644
---- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-+++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-@@ -124,12 +124,11 @@ static const char *aer_agent_string[] = {
- 	"Transmitter ID"
- };
- 
--static void __aer_print_error(const char *prefix,
-+static void __aer_print_error(struct pci_dev *dev,
- 			      struct aer_err_info *info)
- {
- 	int i, status;
- 	const char *errmsg = NULL;
--
- 	status = (info->status & ~info->mask);
- 
- 	for (i = 0; i < 32; i++) {
-@@ -144,26 +143,22 @@ static void __aer_print_error(const char *prefix,
- 				aer_uncorrectable_error_string[i] : NULL;
- 
- 		if (errmsg)
--			printk("%s""   [%2d] %-22s%s\n", prefix, i, errmsg,
-+			dev_err(&dev->dev, "   [%2d] %-22s%s\n", i, errmsg,
- 				info->first_error == i ? " (First)" : "");
- 		else
--			printk("%s""   [%2d] Unknown Error Bit%s\n", prefix, i,
--				info->first_error == i ? " (First)" : "");
-+			dev_err(&dev->dev, "   [%2d] Unknown Error Bit%s\n",
-+				i, info->first_error == i ? " (First)" : "");
- 	}
- }
- 
- void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
- {
- 	int id = ((dev->bus->number << 8) | dev->devfn);
--	char prefix[44];
--
--	snprintf(prefix, sizeof(prefix), "%s%s %s: ",
--		 (info->severity == AER_CORRECTABLE) ? KERN_WARNING : KERN_ERR,
--		 dev_driver_string(&dev->dev), dev_name(&dev->dev));
- 
- 	if (info->status == 0) {
--		printk("%s""PCIe Bus Error: severity=%s, type=Unaccessible, "
--			"id=%04x(Unregistered Agent ID)\n", prefix,
-+		dev_err(&dev->dev,
-+			"PCIe Bus Error: severity=%s, type=Unaccessible, "
-+			"id=%04x(Unregistered Agent ID)\n",
- 			aer_error_severity_string[info->severity], id);
- 	} else {
- 		int layer, agent;
-@@ -171,22 +166,24 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
- 		layer = AER_GET_LAYER_ERROR(info->severity, info->status);
- 		agent = AER_GET_AGENT(info->severity, info->status);
- 
--		printk("%s""PCIe Bus Error: severity=%s, type=%s, id=%04x(%s)\n",
--			prefix, aer_error_severity_string[info->severity],
-+		dev_err(&dev->dev,
-+			"PCIe Bus Error: severity=%s, type=%s, id=%04x(%s)\n",
-+			aer_error_severity_string[info->severity],
- 			aer_error_layer[layer], id, aer_agent_string[agent]);
- 
--		printk("%s""  device [%04x:%04x] error status/mask=%08x/%08x\n",
--			prefix, dev->vendor, dev->device,
-+		dev_err(&dev->dev,
-+			"  device [%04x:%04x] error status/mask=%08x/%08x\n",
-+			dev->vendor, dev->device,
- 			info->status, info->mask);
- 
--		__aer_print_error(prefix, info);
-+		__aer_print_error(dev, info);
- 
- 		if (info->tlp_header_valid) {
- 			unsigned char *tlp = (unsigned char *) &info->tlp;
--			printk("%s""  TLP Header:"
-+			dev_err(&dev->dev, "  TLP Header:"
- 				" %02x%02x%02x%02x %02x%02x%02x%02x"
- 				" %02x%02x%02x%02x %02x%02x%02x%02x\n",
--				prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
-+				*(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
- 				*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
- 				*(tlp + 11), *(tlp + 10), *(tlp + 9),
- 				*(tlp + 8), *(tlp + 15), *(tlp + 14),
-@@ -195,8 +192,9 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
- 	}
- 
- 	if (info->id && info->error_dev_num > 1 && info->id == id)
--		printk("%s""  Error of this Agent(%04x) is reported first\n",
--			prefix, id);
-+		dev_err(&dev->dev,
-+			   "  Error of this Agent(%04x) is reported first\n",
-+			id);
- 	trace_aer_event(dev_name(&dev->dev), (info->status & ~info->mask),
- 			info->severity);
- }
-@@ -244,21 +242,21 @@ void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
- 	}
- 	layer = AER_GET_LAYER_ERROR(aer_severity, status);
- 	agent = AER_GET_AGENT(aer_severity, status);
--	printk("%s""aer_status: 0x%08x, aer_mask: 0x%08x\n",
--	       prefix, status, mask);
-+	dev_err(&dev->dev, "aer_status: 0x%08x, aer_mask: 0x%08x\n",
-+	       status, mask);
- 	cper_print_bits(prefix, status, status_strs, status_strs_size);
--	printk("%s""aer_layer=%s, aer_agent=%s\n", prefix,
-+	dev_err(&dev->dev, "aer_layer=%s, aer_agent=%s\n",
- 	       aer_error_layer[layer], aer_agent_string[agent]);
- 	if (aer_severity != AER_CORRECTABLE)
--		printk("%s""aer_uncor_severity: 0x%08x\n",
--		       prefix, aer->uncor_severity);
-+		dev_err(&dev->dev, "aer_uncor_severity: 0x%08x\n",
-+		       aer->uncor_severity);
- 	if (tlp_header_valid) {
- 		const unsigned char *tlp;
- 		tlp = (const unsigned char *)&aer->header_log;
--		printk("%s""aer_tlp_header:"
-+		dev_err(&dev->dev, "aer_tlp_header:"
- 			" %02x%02x%02x%02x %02x%02x%02x%02x"
- 			" %02x%02x%02x%02x %02x%02x%02x%02x\n",
--			prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
-+			*(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
- 			*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
- 			*(tlp + 11), *(tlp + 10), *(tlp + 9),
- 			*(tlp + 8), *(tlp + 15), *(tlp + 14),
+Jan 14 10:58:05 zippy kernel: [66045.627952] NFS: Registering the id_resolver key type
+Jan 14 10:58:05 zippy kernel: [66045.628014] Key type id_resolver registered
+Jan 14 10:58:05 zippy kernel: [66045.628020] Key type id_legacy registered
+Jan 14 10:58:05 zippy kernel: [66045.636302] ------------[ cut here ]------------
+Jan 14 10:58:05 zippy kernel: [66045.648342] kernel BUG at net/sunrpc/svc_xprt.c:921!
 
