@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757271Ab3APBEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 20:04:55 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:16475 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756087Ab3APBEx (ORCPT
+	id S1757304Ab3APBHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 20:07:46 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:37544 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756113Ab3APBHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 20:04:53 -0500
-Date: Wed, 16 Jan 2013 09:02:30 +0800
-From: Liu Bo <bo.li.liu@oracle.com>
-To: Zach Brown <zab@zabbo.net>
-Cc: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH] mm/slab: add a leak decoder callback
-Message-ID: <20130116010229.GB3942@liubo>
-Reply-To: bo.li.liu@oracle.com
-References: <1358143419-13074-1-git-send-email-bo.li.liu@oracle.com>
- <0000013c3f0c8af2-361e64b5-f822-4a93-a67e-b2902bb336fc-000000@email.amazonses.com>
- <20130115170105.GP12288@lenny.home.zabbo.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130115170105.GP12288@lenny.home.zabbo.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 15 Jan 2013 20:07:44 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] kvm: close opened file
+Date: Wed, 16 Jan 2013 02:07:35 +0100
+Message-Id: <1358298456-18377-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 09:01:05AM -0800, Zach Brown wrote:
-> > The merge processing occurs during kmem_cache_create and you are setting
-> > up the decoder field afterwards! Wont work.
-> 
-> In the thread I suggested providing the callback at destruction:
-> 
->  http://www.mail-archive.com/linux-btrfs@vger.kernel.org/msg21130.html
-> 
-> I liked that it limits accesibility of the callback to the only path
-> that uses it.
+The file should be closed before return.
 
-Well, I was trying to avoid API change, but seems we have to, I'll
-update the patch as your suggestion in the next version.
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ tools/kvm/builtin-setup.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-thanks,
-liubo
+diff --git a/tools/kvm/builtin-setup.c b/tools/kvm/builtin-setup.c
+index c5b0566..8b45c56 100644
+--- a/tools/kvm/builtin-setup.c
++++ b/tools/kvm/builtin-setup.c
+@@ -159,12 +159,12 @@ static int copy_passwd(const char *guestfs_name)
+ 		return -1;
+ 
+ 	ret = fprintf(file, "root:x:0:0:root:/root:/bin/sh\n");
+-	if (ret < 0)
+-		return ret;
++	if (ret > 0)
++		ret = 0;
+ 
+ 	fclose(file);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int make_guestfs_symlink(const char *guestfs_name, const char *path)
+-- 
+1.7.10.4
+
