@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab3APQEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:04:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36191 "EHLO
+	id S1758795Ab3APQqA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:46:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36177 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758373Ab3APQEc (ORCPT
+	with ESMTP id S1758353Ab3APQEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:04:32 -0500
+	Wed, 16 Jan 2013 11:04:24 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Yi Zou <yi.zou@intel.com>, Open-FCoE <devel@open-fcoe.org>,
+        "Nicholas A. Bellinger" <nab@risingtidesystems.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 111/222] NFS: Fix calls to drop_nlink()
-Date: Wed, 16 Jan 2013 13:55:11 -0200
-Message-Id: <1358351822-7675-112-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 108/222] target/tcm_fc: fix the lockdep warning due to inconsistent lock state
+Date: Wed, 16 Jan 2013 13:55:08 -0200
+Message-Id: <1358351822-7675-109-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,86 +29,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Yi Zou <yi.zou@intel.com>
 
-commit 1f018458b30b0d5c535c94e577aa0acbb92e1395 upstream.
+commit 9f4ad44b264f8bb61ffdd607148215566568430d upstream.
 
-It is almost always wrong for NFS to call drop_nlink() after removing a
-file. What we really want is to mark the inode's attributes for
-revalidation, and we want to ensure that the VFS drops it if we're
-reasonably sure that this is the final unlink().
-Do the former using the usual cache validity flags, and the latter
-by testing if inode->i_nlink == 1, and clearing it in that case.
+The lockdep warning below is in theory correct but it will be in really weird
+rare situation that ends up that deadlock since the tcm fc session is hashed
+based the rport id. Nonetheless, the complaining below is about rcu callback
+that does the transport_deregister_session() is happening in softirq, where
+transport_register_session() that happens earlier is not. This triggers the
+lockdep warning below. So, just fix this to make lockdep happy by disabling
+the soft irq before calling transport_register_session() in ft_prli.
 
-This also fixes the following warning reported by Neil Brown and
-Jeff Layton (among others).
+BTW, this was found in FCoE VN2VN over two VMs, couple of create and destroy
+would get this triggered.
 
-[634155.004438] WARNING:
-at /home/abuild/rpmbuild/BUILD/kernel-desktop-3.5.0/lin [634155.004442]
-Hardware name: Latitude E6510 [634155.004577]  crc_itu_t crc32c_intel
-snd_hwdep snd_pcm snd_timer snd soundcor [634155.004609] Pid: 13402, comm:
-bash Tainted: G        W    3.5.0-36-desktop # [634155.004611] Call Trace:
-[634155.004630]  [<ffffffff8100444a>] dump_trace+0xaa/0x2b0
-[634155.004641]  [<ffffffff815a23dc>] dump_stack+0x69/0x6f
-[634155.004653]  [<ffffffff81041a0b>] warn_slowpath_common+0x7b/0xc0
-[634155.004662]  [<ffffffff811832e4>] drop_nlink+0x34/0x40
-[634155.004687]  [<ffffffffa05bb6c3>] nfs_dentry_iput+0x33/0x70 [nfs]
-[634155.004714]  [<ffffffff8118049e>] dput+0x12e/0x230
-[634155.004726]  [<ffffffff8116b230>] __fput+0x170/0x230
-[634155.004735]  [<ffffffff81167c0f>] filp_close+0x5f/0x90
-[634155.004743]  [<ffffffff81167cd7>] sys_close+0x97/0x100
-[634155.004754]  [<ffffffff815c3b39>] system_call_fastpath+0x16/0x1b
-[634155.004767]  [<00007f2a73a0d110>] 0x7f2a73a0d10f
+v1: was enforcing register to be in softirq context which was not righ. See,
+http://www.spinics.net/lists/target-devel/msg03614.html
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[ herton: unfuzz patch ]
+v2: following comments from Roland&Nick (thanks), it seems we don't have to
+do transport_deregister_session() in rcu callback, so move it into ft_sess_free()
+but still do kfree() of the corresponding ft_sess struct in rcu callback to
+make sure the ft_sess is not freed till the rcu callback.
+
+...
+[ 1328.370592] scsi2 : FCoE Driver
+[ 1328.383429] fcoe: No FDMI support.
+[ 1328.384509] host2: libfc: Link up on port (000000)
+[ 1328.934229] host2: Assigned Port ID 00a292
+[ 1357.232132] host2: rport 00a393: Remove port
+[ 1357.232568] host2: rport 00a393: Port sending LOGO from Ready state
+[ 1357.233692] host2: rport 00a393: Delete port
+[ 1357.234472] host2: rport 00a393: work event 3
+[ 1357.234969] host2: rport 00a393: callback ev 3
+[ 1357.235979] host2: rport 00a393: Received a LOGO response closed
+[ 1357.236706] host2: rport 00a393: work delete
+[ 1357.237481]
+[ 1357.237631] =================================
+[ 1357.238064] [ INFO: inconsistent lock state ]
+[ 1357.238450] 3.7.0-rc7-yikvm+ #3 Tainted: G           O
+[ 1357.238450] ---------------------------------
+[ 1357.238450] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+[ 1357.238450] ksoftirqd/0/3 [HC0[0]:SC1[1]:HE0:SE0] takes:
+[ 1357.238450]  (&(&se_tpg->session_lock)->rlock){+.?...}, at: [<ffffffffa01eacd4>] transport_deregister_session+0x41/0x148 [target_core_mod]
+[ 1357.238450] {SOFTIRQ-ON-W} state was registered at:
+[ 1357.238450]   [<ffffffff810834f5>] mark_held_locks+0x6d/0x95
+[ 1357.238450]   [<ffffffff8108364a>] trace_hardirqs_on_caller+0x12d/0x197
+[ 1357.238450]   [<ffffffff810836c1>] trace_hardirqs_on+0xd/0xf
+[ 1357.238450]   [<ffffffff8149caba>] _raw_spin_unlock_irq+0x2d/0x45
+[ 1357.238450]   [<ffffffffa01e8d10>] __transport_register_session+0xb8/0x122 [target_core_mod]
+[ 1357.238450]   [<ffffffffa01e8dbe>] transport_register_session+0x44/0x5a [target_core_mod]
+[ 1357.238450]   [<ffffffffa018e32c>] ft_prli+0x1e3/0x275 [tcm_fc]
+[ 1357.238450]   [<ffffffffa0160e8d>] fc_rport_recv_req+0x95e/0xdc5 [libfc]
+[ 1357.238450]   [<ffffffffa015be88>] fc_lport_recv_els_req+0xc4/0xd5 [libfc]
+[ 1357.238450]   [<ffffffffa015c778>] fc_lport_recv_req+0x12f/0x18f [libfc]
+[ 1357.238450]   [<ffffffffa015a6d7>] fc_exch_recv+0x8ba/0x981 [libfc]
+[ 1357.238450]   [<ffffffffa0176d7a>] fcoe_percpu_receive_thread+0x47a/0x4e2 [fcoe]
+[ 1357.238450]   [<ffffffff810549f1>] kthread+0xb1/0xb9
+[ 1357.238450]   [<ffffffff814a40ec>] ret_from_fork+0x7c/0xb0
+[ 1357.238450] irq event stamp: 275411
+[ 1357.238450] hardirqs last  enabled at (275410): [<ffffffff810bb6a0>] rcu_process_callbacks+0x229/0x42a
+[ 1357.238450] hardirqs last disabled at (275411): [<ffffffff8149c2f7>] _raw_spin_lock_irqsave+0x22/0x8e
+[ 1357.238450] softirqs last  enabled at (275394): [<ffffffff8103d669>] __do_softirq+0x246/0x26f
+[ 1357.238450] softirqs last disabled at (275399): [<ffffffff8103d6bb>] run_ksoftirqd+0x29/0x62
+[ 1357.238450]
+[ 1357.238450] other info that might help us debug this:
+[ 1357.238450]  Possible unsafe locking scenario:
+[ 1357.238450]
+[ 1357.238450]        CPU0
+[ 1357.238450]        ----
+[ 1357.238450]   lock(&(&se_tpg->session_lock)->rlock);
+[ 1357.238450]   <Interrupt>
+[ 1357.238450]     lock(&(&se_tpg->session_lock)->rlock);
+[ 1357.238450]
+[ 1357.238450]  *** DEADLOCK ***
+[ 1357.238450]
+[ 1357.238450] no locks held by ksoftirqd/0/3.
+[ 1357.238450]
+[ 1357.238450] stack backtrace:
+[ 1357.238450] Pid: 3, comm: ksoftirqd/0 Tainted: G           O 3.7.0-rc7-yikvm+ #3
+[ 1357.238450] Call Trace:
+[ 1357.238450]  [<ffffffff8149399a>] print_usage_bug+0x1f5/0x206
+[ 1357.238450]  [<ffffffff8100da59>] ? save_stack_trace+0x2c/0x49
+[ 1357.238450]  [<ffffffff81082aae>] ? print_irq_inversion_bug.part.14+0x1ae/0x1ae
+[ 1357.238450]  [<ffffffff81083336>] mark_lock+0x106/0x258
+[ 1357.238450]  [<ffffffff81084e34>] __lock_acquire+0x2e7/0xe53
+[ 1357.238450]  [<ffffffff8102903d>] ? pvclock_clocksource_read+0x48/0xb4
+[ 1357.238450]  [<ffffffff810ba6a3>] ? rcu_process_gp_end+0xc0/0xc9
+[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
+[ 1357.238450]  [<ffffffff81085ef1>] lock_acquire+0x119/0x143
+[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
+[ 1357.238450]  [<ffffffff8149c329>] _raw_spin_lock_irqsave+0x54/0x8e
+[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
+[ 1357.238450]  [<ffffffffa01eacd4>] transport_deregister_session+0x41/0x148 [target_core_mod]
+[ 1357.238450]  [<ffffffff810bb6a0>] ? rcu_process_callbacks+0x229/0x42a
+[ 1357.238450]  [<ffffffffa018ddc5>] ft_sess_rcu_free+0x17/0x24 [tcm_fc]
+[ 1357.238450]  [<ffffffffa018ddae>] ? ft_sess_free+0x1b/0x1b [tcm_fc]
+[ 1357.238450]  [<ffffffff810bb6d7>] rcu_process_callbacks+0x260/0x42a
+[ 1357.238450]  [<ffffffff8103d55d>] __do_softirq+0x13a/0x26f
+[ 1357.238450]  [<ffffffff8149b34e>] ? __schedule+0x65f/0x68e
+[ 1357.238450]  [<ffffffff8103d6bb>] run_ksoftirqd+0x29/0x62
+[ 1357.238450]  [<ffffffff8105c83c>] smpboot_thread_fn+0x1a5/0x1aa
+[ 1357.238450]  [<ffffffff8105c697>] ? smpboot_unregister_percpu_thread+0x47/0x47
+[ 1357.238450]  [<ffffffff810549f1>] kthread+0xb1/0xb9
+[ 1357.238450]  [<ffffffff8149b49d>] ? wait_for_common+0xbb/0x10a
+[ 1357.238450]  [<ffffffff81054940>] ? __init_kthread_worker+0x59/0x59
+[ 1357.238450]  [<ffffffff814a40ec>] ret_from_fork+0x7c/0xb0
+[ 1357.238450]  [<ffffffff81054940>] ? __init_kthread_worker+0x59/0x59
+[ 1417.440099]  rport-2:0-0: blocked FC remote port time out: removing rport
+
+Signed-off-by: Yi Zou <yi.zou@intel.com>
+Cc: Open-FCoE <devel@open-fcoe.org>
+Cc: Nicholas A. Bellinger <nab@risingtidesystems.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/nfs/dir.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/target/tcm_fc/tfc_sess.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index b1f3675..9ac9254 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1242,11 +1242,14 @@ static int nfs_dentry_delete(const struct dentry *dentry)
- 
- }
- 
-+/* Ensure that we revalidate inode->i_nlink */
- static void nfs_drop_nlink(struct inode *inode)
+diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
+index 87901fa..a426c40 100644
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -431,7 +431,6 @@ static void ft_sess_rcu_free(struct rcu_head *rcu)
  {
- 	spin_lock(&inode->i_lock);
--	if (inode->i_nlink > 0)
--		drop_nlink(inode);
-+	/* drop the inode if we're reasonably sure this is the last link */
-+	if (inode->i_nlink == 1)
-+		clear_nlink(inode);
-+	NFS_I(inode)->cache_validity |= NFS_INO_INVALID_ATTR;
- 	spin_unlock(&inode->i_lock);
+ 	struct ft_sess *sess = container_of(rcu, struct ft_sess, rcu);
+ 
+-	transport_deregister_session(sess->se_sess);
+ 	kfree(sess);
  }
  
-@@ -1261,8 +1264,8 @@ static void nfs_dentry_iput(struct dentry *dentry, struct inode *inode)
- 		NFS_I(inode)->cache_validity |= NFS_INO_INVALID_DATA;
+@@ -439,6 +438,7 @@ static void ft_sess_free(struct kref *kref)
+ {
+ 	struct ft_sess *sess = container_of(kref, struct ft_sess, kref);
  
- 	if (dentry->d_flags & DCACHE_NFSFS_RENAMED) {
--		drop_nlink(inode);
- 		nfs_complete_unlink(dentry, inode);
-+		nfs_drop_nlink(inode);
- 	}
- 	iput(inode);
++	transport_deregister_session(sess->se_sess);
+ 	call_rcu(&sess->rcu, ft_sess_rcu_free);
  }
-@@ -1780,10 +1783,8 @@ static int nfs_safe_remove(struct dentry *dentry)
- 	if (inode != NULL) {
- 		nfs_inode_return_delegation(inode);
- 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
--		/* The VFS may want to delete this inode */
- 		if (error == 0)
- 			nfs_drop_nlink(inode);
--		nfs_mark_for_revalidate(inode);
- 	} else
- 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
- 	if (error == -ENOENT)
+ 
 -- 
 1.7.9.5
 
