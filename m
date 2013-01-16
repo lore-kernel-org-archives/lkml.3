@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab3APQGE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:06:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36317 "EHLO
+	id S932408Ab3APQGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:06:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36332 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932341Ab3APQF6 (ORCPT
+	with ESMTP id S1758417Ab3APQGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:05:58 -0500
+	Wed, 16 Jan 2013 11:06:11 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: David Woodhouse <David.Woodhouse@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 133/222] ARM: missing ->mmap_sem around find_vma() in swp_emulate.c
-Date: Wed, 16 Jan 2013 13:55:33 -0200
-Message-Id: <1358351822-7675-134-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 136/222] intel-iommu: Free old page tables before creating superpage
+Date: Wed, 16 Jan 2013 13:55:36 -0200
+Message-Id: <1358351822-7675-137-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,40 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: "Woodhouse, David" <david.woodhouse@intel.com>
 
-commit 7bf9b7bef881aac820bf1f2e9951a17b09bd7e04 upstream.
+commit 6491d4d02893d9787ba67279595990217177b351 upstream.
 
-find_vma() is *not* safe when somebody else is removing vmas.  Not just
-the return value might get bogus just as you are getting it (this instance
-doesn't try to dereference the resulting vma), the search itself can get
-buggered in rather spectacular ways.  IOW, ->mmap_sem really, really is
-not optional here.
+The dma_pte_free_pagetable() function will only free a page table page
+if it is asked to free the *entire* 2MiB range that it covers. So if a
+page table page was used for one or more small mappings, it's likely to
+end up still present in the page tables... but with no valid PTEs.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This was fine when we'd only be repopulating it with 4KiB PTEs anyway
+but the same virtual address range can end up being reused for a
+*large-page* mapping. And in that case were were trying to insert the
+large page into the second-level page table, and getting a complaint
+from the sanity check in __domain_mapping() because there was already a
+corresponding entry. This was *relatively* harmless; it led to a memory
+leak of the old page table page, but no other ill-effects.
+
+Fix it by calling dma_pte_clear_range (hopefully redundant) and
+dma_pte_free_pagetable() before setting up the new large page.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Tested-by: Ravi Murty <Ravi.Murty@intel.com>
+Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/arm/kernel/swp_emulate.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/iommu/intel-iommu.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kernel/swp_emulate.c b/arch/arm/kernel/swp_emulate.c
-index df74518..ab1017b 100644
---- a/arch/arm/kernel/swp_emulate.c
-+++ b/arch/arm/kernel/swp_emulate.c
-@@ -109,10 +109,12 @@ static void set_segfault(struct pt_regs *regs, unsigned long addr)
- {
- 	siginfo_t info;
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 3e1bdc1..f3e77a5 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1827,10 +1827,17 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
+ 			if (!pte)
+ 				return -ENOMEM;
+ 			/* It is large page*/
+-			if (largepage_lvl > 1)
++			if (largepage_lvl > 1) {
+ 				pteval |= DMA_PTE_LARGE_PAGE;
+-			else
++				/* Ensure that old small page tables are removed to make room
++				   for superpage, if they exist. */
++				dma_pte_clear_range(domain, iov_pfn,
++						    iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
++				dma_pte_free_pagetable(domain, iov_pfn,
++						       iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
++			} else {
+ 				pteval &= ~(uint64_t)DMA_PTE_LARGE_PAGE;
++			}
  
-+	down_read(&current->mm->mmap_sem);
- 	if (find_vma(current->mm, addr) == NULL)
- 		info.si_code = SEGV_MAPERR;
- 	else
- 		info.si_code = SEGV_ACCERR;
-+	up_read(&current->mm->mmap_sem);
- 
- 	info.si_signo = SIGSEGV;
- 	info.si_errno = 0;
+ 		}
+ 		/* We don't need lock here, nobody else
 -- 
 1.7.9.5
 
