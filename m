@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3APP6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:58:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35712 "EHLO
+	id S1756896Ab3APRMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:12:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35718 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694Ab3APP6k (ORCPT
+	with ESMTP id S1756694Ab3APP6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:58:40 -0500
+	Wed, 16 Jan 2013 10:58:44 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 020/222] genirq: Always force thread affinity
-Date: Wed, 16 Jan 2013 13:53:40 -0200
-Message-Id: <1358351822-7675-21-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 021/222] xhci: Fix conditional check in bandwidth calculation.
+Date: Wed, 16 Jan 2013 13:53:41 -0200
+Message-Id: <1358351822-7675-22-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,85 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 04aa530ec04f61875b99c12721162e2964e3318c upstream.
+commit 392a07ae3316f2b90b39ce41e66d6f6b5c95de90 upstream.
 
-Sankara reported that the genirq core code fails to adjust the
-affinity of an interrupt thread in several cases:
+David reports that at drivers/usb/host/xhci.c:2257:
 
- 1) On request/setup_irq() the call to setup_affinity() happens before
-    the new action is registered, so the new thread is not notified.
+static bool xhci_is_sync_in_ep(unsigned int ep_type)
+{
+    return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
+}
 
- 2) For secondary shared interrupts nothing notifies the new thread to
-    change its affinity.
+The static analyser cppcheck says
 
- 3) Interrupts which have the IRQ_NO_BALANCE flag set are not moving
-    the thread either.
+[linux-3.7-rc2/drivers/usb/host/xhci.c:2257]: (style) Redundant condition: If ep_type == 5, the comparison ep_type != 7 is always true.
 
-Fix this by setting the thread affinity flag right on thread creation
-time. This ensures that under all circumstances the thread moves to
-the right place. Requires a check in irq_thread_check_affinity for an
-existing affinity mask (CONFIG_CPU_MASK_OFFSTACK=y)
+Maybe the original programmer intention was something like
 
-Reported-and-tested-by: Sankara Muthukrishnan <sankara.m@gmail.com>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1209041738200.2754@ionos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+static bool xhci_is_sync_in_ep(unsigned int ep_type)
+{
+    return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
+}
+
+Fix this.
+
+This patch should be backported to stable kernels as old as 3.2, that
+contain the commit 2b69899934c63b7b9432568584fb4c4a2924f40c "xhci: USB
+3.0 BW checking."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: David Binderman <dcb314@hotmail.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/irq/manage.c |   23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 5e42eb1..b4c6385 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -716,6 +716,7 @@ static void
- irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 5f831c2..f67634b 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2253,7 +2253,7 @@ static bool xhci_is_async_ep(unsigned int ep_type)
+ 
+ static bool xhci_is_sync_in_ep(unsigned int ep_type)
  {
- 	cpumask_var_t mask;
-+	bool valid = true;
- 
- 	if (!test_and_clear_bit(IRQTF_AFFINITY, &action->thread_flags))
- 		return;
-@@ -730,10 +731,18 @@ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
- 	}
- 
- 	raw_spin_lock_irq(&desc->lock);
--	cpumask_copy(mask, desc->irq_data.affinity);
-+	/*
-+	 * This code is triggered unconditionally. Check the affinity
-+	 * mask pointer. For CPU_MASK_OFFSTACK=n this is optimized out.
-+	 */
-+	if (desc->irq_data.affinity)
-+		cpumask_copy(mask, desc->irq_data.affinity);
-+	else
-+		valid = false;
- 	raw_spin_unlock_irq(&desc->lock);
- 
--	set_cpus_allowed_ptr(current, mask);
-+	if (valid)
-+		set_cpus_allowed_ptr(current, mask);
- 	free_cpumask_var(mask);
+-	return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
++	return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
  }
- #else
-@@ -936,6 +945,16 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 		 */
- 		get_task_struct(t);
- 		new->thread = t;
-+		/*
-+		 * Tell the thread to set its affinity. This is
-+		 * important for shared interrupt handlers as we do
-+		 * not invoke setup_affinity() for the secondary
-+		 * handlers as everything is already set up. Even for
-+		 * interrupts marked with IRQF_NO_BALANCE this is
-+		 * correct as we want the thread to move to the cpu(s)
-+		 * on which the requesting code placed the interrupt.
-+		 */
-+		set_bit(IRQTF_AFFINITY, &new->thread_flags);
- 	}
  
- 	if (!alloc_cpumask_var(&mask, GFP_KERNEL)) {
+ static unsigned int xhci_get_ss_bw_consumed(struct xhci_bw_info *ep_bw)
 -- 
 1.7.9.5
 
