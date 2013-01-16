@@ -1,113 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab3APPFy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:05:54 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:57166 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab3APPFw (ORCPT
+	id S1756767Ab3APPGH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:06:07 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:59310 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab3APPGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:05:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <3963234.Gb249i4a6U@flatron>
-References: <1358257112-19595-1-git-send-email-gautam.vivek@samsung.com>
-	<1358257112-19595-4-git-send-email-gautam.vivek@samsung.com>
-	<3963234.Gb249i4a6U@flatron>
-Date: Wed, 16 Jan 2013 20:35:50 +0530
-Message-ID: <CAFp+6iHd66_dvj_M5zOpJZ7sEy-pYa-CdWKUZBYc3Dfn3JHtfg@mail.gmail.com>
-Subject: Re: [PATCH v4 3/4] ARM: Exynos5250: Add clock information for dwc3-exynos
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, jg1.han@samsung.com,
-        kgene.kim@samsung.com, devicetree-discuss@lists.ozlabs.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Jan 2013 10:06:04 -0500
+Message-ID: <1358348758.4643.42.camel@marge.simpson.net>
+Subject: Re: [PATCH -tip] sched: Pair ttwu_activate() with uwtt_deactivate()
+From: Mike Galbraith <bitbucket@online.de>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 16 Jan 2013 16:05:58 +0100
+In-Reply-To: <10a81412c1ac7549412b11a9aa0b5c70dac5de37.1358331166.git.agordeev@redhat.com>
+References: <10a81412c1ac7549412b11a9aa0b5c70dac5de37.1358331166.git.agordeev@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:xQqTZfzHrWLtZ5ZSJciCC446I9VJoYUMQ1aEW0dKbup
+ hoPjM+Hx98144l/Dm/ewmkDuxRHYQvmxQUjDa79fSxcrg4kXwa
+ z1d0c0w5MgvhXaZgHrTwS8n6nugPAVgtfiNYFSG6j6gd75CFlL
+ vEJ/7mYeW7TavGa7+a8V4AHtB2av5XjTuIfG4nvlkxmCX/FTXz
+ +EqLW5xfHHreOgiBNwDyGH0gs/kV94bNFbLmbOiLHyjkOcacPo
+ CAuWLzn8zT4qwaNuukYaTBqholN4illdAyPTDU+zgTtlx2h2pU
+ Z1HglrDrhaZ7yj50FVxlcio2xJVNhM0r4k2imgv5KaRu4VqOMN
+ SdWiBZnXQDZ8Y2uXvBXKU41UCWILg/AiBkYYzGCRk3xCCsJbS3
+ mAizGC82wbsfg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+On Wed, 2013-01-16 at 11:14 +0100, Alexander Gordeev wrote: 
+> Try to make reading of __schedule() bit more easy.
+
+You didn't succeed in doing that for me.  Moving that code away just
+obfuscates the special case for worker-bees scheduling off, and while
+ttwu is shorthand for try_to_wake_up, uuwt is.. a lysdexic typo.
+
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  kernel/sched/core.c |   42 ++++++++++++++++++++++++------------------
+>  1 files changed, 24 insertions(+), 18 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 38413f6..dd54ded 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1272,6 +1272,27 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
+>  		wq_worker_waking_up(p, cpu_of(rq));
+>  }
+>  
+> +static void try_to_wake_up_local(struct task_struct *p);
+> +
+> +static void uwtt_deactivate(struct rq *rq, struct task_struct *p, int de_flags)
+> +{
+> +	deactivate_task(rq, p, de_flags);
+> +	p->on_rq = 0;
+> +
+> +	/*
+> +	 * If a worker went to sleep, notify and ask workqueue
+> +	 * whether it wants to wake up a task to maintain
+> +	 * concurrency.
+> +	 */
+> +	if (p->flags & PF_WQ_WORKER) {
+> +		struct task_struct *to_wakeup;
+> +
+> +		to_wakeup = wq_worker_sleeping(p, cpu_of(rq));
+> +		if (to_wakeup)
+> +			try_to_wake_up_local(to_wakeup);
+> +	}
+> +}
+> +
+>  /*
+>   * Mark the task runnable and perform wakeup-preemption.
+>   */
+> @@ -2907,25 +2928,10 @@ need_resched:
+>  
+>  	switch_count = &prev->nivcsw;
+>  	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+> -		if (unlikely(signal_pending_state(prev->state, prev))) {
+> +		if (unlikely(signal_pending_state(prev->state, prev)))
+>  			prev->state = TASK_RUNNING;
+> -		} else {
+> -			deactivate_task(rq, prev, DEQUEUE_SLEEP);
+> -			prev->on_rq = 0;
+> -
+> -			/*
+> -			 * If a worker went to sleep, notify and ask workqueue
+> -			 * whether it wants to wake up a task to maintain
+> -			 * concurrency.
+> -			 */
+> -			if (prev->flags & PF_WQ_WORKER) {
+> -				struct task_struct *to_wakeup;
+> -
+> -				to_wakeup = wq_worker_sleeping(prev, cpu);
+> -				if (to_wakeup)
+> -					try_to_wake_up_local(to_wakeup);
+> -			}
+> -		}
+> +		else
+> +			uwtt_deactivate(rq, prev, DEQUEUE_SLEEP);
+>  		switch_count = &prev->nvcsw;
+>  	}
+>  
+> -- 
+> 1.7.7.6
+> 
+> 
 
 
-On Wed, Jan 16, 2013 at 1:19 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Hi Vivek,
->
-> Don't you need also some clkdev lookup entry to make the clock available
-> in the driver?
->
-
-This clock source we added with a motive of completion, however it's
-not being used as of now.
-As far as i could see the lookup structure contains clocks for devices
-having multiple instances.
-Do you feel that i should be adding an entry in clk_lookup structure ?
-May be i am missing here something. Can you please elaborate on the
-use-case of clk_lookup
-entries.
-
->
-> On Tuesday 15 of January 2013 19:08:31 Vivek Gautam wrote:
->> Adding necessary device clock to exynos5 needed for
->> the DWC3 controller.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>  arch/arm/mach-exynos/clock-exynos5.c |   24 ++++++++++++++++++++++++
->>  1 files changed, 24 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/mach-exynos/clock-exynos5.c
->> b/arch/arm/mach-exynos/clock-exynos5.c index 0208c3a..13af020 100644
->> --- a/arch/arm/mach-exynos/clock-exynos5.c
->> +++ b/arch/arm/mach-exynos/clock-exynos5.c
->> @@ -757,6 +757,11 @@ static struct clk exynos5_init_clocks_off[] = {
->>               .enable         = exynos5_clk_ip_fsys_ctrl ,
->>               .ctrlbit        = (1 << 18),
->>       }, {
->> +             .name           = "usbdrd30",
->> +             .parent         = &exynos5_clk_aclk_200.clk,
->> +             .enable         = exynos5_clk_ip_fsys_ctrl,
->> +             .ctrlbit        = (1 << 19),
->> +     }, {
->>               .name           = "usbotg",
->>               .enable         = exynos5_clk_ip_fsys_ctrl,
->>               .ctrlbit        = (1 << 7),
->> @@ -1035,6 +1040,16 @@ static struct clksrc_sources exynos5_clkset_group
->> = { .nr_sources       = ARRAY_SIZE(exynos5_clkset_group_list),
->>  };
->>
->> +struct clk *exynos5_clkset_usbdrd30_list[] = {
->> +     [0] = &exynos5_clk_mout_mpll.clk,
->> +     [1] = &exynos5_clk_mout_cpll.clk,
->> +};
->> +
->> +struct clksrc_sources exynos5_clkset_usbdrd30 = {
->> +     .sources        = exynos5_clkset_usbdrd30_list,
->> +     .nr_sources     = ARRAY_SIZE(exynos5_clkset_usbdrd30_list),
->> +};
->> +
->>  /* Possible clock sources for aclk_266_gscl_sub Mux */
->>  static struct clk *clk_src_gscl_266_list[] = {
->>       [0] = &clk_ext_xtal_mux,
->> @@ -1329,6 +1344,15 @@ static struct clksrc_clk exynos5_clksrcs[] = {
->>                       .parent         = &exynos5_clk_mout_cpll.clk,
->>               },
->>               .reg_div = { .reg = EXYNOS5_CLKDIV_GEN, .shift = 4, .size = 3
-> },
->> +     }, {
->> +             .clk    = {
->> +                     .name           = "sclk_usbdrd30",
->> +                     .enable         = exynos5_clksrc_mask_fsys_ctrl,
->> +                     .ctrlbit        = (1 << 28),
->> +             },
->> +             .sources = &exynos5_clkset_usbdrd30,
->> +             .reg_src = { .reg = EXYNOS5_CLKSRC_FSYS, .shift = 28, .size =
-> 1 },
->> +             .reg_div = { .reg = EXYNOS5_CLKDIV_FSYS0, .shift = 24, .size =
-> 4 },
->>       },
->>  };
-
-
--- 
-Thanks & Regards
-Vivek
