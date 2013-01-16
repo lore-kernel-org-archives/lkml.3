@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab3APQEl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:04:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36197 "EHLO
+	id S932184Ab3APQEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:04:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36204 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121Ab3APQEh (ORCPT
+	with ESMTP id S932121Ab3APQEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:04:37 -0500
+	Wed, 16 Jan 2013 11:04:42 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Popovec <popovec@fei.tuke.sk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 112/222] Input: walkera0701 - fix crash on startup
-Date: Wed, 16 Jan 2013 13:55:12 -0200
-Message-Id: <1358351822-7675-113-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 113/222] SUNRPC: continue run over clients list on PipeFS event instead of break
+Date: Wed, 16 Jan 2013 13:55:13 -0200
+Message-Id: <1358351822-7675-114-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,60 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Popovec <popovec@oko.fei.tuke.sk>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit a455e2985f57e2a71566bb8850094af38b2c932d upstream.
+commit cd6c5968582a273561464fe6b1e8cc8214be02df upstream.
 
-The driver's timer must be set up before enabling IRQ handler, otherwise
-bad things may happen.
+There are SUNRPC clients, which program doesn't have pipe_dir_name. These
+clients can be skipped on PipeFS events, because nothing have to be created or
+destroyed. But instead of breaking in case of such a client was found, search
+for suitable client over clients list have to be continued. Otherwise some
+clients could not be covered by PipeFS event handler.
 
-Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Peter Popovec <popovec@fei.tuke.sk>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/input/joystick/walkera0701.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ net/sunrpc/clnt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/joystick/walkera0701.c b/drivers/input/joystick/walkera0701.c
-index 4dfa1ee..f8f892b 100644
---- a/drivers/input/joystick/walkera0701.c
-+++ b/drivers/input/joystick/walkera0701.c
-@@ -196,6 +196,7 @@ static void walkera0701_close(struct input_dev *dev)
- 	struct walkera_dev *w = input_get_drvdata(dev);
- 
- 	parport_disable_irq(w->parport);
-+	hrtimer_cancel(&w->timer);
- }
- 
- static int walkera0701_connect(struct walkera_dev *w, int parport)
-@@ -224,6 +225,9 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
- 	if (parport_claim(w->pardevice))
- 		goto init_err1;
- 
-+	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	w->timer.function = timer_handler;
-+
- 	w->input_dev = input_allocate_device();
- 	if (!w->input_dev)
- 		goto init_err2;
-@@ -254,8 +258,6 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
- 	if (err)
- 		goto init_err3;
- 
--	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	w->timer.function = timer_handler;
- 	return 0;
- 
-  init_err3:
-@@ -271,7 +273,6 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
- 
- static void walkera0701_disconnect(struct walkera_dev *w)
- {
--	hrtimer_cancel(&w->timer);
- 	input_unregister_device(w->input_dev);
- 	parport_release(w->pardevice);
- 	parport_unregister_device(w->pardevice);
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index aaf70aa..631a75d 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -234,7 +234,7 @@ static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
+ 	spin_lock(&sn->rpc_client_lock);
+ 	list_for_each_entry(clnt, &sn->all_clients, cl_clients) {
+ 		if (clnt->cl_program->pipe_dir_name == NULL)
+-			break;
++			continue;
+ 		if (rpc_clnt_skip_event(clnt, event))
+ 			continue;
+ 		if (atomic_inc_not_zero(&clnt->cl_count) == 0)
 -- 
 1.7.9.5
 
