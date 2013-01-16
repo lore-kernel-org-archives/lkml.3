@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab3APWAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:00:22 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:39473 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757245Ab3APWAU (ORCPT
+	id S1757030Ab3APWB1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:01:27 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48848 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756028Ab3APWB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:00:20 -0500
-Date: Wed, 16 Jan 2013 23:00:18 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sparc: kernel/sbus.c: fix memory leakage
-Message-ID: <20130116220018.GA14063@merkur.ravnborg.org>
-References: <1358199372-11976-1-git-send-email-dinggnu@gmail.com> <20130116211309.GA13993@merkur.ravnborg.org> <20130116211725.GC18593@gmail.com>
+	Wed, 16 Jan 2013 17:01:26 -0500
+Message-ID: <50F72333.60200@jp.fujitsu.com>
+Date: Wed, 16 Jan 2013 17:01:23 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130116211725.GC18593@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: akpm@linux-foundation.org
+CC: isimatu.yasuaki@jp.fujitsu.com, tony.luck@intel.com, hpa@zytor.com,
+        tangchen@cn.fujitsu.com, jiang.liu@huawei.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
+        yinghai@kernel.org, rob@landley.net, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
+        guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
+        jaegeuk.hanse@gmail.com, glommer@parallels.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com> <50F440F5.3030006@zytor.com> <20130114143456.3962f3bd.akpm@linux-foundation.org> <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com> <20130114144601.1c40dc7e.akpm@linux-foundation.org> <50F647E8.509@jp.fujitsu.com> <20130116132953.6159b673.akpm@linux-foundation.org>
+In-Reply-To: <20130116132953.6159b673.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 10:17:26PM +0100, Cong Ding wrote:
-> On Wed, Jan 16, 2013 at 10:13:09PM +0100, Sam Ravnborg wrote:
-> > On Mon, Jan 14, 2013 at 10:36:08PM +0100, Cong Ding wrote:
-> > > the variable iommu and strbuf are not freed if it goes to error.
-> > > 
-> > > Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> > > ---
-> > >  arch/sparc/kernel/sbus.c |    8 ++++++--
-> > >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/arch/sparc/kernel/sbus.c b/arch/sparc/kernel/sbus.c
-> > > index 1271b3a..0b66e53 100644
-> > > --- a/arch/sparc/kernel/sbus.c
-> > > +++ b/arch/sparc/kernel/sbus.c
-> > > @@ -555,10 +555,10 @@ static void __init sbus_iommu_init(struct platform_device *op)
-> > >  
-> > >  	iommu = kzalloc(sizeof(*iommu), GFP_ATOMIC);
-> > >  	if (!iommu)
-> > > -		goto fatal_memory_error;
-> > > +		goto fatal_iommu_memory_error;
-> > >  	strbuf = kzalloc(sizeof(*strbuf), GFP_ATOMIC);
-> > >  	if (!strbuf)
-> > > -		goto fatal_memory_error;
-> > > +		goto fatal_strbuf_memory_error;
-> > >  
-> > >  	op->dev.archdata.iommu = iommu;
-> > >  	op->dev.archdata.stc = strbuf;
-> > > @@ -656,6 +656,10 @@ static void __init sbus_iommu_init(struct platform_device *op)
-> > >  	return;
-> > >  
-> > >  fatal_memory_error:
-> > > +	kfree(strbuf);
-> > > +fatal_strbuf_memory_error:
-> > > +	kfree(iommu);
-> > > +fatal_iommu_memory_error:
-> > >  	prom_printf("sbus_iommu_init: Fatal memory allocation error.\n");
-> > >  }
-> > kfree is a noop if passed a null pointer.
-> > So you can just add the missing kfree's to fix this.
-> > 
-> > 	Sam
-> as far as I know, most codes in the kernel are in the same style as this
-> patch, but if you really prefer to do in the way you described I can send
-> a new version.
+On 1/16/2013 4:29 PM, Andrew Morton wrote:
+> On Wed, 16 Jan 2013 15:25:44 +0900
+> Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+> 
+>>>
+>>> Things I'm wondering:
+>>>
+>>> - is there *really* a case for retaining the boot option if/when
+>>>    SRAT support is available?
+>>
+>> Yes. If SRAT support is available, all memory which enabled hotpluggable
+>> bit are managed by ZONEMOVABLE. But performance degradation may
+>> occur by NUMA because we can only allocate anonymous page and page-cache
+>> from these memory.
+>>
+>> In this case, if user cannot change SRAT information, user needs a way to
+>> select/set removable memory manually.
+> 
+> If I understand this correctly you mean that once SRAT parsing is
+> implemented, the user can use movablecore_map to override that SRAT
+> parsing, yes?  That movablecore_map will take precedence over SRAT?
 
-I prefer the simpler variant.
-Please redo.
+I think movablecore_map (I prefer movablemem than it, btw) should behave so.
+because of, for past three years, almost all memory hotplug bug was handled
+only I and kamezawa-san and, afaik, both don't have hotremove aware specific
+hardware.
 
-	Sam
+So, if the new feature require specific hardware, we can't maintain this area
+any more.
+
+
