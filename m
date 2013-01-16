@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab3APQjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:39:45 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53921 "EHLO
+	id S932332Ab3APQjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:39:54 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53925 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076Ab3APQjm (ORCPT
+	with ESMTP id S932313Ab3APQju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:39:42 -0500
-Subject: [PATCH 07/10] goldfish: power device
+	Wed, 16 Jan 2013 11:39:50 -0500
+Subject: [PATCH 08/10] goldfish: real time clock
 To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
         mikechan@google.com
 From: Alan Cox <alan@linux.intel.com>
-Date: Wed, 16 Jan 2013 16:59:50 +0000
-Message-ID: <20130116165949.15183.92580.stgit@bob.linux.org.uk>
+Date: Wed, 16 Jan 2013 17:00:02 +0000
+Message-ID: <20130116170001.15183.41023.stgit@bob.linux.org.uk>
 In-Reply-To: <20130116165552.15183.92942.stgit@bob.linux.org.uk>
 References: <20130116165552.15183.92942.stgit@bob.linux.org.uk>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Lockwood <lockwood@android.com>
+From: Arve Hjønnevåg <arve@google.com>
 
-Add the emulated power driver for the Goldfish platform.
-
-This folds together the code from the Google tree, Jun Nakajima's cleanups
-and x86 porting work, and then a tidy up to pass checkpatch.
+Gets the current time from the host. Alarms are not supported yet.
 
 Signed-off-by: Mike A. Chan <mikechan@google.com>
-[cleanup and x86 support]
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
-Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
-Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
-Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
-[ported to 3.4]
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+[Ported to 3.4]
 Signed-off-by: Tom Keel <thomas.keel@intel.com>
-[ported to 3.7 and final tidy]
+[Cleaned up to use ioremap, types, unload etc]
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/power/Kconfig            |    8 +
- drivers/power/Makefile           |    1 
- drivers/power/goldfish_battery.c |  251 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 259 insertions(+), 1 deletion(-)
- create mode 100644 drivers/power/goldfish_battery.c
+ drivers/rtc/Kconfig        |    9 +++
+ drivers/rtc/Makefile       |    1 
+ drivers/rtc/rtc-goldfish.c |  140 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 150 insertions(+)
+ create mode 100644 drivers/rtc/rtc-goldfish.c
 
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 9f45e2f..0c5208d 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -346,8 +346,14 @@ config AB8500_BM
- 	help
- 	  Say Y to include support for AB8500 battery management.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 1466e6a..fa5a807 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -998,6 +998,15 @@ config RTC_DRV_BFIN
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-bfin.
  
--source "drivers/power/reset/Kconfig"
-+config BATTERY_GOLDFISH
-+	tristate "Goldfish battery driver"
++config RTC_DRV_GOLDFISH
++	tristate "GOLDFISH"
 +	depends on GOLDFISH
 +	help
-+	  Say Y to enable support for the battery and AC power in the
-+	  Goldfish emulator.
- 
-+source "drivers/power/reset/Kconfig"
- endif # POWER_SUPPLY
- 
- source "drivers/power/avs/Kconfig"
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index b11e0c7..a9f5c06 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -20,6 +20,7 @@ obj-$(CONFIG_BATTERY_DS2760)	+= ds2760_battery.o
- obj-$(CONFIG_BATTERY_DS2780)	+= ds2780_battery.o
- obj-$(CONFIG_BATTERY_DS2781)	+= ds2781_battery.o
- obj-$(CONFIG_BATTERY_DS2782)	+= ds2782_battery.o
-+obj-$(CONFIG_BATTERY_GOLDFISH)	+= goldfish_battery.o
- obj-$(CONFIG_BATTERY_PMU)	+= pmu_battery.o
- obj-$(CONFIG_BATTERY_OLPC)	+= olpc_battery.o
- obj-$(CONFIG_BATTERY_TOSA)	+= tosa_battery.o
-diff --git a/drivers/power/goldfish_battery.c b/drivers/power/goldfish_battery.c
++	  RTC driver for Goldfish Virtual Platform
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-goldfish.
++
+ config RTC_DRV_RS5C313
+ 	tristate "Ricoh RS5C313"
+ 	depends on SH_LANDISK
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index f774531..e24133f 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -52,6 +52,7 @@ obj-$(CONFIG_RTC_DRV_EM3027)	+= rtc-em3027.o
+ obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
+ obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
+ obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
++obj-$(CONFIG_RTC_DRV_GOLDFISH)	+= rtc-goldfish.o
+ obj-$(CONFIG_RTC_DRV_HID_SENSOR_TIME) += rtc-hid-sensor-time.o
+ obj-$(CONFIG_RTC_DRV_IMXDI)	+= rtc-imxdi.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
+diff --git a/drivers/rtc/rtc-goldfish.c b/drivers/rtc/rtc-goldfish.c
 new file mode 100644
-index 0000000..222abac
+index 0000000..c67cd9e
 --- /dev/null
-+++ b/drivers/power/goldfish_battery.c
-@@ -0,0 +1,251 @@
++++ b/drivers/rtc/rtc-goldfish.c
+@@ -0,0 +1,140 @@
 +/*
-+ * Power supply driver for the goldfish emulator
-+ *
-+ * Copyright (C) 2008 Google, Inc.
++ * Copyright (C) 2007 Google, Inc.
 + * Copyright (C) 2012 Intel, Inc.
-+ * Author: Mike Lockwood <lockwood@android.com>
 + *
 + * This software is licensed under the terms of the GNU General Public
 + * License version 2, as published by the Free Software Foundation, and
@@ -106,237 +95,129 @@ index 0000000..222abac
 + *
 + */
 +
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
-+#include <linux/types.h>
-+#include <linux/pci.h>
 +#include <linux/interrupt.h>
-+#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/irq.h>
++#include <linux/platform_device.h>
++#include <linux/rtc.h>
++#include <linux/export.h>
++#include <linux/slab.h>
 +
++#define GOLDFISH_TIME_LOW		0x00
++#define GOLDFISH_TIME_HIGH		0x04
++#define GOLDFISH_ALARM_LOW		0x08
++#define GOLDFISH_ALARM_HIGH		0x0C
++#define GOLDFISH_CLEAR_TIMER_INT	0x10
++#define GOLDFISH_CLEAR_ALARM		0x14
 +
-+struct goldfish_battery_data {
-+	void __iomem *reg_base;
-+	int irq;
-+	spinlock_t lock;
-+
-+	struct power_supply battery;
-+	struct power_supply ac;
++struct goldfish_rtc {
++	void __iomem *base;
++	u32 irq;
++	struct rtc_device *rtc;
 +};
 +
-+#define GOLDFISH_BATTERY_READ(data, addr)   (readl(data->reg_base + addr))
-+#define GOLDFISH_BATTERY_WRITE(data, addr, x)   (writel(x, data->reg_base + addr))
-+
-+
-+/* temporary variable used between goldfish_battery_probe() and goldfish_battery_open() */
-+static struct goldfish_battery_data *battery_data;
-+
-+enum {
-+	/* status register */
-+	BATTERY_INT_STATUS	    = 0x00,
-+	/* set this to enable IRQ */
-+	BATTERY_INT_ENABLE	    = 0x04,
-+
-+	BATTERY_AC_ONLINE       = 0x08,
-+	BATTERY_STATUS          = 0x0C,
-+	BATTERY_HEALTH          = 0x10,
-+	BATTERY_PRESENT         = 0x14,
-+	BATTERY_CAPACITY        = 0x18,
-+
-+	BATTERY_STATUS_CHANGED	= 1U << 0,
-+	AC_STATUS_CHANGED	= 1U << 1,
-+	BATTERY_INT_MASK        = BATTERY_STATUS_CHANGED | AC_STATUS_CHANGED,
-+};
-+
-+
-+static int goldfish_ac_get_property(struct power_supply *psy,
-+			enum power_supply_property psp,
-+			union power_supply_propval *val)
++static irqreturn_t goldfish_rtc_interrupt(int irq, void *dev_id)
 +{
-+	struct goldfish_battery_data *data = container_of(psy,
-+		struct goldfish_battery_data, ac);
-+	int ret = 0;
++	struct goldfish_rtc	*qrtc = dev_id;
++	unsigned long		events = 0;
 +
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_AC_ONLINE);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+	return ret;
++	writel(1, qrtc->base + GOLDFISH_CLEAR_TIMER_INT);
++	events = RTC_IRQF | RTC_AF;
++
++	rtc_update_irq(qrtc->rtc, 1, events);
++
++	return IRQ_HANDLED;
 +}
 +
-+static int goldfish_battery_get_property(struct power_supply *psy,
-+				 enum power_supply_property psp,
-+				 union power_supply_propval *val)
++static int goldfish_rtc_read_time(struct device *dev, struct rtc_time *tm)
 +{
-+	struct goldfish_battery_data *data = container_of(psy,
-+		struct goldfish_battery_data, battery);
-+	int ret = 0;
++	int64_t time;
++	struct goldfish_rtc *qrtc = platform_get_drvdata(
++						to_platform_device(dev));
 +
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_STATUS:
-+		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_STATUS);
-+		break;
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_HEALTH);
-+		break;
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_PRESENT);
-+		break;
-+	case POWER_SUPPLY_PROP_TECHNOLOGY:
-+		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
-+		break;
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_CAPACITY);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
++	time = readl(qrtc->base + GOLDFISH_TIME_LOW);
++	time |= (int64_t)readl(qrtc->base + GOLDFISH_TIME_HIGH) << 32;
++	do_div(time, NSEC_PER_SEC);
 +
-+	return ret;
++	rtc_time_to_tm(time, tm);
++	return 0;
 +}
 +
-+static enum power_supply_property goldfish_battery_props[] = {
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+	POWER_SUPPLY_PROP_CAPACITY,
++static const struct rtc_class_ops goldfish_rtc_ops = {
++	.read_time	= goldfish_rtc_read_time,
 +};
 +
-+static enum power_supply_property goldfish_ac_props[] = {
-+	POWER_SUPPLY_PROP_ONLINE,
-+};
-+
-+static irqreturn_t goldfish_battery_interrupt(int irq, void *dev_id)
-+{
-+	unsigned long irq_flags;
-+	struct goldfish_battery_data *data = dev_id;
-+	uint32_t status;
-+
-+	spin_lock_irqsave(&data->lock, irq_flags);
-+
-+	/* read status flags, which will clear the interrupt */
-+	status = GOLDFISH_BATTERY_READ(data, BATTERY_INT_STATUS);
-+	status &= BATTERY_INT_MASK;
-+
-+	if (status & BATTERY_STATUS_CHANGED)
-+		power_supply_changed(&data->battery);
-+	if (status & AC_STATUS_CHANGED)
-+		power_supply_changed(&data->ac);
-+
-+	spin_unlock_irqrestore(&data->lock, irq_flags);
-+	return status ? IRQ_HANDLED : IRQ_NONE;
-+}
-+
-+
-+static int goldfish_battery_probe(struct platform_device *pdev)
++static int goldfish_rtc_probe(struct platform_device *pdev)
 +{
 +	int ret;
 +	struct resource *r;
-+	struct goldfish_battery_data *data;
++	struct goldfish_rtc *qrtc;
 +
-+	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	if (data == NULL) {
++	qrtc = kzalloc(sizeof(*qrtc), GFP_KERNEL);
++	if (qrtc == NULL) {
 +		ret = -ENOMEM;
-+		goto err_data_alloc_failed;
++		goto err_qrtc_alloc_failed;
 +	}
-+	spin_lock_init(&data->lock);
-+
-+	data->battery.properties = goldfish_battery_props;
-+	data->battery.num_properties = ARRAY_SIZE(goldfish_battery_props);
-+	data->battery.get_property = goldfish_battery_get_property;
-+	data->battery.name = "battery";
-+	data->battery.type = POWER_SUPPLY_TYPE_BATTERY;
-+
-+	data->ac.properties = goldfish_ac_props;
-+	data->ac.num_properties = ARRAY_SIZE(goldfish_ac_props);
-+	data->ac.get_property = goldfish_ac_get_property;
-+	data->ac.name = "ac";
-+	data->ac.type = POWER_SUPPLY_TYPE_MAINS;
++	platform_set_drvdata(pdev, qrtc);
 +
 +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 +	if (r == NULL) {
-+		pr_err("%s: platform_get_resource failed\n", pdev->name);
 +		ret = -ENODEV;
 +		goto err_no_io_base;
 +	}
-+	data->reg_base = ioremap(r->start, r->end - r->start + 1);
-+	if (data->reg_base == NULL) {
-+		pr_err("%s: unable to remap MMIO\n", pdev->name);
++	qrtc->base = ioremap(r->start, 0x18);
++	if (qrtc->base == NULL) {
 +		ret = -ENOMEM;
 +		goto err_no_io_base;
 +	}
-+
-+	data->irq = platform_get_irq(pdev, 0);
-+	if (data->irq < 0) {
-+		pr_err("%s: platform_get_irq failed\n", pdev->name);
++	qrtc->irq = platform_get_irq(pdev, 0);
++	if (qrtc->irq < 0) {
 +		ret = -ENODEV;
 +		goto err_no_irq;
 +	}
++	qrtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
++					&goldfish_rtc_ops, THIS_MODULE);
++	if (IS_ERR(qrtc->rtc)) {
++		ret = PTR_ERR(qrtc->rtc);
++		goto err_rtc_device_register_failed;
++	}
 +
-+	ret = request_irq(data->irq, goldfish_battery_interrupt,
-+						IRQF_SHARED, pdev->name, data);
++	ret = request_irq(qrtc->irq, goldfish_rtc_interrupt, 0, pdev->name, qrtc);
 +	if (ret)
-+		goto err_request_irq_failed;
++		goto request_irq;
 +
-+	ret = power_supply_register(&pdev->dev, &data->ac);
-+	if (ret)
-+		goto err_ac_failed;
-+
-+	ret = power_supply_register(&pdev->dev, &data->battery);
-+	if (ret)
-+		goto err_battery_failed;
-+
-+	platform_set_drvdata(pdev, data);
-+	battery_data = data;
-+
-+	GOLDFISH_BATTERY_WRITE(data, BATTERY_INT_ENABLE, BATTERY_INT_MASK);
 +	return 0;
 +
-+err_battery_failed:
-+	power_supply_unregister(&data->ac);
-+err_ac_failed:
-+	free_irq(data->irq, data);
-+err_request_irq_failed:
++	free_irq(qrtc->irq, qrtc);
++request_irq:
++	rtc_device_unregister(qrtc->rtc);
++err_rtc_device_register_failed:
 +err_no_irq:
-+	iounmap(data->reg_base);
++	iounmap(qrtc->base);
 +err_no_io_base:
-+	kfree(data);
-+err_data_alloc_failed:
++	kfree(qrtc);
++err_qrtc_alloc_failed:
 +	return ret;
 +}
 +
-+static int goldfish_battery_remove(struct platform_device *pdev)
++static int goldfish_rtc_remove(struct platform_device *pdev)
 +{
-+	struct goldfish_battery_data *data = platform_get_drvdata(pdev);
-+
-+	power_supply_unregister(&data->battery);
-+	power_supply_unregister(&data->ac);
-+
-+	free_irq(data->irq, data);
-+	iounmap(data->reg_base);
-+	kfree(data);
-+	battery_data = NULL;
++	struct goldfish_rtc	*qrtc = platform_get_drvdata(pdev);
++	free_irq(qrtc->irq, qrtc);
++	rtc_device_unregister(qrtc->rtc);
++	iounmap(qrtc->base);
++	kfree(qrtc);
 +	return 0;
 +}
 +
-+static struct platform_driver goldfish_battery_device = {
-+	.probe		= goldfish_battery_probe,
-+	.remove		= goldfish_battery_remove,
++static struct platform_driver goldfish_timer = {
++	.probe = goldfish_rtc_probe,
++	.remove = goldfish_rtc_remove,
 +	.driver = {
-+		.name = "goldfish-battery"
++		.name = "goldfish_rtc"
 +	}
 +};
 +
-+module_platform_driver(goldfish_battery_device);
-+
-+MODULE_AUTHOR("Mike Lockwood lockwood@android.com");
++module_platform_driver(goldfish_timer);
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Battery driver for the Goldfish emulator");
 
