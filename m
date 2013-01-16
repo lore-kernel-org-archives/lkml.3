@@ -1,250 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab3APQ77 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:59:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757539Ab3APQ75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:59:57 -0500
-Date: Wed, 16 Jan 2013 19:03:56 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V6 3/3] tuntap: allow polling/writing/reading when
- detached
-Message-ID: <20130116170356.GC4257@redhat.com>
-References: <1358351078-58915-1-git-send-email-jasowang@redhat.com>
- <1358351078-58915-4-git-send-email-jasowang@redhat.com>
+	id S1757894Ab3APRAK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:00:10 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:34600 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757784Ab3APRAF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 12:00:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358351078-58915-4-git-send-email-jasowang@redhat.com>
+In-Reply-To: <20130116105327.GA16543@mudshark.cambridge.arm.com>
+References: <003301cde30b$c584c2d0$508e4870$%cho@samsung.com>
+	<20130116105327.GA16543@mudshark.cambridge.arm.com>
+Date: Thu, 17 Jan 2013 02:00:03 +0900
+X-Google-Sender-Auth: 9JbHB5M7mRjGyM9Jt5iCydYzKXg
+Message-ID: <CAHQjnOMonei8ZS+wKhv4REXq_dpXPdnGrdKEfkdJ+J7QF7kf8w@mail.gmail.com>
+Subject: Re: [PATCH v6 00/12] iommu/exynos: Fixes and Enhancements of System
+ MMU driver with DT
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Hyunwoong Kim <khw0178.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>, Joerg Roedel <joro@8bytes.org>,
+        Subash Patel <supash.ramaswamy@linaro.org>,
+        Rahul Sharma <rahul.sharma@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 11:44:38PM +0800, Jason Wang wrote:
-> We forbid polling, writing and reading when the file were detached, this may
-> complex the user in several cases:
-> 
-> - when guest pass some buffers to vhost/qemu and then disable some queues,
->   host/qemu needs to do its own cleanup on those buffers which is complex
->   sometimes. We can do this simply by allowing a user can still write to an
->   disabled queue. Write to an disabled queue will cause the packet pass to the
->   kernel and read will get nothing.
-> - align the polling behavior with macvtap which never fails when the queue is
->   created. This can simplify the polling errors handling of its user (e.g vhost)
-> 
-> In order to achieve this, tfile->tun were not assign to NULL when detached. And
-> tfile->tun were converted to be RCU protected in order to let the data path can
-> check whether the file is deated in a lockless manner. This will be used to
-> prevent the flow caches from being updated for a detached queue.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/tun.c |   45 ++++++++++++++++++++++++++-------------------
->  1 files changed, 26 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index c81680d..ec539a9 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -139,7 +139,7 @@ struct tun_file {
->  	unsigned int flags;
->  	u16 queue_index;
->  	struct list_head next;
-> -	struct tun_struct *detached;
-> +	struct tun_struct __rcu *detached;
->  };
->  
->  struct tun_flow_entry {
-> @@ -295,11 +295,12 @@ static void tun_flow_cleanup(unsigned long data)
->  }
->  
->  static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
-> -			    u16 queue_index)
-> +			    struct tun_file *tfile)
->  {
->  	struct hlist_head *head;
->  	struct tun_flow_entry *e;
->  	unsigned long delay = tun->ageing_time;
-> +	u16 queue_index = tfile->queue_index;
->  
->  	if (!rxhash)
->  		return;
-> @@ -308,7 +309,7 @@ static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
->  
->  	rcu_read_lock();
->  
-> -	if (tun->numqueues == 1)
-> +	if (tun->numqueues == 1 || rcu_dereference(tfile->detached))
->  		goto unlock;
->  
->  	e = tun_flow_find(head, rxhash);
+On Wed, Jan 16, 2013 at 7:53 PM, Will Deacon <will.deacon@arm.com> wrote:
+> On Wed, Dec 26, 2012 at 01:53:15AM +0000, Cho KyongHo wrote:
+>> notice: v6 patch-set is rebased on next/iommu-exynos branch of
+>> linux-samsung.git.  This patch-set does not include 2 patches (05 and 06
+>> patches in v5 patch-se) because they alread exist already in the branch.
+>
+> Given that devicetree-discuss has been notably absent from discussion
+> surrounding the proposed binding, I think that including that patch in
+> linux-samsung.git and dropping it from this series is rather premature.
+>
+> I have comments on the binding, so I'll dig up the version you posted in v5
+> and add devicetree-discuss to CC.
 
-Sorry, still an issue with this one.
+Thank you.
 
+>> The current exynos-iommu(System MMU) driver does not work autonomously
+>> since it is lack of support for power management of peripheral blocks.
+>> For example, MFC device driver must ensure that its System MMU is disabled
+>> before MFC block is power-down not to invalidate IOTLB in the System MMU
+>> when I/O memory mapping is changed. Because A System MMU is resides in the
+>> same H/W block, access to control registers of System MMU while the H/W
+>> block is turned off must be prohibited.
+>>
+>> This set of changes solves the above problem with setting each System MMUs
+>> as the parent of the device which owns the System MMU to recieve the
+>> information when the device is turned off or turned on.
+>>
+>> Another big change to the driver is the support for devicetree.
+>> The bindings for System MMU is described in
+>> Documentation/devicetree/bindings/arm/samsung/system-mmu.txt
+>
+> This should probably be Documentation/devicetree/bindings/iommu/ no?
 
-                u16 index = tfile->queue_index;
-                BUG_ON(index >= tun->numqueues);
-                dev = tun->dev;
+Please let me check it.
 
-                rcu_assign_pointer(tun->tfiles[index],
-                                   tun->tfiles[tun->numqueues - 1]);
-                rcu_assign_pointer(tfile->tun, NULL);
-                ntfile = rtnl_dereference(tun->tfiles[index]);
-                ntfile->queue_index = index;
+Thank you.
 
-                --tun->numqueues;
-                if (clean)
-                        sock_put(&tfile->sk);
-                else
-                        tun_disable_queue(tun, tfile);
-
-You should first disable queue then synchronize network
-only then play with tfiles array.
-As it is you might have removed file from array but
-did not set detached flag yet, so queue_index
-above is stable.
-
-On enable, clear detached last thing.
-
-> @@ -384,16 +385,16 @@ static void tun_set_real_num_queues(struct tun_struct *tun)
->  
->  static void tun_disable_queue(struct tun_struct *tun, struct tun_file *tfile)
->  {
-> -	tfile->detached = tun;
-> +	rcu_assign_pointer(tfile->detached, tun);
->  	list_add_tail(&tfile->next, &tun->disabled);
->  	++tun->numdisabled;
->  }
->  
->  static struct tun_struct *tun_enable_queue(struct tun_file *tfile)
->  {
-> -	struct tun_struct *tun = tfile->detached;
-> +	struct tun_struct *tun = rtnl_dereference(tfile->detached);
->  
-> -	tfile->detached = NULL;
-> +	rcu_assign_pointer(tfile->detached, NULL);
->  	list_del_init(&tfile->next);
->  	--tun->numdisabled;
->  	return tun;
-> @@ -402,26 +403,27 @@ static struct tun_struct *tun_enable_queue(struct tun_file *tfile)
->  static void __tun_detach(struct tun_file *tfile, bool clean)
->  {
->  	struct tun_file *ntfile;
-> -	struct tun_struct *tun;
-> +	struct tun_struct *tun, *detached;
->  	struct net_device *dev;
->  
->  	tun = rtnl_dereference(tfile->tun);
-> +	detached = rtnl_dereference(tfile->detached);
->  
-> -	if (tun) {
-> +	if (tun && !detached) {
->  		u16 index = tfile->queue_index;
->  		BUG_ON(index >= tun->numqueues);
->  		dev = tun->dev;
->  
->  		rcu_assign_pointer(tun->tfiles[index],
->  				   tun->tfiles[tun->numqueues - 1]);
-> -		rcu_assign_pointer(tfile->tun, NULL);
->  		ntfile = rtnl_dereference(tun->tfiles[index]);
->  		ntfile->queue_index = index;
->  
->  		--tun->numqueues;
-> -		if (clean)
-> +		if (clean) {
-> +			rcu_assign_pointer(tfile->tun, NULL);
->  			sock_put(&tfile->sk);
-> -		else
-> +		} else
->  			tun_disable_queue(tun, tfile);
->  
->  		synchronize_net();
-> @@ -429,7 +431,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
->  		/* Drop read queue */
->  		skb_queue_purge(&tfile->sk.sk_receive_queue);
->  		tun_set_real_num_queues(tun);
-> -	} else if (tfile->detached && clean) {
-> +	} else if (detached && clean) {
->  		tun = tun_enable_queue(tfile);
->  		sock_put(&tfile->sk);
->  	}
-> @@ -466,6 +468,10 @@ static void tun_detach_all(struct net_device *dev)
->  		rcu_assign_pointer(tfile->tun, NULL);
->  		--tun->numqueues;
->  	}
-> +	list_for_each_entry(tfile, &tun->disabled, next) {
-> +		wake_up_all(&tfile->wq.wait);
-> +		rcu_assign_pointer(tfile->tun, NULL);
-> +	}
->  	BUG_ON(tun->numqueues != 0);
->  
->  	synchronize_net();
-> @@ -496,7 +502,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
->  		goto out;
->  
->  	err = -EINVAL;
-> -	if (rtnl_dereference(tfile->tun))
-> +	if (rtnl_dereference(tfile->tun) && !rtnl_dereference(tfile->detached))
->  		goto out;
->  
->  	err = -EBUSY;
-> @@ -504,7 +510,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
->  		goto out;
->  
->  	err = -E2BIG;
-> -	if (!tfile->detached &&
-> +	if (!rtnl_dereference(tfile->detached) &&
->  	    tun->numqueues + tun->numdisabled == MAX_TAP_QUEUES)
->  		goto out;
->  
-> @@ -521,7 +527,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
->  	rcu_assign_pointer(tun->tfiles[tun->numqueues], tfile);
->  	tun->numqueues++;
->  
-> -	if (tfile->detached)
-> +	if (rtnl_dereference(tfile->detached))
->  		tun_enable_queue(tfile);
->  	else
->  		sock_hold(&tfile->sk);
-> @@ -1195,7 +1201,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
->  	tun->dev->stats.rx_packets++;
->  	tun->dev->stats.rx_bytes += len;
->  
-> -	tun_flow_update(tun, rxhash, tfile->queue_index);
-> +	tun_flow_update(tun, rxhash, tfile);
->  	return total_len;
->  }
->  
-> @@ -1552,7 +1558,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->  	struct net_device *dev;
->  	int err;
->  
-> -	if (tfile->detached)
-> +	if (rtnl_dereference(tfile->detached))
->  		return -EINVAL;
->  
->  	dev = __dev_get_by_name(net, ifr->ifr_name);
-> @@ -1796,7 +1802,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
->  	rtnl_lock();
->  
->  	if (ifr->ifr_flags & IFF_ATTACH_QUEUE) {
-> -		tun = tfile->detached;
-> +		tun = rtnl_dereference(tfile->detached);
->  		if (!tun) {
->  			ret = -EINVAL;
->  			goto unlock;
-> @@ -1807,7 +1813,8 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
->  		ret = tun_attach(tun, file);
->  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
->  		tun = rtnl_dereference(tfile->tun);
-> -		if (!tun || !(tun->flags & TUN_TAP_MQ))
-> +		if (!tun || !(tun->flags & TUN_TAP_MQ) ||
-> +		    rtnl_dereference(tfile->detached))
->  			ret = -EINVAL;
->  		else
->  			__tun_detach(tfile, false);
-> -- 
-> 1.7.1
+KyongHo.
