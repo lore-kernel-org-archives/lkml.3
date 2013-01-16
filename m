@@ -1,40 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab3APOMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:12:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34921 "EHLO mx1.redhat.com"
+	id S1753253Ab3APOOs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:14:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53958 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751363Ab3APOMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:12:43 -0500
-Date: Wed, 16 Jan 2013 16:12:40 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [GIT PULL] KVM fixes for 3.8-rc3
-Message-ID: <20130116141240.GA29965@redhat.com>
+	id S1751222Ab3APOOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 09:14:45 -0500
+Date: Wed, 16 Jan 2013 15:14:36 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, jbeulich@suse.com,
+        dhowells@redhat.com, wency@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, paul.gortmaker@windriver.com,
+        laijs@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie,
+        minchan@kernel.org, aquini@redhat.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, fenghua.yu@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        davem@davemloft.net, michael@ellerman.id.au,
+        gerald.schaefer@de.ibm.com, gregkh@linuxfoundation.org, x86@kernel.org,
+        linux390@de.ibm.com, linux-ia64@vger.kernel.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        tangchen@cn.fujitsu.com
+Subject: Re: [PATCH v3 1/2] memory-hotplug: introduce
+ CONFIG_HAVE_BOOTMEM_INFO_NODE and revert register_page_bootmem_info_node()
+ when platform not support
+Message-ID: <20130116141436.GE343@dhcp22.suse.cz>
+References: <1358324059-9608-1-git-send-email-linfeng@cn.fujitsu.com>
+ <1358324059-9608-2-git-send-email-linfeng@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1358324059-9608-2-git-send-email-linfeng@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 16-01-13 16:14:18, Lin Feng wrote:
+[...]
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 278e3ab..f8c5799 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -162,10 +162,18 @@ config MOVABLE_NODE
+>  	  Say Y here if you want to hotplug a whole node.
+>  	  Say N here if you want kernel to use memory on all nodes evenly.
+>  
+> +#
+> +# Only be set on architectures that have completely implemented memory hotplug
+> +# feature. If you are not sure, don't touch it.
+> +#
+> +config HAVE_BOOTMEM_INFO_NODE
+> +	def_bool n
+> +
+>  # eventually, we can have this option just 'select SPARSEMEM'
+>  config MEMORY_HOTPLUG
+>  	bool "Allow for memory hot-add"
+>  	select MEMORY_ISOLATION
+> +	select HAVE_BOOTMEM_INFO_NODE if X86_64
+>  	depends on SPARSEMEM || X86_64_ACPI_NUMA
+>  	depends on HOTPLUG && ARCH_ENABLE_MEMORY_HOTPLUG
+>  	depends on (IA64 || X86 || PPC_BOOK3S_64 || SUPERH || S390)
 
-Linus,
+I am still not sure I understand the relation to MEMORY_HOTREMOVE.
+Is register_page_bootmem_info_node required/helpful even if
+!CONFIG_MEMORY_HOTREMOVE?
 
-Please pull from
-
-git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
-
-To receive the following KVM bug fixes
-
-
-Christian Borntraeger (1):
-      s390/kvm: Fix BUG in include/linux/kvm_host.h:745
-
- arch/s390/kvm/kvm-s390.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---
-			Gleb.
+Also, now that I am thinking about that more, maybe it would
+be cleaner to put the select into arch/x86/Kconfig and do it
+same as ARCH_ENABLE_MEMORY_{HOTPLUG,HOTREMOVE} (and name it
+ARCH_HAVE_BOOTMEM_INFO_NODE).
+-- 
+Michal Hocko
+SUSE Labs
