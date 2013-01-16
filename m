@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062Ab3APWvs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:51:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50207 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757717Ab3APWvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:51:46 -0500
-Date: Wed, 16 Jan 2013 17:51:42 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, pjones@redhat.com,
-        hpa@zytor.com, dhowells@redhat.com, jwboyer@redhat.com,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-Message-ID: <20130116225141.GC4222@redhat.com>
-References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
- <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
- <1358375723.4593.206.camel@falcor1>
+	id S1758107Ab3APWvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:51:52 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:50242 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757717Ab3APWvt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 17:51:49 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkECAG6Zu08YNOOE/2dsb2JhbAANN4F7gzKrG4ZmAQEBAQMjVQEQCw4KAgIFFgsCAgkDAgECAUUGDQEHAQGvGJJ7gSaOCoEUA4hClXeJWQ
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="212737197"
+Message-ID: <50F72F03.5070806@teksavvy.com>
+Date: Wed, 16 Jan 2013 17:51:47 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358375723.4593.206.camel@falcor1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
+References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com>
+In-Reply-To: <50F63882.8000607@parallels.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 05:35:23PM -0500, Mimi Zohar wrote:
-> On Tue, 2013-01-15 at 16:34 -0500, Vivek Goyal wrote:
-> > If a binary is signed, verify its signature. If signature is not valid, do
-> > not allow execution. If binary is not signed, execution is allowed
-> > unconditionally.
+On 13-01-16 12:20 AM, Stanislav Kinsbursky wrote:
 > 
-> Basically you're building the policy into the executable.  Anyone can
-> rebuild the executable and, without signing it, install/replace an
-> existing one.  How is this safe?  The signature verification policy
-> needs to be defined independently of the executable.
+> Mark, could you provide any call traces?
 
-Upon signature verification this executable will also acquire a new
-capability(say CAP_SIGNED). And some of the services can be allowed only
-if process has that new capability. (TODO item)
+Call traces from where/what?
+There's this one, posted earlier in the BUG report:
 
-So if somebody removes the signature and launches same executable, sure
-it will run but it will fail to get some of the kernel services. For
-example, in this case it should not be able to call sys_kexec() system
-call.
+kernel BUG at net/sunrpc/svc_xprt.c:921!
+Call Trace:
+ [<ffffffffa016a56a>] ? svc_recv+0xcc/0x338 [sunrpc]
+ [<ffffffffa0318bfc>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
+ [<ffffffffa0318c19>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
+ [<ffffffff810407e6>] ? kthread+0x81/0x89
+ [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
+ [<ffffffff812ea62c>] ? ret_from_fork+0x7c/0xb0
+ [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
 
-Right now my goal is to not run anything which is not signed. For that
-we will need a fully signed user space. And I am not sure that's going
-to happen in near future, atleast for the generic case.
-
-Thanks
-Vivek
