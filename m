@@ -1,151 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab3APBVj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 20:21:39 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:48573 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756264Ab3APBVh (ORCPT
+	id S1757213Ab3APBZe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 20:25:34 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20057 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756264Ab3APBZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 20:21:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130115165042.1daadec2.akpm@linux-foundation.org>
-References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
- <1357712474-27595-3-git-send-email-minchan@kernel.org> <20130109162602.53a60e77.akpm@linux-foundation.org>
- <20130110022306.GB14685@blaptop> <20130110135828.c88bcaf1.akpm@linux-foundation.org>
- <20130111044327.GB6183@blaptop> <20130115160957.9ef860d7.akpm@linux-foundation.org>
- <CAPz6YkWC+y+jqD+0UNe+cD6OyveursZaahxc26mH81DOGD7sNw@mail.gmail.com> <20130115165042.1daadec2.akpm@linux-foundation.org>
-From: Sonny Rao <sonnyrao@google.com>
-Date: Tue, 15 Jan 2013 17:21:15 -0800
-Message-ID: <CAPz6YkXNECSitpQvUNst0HW-uEWWssix-H1Cm_QfWSTMQE0m8Q@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm: forcely swapout when we are out of page cache
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+	Tue, 15 Jan 2013 20:25:32 -0500
+X-Authority-Analysis: v=2.0 cv=UsXhxpMB c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=upmiaRri9ugA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=vw99MyFtH44A:10 a=6n3r0VZ_rVv3qROvMsUA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358299528.4068.38.camel@gandalf.local.home>
+Subject: Re: [RFC][PATCH v7 1/2] trace,x86: add x86 irq vector tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Bryan Freed <bfreed@google.com>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Sameer Nanda <snanda@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Date: Tue, 15 Jan 2013 20:25:28 -0500
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3D281@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3D281@USINDEM103.corp.hds.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 4:50 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 15 Jan 2013 16:32:38 -0800
-> Sonny Rao <sonnyrao@google.com> wrote:
->
->> >> It's for saving the power to increase batter life.
->> >
->> > It might well have that effect, dunno.  That wasn't my intent.  Testing
->> > needed!
->> >
->>
->> Power saving is certainly why we had it on originally for ChromeOS,
->> but we turned it off due to misbehavior.
->>
->> Specifically, we saw a pathological behavior where we'd end up writing
->> to the disk every few seconds when laptop mode was turned on.  This
->> turned out to be because laptop-mode sets a timer which is used to
->> check for new dirty data after the initial flush and writes that out
->> before spinning the disk down, and on ChromeOS various chatty daemons
->> on the system were logging and dirtying data more or less constantly
->> so there was almost always something there to be written out.  So what
->> ended up happening was that we'd need to do a read, then wake up the
->> disk, and then keep writing every few seconds for a long period of
->> time, which had the opposite effect from what we wanted.
->
-> So after the read, the disk would chatter away doing a dribble of
-> writes?  That sounds like plain brokenness (and why did the chrome guys
-> not tell anyone about it?!?!?).
+On Thu, 2013-01-10 at 17:33 +0000, Seiji Aguchi wrote:
 
-Yes, either read or fsync.  I ranted about it a little (here:
-http://marc.info/?l=linux-mm&m=135422986220016&w=4), but mostly
-assumed it was working as expected, and that ChromeOS was just
-dirtying data at an absurd pace.  Might have been a bad assumption and
-I could have been more explicit about reporting it, sorry about that.
+> diff --git a/arch/x86/include/asm/trace/irq_vectors.h b/arch/x86/include/asm/trace/irq_vectors.h
+> new file mode 100644
+> index 0000000..9bcb27b
+> --- /dev/null
+> +++ b/arch/x86/include/asm/trace/irq_vectors.h
+> @@ -0,0 +1,154 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM irq_vectors
+> +
+> +#if !defined(_TRACE_IRQ_VECTORS_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_IRQ_VECTORS_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +extern void trace_irq_vector_regfunc(void);
+> +extern void trace_irq_vector_unregfunc(void);
+> +
+> +#define DECLARE_IRQ_VECTOR_EVENT(name)				\
+> +TRACE_EVENT_FN(name,						\
+> +	TP_PROTO(int vector),					\
+> +								\
+> +	TP_ARGS(vector),					\
+> +								\
+> +	TP_STRUCT__entry(					\
+> +		__field(	int,	vector	)		\
+> +	),							\
+> +								\
+> +	TP_fast_assign(						\
+> +		__entry->vector = vector;			\
+> +	),							\
+> +								\
+> +	TP_printk("vector=%d", __entry->vector),		\
+> +	trace_irq_vector_regfunc, trace_irq_vector_unregfunc	\
+> +);
+> +
+> +/*
+> + * local_timer_entry - called before entering a local timer interrupt
+> + * vector handler
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(local_timer_entry)
 
-> The idea is that when the physical
-> read occurs, we should opportunistically flush out all pending writes,
-> while the disk is running.  Then go back into
-> buffer-writes-for-a-long-time mode.
->
+This is a great big waste of space. Add the below patch to your series
+and then just do:
 
-See the comment in page-writeback.c above laptop_io_completion():
+DECLARE_EVENT_CLASS(x86_irq_vector,
 
-/*
- * We've spun up the disk and we're in laptop mode: schedule writeback
- * of all dirty data a few seconds from now.  If the flush is already
-scheduled
- * then push it back - the user is still using the disk.
- */
-void laptop_io_completion(struct backing_dev_info *info)
+	TP_PROTO(int vector),
 
-What ends up happening fairly often is that there's always something
-dirty with that few seconds (or even one second) on our system.
+	TP_ARGS(vector),
 
-> I forget what we did with fsync() and friends.  Quite a lot of
-> pestiferous applications like to do fsync quite frequently.  I had a
-> special kernel in which fsync() consisted of "return 0;", but ISTR
-> there being some resistance to productizing that idea.
->
+	TP_STRUCT__entry(
+		__field(		int,	vector	)
+	),
 
-Yeah, we have this problem and we try to fix up users of fsync() as we
-find them but it's a bit of a never-ending battle.  Such a feature
-would be useful.
+	TP_fast_assign(
+		__entry->vector = vector;
+	),
 
->>  The issues
->> with zram swap just confirmed that we didn't want laptop mode.
->>
->> Most of our devices have had SSDs rather than spinning disks, so noise
->> wasn't an issue, although when we finally did support an official
->> device with a spinning disk people certainly complained when the disk
->> started clicking all the time
->
-> hm, it's interesting that the general idea still has vailidity.  It
-> would be a fun project for someone to sniff out all the requirements,
-> fixup/enhance/rewrite the current implementation and generally make it
-> all spiffy and nice.
->
->> (due to the underflow in the writeback code).
->
-> To what underflow do you refer?
->
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=c8b74c2f6604923de91f8aa6539f8bb934736754
+	TP_printk("vector=%d", __entry->vector)
+);
 
-That particular bug caused writes to happen almost instantly after the
-underflow ocurred, and consequently slowed write throughput to a crawl
-because there was no chance for contiguous writes to gather.
+#define DEFINE_IRQ_VECTOR_EVENT(name) \	
+DEFINE_EVENT_FN(name, \
+	TP_PROTO(int vector), \
+	TP_ARGS(vector), \
+	trace_irq_vector_regfunc, \
+	trace_irq_vector_unregfunc);
 
->> We do know that current SSDs save a significant amount of
->> power when they go into standby, so minimizing disk writes is still
->> useful on these devices.
->>
->> A very simple laptop mode which only does a single sync when we spin
->> up the disk, and didn't bother with the timer behavior or muck with
->> swap behavior might be something that is more useful for us, and I
->> suspect it might simplify the writeback code somewhat as well.
->
-> I don't think I understand the problem with the timer.  My original RFC
-> said
->
-> : laptop_writeback_centisecs
-> : --------------------------
-> :
-> : This tunable determines the maximum age of dirty data when the machine
-> : is operating in Laptop mode.  The default value is 30000 - five
-> : minutes.  This means that if applications are generating a small amount
-> : of write traffic, the disk will spin up once per five minutes.
-> :
-> : If the disk is spun up for any other reason (such as for a read) then
-> : all dirty data will be flushed anyway, and this timer is reset to zero.
->
-> which all sounds very sensible and shouldn't exhibit the behavior you
-> observed.
->
+And keep the rest the same.
 
-The laptop-mode timer get re-armed after each writeback (see above
-laptop_io_completion function), even if it was caused by laptop-mode
-itself.  So, if something is continually dirtying a little bit of
-data, we end up getting a chain of small writes which keeps the disk
-awake for long periods of time.
+> +
+> +/*
+> + * local_timer_exit - called immediately after the interrupt vector
+> + * handler returns
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(local_timer_exit)
+> +
+> +/*
+> + * reschedule_entry - called before entering a reschedule vector handler
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(reschedule_entry)
+> +
+> +/*
+> + * reschedule_exit - called immediately after the interrupt vector
+> + * handler returns
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(reschedule_exit)
+> +
+> +/*
+> + * spurious_apic_entry - called before entering a spurious apic vector handler
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(spurious_apic_entry)
+> +
+> +/*
+> + * spurious_apic_exit - called immediately after the interrupt vector
+> + * handler returns
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(spurious_apic_exit)
+> +
+> +/*
+> + * error_apic_entry - called before entering an error apic vector handler
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(error_apic_entry)
+> +
+> +/*
+> + * error_apic_exit - called immediately after the interrupt vector
+> + * handler returns
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(error_apic_exit)
+> +
+> +/*
+> + * x86_platform_ipi_entry - called before entering a x86 platform ipi interrupt
+> + * vector handler
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(x86_platform_ipi_entry)
+> +
+> +/*
+> + * x86_platform_ipi_exit - called immediately after the interrupt vector
+> + * handler returns
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(x86_platform_ipi_exit)
+> +
+> +/*
+> + * irq_work_entry - called before entering a irq work interrupt
+> + * vector handler
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(irq_work_entry)
+> +
+> +/*
+> + * irq_work_exit - called immediately after the interrupt vector
+> + * handler returns
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(irq_work_exit)
+> +
+> +/*
+> + * call_function_entry - called before entering a call function interrupt
+> + * vector handler
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(call_function_entry)
+> +
+> +/*
+> + * call_function_exit - called immediately after the interrupt vector
+> + * handler returns
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(call_function_exit)
+> +
+> +/*
+> + * call_function_single_entry - called before entering a call function
+> + * single interrupt vector handler
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(call_function_single_entry)
+> +
+> +/*
+> + * call_function_single_exit - called immediately after the interrupt vector
+> + * handler returns
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(call_function_single_exit)
+> +
+> +/*
+> + * threshold_apic_entry - called before entering a threshold apic interrupt
+> + * vector handler
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(threshold_apic_entry)
+> +
+> +/*
+> + * threshold_apic_exit - called immediately after the interrupt vector
+> + * handler returns
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(threshold_apic_exit)
+> +
+> +/*
+> + * thermal_apic_entry - called before entering a thermal apic interrupt
+> + * vector handler
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(thermal_apic_entry)
+> +
+> +/*
+> + * thrmal_apic_exit - called immediately after the interrupt vector
+> + * handler returns
+> + */
+> +DECLARE_IRQ_VECTOR_EVENT(thermal_apic_exit)
+> +
+> +#undef TRACE_INCLUDE_PATH
+> +#define TRACE_INCLUDE_PATH ../../arch/x86/include/asm/trace
+> +#define TRACE_INCLUDE_FILE irq_vectors
+> +#endif /*  _TRACE_IRQ_VECTORS_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> +
+
+---
+tracing: Add DEFINE_EVENT_FN() macro
+
+Each TRACE_EVENT() adds several helper functions. If two or more trace
+events share the same structure and print format, they can also share
+most of these helper functions and save a lot of space from duplicate
+code. This is why the DECLARE_EVENT_CLASS() and DEFINE_EVENT() were
+created.
+
+Some events require a trigger to be called at registering and
+unregistering of the event and to do so they use TRACE_EVENT_FN().
+
+If multiple events require a trigger, they currently have no choice but
+to use TRACE_EVENT_FN() as there's no DEFINE_EVENT_FN() available. This
+unfortunately causes a lot of wasted duplicate code created.
+
+By adding a DEFINE_EVENT_FN(), these events can still use a
+DECLARE_EVENT_CLASS() and then define their own triggers.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index 2f322c3..9bf59e5 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -378,6 +378,8 @@ static inline void tracepoint_synchronize_unregister(void)
+ #define DECLARE_EVENT_CLASS(name, proto, args, tstruct, assign, print)
+ #define DEFINE_EVENT(template, name, proto, args)		\
+ 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
++#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)\
++	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+ 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+ #define DEFINE_EVENT_CONDITION(template, name, proto,		\
+diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
+index 1905ca8..02e1003 100644
+--- a/include/trace/define_trace.h
++++ b/include/trace/define_trace.h
+@@ -44,6 +44,10 @@
+ #define DEFINE_EVENT(template, name, proto, args) \
+ 	DEFINE_TRACE(name)
+ 
++#undef DEFINE_EVENT_FN
++#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg) \
++	DEFINE_TRACE_FN(name, reg, unreg)
++
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+ 	DEFINE_TRACE(name)
+@@ -91,6 +95,7 @@
+ #undef TRACE_EVENT_CONDITION
+ #undef DECLARE_EVENT_CLASS
+ #undef DEFINE_EVENT
++#undef DEFINE_EVENT_FN
+ #undef DEFINE_EVENT_PRINT
+ #undef DEFINE_EVENT_CONDITION
+ #undef TRACE_HEADER_MULTI_READ
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 40dc5e8..7bab676 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -71,6 +71,10 @@
+ 	static struct ftrace_event_call	__used		\
+ 	__attribute__((__aligned__(4))) event_##name
+ 
++#undef DEFINE_EVENT_FN
++#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)	\
++	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
++
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+ 	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
+
+
