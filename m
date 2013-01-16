@@ -1,31 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab3APPiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:38:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50827 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752688Ab3APPiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:38:23 -0500
-Date: Wed, 16 Jan 2013 07:39:11 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
+	id S1756119Ab3APPo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:44:27 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28818 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3APPo0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 10:44:26 -0500
+X-Authority-Analysis: v=2.0 cv=e+OEuNV/ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=oS6VeJ3zRZwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ylgaL1uFd_sA:10 a=DQFY4bBbQHZdff4M-pYA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358351064.4068.43.camel@gandalf.local.home>
 Subject: Re: [PATCH 00/10] TTY: switch flipping functions to tty_port
-Message-ID: <20130116153911.GB1329@kroah.com>
-References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
- <20130116064735.GA7743@kroah.com>
- <50F6AD15.708@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg KH <gregkh@linuxfoundation.org>, alan@linux.intel.com,
+        jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Date: Wed, 16 Jan 2013 10:44:24 -0500
 In-Reply-To: <50F6AD15.708@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
+	 <20130116064735.GA7743@kroah.com> <50F6AD15.708@suse.cz>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 02:37:25PM +0100, Jiri Slaby wrote:
+On Wed, 2013-01-16 at 14:37 +0100, Jiri Slaby wrote:
 > On 01/16/2013 07:47 AM, Greg KH wrote:
 > > On Thu, Jan 03, 2013 at 03:53:00PM +0100, Jiri Slaby wrote:
 > >> In this series we get rid of the tty_port_tty_get in most hot paths as
@@ -42,7 +46,18 @@ On Wed, Jan 16, 2013 at 02:37:25PM +0100, Jiri Slaby wrote:
 > even have a tty_port for each port which is a requirement for a while
 > already. That is also a prerequisite to fix the build failure.
 
-It used to be marked BROKEN, I'll go do that now again to solve this
-issue.
+What do I need to do to fix it?
 
-greg k-h
+> 
+> Steven, do you have any plans with the driver? What is its planned destiny?
+
+Well, I'm currently using the device in my main machine. As it is my
+main box, I don't update the kernel as often.
+
+Let me know what I need to do to fix it in the current kernel.
+
+Thanks,
+
+-- Steve
+
+
