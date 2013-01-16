@@ -1,212 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab3APUfG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 15:35:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41104 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3APUfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 15:35:04 -0500
-Date: Wed, 16 Jan 2013 12:35:02 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 2/3] signalfd: add ability to return siginfo in a raw
- format (v2)
-Message-Id: <20130116123502.70af6b85.akpm@linux-foundation.org>
-In-Reply-To: <1358182435-19245-3-git-send-email-avagin@openvz.org>
-References: <1358182435-19245-1-git-send-email-avagin@openvz.org>
-	<1358182435-19245-3-git-send-email-avagin@openvz.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756408Ab3APUf7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 15:35:59 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:57977 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752064Ab3APUf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 15:35:57 -0500
+From: Luciano Coelho <coelho@ti.com>
+To: <tony@atomide.com>
+CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] OMAP: omap4-panda: add WiLink shared transport power functions
+Date: Wed, 16 Jan 2013 22:34:55 +0200
+Message-ID: <1358368495-10499-1-git-send-email-coelho@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013 20:53:54 +0400
-Andrey Vagin <avagin@openvz.org> wrote:
+The code to enable and disable the WiLink shared transport has been
+removed from the TI-ST driver, so it must be implemented in the board
+files instead.  Add the relevant operations to Panda's board file.
 
-> signalfd should be called with the flag SFD_RAW for that.
-> 
-> signalfd_siginfo is not full for siginfo with a negative si_code.
-> copy_siginfo_to_user() is copied a full siginfo to user-space, if
-> si_code is negative.  signalfd_copyinfo() doesn't do that and can't be
-> expanded, because it has not compatible format with siginfo_t.
-> 
-> Another problem is that a constant __SI_* is removed from si_code.
-> It's not a problem for usual applications, because they expect
-> a defined type of siginfo (internal logic).
-> When we want to dump pending signals, we can't predict a type of
-> siginfo, so we should get it from kernel.
-> 
-> The main idea of the raw format is that it should be enough for
-> restoring exactly the same siginfo for the current process.
-> 
-> This functionality is required for checkpointing pending signals.
-> 
-> ...
->
-> --- a/fs/signalfd.c
-> +++ b/fs/signalfd.c
-> @@ -30,6 +30,7 @@
->  #include <linux/signalfd.h>
->  #include <linux/syscalls.h>
->  #include <linux/proc_fs.h>
-> +#include <linux/compat.h>
->  
->  void signalfd_cleanup(struct sighand_struct *sighand)
->  {
-> @@ -74,6 +75,38 @@ static unsigned int signalfd_poll(struct file *file, poll_table *wait)
->  }
->  
->  /*
-> + * Copy a whole siginfo into users spaces.
+Additionally, add the UART2 muxing data, so it's properly configured.
 
-"userspace"
-
-> + * The main idea of this format is that it should be enough
-> + * for restoring siginfo back into the kernel.
-> + */
-> +static int signalfd_copy_raw_info(struct signalfd_siginfo __user *siginfo,
-> +					siginfo_t *kinfo)
-> +{
-> +	siginfo_t *uinfo = (siginfo_t *) siginfo;
-
-Should be
-
-	siginfo_t __user *uinfo = (siginfo_t __user *)siginfo;
-
-> +	int err;
-> +
-> +	BUILD_BUG_ON(sizeof(siginfo_t) != sizeof(struct signalfd_siginfo));
-> +
-> +	err = __clear_user(uinfo, sizeof(*uinfo));
->
-> +#ifdef CONFIG_COMPAT
-> +	if (unlikely(is_compat_task())) {
-> +		compat_siginfo_t *compat_uinfo = (compat_siginfo_t *) siginfo;
-> +
-> +		err |= copy_siginfo_to_user32(compat_uinfo, kinfo);
-> +		err |= put_user(kinfo->si_code, &compat_uinfo->si_code);
-> +
-> +		return err ? -EFAULT: sizeof(*compat_uinfo);
-> +	}
-> +#endif
-> +
-> +	err |= copy_siginfo_to_user(uinfo, kinfo);
-> +	err |= put_user(kinfo->si_code, &uinfo->si_code);
-> +
-> +	return err ? -EFAULT: sizeof(*uinfo);
-> +}
-> +
-> +/*
->   * Copied from copy_siginfo_to_user() in kernel/signal.c
->   */
->  static int signalfd_copyinfo(struct signalfd_siginfo __user *uinfo,
->
-> ...
->
-> --- a/include/uapi/linux/signalfd.h
-> +++ b/include/uapi/linux/signalfd.h
-> @@ -15,6 +15,7 @@
->  /* Flags for signalfd4.  */
->  #define SFD_CLOEXEC O_CLOEXEC
->  #define SFD_NONBLOCK O_NONBLOCK
-> +#define SFD_RAW O_DIRECT
->  
->  struct signalfd_siginfo {
->  	__u32 ssi_signo;
-
-As SFD_RAW is being added to the kernel API we should document it. 
-Please keep Michael cc'ed and work with him on getting the manpages
-updated.
-
-I usually ask that checkpoint-restart specific code be wrapped in
-#ifdef CONFIG_CHECKPOINT_RESTORE, mainly so we can identify it all
-if/when your project fails and we decide to remove the feature ;) But
-as this patch extends the user API I think it simplifies life if we
-make the extension permanent.  Perhaps this is a bad idea, as
-permanently adding this extension to the API makes it harder to ever
-remove the c/r feature.  
-
-
-Proposed fixups.  Please review and test this and check that sparse is
-happy with it.
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: signalfd-add-ability-to-return-siginfo-in-a-raw-format-v2-fix
-
-fix __user annotations, tidy comments and code layout
-
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Andrey Vagin <avagin@openvz.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Luciano Coelho <coelho@ti.com>
 ---
+ arch/arm/mach-omap2/board-omap4panda.c |   57 +++++++++++++++++++++++++++++---
+ 1 file changed, 53 insertions(+), 4 deletions(-)
 
- fs/signalfd.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
-
-diff -puN fs/signalfd.c~signalfd-add-ability-to-return-siginfo-in-a-raw-format-v2-fix fs/signalfd.c
---- a/fs/signalfd.c~signalfd-add-ability-to-return-siginfo-in-a-raw-format-v2-fix
-+++ a/fs/signalfd.c
-@@ -75,14 +75,14 @@ static unsigned int signalfd_poll(struct
- }
+diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
+index 5c8e9ce..97a274b 100644
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -51,18 +51,57 @@
+ #define GPIO_HUB_NRESET		62
+ #define GPIO_WIFI_PMENA		43
+ #define GPIO_WIFI_IRQ		53
++#define GPIO_BT_EN		46
  
- /*
-- * Copy a whole siginfo into users spaces.
-+ * Copy a whole siginfo into userspace.
-  * The main idea of this format is that it should be enough
-  * for restoring siginfo back into the kernel.
-  */
- static int signalfd_copy_raw_info(struct signalfd_siginfo __user *siginfo,
- 					siginfo_t *kinfo)
- {
--	siginfo_t *uinfo = (siginfo_t *) siginfo;
-+	siginfo_t __user *uinfo = (siginfo_t __user *)siginfo;
- 	int err;
+ /* wl127x BT, FM, GPS connectivity chip */
++static int plat_kim_chip_enable(struct kim_data_s *kim_data)
++{
++	gpio_set_value(GPIO_BT_EN, GPIO_LOW);
++	mdelay(5);
++	gpio_set_value(GPIO_BT_EN, GPIO_HIGH);
++	mdelay(100);
++
++	return 0;
++}
++
++static int plat_kim_chip_disable(struct kim_data_s *kim_data)
++{
++	gpio_set_value(GPIO_BT_EN, GPIO_LOW);
++	mdelay(1);
++	gpio_set_value(GPIO_BT_EN, GPIO_HIGH);
++	mdelay(1);
++	gpio_set_value(GPIO_BT_EN, GPIO_LOW);
++
++	return 0;
++}
++
+ static struct ti_st_plat_data wilink_platform_data = {
+-	.nshutdown_gpio	= 46,
+ 	.dev_name	= "/dev/ttyO1",
+ 	.flow_cntrl	= 1,
+ 	.baud_rate	= 3000000,
+-	.chip_enable	= NULL,
+-	.suspend	= NULL,
+-	.resume		= NULL,
++	.chip_enable	= plat_kim_chip_enable,
++	.chip_disable	= plat_kim_chip_disable,
+ };
  
- 	BUILD_BUG_ON(sizeof(siginfo_t) != sizeof(struct signalfd_siginfo));
-@@ -91,19 +91,20 @@ static int signalfd_copy_raw_info(struct
++static int wilink_st_init(void)
++{
++	int status;
++
++	status = gpio_request(GPIO_BT_EN, "kim");
++	if (status) {
++		pr_err("%s: failed to request gpio %d\n", __func__,
++		       GPIO_BT_EN);
++		return status;
++	}
++
++	status = gpio_direction_output(GPIO_BT_EN, 0);
++	if (status)
++		pr_err("%s: unable to configure gpio %d", __func__,
++		       GPIO_BT_EN);
++
++	return status;
++}
++
+ static struct platform_device wl1271_device = {
+ 	.name	= "kim",
+ 	.id	= -1,
+@@ -397,6 +436,12 @@ static struct omap_board_mux board_mux[] __initdata = {
+ 		  OMAP_PULL_ENA),
+ 	OMAP4_MUX(ABE_MCBSP1_FSX, OMAP_MUX_MODE0 | OMAP_PIN_INPUT),
  
- #ifdef CONFIG_COMPAT
- 	if (unlikely(is_compat_task())) {
--		compat_siginfo_t *compat_uinfo = (compat_siginfo_t *) siginfo;
-+		compat_siginfo_t __user *compat_uinfo;
++	/* UART2 - BT/FM/GPS shared transport */
++	OMAP4_MUX(UART2_CTS,	OMAP_PIN_INPUT	| OMAP_MUX_MODE0),
++	OMAP4_MUX(UART2_RTS,	OMAP_PIN_OUTPUT	| OMAP_MUX_MODE0),
++	OMAP4_MUX(UART2_RX,	OMAP_PIN_INPUT	| OMAP_MUX_MODE0),
++	OMAP4_MUX(UART2_TX,	OMAP_PIN_OUTPUT	| OMAP_MUX_MODE0),
++
+ 	{ .reg_offset = OMAP_MUX_TERMINATOR },
+ };
  
-+		compat_uinfo = (compat_siginfo_t __user *)siginfo;
- 		err |= copy_siginfo_to_user32(compat_uinfo, kinfo);
- 		err |= put_user(kinfo->si_code, &compat_uinfo->si_code);
+@@ -433,6 +478,10 @@ static void __init omap4_panda_init(void)
+ 	if (ret)
+ 		pr_err("error setting wl12xx data: %d\n", ret);
  
--		return err ? -EFAULT: sizeof(*compat_uinfo);
-+		return err ? -EFAULT : sizeof(*compat_uinfo);
- 	}
- #endif
- 
- 	err |= copy_siginfo_to_user(uinfo, kinfo);
- 	err |= put_user(kinfo->si_code, &uinfo->si_code);
- 
--	return err ? -EFAULT: sizeof(*uinfo);
-+	return err ? -EFAULT : sizeof(*uinfo);
- }
- 
- /*
-_
++	ret = wilink_st_init();
++	if (ret)
++		pr_err("WiLink shared transport init failed: %d\n", ret);
++
+ 	omap4_panda_init_rev();
+ 	omap4_panda_i2c_init();
+ 	platform_add_devices(panda_devices, ARRAY_SIZE(panda_devices));
+-- 
+1.7.10.4
 
