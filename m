@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758634Ab3APQdv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:33:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36362 "EHLO
+	id S1758638Ab3APQeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:34:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36342 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754101Ab3APQG1 (ORCPT
+	with ESMTP id S932399Ab3APQGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:06:27 -0500
+	Wed, 16 Jan 2013 11:06:16 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Robin Holt <holt@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: NeilBrown <neilb@suse.de>, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 140/222] SGI-XP: handle non-fatal traps
-Date: Wed, 16 Jan 2013 13:55:40 -0200
-Message-Id: <1358351822-7675-141-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 137/222] vfs: d_obtain_alias() needs to use "/" as default name.
+Date: Wed, 16 Jan 2013 13:55:37 -0200
+Message-Id: <1358351822-7675-138-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,108 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 891348ca0f66206f1dc0e30d63757e3df1ae2d15 upstream.
+commit b911a6bdeef5848c468597d040e3407e0aee04ce upstream.
 
-We found a user code which was raising a divide-by-zero trap.  That trap
-would lead to XPC connections between system-partitions being torn down
-due to the die_chain notifier callouts it received.
+NFS appears to use d_obtain_alias() to create the root dentry rather than
+d_make_root.  This can cause 'prepend_path()' to complain that the root
+has a weird name if an NFS filesystem is lazily unmounted.  e.g.  if
+"/mnt" is an NFS mount then
 
-This also revealed a different issue where multiple callers into
-xpc_die_deactivate() would all attempt to do the disconnect in parallel
-which would sometimes lock up but often overwhelm the console on very
-large machines as each would print at least one line of output at the
-end of the deactivate.
+ { cd /mnt; umount -l /mnt ; ls -l /proc/self/cwd; }
 
-I reviewed all the users of the die_chain notifier and changed the code
-to ignore the notifier callouts for reasons which will not actually lead
-to a system to continue on to call die().
+will cause a WARN message like
+   WARNING: at /home/git/linux/fs/dcache.c:2624 prepend_path+0x1d7/0x1e0()
+   ...
+   Root dentry has weird name <>
 
-[akpm@linux-foundation.org: fix ia64]
-Signed-off-by: Robin Holt <holt@sgi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
+to appear in kernel logs.
+
+So change d_obtain_alias() to use "/" rather than "" as the anonymous
+name.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/misc/sgi-xp/xpc_main.c |   34 ++++++++++++++++++++++++++++++++--
- 1 file changed, 32 insertions(+), 2 deletions(-)
+ fs/dcache.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/misc/sgi-xp/xpc_main.c b/drivers/misc/sgi-xp/xpc_main.c
-index 8d082b4..d971817 100644
---- a/drivers/misc/sgi-xp/xpc_main.c
-+++ b/drivers/misc/sgi-xp/xpc_main.c
-@@ -53,6 +53,10 @@
- #include <linux/kthread.h>
- #include "xpc.h"
- 
-+#ifdef CONFIG_X86_64
-+#include <asm/traps.h>
-+#endif
-+
- /* define two XPC debug device structures to be used with dev_dbg() et al */
- 
- struct device_driver xpc_dbg_name = {
-@@ -1079,6 +1083,9 @@ xpc_system_reboot(struct notifier_block *nb, unsigned long event, void *unused)
- 	return NOTIFY_DONE;
- }
- 
-+/* Used to only allow one cpu to complete disconnect */
-+static unsigned int xpc_die_disconnecting;
-+
- /*
-  * Notify other partitions to deactivate from us by first disengaging from all
-  * references to our memory.
-@@ -1092,6 +1099,9 @@ xpc_die_deactivate(void)
- 	long keep_waiting;
- 	long wait_to_print;
- 
-+	if (cmpxchg(&xpc_die_disconnecting, 0, 1))
-+		return;
-+
- 	/* keep xpc_hb_checker thread from doing anything (just in case) */
- 	xpc_exiting = 1;
- 
-@@ -1159,7 +1169,7 @@ xpc_die_deactivate(void)
-  * about the lack of a heartbeat.
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 9560257..1845c46 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1580,7 +1580,7 @@ EXPORT_SYMBOL(d_find_any_alias);
   */
- static int
--xpc_system_die(struct notifier_block *nb, unsigned long event, void *unused)
-+xpc_system_die(struct notifier_block *nb, unsigned long event, void *_die_args)
+ struct dentry *d_obtain_alias(struct inode *inode)
  {
- #ifdef CONFIG_IA64		/* !!! temporary kludge */
- 	switch (event) {
-@@ -1191,7 +1201,27 @@ xpc_system_die(struct notifier_block *nb, unsigned long event, void *unused)
- 		break;
- 	}
- #else
--	xpc_die_deactivate();
-+	struct die_args *die_args = _die_args;
-+
-+	switch (event) {
-+	case DIE_TRAP:
-+		if (die_args->trapnr == X86_TRAP_DF)
-+			xpc_die_deactivate();
-+
-+		if (((die_args->trapnr == X86_TRAP_MF) ||
-+		     (die_args->trapnr == X86_TRAP_XF)) &&
-+		    !user_mode_vm(die_args->regs))
-+			xpc_die_deactivate();
-+
-+		break;
-+	case DIE_INT3:
-+	case DIE_DEBUG:
-+		break;
-+	case DIE_OOPS:
-+	case DIE_GPF:
-+	default:
-+		xpc_die_deactivate();
-+	}
- #endif
+-	static const struct qstr anonstring = { .name = "" };
++	static const struct qstr anonstring = QSTR_INIT("/", 1);
+ 	struct dentry *tmp;
+ 	struct dentry *res;
  
- 	return NOTIFY_DONE;
 -- 
 1.7.9.5
 
