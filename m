@@ -1,68 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab3APC36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 21:29:58 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9537 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756839Ab3APC36 (ORCPT
+	id S1758113Ab3APCb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 21:31:28 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:49371 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758051Ab3APCbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 21:29:58 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=2SWw5zcxuqkA:10 a=5SG0PmZfjMsA:10 a=8nJEP1OIZ-IA:10 a=meVymXHHAAAA:8 a=_H3QqDmwaRoA:10 a=80NHVFwJX0u2rGl5lMAA:9 a=wPNLvfGTeEIA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Date: Tue, 15 Jan 2013 21:29:55 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alex =?iso-8859-1?Q?Villac=EDs?= Lasso <a_villacis@palosanto.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Use of memmap= to forcibly recover memory in 3GB-4GB range - is
- this safe?
-Message-ID: <20130116022955.GB3854@home.goodmis.org>
-References: <50F606A8.2080804@palosanto.com>
+	Tue, 15 Jan 2013 21:31:24 -0500
+Message-ID: <50F6108B.6070204@huawei.com>
+Date: Wed, 16 Jan 2013 10:29:31 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50F606A8.2080804@palosanto.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v8 22/22] PCI: move device_add out of pci_bus_add_device()
+References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-23-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1357944049-29620-23-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 08:47:20PM -0500, Alex Villacís Lasso wrote:
-> The system boots, apparently normally, and I can see the additional
-> "memory" in all system reports. However, I cannot quite shake the
-> feeling that this "memory" might be in fact an illusion, and an
-> attempt to use it will wrap around to the bottom of the memory and
-> corrupt anything there. Or worse.
+On 2013/1/12 6:40, Yinghai Lu wrote:
+> Move out device registering out of pci_bus_add_devices, so we could
+> put new created pci devices in device tree early.
 > 
-> Some tests that I have tried:
-> 1) I have tried to occupy as much memory as possible, by starting
-> two virtual machines, plus one instance of eclipse, a browser, and a
-> bittorrent client, while running the graphical desktop. I have seen
-> the free memory (as reported by "top") fall to under 200 Mb with no
-> apparent instability, so this should prove that the extra memory is
-> real, right?
-
-If you ran all that and it didn't crash and burn, I'm thinking you are
-pretty safe. I would think that if you had 768 megs mapped to nothing,
-mirrored to other memory, or any number of other atrocities, your above
-actions would most likely show some horrible failure.
-
-I think you are correct in assuming that if the MTRR mappings shows
-memory there, it may just be a bug in the BIOS that is not adding it.
-
-> 2) I have recompiled the kernel to support the memtest parameter.
-> When using it, the extra memory segment appears to be as healthy as
-> other areas of memory. However this might only mean that it is
-> wrapping into healthy low RAM.
+> new pci_bus_add_devices will do the device_attach work to load pci drivers
+> instead.
 > 
-> Is my reasoning sane? Is there a way to know, once and for all,
-> whether the extra "memory" is real and safe to use or not?
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/bus.c   |   47 +++--------------------------------------------
+>  drivers/pci/iov.c   |    7 -------
+>  drivers/pci/probe.c |   34 +++++++++++++++++++++++++++-------
+>  3 files changed, 30 insertions(+), 58 deletions(-)
+> 
+> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> index 1f5916a..0a55845 100644
+> --- a/drivers/pci/bus.c
+> +++ b/drivers/pci/bus.c
+> @@ -178,22 +178,9 @@ static void pci_bus_attach_device(struct pci_dev *dev)
+>   */
+>  int pci_bus_add_device(struct pci_dev *dev)
+>  {
+> -	int retval;
+> -
+> -	pci_fixup_device(pci_fixup_final, dev);
+> -
+> -	retval = pcibios_add_device(dev);
+> -	if (retval)
+> -		return retval;
+> -
+> -	retval = device_add(&dev->dev);
+> -	if (retval)
+> -		return retval;
+> -
+>  	pci_bus_attach_device(dev);
+>  	dev->is_added = 1;
+> -	pci_proc_attach_device(dev);
+> -	pci_create_sysfs_dev_files(dev);
+> +
+>  	return 0;
+>  }
 
-I can think of writing a kernel module that reads and writes to these
-locations just to make sure. But other than that, I'm not aware of
-anything. Maybe someone else could offer more.
 
--- Steve
+Hi Yinghai,
+   Should change pci_bus_add_device() function to void return now? So some unnecessary ret check can remove.
+
+>  
+> @@ -205,21 +192,9 @@ int pci_bus_add_device(struct pci_dev *dev)
+>   */
+>  int pci_bus_add_child(struct pci_bus *bus)
+>  {
+> -	int retval;
+> -
+> -	if (bus->bridge)
+> -		bus->dev.parent = bus->bridge;
+> -
+> -	retval = device_add(&bus->dev);
+> -	if (retval)
+> -		return retval;
+> -
+>  	bus->is_added = 1;
+>  
+> -	/* Create legacy_io and legacy_mem files for this bus */
+> -	pci_create_legacy_files(bus);
+> -
+> -	return retval;
+> +	return 0;
+>  }
+>  
+>  /**
+> @@ -245,36 +220,20 @@ void pci_bus_add_devices(const struct pci_bus *bus)
+>  		if (dev->is_added)
+>  			continue;
+>  		retval = pci_bus_add_device(dev);
+> -		if (retval)
+> -			dev_err(&dev->dev, "Error adding device, continuing\n");
+>  	}
+>  
+>  	list_for_each_entry(dev, &bus->devices, bus_list) {
+>  		BUG_ON(!dev->is_added);
+>  
+>  		child = dev->subordinate;
+> -		/*
+> -		 * If there is an unattached subordinate bus, attach
+> -		 * it and then scan for unattached PCI devices.
+> -		 */
+> +
+>  		if (!child)
+>  			continue;
+> -		if (list_empty(&child->node)) {
+> -			down_write(&pci_bus_sem);
+> -			list_add_tail(&child->node, &dev->bus->children);
+> -			up_write(&pci_bus_sem);
+> -		}
+>  		pci_bus_add_devices(child);
+>  
+> -		/*
+> -		 * register the bus with sysfs as the parent is now
+> -		 * properly registered.
+> -		 */
+>  		if (child->is_added)
+>  			continue;
+>  		retval = pci_bus_add_child(child);
+> -		if (retval)
+> -			dev_err(&dev->dev, "Error adding bus, continuing\n");
+>  	}
+>  }
+>  
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index bafd2bb..dbad72e 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -48,12 +48,7 @@ static struct pci_bus *virtfn_add_bus(struct pci_bus *bus, int busnr)
+>  		return NULL;
+>  
+>  	pci_bus_insert_busn_res(child, busnr, busnr);
+> -	child->dev.parent = bus->bridge;
+>  	rc = pci_bus_add_child(child);
+> -	if (rc) {
+> -		pci_remove_bus(child);
+> -		return NULL;
+> -	}
+>  
+>  	return child;
+>  }
+> @@ -123,8 +118,6 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
+>  	virtfn->is_virtfn = 1;
+>  
+>  	rc = pci_bus_add_device(virtfn);
+> -	if (rc)
+> -		goto failed1;
+>  	sprintf(buf, "virtfn%u", id);
+>  	rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
+>  	if (rc)
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index dc4fde3..84c92a0 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -623,6 +623,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+>  {
+>  	struct pci_bus *child;
+>  	int i;
+> +	int ret;
+>  
+>  	/*
+>  	 * Allocate a new bus, and inherit stuff from the parent..
+> @@ -637,8 +638,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+>  	child->bus_flags = parent->bus_flags;
+>  
+>  	/* initialize some portions of the bus device, but don't register it
+> -	 * now as the parent is not properly set up yet.  This device will get
+> -	 * registered later in pci_bus_add_devices()
+> +	 * now as the parent is not properly set up yet.
+>  	 */
+>  	child->dev.class = &pcibus_class;
+>  	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
+> @@ -652,11 +652,14 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+>  	child->primary = parent->busn_res.start;
+>  	child->busn_res.end = 0xff;
+>  
+> -	if (!bridge)
+> -		return child;
+> +	if (!bridge) {
+> +		child->dev.parent = parent->bridge;
+> +		goto add_dev;
+> +	}
+>  
+>  	child->self = bridge;
+>  	child->bridge = get_device(&bridge->dev);
+> +	child->dev.parent = child->bridge;
+>  	pci_set_bus_of_node(child);
+>  	pci_set_bus_speed(child);
+>  
+> @@ -667,6 +670,13 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+>  	}
+>  	bridge->subordinate = child;
+>  
+> +add_dev:
+> +	ret = device_add(&child->dev);
+> +	WARN_ON(ret < 0);
+> +
+> +	/* Create legacy_io and legacy_mem files for this bus */
+> +	pci_create_legacy_files(child);
+> +
+>  	return child;
+>  }
+>  
+> @@ -1297,6 +1307,8 @@ static void pci_init_capabilities(struct pci_dev *dev)
+>  
+>  void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+>  {
+> +	int ret;
+> +
+>  	device_initialize(&dev->dev);
+>  	dev->dev.release = pci_release_dev;
+>  
+> @@ -1327,6 +1339,16 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+>  	down_write(&pci_bus_sem);
+>  	list_add_tail(&dev->bus_list, &bus->devices);
+>  	up_write(&pci_bus_sem);
+> +
+> +	pci_fixup_device(pci_fixup_final, dev);
+> +        ret = pcibios_add_device(dev);
+> +	WARN_ON(ret < 0);
+> +	/* notifier could use pci capabilities */
+> +	ret = device_add(&dev->dev);
+> +	WARN_ON(ret < 0);
+> +
+> +	pci_proc_attach_device(dev);
+> +	pci_create_sysfs_dev_files(dev);
+>  }
+>  
+>  struct pci_dev *__ref pci_scan_single_device(struct pci_bus *bus, int devfn)
+> @@ -1645,13 +1667,13 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  	char bus_addr[64];
+>  	char *fmt;
+>  
+> -
+>  	b = pci_alloc_bus();
+>  	if (!b)
+>  		return NULL;
+>  
+>  	b->sysdata = sysdata;
+>  	b->ops = ops;
+> +	b->number = b->busn_res.start = bus;
+>  	b2 = pci_find_bus(pci_domain_nr(b), bus);
+>  	if (b2) {
+>  		/* If we already got to this bus through a different bridge, ignore it */
+> @@ -1687,8 +1709,6 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  	/* Create legacy_io and legacy_mem files for this bus */
+>  	pci_create_legacy_files(b);
+>  
+> -	b->number = b->busn_res.start = bus;
+> -
+>  	if (parent)
+>  		dev_info(parent, "PCI host bridge to bus %s\n", dev_name(&b->dev));
+>  	else
+> 
+
+
+-- 
+Thanks!
+Yijing
 
