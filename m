@@ -1,132 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab3APIMm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 03:12:42 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46371 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757591Ab3APIMk (ORCPT
+	id S1758332Ab3APIOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 03:14:20 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43989 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab3APIOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 03:12:40 -0500
-Message-ID: <50F66083.7090600@linux.vnet.ibm.com>
-Date: Wed, 16 Jan 2013 13:40:43 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 16 Jan 2013 03:14:18 -0500
+Message-ID: <50F66120.50704@linux.vnet.ibm.com>
+Date: Wed, 16 Jan 2013 13:43:20 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        konrad@kernel.org, xen-devel@lists.xensource.com,
-        stable@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 1/2] ACPI: intel-idle: Don't register CPU notifier if
- we are not running.
-References: <1358288604-24620-1-git-send-email-konrad.wilk@oracle.com> <1358288604-24620-2-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1358288604-24620-2-git-send-email-konrad.wilk@oracle.com>
+To: Ivo Sieben <meltedpianoman@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] tty: Only wakeup the line discipline idle queue when
+ queue is active
+References: <1355842130-15482-1-git-send-email-meltedpianoman@gmail.com> <50E3FDFA.4070203@suse.cz>	<20130102114311.66215bf5@pyramind.ukuu.org.uk> <CAMSQXEHmDb5rUQnT1JNcMCzdaN+gAr+1hR=PyPiDMu7vK5ykxA@mail.gmail.com> <50E4854E.8060801@suse.cz> <CAMSQXEGU2WmhmMqP7XMK2x39GN9iDDWpg-Wa7_cAauHWx5OWbQ@mail.gmail.com>
+In-Reply-To: <CAMSQXEGU2WmhmMqP7XMK2x39GN9iDDWpg-Wa7_cAauHWx5OWbQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011608-4790-0000-0000-0000067B93DB
+x-cbid: 13011608-8256-0000-0000-000005D85079
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 03:53 AM, Konrad Rzeszutek Wilk wrote:
-> The 'intel_idle_probe' probes the CPU and sets the CPU notifier.
-> But if later on during the module initialization we fail (say
-> in cpuidle_register_driver) we stop loading but we neglected
-> to unregister the CPU notifier. This means that during CPU
-> hotplug events the system will fail:
-> 
-> calling  intel_idle_init+0x0/0x326 @ 1
-> intel_idle: MWAIT substates: 0x1120
-> intel_idle: v0.4 model 0x2A
-> intel_idle: lapic_timer_reliable_states 0xffffffff
-> intel_idle: intel_idle yielding to none
-> initcall intel_idle_init+0x0/0x326 returned -19 after 14 usecs
-> 
-> ... some time later, offlining and onlining a CPU:
-> 
-> cpu 3 spinlock event irq 62
-> BUG: unable to ] __cpuidle_register_device+0x1c/0x120
-> PGD 99b8b067 PUD 99b95067 PMD 0
-> Oops: 0000 [#1] SMP
-> Modules linked in: xen_evtchn nouveau mxm_wmi wmi radeon ttm i915 fbcon tileblit font atl1c bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
-> CPU 0
-> Pid: 2302, comm: udevd Not tainted 3.8.0-rc3upstream-00249-g09ad159 #1 MSI MS-7680/H61M-P23 (MS-7680)
-> RIP: e030:[<ffffffff814d956c>]  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
-> RSP: e02b:ffff88009dacfcb8  EFLAGS: 00010286
-> RAX: 0000000000000000 RBX: ffff880105380000 RCX: 000000000000001c
-> RDX: 0000000000000000 RSI: 0000000000000055 RDI: ffff880105380000
-> RBP: ffff88009dacfce8 R08: ffffffff81a4f048 R09: 0000000000000008
-> R10: 0000000000000008 R11: 0000000000000000 R12: ffff880105380000
-> R13: 00000000ffffffdd R14: 0000000000000000 R15: ffffffff81a523d0
-> FS:  00007f37bd83b7a0(0000) GS:ffff880105200000(0000) knlGS:0000000000000000
-> CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 0000000000000008 CR3: 00000000a09ea000 CR4: 0000000000042660
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process udevd (pid: 2302, threadinfo ffff88009dace000, task ffff88009afb47f0)
-> Stack:
->  ffffffff8107f2d0 ffffffff810c2fb7 ffff88009dacfce8 00000000ffffffea
->  ffff880105380000 00000000ffffffdd ffff88009dacfd08 ffffffff814d9882
->  0000000000000003 ffff880105380000 ffff88009dacfd28 ffffffff81340afd
-> Call Trace:
->  [<ffffffff8107f2d0>] ? collect_cpu_info_local+0x30/0x30
->  [<ffffffff810c2fb7>] ? __might_sleep+0xe7/0x100
->  [<ffffffff814d9882>] cpuidle_register_device+0x32/0x70
->  [<ffffffff81340afd>] intel_idle_cpu_init+0xad/0x110
->  [<ffffffff81340bc8>] cpu_hotplug_notify+0x68/0x80
->  [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
->  [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
->  [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
->  [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
->  [<ffffffff81652e18>] cpu_up+0xd9/0xec
->  [<ffffffff8164a254>] store_online+0x94/0xd0
->  [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
->  [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
->  [<ffffffff811a1024>] vfs_write+0xb4/0x130
->  [<ffffffff811a17ea>] sys_write+0x5a/0xa0
->  [<ffffffff816643a9>] system_call_fastpath+0x16/0x1b
-> Code: 03 18 00 c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 30 48 89 5d e8 4c 89 65 f0 48 89 fb 4c 89 6d f8 e8 84 08 00 00 <48> 8b 78 08 49 89 c4 e8 f8 7f c1 ff 89 c2 b8 ea ff ff ff 84 d2
-> RIP  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
->  RSP <ffff88009dacfcb8>
-> 
-> This patch fixes it by moving the CPU notifier registration
-> as the last item to be done by the module.
-> 
-> Cc: stable@vger.kernel.org # for 3.6 and above
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
+Hi Ivo,
+Can you explain how this problem could create a scheduler overhead?
+I am a little confused, because as far as i know,scheduler does not come
+in the picture of the wake up path right? select_task_rq() in
+try_to_wake_up() is where the scheduler comes in,and this is after the
+task wakes up.
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+On 01/03/2013 03:19 PM, Ivo Sieben wrote:
+> Oleg, Peter, Ingo, Andi & Preeti,
+> 
+> 2013/1/2 Jiri Slaby <jslaby@suse.cz>:
+>> On 01/02/2013 04:21 PM, Ivo Sieben wrote:
+>>> I don't understand your responses: do you suggest to implement this
+>>> "if active" behavior in:
+>>> * A new wake_up function called wake_up_if_active() that is part of
+>>> the waitqueue layer?
+>>
+>> Sounds good.
+>>
+>> --
+>> js
+>> suse labs
+> 
+> I want to ask you 'scheduler' people for your opinion:
+> 
+> Maybe you remember my previous patch where I suggested an extra
+> 'waitqueue empty' check before entering the critical section of the
+> wakeup() function (If you do not remember see
+> https://lkml.org/lkml/2012/10/25/159)
+> 
+> Finally Oleg responded that a lot of callers do
+> 
+> 	if (waitqueue_active(q))
+> 		wake_up(...);
+> 
+> what made my patch pointless and adds a memory barrier. I then decided
+> to also implement the 'waitqueue_active' approach for my problem.
+> 
+> But now I get a review comment by Jiri that he would like to hide this
+> 'if active behavior' in a wake_up_if_active() kind of function. I
+> think he is right that implementing this check in the wakeup function
+> would clean things up, right?
+> 
+> I would like to have your opinion on the following two suggestions:
+> - We still can do the original patch on the wake_up() that I
+> suggested. I then can do an additional code cleanup patch that removes
+> the double 'waitqueue_active' call (a quick grep found about 150 of
+> these waitqueue active calls) on several places in the code.
 
-Regards,
-Srivatsa S. Bhat
+I think this is a good move.
 
->  drivers/idle/intel_idle.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+> - Or - as an alternative - I could add extra _if_active() versions of
+> all wake_up() functions, that implement this extra test.
+
+Why add 'extra' if_active versions? Why not optimize this within the
+existing wake_up() functions?
 > 
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index 4ba384f..2df9414 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -448,8 +448,6 @@ static int intel_idle_probe(void)
->  	else
->  		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
-> 
-> -	register_cpu_notifier(&cpu_hotplug_notifier);
-> -
->  	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
->  		" model 0x%X\n", boot_cpu_data.x86_model);
-> 
-> @@ -612,6 +610,7 @@ static int __init intel_idle_init(void)
->  			return retval;
->  		}
->  	}
-> +	register_cpu_notifier(&cpu_hotplug_notifier);
-> 
->  	return 0;
->  }
+> Regards,
+> Ivo
+
+Regards
+Preeti U Murthy
 > 
 
