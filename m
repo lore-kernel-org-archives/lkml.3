@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab3APV7J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 16:59:09 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:23632 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757671Ab3APV7G (ORCPT
+	id S1757530Ab3APWAW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:00:22 -0500
+Received: from smtp.snhosting.dk ([87.238.248.203]:39473 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757245Ab3APWAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 16:59:06 -0500
-Message-ID: <50F72272.8090303@oracle.com>
-Date: Wed, 16 Jan 2013 16:58:10 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+	Wed, 16 Jan 2013 17:00:20 -0500
+Date: Wed, 16 Jan 2013 23:00:18 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Cong Ding <dinggnu@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sparc: kernel/sbus.c: fix memory leakage
+Message-ID: <20130116220018.GA14063@merkur.ravnborg.org>
+References: <1358199372-11976-1-git-send-email-dinggnu@gmail.com> <20130116211309.GA13993@merkur.ravnborg.org> <20130116211725.GC18593@gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Peter Senna Tschudin <peter.senna@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] hlist: drop the node parameter from iterators
-References: <1358094677-11384-1-git-send-email-sasha.levin@oracle.com> <CA+55aFxFb21Ss=-0FUgzQOzPe1=mS11o7J-+Laco09XJvOk9Fg@mail.gmail.com>
-In-Reply-To: <CA+55aFxFb21Ss=-0FUgzQOzPe1=mS11o7J-+Laco09XJvOk9Fg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130116211725.GC18593@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 03:48 PM, Linus Torvalds wrote:
-> On Sun, Jan 13, 2013 at 8:31 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> I'm not sure why, but the hlist for each entry iterators were conceived
->> differently from the list ones. While the list ones are nice and elegant:
-> 
-> So this patch is probably the RightThing(tm) to do, but it's really
-> big and makes me nervous. And the fact that there was already one
-> problem in the first version doesn't make me feel any more
-> warm-and-fuzzy about it.
-> 
-> I understand that this kind of patch is nice to apply after the merge
-> window has closed, but at the same time, it's now *too* long after the
-> merge window closed, and even if it wasn't, I'd really like to feel
-> like this has gotten more testing than it obviously has. Or some other
-> guarantee that there isn't some other subtle issue hiding there.
-> 
-> So I am going through patches in my mbox, but I really don't feel safe
-> enough about this one to apply it.
+On Wed, Jan 16, 2013 at 10:17:26PM +0100, Cong Ding wrote:
+> On Wed, Jan 16, 2013 at 10:13:09PM +0100, Sam Ravnborg wrote:
+> > On Mon, Jan 14, 2013 at 10:36:08PM +0100, Cong Ding wrote:
+> > > the variable iommu and strbuf are not freed if it goes to error.
+> > > 
+> > > Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> > > ---
+> > >  arch/sparc/kernel/sbus.c |    8 ++++++--
+> > >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/arch/sparc/kernel/sbus.c b/arch/sparc/kernel/sbus.c
+> > > index 1271b3a..0b66e53 100644
+> > > --- a/arch/sparc/kernel/sbus.c
+> > > +++ b/arch/sparc/kernel/sbus.c
+> > > @@ -555,10 +555,10 @@ static void __init sbus_iommu_init(struct platform_device *op)
+> > >  
+> > >  	iommu = kzalloc(sizeof(*iommu), GFP_ATOMIC);
+> > >  	if (!iommu)
+> > > -		goto fatal_memory_error;
+> > > +		goto fatal_iommu_memory_error;
+> > >  	strbuf = kzalloc(sizeof(*strbuf), GFP_ATOMIC);
+> > >  	if (!strbuf)
+> > > -		goto fatal_memory_error;
+> > > +		goto fatal_strbuf_memory_error;
+> > >  
+> > >  	op->dev.archdata.iommu = iommu;
+> > >  	op->dev.archdata.stc = strbuf;
+> > > @@ -656,6 +656,10 @@ static void __init sbus_iommu_init(struct platform_device *op)
+> > >  	return;
+> > >  
+> > >  fatal_memory_error:
+> > > +	kfree(strbuf);
+> > > +fatal_strbuf_memory_error:
+> > > +	kfree(iommu);
+> > > +fatal_iommu_memory_error:
+> > >  	prom_printf("sbus_iommu_init: Fatal memory allocation error.\n");
+> > >  }
+> > kfree is a noop if passed a null pointer.
+> > So you can just add the missing kfree's to fix this.
+> > 
+> > 	Sam
+> as far as I know, most codes in the kernel are in the same style as this
+> patch, but if you really prefer to do in the way you described I can send
+> a new version.
 
-I agree about the testing part, I doubt anyone besides Peter and myself
-gave it a go.
+I prefer the simpler variant.
+Please redo.
 
-I guess that if you agree that it should go in once it had some more
-testing, it can go into linux-next and sit there for the next couple
-of weeks until the next merge window opens.
-
-What would be the best way to do that though? see if akpm would take
-it into his tree?
-
-
-Thanks,
-Sasha
-
+	Sam
