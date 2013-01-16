@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab3APQAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:00:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35872 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351Ab3APQAh (ORCPT
+	id S1757571Ab3APRDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:03:14 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:37631 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757431Ab3APQAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:00:37 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Martin Teichmann <lkb.teichmann@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 050/222] USB: ftdi_sio: Add support for Newport AGILIS motor drivers
-Date: Wed, 16 Jan 2013 13:54:10 -0200
-Message-Id: <1358351822-7675-51-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 16 Jan 2013 11:00:43 -0500
+X-Greylist: delayed 8592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jan 2013 11:00:43 EST
+Message-ID: <50F6CE7E.4090807@suse.cz>
+Date: Wed, 16 Jan 2013 16:59:58 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Greg KH <gregkh@linuxfoundation.org>, alan@linux.intel.com,
+        jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/10] TTY: switch flipping functions to tty_port
+References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>  <20130116064735.GA7743@kroah.com> <50F6AD15.708@suse.cz> <1358351064.4068.43.camel@gandalf.local.home>
+In-Reply-To: <1358351064.4068.43.camel@gandalf.local.home>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
+On 01/16/2013 04:44 PM, Steven Rostedt wrote:
+> On Wed, 2013-01-16 at 14:37 +0100, Jiri Slaby wrote:
+>> Steven, do you have any plans with the driver? What is its planned destiny?
+> 
+> Well, I'm currently using the device in my main machine. As it is my
+> main box, I don't update the kernel as often.
+> 
+> Let me know what I need to do to fix it in the current kernel.
 
-------------------
+Every port in the system has to have its struct tty_port counterpart.
 
-From: Martin Teichmann <lkb.teichmann@gmail.com>
+/me looked into the code
 
-commit d7e14b375b40c04cd735b115713043b69a2c68ac upstream.
+OMG. It contains a true copy of serial_core!
 
-The Newport AGILIS model AG-UC8 compact piezo motor controller
-(http://search.newport.com/?q=*&x2=sku&q2=AG-UC8)
-is yet another device using an FTDI USB-to-serial chip. It works
-fine with the ftdi_sio driver when adding
+In the beginning (to remove the BROKEN flag), what it needs is struct
+tty_port to be added to struct sb_uart_info. It obviously needs
+tty_port_init + tty_port_destroy at appropriate places. Then it needs
+tty_register_device to be switched to tty_port_register_device.
 
-  options ftdi-sio product=0x3000 vendor=0x104d
+Finally, having the tty_port, all tty flipping functions take the
+tty_port, not tty_struct (the build errors reported). This is easy while
+you have a tty_port.
 
-to modprobe.d. udevadm reports "Newport" as the manufacturer,
-and "Agilis" as the product name.
+In the long term, it needs to get rid of the all the pseudo-uart* stuff
+(the copy of serial_core) and use only tty layer+tty_port helpers.
 
-Signed-off-by: Martin Teichmann <lkb.teichmann@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
-
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index d0b8c5c..360bdeb 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -197,6 +197,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 57c12ef..049b6e7 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -752,6 +752,12 @@
- #define TTI_VID			0x103E	/* Vendor Id */
- #define TTI_QL355P_PID		0x03E8	/* TTi QL355P power supply */
- 
-+/*
-+ * Newport Cooperation (www.newport.com)
-+ */
-+#define NEWPORT_VID			0x104D
-+#define NEWPORT_AGILIS_PID		0x3000
-+
- /* Interbiometrics USB I/O Board */
- /* Developed for Interbiometrics by Rudolf Gugler */
- #define INTERBIOMETRICS_VID              0x1209
+thanks,
 -- 
-1.7.9.5
-
+js
+suse labs
