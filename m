@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab3APW6F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:58:05 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:11179 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757773Ab3APW6E (ORCPT
+	id S1757447Ab3APXBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 18:01:46 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:54291 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756306Ab3APXBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:58:04 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkECAG6Zu08YNOOE/2dsb2JhbAANN4F7gzKrG4ZmAQEBAQMjVQEQCw4KAgIFFgsCAgkDAgECAUUGDQEHAQGvGJJ7gSaOCoEUA4hClXeJWQ
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="212737558"
-Message-ID: <50F7307A.4090808@teksavvy.com>
-Date: Wed, 16 Jan 2013 17:58:02 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Wed, 16 Jan 2013 18:01:44 -0500
 MIME-Version: 1.0
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com> <50F72F03.5070806@teksavvy.com>
-In-Reply-To: <50F72F03.5070806@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <50F72E40.5040903@suse.cz>
+References: <50F3D9E8.6040802@suse.cz> <16191961.j5ydKsJ3d3@vostro.rjw.lan>
+ <50F68443.3040900@suse.cz> <1383787.8I6fLLmNxl@vostro.rjw.lan> <50F72E40.5040903@suse.cz>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 16 Jan 2013 16:01:23 -0700
+Message-ID: <CAErSpo4LM3t_aTpP0MqVo-tNVG5Px2GFtsKq_OLYvoLveJFs9g@mail.gmail.com>
+Subject: Re: -next: no resume from suspend
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-01-16 05:51 PM, Mark Lord wrote:
-> On 13-01-16 12:20 AM, Stanislav Kinsbursky wrote:
+On Wed, Jan 16, 2013 at 3:48 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 01/16/2013 03:00 PM, Rafael J. Wysocki wrote:
+>> On Wednesday, January 16, 2013 11:43:15 AM Jiri Slaby wrote:
+>>> On 01/14/2013 01:56 PM, Rafael J. Wysocki wrote:
+>>>> On Monday, January 14, 2013 11:11:52 AM Jiri Slaby wrote:
+>>>>> Hi,
+>>>>>
+>>>>> since friday's -next (the last known to be working is the last monday's)
+>>>>> I cannot resume from suspend. The last thing I see with
+>>>>> no_console_suspend is:
+>>>>> i915: No ACPI video bus found
+>>>>>
+>>>>> But I used to see the message always, so this is no difference. Any idea
+>>>>> before I start bisecting?
+>>>>
+>>>> Well, what's the next message you normally see with no_console_suspend?
+>>>
+>>> As I wrote in the other message, the kernel is spinning in
+>>> acpi_rs_get_aml_length. There are weird resources in the list. For
+>>> serial 00:05 there is resource with type and length equal to 0 and for
+>>> parport_pc 00:06 there is resource type 58196295 with length of
+>>> 134284152. See:
+>>> acpi_rs_get_aml_length: ffff8801b9f7b380 type=3 len=16
+>>> acpi_rs_get_aml_length: ffff8801b9f7b390 type=0 len=0
+>>> acpi_rs_get_aml_length: BAD ffff8801b9f7b390 type=0 len=0
+>>> serial 00:05: activation failed
+>>> dpm_run_callback(): pnp_bus_resume+0x0/0x80 returns -5
+>>> PM: Device 00:05 failed to resume: error -5
+>>> acpi_rs_get_aml_length: ffff8801b9f7b680 type=3 len=24
+>>> acpi_rs_get_aml_length: ffff8801b9f7b698 type=58196295 len=134284152
+>>> parport_pc 00:06: activation failed
+>>> dpm_run_callback(): pnp_bus_resume+0x0/0x80 returns -5
+>>> PM: Device 00:06 failed to resume: error -5
+>>>
+>>> if (!length)
+>>>   return error;
+>>>
+>>> makes it resume again with the errors above...
+>>>
+>>> This was 3.8.0-rc3-next-20130114.
 >>
->> Mark, could you provide any call traces?
-> 
-> Call traces from where/what?
-> There's this one, posted earlier in the BUG report:
-> 
-> kernel BUG at net/sunrpc/svc_xprt.c:921!
-> Call Trace:
->  [<ffffffffa016a56a>] ? svc_recv+0xcc/0x338 [sunrpc]
->  [<ffffffffa0318bfc>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
->  [<ffffffffa0318c19>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
->  [<ffffffff810407e6>] ? kthread+0x81/0x89
->  [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
->  [<ffffffff812ea62c>] ? ret_from_fork+0x7c/0xb0
->  [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
-..
+>> There are two things you can try.  First, revert all of the ACPICA patches
+>> and see if that helps.  Second, if that doesn't help, try to revert things in
+>> the PCI tree (alternatively, you can try the PCI tree alone).
+>>
+>> I have tested suspend/resume with the ACPI (including ACPICA) patches applied,
+>> but I haven't tested the PCI tree.
+>
+> I bisected that. It is caused by the following commit:
+> commit 2a3ab82714043580505634ff5b9a743ff4237376
+> Author: Bjorn Helgaas <bhelgaas@google.com>
+> Date:   Fri Jan 4 22:38:10 2013 +0000
+>
+>     PNPACPI: Use _CRS buffer directly as _SRS template
+>
+> Acpidump is here if you are interested:
+> http://www.fi.muni.cz/~xslaby/sklad/adump
 
-This might be of some interest.
-Here are the first few lines of the same BUG occurance,
-with timestamps and the dmesg lines that immediately preceeded it.
-Perhaps they might help indicate who's triggering the action
-that results in the BUG(?).
+Crap, sorry Jiri.
 
-Jan 14 10:58:05 zippy kernel: [66045.627952] NFS: Registering the id_resolver key type
-Jan 14 10:58:05 zippy kernel: [66045.628014] Key type id_resolver registered
-Jan 14 10:58:05 zippy kernel: [66045.628020] Key type id_legacy registered
-Jan 14 10:58:05 zippy kernel: [66045.636302] ------------[ cut here ]------------
-Jan 14 10:58:05 zippy kernel: [66045.648342] kernel BUG at net/sunrpc/svc_xprt.c:921!
+Rafael, I don't really care about that patch, so you can just drop it
+unless you want to debug it.
 
+Bjorn
