@@ -1,179 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3APUIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 15:08:50 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:51712 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab3APUIs (ORCPT
+	id S1755600Ab3APUL3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 15:11:29 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49302 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab3APUL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 15:08:48 -0500
+	Wed, 16 Jan 2013 15:11:28 -0500
+Message-ID: <50F7096C.7020803@wwwdotorg.org>
+Date: Wed, 16 Jan 2013 13:11:24 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130116044742.GB11461@blaptop>
-References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
- <1357712474-27595-3-git-send-email-minchan@kernel.org> <20130109162602.53a60e77.akpm@linux-foundation.org>
- <20130110022306.GB14685@blaptop> <20130110135828.c88bcaf1.akpm@linux-foundation.org>
- <20130111044327.GB6183@blaptop> <20130115160957.9ef860d7.akpm@linux-foundation.org>
- <CAPz6YkWC+y+jqD+0UNe+cD6OyveursZaahxc26mH81DOGD7sNw@mail.gmail.com>
- <20130115165042.1daadec2.akpm@linux-foundation.org> <CAPz6YkXNECSitpQvUNst0HW-uEWWssix-H1Cm_QfWSTMQE0m8Q@mail.gmail.com>
- <20130116044742.GB11461@blaptop>
-From: Sonny Rao <sonnyrao@google.com>
-Date: Wed, 16 Jan 2013 12:08:27 -0800
-Message-ID: <CAPz6YkWUhMUScZ1we9enbnGyXH_2SS7mqoKE5gakAeBQNR3aHw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm: forcely swapout when we are out of page cache
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Bryan Freed <bfreed@google.com>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Sameer Nanda <snanda@chromium.org>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 2/9] clk: tegra: Add tegra specific clocks
+References: <1357890387-23245-1-git-send-email-pgaikwad@nvidia.com><1357890387-23245-3-git-send-email-pgaikwad@nvidia.com> <20130116.171242.2189136612266237422.hdoyu@nvidia.com>
+In-Reply-To: <20130116.171242.2189136612266237422.hdoyu@nvidia.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 8:47 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On Tue, Jan 15, 2013 at 05:21:15PM -0800, Sonny Rao wrote:
->> On Tue, Jan 15, 2013 at 4:50 PM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->> > On Tue, 15 Jan 2013 16:32:38 -0800
->> > Sonny Rao <sonnyrao@google.com> wrote:
->> >
->> >> >> It's for saving the power to increase batter life.
->> >> >
->> >> > It might well have that effect, dunno.  That wasn't my intent.  Testing
->> >> > needed!
->> >> >
->> >>
->> >> Power saving is certainly why we had it on originally for ChromeOS,
->> >> but we turned it off due to misbehavior.
->> >>
->> >> Specifically, we saw a pathological behavior where we'd end up writing
->> >> to the disk every few seconds when laptop mode was turned on.  This
->> >> turned out to be because laptop-mode sets a timer which is used to
->> >> check for new dirty data after the initial flush and writes that out
->> >> before spinning the disk down, and on ChromeOS various chatty daemons
->> >> on the system were logging and dirtying data more or less constantly
->> >> so there was almost always something there to be written out.  So what
->> >> ended up happening was that we'd need to do a read, then wake up the
->> >> disk, and then keep writing every few seconds for a long period of
->> >> time, which had the opposite effect from what we wanted.
->> >
->> > So after the read, the disk would chatter away doing a dribble of
->> > writes?  That sounds like plain brokenness (and why did the chrome guys
->> > not tell anyone about it?!?!?).
->>
->> Yes, either read or fsync.  I ranted about it a little (here:
->> http://marc.info/?l=linux-mm&m=135422986220016&w=4), but mostly
->> assumed it was working as expected, and that ChromeOS was just
->> dirtying data at an absurd pace.  Might have been a bad assumption and
->> I could have been more explicit about reporting it, sorry about that.
->>
->> > The idea is that when the physical
->> > read occurs, we should opportunistically flush out all pending writes,
->> > while the disk is running.  Then go back into
->> > buffer-writes-for-a-long-time mode.
->> >
->>
->> See the comment in page-writeback.c above laptop_io_completion():
->>
->> /*
->>  * We've spun up the disk and we're in laptop mode: schedule writeback
->>  * of all dirty data a few seconds from now.  If the flush is already
->> scheduled
->>  * then push it back - the user is still using the disk.
->>  */
->> void laptop_io_completion(struct backing_dev_info *info)
->>
->> What ends up happening fairly often is that there's always something
->> dirty with that few seconds (or even one second) on our system.
->>
->> > I forget what we did with fsync() and friends.  Quite a lot of
->> > pestiferous applications like to do fsync quite frequently.  I had a
->> > special kernel in which fsync() consisted of "return 0;", but ISTR
->> > there being some resistance to productizing that idea.
->> >
->>
->> Yeah, we have this problem and we try to fix up users of fsync() as we
->> find them but it's a bit of a never-ending battle.  Such a feature
->> would be useful.
->>
->> >>  The issues
->> >> with zram swap just confirmed that we didn't want laptop mode.
->> >>
->> >> Most of our devices have had SSDs rather than spinning disks, so noise
->> >> wasn't an issue, although when we finally did support an official
->> >> device with a spinning disk people certainly complained when the disk
->> >> started clicking all the time
->> >
->> > hm, it's interesting that the general idea still has vailidity.  It
->> > would be a fun project for someone to sniff out all the requirements,
->> > fixup/enhance/rewrite the current implementation and generally make it
->> > all spiffy and nice.
->> >
->> >> (due to the underflow in the writeback code).
->> >
->> > To what underflow do you refer?
->> >
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=c8b74c2f6604923de91f8aa6539f8bb934736754
->>
->> That particular bug caused writes to happen almost instantly after the
->> underflow ocurred, and consequently slowed write throughput to a crawl
->> because there was no chance for contiguous writes to gather.
->>
->> >> We do know that current SSDs save a significant amount of
->> >> power when they go into standby, so minimizing disk writes is still
->> >> useful on these devices.
->> >>
->> >> A very simple laptop mode which only does a single sync when we spin
->> >> up the disk, and didn't bother with the timer behavior or muck with
->> >> swap behavior might be something that is more useful for us, and I
->> >> suspect it might simplify the writeback code somewhat as well.
->> >
->> > I don't think I understand the problem with the timer.  My original RFC
->> > said
->> >
->> > : laptop_writeback_centisecs
->> > : --------------------------
->> > :
->> > : This tunable determines the maximum age of dirty data when the machine
->> > : is operating in Laptop mode.  The default value is 30000 - five
->> > : minutes.  This means that if applications are generating a small amount
->> > : of write traffic, the disk will spin up once per five minutes.
->> > :
->> > : If the disk is spun up for any other reason (such as for a read) then
->> > : all dirty data will be flushed anyway, and this timer is reset to zero.
->> >
->> > which all sounds very sensible and shouldn't exhibit the behavior you
->> > observed.
->> >
->>
->> The laptop-mode timer get re-armed after each writeback (see above
->> laptop_io_completion function), even if it was caused by laptop-mode
->> itself.  So, if something is continually dirtying a little bit of
->> data, we end up getting a chain of small writes which keeps the disk
->> awake for long periods of time.
->
-> Out of curiosity, for saving the power, why don' you increase the value for
-> laptop_mode?
->
+On 01/16/2013 08:12 AM, Hiroshi Doyu wrote:
+> Prashant Gaikwad <pgaikwad@nvidia.com> wrote @ Fri, 11 Jan 2013 08:46:20 +0100:
+> 
+> ....
+>> diff --git a/drivers/clk/tegra/clk-audio-sync.c b/drivers/clk/tegra/clk-audio-sync.c
 
-We want to keep the disk in the active state for as short a time as
-possible, in order to save power.  The minimum time before we can go
-to standby is 5 seconds, so that would be the upper limit on where
-we'd want to set the laptop mode timer.  But the real issue here is
-that the longer we wait, the greater the chance that something on the
-system has dirtyed something which will get flushed, and cause the
-chain of writes I mentioned above.  So, really we want to minimize
-this time (down to 0), not maximize it.
+>> +#define to_clk_sync_source(_hw)                                        \
+>> +       container_of(_hw, struct tegra_clk_sync_source, hw)
+> 
+> Can we define "struct tegra_clk_sync_source" here if there's no need
+> to expose this structure out?
 
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
+In some cases, yes. However, some of the clock structs and ops variables
+are re-used by multiple clock types in different files. For example,
+struct tegra_clk_periph aggregates a struct tegra_clk_frac_div and a
+struct tegra_clk_periph_gate. That means that at least some of the types
+and ops variables must be declared in clk.h (or some header anyway). As
+such, I'd rather just have all the types and ops variables declared
+there for consistency.
+
+>> +static int clk_frac_div_set_rate(struct clk_hw *hw, unsigned long rate,
+>> +                               unsigned long parent_rate)
+>> +{
+>> +       struct tegra_clk_frac_div *divider = to_clk_frac_div(hw);
+>> +       int div;
+>> +       unsigned long flags = 0;
+> 
+> nit, is "flags" not needed to initialize here?
+
+It avoids a compiler warning; the compiler doesn't that the if condition
+that guards the path that uses flags is the same condition as the path
+that initializes it. Or, it may be related to the fact that
+spin_lock_irqsave() writes to the value through a pointer parameter, and
+the compiler doesn't know it's an out-only parameter.
+
+>> diff --git a/drivers/clk/tegra/clk-periph-gate.c b/drivers/clk/tegra/clk-periph-gate.c
+
+>> diff --git a/drivers/clk/tegra/clk-periph-gate.c b/drivers/clk/tegra/clk-periph-gate.c
+
+>> +#define to_clk_periph_gate(_hw)                                        \
+>> +       container_of(_hw, struct tegra_clk_periph_gate, hw)
+> 
+> For consistency, put "to_clk_periph_gate(_hw)" in "clk.h", then this
+> can be used in clk-periph.c as well.
+
+Sure. I moved all "to_clk_*()" macros to clk.h for consistency, since
+the types are all there anyway.
+
+>> +struct clk *tegra_clk_periph_gate(const char *name, const char *parent_name,
+...
+>> +       gate = kzalloc(sizeof(struct tegra_clk_periph_gate), GFP_KERNEL);
+> 
+>        gate = kzalloc(sizeof(*gate), GFP_KERNEL) ?
+
+I've already fixed all those up locally.
+
+>> diff --git a/drivers/clk/tegra/clk-periph.c b/drivers/clk/tegra/clk-periph.c
+
+>> +struct clk *tegra_clk_periph(const char *name, const char **parent_names,
+>> +                            int num_parents, struct tegra_clk_periph *periph,
+>> +                            void __iomem *clk_base, u32 offset)
+>> +{
+>> +       struct clk *clk;
+>> +       struct clk_init_data init;
+>> +
+>> +       init.name = name;
+>> +       init.ops = &tegra_clk_periph_ops;
+>> +       init.flags = 0;
+> 
+> struct members in stack are expected to initialize 0.
+
+Stack variables aren't initialized in C. In this case, since the
+individual fields are being assigned via statements rather than an
+initializer, everything has to be done explicitly.
+
+>> diff --git a/drivers/clk/tegra/clk-pll-out.c b/drivers/clk/tegra/clk-pll-out.c
+
+>> +#define pll_out_enb(p) (BIT(p->enb_bit_idx))
+>> +#define pll_out_rst(p) (BIT(p->rst_bit_idx))
+> 
+> I don't see much benefit from the above macros.
+
+Meh. Do you feel strongly about this? I'm not really inclined to got
+through and change these; there are a bunch of similar things in other
+files, and it feels like it'd just be churn.
+
+Anything I didn't explicitly say no to, I have implemented.
+
+A /lot/ more of the original patch was quoted that was really necessary
+to make your comments; it made wading through the email a little tiresome.
