@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602Ab3APVxr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 16:53:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15119 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757429Ab3APVxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 16:53:45 -0500
-Date: Wed, 16 Jan 2013 16:53:41 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
-        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-Message-ID: <20130116215341.GA4222@redhat.com>
-References: <871udloiku.fsf@xmission.com>
- <1358312159.4593.37.camel@falcor1>
- <87wqvdli1o.fsf@xmission.com>
- <1358344859.4593.66.camel@falcor1>
- <20130116144836.GB29845@redhat.com>
- <1358350391.4593.112.camel@falcor1>
- <20130116163453.GD29845@redhat.com>
- <1358359715.4593.146.camel@falcor1>
- <20130116182804.GF29845@redhat.com>
- <1358364290.4593.178.camel@falcor1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358364290.4593.178.camel@falcor1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757634Ab3APVx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 16:53:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41836 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757610Ab3APVxy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 16:53:54 -0500
+Date: Wed, 16 Jan 2013 13:53:52 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        johnstul@us.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 1/4] sched: /proc/sched_stat fails on very very
+ large machines.
+Message-Id: <20130116135352.890bd6bd.akpm@linux-foundation.org>
+In-Reply-To: <1358286372-13777-2-git-send-email-nzimmer@sgi.com>
+References: <1358286372-13777-1-git-send-email-nzimmer@sgi.com>
+	<1358286372-13777-2-git-send-email-nzimmer@sgi.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 02:24:50PM -0500, Mimi Zohar wrote:
-[..]
-> > > Sorry, this is out of scope for IMA.  Dmitry has looked into this, but
-> > > I'm not sure where it stands at the moment.
-> > 
-> > Ok, so that's one reason that why I wrote these patcehs. IMA currently
-> > is not doing following things to make sure address space of signed images
-> > is not modified by others.
-> > 
-> > - Protecting against modifications to pages on swap.
-> > - Protecting against modifications by ptrace.
-> > - Protecting against modifications which bypassed filesystem and directly
-> >   wrote to the block.
-> > 
-> > Locking down all the pages of signed binaries in memory hopefully should
-> > solve above problems.
+On Tue, 15 Jan 2013 15:46:09 -0600
+Nathan Zimmer <nzimmer@sgi.com> wrote:
+
+> On systems with 4096 cores doing a cat /proc/sched_stat fails.
+> We are trying to push all the data into a single kmalloc buffer.
+> The issue is on these very large machines all the data will not fit in 4mb.
 > 
-> Signing and verifying ELF executables goes back a long time ~2003/4,
-> from a number of esteemed kernel developers, including Greg-KH and Serge
-> Hallyn.
+> A better solution is to not us the single_open mechanism but to provide
+> our own seq_operations.
 > 
-> IMA-appraisal isn't limited to appraising a single type of file, but is
-> a generic mechanism for appraising all files.  If there are issues that
-> aren't being addressed, then by all means, please help by addressing
-> them.  Duplicating a large portion of the code is not productive.
+> The output should be identical to previous version and thus not need the
+> version number.
+> 
+> ...
+>
+> index 903ffa9..33a85c9 100644
+> --- a/kernel/sched/stats.c
+> +++ b/kernel/sched/stats.c
+> @@ -21,9 +21,13 @@ static int show_schedstat(struct seq_file *seq, void *v)
+>  	if (mask_str == NULL)
+>  		return -ENOMEM;
+>  
+> -	seq_printf(seq, "version %d\n", SCHEDSTAT_VERSION);
+> -	seq_printf(seq, "timestamp %lu\n", jiffies);
+> -	for_each_online_cpu(cpu) {
+> +	if (v == (void *)1) {
 
-So do you have ideas on how to address above mentioned issues. Do they
-fit into the realm of IMA/EVM or I just need to write separate code (which
-I have already done).
+The magic-numbers-in-pointers at least need comments, please.  Or nice
+and meaningful #defines.
 
-With above issues, IMA stuff for executable files sounds incomplete.
+> +		seq_printf(seq, "version %d\n", SCHEDSTAT_VERSION);
+> +		seq_printf(seq, "timestamp %lu\n", jiffies);
 
-Thanks
-Vivek
+The code leaks the memory at mask_str here.
+
+> +	} else {
+> +
+> +		cpu = (unsigned long)(v - 2);
+> +
+>  		struct rq *rq = cpu_rq(cpu);
+>  #ifdef CONFIG_SMP
+>  		struct sched_domain *sd;
+> @@ -72,35 +76,64 @@ static int show_schedstat(struct seq_file *seq, void *v)
+>  		}
+>  		rcu_read_unlock();
+>  #endif
+> +		kfree(mask_str);
+>  	}
+> -	kfree(mask_str);
+>  	return 0;
+>  }
+
+Undoing this change will fix the leak.
+
+The schedstats code (both the original and after the patch) appears to
+be racy against cpu hotplug?  What prevents the rq from vanishing while
+we're playing with it?
+
+
