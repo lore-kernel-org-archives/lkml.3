@@ -1,140 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759003Ab3APJ7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 04:59:51 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:58629 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756483Ab3APJ7t (ORCPT
+	id S1758740Ab3APKKN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:10:13 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:41911 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757793Ab3APKKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 04:59:49 -0500
+	Wed, 16 Jan 2013 05:10:07 -0500
 MIME-Version: 1.0
 Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXjmjgFii4bpr6fvfUY9jfu932bCxa088g-wZjOfpYbng@mail.gmail.com>
-References: <CA+icZUUxgRsGkYAmZ=JxTwPvdhTzpGLcxm6+VSq9jnfYPVXj4Q@mail.gmail.com>
-	<s5hpq16zfox.wl%tiwai@suse.de>
-	<CA+icZUWFKzccbHrU0pxK-T2TdwyDsTTNxP_22zmGTPbcAmhMaQ@mail.gmail.com>
-	<s5hpq1531yn.wl%tiwai@suse.de>
-	<CA+icZUXjmjgFii4bpr6fvfUY9jfu932bCxa088g-wZjOfpYbng@mail.gmail.com>
-Date: Wed, 16 Jan 2013 10:59:48 +0100
-Message-ID: <CA+icZUUkbKBzNuCSZUWdTf3_8ZNUAgxNDoubnvAxNyx4j2PKqw@mail.gmail.com>
-Subject: Re: 3.8-rc2 lockdep complains about console_lock vs. fb_notifier_list.rwsem
+In-Reply-To: <43EB3AB3EEFE8D43B525F4D2EAF507E107F4160E@SCYBEXDAG04.amd.com>
+References: <CA+icZUUCB3K1=DuM6Nonu+Qc+qg3cM_ODk9TDZ-uYCfLVOhrdw@mail.gmail.com>
+	<CA+icZUXrQ4aq+cKXj3qEwnhtTGPBfHcJ6q_zTm3xSBUUh9W8dQ@mail.gmail.com>
+	<CA+icZUVBdsAa7ZA7e_UNpBsAOpVOXcawhUncbHNdkC-MGY4qLw@mail.gmail.com>
+	<43EB3AB3EEFE8D43B525F4D2EAF507E107F4160E@SCYBEXDAG04.amd.com>
+Date: Wed, 16 Jan 2013 11:10:06 +0100
+Message-ID: <CA+icZUU7UmoYb5j7Pg57pMdgfw5GNA=M0aBuc5362o2t7Hqt3w@mail.gmail.com>
+Subject: Re: [3.8-{rc1,rc2}] ata1.00: failed to get Identify Device Data,
+ Emask 0x1
 From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-fbdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, alan@lxorguk.ukuu.org.uk,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-next <linux-next@vger.kernel.org>
+To: "Huang, Shane" <Shane.Huang@amd.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lu@intel.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 10:52 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Wed, Jan 16, 2013 at 10:35 AM, Takashi Iwai <tiwai@suse.de> wrote:
->> At Wed, 16 Jan 2013 10:21:46 +0100,
->> Sedat Dilek wrote:
->>>
->>> On Tue, Jan 15, 2013 at 3:25 PM, Takashi Iwai <tiwai@suse.de> wrote:
->>> > At Sat, 5 Jan 2013 13:13:27 +0100,
->>> > Sedat Dilek wrote:
->>> >>
->>> >> Hi Jiri,
->>> >>
->>> >> ...known issue (see thread in [1]), please feel free to test patches
->>> >> from Alan and Andrew (see [1], [2] and [3]) and report.
->>> >>
->>> >> Regards,
->>> >> - Sedat -
->>> >>
->>> >> [1] http://marc.info/?t=135309396400003&r=1&w=2
->>> >> [2] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
->>> >> [3] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover-fix.patch
->>> >> [4] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover-fix-2.patch
->>> >
->>> > I've hit this bug and tried the patch [2] ([3] and [4] are gone).
->>> > Unfortunately the deadlock is still reported, as seen below.
->>> >
->>> > A similar fix for fbcon_unbind(), splitting an unlocked version of
->>> > unbind_con_driver() and call it?
->>> >
->>> > (BTW, the patch [2] contains strange characters in the comments, and
->>> >  has a few coding issues easily detected by checkpatch.pl.)
->>> >
->>>
->>> [ CCing Rafael as he asked in another thread if I had sent a patch ]
->>>
->>> I noticed also some these "strange" chars in the patch from Andrew and
->>> a patch of mine was sent as
->>> "fb-Rework-locking-to-fix-lock-ordering-on-takeover-fix-comments.patch"
->>> to the lists.
->>>
->>> It is strange to me that Andrew or other maintainers himself did not
->>> check with "checkpatch.pl".
->>> This should be a common testcase!
->>> Hey, noone is perfect :-).
->>> ( /me has also not checked with that script - I just saw it. )
->>>
->>> Just as a note to the issue in general:
->>> Andrew took over the patch from Alan which is very honest - he is not
->>> the active TTY maintainer!
->>> Didn't Greg takeover maintenance from Alan (after a dispute and blaming Alan)?
->>> If this is true, why the hell is Greg not CCed?
->>
->> Let's do it :)
->>
->> Greg, Jiri, this bug hits already quite a few people.
->>
->> I can reproduce the bug easily on a machine with a radeon graphics.
->> It appears always at boot when lockdep is enabled.
->>
->>
->>> Thanks for the real patch in the followup of this thread!
->>> Who will take care of it :-)?
->>
->> Either tty maintainer, or fb maintainer, or Andrew?
->>
->> FWIW, Andrew took my patch in mm:
->>   http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
->>   http://ozlabs.org/~akpm/mmots/broken-out/fb-yet-another-band-aid-for-fixing-lockdep-mess.patch
->>
+On Sat, Jan 5, 2013 at 3:20 AM, Huang, Shane <Shane.Huang@amd.com> wrote:
+>> OK, I see the patch I mentioned to fix the problem was later reverted [1].
+>> The real fix is "libata: replace sata_settings with devslp_timing" [2].
 >
-> [ CCing linux-next ML ]
->
-> Thanks for all your efforts to get this fb-issue nailed down for mainline!
->
-> Just as a note being a Linux-Next customer:
->
-> "fb-yet-another-band-aid-for-fixing-lockdep-mess.patch" did not hit
-> next-20130116!
-> Thanks for the link!
->
-> Normally Andrew sents out a mmotm release marking patches from his
-> tree destinated for Linux-Next with a "*".
->
-> To quote from the latest mmotm release-notes:
->
-> "This mmotm tree contains the following patches against 3.8-rc3:
-> (patches marked "*" will be included in linux-next)"
->
-> But anyway this stuff is Linux-3.8 material as well.
+> Yes, please use [2] which can also be found in kernel bugzilla #51881
+> and is pending on Jeff's acceptance. Sorry for the trouble to you guys.
 >
 
-JYI: [1] now does NOT have anymore those "strange" chars, Thanks Takashi san.
+[ CCing Linus ]
 
-I will test next-20130116 with both fb-fixes as -2 kernel.
-( Running LTP-lite on my "naked" -1 kernel only with my kbuild/deb-pkg-fixes. )
+Thanks for taking care (my latest experiences on LKML/linux-next tell
+me even this is no more the fact!)!
 
-Thanks to everyone involved.
+Your patch finally hit Linux-Next (next-20130116) and IIRC it is also
+marked for previous Linux-kernel releases (CC -stable).
+I have tested your patch as said also against Linux v3.8-rcX.
+
+Unfortunately, the applied patch in Linux-Next does not contain any of
+my desired Reported-by/Tested-by.
+This makes me a bit unhappy, but I do NOT insist on it.
+
+Mr. Torvalds himself pointed several times to all maintainers to
+honour people - even they report and ideally report-and-test!
+
+I am doing all my testings in my free-time and I am not paid for it.
+I am raping my hardware here!
+I can't do more than that!
 
 - Sedat -
 
-[1] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
-[2] http://ozlabs.org/~akpm/mmots/broken-out/fb-yet-another-band-aid-for-fixing-lockdep-mess.patch
-> - Sedat -
->
->>
->> thanks,
->>
->> Takashi
+> Thanks,
+> Shane
