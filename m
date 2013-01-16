@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab3APPrS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:47:18 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:64642 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab3APPrQ (ORCPT
+	id S1756149Ab3APPsK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:48:10 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27993 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab3APPsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:47:16 -0500
-Message-ID: <1358351232.2923.10.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and
- <linux/in6.h>
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-CC: Cong Wang <amwang@redhat.com>, Thomas Backlund <tmb@mageia.org>,
-        Eric Blake <eblake@redhat.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <libvirt-list@redhat.com>,
-        <tgraf@suug.ch>, David Miller <davem@davemloft.net>,
-        <libc-alpha@sourceware.org>, <schwab@suse.de>,
-        <carlos@systemhalted.org>
-Date: Wed, 16 Jan 2013 15:47:12 +0000
-In-Reply-To: <50F6B761.8070106@linux-ipv6.org>
-References: <50F2FF1B.3020708@mageia.org> <50F313A5.3020707@mageia.org>
-	   <50F49B7E.50906@redhat.com> <50F52956.50201@mageia.org>
-	  <1358244688.4264.7.camel@cr0> <50F53596.4070200@mageia.org>
-	 <1358316366.14898.8.camel@cr0> <50F6B761.8070106@linux-ipv6.org>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Wed, 16 Jan 2013 10:48:09 -0500
+X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=oS6VeJ3zRZwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ylgaL1uFd_sA:10 a=muxWsHHWUX7mRpHXLX0A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358351287.4068.47.camel@gandalf.local.home>
+Subject: Re: [PATCH 00/10] TTY: switch flipping functions to tty_port
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, alan@linux.intel.com, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 16 Jan 2013 10:48:07 -0500
+In-Reply-To: <20130116153911.GB1329@kroah.com>
+References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
+	 <20130116064735.GA7743@kroah.com> <50F6AD15.708@suse.cz>
+	 <20130116153911.GB1329@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19558.004
-X-TM-AS-Result: No--27.489800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-16 at 23:21 +0900, YOSHIFUJI Hideaki wrote:
-> Cong Wang wrote:
-> > (Cc'ing some glibc developers...)
-> > 
-> > Hello,
-> > 
-> > In glibc source file inet/netinet/in.h and kernel source file
-> > include/uapi/linux/in6.h, both define struct in6_addr, and both are
-> > visible to user applications. Thomas reported a conflict below.
-> > 
-> > So, how can we handle this? /me is wondering why we didn't see this
-> > before.
-[...]
-> This is not a new issue.  In addition to this,
-> netinet/in.h also conflits with linux/in.h.
+On Wed, 2013-01-16 at 07:39 -0800, Greg KH wrote:
+
+> > I intentionally ignored that one as at the time of sending the patches,
+> > it was marked as BROKEN in -next. It is still broken, since it does not
+> > even have a tty_port for each port which is a requirement for a while
+> > already. That is also a prerequisite to fix the build failure.
 > 
-> We might have
->  #if !defined(__GLIBC__) || !defined(_NETINET_IN_H)
->  :
->  #endif
-> around those conflicting definitions in uapi/linux/in{,6}.h.
+> It used to be marked BROKEN, I'll go do that now again to solve this
+> issue.
 
-This only solves half the problem, as <netinet/in.h> might be included
-after <linux/in.h>.  Also, not all Linux userland uses glibc.
+Yeah, it use to be marked broken because it broke other archs because it
+has x86 specific code, but that should have been solved with the depends
+on x86 (which I still need to fix so that it works for other archs).
 
-Ben.
+This now looks like it broke due to kernel ABI changes, and the driver
+was ignored as it was marked BROKEN due to the non-x86 issues.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+In other words, it's now broken only because it was broken before ;-)
+
+-- Steve
+
 
