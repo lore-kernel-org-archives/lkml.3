@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758158Ab3APQD0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:03:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36094 "EHLO
+	id S1758232Ab3APQDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:03:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36117 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757773Ab3APQDW (ORCPT
+	with ESMTP id S1757773Ab3APQDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:03:22 -0500
+	Wed, 16 Jan 2013 11:03:38 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: "Runyan, Arthur J" <arthur.j.runyan@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 093/222] ath9k_hw: Fix signal strength / channel noise reporting
-Date: Wed, 16 Jan 2013 13:54:53 -0200
-Message-Id: <1358351822-7675-94-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 097/222] drm/i915: disable cpt phase pointer fdi rx workaround
+Date: Wed, 16 Jan 2013 13:54:57 -0200
+Message-Id: <1358351822-7675-98-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,55 +28,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit b7c0c238898d200e80487516e2b67aba2a522cc0 upstream.
+commit 539526b4137bc0e7a8806c38c8522f226814a0e6 upstream.
 
-While AR_PHY_CCA_NOM_VAL_* does contain the expected internal noise floor
-for a chip measured in clean air, it refers to the lowest expected reading.
+We've originally added this in
 
-Depending on the frequency, this measurement can vary by about 6db, thus
-causing a higher reported channel noise and signal strength.
+commit 291427f5fdadec6e4be2924172e83588880e1539
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Fri Jul 29 12:42:37 2011 -0700
 
-Factor in the 6db offset when converting internal noisefloor to channel noise.
+    drm/i915: apply phase pointer override on SNB+ too
 
-This patch makes the reported values more accurate for all chips without
-affecting NF calibration behavior.
+and then copy-pasted it over to ivb/ppt. The w/a was originally added
+for ilk/ibx in
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+commit 5b2adf897146edeac6a1e438fb67b5a53dbbdf34
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Thu Oct 7 16:01:15 2010 -0700
+
+    drm/i915: add Ironlake clock gating workaround for FDI link training
+
+and fixed up a bit in
+
+commit 6f06ce184c765fd8d50669a8d12fdd566c920859
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Tue Jan 4 15:09:38 2011 -0800
+
+    drm/i915: set phase sync pointer override enable before setting phase sync pointer
+
+It turns out that this w/a isn't actually required on cpt/ppt and
+positively harmful on ivb/ppt when using fdi B/C links - it results in
+a black screen occasionally, with seemingfully everything working as
+it should. The only failure indication I've found in the hw is that
+eventually (but not right after the modeset completes) a pipe underrun
+is signalled.
+
+Big thanks to Arthur Runyan for all the ideas for registers to check
+and changes to test, otherwise I couldn't ever have tracked this down!
+
+Cc: "Runyan, Arthur J" <arthur.j.runyan@intel.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[ herton: backported to 3.5, it still has the if checks for HAS_PCH_CPT
+  which are removed now ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/calib.c |    1 +
- drivers/net/wireless/ath/ath9k/calib.h |    3 +++
- 2 files changed, 4 insertions(+)
+ drivers/gpu/drm/i915/intel_display.c |   31 -------------------------------
+ 1 file changed, 31 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/calib.c b/drivers/net/wireless/ath/ath9k/calib.c
-index e5cceb0..bbd249d 100644
---- a/drivers/net/wireless/ath/ath9k/calib.c
-+++ b/drivers/net/wireless/ath/ath9k/calib.c
-@@ -69,6 +69,7 @@ s16 ath9k_hw_getchan_noise(struct ath_hw *ah, struct ath9k_channel *chan)
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 98ea04e..fb20654 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2165,18 +2165,6 @@ static void intel_fdi_normal_train(struct drm_crtc *crtc)
+ 			   FDI_FE_ERRC_ENABLE);
+ }
  
- 	if (chan && chan->noisefloor) {
- 		s8 delta = chan->noisefloor -
-+			   ATH9K_NF_CAL_NOISE_THRESH -
- 			   ath9k_hw_get_default_nf(ah, chan);
- 		if (delta > 0)
- 			noise += delta;
-diff --git a/drivers/net/wireless/ath/ath9k/calib.h b/drivers/net/wireless/ath/ath9k/calib.h
-index 3b33996d..1f2e01a 100644
---- a/drivers/net/wireless/ath/ath9k/calib.h
-+++ b/drivers/net/wireless/ath/ath9k/calib.h
-@@ -21,6 +21,9 @@
+-static void cpt_phase_pointer_enable(struct drm_device *dev, int pipe)
+-{
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-	u32 flags = I915_READ(SOUTH_CHICKEN1);
+-
+-	flags |= FDI_PHASE_SYNC_OVR(pipe);
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* once to unlock... */
+-	flags |= FDI_PHASE_SYNC_EN(pipe);
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* then again to enable */
+-	POSTING_READ(SOUTH_CHICKEN1);
+-}
+-
+ /* The FDI link training functions for ILK/Ibexpeak. */
+ static void ironlake_fdi_link_train(struct drm_crtc *crtc)
+ {
+@@ -2327,9 +2315,6 @@ static void gen6_fdi_link_train(struct drm_crtc *crtc)
+ 	POSTING_READ(reg);
+ 	udelay(150);
  
- #define AR_PHY_CCA_FILTERWINDOW_LENGTH          5
+-	if (HAS_PCH_CPT(dev))
+-		cpt_phase_pointer_enable(dev, pipe);
+-
+ 	for (i = 0; i < 4; i++) {
+ 		reg = FDI_TX_CTL(pipe);
+ 		temp = I915_READ(reg);
+@@ -2456,9 +2441,6 @@ static void ivb_manual_fdi_link_train(struct drm_crtc *crtc)
+ 	POSTING_READ(reg);
+ 	udelay(150);
  
-+/* Internal noise floor can vary by about 6db depending on the frequency */
-+#define ATH9K_NF_CAL_NOISE_THRESH		6
-+
- #define NUM_NF_READINGS       6
- #define ATH9K_NF_CAL_HIST_MAX 5
+-	if (HAS_PCH_CPT(dev))
+-		cpt_phase_pointer_enable(dev, pipe);
+-
+ 	for (i = 0; i < 4; i++) {
+ 		reg = FDI_TX_CTL(pipe);
+ 		temp = I915_READ(reg);
+@@ -2572,17 +2554,6 @@ static void ironlake_fdi_pll_enable(struct drm_crtc *crtc)
+ 	}
+ }
  
+-static void cpt_phase_pointer_disable(struct drm_device *dev, int pipe)
+-{
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-	u32 flags = I915_READ(SOUTH_CHICKEN1);
+-
+-	flags &= ~(FDI_PHASE_SYNC_EN(pipe));
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* once to disable... */
+-	flags &= ~(FDI_PHASE_SYNC_OVR(pipe));
+-	I915_WRITE(SOUTH_CHICKEN1, flags); /* then again to lock */
+-	POSTING_READ(SOUTH_CHICKEN1);
+-}
+ static void ironlake_fdi_disable(struct drm_crtc *crtc)
+ {
+ 	struct drm_device *dev = crtc->dev;
+@@ -2609,8 +2580,6 @@ static void ironlake_fdi_disable(struct drm_crtc *crtc)
+ 	/* Ironlake workaround, disable clock pointer after downing FDI */
+ 	if (HAS_PCH_IBX(dev)) {
+ 		I915_WRITE(FDI_RX_CHICKEN(pipe), FDI_RX_PHASE_SYNC_POINTER_OVR);
+-	} else if (HAS_PCH_CPT(dev)) {
+-		cpt_phase_pointer_disable(dev, pipe);
+ 	}
+ 
+ 	/* still set train pattern 1 */
 -- 
 1.7.9.5
 
