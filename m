@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758718Ab3APQOr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:14:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36940 "EHLO
+	id S932950Ab3APQLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:11:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36932 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933084Ab3APQLY (ORCPT
+	with ESMTP id S932976Ab3APQLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:11:24 -0500
+	Wed, 16 Jan 2013 11:11:19 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roland Dreier <roland@purestorage.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Sylvain Munaut <s.munaut@whatever-company.com>,
+Cc: Edgar Toernig <froese@gmx.de>, Tony Prisk <linux@prisktech.co.nz>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 213/222] printk: fix incorrect length from print_time() when seconds > 99999
-Date: Wed, 16 Jan 2013 13:56:53 -0200
-Message-Id: <1358351822-7675-214-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 212/222] drivers/rtc/rtc-vt8500.c: fix handling of data passed in struct rtc_time
+Date: Wed, 16 Jan 2013 13:56:52 -0200
+Message-Id: <1358351822-7675-213-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -32,70 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Tony Prisk <linux@prisktech.co.nz>
 
-commit 35dac27cedd14c3b6fcd4ba7bc3c31738cfd1831 upstream.
+commit 2f90b68309683f2c5765a1b04ca23d71e51f1494 upstream.
 
-print_prefix() passes a NULL buf to print_time() to get the length of
-the time prefix; when printk times are enabled, the current code just
-returns the constant 15, which matches the format "[%5lu.%06lu] " used
-to print the time value.  However, this is obviously incorrect when the
-whole seconds part of the time gets beyond 5 digits (100000 seconds is a
-bit more than a day of uptime).
+tm_mon is 0..11, whereas vt8500 expects 1..12 for the month field,
+causing invalid date errors for January, and causing the day field to
+roll over incorrectly.
 
-The simple fix is to use snprintf(NULL, 0, ...) to calculate the actual
-length of the time prefix.  This could be micro-optimized but it seems
-better to have simpler, more readable code here.
+The century flag is only handled in vt8500_rtc_read_time, but not set in
+vt8500_rtc_set_time.  This patch corrects the behaviour of the century
+flag.
 
-The bug leads to the syslog system call miscomputing which messages fit
-into the userspace buffer.  If there are enough messages to fill
-log_buf_len and some have a timestamp >= 100000, dmesg may fail with:
-
-    # dmesg
-    klogctl: Bad address
-
-When this happens, strace shows that the failure is indeed EFAULT due to
-the kernel mistakenly accessing past the end of dmesg's buffer, since
-dmesg asks the kernel how big a buffer it needs, allocates a bit more,
-and then gets an error when it asks the kernel to fill it:
-
-    syslog(0xa, 0, 0)                       = 1048576
-    mmap(NULL, 1052672, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fa4d25d2000
-    syslog(0x3, 0x7fa4d25d2010, 0x100008)   = -1 EFAULT (Bad address)
-
-As far as I can see, the bug has been there as long as print_time(),
-which comes from commit 084681d14e42 ("printk: flush continuation lines
-immediately to console") in 3.5-rc5.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Joe Perches <joe@perches.com>
-Cc: Sylvain Munaut <s.munaut@whatever-company.com>
+Signed-off-by: Edgar Toernig <froese@gmx.de>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/printk.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-vt8500.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 146827f..46f0c2c 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -812,10 +812,11 @@ static size_t print_time(u64 ts, char *buf)
- 	if (!printk_time)
- 		return 0;
+diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
+index 5641ac5..44878da 100644
+--- a/drivers/rtc/rtc-vt8500.c
++++ b/drivers/rtc/rtc-vt8500.c
+@@ -118,7 +118,7 @@ static int vt8500_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	tm->tm_min = bcd2bin((time & TIME_MIN_MASK) >> TIME_MIN_S);
+ 	tm->tm_hour = bcd2bin((time & TIME_HOUR_MASK) >> TIME_HOUR_S);
+ 	tm->tm_mday = bcd2bin(date & DATE_DAY_MASK);
+-	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S);
++	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S) - 1;
+ 	tm->tm_year = bcd2bin((date & DATE_YEAR_MASK) >> DATE_YEAR_S)
+ 			+ ((date >> DATE_CENTURY_S) & 1 ? 200 : 100);
+ 	tm->tm_wday = (time & TIME_DOW_MASK) >> TIME_DOW_S;
+@@ -137,8 +137,9 @@ static int vt8500_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ 	}
  
-+	rem_nsec = do_div(ts, 1000000000);
-+
- 	if (!buf)
--		return 15;
-+		return snprintf(NULL, 0, "[%5lu.000000] ", (unsigned long)ts);
- 
--	rem_nsec = do_div(ts, 1000000000);
- 	return sprintf(buf, "[%5lu.%06lu] ",
- 		       (unsigned long)ts, rem_nsec / 1000);
- }
+ 	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
+-		| (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
+-		| (bin2bcd(tm->tm_mday)),
++		| (bin2bcd(tm->tm_mon + 1) << DATE_MONTH_S)
++		| (bin2bcd(tm->tm_mday))
++		| ((tm->tm_year >= 200) << DATE_CENTURY_S),
+ 		vt8500_rtc->regbase + VT8500_RTC_DS);
+ 	writel((bin2bcd(tm->tm_wday) << TIME_DOW_S)
+ 		| (bin2bcd(tm->tm_hour) << TIME_HOUR_S)
 -- 
 1.7.9.5
 
