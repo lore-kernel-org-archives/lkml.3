@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455Ab3APMqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 07:46:36 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52080 "EHLO arroyo.ext.ti.com"
+	id S1757428Ab3APMsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 07:48:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49448 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753955Ab3APMpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 07:45:16 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-CC: Archit Taneja <archit@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 0/3] OMAPDSS: Panel NEC: backlight handling changes
-Date: Wed, 16 Jan 2013 13:45:06 +0100
-Message-ID: <1358340309-8774-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.1
+	id S1753587Ab3APMsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 07:48:12 -0500
+Message-ID: <50F6A187.7010101@suse.cz>
+Date: Wed, 16 Jan 2013 13:48:07 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Roland Eggner <edvx1@systemanalysen.net>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Dmitry Voytik <dvv.kernel@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] nconf:  add keybindings for vi-style menu navigation,
+ rewrite help texts
+References: <20121228185108.GA13644@voyt-hp> <1356723607-17027-1-git-send-email-dvv.kernel@gmail.com> <20121229223415.GB28355@mobil.systemanalysen.net> <201301141924.37268.yann.morin.1998@free.fr> <20130115161031.GA5513@mobil.systemanalysen.net> <20130115162632.GB5513@mobil.systemanalysen.net>
+In-Reply-To: <20130115162632.GB5513@mobil.systemanalysen.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi,
+On 15.1.2013 17:26, Roland Eggner wrote:
+>> From: Roland Eggner <edvx1@systemanalysen.net>
+> 
+> •  Implemented vi-style navigation <k> <j> <l> <h>, based on initial work by
+>    Dmitry Voytik.  Using <?> <H> instead of <?> <h> for help related to current
+>    menu entry avoids conflict.
 
-While working with Zoom2 which is using the NEC panel I noticed few issues with
-the panel driver.
-The first patch fixes one irritating warning print every time I boot the board.
-With the third patch we can cleanly move to bl-pwm driver to handle the
-backlight on Zoom2. In this case we should not register another backlight device
-in the NEC panel driver.
+It conflicts with previous behavior that people got used to, though.
 
-Regards,
-Peter
----
-Peter Ujfalusi (3):
-  OMAPDSS: Panel NEC: Set backlight type to remove boot time warning
-  OMAPDSS: Panel NEC: Get rid of nec_80848_data structure
-  OMAPDSS: Panel NEC: Only register backlight when we have valid
-    callback
+Also, please split the patch at least into one part adding the new key
+binding and a second part rewriting the help texts.
 
- .../omap2/displays/panel-nec-nl8048hl11-01b.c      | 81 ++++++++++------------
- 1 file changed, 35 insertions(+), 46 deletions(-)
-
--- 
-1.8.1
-
+Michal
