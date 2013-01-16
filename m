@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758397Ab3APQFi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:05:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36284 "EHLO
+	id S932337Ab3APQFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:05:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36291 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758354Ab3APQFe (ORCPT
+	with ESMTP id S1758354Ab3APQFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:05:34 -0500
+	Wed, 16 Jan 2013 11:05:39 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, Thomas Weber <thomas@tomweber.eu>,
+        Tony Lindgren <tony@atomide.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 127/222] ALSA: hda - Always turn on pins for HDMI/DP
-Date: Wed, 16 Jan 2013 13:55:27 -0200
-Message-Id: <1358351822-7675-128-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 128/222] OMAP: board-files: fix i2c_bus for tfp410
+Date: Wed, 16 Jan 2013 13:55:28 -0200
+Message-Id: <1358351822-7675-129-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,81 +28,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 
-commit 6169b673618bf0b2518ce413b54925782a603f06 upstream.
+commit ca2e16faa7378878c1522a7c1b6c38211de3331d upstream.
 
-We've seen the broken HDMI *video* output on some machines with GM965,
-and the debugging session pointed that the culprit is the disabled
-audio output pins.  Toggling these pins dynamically on demand caused
-flickering of HDMI TV.
+The i2c handling in tfp410 driver, which handles converting parallel RGB
+to DVI, was changed in 958f2717b84e88bf833d996997fda8f73276f2af
+(OMAPDSS: TFP410: pdata rewrite). The patch changed what value the
+driver considers as invalid/undefined.  Before the patch, 0 was the
+invalid value, but as 0 is a valid bus number, the patch changed this to
+-1.
 
-This patch changes the behavior to keep the pin ON constantly.
+However, the fact was missed that many board files do not define the bus
+number at all, thus it's left to 0. This causes the driver to fail to
+get the i2c bus, exiting from the driver's probe with an error, meaning
+that the DVI output does not work for those boards.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51421
+This patch fixes the issue by changing the i2c_bus number field in the
+driver's platform data from u16 to int, and setting the bus number to -1
+in the board files for the boards that did not define the bus. The
+exception is devkit8000, for which the bus is set to 1, which is the
+correct bus for that board.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ herton: adjust context ]
+The bug exists in v3.5+ kernels.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Reported-by: Thomas Weber <thomas@tomweber.eu>
+Cc: Thomas Weber <thomas@tomweber.eu>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- sound/pci/hda/patch_hdmi.c |   18 ++++--------------
- 1 file changed, 4 insertions(+), 14 deletions(-)
+ arch/arm/mach-omap2/board-3430sdp.c      |    1 +
+ arch/arm/mach-omap2/board-am3517evm.c    |    1 +
+ arch/arm/mach-omap2/board-cm-t35.c       |    1 +
+ arch/arm/mach-omap2/board-devkit8000.c   |    1 +
+ arch/arm/mach-omap2/board-omap3evm.c     |    1 +
+ arch/arm/mach-omap2/board-omap3stalker.c |    1 +
+ include/video/omap-panel-tfp410.h        |    2 +-
+ 7 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index 5d52332..f212c37 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -425,9 +425,11 @@ static void hdmi_init_pin(struct hda_codec *codec, hda_nid_t pin_nid)
- 	if (get_wcaps(codec, pin_nid) & AC_WCAP_OUT_AMP)
- 		snd_hda_codec_write(codec, pin_nid, 0,
- 				AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE);
--	/* Disable pin out until stream is active*/
-+	/* Enable pin out: some machines with GM965 gets broken output when
-+	 * the pin is disabled or changed while using with HDMI
-+	 */
- 	snd_hda_codec_write(codec, pin_nid, 0,
--			    AC_VERB_SET_PIN_WIDGET_CONTROL, 0);
-+			    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT);
- }
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index a98c688..456fdbc 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -159,6 +159,7 @@ static struct omap_dss_device sdp3430_lcd_device = {
  
- static int hdmi_get_channel_count(struct hda_codec *codec, hda_nid_t cvt_nid)
-@@ -1147,17 +1149,11 @@ static int generic_hdmi_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
- 	struct hdmi_spec *spec = codec->spec;
- 	int pin_idx = hinfo_to_pin_index(spec, hinfo);
- 	hda_nid_t pin_nid = spec->pins[pin_idx].pin_nid;
--	int pinctl;
+ static struct tfp410_platform_data dvi_panel = {
+ 	.power_down_gpio	= -1,
++	.i2c_bus_num		= -1,
+ };
  
- 	hdmi_set_channel_count(codec, cvt_nid, substream->runtime->channels);
+ static struct omap_dss_device sdp3430_dvi_device = {
+diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+index 18f6010..919dd66 100644
+--- a/arch/arm/mach-omap2/board-am3517evm.c
++++ b/arch/arm/mach-omap2/board-am3517evm.c
+@@ -209,6 +209,7 @@ static struct omap_dss_device am3517_evm_tv_device = {
  
- 	hdmi_setup_audio_infoframe(codec, pin_idx, substream);
+ static struct tfp410_platform_data dvi_panel = {
+ 	.power_down_gpio	= -1,
++	.i2c_bus_num		= -1,
+ };
  
--	pinctl = snd_hda_codec_read(codec, pin_nid, 0,
--				    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
--	snd_hda_codec_write(codec, pin_nid, 0,
--			    AC_VERB_SET_PIN_WIDGET_CONTROL, pinctl | PIN_OUT);
--
- 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
- }
+ static struct omap_dss_device am3517_evm_dvi_device = {
+diff --git a/arch/arm/mach-omap2/board-cm-t35.c b/arch/arm/mach-omap2/board-cm-t35.c
+index ded100c..7e4cbda 100644
+--- a/arch/arm/mach-omap2/board-cm-t35.c
++++ b/arch/arm/mach-omap2/board-cm-t35.c
+@@ -243,6 +243,7 @@ static struct omap_dss_device cm_t35_lcd_device = {
  
-@@ -1169,7 +1165,6 @@ static int generic_hdmi_playback_pcm_cleanup(struct hda_pcm_stream *hinfo,
- 	int cvt_idx, pin_idx;
- 	struct hdmi_spec_per_cvt *per_cvt;
- 	struct hdmi_spec_per_pin *per_pin;
--	int pinctl;
+ static struct tfp410_platform_data dvi_panel = {
+ 	.power_down_gpio	= CM_T35_DVI_EN_GPIO,
++	.i2c_bus_num		= -1,
+ };
  
- 	snd_hda_codec_cleanup_stream(codec, hinfo->nid);
+ static struct omap_dss_device cm_t35_dvi_device = {
+diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+index 6567c1c..024b115 100644
+--- a/arch/arm/mach-omap2/board-devkit8000.c
++++ b/arch/arm/mach-omap2/board-devkit8000.c
+@@ -143,6 +143,7 @@ static struct omap_dss_device devkit8000_lcd_device = {
  
-@@ -1188,11 +1183,6 @@ static int generic_hdmi_playback_pcm_cleanup(struct hda_pcm_stream *hinfo,
- 			return -EINVAL;
- 		per_pin = &spec->pins[pin_idx];
+ static struct tfp410_platform_data dvi_panel = {
+ 	.power_down_gpio	= -1,
++	.i2c_bus_num		= 1,
+ };
  
--		pinctl = snd_hda_codec_read(codec, per_pin->pin_nid, 0,
--					    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
--		snd_hda_codec_write(codec, per_pin->pin_nid, 0,
--				    AC_VERB_SET_PIN_WIDGET_CONTROL,
--				    pinctl & ~PIN_OUT);
- 		snd_hda_spdif_ctls_unassign(codec, pin_idx);
- 	}
+ static struct omap_dss_device devkit8000_dvi_device = {
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index 639bd07..dcae228 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -221,6 +221,7 @@ static struct omap_dss_device omap3_evm_tv_device = {
+ 
+ static struct tfp410_platform_data dvi_panel = {
+ 	.power_down_gpio	= OMAP3EVM_DVI_PANEL_EN_GPIO,
++	.i2c_bus_num		= -1,
+ };
+ 
+ static struct omap_dss_device omap3_evm_dvi_device = {
+diff --git a/arch/arm/mach-omap2/board-omap3stalker.c b/arch/arm/mach-omap2/board-omap3stalker.c
+index b318f56..5387db6 100644
+--- a/arch/arm/mach-omap2/board-omap3stalker.c
++++ b/arch/arm/mach-omap2/board-omap3stalker.c
+@@ -121,6 +121,7 @@ static struct omap_dss_device omap3_stalker_tv_device = {
+ 
+ static struct tfp410_platform_data dvi_panel = {
+ 	.power_down_gpio	= DSS_ENABLE_GPIO,
++	.i2c_bus_num		= -1,
+ };
+ 
+ static struct omap_dss_device omap3_stalker_dvi_device = {
+diff --git a/include/video/omap-panel-tfp410.h b/include/video/omap-panel-tfp410.h
+index 68c31d7..aef35e4 100644
+--- a/include/video/omap-panel-tfp410.h
++++ b/include/video/omap-panel-tfp410.h
+@@ -28,7 +28,7 @@ struct omap_dss_device;
+  * @power_down_gpio: gpio number for PD pin (or -1 if not available)
+  */
+ struct tfp410_platform_data {
+-	u16 i2c_bus_num;
++	int i2c_bus_num;
+ 	int power_down_gpio;
+ };
  
 -- 
 1.7.9.5
