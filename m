@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758954Ab3APJnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 04:43:45 -0500
-Received: from linux-sh.org ([111.68.239.195]:57560 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754055Ab3APJnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 04:43:43 -0500
-Date: Wed, 16 Jan 2013 18:43:38 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sh fixes for 3.8-rc4
-Message-ID: <20130116094337.GB30208@linux-sh.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758967Ab3APJpo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 04:45:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:33819 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758446Ab3APJpn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 04:45:43 -0500
+From: hamo@canonical.com
+To: viro@zeniv.linux.org.uk
+Cc: hamo.by@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] Update comments to match the current code
+Date: Wed, 16 Jan 2013 17:45:36 +0800
+Message-Id: <1358329536-6778-1-git-send-email-hamo@canonical.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 254adaa465c40151df11fc1f88f93e6e86eb61d4:
+From: Yang Bai <hamo.by@gmail.com>
 
-  seq_file: fix new kernel-doc warnings (2013-01-10 14:35:24 -0800)
+Since fs/super.c has changed a lot and fs/namespace.c appears, the
+comments at the head of the files do not match the code.
 
-are available in the git repository at:
+Signed-off-by: Yang Bai <hamo.by@gmail.com>
+---
+ fs/namespace.c | 4 ++++
+ fs/super.c     | 7 +------
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
-  git://github.com/pmundt/linux-sh.git tags/sh-for-linus
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 55605c5..238a09c 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -4,6 +4,10 @@
+  * (C) Copyright Al Viro 2000, 2001
+  *	Released under GPL v2.
+  *
++ *  namespace.c contains code to handle: - mount system call
++ *                                       - umount system call
++ *                                       - pivot_root system call
++ *
+  * Based on code from fs/super.c, copyright Linus Torvalds and others.
+  * Heavily rewritten.
+  */
+diff --git a/fs/super.c b/fs/super.c
+index 12f1237..ebe411d 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -3,12 +3,7 @@
+  *
+  *  Copyright (C) 1991, 1992  Linus Torvalds
+  *
+- *  super.c contains code to handle: - mount structures
+- *                                   - super-block tables
+- *                                   - filesystem drivers list
+- *                                   - mount system call
+- *                                   - umount system call
+- *                                   - ustat system call
++ *  super.c contains code to handle: - super-block tables
+  *
+  * GK 2/5/95  -  Changed to support mounting the root fs via NFS
+  *
+-- 
+1.8.1.1
 
-for you to fetch changes up to 035688d9c64c61957dd272a1e773f27b0143704d:
-
-  sh: ecovec: add sample amixer settings (2013-01-16 18:30:44 +0900)
-
-----------------------------------------------------------------
-SuperH fixes for 3.8-rc4
-
-----------------------------------------------------------------
-Kuninori Morimoto (3):
-      sh: define TASK_UNMAPPED_BASE as a page aligned constant
-      sh: clkfwk: bugfix: sh_clk_div_enable() care sh_clk_div_set_rate() if div6
-      sh: ecovec: add sample amixer settings
-
-Paul Mundt (2):
-      sh: wire up finit_module syscall.
-      sh: Fix up stack debugging build.
-
-Thomas Schwinge (1):
-      sh: Fix FDPIC binary loader
-
- arch/sh/boards/mach-ecovec24/setup.c |   10 ++++++++++
- arch/sh/include/asm/elf.h            |    4 ++--
- arch/sh/include/asm/processor_32.h   |    2 +-
- arch/sh/include/asm/processor_64.h   |    2 +-
- arch/sh/include/uapi/asm/unistd_32.h |    3 ++-
- arch/sh/include/uapi/asm/unistd_64.h |    3 ++-
- arch/sh/kernel/syscalls_32.S         |    1 +
- arch/sh/kernel/syscalls_64.S         |    1 +
- arch/sh/lib/mcount.S                 |    2 ++
- drivers/sh/clk/cpg.c                 |    6 ++++++
- 10 files changed, 28 insertions(+), 6 deletions(-)
