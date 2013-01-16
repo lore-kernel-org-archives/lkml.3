@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758559Ab3APQHG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:07:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36410 "EHLO
+	id S1758573Ab3APQHQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:07:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36421 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757541Ab3APQHB (ORCPT
+	with ESMTP id S1757541Ab3APQHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:07:01 -0500
+	Wed, 16 Jan 2013 11:07:11 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neal Cardwell <ncardwell@google.com>,
+Cc: Jay Purohit <jspurohit@velocitylimitless.com>,
+        Jan Ceuleers <jan.ceuleers@computer.org>,
         "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 149/222] inet_diag: avoid unsafe and nonsensical prefix matches in inet_diag_bc_run()
-Date: Wed, 16 Jan 2013 13:55:49 -0200
-Message-Id: <1358351822-7675-150-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 151/222] usb/ipheth: Add iPhone 5 support
+Date: Wed, 16 Jan 2013 13:55:51 -0200
+Message-Id: <1358351822-7675-152-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,83 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Jay Purohit <jspurohit@velocitylimitless.com>
 
-commit f67caec9068cee426ec23cf9005a1dee2ecad187 upstream.
+commit af1b85e49089f945deb46258b0fc4bc9910afb22 upstream.
 
-Add logic to check the address family of the user-supplied conditional
-and the address family of the connection entry. We now do not do
-prefix matching of addresses from different address families (AF_INET
-vs AF_INET6), except for the previously existing support for having an
-IPv4 prefix match an IPv4-mapped IPv6 address (which this commit
-maintains as-is).
+I noticed that the iPhone ethernet driver did not support
+iPhone 5. I quickly added support to it in my kernel, here's
+a patch.
 
-This change is needed for two reasons:
-
-(1) The addresses are different lengths, so comparing a 128-bit IPv6
-prefix match condition to a 32-bit IPv4 connection address can cause
-us to unwittingly walk off the end of the IPv4 address and read
-garbage or oops.
-
-(2) The IPv4 and IPv6 address spaces are semantically distinct, so a
-simple bit-wise comparison of the prefixes is not meaningful, and
-would lead to bogus results (except for the IPv4-mapped IPv6 case,
-which this commit maintains).
-
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Jay Purohit <jspurohit@velocitylimitless.com>
+Acked-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+Signed-off-by: Jan Ceuleers <jan.ceuleers@computer.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ipv4/inet_diag.c |   28 +++++++++++++++++-----------
- 1 file changed, 17 insertions(+), 11 deletions(-)
+ drivers/net/usb/ipheth.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
-index efeca3b..5d57af1 100644
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -423,25 +423,31 @@ static int inet_diag_bc_run(const struct nlattr *_bc,
- 				break;
- 			}
+diff --git a/drivers/net/usb/ipheth.c b/drivers/net/usb/ipheth.c
+index a28a983..534d8be 100644
+--- a/drivers/net/usb/ipheth.c
++++ b/drivers/net/usb/ipheth.c
+@@ -62,6 +62,7 @@
+ #define USB_PRODUCT_IPAD 0x129a
+ #define USB_PRODUCT_IPHONE_4_VZW 0x129c
+ #define USB_PRODUCT_IPHONE_4S	0x12a0
++#define USB_PRODUCT_IPHONE_5	0x12a8
  
--			if (cond->prefix_len == 0)
--				break;
--
- 			if (op->code == INET_DIAG_BC_S_COND)
- 				addr = entry->saddr;
- 			else
- 				addr = entry->daddr;
- 
-+			if (cond->family != AF_UNSPEC &&
-+			    cond->family != entry->family) {
-+				if (entry->family == AF_INET6 &&
-+				    cond->family == AF_INET) {
-+					if (addr[0] == 0 && addr[1] == 0 &&
-+					    addr[2] == htonl(0xffff) &&
-+					    bitstring_match(addr + 3,
-+							    cond->addr,
-+							    cond->prefix_len))
-+						break;
-+				}
-+				yes = 0;
-+				break;
-+			}
-+
-+			if (cond->prefix_len == 0)
-+				break;
- 			if (bitstring_match(addr, cond->addr,
- 					    cond->prefix_len))
- 				break;
--			if (entry->family == AF_INET6 &&
--			    cond->family == AF_INET) {
--				if (addr[0] == 0 && addr[1] == 0 &&
--				    addr[2] == htonl(0xffff) &&
--				    bitstring_match(addr + 3, cond->addr,
--						    cond->prefix_len))
--					break;
--			}
- 			yes = 0;
- 			break;
- 		}
+ #define IPHETH_USBINTF_CLASS    255
+ #define IPHETH_USBINTF_SUBCLASS 253
+@@ -113,6 +114,10 @@ static struct usb_device_id ipheth_table[] = {
+ 		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_4S,
+ 		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
+ 		IPHETH_USBINTF_PROTO) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(
++		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_5,
++		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
++		IPHETH_USBINTF_PROTO) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(usb, ipheth_table);
 -- 
 1.7.9.5
 
