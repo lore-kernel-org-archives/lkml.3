@@ -1,75 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758517Ab3APQdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:33:07 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:56293 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757398Ab3APQdC convert rfc822-to-8bit (ORCPT
+	id S1758634Ab3APQdv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:33:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36362 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754101Ab3APQG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:33:02 -0500
-From: James Bottomley <jbottomley@parallels.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-CC: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zach Brown <zab@zabbo.net>, Maxim Patlasov <MPatlasov@parallels.com>
-Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
-Thread-Topic: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
-Thread-Index: AQHN9AckBU/BbJkf9Eempikh7KsAyw==
-Date: Wed, 16 Jan 2013 16:32:58 +0000
-Message-ID: <1358353978.2384.50.camel@dabdike.int.hansenpartnership.com>
-References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
-In-Reply-To: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [46.65.52.191]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <4CCA67A75E8D94428CB64A9ED0BC0C1C@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Wed, 16 Jan 2013 11:06:27 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Robin Holt <holt@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 140/222] SGI-XP: handle non-fatal traps
+Date: Wed, 16 Jan 2013 13:55:40 -0200
+Message-Id: <1358351822-7675-141-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-09 at 13:58 -0600, Dave Kleikamp wrote:
-> This patchset was begun by Zach Brown and was originally submitted for
-> review in October, 2009. Feedback was positive, and I have picked up
-> where he left off, porting his patches to the latest mainline kernel
-> and adding support more file systems.
-> 
-> This patch series adds a kernel interface to fs/aio.c so that kernel code can
-> issue concurrent asynchronous IO to file systems.  It adds an aio command and
-> file system methods which specify io memory with pages instead of userspace
-> addresses.
-> 
-> This series was written to reduce the current overhead loop imposes by
-> performing synchronus buffered file system IO from a kernel thread.  These
-> patches turn loop into a light weight layer that translates bios into iocbs.
-> 
-> It introduces new file ops, read_iter() and write_iter(), that replace the
-> aio_read() and aio_write() operations. The iov_iter structure can now contain
-> either a user-space iovec or a kernel-space bio_vec. Since it would be
-> overly complicated to replace every instance of aio_read() and aio_write(),
-> the old operations are not removed, but file systems implementing the new
-> ones need not keep the old ones.
-> 
-> Changes from V4 include:
->  * moved iov-iter.c from mm/ to fs/
->  * removed dio_aligned helper
->  * insured that FUA write to loop device is committed to media
->  * removed no-longer-used REQ_KERNEL define
-> 
-> These patches apply to 3.8-rc2 and are also available at:
-> git://github.com/kleikamp/linux-shaggy.git loop_2013_01_04
-> 
-> My hopes are that this patchset is finally ready for linux-next.
+3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
 
-Just a note that we at parallels are anxiously awaiting this too.  Our
-rewrite of the linux loop device to be more efficient (and not double
-cache) depends on this work.  I should also note that we've been testing
-these patches (albeit backported to a RHEL kernel as a current work
-base) with no problems reported so far.
+------------------
 
-James
+From: Robin Holt <holt@sgi.com>
+
+commit 891348ca0f66206f1dc0e30d63757e3df1ae2d15 upstream.
+
+We found a user code which was raising a divide-by-zero trap.  That trap
+would lead to XPC connections between system-partitions being torn down
+due to the die_chain notifier callouts it received.
+
+This also revealed a different issue where multiple callers into
+xpc_die_deactivate() would all attempt to do the disconnect in parallel
+which would sometimes lock up but often overwhelm the console on very
+large machines as each would print at least one line of output at the
+end of the deactivate.
+
+I reviewed all the users of the die_chain notifier and changed the code
+to ignore the notifier callouts for reasons which will not actually lead
+to a system to continue on to call die().
+
+[akpm@linux-foundation.org: fix ia64]
+Signed-off-by: Robin Holt <holt@sgi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/misc/sgi-xp/xpc_main.c |   34 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/misc/sgi-xp/xpc_main.c b/drivers/misc/sgi-xp/xpc_main.c
+index 8d082b4..d971817 100644
+--- a/drivers/misc/sgi-xp/xpc_main.c
++++ b/drivers/misc/sgi-xp/xpc_main.c
+@@ -53,6 +53,10 @@
+ #include <linux/kthread.h>
+ #include "xpc.h"
+ 
++#ifdef CONFIG_X86_64
++#include <asm/traps.h>
++#endif
++
+ /* define two XPC debug device structures to be used with dev_dbg() et al */
+ 
+ struct device_driver xpc_dbg_name = {
+@@ -1079,6 +1083,9 @@ xpc_system_reboot(struct notifier_block *nb, unsigned long event, void *unused)
+ 	return NOTIFY_DONE;
+ }
+ 
++/* Used to only allow one cpu to complete disconnect */
++static unsigned int xpc_die_disconnecting;
++
+ /*
+  * Notify other partitions to deactivate from us by first disengaging from all
+  * references to our memory.
+@@ -1092,6 +1099,9 @@ xpc_die_deactivate(void)
+ 	long keep_waiting;
+ 	long wait_to_print;
+ 
++	if (cmpxchg(&xpc_die_disconnecting, 0, 1))
++		return;
++
+ 	/* keep xpc_hb_checker thread from doing anything (just in case) */
+ 	xpc_exiting = 1;
+ 
+@@ -1159,7 +1169,7 @@ xpc_die_deactivate(void)
+  * about the lack of a heartbeat.
+  */
+ static int
+-xpc_system_die(struct notifier_block *nb, unsigned long event, void *unused)
++xpc_system_die(struct notifier_block *nb, unsigned long event, void *_die_args)
+ {
+ #ifdef CONFIG_IA64		/* !!! temporary kludge */
+ 	switch (event) {
+@@ -1191,7 +1201,27 @@ xpc_system_die(struct notifier_block *nb, unsigned long event, void *unused)
+ 		break;
+ 	}
+ #else
+-	xpc_die_deactivate();
++	struct die_args *die_args = _die_args;
++
++	switch (event) {
++	case DIE_TRAP:
++		if (die_args->trapnr == X86_TRAP_DF)
++			xpc_die_deactivate();
++
++		if (((die_args->trapnr == X86_TRAP_MF) ||
++		     (die_args->trapnr == X86_TRAP_XF)) &&
++		    !user_mode_vm(die_args->regs))
++			xpc_die_deactivate();
++
++		break;
++	case DIE_INT3:
++	case DIE_DEBUG:
++		break;
++	case DIE_OOPS:
++	case DIE_GPF:
++	default:
++		xpc_die_deactivate();
++	}
+ #endif
+ 
+ 	return NOTIFY_DONE;
+-- 
+1.7.9.5
 
