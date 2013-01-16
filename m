@@ -1,74 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab3APQXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:23:14 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17399 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756425Ab3APQXM (ORCPT
+	id S932322Ab3APQXn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:23:43 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:45983 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756425Ab3APQXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:23:12 -0500
-X-Authority-Analysis: v=2.0 cv=e+OEuNV/ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=oS6VeJ3zRZwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ylgaL1uFd_sA:10 a=I9WiF3Pm5Iv87ngVyhUA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358353390.4068.51.camel@gandalf.local.home>
-Subject: Re: [PATCH 00/10] TTY: switch flipping functions to tty_port
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg KH <gregkh@linuxfoundation.org>, alan@linux.intel.com,
-        jirislaby@gmail.com, linux-kernel@vger.kernel.org
-Date: Wed, 16 Jan 2013 11:23:10 -0500
-In-Reply-To: <50F6CE7E.4090807@suse.cz>
-References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
-	  <20130116064735.GA7743@kroah.com> <50F6AD15.708@suse.cz>
-	 <1358351064.4068.43.camel@gandalf.local.home> <50F6CE7E.4090807@suse.cz>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jan 2013 11:23:40 -0500
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jan 2013 11:23:40 EST
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v4] context_tracking: Add comments on interface and internals
+Date: Wed, 16 Jan 2013 17:16:37 +0100
+Message-Id: <1358352997-29585-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <87wqvdl1n8.fsf@sejong.aot.lge.com>
+References: <87wqvdl1n8.fsf@sejong.aot.lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-16 at 16:59 +0100, Jiri Slaby wrote:
-> On 01/16/2013 04:44 PM, Steven Rostedt wrote:
-> > On Wed, 2013-01-16 at 14:37 +0100, Jiri Slaby wrote:
-> >> Steven, do you have any plans with the driver? What is its planned destiny?
-> > 
-> > Well, I'm currently using the device in my main machine. As it is my
-> > main box, I don't update the kernel as often.
-> > 
-> > Let me know what I need to do to fix it in the current kernel.
-> 
-> Every port in the system has to have its struct tty_port counterpart.
-> 
-> /me looked into the code
-> 
-> OMG. It contains a true copy of serial_core!
+This subsystem lacks many explanations on its purpose and
+design. Add these missing comments.
 
-LOL... Yes this driver truly does suck. I started with a copy that came
-with the device (well, downloaded it from their web site). I did the
-bare minimum to get it working with the latest kernel, in the hope that
-I can get others to help make it into a proper driver.
+v4: Document function parameter to be more kernel-doc
+friendly, as per Namhyung suggestion.
 
-> 
-> In the beginning (to remove the BROKEN flag), what it needs is struct
-> tty_port to be added to struct sb_uart_info. It obviously needs
-> tty_port_init + tty_port_destroy at appropriate places. Then it needs
-> tty_register_device to be switched to tty_port_register_device.
-> 
-> Finally, having the tty_port, all tty flipping functions take the
-> tty_port, not tty_struct (the build errors reported). This is easy while
-> you have a tty_port.
-> 
-> In the long term, it needs to get rid of the all the pseudo-uart* stuff
-> (the copy of serial_core) and use only tty layer+tty_port helpers.
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/context_tracking.c |   75 +++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 65 insertions(+), 10 deletions(-)
 
-grumble, this is a bit more work than I currently have time for. This
-driver needs some major loving. But my heart is someplace else, and
-until I can get a divorce from what I'm currently working on, this
-driver will need to find lovers from someone else.
-
--- Steve
-
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+index e0e07fd..d566aba 100644
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -1,3 +1,19 @@
++/*
++ * Context tracking: Probe on high level context boundaries such as kernel
++ * and userspace. This includes syscalls and exceptions entry/exit.
++ *
++ * This is used by RCU to remove its dependency on the timer tick while a CPU
++ * runs in userspace.
++ *
++ *  Started by Frederic Weisbecker:
++ *
++ * Copyright (C) 2012 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
++ *
++ * Many thanks to Gilad Ben-Yossef, Paul McKenney, Ingo Molnar, Andrew Morton,
++ * Steven Rostedt, Peter Zijlstra for suggestions and improvements.
++ *
++ */
++
+ #include <linux/context_tracking.h>
+ #include <linux/rcupdate.h>
+ #include <linux/sched.h>
+@@ -6,8 +22,8 @@
+ 
+ struct context_tracking {
+ 	/*
+-	 * When active is false, hooks are not set to
+-	 * minimize overhead: TIF flags are cleared
++	 * When active is false, probes are unset in order
++	 * to minimize overhead: TIF flags are cleared
+ 	 * and calls to user_enter/exit are ignored. This
+ 	 * may be further optimized using static keys.
+ 	 */
+@@ -24,6 +40,15 @@ static DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
+ #endif
+ };
+ 
++/**
++ * user_enter - Inform the context tracking that the CPU is going to
++ *              enter userspace mode.
++ *
++ * This function must be called right before we switch from the kernel
++ * to userspace, when it's guaranteed the remaining kernel instructions
++ * to execute won't use any RCU read side critical section because this
++ * function sets RCU in extended quiescent state.
++ */
+ void user_enter(void)
+ {
+ 	unsigned long flags;
+@@ -39,40 +64,70 @@ void user_enter(void)
+ 	if (in_interrupt())
+ 		return;
+ 
++	/* Kernel threads aren't supposed to go to userspace */
+ 	WARN_ON_ONCE(!current->mm);
+ 
+ 	local_irq_save(flags);
+ 	if (__this_cpu_read(context_tracking.active) &&
+ 	    __this_cpu_read(context_tracking.state) != IN_USER) {
+ 		__this_cpu_write(context_tracking.state, IN_USER);
++		/*
++		 * At this stage, only low level arch entry code remains and
++		 * then we'll run in userspace. We can assume there won't be
++		 * any RCU read-side critical section until the next call to
++		 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
++		 * on the tick.
++		 */
+ 		rcu_user_enter();
+ 	}
+ 	local_irq_restore(flags);
+ }
+ 
++
++/**
++ * user_exit - Inform the context tracking that the CPU is
++ *             exiting userspace mode and entering the kernel.
++ *
++ * This function must be called after we entered the kernel from userspace
++ * before any use of RCU read side critical section. This potentially include
++ * any high level kernel code like syscalls, exceptions, signal handling, etc...
++ *
++ * This call supports re-entrancy. This way it can be called from any exception
++ * handler without needing to know if we came from userspace or not.
++ */
+ void user_exit(void)
+ {
+ 	unsigned long flags;
+ 
+-	/*
+-	 * Some contexts may involve an exception occuring in an irq,
+-	 * leading to that nesting:
+-	 * rcu_irq_enter() rcu_user_exit() rcu_user_exit() rcu_irq_exit()
+-	 * This would mess up the dyntick_nesting count though. And rcu_irq_*()
+-	 * helpers are enough to protect RCU uses inside the exception. So
+-	 * just return immediately if we detect we are in an IRQ.
+-	 */
+ 	if (in_interrupt())
+ 		return;
+ 
+ 	local_irq_save(flags);
+ 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
+ 		__this_cpu_write(context_tracking.state, IN_KERNEL);
++		/*
++		 * We are going to run code that may use RCU. Inform
++		 * RCU core about that (ie: we may need the tick again).
++		 */
+ 		rcu_user_exit();
+ 	}
+ 	local_irq_restore(flags);
+ }
+ 
++
++/**
++ * context_tracking_task_switch - context switch the syscall callbacks
++ * @prev: the task that is being switched out
++ * @next: the task that is being switched in
++ *
++ * The context tracking uses the syscall slow path to implement its user-kernel
++ * boundaries probes on syscalls. This way it doesn't impact the syscall fast
++ * path on CPUs that don't do context tracking.
++ *
++ * But we need to clear the flag on the previous task because it may later
++ * migrate to some CPU that doesn't do the context tracking. As such the TIF
++ * flag may not be desired there.
++ */
+ void context_tracking_task_switch(struct task_struct *prev,
+ 			     struct task_struct *next)
+ {
+-- 
+1.7.5.4
 
