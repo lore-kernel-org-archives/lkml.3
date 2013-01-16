@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758011Ab3APEBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 23:01:18 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:54177 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756664Ab3APEBR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 23:01:17 -0500
-Date: Tue, 15 Jan 2013 23:01:15 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Tejun Heo <tj@kernel.org>
-cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Jens Axboe <axboe@kernel.dk>, USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: USB device cannot be reconnected and khubd "blocked for more
- than 120 seconds"
-In-Reply-To: <20130116003530.GK2668@htj.dyndns.org>
-Message-ID: <Pine.LNX.4.44L0.1301152253070.26877-100000@netrider.rowland.org>
+	id S1758157Ab3APECv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 23:02:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:60780 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757153Ab3APECu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 23:02:50 -0500
+Date: Tue, 15 Jan 2013 20:03:48 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [ 000/171] 3.4.26-stable review
+Message-ID: <20130116040348.GA12335@kroah.com>
+References: <20130115224313.394976595@linuxfoundation.org>
+ <CAKocOOOVoViOdViChm58ZGM6M6FCkq5VUDZjfDvjBqF7PSoQnQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKocOOOVoViOdViChm58ZGM6M6FCkq5VUDZjfDvjBqF7PSoQnQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013, Tejun Heo wrote:
-
-> Hello, Arjan.
+On Tue, Jan 15, 2013 at 08:48:24PM -0700, Shuah Khan wrote:
+> On Tue, Jan 15, 2013 at 3:42 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > This is the start of the stable review cycle for the 3.4.26 release.
+> > There are 171 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Thu Jan 17 22:42:47 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> >         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.26-rc1.gz
+> > and the diffstat can be found below.
+> >
+> > thanks,
+> >
+> > greg k-h
 > 
-> On Tue, Jan 15, 2013 at 04:25:54PM -0800, Arjan van de Ven wrote:
-> > async fundamentally had the concept of a monotonic increasing number,
-> > and that you could always wait for "everyone before me".
-> > then people (like me) wanted exceptions to what "everyone" means ;-(
-> > I'm ok with going back to a single space and simplify the world.
-> 
-> If we want (or need) finer grained operation, we'll probably have to
-> head the other direction, so that we can definitively tell that an
-> async operation belongs to domains system, module load A and B, so
-> that each waiter knows what to wait for.
-> 
-> The current domain implementation is somewhere inbetween.  It's not
-> completely simplistic system and at the same time not developed enough
-> to do properly stacked flushing.
+> Patches applied cleanly to 3.0.y, 3.4.y, and 3.7.y.
+> Compiled and booted on the following systems:
+> HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
+> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
-I like your idea of chronological synchronization: Insist that anybody
-who wants to flush async jobs must get a cookie, and then only allow
-them to wait for async jobs started after the cookie was issued.
+Thanks for testing.
 
-I don't know if this is possible with the current implementation.  It 
-would require changing every call to async_synchronize_*(), and in a 
-nontrivial way.  But it might provide a proper solution to all these 
-problems.
-
-Can you think of any reasons why it wouldn't work in principle?  It 
-would prevent code from doing "wait until all currently-running async 
-jobs have finished" -- but arguably, nobody should be allowed to do 
-that anyway.
-
-Alan Stern
-
-
+greg k-h
