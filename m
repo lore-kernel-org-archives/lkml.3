@@ -1,31 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab3APQJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:09:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36747 "EHLO
+	id S1758683Ab3APQJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:09:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36757 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932679Ab3APQJD (ORCPT
+	with ESMTP id S1758663Ab3APQJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:09:03 -0500
+	Wed, 16 Jan 2013 11:09:09 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Wong <normalperson@yhbt.net>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Jiri Olsa <jolsa@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Voellmy <andreas.voellmy@yale.edu>, netdev@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 176/222] epoll: prevent missed events on EPOLL_CTL_MOD
-Date: Wed, 16 Jan 2013 13:56:16 -0200
-Message-Id: <1358351822-7675-177-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 181/222] sparc: huge_ptep_set_* functions need to call set_huge_pte_at()
+Date: Wed, 16 Jan 2013 13:56:21 -0200
+Message-Id: <1358351822-7675-182-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -38,86 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Wong <normalperson@yhbt.net>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-commit 128dd1759d96ad36c379240f8b9463e8acfd37a1 upstream.
+commit 6cb9c3697585c47977c42c5cc1b9fc49247ac530 upstream.
 
-EPOLL_CTL_MOD sets the interest mask before calling f_op->poll() to
-ensure events are not missed.  Since the modifications to the interest
-mask are not protected by the same lock as ep_poll_callback, we need to
-ensure the change is visible to other CPUs calling ep_poll_callback.
+Modifying the huge pte's requires that all the underlying pte's be
+modified.
 
-We also need to ensure f_op->poll() has an up-to-date view of past
-events which occured before we modified the interest mask.  So this
-barrier also pairs with the barrier in wq_has_sleeper().
+Version 2: added missing flush_tlb_page()
 
-This should guarantee either ep_poll_callback or f_op->poll() (or both)
-will notice the readiness of a recently-ready/modified item.
-
-This issue was encountered by Andreas Voellmy and Junchang(Jason) Wang in:
-http://thread.gmane.org/gmane.linux.kernel/1408782/
-
-Signed-off-by: Eric Wong <normalperson@yhbt.net>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Voellmy <andreas.voellmy@yale.edu>
-Tested-by: "Junchang(Jason) Wang" <junchang.wang@yale.edu>
-Cc: netdev@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/eventpoll.c |   22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ arch/sparc/include/asm/hugetlb.h |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 1c8b556..dd1a55d 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1285,7 +1285,7 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
- 	 * otherwise we might miss an event that happens between the
- 	 * f_op->poll() call and the new event set registering.
- 	 */
--	epi->event.events = event->events;
-+	epi->event.events = event->events; /* need barrier below */
- 	pt._key = event->events;
- 	epi->event.data = event->data; /* protected by mtx */
- 	if (epi->event.events & EPOLLWAKEUP) {
-@@ -1296,6 +1296,26 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
- 	}
+diff --git a/arch/sparc/include/asm/hugetlb.h b/arch/sparc/include/asm/hugetlb.h
+index 1770610..f368cef 100644
+--- a/arch/sparc/include/asm/hugetlb.h
++++ b/arch/sparc/include/asm/hugetlb.h
+@@ -58,14 +58,20 @@ static inline pte_t huge_pte_wrprotect(pte_t pte)
+ static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
+ 					   unsigned long addr, pte_t *ptep)
+ {
+-	ptep_set_wrprotect(mm, addr, ptep);
++	pte_t old_pte = *ptep;
++	set_huge_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
+ }
  
- 	/*
-+	 * The following barrier has two effects:
-+	 *
-+	 * 1) Flush epi changes above to other CPUs.  This ensures
-+	 *    we do not miss events from ep_poll_callback if an
-+	 *    event occurs immediately after we call f_op->poll().
-+	 *    We need this because we did not take ep->lock while
-+	 *    changing epi above (but ep_poll_callback does take
-+	 *    ep->lock).
-+	 *
-+	 * 2) We also need to ensure we do not miss _past_ events
-+	 *    when calling f_op->poll().  This barrier also
-+	 *    pairs with the barrier in wq_has_sleeper (see
-+	 *    comments for wq_has_sleeper).
-+	 *
-+	 * This barrier will now guarantee ep_poll_callback or f_op->poll
-+	 * (or both) will notice the readiness of an item.
-+	 */
-+	smp_mb();
-+
-+	/*
- 	 * Get current event bits. We can safely use the file* here because
- 	 * its usage count has been increased by the caller of this function.
- 	 */
+ static inline int huge_ptep_set_access_flags(struct vm_area_struct *vma,
+ 					     unsigned long addr, pte_t *ptep,
+ 					     pte_t pte, int dirty)
+ {
+-	return ptep_set_access_flags(vma, addr, ptep, pte, dirty);
++	int changed = !pte_same(*ptep, pte);
++	if (changed) {
++		set_huge_pte_at(vma->vm_mm, addr, ptep, pte);
++		flush_tlb_page(vma, addr);
++	}
++	return changed;
+ }
+ 
+ static inline pte_t huge_ptep_get(pte_t *ptep)
 -- 
 1.7.9.5
 
