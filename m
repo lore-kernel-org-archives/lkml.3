@@ -1,113 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab3APOAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:00:11 -0500
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:44642 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab3APOAG (ORCPT
+	id S1756352Ab3APOAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:00:32 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:62063 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab3APOA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:00:06 -0500
+	Wed, 16 Jan 2013 09:00:28 -0500
 MIME-Version: 1.0
-In-Reply-To: <87obgpcmqs.fsf@tucsk.piliscsaba.szeredi.hu>
-References: <87obgpcmqs.fsf@tucsk.piliscsaba.szeredi.hu>
-From: Feng Shuo <steve.shuo.feng@gmail.com>
-Date: Wed, 16 Jan 2013 21:59:32 +0800
-Message-ID: <CALmpHybZ4ziLB1V10frctYrO3buHfMoekXxrHMLML3fRMy+Hnw@mail.gmail.com>
-Subject: Re: [GIT PULL] fuse updates for 3.8
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Maxim Patlasov <mpatlasov@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1358257194-8204-1-git-send-email-jolsa@redhat.com>
+References: <1358257194-8204-1-git-send-email-jolsa@redhat.com>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Wed, 16 Jan 2013 09:00:07 -0500
+Message-ID: <CAOPLpQeHTCwr4tuHi0nORCn+LKJRzEGoCWhC-rj30nLe7bY5Nw@mail.gmail.com>
+Subject: Re: [RFC 0/4] perf tool: Adding ratios support
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+On Tue, Jan 15, 2013 at 8:39 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+>   $ perf stat -f formula.conf:cpi kill
+>   usage: kill [ -s signal | -p ] [ -a ] pid ...
+>          kill -l [ signal ]
 
-Would you consider the adaptive readdir_plus patch?
+I do like this proposal.  The only comment I have is that perhaps the
+command line syntax isn't ideal.  What you use above is tied to the
+ratios be defined in the config file.  I would imagine that at least
+over time (for some ratios probably right away) they become available
+by default and don't require a config file.  Also, users might want to
+put individualized ratio definitions in a config file which is read by
+default.
 
-On Wed, Jan 16, 2013 at 8:53 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> Hi Linus,
->
-> Sorry for the late submission.  Most of this was bound for 3.7, which I
-> missed due to moving house.  I think it makes sense to merge it now
-> instead of next cycle as there are quite of few other fuse updates
-> pending.
->
-> Please consider pulling
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
->
-> The large part of this pull request is a patch series from Maxim
-> Patlasov to optimize scatter-gather direct IO.  The rest is small fixes
-> and cleanups.
->
-> There's a one line change outside of fs/fuse to mm/filemap.c which makes
-> the argument of iov_iter_single_seg_count() const, required by Maxim's
-> patches.
->
-> Thanks,
-> Miklos
->
-> ----
-> Anand V. Avati (1):
->       fuse: implement NFS-like readdirplus support
->
-> David Herrmann (2):
->       cuse: use mutex as registration lock instead of spinlocks
->       cuse: do not register multiple devices with identical names
->
-> Maxim Patlasov (12):
->       fuse: general infrastructure for pages[] of variable size
->       fuse: categorize fuse_get_req()
->       fuse: rework fuse_retrieve()
->       fuse: rework fuse_readpages()
->       fuse: rework fuse_perform_write()
->       fuse: rework fuse_do_ioctl()
->       fuse: add per-page descriptor <offset, length> to fuse_req
->       fuse: use req->page_descs[] for argpages cases
->       mm: minor cleanup of iov_iter_single_seg_count()
->       fuse: pass iov[] to fuse_get_user_pages()
->       fuse: optimize fuse_get_user_pages()
->       fuse: optimize __fuse_direct_io()
->
-> Miklos Szeredi (3):
->       fuse: cleanup fuse_direct_io()
->       fuse: make fuse_file_fallocate() static
->       cuse: fix uninitialized variable warnings
->
-> Robert P. J. Day (1):
->       fuse: Move CUSE Kconfig entry from fs/Kconfig into fs/fuse/Kconfig
->
-> Wei Yongjun (1):
->       fuse: remove unused variable in fuse_try_move_page()
->
-> ---
->  fs/Kconfig                |   10 --
->  fs/fuse/Kconfig           |   16 ++-
->  fs/fuse/cuse.c            |   46 +++++----
->  fs/fuse/dev.c             |  122 ++++++++++++++++-------
->  fs/fuse/dir.c             |  199 ++++++++++++++++++++++++++++++++-----
->  fs/fuse/file.c            |  240 +++++++++++++++++++++++++++++----------------
->  fs/fuse/fuse_i.h          |   58 ++++++++---
->  fs/fuse/inode.c           |   11 ++-
->  include/linux/fs.h        |    2 +-
->  include/uapi/linux/fuse.h |   12 +++
->  mm/filemap.c              |    2 +-
->  11 files changed, 528 insertions(+), 190 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+How about the formulas becoming available whenever the config file is
+read.  Maybe this means a few more keywords in the config file (ratio,
+ratio-set, ...).  E.g.:
 
+ratio-set branch {
+          events = {instructions,branch-instructions,branch-misses}:u
 
+          ratio branch-rate {
+                  formula = branch-instructions / instructions
+                  desc = branch rate
+          }
 
--- 
-Feng Shuo
-Tel: (86)10-59851155-2116
-Fax: (86)10-59851155-2008
-Tianjin Zhongke Blue Whale Information Technologies Co., Ltd
-10th Floor, Tower A, The GATE building, No. 19 Zhong-guan-cun Avenue
-Haidian District, Beijing, China
-Postcode 100080
+          ratio branch-miss-rate {
+                  formula = branch-misses / instructions
+                  desc = branch misprediction rate
+          }
+
+          ratio branch-miss-ratio{
+                  formula = branch-misses / branch-instructions
+                  desc = branch misprediction ratio
+          }
+  }
+
+You get the idea.  Maybe substitute "ratio":with "formula". Then allow
+such a ratio/formula to be used just like a normal event, perhaps with
+a special suffix/prefix to designate it.  This should then also mark
+the events as part of a group so that the underlying counters are
+scheduled in together.
