@@ -1,138 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756414Ab3APN74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:59:56 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:41892 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253Ab3APN7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:59:54 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v8 14/22] ACPI: update ej_event interface to take acpi_device
-Date: Wed, 16 Jan 2013 15:05:46 +0100
-Message-ID: <2146678.ZYzAqhqxN1@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQUivk3d0L8UENMBgoqeaC3pGAg=mobjsRupHFhH0VGp7Q@mail.gmail.com>
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <3905799.Wx2ixLIOL7@vostro.rjw.lan> <CAE9FiQUivk3d0L8UENMBgoqeaC3pGAg=mobjsRupHFhH0VGp7Q@mail.gmail.com>
+	id S1756441Ab3APOAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:00:11 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:44642 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756277Ab3APOAG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 09:00:06 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <87obgpcmqs.fsf@tucsk.piliscsaba.szeredi.hu>
+References: <87obgpcmqs.fsf@tucsk.piliscsaba.szeredi.hu>
+From: Feng Shuo <steve.shuo.feng@gmail.com>
+Date: Wed, 16 Jan 2013 21:59:32 +0800
+Message-ID: <CALmpHybZ4ziLB1V10frctYrO3buHfMoekXxrHMLML3fRMy+Hnw@mail.gmail.com>
+Subject: Re: [GIT PULL] fuse updates for 3.8
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Maxim Patlasov <mpatlasov@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 15, 2013 04:36:19 PM Yinghai Lu wrote:
-> On Tue, Jan 15, 2013 at 4:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, January 16, 2013 12:55:20 AM Rafael J. Wysocki wrote:
-> >> On Tuesday, January 15, 2013 03:43:17 PM Yinghai Lu wrote:
-> >> > On Tue, Jan 15, 2013 at 3:26 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > > On Monday, January 14, 2013 10:55:49 PM Yinghai Lu wrote:
-> > [...]
-> >> >
-> >> >
-> >> > looks like:
-> >> >
-> >> > acpi_device_release+0x30
-> >> > 0xffffffff81536e2f is in acpi_device_release (drivers/acpi/scan.c:524).
-> >> > 519 static void acpi_free_power_resources_lists(struct acpi_device *device)
-> >> > 520 {
-> >> > 521         int i;
-> >> > 522
-> >> > 523         acpi_power_resources_list_free(&device->wakeup.resources);
-> >> > 524         if (!device->flags.power_manageable)
-> >> > 525                 return;
-> >> > 526
-> >> > 527         for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
-> >> > 528                 struct acpi_device_power_state *ps = &device->power.states[i];
-> >> >
-> >> > wakeup.resources has problem?
-> >>
-> >> Yes, it seems to.
-> >>
-> >> Thanks for the report, looking into it.
-> >
-> > Found a bug, fixed it and updated the tree (device->flags.wakeup.valid should
-> > be checked before the acpi_power_resources_list_free(&device->wakeup.resources),
-> > otherwise the list may not be initialized).
-> >
-> 
-> still have problems:
+Hi Miklos,
 
-My bad, sorry about that.
+Would you consider the adaptive readdir_plus patch?
 
-> [   63.971903] BUG: unable to handle kernel NULL pointer dereference
-> at 0000000000000010
-> [   63.972708] IP: [<ffffffff8153bf53>] acpi_power_off_list+0x19/0x53
-> [   63.972708] PGD 0
-> [   63.972708] Oops: 0000 [#1] SMP
-> [   63.972708] Modules linked in:
-> [   63.972708] CPU 0
-> [   63.972708] Pid: 4, comm: kworker/0:0 Not tainted
-> 3.8.0-rc3-yh-00703-g5955587-dirty #1132 Bochs Bochs
-> [   63.972708] RIP: 0010:[<ffffffff8153bf53>]  [<ffffffff8153bf53>]
-> acpi_power_off_list+0x19/0x53
-> [   63.972708] RSP: 0018:ffff8801964bba78  EFLAGS: 00010203
-> [   63.972708] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 00000001810000e5
-> [   63.972708] RDX: 00000001810000e6 RSI: 0000000000000004 RDI: ffff8801965de8e0
-> [   63.972708] RBP: ffff8801964bba98 R08: 0000000000000002 R09: ffff8801993d64b0
-> [   63.972708] R10: 0000000000000000 R11: 0000000000000001 R12: ffff8801965de8e0
-> [   63.972708] R13: 0000000000000001 R14: 0000000000000000 R15: ffff880196466528
-> [   63.972708] FS:  0000000000000000(0000) GS:ffff880199200000(0000)
-> knlGS:0000000000000000
-> [   63.972708] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [   63.972708] CR2: 0000000000000010 CR3: 000000017f10a000 CR4: 00000000000006f0
-> [   63.972708] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [   63.972708] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [   63.972708] Process kworker/0:0 (pid: 4, threadinfo
-> ffff8801964ba000, task ffff880196580000)
-> [   63.972708] Stack:
-> [   63.972708]  ffff8801965de800 0000000000000004 ffff8801965de800
-> 0000000000000001
-> [   63.972708]  ffff8801964bbab8 ffffffff8153c65e ffff8801965de800
-> ffff8801965de9d0
-> [   63.972708]  ffff8801964bbae8 ffffffff815367fa ffff8801964bbb08
-> 0000000000000001
-> [   63.972708] Call Trace:
-> [   63.972708]  [<ffffffff8153c65e>] acpi_power_transition+0x6c/0x98
-> [   63.972708]  [<ffffffff815367fa>] acpi_device_unregister+0x16f/0x177
-> [   63.972708]  [<ffffffff8153682d>] acpi_bus_remove+0x2b/0x2f
-> [   63.972708]  [<ffffffff815601cc>] acpi_ns_walk_namespace+0x114/0x250
-> [   63.972708]  [<ffffffff81536802>] ? acpi_device_unregister+0x177/0x177
-> [   63.972708]  [<ffffffff81536802>] ? acpi_device_unregister+0x177/0x177
-> [   63.972708]  [<ffffffff815607cd>] acpi_walk_namespace+0xee/0x137
-> [   63.972708]  [<ffffffff81536921>] acpi_bus_trim+0x64/0x7c
-> [   63.972708]  [<ffffffff815369b2>] acpi_bus_hot_remove_device+0x79/0x16d
-> [   63.972708]  [<ffffffff81196dc2>] ? kmem_cache_alloc_trace+0x42/0x150
-> [   63.972708]  [<ffffffff81539c20>] _handle_hotplug_event_root+0x108/0x149
-> [   63.972708]  [<ffffffff810a8b20>] ? process_one_work+0x270/0x560
-> [   63.972708]  [<ffffffff810a8b8d>] process_one_work+0x2dd/0x560
-> [   63.972708]  [<ffffffff810a8b20>] ? process_one_work+0x270/0x560
-> [   63.972708]  [<ffffffff810a9679>] ? worker_thread+0x59/0x3a0
-> [   63.972708]  [<ffffffff81539b18>] ? acpi_pci_find_root+0x3f/0x3f
-> [   63.972708]  [<ffffffff810a989a>] worker_thread+0x27a/0x3a0
-> [   63.972708]  [<ffffffff810e9f4d>] ? trace_hardirqs_on+0xd/0x10
-> [   63.972708]  [<ffffffff810a9620>] ? manage_workers+0x280/0x280
-> [   63.972708]  [<ffffffff810af088>] kthread+0xe8/0xf0
-> [   63.972708]  [<ffffffff810aefa0>] ? __init_kthread_worker+0x70/0x70
-> [   63.972708]  [<ffffffff8216d61c>] ret_from_fork+0x7c/0xb0
-> [   63.972708]  [<ffffffff810aefa0>] ? __init_kthread_worker+0x70/0x70
-> [   63.972708] Code: 08 4c 39 e3 75 ee 41 5a 5b 41 5c 44 89 e8 41 5d
-> 5d c3 0f 1f 44 00 00 55 48 89 e5 41 55 41 54 53 41 54 49 89 fc 48 8b
-> 5f 08 eb 14 <48> 8b 7b 10 e8 22 fd ff ff 85 c0 41 89 c5 75 17 48 8b 5b
-> 08 4c
+On Wed, Jan 16, 2013 at 8:53 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> Hi Linus,
+>
+> Sorry for the late submission.  Most of this was bound for 3.7, which I
+> missed due to moving house.  I think it makes sense to merge it now
+> instead of next cycle as there are quite of few other fuse updates
+> pending.
+>
+> Please consider pulling
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
+>
+> The large part of this pull request is a patch series from Maxim
+> Patlasov to optimize scatter-gather direct IO.  The rest is small fixes
+> and cleanups.
+>
+> There's a one line change outside of fs/fuse to mm/filemap.c which makes
+> the argument of iov_iter_single_seg_count() const, required by Maxim's
+> patches.
+>
+> Thanks,
+> Miklos
+>
+> ----
+> Anand V. Avati (1):
+>       fuse: implement NFS-like readdirplus support
+>
+> David Herrmann (2):
+>       cuse: use mutex as registration lock instead of spinlocks
+>       cuse: do not register multiple devices with identical names
+>
+> Maxim Patlasov (12):
+>       fuse: general infrastructure for pages[] of variable size
+>       fuse: categorize fuse_get_req()
+>       fuse: rework fuse_retrieve()
+>       fuse: rework fuse_readpages()
+>       fuse: rework fuse_perform_write()
+>       fuse: rework fuse_do_ioctl()
+>       fuse: add per-page descriptor <offset, length> to fuse_req
+>       fuse: use req->page_descs[] for argpages cases
+>       mm: minor cleanup of iov_iter_single_seg_count()
+>       fuse: pass iov[] to fuse_get_user_pages()
+>       fuse: optimize fuse_get_user_pages()
+>       fuse: optimize __fuse_direct_io()
+>
+> Miklos Szeredi (3):
+>       fuse: cleanup fuse_direct_io()
+>       fuse: make fuse_file_fallocate() static
+>       cuse: fix uninitialized variable warnings
+>
+> Robert P. J. Day (1):
+>       fuse: Move CUSE Kconfig entry from fs/Kconfig into fs/fuse/Kconfig
+>
+> Wei Yongjun (1):
+>       fuse: remove unused variable in fuse_try_move_page()
+>
+> ---
+>  fs/Kconfig                |   10 --
+>  fs/fuse/Kconfig           |   16 ++-
+>  fs/fuse/cuse.c            |   46 +++++----
+>  fs/fuse/dev.c             |  122 ++++++++++++++++-------
+>  fs/fuse/dir.c             |  199 ++++++++++++++++++++++++++++++++-----
+>  fs/fuse/file.c            |  240 +++++++++++++++++++++++++++++----------------
+>  fs/fuse/fuse_i.h          |   58 ++++++++---
+>  fs/fuse/inode.c           |   11 ++-
+>  include/linux/fs.h        |    2 +-
+>  include/uapi/linux/fuse.h |   12 +++
+>  mm/filemap.c              |    2 +-
+>  11 files changed, 528 insertions(+), 190 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-acpi_power_transition() has to check if the device is power-manageable, since
-otherwise the power resources lists will not be initialized.  It should be
-fixed now.
-
-Thanks,
-Rafael
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Feng Shuo
+Tel: (86)10-59851155-2116
+Fax: (86)10-59851155-2008
+Tianjin Zhongke Blue Whale Information Technologies Co., Ltd
+10th Floor, Tower A, The GATE building, No. 19 Zhong-guan-cun Avenue
+Haidian District, Beijing, China
+Postcode 100080
