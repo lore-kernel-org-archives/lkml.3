@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab3APQAS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:00:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35841 "EHLO
+	id S1757366Ab3APQAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:00:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35851 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351Ab3APQAO (ORCPT
+	with ESMTP id S1756351Ab3APQAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:00:14 -0500
+	Wed, 16 Jan 2013 11:00:19 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 044/222] Revert "8139cp: revert "set ring address before enabling receiver""
-Date: Wed, 16 Jan 2013 13:54:04 -0200
-Message-Id: <1358351822-7675-45-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 046/222] USB: OHCI: workaround for hardware bug: retired TDs not added to the Done Queue
+Date: Wed, 16 Jan 2013 13:54:06 -0200
+Message-Id: <1358351822-7675-47-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,61 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 071e3ef4a94a021b16a2912f3885c86f4ff36b49 upstream.
+commit 50ce5c0683aa83eb161624ea89daa5a9eee0c2ce upstream.
 
-This reverts commit b26623dab7eeb1e9f5898c7a49458789dd492f20.
+This patch (as1636) is a partial workaround for a hardware bug
+affecting OHCI controllers by NVIDIA at least, maybe others too.  When
+the controller retires a Transfer Descriptor, it is supposed to add
+the TD onto the Done Queue.  But sometimes this doesn't happen, with
+the result that ohci-hcd never realizes the corresponding transfer has
+finished.  Symptoms can vary; a typical result is that USB audio stops
+working after a while.
 
-This reverts the revert, in net-next we'll try another scheme
-to fix this bug using patches from David Woodhouse.
+The patch works around the problem by recognizing that TDs are always
+processed in order.  Therefore, if a later TD is found on the Done
+Queue than all the earlier TDs for the same endpoint must be finished
+as well.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Unfortunately this won't solve the problem in cases where the missing
+TD is the last one in the endpoint's queue.  A complete fix would
+require a signficant amount of change to the driver.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/ethernet/realtek/8139cp.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/usb/host/ohci-q.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
-index a2679d8..995d0cf 100644
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -979,6 +979,17 @@ static void cp_init_hw (struct cp_private *cp)
- 	cpw32_f (MAC0 + 0, le32_to_cpu (*(__le32 *) (dev->dev_addr + 0)));
- 	cpw32_f (MAC0 + 4, le32_to_cpu (*(__le32 *) (dev->dev_addr + 4)));
+diff --git a/drivers/usb/host/ohci-q.c b/drivers/usb/host/ohci-q.c
+index c5a1ea9..9d00d47 100644
+--- a/drivers/usb/host/ohci-q.c
++++ b/drivers/usb/host/ohci-q.c
+@@ -1128,6 +1128,25 @@ dl_done_list (struct ohci_hcd *ohci)
  
-+	cpw32_f(HiTxRingAddr, 0);
-+	cpw32_f(HiTxRingAddr + 4, 0);
+ 	while (td) {
+ 		struct td	*td_next = td->next_dl_td;
++		struct ed	*ed = td->ed;
 +
-+	ring_dma = cp->ring_dma;
-+	cpw32_f(RxRingAddr, ring_dma & 0xffffffff);
-+	cpw32_f(RxRingAddr + 4, (ring_dma >> 16) >> 16);
++		/*
++		 * Some OHCI controllers (NVIDIA for sure, maybe others)
++		 * occasionally forget to add TDs to the done queue.  Since
++		 * TDs for a given endpoint are always processed in order,
++		 * if we find a TD on the donelist then all of its
++		 * predecessors must be finished as well.
++		 */
++		for (;;) {
++			struct td	*td2;
 +
-+	ring_dma += sizeof(struct cp_desc) * CP_RX_RING_SIZE;
-+	cpw32_f(TxRingAddr, ring_dma & 0xffffffff);
-+	cpw32_f(TxRingAddr + 4, (ring_dma >> 16) >> 16);
++			td2 = list_first_entry(&ed->td_list, struct td,
++					td_list);
++			if (td2 == td)
++				break;
++			takeback_td(ohci, td2);
++		}
 +
- 	cp_start_hw(cp);
- 	cpw8(TxThresh, 0x06); /* XXX convert magic num to a constant */
- 
-@@ -992,17 +1003,6 @@ static void cp_init_hw (struct cp_private *cp)
- 
- 	cpw8(Config5, cpr8(Config5) & PMEStatus);
- 
--	cpw32_f(HiTxRingAddr, 0);
--	cpw32_f(HiTxRingAddr + 4, 0);
--
--	ring_dma = cp->ring_dma;
--	cpw32_f(RxRingAddr, ring_dma & 0xffffffff);
--	cpw32_f(RxRingAddr + 4, (ring_dma >> 16) >> 16);
--
--	ring_dma += sizeof(struct cp_desc) * CP_RX_RING_SIZE;
--	cpw32_f(TxRingAddr, ring_dma & 0xffffffff);
--	cpw32_f(TxRingAddr + 4, (ring_dma >> 16) >> 16);
--
- 	cpw16(MultiIntr, 0);
- 
- 	cpw8_f(Cfg9346, Cfg9346_Lock);
+ 		takeback_td(ohci, td);
+ 		td = td_next;
+ 	}
 -- 
 1.7.9.5
 
