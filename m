@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757321Ab3APRIo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 12:08:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35778 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757124Ab3APP7b (ORCPT
+	id S1757405Ab3APRIx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:08:53 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43478 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755595Ab3APRIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:59:31 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 033/222] cgroup: remove incorrect dget/dput() pair in cgroup_create_dir()
-Date: Wed, 16 Jan 2013 13:53:53 -0200
-Message-Id: <1358351822-7675-34-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 16 Jan 2013 12:08:49 -0500
+Message-ID: <50F6DE9D.5080906@wwwdotorg.org>
+Date: Wed, 16 Jan 2013 10:08:45 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: Tony Prisk <linux@prisktech.co.nz>, Stephen Warren <swarren@nvidia.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Colin Cross <ccross@android.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: manual merge of the tegra tree with the arm-soc tree
+References: <20130116141411.8fadedee54ed35dc0eddd288@canb.auug.org.au> <1358308153.32106.8.camel@gitbox> <50F62D69.8080100@nvidia.com> <1358311923.537.3.camel@gitbox> <CAOesGMgr_f-XGHOdMW3ugfXbVaUc4EALrbfJD=XeOKixxrY8PA@mail.gmail.com>
+In-Reply-To: <CAOesGMgr_f-XGHOdMW3ugfXbVaUc4EALrbfJD=XeOKixxrY8PA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
+On 01/16/2013 09:27 AM, Olof Johansson wrote:
+> Hi,
+> 
+> On Tue, Jan 15, 2013 at 8:52 PM, Tony Prisk <linux@prisktech.co.nz> wrote:
+>> On Tue, 2013-01-15 at 21:32 -0700, Stephen Warren wrote:
+>>> On 01/15/2013 08:49 PM, Tony Prisk wrote:
+>>>> On Wed, 2013-01-16 at 14:14 +1100, Stephen Rothwell wrote:
+>>>>> Hi all,
+>>>>>
+>>>>> Today's linux-next merge of the tegra tree got a conflict in
+>>>>> drivers/clocksource/Makefile between commit ff7ec345f0ec ("timer: vt8500:
+>>>>> Move timer code to drivers/clocksource") from the arm-soc tree and commit
+>>>>> ac0fd9eca3ba ("ARM: tegra: move timer.c to drivers/clocksource/") from
+>>>>> the tegra tree.
+>>>>>
+>>>>> I fixed it up (see below) and can carry the fix as necessary (no action
+>>>>> is required).
+>>>>>
+>>>>
+>>>> I don't know about everyone else, but I feel the preference should be to
+>>>> keep things alphabetized where possible to help avoid with merge
+>>>> conflicts later on. This is always a problem when we start tacking
+>>>> things on the end of lists.
+>>>>
+>>>> I realise this Kconfig is not alphabetized anyway, but it's never too
+>>>> early to start on the 'right' path.
+>>>
+>>> Sounds like a good idea, but the issue is: When to do the initial sort
+>>> so it doesn't conflict with all the adds in a kernel cycle... Post and
+>>> immediately commit a new patch near the end of the merge window?
+>>
+>> Given that the maintainer can quite safely do the patch (sorry
+>> maintainers), I don't see any reason why it couldn't be done at the
+>> point where they stop accepting patches for the merge-window. Once the
+>> patches are stopped, sort the list in one last patch.
 
-------------------
+That only works well if the one maintainer is the only person taking
+patches for the drivers/clocksource tree. It might be true that the "one
+maintainer" here ends up being arm-soc in this kernel cycle though?
 
-From: Tejun Heo <tj@kernel.org>
+>> It makes sense to get it done in this window if possible as the Kconfig
+>> will only get bigger as time goes on, making sorting it more time
+>> consuming.
+> 
+> Actually, Russell wen through and reordered these not long ago, if I
+> remember correctly. The current ordering is the same as in the
+> structure definition, and should be kept that way.
 
-commit 175431635ec09b1d1bba04979b006b99e8305a83 upstream.
-
-cgroup_create_dir() does weird dancing with dentry refcnt.  On
-success, it gets and then puts it achieving nothing.  On failure, it
-puts but there isn't no matching get anywhere leading to the following
-oops if cgroup_create_file() fails for whatever reason.
-
-  ------------[ cut here ]------------
-  kernel BUG at /work/os/work/fs/dcache.c:552!
-  invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-  Modules linked in:
-  CPU 2
-  Pid: 697, comm: mkdir Not tainted 3.7.0-rc4-work+ #3 Bochs Bochs
-  RIP: 0010:[<ffffffff811d9c0c>]  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
-  RSP: 0018:ffff88001a3ebef8  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: ffff88000e5b1ef8 RCX: 0000000000000403
-  RDX: 0000000000000303 RSI: 2000000000000000 RDI: ffff88000e5b1f58
-  RBP: ffff88001a3ebf18 R08: ffffffff82c76960 R09: 0000000000000001
-  R10: ffff880015022080 R11: ffd9bed70f48a041 R12: 00000000ffffffea
-  R13: 0000000000000001 R14: ffff88000e5b1f58 R15: 00007fff57656d60
-  FS:  00007ff05fcb3800(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 00000000004046f0 CR3: 000000001315f000 CR4: 00000000000006e0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process mkdir (pid: 697, threadinfo ffff88001a3ea000, task ffff880015022080)
-  Stack:
-   ffff88001a3ebf48 00000000ffffffea 0000000000000001 0000000000000000
-   ffff88001a3ebf38 ffffffff811cc889 0000000000000001 ffff88000e5b1ef8
-   ffff88001a3ebf68 ffffffff811d1fc9 ffff8800198d7f18 ffff880019106ef8
-  Call Trace:
-   [<ffffffff811cc889>] done_path_create+0x19/0x50
-   [<ffffffff811d1fc9>] sys_mkdirat+0x59/0x80
-   [<ffffffff811d2009>] sys_mkdir+0x19/0x20
-   [<ffffffff81be1e02>] system_call_fastpath+0x16/0x1b
-  Code: 00 48 8d 90 18 01 00 00 48 89 93 c0 00 00 00 4c 89 a0 18 01 00 00 48 8b 83 a0 00 00 00 83 80 28 01 00 00 01 e8 e6 6f a0 00 eb 92 <0f> 0b 66 90 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 49 89 fe 41
-  RIP  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
-   RSP <ffff88001a3ebef8>
-  ---[ end trace 1277bcfd9561ddb0 ]---
-
-Fix it by dropping the unnecessary dget/dput() pair.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- kernel/cgroup.c |    2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index a31b636..1f2c8bf 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2639,9 +2639,7 @@ static int cgroup_create_dir(struct cgroup *cgrp, struct dentry *dentry,
- 		dentry->d_fsdata = cgrp;
- 		inc_nlink(parent->d_inode);
- 		rcu_assign_pointer(cgrp->dentry, dentry);
--		dget(dentry);
- 	}
--	dput(dentry);
- 
- 	return error;
- }
--- 
-1.7.9.5
-
+I think this is talking about Makefile entries rather than struct
+definitions?
