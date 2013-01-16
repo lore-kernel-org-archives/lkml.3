@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758179Ab3APQDd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:03:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36099 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757773Ab3APQD1 (ORCPT
+	id S1758237Ab3APQtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:49:20 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9627 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab3APQtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:03:27 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 094/222] ath5k: fix tx path skb leaks
-Date: Wed, 16 Jan 2013 13:54:54 -0200
-Message-Id: <1358351822-7675-95-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 16 Jan 2013 11:49:17 -0500
+X-Authority-Analysis: v=2.0 cv=e+OEuNV/ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=oS6VeJ3zRZwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ylgaL1uFd_sA:10 a=WeLpJKWFmSSlEFhsx2EA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358354955.4068.55.camel@gandalf.local.home>
+Subject: Re: [PATCH 00/10] TTY: switch flipping functions to tty_port
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
+        jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Date: Wed, 16 Jan 2013 11:49:15 -0500
+In-Reply-To: <20130116164238.625db60c@bob.linux.org.uk>
+References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
+	 <20130116064735.GA7743@kroah.com> <50F6AD15.708@suse.cz>
+	 <1358351064.4068.43.camel@gandalf.local.home> <50F6CE7E.4090807@suse.cz>
+	 <20130116164238.625db60c@bob.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2013-01-16 at 16:42 +0000, Alan Cox wrote:
+>  
+> > OMG. It contains a true copy of serial_core!
+> 
+> And it seems to just be another 165x0 driver anyway In fact it looks
+> like the right thing to do is to take it out and shoot it. We've got a
+> 16x50 driver already.
+> 
+> There are a few bits of gunk in there to set custom board registers and
+> to figure out the configuration. See drivers/tty/serial/8250/8250_pci.c
+> and it ought to be possible to just plug it in there. The 422 stuff
+> might need a bit more tweaking.
 
-------------------
+I know just enough about serials and ttys to be dangerous. I'll try to
+tweak the 8250_pci.c code and see if that can work with this driver. I'm
+currently running a 3.6.11 kernel on this box. I'll work on that version
+first. Then I should probably update to the latest 3.7 release and port
+it there.
 
-From: Felix Fietkau <nbd@openwrt.org>
+I can only test the card I own:
 
-commit 596ab5ec3bf10a22be30d7cb1d903a4b83fd607c upstream.
+  Systembase Co Ltd Device 4d02
 
-ieee80211_free_txskb() needs to be used instead of dev_kfree_skb_any for
-tx packets passed to the driver from mac80211
+If it works with this driver, then I'm happy and I'm all for shooting
+the sb105x. Heck, I'll pull the trigger myself.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/net/wireless/ath/ath5k/base.c         |    4 ++--
- drivers/net/wireless/ath/ath5k/mac80211-ops.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+-- Steve
 
-diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
-index 44ad6fe..10a9985 100644
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -845,7 +845,7 @@ ath5k_txbuf_free_skb(struct ath5k_hw *ah, struct ath5k_buf *bf)
- 		return;
- 	dma_unmap_single(ah->dev, bf->skbaddr, bf->skb->len,
- 			DMA_TO_DEVICE);
--	dev_kfree_skb_any(bf->skb);
-+	ieee80211_free_txskb(ah->hw, bf->skb);
- 	bf->skb = NULL;
- 	bf->skbaddr = 0;
- 	bf->desc->ds_data = 0;
-@@ -1572,7 +1572,7 @@ ath5k_tx_queue(struct ieee80211_hw *hw, struct sk_buff *skb,
- 	return;
- 
- drop_packet:
--	dev_kfree_skb_any(skb);
-+	ieee80211_free_txskb(hw, skb);
- }
- 
- static void
-diff --git a/drivers/net/wireless/ath/ath5k/mac80211-ops.c b/drivers/net/wireless/ath/ath5k/mac80211-ops.c
-index 22b80af..4c8ba4d 100644
---- a/drivers/net/wireless/ath/ath5k/mac80211-ops.c
-+++ b/drivers/net/wireless/ath/ath5k/mac80211-ops.c
-@@ -61,7 +61,7 @@ ath5k_tx(struct ieee80211_hw *hw, struct sk_buff *skb)
- 	u16 qnum = skb_get_queue_mapping(skb);
- 
- 	if (WARN_ON(qnum >= ah->ah_capabilities.cap_queues.q_tx_num)) {
--		dev_kfree_skb_any(skb);
-+		ieee80211_free_txskb(hw, skb);
- 		return;
- 	}
- 
--- 
-1.7.9.5
 
