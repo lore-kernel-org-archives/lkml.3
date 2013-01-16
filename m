@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab3APQIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:08:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36692 "EHLO
+	id S932584Ab3APQIX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:08:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36678 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932605Ab3APQIc (ORCPT
+	with ESMTP id S932568Ab3APQIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:08:32 -0500
+	Wed, 16 Jan 2013 11:08:20 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Tokarev <mjt@tls.msk.ru>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 171/222] ext4: do not try to write superblock on ro remount w/o journal
-Date: Wed, 16 Jan 2013 13:56:11 -0200
-Message-Id: <1358351822-7675-172-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 168/222] jbd2: fix assertion failure in jbd2_journal_flush()
+Date: Wed, 16 Jan 2013 13:56:08 -0200
+Message-Id: <1358351822-7675-169-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,49 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Tokarev <mjt@tls.msk.ru>
+From: Jan Kara <jack@suse.cz>
 
-commit d096ad0f79a782935d2e06ae8fb235e8c5397775 upstream.
+commit d7961c7fa4d2e3c3f12be67e21ba8799b5a7238a upstream.
 
-When a journal-less ext4 filesystem is mounted on a read-only block
-device (blockdev --setro will do), each remount (for other, unrelated,
-flags, like suid=>nosuid etc) results in a series of scary messages
-from kernel telling about I/O errors on the device.
+The following race is possible between start_this_handle() and someone
+calling jbd2_journal_flush().
 
-This is becauese of the following code ext4_remount():
+Process A                              Process B
+start_this_handle().
+  if (journal->j_barrier_count) # false
+  if (!journal->j_running_transaction) { #true
+    read_unlock(&journal->j_state_lock);
+                                       jbd2_journal_lock_updates()
+                                       jbd2_journal_flush()
+                                         write_lock(&journal->j_state_lock);
+                                         if (journal->j_running_transaction) {
+                                           # false
+                                         ... wait for committing trans ...
+                                         write_unlock(&journal->j_state_lock);
+    ...
+    write_lock(&journal->j_state_lock);
+    if (!journal->j_running_transaction) { # true
+      jbd2_get_transaction(journal, new_transaction);
+    write_unlock(&journal->j_state_lock);
+    goto repeat; # eventually blocks on j_barrier_count > 0
+                                         ...
+                                         J_ASSERT(!journal->j_running_transaction);
+                                           # fails
 
-       if (sbi->s_journal == NULL)
-                ext4_commit_super(sb, 1);
+We fix the race by rechecking j_barrier_count after reacquiring j_state_lock
+in exclusive mode.
 
-at the end of remount procedure, which forces writing (flushing) of
-a superblock regardless whenever it is dirty or not, if the filesystem
-is readonly or not, and whenever the device itself is readonly or not.
-
-We only need call ext4_commit_super when the file system had been
-previously mounted read/write.
-
-Thanks to Eric Sandeen for help in diagnosing this issue.
-
-Signed-off-By: Michael Tokarev <mjt@tls.msk.ru>
+Reported-by: yjwsignal@empal.com
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/ext4/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/jbd2/transaction.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index b045207..5be2105 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -4686,7 +4686,7 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
- 	}
- 
- 	ext4_setup_system_zone(sb);
--	if (sbi->s_journal == NULL)
-+	if (sbi->s_journal == NULL && !(old_sb_flags & MS_RDONLY))
- 		ext4_commit_super(sb, 1);
- 
- #ifdef CONFIG_QUOTA
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index fb1ab953..2fb20f5 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -209,7 +209,8 @@ repeat:
+ 		if (!new_transaction)
+ 			goto alloc_transaction;
+ 		write_lock(&journal->j_state_lock);
+-		if (!journal->j_running_transaction) {
++		if (!journal->j_running_transaction &&
++		    !journal->j_barrier_count) {
+ 			jbd2_get_transaction(journal, new_transaction);
+ 			new_transaction = NULL;
+ 		}
 -- 
 1.7.9.5
 
