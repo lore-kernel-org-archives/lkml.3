@@ -1,209 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759102Ab3APKmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:42:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759060Ab3APKmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:42:36 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH V5 3/3] tuntap: allow polling/writing/reading when detached
-Date: Wed, 16 Jan 2013 18:34:01 +0800
-Message-Id: <1358332441-26859-4-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1358332441-26859-1-git-send-email-jasowang@redhat.com>
-References: <1358332441-26859-1-git-send-email-jasowang@redhat.com>
+	id S1759140Ab3APKnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:43:24 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:46564 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759121Ab3APKnU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 05:43:20 -0500
+Message-ID: <50F68443.3040900@suse.cz>
+Date: Wed, 16 Jan 2013 11:43:15 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: -next: no resume from suspend
+References: <50F3D9E8.6040802@suse.cz> <16191961.j5ydKsJ3d3@vostro.rjw.lan>
+In-Reply-To: <16191961.j5ydKsJ3d3@vostro.rjw.lan>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We forbid polling, writing and reading when the file were detached, this may
-complex the user in several cases:
+On 01/14/2013 01:56 PM, Rafael J. Wysocki wrote:
+> On Monday, January 14, 2013 11:11:52 AM Jiri Slaby wrote:
+>> Hi,
+>>
+>> since friday's -next (the last known to be working is the last monday's)
+>> I cannot resume from suspend. The last thing I see with
+>> no_console_suspend is:
+>> i915: No ACPI video bus found
+>>
+>> But I used to see the message always, so this is no difference. Any idea
+>> before I start bisecting?
+> 
+> Well, what's the next message you normally see with no_console_suspend?
 
-- when guest pass some buffers to vhost/qemu and then disable some queues,
-  host/qemu needs to do its own cleanup on those buffers which is complex
-  sometimes. We can do this simply by allowing a user can still write to an
-  disabled queue. Write to an disabled queue will cause the packet pass to the
-  kernel and read will get nothing.
-- align the polling behavior with macvtap which never fails when the queue is
-  created. This can simplify the polling errors handling of its user (e.g vhost)
+As I wrote in the other message, the kernel is spinning in
+acpi_rs_get_aml_length. There are weird resources in the list. For
+serial 00:05 there is resource with type and length equal to 0 and for
+parport_pc 00:06 there is resource type 58196295 with length of
+134284152. See:
+acpi_rs_get_aml_length: ffff8801b9f7b380 type=3 len=16
+acpi_rs_get_aml_length: ffff8801b9f7b390 type=0 len=0
+acpi_rs_get_aml_length: BAD ffff8801b9f7b390 type=0 len=0
+serial 00:05: activation failed
+dpm_run_callback(): pnp_bus_resume+0x0/0x80 returns -5
+PM: Device 00:05 failed to resume: error -5
+acpi_rs_get_aml_length: ffff8801b9f7b680 type=3 len=24
+acpi_rs_get_aml_length: ffff8801b9f7b698 type=58196295 len=134284152
+parport_pc 00:06: activation failed
+dpm_run_callback(): pnp_bus_resume+0x0/0x80 returns -5
+PM: Device 00:06 failed to resume: error -5
 
-In order to achieve this, tfile->tun were not assign to NULL when detached. And
-tfile->tun were converted to be RCU protected in order to let the data path can
-check whether the file is deated in a lockless manner. This will be used to
-prevent the flow caches from being updated for a detached queue.
+if (!length)
+  return error;
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c |   43 +++++++++++++++++++++++++------------------
- 1 files changed, 25 insertions(+), 18 deletions(-)
+makes it resume again with the errors above...
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index c81680d..3f011e0 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -139,7 +139,7 @@ struct tun_file {
- 	unsigned int flags;
- 	u16 queue_index;
- 	struct list_head next;
--	struct tun_struct *detached;
-+	struct tun_struct __rcu *detached;
- };
- 
- struct tun_flow_entry {
-@@ -295,11 +295,12 @@ static void tun_flow_cleanup(unsigned long data)
- }
- 
- static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
--			    u16 queue_index)
-+			    struct tun_file *tfile)
- {
- 	struct hlist_head *head;
- 	struct tun_flow_entry *e;
- 	unsigned long delay = tun->ageing_time;
-+	u16 queue_index = tfile->queue_index;
- 
- 	if (!rxhash)
- 		return;
-@@ -308,7 +309,7 @@ static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
- 
- 	rcu_read_lock();
- 
--	if (tun->numqueues == 1)
-+	if (tun->numqueues == 1 || !rtnl_dereference(tfile->detached))
- 		goto unlock;
- 
- 	e = tun_flow_find(head, rxhash);
-@@ -384,16 +385,16 @@ static void tun_set_real_num_queues(struct tun_struct *tun)
- 
- static void tun_disable_queue(struct tun_struct *tun, struct tun_file *tfile)
- {
--	tfile->detached = tun;
-+	rcu_assign_pointer(tfile->detached, tun);
- 	list_add_tail(&tfile->next, &tun->disabled);
- 	++tun->numdisabled;
- }
- 
- static struct tun_struct *tun_enable_queue(struct tun_file *tfile)
- {
--	struct tun_struct *tun = tfile->detached;
-+	struct tun_struct *tun = rtnl_dereference(tfile->detached);
- 
--	tfile->detached = NULL;
-+	rcu_assign_pointer(tfile->detached, NULL);
- 	list_del_init(&tfile->next);
- 	--tun->numdisabled;
- 	return tun;
-@@ -402,26 +403,27 @@ static struct tun_struct *tun_enable_queue(struct tun_file *tfile)
- static void __tun_detach(struct tun_file *tfile, bool clean)
- {
- 	struct tun_file *ntfile;
--	struct tun_struct *tun;
-+	struct tun_struct *tun, *detached;
- 	struct net_device *dev;
- 
- 	tun = rtnl_dereference(tfile->tun);
-+	detached = rtnl_dereference(tfile->detached);
- 
--	if (tun) {
-+	if (tun && !detached) {
- 		u16 index = tfile->queue_index;
- 		BUG_ON(index >= tun->numqueues);
- 		dev = tun->dev;
- 
- 		rcu_assign_pointer(tun->tfiles[index],
- 				   tun->tfiles[tun->numqueues - 1]);
--		rcu_assign_pointer(tfile->tun, NULL);
- 		ntfile = rtnl_dereference(tun->tfiles[index]);
- 		ntfile->queue_index = index;
- 
- 		--tun->numqueues;
--		if (clean)
-+		if (clean) {
-+			rcu_assign_pointer(tfile->tun, NULL);
- 			sock_put(&tfile->sk);
--		else
-+		} else
- 			tun_disable_queue(tun, tfile);
- 
- 		synchronize_net();
-@@ -429,7 +431,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
- 		/* Drop read queue */
- 		skb_queue_purge(&tfile->sk.sk_receive_queue);
- 		tun_set_real_num_queues(tun);
--	} else if (tfile->detached && clean) {
-+	} else if (detached && clean) {
- 		tun = tun_enable_queue(tfile);
- 		sock_put(&tfile->sk);
- 	}
-@@ -466,6 +468,10 @@ static void tun_detach_all(struct net_device *dev)
- 		rcu_assign_pointer(tfile->tun, NULL);
- 		--tun->numqueues;
- 	}
-+	list_for_each_entry(tfile, &tun->disabled, next) {
-+		wake_up_all(&tfile->wq.wait);
-+		rcu_assign_pointer(tfile->tun, NULL);
-+	}
- 	BUG_ON(tun->numqueues != 0);
- 
- 	synchronize_net();
-@@ -496,7 +502,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
- 		goto out;
- 
- 	err = -EINVAL;
--	if (rtnl_dereference(tfile->tun))
-+	if (rtnl_dereference(tfile->tun) && !rtnl_dereference(tfile->detached))
- 		goto out;
- 
- 	err = -EBUSY;
-@@ -504,7 +510,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
- 		goto out;
- 
- 	err = -E2BIG;
--	if (!tfile->detached &&
-+	if (!rtnl_dereference(tfile->detached) &&
- 	    tun->numqueues + tun->numdisabled == MAX_TAP_QUEUES)
- 		goto out;
- 
-@@ -521,7 +527,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
- 	rcu_assign_pointer(tun->tfiles[tun->numqueues], tfile);
- 	tun->numqueues++;
- 
--	if (tfile->detached)
-+	if (rtnl_dereference(tfile->detached))
- 		tun_enable_queue(tfile);
- 	else
- 		sock_hold(&tfile->sk);
-@@ -1195,7 +1201,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	tun->dev->stats.rx_packets++;
- 	tun->dev->stats.rx_bytes += len;
- 
--	tun_flow_update(tun, rxhash, tfile->queue_index);
-+	tun_flow_update(tun, rxhash, tfile);
- 	return total_len;
- }
- 
-@@ -1796,7 +1802,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
- 	rtnl_lock();
- 
- 	if (ifr->ifr_flags & IFF_ATTACH_QUEUE) {
--		tun = tfile->detached;
-+		tun = rtnl_dereference(tfile->detached);
- 		if (!tun) {
- 			ret = -EINVAL;
- 			goto unlock;
-@@ -1807,7 +1813,8 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
- 		ret = tun_attach(tun, file);
- 	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
- 		tun = rtnl_dereference(tfile->tun);
--		if (!tun || !(tun->flags & TUN_TAP_MQ))
-+		if (!tun || !(tun->flags & TUN_TAP_MQ) ||
-+		    rtnl_dereference(tfile->detached))
- 			ret = -EINVAL;
- 		else
- 			__tun_detach(tfile, false);
+This was 3.8.0-rc3-next-20130114. Going to test 20130116 as there are
+these patches:
+616979e memory-hotplug: remove sysfs file of node
+a41a27d ACPI / PM: remove leading whitespace from #ifdef
+ace2342 ACPI / PM: Consolidate suspend-specific and hibernate-specific code
+27a5fb8 ACPI / PM: Move device power management functions to device_pm.c
+717a5d1 ACPI / PM: Export power states of ACPI devices via sysfs
+ee8f808 ACPI / PM: Common string representations of device power states
+44fed9b ACPI / PM: More visible function for retrieving device power states
+81ed027 ACPI / PM: Change the way power transitions to D3cold are
+carried out
+113542c ACPI: Use system level attribute of wakeup power resources
+c6fdf80 ACPI: Take power resource initialization errors into account
+b6568e5 ACPI / scan: Consolidate extraction of power resources lists
+8a0a4d6 ACPI / scan: Remove unnecessary initialization of local variables
+5c24aa4 ACPI / scan: Move power state initialization to a separate routine
+59e8500 ACPI / PM: Take order attribute of wakeup power resources into
+account
+f369253 ACPI / PM: Take order attribute of power resources into account
+3170b40 ACPI: Do not use device power states of power resources
+17ece8c ACPI: Drop power resources driver
+5e4cd24 ACPI / scan: Treat power resources in a special way
+5b32520 ACPI / scan: More straightforward preparation of ACPI device objects
+5a62e76 ACPI / PM: Rework the handling of devices depending on power
+resources
+5993c46 ACPI: update ej_event interface to take acpi_device
+05404d8 ACPI / scan: Add second pass to acpi_bus_trim()
+cecdb19 ACPI / scan: Change the implementation of acpi_bus_trim()
+ae28179 ACPI / scan: Drop the second argument of acpi_bus_trim()
+b17b537 ACPI / scan: Drop the second argument of acpi_device_unregister()
+a412a11 ACPI / glue: Fix build with ACPI_GLUE_DEBUG set
+abe9921 ACPI / scan: Fix check of device_attach() return value.
+e92a79b ACPI thermal: remove unnecessary newline from exception message
+2b16c77 ACPI sysfs: remove unnecessary newline from exception
+f1f37cb ACPI video: remove unnecessary newline from error messages
+b43e106 ACPICA: Cleanup table handler naming conflicts.
+42f8fb7 ACPICA: Source restructuring: split large files into 8 new files.
+
+thanks,
 -- 
-1.7.1
-
+js
+suse labs
