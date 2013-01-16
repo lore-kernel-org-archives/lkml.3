@@ -1,165 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758592Ab3APHdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 02:33:31 -0500
-Received: from mga14.intel.com ([143.182.124.37]:57461 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753803Ab3APHd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 02:33:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,476,1355126400"; 
-   d="scan'208";a="191670342"
-Message-ID: <1358321601.2252.36.camel@rzhang1-mobl4>
-Subject: Re: [PATCH 1/2] thermal: sysfs: Add a new sysfs node emul_temp
-From: Zhang Rui <rui.zhang@intel.com>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-pm@vger.kernel.org, jonghwa3.lee@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 16 Jan 2013 15:33:21 +0800
-In-Reply-To: <1357517296-31402-1-git-send-email-amit.daniel@samsung.com>
-References: <1357517296-31402-1-git-send-email-amit.daniel@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1754103Ab3APHko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 02:40:44 -0500
+Received: from mail-da0-f53.google.com ([209.85.210.53]:60860 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676Ab3APHkm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 02:40:42 -0500
+Message-ID: <50F65972.9030605@gmail.com>
+Date: Wed, 16 Jan 2013 15:40:34 +0800
+From: "yanyg02@gmail.com" <yanyg02@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysfs: sysfs_update_group always fails and generates
+ a WARNING CALL-trace
+References: <20130116070425.GA3972@yvit> <20130116071509.GA865@kroah.com>
+In-Reply-To: <20130116071509.GA865@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Amit,
+Sorry. I'm a fresh. This is my first patch commit. And still now *mutt* 
+does not configured properly.
 
-On Sun, 2013-01-06 at 16:08 -0800, Amit Daniel Kachhap wrote:
-> This patch adds support to set the emulated temperature method in
-> thermal zone (sensor). After setting this feature thermal zone must
-> report this temperature and not the actual temperature. The actual
-> implementation of this emulated temperature is based on sensor
-> capability or platform specific. This is useful in debugging different
-> temperature threshold and its associated cooling action. Writing 0 on
-> this node should disable emulation.
+I will study howto and commit patch again. Sorry.
 
-Question:
-will this bring hardware issue? Say, critical temperature reached while
-in emulation mode?
+-------------------
+> On Wed, Jan 16, 2013 at 03:04:25PM +0800, yanyg wrote:
+>> @sysfs_update_group@ always fails and borns a WARNING CALL-trace
+>> if the group exists. BUT still now, no *reference* of this routine at all.
+> I don't understand.
+OK, sysfs routine @sysfs_update_group@ *never* works properly
+>
+>> >From fe40df7d716658a1fbdab79768628c81d4363428 Mon Sep 17 00:00:00 2001
+>> From: yanyg <yanyg02@gmail.com>
+>> Date: Wed, 16 Jan 2013 11:25:15 +0800
+>> Subject: [PATCH] sysfs-fixes:
+>>
+>> @sysfs_update_group@ always fail and generates WARNING CALL trace.
+>> fix @internal_create_group@ to avoid it.
+> Why did you embed the patch here, with the words above it?  I would have
+> to edit it to apply it :(
+>
+> It's also not in a format I can apply (no signed-off-by: line.)
+So sorry.
+>
+>> ---
+>>   fs/sysfs/group.c |   14 ++++++++++----
+>>   1 files changed, 10 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+>> index 2df555c..51fcf62 100644
+>> --- a/fs/sysfs/group.c
+>> +++ b/fs/sysfs/group.c
+>> @@ -60,7 +60,7 @@ static int internal_create_group(struct kobject *kobj, int update,
+>>   				 const struct attribute_group *grp)
+>>   {
+>>   	struct sysfs_dirent *sd;
+>> -	int error;
+>> +	int error, do_put = 0;
+>>   
+>>   	BUG_ON(!kobj || (!update && !kobj->sd));
+>>   
+>> @@ -73,9 +73,14 @@ static int internal_create_group(struct kobject *kobj, int update,
+>>   		return -EINVAL;
+>>   	}
+>>   	if (grp->name) {
+>> -		error = sysfs_create_subdir(kobj, grp->name, &sd);
+>> -		if (error)
+>> -			return error;
+>> +		sd = sysfs_get_dirent(kobj->sd, NULL, grp->name);
+>> +		if (sd) {
+>> +			do_put = 1;
+>> +		} else {
+>> +			error = sysfs_create_subdir(kobj, grp->name, &sd);
+>> +			if (error)
+>> +				return error;
+>> +		}
+>>   	} else
+>>   		sd = kobj->sd;
+>>   	sysfs_get(sd);
+>> @@ -85,6 +90,7 @@ static int internal_create_group(struct kobject *kobj, int update,
+>>   			sysfs_remove_subdir(sd);
+>>   	}
+>>   	sysfs_put(sd);
+>> +	if (do_put) sysfs_put(sd);
+> Always run your patches through scripts/checkpatch.pl and fix the
+> problems it tells you about.
+>
+> What code in the kernel is hitting this today?
+I write a simply virtual block device driver which calls 
+@sysfs_update_group@ to updates attributes and modes, it fails.
+YOU can reproduce the bug by append @sysfs_update_group@ at below any of 
+@sysfs_create_group@ call.
+>
+> thanks,
+>
+> greg k-h
+>
 
-As this is for debug purpose, I'd prefer to have a seperate Kconfig
-option for this feature.
+So too sorry for my silly.
 
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> ---
->  Documentation/thermal/sysfs-api.txt |   14 ++++++++++++++
->  drivers/thermal/thermal_sys.c       |   26 ++++++++++++++++++++++++++
->  include/linux/thermal.h             |    1 +
->  3 files changed, 41 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
-> index 88c0233..e8f2ee4 100644
-> --- a/Documentation/thermal/sysfs-api.txt
-> +++ b/Documentation/thermal/sysfs-api.txt
-> @@ -55,6 +55,8 @@ temperature) and throttle appropriate devices.
->  	.get_trip_type: get the type of certain trip point.
->  	.get_trip_temp: get the temperature above which the certain trip point
->  			will be fired.
-> +	.set_emul_temp: set the emulation temperature which helps in debugging
-> +			different threshold temperature points.
->  
->  1.1.2 void thermal_zone_device_unregister(struct thermal_zone_device *tz)
->  
-> @@ -153,6 +155,7 @@ Thermal zone device sys I/F, created once it's registered:
->      |---trip_point_[0-*]_temp:	Trip point temperature
->      |---trip_point_[0-*]_type:	Trip point type
->      |---trip_point_[0-*]_hyst:	Hysteresis value for this trip point
-> +    |---emul_temp:		Emulated temperature set node
->  
->  Thermal cooling device sys I/F, created once it's registered:
->  /sys/class/thermal/cooling_device[0-*]:
-> @@ -252,6 +255,17 @@ passive
->  	Valid values: 0 (disabled) or greater than 1000
->  	RW, Optional
->  
-> +emul_temp
-> +	Interface to set the emulated temperature method in thermal zone
-> +	(sensor). After setting this feature thermal zone must report
-> +	this temperature and not the actual temperature. The actual
-> +	implementation of this emulated	temperature is platform specific.
-
-can we have a pure software temperature emulation method?
-say, the generic thermal layer caches the emulated temperature value,
-and hook it in update_temperature()?
-This is also useful for testing in polling mode, and it does not require
-platform specific callback support. I mean thermal_ops->set_emul_temp is
-optional, but thermal emulation is always available for all platforms.
-
-thanks,
-rui
-> +	This is useful in debugging different temperature threshold and its
-> +	associated cooling action. Writing 0 on this node should disable
-> +	emulation.
-> +	Unit: millidegree Celsius
-> +	WO, Optional
-> +
->  *****************************
->  * Cooling device attributes *
->  *****************************
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> index 8c8ce80..ecdfc7d 100644
-> --- a/drivers/thermal/thermal_sys.c
-> +++ b/drivers/thermal/thermal_sys.c
-> @@ -700,11 +700,31 @@ policy_show(struct device *dev, struct device_attribute *devattr, char *buf)
->  	return sprintf(buf, "%s\n", tz->governor->name);
->  }
->  
-> +static ssize_t
-> +emul_temp_store(struct device *dev, struct device_attribute *attr,
-> +		     const char *buf, size_t count)
-> +{
-> +	struct thermal_zone_device *tz = to_thermal_zone(dev);
-> +	int ret;
-> +	unsigned long temperature;
-> +
-> +	if (!tz->ops->set_emul_temp)
-> +		return -EPERM;
-> +
-> +	if (kstrtoul(buf, 10, &temperature))
-> +		return -EINVAL;
-> +
-> +	ret = tz->ops->set_emul_temp(tz, temperature);
-> +
-> +	return ret ? ret : count;
-> +}
-> +
->  static DEVICE_ATTR(type, 0444, type_show, NULL);
->  static DEVICE_ATTR(temp, 0444, temp_show, NULL);
->  static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
->  static DEVICE_ATTR(passive, S_IRUGO | S_IWUSR, passive_show, passive_store);
->  static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR, policy_show, policy_store);
-> +static DEVICE_ATTR(emul_temp, S_IWUSR, NULL, emul_temp_store);
->  
->  /* sys I/F for cooling device */
->  #define to_cooling_device(_dev)	\
-> @@ -1592,6 +1612,12 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
->  			goto unregister;
->  	}
->  
-> +	if (ops->set_emul_temp) {
-> +		result = device_create_file(&tz->device, &dev_attr_emul_temp);
-> +		if (result)
-> +			goto unregister;
-> +	}
-> +
->  	/* Create policy attribute */
->  	result = device_create_file(&tz->device, &dev_attr_policy);
->  	if (result)
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index 883bcda..fbb87d4 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -123,6 +123,7 @@ struct thermal_zone_device_ops {
->  	int (*set_trip_hyst) (struct thermal_zone_device *, int,
->  			      unsigned long);
->  	int (*get_crit_temp) (struct thermal_zone_device *, unsigned long *);
-> +	int (*set_emul_temp) (struct thermal_zone_device *, unsigned long);
->  	int (*get_trend) (struct thermal_zone_device *, int,
->  			  enum thermal_trend *);
->  	int (*notify) (struct thermal_zone_device *, int,
-
-
+yanyg02
