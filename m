@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757347Ab3APMph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 07:45:37 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42902 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896Ab3APMpf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 07:45:35 -0500
-Date: Wed, 16 Jan 2013 12:45:28 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 3/4] pinctrl: add abx500 pinctrl driver core
-Message-ID: <20130116124528.GD20091@gmail.com>
-References: <1358242984-5160-1-git-send-email-linus.walleij@stericsson.com>
- <50F5A1B7.20504@wwwdotorg.org>
+	id S1757140Ab3APMpU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 07:45:20 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52082 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748Ab3APMpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 07:45:17 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+CC: Archit Taneja <archit@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/3] OMAPDSS: Panel NEC: Set backlight type to remove boot time warning
+Date: Wed, 16 Jan 2013 13:45:07 +0100
+Message-ID: <1358340309-8774-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1358340309-8774-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1358340309-8774-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50F5A1B7.20504@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static int abx500_gpio_irq_init(struct abx500_pinctrl *pct)
-> ...
-> > +#ifdef CONFIG_ARM
-> > +		set_irq_flags(irq, IRQF_VALID);
-> > +#else
-> > +		irq_set_noprobe(irq);
-> > +#endif
-> 
-> I assume that ifdef is always set one particular way?
-> 
-> > +static void abx500_gpio_irq_remove(struct abx500_pinctrl *pct)
-> ...
-> > +#ifdef CONFIG_ARM
-> > +		set_irq_flags(irq, 0);
-> > +#endif
-> 
-> Same there.
+Fixes the following boot time warning:
+[    2.230865] WARNING: at drivers/video/backlight/backlight.c:315 backlight_device_register+0x184/0x1f4()
+[    2.240386] nec-8048: invalid backlight type
 
-You can safely ignore anything to do with IRQs in this patch-set, as
-I have a follow-up one (originally written for the old gpio-ab8500
-driver - which this is the successor to), which pulls it all out and
-applies to the ab8500-core driver instead.
+We need to pass valid backlight type when the device is registered.
 
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
+index c4e9c2b..f43a343 100644
+--- a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
++++ b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
+@@ -132,6 +132,7 @@ static int nec_8048_panel_probe(struct omap_dss_device *dssdev)
+ 
+ 	memset(&props, 0, sizeof(struct backlight_properties));
+ 	props.max_brightness = 255;
++	props.type = BACKLIGHT_RAW;
+ 
+ 	bl = backlight_device_register("nec-8048", &dssdev->dev, dssdev,
+ 			&nec_8048_bl_ops, &props);
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.1
+
