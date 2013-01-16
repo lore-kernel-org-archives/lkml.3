@@ -1,146 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab3APMpX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 07:45:23 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40131 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748Ab3APMpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 07:45:20 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-CC: Archit Taneja <archit@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/3] OMAPDSS: Panel NEC: Only register backlight when we have valid callback
-Date: Wed, 16 Jan 2013 13:45:09 +0100
-Message-ID: <1358340309-8774-4-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1358340309-8774-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1358340309-8774-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1757347Ab3APMph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 07:45:37 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42902 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755896Ab3APMpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 07:45:35 -0500
+Date: Wed, 16 Jan 2013 12:45:28 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 3/4] pinctrl: add abx500 pinctrl driver core
+Message-ID: <20130116124528.GD20091@gmail.com>
+References: <1358242984-5160-1-git-send-email-linus.walleij@stericsson.com>
+ <50F5A1B7.20504@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50F5A1B7.20504@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not register a backlight device when the dssdev->set_backlight callback
-is not set by the board.
-In this case either we do not have means to control the backlight or the
-board is using other means to control it, like bl-pwm.
+> > +static int abx500_gpio_irq_init(struct abx500_pinctrl *pct)
+> ...
+> > +#ifdef CONFIG_ARM
+> > +		set_irq_flags(irq, IRQF_VALID);
+> > +#else
+> > +		irq_set_noprobe(irq);
+> > +#endif
+> 
+> I assume that ifdef is always set one particular way?
+> 
+> > +static void abx500_gpio_irq_remove(struct abx500_pinctrl *pct)
+> ...
+> > +#ifdef CONFIG_ARM
+> > +		set_irq_flags(irq, 0);
+> > +#endif
+> 
+> Same there.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- .../omap2/displays/panel-nec-nl8048hl11-01b.c      | 60 ++++++++++++----------
- 1 file changed, 33 insertions(+), 27 deletions(-)
+You can safely ignore anything to do with IRQs in this patch-set, as
+I have a follow-up one (originally written for the old gpio-ab8500
+driver - which this is the successor to), which pulls it all out and
+applies to the ab8500-core driver instead.
 
-diff --git a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-index e6589fe..11302b2 100644
---- a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-+++ b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-@@ -85,9 +85,6 @@ static int nec_8048_bl_update_status(struct backlight_device *bl)
- 	struct omap_dss_device *dssdev = dev_get_drvdata(&bl->dev);
- 	int level;
- 
--	if (!dssdev->set_backlight)
--		return -EINVAL;
--
- 	if (bl->props.fb_blank == FB_BLANK_UNBLANK &&
- 			bl->props.power == FB_BLANK_UNBLANK)
- 		level = bl->props.brightness;
-@@ -114,30 +111,33 @@ static const struct backlight_ops nec_8048_bl_ops = {
- static int nec_8048_panel_probe(struct omap_dss_device *dssdev)
- {
- 	struct backlight_device *bl;
--	struct backlight_properties props;
- 	int r;
- 
- 	dssdev->panel.timings = nec_8048_panel_timings;
- 
--	memset(&props, 0, sizeof(struct backlight_properties));
--	props.max_brightness = 255;
--	props.type = BACKLIGHT_RAW;
-+	if (dssdev->set_backlight) {
-+		struct backlight_properties props;
-+
-+		memset(&props, 0, sizeof(struct backlight_properties));
-+		props.max_brightness = 255;
-+		props.type = BACKLIGHT_RAW;
- 
--	bl = backlight_device_register("nec-8048", &dssdev->dev, dssdev,
--			&nec_8048_bl_ops, &props);
--	if (IS_ERR(bl))
--		return PTR_ERR(bl);
-+		bl = backlight_device_register("nec-8048", &dssdev->dev, dssdev,
-+				&nec_8048_bl_ops, &props);
-+		if (IS_ERR(bl))
-+			return PTR_ERR(bl);
- 
--	dev_set_drvdata(&dssdev->dev, bl);
-+		dev_set_drvdata(&dssdev->dev, bl);
- 
--	bl->props.fb_blank = FB_BLANK_UNBLANK;
--	bl->props.power = FB_BLANK_UNBLANK;
--	bl->props.max_brightness = dssdev->max_backlight_level;
--	bl->props.brightness = dssdev->max_backlight_level;
-+		bl->props.fb_blank = FB_BLANK_UNBLANK;
-+		bl->props.power = FB_BLANK_UNBLANK;
-+		bl->props.max_brightness = dssdev->max_backlight_level;
-+		bl->props.brightness = dssdev->max_backlight_level;
- 
--	r = nec_8048_bl_update_status(bl);
--	if (r < 0)
--		dev_err(&dssdev->dev, "failed to set lcd brightness\n");
-+		r = nec_8048_bl_update_status(bl);
-+		if (r < 0)
-+			dev_err(&dssdev->dev, "failed to set lcd brightness\n");
-+	}
- 
- 	return 0;
- }
-@@ -146,9 +146,11 @@ static void nec_8048_panel_remove(struct omap_dss_device *dssdev)
- {
- 	struct backlight_device *bl = dev_get_drvdata(&dssdev->dev);
- 
--	bl->props.power = FB_BLANK_POWERDOWN;
--	nec_8048_bl_update_status(bl);
--	backlight_device_unregister(bl);
-+	if (bl) {
-+		bl->props.power = FB_BLANK_POWERDOWN;
-+		nec_8048_bl_update_status(bl);
-+		backlight_device_unregister(bl);
-+	}
- }
- 
- static int nec_8048_panel_power_on(struct omap_dss_device *dssdev)
-@@ -172,9 +174,11 @@ static int nec_8048_panel_power_on(struct omap_dss_device *dssdev)
- 			goto err1;
- 	}
- 
--	r = nec_8048_bl_update_status(bl);
--	if (r < 0)
--		dev_err(&dssdev->dev, "failed to set lcd brightness\n");
-+	if (bl) {
-+		r = nec_8048_bl_update_status(bl);
-+		if (r < 0)
-+			dev_err(&dssdev->dev, "failed to set lcd brightness\n");
-+	}
- 
- 	return 0;
- err1:
-@@ -190,8 +194,10 @@ static void nec_8048_panel_power_off(struct omap_dss_device *dssdev)
- 	if (dssdev->state != OMAP_DSS_DISPLAY_ACTIVE)
- 		return;
- 
--	bl->props.brightness = 0;
--	nec_8048_bl_update_status(bl);
-+	if (bl) {
-+		bl->props.brightness = 0;
-+		nec_8048_bl_update_status(bl);
-+	}
- 
- 	if (dssdev->platform_disable)
- 		dssdev->platform_disable(dssdev);
 -- 
-1.8.1
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
