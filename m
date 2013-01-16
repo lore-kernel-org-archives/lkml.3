@@ -1,189 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532Ab3APH25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 02:28:57 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:43356 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752864Ab3APH2z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 02:28:55 -0500
-Message-ID: <50F6568D.3060703@st.com>
-Date: Wed, 16 Jan 2013 08:28:13 +0100
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1758570Ab3APHbv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 02:31:51 -0500
+Received: from mga03.intel.com ([143.182.124.21]:32978 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752676Ab3APHbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 02:31:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,476,1355126400"; 
+   d="scan'208";a="191670034"
+Message-ID: <50F657A1.1080102@intel.com>
+Date: Wed, 16 Jan 2013 15:32:49 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Byungho An <bh74.an@samsung.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        jeffrey.t.kirsher@intel.com, kgene.kim@samsung.com
-Subject: Re: [PATCH net-next 1/3] net: stmmac: add gmac autoneg set for SGMII,
- TBI, and RTBI
-References: <00c001cdf369$9b25bdf0$d17139d0$@samsung.com>
-In-Reply-To: <00c001cdf369$9b25bdf0$d17139d0$@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Morten Rasmussen <Morten.Rasmussen@arm.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 17/22] sched: packing small tasks in wake/exec balancing
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-18-git-send-email-alex.shi@intel.com> <20130110171728.GG2046@e103034-lin> <50EF8B37.7050404@intel.com> <20130114170048.GB8528@e103034-lin>
+In-Reply-To: <20130114170048.GB8528@e103034-lin>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Byungho,
+On 01/15/2013 01:00 AM, Morten Rasmussen wrote:
+>>> Why multiply rq->util by nr_running?
+>>> > > 
+>>> > > Let's take an example where rq->util = 50, nr_running = 2, and putil =
+>>> > > 10. In this case the value of putil doesn't really matter as vacancy
+>>> > > would be negative anyway since FULL_UTIL - rq->util * nr_running is -1.
+>>> > > However, with rq->util = 50 there should be plenty of spare cpu time to
+>>> > > take another task.
+>> > 
+>> > for this example, the util is not full maybe due to it was just wake up,
+>> > it still is possible like to run full time. So, I try to give it the
+>> > large guess load.
+> I don't see why rq->util should be treated different depending on the
+> number of tasks causing the load. rq->util = 50 means that the cpu is
+> busy about 50% of the time no matter how many tasks contibute to that
+> load.
+> 
+> If nr_running = 1 instead in my example, you would consider the cpu
+> vacant if putil = 6, but if nr_running > 1 you would not. Why should the
+> two scenarios be treated differently?
+> 
+>>> > > 
+>>> > > Also, why multiply putil by 8? rq->util must be very close to 0 for
+>>> > > vacancy to be positive if putil is close to 12 (12.5%).
+>> > 
+>> > just want to pack small util tasks, since packing is possible to hurt
+>> > performance.
+> I agree that packing may affect performance. But why don't you reduce
+> FULL_UTIL instead of multiplying by 8? With current expression you will
+> not pack a 10% task if rq->util = 20 and nr_running = 1, but you would
+> pack a 6% task even if rq->util = 50 and the resulting cpu load is much
+> higher.
+> 
 
-On 1/15/2013 10:45 PM, Byungho An wrote:
->
-> This patch adds gmac autoneg set function for SGMII, TBI,
-> or RTBI interface. In case of PHY's autoneg is set, gmac's
-> autoneg enable bit should set. After checking phy's autoneg
-> if phydev's autoneg is '1' gmac's ANE bit set for those
-> interface.
+Yes, the threshold has no strong theory or experiment support. I had
+tried cyclitest which Vicent used, the case's load avg is too small to
+be caught. so just use half of Vicent value as 12.5%. If you has more
+reasonable value, let me know.
 
-Sorry I've some doubts about these patches.
+As to nr_running engaged as multiple mode. it's base on 2 reasons.
+1, load avg/util need 345ms to accumulate as 100%. so, if a tasks is
+cost full cpu time, it still has 345ms with rq->util < 1.
+2, if there are more tasks, like 2 tasks running on one cpu, it's
+possible to has capacity to burn 200% cpu time, while the biggest
+rq->util is still 100%.
 
-Firstly if the MAC is able to manage RGMII/SGMII etc this should be 
-verified by looking at the HW cap register: i.e. PCS bit.
+Consider to figure out precise utils is complicate and cost much. I do
+this simple calculation. It is not very precise, but it is efficient and
+more bias toward performance.
 
-   (I have no HW that support this so I cannot do any tests).
-
-In case of this feature is actually supported then the driver could
-manage everything bypassing the MDIO.
-IMO, we could not need to call the stmmac_phy_init and we should not
-use the PHYLIB.
-I mean if we have the PCS module we could have a minimal support to get
-link status, restart ANE etc w/o using at all the PHYLIB (so w/o 
-touching the PHY regs via the MDIO/MDC).
-
-   It could also be useful to complete the support with the RGMII... no
-   extra effort should be needed while adding SGMII if you look at the
-   core registers.
-   If you add the RGMII on some platforms we could guarantee to manage
-   the fix_mac_speed (see stmmac doc).
-
-Looking at the other your patches, the ethtool support is not
-completed. I expected to restart ANE, get/set link property etc.
-
-Also pay attention to properly treat EEE. Maybe, as first stage we
-should disable the feature in this case. We will see it later.
-The question is that we could not be able to use some extra features
-that currently need to dialog more with the PHY device. I mean what we
-actually do by using PHYLIB.
-
->
-> Signed-off-by: Byungho An <bh74.an@samsung.com>
-> ---
->   drivers/net/ethernet/stmicro/stmmac/common.h         |    1 +
->   drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c |   11 +++++++++++
->   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c    |    9 +++++++++
->   3 files changed, 21 insertions(+)
->
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h
-> b/drivers/net/ethernet/stmicro/stmmac/common.h
-> index 186d148..72ba769 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/common.h
-> +++ b/drivers/net/ethernet/stmicro/stmmac/common.h
-> @@ -344,6 +344,7 @@ struct stmmac_ops {
->   	void (*reset_eee_mode) (void __iomem *ioaddr);
->   	void (*set_eee_timer) (void __iomem *ioaddr, int ls, int tw);
->   	void (*set_eee_pls) (void __iomem *ioaddr, int link);
-> +	void (*set_autoneg) (void __iomem *ioaddr);
->   };
->
->   struct mac_link {
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> index bfe0226..a0737b39 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> @@ -297,6 +297,16 @@ static void  dwmac1000_set_eee_timer(void __iomem
-> *ioaddr, int ls, int tw)
->   	writel(value, ioaddr + LPI_TIMER_CTRL);
->   }
->
-> +static void dwmac1000_set_autoneg(void __iomem *ioaddr)
-> +{
-> +	u32 value;
-> +
-> +	value = readl(ioaddr + GMAC_AN_CTRL);
-> +	value |= 0x1000;
-
-pls use define instead of raw values ... see below.
-
-> +	writel(value, ioaddr + GMAC_AN_CTRL);
-> +}
-> +
-> +
->   static const struct stmmac_ops dwmac1000_ops = {
->   	.core_init = dwmac1000_core_init,
->   	.rx_ipc = dwmac1000_rx_ipc_enable,
-> @@ -311,6 +321,7 @@ static const struct stmmac_ops dwmac1000_ops = {
->   	.reset_eee_mode =  dwmac1000_reset_eee_mode,
->   	.set_eee_timer =  dwmac1000_set_eee_timer,
->   	.set_eee_pls =  dwmac1000_set_eee_pls,
-> +	.set_autoneg =  dwmac1000_set_autoneg,
->   };
->
->   struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr)
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> index f07c061..3e28934 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> @@ -1007,6 +1007,7 @@ static int stmmac_open(struct net_device *dev)
->   {
->   	struct stmmac_priv *priv = netdev_priv(dev);
->   	int ret;
-> +	int interface = priv->plat->interface;
->
->   	clk_prepare_enable(priv->stmmac_clk);
->
-> @@ -1041,6 +1042,14 @@ static int stmmac_open(struct net_device *dev)
->   	/* Initialize the MAC Core */
->   	priv->hw->mac->core_init(priv->ioaddr);
->
-> +	/* If phy autoneg is on, set gmac autoneg for SGMII, TBI and RTBI*/
-> +	if (interface == PHY_INTERFACE_MODE_SGMII ||
-> +	    interface == PHY_INTERFACE_MODE_TBI ||
-> +	    interface == PHY_INTERFACE_MODE_RTBI) {
-> +		if (priv->phydev->autoneg)
-> +			priv->hw->mac->set_autoneg(priv->ioaddr);
-> +	}
-
-we could use the following instead of priv->hw->mac->set_autoneg:
-
-static void dwmac1000_ctrl_ane(void __iomem *ioaddr, bool restart)
-{
-     int value = GMAC_CTRL_ANE_EN;
-
-     if (restart)
-         value |= GMAC_CTRL_ANE_RESTART;
-
-     writel(value, ioaddr +GMAC_AN_CTRL);
-}
-
-where we should defines all the missing macros for the registers 48, 49 ...
-
-/* RGMI/SGMII defines */
-#define GMAC_CTRL_ANE_SGMII_RAL (1 << 18)
-#define GMAC_CTRL_ANE_EN       (1 << 12)
-#define GMAC_CTRL_ANE_RESTART  (1 << 9)
-
-The handler should store the link status that will be used to pass the 
-info to the ethtool for example. We need to manage speed and duplex etc.
-
-What happens if you run "ethtool eth0" command?
-Or if you run mii-tool?
-I expect to get the right speed and duplex at least.
-
-Concerning the stmmac_set_pauseparam I'm also not sure you are doing the 
-right thing. Note that you are not restarting the ANE at all ... (this 
-is what the phy_start_aneg does). If set the bit 12 then you are 
-enabling the ane. To restart it, you need to set the bit 9 in the reg 48.
-
-I can support you on all the points above. Let me know.
-
-BR,
-peppe
-
-> +
->   	/* Request the IRQ lines */
->   	ret = request_irq(dev->irq, stmmac_interrupt,
->   			 IRQF_SHARED, dev->name, dev);
->
-
+-- 
+Thanks Alex
