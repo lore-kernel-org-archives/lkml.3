@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab3APGHq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 01:07:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35607 "EHLO mx1.redhat.com"
+	id S1757482Ab3APGK4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 01:10:56 -0500
+Received: from mga03.intel.com ([143.182.124.21]:65278 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752251Ab3APGHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 01:07:45 -0500
-Message-ID: <1358316366.14898.8.camel@cr0>
-Subject: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
-From: Cong Wang <amwang@redhat.com>
-To: Thomas Backlund <tmb@mageia.org>
-Cc: Eric Blake <eblake@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
-        David Miller <davem@davemloft.net>, libc-alpha@sourceware.org,
-        schwab@suse.de, carlos@systemhalted.org
-Date: Wed, 16 Jan 2013 14:06:06 +0800
-In-Reply-To: <50F53596.4070200@mageia.org>
-References: <50F2FF1B.3020708@mageia.org> <50F313A5.3020707@mageia.org>
-	  <50F49B7E.50906@redhat.com> <50F52956.50201@mageia.org>
-	 <1358244688.4264.7.camel@cr0> <50F53596.4070200@mageia.org>
-Content-Type: text/plain; charset="UTF-8"
+	id S1752258Ab3APGKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 01:10:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,476,1355126400"; 
+   d="scan'208";a="191649673"
+Message-ID: <50F644A9.3080509@intel.com>
+Date: Wed, 16 Jan 2013 14:11:53 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 17/22] sched: packing small tasks in wake/exec balancing
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-18-git-send-email-alex.shi@intel.com> <20130110171728.GG2046@e103034-lin> <50EF8B37.7050404@intel.com> <87pq18nsnk.fsf@sejong.aot.lge.com>
+In-Reply-To: <87pq18nsnk.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Cc'ing some glibc developers...)
+On 01/14/2013 03:13 PM, Namhyung Kim wrote:
+> On Fri, 11 Jan 2013 11:47:03 +0800, Alex Shi wrote:
+>> On 01/11/2013 01:17 AM, Morten Rasmussen wrote:
+>>> On Sat, Jan 05, 2013 at 08:37:46AM +0000, Alex Shi wrote:
+>>>> If the wake/exec task is small enough, utils < 12.5%, it will
+>>>> has the chance to be packed into a cpu which is busy but still has space to
+>>>> handle it.
+>>>>
+>>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>>>> ---
+> [snip]
+>>> I may be missing something, but could the expression be something like
+>>> the below instead?
+>>>
+>>> Create a putil < 12.5% check before the loop. There is no reason to
+>>> recheck it every iteration. Then:
+> 
+> Agreed.  Also suggest that the checking local cpu can also be moved
+> before the loop so that it can be used without going through the loop if
+> it's vacant enough.
 
-Hello,
+Yes, thanks for suggestion!
+> 
+>>>
+>>> vacancy = FULL_UTIL - (rq->util + putil)
+>>>
+>>> should be enough?
+>>>
+>>>> +
+>>>> +		/* bias toward local cpu */
+>>>> +		if (vacancy > 0 && (i == this_cpu))
+>>>> +			return i;
+>>>> +
+>>>> +		if (vacancy > 0 && vacancy < min_vacancy) {
+>>>> +			min_vacancy = vacancy;
+>>>> +			idlest = i;
+>>>
+>>> "idlest" may be a bit misleading here as you actually select busiest cpu
+>>> that have enough spare capacity to take the task.
+>>
+>> Um, change to leader_cpu?
+> 
+> vacantest? ;-)
 
-In glibc source file inet/netinet/in.h and kernel source file
-include/uapi/linux/in6.h, both define struct in6_addr, and both are
-visible to user applications. Thomas reported a conflict below.
-
-So, how can we handle this? /me is wondering why we didn't see this
-before.
-
-Thanks.
-
-On Tue, 2013-01-15 at 12:55 +0200, Thomas Backlund wrote:
-> Cong Wang skrev 15.1.2013 12:11:
-> >
-> > Does the following patch help?
-> >
-> > $ git diff include/uapi/linux/if_bridge.h
-> > diff --git a/include/uapi/linux/if_bridge.h
-> > b/include/uapi/linux/if_bridge.h
-> > index 5db2975..653db23 100644
-> > --- a/include/uapi/linux/if_bridge.h
-> > +++ b/include/uapi/linux/if_bridge.h
-> > @@ -14,6 +14,7 @@
-> >   #define _UAPI_LINUX_IF_BRIDGE_H
-> >
-> >   #include <linux/types.h>
-> > +#include <linux/in6.h>
-> >
-> >   #define SYSFS_BRIDGE_ATTR      "bridge"
-> >   #define SYSFS_BRIDGE_FDB       "brforward"
-> >
+hard to the ward in google. are you sure it is better than leader_cpu?  :)
 > 
-> Well, I suggested the same fix in the beginning of the thread
-> on netdev and lkml: "if_bridge.h: include in6.h for struct in6_addr use"
-> 
-> as it seemed to fix the libvirt case
-> 
-> but then asked it to be ignored after I tried to build connman,
-> and hit this conflict with glibc-2.17:
-> 
-> In file included from /usr/include/arpa/inet.h:22:0,
->                   from ./include/connman/inet.h:25,
->                   from src/connman.h:128,
->                   from src/tethering.c:40:
-> /usr/include/netinet/in.h:35:5: error: expected identifier before 
-> numeric constant
-> /usr/include/netinet/in.h:197:8: error: redefinition of 'struct in6_addr'
-> In file included from /usr/include/linux/if_bridge.h:17:0,
->                   from src/tethering.c:38:
-> /usr/include/linux/in6.h:30:8: note: originally defined here
-> In file included from /usr/include/arpa/inet.h:22:0,
->                   from ./include/connman/inet.h:25,
->                   from src/connman.h:128,
->                   from src/tethering.c:40:
-> /usr/include/netinet/in.h:238:8: error: redefinition of 'struct 
-> sockaddr_in6'
-> In file included from /usr/include/linux/if_bridge.h:17:0,
->                   from src/tethering.c:38:
-> /usr/include/linux/in6.h:46:8: note: originally defined here
-> In file included from /usr/include/arpa/inet.h:22:0,
->                   from ./include/connman/inet.h:25,
->                   from src/connman.h:128,
->                   from src/tethering.c:40:
-> /usr/include/netinet/in.h:274:8: error: redefinition of 'struct ipv6_mreq'
-> In file included from /usr/include/linux/if_bridge.h:17:0,
->                   from src/tethering.c:38:
-> /usr/include/linux/in6.h:54:8: note: originally defined here
-> make[1]: *** [src/src_connmand-tethering.o] Error 1
-> 
-> 
-> So I'm not sure it's the right one...
+> Thanks,
+> Namhyung
 > 
 
 
-
+-- 
+Thanks Alex
