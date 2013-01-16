@@ -1,104 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab3APOov (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:44:51 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:34830 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756400Ab3APOot (ORCPT
+	id S1755836Ab3APOpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:45:05 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46549 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab3APOpC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:44:49 -0500
-From: sjur.brandeland@stericsson.com
-To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Cc: mporter@ti.com, =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Loic Pallardy <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Suman Anna <s-anna@ti.com>, Mark Grosen <mgrosen@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv3 11/11] remoteproc: Calculate max_notifyid by counting vrings
-Date: Wed, 16 Jan 2013 15:43:50 +0100
-Message-Id: <1358347430-9243-12-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358347430-9243-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1358347430-9243-1-git-send-email-sjur.brandeland@stericsson.com>
+	Wed, 16 Jan 2013 09:45:02 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
+CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <rogerq@ti.com>
+Subject: [PATCH v6 13/22] mfd: omap-usb-host: override number of ports from platform data
+Date: Wed, 16 Jan 2013 16:43:44 +0200
+Message-ID: <1358347433-329-14-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1358347433-329-1-git-send-email-rogerq@ti.com>
+References: <1358347433-329-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Both OMAP4 and 5 exhibit the same revision ID in the REVISION register
+but they have different number of ports i.e. 2 and 3 respectively.
+So we can't rely on REVISION register for number of ports on OMAP5
+and depend on platform data (or device tree) instead.
 
-Simplify hanling of max_notifyid by simply counting the
-number of vrings.
-
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/remoteproc/remoteproc_core.c |   20 +++++---------------
- 1 files changed, 5 insertions(+), 15 deletions(-)
+ drivers/mfd/omap-usb-host.c            |   34 +++++++++++++++++++------------
+ include/linux/platform_data/usb-omap.h |    1 +
+ 2 files changed, 22 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 4f342e0..31ecb30 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -227,9 +227,6 @@ int rproc_alloc_vring(struct rproc_vdev *rvdev, int i)
- 		return ret;
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 0ab6801..65d2ab4 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -493,19 +493,27 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 	 */
+ 	pm_runtime_put_sync(dev);
+ 
+-	switch (omap->usbhs_rev) {
+-	case OMAP_USBHS_REV1:
+-		omap->nports = 3;
+-		break;
+-	case OMAP_USBHS_REV2:
+-		omap->nports = 2;
+-		break;
+-	default:
+-		omap->nports = OMAP3_HS_USB_PORTS;
+-		dev_dbg(dev,
+-		  "USB HOST Rev : 0x%d not recognized, assuming %d ports\n",
+-		   omap->usbhs_rev, omap->nports);
+-		break;
++	/*
++	 * If platform data contains nports then use that
++	 * else make out number of ports from USBHS revision
++	 */
++	if (pdata->nports) {
++		omap->nports = pdata->nports;
++	} else {
++		switch (omap->usbhs_rev) {
++		case OMAP_USBHS_REV1:
++			omap->nports = 3;
++			break;
++		case OMAP_USBHS_REV2:
++			omap->nports = 2;
++			break;
++		default:
++			omap->nports = OMAP3_HS_USB_PORTS;
++			dev_dbg(dev,
++			 "USB HOST Rev:0x%d not recognized, assuming %d ports\n",
++			 omap->usbhs_rev, omap->nports);
++			break;
++		}
  	}
  
--	/* Store largest notifyid */
--	rproc->max_notifyid = max(rproc->max_notifyid, notifyid);
--
- 	dev_dbg(dev, "vring%d: va %p dma %llx size %x idr %d\n", i, va,
- 				(unsigned long long)dma, size, notifyid);
+ 	for (i = 0; i < omap->nports; i++)
+diff --git a/include/linux/platform_data/usb-omap.h b/include/linux/platform_data/usb-omap.h
+index 04c7537..925a4a7 100644
+--- a/include/linux/platform_data/usb-omap.h
++++ b/include/linux/platform_data/usb-omap.h
+@@ -39,6 +39,7 @@ enum usbhs_omap_port_mode {
+ };
  
-@@ -279,25 +276,13 @@ rproc_parse_vring(struct rproc_vdev *rvdev, struct fw_rsc_vdev *rsc, int i)
- 	return 0;
- }
- 
--static int rproc_max_notifyid(int id, void *p, void *data)
--{
--	int *maxid = data;
--	*maxid = max(*maxid, id);
--	return 0;
--}
--
- void rproc_free_vring(struct rproc_vring *rvring)
- {
- 	int size = PAGE_ALIGN(vring_size(rvring->len, rvring->align));
- 	struct rproc *rproc = rvring->rvdev->rproc;
--	int maxid = 0;
- 
- 	dma_free_coherent(rproc->dev.parent, size, rvring->va, rvring->dma);
- 	idr_remove(&rproc->notifyids, rvring->notifyid);
--
--	/* Find the largest remaining notifyid */
--	idr_for_each(&rproc->notifyids, rproc_max_notifyid, &maxid);
--	rproc->max_notifyid = maxid;
- }
- 
- /**
-@@ -372,6 +357,9 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 	/* remember the resource entry */
- 	rvdev->rsc = rsc;
- 
-+	/* Summerize the number of notification IDs */
-+	rproc->max_notifyid += rsc->num_of_vrings;
-+
- 	list_add_tail(&rvdev->node, &rproc->rvdevs);
- 
- 	/* it is now safe to add the virtio device */
-@@ -827,6 +815,8 @@ static void rproc_fw_load(const struct firmware *fw, void *context)
- 		goto clean_up;
- 	}
- 
-+	rproc->max_notifyid = 0;
-+
- 	/* handle fw resources which are required to load rproc */
- 	ret = rproc_handle_resource(rproc, table, tablesz, rproc_handle_rsc);
- 	if (ret) {
+ struct usbhs_omap_platform_data {
++	int				nports;
+ 	enum usbhs_omap_port_mode	port_mode[OMAP3_HS_USB_PORTS];
+ 	int				reset_gpio_port[OMAP3_HS_USB_PORTS];
+ 	struct regulator		*regulator[OMAP3_HS_USB_PORTS];
 -- 
-1.7.5.4
+1.7.4.1
 
