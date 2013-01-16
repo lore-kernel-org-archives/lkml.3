@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072Ab3APQ0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:26:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36682 "EHLO
+	id S1758690Ab3APQ1h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:27:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36664 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab3APQIX (ORCPT
+	with ESMTP id S932412Ab3APQIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:08:23 -0500
+	Wed, 16 Jan 2013 11:08:11 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 169/222] drm/radeon: add WAIT_UNTIL to evergreen VM safe reg list
-Date: Wed, 16 Jan 2013 13:56:09 -0200
-Message-Id: <1358351822-7675-170-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 166/222] ext4: check dioread_nolock on remount
+Date: Wed, 16 Jan 2013 13:56:06 -0200
+Message-Id: <1358351822-7675-167-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,33 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 668bbc81baf0f34df832d8aca5c7d5e19a493c68 upstream.
+commit 261cb20cb2f0737a247aaf08dff7eb065e3e5b66 upstream.
 
-It's used in a recent mesa commit:
-http://cgit.freedesktop.org/mesa/mesa/commit/?id=24b1206ab2dcd506aaac3ef656aebc8bc20cd27a
-and there may be some other cases in the future where it's required.
+Currently we allow enabling dioread_nolock mount option on remount for
+filesystems where blocksize < PAGE_CACHE_SIZE.  This isn't really
+supported so fix the bug by moving the check for blocksize !=
+PAGE_CACHE_SIZE into parse_options(). Change the original PAGE_SIZE to
+PAGE_CACHE_SIZE along the way because that's what we are really
+interested in.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen_cs.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/super.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen_cs.c b/drivers/gpu/drm/radeon/evergreen_cs.c
-index 33aeaa5..4324c0d 100644
---- a/drivers/gpu/drm/radeon/evergreen_cs.c
-+++ b/drivers/gpu/drm/radeon/evergreen_cs.c
-@@ -2672,6 +2672,7 @@ static bool evergreen_vm_reg_valid(u32 reg)
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 993392b..b045207 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1656,9 +1656,7 @@ static int parse_options(char *options, struct super_block *sb,
+ 			 unsigned int *journal_ioprio,
+ 			 int is_remount)
+ {
+-#ifdef CONFIG_QUOTA
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+-#endif
+ 	char *p;
+ 	substring_t args[MAX_OPT_ARGS];
+ 	int token;
+@@ -1707,6 +1705,16 @@ static int parse_options(char *options, struct super_block *sb,
+ 		}
+ 	}
+ #endif
++	if (test_opt(sb, DIOREAD_NOLOCK)) {
++		int blocksize =
++			BLOCK_SIZE << le32_to_cpu(sbi->s_es->s_log_block_size);
++
++		if (blocksize < PAGE_CACHE_SIZE) {
++			ext4_msg(sb, KERN_ERR, "can't mount with "
++				 "dioread_nolock if block size != PAGE_SIZE");
++			return 0;
++		}
++	}
+ 	return 1;
+ }
  
- 	/* check config regs */
- 	switch (reg) {
-+	case WAIT_UNTIL:
- 	case GRBM_GFX_INDEX:
- 	case CP_STRMOUT_CNTL:
- 	case CP_COHER_CNTL:
+@@ -3410,15 +3418,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 			clear_opt(sb, DELALLOC);
+ 	}
+ 
+-	blocksize = BLOCK_SIZE << le32_to_cpu(es->s_log_block_size);
+-	if (test_opt(sb, DIOREAD_NOLOCK)) {
+-		if (blocksize < PAGE_SIZE) {
+-			ext4_msg(sb, KERN_ERR, "can't mount with "
+-				 "dioread_nolock if block size != PAGE_SIZE");
+-			goto failed_mount;
+-		}
+-	}
+-
+ 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+ 		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
+ 
+@@ -3460,6 +3459,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (!ext4_feature_set_ok(sb, (sb->s_flags & MS_RDONLY)))
+ 		goto failed_mount;
+ 
++	blocksize = BLOCK_SIZE << le32_to_cpu(es->s_log_block_size);
+ 	if (blocksize < EXT4_MIN_BLOCK_SIZE ||
+ 	    blocksize > EXT4_MAX_BLOCK_SIZE) {
+ 		ext4_msg(sb, KERN_ERR,
 -- 
 1.7.9.5
 
