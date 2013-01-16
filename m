@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab3APWvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:51:52 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:50242 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757717Ab3APWvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:51:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkECAG6Zu08YNOOE/2dsb2JhbAANN4F7gzKrG4ZmAQEBAQMjVQEQCw4KAgIFFgsCAgkDAgECAUUGDQEHAQGvGJJ7gSaOCoEUA4hClXeJWQ
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="212737197"
-Message-ID: <50F72F03.5070806@teksavvy.com>
-Date: Wed, 16 Jan 2013 17:51:47 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1758046Ab3APWxc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:53:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59326 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757681Ab3APWxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 17:53:31 -0500
+Message-ID: <50F72F17.9030805@zytor.com>
+Date: Wed, 16 Jan 2013 14:52:07 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com>
-In-Reply-To: <50F63882.8000607@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wujianguo@huawei.com" <wujianguo@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "lliubbo@gmail.com" <lliubbo@gmail.com>,
+        "jaegeuk.hanse@gmail.com" <jaegeuk.hanse@gmail.com>,
+        "glommer@parallels.com" <glommer@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com> <50F440F5.3030006@zytor.com> <20130114143456.3962f3bd.akpm@linux-foundation.org> <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com> <20130114144601.1c40dc7e.akpm@linux-foundation.org> <50F647E8.509@jp.fujitsu.com> <20130116132953.6159b673.akpm@linux-foundation.org>
+In-Reply-To: <20130116132953.6159b673.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.5
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-01-16 12:20 AM, Stanislav Kinsbursky wrote:
+On 01/16/2013 01:29 PM, Andrew Morton wrote:
+>>
+>> Yes. If SRAT support is available, all memory which enabled hotpluggable
+>> bit are managed by ZONEMOVABLE. But performance degradation may
+>> occur by NUMA because we can only allocate anonymous page and page-cache
+>> from these memory.
+>>
+>> In this case, if user cannot change SRAT information, user needs a way to
+>> select/set removable memory manually.
 > 
-> Mark, could you provide any call traces?
+> If I understand this correctly you mean that once SRAT parsing is
+> implemented, the user can use movablecore_map to override that SRAT
+> parsing, yes?  That movablecore_map will take precedence over SRAT?
+> 
 
-Call traces from where/what?
-There's this one, posted earlier in the BUG report:
+Yes, but we still need a higher-level user interface which specifies
+which nodes, not which memory ranges, should be movable.  That is the
+policy granularity that is actually appropriate for the administrator
+(trading off performance vs reliability.)
 
-kernel BUG at net/sunrpc/svc_xprt.c:921!
-Call Trace:
- [<ffffffffa016a56a>] ? svc_recv+0xcc/0x338 [sunrpc]
- [<ffffffffa0318bfc>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
- [<ffffffffa0318c19>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
- [<ffffffff810407e6>] ? kthread+0x81/0x89
- [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
- [<ffffffff812ea62c>] ? ret_from_fork+0x7c/0xb0
- [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
+	-hpa
 
