@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab3APQcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:32:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36377 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932376Ab3APQGh (ORCPT
+	id S1758517Ab3APQdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:33:07 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:56293 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757398Ab3APQdC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:06:37 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Francois Romieu <romieu@fr.zoreil.com>,
-        Daniele Venzano <venza@brownhat.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 143/222] sis900: fix sis900_set_mode call parameters.
-Date: Wed, 16 Jan 2013 13:55:43 -0200
-Message-Id: <1358351822-7675-144-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 16 Jan 2013 11:33:02 -0500
+From: James Bottomley <jbottomley@parallels.com>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+CC: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zach Brown <zab@zabbo.net>, Maxim Patlasov <MPatlasov@parallels.com>
+Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
+Thread-Topic: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
+Thread-Index: AQHN9AckBU/BbJkf9Eempikh7KsAyw==
+Date: Wed, 16 Jan 2013 16:32:58 +0000
+Message-ID: <1358353978.2384.50.camel@dabdike.int.hansenpartnership.com>
+References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
+In-Reply-To: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [46.65.52.191]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <4CCA67A75E8D94428CB64A9ED0BC0C1C@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2013-01-09 at 13:58 -0600, Dave Kleikamp wrote:
+> This patchset was begun by Zach Brown and was originally submitted for
+> review in October, 2009. Feedback was positive, and I have picked up
+> where he left off, porting his patches to the latest mainline kernel
+> and adding support more file systems.
+> 
+> This patch series adds a kernel interface to fs/aio.c so that kernel code can
+> issue concurrent asynchronous IO to file systems.  It adds an aio command and
+> file system methods which specify io memory with pages instead of userspace
+> addresses.
+> 
+> This series was written to reduce the current overhead loop imposes by
+> performing synchronus buffered file system IO from a kernel thread.  These
+> patches turn loop into a light weight layer that translates bios into iocbs.
+> 
+> It introduces new file ops, read_iter() and write_iter(), that replace the
+> aio_read() and aio_write() operations. The iov_iter structure can now contain
+> either a user-space iovec or a kernel-space bio_vec. Since it would be
+> overly complicated to replace every instance of aio_read() and aio_write(),
+> the old operations are not removed, but file systems implementing the new
+> ones need not keep the old ones.
+> 
+> Changes from V4 include:
+>  * moved iov-iter.c from mm/ to fs/
+>  * removed dio_aligned helper
+>  * insured that FUA write to loop device is committed to media
+>  * removed no-longer-used REQ_KERNEL define
+> 
+> These patches apply to 3.8-rc2 and are also available at:
+> git://github.com/kleikamp/linux-shaggy.git loop_2013_01_04
+> 
+> My hopes are that this patchset is finally ready for linux-next.
 
-------------------
+Just a note that we at parallels are anxiously awaiting this too.  Our
+rewrite of the linux loop device to be more efficient (and not double
+cache) depends on this work.  I should also note that we've been testing
+these patches (albeit backported to a RHEL kernel as a current work
+base) with no problems reported so far.
 
-From: Francois Romieu <romieu@fr.zoreil.com>
-
-commit 8495c0da20bc496ac9d5da2b292adb28f61d2713 upstream.
-
-Leftover of 57d6d456cfb89264f87d24f52640ede23fdf12bd ("sis900: stop
-using net_device.{base_addr, irq} and convert to __iomem.").
-
-It is needed for suspend / resume to work.
-
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Tested-by: Jan Janssen <medhefgo@web.de>
-Cc: Daniele Venzano <venza@brownhat.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/net/ethernet/sis/sis900.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/sis/sis900.c b/drivers/net/ethernet/sis/sis900.c
-index 203d9c6..f21e30c 100644
---- a/drivers/net/ethernet/sis/sis900.c
-+++ b/drivers/net/ethernet/sis/sis900.c
-@@ -2477,7 +2477,7 @@ static int sis900_resume(struct pci_dev *pci_dev)
- 	netif_start_queue(net_dev);
- 
- 	/* Workaround for EDB */
--	sis900_set_mode(ioaddr, HW_SPEED_10_MBPS, FDX_CAPABLE_HALF_SELECTED);
-+	sis900_set_mode(sis_priv, HW_SPEED_10_MBPS, FDX_CAPABLE_HALF_SELECTED);
- 
- 	/* Enable all known interrupts by setting the interrupt mask. */
- 	sw32(imr, RxSOVR | RxORN | RxERR | RxOK | TxURN | TxERR | TxIDLE);
--- 
-1.7.9.5
+James
 
