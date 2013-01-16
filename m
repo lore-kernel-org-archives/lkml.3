@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab3APFUQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 00:20:16 -0500
-Received: from relay.parallels.com ([195.214.232.42]:33956 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab3APFUO (ORCPT
+	id S1753106Ab3APFVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 00:21:20 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:52565 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab3APFVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 00:20:14 -0500
-Message-ID: <50F63882.8000607@parallels.com>
-Date: Wed, 16 Jan 2013 09:20:02 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 16 Jan 2013 00:21:19 -0500
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>, Mark Lord <kernel@teksavvy.com>
-CC: <linux-nfs@vger.kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org>
-In-Reply-To: <20130115205625.GH4940@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.18.163]
+In-Reply-To: <1358257112-19595-2-git-send-email-gautam.vivek@samsung.com>
+References: <1358257112-19595-1-git-send-email-gautam.vivek@samsung.com>
+	<1358257112-19595-2-git-send-email-gautam.vivek@samsung.com>
+Date: Wed, 16 Jan 2013 10:51:17 +0530
+Message-ID: <CAFp+6iFgaT9D2hR0pX34jo2g+GHftmA0Mw3y96-oKe0KakZOxA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/4] ARM: Exynos5250: Enabling ehci-s5p driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, jg1.han@samsung.com,
+        kgene.kim@samsung.com, devicetree-discuss@lists.ozlabs.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-16.01.2013 00:56, J. Bruce Fields пишет:
-> On Mon, Jan 14, 2013 at 11:16:00PM -0500, Mark Lord wrote:
->> On 13-01-14 03:37 PM, J. Bruce Fields wrote:
->>> Thanks for the report.
->>>
->>> On Mon, Jan 14, 2013 at 11:17:09AM -0500, Mark Lord wrote:
->>>> Since upgrading to 3.7, and now 3.7.2, my AMD-450E based server
->>>
->>> It's acting as an NFS client, right?
->>
->> Client and server, with other Linux boxes all running 3.something kernels.
->>
->>> What did you upgrade from?
->>
->> 3.4.something, I believe.
->>
->>>> is getting these BUG complaints.  The .config file is gzip'd/attached.
->>>
->>> Is this easy to reproduce?
->>
->> So far, it seems to pop up within a day or so of any reboot.
->> I normally only reboot that system for a kernel upgrade,
->> but can do so a bit more often if there's useful info to collect.
+On Tue, Jan 15, 2013 at 7:08 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Adding EHCI device tree node for Exynos5250 along with
+> the device base adress and gpio line for vbus.
 >
-> So this means svc_delete_xprt was called on an xprt twice.
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  .../devicetree/bindings/usb/exynos-usb.txt         |   25 ++++++++++++++++++++
+>  arch/arm/boot/dts/exynos5250-smdk5250.dts          |    4 +++
+>  arch/arm/boot/dts/exynos5250.dtsi                  |    6 ++++
+>  3 files changed, 35 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/usb/exynos-usb.txt
 >
-> That could happen if server threads are still running (and calling
-> svc_recv) after we start shutting down the server: svc_shutdown_net
-> assumes that server threads are already shut down, but that isn't true
-> any more after the containerization work.
->
-> I thought that would only be a bug for users actually running multiple
-> containers, but looking at nfs_callback_down, I don't think that's
-> true--it seems to always shut down the thread last.
->
+> diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> new file mode 100644
+> index 0000000..e8bbb47
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> @@ -0,0 +1,25 @@
+> +Samsung Exynos SoC USB controller
+> +
+> +The USB devices interface with USB controllers on Exynos SOCs.
+> +The device node has following properties.
+> +
+> +EHCI
+> +Required properties:
+> + - compatible: should be "samsung,exynos4210-ehci" for USB 2.0
+> +   EHCI controller in host mode.
+> + - reg: physical base address of the controller and length of memory mapped
+> +   region.
+> + - interrupts: interrupt number to the cpu.
+> +
+> +Optional properties:
+> + - samsung,vbus-gpio:  if present, specifies the GPIO that
+> +   needs to be pulled up for the bus to be powered.
+> +
+> +Example:
+> +
+> +       usb@12110000 {
+> +               compatible = "samsung,exynos4210-ehci";
+> +               reg = <0x12110000 0x100>;
+> +               interrupts = <0 71 0>;
+> +               samsung,vbus-gpio = <&gpx2 6 1 3 3>;
+> +       };
+> diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> index 942d576..7363e14 100644
+> --- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> +++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> @@ -204,4 +204,8 @@
+>                 samsung,mfc-r = <0x43000000 0x800000>;
+>                 samsung,mfc-l = <0x51000000 0x800000>;
+>         };
+> +
+> +       usb@12110000 {
+> +               samsung,vbus-gpio = <&gpx2 6 1 3 3>;
+> +       };
 
-Thanks, Bruce. It reminds me the patch with additional protection for permanents sockets shutdown I've sent you a couple of mount ago...
-Look like I should revisit this patch at least.
+Add required vbus gpio for snow board also here.
 
-Mark, could you provide any call traces?
-
-> --b.
->
+>  };
 
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Thanks & Regards
+Vivek
