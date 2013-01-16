@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab3APRfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 12:35:14 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:48478 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3APRfL (ORCPT
+	id S1756578Ab3APRhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:37:19 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:47950 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab3APRhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 12:35:11 -0500
+	Wed, 16 Jan 2013 12:37:17 -0500
+Date: Wed, 16 Jan 2013 09:37:03 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Jens Axboe <axboe@kernel.dk>, USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: USB device cannot be reconnected and khubd "blocked for more
+ than 120 seconds"
+Message-ID: <20130116173703.GR2668@htj.dyndns.org>
+References: <20130116161224.GO2668@htj.dyndns.org>
+ <Pine.LNX.4.44L0.1301161132470.1704-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <50F6DE9D.5080906@wwwdotorg.org>
-References: <20130116141411.8fadedee54ed35dc0eddd288@canb.auug.org.au>
-	<1358308153.32106.8.camel@gitbox>
-	<50F62D69.8080100@nvidia.com>
-	<1358311923.537.3.camel@gitbox>
-	<CAOesGMgr_f-XGHOdMW3ugfXbVaUc4EALrbfJD=XeOKixxrY8PA@mail.gmail.com>
-	<50F6DE9D.5080906@wwwdotorg.org>
-Date: Wed, 16 Jan 2013 09:35:10 -0800
-Message-ID: <CAOesGMhwEyoExekOxc-D+Vr4dmWwLaiC4arJNa-nfjZxK0QbSA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the tegra tree with the arm-soc tree
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Tony Prisk <linux@prisktech.co.nz>, Stephen Warren <swarren@nvidia.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Colin Cross <ccross@android.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1301161132470.1704-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 9:08 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 01/16/2013 09:27 AM, Olof Johansson wrote:
->> Hi,
->>
->> On Tue, Jan 15, 2013 at 8:52 PM, Tony Prisk <linux@prisktech.co.nz> wrote:
->>> On Tue, 2013-01-15 at 21:32 -0700, Stephen Warren wrote:
->>>> On 01/15/2013 08:49 PM, Tony Prisk wrote:
->>>>> On Wed, 2013-01-16 at 14:14 +1100, Stephen Rothwell wrote:
->>>>>> Hi all,
->>>>>>
->>>>>> Today's linux-next merge of the tegra tree got a conflict in
->>>>>> drivers/clocksource/Makefile between commit ff7ec345f0ec ("timer: vt8500:
->>>>>> Move timer code to drivers/clocksource") from the arm-soc tree and commit
->>>>>> ac0fd9eca3ba ("ARM: tegra: move timer.c to drivers/clocksource/") from
->>>>>> the tegra tree.
->>>>>>
->>>>>> I fixed it up (see below) and can carry the fix as necessary (no action
->>>>>> is required).
->>>>>>
->>>>>
->>>>> I don't know about everyone else, but I feel the preference should be to
->>>>> keep things alphabetized where possible to help avoid with merge
->>>>> conflicts later on. This is always a problem when we start tacking
->>>>> things on the end of lists.
->>>>>
->>>>> I realise this Kconfig is not alphabetized anyway, but it's never too
->>>>> early to start on the 'right' path.
->>>>
->>>> Sounds like a good idea, but the issue is: When to do the initial sort
->>>> so it doesn't conflict with all the adds in a kernel cycle... Post and
->>>> immediately commit a new patch near the end of the merge window?
->>>
->>> Given that the maintainer can quite safely do the patch (sorry
->>> maintainers), I don't see any reason why it couldn't be done at the
->>> point where they stop accepting patches for the merge-window. Once the
->>> patches are stopped, sort the list in one last patch.
->
-> That only works well if the one maintainer is the only person taking
-> patches for the drivers/clocksource tree. It might be true that the "one
-> maintainer" here ends up being arm-soc in this kernel cycle though?
+Hello, Alan.
 
-I'll send a patch to Linus at the end of the merge window, no need to
-do it through a merge -- that way it's trivial for him to fixup a
-merge conflict (and he can refuse to take it if he feels it's silly).
+On Wed, Jan 16, 2013 at 12:01:53PM -0500, Alan Stern wrote:
+> > The problem here is that "flush everything which comes before me" is
+> > used to order async jobs.  e.g. after async jobs probe the hardware
+> > they order themselves by flushing before registering them, so unless
+> 
+> I don't fully understand this example.  What is the point -- to make 
+> sure that asynchronously probed devices are registered in the order of 
+> their discovery?
 
->>> It makes sense to get it done in this window if possible as the Kconfig
->>> will only get bigger as time goes on, making sorting it more time
->>> consuming.
->>
->> Actually, Russell wen through and reordered these not long ago, if I
->> remember correctly. The current ordering is the same as in the
->> structure definition, and should be kept that way.
->
-> I think this is talking about Makefile entries rather than struct
-> definitions?
+People still want devices to be numbered to their physical ports and
+so on, so we keep the registeration order the same as natural
+(whatever that means) hardware order.
 
-Ah, yes, they should be sorted. But definitely not right now since
-it'll just make things worse.
+> If so, here's how to do it safely: Start up the async jobs in reverse
+> order of discovery.  Have each job acquire a cookie when it starts.  
+> Then each job needs to wait only for tasks that started after its
+> cookie was issued.
 
+It's a bit clumsy but yeah I guess it could work.
 
--Olof
+> > There aren't too many which use async anyway so changing stuff
+> > shouldn't be too difficult but I think the simpicity or dumbness is
+> > one of major attractions of async, so it'd be nice to keep things that
+> > way and the PF_USED_ASYNC hack seems to be able to hold things
+> > together for now.
+> 
+> Nesting won't matter for the chronological approach.  I really think 
+> you should consider it more fully.  It's not a hack, and it doesn't 
+> need to be complicated.
+
+There is benefit to the current dumb implementation in that drivers
+can use it without thinking too much, but yeah it could be that the
+flushing range limit isn't too much of restriction on top.  I don't
+know.  At this point, I'd prefer to remove request_module() from
+elevator init path for the problem at hand.  If we need something more
+involved, changing cookie usage rules definitely seems like an option.
+
+Thanks.
+
+-- 
+tejun
