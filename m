@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab3APQLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:11:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36915 "EHLO
+	id S933096Ab3APQL0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:11:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36929 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933046Ab3APQLE (ORCPT
+	with ESMTP id S932567Ab3APQLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:11:04 -0500
+	Wed, 16 Jan 2013 11:11:16 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Tony Prisk <linux@prisktech.co.nz>, Edgar Toernig <froese@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 209/222] ACPI / scan: Do not use dummy HID for system bus ACPI nodes
-Date: Wed, 16 Jan 2013 13:56:49 -0200
-Message-Id: <1358351822-7675-210-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 211/222] drivers/rtc/rtc-vt8500.c: correct handling of CR_24H bitfield
+Date: Wed, 16 Jan 2013 13:56:51 -0200
+Message-Id: <1358351822-7675-212-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,35 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Tony Prisk <linux@prisktech.co.nz>
 
-commit 4f5f64cf0cc916220aaa055992e31195470cfe37 upstream.
+commit 532db570e5181abc8f4f7bfa6c77c69ec2240198 upstream.
 
-At one point acpi_device_set_id() checks if acpi_device_hid(device)
-returns NULL, but that never happens, so system bus devices with an
-empty list of PNP IDs are given the dummy HID ("device") instead of
-the "system bus HID" ("LNXSYBUS").  Fix the code to use the right
-check.
+Control register bitfield for 12H/24H mode is handled incorrectly.
+Setting CR_24H actually enables 12H mode.  This patch renames the define
+and changes the initialization code to correctly set 24H mode.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Cc: Edgar Toernig <froese@gmx.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/acpi/scan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/rtc/rtc-vt8500.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 803c4ec..fcae116 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -1162,7 +1162,7 @@ static void acpi_device_set_id(struct acpi_device *device)
- 			acpi_add_id(device, ACPI_DOCK_HID);
- 		else if (!acpi_ibm_smbus_match(device))
- 			acpi_add_id(device, ACPI_SMBUS_IBM_HID);
--		else if (!acpi_device_hid(device) &&
-+		else if (list_empty(&device->pnp.ids) &&
- 			 ACPI_IS_ROOT_DEVICE(device->parent)) {
- 			acpi_add_id(device, ACPI_BUS_HID); /* \_SB, LNXSYBUS */
- 			strcpy(device->pnp.device_name, ACPI_BUS_DEVICE_NAME);
+diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
+index 9e94fb1..5641ac5 100644
+--- a/drivers/rtc/rtc-vt8500.c
++++ b/drivers/rtc/rtc-vt8500.c
+@@ -69,7 +69,7 @@
+ 				| ALARM_SEC_BIT)
+ 
+ #define VT8500_RTC_CR_ENABLE	(1 << 0)	/* Enable RTC */
+-#define VT8500_RTC_CR_24H	(1 << 1)	/* 24h time format */
++#define VT8500_RTC_CR_12H	(1 << 1)	/* 12h time format */
+ #define VT8500_RTC_CR_SM_ENABLE	(1 << 2)	/* Enable periodic irqs */
+ #define VT8500_RTC_CR_SM_SEC	(1 << 3)	/* 0: 1Hz/60, 1: 1Hz */
+ #define VT8500_RTC_CR_CALIB	(1 << 4)	/* Enable calibration */
+@@ -248,7 +248,7 @@ static int __devinit vt8500_rtc_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* Enable RTC and set it to 24-hour mode */
+-	writel(VT8500_RTC_CR_ENABLE | VT8500_RTC_CR_24H,
++	writel(VT8500_RTC_CR_ENABLE,
+ 	       vt8500_rtc->regbase + VT8500_RTC_CR);
+ 
+ 	vt8500_rtc->rtc = rtc_device_register("vt8500-rtc", &pdev->dev,
 -- 
 1.7.9.5
 
