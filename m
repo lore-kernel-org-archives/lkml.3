@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3APDBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 22:01:18 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:44775 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776Ab3APDBQ (ORCPT
+	id S1758082Ab3APDB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 22:01:29 -0500
+Received: from mail.windriver.com ([147.11.1.11]:43917 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757654Ab3APDB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 22:01:16 -0500
-Message-ID: <50F617E4.4070109@windriver.com>
-Date: Wed, 16 Jan 2013 11:00:52 +0800
-From: "tiejun.chen" <tiejun.chen@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
+	Tue, 15 Jan 2013 22:01:27 -0500
+From: Tiejun Chen <tiejun.chen@windriver.com>
 To: <benh@kernel.crashing.org>, <galak@kernel.crashing.org>
 CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][v0][PATCH 1/1] ppc64: ignore interrupts while offline
-References: <1358245860-6546-1-git-send-email-tiejun.chen@windriver.com>
-In-Reply-To: <1358245860-6546-1-git-send-email-tiejun.chen@windriver.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [147.11.178.22]
+Subject: [v1][PATCH 1/1] ppc64: max next_tb to prevent from replaying timer interrupt
+Date: Wed, 16 Jan 2013 11:01:19 +0800
+Message-ID: <1358305279-19068-1-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore this to check next version.
+With lazy interrupt, we always call __check_irq_replaysome with
+decrementers_next_tb to check if we need to replay timer interrupt.
+So in hotplug case we also need to set decrementers_next_tb as MAX
+to make sure __check_irq_replay don't replay timer interrupt
+when return as we expect, otherwise we'll trap here infinitely.
 
-Tiejun
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+---
+v1:
 
-On 01/15/2013 06:31 PM, Tiejun Chen wrote:
-> With lazy interrupt, some implementations of hotplug will
-> get some interrupts even while offline, just ignore these.
->
-> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
-> ---
->   arch/powerpc/kernel/irq.c |    6 ++++++
->   1 file changed, 6 insertions(+)
->
-> diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
-> index 4f97fe3..dbca574 100644
-> --- a/arch/powerpc/kernel/irq.c
-> +++ b/arch/powerpc/kernel/irq.c
-> @@ -144,6 +144,12 @@ notrace unsigned int __check_irq_replay(void)
->   	 */
->   	unsigned char happened = local_paca->irq_happened;
->
-> +	/* Some implementations of hotplug will get some interrupts while
-> +	 * offline, just ignore these.
-> +	 */
-> +	if (cpu_is_offline(smp_processor_id()))
-> +		return 0;
-> +
->   	/* Clear bit 0 which we wouldn't clear otherwise */
->   	local_paca->irq_happened &= ~PACA_IRQ_HARD_DIS;
->
->
+* In hotplug case we max decrementers_next_tb to prevent from
+replaying timer interrupt for any offline CPU.
+
+ arch/powerpc/kernel/time.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index 6f6b1cc..127361e 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -494,10 +494,15 @@ void timer_interrupt(struct pt_regs * regs)
+ 	set_dec(DECREMENTER_MAX);
+ 
+ 	/* Some implementations of hotplug will get timer interrupts while
+-	 * offline, just ignore these
++	 * offline, just ignore these and we also need to set
++	 * decrementers_next_tb as MAX to make sure __check_irq_replay
++	 * don't replay timer interrupt when return, otherwise we'll trap
++	 * here infinitely :(
+ 	 */
+-	if (!cpu_online(smp_processor_id()))
++	if (!cpu_online(smp_processor_id())) {
++		*next_tb = ~(u64)0;
+ 		return;
++	}
+ 
+ 	/* Conditionally hard-enable interrupts now that the DEC has been
+ 	 * bumped to its maximum value
+-- 
+1.7.9.5
 
