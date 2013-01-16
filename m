@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab3APFmw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 00:42:52 -0500
-Received: from mga02.intel.com ([134.134.136.20]:13366 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877Ab3APFmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 00:42:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,476,1355126400"; 
-   d="scan'208";a="247476720"
-Message-ID: <50F63E16.1060903@intel.com>
-Date: Wed, 16 Jan 2013 13:43:50 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 05/22] sched: remove domain iterations in fork/exec/wake
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-6-git-send-email-alex.shi@intel.com> <20130109182102.GC2046@e103034-lin> <50EF9B69.3000201@linux.vnet.ibm.com>
-In-Reply-To: <50EF9B69.3000201@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1753876Ab3APFn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 00:43:59 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58922 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750705Ab3APFn5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 00:43:57 -0500
+X-Sasl-enc: AsDeF1DW0yLhVevC7JQMMZKDrSegR8rJTF0rtR0I/UeS 1358315036
+From: Alan Ott <alan@signal11.us>
+To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tony Cheneau <tony.cheneau@amnesiak.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Alan Ott <alan@signal11.us>
+Subject: [PATCH 0/2] Handle Uncompressed IPv6 on 6LoWPAN
+Date: Wed, 16 Jan 2013 00:43:55 -0500
+Message-Id: <1358315037-10043-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--		/* while loop will break here if sd == NULL */
->>
->> I agree that this should be a major optimization. I just can't figure
->> out why the existing recursive search for an idle cpu switches to the
->> new cpu near the end and then starts a search for an idle cpu in the new
->> cpu's domain. Is this to handle some exotic sched domain configurations?
->> If so, they probably wouldn't work with your optimizations.
-> 
-> Let me explain my understanding of why the recursive search is the way
-> it is.
-> 
->  _________________________  sd0
-> |                         |
-> |  ___sd1__   ___sd2__    |
-> | |        | |        |   |
-> | | sgx    | |  sga   |   |
-> | | sgy    | |  sgb   |   |
-> | |________| |________|   |
-> |_________________________|
-> 
-> What the current recursive search is doing is (assuming we start with
-> sd0-the top level sched domain whose flags are rightly set). we find
-> that sd1 is the idlest group,and a cpux1 in sgx is the idlest cpu.
-> 
-> We could have ideally stopped the search here.But the problem with this
-> is that there is a possibility that sgx is more loaded than sgy; meaning
-> the cpus in sgx are heavily imbalanced;say there are two cpus cpux1 and
-> cpux2 in sgx,where cpux2 is heavily loaded and cpux1 has recently gotten
-> idle and load balancing has not come to its rescue yet.According to the
-> search above, cpux1 is idle,but is *not the right candidate for
-> scheduling forked task,it is the right candidate for relieving the load
-> from cpux2* due to cache locality etc.
+This has been tested by exchanging data with with the Contiki operating
+system using a Redwire Econotag.  Contiki had to be set to send uncompressed
+data, and had to have a #define modified to enable reception and processing
+of header-compressed packets when not set to send compressed data.
 
-The problem still exists on the current code. It still goes to cpux1.
-and then goes up to sgx to seek idlest group ... idlest cpu, and back to
-cpux1 again. nothing help.
+Alan Ott (2):
+  6lowpan: Refactor packet delivery into a function
+  6lowpan: Handle uncompressed IPv6 packets over 6LoWPAN
 
+ net/ieee802154/6lowpan.c | 79 ++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 56 insertions(+), 23 deletions(-)
+
+-- 
+1.7.11.2
 
