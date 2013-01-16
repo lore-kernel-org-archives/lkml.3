@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab3APP6B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:58:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35641 "EHLO
+	id S1756739Ab3APP6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:58:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35657 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756636Ab3APP56 (ORCPT
+	with ESMTP id S1756306Ab3APP6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:57:58 -0500
+	Wed, 16 Jan 2013 10:58:07 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>,
+Cc: Jan Beulich <jbeulich@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 009/222] usb: gadget: phonet: free requests in pn_bind()'s error path
-Date: Wed, 16 Jan 2013 13:53:29 -0200
-Message-Id: <1358351822-7675-10-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 011/222] x86: hpet: Fix masking of MSI interrupts
+Date: Wed, 16 Jan 2013 13:53:31 -0200
+Message-Id: <1358351822-7675-12-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,50 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit d0eca719dd11ad0619e8dd6a1f3eceb95b0216dd upstream.
+commit 6acf5a8c931da9d26c8dd77d784daaf07fa2bff0 upstream.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+HPET_TN_FSB is not a proper mask bit; it merely toggles between MSI and
+legacy interrupt delivery. The proper mask bit is HPET_TN_ENABLE, so
+use both bits when (un)masking the interrupt.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/5093E09002000078000A60E6@nat28.tlf.novell.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/gadget/f_phonet.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/kernel/hpet.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_phonet.c b/drivers/usb/gadget/f_phonet.c
-index 965a629..16512f9 100644
---- a/drivers/usb/gadget/f_phonet.c
-+++ b/drivers/usb/gadget/f_phonet.c
-@@ -531,7 +531,7 @@ int pn_bind(struct usb_configuration *c, struct usb_function *f)
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index 1460a5d..e28670f 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -434,7 +434,7 @@ void hpet_msi_unmask(struct irq_data *data)
  
- 		req = usb_ep_alloc_request(fp->out_ep, GFP_KERNEL);
- 		if (!req)
--			goto err;
-+			goto err_req;
+ 	/* unmask it */
+ 	cfg = hpet_readl(HPET_Tn_CFG(hdev->num));
+-	cfg |= HPET_TN_FSB;
++	cfg |= HPET_TN_ENABLE | HPET_TN_FSB;
+ 	hpet_writel(cfg, HPET_Tn_CFG(hdev->num));
+ }
  
- 		req->complete = pn_rx_complete;
- 		fp->out_reqv[i] = req;
-@@ -540,14 +540,18 @@ int pn_bind(struct usb_configuration *c, struct usb_function *f)
- 	/* Outgoing USB requests */
- 	fp->in_req = usb_ep_alloc_request(fp->in_ep, GFP_KERNEL);
- 	if (!fp->in_req)
--		goto err;
-+		goto err_req;
+@@ -445,7 +445,7 @@ void hpet_msi_mask(struct irq_data *data)
  
- 	INFO(cdev, "USB CDC Phonet function\n");
- 	INFO(cdev, "using %s, OUT %s, IN %s\n", cdev->gadget->name,
- 		fp->out_ep->name, fp->in_ep->name);
- 	return 0;
+ 	/* mask it */
+ 	cfg = hpet_readl(HPET_Tn_CFG(hdev->num));
+-	cfg &= ~HPET_TN_FSB;
++	cfg &= ~(HPET_TN_ENABLE | HPET_TN_FSB);
+ 	hpet_writel(cfg, HPET_Tn_CFG(hdev->num));
+ }
  
-+err_req:
-+	for (i = 0; i < phonet_rxq_size && fp->out_reqv[i]; i++)
-+		usb_ep_free_request(fp->out_ep, fp->out_reqv[i]);
- err:
-+
- 	if (fp->out_ep)
- 		fp->out_ep->driver_data = NULL;
- 	if (fp->in_ep)
 -- 
 1.7.9.5
 
