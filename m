@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759200Ab3APKoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:44:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42935 "EHLO mx2.suse.de"
+	id S1759039Ab3APKmd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:42:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28832 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759183Ab3APKoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:44:06 -0500
-Date: Wed, 16 Jan 2013 11:44:00 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Antonio Ospite <ospite@studenti.unina.it>
-Subject: Re: [PATCH v2] HID: add support for Sony RF receiver with USB product
- id 0x0374
-In-Reply-To: <50F637D1.8070302@lab.ntt.co.jp>
-Message-ID: <alpine.LNX.2.00.1301161141250.14768@pobox.suse.cz>
-References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>  <50F52986.2080002@lab.ntt.co.jp> <1358246448.4897.3.camel@nexus.lab.ntt.co.jp> <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
- <50F637D1.8070302@lab.ntt.co.jp>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758935Ab3APKmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 05:42:31 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH V5 1/3] vhost_net: correct error handling in vhost_net_set_backend()
+Date: Wed, 16 Jan 2013 18:33:59 +0800
+Message-Id: <1358332441-26859-2-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1358332441-26859-1-git-send-email-jasowang@redhat.com>
+References: <1358332441-26859-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jan 2013, Fernando Luis Vazquez Cao wrote:
+Currently, when vhost_init_used() fails the sock refcnt and ubufs were
+leaked. Correct this by calling vhost_init_used() before assign ubufs and
+restore the oldsock when it fails.
 
-> I noticed that the patch was tagged "for-3.9". Does this mean
-> that it is too late to get it merged during the current release
-> cycle?
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/vhost/net.c |   16 +++++++++++-----
+ 1 files changed, 11 insertions(+), 5 deletions(-)
 
-I currently don't have anything queued for 3.8, and this particular patch 
-doesn't justify a separate pull request.
-
-Once it's in Linus' tree, it can be easily pushed out to all existing 
--stable branches (including 3.8-stable, once it's created).
-
-If I am gfoing to be sending pull request for 3.8 to Linus still due to 
-some important bugfix, I will be including this.
-
-> If possible, I would like to get it backported to 3.7-stable (and 
-> possibly 3.2 stable), since without it a whole family of Sony desktop 
-> computers is unusable under Linux out of the box. Should I do it myself 
-> or do you have a process in place for HID stable patches?
-
-If the patch had
-
-	Cc: stable@vger.kernel.org
-
-in it, it'd be picked for -stable queue automatically. Otherwise, anyone 
-is free to take it once it's in Linus' tree and sent to to 
-stable@vger.kernel.org for inclusion.
-
-Hope this helps,
-
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index ebd08b2..d10ad6f 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -827,15 +827,16 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+ 			r = PTR_ERR(ubufs);
+ 			goto err_ubufs;
+ 		}
+-		oldubufs = vq->ubufs;
+-		vq->ubufs = ubufs;
++
+ 		vhost_net_disable_vq(n, vq);
+ 		rcu_assign_pointer(vq->private_data, sock);
+-		vhost_net_enable_vq(n, vq);
+-
+ 		r = vhost_init_used(vq);
+ 		if (r)
+-			goto err_vq;
++			goto err_used;
++		vhost_net_enable_vq(n, vq);
++
++		oldubufs = vq->ubufs;
++		vq->ubufs = ubufs;
+ 
+ 		n->tx_packets = 0;
+ 		n->tx_zcopy_err = 0;
+@@ -859,6 +860,11 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+ 	mutex_unlock(&n->dev.mutex);
+ 	return 0;
+ 
++err_used:
++	rcu_assign_pointer(vq->private_data, oldsock);
++	vhost_net_enable_vq(n, vq);
++	if (ubufs)
++		vhost_ubuf_put_and_wait(ubufs);
+ err_ubufs:
+ 	fput(sock->file);
+ err_vq:
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.1
+
