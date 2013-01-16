@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758432Ab3APDrn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 22:47:43 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:35834 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758401Ab3APDrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 22:47:42 -0500
-From: "Kumar, Anil" <anilkumar.v@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-CC: <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <khilman@deeprootsystems.com>,
-        <hs@denx.de>, <anilkumar.v@ti.com>
-Subject: [PATCH V4 0/3] ARM: davinci: da850: add pinctrl support
-Date: Wed, 16 Jan 2013 09:18:19 +0530
-Message-ID: <1358308102-8169-1-git-send-email-anilkumar.v@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1758601Ab3APDsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 22:48:52 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:50494 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758578Ab3APDsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 22:48:51 -0500
+Message-ID: <1358308153.32106.8.camel@gitbox>
+Subject: Re: linux-next: manual merge of the tegra tree with the arm-soc tree
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Date: Wed, 16 Jan 2013 16:49:13 +1300
+In-Reply-To: <20130116141411.8fadedee54ed35dc0eddd288@canb.auug.org.au>
+References: <20130116141411.8fadedee54ed35dc0eddd288@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches adds:
+On Wed, 2013-01-16 at 14:14 +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the tegra tree got a conflict in
+> drivers/clocksource/Makefile between commit ff7ec345f0ec ("timer: vt8500:
+> Move timer code to drivers/clocksource") from the arm-soc tree and commit
+> ac0fd9eca3ba ("ARM: tegra: move timer.c to drivers/clocksource/") from
+> the tegra tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
 
-* Add pinctrl-single for handling Padconf registers.
-* Add NAND node to export NAND functionality on da850 EVM.
-* Add NAND pinctrl node to do pin mux according to pinctrl-single driver.
+I don't know about everyone else, but I feel the preference should be to
+keep things alphabetized where possible to help avoid with merge
+conflicts later on. This is always a problem when we start tacking
+things on the end of lists.
 
+I realise this Kconfig is not alphabetized anyway, but it's never too
+early to start on the 'right' path.
 
-This series applies on top of tag next-20130107 git tree
-https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-and the following patch
-
- -drivers/pinctrl: grab default handles from device core
-  https://patchwork.kernel.org/patch/1862231/
-
-This series is tested on da850 EVM.
-
-Changes since V3:
-
- -Move NAND related pinctrl DT data into the da850.dtsi file so it can
-  be reused.
- 
-Changes since V2:
-
- -Move NAND pins configuration into the nand_cs3 DT node to avoid pins
-  configuration if it is not probed.
-
-Changes since V1:
-
- -Remove the binding documentation as already documented as part of
-  Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt
- -Enable PINCTRL Kconfig for MACH_DA8XX_DT platform only.
- -Fix the pinctrl driver node unit-address.
- -Make separate patch for da8xx_omapl_defconfig changes.
-
-Kumar, Anil (3):
-  ARM: davinci: da850: add pinctrl driver DT entries
-  ARM: davinci: da8xx defconfig: enable pinctrl config option
-  ARM: davinci: da850: add NAND driver DT entries
-
- arch/arm/boot/dts/da850-evm.dts        |    8 ++++++
- arch/arm/boot/dts/da850.dtsi           |   40 ++++++++++++++++++++++++++++++++
- arch/arm/configs/da8xx_omapl_defconfig |    1 +
- arch/arm/mach-davinci/Kconfig          |    1 +
- 4 files changed, 50 insertions(+), 0 deletions(-)
-
--- 
-1.7.4.1
+Regards
+Tony P
 
