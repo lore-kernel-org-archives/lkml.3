@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758582Ab3APIo7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 03:44:59 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64947 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757543Ab3APIo5 (ORCPT
+	id S1758792Ab3APIrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 03:47:22 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:35815 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754226Ab3APIrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 03:44:57 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-4d-50f668885924
-Date: Wed, 16 Jan 2013 17:45:00 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] slub: correct bootstrap() for kmem_cache,
- kmem_cache_node
-Message-ID: <20130116084459.GB13446@lge.com>
-References: <1358234402-2615-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1358234402-2615-2-git-send-email-iamjoonsoo.kim@lge.com>
- <0000013c3eda78d8-da8c775c-d7c0-4a88-bacf-0b5160b5c668-000000@email.amazonses.com>
+	Wed, 16 Jan 2013 03:47:21 -0500
+Date: Wed, 16 Jan 2013 08:47:14 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        Marcus Cooper <marcus.xm.cooper@stericsson.com>
+Subject: Re: [PATCH 06/18] power: ab8500_bm: Recharge condition not optimal
+ for battery
+Message-ID: <20130116084714.GE9379@gmail.com>
+References: <1357909986-9262-1-git-send-email-lee.jones@linaro.org>
+ <1357909986-9262-7-git-send-email-lee.jones@linaro.org>
+ <20130116014442.GA17659@lizard.fhda.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <0000013c3eda78d8-da8c775c-d7c0-4a88-bacf-0b5160b5c668-000000@email.amazonses.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130116014442.GA17659@lizard.fhda.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 03:36:10PM +0000, Christoph Lameter wrote:
-> On Tue, 15 Jan 2013, Joonsoo Kim wrote:
-> 
-> > These didn't make any error previously, because we normally don't free
-> > objects which comes from kmem_cache's first slab and kmem_cache_node's.
-> 
-> And these slabs are on the partial list because the objects are typically
-> relatively small compared to page size. Do you have a system with a very
-> large kmem_cache size?
+On Tue, 15 Jan 2013, Anton Vorontsov wrote:
 
-These slabs are not on the partial list, but on the cpu_slab of boot cpu.
-Reason for this is described in changelog.
-Because these slabs are not on partial list, we need to
-check kmem_cache_cpu's cpu slab. This patch implement it.
-
-> > Problem will be solved if we consider a cpu slab in bootstrap().
-> > This patch implement it.
+> On Fri, Jan 11, 2013 at 01:12:54PM +0000, Lee Jones wrote:
+> > From: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+> > 
+> > Today the battery recharge is determined with a voltage threshold. This
+> > voltage threshold is only valid when the battery is relaxed. In charging
+> > algorithm the voltage read is the loaded battery voltage and no
+> > compensation is done to get the relaxed voltage. When maintenance
+> > charging is not selected, this makes the recharging condition to almost
+> > immediately activate when there is a discharge present on the battery.
+> > 
+> > Depending on which vendor the battery comes from this behavior can wear
+> > out the battery much faster than normal.
+> > 
+> > The fuelgauge driver is responsible to monitor the actual battery
+> > capacity and is able to estimate the remaining capacity. It is better to
+> > use the remaining capacity as a limit to determine when battery should
+> > be recharged.
+> > 
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+> > Reviewed-by: Hakan BERG <hakan.berg@stericsson.com>
+> > Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+> > ---
+> > +	.maint_thres = 95,
+> >  	.user_cap_limit = 15,
+> >  	.maint_thres = 97,
+> >  };
 > 
-> At boot time only one processor is up so you do not need the loop over all
-> processors.
+> 95 or 97? These are both specified. I removed 97, assuming it was a merge
+> error on your side. But please double check, it could be that you really
+> want 97 here.
 
-Okay! I will fix and submit v2, soon.
+You did the correct thing, thanks.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
