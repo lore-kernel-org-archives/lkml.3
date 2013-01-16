@@ -1,165 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757773Ab3APXoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 18:44:10 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:2044 "EHLO mms3.broadcom.com"
+	id S1757888Ab3APXzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 18:55:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50215 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755759Ab3APXoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 18:44:09 -0500
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-From: "Al Cooper" <alcooperx@gmail.com>
-To: rostedt@goodmis.org, ddaney.cavm@gmail.com, ralf@linux-mips.org,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-cc: "Al Cooper" <alcooperx@gmail.com>
-Subject: [PATCH V2] mips: function tracer: Fix broken function tracing
-Date: Wed, 16 Jan 2013 18:43:28 -0500
-Message-ID: <1358379808-16449-1-git-send-email-alcooperx@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <y>
-References: <y>
+	id S1757477Ab3APXzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 18:55:32 -0500
+Date: Thu, 17 Jan 2013 00:55:29 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, jslaby@suse.cz
+Subject: Re: [PATCH] printk: Avoid softlockups in console_unlock()
+Message-ID: <20130116235529.GA10251@quack.suse.cz>
+References: <1358272714-23375-1-git-send-email-jack@suse.cz>
+ <20130115233742.e8571f92.akpm@linux-foundation.org>
+ <20130116101644.GA29162@quack.suse.cz>
+ <20130116145005.e20f4e53.akpm@linux-foundation.org>
 MIME-Version: 1.0
-X-WSS-ID: 7CE9E58E3Q43364463-01-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130116145005.e20f4e53.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is my second attempt and is the result of some GREAT feedback
-from David Daney and Steven Rostedt.
+On Wed 16-01-13 14:50:05, Andrew Morton wrote:
+> > > > We fix the issue by printing at most 1 KB of messages (unless we are in an
+> > > > early boot stage or oops is happening) in one console_unlock() call. The rest
+> > > > of the buffer will be printed either by further callers to printk() or by a
+> > > > queued work.
+> > > 
+> > > Complex.  Did you try just putting a touch_nmi_watchdog() in the loop?
+> >   I didn't try that. I suppose touch_nmi_watchdog() +
+> > rcu_cpu_stall_reset() would make the messages go away (yes, RCU eventually
+> > freaks out as well). But is it really sane that we keep single CPU busy,
+> > unusable for anything else, for such a long time? There can be no RCU
+> > callbacks processed, no IPIs are processed (which is what triggers
+> > softlockup reports), etc.
+> 
+> What's not sane is doing large amounts of printk over a slow device.
+  Yeah, but serial consoles are handy... These sysadmins are pretty
+religious about them and when the machine doesn't boot with serial console
+enabled they complain. Nitpickers!
 
-Function tracing is currently broken for all 32 bit MIPS platforms.
-When tracing is enabled, the kernel immediately hangs on boot.
-This is a result of commit b732d439cb43336cd6d7e804ecb2c81193ef63b0
-that changes the kernel/trace/Kconfig file so that is no longer
-forces FRAME_POINTER when FUNCTION_TRACING is enabled.
+> > I agree that if we silence all the warnings, everything will eventually
+> > hang waiting for the stalled CPU, that will finish the printing and things
+> > start from the beginning (we tried silencing RCU with rcu_cpu_stall_reset()
+> > and that makes the machine boot eventually). But it seems like papering
+> > over a real problem?  
+> 
+> Well not really - we're doing what the printk() caller asked us to do -
+> to synchronously print stuff.  And simply sitting there pumping out the
+> characters is the simplest, most straightforward thing to do.  And
+> printk() should be simple and straightforward.
+  Except that printk() isn't always synchronous. It writes a message into
+the kernel buffer. If there is noone else pumping characters from the buffer
+into console at that moment, the printk caller starts doing so. But
+otherwise printk() just returns and pumping of characters is left on
+whoever started doing that thankless job. So that poor guy ends up doing
+the pumping for all the others...
 
-MIPS frame pointers are generally considered to be useless because
-they cannot be used to unwind the stack. Unfortunately the MIPS
-function tracing code has bugs that are masked by the use of frame
-pointers. This commit fixes the bugs so that MIPS frame pointers
-don't need to be enabled.
+> If this is all a problem then the calling code should stop doing so
+> much printing!
+  It's mostly a device discovery that triggers the issues in practice. They
+have over thousand of SCSI disks attached (multipath in use) and when each
+disk prints ~400 bytes of messages (just check your dmesg) you end up with
+~30s worth of printing over 115200 console.
 
-The bugs are a result of the odd calling sequence used to call the trace
-routine. This calling sequence is inserted into every traceable function
-when the tracing CONFIG option is enabled. This sequence is generated
-for 32bit MIPS platforms by the compiler via the "-pg" flag.
-Part of the sequence is "addiu sp,sp,-8" in the delay slot after every
-call to the trace routine "_mcount" (some legacy thing where 2 arguments
-used to be pushed on the stack). The _mcount routine is expected to
-adjust the sp by +8 before returning.
+> And punting the operation to a kernel thread is a pretty radical change
+> - it surely adds significant risk that output will be lost.
+  I agree there is a higher chance the output will be lost.
 
-The problem is that when tracing is disabled for a function, the
-"jalr _mcount" instruction is replaced with a nop, but the
-"addiu sp,sp,-8" is still executed and the stack pointer is left
-trashed. When frame pointers are enabled the problem is masked
-because any access to the stack is done through the frame
-pointer and the stack pointer is restored from the frame pointer when
-the function returns.
+> So hrm, I dunno.  Can we just put the touch_nmi_watchdog() in there
+> intially, see if it fixes things?  If people continue to hit problems
+> then we can take a second look?
+  OK, I'll see if I can get this tested on one of those machines...
 
-This patch writes two nops starting at the address of the "jalr _mcount"
-instruction whenever tracing is disabled. This means that the
-"addiu sp,sp.-8" will be converted to a nop along with the "jalr".
-This is SMP safe because the first time this happens is during
-ftrace_init() which is before any other processor has been started.
-Subsequent calls to enable/disable tracing when other CPUs ARE running
-will still be safe because the enable will only change the first nop
-to a "jalr" and the disable, while writing 2 nops, will only be changing
-the "jalr". This patch also stops using stop_machine() to call the
-tracer enable/disable routines and calls them directly because the
-routines are SMP safe.
-
-Signed-off-by: Al Cooper <alcooperx@gmail.com>
----
- arch/mips/kernel/ftrace.c |   34 +++++++++++++++++++++++++++++++++-
- arch/mips/kernel/mcount.S |    5 ++---
- 2 files changed, 35 insertions(+), 4 deletions(-)
-
-diff --git a/arch/mips/kernel/ftrace.c b/arch/mips/kernel/ftrace.c
-index 6a2d758..6bcb678 100644
---- a/arch/mips/kernel/ftrace.c
-+++ b/arch/mips/kernel/ftrace.c
-@@ -25,6 +25,12 @@
- #define MCOUNT_OFFSET_INSNS 4
- #endif
- 
-+/* Arch override because MIPS doesn't need to run this from stop_machine() */
-+void arch_ftrace_update_code(int command)
-+{
-+	ftrace_modify_all_code(command);
-+}
-+
- /*
-  * Check if the address is in kernel space
-  *
-@@ -89,6 +95,22 @@ static int ftrace_modify_code(unsigned long ip, unsigned int new_code)
- 	return 0;
- }
- 
-+static int ftrace_modify_code_2(unsigned long ip, unsigned int new_code1,
-+				unsigned int new_code2)
-+{
-+	int faulted;
-+
-+	safe_store_code(new_code1, ip, faulted);
-+	if (unlikely(faulted))
-+		return -EFAULT;
-+	ip += 4;
-+	safe_store_code(new_code2, ip, faulted);
-+	if (unlikely(faulted))
-+		return -EFAULT;
-+	flush_icache_range(ip, ip + 8); /* original ip + 12 */
-+	return 0;
-+}
-+
- /*
-  * The details about the calling site of mcount on MIPS
-  *
-@@ -131,8 +153,18 @@ int ftrace_make_nop(struct module *mod,
- 	 * needed.
- 	 */
- 	new = in_kernel_space(ip) ? INSN_NOP : INSN_B_1F;
--
-+#ifdef CONFIG_64BIT
- 	return ftrace_modify_code(ip, new);
-+#else
-+	/*
-+	 * On 32 bit MIPS platforms, gcc adds a stack adjust
-+	 * instruction in the delay slot after the branch to
-+	 * mcount and expects mcount to restore the sp on return.
-+	 * This is based on a legacy API and does nothing but
-+	 * waste instructions so it's being removed at runtime.
-+	 */
-+	return ftrace_modify_code_2(ip, new, INSN_NOP);
-+#endif
- }
- 
- int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
-diff --git a/arch/mips/kernel/mcount.S b/arch/mips/kernel/mcount.S
-index 4c968e7..35ccaf7 100644
---- a/arch/mips/kernel/mcount.S
-+++ b/arch/mips/kernel/mcount.S
-@@ -46,9 +46,8 @@
- 	PTR_L	a5, PT_R9(sp)
- 	PTR_L	a6, PT_R10(sp)
- 	PTR_L	a7, PT_R11(sp)
--	PTR_ADDIU	sp, PT_SIZE
- #else
--	PTR_ADDIU	sp, (PT_SIZE + 8)
-+	PTR_ADDIU	sp, PT_SIZE
- #endif
- .endm
- 
-@@ -69,7 +68,7 @@ NESTED(ftrace_caller, PT_SIZE, ra)
- 	.globl _mcount
- _mcount:
- 	b	ftrace_stub
--	 nop
-+	addiu sp,sp,8
- 	lw	t1, function_trace_stop
- 	bnez	t1, ftrace_stub
- 	 nop
+								Honza
 -- 
-1.7.6
-
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
