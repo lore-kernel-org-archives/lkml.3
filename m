@@ -1,145 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab3APGfs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 01:35:48 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35471 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab3APGfq (ORCPT
+	id S932081Ab3APGiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 01:38:01 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:2428 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757433Ab3APGh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 01:35:46 -0500
-Date: Wed, 16 Jan 2013 07:35:33 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, swarren@nvidia.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource
- allocation
-Message-ID: <20130116063533.GA22345@pengutronix.de>
-References: <1357371910-3164-3-git-send-email-ldewangan@nvidia.com>
- <20130105080658.GA1315@core.coreip.homeip.net>
- <20130106192739.GA11566@avionic-0098.adnet.avionic-design.de>
- <20130106195748.GA28212@core.coreip.homeip.net>
- <20130109070745.GA12782@avionic-0098.adnet.avionic-design.de>
- <20130109091939.GA4369@core.coreip.homeip.net>
- <20130109092352.GA28037@avionic-0098.adnet.avionic-design.de>
- <20130114154959.GA25049@avionic-0098.adnet.avionic-design.de>
- <20130115130623.GC2625@pengutronix.de>
- <20130115154423.GA13871@avionic-0098.adnet.avionic-design.de>
+	Wed, 16 Jan 2013 01:37:59 -0500
+X-IronPort-AV: E=Sophos;i="4.84,476,1355126400"; 
+   d="scan'208";a="20316733"
+Message-ID: <50F64AC1.3040304@codeaurora.org>
+Date: Wed, 16 Jan 2013 12:07:53 +0530
+From: Subhash Jadavani <subhashj@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
-Content-Disposition: inline
-In-Reply-To: <20130115154423.GA13871@avionic-0098.adnet.avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        martin.petersen@oracle.com, asias@redhat.com, tj@kernel.org
+Subject: Re: [PATCH v2 1/1] block: blk-merge: don't merge the pages with non-contiguous
+ descriptors
+References: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org> <1358266794.10591.8.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1358266794.10591.8.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 1/15/2013 9:49 PM, James Bottomley wrote:
+> On Tue, 2013-01-15 at 21:31 +0530, Subhash Jadavani wrote:
+>> blk_rq_map_sg() function merges the physically contiguous pages to use same
+>> scatter-gather node without checking if their page descriptors are
+>> contiguous or not.
+>>
+>> Now when dma_map_sg() is called on the scatter gather list, it would
+>> take the base page pointer from each node (one by one) and iterates
+>> through all of the pages in same sg node by keep incrementing the base
+>> page pointer with the assumption that physically contiguous pages will
+>> have their page descriptor address contiguous which may not be true
+>> if SPARSEMEM config is enabled. So here we may end referring to invalid
+>> page descriptor.
+>>
+>> Following table shows the example of physically contiguous pages but
+>> their page descriptor addresses non-contiguous.
+>> -------------------------------------------
+>> | Page Descriptor    |   Physical Address |
+>> ------------------------------------------
+>> | 0xc1e43fdc         |   0xdffff000       |
+>> | 0xc2052000         |   0xe0000000       |
+>> -------------------------------------------
+>>
+>> With this patch, relevant blk-merge functions will also check if the
+>> physically contiguous pages are having page descriptors address contiguous
+>> or not? If not then, these pages are separated to be in different
+>> scatter-gather nodes.
+> How does this manifest as a bug?
+>
+> The discontinuity is in struct page arrays, which hardware doesn't care
+> about.  All we need is to get from struct page to the physical address
+> for programming the hardware, for which we use the sg_phys() inline
+> function.
+>
+> Even given we have a two page physical contiguity at 0xdffff000 in your
+> example, the sg list entry contains a length of 8192 and a page_link of
+> 0xc1e43fdc, which we transform to the correct physical address and
+> length.
+Thanks James for looking at this patch.
 
---BOKacYhQ+x31HxR3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Let's assume this scenario.
+PAGE_SIZE = 4096 (4K),
+2 page descriptors (as mentioned commit text) whose own addresses are 
+discontingous but they point to physically contiguous memory space, 
+sizeof(struct page) is 36 bytes.
+Only one SG node created in Scatter Gather list (by blk_rq_map_sg) with 
+this node's page_link=0xc1e43fdc, length=8192, offset=0
 
-Hi,
+Now consider this call stack from MMC block driver (this is on the ARmv7 
+based board):
+     [   98.918174] [<c001b50c>] (v7_dma_inv_range+0x30/0x48) from 
+[<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c)
+     [   98.927819] [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c) from 
+[<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c)
+     [   98.937982] [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c) from 
+[<c0017ff8>] (dma_map_sg+0x3c/0x114)
+     [   98.947169] [<c0017ff8>] (dma_map_sg+0x3c/0x114) from 
+[<c0532c40>] (msmsdcc_prep_xfer+0x50/0x10c)
+     [   98.956020] [<c0532c40>] (msmsdcc_prep_xfer+0x50/0x10c) from 
+[<c0539664>] (msmsdcc_pre_req+0x78/0x98)
+     [   98.965237] [<c0539664>] (msmsdcc_pre_req+0x78/0x98) from 
+[<c0521d98>] (mmc_start_req+0x4c/0x1c4)
+     [   98.974088] [<c0521d98>] (mmc_start_req+0x4c/0x1c4) from 
+[<c052faa0>] (mmc_blk_issue_rw_rq+0x3a0/0x84c)
+     [   98.983457] [<c052faa0>] (mmc_blk_issue_rw_rq+0x3a0/0x84c) from 
+[<c05304b4>] (mmc_blk_issue_rq+0x568/0x5c4)
+     [   98.993193] [<c05304b4>] (mmc_blk_issue_rq+0x568/0x5c4) from 
+[<c0530718>] (mmc_queue_thread+0xb4/0x120)
+     [   99.002563] [<c0530718>] (mmc_queue_thread+0xb4/0x120) from 
+[<c0096400>] (kthread+0x80/0x8c)
+     [   99.010987] [<c0096400>] (kthread+0x80/0x8c) from [<c000f028>] 
+(kernel_thread_exit+0x0/0x8)
 
-> > Then, I added the example code in the documentation using EADDRNOTAVAIL.
-> > Yes, I was brave with this one. Yet, EINVAL, EBUSY, ENOENT, did not
-> > really cut it and are so heavily used in drivers that they turned into a
-> > generic "something is wrong" error. I tried here to use a not overloaded
-> > error code in order to be specific again. Since the patches were
-> > accepted, I assumed it wasn't seen as a namespace violation. (Then
-> > again, it probably would have been if that error code would go out to
-> > userspace) Naturally, I didn't have the resources to check all patches
-> > for a consistent error code.
->=20
-> The problem with the current approach is that people (me included) keep
-> telling people to use this or that error code in an attempt to achieve
-> some kind of consistency. Also using an error message to distinguish
-> between reasons for failure makes it impossible to handle the error
-> other than by visual inspection. Granted, there are currently no code
-> paths that require this.
+dma_cache_maint_page() function iterates through each page in single sg 
+node, maps it to virtual space and then call the cache maintainance 
+operation on that page.
 
-Yes, so currently, this is rather a cosmetic change. And for that, it is
-quite intrusive. I think something like this is needed somewhen as part
-of a bigger overhaul. That's what I called "master plan" last time. That
-could be that resource handling gets aligned in general, also taking
-e.g. interrupt resources into account. But only changing error code
-handling for this function, doesn't seem too useful to me and might even
-need another change later, then.
+With above scenario, first page descriptor would be 0xc1e43fdc, which 
+would be mapped virtual address by either kmap() (if it's higmem page) 
+or by page_address() (if it's low mem page).
 
-> One problem with the original patch was also that it didn't actually
-> convert any existing uses, so there was little chance of anyone noticing
-
-Like with the error codes now, there are so many different ways of
-handling resources that I did not want to mass convert all the drivers
-without being able to test them. I was hoping for a migration over time
-with patches from people who really tested what they did.
-
-> potential problems. More than a year later this function is used by many
-> subsystems and a lot of drivers. It just so happened that I observed how
-> many people just didn't know what error codes to choose and often just
-> grabbing one randomly.
-
-Yes, and concerning resources this needs cleaning on a bigger scale IMO.
-
-> By adding devm_ioremap_resource() and having it return ERR_PTR()-encoded
-> error codes we get rid of all these problems and put the responsibility
-> for choosing the error code where, in my opinion, it belongs: the
-> failing function.
-
-For completeness, it leaves the problem that people might forget to use
-ERR_PTR (seen that often in the clk framework). And the change is huge
-while I can't see any real benefit right now.
-
-> > When working with this function, there was also the idea to abstract
-> > getting the resource away. Which then gave Sascha Hauer and me the
-> > question, if drivers really have to do this or if this couldn't be done
-> > by the kernel somehow, i.e. giving the drivers already the resources
-> > they need, completely prepared.
->=20
-> I'm not sure I like that very much. That could possibly lead to a new
-> problem where drivers that need to do something special have to jump
-> through hoops to achieve something that may otherwise be simple.
-
-I assume that drivers are already doing something special :) So, that
-would turn up in the conversion process. I can't promise that it would
-really work, it would need some playing around.
-
-> Anyway, if people don't think this is a sensible conversion I should
-> waste no more time on it. On the other hand I have the patch series
-> ready so I might as well post it for broader review.
-
-Working on patches is hardly a waste. Even if not accepted, you gain
-understanding. Please put me on CC, if you post the patches.
+Now as the size of the sg node is 8192 bytes, dma_cache_maint_page() 
+function increments the page pointer (pointed by page_link of sg node) 
+to get to the next descriptor. page++ would yield page descriptor 
+address = 0xc1e44000 (0xc1e43fdc + sizeof (struct page)). 0xc1e44000 is 
+not pointing any real page descriptor so when calls 
+page_address(0xc1e44000) to get virtual address of the page, it returns 
+invalid virtual address. Now when we try to dereference that invalid 
+virtual address in cache maintainance functions, it would result into 
+"Unable to handle kernel paging request at virtual address xxxxxxxx" 
+error and kernel crashes.
 
 Regards,
+Subhash
+>
+> James
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---BOKacYhQ+x31HxR3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlD2SjUACgkQD27XaX1/VRtPPgCfb3MiZpVKu3WeAg/j/kJr7oHC
-5NIAn25m9eZdHRVZADPAT2u2LcGT7yo7
-=GLjc
------END PGP SIGNATURE-----
-
---BOKacYhQ+x31HxR3--
