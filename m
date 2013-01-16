@@ -1,93 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab3APKQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:16:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41937 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758446Ab3APKQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:16:46 -0500
-Date: Wed, 16 Jan 2013 11:16:44 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, jslaby@suse.cz
-Subject: Re: [PATCH] printk: Avoid softlockups in console_unlock()
-Message-ID: <20130116101644.GA29162@quack.suse.cz>
-References: <1358272714-23375-1-git-send-email-jack@suse.cz>
- <20130115233742.e8571f92.akpm@linux-foundation.org>
+	id S1758859Ab3APKS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:18:59 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:54034 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758251Ab3APKS4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 05:18:56 -0500
+Date: Wed, 16 Jan 2013 11:18:22 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
+Message-ID: <20130116101822.GA17706@avionic-0098.adnet.avionic-design.de>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130109231758.GA27065@obsidianresearch.com>
+ <20130110071937.GG15212@avionic-0098.adnet.avionic-design.de>
+ <201301100917.19577.arnd@arndb.de>
+ <20130110102544.GA5546@avionic-0098.adnet.avionic-design.de>
+ <20130110182007.GA28004@obsidianresearch.com>
+ <20130110185505.GA22944@avionic-0098.adnet.avionic-design.de>
+ <20130110190327.GA23110@avionic-0098.adnet.avionic-design.de>
+ <20130110192417.GA18478@obsidianresearch.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
 Content-Disposition: inline
-In-Reply-To: <20130115233742.e8571f92.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130110192417.GA18478@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:vJviqzrfEGgbNFM2eTO8KwiZSKtTzBnqH7qJDoL7p79
+ o0GPK+V5NHKmmCO0rBWo33cNtKJZrs3g32no9AyrOHP+AXLk1r
+ vL4JdnglvDHEUgIwqkLFgsxkceJQaEKeNN8k+oxbBDyDhgWQIh
+ 7w9mayCqfViuE+y/8nsMVL7ZHmrrbUtlTSM+YOYe4Suq0l7LMH
+ 5j+Nw+P9peXWOb4kcB3RMN7TqePrx24Fw9vXUDdi2GnBHsxfuY
+ yHDhson+H56L0ThNUze3UmLtkNEpa5yvWgbq31s4mfEgA47LOg
+ tebfGgKy9xtmq2jQqmZg7QsWasTfLpVlMS5TnUfX93tXb1l6g9
+ Zx8GhJ24FDQtYaH74KPy46KY10jg1XDku95VckLPZROzBgwRbu
+ DZ0jqh95HXayoe5lBidZaFmVGez8WVU8I5HV7ZWKJAnV1ThNN1
+ 35iAo
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 15-01-13 23:37:42, Andrew Morton wrote:
-> On Tue, 15 Jan 2013 18:58:34 +0100 Jan Kara <jack@suse.cz> wrote:
-> 
-> > A CPU can be caught in console_unlock() for a long time (tens of seconds are
-> > reported by our customers) when other CPUs are using printk heavily and serial
-> > console makes printing slow.  This triggers softlockup warnings because
-> > interrupts are disabled for the whole time console_unlock() runs (e.g.
-> > vprintk() calls console_unlock() with interrupts disabled).
-> 
-> It should trigger the NMI watchdog in that case?
-  Yes. I see soft lockup reports like:
-BUG: soft lockup - CPU#0 stuck for 23s! [kworker/u:126:791]
-Modules linked in: sd_mod crc_t10dif usbhid hid uhci_hcd ehci_hcd thermal usbcore usb_common bfa scsi_transport_fc scsi_tgt processor thermal_sys hwmon dm_snapshot dm_mod ata_generic ata_piix libata hpsa cciss scsi_mod
-Supported: Yes
 
-Pid: 791, comm: kworker/u:126 Not tainted 3.0.13-0.9-pae #1 HP ProLiant DL380 G7
-EIP: 0060:[<c027ceda>] EFLAGS: 00000202 CPU: 0
-EIP is at smp_call_function_many+0x1aa/0x220
-EAX: 00000292 EBX: f3006780 ECX: 00000004 EDX: 00000080
-ESI: f3006798 EDI: 00000003 EBP: c08696b4 ESP: eeed7e68
- DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-Process kworker/u:126 (pid: 791, ti=eeed6000 task=eeed4f60 task.ti=eeed6000)
-Stack:
- 00000080 01000000 00000000 c034bbd0 00000000 c034bbd0 f0c03850 ef5c7400
- c027cf6e 00000001 00000000 c027cf9b 00000000 f0c03840 f0c03850 ef5c7400
- c0351e55 00000001 ef5c743c 00000000 ef5c7400 f0c03840 ef5c7460 f1041c05
-Call Trace:
- [<c027cf6e>] smp_call_function+0x1e/0x30
- [<c027cf9b>] on_each_cpu+0x1b/0x50
- [<c0351e55>] __blkdev_put+0x165/0x1a0
- [<c03db6f2>] register_disk+0x142/0x150
- [<c03db7e9>] add_disk+0xe9/0x160
- [<f823f166>] sd_probe_async+0xf6/0x1c0 [sd_mod]
- [<c026e0ff>] async_run_entry_fn+0x5f/0x160
- [<c026062c>] process_one_work+0x13c/0x2d0
- [<c0262e87>] worker_thread+0x127/0x370
- [<c0266764>] kthread+0x74/0x80
- [<c05ce126>] kernel_thread_helper+0x6/0xd
-Code: e8 3c 9d 34 00 0f ae f0 89 f6 89 f0 ff 15 04 1e 83 c0
-80 7c 24 07 00 0f 84 bf fe ff ff f6 43 10 01 0f 84 b5 fe ff ff 66 90 f3 90
-<f6> 43 10 01 66 90 75 f6 83 c4 10 5b 5e 5f 5d c3 8d b6 00 00 00 
- 
-  Note that this is with our SLE11-SP2 kernel but printk code upstream is
-the same upstream in this regard.
+--82I3+IH0IqGh5yIs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > We fix the issue by printing at most 1 KB of messages (unless we are in an
-> > early boot stage or oops is happening) in one console_unlock() call. The rest
-> > of the buffer will be printed either by further callers to printk() or by a
-> > queued work.
-> 
-> Complex.  Did you try just putting a touch_nmi_watchdog() in the loop?
-  I didn't try that. I suppose touch_nmi_watchdog() +
-rcu_cpu_stall_reset() would make the messages go away (yes, RCU eventually
-freaks out as well). But is it really sane that we keep single CPU busy,
-unusable for anything else, for such a long time? There can be no RCU
-callbacks processed, no IPIs are processed (which is what triggers
-softlockup reports), etc.
+On Thu, Jan 10, 2013 at 12:24:17PM -0700, Jason Gunthorpe wrote:
+> On Thu, Jan 10, 2013 at 08:03:27PM +0100, Thierry Reding wrote:
+>=20
+> > > > You'd piece a mapping together, each bus requires 16 64k mappings, a
+> > > > simple 2d array of busnr*16 of pointers would do the trick. A more
+> > > > clever solution would be to allocate contiguous virtual memory and
+> > > > split that up..
+> =20
+> > > Oh, I see. I'm not very familiar with the internals of remapping, so
+> > > I'll need to do some more reading. Thanks for the hints.
+> >=20
+> > I forgot to ask. What's the advantage of having a contiguous virtual
+> > memory area and splitting it up versus remapping each chunk separately?
+>=20
+> Not alot, really, but it saves you from the pointer array and
+> associated overhead. IIRC it is fairly easy to do in the kernel.
+>=20
+> Arnd's version is good too, but you would be restricted to aligned
+> powers of two for the bus number range in the DT, which is probably
+> not that big a deal either?
 
-I agree that if we silence all the warnings, everything will eventually
-hang waiting for the stalled CPU, that will finish the printing and things
-start from the beginning (we tried silencing RCU with rcu_cpu_stall_reset()
-and that makes the machine boot eventually). But it seems like papering
-over a real problem?  
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+I've been trying to make this work, but this implementation always
+triggers a BUG_ON() in lib/ioremap.c, line 27:
+
+	27 		BUG_ON(!pte_none(*pte));
+
+which seems to indicate that the page is already mapped, right?
+
+Below is the relevant code:
+
+struct tegra_pcie_bus {
+	struct vm_struct *area;
+	struct list_head list;
+	unsigned int nr;
+};
+
+static struct tegra_pcie_bus *tegra_pcie_bus_alloc(struct tegra_pcie *pcie,
+						   unsigned int busnr)
+{
+	unsigned long flags =3D VM_READ | VM_WRITE | VM_IO | VM_PFNMAP |
+			      VM_DONTEXPAND | VM_DONTDUMP;
+	phys_addr_t cs =3D pcie->cs->start;
+	struct tegra_pcie_bus *bus;
+	struct vm_struct *vm;
+	unsigned int i;
+	int err;
+
+	bus =3D devm_kzalloc(pcie->dev, sizeof(*bus), GFP_KERNEL);
+	if (!bus)
+		return ERR_PTR(-ENOMEM);
+
+	INIT_LIST_HEAD(&bus->list);
+	bus->nr =3D busnr;
+
+	bus->area =3D get_vm_area(SZ_1M, VM_IOREMAP);
+	if (!bus->area) {
+		err =3D -ENOMEM;
+		goto free;
+	}
+
+	for (i =3D 0; i < 16; i++) {
+		unsigned long virt =3D (unsigned long)bus->area->addr +
+				     i * SZ_64K;
+		phys_addr_t phys =3D cs + busnr * SZ_64K + i * SZ_1M;
+
+		err =3D ioremap_page_range(virt, virt + SZ_64K - 1, phys,
+					 vm_get_page_prot(flags));
+		if (err < 0) {
+			dev_err(pcie->dev, "ioremap_page_range() failed: %d\n",
+				err);
+			goto unmap;
+		}
+	}
+
+	return bus;
+
+unmap:
+	vunmap(bus->area->addr);
+	free_vm_area(bus->area);
+free:
+	devm_kfree(pcie->dev, bus);
+	return ERR_PTR(err);
+}
+
+Anybody see what's wrong with that?
+
+--82I3+IH0IqGh5yIs
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ9n5tAAoJEN0jrNd/PrOhUlQP/RUVN/UfOSvzFvZTgmNnopVr
+uBS3wbP1GjJT+aMYih9UQyZMuyKfuiZrivc3pdcADdzxyrnNJ4nrHX/Ovsvbu274
+na483q/qLqwUCuU7oDg+0ntFC7XxPJadt2/vITq/MzhMRMy9V3cNBQAk+ga4NK/U
+WbZ4iX2sMsnJ6wQfFuLavOnXHivdGfgLZ2DaofoTb++TjlzO1bm5zh2rJ9Tc8VyM
+Umo93ebyGERRv/IsNGEfb3ZZ7QhyLcHsBDoow1XFfvja4poCumKNMHFz8bbiLK5w
+MOvEBoy/q+vwo7ZL3i3/YCxKxUoLQ/+dq6SbmXjDjVTjjiLWXH3t0lhkODoHsrWH
+YsiqBIK4bnDS6qNUGWYM8HlTzOHmhhIobkeT+Do/gA0P1gvsoKsh+YpfBiqVof27
+M9YDteY1M4pypSw6GctkDPwPTkSM1qCUpFXidvpya7jyrlMpncEG/NiYgEcGsNJP
+eyYJ+ky0CznzcuNukcGMa+NOt5eCZzBJnBmNoOU41M1kljZ06/AJKKOI8jsddf3q
+nZVDhxnavMXi7uagRpiQjc48oLdEVV2SdBtpVdLIQiHplme8EJj2sQ5c7/XY8WTd
+yVDcA3WWkdezFGWxya6C5sbsd2PI/G7qvg19h8GLQgC+CGS1ctRdYr/soLYBrMMT
+xIWtdPiPzIl1NqC6TT/S
+=z/1p
+-----END PGP SIGNATURE-----
+
+--82I3+IH0IqGh5yIs--
