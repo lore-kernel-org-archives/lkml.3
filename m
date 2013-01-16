@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932918Ab3APQKR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:10:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36844 "EHLO
+	id S932930Ab3APQKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:10:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36862 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932884Ab3APQKH (ORCPT
+	with ESMTP id S932476Ab3APQKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:10:07 -0500
+	Wed, 16 Jan 2013 11:10:25 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+Cc: Christian Lamparter <chunkeey@googlemail.com>,
         "John W. Linville" <linville@tuxdriver.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 196/222] rtlwifi: fix incorrect use of usb_alloc_coherent with usb_control_msg
-Date: Wed, 16 Jan 2013 13:56:36 -0200
-Message-Id: <1358351822-7675-197-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 199/222] p54usb: add USBIDs for two more p54usb devices
+Date: Wed, 16 Jan 2013 13:56:39 -0200
+Message-Id: <1358351822-7675-200-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,49 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 4c3de5920c486b8eefa6187ee6a181864c161100 upstream.
+commit 4010fe21a315b4223c25376714c6a2b61b722e5c upstream.
 
-Incorrect use of usb_alloc_coherent memory as input buffer to usb_control_msg
-can cause problems in arch DMA code, for example kernel BUG at
-'arch/arm/include/asm/dma-mapping.h:321' on ARM (linux-3.4).
+This patch adds USBIDs for:
+	- DrayTek Vigor 530
+	- Zoom 4410a
 
-Change _usb_writeN_sync use kmalloc'd buffer instead.
+It also adds a note about Gemtek WUBI-100GW
+and SparkLAN WL-682 USBID conflict [WUBI-100GW
+is a ISL3886+NET2280 (LM86 firmare) solution,
+whereas WL-682 is a ISL3887 (LM87 firmware)]
+device.
 
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Source: <http://www.wikidevi.com/wiki/Intersil/p54/usb/windows>
+
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/usb.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/wireless/p54/p54usb.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/usb.c b/drivers/net/wireless/rtlwifi/usb.c
-index aa970fc..8fa144f 100644
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -210,17 +210,16 @@ static void _usb_writeN_sync(struct rtl_priv *rtlpriv, u32 addr, void *data,
- 	u16 index = REALTEK_USB_VENQT_CMD_IDX;
- 	int pipe = usb_sndctrlpipe(udev, 0); /* write_out */
- 	u8 *buffer;
--	dma_addr_t dma_addr;
- 
--	wvalue = (u16)(addr&0x0000ffff);
--	buffer = usb_alloc_coherent(udev, (size_t)len, GFP_ATOMIC, &dma_addr);
-+	wvalue = (u16)(addr & 0x0000ffff);
-+	buffer = kmalloc(len, GFP_ATOMIC);
- 	if (!buffer)
- 		return;
- 	memcpy(buffer, data, len);
- 	usb_control_msg(udev, pipe, request, reqtype, wvalue,
- 			index, buffer, len, 50);
- 
--	usb_free_coherent(udev, (size_t)len, buffer, dma_addr);
-+	kfree(buffer);
- }
- 
- static void _rtl_usb_io_handler_init(struct device *dev,
+diff --git a/drivers/net/wireless/p54/p54usb.c b/drivers/net/wireless/p54/p54usb.c
+index 4334291..4191294 100644
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -47,6 +47,7 @@ static struct usb_device_id p54u_table[] = {
+ 	{USB_DEVICE(0x0411, 0x0050)},	/* Buffalo WLI2-USB2-G54 */
+ 	{USB_DEVICE(0x045e, 0x00c2)},	/* Microsoft MN-710 */
+ 	{USB_DEVICE(0x0506, 0x0a11)},	/* 3COM 3CRWE254G72 */
++	{USB_DEVICE(0x0675, 0x0530)},	/* DrayTek Vigor 530 */
+ 	{USB_DEVICE(0x06b9, 0x0120)},	/* Thomson SpeedTouch 120g */
+ 	{USB_DEVICE(0x0707, 0xee06)},	/* SMC 2862W-G */
+ 	{USB_DEVICE(0x07aa, 0x001c)},	/* Corega CG-WLUSB2GT */
+@@ -82,6 +83,7 @@ static struct usb_device_id p54u_table[] = {
+ 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
+ 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
+ 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
++	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
+ 	{USB_DEVICE(0x083a, 0x4503)},	/* T-Com Sinus 154 data II */
+ 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
+ 	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
+@@ -102,6 +104,7 @@ static struct usb_device_id p54u_table[] = {
+ 	{USB_DEVICE(0x13B1, 0x000C)},	/* Linksys WUSB54AG */
+ 	{USB_DEVICE(0x1413, 0x5400)},   /* Telsey 802.11g USB2.0 Adapter */
+ 	{USB_DEVICE(0x1435, 0x0427)},	/* Inventel UR054G */
++	/* {USB_DEVICE(0x15a9, 0x0002)}, * Also SparkLAN WL-682 with 3887 */
+ 	{USB_DEVICE(0x1668, 0x1050)},	/* Actiontec 802UIG-1 */
+ 	{USB_DEVICE(0x1740, 0x1000)},	/* Senao NUB-350 */
+ 	{USB_DEVICE(0x2001, 0x3704)},	/* DLink DWL-G122 rev A2 */
 -- 
 1.7.9.5
 
