@@ -1,96 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758332Ab3APIOU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 03:14:20 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43989 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab3APIOS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 03:14:18 -0500
-Message-ID: <50F66120.50704@linux.vnet.ibm.com>
-Date: Wed, 16 Jan 2013 13:43:20 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Ivo Sieben <meltedpianoman@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] tty: Only wakeup the line discipline idle queue when
- queue is active
-References: <1355842130-15482-1-git-send-email-meltedpianoman@gmail.com> <50E3FDFA.4070203@suse.cz>	<20130102114311.66215bf5@pyramind.ukuu.org.uk> <CAMSQXEHmDb5rUQnT1JNcMCzdaN+gAr+1hR=PyPiDMu7vK5ykxA@mail.gmail.com> <50E4854E.8060801@suse.cz> <CAMSQXEGU2WmhmMqP7XMK2x39GN9iDDWpg-Wa7_cAauHWx5OWbQ@mail.gmail.com>
-In-Reply-To: <CAMSQXEGU2WmhmMqP7XMK2x39GN9iDDWpg-Wa7_cAauHWx5OWbQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011608-8256-0000-0000-000005D85079
+	id S1758690Ab3APIPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 03:15:34 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:22925 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758479Ab3APIPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 03:15:32 -0500
+X-IronPort-AV: E=Sophos;i="4.84,478,1355068800"; 
+   d="scan'208";a="6598688"
+From: Lin Feng <linfeng@cn.fujitsu.com>
+To: akpm@linux-foundation.org, mhocko@suse.cz, linux-mm@kvack.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, jbeulich@suse.com,
+        dhowells@redhat.com, wency@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, paul.gortmaker@windriver.com,
+        laijs@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie,
+        minchan@kernel.org, aquini@redhat.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, fenghua.yu@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        davem@davemloft.net, michael@ellerman.id.au,
+        gerald.schaefer@de.ibm.com, gregkh@linuxfoundation.org
+Cc: x86@kernel.org, linux390@de.ibm.com, linux-ia64@vger.kernel.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linfeng@cn.fujitsu.com, tangchen@cn.fujitsu.com
+Subject: [PATCH 2/2] memory-hotplug: cleanup: removing the arch specific functions without any implementation
+Date: Wed, 16 Jan 2013 16:14:19 +0800
+Message-Id: <1358324059-9608-3-git-send-email-linfeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1358324059-9608-1-git-send-email-linfeng@cn.fujitsu.com>
+References: <1358324059-9608-1-git-send-email-linfeng@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/16 16:14:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/16 16:14:44,
+	Serialize complete at 2013/01/16 16:14:44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivo,
-Can you explain how this problem could create a scheduler overhead?
-I am a little confused, because as far as i know,scheduler does not come
-in the picture of the wake up path right? select_task_rq() in
-try_to_wake_up() is where the scheduler comes in,and this is after the
-task wakes up.
+From: Michal Hocko <mhocko@suse.cz>
 
-On 01/03/2013 03:19 PM, Ivo Sieben wrote:
-> Oleg, Peter, Ingo, Andi & Preeti,
-> 
-> 2013/1/2 Jiri Slaby <jslaby@suse.cz>:
->> On 01/02/2013 04:21 PM, Ivo Sieben wrote:
->>> I don't understand your responses: do you suggest to implement this
->>> "if active" behavior in:
->>> * A new wake_up function called wake_up_if_active() that is part of
->>> the waitqueue layer?
->>
->> Sounds good.
->>
->> --
->> js
->> suse labs
-> 
-> I want to ask you 'scheduler' people for your opinion:
-> 
-> Maybe you remember my previous patch where I suggested an extra
-> 'waitqueue empty' check before entering the critical section of the
-> wakeup() function (If you do not remember see
-> https://lkml.org/lkml/2012/10/25/159)
-> 
-> Finally Oleg responded that a lot of callers do
-> 
-> 	if (waitqueue_active(q))
-> 		wake_up(...);
-> 
-> what made my patch pointless and adds a memory barrier. I then decided
-> to also implement the 'waitqueue_active' approach for my problem.
-> 
-> But now I get a review comment by Jiri that he would like to hide this
-> 'if active behavior' in a wake_up_if_active() kind of function. I
-> think he is right that implementing this check in the wakeup function
-> would clean things up, right?
-> 
-> I would like to have your opinion on the following two suggestions:
-> - We still can do the original patch on the wake_up() that I
-> suggested. I then can do an additional code cleanup patch that removes
-> the double 'waitqueue_active' call (a quick grep found about 150 of
-> these waitqueue active calls) on several places in the code.
+After introducing CONFIG_HAVE_BOOTMEM_INFO_NODE Kconfig option, the related arch
+specific functions become confusing, remove them.
 
-I think this is a good move.
+Guys who want to implement memory-hotplug feature on such archs for this part
+should look into register_page_bootmem_info_node() and flesh out from top to
+end.
 
-> - Or - as an alternative - I could add extra _if_active() versions of
-> all wake_up() functions, that implement this extra test.
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+---
+ arch/ia64/mm/discontig.c  |    5 -----
+ arch/powerpc/mm/init_64.c |    5 -----
+ arch/s390/mm/vmem.c       |    6 ------
+ arch/sparc/mm/init_64.c   |    5 -----
+ 4 files changed, 0 insertions(+), 21 deletions(-)
 
-Why add 'extra' if_active versions? Why not optimize this within the
-existing wake_up() functions?
-> 
-> Regards,
-> Ivo
-
-Regards
-Preeti U Murthy
-> 
+diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
+index 882a0fd..cb5e1ff 100644
+--- a/arch/ia64/mm/discontig.c
++++ b/arch/ia64/mm/discontig.c
+@@ -827,9 +827,4 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
+ {
+ }
+ 
+-void register_page_bootmem_memmap(unsigned long section_nr,
+-				  struct page *start_page, unsigned long size)
+-{
+-	/* TODO */
+-}
+ #endif
+diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+index 2969591..7e2246f 100644
+--- a/arch/powerpc/mm/init_64.c
++++ b/arch/powerpc/mm/init_64.c
+@@ -302,10 +302,5 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
+ {
+ }
+ 
+-void register_page_bootmem_memmap(unsigned long section_nr,
+-				  struct page *start_page, unsigned long size)
+-{
+-	/* TODO */
+-}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+diff --git a/arch/s390/mm/vmem.c b/arch/s390/mm/vmem.c
+index 81e6ba3..fa09c2f 100644
+--- a/arch/s390/mm/vmem.c
++++ b/arch/s390/mm/vmem.c
+@@ -276,12 +276,6 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
+ {
+ }
+ 
+-void register_page_bootmem_memmap(unsigned long section_nr,
+-				  struct page *start_page, unsigned long size)
+-{
+-	/* TODO */
+-}
+-
+ /*
+  * Add memory segment to the segment list if it doesn't overlap with
+  * an already present segment.
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 5afe21a..76ac544 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2236,11 +2236,6 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
+ {
+ }
+ 
+-void register_page_bootmem_memmap(unsigned long section_nr,
+-				  struct page *start_page, unsigned long size)
+-{
+-	/* TODO */
+-}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void prot_init_common(unsigned long page_none,
+-- 
+1.7.1
 
