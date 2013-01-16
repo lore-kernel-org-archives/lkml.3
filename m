@@ -1,41 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab3APHDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 02:03:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:36695 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751969Ab3APHDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 02:03:08 -0500
-Date: Tue, 15 Jan 2013 23:04:02 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] tty: Fix ptmx open without closed slave.
-Message-ID: <20130116070402.GA2527@kroah.com>
-References: <50D20EB5.30900@ilyx.ru>
+	id S1757660Ab3APHF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 02:05:29 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:34057 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3APHF2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 02:05:28 -0500
+Date: Wed, 16 Jan 2013 15:04:25 +0800
+From: yanyg <yanyg02@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] sysfs: sysfs_update_group always fails and generates a
+ WARNING CALL-trace
+Message-ID: <20130116070425.GA3972@yvit>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50D20EB5.30900@ilyx.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 11:00:05PM +0400, Ilya Zykov wrote:
-> When we are opening ptmx, we have closed pts, by description.
-> Now only if we open and after close all pts' descriptions, pty_close() sets
-> this bit correctly
-> 
-> Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
+@sysfs_update_group@ always fails and borns a WARNING CALL-trace
+if the group exists. BUT still now, no *reference* of this routine at all.
 
-Ok, I have a ton of patches from you, lots of different threads, patches
-with the same subject, and I don't know what one Alan agreed to.
+>From fe40df7d716658a1fbdab79768628c81d4363428 Mon Sep 17 00:00:00 2001
+From: yanyg <yanyg02@gmail.com>
+Date: Wed, 16 Jan 2013 11:25:15 +0800
+Subject: [PATCH] sysfs-fixes:
 
-So, can you please resend what Alan and you agree should be applied to
-the tree?
+@sysfs_update_group@ always fail and generates WARNING CALL trace.
+fix @internal_create_group@ to avoid it.
+---
+ fs/sysfs/group.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
 
-totally confused,
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index 2df555c..51fcf62 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -60,7 +60,7 @@ static int internal_create_group(struct kobject *kobj, int update,
+ 				 const struct attribute_group *grp)
+ {
+ 	struct sysfs_dirent *sd;
+-	int error;
++	int error, do_put = 0;
+ 
+ 	BUG_ON(!kobj || (!update && !kobj->sd));
+ 
+@@ -73,9 +73,14 @@ static int internal_create_group(struct kobject *kobj, int update,
+ 		return -EINVAL;
+ 	}
+ 	if (grp->name) {
+-		error = sysfs_create_subdir(kobj, grp->name, &sd);
+-		if (error)
+-			return error;
++		sd = sysfs_get_dirent(kobj->sd, NULL, grp->name);
++		if (sd) {
++			do_put = 1;
++		} else {
++			error = sysfs_create_subdir(kobj, grp->name, &sd);
++			if (error)
++				return error;
++		}
+ 	} else
+ 		sd = kobj->sd;
+ 	sysfs_get(sd);
+@@ -85,6 +90,7 @@ static int internal_create_group(struct kobject *kobj, int update,
+ 			sysfs_remove_subdir(sd);
+ 	}
+ 	sysfs_put(sd);
++	if (do_put) sysfs_put(sd);
+ 	return error;
+ }
+ 
+-- 
+1.7.2.5
 
-greg k-h
