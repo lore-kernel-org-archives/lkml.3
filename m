@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3APO7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:59:20 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:41931 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753149Ab3APO7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:59:19 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: Re: [PATCH] ACPI: add support for CSRT table
-Date: Wed, 16 Jan 2013 16:05:13 +0100
-Message-ID: <52251733.O8Fi4oih4J@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130116044216.GP13897@intel.com>
-References: <1358157111-26510-1-git-send-email-mika.westerberg@linux.intel.com> <2369015.SBxXlM67PJ@vostro.rjw.lan> <20130116044216.GP13897@intel.com>
+	id S1756106Ab3APPAu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:00:50 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:60064 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751405Ab3APPAs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 10:00:48 -0500
+Date: Wed, 16 Jan 2013 10:00:47 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Woody Suwalski <terraluna977@gmail.com>
+cc: Andreas Mohr <andi@lisas.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.8-rc1 - another regression on USB :-(
+In-Reply-To: <50F62BEC.4060602@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1301160955450.1704-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 16, 2013 06:42:16 AM Mika Westerberg wrote:
-> On Wed, Jan 16, 2013 at 12:35:56AM +0100, Rafael J. Wysocki wrote:
-> > On Monday, January 14, 2013 11:51:51 AM Mika Westerberg wrote:
-> > > Core System Resources Table (CSRT) is a proprietary ACPI table that
-> > > contains resources for certain devices that are not found in the DSDT
-> > > table. Typically a shared DMA controller might be found here.
-> > > 
-> > > This patch adds support for this table. We go through all entries in the
-> > > table and make platform devices of them. The resources from the table are
-> > > passed with the platform device.
-> > > 
-> > > There is one special resource in the table and it is the DMA request line
-> > > base and number of request lines. This information might be needed by the
-> > > DMA controller driver as it needs to map the ACPI DMA request line number
-> > > to the actual request line understood by the hardware. This range is passed
-> > > as IORESOURCE_DMA resource.
-> > 
-> > I have a question: Who's going to bind to those platform devices created
-> > by the code in this patch and how exactly this is going to happen?
+On Tue, 15 Jan 2013, Woody Suwalski wrote:
+
+> > Another important change is that the EHCI driver is now split into two
+> > modules.  That can slow down loading and affect the timing.
+> >
+> > Alan Stern
+> >
+> My testcase is a live initramfs + squash root.
+> The boot logic is as stable as can be - unchanged since 2.6.2x kernels.
+> And it was working fine till 3.8-rc1.
 > 
-> Typically it is the DMA driver (but not limited to that). It is supposed to
-> work so that either the driver name (in the platform driver struct) matches
-> the device name in the CSRT or like with the dw_dmac case we do something
-> like:
-> 
-> /* The platform device created is "INTL9C60.0.auto" */
-> 
-> static const struct platform_device_id dw_dma_ids[] = {
->         { "INTL9C60", 0 },
-> 	{ }
-> }
-> 
-> static struct platform_driver dw_driver = {
-> 	...
-> 	.id_table = dw_dma_ids,
-> };
+> The modules are insmoded in a fixed order:
+> usb-common, usbcore, xhci-hcd, ehci-hcd, uhci-hcd, ohci-hcd, usbhid, 
+> usb_storage,...
 
-OK, that's fine by me.  Will apply.
+But apparently you don't insmod ehci-pci.  That could cause problems, 
+if your EHCI controller is PCI-based.
 
-Do you want it to go to any particular branch (eg. along with the acpi-scan
-changes)?
+> If all USB is built as modules - I get read errors from USB drives when 
+> accessing squash image, boot fails.
 
-Rafael
+What read errors?  What is the cause of these errors?
 
+> If usb-common and usbcore are built in, system seems to crawl with a 
+> very slow USB, but boots. That could be caused by timing between hcd 
+> modules.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Do have a dmesg log with timestamps so we can see where things go slow?  
+I suggest enabling CONFIG_PRINTK_TIME and CONFIG_USB_DEBUG.  You might
+even want CONFIG_USB_STORAGE_DEBUG, although that often logs too much
+information.
+
+> If usb-common, usbcore and ehci-hcd are built-in, all works OK like 
+> "before 3.8".
+
+What about ehci-pci?
+
+> I was testing on machines  without xhci or ohci hardware, so these 
+> drivers probably are not playing any role.
+> I have retried initramfs with a 1s sleep between insmods to verify if it 
+> is timing - still the same read errors - so the main issue is _not_ timing.
+> The read errors problem is 100% reproducible for me, the blocks where 
+> read fails are not fixed - every (failed) boot errors start appearing in 
+> a bit different location.
+> Just selecting a differently - configured  kernel image makes the boot 
+> work, so it is not a problem of squash image, USB drive, squashfs driver.
+
+Without knowing what these read errors are, it's hard to say anything 
+about them.
+
+Alan Stern
+
