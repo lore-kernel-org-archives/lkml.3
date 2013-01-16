@@ -1,146 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab3APVhm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 16:37:42 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:65093 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757136Ab3APVhd (ORCPT
+	id S1757461Ab3APVl6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 16:41:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41775 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756028Ab3APVl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 16:37:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <002701cdf1d7$99dd1d00$cd975700$@codeaurora.org>
-References: <1357936936-25977-1-git-send-email-merez@codeaurora.org>
-	<50F10B86.6020905@codeaurora.org>
-	<002701cdf1d7$99dd1d00$cd975700$@codeaurora.org>
-Date: Wed, 16 Jan 2013 22:37:31 +0100
-Message-ID: <CAPDyKFrjFhBMHqn+CYB5LPwiWmAOWmiL2pm5Kww5u9jUrQ4p3w@mail.gmail.com>
-Subject: Re: [PATCH] mmc: core: disable the cache before suspend only after
- stopping BKOPS
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Maya Erez <merez@codeaurora.org>
-Cc: Subhash Jadavani <subhashj@codeaurora.org>, linux-mmc@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Jan 2013 16:41:57 -0500
+Date: Wed, 16 Jan 2013 13:41:55 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] mm: prevent to add a page to swap if may_writepage
+ is unset
+Message-Id: <20130116134155.18092f1a.akpm@linux-foundation.org>
+In-Reply-To: <1357712474-27595-2-git-send-email-minchan@kernel.org>
+References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+	<1357712474-27595-2-git-send-email-minchan@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 January 2013 22:47, Maya Erez <merez@codeaurora.org> wrote:
-> -----Original Message-----
-> From: Subhash Jadavani [mailto:subhashj@codeaurora.org]
-> Sent: Saturday, January 12, 2013 9:07 AM
-> To: Maya Erez
-> Cc: linux-mmc@vger.kernel.org; linux-arm-msm@vger.kernel.org; open list
-> Subject: Re: [PATCH] mmc: core: disable the cache before suspend only after
-> stopping BKOPS
+On Wed,  9 Jan 2013 15:21:13 +0900
+Minchan Kim <minchan@kernel.org> wrote:
 >
-> On 1/12/2013 2:12 AM, Maya Erez wrote:
->> mmc_cache_ctrl was called in runtime suspend before MMC interrupted
->> BKOPS in case it is still running on the card. This caused the cache
->> disable to timeout.
-> I guess even if the idle time bkops polling is not implemented, this patch
-> is good to have. cache control is the eMMC feature and in that sense, it
-> should have been part of MMC's bus resume (mmc_resume) rather than generic
-> mmc_suspend_host().
->
-> Patch as such is fine and if you agree, you may want to remove the
-> mentioning of bkops as part of commit text and may just want to mention
-> above reason as the main motivation for this patch.
->
-> Agreed, I will change the commit text in the next uploaded version.
->
->> Therefore, mmc_cache_ctrl has to move to mmc_suspend where we are sure
->> that the card can go into suspend and there is no pending activity.
->>
->> Signed-off-by: Maya Erez <merez@codeaurora.org>
->> ---
->>   drivers/mmc/core/core.c |    7 +------
->>   drivers/mmc/core/mmc.c  |    8 +++++++-
->>   2 files changed, 8 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c index
->> aaed768..b438bb2 100644
->> --- a/drivers/mmc/core/core.c
->> +++ b/drivers/mmc/core/core.c
->> @@ -2388,6 +2388,7 @@ EXPORT_SYMBOL(mmc_flush_cache);
->>    * Turn the cache ON/OFF.
->>    * Turning the cache OFF shall trigger flushing of the data
->>    * to the non-volatile storage.
->> + * This function should be called with host claimed
->>    */
->>   int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
->>   {
->> @@ -2399,7 +2400,6 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
->>                       mmc_card_is_removable(host))
->>               return err;
->>
->> -     mmc_claim_host(host);
->>       if (card && mmc_card_mmc(card) &&
->>                       (card->ext_csd.cache_size > 0)) {
->>               enable = !!enable;
->> @@ -2417,7 +2417,6 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
->>                               card->ext_csd.cache_ctrl = enable;
->>               }
->>       }
->> -     mmc_release_host(host);
->>
->>       return err;
->>   }
->> @@ -2436,10 +2435,6 @@ int mmc_suspend_host(struct mmc_host *host)
->>       cancel_delayed_work(&host->detect);
->>       mmc_flush_scheduled_work();
->>
->> -     err = mmc_cache_ctrl(host, 0);
->> -     if (err)
->> -             goto out;
->> -
->>       mmc_bus_get(host);
->>       if (host->bus_ops && !host->bus_dead) {
->>               if (host->bus_ops->suspend) {
->> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c index
->> e6e3911..dc17d40 100644
->> --- a/drivers/mmc/core/mmc.c
->> +++ b/drivers/mmc/core/mmc.c
->> @@ -1379,6 +1379,11 @@ static int mmc_suspend(struct mmc_host *host)
->>       BUG_ON(!host->card);
->>
->>       mmc_claim_host(host);
->> +
->> +     err = mmc_cache_ctrl(host, 0);
->> +     if (err)
->> +             goto out;
->> +
->>       if (mmc_can_poweroff_notify(host->card))
->>               err = mmc_poweroff_notify(host->card,
-> EXT_CSD_POWER_OFF_SHORT);
->>       else if (mmc_card_can_sleep(host))
->> @@ -1386,8 +1391,9 @@ static int mmc_suspend(struct mmc_host *host)
->>       else if (!mmc_host_is_spi(host))
->>               err = mmc_deselect_cards(host);
->>       host->card->state &= ~(MMC_STATE_HIGHSPEED |
-> MMC_STATE_HIGHSPEED_200);
->> -     mmc_release_host(host);
->>
->> +out:
->> +     mmc_release_host(host);
->>       return err;
->>   }
->>
-> --
-> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-> of Code Aurora Forum, hosted by The Linux Foundation
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I agree that some update to the commit msg is wanted; since this fixup
-is not related to runtime suspend as such.
-Anyway, you have my ack!
+This changelog is quite hard to understand :(
 
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+> Recently, Luigi reported there are lots of free swap space when
+> OOM happens. It's easily reproduced on zram-over-swap, where
+> many instance of memory hogs are running and laptop_mode is enabled.
+> 
+> Luigi reported there was no problem when he disabled laptop_mode.
+> The problem when I investigate problem is following as.
+> 
+> try_to_free_pages disable may_writepage if laptop_mode is enabled.
+> shrink_page_list adds lots of anon pages in swap cache by
+> add_to_swap, which makes pages Dirty and rotate them to head of
+> inactive LRU without pageout. If it is repeated, inactive anon LRU
+> is full of Dirty and SwapCache pages.
 
-Kind regards
-Ulf Hansson
+"Dirty and SwapCache" is ambigious.  Does it mean "dirty pages and
+swapcache pages" or does it mean "dirty swapcache pages".  The latter,
+I expect.
+
+> 
+> In case of that, isolate_lru_pages fails because it try to isolate
+> clean page due to may_writepage == 0.
+> 
+> The may_writepage could be 1 only if total_scanned is higher than
+> writeback_threshold in do_try_to_free_pages but unfortunately,
+> VM can't isolate anon pages from inactive anon lru list by
+> above reason and we already reclaimed all file-backed pages.
+> So it ends up OOM killing.
+
+Here, please expand upon "by above reason".  Explain here exactly why
+scanning is unsuccessful.
+
+> This patch prevents to add a page to swap cache unnecessary when
+> may_writepage is unset so anoymous lru list isn't full of
+> Dirty/Swapcache page. So VM can isolate pages from anon lru list,
+> which ends up setting may_writepage to 1 and could swap out
+> anon lru pages. When OOM triggers, I confirmed swap space was full.
+> 
+> ...
+>
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -780,6 +780,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  		if (PageAnon(page) && !PageSwapCache(page)) {
+>  			if (!(sc->gfp_mask & __GFP_IO))
+>  				goto keep_locked;
+> +			if (!sc->may_writepage)
+> +				goto keep_locked;
+>  			if (!add_to_swap(page))
+>  				goto activate_locked;
+>  			may_enter_fs = 1;
+
+Needs a comment explaining why we bale out in this case, please.
+
+If I'm understanding it correctly, this change causes the kernel to
+move less anonymous memory onto the inactive anon LRU and thereby
+causes the scanner to be more successful in locating clean swapcache
+pages on that list?  But that makes no sense, because from your
+description it appears the intent of the patch is to use *more* swap.
