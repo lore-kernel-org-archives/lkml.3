@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408Ab3APThr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 14:37:47 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:47967 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756938Ab3APThn (ORCPT
+	id S1755711Ab3APTqE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 14:46:04 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60365 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242Ab3APTqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 14:37:43 -0500
-Message-ID: <1358365044.4593.186.camel@falcor1>
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+	Wed, 16 Jan 2013 14:46:01 -0500
+Message-ID: <1358365541.4593.190.camel@falcor1>
+Subject: Re: [RFC 0/1] ima/evm: signature verification support using
+ asymmetric keys
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
-        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org,
-        Ryan Ware <ryan.r.ware@intel.com>
-Date: Wed, 16 Jan 2013 14:37:24 -0500
-In-Reply-To: <20130116185741.GA3038@redhat.com>
-References: <871udloiku.fsf@xmission.com> <1358312159.4593.37.camel@falcor1>
-	 <87wqvdli1o.fsf@xmission.com> <1358344859.4593.66.camel@falcor1>
-	 <20130116144836.GB29845@redhat.com> <1358350391.4593.112.camel@falcor1>
-	 <20130116155406.GC29845@redhat.com> <1358357079.4593.135.camel@falcor1>
-	 <20130116182146.GE29845@redhat.com> <1358361912.4593.162.camel@falcor1>
-	 <20130116185741.GA3038@redhat.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: dhowells@redhat.com, jmorris@namei.org,
+        linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 16 Jan 2013 14:45:41 -0500
+In-Reply-To: <cover.1358246017.git.dmitry.kasatkin@intel.com>
+References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011619-7408-0000-0000-00000BF02ED7
+x-cbid: 13011619-3620-0000-0000-000000EA1FD1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-16 at 13:57 -0500, Vivek Goyal wrote:
-> On Wed, Jan 16, 2013 at 01:45:12PM -0500, Mimi Zohar wrote:
+On Tue, 2013-01-15 at 12:34 +0200, Dmitry Kasatkin wrote:
+> Asymmetric keys were introduced in linux-3.7 to verify the signature on signed
+> kernel modules.  The asymmetric keys infrastructure abstracts the signature
+> verification from the crypto details.  This patch adds IMA/EVM signature
+> verification using asymmetric keys.  Support for additional signature
+> verification methods can now be delegated to the asymmetric key infrastructure.
 > 
-> [..]
-> > > Given the fact that signatures are stored in extended attributes, to me
-> > > the only way to sign executables in current IMA framework would to be
-> > > prepare file system image at build server and ship that image. And
-> > > then installer simply mounts that image (after making sure that proper
-> > > verification keys have been loaded in kernel).
-> > 
-> > That is one scenario.  Another scenario is to update packages to include
-> > extended attributes and to write those extended attributes on
-> > installation.
-> 
-> Ok, that's the point I am missing. So I can sign a file and signatures
-> are in a separate file. And these signatures are installed in extended
-> attributes at file installation time (IOW rpm installation time) on
-> target.
-> 
-> If all this works, this sounds reasonable so far. Except the point of
-> disabling ptrace and locking down memory. 
-> 
-> So what's the state of above work. Is there something I can play with.
+> Although the module signature header and the IMA/EVM signature header could
+> use the same header format, to minimize the signature length and save space
+> in the extended attribute, the IMA/EVM header format is different than the
+> module signature header.  The main difference is that the key identifier is
+> a sha1[12 - 19] hash of the key modulus and exponent and similar to the current
+> implementation. The only purpose is to identify corresponding key in the kernel
+> keyring. ima-evm-utils was updated to support the new signature format.
 
-Sorry, I'm not sure of the RPM implementation details of where/how the
-signatures are stored in the package, nor of the status of these
-changes.  Perhaps someone else on the mailing list knows.
+David, are you ok with how support for asymmetric keys is being added to
+EVM/IMA-appraisal for verifying signatures?  Any comments?
 
 thanks,
 
 Mimi
-
-
 
