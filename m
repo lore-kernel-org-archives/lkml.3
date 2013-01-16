@@ -1,109 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab3APT0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 14:26:13 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:36893 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757261Ab3APT0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 14:26:10 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: David Miller <davem@davemloft.net>
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
-Date: Wed, 16 Jan 2013 14:29:30 -0500
-User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
-Cc: libc-alpha@sourceware.org, bhutchings@solarflare.com,
-        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
-        eblake@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
-        schwab@suse.de, carlos@systemhalted.org
-References: <50F6B761.8070106@linux-ipv6.org> <201301161205.04502.vapier@gentoo.org> <20130116.135744.697469565804508454.davem@davemloft.net>
-In-Reply-To: <20130116.135744.697469565804508454.davem@davemloft.net>
+	id S1756993Ab3APTaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 14:30:39 -0500
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:37073 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab3APTah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 14:30:37 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1598368.kUgqzcCjIn";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301161429.33814.vapier@gentoo.org>
+In-Reply-To: <1358321601.2252.36.camel@rzhang1-mobl4>
+References: <1357517296-31402-1-git-send-email-amit.daniel@samsung.com>
+	<1358321601.2252.36.camel@rzhang1-mobl4>
+Date: Wed, 16 Jan 2013 11:30:35 -0800
+Message-ID: <CADGdYn4CWscQf0y6dmgYUsKB8u25BOmLYq+T64haBKpwnZ3KBQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] thermal: sysfs: Add a new sysfs node emul_temp
+From: amit kachhap <amit.kachhap@gmail.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org, jonghwa3.lee@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Durgadoss <durgadoss.r@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1598368.kUgqzcCjIn
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Hi Rui,
 
-On Wednesday 16 January 2013 13:57:44 David Miller wrote:
-> From: Mike Frysinger <vapier@gentoo.org>
-> > certainly true, but the current expectation is that you don't mix your
-> > ABIs. if you're programming with the C library API, then use the C
-> > library headers. if you're banging directly on the kernel, then use the
-> > kernel headers.  not saying it's a perfect solution, but it works for
-> > the vast majority of use cases.
->=20
-> This isn't how real life works.
->=20
-> GLIBC itself brings in some of the kernel headers, as do various library
-> headers for libraries other than glibc.
->=20
-> So you can get these conflicting headers included indirectly, and it is
-> of no fault of any of the various parties involved.
+Thanks for the review comments,
+On Tue, Jan 15, 2013 at 11:33 PM, Zhang Rui <rui.zhang@intel.com> wrote:
+> Hi, Amit,
+>
+> On Sun, 2013-01-06 at 16:08 -0800, Amit Daniel Kachhap wrote:
+>> This patch adds support to set the emulated temperature method in
+>> thermal zone (sensor). After setting this feature thermal zone must
+>> report this temperature and not the actual temperature. The actual
+>> implementation of this emulated temperature is based on sensor
+>> capability or platform specific. This is useful in debugging different
+>> temperature threshold and its associated cooling action. Writing 0 on
+>> this node should disable emulation.
+>
+> Question:
+> will this bring hardware issue? Say, critical temperature reached while
+> in emulation mode?
+No emulation does cause any h/w issue.
+>
+> As this is for debug purpose, I'd prefer to have a seperate Kconfig
+> option for this feature.
+Yes agreed. Will re-submit with kconfig option.
+>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> ---
+>>  Documentation/thermal/sysfs-api.txt |   14 ++++++++++++++
+>>  drivers/thermal/thermal_sys.c       |   26 ++++++++++++++++++++++++++
+>>  include/linux/thermal.h             |    1 +
+>>  3 files changed, 41 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
+>> index 88c0233..e8f2ee4 100644
+>> --- a/Documentation/thermal/sysfs-api.txt
+>> +++ b/Documentation/thermal/sysfs-api.txt
+>> @@ -55,6 +55,8 @@ temperature) and throttle appropriate devices.
+>>       .get_trip_type: get the type of certain trip point.
+>>       .get_trip_temp: get the temperature above which the certain trip point
+>>                       will be fired.
+>> +     .set_emul_temp: set the emulation temperature which helps in debugging
+>> +                     different threshold temperature points.
+>>
+>>  1.1.2 void thermal_zone_device_unregister(struct thermal_zone_device *tz)
+>>
+>> @@ -153,6 +155,7 @@ Thermal zone device sys I/F, created once it's registered:
+>>      |---trip_point_[0-*]_temp:       Trip point temperature
+>>      |---trip_point_[0-*]_type:       Trip point type
+>>      |---trip_point_[0-*]_hyst:       Hysteresis value for this trip point
+>> +    |---emul_temp:           Emulated temperature set node
+>>
+>>  Thermal cooling device sys I/F, created once it's registered:
+>>  /sys/class/thermal/cooling_device[0-*]:
+>> @@ -252,6 +255,17 @@ passive
+>>       Valid values: 0 (disabled) or greater than 1000
+>>       RW, Optional
+>>
+>> +emul_temp
+>> +     Interface to set the emulated temperature method in thermal zone
+>> +     (sensor). After setting this feature thermal zone must report
+>> +     this temperature and not the actual temperature. The actual
+>> +     implementation of this emulated temperature is platform specific.
+>
+> can we have a pure software temperature emulation method?
+> say, the generic thermal layer caches the emulated temperature value,
+> and hook it in update_temperature()?
+> This is also useful for testing in polling mode, and it does not require
+> platform specific callback support. I mean thermal_ops->set_emul_temp is
+> optional, but thermal emulation is always available for all platforms.
+Yes It makes sense and we can have pure software emulation and use the
+cached temperature when no platform call is registered. In my case I
+needed this in h/w so to have the same sensor trigger interrupts
+behaviour.
 
-the headers glibc includes tend to be pretty stand alone specifically so th=
-at=20
-it doesn't matter
+So the code flow can be like this,
 
-> We have to make them work when included at the same time somehow, and
-> this is totally unavoidable.
+#ifdef CONFIG_THERMAL_EMULATION
+if (thermal_ops->set_emul_temp)
+then pass emul_temp to platform and use the normal platform
+thermal_ops->get_temp
+else
+Store it locally and use emul_temp  instead of calling platform
+thermal_ops->get_temp
+#endif
 
-"them" is vague.  saying that every kernel header has to be usable in the s=
-ame=20
-compilation unit as every C library header regardless of order is unrealist=
-ic=20
-(at least it is today).  there are cases where they define the same structu=
-re=20
-different because the structure as the C library expects is different from =
-what=20
-the kernel syscall expects.  you could avoid that on the kernel side by giv=
-ing=20
-them all prefixes (like __kernel_), but that didn't seem entirely palpable =
-to=20
-the kernel folks.  i couldn't even get them to remove crap that breaks non-
-glibc C libraries (e.g. uapi/linux/stat.h -- looks like someone inadvertent=
-ly=20
-fixed uapi/linux/socket.h finally).
+I will re-submit with this change.
 
-for many networking headers, the C library will provide enums & defines whi=
-le=20
-the kernel only provides enums.  including the kernel after the C library o=
-ne=20
-leads to parsing errors as the defines expand in the enum and kill it.  lik=
-e=20
-linux/in.h and netinet/in.h and IPPROTO_*.
-=2Dmike
-
---nextPart1598368.kUgqzcCjIn
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ9v+dAAoJEEFjO5/oN/WBgWsP/1/PhYIR7pFEd8dCtDAUr3ck
-tQagjwdBvkPaw5uneqVoPTywCy4tvvK0Oqh0HyYPyE0PNjUwQzvdi7jgJPye5omZ
-A7OtTqULytOvjtPYEwOEB+aCQk43jzuL8gCrFTWYhDwd4vZqFcmlsLAAwXa5YCM3
-mRON4PEZ8mcEpANCfoJ6AIpQtVKIssLisBnUmgMFOL3G4SVHrRDWHvXMsqM6dsBt
-IsZGPlnPEIJuAIfELuJP4U6aM8wWdMFhfKJ7OOsAuzKALCXzAVYybAWKvOc9hHTN
-mMa+hj/G5b4hY8yJSx0O9vvdJJaXYkIBQt6wFBD8V28R84/xsYXR79cflCBuQynj
-A/+F0HOs25SpMqeavMZ2ufRwD2JmaMnfpTwXC7KXA6inBD4bv4lP4TbjJPZYxr1M
-R3I9Xb8O2NaYxL/6w7v4scND1rVy/c+0j08r0bDpthf4kbhvKVhoupUJ/dt6GwMU
-ctg/2RTLQXnSYc5rp4e6tDSshKEBbBNPqDF5O4EsjM1trPQ+Ae8sqW2w7E+kk0V/
-EBmUYWiwvmZOzTnVnP82jKGge253S4uDX+9iu6/Cofxeo9ikNg3DUqURhKTCViIr
-S4Oz5gloxr4TguX+aEmpP2Ro3ALFYsRKhd0l1HtKFwuZoe0ayOMZLfkIjaGZpWDl
-mU4pBlpF2fi3VUl+8d8c
-=I0im
------END PGP SIGNATURE-----
-
---nextPart1598368.kUgqzcCjIn--
+Thanks,
+Amit
+>
+> thanks,
+> rui
+>> +     This is useful in debugging different temperature threshold and its
+>> +     associated cooling action. Writing 0 on this node should disable
+>> +     emulation.
+>> +     Unit: millidegree Celsius
+>> +     WO, Optional
+>> +
+>>  *****************************
+>>  * Cooling device attributes *
+>>  *****************************
+>> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+>> index 8c8ce80..ecdfc7d 100644
+>> --- a/drivers/thermal/thermal_sys.c
+>> +++ b/drivers/thermal/thermal_sys.c
+>> @@ -700,11 +700,31 @@ policy_show(struct device *dev, struct device_attribute *devattr, char *buf)
+>>       return sprintf(buf, "%s\n", tz->governor->name);
+>>  }
+>>
+>> +static ssize_t
+>> +emul_temp_store(struct device *dev, struct device_attribute *attr,
+>> +                  const char *buf, size_t count)
+>> +{
+>> +     struct thermal_zone_device *tz = to_thermal_zone(dev);
+>> +     int ret;
+>> +     unsigned long temperature;
+>> +
+>> +     if (!tz->ops->set_emul_temp)
+>> +             return -EPERM;
+>> +
+>> +     if (kstrtoul(buf, 10, &temperature))
+>> +             return -EINVAL;
+>> +
+>> +     ret = tz->ops->set_emul_temp(tz, temperature);
+>> +
+>> +     return ret ? ret : count;
+>> +}
+>> +
+>>  static DEVICE_ATTR(type, 0444, type_show, NULL);
+>>  static DEVICE_ATTR(temp, 0444, temp_show, NULL);
+>>  static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
+>>  static DEVICE_ATTR(passive, S_IRUGO | S_IWUSR, passive_show, passive_store);
+>>  static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR, policy_show, policy_store);
+>> +static DEVICE_ATTR(emul_temp, S_IWUSR, NULL, emul_temp_store);
+>>
+>>  /* sys I/F for cooling device */
+>>  #define to_cooling_device(_dev)      \
+>> @@ -1592,6 +1612,12 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+>>                       goto unregister;
+>>       }
+>>
+>> +     if (ops->set_emul_temp) {
+>> +             result = device_create_file(&tz->device, &dev_attr_emul_temp);
+>> +             if (result)
+>> +                     goto unregister;
+>> +     }
+>> +
+>>       /* Create policy attribute */
+>>       result = device_create_file(&tz->device, &dev_attr_policy);
+>>       if (result)
+>> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+>> index 883bcda..fbb87d4 100644
+>> --- a/include/linux/thermal.h
+>> +++ b/include/linux/thermal.h
+>> @@ -123,6 +123,7 @@ struct thermal_zone_device_ops {
+>>       int (*set_trip_hyst) (struct thermal_zone_device *, int,
+>>                             unsigned long);
+>>       int (*get_crit_temp) (struct thermal_zone_device *, unsigned long *);
+>> +     int (*set_emul_temp) (struct thermal_zone_device *, unsigned long);
+>>       int (*get_trend) (struct thermal_zone_device *, int,
+>>                         enum thermal_trend *);
+>>       int (*notify) (struct thermal_zone_device *, int,
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
