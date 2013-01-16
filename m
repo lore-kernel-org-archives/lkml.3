@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758500Ab3APHMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 02:12:52 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:53211 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758451Ab3APHMu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 02:12:50 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-80-50f652dd2ac7
-Message-id: <50F652ED.9020701@samsung.com>
-Date: Wed, 16 Jan 2013 16:12:45 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, cwchoi00@gmail.com
-Subject: Re: [GIT PULL] extcon for 3.8-rc4
-References: <50F5067A.2060104@samsung.com> <20130115113719.GD1748@kroah.com>
- <CAGTfZH2r9TaNEPQ5am-UFwQd9t_qegxfo3MMOwJxvfctid7=-Q@mail.gmail.com>
- <20130115121356.GA2349@kroah.com>
- <CAGTfZH27VUuqqx5b4trMSDDDceWqwHE2wqPZdLbWvvBvbrzpKg@mail.gmail.com>
- <20130115134941.GA25473@kroah.com> <50F620BB.9010602@samsung.com>
- <20130116064640.GB6087@kroah.com>
-In-reply-to: <20130116064640.GB6087@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsVy+t8zXd27Qd8CDCb+E7W4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZ1y48Zin4y1HR/3ANYwNjJ3sXIyeHhICJxIblPUwQtpjEhXvr
-	2boYuTiEBJYxSuxfepYZpqhn/wRWiMR0Rom5TTeYIZwuJomuD3vARvEKaEmcnzQDKMHBwSKg
-	KrFjWxZImA0ovP/FDTaQsKhAhMSvfg6IakGJH5PvsYDYIgIaEi+P3mIBGcks8J5R4t6lCWAJ
-	YaDepVv2Q130jEli16XHbCAJTgE9ic979oDZzAI6Evtbp0HZ8hKb17wFu5pFQEDi2+RDLCCL
-	JQRkJTYdALtZQqCZXeLPnhcsEJ9JShxccYNlAqPYLCRHzUIydhaSsQsYmVcxiqYWJBcUJ6Xn
-	GuoVJ+YWl+al6yXn525ihESF1A7GlQ0WhxgFOBiVeHi9Cr8GCLEmlhVX5h5ilOBgVhLhXWb/
-	LUCINyWxsiq1KD++qDQntfgQow/QtROZpUST84ERm1cSb2hsYGxoaGloZmppaoBDWEmcl/HU
-	kwAhgfTEktTs1NSC1CKYcUwcnFINjMbhEy3mPLZfwV1wJ3b3Oe6Oo2r3pr3K2vbEZNHRP3bO
-	Mt3V37ctkTyoduPNhymvVqt8qJaJmC5ycfvatSaJqy7Oiv94+UC8wPN9CZJPbh0N9NpQMuVe
-	YZmm149ZR0yDtlltn7+11WfWu4vm2/pbja7FffZxvBmofk5LR/LOgsZTWQ9XOqw5bnhIiaU4
-	I9FQi7moOBEARznzdLcCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jQd27Qd8CDD6fFbS4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGdcuPGYp+MtR0f9wDWMD
-	Yyd7FyMnh4SAiUTP/gmsELaYxIV769m6GLk4hASmM0rMbbrBDOF0MUl0fdgD1sEroCVxftIM
-	oAQHB4uAqsSObVkgYTag8P4XN9hAwqICERK/+jkgqgUlfky+xwJiiwhoSLw8eosFZCSzwHtG
-	iXuXJoAlhIF6l27ZD7X4GZPErkuP2UASnAJ6Ep/37AGzmQV0JPa3ToOy5SU2r3nLPIFRYBaS
-	JbOQlM1CUraAkXkVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnDMPZPawbiyweIQowAHoxIP
-	r1fh1wAh1sSy4srcQ4wSHMxKIrzL7L8FCPGmJFZWpRblxxeV5qQWH2L0AYbARGYp0eR8YDrI
-	K4k3NDYxM7I0MjM2MTc2xiGsJM7LeOpJgJBAemJJanZqakFqEcw4Jg5OqQbG0ObXN3M02h4x
-	SxfPu3C2/9n3y0UbXyr+b7RWzeu4z3P2X2y+8we2+7/NrHlqlas/zzW7ai311zJxq+WnI3Ws
-	5gIsP87lX1n4wyP25/lSVQ/O563rD98ujFL/tyDGxOqeWMSH/KN3zkcI6n062NDPx8ey4+U5
-	N9tXDX2/Gm/d419r4cMi8yNQiaU4I9FQi7moOBEAT4L4IOYCAAA=
-X-CFilter-Loop: Reflected
+	id S1758531Ab3APHON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 02:14:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:37057 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758083Ab3APHOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 02:14:10 -0500
+Date: Tue, 15 Jan 2013 23:15:09 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: yanyg <yanyg02@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysfs: sysfs_update_group always fails and generates a
+ WARNING CALL-trace
+Message-ID: <20130116071509.GA865@kroah.com>
+References: <20130116070425.GA3972@yvit>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130116070425.GA3972@yvit>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 03:46 PM, Greg KH wrote:
-> On Wed, Jan 16, 2013 at 12:38:35PM +0900, Chanwoo Choi wrote:
->>>>  OK, I will resend pull-request to include only bugfixes patch in 3.8.
->>>> After released v3.8-rc7 or 3.8-rc8 kernel, I will send pull-request of extcon
->>>> to include new feature patches of extcon driver in 3.9.
->>>
->>> No, you can send me that pull request now as well, I have two different
->>> branches, one to go to Linus for this release, and one for the next one.
->>> Both of them show up in linux-next.  You should have the same.
->>>
->>> So you can send me two pull requests now, does that make more sense?
->>>
->> I understand and thanks for your comment. I will resend only one pull-request for
->> extcon to include it for -next branch. I don't send separate pull-request
->> for bugfixes patch.
+On Wed, Jan 16, 2013 at 03:04:25PM +0800, yanyg wrote:
+> @sysfs_update_group@ always fails and borns a WARNING CALL-trace
+> if the group exists. BUT still now, no *reference* of this routine at all.
+
+I don't understand.
+
+> >From fe40df7d716658a1fbdab79768628c81d4363428 Mon Sep 17 00:00:00 2001
+> From: yanyg <yanyg02@gmail.com>
+> Date: Wed, 16 Jan 2013 11:25:15 +0800
+> Subject: [PATCH] sysfs-fixes:
 > 
-> Why not send a bugfix pull request?  Are none of these for 3.8?  If so,
-> fine, but be sure to go through them to determine this.
+> @sysfs_update_group@ always fail and generates WARNING CALL trace.
+> fix @internal_create_group@ to avoid it.
 
-I think that it isn't critical bug and relevant to extcon core driver.
-And The issue is trivial and depend on new feature of max77693 extcon driver.
+Why did you embed the patch here, with the words above it?  I would have
+to edit it to apply it :(
 
-Thank you,
-Chanwoo Choi
+It's also not in a format I can apply (no signed-off-by: line.)
 
+> ---
+>  fs/sysfs/group.c |   14 ++++++++++----
+>  1 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+> index 2df555c..51fcf62 100644
+> --- a/fs/sysfs/group.c
+> +++ b/fs/sysfs/group.c
+> @@ -60,7 +60,7 @@ static int internal_create_group(struct kobject *kobj, int update,
+>  				 const struct attribute_group *grp)
+>  {
+>  	struct sysfs_dirent *sd;
+> -	int error;
+> +	int error, do_put = 0;
+>  
+>  	BUG_ON(!kobj || (!update && !kobj->sd));
+>  
+> @@ -73,9 +73,14 @@ static int internal_create_group(struct kobject *kobj, int update,
+>  		return -EINVAL;
+>  	}
+>  	if (grp->name) {
+> -		error = sysfs_create_subdir(kobj, grp->name, &sd);
+> -		if (error)
+> -			return error;
+> +		sd = sysfs_get_dirent(kobj->sd, NULL, grp->name);
+> +		if (sd) {
+> +			do_put = 1;
+> +		} else {
+> +			error = sysfs_create_subdir(kobj, grp->name, &sd);
+> +			if (error)
+> +				return error;
+> +		}
+>  	} else
+>  		sd = kobj->sd;
+>  	sysfs_get(sd);
+> @@ -85,6 +90,7 @@ static int internal_create_group(struct kobject *kobj, int update,
+>  			sysfs_remove_subdir(sd);
+>  	}
+>  	sysfs_put(sd);
+> +	if (do_put) sysfs_put(sd);
+
+Always run your patches through scripts/checkpatch.pl and fix the
+problems it tells you about.
+
+What code in the kernel is hitting this today?
+
+thanks,
+
+greg k-h
