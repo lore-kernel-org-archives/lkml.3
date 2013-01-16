@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab3APBar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 20:30:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752637Ab3APBap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 20:30:45 -0500
-Date: Wed, 16 Jan 2013 01:29:15 +0000
-From: Alasdair G Kergon <agk@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk,
-        snitzer@redhat.com, agk@redhat.com, neilb@suse.de
-Subject: Re: Bcache v. whatever
-Message-ID: <20130116012914.GA27245@agk-dp.fab.redhat.com>
-Mail-Followup-To: Kent Overstreet <koverstreet@google.com>,
-	James Bottomley <James.Bottomley@HansenPartnership.com>,
-	linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-	akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk,
-	snitzer@redhat.com, agk@redhat.com, neilb@suse.de
-References: <20130114223202.GV26407@google.com> <1358241656.2383.2.camel@dabdike.int.hansenpartnership.com> <20130115205912.GA26407@google.com> <1358291738.10591.23.camel@dabdike.int.hansenpartnership.com> <20130115233347.GD26407@google.com>
+	id S1757013Ab3APBet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 20:34:49 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:50803 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756394Ab3APBes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 20:34:48 -0500
+Message-ID: <50F603AC.90005@linux.vnet.ibm.com>
+Date: Tue, 15 Jan 2013 17:34:36 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130115233347.GD26407@google.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH 15/17] mm/page_alloc: add informative debugging message
+ in page_outside_zone_boundaries()
+References: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com> <1358295894-24167-16-git-send-email-cody@linux.vnet.ibm.com>
+In-Reply-To: <1358295894-24167-16-git-send-email-cody@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011601-5406-0000-0000-0000043F17AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 03:33:47PM -0800, Kent Overstreet wrote:
-> I haven't been active on dm-devel, besides the occasional cross
-> posting... not sure what activity you're referring to on the dm list,
- 
-A caching framework based on dm has been proposed by Joe Thornber (the
-original author of dm).
+On 01/15/2013 04:24 PM, Cody P Schafer wrote:
+> Add a debug message which prints when a page is found outside of the
+> boundaries of the zone it should belong to. Format is:
+> 	"page $pfn outside zone [ $start_pfn - $end_pfn ]"
 
-Mike Snitzer is trying to adapt the performance tests for this dm-based
-framework to include the latest bcache code that you just posted to
-start to give us an idea of the circumstances in which each of them work
-well (or badly).
+I'd make sure to say 'pfn' here, just to make sure that it's explicitly
+stated to be a pfn and not a 'struct page'
 
-1, Caching is a complicated feature: It's easy to get no benefit or even
-a negative benefit from a cache if you use an inappropriate policy or
-don't tune it to your I/O patterns.
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index f8ed277..f1783cf 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -239,13 +239,20 @@ static int page_outside_zone_boundaries(struct zone *zone, struct page *page)
+>  	int ret = 0;
+>  	unsigned seq;
+>  	unsigned long pfn = page_to_pfn(page);
+> +	unsigned long sp, start_pfn;
 
-2. We now have several independent/overlapping implementations of this
-type of caching.  Comparing and contrasting them should help us to tease
-out the critical design elements and optimisations and decide which of
-them together or separately (or some hybrid) would enable the kernel to
-support the widest range of situations users require with the minimum
-of code and complexity.
+I think calling this zone_spanned is probably just fine.  Shouldn't take
+up too much room.
 
-3. We all want to move quickly now, perhaps even with something in the
-next merge window if we can or otherwise the one after that.
+>  	do {
+>  		seq = zone_span_seqbegin(zone);
+> +		start_pfn = zone->zone_start_pfn;
+> +		sp = zone->spanned_pages;
+>  		if (!zone_spans_pfn(zone, pfn))
+>  			ret = 1;
+>  	} while (zone_span_seqretry(zone, seq));
+> 
+> +	if (ret)
+> +		pr_debug("page %lu outside zone [ %lu - %lu ]\n",
+> +			pfn, start_pfn, start_pfn + sp);
+> +
+>  	return ret;
+>  }
 
-Alasdair
+Is there a way we could also fit in something to disambiguate the zones?
+ I can imagine a scenario where two zones might have identical
+start/spanned_pages, so they might be impossible to tell apart in a
+message like this.  Maybe we could add the NUMA node or the
+DMA/Normal/Highmem text?
 
