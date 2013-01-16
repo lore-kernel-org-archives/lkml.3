@@ -1,108 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab3APNyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:54:47 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43923 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab3APNyP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:54:15 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>
-Subject: [PATCH v2 11/11] mfd: twl-core: Move twl_i2c_read/write_u8 to header as inline function
-Date: Wed, 16 Jan 2013 14:53:59 +0100
-Message-ID: <1358344439-23017-12-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1358344439-23017-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1358344439-23017-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1756218Ab3APNzD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:55:03 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:41890 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751974Ab3APNy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 08:54:59 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: -next: no resume from suspend
+Date: Wed, 16 Jan 2013 15:00:52 +0100
+Message-ID: <1383787.8I6fLLmNxl@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <50F68443.3040900@suse.cz>
+References: <50F3D9E8.6040802@suse.cz> <16191961.j5ydKsJ3d3@vostro.rjw.lan> <50F68443.3040900@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-twl_i2c_read/write_u8 become as a simple wrapper over the twl_i2c_read/write.
+On Wednesday, January 16, 2013 11:43:15 AM Jiri Slaby wrote:
+> On 01/14/2013 01:56 PM, Rafael J. Wysocki wrote:
+> > On Monday, January 14, 2013 11:11:52 AM Jiri Slaby wrote:
+> >> Hi,
+> >>
+> >> since friday's -next (the last known to be working is the last monday's)
+> >> I cannot resume from suspend. The last thing I see with
+> >> no_console_suspend is:
+> >> i915: No ACPI video bus found
+> >>
+> >> But I used to see the message always, so this is no difference. Any idea
+> >> before I start bisecting?
+> > 
+> > Well, what's the next message you normally see with no_console_suspend?
+> 
+> As I wrote in the other message, the kernel is spinning in
+> acpi_rs_get_aml_length. There are weird resources in the list. For
+> serial 00:05 there is resource with type and length equal to 0 and for
+> parport_pc 00:06 there is resource type 58196295 with length of
+> 134284152. See:
+> acpi_rs_get_aml_length: ffff8801b9f7b380 type=3 len=16
+> acpi_rs_get_aml_length: ffff8801b9f7b390 type=0 len=0
+> acpi_rs_get_aml_length: BAD ffff8801b9f7b390 type=0 len=0
+> serial 00:05: activation failed
+> dpm_run_callback(): pnp_bus_resume+0x0/0x80 returns -5
+> PM: Device 00:05 failed to resume: error -5
+> acpi_rs_get_aml_length: ffff8801b9f7b680 type=3 len=24
+> acpi_rs_get_aml_length: ffff8801b9f7b698 type=58196295 len=134284152
+> parport_pc 00:06: activation failed
+> dpm_run_callback(): pnp_bus_resume+0x0/0x80 returns -5
+> PM: Device 00:06 failed to resume: error -5
+> 
+> if (!length)
+>   return error;
+> 
+> makes it resume again with the errors above...
+> 
+> This was 3.8.0-rc3-next-20130114. Going to test 20130116 as there are
+> these patches:
+> 616979e memory-hotplug: remove sysfs file of node
+> a41a27d ACPI / PM: remove leading whitespace from #ifdef
+> ace2342 ACPI / PM: Consolidate suspend-specific and hibernate-specific code
+> 27a5fb8 ACPI / PM: Move device power management functions to device_pm.c
+> 717a5d1 ACPI / PM: Export power states of ACPI devices via sysfs
+> ee8f808 ACPI / PM: Common string representations of device power states
+> 44fed9b ACPI / PM: More visible function for retrieving device power states
+> 81ed027 ACPI / PM: Change the way power transitions to D3cold are
+> carried out
+> 113542c ACPI: Use system level attribute of wakeup power resources
+> c6fdf80 ACPI: Take power resource initialization errors into account
+> b6568e5 ACPI / scan: Consolidate extraction of power resources lists
+> 8a0a4d6 ACPI / scan: Remove unnecessary initialization of local variables
+> 5c24aa4 ACPI / scan: Move power state initialization to a separate routine
+> 59e8500 ACPI / PM: Take order attribute of wakeup power resources into
+> account
+> f369253 ACPI / PM: Take order attribute of power resources into account
+> 3170b40 ACPI: Do not use device power states of power resources
+> 17ece8c ACPI: Drop power resources driver
+> 5e4cd24 ACPI / scan: Treat power resources in a special way
+> 5b32520 ACPI / scan: More straightforward preparation of ACPI device objects
+> 5a62e76 ACPI / PM: Rework the handling of devices depending on power
+> resources
+> 5993c46 ACPI: update ej_event interface to take acpi_device
+> 05404d8 ACPI / scan: Add second pass to acpi_bus_trim()
+> cecdb19 ACPI / scan: Change the implementation of acpi_bus_trim()
+> ae28179 ACPI / scan: Drop the second argument of acpi_bus_trim()
+> b17b537 ACPI / scan: Drop the second argument of acpi_device_unregister()
+> a412a11 ACPI / glue: Fix build with ACPI_GLUE_DEBUG set
+> abe9921 ACPI / scan: Fix check of device_attach() return value.
+> e92a79b ACPI thermal: remove unnecessary newline from exception message
+> 2b16c77 ACPI sysfs: remove unnecessary newline from exception
+> f1f37cb ACPI video: remove unnecessary newline from error messages
+> b43e106 ACPICA: Cleanup table handler naming conflicts.
+> 42f8fb7 ACPICA: Source restructuring: split large files into 8 new files.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl-core.c  | 28 ----------------------------
- include/linux/i2c/twl.h | 17 +++++++++++------
- 2 files changed, 11 insertions(+), 34 deletions(-)
+None of the ACPI patches above has anything to do with resources.
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 9661204..557f9ee 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -379,34 +379,6 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
- }
- EXPORT_SYMBOL(twl_i2c_read);
- 
--/**
-- * twl_i2c_write_u8 - Writes a 8 bit register in TWL4030/TWL5030/TWL60X0
-- * @mod_no: module number
-- * @value: the value to be written 8 bit
-- * @reg: register address (just offset will do)
-- *
-- * Returns result of operation - 0 is success
-- */
--int twl_i2c_write_u8(u8 mod_no, u8 value, u8 reg)
--{
--	return twl_i2c_write(mod_no, &value, reg, 1);
--}
--EXPORT_SYMBOL(twl_i2c_write_u8);
--
--/**
-- * twl_i2c_read_u8 - Reads a 8 bit register from TWL4030/TWL5030/TWL60X0
-- * @mod_no: module number
-- * @value: the value read 8 bit
-- * @reg: register address (just offset will do)
-- *
-- * Returns result of operation - 0 is success
-- */
--int twl_i2c_read_u8(u8 mod_no, u8 *value, u8 reg)
--{
--	return twl_i2c_read(mod_no, value, reg, 1);
--}
--EXPORT_SYMBOL(twl_i2c_read_u8);
--
- /*----------------------------------------------------------------------*/
- 
- /**
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index e441fd8..488debb 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -175,17 +175,22 @@ TWL_CLASS_IS(4030, TWL4030_CLASS_ID)
- TWL_CLASS_IS(6030, TWL6030_CLASS_ID)
- 
- /*
-- * Read and write single 8-bit registers
-- */
--int twl_i2c_write_u8(u8 mod_no, u8 val, u8 reg);
--int twl_i2c_read_u8(u8 mod_no, u8 *val, u8 reg);
--
--/*
-  * Read and write several 8-bit registers at once.
-  */
- int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes);
- int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes);
- 
-+/*
-+ * Read and write single 8-bit registers
-+ */
-+static inline int twl_i2c_write_u8(u8 mod_no, u8 val, u8 reg) {
-+	return twl_i2c_write(mod_no, &val, reg, 1);
-+}
-+
-+static inline int twl_i2c_read_u8(u8 mod_no, u8 *val, u8 reg) {
-+	return twl_i2c_read(mod_no, val, reg, 1);
-+}
-+
- int twl_get_type(void);
- int twl_get_version(void);
- int twl_get_hfclk_rate(void);
+There are two things you can try.  First, revert all of the ACPICA patches
+and see if that helps.  Second, if that doesn't help, try to revert things in
+the PCI tree (alternatively, you can try the PCI tree alone).
+
+I have tested suspend/resume with the ACPI (including ACPICA) patches applied,
+but I haven't tested the PCI tree.
+
+Thanks,
+Rafael
+
+
 -- 
-1.8.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
