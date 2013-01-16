@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab3APV4t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 16:56:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41846 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757620Ab3APV4s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 16:56:48 -0500
-Date: Wed, 16 Jan 2013 13:56:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        johnstul@us.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 2/4] sched: /proc/sched_debug fails on very very
- large machines.
-Message-Id: <20130116135647.019cbe8d.akpm@linux-foundation.org>
-In-Reply-To: <1358286372-13777-3-git-send-email-nzimmer@sgi.com>
-References: <1358286372-13777-1-git-send-email-nzimmer@sgi.com>
-	<1358286372-13777-3-git-send-email-nzimmer@sgi.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757830Ab3APV5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 16:57:24 -0500
+Received: from fieldses.org ([174.143.236.118]:48835 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757800Ab3APV5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 16:57:23 -0500
+Date: Wed, 16 Jan 2013 16:57:19 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-nfs@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] nfsd: fix compile warning about unused variable 'nn'
+Message-ID: <20130116215719.GC6598@fieldses.org>
+References: <1358235787-17292-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1358235787-17292-2-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1358235787-17292-2-git-send-email-mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013 15:46:10 -0600
-Nathan Zimmer <nzimmer@sgi.com> wrote:
-
-> On systems with 4096 cores attemping to read /proc/sched_debug fails.
-> We are trying to push all the data into a single kmalloc buffer.
-> The issue is on these very large machines all the data will not fit in 4mb.
+On Tue, Jan 15, 2013 at 09:43:07AM +0200, Mika Westerberg wrote:
+> Commit c9a4962881 (nfsd: make client_lock per net) added
+> lockdep_assert_held() call to function free_client(). However, if lockdep
+> is disabled we get following compiler warning:
 > 
-> A better solution is to not us the single_open mechanism but to provide
-> our own seq_operations and treat each cpu as an individual record.
+> fs/nfsd/nfs4state.c: In function ‘free_client’:
+> fs/nfsd/nfs4state.c:1051:19: warning: unused variable ‘nn’ [-Wunused-variable]
 > 
-> The output should be identical to previous version.
+> Fix this by marking the 'nn' with __maybe_unused.
+
+I queued up fixes for these for 3.9 on the assumption it's better to
+live with the compile errors a little longer than to submit unimportant
+stuff for post-merge-window 3.8.
+
+But if it means more people are going to waste time tripping over these,
+then maybe they should just go in now--I don't know.
+
+--b.
+
 > 
-> ...
->
-> +	int cpu = (unsigned long)(v - 2);
-
-Again, the meaning of the magic offsets are unobvious to readers of
-this code.
-
-> -	SEQ_printf(m, "\n");
-> +	if (cpu != -1)
-> +		print_cpu(m, cpu);
-
-Same concerns with cpu hotplug.
-
-> +	else
-> +		sched_debug_header(m);
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+>  fs/nfsd/nfs4state.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+> index ac8ed96..2d3011c 100644
+> --- a/fs/nfsd/nfs4state.c
+> +++ b/fs/nfsd/nfs4state.c
+> @@ -1048,7 +1048,7 @@ static struct nfs4_client *alloc_client(struct xdr_netobj name)
+>  static inline void
+>  free_client(struct nfs4_client *clp)
+>  {
+> -	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
+> +	struct nfsd_net *nn __maybe_unused = net_generic(clp->net, nfsd_net_id);
 >  
->  	return 0;
->  }
-
+>  	lockdep_assert_held(&nn->client_lock);
+>  	while (!list_empty(&clp->cl_sessions)) {
+> -- 
+> 1.7.10.4
+> 
