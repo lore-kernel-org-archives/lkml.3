@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978Ab3APVW7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 16:22:59 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:29105 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756273Ab3APVW6 (ORCPT
+	id S1757045Ab3APVXg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 16:23:36 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:39898 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755763Ab3APVXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 16:22:58 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, annie.li@oracle.com,
-        msw@amazon.com
-Subject: [PATCH] xen/grant-table: Force to use v1 of grants.
-Date: Wed, 16 Jan 2013 16:22:49 -0500
-Message-Id: <1358371369-19089-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.0.2
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 16 Jan 2013 16:23:34 -0500
+Date: Wed, 16 Jan 2013 22:17:26 +0100
+From: Cong Ding <dinggnu@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sparc: kernel/sbus.c: fix memory leakage
+Message-ID: <20130116211725.GC18593@gmail.com>
+References: <1358199372-11976-1-git-send-email-dinggnu@gmail.com>
+ <20130116211309.GA13993@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130116211309.GA13993@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have the framework to use v2, but there are no backends that
-actually use it. The end result is that on PV we use v2 grants
-and on PVHVM v1. The v1 has a capacity of 512 grants per page while
-the v2 has 256 grants per page. This means we lose about 50%
-capacity - and if we want more than 16 VIFs (each VIF takes
-512 grants), then we are hitting the max per guest of 32.
+On Wed, Jan 16, 2013 at 10:13:09PM +0100, Sam Ravnborg wrote:
+> On Mon, Jan 14, 2013 at 10:36:08PM +0100, Cong Ding wrote:
+> > the variable iommu and strbuf are not freed if it goes to error.
+> > 
+> > Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> > ---
+> >  arch/sparc/kernel/sbus.c |    8 ++++++--
+> >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/sparc/kernel/sbus.c b/arch/sparc/kernel/sbus.c
+> > index 1271b3a..0b66e53 100644
+> > --- a/arch/sparc/kernel/sbus.c
+> > +++ b/arch/sparc/kernel/sbus.c
+> > @@ -555,10 +555,10 @@ static void __init sbus_iommu_init(struct platform_device *op)
+> >  
+> >  	iommu = kzalloc(sizeof(*iommu), GFP_ATOMIC);
+> >  	if (!iommu)
+> > -		goto fatal_memory_error;
+> > +		goto fatal_iommu_memory_error;
+> >  	strbuf = kzalloc(sizeof(*strbuf), GFP_ATOMIC);
+> >  	if (!strbuf)
+> > -		goto fatal_memory_error;
+> > +		goto fatal_strbuf_memory_error;
+> >  
+> >  	op->dev.archdata.iommu = iommu;
+> >  	op->dev.archdata.stc = strbuf;
+> > @@ -656,6 +656,10 @@ static void __init sbus_iommu_init(struct platform_device *op)
+> >  	return;
+> >  
+> >  fatal_memory_error:
+> > +	kfree(strbuf);
+> > +fatal_strbuf_memory_error:
+> > +	kfree(iommu);
+> > +fatal_iommu_memory_error:
+> >  	prom_printf("sbus_iommu_init: Fatal memory allocation error.\n");
+> >  }
+> kfree is a noop if passed a null pointer.
+> So you can just add the missing kfree's to fix this.
+> 
+> 	Sam
+as far as I know, most codes in the kernel are in the same style as this
+patch, but if you really prefer to do in the way you described I can send
+a new version.
 
-Note: The hypervisor provides an over-ride for the default
-of 32 frames (pages) per guest: gnttab_max_nr_frames=X
+Let me know.
 
-Oracle-bug: 16039922
-CC: annie.li@oracle.com
-CC: msw@amazon.com
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/grant-table.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index 95ce9d0..568fd8f 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -1108,10 +1108,8 @@ static void gnttab_request_version(void)
- 	int rc;
- 	struct gnttab_set_version gsv;
- 
--	if (xen_hvm_domain())
--		gsv.version = 1;
--	else
--		gsv.version = 2;
-+	gsv.version = 1;
-+
- 	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv, 1);
- 	if (rc == 0 && gsv.version == 2) {
- 		grant_table_version = 2;
--- 
-1.8.0.2
+- cong
 
