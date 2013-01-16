@@ -1,76 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758963Ab3APJ7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 04:59:19 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:54771 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756483Ab3APJ7P (ORCPT
+	id S1759003Ab3APJ7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 04:59:51 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:58629 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756483Ab3APJ7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 04:59:15 -0500
-Date: Wed, 16 Jan 2013 09:59:09 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH 2/4] clk: ux500: Ensure the FMSC clock is obtainable
-Message-ID: <20130116095909.GH9379@gmail.com>
-References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
- <1355937587-31730-2-git-send-email-lee.jones@linaro.org>
- <20130115235252.23734.21408@quantum>
+	Wed, 16 Jan 2013 04:59:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130115235252.23734.21408@quantum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUXjmjgFii4bpr6fvfUY9jfu932bCxa088g-wZjOfpYbng@mail.gmail.com>
+References: <CA+icZUUxgRsGkYAmZ=JxTwPvdhTzpGLcxm6+VSq9jnfYPVXj4Q@mail.gmail.com>
+	<s5hpq16zfox.wl%tiwai@suse.de>
+	<CA+icZUWFKzccbHrU0pxK-T2TdwyDsTTNxP_22zmGTPbcAmhMaQ@mail.gmail.com>
+	<s5hpq1531yn.wl%tiwai@suse.de>
+	<CA+icZUXjmjgFii4bpr6fvfUY9jfu932bCxa088g-wZjOfpYbng@mail.gmail.com>
+Date: Wed, 16 Jan 2013 10:59:48 +0100
+Message-ID: <CA+icZUUkbKBzNuCSZUWdTf3_8ZNUAgxNDoubnvAxNyx4j2PKqw@mail.gmail.com>
+Subject: Re: 3.8-rc2 lockdep complains about console_lock vs. fb_notifier_list.rwsem
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-fbdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, alan@lxorguk.ukuu.org.uk,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013, Mike Turquette wrote:
+On Wed, Jan 16, 2013 at 10:52 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Wed, Jan 16, 2013 at 10:35 AM, Takashi Iwai <tiwai@suse.de> wrote:
+>> At Wed, 16 Jan 2013 10:21:46 +0100,
+>> Sedat Dilek wrote:
+>>>
+>>> On Tue, Jan 15, 2013 at 3:25 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>>> > At Sat, 5 Jan 2013 13:13:27 +0100,
+>>> > Sedat Dilek wrote:
+>>> >>
+>>> >> Hi Jiri,
+>>> >>
+>>> >> ...known issue (see thread in [1]), please feel free to test patches
+>>> >> from Alan and Andrew (see [1], [2] and [3]) and report.
+>>> >>
+>>> >> Regards,
+>>> >> - Sedat -
+>>> >>
+>>> >> [1] http://marc.info/?t=135309396400003&r=1&w=2
+>>> >> [2] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
+>>> >> [3] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover-fix.patch
+>>> >> [4] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover-fix-2.patch
+>>> >
+>>> > I've hit this bug and tried the patch [2] ([3] and [4] are gone).
+>>> > Unfortunately the deadlock is still reported, as seen below.
+>>> >
+>>> > A similar fix for fbcon_unbind(), splitting an unlocked version of
+>>> > unbind_con_driver() and call it?
+>>> >
+>>> > (BTW, the patch [2] contains strange characters in the comments, and
+>>> >  has a few coding issues easily detected by checkpatch.pl.)
+>>> >
+>>>
+>>> [ CCing Rafael as he asked in another thread if I had sent a patch ]
+>>>
+>>> I noticed also some these "strange" chars in the patch from Andrew and
+>>> a patch of mine was sent as
+>>> "fb-Rework-locking-to-fix-lock-ordering-on-takeover-fix-comments.patch"
+>>> to the lists.
+>>>
+>>> It is strange to me that Andrew or other maintainers himself did not
+>>> check with "checkpatch.pl".
+>>> This should be a common testcase!
+>>> Hey, noone is perfect :-).
+>>> ( /me has also not checked with that script - I just saw it. )
+>>>
+>>> Just as a note to the issue in general:
+>>> Andrew took over the patch from Alan which is very honest - he is not
+>>> the active TTY maintainer!
+>>> Didn't Greg takeover maintenance from Alan (after a dispute and blaming Alan)?
+>>> If this is true, why the hell is Greg not CCed?
+>>
+>> Let's do it :)
+>>
+>> Greg, Jiri, this bug hits already quite a few people.
+>>
+>> I can reproduce the bug easily on a machine with a radeon graphics.
+>> It appears always at boot when lockdep is enabled.
+>>
+>>
+>>> Thanks for the real patch in the followup of this thread!
+>>> Who will take care of it :-)?
+>>
+>> Either tty maintainer, or fb maintainer, or Andrew?
+>>
+>> FWIW, Andrew took my patch in mm:
+>>   http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
+>>   http://ozlabs.org/~akpm/mmots/broken-out/fb-yet-another-band-aid-for-fixing-lockdep-mess.patch
+>>
+>
+> [ CCing linux-next ML ]
+>
+> Thanks for all your efforts to get this fb-issue nailed down for mainline!
+>
+> Just as a note being a Linux-Next customer:
+>
+> "fb-yet-another-band-aid-for-fixing-lockdep-mess.patch" did not hit
+> next-20130116!
+> Thanks for the link!
+>
+> Normally Andrew sents out a mmotm release marking patches from his
+> tree destinated for Linux-Next with a "*".
+>
+> To quote from the latest mmotm release-notes:
+>
+> "This mmotm tree contains the following patches against 3.8-rc3:
+> (patches marked "*" will be included in linux-next)"
+>
+> But anyway this stuff is Linux-3.8 material as well.
+>
 
-> Quoting Lee Jones (2012-12-19 09:19:45)
-> > The FMSC clock is traditionally used for NAND flash devices when
-> > used on the ux500 series platforms. This patch makes it searchable
-> > during a clock-name search.
-> > 
-> > Cc: Mike Turquette <mturquette@linaro.org>
-> > Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Acked-by: Mike Turquette <mturquette@linaro.org>
-> 
-> Who do you want this series to go through?
+JYI: [1] now does NOT have anymore those "strange" chars, Thanks Takashi san.
 
-To be honest I don't really mind. I can take them through the
-arm-soc tree with "[1/4] ARM ...", but I still need an Ack from
-the SMSC911x maintainer for "[4/4] ...", before I can do that.
+I will test next-20130116 with both fb-fixes as -2 kernel.
+( Running LTP-lite on my "naked" -1 kernel only with my kbuild/deb-pkg-fixes. )
 
-Still waiting for that. :(
+Thanks to everyone involved.
 
-> > ---
-> >  drivers/clk/ux500/u8500_clk.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
-> > index 6b889a0..a601802 100644
-> > --- a/drivers/clk/ux500/u8500_clk.c
-> > +++ b/drivers/clk/ux500/u8500_clk.c
-> > @@ -324,7 +324,7 @@ void u8500_clk_init(void)
-> >  
-> >         clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", U8500_CLKRST3_BASE,
-> >                                 BIT(0), 0);
-> > -       clk_register_clkdev(clk, NULL, "fsmc");
-> > +       clk_register_clkdev(clk, "fsmc", NULL);
-> >  
-> >         clk = clk_reg_prcc_pclk("p3_pclk1", "per3clk", U8500_CLKRST3_BASE,
-> >                                 BIT(1), 0);
-> > -- 
-> > 1.7.9.5
+- Sedat -
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+[1] http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
+[2] http://ozlabs.org/~akpm/mmots/broken-out/fb-yet-another-band-aid-for-fixing-lockdep-mess.patch
+> - Sedat -
+>
+>>
+>> thanks,
+>>
+>> Takashi
