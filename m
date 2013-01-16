@@ -1,69 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab3APSU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 13:20:56 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:47427 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3APSUz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 13:20:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <50F6E582.60905@zytor.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1301151214480.4978@kaball.uk.xensource.com>
-	<CAE9FiQV1uxeHDVMcgNij7qAta+r2A52Jqwzb32Y1qgM13jUOeQ@mail.gmail.com>
-	<CAE9FiQVhk4jc5WaOC5b+dn6Jo1w7s01MUBL16P43tNxav4kJzA@mail.gmail.com>
-	<alpine.DEB.2.02.1301161048120.4978@kaball.uk.xensource.com>
-	<CAE9FiQUYi_Bp2DW-G3Ht=Xz1rk+xks+NZe+-nAmvh4xR4dxVwA@mail.gmail.com>
-	<50F6E582.60905@zytor.com>
-Date: Wed, 16 Jan 2013 10:20:53 -0800
-X-Google-Sender-Auth: mOyVRqKO46c_auj-AUSHAbRflCc
-Message-ID: <CAE9FiQUGMTLDyTZTsaHFaVc0VF7JoNPkPAWQGXq3OUdn9jir6Q@mail.gmail.com>
-Subject: Re: [PATCH v7u1 00/31] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+	id S1757169Ab3APSVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 13:21:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41986 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753161Ab3APSVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 13:21:50 -0500
+Date: Wed, 16 Jan 2013 13:21:46 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
+        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+Message-ID: <20130116182146.GE29845@redhat.com>
+References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+ <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
+ <871udloiku.fsf@xmission.com>
+ <1358312159.4593.37.camel@falcor1>
+ <87wqvdli1o.fsf@xmission.com>
+ <1358344859.4593.66.camel@falcor1>
+ <20130116144836.GB29845@redhat.com>
+ <1358350391.4593.112.camel@falcor1>
+ <20130116155406.GC29845@redhat.com>
+ <1358357079.4593.135.camel@falcor1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358357079.4593.135.camel@falcor1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 9:38 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 01/16/2013 09:31 AM, Yinghai Lu wrote:
->>
->>
->
-> The first sentence here doesn't parse, and this description doesn't give any
-> hint to anyone who is researching this code in say, five years, what
-> problems this caused.
->
-> I can't really figure it out, either; from looking at the thread and the
-> patch I'm assuming the problem is somehow that the code failed to use the
-> last page in the brk buffer, which somehow lead to a Xen boot failure... but
-> the bits from here to there are totally unclear.
+On Wed, Jan 16, 2013 at 12:24:39PM -0500, Mimi Zohar wrote:
+> On Wed, 2013-01-16 at 10:54 -0500, Vivek Goyal wrote:
+> > On Wed, Jan 16, 2013 at 10:33:11AM -0500, Mimi Zohar wrote:
+> > 
+> > [..]
+> > > > - Also I really could not figure out where does the private signing key
+> > > >   lives. I got the impression that we need to trust installer and
+> > > >   signing somehow happens at installation time. And we wanted signing
+> > > >   to happen at build server and could not trust installer for that.
+> > > 
+> > > Dmitry's ima-evm-utils package signs files.  Depending on the options,
+> > > both the EVM and IMA extended attributes are created.
+> > 
+> > I was going through following presentation.
+> > 
+> > http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
+> > 
+> > On slide 8, it mentons signing.
+> > 
+> > 	evmctl sign --imahash /path/to/file
+> > 	evmctl sign --imasig /path/to/file
+> > 
+> > Can't figure out where does the key for signing come from? Is it already
+> > loaded in any of kernel keyrings.
+> > 
+> > If yes, I think this is non-starter. One can not distribute the private
+> > key.
+> 
+> No, the default key location is /etc/keys/privkey_evm.pem, but can be
+> specified.  Prior to Dmitry's updating the package yesterday, the last
+> parameter was the key pathname.  After the update, you can specify the
+> key location with the new --key option.
+> 
+> > Also I am assuming that this is done at installation time? If yes, then
+> > again it does not work as installer does not have private key.
+> 
+> Not necessarily.  The original use case scenario was creating an image
+> with both EVM and IMA digital signatures and then flashing the image.
 
-ok, let me try again.
-tip:x86/mm2 does not fail on xen testing from Stefano and Konrad.
+But distributions don't ship pre-setup root file system. It is created
+and labeled at installation time. So if we want to use IMA, we need to
+sign files at installation time. That means private keys need to be
+accessible to installer (using --key option). And that does not work for
+this use case.
 
-Stefano found booting failure with PV xen with for-x86-boot.
+> 
+> > On slide 11, it talks about importing public keys in kernel keyring from
+> > initramfs. As we discussed this will need modification as these keys
+> > need to be signed and signing public key should already be part of 
+> > kernel keyring.
+> 
+> It's been a long process upstreaming all the different pieces involved.
+> The initial design/step was to load the public key on a keyring.  Since
+> then we've added support for multiple keyrings(eg. EVM, IMA, etc).  The
+> next step is to tie this in with secure boot.
+> 
+> > So looking at the signing process, it really does not look like that
+> > I can sign the executable at build server. It looks it needs to be
+> > signed by installer at install time and private key needs to be available
+> > to installer?
+> 
+> No, the build server can sign the files, so the private key is not
+> required on the target.  These signatures need to be included in the
+> package.  Elena Reshetova gave a talk at the last LSS
+> (http://lwn.net/Articles/518265/), describing changes to RPM to write
+> the security extended attributes.
 
-for-x86-boot has one patch that is trying to get back an wasted page
-in pre-allocated BRK
-and that cause xen pv fails with 2G setup.
-that patch just uncover one bug in x86/mm2.
+Following is from article.
 
-So questions:
-1. do we need to rebase x86/mm2 to fold the two patches in. ?
-2. or just put fixes at beginning for-x86-boot ?
+"The other hooks that Reshetova proposed are associated with the individual
+files in a package. Those would allow things like security labeling or
+calculating hashes on the file contents (for integrity purposes)."
+
+IIUC, these hooks will execute on the target. So hash and all signatures
+should still be generated on target and not build server?
+
+Given the fact that signatures are stored in extended attributes, to me
+the only way to sign executables in current IMA framework would to be
+prepare file system image at build server and ship that image. And
+then installer simply mounts that image (after making sure that proper
+verification keys have been loaded in kernel).
+
+And this image will pretty much be static. As you don't have private key
+you can't install more packages and sign these.
+
+So it will be something like one image per signed package (in worst case).
+
+I don't think starting to ship signed file system images as compared
+to signed files is a better idea. 
 
 Thanks
-
-Yinghai
+Vivek
