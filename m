@@ -1,324 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab3APN5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:57:25 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43901 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193Ab3APNyF (ORCPT
+	id S1756282Ab3APN60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:58:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34754 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753807Ab3APN6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:54:05 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>
-Subject: [PATCH v2 02/11] mfd: twl-core: Clean up module id lookup and definitions
-Date: Wed, 16 Jan 2013 14:53:50 +0100
-Message-ID: <1358344439-23017-3-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1358344439-23017-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1358344439-23017-1-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 16 Jan 2013 08:58:18 -0500
+Message-ID: <1358344686.15692.105.camel@deadeye.wl.decadent.org.uk>
+Subject: Linux 3.2.37
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, Jiri Slaby <jslaby@suse.cz>,
+        stable@vger.kernel.org
+Cc: lwn@lwn.net
+Date: Wed, 16 Jan 2013 13:58:06 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-S/U1HewM/Hh8wC1wD8wK"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use enums for all module definitions:
-twl_module_ids for common functionality among twl4030/twl6030
-twl4030_module_ids for twl4030 specific ids
-twl6030_module_ids for twl6030 specific ids
 
-In this way the list can be managed easier when new functionality going to
-be implemented.
+--=-S/U1HewM/Hh8wC1wD8wK
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl-core.c  | 105 +++++++++++++++++++++++-------------------------
- include/linux/i2c/twl.h |  66 ++++++++++++++++--------------
- 2 files changed, 86 insertions(+), 85 deletions(-)
+I'm announcing the release of the 3.2.37 kernel.
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 4f3baad..b781cdd 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -74,8 +74,6 @@
- #define SUB_CHIP_ID3 3
- #define SUB_CHIP_ID_INVAL 0xff
- 
--#define TWL_MODULE_LAST TWL4030_MODULE_LAST
--
- /* Base Address defns for twl4030_map[] */
- 
- /* subchip/slave 0 - USB ID */
-@@ -94,10 +92,7 @@
- #define TWL4030_BASEADD_MADC		0x0000
- #define TWL4030_BASEADD_MAIN_CHARGE	0x0074
- #define TWL4030_BASEADD_PRECHARGE	0x00AA
--#define TWL4030_BASEADD_PWM0		0x00F8
--#define TWL4030_BASEADD_PWM1		0x00FB
--#define TWL4030_BASEADD_PWMA		0x00EF
--#define TWL4030_BASEADD_PWMB		0x00F1
-+#define TWL4030_BASEADD_PWM		0x00F8
- #define TWL4030_BASEADD_KEYPAD		0x00D2
- 
- #define TWL5031_BASEADD_ACCESSORY	0x0074 /* Replaces Main Charge */
-@@ -117,7 +112,7 @@
- 
- /* subchip/slave 0 0x48 - POWER */
- #define TWL6030_BASEADD_RTC		0x0000
--#define TWL6030_BASEADD_MEM		0x0017
-+#define TWL6030_BASEADD_SECURED_REG	0x0017
- #define TWL6030_BASEADD_PM_MASTER	0x001F
- #define TWL6030_BASEADD_PM_SLAVE_MISC	0x0030 /* PM_RECEIVER */
- #define TWL6030_BASEADD_PM_MISC		0x00E2
-@@ -132,6 +127,7 @@
- #define TWL6030_BASEADD_PIH		0x00D0
- #define TWL6030_BASEADD_CHARGER		0x00E0
- #define TWL6025_BASEADD_CHARGER		0x00DA
-+#define TWL6030_BASEADD_LED		0x00F4
- 
- /* subchip/slave 2 0x4A - DFT */
- #define TWL6030_BASEADD_DIEID		0x00C0
-@@ -188,34 +184,33 @@ static struct twl_mapping twl4030_map[] = {
- 	 * so they continue to match the order in this table.
- 	 */
- 
-+	/* Common IPs */
- 	{ 0, TWL4030_BASEADD_USB },
-+	{ 1, TWL4030_BASEADD_PIH },
-+	{ 2, TWL4030_BASEADD_MAIN_CHARGE },
-+	{ 3, TWL4030_BASEADD_PM_MASTER },
-+	{ 3, TWL4030_BASEADD_PM_RECEIVER },
-+
-+	{ 3, TWL4030_BASEADD_RTC },
-+	{ 2, TWL4030_BASEADD_PWM },
-+	{ 2, TWL4030_BASEADD_LED },
-+	{ 3, TWL4030_BASEADD_SECURED_REG },
-+
-+	/* TWL4030 specific IPs */
- 	{ 1, TWL4030_BASEADD_AUDIO_VOICE },
- 	{ 1, TWL4030_BASEADD_GPIO },
- 	{ 1, TWL4030_BASEADD_INTBR },
--	{ 1, TWL4030_BASEADD_PIH },
--
- 	{ 1, TWL4030_BASEADD_TEST },
- 	{ 2, TWL4030_BASEADD_KEYPAD },
-+
- 	{ 2, TWL4030_BASEADD_MADC },
- 	{ 2, TWL4030_BASEADD_INTERRUPTS },
--	{ 2, TWL4030_BASEADD_LED },
--
--	{ 2, TWL4030_BASEADD_MAIN_CHARGE },
- 	{ 2, TWL4030_BASEADD_PRECHARGE },
--	{ 2, TWL4030_BASEADD_PWM0 },
--	{ 2, TWL4030_BASEADD_PWM1 },
--	{ 2, TWL4030_BASEADD_PWMA },
--
--	{ 2, TWL4030_BASEADD_PWMB },
--	{ 2, TWL5031_BASEADD_ACCESSORY },
--	{ 2, TWL5031_BASEADD_INTERRUPTS },
- 	{ 3, TWL4030_BASEADD_BACKUP },
- 	{ 3, TWL4030_BASEADD_INT },
- 
--	{ 3, TWL4030_BASEADD_PM_MASTER },
--	{ 3, TWL4030_BASEADD_PM_RECEIVER },
--	{ 3, TWL4030_BASEADD_RTC },
--	{ 3, TWL4030_BASEADD_SECURED_REG },
-+	{ 2, TWL5031_BASEADD_ACCESSORY },
-+	{ 2, TWL5031_BASEADD_INTERRUPTS },
- };
- 
- static struct regmap_config twl4030_regmap_config[4] = {
-@@ -251,35 +246,25 @@ static struct twl_mapping twl6030_map[] = {
- 	 * <linux/i2c/twl.h> defines for TWL4030_MODULE_*
- 	 * so they continue to match the order in this table.
- 	 */
--	{ SUB_CHIP_ID1, TWL6030_BASEADD_USB },
--	{ SUB_CHIP_ID_INVAL, TWL6030_BASEADD_AUDIO },
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_DIEID },
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
--	{ SUB_CHIP_ID1, TWL6030_BASEADD_PIH },
--
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
--	{ SUB_CHIP_ID1, TWL6030_BASEADD_GPADC_CTRL },
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
--
--	{ SUB_CHIP_ID1, TWL6030_BASEADD_CHARGER },
--	{ SUB_CHIP_ID1, TWL6030_BASEADD_GASGAUGE },
--	{ SUB_CHIP_ID1, TWL6030_BASEADD_PWM },
--	{ SUB_CHIP_ID0, TWL6030_BASEADD_ZERO },
--	{ SUB_CHIP_ID1, TWL6030_BASEADD_ZERO },
--
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_ZERO },
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_ZERO },
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
--	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
--
--	{ SUB_CHIP_ID0, TWL6030_BASEADD_PM_MASTER },
--	{ SUB_CHIP_ID0, TWL6030_BASEADD_PM_SLAVE_MISC },
--	{ SUB_CHIP_ID0, TWL6030_BASEADD_RTC },
--	{ SUB_CHIP_ID0, TWL6030_BASEADD_MEM },
--	{ SUB_CHIP_ID1, TWL6025_BASEADD_CHARGER },
-+
-+	/* Common IPs */
-+	{ 1, TWL6030_BASEADD_USB },
-+	{ 1, TWL6030_BASEADD_PIH },
-+	{ 1, TWL6030_BASEADD_CHARGER },
-+	{ 0, TWL6030_BASEADD_PM_MASTER },
-+	{ 0, TWL6030_BASEADD_PM_SLAVE_MISC },
-+
-+	{ 0, TWL6030_BASEADD_RTC },
-+	{ 1, TWL6030_BASEADD_PWM },
-+	{ 1, TWL6030_BASEADD_LED },
-+	{ 0, TWL6030_BASEADD_SECURED_REG },
-+
-+	/* TWL6030 specific IPs */
-+	{ 0, TWL6030_BASEADD_ZERO },
-+	{ 1, TWL6030_BASEADD_ZERO },
-+	{ 2, TWL6030_BASEADD_ZERO },
-+	{ 1, TWL6030_BASEADD_GPADC_CTRL },
-+	{ 1, TWL6030_BASEADD_GASGAUGE },
- };
- 
- static struct regmap_config twl6030_regmap_config[3] = {
-@@ -305,6 +290,14 @@ static struct regmap_config twl6030_regmap_config[3] = {
- 
- /*----------------------------------------------------------------------*/
- 
-+static inline int twl_get_last_module(void)
-+{
-+	if (twl_class_is_4030())
-+		return TWL4030_MODULE_LAST;
-+	else
-+		return TWL6030_MODULE_LAST;
-+}
-+
- /* Exported Functions */
- 
- /**
-@@ -325,7 +318,7 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
- 	int sid;
- 	struct twl_client *twl;
- 
--	if (unlikely(mod_no >= TWL_MODULE_LAST)) {
-+	if (unlikely(mod_no >= twl_get_last_module())) {
- 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
- 		return -EPERM;
- 	}
-@@ -367,7 +360,7 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
- 	int sid;
- 	struct twl_client *twl;
- 
--	if (unlikely(mod_no >= TWL_MODULE_LAST)) {
-+	if (unlikely(mod_no >= twl_get_last_module())) {
- 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
- 		return -EPERM;
- 	}
-@@ -1228,6 +1221,10 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	if ((id->driver_data) & TWL6030_CLASS) {
- 		twl_id = TWL6030_CLASS_ID;
- 		twl_map = &twl6030_map[0];
-+		/* The charger base address is different in twl6025 */
-+		if ((id->driver_data) & TWL6025_SUBCLASS)
-+			twl_map[TWL_MODULE_MAIN_CHARGE].base =
-+							TWL6025_BASEADD_CHARGER;
- 		twl_regmap_config = twl6030_regmap_config;
- 		num_slaves = TWL_NUM_SLAVES - 1;
- 	} else {
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index 1ff54b1..72adc88 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -39,51 +39,55 @@
-  * address each module uses within a given i2c slave.
-  */
- 
-+/* Module IDs for similar functionalities found in twl4030/twl6030 */
-+enum twl_module_ids {
-+	TWL_MODULE_USB,
-+	TWL_MODULE_PIH,
-+	TWL_MODULE_MAIN_CHARGE,
-+	TWL_MODULE_PM_MASTER,
-+	TWL_MODULE_PM_RECEIVER,
-+
-+	TWL_MODULE_RTC,
-+	TWL_MODULE_PWM,
-+	TWL_MODULE_LED,
-+	TWL_MODULE_SECURED_REG,
-+
-+	TWL_MODULE_LAST,
-+};
-+
-+/* Modules only available in twl4030 series */
- enum twl4030_module_ids {
--	TWL4030_MODULE_USB = 0,		/* Slave 0 (i2c address 0x48) */
--	TWL4030_MODULE_AUDIO_VOICE,	/* Slave 1 (i2c address 0x49) */
-+	TWL4030_MODULE_AUDIO_VOICE = TWL_MODULE_LAST,
- 	TWL4030_MODULE_GPIO,
- 	TWL4030_MODULE_INTBR,
--	TWL4030_MODULE_PIH,
--
- 	TWL4030_MODULE_TEST,
--	TWL4030_MODULE_KEYPAD,		/* Slave 2 (i2c address 0x4a) */
-+	TWL4030_MODULE_KEYPAD,
-+
- 	TWL4030_MODULE_MADC,
- 	TWL4030_MODULE_INTERRUPTS,
--	TWL4030_MODULE_LED,
--
--	TWL4030_MODULE_MAIN_CHARGE,
- 	TWL4030_MODULE_PRECHARGE,
--	TWL4030_MODULE_PWM0,
--	TWL4030_MODULE_PWM1,
--	TWL4030_MODULE_PWMA,
-+	TWL4030_MODULE_BACKUP,
-+	TWL4030_MODULE_INT,
- 
--	TWL4030_MODULE_PWMB,
- 	TWL5031_MODULE_ACCESSORY,
- 	TWL5031_MODULE_INTERRUPTS,
--	TWL4030_MODULE_BACKUP,		/* Slave 3 (i2c address 0x4b) */
--	TWL4030_MODULE_INT,
- 
--	TWL4030_MODULE_PM_MASTER,
--	TWL4030_MODULE_PM_RECEIVER,
--	TWL4030_MODULE_RTC,
--	TWL4030_MODULE_SECURED_REG,
- 	TWL4030_MODULE_LAST,
- };
- 
--/* Similar functionalities implemented in TWL4030/6030 */
--#define TWL_MODULE_USB		TWL4030_MODULE_USB
--#define TWL_MODULE_PIH		TWL4030_MODULE_PIH
--#define TWL_MODULE_MAIN_CHARGE	TWL4030_MODULE_MAIN_CHARGE
--#define TWL_MODULE_PM_MASTER	TWL4030_MODULE_PM_MASTER
--#define TWL_MODULE_PM_RECEIVER	TWL4030_MODULE_PM_RECEIVER
--#define TWL_MODULE_RTC		TWL4030_MODULE_RTC
--#define TWL_MODULE_PWM		TWL4030_MODULE_PWM0
--#define TWL_MODULE_LED		TWL4030_MODULE_LED
--
--#define TWL6030_MODULE_ID0	13
--#define TWL6030_MODULE_ID1	14
--#define TWL6030_MODULE_ID2	15
-+/* Modules only available in twl6030 series */
-+enum twl6030_module_ids {
-+	TWL6030_MODULE_ID0 = TWL_MODULE_LAST,
-+	TWL6030_MODULE_ID1,
-+	TWL6030_MODULE_ID2,
-+	TWL6030_MODULE_GPADC,
-+	TWL6030_MODULE_GASGAUGE,
-+
-+	TWL6030_MODULE_LAST,
-+};
-+
-+/* Until the clients has been converted to use TWL_MODULE_LED */
-+#define TWL4030_MODULE_LED	TWL_MODULE_LED
- 
- #define GPIO_INTR_OFFSET	0
- #define KEYPAD_INTR_OFFSET	1
--- 
-1.8.1
+All users of the 3.2 kernel series should upgrade.
 
+The updated 3.2.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.2.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git
+
+Ben.
+
+------------
+
+ Documentation/networking/ip-sysctl.txt     |    5 ++
+ Makefile                                   |    2 +-
+ arch/powerpc/kernel/time.c                 |    5 --
+ arch/powerpc/platforms/40x/ppc40x_simple.c |    3 +-
+ arch/sparc/include/asm/hugetlb.h           |   10 ++-
+ drivers/acpi/scan.c                        |    9 ++-
+ drivers/block/aoe/aoe.h                    |    2 +-
+ drivers/block/aoe/aoeblk.c                 |    5 --
+ drivers/gpu/drm/i915/i915_drv.h            |    1 +
+ drivers/gpu/drm/i915/intel_display.c       |   17 ++++
+ drivers/gpu/drm/i915/intel_lvds.c          |    1 +
+ drivers/gpu/drm/nouveau/nouveau_bo.c       |    2 +-
+ drivers/gpu/drm/radeon/radeon_combios.c    |  117 ++++++++++++++++++++++++=
+++++
+ drivers/gpu/drm/radeon/radeon_connectors.c |   10 ++-
+ drivers/gpu/drm/radeon/radeon_display.c    |   13 +++-
+ drivers/gpu/drm/radeon/radeon_i2c.c        |   10 ++-
+ drivers/gpu/drm/radeon/radeon_mode.h       |    4 +-
+ drivers/hwmon/lm73.c                       |   16 ++--
+ drivers/infiniband/hw/nes/nes.h            |    1 +
+ drivers/infiniband/hw/nes/nes_hw.c         |    9 +--
+ drivers/infiniband/hw/nes/nes_verbs.c      |    9 ++-
+ drivers/net/wireless/ath/ath9k/ar9003_hw.c |    4 +-
+ drivers/net/wireless/p54/p54usb.c          |    4 +
+ drivers/net/wireless/rt2x00/rt2800lib.c    |    3 +-
+ drivers/pci/quirks.c                       |    7 +-
+ drivers/rtc/rtc-vt8500.c                   |   11 +--
+ drivers/scsi/mvsas/mv_sas.c                |    2 +-
+ drivers/video/mxsfb.c                      |    3 +-
+ fs/cifs/transport.c                        |    7 ++
+ fs/eventpoll.c                             |   22 +++++-
+ fs/ext4/extents.c                          |   22 +++++-
+ fs/ext4/super.c                            |   22 +++---
+ fs/jbd2/transaction.c                      |    3 +-
+ fs/nfs/super.c                             |    2 +-
+ fs/udf/inode.c                             |    7 +-
+ include/asm-generic/tlb.h                  |    9 +++
+ include/linux/compiler-gcc.h               |    5 ++
+ include/linux/page-flags.h                 |    8 +-
+ include/linux/pci_ids.h                    |    1 +
+ include/linux/snmp.h                       |    3 +-
+ include/net/inet_connection_sock.h         |    1 +
+ include/net/mac80211.h                     |    5 ++
+ include/net/tcp.h                          |    1 +
+ mm/memory.c                                |    5 ++
+ mm/mempolicy.c                             |   64 +++++++--------
+ net/dccp/ipv4.c                            |    4 +-
+ net/dccp/ipv6.c                            |    3 +-
+ net/ipv4/inet_connection_sock.c            |   16 ++++
+ net/ipv4/proc.c                            |    3 +-
+ net/ipv4/sysctl_net_ipv4.c                 |    7 ++
+ net/ipv4/tcp_input.c                       |   93 ++++++++++++++++------
+ net/ipv4/tcp_ipv4.c                        |    5 +-
+ net/ipv6/tcp_ipv6.c                        |    3 +-
+ net/mac80211/status.c                      |    6 +-
+ net/sched/sch_htb.c                        |    2 +-
+ net/sunrpc/sched.c                         |   27 ++++++-
+ 56 files changed, 489 insertions(+), 152 deletions(-)
+
+Aaro Koskinen (1):
+      drm/nouveau: fix init with agpgart-uninorth
+
+Alex Deucher (2):
+      drm/radeon: add connector table for SAM440ep embedded board
+      drm/radeon: add connector table for Mac G4 Silver
+
+Andreas Hartmann (1):
+      rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails
+
+Andy Lutomirski (1):
+      PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz
+
+Ben Hutchings (1):
+      Linux 3.2.37
+
+Chris Verges (1):
+      hwmon: (lm73} Detect and report i2c bus errors
+
+Christian Lamparter (1):
+      p54usb: add USBIDs for two more p54usb devices
+
+Christoffer Dall (1):
+      mm: Fix PageHead when !CONFIG_PAGEFLAGS_EXTENDED
+
+Christoph Paasch (1):
+      inet: Fix kmemleak in tcp_v4/6_syn_recv_sock and dccp_v4/6_request_re=
+cv_sock
+
+Dave Kleikamp (1):
+      sparc: huge_ptep_set_* functions need to call set_huge_pte_at()
+
+Ed L. Cashin (1):
+      aoe: do not call bdi_init after blk_alloc_queue
+
+Eric Dumazet (5):
+      tcp: implement RFC 5961 3.2
+      tcp: implement RFC 5961 4.2
+      tcp: refine SYN handling in tcp_validate_incoming
+      tcp: tcp_replace_ts_recent() should not be called from tcp_validate_i=
+ncoming()
+      tcp: RFC 5961 5.2 Blind Data Injection Attack Mitigation
+
+Eric Wong (1):
+      epoll: prevent missed events on EPOLL_CTL_MOD
+
+Forrest Liu (1):
+      ext4: fix extent tree corruption caused by hole punch
+
+Gabor Juhos (1):
+      powerpc: Add missing NULL terminator to avoid boot panic on PPC40x
+
+Hugh Dickins (1):
+      tmpfs mempolicy: fix /proc/mounts corrupting memory
+
+Jan Kara (2):
+      ext4: check dioread_nolock on remount
+      jbd2: fix assertion failure in jbd2_journal_flush()
+
+Jeff Layton (1):
+      cifs: adjust sequence number downward after signing NT_CANCEL request
+
+Jianpeng Ma (1):
+      mvsas: Fix oops when ata commond timeout.
+
+Krzysztof Mazur (1):
+      i915: ensure that VGA plane is disabled
+
+Lothar Wa=C3=9Fmann (1):
+      video: mxsfb: fix crash when unblanking the display
+
+Michael Tokarev (1):
+      ext4: do not try to write superblock on ro remount w/o journal
+
+Michal Hocko (1):
+      mm: limit mmu_gather batching to fix soft lockups on !CONFIG_PREEMPT
+
+Namjae Jeon (1):
+      udf: don't increment lenExtents while writing to a hole
+
+Niels Ole Salscheider (1):
+      drm/radeon: Properly handle DDC probe for DP bridges
+
+Rafael J. Wysocki (1):
+      ACPI / scan: Do not use dummy HID for system bus ACPI nodes
+
+Shan Hai (1):
+      powerpc/vdso: Remove redundant locking in update_vsyscall_tz()
+
+Stanislaw Gruszka (2):
+      mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
+      Revert: "rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe=
+ fails"
+
+Stefan Hasko (1):
+      net: sched: integer overflow fix
+
+Steven Rostedt (1):
+      ftrace: Do not function trace inlined functions
+
+Sujith Manoharan (1):
+      ath9k_hw: Fix RX gain initvals for AR9485
+
+Tatyana Nikolova (2):
+      RDMA/nes: Fix for crash when registering zero length MR for CQ
+      RDMA/nes: Fix for terminate timer crash
+
+Tomasz Guszkowski (1):
+      p54usb: add USB ID for T-Com Sinus 154 data II
+
+Tony Prisk (2):
+      drivers/rtc/rtc-vt8500.c: correct handling of CR_24H bitfield
+      drivers/rtc/rtc-vt8500.c: fix handling of data passed in struct rtc_t=
+ime
+
+Trond Myklebust (1):
+      SUNRPC: Ensure that we free the rpc_task after cleanups are done
+
+Xi Wang (1):
+      nfs: fix null checking in nfs_get_option_str()
+
+Zhang Rui (1):
+      ACPI : do not use Lid and Sleep button for S5 wakeup
+
+
+
+--=-S/U1HewM/Hh8wC1wD8wK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUPax7ue/yOyVhhEJAQogehAAr9MP+BJUQqeVFQXB5z6ygLoNUbJNViF7
+IlrVAwaFeClf11MOHlzePYgs4FLfPM5CxL+MLIAs4jBO7wSoemFFaNzf4I9mHJ84
+D/wlE3wHb/ydgykIPyf0PbD10LKSm1jt1wyf1PXcR+GC3PAPLnXCdpBSud+argsG
+82rbLu2zFmoftB8bx0LKKrr4elVcmC0inA3JsTDeDltS6J94YLTZC6MNep1dvJ/L
+kIApS6lZ5lOxa+GS/3FNEDDhNCrcJd6+zkWkecVUWI5ed2pG53L4A2g6p3Njeh/v
+PbVPVbLGzjb56QtHP3IWFSKsl8G19w+BOEF/WrvAkBJGz1RLSCcDW/zQ/A8zXZpl
+obGN5fSqSVdQTCm+eP84Wl3daZ1lItenqU27kjynlyByLiAyP6Z/gQml6VaZikpB
+fg5+UkAKNeeG2wAf9C/+ITms/pY8M0UomuOexoKpynHenHtqQvM/uKFVIlytOZ2D
+N5o09RdK7OWmcbnE/6tF4ud8zKM6+2pjpl3vzL6FUEWKmccQXYIx/56pmWMuxyvJ
+jVokRkaY6gkiy76xaYdbLrZzLPIYglojArncJobNlH2+ihm1fTcWjV8AGU/DpwOS
+pUjbaPM+SyFkd83iqcGTF0+HOY7/g5nvQ0qnJJc2ARCPZLIQoVEFnMWGbBvJI4aN
+A/fss3mFHpQ=
+=Iq7O
+-----END PGP SIGNATURE-----
+
+--=-S/U1HewM/Hh8wC1wD8wK--
