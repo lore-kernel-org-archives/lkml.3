@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab3APAR5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:17:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42330 "EHLO mail.kernel.org"
+	id S932382Ab3APASU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:18:20 -0500
+Received: from mout.web.de ([212.227.17.11]:58574 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932269Ab3AOWbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:31:40 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michael Tokarev <mjt@tls.msk.ru>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 112/221] ext4: do not try to write superblock on ro remount w/o journal
-Date: Tue, 15 Jan 2013 10:50:39 -0800
-Message-Id: <20130115185006.129937451@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
-References: <20130115184958.025580322@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1758355Ab3APASS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 19:18:18 -0500
+Message-ID: <50F5F1B7.3040201@web.de>
+Date: Wed, 16 Jan 2013 01:17:59 +0100
+From: Soeren Moch <smoch@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all dma_alloc_coherent()
+ calls
+References: <20121119144826.f59667b2.akpm@linux-foundation.org> <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com> <50F3F289.3090402@web.de> <20130115165642.GA25500@titan.lakedaemon.net> <20130115175020.GA3764@kroah.com> <20130115201617.GC25500@titan.lakedaemon.net> <20130115215602.GF25500@titan.lakedaemon.net>
+In-Reply-To: <20130115215602.GF25500@titan.lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:eCxafcB4zhTtfVr/QLqJlb0cA1mIUMKTQcS/8ykDHit
+ l+uOkFyHA1atwegp3R5bmxmwYH3Uu6EMCIDGm+Q/FEjw+bfgEm
+ e541M8h6RGEK6vjmSD1/xV6Iwv1u4D/9PnmGBHB/K44evzXXkS
+ wFEuCLhIm3xuJ56QnFffO3O/R/04chTJT4KGa9zy3FYgd3KZrC
+ VCRrVfKc/J4enqjAq2J6g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On 15.01.2013 22:56, Jason Cooper wrote:
+> Soeren,
+>
+> On Tue, Jan 15, 2013 at 03:16:17PM -0500, Jason Cooper wrote:
+>> If my understanding is correct, one of the drivers (most likely one)
+>> either asks for too small of a dma buffer, or is not properly
+>> deallocating blocks from the per-device pool.  Either case leads to
+>> exhaustion, and falling back to the atomic pool.  Which subsequently
+>> gets wiped out as well.
+>
+> If my hunch is right, could you please try each of the three dvb drivers
+> in turn and see which one (or more than one) causes the error?
+>
 
-------------------
+In fact I use only 2 types of DVB sticks: em28xx usb bridge plus drxk
+demodulator, and dib0700 usb bridge plus dib7000p demod.
 
-From: Michael Tokarev <mjt@tls.msk.ru>
+I would bet for em28xx causing the error, but this is not thoroughly
+tested. Unfortunately testing with removed sticks is not easy, because
+this is a production system and disabling some services for the long
+time we need to trigger this error will certainly result in unhappy
+users.
 
-commit d096ad0f79a782935d2e06ae8fb235e8c5397775 upstream.
+I will see what I can do here. Is there an easy way to track the buffer
+usage without having to wait for complete exhaustion?
 
-When a journal-less ext4 filesystem is mounted on a read-only block
-device (blockdev --setro will do), each remount (for other, unrelated,
-flags, like suid=>nosuid etc) results in a series of scary messages
-from kernel telling about I/O errors on the device.
+In linux-3.5.x there is no such problem. Can we use all available memory
+for dma buffers here on armv5 architectures, in contrast to newer
+kernels?
 
-This is becauese of the following code ext4_remount():
-
-       if (sbi->s_journal == NULL)
-                ext4_commit_super(sb, 1);
-
-at the end of remount procedure, which forces writing (flushing) of
-a superblock regardless whenever it is dirty or not, if the filesystem
-is readonly or not, and whenever the device itself is readonly or not.
-
-We only need call ext4_commit_super when the file system had been
-previously mounted read/write.
-
-Thanks to Eric Sandeen for help in diagnosing this issue.
-
-Signed-off-By: Michael Tokarev <mjt@tls.msk.ru>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ext4/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -4729,7 +4729,7 @@ static int ext4_remount(struct super_blo
- 	}
- 
- 	ext4_setup_system_zone(sb);
--	if (sbi->s_journal == NULL)
-+	if (sbi->s_journal == NULL && !(old_sb_flags & MS_RDONLY))
- 		ext4_commit_super(sb, 1);
- 
- #ifdef CONFIG_QUOTA
-
+Regards,
+Soeren
 
