@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758370Ab3APDra (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 22:47:30 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:33394 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758107Ab3APDr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 22:47:28 -0500
+	id S1758472Ab3APDrp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 22:47:45 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:35843 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758401Ab3APDrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 22:47:43 -0500
+From: "Kumar, Anil" <anilkumar.v@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+CC: <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <khilman@deeprootsystems.com>,
+        <hs@denx.de>, <anilkumar.v@ti.com>
+Subject: [PATCH V4 2/3] ARM: davinci: da8xx defconfig: enable pinctrl config option
+Date: Wed, 16 Jan 2013 09:18:21 +0530
+Message-ID: <1358308102-8169-3-git-send-email-anilkumar.v@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358308102-8169-1-git-send-email-anilkumar.v@ti.com>
+References: <1358308102-8169-1-git-send-email-anilkumar.v@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20130115225340.367496998@linuxfoundation.org>
-References: <20130115225340.367496998@linuxfoundation.org>
-Date: Tue, 15 Jan 2013 20:47:26 -0700
-Message-ID: <CAKocOOMJu=Rm+9MNzm1pJFoHWJJPUbu-eE2AZ4n7gsP9gZ0gTA@mail.gmail.com>
-Subject: Re: [ 00/71] 3.0.59-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 3:53 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.0.59 release.
-> There are 71 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Jan 17 22:53:26 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.59-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
+Enable pinctrl related config option in da8xx_omapl_defconfig
 
-Patches applied cleanly to 3.0.y, 3.4.y, and 3.7.y.
-Compiled and booted on the following systems:
-HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
+---
+:100644 100644 f292239... 0892db4... M	arch/arm/configs/da8xx_omapl_defconfig
+ arch/arm/configs/da8xx_omapl_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Cross-compile tests:
-alpha: defconfig passed on all
-arm: defconfig passed on all
-arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.7.y
-c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.7.y.
-mips: defconfig passed on all
-mipsel: defconfig passed on all
-powerpc: wii_defconfig passed on all
-sh: defconfig passed on all
-sparc: defconfig passed on all
-tile: tilegx_defconfig passed on all
+diff --git a/arch/arm/configs/da8xx_omapl_defconfig b/arch/arm/configs/da8xx_omapl_defconfig
+index f292239..0892db4 100644
+--- a/arch/arm/configs/da8xx_omapl_defconfig
++++ b/arch/arm/configs/da8xx_omapl_defconfig
+@@ -81,6 +81,7 @@ CONFIG_SERIAL_OF_PLATFORM=y
+ CONFIG_I2C=y
+ CONFIG_I2C_CHARDEV=y
+ CONFIG_I2C_DAVINCI=y
++CONFIG_PINCTRL_SINGLE=y
+ # CONFIG_HWMON is not set
+ CONFIG_WATCHDOG=y
+ CONFIG_REGULATOR=y
+-- 
+1.7.4.1
 
--- Shuah
