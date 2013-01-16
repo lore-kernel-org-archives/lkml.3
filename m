@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757820Ab3APQCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:02:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35998 "EHLO
+	id S1757797Ab3APQCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:02:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35994 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757771Ab3APQCG (ORCPT
+	with ESMTP id S1757761Ab3APQCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:02:06 -0500
+	Wed, 16 Jan 2013 11:02:02 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 073/222] Bluetooth: cancel power_on work when unregistering the device
-Date: Wed, 16 Jan 2013 13:54:33 -0200
-Message-Id: <1358351822-7675-74-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 072/222] Bluetooth: Add missing lock nesting notation
+Date: Wed, 16 Jan 2013 13:54:32 -0200
+Message-Id: <1358351822-7675-73-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,65 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 
-commit b9b5ef188e5a2222cfc16ef62a4703080750b451 upstream.
+commit dc2a0e20fbc85a71c63aa4330b496fda33f6bf80 upstream.
 
-We need to cancel the hci_power_on work in order to avoid it run when we
-try to free the hdev.
+This patch fixes the following report, it happens when accepting rfcomm
+connections:
 
-[ 1434.201149] ------------[ cut here ]------------
-[ 1434.204998] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
-[ 1434.208324] ODEBUG: free active (active state 0) object type: work_struct hint: hci
-_power_on+0x0/0x90
-[ 1434.210386] Pid: 8564, comm: trinity-child25 Tainted: G        W    3.7.0-rc5-next-
-20121112-sasha-00018-g2f4ce0e #127
-[ 1434.210760] Call Trace:
-[ 1434.210760]  [<ffffffff819f3d6e>] ? debug_print_object+0x8e/0xb0
-[ 1434.210760]  [<ffffffff8110b887>] warn_slowpath_common+0x87/0xb0
-[ 1434.210760]  [<ffffffff8110b911>] warn_slowpath_fmt+0x41/0x50
-[ 1434.210760]  [<ffffffff819f3d6e>] debug_print_object+0x8e/0xb0
-[ 1434.210760]  [<ffffffff8376b750>] ? hci_dev_open+0x310/0x310
-[ 1434.210760]  [<ffffffff83bf94e5>] ? _raw_spin_unlock_irqrestore+0x55/0xa0
-[ 1434.210760]  [<ffffffff819f3ee5>] __debug_check_no_obj_freed+0xa5/0x230
-[ 1434.210760]  [<ffffffff83785db0>] ? bt_host_release+0x10/0x20
-[ 1434.210760]  [<ffffffff819f4d15>] debug_check_no_obj_freed+0x15/0x20
-[ 1434.210760]  [<ffffffff8125eee7>] kfree+0x227/0x330
-[ 1434.210760]  [<ffffffff83785db0>] bt_host_release+0x10/0x20
-[ 1434.210760]  [<ffffffff81e539e5>] device_release+0x65/0xc0
-[ 1434.210760]  [<ffffffff819d3975>] kobject_cleanup+0x145/0x190
-[ 1434.210760]  [<ffffffff819d39cd>] kobject_release+0xd/0x10
-[ 1434.210760]  [<ffffffff819d33cc>] kobject_put+0x4c/0x60
-[ 1434.210760]  [<ffffffff81e548b2>] put_device+0x12/0x20
-[ 1434.210760]  [<ffffffff8376a334>] hci_free_dev+0x24/0x30
-[ 1434.210760]  [<ffffffff82fd8fe1>] vhci_release+0x31/0x60
-[ 1434.210760]  [<ffffffff8127be12>] __fput+0x122/0x250
-[ 1434.210760]  [<ffffffff811cab0d>] ? rcu_user_exit+0x9d/0xd0
-[ 1434.210760]  [<ffffffff8127bf49>] ____fput+0x9/0x10
-[ 1434.210760]  [<ffffffff81133402>] task_work_run+0xb2/0xf0
-[ 1434.210760]  [<ffffffff8106cfa7>] do_notify_resume+0x77/0xa0
-[ 1434.210760]  [<ffffffff83bfb0ea>] int_signal+0x12/0x17
-[ 1434.210760] ---[ end trace a6d57fefbc8a8cc7 ]---
+[  228.165378] =============================================
+[  228.165378] [ INFO: possible recursive locking detected ]
+[  228.165378] 3.7.0-rc1-00536-gc1d5dc4 #120 Tainted: G        W
+[  228.165378] ---------------------------------------------
+[  228.165378] bluetoothd/1341 is trying to acquire lock:
+[  228.165378]  (sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM){+.+...}, at:
+[<ffffffffa0000aa0>] bt_accept_dequeue+0xa0/0x180 [bluetooth]
+[  228.165378]
+[  228.165378] but task is already holding lock:
+[  228.165378]  (sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM){+.+...}, at:
+[<ffffffffa0205118>] rfcomm_sock_accept+0x58/0x2d0 [rfcomm]
+[  228.165378]
+[  228.165378] other info that might help us debug this:
+[  228.165378]  Possible unsafe locking scenario:
+[  228.165378]
+[  228.165378]        CPU0
+[  228.165378]        ----
+[  228.165378]   lock(sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM);
+[  228.165378]   lock(sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM);
+[  228.165378]
+[  228.165378]  *** DEADLOCK ***
+[  228.165378]
+[  228.165378]  May be due to missing lock nesting notation
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/bluetooth/hci_core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/bluetooth/rfcomm/sock.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
-index 730ff46..de01610 100644
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -1800,6 +1800,8 @@ void hci_unregister_dev(struct hci_dev *hdev)
- 	for (i = 0; i < NUM_REASSEMBLY; i++)
- 		kfree_skb(hdev->reassembly[i]);
+diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
+index 2df6956..20bd148 100644
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -486,7 +486,7 @@ static int rfcomm_sock_accept(struct socket *sock, struct socket *newsock, int f
+ 	long timeo;
+ 	int err = 0;
  
-+	cancel_work_sync(&hdev->power_on);
-+
- 	if (!test_bit(HCI_INIT, &hdev->flags) &&
- 				!test_bit(HCI_SETUP, &hdev->dev_flags)) {
- 		hci_dev_lock(hdev);
+-	lock_sock(sk);
++	lock_sock_nested(sk, SINGLE_DEPTH_NESTING);
+ 
+ 	if (sk->sk_type != SOCK_STREAM) {
+ 		err = -EINVAL;
+@@ -523,7 +523,7 @@ static int rfcomm_sock_accept(struct socket *sock, struct socket *newsock, int f
+ 
+ 		release_sock(sk);
+ 		timeo = schedule_timeout(timeo);
+-		lock_sock(sk);
++		lock_sock_nested(sk, SINGLE_DEPTH_NESTING);
+ 	}
+ 	__set_current_state(TASK_RUNNING);
+ 	remove_wait_queue(sk_sleep(sk), &wait);
 -- 
 1.7.9.5
 
