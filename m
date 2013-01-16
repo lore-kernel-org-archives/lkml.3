@@ -1,118 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3APSEO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 13:04:14 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38653 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab3APSEM (ORCPT
+	id S1756844Ab3APSJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 13:09:07 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:54898 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756064Ab3APSJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 13:04:12 -0500
-Message-ID: <50F6EB98.5090607@wwwdotorg.org>
-Date: Wed, 16 Jan 2013 11:04:08 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/9] clk: tegra: Add tegra specific clocks
-References: <1357890387-23245-3-git-send-email-pgaikwad@nvidia.com><20130111.134820.1392079432650652356.hdoyu@nvidia.com><50F085A0.4090100@wwwdotorg.org> <20130116.101906.399662310268585658.hdoyu@nvidia.com>
-In-Reply-To: <20130116.101906.399662310268585658.hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Jan 2013 13:09:04 -0500
+Message-ID: <1358359715.4593.146.camel@falcor1>
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
+        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
+Date: Wed, 16 Jan 2013 13:08:35 -0500
+In-Reply-To: <20130116163453.GD29845@redhat.com>
+References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+	 <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
+	 <871udloiku.fsf@xmission.com> <1358312159.4593.37.camel@falcor1>
+	 <87wqvdli1o.fsf@xmission.com> <1358344859.4593.66.camel@falcor1>
+	 <20130116144836.GB29845@redhat.com> <1358350391.4593.112.camel@falcor1>
+	 <20130116163453.GD29845@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011618-2398-0000-0000-000010200928
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 01:19 AM, Hiroshi Doyu wrote:
-> Stephen Warren <swarren@wwwdotorg.org> wrote @ Fri, 11 Jan 2013 22:35:28 +0100:
-> 
->> On 01/11/2013 04:48 AM, Hiroshi Doyu wrote:
->>> Hi Prahant,
->>>
->>> Some nit-pick/cosmetic comments inlined...
->>
->> FYI, Prashant is on vacation for the next week or two, so I'll take over
->> this series to clean up any last review comments.
->>
->>> Prashant Gaikwad <pgaikwad@nvidia.com> wrote @ Fri, 11 Jan 2013 08:46:20 +0100:
->>>
->>>> Add tegra specific clocks, pll, pll_out, peripheral,
->>>> frac_divider, super.
->>
->> (it's a good idea to quote as little text as possible; paging through
->> the whole patch to find your comments was slightly painful).
->>
->>>> diff --git a/drivers/clk/tegra/clk-audio-sync.c b/drivers/clk/tegra/clk-audio-sync.c
->>
->>>> +struct clk *tegra_clk_sync_source(const char *name, unsigned long rate,
->>>> +                                 unsigned long max_rate)
->>>> +{
->>>> +       struct tegra_clk_sync_source *sync;
->>>> +       struct clk_init_data init;
->>>> +       struct clk *clk;
->>>> +
->>>> +       sync = kzalloc(sizeof(struct tegra_clk_sync_source), GFP_KERNEL);
->>>> +       if (!sync) {
->>>> +               pr_err("%s: could not allocate sync source clk\n", __func__);
->>>> +               return ERR_PTR(-ENOMEM);
->>>> +       }
->>>> +
->>>> +       sync->rate = rate;
->>>> +       sync->max_rate = max_rate;
->>>> +
->>>> +       init.ops = &tegra_clk_sync_source_ops;
->>>> +       init.name = name;
->>>> +       init.flags = CLK_IS_ROOT;
->>>> +       init.parent_names = NULL;
->>>> +       init.num_parents = 0;
->>>> +
->>>> +       sync->hw.init = &init;
->>>> +
->>>> +       clk = clk_register(NULL, &sync->hw);
->>>
->>> The above usage of "init" from stack may be a bit
->>> unfamilier. I can guess that its content is copied in clk_register()
->>> but it's originally defined in stack. So I just prefer to writing this
->>> as below. It may be somewhat explict that we know init is from stack.
->>
->> The issue you mention is more about whether "init" is copied from the
->> stack or not; simplying changing the initialization to:
->>
->>> struct clk *tegra_clk_sync_source(const char *name, unsigned long rate,
->>>                                  unsigned long max_rate)
->>> {
->>>         struct tegra_clk_sync_source *sync;
->>>         struct clk_init_data init = {
->>>                 .ops = &tegra_clk_sync_source_ops;
->>>                 .name = name;
->>>                 .flags = CLK_IS_ROOT;
->>>                 .parent_names = NULL;
->>>                 .num_parents = 0;
->>>         };
-> 
-> Also since "init" is allocated from stack, members are expected to be
-> initialized *zero*. The last 2 lines are not necessary in the above.
-> 
->          struct clk_init_data init = {
->                  .ops = &tegra_clk_sync_source_ops;
->                  .name = name;
->                  .flags = CLK_IS_ROOT;
->          };
+On Wed, 2013-01-16 at 11:34 -0500, Vivek Goyal wrote:
 
-Variables on the stack aren't initialized the zero without an explicit
-assignment.
+> I read the comment in ima_bprm_check() being called from security_bprm_check(). 
+> It says that files already open for write can't executed and files already
+> open for exec can't be open for writes. That's fine. 
+> 
+> I was worried about anonymous pages being modified on swap and then
+> faulted back in. It is not necessarily signature verification but making
+> sure signed processes memory is not modified later by any unsigned process
+> in anyway. And that includes disabling ptrace too.
+> 
+> So IMA stuff does not do anything to protect against process memory being
+> modified using ptrace or by playing tricks with swap.
 
-The reason why those last two lines aren't strictly necessary, is
-because the whole of the "init" struct is being initialized due to
-assignment to the struct, and omitting an explicit value for any of the
-fields means that the field's value will be zero. The same would be true
-for a global struct initialization (as opposed to BSS).
+> I am not sure what will happen if I can bypass the file system and directly
+> write on a disk block and modify executable. (Assuming one can get block
+> information somehow). Does anything protect such modification? Will IMA
+> detect it?
 
-Either way though, I'm inclined to leave the initialization in; there's
-little harm being explicit.
+Sorry, this is out of scope for IMA.  Dmitry has looked into this, but
+I'm not sure where it stands at the moment.
+
+thanks,
+
+Mimi
+
