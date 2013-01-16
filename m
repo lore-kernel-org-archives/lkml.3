@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab3APBNO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 20:13:14 -0500
-Received: from norkia.v3.sk ([91.210.183.14]:57096 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757128Ab3APBNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 20:13:02 -0500
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Lubomir Rintel <lkundrak@v3.sk>
-Subject: [PATCH 2/2] mtd: Allow removal of partitioning modules
-Date: Wed, 16 Jan 2013 02:12:50 +0100
-Message-Id: <1358298770-20286-2-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1358298770-20286-1-git-send-email-lkundrak@v3.sk>
-References: <1358298770-20286-1-git-send-email-lkundrak@v3.sk>
+	id S1757538Ab3APBPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 20:15:32 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:55501 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757128Ab3APBPa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 20:15:30 -0500
+Message-ID: <50F5FF2F.70206@vlnb.net>
+Date: Tue, 15 Jan 2013 20:15:27 -0500
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
+Subject: [ANNOUNCE]: SCST version 2.2.1 released
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:wrmZDupC9XHLDEYOtPZpcYDou0/V1RKcmV869lGEUgu
+ FZzLAOI6Fn4WWjBx1c0+fLGaxXZV0LxnkWIPzxGcFrJgmhxf/a
+ /2uaeCB0q3nd7YI1SIsKw2I30jw8I7Ma81I4NLqGlqEaQnbcg0
+ 6ujFZBf46nrPobbAKqNcexROn97oYjvSn8Rp+jWUyCo5hBiHCh
+ VhhBLkFiG1ieAVTkuJNEGBqdPJRzR3lB2Bhceo2Qkj93Sz4Zfa
+ bj9A9HfC/HZkUyFRllk4hUAshNfCtGPb9/KsGNDEML9u5QQVt/
+ CTxolGBAeX637s2JJ+oJZSIqBCIGK9hyKcwM5Mggt1DmUk/lmZ
+ PKyAVzJUhp73aWOuGSws=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
----
- drivers/mtd/ar7part.c     |    6 ++++++
- drivers/mtd/cmdlinepart.c |    6 ++++++
- drivers/mtd/ofpart.c      |    7 +++++++
- 3 files changed, 19 insertions(+), 0 deletions(-)
+SCST version 2.2.1 has just been released. This release includes SCST core, target 
+drivers iSCSI-SCST (iSCSI), qla2x00t (QLogic Fibre Channel), ib_srpt (InfiniBand 
+SRP) and scst_local (local loopback-like access) as well as SCST management 
+utility scstadmin.
 
-diff --git a/drivers/mtd/ar7part.c b/drivers/mtd/ar7part.c
-index 9453931..a98899f 100644
---- a/drivers/mtd/ar7part.c
-+++ b/drivers/mtd/ar7part.c
-@@ -145,7 +145,13 @@ static int __init ar7_parser_init(void)
- 	return register_mtd_parser(&ar7_parser);
- }
- 
-+static void __exit ar7_parser_exit(void)
-+{
-+	deregister_mtd_parser(&ar7_parser);
-+}
-+
- module_init(ar7_parser_init);
-+module_exit(ar7_parser_exit);
- 
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR(	"Felix Fietkau <nbd@openwrt.org>, "
-diff --git a/drivers/mtd/cmdlinepart.c b/drivers/mtd/cmdlinepart.c
-index a2bb2ea..8689a77 100644
---- a/drivers/mtd/cmdlinepart.c
-+++ b/drivers/mtd/cmdlinepart.c
-@@ -382,7 +382,13 @@ static int __init cmdline_parser_init(void)
- 	return register_mtd_parser(&cmdline_parser);
- }
- 
-+static void __exit cmdline_parser_exit(void)
-+{
-+	deregister_mtd_parser(&cmdline_parser);
-+}
-+
- module_init(cmdline_parser_init);
-+module_exit(cmdline_parser_exit);
- 
- MODULE_PARM_DESC(mtdparts, "Partitioning specification");
- module_param(mtdparts, charp, 0);
-diff --git a/drivers/mtd/ofpart.c b/drivers/mtd/ofpart.c
-index d9127e2..d407e0b 100644
---- a/drivers/mtd/ofpart.c
-+++ b/drivers/mtd/ofpart.c
-@@ -171,7 +171,14 @@ out:
- 	return rc;
- }
- 
-+static void __exit ofpart_parser_exit(void)
-+{
-+	deregister_mtd_parser(&ofpart_parser);
-+	deregister_mtd_parser(&ofoldpart_parser);
-+}
-+
- module_init(ofpart_parser_init);
-+module_exit(ofpart_parser_exit);
- 
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Parser for MTD partitioning information in device tree");
--- 
-1.7.1
+SCST allows creation of sophisticated storage devices, which provide advanced 
+functionality, like replication, thin provisioning, deduplication, high 
+availability, automatic backup, etc. Another class of such devices are Virtual 
+Tape Libraries (VTL) as well as other disk-based backup solutions. SCST created 
+devices not limited by network interface only, but they can use any link 
+supporting SCSI-style data exchange, like Fibre Channel or SAS. Majority of modern 
+SAN appliances, especially higher end ones, are SCST based. It might well be that 
+your favorite storage appliance running SCST in the firmware.
+
+More info about SCST and its modules you can find on: http://scst.sourceforge.net
+
+Thanks to all who made it happen, especially Bart Van Assche, who prepared the 
+packages!
+
+Vlad
 
