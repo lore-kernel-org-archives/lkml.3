@@ -1,138 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab3APIPv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 03:15:51 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56045 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758268Ab3APIPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 03:15:31 -0500
-X-IronPort-AV: E=Sophos;i="4.84,478,1355068800"; 
-   d="scan'208";a="6598687"
-From: Lin Feng <linfeng@cn.fujitsu.com>
-To: akpm@linux-foundation.org, mhocko@suse.cz, linux-mm@kvack.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, jbeulich@suse.com,
-        dhowells@redhat.com, wency@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, paul.gortmaker@windriver.com,
-        laijs@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie,
-        minchan@kernel.org, aquini@redhat.com, jiang.liu@huawei.com,
-        tony.luck@intel.com, fenghua.yu@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        davem@davemloft.net, michael@ellerman.id.au,
-        gerald.schaefer@de.ibm.com, gregkh@linuxfoundation.org
-Cc: x86@kernel.org, linux390@de.ibm.com, linux-ia64@vger.kernel.org,
-        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linfeng@cn.fujitsu.com, tangchen@cn.fujitsu.com
-Subject: [PATCH v3 1/2] memory-hotplug: introduce CONFIG_HAVE_BOOTMEM_INFO_NODE and revert register_page_bootmem_info_node() when platform not support
-Date: Wed, 16 Jan 2013 16:14:18 +0800
-Message-Id: <1358324059-9608-2-git-send-email-linfeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1358324059-9608-1-git-send-email-linfeng@cn.fujitsu.com>
-References: <1358324059-9608-1-git-send-email-linfeng@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/16 16:14:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/16 16:14:42,
-	Serialize complete at 2013/01/16 16:14:42
+	id S1758537Ab3APITN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 03:19:13 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9038 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757591Ab3APITK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 03:19:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 16 Jan 2013 00:19:03 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 16 Jan 2013 09:19:06 +0100
+Subject: Re: [PATCH v4 2/9] clk: tegra: Add tegra specific clocks
+Thread-Topic: [PATCH v4 2/9] clk: tegra: Add tegra specific clocks
+Thread-Index: Ac3zwif2RGhUwPMrRKeQJuNxdYwFtw==
+Message-ID: <20130116.101906.399662310268585658.hdoyu@nvidia.com>
+References: <1357890387-23245-3-git-send-email-pgaikwad@nvidia.com><20130111.134820.1392079432650652356.hdoyu@nvidia.com><50F085A0.4090100@wwwdotorg.org>
+In-Reply-To: <50F085A0.4090100@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's implemented by adding a new Kconfig option named
-CONFIG_HAVE_BOOTMEM_INFO_NODE, which will be automatically selected by
-memory-hotplug feature fully supported archs(currently only on x86_64).
+Stephen Warren <swarren@wwwdotorg.org> wrote @ Fri, 11 Jan 2013 22:35:28 +0100:
 
-Reported-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
----
-ChangeLog v2->v3:
-- Rename the patch title to conform it's content.
-- Update memory_hotplug.h and remove the misleading TODO pointed out by Michal.
+> On 01/11/2013 04:48 AM, Hiroshi Doyu wrote:
+> > Hi Prahant,
+> > 
+> > Some nit-pick/cosmetic comments inlined...
+> 
+> FYI, Prashant is on vacation for the next week or two, so I'll take over
+> this series to clean up any last review comments.
+> 
+> > Prashant Gaikwad <pgaikwad@nvidia.com> wrote @ Fri, 11 Jan 2013 08:46:20 +0100:
+> > 
+> >> Add tegra specific clocks, pll, pll_out, peripheral,
+> >> frac_divider, super.
+> 
+> (it's a good idea to quote as little text as possible; paging through
+> the whole patch to find your comments was slightly painful).
+> 
+> >> diff --git a/drivers/clk/tegra/clk-audio-sync.c b/drivers/clk/tegra/clk-audio-sync.c
+> 
+> >> +struct clk *tegra_clk_sync_source(const char *name, unsigned long rate,
+> >> +                                 unsigned long max_rate)
+> >> +{
+> >> +       struct tegra_clk_sync_source *sync;
+> >> +       struct clk_init_data init;
+> >> +       struct clk *clk;
+> >> +
+> >> +       sync = kzalloc(sizeof(struct tegra_clk_sync_source), GFP_KERNEL);
+> >> +       if (!sync) {
+> >> +               pr_err("%s: could not allocate sync source clk\n", __func__);
+> >> +               return ERR_PTR(-ENOMEM);
+> >> +       }
+> >> +
+> >> +       sync->rate = rate;
+> >> +       sync->max_rate = max_rate;
+> >> +
+> >> +       init.ops = &tegra_clk_sync_source_ops;
+> >> +       init.name = name;
+> >> +       init.flags = CLK_IS_ROOT;
+> >> +       init.parent_names = NULL;
+> >> +       init.num_parents = 0;
+> >> +
+> >> +       sync->hw.init = &init;
+> >> +
+> >> +       clk = clk_register(NULL, &sync->hw);
+> > 
+> > The above usage of "init" from stack may be a bit
+> > unfamilier. I can guess that its content is copied in clk_register()
+> > but it's originally defined in stack. So I just prefer to writing this
+> > as below. It may be somewhat explict that we know init is from stack.
+> 
+> The issue you mention is more about whether "init" is copied from the
+> stack or not; simplying changing the initialization to:
+> 
+> > struct clk *tegra_clk_sync_source(const char *name, unsigned long rate,
+> >                                  unsigned long max_rate)
+> > {
+> >         struct tegra_clk_sync_source *sync;
+> >         struct clk_init_data init = {
+> >                 .ops = &tegra_clk_sync_source_ops;
+> >                 .name = name;
+> >                 .flags = CLK_IS_ROOT;
+> >                 .parent_names = NULL;
+> >                 .num_parents = 0;
+> >         };
 
-ChangeLog v1->v2:
-- Add a Kconfig option named HAVE_BOOTMEM_INFO_NODE suggested by Michal, which
-  will be automatically selected by supported archs(currently only on x86_64).
----
- arch/x86/mm/init_64.c          |    2 +-
- include/linux/memory_hotplug.h |    6 ++++++
- mm/Kconfig                     |    8 ++++++++
- mm/memory_hotplug.c            |    2 ++
- 4 files changed, 17 insertions(+), 1 deletions(-)
+Also since "init" is allocated from stack, members are expected to be
+initialized *zero*. The last 2 lines are not necessary in the above.
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 07d6966..b539015 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -1317,7 +1317,7 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
- 	return 0;
- }
- 
--#ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
-+#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HAVE_BOOTMEM_INFO_NODE)
- void register_page_bootmem_memmap(unsigned long section_nr,
- 				  struct page *start_page, unsigned long size)
- {
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index f60e728..69903cc 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -174,7 +174,13 @@ static inline void arch_refresh_nodedata(int nid, pg_data_t *pgdat)
- #endif /* CONFIG_NUMA */
- #endif /* CONFIG_HAVE_ARCH_NODEDATA_EXTENSION */
- 
-+#ifdef CONFIG_HAVE_BOOTMEM_INFO_NODE
- extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
-+#else
-+static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
-+{
-+}
-+#endif
- extern void put_page_bootmem(struct page *page);
- extern void get_page_bootmem(unsigned long ingo, struct page *page,
- 			     unsigned long type);
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 278e3ab..f8c5799 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -162,10 +162,18 @@ config MOVABLE_NODE
- 	  Say Y here if you want to hotplug a whole node.
- 	  Say N here if you want kernel to use memory on all nodes evenly.
- 
-+#
-+# Only be set on architectures that have completely implemented memory hotplug
-+# feature. If you are not sure, don't touch it.
-+#
-+config HAVE_BOOTMEM_INFO_NODE
-+	def_bool n
-+
- # eventually, we can have this option just 'select SPARSEMEM'
- config MEMORY_HOTPLUG
- 	bool "Allow for memory hot-add"
- 	select MEMORY_ISOLATION
-+	select HAVE_BOOTMEM_INFO_NODE if X86_64
- 	depends on SPARSEMEM || X86_64_ACPI_NUMA
- 	depends on HOTPLUG && ARCH_ENABLE_MEMORY_HOTPLUG
- 	depends on (IA64 || X86 || PPC_BOOK3S_64 || SUPERH || S390)
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 8aa2b56..daf111f 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -189,6 +189,7 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
- }
- #endif
- 
-+#ifdef CONFIG_HAVE_BOOTMEM_INFO_NODE
- void register_page_bootmem_info_node(struct pglist_data *pgdat)
- {
- 	unsigned long i, pfn, end_pfn, nr_pages;
-@@ -230,6 +231,7 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
- 			register_page_bootmem_info_section(pfn);
- 	}
- }
-+#endif
- 
- static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
- 			   unsigned long end_pfn)
--- 
-1.7.1
+         struct clk_init_data init = {
+                 .ops = &tegra_clk_sync_source_ops;
+                 .name = name;
+                 .flags = CLK_IS_ROOT;
+         };
 
+> ... doesn't really address that, although it's a perfectly reasonable
+> change.
+> 
+> To address the copying issue, why not just add a comment:
+
+OK
+
+>        /*
+>         * This data pointed at by this field is copied by
+>         * clk_register(), so a pointer to the stack is OK.
+>         */
+>        sync->hw.init = &init;
+> 
+>        clk = clk_register(NULL, &sync->hw);
+> 
+> I'll make the other changes you suggested.
