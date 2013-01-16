@@ -1,126 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757974Ab3APAdC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:33:02 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:43383 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757237Ab3APAc7 (ORCPT
+	id S1757920Ab3APAdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:33:15 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:59492 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757809Ab3APAdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 19:32:59 -0500
+	Tue, 15 Jan 2013 19:33:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130115160957.9ef860d7.akpm@linux-foundation.org>
-References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
- <1357712474-27595-3-git-send-email-minchan@kernel.org> <20130109162602.53a60e77.akpm@linux-foundation.org>
- <20130110022306.GB14685@blaptop> <20130110135828.c88bcaf1.akpm@linux-foundation.org>
- <20130111044327.GB6183@blaptop> <20130115160957.9ef860d7.akpm@linux-foundation.org>
-From: Sonny Rao <sonnyrao@google.com>
-Date: Tue, 15 Jan 2013 16:32:38 -0800
-Message-ID: <CAPz6YkWC+y+jqD+0UNe+cD6OyveursZaahxc26mH81DOGD7sNw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm: forcely swapout when we are out of page cache
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Bryan Freed <bfreed@google.com>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Sameer Nanda <snanda@chromium.org>
+In-Reply-To: <1357731938-8417-1-git-send-email-glommer@parallels.com>
+References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
+Date: Tue, 15 Jan 2013 16:33:10 -0800
+Message-ID: <CAMbhsRQ7B4Uu1Wukfay+m4K7CVXtVbsTTEd6JHrwC2s+NcEFNA@mail.gmail.com>
+Subject: Re: [PATCH v5 00/11] per-cgroup cpu-stat
+From: Colin Cross <ccross@google.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: cgroups@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 4:09 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Fri, 11 Jan 2013 13:43:27 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
+On Wed, Jan 9, 2013 at 3:45 AM, Glauber Costa <glommer@parallels.com> wrote:
+> [ update: I thought I posted this already before leaving for holidays. However,
+>   now that I am checking for replies, I can't find nor replies nor the original
+>   mail in my boxes or archives. I am posting again for safety sake, but sorry
+>   you are getting this twice by any chance ]
 >
->> Hi Andrew,
->>
->> On Thu, Jan 10, 2013 at 01:58:28PM -0800, Andrew Morton wrote:
->> > On Thu, 10 Jan 2013 11:23:06 +0900
->> > Minchan Kim <minchan@kernel.org> wrote:
->> >
->> > > > I have a feeling that laptop mode has bitrotted and these patches are
->> > > > kinda hacking around as-yet-not-understood failures...
->> > >
->> > > Absolutely, this patch is last guard for unexpectable behavior.
->> > > As I mentioned in cover-letter, Luigi's problem could be solved either [1/2]
->> > > or [2/2] but I wanted to add this as last resort in case of unexpected
->> > > emergency. But you're right. It's not good to hide the problem like this path
->> > > so let's drop [2/2].
->> > >
->> > > Also, I absolutely agree it has bitrotted so for correcting it, we need a
->> > > volunteer who have to inverstigate power saveing experiment with long time.
->> > > So [1/2] would be band-aid until that.
->> >
->> > I'm inclined to hold off on 1/2 as well, really.
->>
->> Then, what's your plan?
+> Hi all,
 >
-> My plan is to sit here until someone gets down and fully tests and
-> fixes laptop-mode.  Making it work properly, reliably and as-designed.
+> This is an attempt to provide userspace with enough information to reconstruct
+> per-container version of files like "/proc/stat". In particular, we are
+> interested in knowing the per-cgroup slices of user time, system time, wait
+> time, number of processes, and a variety of statistics.
 >
+> This task is made more complicated by the fact that multiple controllers are
+> involved in collecting those statistics: cpu and cpuacct. So the first thing I
+> am doing here, is ressurecting Tejun's patches that aim at deprecating cpuacct.
+>
+> This is one of the major differences from earlier attempts: all data is provided
+> by the cpu controller, resulting in greater simplicity.
 
-I think we should agree on what the goals are first.
+Android userspace is currently using both cpu and cpuacct, and not
+co-mounting them.  They are used for fundamentally different uses such
+that creating a single hierarchy for both of them while maintaining
+the existing behavior is not possible.
 
-> Or perhaps someone wants to make the case that we just don't need it
-> any more (SSDs are silent!) and removes it all.
->
->> >
->> > The point of laptop_mode isn't to save power btw - it is to minimise
->> > the frequency with which the disk drive is spun up.  By deferring and
->> > then batching writeout operations, basically.
->>
->> I don't get it. Why should we minimise such frequency?
->
-> Because my laptop was going clickety every minute and was keeping me
-> awake.
->
+We use the cpu cgroup primarily as a priority container.  A simple
+view is that each thread is assigned to a foreground cgroup when it is
+user-visible, and a background cgroup when it is not.  The foreground
+cgroup is assigned a significantly higher cpu.shares value such that
+when each group is fully loaded the background group will get 5% and
+the foreground group will get 95%.
 
-Very interesting, I don't know if anyone realized that (or we just forgot) :-)
+We use the cpuacct cgroup to measure cpu usage per uid, primarily to
+estimate one cause of battery usage.  Each uid gets a cgroup, and when
+spawning a task for a new uid we put it in the appropriate cgroup.
 
->> It's for saving the power to increase batter life.
->
-> It might well have that effect, dunno.  That wasn't my intent.  Testing
-> needed!
->
+We could create a new uid cgroup for cpuacct inside the foreground and
+background cgroups used for scheduling, but that would drastically
+change the way scheduling works when multiple uids have active
+threads.  With separate cpu and cpuacct mounts, every active
+foreground thread will get equal cpu time.  With co-mounted cpu and
+cpuacct cgroups, cpu time will be shared between each accounting
+group, and then sub-shared inside that group.
 
-Power saving is certainly why we had it on originally for ChromeOS,
-but we turned it off due to misbehavior.
+A concrete example:
+Two uids, 1 and 2.  Uid 1 has one thread A, uid 2 has two threads B
+and C.  All threads are foreground and running continuously.
 
-Specifically, we saw a pathological behavior where we'd end up writing
-to the disk every few seconds when laptop mode was turned on.  This
-turned out to be because laptop-mode sets a timer which is used to
-check for new dirty data after the initial flush and writes that out
-before spinning the disk down, and on ChromeOS various chatty daemons
-on the system were logging and dirtying data more or less constantly
-so there was almost always something there to be written out.  So what
-ended up happening was that we'd need to do a read, then wake up the
-disk, and then keep writing every few seconds for a long period of
-time, which had the opposite effect from what we wanted.  The issues
-with zram swap just confirmed that we didn't want laptop mode.
+With separate cpu and cpuacct mounts, we have:
+/cpu/foreground/tasks:
+A
+B
+C
+/cpuacct/uid/1/tasks:
+A
+/cpuacct/uid/2/tasks:
+B
+C
 
-Most of our devices have had SSDs rather than spinning disks, so noise
-wasn't an issue, although when we finally did support an official
-device with a spinning disk people certainly complained when the disk
-started clicking all the time (due to the underflow in the writeback
-code).   We do know that current SSDs save a significant amount of
-power when they go into standby, so minimizing disk writes is still
-useful on these devices.
+A, B, and C each will get 33% of the cpu time.
 
-A very simple laptop mode which only does a single sync when we spin
-up the disk, and didn't bother with the timer behavior or muck with
-swap behavior might be something that is more useful for us, and I
-suspect it might simplify the writeback code somewhat as well.
+With co-mounted cpu and cpuacct mounts:
+/cpu/foreground/1/tasks:
+A
+/cpu/foreground/2/tasks
+B
+C
 
->> As I real all document about laptop_mode, they all said about the power
->> or battery life saving.
->>
->> 1. Documentation/laptops/laptop-mode.txt
->> 2. http://linux.die.net/man/8/laptop_mode
->> 3. http://samwel.tk/laptop_mode/
->> 3. http://www.thinkwiki.org/wiki/Laptop-mode
->
-> Documentation creep ;)
->
-> Ten years ago, gad: http://lwn.net/Articles/1652/
+A will get 50% of the cpu time, B and C will get 25% of the cpu time.
+I don't see any way to add new subgroups for accounting without
+partitioning the cpu time for each subgroup.
