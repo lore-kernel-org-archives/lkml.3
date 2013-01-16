@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757141Ab3APS5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 13:57:54 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:37006 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115Ab3APS5u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 13:57:50 -0500
-Date: Wed, 16 Jan 2013 13:57:44 -0500 (EST)
-Message-Id: <20130116.135744.697469565804508454.davem@davemloft.net>
-To: vapier@gentoo.org
-Cc: libc-alpha@sourceware.org, bhutchings@solarflare.com,
-        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
-        eblake@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
-        schwab@suse.de, carlos@systemhalted.org
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and
- <linux/in6.h>
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201301161205.04502.vapier@gentoo.org>
-References: <50F6B761.8070106@linux-ipv6.org>
-	<1358351232.2923.10.camel@bwh-desktop.uk.solarflarecom.com>
-	<201301161205.04502.vapier@gentoo.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1756998Ab3APS5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 13:57:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61170 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753828Ab3APS5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 13:57:49 -0500
+Date: Wed, 16 Jan 2013 13:57:41 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
+        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+Message-ID: <20130116185741.GA3038@redhat.com>
+References: <871udloiku.fsf@xmission.com>
+ <1358312159.4593.37.camel@falcor1>
+ <87wqvdli1o.fsf@xmission.com>
+ <1358344859.4593.66.camel@falcor1>
+ <20130116144836.GB29845@redhat.com>
+ <1358350391.4593.112.camel@falcor1>
+ <20130116155406.GC29845@redhat.com>
+ <1358357079.4593.135.camel@falcor1>
+ <20130116182146.GE29845@redhat.com>
+ <1358361912.4593.162.camel@falcor1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358361912.4593.162.camel@falcor1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 16 Jan 2013 12:04:56 -0500
+On Wed, Jan 16, 2013 at 01:45:12PM -0500, Mimi Zohar wrote:
 
-> certainly true, but the current expectation is that you don't mix your ABIs.  
-> if you're programming with the C library API, then use the C library headers.  
-> if you're banging directly on the kernel, then use the kernel headers.  not 
-> saying it's a perfect solution, but it works for the vast majority of use 
-> cases.
+[..]
+> > Given the fact that signatures are stored in extended attributes, to me
+> > the only way to sign executables in current IMA framework would to be
+> > prepare file system image at build server and ship that image. And
+> > then installer simply mounts that image (after making sure that proper
+> > verification keys have been loaded in kernel).
+> 
+> That is one scenario.  Another scenario is to update packages to include
+> extended attributes and to write those extended attributes on
+> installation.
 
-This isn't how real life works.
+Ok, that's the point I am missing. So I can sign a file and signatures
+are in a separate file. And these signatures are installed in extended
+attributes at file installation time (IOW rpm installation time) on
+target.
 
-GLIBC itself brings in some of the kernel headers, as do various library
-headers for libraries other than glibc.
+If all this works, this sounds reasonable so far. Except the point of
+disabling ptrace and locking down memory. 
 
-So you can get these conflicting headers included indirectly, and it is
-of no fault of any of the various parties involved.
+So what's the state of above work. Is there something I can play with.
 
-We have to make them work when included at the same time somehow, and
-this is totally unavoidable.
+Thanks
+Vivek
