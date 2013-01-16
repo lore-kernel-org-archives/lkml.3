@@ -1,142 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815Ab3APPIo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:08:44 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:60798 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756652Ab3APPIl (ORCPT
+	id S1756842Ab3APPIv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:08:51 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:33752 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756391Ab3APPIu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:08:41 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH] f2fs: add __init to functions in init_f2fs_fs
-Date: Thu, 17 Jan 2013 00:08:30 +0900
-Message-Id: <1358348911-8962-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 16 Jan 2013 10:08:50 -0500
+Date: Wed, 16 Jan 2013 15:08:49 +0000
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 17/22] sched: packing small tasks in wake/exec
+ balancing
+Message-ID: <20130116150849.GB30805@e103034-lin>
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
+ <1357375071-11793-18-git-send-email-alex.shi@intel.com>
+ <20130110171728.GG2046@e103034-lin>
+ <50EF8B37.7050404@intel.com>
+ <20130114170048.GB8528@e103034-lin>
+ <50F657A1.1080102@intel.com>
+MIME-Version: 1.0
+In-Reply-To: <50F657A1.1080102@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 16 Jan 2013 15:08:41.0629 (UTC) FILETIME=[5ECA9CD0:01CDF3FB]
+X-MC-Unique: 113011615084409401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Wed, Jan 16, 2013 at 07:32:49AM +0000, Alex Shi wrote:
+> On 01/15/2013 01:00 AM, Morten Rasmussen wrote:
+> >>> Why multiply rq->util by nr_running?
+> >>> > > 
+> >>> > > Let's take an example where rq->util = 50, nr_running = 2, and putil =
+> >>> > > 10. In this case the value of putil doesn't really matter as vacancy
+> >>> > > would be negative anyway since FULL_UTIL - rq->util * nr_running is -1.
+> >>> > > However, with rq->util = 50 there should be plenty of spare cpu time to
+> >>> > > take another task.
+> >> > 
+> >> > for this example, the util is not full maybe due to it was just wake up,
+> >> > it still is possible like to run full time. So, I try to give it the
+> >> > large guess load.
+> > I don't see why rq->util should be treated different depending on the
+> > number of tasks causing the load. rq->util = 50 means that the cpu is
+> > busy about 50% of the time no matter how many tasks contibute to that
+> > load.
+> > 
+> > If nr_running = 1 instead in my example, you would consider the cpu
+> > vacant if putil = 6, but if nr_running > 1 you would not. Why should the
+> > two scenarios be treated differently?
+> > 
+> >>> > > 
+> >>> > > Also, why multiply putil by 8? rq->util must be very close to 0 for
+> >>> > > vacancy to be positive if putil is close to 12 (12.5%).
+> >> > 
+> >> > just want to pack small util tasks, since packing is possible to hurt
+> >> > performance.
+> > I agree that packing may affect performance. But why don't you reduce
+> > FULL_UTIL instead of multiplying by 8? With current expression you will
+> > not pack a 10% task if rq->util = 20 and nr_running = 1, but you would
+> > pack a 6% task even if rq->util = 50 and the resulting cpu load is much
+> > higher.
+> > 
+> 
+> Yes, the threshold has no strong theory or experiment support. I had
+> tried cyclitest which Vicent used, the case's load avg is too small to
+> be caught. so just use half of Vicent value as 12.5%. If you has more
+> reasonable value, let me know.
+> 
+> As to nr_running engaged as multiple mode. it's base on 2 reasons.
+> 1, load avg/util need 345ms to accumulate as 100%. so, if a tasks is
+> cost full cpu time, it still has 345ms with rq->util < 1.
 
-Add __init to functions in init_f2fs_fs for code consistency.
+I agree that load avg may not be accurate, especially for new tasks. But
+why use it if you don't trust its value anyway?
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- fs/f2fs/checkpoint.c |    2 +-
- fs/f2fs/f2fs.h       |   10 +++++-----
- fs/f2fs/gc.c         |    2 +-
- fs/f2fs/node.c       |    2 +-
- fs/f2fs/super.c      |    2 +-
- 5 files changed, 9 insertions(+), 9 deletions(-)
+The load avg (sum/period) of a new task will reach 100% instantly if the
+task is consuming all the cpu time it can get. An old task can reach 50%
+within 32ms. So you should fairly quickly be able to see if it is a
+light task or not. You may under-estimate its load in the beginning, but
+only for a very short time.
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index d75c86a..ff3c843 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -771,7 +771,7 @@ void init_orphan_info(struct f2fs_sb_info *sbi)
- 	sbi->n_orphans = 0;
- }
- 
--int create_checkpoint_caches(void)
-+int __init create_checkpoint_caches(void)
- {
- 	orphan_entry_slab = f2fs_kmem_cache_create("f2fs_orphan_entry",
- 			sizeof(struct orphan_inode_entry), NULL);
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 976325d..c8e2d75 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -914,7 +914,7 @@ int restore_node_summary(struct f2fs_sb_info *, unsigned int,
- void flush_nat_entries(struct f2fs_sb_info *);
- int build_node_manager(struct f2fs_sb_info *);
- void destroy_node_manager(struct f2fs_sb_info *);
--int create_node_manager_caches(void);
-+int __init create_node_manager_caches(void);
- void destroy_node_manager_caches(void);
- 
- /*
-@@ -966,7 +966,7 @@ void sync_dirty_dir_inodes(struct f2fs_sb_info *);
- void block_operations(struct f2fs_sb_info *);
- void write_checkpoint(struct f2fs_sb_info *, bool, bool);
- void init_orphan_info(struct f2fs_sb_info *);
--int create_checkpoint_caches(void);
-+int __init create_checkpoint_caches(void);
- void destroy_checkpoint_caches(void);
- 
- /*
-@@ -988,7 +988,7 @@ void stop_gc_thread(struct f2fs_sb_info *);
- block_t start_bidx_of_node(unsigned int);
- int f2fs_gc(struct f2fs_sb_info *);
- void build_gc_manager(struct f2fs_sb_info *);
--int create_gc_caches(void);
-+int __init create_gc_caches(void);
- void destroy_gc_caches(void);
- 
- /*
-@@ -1060,7 +1060,7 @@ struct f2fs_stat_info {
- 
- int f2fs_build_stats(struct f2fs_sb_info *);
- void f2fs_destroy_stats(struct f2fs_sb_info *);
--void f2fs_create_root_stats(void);
-+void __init f2fs_create_root_stats(void);
- void f2fs_destroy_root_stats(void);
- #else
- #define stat_inc_call_count(si)
-@@ -1071,7 +1071,7 @@ void f2fs_destroy_root_stats(void);
- 
- static inline int f2fs_build_stats(struct f2fs_sb_info *sbi) { return 0; }
- static inline void f2fs_destroy_stats(struct f2fs_sb_info *sbi) { }
--static inline void f2fs_create_root_stats(void) { }
-+static inline void __init f2fs_create_root_stats(void) { }
- static inline void f2fs_destroy_root_stats(void) { }
- #endif
- 
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index b4dd90c..809cfec 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -697,7 +697,7 @@ void build_gc_manager(struct f2fs_sb_info *sbi)
- 	DIRTY_I(sbi)->v_ops = &default_v_ops;
- }
- 
--int create_gc_caches(void)
-+int __init create_gc_caches(void)
- {
- 	winode_slab = f2fs_kmem_cache_create("f2fs_gc_inodes",
- 			sizeof(struct inode_entry), NULL);
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 5066bfd..f177c01 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1732,7 +1732,7 @@ void destroy_node_manager(struct f2fs_sb_info *sbi)
- 	kfree(nm_i);
- }
- 
--int create_node_manager_caches(void)
-+int __init create_node_manager_caches(void)
- {
- 	nat_entry_slab = f2fs_kmem_cache_create("nat_entry",
- 			sizeof(struct nat_entry), NULL);
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index d551a72..37fad04 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -640,7 +640,7 @@ static struct file_system_type f2fs_fs_type = {
- 	.fs_flags	= FS_REQUIRES_DEV,
- };
- 
--static int init_inodecache(void)
-+static int __init init_inodecache(void)
- {
- 	f2fs_inode_cachep = f2fs_kmem_cache_create("f2fs_inode_cache",
- 			sizeof(struct f2fs_inode_info), NULL);
--- 
-1.7.9.5
+> 2, if there are more tasks, like 2 tasks running on one cpu, it's
+> possible to has capacity to burn 200% cpu time, while the biggest
+> rq->util is still 100%.
+
+If you want to have a better metric for how much cpu time the task on
+the runqueue could potentially use, I would suggest using
+cfs_rq->runnable_load_avg which is the load_avg_contrib sum of all tasks
+on the runqueue. It would give you 200% in your example above.
+
+On the other hand, I think rq->util is fine for this purpose. If
+rq->util < 100% you know for sure that cpu is not fully utilized no
+matter how many tasks you have on the runqueue. So as long as rq->util
+is well below 100% (like < 50%) it should be safe to pack more small
+tasks on that cpu even if it has multiple tasks running already.
+
+> 
+> Consider to figure out precise utils is complicate and cost much. I do
+> this simple calculation. It is not very precise, but it is efficient and
+> more bias toward performance.
+
+It is indeed very biased towards performance. I would prefer more focus
+on saving power in a power scheduling policy :)
+
+Morten
+
+> 
+> -- 
+> Thanks Alex
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
