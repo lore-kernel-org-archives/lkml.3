@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab3APJgT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 04:36:19 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:58646 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756294Ab3APJgR (ORCPT
+	id S1758925Ab3APJkp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 04:40:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:33775 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758785Ab3APJkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 04:36:17 -0500
-Message-ID: <50F673F2.4070201@openwrt.org>
-Date: Wed, 16 Jan 2013 10:33:38 +0100
-From: Florian Fainelli <florian@openwrt.org>
-Organization: OpenWrt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Lasse Collin <lasse.collin@tukaani.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] decompressors: make the default XZ_BCJ_* config match
- the selected architecture
-References: <1358266931-23401-1-git-send-email-florian@openwrt.org> <1358266931-23401-2-git-send-email-florian@openwrt.org> <20130115201117.5ce0a690@tukaani.org>
-In-Reply-To: <20130115201117.5ce0a690@tukaani.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jan 2013 04:40:42 -0500
+From: hamo@canonical.com
+To: viro@zeniv.linux.org.uk
+Cc: hamo.by@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] update comments to fit the current code
+Date: Wed, 16 Jan 2013 17:40:24 +0800
+Message-Id: <1358329224-6500-1-git-send-email-hamo@canonical.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2013 07:11 PM, Lasse Collin wrote:
-> On 2013-01-15 Florian Fainelli wrote:
->> This patch changes the defautl XZ_BCJ_* config symbol to match the
->> configured architecture. It is perfectly legitimate to support
->> multiple XZ BCJ filters for different architectures (e.g.: to mount
->> foreign squashfs/xz compressed filesystems), it is however more
->> natural not to select them all by default, but only the one matching
->> the configured architecture.
-> I don't have a strong opinion on what is the best default setting, so
-> it's fine to me that the default is changed if that's what people
-> prefer.
+From: Yang Bai <hamo.by@gmail.com>
 
-I think it does make sense to have the default match the configured 
-architecture, as it is very likely going to be used for that purpose.
+Since fs/super.c has changed a lot and fs/namespace.c appears, the
+comments at the head of the files do not match the code.
+---
+ fs/namespace.c | 4 ++++
+ fs/super.c     | 7 +------
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
->
->>   config XZ_DEC_X86
->>   	bool "x86 BCJ filter decoder" if EXPERT
->> -	default y
->> +	default y if X86
->>   	select XZ_DEC_BCJ
-> [...]
->
-> I think the "if EXPERT" strings should be dropped when all BCJ filters
-> aren't enabled by default. One should be able to enable all filters
-> without enabling EXPERT.
-Ok, this would probably be a third patch, since my two patches basically 
-just modify what was already there, but I agree with you, even though 
-EXPERT is enabled by default on most architectures and defconfigs.
---
-Florian
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 55605c5..238a09c 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -4,6 +4,10 @@
+  * (C) Copyright Al Viro 2000, 2001
+  *	Released under GPL v2.
+  *
++ *  namespace.c contains code to handle: - mount system call
++ *                                       - umount system call
++ *                                       - pivot_root system call
++ *
+  * Based on code from fs/super.c, copyright Linus Torvalds and others.
+  * Heavily rewritten.
+  */
+diff --git a/fs/super.c b/fs/super.c
+index 12f1237..ebe411d 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -3,12 +3,7 @@
+  *
+  *  Copyright (C) 1991, 1992  Linus Torvalds
+  *
+- *  super.c contains code to handle: - mount structures
+- *                                   - super-block tables
+- *                                   - filesystem drivers list
+- *                                   - mount system call
+- *                                   - umount system call
+- *                                   - ustat system call
++ *  super.c contains code to handle: - super-block tables
+  *
+  * GK 2/5/95  -  Changed to support mounting the root fs via NFS
+  *
+-- 
+1.8.1.1
+
