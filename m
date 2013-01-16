@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab3APNaf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:30:35 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8183 "EHLO
+	id S1757649Ab3APNaq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:30:46 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8194 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104Ab3APNab (ORCPT
+	with ESMTP id S1754104Ab3APNak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:30:31 -0500
+	Wed, 16 Jan 2013 08:30:40 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 16 Jan 2013 05:29:19 -0800
+	by hqnvupgp05.nvidia.com on Wed, 16 Jan 2013 05:30:36 -0800
 From: Venu Byravarasu <vbyravarasu@nvidia.com>
 To: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <stern@rowland.harvard.edu>
 CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <swarren@wwwdotorg.org>, <linux-doc@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>,
         Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH 2/4] USB: PHY: Get rid of instance number to differentiate legacy controller
-Date: Wed, 16 Jan 2013 19:00:20 +0530
-Message-ID: <1358343022-28919-3-git-send-email-vbyravarasu@nvidia.com>
+Subject: [PATCH 4/4] usb: Add APIs to access host registers from Tegra PHY
+Date: Wed, 16 Jan 2013 19:00:22 +0530
+Message-ID: <1358343022-28919-5-git-send-email-vbyravarasu@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1358343022-28919-1-git-send-email-vbyravarasu@nvidia.com>
 References: <1358343022-28919-1-git-send-email-vbyravarasu@nvidia.com>
@@ -27,164 +27,250 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra20 USB has 3 PHY instances. Instance 0 is based on
-legacy PHY interface and other two are standard interfaces.
-
-As instance number was used to differentiate legacy from
-standard interfaces, used DT param to get this info and
-processed accordingly.
+As Tegra PHY driver needs to access one of the Host registers,
+added few APIs.
 
 Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 ---
- drivers/usb/phy/tegra_usb_phy.c   |   32 +++++++++++++++-----------------
- include/linux/usb/tegra_usb_phy.h |    1 +
- 2 files changed, 16 insertions(+), 17 deletions(-)
+ drivers/usb/host/ehci-tegra.c     |   71 ++++++++++++++++++++++++++++++++++++-
+ drivers/usb/phy/tegra_usb_phy.c   |   51 +++++++--------------------
+ include/linux/usb/tegra_usb_phy.h |    6 +++
+ 3 files changed, 89 insertions(+), 39 deletions(-)
 
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index 55a9cde..5299b01 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -2,7 +2,7 @@
+  * EHCI-compliant USB host controller driver for NVIDIA Tegra SoCs
+  *
+  * Copyright (C) 2010 Google, Inc.
+- * Copyright (C) 2009 NVIDIA Corporation
++ * Copyright (C) 2009 - 2013 NVIDIA Corporation
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -33,6 +33,20 @@
+ #define TEGRA_USB2_BASE			0xC5004000
+ #define TEGRA_USB3_BASE			0xC5008000
+ 
++/* PORTSC registers */
++#define USB_PORTSC1			0x184
++#define USB_PORTSC1_PTS(x)	(((x) & 0x3) << 30)
++#define USB_PORTSC1_PSPD(x)	(((x) & 0x3) << 26)
++#define USB_PORTSC1_PHCD	(1 << 23)
++#define USB_PORTSC1_WKOC	(1 << 22)
++#define USB_PORTSC1_WKDS	(1 << 21)
++#define USB_PORTSC1_WKCN	(1 << 20)
++#define USB_PORTSC1_PTC(x)	(((x) & 0xf) << 16)
++#define USB_PORTSC1_PP		(1 << 12)
++#define USB_PORTSC1_SUSP	(1 << 7)
++#define USB_PORTSC1_PE		(1 << 2)
++#define USB_PORTSC1_CCS		(1 << 0)
++
+ #define TEGRA_USB_DMA_ALIGN 32
+ 
+ struct tegra_ehci_hcd {
+@@ -605,6 +619,50 @@ static const struct dev_pm_ops tegra_ehci_pm_ops = {
+ 
+ #endif
+ 
++void tegra_ehci_set_wakeon_events(struct usb_phy *x, bool enable)
++{
++	unsigned long val;
++	struct usb_hcd *hcd = bus_to_hcd(x->otg->host);
++	void __iomem *base = hcd->regs;
++	u32 wake = USB_PORTSC1_WKOC | USB_PORTSC1_WKDS | USB_PORTSC1_WKCN;
++
++	val = readl(base + USB_PORTSC1);
++	if (enable)
++		val |= wake;
++	else
++		val &= ~wake;
++	writel(val, base + USB_PORTSC1);
++}
++EXPORT_SYMBOL_GPL(tegra_ehci_set_wakeon_events);
++
++void tegra_ehci_set_pts(struct usb_phy *x, u8 pts_val)
++{
++	unsigned long val;
++	struct usb_hcd *hcd = bus_to_hcd(x->otg->host);
++	void __iomem *base = hcd->regs;
++
++	val = readl(base + USB_PORTSC1);
++	val &= ~USB_PORTSC1_PTS(3);
++	val |= USB_PORTSC1_PTS(pts_val & 3);
++	writel(val, base + USB_PORTSC1);
++}
++EXPORT_SYMBOL_GPL(tegra_ehci_set_pts);
++
++void tegra_ehci_set_phcd(struct usb_phy *x, bool enable)
++{
++	unsigned long val;
++	struct usb_hcd *hcd = bus_to_hcd(x->otg->host);
++	void __iomem *base = hcd->regs;
++
++	val = readl(base + USB_PORTSC1);
++	if (enable)
++		val |= USB_PORTSC1_PHCD;
++	else
++		val &= ~USB_PORTSC1_PHCD;
++	writel(val, base + USB_PORTSC1);
++}
++EXPORT_SYMBOL_GPL(tegra_ehci_set_phcd);
++
+ static u64 tegra_ehci_dma_mask = DMA_BIT_MASK(32);
+ 
+ static int tegra_ehci_probe(struct platform_device *pdev)
+@@ -616,6 +674,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	int err = 0;
+ 	int irq;
+ 	int instance = pdev->id;
++	struct usb_phy *u_phy;
+ 
+ 	pdata = pdev->dev.platform_data;
+ 	if (!pdata) {
+@@ -718,6 +777,16 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 
+ 	usb_phy_init(&tegra->phy->u_phy);
+ 
++	hcd->phy = u_phy = &tegra->phy->u_phy;
++	u_phy->otg = devm_kzalloc(&pdev->dev, sizeof(struct usb_otg),
++			     GFP_KERNEL);
++	if (!u_phy->otg) {
++		dev_err(&pdev->dev, "Failed to alloc memory for otg\n");
++		err = -ENOMEM;
++		goto fail_io;
++	}
++	u_phy->otg->host = hcd_to_bus(hcd);
++
+ 	err = usb_phy_set_suspend(&tegra->phy->u_phy, 0);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "Failed to power on the phy\n");
 diff --git a/drivers/usb/phy/tegra_usb_phy.c b/drivers/usb/phy/tegra_usb_phy.c
-index 3059384..79280fe 100644
+index ce1ff2a..f3b73b3 100644
 --- a/drivers/usb/phy/tegra_usb_phy.c
 +++ b/drivers/usb/phy/tegra_usb_phy.c
-@@ -24,6 +24,7 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/gpio.h>
-+#include <linux/of.h>
- #include <linux/of_gpio.h>
- #include <linux/usb/otg.h>
- #include <linux/usb/ulpi.h>
-@@ -221,7 +222,7 @@ static int utmip_pad_open(struct tegra_usb_phy *phy)
- 		return PTR_ERR(phy->pad_clk);
- 	}
+@@ -36,19 +36,6 @@
  
--	if (phy->instance == 0) {
-+	if (phy->is_legacy_phy) {
- 		phy->pad_regs = phy->regs;
- 	} else {
- 		phy->pad_regs = ioremap(TEGRA_USB_BASE, TEGRA_USB_SIZE);
-@@ -236,7 +237,7 @@ static int utmip_pad_open(struct tegra_usb_phy *phy)
+ #define ULPI_VIEWPORT		0x170
  
- static void utmip_pad_close(struct tegra_usb_phy *phy)
- {
--	if (phy->instance != 0)
-+	if (!phy->is_legacy_phy)
- 		iounmap(phy->pad_regs);
- 	clk_put(phy->pad_clk);
- }
-@@ -305,7 +306,7 @@ static void utmi_phy_clk_disable(struct tegra_usb_phy *phy)
- 	unsigned long val;
- 	void __iomem *base = phy->regs;
- 
--	if (phy->instance == 0) {
-+	if (phy->is_legacy_phy) {
- 		val = readl(base + USB_SUSP_CTRL);
- 		val |= USB_SUSP_SET;
- 		writel(val, base + USB_SUSP_CTRL);
-@@ -315,9 +316,7 @@ static void utmi_phy_clk_disable(struct tegra_usb_phy *phy)
+-#define USB_PORTSC1		0x184
+-#define   USB_PORTSC1_PTS(x)	(((x) & 0x3) << 30)
+-#define   USB_PORTSC1_PSPD(x)	(((x) & 0x3) << 26)
+-#define   USB_PORTSC1_PHCD	(1 << 23)
+-#define   USB_PORTSC1_WKOC	(1 << 22)
+-#define   USB_PORTSC1_WKDS	(1 << 21)
+-#define   USB_PORTSC1_WKCN	(1 << 20)
+-#define   USB_PORTSC1_PTC(x)	(((x) & 0xf) << 16)
+-#define   USB_PORTSC1_PP	(1 << 12)
+-#define   USB_PORTSC1_SUSP	(1 << 7)
+-#define   USB_PORTSC1_PE	(1 << 2)
+-#define   USB_PORTSC1_CCS	(1 << 0)
+-
+ #define USB_SUSP_CTRL		0x400
+ #define   USB_WAKE_ON_CNNT_EN_DEV	(1 << 3)
+ #define   USB_WAKE_ON_DISCON_EN_DEV	(1 << 4)
+@@ -311,11 +298,8 @@ static void utmi_phy_clk_disable(struct tegra_usb_phy *phy)
  		val = readl(base + USB_SUSP_CTRL);
  		val &= ~USB_SUSP_SET;
  		writel(val, base + USB_SUSP_CTRL);
+-	} else {
+-		val = readl(base + USB_PORTSC1);
+-		val |= USB_PORTSC1_PHCD;
+-		writel(val, base + USB_PORTSC1);
 -	}
--
--	if (phy->instance == 2) {
-+	} else {
- 		val = readl(base + USB_PORTSC1);
- 		val |= USB_PORTSC1_PHCD;
- 		writel(val, base + USB_PORTSC1);
-@@ -332,7 +331,7 @@ static void utmi_phy_clk_enable(struct tegra_usb_phy *phy)
- 	unsigned long val;
- 	void __iomem *base = phy->regs;
++	} else
++		tegra_ehci_set_phcd(&phy->u_phy, true);
  
--	if (phy->instance == 0) {
-+	if (phy->is_legacy_phy) {
- 		val = readl(base + USB_SUSP_CTRL);
- 		val |= USB_SUSP_CLR;
- 		writel(val, base + USB_SUSP_CTRL);
-@@ -342,9 +341,7 @@ static void utmi_phy_clk_enable(struct tegra_usb_phy *phy)
+ 	if (utmi_wait_register(base + USB_SUSP_CTRL, USB_PHY_CLK_VALID, 0) < 0)
+ 		pr_err("%s: timeout waiting for phy to stabilize\n", __func__);
+@@ -336,11 +320,8 @@ static void utmi_phy_clk_enable(struct tegra_usb_phy *phy)
  		val = readl(base + USB_SUSP_CTRL);
  		val &= ~USB_SUSP_CLR;
  		writel(val, base + USB_SUSP_CTRL);
+-	} else {
+-		val = readl(base + USB_PORTSC1);
+-		val &= ~USB_PORTSC1_PHCD;
+-		writel(val, base + USB_PORTSC1);
 -	}
--
--	if (phy->instance == 2) {
-+	} else {
- 		val = readl(base + USB_PORTSC1);
- 		val &= ~USB_PORTSC1_PHCD;
- 		writel(val, base + USB_PORTSC1);
-@@ -365,7 +362,7 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
- 	val |= UTMIP_RESET;
- 	writel(val, base + USB_SUSP_CTRL);
++	} else
++		tegra_ehci_set_phcd(&phy->u_phy, false);
  
--	if (phy->instance == 0) {
-+	if (phy->is_legacy_phy) {
- 		val = readl(base + USB1_LEGACY_CTRL);
- 		val |= USB1_NO_LEGACY_MODE;
- 		writel(val, base + USB1_LEGACY_CTRL);
-@@ -440,16 +437,14 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
- 	val |= UTMIP_BIAS_PDTRK_COUNT(0x5);
- 	writel(val, base + UTMIP_BIAS_CFG1);
- 
--	if (phy->instance == 0) {
-+	if (phy->is_legacy_phy) {
- 		val = readl(base + UTMIP_SPARE_CFG0);
- 		if (phy->mode == TEGRA_USB_PHY_MODE_DEVICE)
- 			val &= ~FUSE_SETUP_SEL;
- 		else
- 			val |= FUSE_SETUP_SEL;
- 		writel(val, base + UTMIP_SPARE_CFG0);
--	}
--
--	if (phy->instance == 2) {
-+	} else {
- 		val = readl(base + USB_SUSP_CTRL);
- 		val |= UTMIP_PHY_ENABLE;
- 		writel(val, base + USB_SUSP_CTRL);
-@@ -459,7 +454,7 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
- 	val &= ~UTMIP_RESET;
- 	writel(val, base + USB_SUSP_CTRL);
- 
--	if (phy->instance == 0) {
-+	if (phy->is_legacy_phy) {
- 		val = readl(base + USB1_LEGACY_CTRL);
- 		val &= ~USB1_VBUS_SENSE_CTL_MASK;
- 		val |= USB1_VBUS_SENSE_CTL_A_SESS_VLD;
-@@ -472,7 +467,7 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
+ 	if (utmi_wait_register(base + USB_SUSP_CTRL, USB_PHY_CLK_VALID,
+ 						     USB_PHY_CLK_VALID))
+@@ -462,11 +443,8 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
  
  	utmi_phy_clk_enable(phy);
  
--	if (phy->instance == 2) {
-+	if (!phy->is_legacy_phy) {
- 		val = readl(base + USB_PORTSC1);
- 		val &= ~USB_PORTSC1_PTS(~0);
- 		writel(val, base + USB_PORTSC1);
-@@ -739,6 +734,7 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
- 	unsigned long parent_rate;
- 	int i;
- 	int err;
-+	struct device_node *np = dev->of_node;
+-	if (!phy->is_legacy_phy) {
+-		val = readl(base + USB_PORTSC1);
+-		val &= ~USB_PORTSC1_PTS(~0);
+-		writel(val, base + USB_PORTSC1);
+-	}
++	if (!phy->is_legacy_phy)
++		tegra_ehci_set_pts(&phy->u_phy, 0);
  
- 	phy = kzalloc(sizeof(struct tegra_usb_phy), GFP_KERNEL);
- 	if (!phy)
-@@ -749,6 +745,8 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
- 	phy->config = config;
- 	phy->mode = phy_mode;
+ 	return 0;
+ }
+@@ -611,10 +589,7 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
+ 		return ret;
+ 	}
+ 
+-	val = readl(base + USB_PORTSC1);
+-	val |= USB_PORTSC1_WKOC | USB_PORTSC1_WKDS | USB_PORTSC1_WKCN;
+-	writel(val, base + USB_PORTSC1);
+-
++	tegra_ehci_set_wakeon_events(&phy->u_phy, true);
+ 	val = readl(base + USB_SUSP_CTRL);
+ 	val |= USB_SUSP_CLR;
+ 	writel(val, base + USB_SUSP_CTRL);
+@@ -629,17 +604,12 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
+ 
+ static int ulpi_phy_power_off(struct tegra_usb_phy *phy)
+ {
+-	unsigned long val;
+-	void __iomem *base = phy->regs;
+ 	struct tegra_ulpi_config *config = phy->config;
+ 
+ 	/* Clear WKCN/WKDS/WKOC wake-on events that can cause the USB
+ 	 * Controller to immediately bring the ULPI PHY out of low power
+ 	 */
+-	val = readl(base + USB_PORTSC1);
+-	val &= ~(USB_PORTSC1_WKOC | USB_PORTSC1_WKDS | USB_PORTSC1_WKCN);
+-	writel(val, base + USB_PORTSC1);
+-
++	tegra_ehci_set_wakeon_events(&phy->u_phy, false);
+ 	clk_disable(phy->clk);
+ 	return gpio_direction_output(config->reset_gpio, 0);
+ }
+@@ -742,6 +712,11 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
  	phy->dev = dev;
-+	phy->is_legacy_phy =
-+		of_property_read_bool(np, "nvidia,has-legacy-mode");
+ 	phy->is_legacy_phy =
+ 		of_property_read_bool(np, "nvidia,has-legacy-mode");
++	err = of_property_match_string(np, "phy_type", "ulpi");
++	if (err < 0)
++		phy->is_ulpi_phy = false;
++	else
++		phy->is_ulpi_phy = true;
  
  	if (!phy->config) {
- 		if (phy_is_ulpi(phy)) {
+ 		if (phy->is_ulpi_phy) {
 diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
-index 34e6355..f03e157 100644
+index a6a89d4..d5f695b 100644
 --- a/include/linux/usb/tegra_usb_phy.h
 +++ b/include/linux/usb/tegra_usb_phy.h
-@@ -59,6 +59,7 @@ struct tegra_usb_phy {
- 	struct usb_phy *ulpi;
- 	struct usb_phy u_phy;
- 	struct device *dev;
-+	bool is_legacy_phy;
- };
+@@ -75,4 +75,10 @@ void tegra_ehci_phy_restore_start(struct tegra_usb_phy *phy,
  
- struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
+ void tegra_ehci_phy_restore_end(struct tegra_usb_phy *phy);
+ 
++void tegra_ehci_set_wakeon_events(struct usb_phy *x, bool enable);
++
++void tegra_ehci_set_pts(struct usb_phy *x, u8 pts_val);
++
++void tegra_ehci_set_phcd(struct usb_phy *x, bool enable);
++
+ #endif /* __TEGRA_USB_PHY_H */
 -- 
 1.7.0.4
 
