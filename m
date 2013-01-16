@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab3APIPe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 03:15:34 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:22925 "EHLO song.cn.fujitsu.com"
+	id S1758619Ab3APIPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 03:15:31 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56045 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758479Ab3APIPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 03:15:32 -0500
+	id S1753963Ab3APIP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 03:15:29 -0500
 X-IronPort-AV: E=Sophos;i="4.84,478,1355068800"; 
-   d="scan'208";a="6598688"
+   d="scan'208";a="6598686"
 From: Lin Feng <linfeng@cn.fujitsu.com>
 To: akpm@linux-foundation.org, mhocko@suse.cz, linux-mm@kvack.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, jbeulich@suse.com,
@@ -23,101 +23,62 @@ Cc: x86@kernel.org, linux390@de.ibm.com, linux-ia64@vger.kernel.org,
         linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         linfeng@cn.fujitsu.com, tangchen@cn.fujitsu.com
-Subject: [PATCH 2/2] memory-hotplug: cleanup: removing the arch specific functions without any implementation
-Date: Wed, 16 Jan 2013 16:14:19 +0800
-Message-Id: <1358324059-9608-3-git-send-email-linfeng@cn.fujitsu.com>
+Subject: [PATCH v3 0/2] memory-hotplug: introduce CONFIG_HAVE_BOOTMEM_INFO_NODE and revert register_page_bootmem_info_node() when platform not support
+Date: Wed, 16 Jan 2013 16:14:17 +0800
+Message-Id: <1358324059-9608-1-git-send-email-linfeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1358324059-9608-1-git-send-email-linfeng@cn.fujitsu.com>
-References: <1358324059-9608-1-git-send-email-linfeng@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/16 16:14:43,
+ 2013/01/16 16:14:39,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/16 16:14:44,
-	Serialize complete at 2013/01/16 16:14:44
+ 2013/01/16 16:14:41,
+	Serialize complete at 2013/01/16 16:14:41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Hocko <mhocko@suse.cz>
+Memory-hotplug codes for x86_64 have been implemented by patchset:
+https://lkml.org/lkml/2013/1/9/124
+While other platforms haven't been completely implemented yet.
 
-After introducing CONFIG_HAVE_BOOTMEM_INFO_NODE Kconfig option, the related arch
-specific functions become confusing, remove them.
+If we enable both CONFIG_MEMORY_HOTPLUG_SPARSE and CONFIG_SPARSEMEM_VMEMMAP,
+register_page_bootmem_info_node() may be buggy, which is a hotplug generic
+function but falling back to call platform related function
+register_page_bootmem_memmap().
 
-Guys who want to implement memory-hotplug feature on such archs for this part
-should look into register_page_bootmem_info_node() and flesh out from top to
-end.
+Other platforms such as powerpc it's not implemented, so on such platforms,
+revert them to empty as they were before.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
----
- arch/ia64/mm/discontig.c  |    5 -----
- arch/powerpc/mm/init_64.c |    5 -----
- arch/s390/mm/vmem.c       |    6 ------
- arch/sparc/mm/init_64.c   |    5 -----
- 4 files changed, 0 insertions(+), 21 deletions(-)
+It's implemented by adding a new Kconfig option named
+CONFIG_HAVE_BOOTMEM_INFO_NODE, which will be automatically selected by
+memory-hotplug supported archs(currently only on x86_64).
 
-diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
-index 882a0fd..cb5e1ff 100644
---- a/arch/ia64/mm/discontig.c
-+++ b/arch/ia64/mm/discontig.c
-@@ -827,9 +827,4 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
- {
- }
- 
--void register_page_bootmem_memmap(unsigned long section_nr,
--				  struct page *start_page, unsigned long size)
--{
--	/* TODO */
--}
- #endif
-diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
-index 2969591..7e2246f 100644
---- a/arch/powerpc/mm/init_64.c
-+++ b/arch/powerpc/mm/init_64.c
-@@ -302,10 +302,5 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
- {
- }
- 
--void register_page_bootmem_memmap(unsigned long section_nr,
--				  struct page *start_page, unsigned long size)
--{
--	/* TODO */
--}
- #endif /* CONFIG_SPARSEMEM_VMEMMAP */
- 
-diff --git a/arch/s390/mm/vmem.c b/arch/s390/mm/vmem.c
-index 81e6ba3..fa09c2f 100644
---- a/arch/s390/mm/vmem.c
-+++ b/arch/s390/mm/vmem.c
-@@ -276,12 +276,6 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
- {
- }
- 
--void register_page_bootmem_memmap(unsigned long section_nr,
--				  struct page *start_page, unsigned long size)
--{
--	/* TODO */
--}
--
- /*
-  * Add memory segment to the segment list if it doesn't overlap with
-  * an already present segment.
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 5afe21a..76ac544 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2236,11 +2236,6 @@ void vmemmap_free(struct page *memmap, unsigned long nr_pages)
- {
- }
- 
--void register_page_bootmem_memmap(unsigned long section_nr,
--				  struct page *start_page, unsigned long size)
--{
--	/* TODO */
--}
- #endif /* CONFIG_SPARSEMEM_VMEMMAP */
- 
- static void prot_init_common(unsigned long page_none,
--- 
-1.7.1
+changeLog v2->v3:
+1) patch 1/2:
+- Rename the patch title to conform it's content.
+- Update memory_hotplug.h and remove the misleading TODO pointed out by Michal.
+2) patch 2/2:
+- New added, remove unimplemented functions suggested by Michal.
+
+ChangeLog v1->v2:
+1) patch 1/2:
+- Add a Kconfig option named HAVE_BOOTMEM_INFO_NODE suggested by Michal, which
+  will be automatically selected by supported archs(currently only on x86_64).
+
+Lin Feng (1):
+  memory-hotplug: revert register_page_bootmem_info_node() to empty
+    when platform related code is not implemented
+
+Michal Hocko (1):
+  memory-hotplug: cleanup: removing the arch specific functions without
+    any implementation
+
+ arch/ia64/mm/discontig.c       |    5 -----
+ arch/powerpc/mm/init_64.c      |    5 -----
+ arch/s390/mm/vmem.c            |    6 ------
+ arch/sparc/mm/init_64.c        |    5 -----
+ arch/x86/mm/init_64.c          |    2 +-
+ include/linux/memory_hotplug.h |    6 ++++++
+ mm/Kconfig                     |    8 ++++++++
+ mm/memory_hotplug.c            |    2 ++
+ 8 files changed, 17 insertions(+), 22 deletions(-)
 
