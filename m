@@ -1,23 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab3APP6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:58:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35722 "EHLO
+	id S1756919Ab3APP6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:58:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35714 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756742Ab3APP6t (ORCPT
+	with ESMTP id S1756838Ab3APP6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:58:49 -0500
+	Wed, 16 Jan 2013 10:58:41 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Vinson Lee <vlee@twitter.com>, Zheng Liu <wenqing.lz@taobao.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 022/222] xHCI: Fix TD Size calculation on 1.0 hosts.
-Date: Wed, 16 Jan 2013 13:53:42 -0200
-Message-Id: <1358351822-7675-23-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 018/222] perf test: fix a build error on builtin-test
+Date: Wed, 16 Jan 2013 13:53:38 -0200
+Message-Id: <1358351822-7675-19-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,158 +36,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Zheng Liu <gnehzuil.liu@gmail.com>
 
-commit 4525c0a10dff7ad3669763c28016c7daffc3900e upstream.
+commit 12f8f74b2a4d26c4facfa7ef99487cf0930f6ef7 upstream.
 
-The xHCI 1.0 specification made a change to the TD Size field in TRBs.
-The value is now the number of packets that remain to be sent in the TD,
-not including this TRB.  The TD Size value for the last TRB in a TD must
-always be zero.
+Recently I build perf and get a build error on builtin-test.c. The error is as
+following:
 
-The xHCI function xhci_v1_0_td_remainder() attempts to calculate this,
-but it gets it wrong.  First, it erroneously reuses the old
-xhci_td_remainder function, which will right shift the value by 10.  The
-xHCI 1.0 spec as of June 2011 says nothing about right shifting by 10.
-Second, it does not set the TD size for the last TRB in a TD to zero.
+$ make
+    CC perf.o
+    CC builtin-test.o
+cc1: warnings being treated as errors
+builtin-test.c: In function ‘sched__get_first_possible_cpu’:
+builtin-test.c:977: warning: implicit declaration of function ‘CPU_ALLOC’
+builtin-test.c:977: warning: nested extern declaration of ‘CPU_ALLOC’
+builtin-test.c:977: warning: assignment makes pointer from integer without a cast
+builtin-test.c:978: warning: implicit declaration of function ‘CPU_ALLOC_SIZE’
+builtin-test.c:978: warning: nested extern declaration of ‘CPU_ALLOC_SIZE’
+builtin-test.c:979: warning: implicit declaration of function ‘CPU_ZERO_S’
+builtin-test.c:979: warning: nested extern declaration of ‘CPU_ZERO_S’
+builtin-test.c:982: warning: implicit declaration of function ‘CPU_FREE’
+builtin-test.c:982: warning: nested extern declaration of ‘CPU_FREE’
+builtin-test.c:992: warning: implicit declaration of function ‘CPU_ISSET_S’
+builtin-test.c:992: warning: nested extern declaration of ‘CPU_ISSET_S’
+builtin-test.c:998: warning: implicit declaration of function ‘CPU_CLR_S’
+builtin-test.c:998: warning: nested extern declaration of ‘CPU_CLR_S’
+make: *** [builtin-test.o] Error 1
 
-Third, it uses roundup instead of DIV_ROUND_UP.  The total packet count
-is supposed to be the total number of bytes in this TD, divided by the
-max packet size, rounded up.  DIV_ROUND_UP is the right function to use
-in that case.
+This problem is introduced in 3e7c439a. CPU_ALLOC and related macros are
+missing in sched__get_first_possible_cpu function. In 54489c18, commiter
+mentioned that CPU_ALLOC has been removed. So CPU_ALLOC calls in this
+function are removed to let perf to be built.
 
-With the old code, a TD on an endpoint with max packet size 1024 would
-be set up like so:
-TRB 1, TRB length = 600 bytes, TD size = 0
-TRB 1, TRB length = 200 bytes, TD size = 0
-TRB 1, TRB length = 100 bytes, TD size = 0
-
-With the new code, the TD would be set up like this:
-TRB 1, TRB length = 600 bytes, TD size = 1
-TRB 1, TRB length = 200 bytes, TD size = 1
-TRB 1, TRB length = 100 bytes, TD size = 0
-
-This commit should be backported to kernels as old as 3.0, that contain
-the commit 4da6e6f247a2601ab9f1e63424e4d944ed4124f3 "xhci 1.0: Update TD
-size field format."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Chintan Mehta <chintan.mehta@sibridgetech.com>
-Reported-by: Shimmer Huang <shimmering.h@gmail.com>
-Tested-by: Bhavik Kothari <bhavik.kothari@sibridgetech.com>
-Tested-by: Shimmer Huang <shimmering.h@gmail.com>
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Vinson Lee <vlee@twitter.com>
+Cc: Zheng Liu <wenqing.lz@taobao.com>
+Link: http://lkml.kernel.org/r/1352422726-31114-1-git-send-email-vlee@twitter.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+[ herton: builtin-test.c wasn't under tests subdirectory in 3.5 ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/host/xhci-ring.c |   32 +++++++++++++++++++-------------
- 1 file changed, 19 insertions(+), 13 deletions(-)
+ tools/perf/builtin-test.c |   38 ++++++++++++--------------------------
+ 1 file changed, 12 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 755858e..7ac8c9fa 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3069,11 +3069,11 @@ static u32 xhci_td_remainder(unsigned int remainder)
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 5a8727c..a3595f0 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -604,19 +604,13 @@ out_free_threads:
+ #undef nsyscalls
  }
  
- /*
-- * For xHCI 1.0 host controllers, TD size is the number of packets remaining in
-- * the TD (*not* including this TRB).
-+ * For xHCI 1.0 host controllers, TD size is the number of max packet sized
-+ * packets remaining in the TD (*not* including this TRB).
-  *
-  * Total TD packet count = total_packet_count =
-- *     roundup(TD size in bytes / wMaxPacketSize)
-+ *     DIV_ROUND_UP(TD size in bytes / wMaxPacketSize)
-  *
-  * Packets transferred up to and including this TRB = packets_transferred =
-  *     rounddown(total bytes transferred including this TRB / wMaxPacketSize)
-@@ -3081,15 +3081,16 @@ static u32 xhci_td_remainder(unsigned int remainder)
-  * TD size = total_packet_count - packets_transferred
-  *
-  * It must fit in bits 21:17, so it can't be bigger than 31.
-+ * The last TRB in a TD must have the TD size set to zero.
-  */
--
- static u32 xhci_v1_0_td_remainder(int running_total, int trb_buff_len,
--		unsigned int total_packet_count, struct urb *urb)
-+		unsigned int total_packet_count, struct urb *urb,
-+		unsigned int num_trbs_left)
+-static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t **maskp,
+-					 size_t *sizep)
++static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t *maskp)
  {
- 	int packets_transferred;
+-	cpu_set_t *mask;
+-	size_t size;
+ 	int i, cpu = -1, nrcpus = 1024;
+ realloc:
+-	mask = CPU_ALLOC(nrcpus);
+-	size = CPU_ALLOC_SIZE(nrcpus);
+-	CPU_ZERO_S(size, mask);
++	CPU_ZERO(maskp);
  
- 	/* One TRB with a zero-length data packet. */
--	if (running_total == 0 && trb_buff_len == 0)
-+	if (num_trbs_left == 0 || (running_total == 0 && trb_buff_len == 0))
- 		return 0;
+-	if (sched_getaffinity(pid, size, mask) == -1) {
+-		CPU_FREE(mask);
++	if (sched_getaffinity(pid, sizeof(*maskp), maskp) == -1) {
+ 		if (errno == EINVAL && nrcpus < (1024 << 8)) {
+ 			nrcpus = nrcpus << 2;
+ 			goto realloc;
+@@ -626,19 +620,14 @@ realloc:
+ 	}
  
- 	/* All the TRB queueing functions don't count the current TRB in
-@@ -3098,7 +3099,9 @@ static u32 xhci_v1_0_td_remainder(int running_total, int trb_buff_len,
- 	packets_transferred = (running_total + trb_buff_len) /
- 		usb_endpoint_maxp(&urb->ep->desc);
+ 	for (i = 0; i < nrcpus; i++) {
+-		if (CPU_ISSET_S(i, size, mask)) {
+-			if (cpu == -1) {
++		if (CPU_ISSET(i, maskp)) {
++			if (cpu == -1)
+ 				cpu = i;
+-				*maskp = mask;
+-				*sizep = size;
+-			} else
+-				CPU_CLR_S(i, size, mask);
++			else
++				CPU_CLR(i, maskp);
+ 		}
+ 	}
  
--	return xhci_td_remainder(total_packet_count - packets_transferred);
-+	if ((total_packet_count - packets_transferred) > 31)
-+		return 31 << 17;
-+	return (total_packet_count - packets_transferred) << 17;
+-	if (cpu == -1)
+-		CPU_FREE(mask);
+-
+ 	return cpu;
  }
  
- static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
-@@ -3125,7 +3128,7 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+@@ -653,8 +642,8 @@ static int test__PERF_RECORD(void)
+ 		.freq	    = 10,
+ 		.mmap_pages = 256,
+ 	};
+-	cpu_set_t *cpu_mask = NULL;
+-	size_t cpu_mask_size = 0;
++	cpu_set_t cpu_mask;
++	size_t cpu_mask_size = sizeof(cpu_mask);
+ 	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
+ 	struct perf_evsel *evsel;
+ 	struct perf_sample sample;
+@@ -718,8 +707,7 @@ static int test__PERF_RECORD(void)
+ 	evsel->attr.sample_type |= PERF_SAMPLE_TIME;
+ 	perf_evlist__config_attrs(evlist, &opts);
  
- 	num_trbs = count_sg_trbs_needed(xhci, urb);
- 	num_sgs = urb->num_mapped_sgs;
--	total_packet_count = roundup(urb->transfer_buffer_length,
-+	total_packet_count = DIV_ROUND_UP(urb->transfer_buffer_length,
- 			usb_endpoint_maxp(&urb->ep->desc));
+-	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask,
+-					    &cpu_mask_size);
++	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask);
+ 	if (err < 0) {
+ 		pr_debug("sched__get_first_possible_cpu: %s\n", strerror(errno));
+ 		goto out_delete_evlist;
+@@ -730,9 +718,9 @@ static int test__PERF_RECORD(void)
+ 	/*
+ 	 * So that we can check perf_sample.cpu on all the samples.
+ 	 */
+-	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, cpu_mask) < 0) {
++	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, &cpu_mask) < 0) {
+ 		pr_debug("sched_setaffinity: %s\n", strerror(errno));
+-		goto out_free_cpu_mask;
++		goto out_delete_evlist;
+ 	}
  
- 	trb_buff_len = prepare_transfer(xhci, xhci->devs[slot_id],
-@@ -3208,7 +3211,8 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 					running_total);
- 		} else {
- 			remainder = xhci_v1_0_td_remainder(running_total,
--					trb_buff_len, total_packet_count, urb);
-+					trb_buff_len, total_packet_count, urb,
-+					num_trbs - 1);
- 		}
- 		length_field = TRB_LEN(trb_buff_len) |
- 			remainder |
-@@ -3316,7 +3320,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 	start_cycle = ep_ring->cycle_state;
- 
- 	running_total = 0;
--	total_packet_count = roundup(urb->transfer_buffer_length,
-+	total_packet_count = DIV_ROUND_UP(urb->transfer_buffer_length,
- 			usb_endpoint_maxp(&urb->ep->desc));
- 	/* How much data is in the first TRB? */
- 	addr = (u64) urb->transfer_dma;
-@@ -3362,7 +3366,8 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 					running_total);
- 		} else {
- 			remainder = xhci_v1_0_td_remainder(running_total,
--					trb_buff_len, total_packet_count, urb);
-+					trb_buff_len, total_packet_count, urb,
-+					num_trbs - 1);
- 		}
- 		length_field = TRB_LEN(trb_buff_len) |
- 			remainder |
-@@ -3625,7 +3630,7 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 		addr = start_addr + urb->iso_frame_desc[i].offset;
- 		td_len = urb->iso_frame_desc[i].length;
- 		td_remain_len = td_len;
--		total_packet_count = roundup(td_len,
-+		total_packet_count = DIV_ROUND_UP(td_len,
- 				usb_endpoint_maxp(&urb->ep->desc));
- 		/* A zero-length transfer still involves at least one packet. */
- 		if (total_packet_count == 0)
-@@ -3704,7 +3709,8 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 			} else {
- 				remainder = xhci_v1_0_td_remainder(
- 						running_total, trb_buff_len,
--						total_packet_count, urb);
-+						total_packet_count, urb,
-+						(trbs_per_td - j - 1));
- 			}
- 			length_field = TRB_LEN(trb_buff_len) |
- 				remainder |
+ 	/*
+@@ -925,8 +913,6 @@ found_exit:
+ 	}
+ out_err:
+ 	perf_evlist__munmap(evlist);
+-out_free_cpu_mask:
+-	CPU_FREE(cpu_mask);
+ out_delete_evlist:
+ 	perf_evlist__delete(evlist);
+ out:
 -- 
 1.7.9.5
 
