@@ -1,274 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113Ab3APCb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 21:31:28 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:49371 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758051Ab3APCbY (ORCPT
+	id S1758129Ab3APClN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 21:41:13 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:18202 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757282Ab3APClM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 21:31:24 -0500
-Message-ID: <50F6108B.6070204@huawei.com>
-Date: Wed, 16 Jan 2013 10:29:31 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 15 Jan 2013 21:41:12 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19Hlho7mt4XCrRNG7rr89biieNJ81yWc38=
+Date: Tue, 15 Jan 2013 21:40:14 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Soeren Moch <smoch@web.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20130116024014.GH25500@titan.lakedaemon.net>
+References: <20121119144826.f59667b2.akpm@linux-foundation.org>
+ <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com>
+ <50F3F289.3090402@web.de>
+ <20130115165642.GA25500@titan.lakedaemon.net>
+ <20130115175020.GA3764@kroah.com>
+ <20130115201617.GC25500@titan.lakedaemon.net>
+ <20130115215602.GF25500@titan.lakedaemon.net>
+ <50F5F1B7.3040201@web.de>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v8 22/22] PCI: move device_add out of pci_bus_add_device()
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org> <1357944049-29620-23-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1357944049-29620-23-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F5F1B7.3040201@web.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/12 6:40, Yinghai Lu wrote:
-> Move out device registering out of pci_bus_add_devices, so we could
-> put new created pci devices in device tree early.
+Soeren,
+
+On Wed, Jan 16, 2013 at 01:17:59AM +0100, Soeren Moch wrote:
+> On 15.01.2013 22:56, Jason Cooper wrote:
+> >On Tue, Jan 15, 2013 at 03:16:17PM -0500, Jason Cooper wrote:
+> >>If my understanding is correct, one of the drivers (most likely one)
+> >>either asks for too small of a dma buffer, or is not properly
+> >>deallocating blocks from the per-device pool.  Either case leads to
+> >>exhaustion, and falling back to the atomic pool.  Which subsequently
+> >>gets wiped out as well.
+> >
+> >If my hunch is right, could you please try each of the three dvb drivers
+> >in turn and see which one (or more than one) causes the error?
 > 
-> new pci_bus_add_devices will do the device_attach work to load pci drivers
-> instead.
+> In fact I use only 2 types of DVB sticks: em28xx usb bridge plus drxk
+> demodulator, and dib0700 usb bridge plus dib7000p demod.
 > 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/bus.c   |   47 +++--------------------------------------------
->  drivers/pci/iov.c   |    7 -------
->  drivers/pci/probe.c |   34 +++++++++++++++++++++++++++-------
->  3 files changed, 30 insertions(+), 58 deletions(-)
-> 
-> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-> index 1f5916a..0a55845 100644
-> --- a/drivers/pci/bus.c
-> +++ b/drivers/pci/bus.c
-> @@ -178,22 +178,9 @@ static void pci_bus_attach_device(struct pci_dev *dev)
->   */
->  int pci_bus_add_device(struct pci_dev *dev)
->  {
-> -	int retval;
-> -
-> -	pci_fixup_device(pci_fixup_final, dev);
-> -
-> -	retval = pcibios_add_device(dev);
-> -	if (retval)
-> -		return retval;
-> -
-> -	retval = device_add(&dev->dev);
-> -	if (retval)
-> -		return retval;
-> -
->  	pci_bus_attach_device(dev);
->  	dev->is_added = 1;
-> -	pci_proc_attach_device(dev);
-> -	pci_create_sysfs_dev_files(dev);
-> +
->  	return 0;
->  }
+> I would bet for em28xx causing the error, but this is not thoroughly
+> tested. Unfortunately testing with removed sticks is not easy, because
+> this is a production system and disabling some services for the long
+> time we need to trigger this error will certainly result in unhappy
+> users.
 
+Just out of curiosity, what board is it?
 
-Hi Yinghai,
-   Should change pci_bus_add_device() function to void return now? So some unnecessary ret check can remove.
+> I will see what I can do here. Is there an easy way to track the buffer
+> usage without having to wait for complete exhaustion?
 
->  
-> @@ -205,21 +192,9 @@ int pci_bus_add_device(struct pci_dev *dev)
->   */
->  int pci_bus_add_child(struct pci_bus *bus)
->  {
-> -	int retval;
-> -
-> -	if (bus->bridge)
-> -		bus->dev.parent = bus->bridge;
-> -
-> -	retval = device_add(&bus->dev);
-> -	if (retval)
-> -		return retval;
-> -
->  	bus->is_added = 1;
->  
-> -	/* Create legacy_io and legacy_mem files for this bus */
-> -	pci_create_legacy_files(bus);
-> -
-> -	return retval;
-> +	return 0;
->  }
->  
->  /**
-> @@ -245,36 +220,20 @@ void pci_bus_add_devices(const struct pci_bus *bus)
->  		if (dev->is_added)
->  			continue;
->  		retval = pci_bus_add_device(dev);
-> -		if (retval)
-> -			dev_err(&dev->dev, "Error adding device, continuing\n");
->  	}
->  
->  	list_for_each_entry(dev, &bus->devices, bus_list) {
->  		BUG_ON(!dev->is_added);
->  
->  		child = dev->subordinate;
-> -		/*
-> -		 * If there is an unattached subordinate bus, attach
-> -		 * it and then scan for unattached PCI devices.
-> -		 */
-> +
->  		if (!child)
->  			continue;
-> -		if (list_empty(&child->node)) {
-> -			down_write(&pci_bus_sem);
-> -			list_add_tail(&child->node, &dev->bus->children);
-> -			up_write(&pci_bus_sem);
-> -		}
->  		pci_bus_add_devices(child);
->  
-> -		/*
-> -		 * register the bus with sysfs as the parent is now
-> -		 * properly registered.
-> -		 */
->  		if (child->is_added)
->  			continue;
->  		retval = pci_bus_add_child(child);
-> -		if (retval)
-> -			dev_err(&dev->dev, "Error adding bus, continuing\n");
->  	}
->  }
->  
-> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> index bafd2bb..dbad72e 100644
-> --- a/drivers/pci/iov.c
-> +++ b/drivers/pci/iov.c
-> @@ -48,12 +48,7 @@ static struct pci_bus *virtfn_add_bus(struct pci_bus *bus, int busnr)
->  		return NULL;
->  
->  	pci_bus_insert_busn_res(child, busnr, busnr);
-> -	child->dev.parent = bus->bridge;
->  	rc = pci_bus_add_child(child);
-> -	if (rc) {
-> -		pci_remove_bus(child);
-> -		return NULL;
-> -	}
->  
->  	return child;
->  }
-> @@ -123,8 +118,6 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
->  	virtfn->is_virtfn = 1;
->  
->  	rc = pci_bus_add_device(virtfn);
-> -	if (rc)
-> -		goto failed1;
->  	sprintf(buf, "virtfn%u", id);
->  	rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
->  	if (rc)
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index dc4fde3..84c92a0 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -623,6 +623,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->  {
->  	struct pci_bus *child;
->  	int i;
-> +	int ret;
->  
->  	/*
->  	 * Allocate a new bus, and inherit stuff from the parent..
-> @@ -637,8 +638,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->  	child->bus_flags = parent->bus_flags;
->  
->  	/* initialize some portions of the bus device, but don't register it
-> -	 * now as the parent is not properly set up yet.  This device will get
-> -	 * registered later in pci_bus_add_devices()
-> +	 * now as the parent is not properly set up yet.
->  	 */
->  	child->dev.class = &pcibus_class;
->  	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
-> @@ -652,11 +652,14 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->  	child->primary = parent->busn_res.start;
->  	child->busn_res.end = 0xff;
->  
-> -	if (!bridge)
-> -		return child;
-> +	if (!bridge) {
-> +		child->dev.parent = parent->bridge;
-> +		goto add_dev;
-> +	}
->  
->  	child->self = bridge;
->  	child->bridge = get_device(&bridge->dev);
-> +	child->dev.parent = child->bridge;
->  	pci_set_bus_of_node(child);
->  	pci_set_bus_speed(child);
->  
-> @@ -667,6 +670,13 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->  	}
->  	bridge->subordinate = child;
->  
-> +add_dev:
-> +	ret = device_add(&child->dev);
-> +	WARN_ON(ret < 0);
-> +
-> +	/* Create legacy_io and legacy_mem files for this bus */
-> +	pci_create_legacy_files(child);
-> +
->  	return child;
->  }
->  
-> @@ -1297,6 +1307,8 @@ static void pci_init_capabilities(struct pci_dev *dev)
->  
->  void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
->  {
-> +	int ret;
-> +
->  	device_initialize(&dev->dev);
->  	dev->dev.release = pci_release_dev;
->  
-> @@ -1327,6 +1339,16 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
->  	down_write(&pci_bus_sem);
->  	list_add_tail(&dev->bus_list, &bus->devices);
->  	up_write(&pci_bus_sem);
-> +
-> +	pci_fixup_device(pci_fixup_final, dev);
-> +        ret = pcibios_add_device(dev);
-> +	WARN_ON(ret < 0);
-> +	/* notifier could use pci capabilities */
-> +	ret = device_add(&dev->dev);
-> +	WARN_ON(ret < 0);
-> +
-> +	pci_proc_attach_device(dev);
-> +	pci_create_sysfs_dev_files(dev);
->  }
->  
->  struct pci_dev *__ref pci_scan_single_device(struct pci_bus *bus, int devfn)
-> @@ -1645,13 +1667,13 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  	char bus_addr[64];
->  	char *fmt;
->  
-> -
->  	b = pci_alloc_bus();
->  	if (!b)
->  		return NULL;
->  
->  	b->sysdata = sysdata;
->  	b->ops = ops;
-> +	b->number = b->busn_res.start = bus;
->  	b2 = pci_find_bus(pci_domain_nr(b), bus);
->  	if (b2) {
->  		/* If we already got to this bus through a different bridge, ignore it */
-> @@ -1687,8 +1709,6 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  	/* Create legacy_io and legacy_mem files for this bus */
->  	pci_create_legacy_files(b);
->  
-> -	b->number = b->busn_res.start = bus;
-> -
->  	if (parent)
->  		dev_info(parent, "PCI host bridge to bus %s\n", dev_name(&b->dev));
->  	else
-> 
+DMA_API_DEBUG
 
+> In linux-3.5.x there is no such problem. Can we use all available memory
+> for dma buffers here on armv5 architectures, in contrast to newer
+> kernels?
 
--- 
-Thanks!
-Yijing
+Were the loads exactly the same when you tested 3.5.x?  I looked at the
+changes from v3.5 to v3.7.1 for all four drivers you mentioned as well
+as sata_mv.
 
+The biggest thing I see is that all of the media drivers got shuffled
+around into their own subdirectories after v3.5.  'git show -M 0c0d06c'
+shows it was a clean copy of all the files.
+
+What would be most helpful is if you could do a git bisect between
+v3.5.x (working) and the oldest version where you know it started
+failing (v3.7.1 or earlier if you know it).
+
+thx,
+
+Jason.
