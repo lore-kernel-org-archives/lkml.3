@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab3APAw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:52:59 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:35887 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755719Ab3APAw4 (ORCPT
+	id S1756600Ab3APA4r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:56:47 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:53417 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab3APA4q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 19:52:56 -0500
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux MM <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Cody P Schafer <jmesmon@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 06/17] mmzone: add pgdat_{end_pfn,is_empty}() helpers & consolidate.
-Date: Tue, 15 Jan 2013 16:24:43 -0800
-Message-Id: <1358295894-24167-7-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.0.3
-In-Reply-To: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011600-5406-0000-0000-0000043D0B4F
+	Tue, 15 Jan 2013 19:56:46 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Joe Perches <joe@perches.com>, James Hogan <james.hogan@imgtec.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1358274665.2597.11.camel@joe-AO722>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rnayak@ti.com
+References: <1358245685-4392-1-git-send-email-james.hogan@imgtec.com>
+ <1358274665.2597.11.camel@joe-AO722>
+Message-ID: <20130116005639.8920.45989@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH 1/1] clk-divider: fix is_power_of_two()
+Date: Tue, 15 Jan 2013 16:56:39 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cody P Schafer <jmesmon@gmail.com>
+Quoting Joe Perches (2013-01-15 10:31:05)
+> On Tue, 2013-01-15 at 10:28 +0000, James Hogan wrote:
+> > The macro is_power_of_two() in clk-divider.c was defined as !(i & ~i)
+> > which is always true. Correct it to !(i & (i - 1)).
+> []
+> > diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+> []
+> > @@ -29,8 +29,8 @@
+> []
+> > -#define div_mask(d)  ((1 << (d->width)) - 1)
+> > -#define is_power_of_two(i)   !(i & ~i)
+> > +#define div_mask(d)  ((1 << ((d)->width)) - 1)
+> > +#define is_power_of_two(i)   (!((i) & ((i) - 1)))
+> 
+> Use is_power_of_2 in log2.h instead?
 
-Add pgdat_end_pfn() and pgdat_is_empty() helpers which match the similar
-zone_*() functions.
+Both are fine suggestions.  How about I apply the below patch?
 
-Change node_end_pfn() to be a wrapper of pgdat_end_pfn().
+Thanks,
+Mike
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+
+
+>From 54c6c9e5f61693effbe6e4fb28ef9f2f9b3d7a23 Mon Sep 17 00:00:00 2001
+From: James Hogan <james.hogan@imgtec.com>
+Date: Tue, 15 Jan 2013 10:28:05 +0000
+Subject: [PATCH] clk-divider: fix macros
+
+The macro is_power_of_two() in clk-divider.c was defined as !(i & ~i)
+which is always true.  Instead use is_power_of_2() from log2.h.
+
+Also add brackets around the macro arguments in div_mask to avoid any
+future operator precedence problems.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+[mturquette@linaro.org: use log2.h per Joe Perches; update changelog]
 ---
- include/linux/mmzone.h | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/clk/clk-divider.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 696cb7c..d7abff0 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -772,11 +772,17 @@ typedef struct pglist_data {
- #define nid_page_nr(nid, pagenr) 	pgdat_page_nr(NODE_DATA(nid),(pagenr))
+diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+index a9204c6..68b4021 100644
+--- a/drivers/clk/clk-divider.c
++++ b/drivers/clk/clk-divider.c
+@@ -16,6 +16,7 @@
+ #include <linux/io.h>
+ #include <linux/err.h>
+ #include <linux/string.h>
++#include <linux/log2.h>
  
- #define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
-+#define node_end_pfn(nid) pgdat_end_pfn(NODE_DATA(nid))
+ /*
+  * DOC: basic adjustable divider clock that cannot gate
+@@ -29,8 +30,7 @@
  
--#define node_end_pfn(nid) ({\
--	pg_data_t *__pgdat = NODE_DATA(nid);\
--	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;\
--})
-+static inline unsigned long pgdat_end_pfn(pg_data_t *pgdat)
-+{
-+	return pgdat->node_start_pfn + pgdat->node_spanned_pages;
-+}
-+
-+static inline bool pgdat_is_empty(pg_data_t *pgdat)
-+{
-+	return !pgdat->node_start_pfn && !pgdat->node_spanned_pages;
-+}
+ #define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
  
- #include <linux/memory_hotplug.h>
+-#define div_mask(d)	((1 << (d->width)) - 1)
+-#define is_power_of_two(i)	!(i & ~i)
++#define div_mask(d)	((1 << ((d)->width)) - 1)
  
+ static unsigned int _get_table_maxdiv(const struct clk_div_table *table)
+ {
+@@ -137,7 +137,7 @@ static bool _is_valid_table_div(const struct clk_div_table *table,
+ static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
+ {
+ 	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
+-		return is_power_of_two(div);
++		return is_power_of_2(div);
+ 	if (divider->table)
+ 		return _is_valid_table_div(divider->table, div);
+ 	return true;
 -- 
-1.8.0.3
+1.7.10.4
 
