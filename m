@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758556Ab3APQTT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:19:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36832 "EHLO
+	id S932856Ab3APQJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:09:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36823 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932859Ab3APQJ6 (ORCPT
+	with ESMTP id S932181Ab3APQJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:09:58 -0500
+	Wed, 16 Jan 2013 11:09:51 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Ed Cashin <ecashin@coraid.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 194/222] Input: gpio_keys - defer probing if GPIO probing is deferred
-Date: Wed, 16 Jan 2013 13:56:34 -0200
-Message-Id: <1358351822-7675-195-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 192/222] aoe: do not call bdi_init after blk_alloc_queue
+Date: Wed, 16 Jan 2013 13:56:32 -0200
+Message-Id: <1358351822-7675-193-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,75 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Ed Cashin <ecashin@coraid.com>
 
-commit e324ce61ef483dd26d03502d35666ad48a2e1b33 upstream.
+[ this is part of commit 0a41409c518083133e79015092585d68915865be upstream,
+  kernels <= 3.6 requires this different patch ]
 
-If of_get_gpio_flags() returns an error (as in case when GPIO probe is
-deferred) the driver would attempt to claim invalid GPIO. It should
-propagate the error code up the stack instead so that the probe either
-fails or will be retried later (in case of -EPROBE_DEFER).
+blk_alloc_queue has already done a bdi_init, so do not bdi_init
+again in aoeblk_gdalloc.  The extra call causes list corruption
+in the per-CPU backing dev info stats lists.
 
-Reported-by: Gabor Juhos <juhosg@openwrt.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-[ herton: backport for 3.5:
-  * adjust context, different error handling and return type in
-    gpio_keys_get_devtree_pdata function
-  * drop check for EPROBE_DEFER, of_get_gpio_flags doesn't return it on
-    3.5. The patch just will return an error, no deferring is done. ]
+Affected users see console WARNINGs about list_del corruption on
+percpu_counter_destroy when doing "rmmod aoe" or "aoeflush -a"
+when AoE targets have been detected and initialized by the
+system.
+
+The patch below applies to v3.6.11, with its v47 aoe driver.  It
+is expected to apply to all currently maintained stable kernels
+except 3.7.y.  A related but different fix has been posted for
+3.7.y.
+
+References:
+
+  RedHat bugzilla ticket with original report
+  https://bugzilla.redhat.com/show_bug.cgi?id=853064
+
+  LKML discussion of bug and fix
+  http://thread.gmane.org/gmane.linux.kernel/1416336/focus=1416497
+
+Reported-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/input/keyboard/gpio_keys.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/block/aoe/aoe.h    |    2 +-
+ drivers/block/aoe/aoeblk.c |    5 -----
+ 2 files changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index 62bfce4..4f5cce8 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -548,6 +548,7 @@ static int gpio_keys_get_devtree_pdata(struct device *dev,
- 	struct device_node *node, *pp;
- 	int i;
- 	struct gpio_keys_button *buttons;
-+	int error = -ENODEV;
- 	u32 reg;
+diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
+index db195ab..e49ddd0 100644
+--- a/drivers/block/aoe/aoe.h
++++ b/drivers/block/aoe/aoe.h
+@@ -1,5 +1,5 @@
+ /* Copyright (c) 2007 Coraid, Inc.  See COPYING for GPL terms. */
+-#define VERSION "47"
++#define VERSION "47q"
+ #define AOE_MAJOR 152
+ #define DEVICE_NAME "aoe"
  
- 	node = dev->of_node;
-@@ -574,6 +575,7 @@ static int gpio_keys_get_devtree_pdata(struct device *dev,
- 	pp = NULL;
- 	i = 0;
- 	while ((pp = of_get_next_child(node, pp))) {
-+		int gpio;
- 		enum of_gpio_flags flags;
+diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
+index 321de7b..7eca463 100644
+--- a/drivers/block/aoe/aoeblk.c
++++ b/drivers/block/aoe/aoeblk.c
+@@ -276,8 +276,6 @@ aoeblk_gdalloc(void *vp)
+ 		goto err_mempool;
+ 	blk_queue_make_request(d->blkq, aoeblk_make_request);
+ 	d->blkq->backing_dev_info.name = "aoe";
+-	if (bdi_init(&d->blkq->backing_dev_info))
+-		goto err_blkq;
+ 	spin_lock_irqsave(&d->lock, flags);
+ 	gd->major = AOE_MAJOR;
+ 	gd->first_minor = d->sysminor * AOE_PARTITIONS;
+@@ -298,9 +296,6 @@ aoeblk_gdalloc(void *vp)
+ 	aoedisk_add_sysfs(d);
+ 	return;
  
- 		if (!of_find_property(pp, "gpios", NULL)) {
-@@ -581,7 +583,17 @@ static int gpio_keys_get_devtree_pdata(struct device *dev,
- 			dev_warn(dev, "Found button without gpios\n");
- 			continue;
- 		}
--		buttons[i].gpio = of_get_gpio_flags(pp, 0, &flags);
-+
-+		gpio = of_get_gpio_flags(pp, 0, &flags);
-+		if (gpio < 0) {
-+			error = gpio;
-+			dev_err(dev,
-+				"Failed to get gpio flags, error: %d\n",
-+				error);
-+			goto out_fail;
-+		}
-+
-+		buttons[i].gpio = gpio;
- 		buttons[i].active_low = flags & OF_GPIO_ACTIVE_LOW;
- 
- 		if (of_property_read_u32(pp, "linux,code", &reg)) {
-@@ -613,7 +625,7 @@ static int gpio_keys_get_devtree_pdata(struct device *dev,
- 
- out_fail:
- 	kfree(buttons);
--	return -ENODEV;
-+	return error;
- }
- 
- static struct of_device_id gpio_keys_of_match[] = {
+-err_blkq:
+-	blk_cleanup_queue(d->blkq);
+-	d->blkq = NULL;
+ err_mempool:
+ 	mempool_destroy(d->bufpool);
+ err_disk:
 -- 
 1.7.9.5
 
