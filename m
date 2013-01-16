@@ -1,129 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757169Ab3APSVw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 13:21:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41986 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753161Ab3APSVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 13:21:50 -0500
-Date: Wed, 16 Jan 2013 13:21:46 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
-        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-Message-ID: <20130116182146.GE29845@redhat.com>
-References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
- <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
- <871udloiku.fsf@xmission.com>
- <1358312159.4593.37.camel@falcor1>
- <87wqvdli1o.fsf@xmission.com>
- <1358344859.4593.66.camel@falcor1>
- <20130116144836.GB29845@redhat.com>
- <1358350391.4593.112.camel@falcor1>
- <20130116155406.GC29845@redhat.com>
- <1358357079.4593.135.camel@falcor1>
+	id S1757031Ab3APSZi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 13:25:38 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:43117 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295Ab3APSZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 13:25:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358357079.4593.135.camel@falcor1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1358353978.2384.50.camel@dabdike.int.hansenpartnership.com>
+References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
+	<1358353978.2384.50.camel@dabdike.int.hansenpartnership.com>
+Date: Wed, 16 Jan 2013 19:25:35 +0100
+Message-ID: <CA+icZUWc_hwX6A3YjD3p66FG4Qbgraukm+0GJXUPzPOWb=twJQ@mail.gmail.com>
+Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: James Bottomley <jbottomley@parallels.com>
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zach Brown <zab@zabbo.net>, Maxim Patlasov <MPatlasov@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 12:24:39PM -0500, Mimi Zohar wrote:
-> On Wed, 2013-01-16 at 10:54 -0500, Vivek Goyal wrote:
-> > On Wed, Jan 16, 2013 at 10:33:11AM -0500, Mimi Zohar wrote:
-> > 
-> > [..]
-> > > > - Also I really could not figure out where does the private signing key
-> > > >   lives. I got the impression that we need to trust installer and
-> > > >   signing somehow happens at installation time. And we wanted signing
-> > > >   to happen at build server and could not trust installer for that.
-> > > 
-> > > Dmitry's ima-evm-utils package signs files.  Depending on the options,
-> > > both the EVM and IMA extended attributes are created.
-> > 
-> > I was going through following presentation.
-> > 
-> > http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
-> > 
-> > On slide 8, it mentons signing.
-> > 
-> > 	evmctl sign --imahash /path/to/file
-> > 	evmctl sign --imasig /path/to/file
-> > 
-> > Can't figure out where does the key for signing come from? Is it already
-> > loaded in any of kernel keyrings.
-> > 
-> > If yes, I think this is non-starter. One can not distribute the private
-> > key.
-> 
-> No, the default key location is /etc/keys/privkey_evm.pem, but can be
-> specified.  Prior to Dmitry's updating the package yesterday, the last
-> parameter was the key pathname.  After the update, you can specify the
-> key location with the new --key option.
-> 
-> > Also I am assuming that this is done at installation time? If yes, then
-> > again it does not work as installer does not have private key.
-> 
-> Not necessarily.  The original use case scenario was creating an image
-> with both EVM and IMA digital signatures and then flashing the image.
+On Wed, Jan 16, 2013 at 5:32 PM, James Bottomley
+<jbottomley@parallels.com> wrote:
+> On Wed, 2013-01-09 at 13:58 -0600, Dave Kleikamp wrote:
+>> This patchset was begun by Zach Brown and was originally submitted for
+>> review in October, 2009. Feedback was positive, and I have picked up
+>> where he left off, porting his patches to the latest mainline kernel
+>> and adding support more file systems.
+>>
+>> This patch series adds a kernel interface to fs/aio.c so that kernel code can
+>> issue concurrent asynchronous IO to file systems.  It adds an aio command and
+>> file system methods which specify io memory with pages instead of userspace
+>> addresses.
+>>
+>> This series was written to reduce the current overhead loop imposes by
+>> performing synchronus buffered file system IO from a kernel thread.  These
+>> patches turn loop into a light weight layer that translates bios into iocbs.
+>>
+>> It introduces new file ops, read_iter() and write_iter(), that replace the
+>> aio_read() and aio_write() operations. The iov_iter structure can now contain
+>> either a user-space iovec or a kernel-space bio_vec. Since it would be
+>> overly complicated to replace every instance of aio_read() and aio_write(),
+>> the old operations are not removed, but file systems implementing the new
+>> ones need not keep the old ones.
+>>
+>> Changes from V4 include:
+>>  * moved iov-iter.c from mm/ to fs/
+>>  * removed dio_aligned helper
+>>  * insured that FUA write to loop device is committed to media
+>>  * removed no-longer-used REQ_KERNEL define
+>>
+>> These patches apply to 3.8-rc2 and are also available at:
+>> git://github.com/kleikamp/linux-shaggy.git loop_2013_01_04
+>>
+>> My hopes are that this patchset is finally ready for linux-next.
+>
+> Just a note that we at parallels are anxiously awaiting this too.  Our
+> rewrite of the linux loop device to be more efficient (and not double
+> cache) depends on this work.  I should also note that we've been testing
+> these patches (albeit backported to a RHEL kernel as a current work
+> base) with no problems reported so far.
+>
 
-But distributions don't ship pre-setup root file system. It is created
-and labeled at installation time. So if we want to use IMA, we need to
-sign files at installation time. That means private keys need to be
-accessible to installer (using --key option). And that does not work for
-this use case.
+Hi James,
 
-> 
-> > On slide 11, it talks about importing public keys in kernel keyring from
-> > initramfs. As we discussed this will need modification as these keys
-> > need to be signed and signing public key should already be part of 
-> > kernel keyring.
-> 
-> It's been a long process upstreaming all the different pieces involved.
-> The initial design/step was to load the public key on a keyring.  Since
-> then we've added support for multiple keyrings(eg. EVM, IMA, etc).  The
-> next step is to tie this in with secure boot.
-> 
-> > So looking at the signing process, it really does not look like that
-> > I can sign the executable at build server. It looks it needs to be
-> > signed by installer at install time and private key needs to be available
-> > to installer?
-> 
-> No, the build server can sign the files, so the private key is not
-> required on the target.  These signatures need to be included in the
-> package.  Elena Reshetova gave a talk at the last LSS
-> (http://lwn.net/Articles/518265/), describing changes to RPM to write
-> the security extended attributes.
+do you have a location for me for testing this patchset from parallels?
 
-Following is from article.
+Regards,
+- Sedat -
 
-"The other hooks that Reshetova proposed are associated with the individual
-files in a package. Those would allow things like security labeling or
-calculating hashes on the file contents (for integrity purposes)."
-
-IIUC, these hooks will execute on the target. So hash and all signatures
-should still be generated on target and not build server?
-
-Given the fact that signatures are stored in extended attributes, to me
-the only way to sign executables in current IMA framework would to be
-prepare file system image at build server and ship that image. And
-then installer simply mounts that image (after making sure that proper
-verification keys have been loaded in kernel).
-
-And this image will pretty much be static. As you don't have private key
-you can't install more packages and sign these.
-
-So it will be something like one image per signed package (in worst case).
-
-I don't think starting to ship signed file system images as compared
-to signed files is a better idea. 
-
-Thanks
-Vivek
+> James
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
