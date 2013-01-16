@@ -1,82 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab3APMjY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 07:39:24 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:61321 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab3APMjT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 07:39:19 -0500
-X-IronPort-AV: E=Sophos;i="4.84,479,1355126400"; 
-   d="scan'208";a="20196857"
-Message-ID: <50F69F72.4030807@codeaurora.org>
-Date: Wed, 16 Jan 2013 18:09:14 +0530
-From: Subhash Jadavani <subhashj@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1757246Ab3APMpX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 07:45:23 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:40131 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748Ab3APMpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 07:45:20 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+CC: Archit Taneja <archit@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3/3] OMAPDSS: Panel NEC: Only register backlight when we have valid callback
+Date: Wed, 16 Jan 2013 13:45:09 +0100
+Message-ID: <1358340309-8774-4-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1358340309-8774-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1358340309-8774-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        martin.petersen@oracle.com, asias@redhat.com, tj@kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2 1/1] block: blk-merge: don't merge the pages with non-contiguous
- descriptors
-References: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org>  <1358266794.10591.8.camel@dabdike.int.hansenpartnership.com>  <50F64AC1.3040304@codeaurora.org> <1358332355.2384.11.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1358332355.2384.11.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/16/2013 4:02 PM, James Bottomley wrote:
-> On Wed, 2013-01-16 at 12:07 +0530, Subhash Jadavani wrote:
->
->> Now consider this call stack from MMC block driver (this is on the ARmv7
->> based board):
->>       [   98.918174] [<c001b50c>] (v7_dma_inv_range+0x30/0x48) from
->> [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c)
->>       [   98.927819] [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c) from
->> [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c)
->>       [   98.937982] [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c) from
->> [<c0017ff8>] (dma_map_sg+0x3c/0x114)
-> OK, so this is showing that ARM itself is making the assumption that the
-> pages are contiguous in the page offset map.
->
-> Fix this by doing the increment via the pfn, which will do the right
-> thing whatever the memory model.
->
-> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Do not register a backlight device when the dssdev->set_backlight callback
+is not set by the board.
+In this case either we do not have means to control the backlight or the
+board is using other means to control it, like bl-pwm.
 
-Thanks James. Yes, it make sense to fix the ARM code itself if it is the 
-only one giving this trouble.
-I have tried your change below and it also fixes this issue (without 
-having my blk-merge patch). I will forward your change to Russel King to 
-see what he thinks about it.
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ .../omap2/displays/panel-nec-nl8048hl11-01b.c      | 60 ++++++++++++----------
+ 1 file changed, 33 insertions(+), 27 deletions(-)
 
-Regards,
-Subhash
->
-> ---
->
-> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-> index 6b2fb87..ab88c5b 100644
-> --- a/arch/arm/mm/dma-mapping.c
-> +++ b/arch/arm/mm/dma-mapping.c
-> @@ -809,7 +809,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
->   			op(vaddr, len, dir);
->   		}
->   		offset = 0;
-> -		page++;
-> +		page = pfn_to_page(page_to_pfn(page) + 1);
->   		left -= len;
->   	} while (left);
->   }
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
+index e6589fe..11302b2 100644
+--- a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
++++ b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
+@@ -85,9 +85,6 @@ static int nec_8048_bl_update_status(struct backlight_device *bl)
+ 	struct omap_dss_device *dssdev = dev_get_drvdata(&bl->dev);
+ 	int level;
+ 
+-	if (!dssdev->set_backlight)
+-		return -EINVAL;
+-
+ 	if (bl->props.fb_blank == FB_BLANK_UNBLANK &&
+ 			bl->props.power == FB_BLANK_UNBLANK)
+ 		level = bl->props.brightness;
+@@ -114,30 +111,33 @@ static const struct backlight_ops nec_8048_bl_ops = {
+ static int nec_8048_panel_probe(struct omap_dss_device *dssdev)
+ {
+ 	struct backlight_device *bl;
+-	struct backlight_properties props;
+ 	int r;
+ 
+ 	dssdev->panel.timings = nec_8048_panel_timings;
+ 
+-	memset(&props, 0, sizeof(struct backlight_properties));
+-	props.max_brightness = 255;
+-	props.type = BACKLIGHT_RAW;
++	if (dssdev->set_backlight) {
++		struct backlight_properties props;
++
++		memset(&props, 0, sizeof(struct backlight_properties));
++		props.max_brightness = 255;
++		props.type = BACKLIGHT_RAW;
+ 
+-	bl = backlight_device_register("nec-8048", &dssdev->dev, dssdev,
+-			&nec_8048_bl_ops, &props);
+-	if (IS_ERR(bl))
+-		return PTR_ERR(bl);
++		bl = backlight_device_register("nec-8048", &dssdev->dev, dssdev,
++				&nec_8048_bl_ops, &props);
++		if (IS_ERR(bl))
++			return PTR_ERR(bl);
+ 
+-	dev_set_drvdata(&dssdev->dev, bl);
++		dev_set_drvdata(&dssdev->dev, bl);
+ 
+-	bl->props.fb_blank = FB_BLANK_UNBLANK;
+-	bl->props.power = FB_BLANK_UNBLANK;
+-	bl->props.max_brightness = dssdev->max_backlight_level;
+-	bl->props.brightness = dssdev->max_backlight_level;
++		bl->props.fb_blank = FB_BLANK_UNBLANK;
++		bl->props.power = FB_BLANK_UNBLANK;
++		bl->props.max_brightness = dssdev->max_backlight_level;
++		bl->props.brightness = dssdev->max_backlight_level;
+ 
+-	r = nec_8048_bl_update_status(bl);
+-	if (r < 0)
+-		dev_err(&dssdev->dev, "failed to set lcd brightness\n");
++		r = nec_8048_bl_update_status(bl);
++		if (r < 0)
++			dev_err(&dssdev->dev, "failed to set lcd brightness\n");
++	}
+ 
+ 	return 0;
+ }
+@@ -146,9 +146,11 @@ static void nec_8048_panel_remove(struct omap_dss_device *dssdev)
+ {
+ 	struct backlight_device *bl = dev_get_drvdata(&dssdev->dev);
+ 
+-	bl->props.power = FB_BLANK_POWERDOWN;
+-	nec_8048_bl_update_status(bl);
+-	backlight_device_unregister(bl);
++	if (bl) {
++		bl->props.power = FB_BLANK_POWERDOWN;
++		nec_8048_bl_update_status(bl);
++		backlight_device_unregister(bl);
++	}
+ }
+ 
+ static int nec_8048_panel_power_on(struct omap_dss_device *dssdev)
+@@ -172,9 +174,11 @@ static int nec_8048_panel_power_on(struct omap_dss_device *dssdev)
+ 			goto err1;
+ 	}
+ 
+-	r = nec_8048_bl_update_status(bl);
+-	if (r < 0)
+-		dev_err(&dssdev->dev, "failed to set lcd brightness\n");
++	if (bl) {
++		r = nec_8048_bl_update_status(bl);
++		if (r < 0)
++			dev_err(&dssdev->dev, "failed to set lcd brightness\n");
++	}
+ 
+ 	return 0;
+ err1:
+@@ -190,8 +194,10 @@ static void nec_8048_panel_power_off(struct omap_dss_device *dssdev)
+ 	if (dssdev->state != OMAP_DSS_DISPLAY_ACTIVE)
+ 		return;
+ 
+-	bl->props.brightness = 0;
+-	nec_8048_bl_update_status(bl);
++	if (bl) {
++		bl->props.brightness = 0;
++		nec_8048_bl_update_status(bl);
++	}
+ 
+ 	if (dssdev->platform_disable)
+ 		dssdev->platform_disable(dssdev);
+-- 
+1.8.1
 
