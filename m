@@ -1,114 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab3APRYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 12:24:50 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:41639 "EHLO e9.ny.us.ibm.com"
+	id S1756436Ab3APRZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:25:21 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:54423 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211Ab3APRYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 12:24:48 -0500
-Message-ID: <1358357079.4593.135.camel@falcor1>
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
-        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Date: Wed, 16 Jan 2013 12:24:39 -0500
-In-Reply-To: <20130116155406.GC29845@redhat.com>
-References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
-	 <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
-	 <871udloiku.fsf@xmission.com> <1358312159.4593.37.camel@falcor1>
-	 <87wqvdli1o.fsf@xmission.com> <1358344859.4593.66.camel@falcor1>
-	 <20130116144836.GB29845@redhat.com> <1358350391.4593.112.camel@falcor1>
-	 <20130116155406.GC29845@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1756241Ab3APRZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 12:25:19 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
+Date: Wed, 16 Jan 2013 12:28:39 -0500
+User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
+Cc: libc-alpha@sourceware.org, YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Cong Wang <amwang@redhat.com>, Thomas Backlund <tmb@mageia.org>,
+        Eric Blake <eblake@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
+        David Miller <davem@davemloft.net>, schwab@suse.de,
+        carlos@systemhalted.org
+References: <50F2FF1B.3020708@mageia.org> <201301161205.04502.vapier@gentoo.org> <1358356211.2923.25.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1358356211.2923.25.camel@bwh-desktop.uk.solarflarecom.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart3697423.Mc9bZ6SUye";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011617-7182-0000-0000-0000047C0A7F
+Message-Id: <201301161228.42592.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-16 at 10:54 -0500, Vivek Goyal wrote:
-> On Wed, Jan 16, 2013 at 10:33:11AM -0500, Mimi Zohar wrote:
-> 
-> [..]
-> > > - Also I really could not figure out where does the private signing key
-> > >   lives. I got the impression that we need to trust installer and
-> > >   signing somehow happens at installation time. And we wanted signing
-> > >   to happen at build server and could not trust installer for that.
-> > 
-> > Dmitry's ima-evm-utils package signs files.  Depending on the options,
-> > both the EVM and IMA extended attributes are created.
-> 
-> I was going through following presentation.
-> 
-> http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
-> 
-> On slide 8, it mentons signing.
-> 
-> 	evmctl sign --imahash /path/to/file
-> 	evmctl sign --imasig /path/to/file
-> 
-> Can't figure out where does the key for signing come from? Is it already
-> loaded in any of kernel keyrings.
-> 
-> If yes, I think this is non-starter. One can not distribute the private
-> key.
+--nextPart3697423.Mc9bZ6SUye
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-No, the default key location is /etc/keys/privkey_evm.pem, but can be
-specified.  Prior to Dmitry's updating the package yesterday, the last
-parameter was the key pathname.  After the update, you can specify the
-key location with the new --key option.
+On Wednesday 16 January 2013 12:10:11 Ben Hutchings wrote:
+> On Wed, 2013-01-16 at 12:04 -0500, Mike Frysinger wrote:
+> > On Wednesday 16 January 2013 10:47:12 Ben Hutchings wrote:
+> > > On Wed, 2013-01-16 at 23:21 +0900, YOSHIFUJI Hideaki wrote:
+> > > > Cong Wang wrote:
+> > > > > (Cc'ing some glibc developers...)
+> > > > >=20
+> > > > > Hello,
+> > > > >=20
+> > > > > In glibc source file inet/netinet/in.h and kernel source file
+> > > > > include/uapi/linux/in6.h, both define struct in6_addr, and both a=
+re
+> > > > > visible to user applications. Thomas reported a conflict below.
+> > > > >=20
+> > > > > So, how can we handle this? /me is wondering why we didn't see th=
+is
+> > > > > before.
+> > >=20
+> > > [...]
+> > >=20
+> > > > This is not a new issue.  In addition to this,
+> > > > netinet/in.h also conflits with linux/in.h.
+> > > >=20
+> > > > We might have
+> > > >=20
+> > > >  #if !defined(__GLIBC__) || !defined(_NETINET_IN_H)
+> > > > =20
+> > > >  #endif
+> > > >=20
+> > > > around those conflicting definitions in uapi/linux/in{,6}.h.
+> > >=20
+> > > This only solves half the problem, as <netinet/in.h> might be included
+> > > after <linux/in.h>.  Also, not all Linux userland uses glibc.
+> >=20
+> > certainly true, but the current expectation is that you don't mix your
+> > ABIs.
+>=20
+> Whose expectation?  Which ABIs are being mixed?
 
-> Also I am assuming that this is done at installation time? If yes, then
-> again it does not work as installer does not have private key.
+the kernel's view of the world and the C library's view of the world.  ther=
+e=20
+is a lot of overlap, but it's the C library's job to provide a POSIX compli=
+ant=20
+interface (and then some).
 
-Not necessarily.  The original use case scenario was creating an image
-with both EVM and IMA digital signatures and then flashing the image.
+obvious examples:
+ - the stat structures are not the same and require translation
+ - ptrace structures are not the same and you really need to use the C lib =
+one
+ - the readdir function is completely different
 
-> On slide 11, it talks about importing public keys in kernel keyring from
-> initramfs. As we discussed this will need modification as these keys
-> need to be signed and signing public key should already be part of 
-> kernel keyring.
+but to this specific question, if you're calling the kernel's network funct=
+ions=20
+directly, then you need to include the kernel's headers for its definition =
+of=20
+how things are passed.  if you're calling the C library's network functions=
+,=20
+then use the C library's headers.
 
-It's been a long process upstreaming all the different pieces involved.
-The initial design/step was to load the public key on a keyring.  Since
-then we've added support for multiple keyrings(eg. EVM, IMA, etc).  The
-next step is to tie this in with secure boot.
+> > if you're programming with the C library API, then use the C library
+> > headers. if you're banging directly on the kernel, then use the kernel
+> > headers.  not saying it's a perfect solution, but it works for the vast
+> > majority of use cases.
+>=20
+> In practice most C programs for Linux will use a mixture of thinly
+> wrapped system calls and higher-level APIs from the C library, and never
+> really call the kernel directly (as that requires inline assembler).
+> Userland programmers will work around this historical mess by tweaking
+> the #include order or splitting source files.  But they shouldn't have
+> to.
 
-> So looking at the signing process, it really does not look like that
-> I can sign the executable at build server. It looks it needs to be
-> signed by installer at install time and private key needs to be available
-> to installer?
+if you're not calling the kernel directly, why are you including the kernel=
+=20
+headers ?  what is the problem people are actually trying to address here (=
+and=20
+no, "i want to include both headers" is not the answer) ?
+=2Dmike
 
-No, the build server can sign the files, so the private key is not
-required on the target.  These signatures need to be included in the
-package.  Elena Reshetova gave a talk at the last LSS
-(http://lwn.net/Articles/518265/), describing changes to RPM to write
-the security extended attributes.
+--nextPart3697423.Mc9bZ6SUye
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-> > 
-> > >   My understanding of IMA could be wrong. So it would help if you
-> > >   could list the exact steps about how to achieve the same goal using
-> > >   IMA.
-> > 
-> > http://linux-ima.sourceforge.net/  needs to be updated, but it describes
-> > the integrity subsystem and includes a link to Dave Safford's original
-> > whitepaper "An Overview of the Linux Integrity subsystem".
-> 
-> I have gone through the paper in the past and still the quetions remain
-> unanswered. So it will really help, if you could take a very simple
-> example of hello-world executable and list the steps needed to be
-> performed to sign and verify executable.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-Ok, will post this separately.
+iQIcBAABAgAGBQJQ9uNKAAoJEEFjO5/oN/WBTpMP/3kHM+2YwoSb8NBODwdeuCHd
+8oXI2DdH1qKuTP8Z7jA3f4sTFrQAEfQlINnVTOp4Ac5D//S3SH38YV3UV7t0kho5
+fS6wfJYMjvAKHzunDzf/trHsb/hrZqddy5AYk5NTCjNyiq3L7SBbWgwa3TLpUoH7
+DYJnpF5PB8KnLikhLIrYSpeQwow84oaJPbS4hJ9OnFoBzB5aUilJ69HDUG55l76z
+hXfcgLzuhdBL4DT0ZgTzTgf9KMlnkGKUuHdEIgg8HqkPgKj0YEq8rdF1foiJ0GnO
+E2ifBqhPMSTTEvLuqXIbdSed0KQdnkfpWdFlpeqHS3UQMu2tDQfgq3Wj7Fvz/MsM
++DqtPRiTaW8QRYtPIE7sNjpG7RqPHWqgnaVRDjlK4F/92fOvgMRjQ57bDwAn2yXc
+vc92nGN7Nn9DWLdkSCec9hEdXwE5/2/MQDvyTnKPmA87TTHigg42+1l9wDQefm8/
+8Tdw9RfJ1BbRB8cmUEIypu3Jcu444OPD4KJTi4w5tH4bS/rJneuTx/pkt954qn06
+oEKQ31ibeJtjoTYCTwo7TK6akR99zgudrxzMqhEN7QgrWi1M9xTtvQw87+g3kANx
+dzWtYQ2R/Yv0mzQnfLc1UbKInFSoXK4I4UVo8sX/kzFn9vlyw5R2aeHSSaXDPJti
+3A3pnV5jw1qUQvOXvdud
+=v4tC
+-----END PGP SIGNATURE-----
 
-thanks,
-
-Mimi
-
+--nextPart3697423.Mc9bZ6SUye--
