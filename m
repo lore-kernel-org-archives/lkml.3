@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab3APDZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 22:25:09 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:37835 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757374Ab3APDZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 22:25:07 -0500
-Date: Tue, 15 Jan 2013 19:25:02 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] module, async: async_synchronize_full() on module init
- iff async is used
-Message-ID: <20130116032502.GN2668@htj.dyndns.org>
-References: <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
- <CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com>
- <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
- <20130115183204.GE2668@htj.dyndns.org>
- <CA+55aFzZ1NJz34r99N7+mU4CN5Ju4QpHrDoWv5Kbd5-Z4QzgaA@mail.gmail.com>
- <20130115235043.GJ2668@htj.dyndns.org>
- <CA+55aFzm4k2CyQ_mZVHyeasjw4ybqfO2SpJrZZNZeUsSW8PB=g@mail.gmail.com>
- <CA+55aFxLJ=Yfms9SkPJLjQ-ZASPNZC0JUBsb3OwonJvTCcBzxA@mail.gmail.com>
- <20130116025251.GM2668@htj.dyndns.org>
- <CA+55aFxttTkWG0gfUz3=V8A-9az3+qY3j0JZEAoKv0ne-QupZw@mail.gmail.com>
+	id S1758207Ab3APDZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 22:25:18 -0500
+Received: from mout.web.de ([212.227.17.11]:52730 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758184Ab3APDZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 22:25:12 -0500
+Message-ID: <50F61D86.4020801@web.de>
+Date: Wed, 16 Jan 2013 04:24:54 +0100
+From: Soeren Moch <smoch@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxttTkWG0gfUz3=V8A-9az3+qY3j0JZEAoKv0ne-QupZw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all dma_alloc_coherent()
+ calls
+References: <20121119144826.f59667b2.akpm@linux-foundation.org> <1353421905-3112-1-git-send-email-m.szyprowski@samsung.com> <50F3F289.3090402@web.de> <20130115165642.GA25500@titan.lakedaemon.net> <20130115175020.GA3764@kroah.com> <20130115201617.GC25500@titan.lakedaemon.net> <20130115215602.GF25500@titan.lakedaemon.net> <50F5F1B7.3040201@web.de> <20130116024014.GH25500@titan.lakedaemon.net>
+In-Reply-To: <20130116024014.GH25500@titan.lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:Ixot1n+YgepqfqTGCGJLRRZwe5z92odo19OePrbdbdY
+ WldW35DbO+hIgz3/befxe6mmEmqU2P7FHPyKZPR1uPjXNzkWv7
+ kLKi1Rl9QLZGTrZ0rTmbOugjASR0mijfY5rWeo+DhG71EUfp9W
+ 4byC/l9MI817vw+LObPrnKXIJmEhD6y58Wge1hdT6YBf5zVM6d
+ oGYOv/oBG6Kdnh75sDZJA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On 16.01.2013 03:40, Jason Cooper wrote:
+> Soeren,
+>
+> On Wed, Jan 16, 2013 at 01:17:59AM +0100, Soeren Moch wrote:
+>> On 15.01.2013 22:56, Jason Cooper wrote:
+>>> On Tue, Jan 15, 2013 at 03:16:17PM -0500, Jason Cooper wrote:
+>>>> If my understanding is correct, one of the drivers (most likely one)
+>>>> either asks for too small of a dma buffer, or is not properly
+>>>> deallocating blocks from the per-device pool.  Either case leads to
+>>>> exhaustion, and falling back to the atomic pool.  Which subsequently
+>>>> gets wiped out as well.
+>>>
+>>> If my hunch is right, could you please try each of the three dvb drivers
+>>> in turn and see which one (or more than one) causes the error?
+>>
+>> In fact I use only 2 types of DVB sticks: em28xx usb bridge plus drxk
+>> demodulator, and dib0700 usb bridge plus dib7000p demod.
+>>
+>> I would bet for em28xx causing the error, but this is not thoroughly
+>> tested. Unfortunately testing with removed sticks is not easy, because
+>> this is a production system and disabling some services for the long
+>> time we need to trigger this error will certainly result in unhappy
+>> users.
+>
+> Just out of curiosity, what board is it?
 
-On Tue, Jan 15, 2013 at 07:00:31PM -0800, Linus Torvalds wrote:
-> That said, maybe we could just make the rule be that you can't pick a
-> default IO scheduler that is modular.
+The kirkwood board? A modified Guruplug Server Plus.
+>
+>> I will see what I can do here. Is there an easy way to track the buffer
+>> usage without having to wait for complete exhaustion?
+>
+> DMA_API_DEBUG
 
-This is definitely much more preferable but it would affect use case
-where everything is built modular and the elevator is selected via
-kernel param.  This is way outside the usual usage and we can warn
-about the new behavior but it still is an observable behavior change.
-Do you think this would be okay?
+OK, maybe I can try this.
+>
+>> In linux-3.5.x there is no such problem. Can we use all available memory
+>> for dma buffers here on armv5 architectures, in contrast to newer
+>> kernels?
+>
+> Were the loads exactly the same when you tested 3.5.x?
 
-> And I *would* like to see the warning we discussed. Maybe there are
-> other situations that can trigger this?
-> 
-> Because something like that
-> 
->     WARN_ON_ONCE(wait && i_am_async() && system_state == SYSTEM_RUNNING);
-> 
-> in kernel/kmod.c (__request_module()) still sounds like a good idea to
-> verify that this is the only thing that triggers it (of course, we'd
-> need to somehow avoid the warning for the known case with the known
-> workaround).
+Exactly the same, yes.
 
-And then this warning can be added without introducing
-request_module_but_dont_warn_about_being_called_from_async().
+>I looked at the
+> changes from v3.5 to v3.7.1 for all four drivers you mentioned as well
+> as sata_mv.
+>
+> The biggest thing I see is that all of the media drivers got shuffled
+> around into their own subdirectories after v3.5.  'git show -M 0c0d06c'
+> shows it was a clean copy of all the files.
+>
+> What would be most helpful is if you could do a git bisect between
+> v3.5.x (working) and the oldest version where you know it started
+> failing (v3.7.1 or earlier if you know it).
+>
+I did not bisect it, but Marek mentioned earlier that commit
+e9da6e9905e639b0f842a244bc770b48ad0523e9 in Linux v3.6-rc1 introduced
+new code for dma allocations. This is probably the root cause for the
+new (mis-)behavior (due to my tests 3.6.0 is not working anymore).
+I'm not very familiar with arm mm code, and from the patch itself I
+cannot understand what's different. Maybe CONFIG_CMA is default
+also for armv5 (not only v6) now? But I might be totally wrong here,
+maybe someone of the mm experts can explain the difference?
 
-Thanks.
+Regards,
+Soeren
 
--- 
-tejun
+
+
+
+
