@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab3APWEl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:04:41 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:41056 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756136Ab3APWEk (ORCPT
+	id S1757822Ab3APWEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:04:50 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:56406 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757762Ab3APWEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:04:40 -0500
+	Wed, 16 Jan 2013 17:04:48 -0500
+Date: Wed, 16 Jan 2013 23:04:47 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] irq_work changes for 3.9
+Message-ID: <20130116220447.GA20148@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-In-Reply-To: <50F72272.8090303@oracle.com>
-References: <1358094677-11384-1-git-send-email-sasha.levin@oracle.com>
- <CA+55aFxFb21Ss=-0FUgzQOzPe1=mS11o7J-+Laco09XJvOk9Fg@mail.gmail.com> <50F72272.8090303@oracle.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 Jan 2013 14:04:19 -0800
-X-Google-Sender-Auth: 4x1afF7BPm28VNi4alXPL5lMKYI
-Message-ID: <CA+55aFxjwW4Ppv-73WHh-RqeFvq+Bjr3o08ZuKkiWuwAVMkqFQ@mail.gmail.com>
-Subject: Re: [PATCH v2] hlist: drop the node parameter from iterators
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358345841-29136-1-git-send-email-fweisbec@gmail.com>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 1:58 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> I guess that if you agree that it should go in once it had some more
-> testing, it can go into linux-next and sit there for the next couple
-> of weeks until the next merge window opens.
+Hi,
 
-So linux-next gets compile testing and warns about conflicts. But
-almost nobody really runs the end result.
+> These three patches are general fixes for irq work. The two first
+> patches fix tight races on global irq work claiming that prevent the irq work
+> subsystem from dropping a work enqueuing attempt because it thinks it's
+> already pending while it may be already executing or executed.
 
-Now, *hopefully* the compile problems and conflicts are the major
-issue, but at the same time, I worry about some actual subtle semantic
-breakage. I'm not sure how it would happen, but it's a big patch..
+Would that one happen to be one that would fix my system dropping
+dead on sound output (looping the existing buffer ad infinitum)
+every couple idle minutes when using my sound card's
+PulseAudio IRQ-less playback patch (to-be-submitted),
+and which seems to have started (or got quite a bit worse
+so as to let me notice?) once I added my
+"quirks: enable APIC De-Assert Message bit for VIA 8235, too."
+(to-be-submitted) commit?
+(which reduces IRQs from duplicate to single - thereby probably
+reducing the opportunities for the system to notice that work is pending)
 
-> What would be the best way to do that though? see if akpm would take
-> it into his tree?
+Of course a lone kick to the mouse always fixes it...
 
-That would help. As would just linux-next. As would just after the
-next merge window closes, if you can send it almost immediately *and*
-have the "at least the patch has been around for a long time with no
-*known* breakage" note. Because at some point, I guess we can't do
-much more than that.
+(-rc2 here)
 
-                Linus
+Hell yeah that does sound like a potential candidate to me.
+
+Andreas Mohr
