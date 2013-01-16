@@ -1,121 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab3APMqF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 07:46:05 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:60375 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757032Ab3APMpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 07:45:19 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-CC: Archit Taneja <archit@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/3] OMAPDSS: Panel NEC: Get rid of nec_80848_data structure
-Date: Wed, 16 Jan 2013 13:45:08 +0100
-Message-ID: <1358340309-8774-3-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1358340309-8774-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1358340309-8774-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1755388Ab3APMpR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 07:45:17 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:42738 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748Ab3APMpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 07:45:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130115224502.23734.7414@quantum>
+References: <1357650191-30842-1-git-send-email-rajagopal.venkat@linaro.org>
+	<1357712988-22317-1-git-send-email-rajagopal.venkat@linaro.org>
+	<20130115224502.23734.7414@quantum>
+Date: Wed, 16 Jan 2013 18:15:13 +0530
+Message-ID: <CA+Z25wW=g+-Uo2DLpD=0ADjWTh5DKQb5ePPXR1tz0LXH3_b-xg@mail.gmail.com>
+Subject: Re: [PATCH] clk: remove unreachable code
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: patches@linaro.org, linaro-dev@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has only a pointer to the backlight_device in it. We can just add the
-pointer to the backlight_device as driver data.
+On 16 January 2013 04:15, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Rajagopal Venkat (2013-01-08 22:29:48)
+>> while reparenting a clock, NULL check is done for clock in
+>> consideration and its new parent. So re-check is not required.
+>> If done, else part becomes unreachable.
+>>
+>> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+>> ---
+>>  drivers/clk/clk.c |   13 ++-----------
+>>  1 file changed, 2 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+>> index 251e45d..1c4097c 100644
+>> --- a/drivers/clk/clk.c
+>> +++ b/drivers/clk/clk.c
+>> @@ -1040,7 +1040,6 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+>>  {
+>>  #ifdef CONFIG_COMMON_CLK_DEBUG
+>>         struct dentry *d;
+>> -       struct dentry *new_parent_d;
+>>  #endif
+>>
+>>         if (!clk || !new_parent)
+>> @@ -1048,22 +1047,14 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+>>
+>>         hlist_del(&clk->child_node);
+>>
+>> -       if (new_parent)
+>> -               hlist_add_head(&clk->child_node, &new_parent->children);
+>> -       else
+>> -               hlist_add_head(&clk->child_node, &clk_orphan_list);
+>> +       hlist_add_head(&clk->child_node, &new_parent->children);
+>
+> Rajagopal,
+>
+> You found a bug, but not the right one :)
+>
+> This change would result in never moving a clock into the orphan list if
+> the parent is missing.  The right thing to do is to allow the operation
+> to succeed and migrate this clock into the orphan list.  In keeping
+> with the clk.h api we need to treat struct clk new_parent as an opaque
+> cookie and not care whether or not it is NULL.
+>
+Mike,
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- .../omap2/displays/panel-nec-nl8048hl11-01b.c      | 32 +++++-----------------
- 1 file changed, 7 insertions(+), 25 deletions(-)
+The only path where __clk_reparent() can get new parent as NULL is from
+clk_set_parent() api. Tracing this path, here are the reasons why I submitted
+this patch.
 
-diff --git a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-index f43a343..e6589fe 100644
---- a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-+++ b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-@@ -32,10 +32,6 @@
-  */
- #define LCD_PIXEL_CLOCK		23800
- 
--struct nec_8048_data {
--	struct backlight_device *bl;
--};
--
- static const struct {
- 	unsigned char addr;
- 	unsigned char dat;
-@@ -118,30 +114,21 @@ static const struct backlight_ops nec_8048_bl_ops = {
- static int nec_8048_panel_probe(struct omap_dss_device *dssdev)
- {
- 	struct backlight_device *bl;
--	struct nec_8048_data *necd;
- 	struct backlight_properties props;
- 	int r;
- 
- 	dssdev->panel.timings = nec_8048_panel_timings;
- 
--	necd = kzalloc(sizeof(*necd), GFP_KERNEL);
--	if (!necd)
--		return -ENOMEM;
--
--	dev_set_drvdata(&dssdev->dev, necd);
--
- 	memset(&props, 0, sizeof(struct backlight_properties));
- 	props.max_brightness = 255;
- 	props.type = BACKLIGHT_RAW;
- 
- 	bl = backlight_device_register("nec-8048", &dssdev->dev, dssdev,
- 			&nec_8048_bl_ops, &props);
--	if (IS_ERR(bl)) {
--		r = PTR_ERR(bl);
--		kfree(necd);
--		return r;
--	}
--	necd->bl = bl;
-+	if (IS_ERR(bl))
-+		return PTR_ERR(bl);
-+
-+	dev_set_drvdata(&dssdev->dev, bl);
- 
- 	bl->props.fb_blank = FB_BLANK_UNBLANK;
- 	bl->props.power = FB_BLANK_UNBLANK;
-@@ -157,21 +144,17 @@ static int nec_8048_panel_probe(struct omap_dss_device *dssdev)
- 
- static void nec_8048_panel_remove(struct omap_dss_device *dssdev)
- {
--	struct nec_8048_data *necd = dev_get_drvdata(&dssdev->dev);
--	struct backlight_device *bl = necd->bl;
-+	struct backlight_device *bl = dev_get_drvdata(&dssdev->dev);
- 
- 	bl->props.power = FB_BLANK_POWERDOWN;
- 	nec_8048_bl_update_status(bl);
- 	backlight_device_unregister(bl);
--
--	kfree(necd);
- }
- 
- static int nec_8048_panel_power_on(struct omap_dss_device *dssdev)
- {
-+	struct backlight_device *bl = dev_get_drvdata(&dssdev->dev);
- 	int r;
--	struct nec_8048_data *necd = dev_get_drvdata(&dssdev->dev);
--	struct backlight_device *bl = necd->bl;
- 
- 	if (dssdev->state == OMAP_DSS_DISPLAY_ACTIVE)
- 		return 0;
-@@ -202,8 +185,7 @@ err0:
- 
- static void nec_8048_panel_power_off(struct omap_dss_device *dssdev)
- {
--	struct nec_8048_data *necd = dev_get_drvdata(&dssdev->dev);
--	struct backlight_device *bl = necd->bl;
-+	struct backlight_device *bl = dev_get_drvdata(&dssdev->dev);
- 
- 	if (dssdev->state != OMAP_DSS_DISPLAY_ACTIVE)
- 		return;
+1. The clk_set_parent() function takes new parent for granted and tries to
+access new_parent->rate when notifiers are registered,
+2. For clocks with multiple parents, the __clk_set_parent() function also
+takes new parent for granted and tries to access parent name while finding
+the index of new parent from cached parent pointers.
+
+But if the design decision is to allow clock to be re-parented to orphan list
+when new parent is missing, I can provide the new working patch.
+
+> Untested patch below fixes the real bug:
+>
+>
+>
+> From a4d56e3ee51452366365749873710e16631e9de7 Mon Sep 17 00:00:00 2001
+> From: Mike Turquette <mturquette@linaro.org>
+> Date: Tue, 15 Jan 2013 14:39:06 -0800
+> Subject: [PATCH] clk: allow re-parenting to NULL clks
+>
+> __clk_reparent presently bails early if the new parent of a clk is NULL.
+> This is wrong and prevents dynamically migrating clocks into the orphan
+> list.  The fix is to remove the NULL pointer check for new_parent in
+> __clk_parent.
+>
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> ---
+>  drivers/clk/clk.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 593a2e4..f056230 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1186,7 +1186,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+>         struct dentry *new_parent_d;
+>  #endif
+>
+> -       if (!clk || !new_parent)
+> +       if (!clk)
+>                 return;
+>
+>         hlist_del(&clk->child_node);
+> --
+> 1.7.10.4
+>
+
+
+
 -- 
-1.8.1
-
+Regards,
+Rajagopal
