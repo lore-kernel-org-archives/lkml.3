@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757682Ab3APQBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:01:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35946 "EHLO
+	id S1757713Ab3APQBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:01:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35968 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757354Ab3APQB1 (ORCPT
+	with ESMTP id S1757678Ab3APQBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:01:27 -0500
+	Wed, 16 Jan 2013 11:01:43 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Xi Wang <xi.wang@gmail.com>, James Bottomley <JBottomley@Parallels.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 063/222] mvsas: fix undefined bit shift
-Date: Wed, 16 Jan 2013 13:54:23 -0200
-Message-Id: <1358351822-7675-64-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 067/222] ring-buffer: Fix NULL pointer if rb_set_head_page() fails
+Date: Wed, 16 Jan 2013 13:54:27 -0200
+Message-Id: <1358351822-7675-68-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,74 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit beecadea1b8d67f591b13f7099559f32f3fd601d upstream.
+commit 54f7be5b831254199522523ccab4c3d954bbf576 upstream.
 
-The macro bit(n) is defined as ((u32)1 << n), and thus it doesn't work
-with n >= 32, such as in mvs_94xx_assign_reg_set():
+The function rb_set_head_page() searches the list of ring buffer
+pages for a the page that has the HEAD page flag set. If it does
+not find it, it will do a WARN_ON(), disable the ring buffer and
+return NULL, as this should never happen.
 
-	if (i >= 32) {
-		mvi->sata_reg_set |= bit(i);
-		...
-	}
+But if this bug happens to happen, not all callers of this function
+can handle a NULL pointer being returned from it. That needs to be
+fixed.
 
-The shift ((u32)1 << n) with n >= 32 also leads to undefined behavior.
-The result varies depending on the architecture.
-
-This patch changes bit(n) to do a 64-bit shift.  It also simplifies
-mv_ffc64() using __ffs64(), since invoking ffz() with ~0 is undefined.
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Acked-by: Xiangliang Yu <yuxiangl@marvell.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/scsi/mvsas/mv_94xx.h |   14 ++------------
- drivers/scsi/mvsas/mv_sas.h  |    2 +-
- 2 files changed, 3 insertions(+), 13 deletions(-)
+ kernel/trace/ring_buffer.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/mvsas/mv_94xx.h b/drivers/scsi/mvsas/mv_94xx.h
-index 8f7eb4f..487aa6f 100644
---- a/drivers/scsi/mvsas/mv_94xx.h
-+++ b/drivers/scsi/mvsas/mv_94xx.h
-@@ -258,21 +258,11 @@ enum sas_sata_phy_regs {
- #define SPI_ADDR_VLD_94XX         	(1U << 1)
- #define SPI_CTRL_SpiStart_94XX     	(1U << 0)
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index db6dff1..35bf8f7 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1396,6 +1396,8 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer)
+ 		struct list_head *head_page_with_bit;
  
--#define mv_ffc(x)   ffz(x)
--
- static inline int
- mv_ffc64(u64 v)
- {
--	int i;
--	i = mv_ffc((u32)v);
--	if (i >= 0)
--		return i;
--	i = mv_ffc((u32)(v>>32));
--
--	if (i != 0)
--		return 32 + i;
--
--	return -1;
-+	u64 x = ~v;
-+	return x ? __ffs64(x) : -1;
- }
+ 		head_page = &rb_set_head_page(cpu_buffer)->list;
++		if (!head_page)
++			break;
+ 		prev_page = head_page->prev;
  
- #define r_reg_set_enable(i) \
-diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
-index c04a4f5..da24955 100644
---- a/drivers/scsi/mvsas/mv_sas.h
-+++ b/drivers/scsi/mvsas/mv_sas.h
-@@ -69,7 +69,7 @@ extern struct kmem_cache *mvs_task_list_cache;
- #define DEV_IS_EXPANDER(type)	\
- 	((type == EDGE_DEV) || (type == FANOUT_DEV))
+ 		first_page = pages->next;
+@@ -2934,7 +2936,7 @@ unsigned long ring_buffer_oldest_event_ts(struct ring_buffer *buffer, int cpu)
+ 	unsigned long flags;
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct buffer_page *bpage;
+-	unsigned long ret;
++	unsigned long ret = 0;
  
--#define bit(n) ((u32)1 << n)
-+#define bit(n) ((u64)1 << n)
+ 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
+ 		return 0;
+@@ -2949,7 +2951,8 @@ unsigned long ring_buffer_oldest_event_ts(struct ring_buffer *buffer, int cpu)
+ 		bpage = cpu_buffer->reader_page;
+ 	else
+ 		bpage = rb_set_head_page(cpu_buffer);
+-	ret = bpage->page->time_stamp;
++	if (bpage)
++		ret = bpage->page->time_stamp;
+ 	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
  
- #define for_each_phy(__lseq_mask, __mc, __lseq)			\
- 	for ((__mc) = (__lseq_mask), (__lseq) = 0;		\
+ 	return ret;
+@@ -3256,6 +3259,8 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+ 	 * Splice the empty reader page into the list around the head.
+ 	 */
+ 	reader = rb_set_head_page(cpu_buffer);
++	if (!reader)
++		goto out;
+ 	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
+ 	cpu_buffer->reader_page->list.prev = reader->list.prev;
+ 
 -- 
 1.7.9.5
 
