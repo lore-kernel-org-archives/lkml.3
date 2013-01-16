@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151Ab3APIsl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 03:48:41 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:52827 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754055Ab3APIsk (ORCPT
+	id S932207Ab3APIsx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 03:48:53 -0500
+Received: from stonestorm.inifta.unlp.edu.ar ([163.10.21.140]:35793 "EHLO
+	stonestorm.inifta.unlp.edu.ar" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754640Ab3APIsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 03:48:40 -0500
-Date: Wed, 16 Jan 2013 08:48:34 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 03/18] power: ab8500_charger: Detect charger removal
-Message-ID: <20130116084834.GF9379@gmail.com>
-References: <1357909986-9262-1-git-send-email-lee.jones@linaro.org>
- <1357909986-9262-4-git-send-email-lee.jones@linaro.org>
- <20130116013640.GA11105@lizard.fhda.edu>
+	Wed, 16 Jan 2013 03:48:41 -0500
+X-Greylist: delayed 1861 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jan 2013 03:48:40 EST
+Message-ID: <20130116051530.102937467u6thzac@webmail.inifta.unlp.edu.ar>
+Date: Wed, 16 Jan 2013 05:15:30 -0300
+From: fjiban <fjiban@inifta.unlp.edu.ar>
+Reply-to: violetlargeallen116@yahoo.ie
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130116013640.GA11105@lizard.fhda.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jan 2013, Anton Vorontsov wrote:
 
-> On Fri, Jan 11, 2013 at 01:12:51PM +0000, Lee Jones wrote:
-> > Add two new work queues to provide USB and AC charger disconnect
-> > detection.
-> > 
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> [....]
-> > +		if ((statval & usbch)) != usbch)
-> 
->   CC      drivers/power/ab8500_charger.o
-> drivers/power/ab8500_charger.c: In function ‘ab8500_charger_usb_attached_work’:
-> drivers/power/ab8500_charger.c:1812:26: error: expected expression before ‘!=’ token
-> drivers/power/ab8500_charger.c:1812:34: error: expected statement before ‘)’ token
-> drivers/power/ab8500_charger.c: In function ‘ab8500_charger_ac_attached_work’:
-> drivers/power/ab8500_charger.c:1852:27: error: expected expression before ‘!=’ token
-> drivers/power/ab8500_charger.c:1852:36: error: expected statement before ‘)’ token
-> 
-> I fixed it up...
+Dear Sir/Madam,
 
-You're a star.
+I saw your email address during the course of my  research today.My Name
+is Allen my wife and I won a Jackpot Lottery 11.3 million in july and during
+the process my wife passed away as a result of cancer illness, we are donating
+the sum of 1.million dollars to 6 lucky individual  over the world and if you
+received this email then you are one of the lucky recipients and all  
+you have to
+do is get back to us so that we can send your details to the payout bank.
+Please note that you have to contact my private email for more information
+(violetlargeallen116@yahoo.ie)
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+You can verify this by visiting the web pages below.
+
+http://www.dailymail.co.uk/news/article-1326473/Canadian-couple-Allen-Violet-Large-away-entire-11-2m-lottery-win.html
+
+
+Goodluck,
+Allen and Violet Large
+
+
+
+
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
+
