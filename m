@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab3APQEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:04:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36219 "EHLO
+	id S932228Ab3APQE4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:04:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36210 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121Ab3APQEw (ORCPT
+	with ESMTP id S932162Ab3APQEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:04:52 -0500
+	Wed, 16 Jan 2013 11:04:45 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Corey Minyard <cminyard@mvista.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Mikael Starvik <starvik@axis.com>,
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 115/222] CRIS: fix I/O macros
-Date: Wed, 16 Jan 2013 13:55:15 -0200
-Message-Id: <1358351822-7675-116-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 114/222] proc: pid/status: show all supplementary groups
+Date: Wed, 16 Jan 2013 13:55:14 -0200
+Message-Id: <1358351822-7675-115-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -31,81 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corey Minyard <cminyard@mvista.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit c24bf9b4cc6a0f330ea355d73bfdf1dae7e63a05 upstream.
+commit 8d238027b87e654be552eabdf492042a34c5c300 upstream.
 
-The inb/outb macros for CRIS are broken from a number of points of view,
-missing () around parameters and they have an unprotected if statement
-in them.  This was breaking the compile of IPMI on CRIS and thus I was
-being annoyed by build regressions, so I fixed them.
+We display a list of supplementary group for each process in
+/proc/<pid>/status.  However, we show only the first 32 groups, not all of
+them.
 
-Plus I don't think they would have worked at all, since the data values
-were missing "&" and the outsl had a "3" instead of a "4" for the size.
->From what I can tell, this stuff is not used at all, so this can't be
-any more broken than it was before, anyway.
+Although this is rare, but sometimes processes do have more than 32
+supplementary groups, and this kernel limitation breaks user-space apps
+that rely on the group list in /proc/<pid>/status.
 
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Number 32 comes from the internal NGROUPS_SMALL macro which defines the
+length for the internal kernel "small" groups buffer.  There is no
+apparent reason to limit to this value.
+
+This patch removes the 32 groups printing limit.
+
+The Linux kernel limits the amount of supplementary groups by NGROUPS_MAX,
+which is currently set to 65536.  And this is the maximum count of groups
+we may possibly print.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Acked-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/cris/include/asm/io.h |   39 +++++++++++++++++++++++++++++++++------
- 1 file changed, 33 insertions(+), 6 deletions(-)
+ fs/proc/array.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/cris/include/asm/io.h b/arch/cris/include/asm/io.h
-index 32567bc..ac12ae2 100644
---- a/arch/cris/include/asm/io.h
-+++ b/arch/cris/include/asm/io.h
-@@ -133,12 +133,39 @@ static inline void writel(unsigned int b, volatile void __iomem *addr)
- #define insb(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,1,count) : 0)
- #define insw(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,2,count) : 0)
- #define insl(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,4,count) : 0)
--#define outb(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,1,1)
--#define outw(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,2,1)
--#define outl(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,4,1)
--#define outsb(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,1,count)
--#define outsw(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,2,count)
--#define outsl(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,3,count)
-+static inline void outb(unsigned char data, unsigned int port)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *) &data, 1, 1);
-+}
-+static inline void outw(unsigned short data, unsigned int port)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *) &data, 2, 1);
-+}
-+static inline void outl(unsigned int data, unsigned int port)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *) &data, 4, 1);
-+}
-+static inline void outsb(unsigned int port, const void *addr,
-+			 unsigned long count)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *)addr, 1, count);
-+}
-+static inline void outsw(unsigned int port, const void *addr,
-+			 unsigned long count)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *)addr, 2, count);
-+}
-+static inline void outsl(unsigned int port, const void *addr,
-+			 unsigned long count)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *)addr, 4, count);
-+}
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index c1c207c..bd31e02 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -212,7 +212,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 	group_info = cred->group_info;
+ 	task_unlock(p);
  
- /*
-  * Convert a physical pointer to a virtual kernel pointer for /dev/mem
+-	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
++	for (g = 0; g < group_info->ngroups; g++)
+ 		seq_printf(m, "%d ",
+ 			   from_kgid_munged(user_ns, GROUP_AT(group_info, g)));
+ 	put_cred(cred);
 -- 
 1.7.9.5
 
