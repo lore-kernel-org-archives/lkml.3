@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100Ab3APP7W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:59:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35758 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944Ab3APP7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757071Ab3APP7R (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 16 Jan 2013 10:59:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35752 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757030Ab3APP7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 10:59:12 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Eric Sandeen <sandeen@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 029/222] powerpc: Fix CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n build
-Date: Wed, 16 Jan 2013 13:53:49 -0200
-Message-Id: <1358351822-7675-30-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 028/222] ext4: init pagevec in ext4_da_block_invalidatepages
+Date: Wed, 16 Jan 2013 13:53:48 -0200
+Message-Id: <1358351822-7675-29-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,35 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit 11ee7e99f35ecb15f59b21da6a82d96d2cd3fcc8 upstream.
+commit 66bea92c69477a75a5d37b9bfed5773c92a3c4b4 upstream.
 
-If we build a kernel with CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n,
-the kernel fails when we run at a non zero offset. It turns out
-we were incorrectly wrapping some of the relocatable kernel code
-with CONFIG_CRASH_DUMP.
+ext4_da_block_invalidatepages is missing a pagevec_init(),
+which means that pvec->cold contains random garbage.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This affects whether the page goes to the front or
+back of the LRU when ->cold makes it to
+free_hot_cold_page()
+
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/powerpc/kernel/head_64.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/inode.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
-index 58bddee..9e07bd0 100644
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -422,7 +422,7 @@ _STATIC(__after_prom_start)
- 	tovirt(r6,r6)			/* on booke, we already run at PAGE_OFFSET */
- #endif
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 9e9aed3..75f537f 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1491,6 +1491,8 @@ static void ext4_da_block_invalidatepages(struct mpage_da_data *mpd)
  
--#ifdef CONFIG_CRASH_DUMP
-+#ifdef CONFIG_RELOCATABLE
- /*
-  * Check if the kernel has to be running as relocatable kernel based on the
-  * variable __run_at_load, if it is set the kernel is treated as relocatable
+ 	index = mpd->first_page;
+ 	end   = mpd->next_page - 1;
++
++	pagevec_init(&pvec, 0);
+ 	while (index <= end) {
+ 		nr_pages = pagevec_lookup(&pvec, mapping, index, PAGEVEC_SIZE);
+ 		if (nr_pages == 0)
 -- 
 1.7.9.5
 
