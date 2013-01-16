@@ -1,163 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab3APLyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 06:54:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52622 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321Ab3APLx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 06:53:59 -0500
-Date: Wed, 16 Jan 2013 12:30:13 +0100
-From: Jiri Olsa <jolsa@redhat.com>
+	id S1753316Ab3APMAK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 07:00:10 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54225 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab3APMAI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 07:00:08 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-75-50f69646b94f
+From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
-        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 6/6][v3] perf: Document the ABI of perf sysfs entries
-Message-ID: <20130116113013.GA1042@krava.brq.redhat.com>
-References: <20130110010347.GA32590@us.ibm.com>
- <20130110010703.GF32590@us.ibm.com>
- <20130115185759.GG5826@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130115185759.GG5826@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 1/2] perf tools: Do not include PERF-VERSION-FILE to Makefile
+Date: Wed, 16 Jan 2013 20:59:53 +0900
+Message-Id: <1358337594-10916-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 03:57:59PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Jan 09, 2013 at 05:07:03PM -0800, Sukadev Bhattiprolu escreveu:
-> > [PATCH 6/6][v3] perf: Document the ABI of perf sysfs entries
-> > 
-> > This patchset addes two new sets of files to sysfs:
-> > 
-> > 	- generic and POWER-specific perf events in /sys/devices/cpu/events/
-> > 	- perf event config format in /sys/devices/cpu/format/event
-> > 
-> > Document the format of these files which would become part of the ABI.
-> > 
-> > Changelog[v3]:
-> > 	[Greg KH] Include ABI documentation.
-> 
-> Jiri, can I have your ack on this one too?
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-hm, we already already 'format' definition but in testing section
-(and we are missing 'events' definition there.. my bad)
+When make runs it tries to update the Makefile rules by reading all of
+included Makefiles.  During the perf build it checks PERF-VERSION-FILE
+to get the current version number.  But it triggers Makefile update so
+that make runs again with the update Makefile and, in turn, users will
+see duplicate CHK message on the second path.
 
-anyway, after reading Documentation/ABI/README looks like we
-should go for 'testing' section with this as well.. stable
-seems scary at this point ;-)
+Running make with -d option for debugging tells me this:
 
-jirka
+GNU Make 3.82
+Built for x86_64-redhat-linux-gnu
+Copyright (C) 2010  Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Reading makefiles...
+Reading makefile `Makefile'...
+Reading makefile `../scripts/Makefile.include' (search path) (no ~ expansion)...
+Reading makefile `config/utilities.mak' (search path) (no ~ expansion)...
+Reading makefile `PERF-VERSION-FILE' (search path) (don't care) (no ~ expansion)...
+Reading makefile `config/feature-tests.mak' (search path) (don't care) (no ~ expansion)...
+    CHK -fstack-protector-all
+    CHK -Wstack-protector
+    CHK -Wvolatile-register-var
+...
+Updating makefiles....
+ Considering target file `PERF-VERSION-FILE'.
+ Must remake target `PERF-VERSION-FILE'.
+Invoking recipe from Makefile:52 to update target `PERF-VERSION-FILE'.
+Putting child 0x14037a0 (PERF-VERSION-FILE) PID 31925 on the chain.
+Live child 0x14037a0 (PERF-VERSION-FILE) PID 31925
+PERF_VERSION = 3.8.rc3.gf751db6
+Reaping winning child 0x14037a0 PID 31925
+Removing child 0x14037a0 PID 31925 from chain.
+ Successfully remade target file `PERF-VERSION-FILE'.
+...
+Re-executing[1]: make -d                       <------------ here
+GNU Make 3.82
+Built for x86_64-redhat-linux-gnu
+Copyright (C) 2010  Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Reading makefiles...
+Reading makefile `Makefile'...
+Reading makefile `../scripts/Makefile.include' (search path) (no ~ expansion)...
+Reading makefile `config/utilities.mak' (search path) (no ~ expansion)...
+Reading makefile `PERF-VERSION-FILE' (search path) (don't care) (no ~ expansion)...
+Reading makefile `config/feature-tests.mak' (search path) (don't care) (no ~ expansion)...
+    CHK -fstack-protector-all
+    CHK -Wstack-protector
+    CHK -Wvolatile-register-var
+...
 
-> 
-> Greg, all ok now?
-> 
-> - Arnaldo
->  
-> > Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> > ---
-> >  Documentation/ABI/stable/sysfs-devices-cpu-events |   54 +++++++++++++++++++++
-> >  Documentation/ABI/stable/sysfs-devices-cpu-format |   27 ++++++++++
-> >  2 files changed, 81 insertions(+), 0 deletions(-)
-> >  create mode 100644 Documentation/ABI/stable/sysfs-devices-cpu-format
-> > 
-> > diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-events b/Documentation/ABI/stable/sysfs-devices-cpu-events
-> > index e69de29..f37d542 100644
-> > --- a/Documentation/ABI/stable/sysfs-devices-cpu-events
-> > +++ b/Documentation/ABI/stable/sysfs-devices-cpu-events
-> > @@ -0,0 +1,54 @@
-> > +What:		/sys/devices/cpu/events/
-> > +		/sys/devices/cpu/events/branch-misses
-> > +		/sys/devices/cpu/events/cache-references
-> > +		/sys/devices/cpu/events/cache-misses
-> > +		/sys/devices/cpu/events/stalled-cycles-frontend
-> > +		/sys/devices/cpu/events/branch-instructions
-> > +		/sys/devices/cpu/events/stalled-cycles-backend
-> > +		/sys/devices/cpu/events/instructions
-> > +		/sys/devices/cpu/events/cpu-cycles
-> > +
-> > +Date:		2013/01/08
-> > +
-> > +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-> > +
-> > +Description:	Generic performance monitoring events
-> > +
-> > +		A collection of performance monitoring events that may be
-> > +		supported by many/most CPUs. These events can be monitored
-> > +		using the 'perf(1)' tool.
-> > +
-> > +		The contents of each file would look like:
-> > +
-> > +			event=0xNNNN
-> > +
-> > +		where 'N' is a hex digit.
-> > +
-> > +
-> > +What: 		/sys/devices/cpu/events/PM_LD_MISS_L1
-> > +		/sys/devices/cpu/events/PM_LD_REF_L1
-> > +		/sys/devices/cpu/events/PM_CYC
-> > +		/sys/devices/cpu/events/PM_BRU_FIN
-> > +		/sys/devices/cpu/events/PM_GCT_NOSLOT_CYC
-> > +		/sys/devices/cpu/events/PM_BRU_MPRED
-> > +		/sys/devices/cpu/events/PM_INST_CMPL
-> > +		/sys/devices/cpu/events/PM_CMPLU_STALL
-> > +
-> > +Date:		2013/01/08
-> > +
-> > +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-> > +		Linux Powerpc mailing list <linuxppc-dev@ozlabs.org>
-> > +
-> > +Description:	POWER specific performance monitoring events
-> > +
-> > +		A collection of performance monitoring events that may be
-> > +		supported by the POWER CPU. These events can be monitored
-> > +		using the 'perf(1)' tool.
-> > +
-> > +		These events may not be supported by other CPUs.
-> > +
-> > +		The contents of each file would look like:
-> > +
-> > +			event=0xNNNN
-> > +
-> > +		where 'N' is a hex digit.
-> > diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-format b/Documentation/ABI/stable/sysfs-devices-cpu-format
-> > new file mode 100644
-> > index 0000000..b15cfb2
-> > --- /dev/null
-> > +++ b/Documentation/ABI/stable/sysfs-devices-cpu-format
-> > @@ -0,0 +1,27 @@
-> > +What:		/sys/devices/cpu/format/
-> > +		/sys/devices/cpu/format/event
-> > +
-> > +Date:		2013/01/08
-> > +
-> > +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-> > +
-> > +Description:	Format of performance monitoring events
-> > +
-> > +		Each CPU/architecture may use different format to represent
-> > +		the perf event.  The 'event' file describes the configuration
-> > +		format of the performance monitoring event on the CPU/system.
-> > +
-> > +		The contents of each file would look like:
-> > +
-> > +			config:m-n
-> > +
-> > +		where m and n are the starting and ending bits that are
-> > +		used to represent the event.
-> > +
-> > +		For example, on POWER,
-> > +
-> > +			$ cat /sys/devices/cpu/format/event
-> > +			config:0-20
-> > +
-> > +		meaning that POWER uses the first 20-bits to represent a perf
-> > +		event.
-> > -- 
-> > 1.7.1
+Actually PERF-VERSION-FILE is used only for perf.c to #define
+PERF_VERSION macro.  So make it like a C header file and include it
+during compiling the perf.c file will remove the need of being
+included into Makefile.  Hench no need to update the Makefile and no
+CHK lines anymore.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Makefile              | 3 +--
+ tools/perf/util/PERF-VERSION-GEN | 4 ++--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 103ed956ca80..bdbd54edf8cc 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -50,7 +50,6 @@ include config/utilities.mak
+ 
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+--include $(OUTPUT)PERF-VERSION-FILE
+ 
+ uname_M := $(shell uname -m 2>/dev/null || echo not)
+ 
+@@ -890,7 +889,7 @@ strip: $(PROGRAMS) $(OUTPUT)perf
+ 	$(STRIP) $(STRIP_OPTS) $(PROGRAMS) $(OUTPUT)perf
+ 
+ $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -DPERF_VERSION='"$(PERF_VERSION)"' \
++	$(QUIET_CC)$(CC) -include $(OUTPUT)PERF-VERSION-FILE \
+ 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+ 		$(ALL_CFLAGS) -c $(filter %.c,$^) -o $@
+ 
+diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
+index 6aa34e5afdcf..055fef34b6f6 100755
+--- a/tools/perf/util/PERF-VERSION-GEN
++++ b/tools/perf/util/PERF-VERSION-GEN
+@@ -26,13 +26,13 @@ VN=$(expr "$VN" : v*'\(.*\)')
+ 
+ if test -r $GVF
+ then
+-	VC=$(sed -e 's/^PERF_VERSION = //' <$GVF)
++	VC=$(sed -e 's/^#define PERF_VERSION "\(.*\)"/\1/' <$GVF)
+ else
+ 	VC=unset
+ fi
+ test "$VN" = "$VC" || {
+ 	echo >&2 "PERF_VERSION = $VN"
+-	echo "PERF_VERSION = $VN" >$GVF
++	echo "#define PERF_VERSION \"$VN\"" >$GVF
+ }
+ 
+ 
+-- 
+1.7.11.7
+
