@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758615Ab3APJTu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 04:19:50 -0500
-Received: from mga03.intel.com ([143.182.124.21]:25317 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab3APJTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 04:19:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,478,1355126400"; 
-   d="scan'208";a="244531643"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: daniel.vetter@ffwll.ch, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: -next: no resume from suspend
-In-Reply-To: <50F3FFE6.4090108@suse.cz>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <50F3D9E8.6040802@suse.cz> <16191961.j5ydKsJ3d3@vostro.rjw.lan> <50F3FFE6.4090108@suse.cz>
-User-Agent: Notmuch/0.14+267~g79b3518 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 16 Jan 2013 11:20:43 +0200
-Message-ID: <87fw21wkk4.fsf@intel.com>
+	id S1758782Ab3APJUT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 04:20:19 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63786 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758657Ab3APJUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 04:20:16 -0500
+X-AuditID: 9c930179-b7b54ae000000e44-7a-50f670cebdf6
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 05/13] perf hists: Resort hist entries using group members for output
+References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
+	<1358235117-12803-6-git-send-email-namhyung@kernel.org>
+	<20130115182915.GA5826@ghostprotocols.net>
+Date: Wed, 16 Jan 2013 18:20:14 +0900
+In-Reply-To: <20130115182915.GA5826@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Tue, 15 Jan 2013 15:29:15 -0300")
+Message-ID: <87mww9mqlt.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 01/14/2013 01:56 PM, Rafael J. Wysocki wrote:
->> On Monday, January 14, 2013 11:11:52 AM Jiri Slaby wrote:
->>> Hi,
->>>
->>> since friday's -next (the last known to be working is the last monday's)
->>> I cannot resume from suspend. The last thing I see with
->>> no_console_suspend is:
->>> i915: No ACPI video bus found
->>>
->>> But I used to see the message always, so this is no difference. Any idea
->>> before I start bisecting?
+Hi Arnaldo,
+
+On Tue, 15 Jan 2013 15:29:15 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Jan 15, 2013 at 04:31:49PM +0900, Namhyung Kim escreveu:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
 >> 
->> Well, what's the next message you normally see with no_console_suspend?
+>> When event group is enabled, sorting hist entries on periods for output
+>> should consider groups members' period also.  To do that, build period
+>> table using link/pair information and compare the table.
+[snip]
+>> +static int hist_entry__sort_on_period(struct hist_entry *a,
+>> +				      struct hist_entry *b)
+>> +{
+>> +	int ret;
+>> +	int i, nr_members;
+>> +	struct perf_evsel *evsel;
+>> +	struct hist_entry *pair;
+>> +	u64 *periods_a, *periods_b;
+>> +
+>> +	ret = period_cmp(a->stat.period, b->stat.period);
+>> +	if (ret || !symbol_conf.event_group)
 >
-> [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+> Why do we need to call period_cmp() when symbol_conf.event_group is
+> false?
 >
-> Adding DRM and intel guys.
+> I see, confusing neverthless :-\
 
-Hi Jiri, the dmesgs for both cases with drm.debug=0xe module param might
-give us some clues.
+In this function @a and @b are entries of group leaders and should be
+compared first - other group members are compared only if periods of
+leader entries are same.
 
-Does it work without no_console_suspend?
+For non-group events or when event group view is disabled, this function
+will be called for every events as if they're leaders.
 
 
-BR,
-Jani.
+>
+>> +		return ret;
+>
+> I would expect two functions, one for sorting on period and another for
+> not sorting on period, i.e. don't call a function called
+> 'sort_on_period' when _not_ sorting on period.
+
+Sorry, I can't understand.
+
+This 'sort_on_period' function is called during the (final) output
+resorting and it's unconditional.  IOW hist entries should be sorted by
+their period to be shown accordingly in the output.
+
+Am I missing something?
+
+Thanks,
+Namhyung
