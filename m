@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab3APQCV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:02:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36010 "EHLO
+	id S1757898Ab3APQC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:02:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36019 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757860Ab3APQCR (ORCPT
+	with ESMTP id S1757578Ab3APQC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:02:17 -0500
+	Wed, 16 Jan 2013 11:02:26 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 076/222] ALSA: usb-audio: Fix missing autopm for MIDI input
-Date: Wed, 16 Jan 2013 13:54:36 -0200
-Message-Id: <1358351822-7675-77-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 078/222] mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
+Date: Wed, 16 Jan 2013 13:54:38 -0200
+Message-Id: <1358351822-7675-79-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,221 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit f5f165418cabf2218eb466c0e94693b8b1aee88b upstream.
+commit 5b632fe85ec82e5c43740b52e74c66df50a37db3 upstream.
 
-The commit [88a8516a: ALSA: usbaudio: implement USB autosuspend] added
-the support of autopm for USB MIDI output, but it didn't take the MIDI
-input into account.
+Commit f0425beda4d404a6e751439b562100b902ba9c98 "mac80211: retry sending
+failed BAR frames later instead of tearing down aggr" caused regression
+on rt2x00 hardware (connection hangs). This regression was fixed by
+commit be03d4a45c09ee5100d3aaaedd087f19bc20d01 "rt2x00: Don't let
+mac80211 send a BAR when an AMPDU subframe fails". But the latter
+commit caused yet another problem reported in
+https://bugzilla.kernel.org/show_bug.cgi?id=42828#c22
 
-This patch adds the following for fixing the autopm:
-- Manage the URB start at the first MIDI input stream open, instead of
-  the time of instance creation
-- Move autopm code to the common substream_open()
-- Make snd_usbmidi_input_start/_stop() more robust and add the running
-  state check
+After long discussion in this thread:
+http://mid.gmane.org/20121018075615.GA18212@redhat.com
+and testing various alternative solutions, which failed on one or other
+setup, we have no other good fix for the issues like just revert both
+mentioned earlier commits.
 
-Reviewd-by: Clemens Ladisch <clemens@ladisch.de>
-Tested-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+To do not affect other hardware which benefit from commit
+f0425beda4d404a6e751439b562100b902ba9c98, instead of reverting it,
+introduce flag that when used will restore mac80211 behaviour before
+the commit.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+[replaced link with mid.gmane.org that has message-id]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- sound/usb/midi.c |   88 ++++++++++++++++++++++++++++--------------------------
- 1 file changed, 46 insertions(+), 42 deletions(-)
+ include/net/mac80211.h |    5 +++++
+ net/mac80211/status.c  |    6 +++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/sound/usb/midi.c b/sound/usb/midi.c
-index c0054ee..34b9bb7 100644
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -126,8 +126,10 @@ struct snd_usb_midi {
- 		struct snd_usb_midi_in_endpoint *in;
- 	} endpoints[MIDI_MAX_ENDPOINTS];
- 	unsigned long input_triggered;
--	unsigned int opened;
-+	bool autopm_reference;
-+	unsigned int opened[2];
- 	unsigned char disconnected;
-+	unsigned char input_running;
- 
- 	struct snd_kcontrol *roland_load_ctl;
+diff --git a/include/net/mac80211.h b/include/net/mac80211.h
+index 95e39b6..82942da 100644
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -1197,6 +1197,10 @@ enum sta_notify_cmd {
+  *	queue mapping in order to use different queues (not just one per AC)
+  *	for different virtual interfaces. See the doc section on HW queue
+  *	control for more details.
++ *
++ * @IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL: On this hardware TX BA session
++ *	should be tear down once BAR frame will not be acked.
++ *
+  */
+ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_HAS_RATE_CONTROL			= 1<<0,
+@@ -1224,6 +1228,7 @@ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_AP_LINK_PS				= 1<<22,
+ 	IEEE80211_HW_TX_AMPDU_SETUP_IN_HW		= 1<<23,
+ 	IEEE80211_HW_SCAN_WHILE_IDLE			= 1<<24,
++	IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL		= 1<<26,
  };
-@@ -149,7 +151,6 @@ struct snd_usb_midi_out_endpoint {
- 		struct snd_usb_midi_out_endpoint* ep;
- 		struct snd_rawmidi_substream *substream;
- 		int active;
--		bool autopm_reference;
- 		uint8_t cable;		/* cable number << 4 */
- 		uint8_t state;
- #define STATE_UNKNOWN	0
-@@ -1034,36 +1035,58 @@ static void update_roland_altsetting(struct snd_usb_midi* umidi)
- 	snd_usbmidi_input_start(&umidi->list);
- }
  
--static void substream_open(struct snd_rawmidi_substream *substream, int open)
-+static int substream_open(struct snd_rawmidi_substream *substream, int dir,
-+			  int open)
- {
- 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
- 	struct snd_kcontrol *ctl;
-+	int err;
+ /**
+diff --git a/net/mac80211/status.c b/net/mac80211/status.c
+index 1c697ef..f98b326 100644
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -435,7 +435,11 @@ void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb)
+ 				       IEEE80211_BAR_CTRL_TID_INFO_MASK) >>
+ 				      IEEE80211_BAR_CTRL_TID_INFO_SHIFT;
  
- 	down_read(&umidi->disc_rwsem);
- 	if (umidi->disconnected) {
- 		up_read(&umidi->disc_rwsem);
--		return;
-+		return open ? -ENODEV : 0;
- 	}
- 
- 	mutex_lock(&umidi->mutex);
- 	if (open) {
--		if (umidi->opened++ == 0 && umidi->roland_load_ctl) {
--			ctl = umidi->roland_load_ctl;
--			ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
--			snd_ctl_notify(umidi->card,
-+		if (!umidi->opened[0] && !umidi->opened[1]) {
-+			err = usb_autopm_get_interface(umidi->iface);
-+			umidi->autopm_reference = err >= 0;
-+			if (err < 0 && err != -EACCES) {
-+				mutex_unlock(&umidi->mutex);
-+				up_read(&umidi->disc_rwsem);
-+				return -EIO;
-+			}
-+			if (umidi->roland_load_ctl) {
-+				ctl = umidi->roland_load_ctl;
-+				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
-+				snd_ctl_notify(umidi->card,
- 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
--			update_roland_altsetting(umidi);
-+				update_roland_altsetting(umidi);
-+			}
+-				ieee80211_set_bar_pending(sta, tid, ssn);
++				if (local->hw.flags &
++				    IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL)
++					ieee80211_stop_tx_ba_session(&sta->sta, tid);
++				else
++					ieee80211_set_bar_pending(sta, tid, ssn);
+ 			}
  		}
-+		umidi->opened[dir]++;
-+		if (umidi->opened[1])
-+			snd_usbmidi_input_start(&umidi->list);
- 	} else {
--		if (--umidi->opened == 0 && umidi->roland_load_ctl) {
--			ctl = umidi->roland_load_ctl;
--			ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
--			snd_ctl_notify(umidi->card,
-+		umidi->opened[dir]--;
-+		if (!umidi->opened[1])
-+			snd_usbmidi_input_stop(&umidi->list);
-+		if (!umidi->opened[0] && !umidi->opened[1]) {
-+			if (umidi->roland_load_ctl) {
-+				ctl = umidi->roland_load_ctl;
-+				ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
-+				snd_ctl_notify(umidi->card,
- 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
-+			}
-+			if (umidi->autopm_reference)
-+				usb_autopm_put_interface(umidi->iface);
- 		}
- 	}
- 	mutex_unlock(&umidi->mutex);
- 	up_read(&umidi->disc_rwsem);
-+	return 0;
- }
- 
- static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
-@@ -1071,7 +1094,6 @@ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
- 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
- 	struct usbmidi_out_port* port = NULL;
- 	int i, j;
--	int err;
- 
- 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
- 		if (umidi->endpoints[i].out)
-@@ -1085,33 +1107,14 @@ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
- 		return -ENXIO;
- 	}
- 
--	down_read(&umidi->disc_rwsem);
--	if (umidi->disconnected) {
--		up_read(&umidi->disc_rwsem);
--		return -ENODEV;
--	}
--	err = usb_autopm_get_interface(umidi->iface);
--	port->autopm_reference = err >= 0;
--	up_read(&umidi->disc_rwsem);
--	if (err < 0 && err != -EACCES)
--		return -EIO;
- 	substream->runtime->private_data = port;
- 	port->state = STATE_UNKNOWN;
--	substream_open(substream, 1);
--	return 0;
-+	return substream_open(substream, 0, 1);
- }
- 
- static int snd_usbmidi_output_close(struct snd_rawmidi_substream *substream)
- {
--	struct snd_usb_midi* umidi = substream->rmidi->private_data;
--	struct usbmidi_out_port *port = substream->runtime->private_data;
--
--	substream_open(substream, 0);
--	down_read(&umidi->disc_rwsem);
--	if (!umidi->disconnected && port->autopm_reference)
--		usb_autopm_put_interface(umidi->iface);
--	up_read(&umidi->disc_rwsem);
--	return 0;
-+	return substream_open(substream, 0, 0);
- }
- 
- static void snd_usbmidi_output_trigger(struct snd_rawmidi_substream *substream, int up)
-@@ -1164,14 +1167,12 @@ static void snd_usbmidi_output_drain(struct snd_rawmidi_substream *substream)
- 
- static int snd_usbmidi_input_open(struct snd_rawmidi_substream *substream)
- {
--	substream_open(substream, 1);
--	return 0;
-+	return substream_open(substream, 1, 1);
- }
- 
- static int snd_usbmidi_input_close(struct snd_rawmidi_substream *substream)
- {
--	substream_open(substream, 0);
--	return 0;
-+	return substream_open(substream, 1, 0);
- }
- 
- static void snd_usbmidi_input_trigger(struct snd_rawmidi_substream *substream, int up)
-@@ -2080,12 +2081,15 @@ void snd_usbmidi_input_stop(struct list_head* p)
- 	unsigned int i, j;
- 
- 	umidi = list_entry(p, struct snd_usb_midi, list);
-+	if (!umidi->input_running)
-+		return;
- 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i) {
- 		struct snd_usb_midi_endpoint* ep = &umidi->endpoints[i];
- 		if (ep->in)
- 			for (j = 0; j < INPUT_URBS; ++j)
- 				usb_kill_urb(ep->in->urbs[j]);
- 	}
-+	umidi->input_running = 0;
- }
- 
- static void snd_usbmidi_input_start_ep(struct snd_usb_midi_in_endpoint* ep)
-@@ -2110,8 +2114,11 @@ void snd_usbmidi_input_start(struct list_head* p)
- 	int i;
- 
- 	umidi = list_entry(p, struct snd_usb_midi, list);
-+	if (umidi->input_running || !umidi->opened[1])
-+		return;
- 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
- 		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
-+	umidi->input_running = 1;
- }
- 
- /*
-@@ -2250,9 +2257,6 @@ int snd_usbmidi_create(struct snd_card *card,
- 	}
- 
- 	list_add_tail(&umidi->list, midi_list);
--
--	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
--		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
- 	return 0;
- }
  
 -- 
 1.7.9.5
