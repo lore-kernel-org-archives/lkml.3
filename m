@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab3APWMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:12:12 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:54685 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757454Ab3APWMK (ORCPT
+	id S1757636Ab3APWSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:18:36 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:28196 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757136Ab3APWSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:12:10 -0500
+	Wed, 16 Jan 2013 17:18:34 -0500
+Message-ID: <50F72706.5090900@oracle.com>
+Date: Wed, 16 Jan 2013 17:17:42 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130116220447.GA20148@rhlx01.hs-esslingen.de>
-References: <1358345841-29136-1-git-send-email-fweisbec@gmail.com>
-	<20130116220447.GA20148@rhlx01.hs-esslingen.de>
-Date: Wed, 16 Jan 2013 23:12:09 +0100
-Message-ID: <CAFTL4hzeCGR2ygqqB8mxuVzduVbx7YOOm98EMoxR25x5pFiYHA@mail.gmail.com>
-Subject: Re: [GIT PULL] irq_work changes for 3.9
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Peter Senna Tschudin <peter.senna@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] hlist: drop the node parameter from iterators
+References: <1358094677-11384-1-git-send-email-sasha.levin@oracle.com> <CA+55aFxFb21Ss=-0FUgzQOzPe1=mS11o7J-+Laco09XJvOk9Fg@mail.gmail.com> <50F72272.8090303@oracle.com> <CA+55aFxjwW4Ppv-73WHh-RqeFvq+Bjr3o08ZuKkiWuwAVMkqFQ@mail.gmail.com>
+In-Reply-To: <CA+55aFxjwW4Ppv-73WHh-RqeFvq+Bjr3o08ZuKkiWuwAVMkqFQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/16 Andreas Mohr <andi@lisas.de>:
-> Hi,
->
->> These three patches are general fixes for irq work. The two first
->> patches fix tight races on global irq work claiming that prevent the irq work
->> subsystem from dropping a work enqueuing attempt because it thinks it's
->> already pending while it may be already executing or executed.
->
-> Would that one happen to be one that would fix my system dropping
-> dead on sound output (looping the existing buffer ad infinitum)
-> every couple idle minutes when using my sound card's
-> PulseAudio IRQ-less playback patch (to-be-submitted),
-> and which seems to have started (or got quite a bit worse
-> so as to let me notice?) once I added my
-> "quirks: enable APIC De-Assert Message bit for VIA 8235, too."
-> (to-be-submitted) commit?
-> (which reduces IRQs from duplicate to single - thereby probably
-> reducing the opportunities for the system to notice that work is pending)
->
-> Of course a lone kick to the mouse always fixes it...
->
-> (-rc2 here)
->
-> Hell yeah that does sound like a potential candidate to me.
->
-> Andreas Mohr
+On 01/16/2013 05:04 PM, Linus Torvalds wrote:
+> On Wed, Jan 16, 2013 at 1:58 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>
+>> I guess that if you agree that it should go in once it had some more
+>> testing, it can go into linux-next and sit there for the next couple
+>> of weeks until the next merge window opens.
+> 
+> So linux-next gets compile testing and warns about conflicts. But
+> almost nobody really runs the end result.
 
-I doubt it. I don't see a sound driver using struct irq_work:
+I do :)
 
-$git grep -F "struct irq_work" drivers/ sound/
+I also know that people run ltp tests on top of those builds, so while
+it's not as good as actually working with it, it's also not
+insignificant.
 
-drivers/acpi/apei/ghes.c:static struct irq_work ghes_proc_irq_work;
-drivers/acpi/apei/ghes.c:static void ghes_proc_in_irq(struct irq_work *irq_work)
-drivers/extcon/extcon-max77693.c:       struct work_struct irq_work;
-drivers/extcon/extcon-max8997.c:        struct work_struct irq_work;
-drivers/net/ethernet/microchip/enc28j60.c:      struct work_struct irq_work;
-drivers/net/wireless/ti/wl1251/wl1251.h:        struct work_struct irq_work;
-drivers/staging/iio/trigger/iio-trig-sysfs.c:   struct irq_work work;
-drivers/staging/iio/trigger/iio-trig-sysfs.c:static void
-iio_sysfs_trigger_work(struct irq_work *work)
-drivers/thermal/exynos_thermal.c:       struct work_struct irq_work;
+> Now, *hopefully* the compile problems and conflicts are the major
+> issue, but at the same time, I worry about some actual subtle semantic
+> breakage. I'm not sure how it would happen, but it's a big patch..
+> 
+>> What would be the best way to do that though? see if akpm would take
+>> it into his tree?
+> 
+> That would help. As would just linux-next. As would just after the
+> next merge window closes, if you can send it almost immediately *and*
+> have the "at least the patch has been around for a long time with no
+> *known* breakage" note. Because at some point, I guess we can't do
+> much more than that.
+
+Alrighty, right after merge window it is. The -rc4 period is what you
+told me the last time I sent this patch, so I went with that this time.
+
+I'll resend this patch to Andrew in hopes that he'll be okay with
+having it in his tree until the next window.
+
+Thanks!
+
