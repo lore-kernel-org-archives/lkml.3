@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167Ab3APNG5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:06:57 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11447 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab3APNG4 (ORCPT
+	id S1757179Ab3APNIJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:08:09 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:34111 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab3APNII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:06:56 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 16 Jan 2013 05:06:48 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 2/2] ARM: tegra: DTS: cardhu: register UARTC
-Date: Wed, 16 Jan 2013 18:36:12 +0530
-Message-ID: <1358341572-8154-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1358341572-8154-1-git-send-email-ldewangan@nvidia.com>
-References: <1358341572-8154-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 16 Jan 2013 08:08:08 -0500
+From: Volokh Konstantin <volokh84@gmail.com>
+To: linux-media@vger.kernel.org
+Cc: mchehab@redhat.com, gregkh@linuxfoundation.org, volokh84@gmail.com,
+        dhowells@redhat.com, rdunlap@xenotime.net, hans.verkuil@cisco.com,
+        justinmattock@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] staging: media: go7007: firmware protection Protection for unfirmware load
+Date: Wed, 16 Jan 2013 17:00:49 +0400
+Message-Id: <1358341251-10087-2-git-send-email-volokh84@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1358341251-10087-1-git-send-email-volokh84@gmail.com>
+References: <1358341251-10087-1-git-send-email-volokh84@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UARTC is used for the interfacing with bluetooth device.
-Register this UART channel as high speed serial channel
-so that it can use the APB DMA for data transfer.
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Volokh Konstantin <volokh84@gmail.com>
 ---
-The driver file got applied in Greg KH's tty tree.
-Tested in linux-next 20121229 with some more changes as
-linux-next-20130116 is crashing in pincontrol.
+ drivers/staging/media/go7007/go7007-usb.c  |    2 +-
+ drivers/staging/media/go7007/go7007-v4l2.c |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
- arch/arm/boot/dts/tegra30-cardhu.dtsi |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-index bdb2a66..ff6b68f 100644
---- a/arch/arm/boot/dts/tegra30-cardhu.dtsi
-+++ b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-@@ -106,6 +106,15 @@
- 				nvidia,slew-rate-rising = <1>;
- 				nvidia,slew-rate-falling = <1>;
- 			};
-+			uart3_txd_pw6 {
-+				nvidia,pins =	"uart3_txd_pw6",
-+						"uart3_cts_n_pa1",
-+						"uart3_rts_n_pc0",
-+						"uart3_rxd_pw7";
-+				nvidia,function = "uartc";
-+				nvidia,pull = <0>;
-+				nvidia,tristate = <0>;
-+			};
- 		};
- 	};
+diff --git a/drivers/staging/media/go7007/go7007-usb.c b/drivers/staging/media/go7007/go7007-usb.c
+index 5443e25..a6cad15 100644
+--- a/drivers/staging/media/go7007/go7007-usb.c
++++ b/drivers/staging/media/go7007/go7007-usb.c
+@@ -1245,7 +1245,6 @@ static void go7007_usb_disconnect(struct usb_interface *intf)
+ 	struct urb *vurb, *aurb;
+ 	int i;
  
-@@ -114,6 +123,12 @@
- 		clock-frequency = <408000000>;
- 	};
+-	go->status = STATUS_SHUTDOWN;
+ 	usb_kill_urb(usb->intr_urb);
  
-+	serial@70006200 {
-+		compatible = "nvidia,tegra30-hsuart";
-+		status = "okay";
-+		clock-frequency = <408000000>;
-+	};
-+
- 	i2c@7000c000 {
- 		status = "okay";
- 		clock-frequency = <100000>;
+ 	/* Free USB-related structs */
+@@ -1269,6 +1268,7 @@ static void go7007_usb_disconnect(struct usb_interface *intf)
+ 	kfree(go->hpi_context);
+ 
+ 	go7007_remove(go);
++	go->status = STATUS_SHUTDOWN;
+ }
+ 
+ static struct usb_driver go7007_usb_driver = {
+diff --git a/drivers/staging/media/go7007/go7007-v4l2.c b/drivers/staging/media/go7007/go7007-v4l2.c
+index e6fa543..a69250f 100644
+--- a/drivers/staging/media/go7007/go7007-v4l2.c
++++ b/drivers/staging/media/go7007/go7007-v4l2.c
+@@ -1832,5 +1832,6 @@ void go7007_v4l2_remove(struct go7007 *go)
+ 	mutex_unlock(&go->hw_lock);
+ 	if (go->video_dev)
+ 		video_unregister_device(go->video_dev);
+-	v4l2_device_unregister(&go->v4l2_dev);
++	if (go->status != STATUS_SHUTDOWN)
++		v4l2_device_unregister(&go->v4l2_dev);
+ }
 -- 
-1.7.1.1
+1.7.7.6
 
