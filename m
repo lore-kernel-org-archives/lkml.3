@@ -1,37 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab3APVt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 16:49:29 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43712 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757300Ab3APVtZ (ORCPT
+	id S1757493Ab3APVt2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 16:49:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2909 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757264Ab3APVtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 16:49:25 -0500
-Message-ID: <50F72062.7060404@wwwdotorg.org>
-Date: Wed, 16 Jan 2013 14:49:22 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 1/4] arm: tegra: Add DT nodes for Tegra USB PHY
-References: <1358343022-28919-1-git-send-email-vbyravarasu@nvidia.com> <1358343022-28919-2-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1358343022-28919-2-git-send-email-vbyravarasu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Jan 2013 16:49:24 -0500
+X-Authority-Analysis: v=2.0 cv=UsXhxpMB c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=S2hSrj2-stIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=WTqab4NZ4NAA:10 a=0ewD6LGPz4y_VLYcV3EA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358372961.23211.8.camel@gandalf.local.home>
+Subject: Re: [PATCH v4] context_tracking: Add comments on interface and
+ internals
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 16 Jan 2013 16:49:21 -0500
+In-Reply-To: <20130116131832.7b3bede0.akpm@linux-foundation.org>
+References: <87wqvdl1n8.fsf@sejong.aot.lge.com>
+	 <1358352997-29585-1-git-send-email-fweisbec@gmail.com>
+	 <20130116131832.7b3bede0.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 06:30 AM, Venu Byravarasu wrote:
-> Add DT nodes for Tegra USB PHY along with related documentation.
-> Also added a phandle property to controller DT node, for referring
-> to connected PHY instance.
+On Wed, 2013-01-16 at 13:18 -0800, Andrew Morton wrote:
+> On Wed, 16 Jan 2013 17:16:37 +0100
 
-Just a quick reminder to Greg, Felipe, Alan: Once this series passes
-review, I'll need to take it through the Tegra tree. (Sorry if I'm
-belabouring that point). This patch in particular will interact with the
-common clock framework changes that will very soon be in the Tegra tree.
+> I still don't understand NOHZ's role in this whole thing :(
+
+It's not for idle NOHZ, but "process" NOHZ.
+
+That is if we have only one task running on a CPU, we don't want a tick
+interrupt to bother it. This is because there's lots of users out there
+that want an uninterrupted task. A task that doesn't ever get bothered
+by the kernel. If it's in userspace, it stays in userspace (no
+interrupts), until it calls into the kernel itself (syscall). Even when
+its in the kernel, we still don't need the tick interrupt if its the
+only task.
+
+But the scheduler isn't the only thing that uses this tick. To remove
+the tick, we need to satisfy all the other users (printk, delayed work,
+u/s-times).
+
+To still keep up the stats of user and kernel times for the task, we
+need to record when the task switches from user to kernel and back
+again. Hence the context tracking code.
+
+Makes more sense?
+
+-- Steve
+
+
