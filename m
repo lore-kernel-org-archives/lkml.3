@@ -1,100 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426Ab3APNpT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:45:19 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:37067 "EHLO
+	id S1754795Ab3APNpS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:45:18 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:37065 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab3APNpQ (ORCPT
+	with ESMTP id S1751363Ab3APNpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 08:45:16 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] TTY: mn10300-serial, fix build breakage
-Date: Wed, 16 Jan 2013 14:45:07 +0100
-Message-Id: <1358343907-28142-2-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 1/2] TTY: ip22zilog, fix tty_flip_buffer_push call
+Date: Wed, 16 Jan 2013 14:45:06 +0100
+Message-Id: <1358343907-28142-1-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1358343907-28142-1-git-send-email-jslaby@suse.cz>
-References: <1358343907-28142-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By the recent `switch flipping' patches we introduced a build failure
-in the driver:
-mn10300-serial.c:527:19: error: 'port' redeclared as different kind of symbol
-
-I did not notice because I did not even find a compiler for that new
-architecture. Hopefully everything is all right now as I cannot test
-it.
+This one was omitted by the "TTY: switch tty_flip_buffer_push" patch
+because I did not compile-test mips driver. Now I do.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/mn10300/kernel/mn10300-serial.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ drivers/tty/serial/ip22zilog.c | 30 ++++++++++++------------------
+ 1 file changed, 12 insertions(+), 18 deletions(-)
 
-diff --git a/arch/mn10300/kernel/mn10300-serial.c b/arch/mn10300/kernel/mn10300-serial.c
-index 1dd20db..bf6e949 100644
---- a/arch/mn10300/kernel/mn10300-serial.c
-+++ b/arch/mn10300/kernel/mn10300-serial.c
-@@ -524,7 +524,7 @@ static int mask_test_and_clear(volatile u8 *ptr, u8 mask)
- static void mn10300_serial_receive_interrupt(struct mn10300_serial_port *port)
+diff --git a/drivers/tty/serial/ip22zilog.c b/drivers/tty/serial/ip22zilog.c
+index 7b1cda5..cb3c81e 100644
+--- a/drivers/tty/serial/ip22zilog.c
++++ b/drivers/tty/serial/ip22zilog.c
+@@ -248,17 +248,12 @@ static void ip22zilog_maybe_update_regs(struct uart_ip22zilog_port *up,
+ #define Rx_BRK 0x0100                   /* BREAK event software flag.  */
+ #define Rx_SYS 0x0200                   /* SysRq event software flag.  */
+ 
+-static struct tty_struct *ip22zilog_receive_chars(struct uart_ip22zilog_port *up,
++static bool ip22zilog_receive_chars(struct uart_ip22zilog_port *up,
+ 						  struct zilog_channel *channel)
  {
- 	struct uart_icount *icount = &port->uart.icount;
--	struct tty_port *port = &port->uart.state->port;
-+	struct tty_port *tport = &port->uart.state->port;
- 	unsigned ix;
- 	int count;
- 	u8 st, ch, push, status, overrun;
-@@ -534,10 +534,10 @@ static void mn10300_serial_receive_interrupt(struct mn10300_serial_port *port)
- 	push = 0;
+-	struct tty_struct *tty;
+ 	unsigned char ch, flag;
+ 	unsigned int r1;
+-
+-	tty = NULL;
+-	if (up->port.state != NULL &&
+-	    up->port.state->port.tty != NULL)
+-		tty = up->port.state->port.tty;
++	bool push = up->port.state != NULL;
  
- 	count = CIRC_CNT(port->rx_inp, port->rx_outp, MNSC_BUFFER_SIZE);
--	count = tty_buffer_request_room(port, count);
-+	count = tty_buffer_request_room(tport, count);
- 	if (count == 0) {
--		if (!port->low_latency)
--			tty_flip_buffer_push(port);
-+		if (!tport->low_latency)
-+			tty_flip_buffer_push(tport);
- 		return;
+ 	for (;;) {
+ 		ch = readb(&channel->control);
+@@ -312,10 +307,10 @@ static struct tty_struct *ip22zilog_receive_chars(struct uart_ip22zilog_port *up
+ 		if (uart_handle_sysrq_char(&up->port, ch))
+ 			continue;
+ 
+-		if (tty)
++		if (push)
+ 			uart_insert_char(&up->port, r1, Rx_OVR, ch, flag);
  	}
+-	return tty;
++	return push;
+ }
  
-@@ -545,8 +545,8 @@ try_again:
- 	/* pull chars out of the hat */
- 	ix = ACCESS_ONCE(port->rx_outp);
- 	if (CIRC_CNT(port->rx_inp, ix, MNSC_BUFFER_SIZE) == 0) {
--		if (push && !port->low_latency)
--			tty_flip_buffer_push(port);
-+		if (push && !tport->low_latency)
-+			tty_flip_buffer_push(tport);
- 		return;
+ static void ip22zilog_status_handle(struct uart_ip22zilog_port *up,
+@@ -438,21 +433,20 @@ static irqreturn_t ip22zilog_interrupt(int irq, void *dev_id)
+ 	while (up) {
+ 		struct zilog_channel *channel
+ 			= ZILOG_CHANNEL_FROM_PORT(&up->port);
+-		struct tty_struct *tty;
+ 		unsigned char r3;
++		bool push = false;
+ 
+ 		spin_lock(&up->port.lock);
+ 		r3 = read_zsreg(channel, R3);
+ 
+ 		/* Channel A */
+-		tty = NULL;
+ 		if (r3 & (CHAEXT | CHATxIP | CHARxIP)) {
+ 			writeb(RES_H_IUS, &channel->control);
+ 			ZSDELAY();
+ 			ZS_WSYNC(channel);
+ 
+ 			if (r3 & CHARxIP)
+-				tty = ip22zilog_receive_chars(up, channel);
++				push = ip22zilog_receive_chars(up, channel);
+ 			if (r3 & CHAEXT)
+ 				ip22zilog_status_handle(up, channel);
+ 			if (r3 & CHATxIP)
+@@ -460,22 +454,22 @@ static irqreturn_t ip22zilog_interrupt(int irq, void *dev_id)
+ 		}
+ 		spin_unlock(&up->port.lock);
+ 
+-		if (tty)
+-			tty_flip_buffer_push(tty);
++		if (push)
++			tty_flip_buffer_push(&up->port.state->port);
+ 
+ 		/* Channel B */
+ 		up = up->next;
+ 		channel = ZILOG_CHANNEL_FROM_PORT(&up->port);
++		push = false;
+ 
+ 		spin_lock(&up->port.lock);
+-		tty = NULL;
+ 		if (r3 & (CHBEXT | CHBTxIP | CHBRxIP)) {
+ 			writeb(RES_H_IUS, &channel->control);
+ 			ZSDELAY();
+ 			ZS_WSYNC(channel);
+ 
+ 			if (r3 & CHBRxIP)
+-				tty = ip22zilog_receive_chars(up, channel);
++				push = ip22zilog_receive_chars(up, channel);
+ 			if (r3 & CHBEXT)
+ 				ip22zilog_status_handle(up, channel);
+ 			if (r3 & CHBTxIP)
+@@ -483,8 +477,8 @@ static irqreturn_t ip22zilog_interrupt(int irq, void *dev_id)
+ 		}
+ 		spin_unlock(&up->port.lock);
+ 
+-		if (tty)
+-			tty_flip_buffer_push(tty);
++		if (push)
++			tty_flip_buffer_push(&up->port.state->port);
+ 
+ 		up = up->next;
  	}
- 
-@@ -666,19 +666,19 @@ insert:
- 		else
- 			flag = TTY_NORMAL;
- 
--		tty_insert_flip_char(port, ch, flag);
-+		tty_insert_flip_char(tport, ch, flag);
- 	}
- 
- 	/* overrun is special, since it's reported immediately, and doesn't
- 	 * affect the current character
- 	 */
- 	if (overrun)
--		tty_insert_flip_char(port, 0, TTY_OVERRUN);
-+		tty_insert_flip_char(tport, 0, TTY_OVERRUN);
- 
- 	count--;
- 	if (count <= 0) {
--		if (!port->low_latency)
--			tty_flip_buffer_push(port);
-+		if (!tport->low_latency)
-+			tty_flip_buffer_push(tport);
- 		return;
- 	}
- 
 -- 
 1.8.1
 
