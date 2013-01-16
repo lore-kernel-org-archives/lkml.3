@@ -1,37 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab3APL1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 06:27:48 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47629 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308Ab3APL1q (ORCPT
+	id S1757860Ab3APL2s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 06:28:48 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:46843 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab3APL2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 06:27:46 -0500
-Date: Wed, 16 Jan 2013 11:25:56 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
-Message-ID: <20130116112556.GR23505@n2100.arm.linux.org.uk>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <20130109231758.GA27065@obsidianresearch.com> <20130110071937.GG15212@avionic-0098.adnet.avionic-design.de> <201301100917.19577.arnd@arndb.de> <20130110102544.GA5546@avionic-0098.adnet.avionic-design.de> <20130110182007.GA28004@obsidianresearch.com> <20130110185505.GA22944@avionic-0098.adnet.avionic-design.de> <20130110190327.GA23110@avionic-0098.adnet.avionic-design.de> <20130110192417.GA18478@obsidianresearch.com> <20130116101822.GA17706@avionic-0098.adnet.avionic-design.de>
+	Wed, 16 Jan 2013 06:28:47 -0500
+Date: Wed, 16 Jan 2013 12:26:10 +0000
+From: Tiana Rakotovao Andriamahefa <rkmahefa@gmail.com>
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: qt3 and ptrdiff_t build error
+Message-ID: <20130116122610.GA7613@rak.local>
+References: <20130115231251.GA6100@rak.local>
+ <20130116063156.GA28910@pryan.ekaia.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130116101822.GA17706@avionic-0098.adnet.avionic-design.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130116063156.GA28910@pryan.ekaia.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 11:18:22AM +0100, Thierry Reding wrote:
-> 		err = ioremap_page_range(virt, virt + SZ_64K - 1, phys,
+Le mercredi 16 janvier 2013 à 07:31:56, Ana Guerrero a écrit :
+> On Tue, Jan 15, 2013 at 11:12:51PM +0000, Tiana Rakotovao Andriamahefa wrote:
+> > Hi all,
+> > 
+> > The build of an application using qt3 always fails into this
+> > kind of error (with GCC-4.6) :
+> > 
+> > In file included from /usr/include/qt3/qmime.h:46:0,
+> >                  from /usr/include/qt3/qevent.h:48,
+> >                  from /usr/include/qt3/qobject.h:48,
+> >                  from /usr/include/qt3/qwidget.h:46,
+> >                  from /usr/include/qt3/qmainwindow.h:45,
+> >                  from main.cc:9:
+> > /usr/include/qt3/qmap.h:607:13: error: ‘ptrdiff_t’ does not name a type
+> > make[1]: *** [scripts/kconfig/qconf.o] Erreur 1
+> > make: *** [xconfig] Erreur 2
+> > 
+> > 
+> > And including <stddef.h> resolves well this problem.
+> > 
+> > So, I would like to ask you if qt3 is still maintained so that it is
+> > for example possible to add " include <stddef.h> " in some qt3 headers?
+> > Or should stddef.h always be included by our program.
+> 
+> Hi Tiana,
+> 
+> Qt3 is not maintained anymore in Debian. Last stable version of Debian
+> shipping Qt3 is Squeeze with GCC 4.4.
+> IIRC the problem you reported was fixed in one of the uploads of Qt3 made
+> after the release of Squeeze, if you grab the latest upload of Qt3 from
+> http://snapshot.debian.org it is possible this problem is fixed there.
 
-Why -1 here?
+I have checked it and found that the error was effectively fixed in the last
+maintained upload of Qt3 in 2011. However, the correction is not yet in Wheezy
+(Debian testing) which I have used for more than a year. It might be
+included there one day!
+This is the case of Debian, but not all distros.
+
+-- 
+Tiana Rakotovao Andriamahefa
