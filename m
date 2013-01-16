@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757666Ab3APAgc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:36:32 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:57968 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757771Ab3APAg2 (ORCPT
+	id S1757896Ab3APAg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:36:58 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:61097 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757651Ab3APAgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 19:36:28 -0500
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux MM <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Cody P Schafer <jmesmon@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 04/17] mm: add helper ensure_zone_is_initialized()
-Date: Tue, 15 Jan 2013 16:24:41 -0800
-Message-Id: <1358295894-24167-5-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.0.3
-In-Reply-To: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011600-7282-0000-0000-00001326ED4F
+	Tue, 15 Jan 2013 19:36:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130115235043.GJ2668@htj.dyndns.org>
+References: <Pine.LNX.4.44L0.1301131153520.17578-100000@netrider.rowland.org>
+ <CALxABCYtKJD4YrPxy6p+Frim8erccp3ine7SVEV9ReoaRh1BWQ@mail.gmail.com>
+ <CACVXFVPMH-CHGw2EVwgYK5ozn1NAygT0f9=Df4vhSJmYYOZBMw@mail.gmail.com>
+ <CACVXFVNvBeHG2TgfNY-wRQYtqsd6v-3AAiQVPAECuRnJ--ON-g@mail.gmail.com>
+ <CA+55aFxV40V2WvNtJY3EC0F-B9wPk8CV2o1TTTyoF4CoWH7rhQ@mail.gmail.com>
+ <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
+ <CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com>
+ <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
+ <20130115183204.GE2668@htj.dyndns.org> <CA+55aFzZ1NJz34r99N7+mU4CN5Ju4QpHrDoWv5Kbd5-Z4QzgaA@mail.gmail.com>
+ <20130115235043.GJ2668@htj.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 15 Jan 2013 16:36:34 -0800
+X-Google-Sender-Auth: zbF4Ho30qlcgCw-WObzAaoDkxUg
+Message-ID: <CA+55aFzm4k2CyQ_mZVHyeasjw4ybqfO2SpJrZZNZeUsSW8PB=g@mail.gmail.com>
+Subject: Re: USB device cannot be reconnected and khubd "blocked for more than
+ 120 seconds"
+To: Tejun Heo <tj@kernel.org>
+Cc: Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cody P Schafer <jmesmon@gmail.com>
+On Tue, Jan 15, 2013 at 3:50 PM, Tejun Heo <tj@kernel.org> wrote:
+>
+> For now, I'm gonna implement simple "I'm not gonna wait for myself"
+> self-deadlock avoidance.
 
-ensure_zone_is_initialized() checks if a zone is in a empty & not
-initialized state (typically occuring after it is created in memory
-hotplugging), and, if so, calls init_currently_empty_zone() to
-initialize the zone.
+You can't really do that. Or rather, it won't *help*.
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- mm/memory_hotplug.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+The thing is, the module loading in particular is not necessarily
+happening in the same context as what *started* the module loading. A
+module loader will request the module from user space, and then later
+user space - through possibly a totally unrelated process - will
+finish it. So there is no "myself". There's not even necessarily any
+relationship that the kernel even knows about, because the module
+loading request can have gone from usermode_helper over something like
+dbus to systemd.
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index d04ed87..875bdfe 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -253,6 +253,17 @@ static void fix_zone_id(struct zone *zone, unsigned long start_pfn,
- 		set_page_links(pfn_to_page(pfn), zid, nid, pfn);
- }
- 
-+/* Can fail with -ENOMEM from allocating a wait table with vmalloc() or
-+ * alloc_bootmem_node_nopanic() */
-+static int __ref ensure_zone_is_initialized(struct zone *zone,
-+			unsigned long start_pfn, unsigned long num_pages)
-+{
-+	if (!zone_is_initialized(zone))
-+		return init_currently_empty_zone(zone, start_pfn, num_pages,
-+						 MEMMAP_HOTPLUG);
-+	return 0;
-+}
-+
- static int __meminit move_pfn_range_left(struct zone *z1, struct zone *z2,
- 		unsigned long start_pfn, unsigned long end_pfn)
- {
--- 
-1.8.0.3
+See?
 
+There's a reason I asked for a warning for this. Or the "let's flag
+the current thread if it ever started anything asynchronous". Because
+it's complicated.
+
+          Linus
