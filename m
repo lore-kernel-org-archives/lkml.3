@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab3APNgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:36:10 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38995 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab3APNgI (ORCPT
+	id S1753602Ab3APNj1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:39:27 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64984 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751419Ab3APNjZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:36:08 -0500
-Date: Wed, 16 Jan 2013 16:36:08 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Volokh Konstantin <volokh84@gmail.com>
-Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        mchehab@redhat.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com,
-        rdunlap@xenotime.net, hans.verkuil@cisco.com, justinmattock@gmail.com
-Subject: Re: [PATCH 3/4] staging: media: go7007: i2c GPIO initialization
- Reset i2c stuff for GO7007_BOARDID_ADLINK_MPG24 need reset GPIO always when
- encoder initialize
-Message-ID: <20130116133608.GH4584@mwanda>
-References: <1358341251-10087-1-git-send-email-volokh84@gmail.com>
- <1358341251-10087-3-git-send-email-volokh84@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358341251-10087-3-git-send-email-volokh84@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 16 Jan 2013 08:39:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,479,1355126400"; 
+   d="scan'208";a="272761329"
+Message-ID: <1358343551.12502.25.camel@smile>
+Subject: Re: [PATCH] dw_dmac: switch to use dma_pool API
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Date: Wed, 16 Jan 2013 15:39:11 +0200
+In-Reply-To: <CAOh2x=k2M_U_f4ztjCkO5rxGg=-P-5ghHKXPJHNVkWq8=-jqYg@mail.gmail.com>
+References: <1358327443-10562-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CAOh2x=k2M_U_f4ztjCkO5rxGg=-P-5ghHKXPJHNVkWq8=-jqYg@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You've added the writes for GO7007_BOARDID_ADLINK_MPG24 but removed
-them for GO7007_BOARDID_XMEN and GO7007_BOARDID_XMEN_III.  Won't
-that break those boards?
+On Wed, 2013-01-16 at 15:18 +0530, Viresh Kumar wrote: 
+> > @@ -1125,7 +1083,6 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
+> > +               memset(desc, 0, sizeof(struct dw_desc));
+> > +
+> 
+> why do we need this? We always fill all fields of this structure, isn't it?
 
-regards,
-dan carpenter
+No, it is not. At least we don't fill everything at
+alloc_chan_resources() stage. Previous code used kzalloc. I decide to
+use memset to avoid potential side effects in the future.
 
-
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
