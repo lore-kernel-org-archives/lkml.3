@@ -1,215 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab3APOoo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:44:44 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46526 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756303Ab3APOol (ORCPT
+	id S1756522Ab3APOtE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:49:04 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:46811 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756391Ab3APOop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:44:41 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
-CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <rogerq@ti.com>
-Subject: [PATCH v6 08/22] mfd: omap-usb-tll: serialize access to TLL device
-Date: Wed, 16 Jan 2013 16:43:39 +0200
-Message-ID: <1358347433-329-9-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1358347433-329-1-git-send-email-rogerq@ti.com>
-References: <1358347433-329-1-git-send-email-rogerq@ti.com>
+	Wed, 16 Jan 2013 09:44:45 -0500
+From: sjur.brandeland@stericsson.com
+To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Cc: mporter@ti.com, =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Loic Pallardy <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Suman Anna <s-anna@ti.com>, Mark Grosen <mgrosen@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [RFCv3 10/11] remoteproc: Support virtio config space.
+Date: Wed, 16 Jan 2013 15:43:49 +0100
+Message-Id: <1358347430-9243-11-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358347430-9243-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1358347430-9243-1-git-send-email-sjur.brandeland@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the unnecessary spin_lock_irqsave/restore() as there is
-no interrupt handler for this driver. Instead we serialize access
-to tll_dev using a global spinlock.
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+Support virtio configuration space and device status and
+feature negotiation with remote device. This virtio device
+can now access the resource table in shared memory.
+
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/mfd/omap-usb-tll.c |   53 ++++++++++++++++++++++---------------------
- 1 files changed, 27 insertions(+), 26 deletions(-)
+ drivers/remoteproc/remoteproc_core.c   |    3 --
+ drivers/remoteproc/remoteproc_virtio.c |   38 +++++++++++++++++++++++++++++--
+ include/linux/remoteproc.h             |    2 -
+ 3 files changed, 35 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index 8628313..031f4fd 100644
---- a/drivers/mfd/omap-usb-tll.c
-+++ b/drivers/mfd/omap-usb-tll.c
-@@ -103,14 +103,13 @@ struct usbtll_omap {
- 	int					nch;	/* num. of channels */
- 	struct usbhs_omap_platform_data		*pdata;
- 	struct clk				**ch_clk;
--	/* secure the register updates */
--	spinlock_t				lock;
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index da1ff4f..4f342e0 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -369,9 +369,6 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
+ 			goto free_rvdev;
+ 	}
+ 
+-	/* remember the device features */
+-	rvdev->dfeatures = rsc->dfeatures;
+-
+ 	/* remember the resource entry */
+ 	rvdev->rsc = rsc;
+ 
+diff --git a/drivers/remoteproc/remoteproc_virtio.c b/drivers/remoteproc/remoteproc_virtio.c
+index e7a4780..eb2089a 100644
+--- a/drivers/remoteproc/remoteproc_virtio.c
++++ b/drivers/remoteproc/remoteproc_virtio.c
+@@ -176,16 +176,21 @@ error:
+  */
+ static u8 rproc_virtio_get_status(struct virtio_device *vdev)
+ {
+-	return 0;
++	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
++	return rvdev->rsc->status;
+ }
+ 
+ static void rproc_virtio_set_status(struct virtio_device *vdev, u8 status)
+ {
++	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
++	rvdev->rsc->status = status;
+ 	dev_dbg(&vdev->dev, "status: %d\n", status);
+ }
+ 
+ static void rproc_virtio_reset(struct virtio_device *vdev)
+ {
++	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
++	rvdev->rsc->status = 0;
+ 	dev_dbg(&vdev->dev, "reset !\n");
+ }
+ 
+@@ -194,7 +199,7 @@ static u32 rproc_virtio_get_features(struct virtio_device *vdev)
+ {
+ 	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
+ 
+-	return rvdev->dfeatures;
++	return rvdev->rsc->dfeatures;
+ }
+ 
+ static void rproc_virtio_finalize_features(struct virtio_device *vdev)
+@@ -213,7 +218,31 @@ static void rproc_virtio_finalize_features(struct virtio_device *vdev)
+ 	 * fixed as part of a small resource table overhaul and then an
+ 	 * extension of the virtio resource entries.
+ 	 */
+-	rvdev->gfeatures = vdev->features[0];
++	rvdev->rsc->gfeatures = vdev->features[0];
++}
++
++void rproc_virtio_get(struct virtio_device *vdev, unsigned offset,
++							void *buf, unsigned len)
++{
++	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
++	void *cfg = &rvdev->rsc->vring[rvdev->rsc->num_of_vrings];
++	if (offset + len > rvdev->rsc->config_len)
++		dev_err(&vdev->dev,
++			"rproc_virtio_get: access out of bounds\n");
++	else
++		memcpy(buf, cfg + offset, len);
++}
++
++void rproc_virtio_set(struct virtio_device *vdev, unsigned offset,
++		      const void *buf, unsigned len)
++{
++	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
++	void *cfg = &rvdev->rsc->vring[rvdev->rsc->num_of_vrings];
++	if (offset + len > rvdev->rsc->config_len)
++		dev_err(&vdev->dev,
++			"rproc_virtio_set: access out of bounds\n");
++	else
++		memcpy(cfg + offset, buf, len);
+ }
+ 
+ static struct virtio_config_ops rproc_virtio_config_ops = {
+@@ -224,6 +253,9 @@ static struct virtio_config_ops rproc_virtio_config_ops = {
+ 	.reset		= rproc_virtio_reset,
+ 	.set_status	= rproc_virtio_set_status,
+ 	.get_status	= rproc_virtio_get_status,
++	.get		= rproc_virtio_get,
++	.set		= rproc_virtio_set,
++
  };
  
- /*-------------------------------------------------------------------------*/
- 
- static const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
- static struct device	*tll_dev;
-+static DEFINE_SPINLOCK(tll_lock);	/* serialize access to tll_dev */
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -212,7 +211,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	struct resource				*res;
- 	struct usbtll_omap			*tll;
- 	unsigned				reg;
--	unsigned long				flags;
- 	int					ret = 0;
- 	int					i, ver;
- 	bool needs_tll;
-@@ -230,8 +228,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	spin_lock_init(&tll->lock);
--
- 	tll->pdata = pdata;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -246,8 +242,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	pm_runtime_enable(dev);
- 	pm_runtime_get_sync(dev);
- 
--	spin_lock_irqsave(&tll->lock, flags);
--
- 	ver =  usbtll_read(base, OMAP_USBTLL_REVISION);
- 	switch (ver) {
- 	case OMAP_USBTLL_REV1:
-@@ -265,8 +259,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		break;
- 	}
- 
--	spin_unlock_irqrestore(&tll->lock, flags);
--
- 	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
- 						GFP_KERNEL);
- 	if (!tll->ch_clk) {
-@@ -275,8 +267,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		goto err_clk_alloc;
- 	}
- 
--	spin_lock_irqsave(&tll->lock, flags);
--
- 	for (i = 0; i < tll->nch; i++) {
- 		char clkname[] = "usb_tll_hs_usb_chx_clk";
- 		struct clk *fck;
-@@ -335,10 +325,11 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	spin_unlock_irqrestore(&tll->lock, flags);
- 	pm_runtime_put_sync(dev);
- 	/* only after this can omap_tll_enable/disable work */
-+	spin_lock(&tll_lock);
- 	tll_dev = dev;
-+	spin_unlock(&tll_lock);
- 
- 	return 0;
- 
-@@ -360,7 +351,9 @@ static int usbtll_omap_remove(struct platform_device *pdev)
- 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
- 	int i;
- 
-+	spin_lock(&tll_lock);
- 	tll_dev = NULL;
-+	spin_unlock(&tll_lock);
- 
- 	for (i = 0; i < tll->nch; i++)
- 		clk_put(tll->ch_clk[i]);
-@@ -373,13 +366,10 @@ static int usbtll_runtime_resume(struct device *dev)
- {
- 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
- 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
--	unsigned long				flags;
- 	int i;
- 
- 	dev_dbg(dev, "usbtll_runtime_resume\n");
- 
--	spin_lock_irqsave(&tll->lock, flags);
--
- 	for (i = 0; i < tll->nch; i++) {
- 		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
- 			int r;
-@@ -395,8 +385,6 @@ static int usbtll_runtime_resume(struct device *dev)
- 		}
- 	}
- 
--	spin_unlock_irqrestore(&tll->lock, flags);
--
- 	return 0;
- }
- 
-@@ -404,13 +392,10 @@ static int usbtll_runtime_suspend(struct device *dev)
- {
- 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
- 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
--	unsigned long				flags;
- 	int i;
- 
- 	dev_dbg(dev, "usbtll_runtime_suspend\n");
- 
--	spin_lock_irqsave(&tll->lock, flags);
--
- 	for (i = 0; i < tll->nch; i++) {
- 		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
- 			if (tll->ch_clk[i])
-@@ -418,8 +403,6 @@ static int usbtll_runtime_suspend(struct device *dev)
- 		}
- 	}
- 
--	spin_unlock_irqrestore(&tll->lock, flags);
--
- 	return 0;
- }
- 
-@@ -441,21 +424,39 @@ static struct platform_driver usbtll_omap_driver = {
- 
- int omap_tll_enable(void)
- {
-+	int ret;
-+
-+	spin_lock(&tll_lock);
-+
- 	if (!tll_dev) {
- 		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
--		return  -ENODEV;
-+		ret = -ENODEV;
-+	} else {
-+		ret = pm_runtime_get_sync(tll_dev);
- 	}
--	return pm_runtime_get_sync(tll_dev);
-+
-+	spin_unlock(&tll_lock);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(omap_tll_enable);
- 
- int omap_tll_disable(void)
- {
-+	int ret;
-+
-+	spin_lock(&tll_lock);
-+
- 	if (!tll_dev) {
- 		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
--		return  -ENODEV;
-+		ret = -ENODEV;
-+	} else {
-+		ret = pm_runtime_put_sync(tll_dev);
- 	}
--	return pm_runtime_put_sync(tll_dev);
-+
-+	spin_unlock(&tll_lock);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(omap_tll_disable);
+ /*
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index 932edc7..d41d66f 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -472,8 +472,6 @@ struct rproc_vdev {
+ 	struct rproc *rproc;
+ 	struct virtio_device vdev;
+ 	struct rproc_vring vring[RVDEV_NUM_VRINGS];
+-	unsigned long dfeatures;
+-	unsigned long gfeatures;
+ 	struct fw_rsc_vdev *rsc;
+ };
  
 -- 
-1.7.4.1
+1.7.5.4
 
