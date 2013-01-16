@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab3APFR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 00:17:57 -0500
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:39799 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab3APFRz (ORCPT
+	id S1752850Ab3APFUQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 00:20:16 -0500
+Received: from relay.parallels.com ([195.214.232.42]:33956 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab3APFUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 00:17:55 -0500
-Message-ID: <50F637D1.8070302@lab.ntt.co.jp>
-Date: Wed, 16 Jan 2013 14:17:05 +0900
-From: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+	Wed, 16 Jan 2013 00:20:14 -0500
+Message-ID: <50F63882.8000607@parallels.com>
+Date: Wed, 16 Jan 2013 09:20:02 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Antonio Ospite <ospite@studenti.unina.it>
-Subject: Re: [PATCH v2] HID: add support for Sony RF receiver with USB product
- id 0x0374
-References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>  <50F52986.2080002@lab.ntt.co.jp> <1358246448.4897.3.camel@nexus.lab.ntt.co.jp> <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "J. Bruce Fields" <bfields@fieldses.org>, Mark Lord <kernel@teksavvy.com>
+CC: <linux-nfs@vger.kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
+References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org>
+In-Reply-To: <20130115205625.GH4940@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On 2013/01/16 01:02, Jiri Kosina wrote:
-> On Tue, 15 Jan 2013, Fernando Luis Vázquez Cao wrote:
+16.01.2013 00:56, J. Bruce Fields пишет:
+> On Mon, Jan 14, 2013 at 11:16:00PM -0500, Mark Lord wrote:
+>> On 13-01-14 03:37 PM, J. Bruce Fields wrote:
+>>> Thanks for the report.
+>>>
+>>> On Mon, Jan 14, 2013 at 11:17:09AM -0500, Mark Lord wrote:
+>>>> Since upgrading to 3.7, and now 3.7.2, my AMD-450E based server
+>>>
+>>> It's acting as an NFS client, right?
+>>
+>> Client and server, with other Linux boxes all running 3.something kernels.
+>>
+>>> What did you upgrade from?
+>>
+>> 3.4.something, I believe.
+>>
+>>>> is getting these BUG complaints.  The .config file is gzip'd/attached.
+>>>
+>>> Is this easy to reproduce?
+>>
+>> So far, it seems to pop up within a day or so of any reboot.
+>> I normally only reboot that system for a kernel upgrade,
+>> but can do so a bit more often if there's useful info to collect.
 >
->> Some Vaio desktop computers, among them the VGC-LN51JGB multimedia PC, have
->> a RF receiver, multi-interface USB device 054c:0374, that is used to connect
->> a wireless keyboard and a wireless mouse.
->>
->> The keyboard works flawlessly, but the mouse (VGP-WMS3 in my case) does not
->> seem to be generating any pointer events. The problem is that the mouse pointer
->> is wrongly declared as a constant non-data variable in the report descriptor
->> (see lsusb and usbhid-dump output below), with the consequence that it is
->> ignored by the HID code.
->>
->> Add this device to the have-special-driver list and fix up the report
->> descriptor in the Sony-specific driver which happens to already have a fixup
->> for a similar firmware bug.
-> Applied, thanks.
+> So this means svc_delete_xprt was called on an xprt twice.
+>
+> That could happen if server threads are still running (and calling
+> svc_recv) after we start shutting down the server: svc_shutdown_net
+> assumes that server threads are already shut down, but that isn't true
+> any more after the containerization work.
+>
+> I thought that would only be a bug for users actually running multiple
+> containers, but looking at nfs_callback_down, I don't think that's
+> true--it seems to always shut down the thread last.
+>
 
-Thank you.
+Thanks, Bruce. It reminds me the patch with additional protection for permanents sockets shutdown I've sent you a couple of mount ago...
+Look like I should revisit this patch at least.
 
-I noticed that the patch was tagged "for-3.9". Does this mean
-that it is too late to get it merged during the current release
-cycle?
+Mark, could you provide any call traces?
 
-If possible, I would like to get it backported to 3.7-stable (and
-possibly 3.2 stable), since without it a whole family of Sony
-desktop computers is unusable under Linux out of the box.
-Should I do it myself or do you have a process in place for HID
-stable patches?
+> --b.
+>
 
-Regards,
-Fernando
+
+-- 
+Best regards,
+Stanislav Kinsbursky
