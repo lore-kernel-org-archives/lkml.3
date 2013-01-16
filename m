@@ -1,62 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab3APS5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 13:57:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753828Ab3APS5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756861Ab3APS5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 13:57:51 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:51668 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab3APS5t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 13:57:49 -0500
-Date: Wed, 16 Jan 2013 13:57:41 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
-        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-Message-ID: <20130116185741.GA3038@redhat.com>
-References: <871udloiku.fsf@xmission.com>
- <1358312159.4593.37.camel@falcor1>
- <87wqvdli1o.fsf@xmission.com>
- <1358344859.4593.66.camel@falcor1>
- <20130116144836.GB29845@redhat.com>
- <1358350391.4593.112.camel@falcor1>
- <20130116155406.GC29845@redhat.com>
- <1358357079.4593.135.camel@falcor1>
- <20130116182146.GE29845@redhat.com>
- <1358361912.4593.162.camel@falcor1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358361912.4593.162.camel@falcor1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87obgpcmqs.fsf@tucsk.piliscsaba.szeredi.hu>
+References: <87obgpcmqs.fsf@tucsk.piliscsaba.szeredi.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 16 Jan 2013 10:57:27 -0800
+X-Google-Sender-Auth: vcdtexQFo4sDVHgcfqbWlq7DrFw
+Message-ID: <CA+55aFw4rer-SPq3gv8RHUba2-w2XX-z-rSXM8C2XuqrfSCG9Q@mail.gmail.com>
+Subject: Re: [GIT PULL] fuse updates for 3.8
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Maxim Patlasov <mpatlasov@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 01:45:12PM -0500, Mimi Zohar wrote:
+On Wed, Jan 16, 2013 at 4:53 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+> The large part of this pull request is a patch series from Maxim
+> Patlasov to optimize scatter-gather direct IO.  The rest is small fixes
+> and cleanups.
 
-[..]
-> > Given the fact that signatures are stored in extended attributes, to me
-> > the only way to sign executables in current IMA framework would to be
-> > prepare file system image at build server and ship that image. And
-> > then installer simply mounts that image (after making sure that proper
-> > verification keys have been loaded in kernel).
-> 
-> That is one scenario.  Another scenario is to update packages to include
-> extended attributes and to write those extended attributes on
-> installation.
+Please just send the fixes. We're post-rc3, I'm not willing to take
+new code like this. Send the actual new code during the next merge
+window.
 
-Ok, that's the point I am missing. So I can sign a file and signatures
-are in a separate file. And these signatures are installed in extended
-attributes at file installation time (IOW rpm installation time) on
-target.
-
-If all this works, this sounds reasonable so far. Except the point of
-disabling ptrace and locking down memory. 
-
-So what's the state of above work. Is there something I can play with.
-
-Thanks
-Vivek
+             Linus
