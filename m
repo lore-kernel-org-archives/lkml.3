@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758683Ab3APQJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:09:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36757 "EHLO
+	id S932702Ab3APQJS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:09:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36768 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758663Ab3APQJJ (ORCPT
+	with ESMTP id S1758663Ab3APQJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:09:09 -0500
+	Wed, 16 Jan 2013 11:09:15 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Antonio Quartulli <ordex@autistici.org>,
+        b.a.t.m.a.n@lists.open-mesh.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 181/222] sparc: huge_ptep_set_* functions need to call set_huge_pte_at()
-Date: Wed, 16 Jan 2013 13:56:21 -0200
-Message-Id: <1358351822-7675-182-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 182/222] batman-adv: fix random jitter calculation
+Date: Wed, 16 Jan 2013 13:56:22 -0200
+Message-Id: <1358351822-7675-183-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,51 +32,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Akinobu Mita <akinobu.mita@gmail.com>
 
-commit 6cb9c3697585c47977c42c5cc1b9fc49247ac530 upstream.
+commit 143cdd8f33909ff5a153e3f02048738c5964ba26 upstream.
 
-Modifying the huge pte's requires that all the underlying pte's be
-modified.
+batadv_iv_ogm_emit_send_time() attempts to calculates a random integer
+in the range of 'orig_interval +- BATADV_JITTER' by the below lines.
 
-Version 2: added missing flush_tlb_page()
+        msecs = atomic_read(&bat_priv->orig_interval) - BATADV_JITTER;
+        msecs += (random32() % 2 * BATADV_JITTER);
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+But it actually gets 'orig_interval' or 'orig_interval - BATADV_JITTER'
+because '%' and '*' have same precedence and associativity is
+left-to-right.
+
+This adds the parentheses at the appropriate position so that it matches
+original intension.
+
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Acked-by: Antonio Quartulli <ordex@autistici.org>
+Cc: Marek Lindner <lindner_marek@yahoo.de>
+Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Cc: Antonio Quartulli <ordex@autistici.org>
+Cc: b.a.t.m.a.n@lists.open-mesh.org
 Cc: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
+Cc: netdev@vger.kernel.org
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/sparc/include/asm/hugetlb.h |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ net/batman-adv/bat_iv_ogm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/sparc/include/asm/hugetlb.h b/arch/sparc/include/asm/hugetlb.h
-index 1770610..f368cef 100644
---- a/arch/sparc/include/asm/hugetlb.h
-+++ b/arch/sparc/include/asm/hugetlb.h
-@@ -58,14 +58,20 @@ static inline pte_t huge_pte_wrprotect(pte_t pte)
- static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
- 					   unsigned long addr, pte_t *ptep)
+diff --git a/net/batman-adv/bat_iv_ogm.c b/net/batman-adv/bat_iv_ogm.c
+index dc53798..bcf3760 100644
+--- a/net/batman-adv/bat_iv_ogm.c
++++ b/net/batman-adv/bat_iv_ogm.c
+@@ -117,7 +117,7 @@ static unsigned long bat_iv_ogm_emit_send_time(const struct bat_priv *bat_priv)
  {
--	ptep_set_wrprotect(mm, addr, ptep);
-+	pte_t old_pte = *ptep;
-+	set_huge_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
+ 	return jiffies + msecs_to_jiffies(
+ 		   atomic_read(&bat_priv->orig_interval) -
+-		   JITTER + (random32() % 2*JITTER));
++		   JITTER + (random32() % (2*JITTER)));
  }
  
- static inline int huge_ptep_set_access_flags(struct vm_area_struct *vma,
- 					     unsigned long addr, pte_t *ptep,
- 					     pte_t pte, int dirty)
- {
--	return ptep_set_access_flags(vma, addr, ptep, pte, dirty);
-+	int changed = !pte_same(*ptep, pte);
-+	if (changed) {
-+		set_huge_pte_at(vma->vm_mm, addr, ptep, pte);
-+		flush_tlb_page(vma, addr);
-+	}
-+	return changed;
- }
- 
- static inline pte_t huge_ptep_get(pte_t *ptep)
+ /* when do we schedule a ogm packet to be sent */
 -- 
 1.7.9.5
 
