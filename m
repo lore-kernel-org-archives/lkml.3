@@ -1,137 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab3APGBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 01:01:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43466 "EHLO mga02.intel.com"
+	id S1754340Ab3APGCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 01:02:05 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50571 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750965Ab3APGBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 01:01:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,476,1355126400"; 
-   d="scan'208";a="272617485"
-Message-ID: <50F6426D.7030201@intel.com>
-Date: Wed, 16 Jan 2013 14:02:21 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1751418Ab3APGCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 01:02:02 -0500
+Message-ID: <50F6423C.2020307@ti.com>
+Date: Wed, 16 Jan 2013 11:31:32 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Morten Rasmussen <Morten.Rasmussen@arm.com>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 16/22] sched: add power aware scheduling in fork/exec/wake
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-17-git-send-email-alex.shi@intel.com> <20130110150108.GF2046@e103034-lin> <50EFBA7D.5070907@intel.com> <20130114160934.GA8528@e103034-lin>
-In-Reply-To: <20130114160934.GA8528@e103034-lin>
-Content-Type: text/plain; charset=windows-1252
+To: "B, Ravi" <ravibabu@ti.com>
+CC: "Balbi, Felipe" <balbi@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/7] usb: musb: add driver for control module
+References: <1358239378-10030-1-git-send-email-kishon@ti.com> <201301151341.08297.arnd@arndb.de> <50F56A1A.3040504@ti.com> <20130115150432.GB26272@arwen.pp.htv.fi> <6C6B28D4DC342643927BEAFCE8707BF63EA5ACAB@DBDE01.ent.ti.com>
+In-Reply-To: <6C6B28D4DC342643927BEAFCE8707BF63EA5ACAB@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2013 12:09 AM, Morten Rasmussen wrote:
-> On Fri, Jan 11, 2013 at 07:08:45AM +0000, Alex Shi wrote:
->> On 01/10/2013 11:01 PM, Morten Rasmussen wrote:
->>> On Sat, Jan 05, 2013 at 08:37:45AM +0000, Alex Shi wrote:
->>>> This patch add power aware scheduling in fork/exec/wake. It try to
->>>> select cpu from the busiest while still has utilization group. That's
->>>> will save power for other groups.
+Hi Ravi,
+
+On Tuesday 15 January 2013 09:36 PM, B, Ravi wrote:
+>> Hi,
+>>
+>> On Tue, Jan 15, 2013 at 08:09:22PM +0530, kishon wrote:
+>>> Hi Arnd,
+>>>
+>>> On Tuesday 15 January 2013 07:11 PM, Arnd Bergmann wrote:
+>>>> On Tuesday 15 January 2013, Kishon Vijay Abraham I wrote:
+>>>>> Added a new driver for the usb part of control module.
+>> This has an
+>>>>> API to power on the USB2 phy and an API to write to the mailbox
+>>>>> depending on whether MUSB has to act in host mode or in
+>> device mode.
+>>>>>
+>>>>> Writing to control module registers for doing the above
+>> task which
+>>>>> was previously done in omap glue and in omap-usb2 phy is removed.
+>>>>>
+>>>>> Also added the dt data to get MUSB working in OMAP platforms.
+>>>>> This series has patches for both drivers and ARCH
+>> folders, so If it
+>>>>> has to be split I'll do it.
+>>>>>
 >>>>
->>>> The trade off is adding a power aware statistics collection in group
->>>> seeking. But since the collection just happened in power scheduling
->>>> eligible condition, the worst case of hackbench testing just drops
->>>> about 2% with powersaving/balance policy. No clear change for
->>>> performance policy.
+>>>> The series looks good to me, I just had a minor comment on
+>> one patch.
 >>>>
->>>> I had tried to use rq load avg utilisation in this balancing, but since
->>>> the utilisation need much time to accumulate itself. It's unfit for any
->>>> burst balancing. So I use nr_running as instant rq utilisation.
+>>>> One a somewhat related topic, I wonder whether there are
+>> any plans on
+>>>> your side to change this driver to support multiple bus
+>> glues to be
+>>>> built for one kernel image. With a multiplatform kernel,
+>> we may need
+>>>> all of TUSB6010/OMAP2PLUS/DSPS/UX500 for instance.
 >>>
->>> So you effective use a mix of nr_running (counting tasks) and PJT's
->>> tracked load for balancing?
->>
->> no, just task number here.
->>>
->>> The problem of slow reaction time of the tracked load a cpu/rq is an
->>> interesting one. Would it be possible to use it if you maintained a
->>> sched group runnable_load_avg similar to cfs_rq->runnable_load_avg where
->>> load contribution of a tasks is added when a task is enqueued and
->>> removed again if it migrates to another cpu?
->>> This way you would know the new load of the sched group/domain instantly
->>> when you migrate a task there. It might not be precise as the load
->>> contribution of the task to some extend depends on the load of the cpu
->>> where it is running. But it would probably be a fair estimate, which is
->>> quite likely to be better than just counting tasks (nr_running).
->>
->> For power consideration scenario, it ask task number less than Lcpu
->> number, don't care the load weight, since whatever the load weight, the
->> task only can burn one LCPU.
->>
-> 
-> True, but you miss the opportunities for power saving when you have many
-> light tasks (> LCPU). Currently, the sd_utils < threshold check will go
-> for SCHED_POLICY_PERFORMANCE if the number tasks (sd_utils) is greater
-> than the domain weight/capacity irrespective of the actual load caused
-> by those tasks.
-> 
-> If you used tracked task load weight for sd_utils instead you would be
-> able to go for power saving in scenarios with many light tasks as well.
+>>> We don't have plans as of now. I actually don't expect any
+>> changes in
+>>> the driver other than the Kconfig changes. Anyways the
+>> probe of glue's
+>>> other than the platform it's running won't get called. right Felipe?
+>
+> If understand correctly the control module driver used to configure the respective usb phy of SoC to respective usb modes using the common set of control module APIs.
+What if, if control module interface (register defintions) varies b/w 
+different revision or spin of same type of SoCs, if usbphy type is changed.
+Well in that case, we can write to the registers based on the IP 
+revision check (I think thats the common practice to do).
 
-yes, that's right on power consideration. but for performance consider,
-it's better to spread tasks on different LCPU to save CS cost. And if
-the cpu usage is nearly full, we don't know if some tasks real want more
-cpu time.
-Even in the power sched policy, we still want to get better performance
-if it's possible. :)
-> 
->>>> +
->>>> +		if (sched_policy == SCHED_POLICY_POWERSAVING)
->>>> +			threshold = sgs.group_weight;
->>>> +		else
->>>> +			threshold = sgs.group_capacity;
->>>
->>> Is group_capacity larger or smaller than group_weight on your platform?
->>
->> Guess most of your confusing come from the capacity != weight here.
->>
->> In most of Intel CPU, a cpu core's power(with 2 HT) is usually 1178, it
->> just bigger than a normal cpu power - 1024. but the capacity is still 1,
->> while the group weight is 2.
->>
-> 
-> Thanks for clarifying. To the best of my knowledge there are no
-> guidelines for how to specify cpu power so it may be a bit dangerous to
-> assume that capacity < weight when capacity is based on cpu power.
+In this case whether the single instance of control module driver is 
+good enough to cater of all cpu types of same SoC series ?
+Of course. I don't see why we can't have the same driver to handle 
+different versions of the same IP.
+The only reason where we might need multiple instance is if the SoC have 
+multiple control module which Arnd already pointed out.
 
-Sure. I also just got them from code. and don't know other arch how to
-different them.
-but currently, seems this cpu power concept works fine.
-> 
-> You could have architectures where the cpu power of each LCPU (HT, core,
-> cpu, whatever LCPU is on the particular platform) is greater than 1024
-> for most LCPUs. In that case, the capacity < weight assumption fails.
-> Also, on non-HT systems it is quite likely that you will have capacity =
-> weight.
+> Whether cpu_is_xxx() can be used to differentiate b/w different cpu types in CM driver?
+Not needed at all IMHO. We can use revision register to differentiate.
 
-yes.
-> 
-> Morten
-> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
+Btw I think Felipe looped you for a different reason ;-)
 
-
--- 
-Thanks Alex
+Thanks
+Kishon
