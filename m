@@ -1,49 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab3APNnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:43:41 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:64157 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab3APNnk (ORCPT
+	id S1755426Ab3APNpT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:45:19 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:37067 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab3APNpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:43:40 -0500
-Message-ID: <50F6AD15.708@suse.cz>
-Date: Wed, 16 Jan 2013 14:37:25 +0100
+	Wed, 16 Jan 2013 08:45:16 -0500
 From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 00/10] TTY: switch flipping functions to tty_port
-References: <1357224789-2853-1-git-send-email-jslaby@suse.cz> <20130116064735.GA7743@kroah.com>
-In-Reply-To: <20130116064735.GA7743@kroah.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] TTY: mn10300-serial, fix build breakage
+Date: Wed, 16 Jan 2013 14:45:07 +0100
+Message-Id: <1358343907-28142-2-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1358343907-28142-1-git-send-email-jslaby@suse.cz>
+References: <1358343907-28142-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 07:47 AM, Greg KH wrote:
-> On Thu, Jan 03, 2013 at 03:53:00PM +0100, Jiri Slaby wrote:
->> In this series we get rid of the tty_port_tty_get in most hot paths as
->> all the flipping functions needs to know is in tty_port already. This
->> simplifies the code at some places a lot.
->>
->> Two fixes for coverity issues are included.
-> 
-> All applied, but the drivers/staging/sb105x/ driver is now broken, can
-> you send me a follow-on patch to fix it?
+By the recent `switch flipping' patches we introduced a build failure
+in the driver:
+mn10300-serial.c:527:19: error: 'port' redeclared as different kind of symbol
 
-I intentionally ignored that one as at the time of sending the patches,
-it was marked as BROKEN in -next. It is still broken, since it does not
-even have a tty_port for each port which is a requirement for a while
-already. That is also a prerequisite to fix the build failure.
+I did not notice because I did not even find a compiler for that new
+architecture. Hopefully everything is all right now as I cannot test
+it.
 
-Steven, do you have any plans with the driver? What is its planned destiny?
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/mn10300/kernel/mn10300-serial.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-thanks,
+diff --git a/arch/mn10300/kernel/mn10300-serial.c b/arch/mn10300/kernel/mn10300-serial.c
+index 1dd20db..bf6e949 100644
+--- a/arch/mn10300/kernel/mn10300-serial.c
++++ b/arch/mn10300/kernel/mn10300-serial.c
+@@ -524,7 +524,7 @@ static int mask_test_and_clear(volatile u8 *ptr, u8 mask)
+ static void mn10300_serial_receive_interrupt(struct mn10300_serial_port *port)
+ {
+ 	struct uart_icount *icount = &port->uart.icount;
+-	struct tty_port *port = &port->uart.state->port;
++	struct tty_port *tport = &port->uart.state->port;
+ 	unsigned ix;
+ 	int count;
+ 	u8 st, ch, push, status, overrun;
+@@ -534,10 +534,10 @@ static void mn10300_serial_receive_interrupt(struct mn10300_serial_port *port)
+ 	push = 0;
+ 
+ 	count = CIRC_CNT(port->rx_inp, port->rx_outp, MNSC_BUFFER_SIZE);
+-	count = tty_buffer_request_room(port, count);
++	count = tty_buffer_request_room(tport, count);
+ 	if (count == 0) {
+-		if (!port->low_latency)
+-			tty_flip_buffer_push(port);
++		if (!tport->low_latency)
++			tty_flip_buffer_push(tport);
+ 		return;
+ 	}
+ 
+@@ -545,8 +545,8 @@ try_again:
+ 	/* pull chars out of the hat */
+ 	ix = ACCESS_ONCE(port->rx_outp);
+ 	if (CIRC_CNT(port->rx_inp, ix, MNSC_BUFFER_SIZE) == 0) {
+-		if (push && !port->low_latency)
+-			tty_flip_buffer_push(port);
++		if (push && !tport->low_latency)
++			tty_flip_buffer_push(tport);
+ 		return;
+ 	}
+ 
+@@ -666,19 +666,19 @@ insert:
+ 		else
+ 			flag = TTY_NORMAL;
+ 
+-		tty_insert_flip_char(port, ch, flag);
++		tty_insert_flip_char(tport, ch, flag);
+ 	}
+ 
+ 	/* overrun is special, since it's reported immediately, and doesn't
+ 	 * affect the current character
+ 	 */
+ 	if (overrun)
+-		tty_insert_flip_char(port, 0, TTY_OVERRUN);
++		tty_insert_flip_char(tport, 0, TTY_OVERRUN);
+ 
+ 	count--;
+ 	if (count <= 0) {
+-		if (!port->low_latency)
+-			tty_flip_buffer_push(port);
++		if (!tport->low_latency)
++			tty_flip_buffer_push(tport);
+ 		return;
+ 	}
+ 
 -- 
-js
-suse labs
+1.8.1
+
+
