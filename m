@@ -1,36 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757765Ab3APWHq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:07:46 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:60427 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024Ab3APWHp (ORCPT
+	id S1757900Ab3APWIC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:08:02 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:36840 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757708Ab3APWIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:07:45 -0500
+	Wed, 16 Jan 2013 17:08:00 -0500
+Date: Wed, 16 Jan 2013 23:01:54 +0100
+From: Cong Ding <dinggnu@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] sparc: kernel/sbus.c: fix memory leakage
+Message-ID: <20130116220153.GD18593@gmail.com>
+References: <1358199372-11976-1-git-send-email-dinggnu@gmail.com>
+ <20130116211309.GA13993@merkur.ravnborg.org>
+ <20130116211725.GC18593@gmail.com>
+ <20130116220018.GA14063@merkur.ravnborg.org>
 MIME-Version: 1.0
-Date: Wed, 16 Jan 2013 15:07:44 -0700
-Message-ID: <CAKocOOMytcbVbcgWPXA8s6+Mm6jSkwB1XqViSN12s53Xj6Bk0Q@mail.gmail.com>
-Subject: Linux 3.8.rc3 ATI radeon driver broken
-From: Shuah Khan <shuahkhan@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130116220018.GA14063@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am seeing dmesg filling up with the DMAR faults on
+the variable iommu and strbuf are not freed if it goes to error.
 
-01:00.0 VGA compatible controller: Advanced Micro Devices [AMD] nee ATI RV620 [M
-obility Radeon HD 3400 Series] (prog-if 00 [VGA controller])
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ arch/sparc/kernel/sbus.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
- [   21.436041] DMAR:[fault reason 06] PTE Read access is not set
-[   21.436071] dmar: DRHD: handling fault status reg 3
-[   21.436075] dmar: DMAR:[DMA Read] Request device [01:00.0] fault
-addr 80004000
+diff --git a/arch/sparc/kernel/sbus.c b/arch/sparc/kernel/sbus.c
+index 1271b3a..78aa26b 100644
+--- a/arch/sparc/kernel/sbus.c
++++ b/arch/sparc/kernel/sbus.c
+@@ -656,6 +656,8 @@ static void __init sbus_iommu_init(struct platform_device *op)
+ 	return;
+ 
+ fatal_memory_error:
++	kfree(strbuf);
++	kfree(iommu);
+ 	prom_printf("sbus_iommu_init: Fatal memory allocation error.\n");
+ }
+ 
+-- 
+1.7.10.4
 
-This is new to rc-3 and also reboot and shutdown both hang.
-
-I am going to start bisecting to isolate the problem and let you know
-what I find.
-
--- Shuah
