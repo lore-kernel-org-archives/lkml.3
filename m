@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932943Ab3APQKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:10:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36867 "EHLO
+	id S1758742Ab3APQSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:18:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36857 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932933Ab3APQKc (ORCPT
+	with ESMTP id S932855Ab3APQKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:10:32 -0500
+	Wed, 16 Jan 2013 11:10:14 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Shan Hai <shan.hai@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 200/222] powerpc/vdso: Remove redundant locking in update_vsyscall_tz()
-Date: Wed, 16 Jan 2013 13:56:40 -0200
-Message-Id: <1358351822-7675-201-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 198/222] ath9k_hw: Fix RX gain initvals for AR9485
+Date: Wed, 16 Jan 2013 13:56:38 -0200
+Message-Id: <1358351822-7675-199-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,67 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit ce73ec6db47af84d1466402781ae0872a9e7873c upstream.
+commit a796a1dd5da9645ad77aa687d1a890ecd63ab5a6 upstream.
 
-The locking in update_vsyscall_tz() is not only unnecessary because the vdso
-code copies the data unproteced in __kernel_gettimeofday() but also
-introduces a hard to reproduce race condition between update_vsyscall()
-and update_vsyscall_tz(), which causes user space process to loop
-forever in vdso code.
+Populate iniModesRxGain with the correct initvals
+array for AR9485 v1.1
 
-The following patch removes the locking from update_vsyscall_tz().
-
-Locking is not only unnecessary because the vdso code copies the data
-unprotected in __kernel_gettimeofday() but also erroneous because updating
-the tb_update_count is not atomic and introduces a hard to reproduce race
-condition between update_vsyscall() and update_vsyscall_tz(), which further
-causes user space process to loop forever in vdso code.
-
-The below scenario describes the race condition,
-x==0	Boot CPU			other CPU
-	proc_P: x==0
-	    timer interrupt
-		update_vsyscall
-x==1		    x++;sync		settimeofday
-					    update_vsyscall_tz
-x==2						x++;sync
-x==3		    sync;x++
-						sync;x++
-	proc_P: x==3 (loops until x becomes even)
-
-Because the ++ operator would be implemented as three instructions and not
-atomic on powerpc.
-
-A similar change was made for x86 in commit 6c260d58634
-("x86: vdso: Remove bogus locking in update_vsyscall_tz")
-
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[ herton: adjust context, INIT_INI_ARRAY still needs ARRAY_SIZE on 3.5 ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/powerpc/kernel/time.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_hw.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index be171ee..3c50ed9 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -750,13 +750,8 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
- 
- void update_vsyscall_tz(void)
- {
--	/* Make userspace gettimeofday spin until we're done. */
--	++vdso_data->tb_update_count;
--	smp_mb();
- 	vdso_data->tz_minuteswest = sys_tz.tz_minuteswest;
- 	vdso_data->tz_dsttime = sys_tz.tz_dsttime;
--	smp_mb();
--	++vdso_data->tb_update_count;
- }
- 
- static void __init clocksource_init(void)
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_hw.c b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
+index 4f692b9..83494ee 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_hw.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
+@@ -632,8 +632,8 @@ static void ar9003_rx_gain_table_mode0(struct ath_hw *ah)
+ 				2);
+ 	else if (AR_SREV_9485_11(ah))
+ 		INIT_INI_ARRAY(&ah->iniModesRxGain,
+-				ar9485Common_wo_xlna_rx_gain_1_1,
+-				ARRAY_SIZE(ar9485Common_wo_xlna_rx_gain_1_1),
++				ar9485_common_rx_gain_1_1,
++				ARRAY_SIZE(ar9485_common_rx_gain_1_1),
+ 				2);
+ 	else if (AR_SREV_9580(ah))
+ 		INIT_INI_ARRAY(&ah->iniModesRxGain,
 -- 
 1.7.9.5
 
