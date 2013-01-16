@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758762Ab3APQgi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:36:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36301 "EHLO
+	id S1758661Ab3APQhl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:37:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36280 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932342Ab3APQFp (ORCPT
+	with ESMTP id S1758182Ab3APQFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:05:45 -0500
+	Wed, 16 Jan 2013 11:05:31 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Takashi Iwai <tiwai@suse.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 130/222] ALSA: hda - Fix the wrong pincaps set in ALC861VD dallas/hp fixup
-Date: Wed, 16 Jan 2013 13:55:30 -0200
-Message-Id: <1358351822-7675-131-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 126/222] ALSA: hda - Fix pin configuration of HP Pavilion dv7
+Date: Wed, 16 Jan 2013 13:55:26 -0200
+Message-Id: <1358351822-7675-127-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,35 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit b78562b10fa66175e30b76073e32a0ad8d92aa83 upstream.
+commit 8ae5865ec77c22462c736846a0679947a6953548 upstream.
 
-The workaround to force VREF50 for dallas/hp model with ALC861VD
-was introduced in commit 8fdcb6fe4204bdb4c6991652717ab5063751414e,
-but it contained wrong pincap override bits.
+Fix the quirk entry for HP Pavilion dv7 in order to make the bass
+speaker working.
 
-This patch fixes to exclude VREF80 pincap bit correctly.
-
+Reported-and-tested-by: Tomas Pospisek <tpo2@sourcepole.ch>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 9011a01..7e3fef0 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6387,8 +6387,8 @@ static void alc861vd_fixup_dallas(struct hda_codec *codec,
- 				  const struct alc_fixup *fix, int action)
- {
- 	if (action == ALC_FIXUP_ACT_PRE_PROBE) {
--		snd_hda_override_pin_caps(codec, 0x18, 0x00001714);
--		snd_hda_override_pin_caps(codec, 0x19, 0x0000171c);
-+		snd_hda_override_pin_caps(codec, 0x18, 0x00000734);
-+		snd_hda_override_pin_caps(codec, 0x19, 0x0000073c);
- 	}
- }
- 
+diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
+index b98aded..ca6b037 100644
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -1698,7 +1698,7 @@ static const struct snd_pci_quirk stac92hd83xxx_cfg_tbl[] = {
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1658,
+ 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1659,
+-			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
++			  "HP Pavilion dv7", STAC_HP_DV7_4000),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x165A,
+ 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x165B,
 -- 
 1.7.9.5
 
