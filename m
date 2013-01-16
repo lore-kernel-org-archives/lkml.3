@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab3APUtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 15:49:12 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:64342 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756241Ab3APUtL (ORCPT
+	id S1756764Ab3APUzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 15:55:31 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:39016 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab3APUza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 15:49:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <1358094677-11384-1-git-send-email-sasha.levin@oracle.com>
-References: <1358094677-11384-1-git-send-email-sasha.levin@oracle.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 Jan 2013 12:48:48 -0800
-X-Google-Sender-Auth: CBCw7xfvEooYrTFsY756IRwUMRk
-Message-ID: <CA+55aFxFb21Ss=-0FUgzQOzPe1=mS11o7J-+Laco09XJvOk9Fg@mail.gmail.com>
-Subject: Re: [PATCH v2] hlist: drop the node parameter from iterators
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Jan 2013 15:55:30 -0500
+Date: Wed, 16 Jan 2013 15:55:27 -0500 (EST)
+Message-Id: <20130116.155527.1163555891632434773.davem@davemloft.net>
+To: tushar.behera@linaro.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, gregkh@linuxfoundation.org, jacmet@sunsite.dk,
+        patches@linaro.org, ming.lei@canonical.com
+Subject: Re: [PATCH] usbnet: dm9601: Fix incorrect command
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1358228341-2104-1-git-send-email-tushar.behera@linaro.org>
+References: <1358228341-2104-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 13, 2013 at 8:31 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> I'm not sure why, but the hlist for each entry iterators were conceived
-> differently from the list ones. While the list ones are nice and elegant:
+From: Tushar Behera <tushar.behera@linaro.org>
+Date: Tue, 15 Jan 2013 11:09:01 +0530
 
-So this patch is probably the RightThing(tm) to do, but it's really
-big and makes me nervous. And the fact that there was already one
-problem in the first version doesn't make me feel any more
-warm-and-fuzzy about it.
+> commit 24b1042c4eb2 ("usbnet: dm9601: apply introduced usb command
+> APIs") removes the distiction between DM_WRITE_REG and DM_WRITE_REGS
+> command. The distiction is reintroduced to the driver so that the
+> functionality of the driver remains same.
+> 
+> CC: Ming Lei <ming.lei@canonical.com>
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 
-I understand that this kind of patch is nice to apply after the merge
-window has closed, but at the same time, it's now *too* long after the
-merge window closed, and even if it wasn't, I'd really like to feel
-like this has gotten more testing than it obviously has. Or some other
-guarantee that there isn't some other subtle issue hiding there.
-
-So I am going through patches in my mbox, but I really don't feel safe
-enough about this one to apply it.
-
-                    Linus
+Applied, thanks.
