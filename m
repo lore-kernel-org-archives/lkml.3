@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759175Ab3APKnu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:43:50 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:40235 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759045Ab3APKmf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:42:35 -0500
-Message-ID: <50F683D9.1080908@linux.vnet.ibm.com>
-Date: Wed, 16 Jan 2013 16:11:29 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1759200Ab3APKoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:44:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42935 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759183Ab3APKoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 05:44:06 -0500
+Date: Wed, 16 Jan 2013 11:44:00 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Antonio Ospite <ospite@studenti.unina.it>
+Subject: Re: [PATCH v2] HID: add support for Sony RF receiver with USB product
+ id 0x0374
+In-Reply-To: <50F637D1.8070302@lab.ntt.co.jp>
+Message-ID: <alpine.LNX.2.00.1301161141250.14768@pobox.suse.cz>
+References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>  <50F52986.2080002@lab.ntt.co.jp> <1358246448.4897.3.camel@nexus.lab.ntt.co.jp> <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
+ <50F637D1.8070302@lab.ntt.co.jp>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Ivo Sieben <meltedpianoman@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] tty: Only wakeup the line discipline idle queue when
- queue is active
-References: <1355842130-15482-1-git-send-email-meltedpianoman@gmail.com> <50E3FDFA.4070203@suse.cz>	<20130102114311.66215bf5@pyramind.ukuu.org.uk> <CAMSQXEHmDb5rUQnT1JNcMCzdaN+gAr+1hR=PyPiDMu7vK5ykxA@mail.gmail.com> <50E4854E.8060801@suse.cz> <CAMSQXEGU2WmhmMqP7XMK2x39GN9iDDWpg-Wa7_cAauHWx5OWbQ@mail.gmail.com> <50F66120.50704@linux.vnet.ibm.com> <CAMSQXEE=Qp8kVcEp8nBhNDmOaDMUQUUou+5Z2f8-1znykqy6mQ@mail.gmail.com>
-In-Reply-To: <CAMSQXEE=Qp8kVcEp8nBhNDmOaDMUQUUou+5Z2f8-1znykqy6mQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011610-1396-0000-0000-0000026C4397
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivo,
+On Wed, 16 Jan 2013, Fernando Luis Vazquez Cao wrote:
 
-On 01/16/2013 02:46 PM, Ivo Sieben wrote:
-> Hi Preeti,
-> 
-> 2013/1/16 Preeti U Murthy <preeti@linux.vnet.ibm.com>:
->> Hi Ivo,
->> Can you explain how this problem could create a scheduler overhead?
->> I am a little confused, because as far as i know,scheduler does not come
->> in the picture of the wake up path right? select_task_rq() in
->> try_to_wake_up() is where the scheduler comes in,and this is after the
->> task wakes up.
->>
-> 
-> Everytime the line discipline is dereferenced, the wakeup function is
-> called. The wakeup() function contains a critical section protected by
-> spinlocks. On a PREEMPT_RT system, a "normal" spinlock behaves just
-> like a mutex: scheduling is not disabled and it is still possible that
-> a new process on a higher RT priority is scheduled in. When a new -
-> higher priority - process is scheduled in just when the put_ldisc() is
-> in the critical section of the wakeup function, the higher priority
-> process (that uses the same TTY instance) will finally also
-> dereference the line discipline and try to wakeup the same waitqueue.
-> This causes the high priority process to  block on the same spinlock.
-> Priority inheritance will solve this blocked situation by a context
-> switch to the lower priority process, run until that process leaves
-> the critical section, and a context switch back to the higher priority
-> process. This is unnecessary since the waitqueue was empty after all
-> (during normal operation the waitqueue is empty most of the time).
-> This unnecessary context switch from/to the high priority process is
-> what a mean with "scheduler overhead" (maybe not a good name for it,
-> sorry for the confusion).
-> 
-> Does this makes sense to you?
+> I noticed that the patch was tagged "for-3.9". Does this mean
+> that it is too late to get it merged during the current release
+> cycle?
 
-Yes.Thank you very much for the explanation :) But I dont see how the
-context switching goes away with your patch.With your patch, when the
-higher priority thread comes in when the lower priority thread is
-running in the critical section,it will see the wait queue empty and
-"continue its execution" without now wanting to enter the critical
-section.So this means it will preempt the lower priority thread because
-it is not waiting on a lock anyway.There is a context switch here right?
-I dont see any problem in scheduling due to this,but I do think your
-patch is essential.
+I currently don't have anything queued for 3.8, and this particular patch 
+doesn't justify a separate pull request.
 
-The entire logic of
-wakelist_active()
-  wake_up()
+Once it's in Linus' tree, it can be easily pushed out to all existing 
+-stable branches (including 3.8-stable, once it's created).
 
-could be integrated into wake_up(). I dont understand why we need a
-separate function to check the emptiness of the wake list. But as Oleg
-pointed out we must identify the places for this optimization.
+If I am gfoing to be sending pull request for 3.8 to Linus still due to 
+some important bugfix, I will be including this.
 
-Regards
-Preeti U Murthy
+> If possible, I would like to get it backported to 3.7-stable (and 
+> possibly 3.2 stable), since without it a whole family of Sony desktop 
+> computers is unusable under Linux out of the box. Should I do it myself 
+> or do you have a process in place for HID stable patches?
 
+If the patch had
+
+	Cc: stable@vger.kernel.org
+
+in it, it'd be picked for -stable queue automatically. Otherwise, anyone 
+is free to take it once it's in Linus' tree and sent to to 
+stable@vger.kernel.org for inclusion.
+
+Hope this helps,
+
+-- 
+Jiri Kosina
+SUSE Labs
