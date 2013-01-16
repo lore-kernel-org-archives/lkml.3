@@ -1,139 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab3APRZV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 12:25:21 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:54423 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756241Ab3APRZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 12:25:19 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
-Date: Wed, 16 Jan 2013 12:28:39 -0500
-User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
-Cc: libc-alpha@sourceware.org, YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Cong Wang <amwang@redhat.com>, Thomas Backlund <tmb@mageia.org>,
-        Eric Blake <eblake@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
-        David Miller <davem@davemloft.net>, schwab@suse.de,
-        carlos@systemhalted.org
-References: <50F2FF1B.3020708@mageia.org> <201301161205.04502.vapier@gentoo.org> <1358356211.2923.25.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1358356211.2923.25.camel@bwh-desktop.uk.solarflarecom.com>
+	id S1756685Ab3APRZh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:25:37 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47171 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756246Ab3APRZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 12:25:20 -0500
+Message-ID: <50F6E27C.50608@wwwdotorg.org>
+Date: Wed, 16 Jan 2013 10:25:16 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3697423.Mc9bZ6SUye";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301161228.42592.vapier@gentoo.org>
+To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+CC: Arto Merilainen <amerilainen@nvidia.com>,
+        "airlied@linux.ie" <airlied@linux.ie>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5 7/8] ARM: tegra: Add board data and 2D clocks
+References: <1358249182-17486-1-git-send-email-tbergstrom@nvidia.com> <1358249182-17486-8-git-send-email-tbergstrom@nvidia.com> <50F5A3A6.7000801@wwwdotorg.org> <50F66061.20509@nvidia.com>
+In-Reply-To: <50F66061.20509@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3697423.Mc9bZ6SUye
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 01/16/2013 01:10 AM, Terje Bergström wrote:
+> On 15.01.2013 20:44, Stephen Warren wrote:
+>> On 01/15/2013 04:26 AM, Terje Bergstrom wrote:
+>>> Add a driver alias gr2d for Tegra 2D device, and assign a duplicate
+>>> of 2D clock to that driver alias.
+>>
+>> FYI on this one patch - it won't be applied to the Tegra tree until
+>> after Prashant's common clock framework changes are applied. As such, it
+>> will need some rework once those patches are applied, or perhaps won't
+>> even be relevant any more; see below.
+> 
+> It looks like I need to just drop the patch 7(8 "ARM: tegra: Add board
+> data and 2D clocks" and change the 2D code to access the clock without a
+> name. Do you agree?
 
-On Wednesday 16 January 2013 12:10:11 Ben Hutchings wrote:
-> On Wed, 2013-01-16 at 12:04 -0500, Mike Frysinger wrote:
-> > On Wednesday 16 January 2013 10:47:12 Ben Hutchings wrote:
-> > > On Wed, 2013-01-16 at 23:21 +0900, YOSHIFUJI Hideaki wrote:
-> > > > Cong Wang wrote:
-> > > > > (Cc'ing some glibc developers...)
-> > > > >=20
-> > > > > Hello,
-> > > > >=20
-> > > > > In glibc source file inet/netinet/in.h and kernel source file
-> > > > > include/uapi/linux/in6.h, both define struct in6_addr, and both a=
-re
-> > > > > visible to user applications. Thomas reported a conflict below.
-> > > > >=20
-> > > > > So, how can we handle this? /me is wondering why we didn't see th=
-is
-> > > > > before.
-> > >=20
-> > > [...]
-> > >=20
-> > > > This is not a new issue.  In addition to this,
-> > > > netinet/in.h also conflits with linux/in.h.
-> > > >=20
-> > > > We might have
-> > > >=20
-> > > >  #if !defined(__GLIBC__) || !defined(_NETINET_IN_H)
-> > > > =20
-> > > >  #endif
-> > > >=20
-> > > > around those conflicting definitions in uapi/linux/in{,6}.h.
-> > >=20
-> > > This only solves half the problem, as <netinet/in.h> might be included
-> > > after <linux/in.h>.  Also, not all Linux userland uses glibc.
-> >=20
-> > certainly true, but the current expectation is that you don't mix your
-> > ABIs.
->=20
-> Whose expectation?  Which ABIs are being mixed?
-
-the kernel's view of the world and the C library's view of the world.  ther=
-e=20
-is a lot of overlap, but it's the C library's job to provide a POSIX compli=
-ant=20
-interface (and then some).
-
-obvious examples:
- - the stat structures are not the same and require translation
- - ptrace structures are not the same and you really need to use the C lib =
-one
- - the readdir function is completely different
-
-but to this specific question, if you're calling the kernel's network funct=
-ions=20
-directly, then you need to include the kernel's headers for its definition =
-of=20
-how things are passed.  if you're calling the C library's network functions=
-,=20
-then use the C library's headers.
-
-> > if you're programming with the C library API, then use the C library
-> > headers. if you're banging directly on the kernel, then use the kernel
-> > headers.  not saying it's a perfect solution, but it works for the vast
-> > majority of use cases.
->=20
-> In practice most C programs for Linux will use a mixture of thinly
-> wrapped system calls and higher-level APIs from the C library, and never
-> really call the kernel directly (as that requires inline assembler).
-> Userland programmers will work around this historical mess by tweaking
-> the #include order or splitting source files.  But they shouldn't have
-> to.
-
-if you're not calling the kernel directly, why are you including the kernel=
-=20
-headers ?  what is the problem people are actually trying to address here (=
-and=20
-no, "i want to include both headers" is not the answer) ?
-=2Dmike
-
---nextPart3697423.Mc9bZ6SUye
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ9uNKAAoJEEFjO5/oN/WBTpMP/3kHM+2YwoSb8NBODwdeuCHd
-8oXI2DdH1qKuTP8Z7jA3f4sTFrQAEfQlINnVTOp4Ac5D//S3SH38YV3UV7t0kho5
-fS6wfJYMjvAKHzunDzf/trHsb/hrZqddy5AYk5NTCjNyiq3L7SBbWgwa3TLpUoH7
-DYJnpF5PB8KnLikhLIrYSpeQwow84oaJPbS4hJ9OnFoBzB5aUilJ69HDUG55l76z
-hXfcgLzuhdBL4DT0ZgTzTgf9KMlnkGKUuHdEIgg8HqkPgKj0YEq8rdF1foiJ0GnO
-E2ifBqhPMSTTEvLuqXIbdSed0KQdnkfpWdFlpeqHS3UQMu2tDQfgq3Wj7Fvz/MsM
-+DqtPRiTaW8QRYtPIE7sNjpG7RqPHWqgnaVRDjlK4F/92fOvgMRjQ57bDwAn2yXc
-vc92nGN7Nn9DWLdkSCec9hEdXwE5/2/MQDvyTnKPmA87TTHigg42+1l9wDQefm8/
-8Tdw9RfJ1BbRB8cmUEIypu3Jcu444OPD4KJTi4w5tH4bS/rJneuTx/pkt954qn06
-oEKQ31ibeJtjoTYCTwo7TK6akR99zgudrxzMqhEN7QgrWi1M9xTtvQw87+g3kANx
-dzWtYQ2R/Yv0mzQnfLc1UbKInFSoXK4I4UVo8sX/kzFn9vlyw5R2aeHSSaXDPJti
-3A3pnV5jw1qUQvOXvdud
-=v4tC
------END PGP SIGNATURE-----
-
---nextPart3697423.Mc9bZ6SUye--
+That sounds right to me, yes.
