@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab3APQBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:01:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35928 "EHLO
+	id S1757595Ab3APQBW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:01:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35935 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757326Ab3APQBP (ORCPT
+	with ESMTP id S1757326Ab3APQBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:01:15 -0500
+	Wed, 16 Jan 2013 11:01:20 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
+Cc: Lukas Czerner <lczerner@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 060/222] KVM: Fix user memslot overlap check
-Date: Wed, 16 Jan 2013 13:54:20 -0200
-Message-Id: <1358351822-7675-61-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 061/222] ext4: fix possible use after free with metadata csum
+Date: Wed, 16 Jan 2013 13:54:21 -0200
+Message-Id: <1358351822-7675-62-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,56 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 5419369ed6bd4cf711fdda5e52a5999b940413f5 upstream.
+commit aeb1e5d69a5be592e86a926be73efb38c55af404 upstream.
 
-Prior to memory slot sorting this loop compared all of the user memory
-slots for overlap with new entries.  With memory slot sorting, we're
-just checking some number of entries in the array that may or may not
-be user slots.  Instead, walk all the slots with kvm_for_each_memslot,
-which has the added benefit of terminating early when we hit the first
-empty slot, and skip comparison to private slots.
+Commit fa77dcfafeaa introduces block bitmap checksum calculation into
+ext4_new_inode() in the case that block group was uninitialized.
+However we brelse() the bitmap buffer before we attempt to checksum it
+so we have no guarantee that the buffer is still there.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Fix this by releasing the buffer after the possible checksum
+computation.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Acked-by: Darrick J. Wong <darrick.wong@oracle.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- virt/kvm/kvm_main.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ fs/ext4/ialloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 44ee712..7d9d969 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -689,8 +689,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 	int r;
- 	gfn_t base_gfn;
- 	unsigned long npages;
--	unsigned long i;
--	struct kvm_memory_slot *memslot;
-+	struct kvm_memory_slot *memslot, *slot;
- 	struct kvm_memory_slot old, new;
- 	struct kvm_memslots *slots, *old_memslots;
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 4418852..536ac65 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -754,7 +754,6 @@ got:
  
-@@ -737,13 +736,11 @@ int __kvm_set_memory_region(struct kvm *kvm,
+ 		BUFFER_TRACE(block_bitmap_bh, "dirty block bitmap");
+ 		err = ext4_handle_dirty_metadata(handle, NULL, block_bitmap_bh);
+-		brelse(block_bitmap_bh);
  
- 	/* Check for overlaps */
- 	r = -EEXIST;
--	for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
--		struct kvm_memory_slot *s = &kvm->memslots->memslots[i];
--
--		if (s == memslot || !s->npages)
-+	kvm_for_each_memslot(slot, kvm->memslots) {
-+		if (slot->id >= KVM_MEMORY_SLOTS || slot == memslot)
- 			continue;
--		if (!((base_gfn + npages <= s->base_gfn) ||
--		      (base_gfn >= s->base_gfn + s->npages)))
-+		if (!((base_gfn + npages <= slot->base_gfn) ||
-+		      (base_gfn >= slot->base_gfn + slot->npages)))
- 			goto out_free;
- 	}
+ 		/* recheck and clear flag under lock if we still need to */
+ 		ext4_lock_group(sb, group);
+@@ -767,6 +766,7 @@ got:
+ 			ext4_group_desc_csum_set(sb, group, gdp);
+ 		}
+ 		ext4_unlock_group(sb, group);
++		brelse(block_bitmap_bh);
  
+ 		if (err)
+ 			goto fail;
 -- 
 1.7.9.5
 
