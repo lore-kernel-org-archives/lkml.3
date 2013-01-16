@@ -1,146 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab3APFiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 00:38:52 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:36062 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab3APFiu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 00:38:50 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-38-50f63ce85663
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, kgene.kim@samsung.com,
-        grant.likely@secretlab.ca, dianders@chromium.org, jg1.han@samsung.com
-Subject: [PATCH v5 1/4] ARM: Exynos5250: Enabling ehci-s5p driver
-Date: Wed, 16 Jan 2013 11:15:43 +0530
-Message-id: <1358315143-16620-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <CAFp+6iFgaT9D2hR0pX34jo2g+GHftmA0Mw3y96-oKe0KakZOxA@mail.gmail.com>
-References: <CAFp+6iFgaT9D2hR0pX34jo2g+GHftmA0Mw3y96-oKe0KakZOxA@mail.gmail.com>
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsWyRsSkVvelzbcAgz3/GS0u75rDZjHj/D4m
-	i0XLWpkdmD0+b5ILYIzisklJzcksSy3St0vgyvi9+SdTwWzxiubVW1kaGN8KdTFyckgImEg8
-	3D6LBcIWk7hwbz1bFyMXh5DAUkaJKb9mMsEUtU+ewgKRWMQocfnbSkYIZzKTxIEXP1lBqtgE
-	dCWa3u5iBLFFBFQlPrctYAexmQUOMUqcmuoOYgsLOErsm/IArJ4FqGbuoWnMIDavgIfEg32z
-	WCG2KUi8uf0MKM7BwSkQLPGkXxDEFBIIkHj/IxCiU0Di2+RDLCBhCQFZiU0HmEGukRB4zCbx
-	fc0CqJslJQ6uuMEygVF4ASPDKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzAoDz975n0DsZV
-	DRaHGAU4GJV4eD0LvwYIsSaWFVfmAp3Owawkwvv1C1CINyWxsiq1KD++qDQntfgQow/QJROZ
-	pUST84ERk1cSb2hsYm5qbGppZGRmaopDWEmcl/HUkwAhgfTEktTs1NSC1CKYcUwcnFINjIr3
-	Rd7+0BM5x3qMbef17VvrGM63TnKqWpF4i2uRj9K6S99MPshdKF81mcnHZfcf0ZfHpKLv//++
-	gtv1OfPVhc7m81LfpxQkzj6trZkeu+hD82Nrv7+Ck1gjbeLFXp7e8OwcA7P4rAeLajTzIhjn
-	K178rvNIbP/brb6fU5lD97WdSP638Jfi2VYlluKMREMt5qLiRADPowoNdwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jAd0XNt8CDBpXGltc3jWHzWLG+X1M
-	FouWtTI7MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
-	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jxe/NP
-	poLZ4hXNq7eyNDC+Fepi5OSQEDCRaJ88hQXCFpO4cG89WxcjF4eQwCJGicvfVjJCOJOZJA68
-	+MkKUsUmoCvR9HYXI4gtIqAq8bltATuIzSxwiFHi1FR3EFtYwFFi35QHYPUsQDVzD01jBrF5
-	BTwkHuybxQqxTUHize1nQHEODk6BYIkn/YIgppBAgMT7H4ETGHkXMDKsYhRNLUguKE5KzzXS
-	K07MLS7NS9dLzs/dxAgO+WfSOxhXNVgcYhTgYFTi4fUs/BogxJpYVlyZC3QKB7OSCO/XL0Ah
-	3pTEyqrUovz4otKc1OJDjD5AN01klhJNzgfGY15JvKGxibmpsamliYWJmSUOYSVxXsZTTwKE
-	BNITS1KzU1MLUotgxjFxcEo1MCqn1rVzH0n/e+e1Z/vVb8ey3xxeZNMkJtR3MvzKMX+JzbZM
-	f7dZNE3XypqzY/thpUTWlyUKBRrfm9eyvJs5bXt2zcdK9xMxXPO2+c+zyxIKmiazY6Lt8VsL
-	l67b3iZp8mgr08tTxZbFgY+3Fa+UYThZLeKc+HXRRK0Y5cbAyhpf96PPnik8z1ViKc5INNRi
-	LipOBACCCStCpgIAAA==
-X-CFilter-Loop: Reflected
+	id S1753253Ab3APFmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 00:42:52 -0500
+Received: from mga02.intel.com ([134.134.136.20]:13366 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750877Ab3APFmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 00:42:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,476,1355126400"; 
+   d="scan'208";a="247476720"
+Message-ID: <50F63E16.1060903@intel.com>
+Date: Wed, 16 Jan 2013 13:43:50 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 05/22] sched: remove domain iterations in fork/exec/wake
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-6-git-send-email-alex.shi@intel.com> <20130109182102.GC2046@e103034-lin> <50EF9B69.3000201@linux.vnet.ibm.com>
+In-Reply-To: <50EF9B69.3000201@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding EHCI device tree node for Exynos5250 along with
-the device base adress and gpio line for vbus.
+-		/* while loop will break here if sd == NULL */
+>>
+>> I agree that this should be a major optimization. I just can't figure
+>> out why the existing recursive search for an idle cpu switches to the
+>> new cpu near the end and then starts a search for an idle cpu in the new
+>> cpu's domain. Is this to handle some exotic sched domain configurations?
+>> If so, they probably wouldn't work with your optimizations.
+> 
+> Let me explain my understanding of why the recursive search is the way
+> it is.
+> 
+>  _________________________  sd0
+> |                         |
+> |  ___sd1__   ___sd2__    |
+> | |        | |        |   |
+> | | sgx    | |  sga   |   |
+> | | sgy    | |  sgb   |   |
+> | |________| |________|   |
+> |_________________________|
+> 
+> What the current recursive search is doing is (assuming we start with
+> sd0-the top level sched domain whose flags are rightly set). we find
+> that sd1 is the idlest group,and a cpux1 in sgx is the idlest cpu.
+> 
+> We could have ideally stopped the search here.But the problem with this
+> is that there is a possibility that sgx is more loaded than sgy; meaning
+> the cpus in sgx are heavily imbalanced;say there are two cpus cpux1 and
+> cpux2 in sgx,where cpux2 is heavily loaded and cpux1 has recently gotten
+> idle and load balancing has not come to its rescue yet.According to the
+> search above, cpux1 is idle,but is *not the right candidate for
+> scheduling forked task,it is the right candidate for relieving the load
+> from cpux2* due to cache locality etc.
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
----
+The problem still exists on the current code. It still goes to cpux1.
+and then goes up to sgx to seek idlest group ... idlest cpu, and back to
+cpux1 again. nothing help.
 
-Changes from v4:
- - Added gpio line for VBUS of USB2.0 on snow board.
-
- .../devicetree/bindings/usb/exynos-usb.txt         |   25 ++++++++++++++++++++
- arch/arm/boot/dts/exynos5250-smdk5250.dts          |    4 +++
- arch/arm/boot/dts/exynos5250-snow.dts              |    4 +++
- arch/arm/boot/dts/exynos5250.dtsi                  |    6 ++++
- 4 files changed, 39 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/usb/exynos-usb.txt
-
-diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-new file mode 100644
-index 0000000..e8bbb47
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-@@ -0,0 +1,25 @@
-+Samsung Exynos SoC USB controller
-+
-+The USB devices interface with USB controllers on Exynos SOCs.
-+The device node has following properties.
-+
-+EHCI
-+Required properties:
-+ - compatible: should be "samsung,exynos4210-ehci" for USB 2.0
-+   EHCI controller in host mode.
-+ - reg: physical base address of the controller and length of memory mapped
-+   region.
-+ - interrupts: interrupt number to the cpu.
-+
-+Optional properties:
-+ - samsung,vbus-gpio:  if present, specifies the GPIO that
-+   needs to be pulled up for the bus to be powered.
-+
-+Example:
-+
-+	usb@12110000 {
-+		compatible = "samsung,exynos4210-ehci";
-+		reg = <0x12110000 0x100>;
-+		interrupts = <0 71 0>;
-+		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
-+	};
-diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-index 942d576..7363e14 100644
---- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
-+++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-@@ -204,4 +204,8 @@
- 		samsung,mfc-r = <0x43000000 0x800000>;
- 		samsung,mfc-l = <0x51000000 0x800000>;
- 	};
-+
-+	usb@12110000 {
-+		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-index 17dd951..47b6b84 100644
---- a/arch/arm/boot/dts/exynos5250-snow.dts
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -40,4 +40,8 @@
- 				<&gpc4 5 2 3 0>, <&gpc4 6 2 3 0>;
- 		};
- 	};
-+
-+	usb@12110000 {
-+		samsung,vbus-gpio = <&gpx1 1 1 3 3>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 30485de..2cbe53e 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -275,6 +275,12 @@
- 		#size-cells = <0>;
- 	};
- 
-+	usb@12110000 {
-+		compatible = "samsung,exynos4210-ehci";
-+		reg = <0x12110000 0x100>;
-+		interrupts = <0 71 0>;
-+	};
-+
- 	amba {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
--- 
-1.7.6.5
 
