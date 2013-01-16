@@ -1,196 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab3APQXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:23:43 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:45983 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756425Ab3APQXk (ORCPT
+	id S1758308Ab3APQYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:24:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36753 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756390Ab3APQJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:23:40 -0500
-X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jan 2013 11:23:40 EST
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH v4] context_tracking: Add comments on interface and internals
-Date: Wed, 16 Jan 2013 17:16:37 +0100
-Message-Id: <1358352997-29585-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <87wqvdl1n8.fsf@sejong.aot.lge.com>
-References: <87wqvdl1n8.fsf@sejong.aot.lge.com>
+	Wed, 16 Jan 2013 11:09:06 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 180/222] RDMA/nes: Fix for crash when registering zero length MR for CQ
+Date: Wed, 16 Jan 2013 13:56:20 -0200
+Message-Id: <1358351822-7675-181-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This subsystem lacks many explanations on its purpose and
-design. Add these missing comments.
+3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
 
-v4: Document function parameter to be more kernel-doc
-friendly, as per Namhyung suggestion.
+------------------
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+
+commit 7d9c199a55200c9b9fcad08e150470d02fb385be upstream.
+
+Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/context_tracking.c |   75 +++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 65 insertions(+), 10 deletions(-)
+ drivers/infiniband/hw/nes/nes_verbs.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index e0e07fd..d566aba 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -1,3 +1,19 @@
-+/*
-+ * Context tracking: Probe on high level context boundaries such as kernel
-+ * and userspace. This includes syscalls and exceptions entry/exit.
-+ *
-+ * This is used by RCU to remove its dependency on the timer tick while a CPU
-+ * runs in userspace.
-+ *
-+ *  Started by Frederic Weisbecker:
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
-+ *
-+ * Many thanks to Gilad Ben-Yossef, Paul McKenney, Ingo Molnar, Andrew Morton,
-+ * Steven Rostedt, Peter Zijlstra for suggestions and improvements.
-+ *
-+ */
-+
- #include <linux/context_tracking.h>
- #include <linux/rcupdate.h>
- #include <linux/sched.h>
-@@ -6,8 +22,8 @@
- 
- struct context_tracking {
- 	/*
--	 * When active is false, hooks are not set to
--	 * minimize overhead: TIF flags are cleared
-+	 * When active is false, probes are unset in order
-+	 * to minimize overhead: TIF flags are cleared
- 	 * and calls to user_enter/exit are ignored. This
- 	 * may be further optimized using static keys.
- 	 */
-@@ -24,6 +40,15 @@ static DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
- #endif
- };
- 
-+/**
-+ * user_enter - Inform the context tracking that the CPU is going to
-+ *              enter userspace mode.
-+ *
-+ * This function must be called right before we switch from the kernel
-+ * to userspace, when it's guaranteed the remaining kernel instructions
-+ * to execute won't use any RCU read side critical section because this
-+ * function sets RCU in extended quiescent state.
-+ */
- void user_enter(void)
- {
- 	unsigned long flags;
-@@ -39,40 +64,70 @@ void user_enter(void)
- 	if (in_interrupt())
- 		return;
- 
-+	/* Kernel threads aren't supposed to go to userspace */
- 	WARN_ON_ONCE(!current->mm);
- 
- 	local_irq_save(flags);
- 	if (__this_cpu_read(context_tracking.active) &&
- 	    __this_cpu_read(context_tracking.state) != IN_USER) {
- 		__this_cpu_write(context_tracking.state, IN_USER);
-+		/*
-+		 * At this stage, only low level arch entry code remains and
-+		 * then we'll run in userspace. We can assume there won't be
-+		 * any RCU read-side critical section until the next call to
-+		 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
-+		 * on the tick.
-+		 */
- 		rcu_user_enter();
- 	}
- 	local_irq_restore(flags);
- }
- 
-+
-+/**
-+ * user_exit - Inform the context tracking that the CPU is
-+ *             exiting userspace mode and entering the kernel.
-+ *
-+ * This function must be called after we entered the kernel from userspace
-+ * before any use of RCU read side critical section. This potentially include
-+ * any high level kernel code like syscalls, exceptions, signal handling, etc...
-+ *
-+ * This call supports re-entrancy. This way it can be called from any exception
-+ * handler without needing to know if we came from userspace or not.
-+ */
- void user_exit(void)
- {
- 	unsigned long flags;
- 
--	/*
--	 * Some contexts may involve an exception occuring in an irq,
--	 * leading to that nesting:
--	 * rcu_irq_enter() rcu_user_exit() rcu_user_exit() rcu_irq_exit()
--	 * This would mess up the dyntick_nesting count though. And rcu_irq_*()
--	 * helpers are enough to protect RCU uses inside the exception. So
--	 * just return immediately if we detect we are in an IRQ.
--	 */
- 	if (in_interrupt())
- 		return;
- 
- 	local_irq_save(flags);
- 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
- 		__this_cpu_write(context_tracking.state, IN_KERNEL);
-+		/*
-+		 * We are going to run code that may use RCU. Inform
-+		 * RCU core about that (ie: we may need the tick again).
-+		 */
- 		rcu_user_exit();
- 	}
- 	local_irq_restore(flags);
- }
- 
-+
-+/**
-+ * context_tracking_task_switch - context switch the syscall callbacks
-+ * @prev: the task that is being switched out
-+ * @next: the task that is being switched in
-+ *
-+ * The context tracking uses the syscall slow path to implement its user-kernel
-+ * boundaries probes on syscalls. This way it doesn't impact the syscall fast
-+ * path on CPUs that don't do context tracking.
-+ *
-+ * But we need to clear the flag on the previous task because it may later
-+ * migrate to some CPU that doesn't do the context tracking. As such the TIF
-+ * flag may not be desired there.
-+ */
- void context_tracking_task_switch(struct task_struct *prev,
- 			     struct task_struct *next)
- {
+diff --git a/drivers/infiniband/hw/nes/nes_verbs.c b/drivers/infiniband/hw/nes/nes_verbs.c
+index 2359568..da84ea3 100644
+--- a/drivers/infiniband/hw/nes/nes_verbs.c
++++ b/drivers/infiniband/hw/nes/nes_verbs.c
+@@ -2561,6 +2561,11 @@ static struct ib_mr *nes_reg_user_mr(struct ib_pd *pd, u64 start, u64 length,
+ 			return ibmr;
+ 		case IWNES_MEMREG_TYPE_QP:
+ 		case IWNES_MEMREG_TYPE_CQ:
++			if (!region->length) {
++				nes_debug(NES_DBG_MR, "Unable to register zero length region for CQ\n");
++				ib_umem_release(region);
++				return ERR_PTR(-EINVAL);
++			}
+ 			nespbl = kzalloc(sizeof(*nespbl), GFP_KERNEL);
+ 			if (!nespbl) {
+ 				nes_debug(NES_DBG_MR, "Unable to allocate PBL\n");
 -- 
-1.7.5.4
+1.7.9.5
 
