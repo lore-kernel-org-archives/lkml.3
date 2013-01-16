@@ -1,54 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab3APAcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:32:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41542 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757792Ab3AOW2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:28:49 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [ 051/221] mfd: wm8994: Add support for WM1811 rev E
-Date: Tue, 15 Jan 2013 10:49:38 -0800
-Message-Id: <20130115185001.709162032@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
-References: <20130115184958.025580322@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1757974Ab3APAdC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:33:02 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:43383 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757237Ab3APAc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 19:32:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130115160957.9ef860d7.akpm@linux-foundation.org>
+References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+ <1357712474-27595-3-git-send-email-minchan@kernel.org> <20130109162602.53a60e77.akpm@linux-foundation.org>
+ <20130110022306.GB14685@blaptop> <20130110135828.c88bcaf1.akpm@linux-foundation.org>
+ <20130111044327.GB6183@blaptop> <20130115160957.9ef860d7.akpm@linux-foundation.org>
+From: Sonny Rao <sonnyrao@google.com>
+Date: Tue, 15 Jan 2013 16:32:38 -0800
+Message-ID: <CAPz6YkWC+y+jqD+0UNe+cD6OyveursZaahxc26mH81DOGD7sNw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mm: forcely swapout when we are out of page cache
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Bryan Freed <bfreed@google.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Sameer Nanda <snanda@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jan 15, 2013 at 4:09 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri, 11 Jan 2013 13:43:27 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
+>
+>> Hi Andrew,
+>>
+>> On Thu, Jan 10, 2013 at 01:58:28PM -0800, Andrew Morton wrote:
+>> > On Thu, 10 Jan 2013 11:23:06 +0900
+>> > Minchan Kim <minchan@kernel.org> wrote:
+>> >
+>> > > > I have a feeling that laptop mode has bitrotted and these patches are
+>> > > > kinda hacking around as-yet-not-understood failures...
+>> > >
+>> > > Absolutely, this patch is last guard for unexpectable behavior.
+>> > > As I mentioned in cover-letter, Luigi's problem could be solved either [1/2]
+>> > > or [2/2] but I wanted to add this as last resort in case of unexpected
+>> > > emergency. But you're right. It's not good to hide the problem like this path
+>> > > so let's drop [2/2].
+>> > >
+>> > > Also, I absolutely agree it has bitrotted so for correcting it, we need a
+>> > > volunteer who have to inverstigate power saveing experiment with long time.
+>> > > So [1/2] would be band-aid until that.
+>> >
+>> > I'm inclined to hold off on 1/2 as well, really.
+>>
+>> Then, what's your plan?
+>
+> My plan is to sit here until someone gets down and fully tests and
+> fixes laptop-mode.  Making it work properly, reliably and as-designed.
+>
 
-------------------
+I think we should agree on what the goals are first.
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Or perhaps someone wants to make the case that we just don't need it
+> any more (SSDs are silent!) and removes it all.
+>
+>> >
+>> > The point of laptop_mode isn't to save power btw - it is to minimise
+>> > the frequency with which the disk drive is spun up.  By deferring and
+>> > then batching writeout operations, basically.
+>>
+>> I don't get it. Why should we minimise such frequency?
+>
+> Because my laptop was going clickety every minute and was keeping me
+> awake.
+>
 
-commit fee546ce8cfd9dea1f53175f627e17ef5ff05df4 upstream.
+Very interesting, I don't know if anyone realized that (or we just forgot) :-)
 
-This is supported identically to the previous revisions.
+>> It's for saving the power to increase batter life.
+>
+> It might well have that effect, dunno.  That wasn't my intent.  Testing
+> needed!
+>
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Power saving is certainly why we had it on originally for ChromeOS,
+but we turned it off due to misbehavior.
 
----
- drivers/mfd/wm8994-core.c |    1 +
- 1 file changed, 1 insertion(+)
+Specifically, we saw a pathological behavior where we'd end up writing
+to the disk every few seconds when laptop mode was turned on.  This
+turned out to be because laptop-mode sets a timer which is used to
+check for new dirty data after the initial flush and writes that out
+before spinning the disk down, and on ChromeOS various chatty daemons
+on the system were logging and dirtying data more or less constantly
+so there was almost always something there to be written out.  So what
+ended up happening was that we'd need to do a read, then wake up the
+disk, and then keep writing every few seconds for a long period of
+time, which had the opposite effect from what we wanted.  The issues
+with zram swap just confirmed that we didn't want laptop mode.
 
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -557,6 +557,7 @@ static __devinit int wm8994_device_init(
- 		case 1:
- 		case 2:
- 		case 3:
-+		case 4:
- 			regmap_patch = wm1811_reva_patch;
- 			patch_regs = ARRAY_SIZE(wm1811_reva_patch);
- 			break;
+Most of our devices have had SSDs rather than spinning disks, so noise
+wasn't an issue, although when we finally did support an official
+device with a spinning disk people certainly complained when the disk
+started clicking all the time (due to the underflow in the writeback
+code).   We do know that current SSDs save a significant amount of
+power when they go into standby, so minimizing disk writes is still
+useful on these devices.
 
+A very simple laptop mode which only does a single sync when we spin
+up the disk, and didn't bother with the timer behavior or muck with
+swap behavior might be something that is more useful for us, and I
+suspect it might simplify the writeback code somewhat as well.
 
+>> As I real all document about laptop_mode, they all said about the power
+>> or battery life saving.
+>>
+>> 1. Documentation/laptops/laptop-mode.txt
+>> 2. http://linux.die.net/man/8/laptop_mode
+>> 3. http://samwel.tk/laptop_mode/
+>> 3. http://www.thinkwiki.org/wiki/Laptop-mode
+>
+> Documentation creep ;)
+>
+> Ten years ago, gad: http://lwn.net/Articles/1652/
