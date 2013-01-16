@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900Ab3APP6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:58:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35711 "EHLO
+	id S1756870Ab3APP6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:58:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35712 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab3APP6k (ORCPT
+	with ESMTP id S1756694Ab3APP6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 10:58:40 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Thomas Gleixner <tglx@linutronix.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 019/222] USB: fix endpoint-disabling for failed config changes
-Date: Wed, 16 Jan 2013 13:53:39 -0200
-Message-Id: <1358351822-7675-20-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 020/222] genirq: Always force thread affinity
+Date: Wed, 16 Jan 2013 13:53:40 -0200
+Message-Id: <1358351822-7675-21-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,107 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 36caff5d795429c572443894e8789c2150dd796b upstream.
+commit 04aa530ec04f61875b99c12721162e2964e3318c upstream.
 
-This patch (as1631) fixes a bug that shows up when a config change
-fails for a device under an xHCI controller.  The controller needs to
-be told to disable the endpoints that have been enabled for the new
-config.  The existing code does this, but before storing the
-information about which endpoints were enabled!  As a result, any
-second attempt to install the new config is doomed to fail because
-xhci-hcd will refuse to enable an endpoint that is already enabled.
+Sankara reported that the genirq core code fails to adjust the
+affinity of an interrupt thread in several cases:
 
-The patch optimistically initializes the new endpoints' device
-structures before asking the device to switch to the new config.  If
-the request fails then the endpoint information is already stored, so
-we can use usb_hcd_alloc_bandwidth() to disable the endpoints with no
-trouble.  The rest of the error path is slightly more complex now; we
-have to disable the new interfaces and call put_device() rather than
-simply deallocating them.
+ 1) On request/setup_irq() the call to setup_affinity() happens before
+    the new action is registered, so the new thread is not notified.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Matthias Schniedermeyer <ms@citd.de>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ 2) For secondary shared interrupts nothing notifies the new thread to
+    change its affinity.
+
+ 3) Interrupts which have the IRQ_NO_BALANCE flag set are not moving
+    the thread either.
+
+Fix this by setting the thread affinity flag right on thread creation
+time. This ensures that under all circumstances the thread moves to
+the right place. Requires a check in irq_thread_check_affinity for an
+existing affinity mask (CONFIG_CPU_MASK_OFFSTACK=y)
+
+Reported-and-tested-by: Sankara Muthukrishnan <sankara.m@gmail.com>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1209041738200.2754@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/core/message.c |   54 +++++++++++++++++++++++++-------------------
- 1 file changed, 31 insertions(+), 23 deletions(-)
+ kernel/irq/manage.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
-index 11cc49d..cf8cb4e 100644
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1806,29 +1806,8 @@ free_interfaces:
- 		goto free_interfaces;
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 5e42eb1..b4c6385 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -716,6 +716,7 @@ static void
+ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
+ {
+ 	cpumask_var_t mask;
++	bool valid = true;
+ 
+ 	if (!test_and_clear_bit(IRQTF_AFFINITY, &action->thread_flags))
+ 		return;
+@@ -730,10 +731,18 @@ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
  	}
  
--	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
--			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
--			      NULL, 0, USB_CTRL_SET_TIMEOUT);
--	if (ret < 0) {
--		/* All the old state is gone, so what else can we do?
--		 * The device is probably useless now anyway.
--		 */
--		cp = NULL;
--	}
--
--	dev->actconfig = cp;
--	if (!cp) {
--		usb_set_device_state(dev, USB_STATE_ADDRESS);
--		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
--		/* Leave LPM disabled while the device is unconfigured. */
--		mutex_unlock(hcd->bandwidth_mutex);
--		usb_autosuspend_device(dev);
--		goto free_interfaces;
--	}
--	mutex_unlock(hcd->bandwidth_mutex);
--	usb_set_device_state(dev, USB_STATE_CONFIGURED);
--
--	/* Initialize the new interface structures and the
+ 	raw_spin_lock_irq(&desc->lock);
+-	cpumask_copy(mask, desc->irq_data.affinity);
 +	/*
-+	 * Initialize the new interface structures and the
- 	 * hc/hcd/usbcore interface/endpoint state.
- 	 */
- 	for (i = 0; i < nintf; ++i) {
-@@ -1872,6 +1851,35 @@ free_interfaces:
- 	}
- 	kfree(new_interfaces);
++	 * This code is triggered unconditionally. Check the affinity
++	 * mask pointer. For CPU_MASK_OFFSTACK=n this is optimized out.
++	 */
++	if (desc->irq_data.affinity)
++		cpumask_copy(mask, desc->irq_data.affinity);
++	else
++		valid = false;
+ 	raw_spin_unlock_irq(&desc->lock);
  
-+	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
-+			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
-+			      NULL, 0, USB_CTRL_SET_TIMEOUT);
-+	if (ret < 0 && cp) {
+-	set_cpus_allowed_ptr(current, mask);
++	if (valid)
++		set_cpus_allowed_ptr(current, mask);
+ 	free_cpumask_var(mask);
+ }
+ #else
+@@ -936,6 +945,16 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 		 */
+ 		get_task_struct(t);
+ 		new->thread = t;
 +		/*
-+		 * All the old state is gone, so what else can we do?
-+		 * The device is probably useless now anyway.
++		 * Tell the thread to set its affinity. This is
++		 * important for shared interrupt handlers as we do
++		 * not invoke setup_affinity() for the secondary
++		 * handlers as everything is already set up. Even for
++		 * interrupts marked with IRQF_NO_BALANCE this is
++		 * correct as we want the thread to move to the cpu(s)
++		 * on which the requesting code placed the interrupt.
 +		 */
-+		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
-+		for (i = 0; i < nintf; ++i) {
-+			usb_disable_interface(dev, cp->interface[i], true);
-+			put_device(&cp->interface[i]->dev);
-+			cp->interface[i] = NULL;
-+		}
-+		cp = NULL;
-+	}
-+
-+	dev->actconfig = cp;
-+	mutex_unlock(hcd->bandwidth_mutex);
-+
-+	if (!cp) {
-+		usb_set_device_state(dev, USB_STATE_ADDRESS);
-+
-+		/* Leave LPM disabled while the device is unconfigured. */
-+		usb_autosuspend_device(dev);
-+		return ret;
-+	}
-+	usb_set_device_state(dev, USB_STATE_CONFIGURED);
-+
- 	if (cp->string == NULL &&
- 			!(dev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
- 		cp->string = usb_cache_string(dev, cp->desc.iConfiguration);
++		set_bit(IRQTF_AFFINITY, &new->thread_flags);
+ 	}
+ 
+ 	if (!alloc_cpumask_var(&mask, GFP_KERNEL)) {
 -- 
 1.7.9.5
 
