@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab3APTV1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 14:21:27 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:36495 "EHLO mx2.parallels.com"
+	id S1756937Ab3APTY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 14:24:57 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38351 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869Ab3APTV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 14:21:26 -0500
-Message-ID: <50F6FDC8.5020909@parallels.com>
-Date: Wed, 16 Jan 2013 11:21:44 -0800
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <xfs@oss.sgi.com>,
-        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
-References: <1354058086-27937-1-git-send-email-david@fromorbit.com> <1354058086-27937-10-git-send-email-david@fromorbit.com>
-In-Reply-To: <1354058086-27937-10-git-send-email-david@fromorbit.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751869Ab3APTY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 14:24:56 -0500
+Message-ID: <1358364290.4593.178.camel@falcor1>
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
+        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
+Date: Wed, 16 Jan 2013 14:24:50 -0500
+In-Reply-To: <20130116182804.GF29845@redhat.com>
+References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+	 <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
+	 <871udloiku.fsf@xmission.com> <1358312159.4593.37.camel@falcor1>
+	 <87wqvdli1o.fsf@xmission.com> <1358344859.4593.66.camel@falcor1>
+	 <20130116144836.GB29845@redhat.com> <1358350391.4593.112.camel@falcor1>
+	 <20130116163453.GD29845@redhat.com> <1358359715.4593.146.camel@falcor1>
+	 <20130116182804.GF29845@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [216.239.55.193]
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011619-7182-0000-0000-0000047D1DB1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 03:14 PM, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
+On Wed, 2013-01-16 at 13:28 -0500, Vivek Goyal wrote:
+> On Wed, Jan 16, 2013 at 01:08:35PM -0500, Mimi Zohar wrote:
+> > On Wed, 2013-01-16 at 11:34 -0500, Vivek Goyal wrote:
+> > 
+> > > I read the comment in ima_bprm_check() being called from security_bprm_check(). 
+> > > It says that files already open for write can't executed and files already
+> > > open for exec can't be open for writes. That's fine. 
+> > > 
+> > > I was worried about anonymous pages being modified on swap and then
+> > > faulted back in. It is not necessarily signature verification but making
+> > > sure signed processes memory is not modified later by any unsigned process
+> > > in anyway. And that includes disabling ptrace too.
+> > > 
+> > > So IMA stuff does not do anything to protect against process memory being
+> > > modified using ptrace or by playing tricks with swap.
+> > 
+> > > I am not sure what will happen if I can bypass the file system and directly
+> > > write on a disk block and modify executable. (Assuming one can get block
+> > > information somehow). Does anything protect such modification? Will IMA
+> > > detect it?
+> > 
+> > Sorry, this is out of scope for IMA.  Dmitry has looked into this, but
+> > I'm not sure where it stands at the moment.
 > 
-> Now that we have an LRU list API, we can start to enhance the
-> implementation.  This splits the single LRU list into per-node lists
-> and locks to enhance scalability. Items are placed on lists
-> according to the node the memory belongs to. To make scanning the
-> lists efficient, also track whether the per-node lists have entries
-> in them in a active nodemask.
+> Ok, so that's one reason that why I wrote these patcehs. IMA currently
+> is not doing following things to make sure address space of signed images
+> is not modified by others.
 > 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  include/linux/list_lru.h |   14 ++--
->  lib/list_lru.c           |  160 +++++++++++++++++++++++++++++++++++-----------
->  2 files changed, 129 insertions(+), 45 deletions(-)
+> - Protecting against modifications to pages on swap.
+> - Protecting against modifications by ptrace.
+> - Protecting against modifications which bypassed filesystem and directly
+>   wrote to the block.
 > 
-> diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
-> index 3423949..b0e3ba2 100644
-> --- a/include/linux/list_lru.h
-> +++ b/include/linux/list_lru.h
-> @@ -8,21 +8,23 @@
->  #define _LRU_LIST_H 0
->  
->  #include <linux/list.h>
-> +#include <linux/nodemask.h>
->  
-> -struct list_lru {
-> +struct list_lru_node {
->  	spinlock_t		lock;
->  	struct list_head	list;
->  	long			nr_items;
-> +} ____cacheline_aligned_in_smp;
-> +
-> +struct list_lru {
-> +	struct list_lru_node	node[MAX_NUMNODES];
-> +	nodemask_t		active_nodes;
->  };
->  
-MAX_NUMNODES will default to 1 << 9, if I'm not mistaken. Your
-list_lru_node seems to be around 32 bytes on 64-bit systems (128 with
-debug). So we're talking about 16k per lru.
-The superblocks only, are present by the dozens even in a small system,
-and I believe the whole goal of this API is to get more users to switch
-to it. This can easily use up a respectable bunch of megs.
+> Locking down all the pages of signed binaries in memory hopefully should
+> solve above problems.
 
-Isn't it a bit too much ?
+Signing and verifying ELF executables goes back a long time ~2003/4,
+from a number of esteemed kernel developers, including Greg-KH and Serge
+Hallyn.
 
-I am wondering if we can't do better in here and at least allocate+grow
-according to the actual number of nodes.
+IMA-appraisal isn't limited to appraising a single type of file, but is
+a generic mechanism for appraising all files.  If there are issues that
+aren't being addressed, then by all means, please help by addressing
+them.  Duplicating a large portion of the code is not productive.
+
+thanks,
+
+Mimi
+
 
