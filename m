@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757970Ab3APWrq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 17:47:46 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:53861 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757681Ab3APWrp convert rfc822-to-8bit (ORCPT
+	id S1758051Ab3APWsh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 17:48:37 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:55918 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758016Ab3APWsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 17:47:45 -0500
-From: Romain KUNTZ <r.kuntz@ipflavors.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH 1/1] ipv6: fix header length calculation in ip6_append_data()
-Date: Wed, 16 Jan 2013 23:47:40 +0100
-Message-Id: <F2E313A0-60C5-49DE-BBB7-BAEF532C0433@ipflavors.com>
-Cc: "yoshfuji@linux-ipv6.org Hideaki" <yoshfuji@linux-ipv6.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Romain KUNTZ <r.kuntz@ipflavors.com>
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-X-Mailer: Apple Mail (2.1499)
+	Wed, 16 Jan 2013 17:48:35 -0500
+Message-ID: <50F72E40.5040903@suse.cz>
+Date: Wed, 16 Jan 2013 23:48:32 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: Re: -next: no resume from suspend
+References: <50F3D9E8.6040802@suse.cz> <16191961.j5ydKsJ3d3@vostro.rjw.lan> <50F68443.3040900@suse.cz> <1383787.8I6fLLmNxl@vostro.rjw.lan>
+In-Reply-To: <1383787.8I6fLLmNxl@vostro.rjw.lan>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 299b0767 (ipv6: Fix IPsec slowpath fragmentation problem)
-has introduced a error in the header length calculation that 
-provokes corrupted packets when non-fragmentable extensions 
-headers (Destination Option or Routing Header Type 2) are used.
+On 01/16/2013 03:00 PM, Rafael J. Wysocki wrote:
+> On Wednesday, January 16, 2013 11:43:15 AM Jiri Slaby wrote:
+>> On 01/14/2013 01:56 PM, Rafael J. Wysocki wrote:
+>>> On Monday, January 14, 2013 11:11:52 AM Jiri Slaby wrote:
+>>>> Hi,
+>>>>
+>>>> since friday's -next (the last known to be working is the last monday's)
+>>>> I cannot resume from suspend. The last thing I see with
+>>>> no_console_suspend is:
+>>>> i915: No ACPI video bus found
+>>>>
+>>>> But I used to see the message always, so this is no difference. Any idea
+>>>> before I start bisecting?
+>>>
+>>> Well, what's the next message you normally see with no_console_suspend?
+>>
+>> As I wrote in the other message, the kernel is spinning in
+>> acpi_rs_get_aml_length. There are weird resources in the list. For
+>> serial 00:05 there is resource with type and length equal to 0 and for
+>> parport_pc 00:06 there is resource type 58196295 with length of
+>> 134284152. See:
+>> acpi_rs_get_aml_length: ffff8801b9f7b380 type=3 len=16
+>> acpi_rs_get_aml_length: ffff8801b9f7b390 type=0 len=0
+>> acpi_rs_get_aml_length: BAD ffff8801b9f7b390 type=0 len=0
+>> serial 00:05: activation failed
+>> dpm_run_callback(): pnp_bus_resume+0x0/0x80 returns -5
+>> PM: Device 00:05 failed to resume: error -5
+>> acpi_rs_get_aml_length: ffff8801b9f7b680 type=3 len=24
+>> acpi_rs_get_aml_length: ffff8801b9f7b698 type=58196295 len=134284152
+>> parport_pc 00:06: activation failed
+>> dpm_run_callback(): pnp_bus_resume+0x0/0x80 returns -5
+>> PM: Device 00:06 failed to resume: error -5
+>>
+>> if (!length)
+>>   return error;
+>>
+>> makes it resume again with the errors above...
+>>
+>> This was 3.8.0-rc3-next-20130114. 
+> 
+> There are two things you can try.  First, revert all of the ACPICA patches
+> and see if that helps.  Second, if that doesn't help, try to revert things in
+> the PCI tree (alternatively, you can try the PCI tree alone).
+> 
+> I have tested suspend/resume with the ACPI (including ACPICA) patches applied,
+> but I haven't tested the PCI tree.
 
-rt->rt6i_nfheader_len is the length of the non-fragmentable 
-extension header, and it should be substracted to
-rt->dst.header_len, and not to exthdrlen, as it was done before
-commit 299b0767.
+I bisected that. It is caused by the following commit:
+commit 2a3ab82714043580505634ff5b9a743ff4237376
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Fri Jan 4 22:38:10 2013 +0000
 
-This patch reverts to the original and correct behavior. It has
-been successfully tested with and without IPsec on packets
-that include non-fragmentable extensions headers.
+    PNPACPI: Use _CRS buffer directly as _SRS template
 
-Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
----
- net/ipv6/ip6_output.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Acpidump is here if you are interested:
+http://www.fi.muni.cz/~xslaby/sklad/adump
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 5552d13..0c7c03d 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1213,10 +1213,10 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 		if (dst_allfrag(rt->dst.path))
- 			cork->flags |= IPCORK_ALLFRAG;
- 		cork->length = 0;
--		exthdrlen = (opt ? opt->opt_flen : 0) - rt->rt6i_nfheader_len;
-+		exthdrlen = (opt ? opt->opt_flen : 0);
- 		length += exthdrlen;
- 		transhdrlen += exthdrlen;
--		dst_exthdrlen = rt->dst.header_len;
-+		dst_exthdrlen = rt->dst.header_len - rt->rt6i_nfheader_len;
- 	} else {
- 		rt = (struct rt6_info *)cork->dst;
- 		fl6 = &inet->cork.fl.u.ip6;
+thanks,
 -- 
-1.7.2.5
-
-
+js
+suse labs
