@@ -1,54 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab3APGRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 01:17:12 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:34404 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757831Ab3APGRK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 01:17:10 -0500
-Message-ID: <50F645D8.1080404@synopsys.com>
-Date: Wed, 16 Jan 2013 11:46:56 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1758204Ab3APGRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 01:17:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28606 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757831Ab3APGRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 01:17:14 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4 3/3] tuntap: allow polling/writing/reading when detached
+Date: Wed, 16 Jan 2013 14:17:06 +0800
+Message-ID: <3742551.hhCnEOvBmh@jason-thinkpad-t430s>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7+; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <20130115164808.GA8792@redhat.com>
+References: <1358245726-16250-1-git-send-email-jasowang@redhat.com> <1358245726-16250-4-git-send-email-jasowang@redhat.com> <20130115164808.GA8792@redhat.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] switch arc-uart to devicetree based probing
-References: <1357885223-19243-1-git-send-email-vgupta@synopsys.com> <20130116061636.GA5680@kroah.com>
-In-Reply-To: <20130116061636.GA5680@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 January 2013 11:46 AM, Greg KH wrote:
-> On Fri, Jan 11, 2013 at 11:50:19AM +0530, Vineet Gupta wrote:
->> Hi,
->>
->> As part of converting ARC Port to devicetree infrastructure, the following
->> series converts the arc-uart driver to DT.
->>
->> * The first patch is a bug-fix which showed up in the process as DT based
->>   platform devices by default have -ve id
->> * Next two prepare the driver for forthcoming DT changes.
->> * Last one contains the DT bindings and driver using those.
->>
->> Couple of points worth mentioning:
->> * The earlyprintk portion of driver still relies on static platform data
->>   we would need some earlyprintk handling in of_fdt_* to clean it up properly
->> * Two of the three platform data instances are now retrieved from DT.
->>   However one still needs to be dynamically passed by platform (using
->>   of_dev_auxdata) as we want to run same image in simulator and hardware
->>
->> Tested on in-works ARC 3.8 port.
->>
->> P.S. Greg, can this be treated as a bug-fix for 3.8
-> No, because it is not a bugfix, but a new feature, sorry.
->
-> greg k-h
+On Tuesday, January 15, 2013 06:48:08 PM Michael S. Tsirkin wrote:
+> On Tue, Jan 15, 2013 at 06:28:46PM +0800, Jason Wang wrote:
+> > We forbid polling, writing and reading when the file were detached, this
+> > may complex the user in several cases:
+> > 
+> > - when guest pass some buffers to vhost/qemu and then disable some queues,
+> > 
+> >   vhost/qemu needs to to its own cleanup which is complex. We can do this
+> >   simply by allowing a user can still write to an disabled queue to
+> >   handle this. And user can still do read but just nothing returned.
+> > 
+> > - align the polling behavior with macvtap which never fails when the queue
+> > is> 
+> >   created. this can simplify the polling errors handling of its user (e.g
+> >   vhost)> 
+> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > ---
+> > 
+> >  drivers/net/tun.c |   18 +++++++++++-------
+> >  1 files changed, 11 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> > index af372d0..eb68937 100644
+> > --- a/drivers/net/tun.c
+> > +++ b/drivers/net/tun.c
+> > @@ -307,7 +307,7 @@ static void tun_flow_update(struct tun_struct *tun,
+> > u32 rxhash,> 
+> >  	rcu_read_lock();
+> > 
+> > -	if (tun->numqueues == 1)
+> > +	if (tun->numqueues == 1 || queue_index >= tun->numqueues)
+> > 
+> >  		goto unlock;
+> >  	
+> >  	e = tun_flow_find(head, rxhash);
+> 
+> Hmm I don't understand - does something ensure that queue_index is >
+> numqueues if the queue is disabled?
 
-NP. Thx a bunch for merging these.
--Vineet
+I miss this, something is needed.
+> Can we check tun->disabled and skip tun_flow_update completely?
+> We might need to switch to rcu_assign for tun->disabled for this
+> but otherwise it looks easy.
+
+Correct, will post another version, thanks.
+> 
+> > @@ -406,21 +406,21 @@ static void __tun_detach(struct tun_file *tfile,
+> > bool clean)> 
+> >  	tun = rtnl_dereference(tfile->tun);
+> > 
+> > -	if (tun) {
+> > +	if (tun && !tfile->detached) {
+> > 
+> >  		u16 index = tfile->queue_index;
+> >  		BUG_ON(index >= tun->numqueues);
+> >  		dev = tun->dev;
+> >  		
+> >  		rcu_assign_pointer(tun->tfiles[index],
+> >  		
+> >  				   tun->tfiles[tun->numqueues - 1]);
+> > 
+> > -		rcu_assign_pointer(tfile->tun, NULL);
+> > 
+> >  		ntfile = rtnl_dereference(tun->tfiles[index]);
+> >  		ntfile->queue_index = index;
+> >  		
+> >  		--tun->numqueues;
+> > 
+> > -		if (clean)
+> > +		if (clean) {
+> > +			rcu_assign_pointer(tfile->tun, NULL);
+> > 
+> >  			sock_put(&tfile->sk);
+> > 
+> > -		else
+> > +		} else
+> > 
+> >  			tun_disable_queue(tun, tfile);
+> >  		
+> >  		synchronize_net();
+> > 
+> > @@ -465,6 +465,10 @@ static void tun_detach_all(struct net_device *dev)
+> > 
+> >  		rcu_assign_pointer(tfile->tun, NULL);
+> >  		--tun->numqueues;
+> >  	
+> >  	}
+> > 
+> > +	list_for_each_entry(tfile, &tun->disabled, next) {
+> > +		wake_up_all(&tfile->wq.wait);
+> > +		rcu_assign_pointer(tfile->tun, NULL);
+> > +	}
+> > 
+> >  	BUG_ON(tun->numqueues != 0);
+> >  	
+> >  	synchronize_net();
+> > 
+> > @@ -491,7 +495,7 @@ static int tun_attach(struct tun_struct *tun, struct
+> > file *file)> 
+> >  	int err;
+> >  	
+> >  	err = -EINVAL;
+> > 
+> > -	if (rtnl_dereference(tfile->tun))
+> > +	if (rtnl_dereference(tfile->tun) && !tfile->detached)
+> > 
+> >  		goto out;
+> >  	
+> >  	err = -EBUSY;
+> > 
+> > @@ -1795,7 +1799,7 @@ static int tun_set_queue(struct file *file, struct
+> > ifreq *ifr)> 
+> >  			ret = tun_attach(tun, file);
+> >  	
+> >  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
+> >  	
+> >  		tun = rtnl_dereference(tfile->tun);
+> > 
+> > -		if (!tun || !(tun->flags & TUN_TAP_MQ))
+> > +		if (!tun || !(tun->flags & TUN_TAP_MQ) || tfile->detached)
+> > 
+> >  			ret = -EINVAL;
+> >  		
+> >  		else
+> >  		
+> >  			__tun_detach(tfile, false);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
