@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932887Ab3APQKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:10:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36839 "EHLO
+	id S932918Ab3APQKR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:10:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36844 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932855Ab3APQKD (ORCPT
+	with ESMTP id S932884Ab3APQKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:10:03 -0500
+	Wed, 16 Jan 2013 11:10:07 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>,
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 195/222] cifs: adjust sequence number downward after signing NT_CANCEL request
-Date: Wed, 16 Jan 2013 13:56:35 -0200
-Message-Id: <1358351822-7675-196-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 196/222] rtlwifi: fix incorrect use of usb_alloc_coherent with usb_control_msg
+Date: Wed, 16 Jan 2013 13:56:36 -0200
+Message-Id: <1358351822-7675-197-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,43 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 
-commit 31efee60f489c759c341454d755a9fd13de8c03d upstream.
+commit 4c3de5920c486b8eefa6187ee6a181864c161100 upstream.
 
-When a call goes out, the signing code adjusts the sequence number
-upward by two to account for the request and the response. An NT_CANCEL
-however doesn't get a response of its own, it just hurries the server
-along to get it to respond to the original request more quickly.
-Therefore, we must adjust the sequence number back down by one after
-signing a NT_CANCEL request.
+Incorrect use of usb_alloc_coherent memory as input buffer to usb_control_msg
+can cause problems in arch DMA code, for example kernel BUG at
+'arch/arm/include/asm/dma-mapping.h:321' on ARM (linux-3.4).
 
-Reported-by: Tim Perry <tdparmor-sambabugs@yahoo.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Change _usb_writeN_sync use kmalloc'd buffer instead.
+
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/cifs/smb1ops.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/wireless/rtlwifi/usb.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/fs/cifs/smb1ops.c b/fs/cifs/smb1ops.c
-index 6dec38f..a288ec2a 100644
---- a/fs/cifs/smb1ops.c
-+++ b/fs/cifs/smb1ops.c
-@@ -51,6 +51,13 @@ send_nt_cancel(struct TCP_Server_Info *server, void *buf,
- 		mutex_unlock(&server->srv_mutex);
- 		return rc;
- 	}
-+
-+	/*
-+	 * The response to this call was already factored into the sequence
-+	 * number when the call went out, so we must adjust it back downward
-+	 * after signing here.
-+	 */
-+	--server->sequence_number;
- 	rc = smb_send(server, in_buf, be32_to_cpu(in_buf->smb_buf_length));
- 	mutex_unlock(&server->srv_mutex);
+diff --git a/drivers/net/wireless/rtlwifi/usb.c b/drivers/net/wireless/rtlwifi/usb.c
+index aa970fc..8fa144f 100644
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -210,17 +210,16 @@ static void _usb_writeN_sync(struct rtl_priv *rtlpriv, u32 addr, void *data,
+ 	u16 index = REALTEK_USB_VENQT_CMD_IDX;
+ 	int pipe = usb_sndctrlpipe(udev, 0); /* write_out */
+ 	u8 *buffer;
+-	dma_addr_t dma_addr;
  
+-	wvalue = (u16)(addr&0x0000ffff);
+-	buffer = usb_alloc_coherent(udev, (size_t)len, GFP_ATOMIC, &dma_addr);
++	wvalue = (u16)(addr & 0x0000ffff);
++	buffer = kmalloc(len, GFP_ATOMIC);
+ 	if (!buffer)
+ 		return;
+ 	memcpy(buffer, data, len);
+ 	usb_control_msg(udev, pipe, request, reqtype, wvalue,
+ 			index, buffer, len, 50);
+ 
+-	usb_free_coherent(udev, (size_t)len, buffer, dma_addr);
++	kfree(buffer);
+ }
+ 
+ static void _rtl_usb_io_handler_init(struct device *dev,
 -- 
 1.7.9.5
 
