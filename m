@@ -1,126 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab3APUf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 15:35:59 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:57977 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064Ab3APUf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 15:35:57 -0500
-From: Luciano Coelho <coelho@ti.com>
-To: <tony@atomide.com>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] OMAP: omap4-panda: add WiLink shared transport power functions
-Date: Wed, 16 Jan 2013 22:34:55 +0200
-Message-ID: <1358368495-10499-1-git-send-email-coelho@ti.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756616Ab3APUtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 15:49:12 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:64342 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756241Ab3APUtL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 15:49:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1358094677-11384-1-git-send-email-sasha.levin@oracle.com>
+References: <1358094677-11384-1-git-send-email-sasha.levin@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 16 Jan 2013 12:48:48 -0800
+X-Google-Sender-Auth: CBCw7xfvEooYrTFsY756IRwUMRk
+Message-ID: <CA+55aFxFb21Ss=-0FUgzQOzPe1=mS11o7J-+Laco09XJvOk9Fg@mail.gmail.com>
+Subject: Re: [PATCH v2] hlist: drop the node parameter from iterators
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code to enable and disable the WiLink shared transport has been
-removed from the TI-ST driver, so it must be implemented in the board
-files instead.  Add the relevant operations to Panda's board file.
+On Sun, Jan 13, 2013 at 8:31 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> I'm not sure why, but the hlist for each entry iterators were conceived
+> differently from the list ones. While the list ones are nice and elegant:
 
-Additionally, add the UART2 muxing data, so it's properly configured.
+So this patch is probably the RightThing(tm) to do, but it's really
+big and makes me nervous. And the fact that there was already one
+problem in the first version doesn't make me feel any more
+warm-and-fuzzy about it.
 
-Signed-off-by: Luciano Coelho <coelho@ti.com>
----
- arch/arm/mach-omap2/board-omap4panda.c |   57 +++++++++++++++++++++++++++++---
- 1 file changed, 53 insertions(+), 4 deletions(-)
+I understand that this kind of patch is nice to apply after the merge
+window has closed, but at the same time, it's now *too* long after the
+merge window closed, and even if it wasn't, I'd really like to feel
+like this has gotten more testing than it obviously has. Or some other
+guarantee that there isn't some other subtle issue hiding there.
 
-diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index 5c8e9ce..97a274b 100644
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -51,18 +51,57 @@
- #define GPIO_HUB_NRESET		62
- #define GPIO_WIFI_PMENA		43
- #define GPIO_WIFI_IRQ		53
-+#define GPIO_BT_EN		46
- 
- /* wl127x BT, FM, GPS connectivity chip */
-+static int plat_kim_chip_enable(struct kim_data_s *kim_data)
-+{
-+	gpio_set_value(GPIO_BT_EN, GPIO_LOW);
-+	mdelay(5);
-+	gpio_set_value(GPIO_BT_EN, GPIO_HIGH);
-+	mdelay(100);
-+
-+	return 0;
-+}
-+
-+static int plat_kim_chip_disable(struct kim_data_s *kim_data)
-+{
-+	gpio_set_value(GPIO_BT_EN, GPIO_LOW);
-+	mdelay(1);
-+	gpio_set_value(GPIO_BT_EN, GPIO_HIGH);
-+	mdelay(1);
-+	gpio_set_value(GPIO_BT_EN, GPIO_LOW);
-+
-+	return 0;
-+}
-+
- static struct ti_st_plat_data wilink_platform_data = {
--	.nshutdown_gpio	= 46,
- 	.dev_name	= "/dev/ttyO1",
- 	.flow_cntrl	= 1,
- 	.baud_rate	= 3000000,
--	.chip_enable	= NULL,
--	.suspend	= NULL,
--	.resume		= NULL,
-+	.chip_enable	= plat_kim_chip_enable,
-+	.chip_disable	= plat_kim_chip_disable,
- };
- 
-+static int wilink_st_init(void)
-+{
-+	int status;
-+
-+	status = gpio_request(GPIO_BT_EN, "kim");
-+	if (status) {
-+		pr_err("%s: failed to request gpio %d\n", __func__,
-+		       GPIO_BT_EN);
-+		return status;
-+	}
-+
-+	status = gpio_direction_output(GPIO_BT_EN, 0);
-+	if (status)
-+		pr_err("%s: unable to configure gpio %d", __func__,
-+		       GPIO_BT_EN);
-+
-+	return status;
-+}
-+
- static struct platform_device wl1271_device = {
- 	.name	= "kim",
- 	.id	= -1,
-@@ -397,6 +436,12 @@ static struct omap_board_mux board_mux[] __initdata = {
- 		  OMAP_PULL_ENA),
- 	OMAP4_MUX(ABE_MCBSP1_FSX, OMAP_MUX_MODE0 | OMAP_PIN_INPUT),
- 
-+	/* UART2 - BT/FM/GPS shared transport */
-+	OMAP4_MUX(UART2_CTS,	OMAP_PIN_INPUT	| OMAP_MUX_MODE0),
-+	OMAP4_MUX(UART2_RTS,	OMAP_PIN_OUTPUT	| OMAP_MUX_MODE0),
-+	OMAP4_MUX(UART2_RX,	OMAP_PIN_INPUT	| OMAP_MUX_MODE0),
-+	OMAP4_MUX(UART2_TX,	OMAP_PIN_OUTPUT	| OMAP_MUX_MODE0),
-+
- 	{ .reg_offset = OMAP_MUX_TERMINATOR },
- };
- 
-@@ -433,6 +478,10 @@ static void __init omap4_panda_init(void)
- 	if (ret)
- 		pr_err("error setting wl12xx data: %d\n", ret);
- 
-+	ret = wilink_st_init();
-+	if (ret)
-+		pr_err("WiLink shared transport init failed: %d\n", ret);
-+
- 	omap4_panda_init_rev();
- 	omap4_panda_i2c_init();
- 	platform_add_devices(panda_devices, ARRAY_SIZE(panda_devices));
--- 
-1.7.10.4
+So I am going through patches in my mbox, but I really don't feel safe
+enough about this one to apply it.
 
+                    Linus
