@@ -1,92 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514Ab3APRCB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 12:02:01 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:60175 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757505Ab3APRBy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757644Ab3APRB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:01:58 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36919 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757220Ab3APRBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 12:01:54 -0500
-Date: Wed, 16 Jan 2013 12:01:53 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tejun Heo <tj@kernel.org>
-cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Jens Axboe <axboe@kernel.dk>, USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: USB device cannot be reconnected and khubd "blocked for more
- than 120 seconds"
-In-Reply-To: <20130116161224.GO2668@htj.dyndns.org>
-Message-ID: <Pine.LNX.4.44L0.1301161132470.1704-100000@iolanthe.rowland.org>
+Date: Wed, 16 Jan 2013 19:01:22 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Cox <alan@linux.intel.com>
+CC: <arve@android.com>, <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <mikechan@google.com>
+Subject: Re: [PATCH 03/10] goldfish: tty driver
+Message-ID: <20130116170122.GB6377@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130116165552.15183.92942.stgit@bob.linux.org.uk>
+ <20130116165902.15183.60134.stgit@bob.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JYK4vJDZwFMowpUq"
+Content-Disposition: inline
+In-Reply-To: <20130116165902.15183.60134.stgit@bob.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jan 2013, Tejun Heo wrote:
+--JYK4vJDZwFMowpUq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hello, Alan.
-> 
-> On Tue, Jan 15, 2013 at 11:01:15PM -0500, Alan Stern wrote:
-> > > The current domain implementation is somewhere inbetween.  It's not
-> > > completely simplistic system and at the same time not developed enough
-> > > to do properly stacked flushing.
-> > 
-> > I like your idea of chronological synchronization: Insist that anybody
-> > who wants to flush async jobs must get a cookie, and then only allow
-> > them to wait for async jobs started after the cookie was issued.
-> > 
-> > I don't know if this is possible with the current implementation.  It 
-> > would require changing every call to async_synchronize_*(), and in a 
-> > nontrivial way.  But it might provide a proper solution to all these 
-> > problems.
-> 
-> The problem here is that "flush everything which comes before me" is
-> used to order async jobs.  e.g. after async jobs probe the hardware
-> they order themselves by flushing before registering them, so unless
+Hi,
 
-I don't fully understand this example.  What is the point -- to make 
-sure that asynchronously probed devices are registered in the order of 
-their discovery?
+On Wed, Jan 16, 2013 at 04:59:03PM +0000, Alan Cox wrote:
+> +static int goldfish_tty_probe(struct platform_device *pdev)
+> +{
+> +	struct goldfish_tty *qtty;
+> +	int ret =3D -EINVAL;
+> +	int i;
+> +	struct resource *r;
+> +	struct device *ttydev;
+> +	void __iomem *base;
+> +	u32 irq;
+> +
+> +	r =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if(r =3D=3D NULL)
+> +		return -EINVAL;
+> +
+> +	base =3D ioremap(r->start, 0x1000);
 
-If so, here's how to do it safely: Start up the async jobs in reverse
-order of discovery.  Have each job acquire a cookie when it starts.  
-Then each job needs to wait only for tasks that started after its
-cookie was issued.
+missing request_mem_region(), in fact you could just use
+devm_request_and_ioremap().
 
-> we build accurate flushing dependencies, those dependencies will reach
-> beyond the time window we're interested in and bring in deadlocks.
+> +	if (base =3D=3D NULL)
+> +		pr_err("goldfish_tty: unable to remap base\n");
+> +
+> +	r =3D platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> +	if(r =3D=3D NULL)
+> +		goto err_unmap;
+> +
+> +	irq =3D r->start;
+> +
+> +	if(pdev->id >=3D goldfish_tty_line_count)
+> +		goto err_unmap;
+> +
+> +	mutex_lock(&goldfish_tty_lock);
+> +	if(goldfish_tty_current_line_count =3D=3D 0) {
+> +		ret =3D goldfish_tty_create_driver();
+> +		if(ret)
+> +			goto err_create_driver_failed;
+> +	}
+> +	goldfish_tty_current_line_count++;
+> +
+> +	qtty =3D &goldfish_ttys[pdev->id];
+> +	spin_lock_init(&qtty->lock);
+> +	tty_port_init(&qtty->port);
+> +	qtty->port.ops =3D &goldfish_port_ops;
+> +	qtty->base =3D base;
+> +	qtty->irq =3D irq;
+> +
+> +	writel(GOLDFISH_TTY_CMD_INT_DISABLE, base + GOLDFISH_TTY_CMD);
+> +
+> +	ret =3D request_irq(irq, goldfish_tty_interrupt, IRQF_SHARED, "goldfish=
+_tty", pdev);
 
-The flushing-dependency principle can be very simple: No async task
-should ever have to wait for another async task that started before it.  
-The "cookie" approach satisfies this requirement (unless an earlier 
-task passes its cookie to a later task or subverts the mechanism in 
-another way).
+this is way over 80-chars, also could use some devm_request_irq().
 
-> And, as Linus pointed it out, tracking dependency through
-> request_module() is tricky no matter what we do.  I think it can be
-> done by matching the ones calling request_module() and the ones
-> actually loading modules but it's gonna be nasty.
+> +	ttydev =3D tty_port_register_device(&qtty->port, goldfish_tty_driver, p=
+dev->id, &pdev->dev);
 
-This shouldn't matter.  Dependencies don't need to be tracked
-explicitly, because we know that any async work done by
-request_module() must start _after_ request_module() is called.  Thus,
-if async task A calls request_module(), which starts up async task B,
-then we know that A can safely wait for B and B cannot safely wait for
-A.
+over 80-chars.
 
-> There aren't too many which use async anyway so changing stuff
-> shouldn't be too difficult but I think the simpicity or dumbness is
-> one of major attractions of async, so it'd be nice to keep things that
-> way and the PF_USED_ASYNC hack seems to be able to hold things
-> together for now.
+> +MODULE_LICENSE("GPL");
 
-Nesting won't matter for the chronological approach.  I really think 
-you should consider it more fully.  It's not a hack, and it doesn't 
-need to be complicated.
+the comment header in this file says it's GPL v2, so this should be:
 
-Alan Stern
+MODULE_LICENSE("GPL v2");
 
+--=20
+balbi
+
+--JYK4vJDZwFMowpUq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ9tziAAoJEIaOsuA1yqREdAIP/RXnv/78JPwjvVlcJ6JOzvzm
+956GSAjZchTkuPI2BLclguCylh+nexBv2h9t3pC8q4ANbzG0TFHyTfzvizvtcdPB
++Otq30w/P+j9DyMfETON0LK4tKBTYp2o++jpWpV1tYFve1QjrwTyL33tukx5GEH8
+bfCUlzvZvIj7TlT5nizS4hUnr97X0xVc0iitwbIxqOyi/4ucIIfmr3E3s0u/M63y
+j6wOV09FxQkuMAdvyF1nTAKiyKnE6kBUZPZfg8N3H/5hhmxNXehl/0mGw8kNZzqH
+B51fmI3fkUuj0BXrqgxVpc5tLaUD4HfHZxYpoJ6FcXMtNWmfcqsAdSluf4VHF3ya
+UiAf64P9RtGAerfyrDWPmb7EeQ9MVWFqfOMVfwkO5P+LiMwT4oPOvZIATCRN802k
+wKcI4MO7OnobiwdhJNpaOCAp8ltVC8KBudlJInh0U6RI3Hrk6CPHBoyoY/hcECW5
+F5hMEYGo+5rORZF+Ijn6xD4x4ZnlPgYNkfUx7Y9mSeK5MlEaxuoaQ1AClJUbR/T5
+PG9yk43Bye+QBgsxyTWrsx300yDRkFGf5FjKQDMMtf++FUWWUqEJKxLGi3+JZjJC
+ydMNB828ewV7xa9vr1PPspdHQb0mY58esy1sWy023I3U4pFqUYVsApKnSpTz5qYW
+hyVKTx9KJZ/qF8vgESfo
+=D0N2
+-----END PGP SIGNATURE-----
+
+--JYK4vJDZwFMowpUq--
