@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742Ab3APQB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:01:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35982 "EHLO
+	id S1757767Ab3APQCC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:02:02 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35987 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757721Ab3APQBz (ORCPT
+	with ESMTP id S1757523Ab3APQB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:01:55 -0500
+	Wed, 16 Jan 2013 11:01:59 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Aaron Lu <aaron.lu@intel.com>, Jeff Garzik <jgarzik@redhat.com>,
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 070/222] libata: set dma_mode to 0xff in reset
-Date: Wed, 16 Jan 2013 13:54:30 -0200
-Message-Id: <1358351822-7675-71-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 071/222] s390/cio: fix pgid reserved check
+Date: Wed, 16 Jan 2013 13:54:31 -0200
+Message-Id: <1358351822-7675-72-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,54 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-commit 5416912af75de9cba5d1c75b99a7888b0bbbd2fb upstream.
+commit d99e79ec5574fc556c988f613ed6175f6de66f4a upstream.
 
-ata_device->dma_mode's initial value is zero, which is not a valid dma
-mode, but ata_dma_enabled will return true for this value. This patch
-sets dma_mode to 0xff in reset function, so that ata_dma_enabled will
-not return true for this case, or it will cause problem for pata_acpi.
+The check to whom a device is reserved is done by checking the path
+state of the affected channel paths. If it turns out that one path is
+flagged as reserved by someone else the whole device is marked as such.
 
-The corrsponding bugzilla page is at:
-https://bugzilla.kernel.org/show_bug.cgi?id=49151
+However the meaning of the RESVD_ELSE bit is that the addressed device
+is reserved to a different pathgroup (and not reserved to a different
+LPAR). If we do this test on a path which is currently not a member of
+the pathgroup we could erroneously mark the device as reserved to
+someone else.
 
-Reported-by: Phillip Wood <phillip.wood@dunelm.org.uk>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Tested-by: Szymon Janc <szymon@janc.net.pl>
-Tested-by: Dutra Julio <dutra.julio@gmail.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+To fix this collect the reserved state for all potential members of the
+pathgroup and only mark the device as reserved if all of those potential
+members have the RESVD_ELSE bit set.
+
+Acked-by: Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/ata/libata-core.c |    1 +
- drivers/ata/libata-eh.c   |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/s390/cio/device_pgid.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 71e8385..96f0847 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -2536,6 +2536,7 @@ int ata_bus_probe(struct ata_port *ap)
- 		 * bus as we may be talking too fast.
- 		 */
- 		dev->pio_mode = XFER_PIO_0;
-+		dev->dma_mode = 0xff;
+diff --git a/drivers/s390/cio/device_pgid.c b/drivers/s390/cio/device_pgid.c
+index 07a4fd2..daa6b90 100644
+--- a/drivers/s390/cio/device_pgid.c
++++ b/drivers/s390/cio/device_pgid.c
+@@ -234,7 +234,7 @@ static int pgid_cmp(struct pgid *p1, struct pgid *p2)
+  * Determine pathgroup state from PGID data.
+  */
+ static void pgid_analyze(struct ccw_device *cdev, struct pgid **p,
+-			 int *mismatch, int *reserved, u8 *reset)
++			 int *mismatch, u8 *reserved, u8 *reset)
+ {
+ 	struct pgid *pgid = &cdev->private->pgid[0];
+ 	struct pgid *first = NULL;
+@@ -248,7 +248,7 @@ static void pgid_analyze(struct ccw_device *cdev, struct pgid **p,
+ 		if ((cdev->private->pgid_valid_mask & lpm) == 0)
+ 			continue;
+ 		if (pgid->inf.ps.state2 == SNID_STATE2_RESVD_ELSE)
+-			*reserved = 1;
++			*reserved |= lpm;
+ 		if (pgid_is_reset(pgid)) {
+ 			*reset |= lpm;
+ 			continue;
+@@ -316,14 +316,14 @@ static void snid_done(struct ccw_device *cdev, int rc)
+ 	struct subchannel *sch = to_subchannel(cdev->dev.parent);
+ 	struct pgid *pgid;
+ 	int mismatch = 0;
+-	int reserved = 0;
++	u8 reserved = 0;
+ 	u8 reset = 0;
+ 	u8 donepm;
  
- 		/* If the controller has a pio mode setup function
- 		 * then use it to set the chipset to rights. Don't
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index 6d53cf9..430a248 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -2618,6 +2618,7 @@ int ata_eh_reset(struct ata_link *link, int classify,
- 		 * bus as we may be talking too fast.
- 		 */
- 		dev->pio_mode = XFER_PIO_0;
-+		dev->dma_mode = 0xff;
- 
- 		/* If the controller has a pio mode setup function
- 		 * then use it to set the chipset to rights. Don't
+ 	if (rc)
+ 		goto out;
+ 	pgid_analyze(cdev, &pgid, &mismatch, &reserved, &reset);
+-	if (reserved)
++	if (reserved == cdev->private->pgid_valid_mask)
+ 		rc = -EUSERS;
+ 	else if (mismatch)
+ 		rc = -EOPNOTSUPP;
+@@ -336,7 +336,7 @@ static void snid_done(struct ccw_device *cdev, int rc)
+ 	}
+ out:
+ 	CIO_MSG_EVENT(2, "snid: device 0.%x.%04x: rc=%d pvm=%02x vpm=%02x "
+-		      "todo=%02x mism=%d rsvd=%d reset=%02x\n", id->ssid,
++		      "todo=%02x mism=%d rsvd=%02x reset=%02x\n", id->ssid,
+ 		      id->devno, rc, cdev->private->pgid_valid_mask, sch->vpm,
+ 		      cdev->private->pgid_todo_mask, mismatch, reserved, reset);
+ 	switch (rc) {
 -- 
 1.7.9.5
 
