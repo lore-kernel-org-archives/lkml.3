@@ -1,154 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab3APOtE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:49:04 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:46811 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756391Ab3APOop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 09:44:45 -0500
-From: sjur.brandeland@stericsson.com
-To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Cc: mporter@ti.com, =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Loic Pallardy <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Suman Anna <s-anna@ti.com>, Mark Grosen <mgrosen@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv3 10/11] remoteproc: Support virtio config space.
-Date: Wed, 16 Jan 2013 15:43:49 +0100
-Message-Id: <1358347430-9243-11-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358347430-9243-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1358347430-9243-1-git-send-email-sjur.brandeland@stericsson.com>
+	id S1756332Ab3APOon (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:44:43 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45199 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752972Ab3APOok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 09:44:40 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
+CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <rogerq@ti.com>
+Subject: [PATCH v6 07/22] mfd: omap-usb-tll: Fix error message
+Date: Wed, 16 Jan 2013 16:43:38 +0200
+Message-ID: <1358347433-329-8-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1358347433-329-1-git-send-email-rogerq@ti.com>
+References: <1358347433-329-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+omap_enable/disable_tll() can fail if TLL device is not
+initialized. It could be due to multiple reasons and not only
+due to missing platform data.
 
-Support virtio configuration space and device status and
-feature negotiation with remote device. This virtio device
-can now access the resource table in shared memory.
+Also make local variables static and use 'struct device *'
+instead of 'struct platform_device *' for global reference.
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/remoteproc/remoteproc_core.c   |    3 --
- drivers/remoteproc/remoteproc_virtio.c |   38 +++++++++++++++++++++++++++++--
- include/linux/remoteproc.h             |    2 -
- 3 files changed, 35 insertions(+), 8 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   21 ++++++++++++---------
+ 1 files changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index da1ff4f..4f342e0 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -369,9 +369,6 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 			goto free_rvdev;
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index b9f372d..8628313 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -109,8 +109,8 @@ struct usbtll_omap {
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
+-struct platform_device	*tll_pdev;
++static const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
++static struct device	*tll_dev;
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -337,7 +337,8 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 	pm_runtime_put_sync(dev);
+-	tll_pdev = pdev;
++	/* only after this can omap_tll_enable/disable work */
++	tll_dev = dev;
+ 
+ 	return 0;
+ 
+@@ -359,6 +360,8 @@ static int usbtll_omap_remove(struct platform_device *pdev)
+ 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
+ 	int i;
+ 
++	tll_dev = NULL;
++
+ 	for (i = 0; i < tll->nch; i++)
+ 		clk_put(tll->ch_clk[i]);
+ 
+@@ -438,21 +441,21 @@ static struct platform_driver usbtll_omap_driver = {
+ 
+ int omap_tll_enable(void)
+ {
+-	if (!tll_pdev) {
+-		pr_err("missing omap usbhs tll platform_data\n");
++	if (!tll_dev) {
++		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
+ 		return  -ENODEV;
  	}
+-	return pm_runtime_get_sync(&tll_pdev->dev);
++	return pm_runtime_get_sync(tll_dev);
+ }
+ EXPORT_SYMBOL_GPL(omap_tll_enable);
  
--	/* remember the device features */
--	rvdev->dfeatures = rsc->dfeatures;
--
- 	/* remember the resource entry */
- 	rvdev->rsc = rsc;
- 
-diff --git a/drivers/remoteproc/remoteproc_virtio.c b/drivers/remoteproc/remoteproc_virtio.c
-index e7a4780..eb2089a 100644
---- a/drivers/remoteproc/remoteproc_virtio.c
-+++ b/drivers/remoteproc/remoteproc_virtio.c
-@@ -176,16 +176,21 @@ error:
-  */
- static u8 rproc_virtio_get_status(struct virtio_device *vdev)
+ int omap_tll_disable(void)
  {
--	return 0;
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	return rvdev->rsc->status;
+-	if (!tll_pdev) {
+-		pr_err("missing omap usbhs tll platform_data\n");
++	if (!tll_dev) {
++		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
+ 		return  -ENODEV;
+ 	}
+-	return pm_runtime_put_sync(&tll_pdev->dev);
++	return pm_runtime_put_sync(tll_dev);
  }
- 
- static void rproc_virtio_set_status(struct virtio_device *vdev, u8 status)
- {
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	rvdev->rsc->status = status;
- 	dev_dbg(&vdev->dev, "status: %d\n", status);
- }
- 
- static void rproc_virtio_reset(struct virtio_device *vdev)
- {
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	rvdev->rsc->status = 0;
- 	dev_dbg(&vdev->dev, "reset !\n");
- }
- 
-@@ -194,7 +199,7 @@ static u32 rproc_virtio_get_features(struct virtio_device *vdev)
- {
- 	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
- 
--	return rvdev->dfeatures;
-+	return rvdev->rsc->dfeatures;
- }
- 
- static void rproc_virtio_finalize_features(struct virtio_device *vdev)
-@@ -213,7 +218,31 @@ static void rproc_virtio_finalize_features(struct virtio_device *vdev)
- 	 * fixed as part of a small resource table overhaul and then an
- 	 * extension of the virtio resource entries.
- 	 */
--	rvdev->gfeatures = vdev->features[0];
-+	rvdev->rsc->gfeatures = vdev->features[0];
-+}
-+
-+void rproc_virtio_get(struct virtio_device *vdev, unsigned offset,
-+							void *buf, unsigned len)
-+{
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	void *cfg = &rvdev->rsc->vring[rvdev->rsc->num_of_vrings];
-+	if (offset + len > rvdev->rsc->config_len)
-+		dev_err(&vdev->dev,
-+			"rproc_virtio_get: access out of bounds\n");
-+	else
-+		memcpy(buf, cfg + offset, len);
-+}
-+
-+void rproc_virtio_set(struct virtio_device *vdev, unsigned offset,
-+		      const void *buf, unsigned len)
-+{
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
-+	void *cfg = &rvdev->rsc->vring[rvdev->rsc->num_of_vrings];
-+	if (offset + len > rvdev->rsc->config_len)
-+		dev_err(&vdev->dev,
-+			"rproc_virtio_set: access out of bounds\n");
-+	else
-+		memcpy(cfg + offset, buf, len);
- }
- 
- static struct virtio_config_ops rproc_virtio_config_ops = {
-@@ -224,6 +253,9 @@ static struct virtio_config_ops rproc_virtio_config_ops = {
- 	.reset		= rproc_virtio_reset,
- 	.set_status	= rproc_virtio_set_status,
- 	.get_status	= rproc_virtio_get_status,
-+	.get		= rproc_virtio_get,
-+	.set		= rproc_virtio_set,
-+
- };
- 
- /*
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index 932edc7..d41d66f 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -472,8 +472,6 @@ struct rproc_vdev {
- 	struct rproc *rproc;
- 	struct virtio_device vdev;
- 	struct rproc_vring vring[RVDEV_NUM_VRINGS];
--	unsigned long dfeatures;
--	unsigned long gfeatures;
- 	struct fw_rsc_vdev *rsc;
- };
+ EXPORT_SYMBOL_GPL(omap_tll_disable);
  
 -- 
-1.7.5.4
+1.7.4.1
 
