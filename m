@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758641Ab3APQHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:07:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36460 "EHLO
+	id S932478Ab3APQHr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:07:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36580 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758556Ab3APQHh (ORCPT
+	with ESMTP id S932465Ab3APQHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:07:37 -0500
+	Wed, 16 Jan 2013 11:07:45 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Malcolm Priestley <tvboxspy@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 158/222] staging: vt6656: [BUG] out of bound array reference in RFbSetPower.
-Date: Wed, 16 Jan 2013 13:55:58 -0200
-Message-Id: <1358351822-7675-159-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 160/222] staging: vt6656: 64 bit fixes : correct all type sizes
+Date: Wed, 16 Jan 2013 13:56:00 -0200
+Message-Id: <1358351822-7675-161-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -30,36 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit ab1dd9963137a1e122004d5378a581bf16ae9bc8 upstream.
+commit 7730492855a2f9c828599bcd8d62760f96d319e4 upstream.
 
-Calling RFbSetPower with uCH zero value will cause out of bound array reference.
-
-This causes 64 bit kernels to oops on boot.
-
-Note: Driver does not function on 64 bit kernels and should be
-blacklisted on them.
+After this patch all BYTE/WORD/DWORD types can be replaced with the appropriate u sizes.
 
 Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/staging/vt6656/rf.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/staging/vt6656/ttype.h |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/vt6656/rf.c b/drivers/staging/vt6656/rf.c
-index 3fd0478..8cf0881 100644
---- a/drivers/staging/vt6656/rf.c
-+++ b/drivers/staging/vt6656/rf.c
-@@ -769,6 +769,9 @@ BYTE    byPwr = pDevice->byCCKPwr;
-         return TRUE;
-     }
+diff --git a/drivers/staging/vt6656/ttype.h b/drivers/staging/vt6656/ttype.h
+index 0f70562c..dfbf747 100644
+--- a/drivers/staging/vt6656/ttype.h
++++ b/drivers/staging/vt6656/ttype.h
+@@ -44,9 +44,9 @@ typedef int             BOOL;
  
-+	if (uCH == 0)
-+		return -EINVAL;
-+
-     switch (uRATE) {
-     case RATE_1M:
-     case RATE_2M:
+ /****** Simple typedefs  ***************************************************/
+ 
+-typedef unsigned char   BYTE;           //  8-bit
+-typedef unsigned short  WORD;           // 16-bit
+-typedef unsigned long   DWORD;          // 32-bit
++typedef u8 BYTE;
++typedef u16 WORD;
++typedef u32 DWORD;
+ 
+ // QWORD is for those situation that we want
+ // an 8-byte-aligned 8 byte long structure
+@@ -62,8 +62,8 @@ typedef UQuadWord       QWORD;          // 64-bit
+ 
+ /****** Common pointer types ***********************************************/
+ 
+-typedef unsigned long   ULONG_PTR;      // 32-bit
+-typedef unsigned long   DWORD_PTR;      // 32-bit
++typedef u32 ULONG_PTR;
++typedef u32 DWORD_PTR;
+ 
+ // boolean pointer
+ 
 -- 
 1.7.9.5
 
