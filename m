@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758367Ab3APQE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:04:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36170 "EHLO
+	id S932123Ab3APQEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:04:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36187 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758346Ab3APQET (ORCPT
+	with ESMTP id S1758354Ab3APQEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:04:19 -0500
+	Wed, 16 Jan 2013 11:04:32 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Boot <bootc@bootc.net>, Andy Grover <agrover@redhat.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+Cc: Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>, Yong Zhang <yong.zhang@windriver.com>,
+        linux-mips@linux-mips.org, Fuxin Zhang <zhangfx@lemote.com>,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 107/222] sbp-target: fix error path in sbp_make_tpg()
-Date: Wed, 16 Jan 2013 13:55:07 -0200
-Message-Id: <1358351822-7675-108-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 109/222] MIPS: Fix poweroff failure when HOTPLUG_CPU configured.
+Date: Wed, 16 Jan 2013 13:55:09 -0200
+Message-Id: <1358351822-7675-110-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,60 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Boot <bootc@bootc.net>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit e1fe2060d7e8f58a69374135e32e90f0bb79a7fd upstream.
+commit 8add1ecb81f541ef2fcb0b85a5470ad9ecfb4a84 upstream.
 
-If the TPG memory is allocated successfully, but we fail further along
-in the function, a dangling pointer to freed memory is left in the TPort
-structure. This is mostly harmless, but does prevent re-trying the
-operation without first removing the TPort altogether.
+When poweroff machine, kernel_power_off() call disable_nonboot_cpus().
+And if we have HOTPLUG_CPU configured, disable_nonboot_cpus() is not an
+empty function but attempt to actually disable the nonboot cpus. Since
+system state is SYSTEM_POWER_OFF, play_dead() won't be called and thus
+disable_nonboot_cpus() hangs. Therefore, we make this patch to avoid
+poweroff failure.
 
-Reported-by: Chen Gang <gang.chen@asianux.com>
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Hongliang Tao <taohl@lemote.com>
+Signed-off-by: Hua Yan <yanh@lemote.com>
+Cc: Yong Zhang <yong.zhang@windriver.com>
+Cc: linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/4211/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/target/sbp/sbp_target.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ arch/mips/kernel/process.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/target/sbp/sbp_target.c b/drivers/target/sbp/sbp_target.c
-index 7e6136e..e935aaa 100644
---- a/drivers/target/sbp/sbp_target.c
-+++ b/drivers/target/sbp/sbp_target.c
-@@ -2221,20 +2221,23 @@ static struct se_portal_group *sbp_make_tpg(
- 	tport->mgt_agt = sbp_management_agent_register(tport);
- 	if (IS_ERR(tport->mgt_agt)) {
- 		ret = PTR_ERR(tport->mgt_agt);
--		kfree(tpg);
--		return ERR_PTR(ret);
-+		goto out_free_tpg;
- 	}
- 
- 	ret = core_tpg_register(&sbp_fabric_configfs->tf_ops, wwn,
- 			&tpg->se_tpg, (void *)tpg,
- 			TRANSPORT_TPG_TYPE_NORMAL);
--	if (ret < 0) {
--		sbp_management_agent_unregister(tport->mgt_agt);
--		kfree(tpg);
--		return ERR_PTR(ret);
--	}
-+	if (ret < 0)
-+		goto out_unreg_mgt_agt;
- 
- 	return &tpg->se_tpg;
-+
-+out_unreg_mgt_agt:
-+	sbp_management_agent_unregister(tport->mgt_agt);
-+out_free_tpg:
-+	tport->tpg = NULL;
-+	kfree(tpg);
-+	return ERR_PTR(ret);
- }
- 
- static void sbp_drop_tpg(struct se_portal_group *se_tpg)
+diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
+index e9a5fd7..69b17a9 100644
+--- a/arch/mips/kernel/process.c
++++ b/arch/mips/kernel/process.c
+@@ -72,9 +72,7 @@ void __noreturn cpu_idle(void)
+ 			}
+ 		}
+ #ifdef CONFIG_HOTPLUG_CPU
+-		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map) &&
+-		    (system_state == SYSTEM_RUNNING ||
+-		     system_state == SYSTEM_BOOTING))
++		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
+ 			play_dead();
+ #endif
+ 		rcu_idle_exit();
 -- 
 1.7.9.5
 
