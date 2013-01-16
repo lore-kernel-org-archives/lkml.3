@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108Ab3APQLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:11:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36944 "EHLO
+	id S933137Ab3APQLl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:11:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36959 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933095Ab3APQL0 (ORCPT
+	with ESMTP id S933120Ab3APQLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:11:26 -0500
+	Wed, 16 Jan 2013 11:11:39 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 214/222] PM: Move disabling/enabling runtime PM to late suspend/early resume
-Date: Wed, 16 Jan 2013 13:56:54 -0200
-Message-Id: <1358351822-7675-215-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 217/222] ALSA: hda - add mute LED for HP Pavilion 17 (Realtek codec)
+Date: Wed, 16 Jan 2013 13:56:57 -0200
+Message-Id: <1358351822-7675-218-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,105 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 9f6d8f6ab26b42620a914d67f29822f9bba90233 upstream.
+commit 6d3cd5d444223c41eabb70dccff14fae4e8cb8b1 upstream.
 
-Currently, the PM core disables runtime PM for all devices right
-after executing subsystem/driver .suspend() callbacks for them
-and re-enables it right before executing subsystem/driver .resume()
-callbacks for them.  This may lead to problems when there are
-two devices such that the .suspend() callback executed for one of
-them depends on runtime PM working for the other.  In that case,
-if runtime PM has already been disabled for the second device,
-the first one's .suspend() won't work correctly (and analogously
-for resume).
+The mute LED is in this case connected to the Mic1 VREF.
 
-To make those issues go away, make the PM core disable runtime PM
-for devices right before executing subsystem/driver .suspend_late()
-callbacks for them and enable runtime PM for them right after
-executing subsystem/driver .resume_early() callbacks for them.  This
-way the potential conflitcs between .suspend_late()/.resume_early()
-and their runtime PM counterparts are still prevented from happening,
-but the subtle ordering issues related to disabling/enabling runtime
-PM for devices during system suspend/resume are much easier to avoid.
+The machine also exposes the following string in BIOS:
+"HP_Mute_LED_0_A", so if more machines are coming, it probably
+makes sense to try to do something more generic, like for the
+IDT codec.
 
-Reported-and-tested-by: Jan-Matthias Braun <jan_braun@gmx.net>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-Reviewed-by: Kevin Hilman <khilman@deeprootsystems.com>
+BugLink: https://bugs.launchpad.net/bugs/1096789
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 [ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- Documentation/power/runtime_pm.txt |    9 +++++----
- drivers/base/power/main.c          |    8 ++++----
- 2 files changed, 9 insertions(+), 8 deletions(-)
+ sound/pci/hda/patch_realtek.c |   30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-diff --git a/Documentation/power/runtime_pm.txt b/Documentation/power/runtime_pm.txt
-index 4abe83e..03591a7 100644
---- a/Documentation/power/runtime_pm.txt
-+++ b/Documentation/power/runtime_pm.txt
-@@ -642,12 +642,13 @@ out the following operations:
-   * During system suspend it calls pm_runtime_get_noresume() and
-     pm_runtime_barrier() for every device right before executing the
-     subsystem-level .suspend() callback for it.  In addition to that it calls
--    pm_runtime_disable() for every device right after executing the
--    subsystem-level .suspend() callback for it.
-+    __pm_runtime_disable() with 'false' as the second argument for every device
-+    right before executing the subsystem-level .suspend_late() callback for it.
- 
-   * During system resume it calls pm_runtime_enable() and pm_runtime_put_sync()
--    for every device right before and right after executing the subsystem-level
--    .resume() callback for it, respectively.
-+    for every device right after executing the subsystem-level .resume_early()
-+    callback and right after executing the subsystem-level .resume() callback
-+    for it, respectively.
- 
- 7. Generic subsystem callbacks
- 
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index 9d54dce..f6afeab 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -507,6 +507,8 @@ static int device_resume_early(struct device *dev, pm_message_t state)
- 	error = dpm_run_callback(callback, dev, state, info);
- 
- 	TRACE_RESUME(error);
-+
-+	pm_runtime_enable(dev);
- 	return error;
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 7e3fef0..30ce67b 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5851,6 +5851,30 @@ static void alc269_fixup_quanta_mute(struct hda_codec *codec,
+ 	spec->automute_hook = alc269_quanta_automute;
  }
  
-@@ -581,7 +583,6 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
- 	if (!dev->power.is_suspended)
- 		goto Unlock;
- 
--	pm_runtime_enable(dev);
- 	put = true;
- 
- 	if (dev->pm_domain) {
-@@ -915,6 +916,8 @@ static int device_suspend_late(struct device *dev, pm_message_t state)
- 	pm_callback_t callback = NULL;
- 	char *info = NULL;
- 
-+	__pm_runtime_disable(dev, false);
++/* update mute-LED according to the speaker mute state via mic1 VREF pin */
++static void alc269_fixup_mic1_mute_hook(void *private_data, int enabled)
++{
++	struct hda_codec *codec = private_data;
++	unsigned int pinval = AC_PINCTL_IN_EN + (enabled ?
++			      AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80);
++	snd_hda_set_pin_ctl_cache(codec, 0x18, pinval);
++}
 +
- 	if (dev->pm_domain) {
- 		info = "late power domain ";
- 		callback = pm_late_early_op(&dev->pm_domain->ops, state);
-@@ -1108,12 +1111,9 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
++static void alc269_fixup_mic1_mute(struct hda_codec *codec,
++				   const struct alc_fixup *fix, int action)
++{
++	struct alc_spec *spec = codec->spec;
++	switch (action) {
++	case ALC_FIXUP_ACT_BUILD:
++		spec->vmaster_mute.hook = alc269_fixup_mic1_mute_hook;
++		snd_hda_add_vmaster_hook(codec, &spec->vmaster_mute, true);
++		/* fallthru */
++	case ALC_FIXUP_ACT_INIT:
++		snd_hda_sync_vmaster_hook(&spec->vmaster_mute);
++		break;
++	}
++}
++
+ /* update mute-LED according to the speaker mute state via mic2 VREF pin */
+ static void alc269_fixup_mic2_mute_hook(void *private_data, int enabled)
+ {
+@@ -5891,6 +5915,7 @@ enum {
+ 	ALC269_FIXUP_DMIC,
+ 	ALC269VB_FIXUP_AMIC,
+ 	ALC269VB_FIXUP_DMIC,
++	ALC269_FIXUP_MIC1_MUTE_LED,
+ 	ALC269_FIXUP_MIC2_MUTE_LED,
+ 	ALC269_FIXUP_LENOVO_DOCK,
+ 	ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT,
+@@ -6016,6 +6041,10 @@ static const struct alc_fixup alc269_fixups[] = {
+ 			{ }
+ 		},
+ 	},
++	[ALC269_FIXUP_MIC1_MUTE_LED] = {
++		.type = ALC_FIXUP_FUNC,
++		.v.func = alc269_fixup_mic1_mute,
++	},
+ 	[ALC269_FIXUP_MIC2_MUTE_LED] = {
+ 		.type = ALC_FIXUP_FUNC,
+ 		.v.func = alc269_fixup_mic2_mute,
+@@ -6038,6 +6067,7 @@ static const struct alc_fixup alc269_fixups[] = {
  
-  Complete:
- 	complete_all(&dev->power.completion);
--
- 	if (error) {
- 		pm_runtime_put_sync(dev);
- 		async_error = error;
--	} else if (dev->power.is_suspended) {
--		__pm_runtime_disable(dev, false);
- 	}
- 
- 	return error;
+ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_MIC2_MUTE_LED),
++	SND_PCI_QUIRK(0x103c, 0x1972, "HP Pavilion 17", ALC269_FIXUP_MIC1_MUTE_LED),
+ 	SND_PCI_QUIRK(0x1043, 0x1427, "Asus Zenbook UX31E", ALC269VB_FIXUP_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x1a13, "Asus G73Jw", ALC269_FIXUP_ASUS_G73JW),
+ 	SND_PCI_QUIRK(0x1043, 0x16e3, "ASUS UX50", ALC269_FIXUP_STEREO_DMIC),
 -- 
 1.7.9.5
 
