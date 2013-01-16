@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758737Ab3APQYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:24:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36745 "EHLO
+	id S1758656Ab3APQZi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:25:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36718 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932670Ab3APQJB (ORCPT
+	with ESMTP id S1758649Ab3APQIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:09:01 -0500
+	Wed, 16 Jan 2013 11:08:47 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Christoffer Dall <cdall@cs.columbia.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Will Deacon <Will.Deacon@arm.com>, Steve Capper <Steve.Capper@arm.com>,
+        Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 179/222] RDMA/nes: Fix for terminate timer crash
-Date: Wed, 16 Jan 2013 13:56:19 -0200
-Message-Id: <1358351822-7675-180-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 174/222] mm: Fix PageHead when !CONFIG_PAGEFLAGS_EXTENDED
+Date: Wed, 16 Jan 2013 13:56:14 -0200
+Message-Id: <1358351822-7675-175-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,89 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
+From: Christoffer Dall <cdall@cs.columbia.edu>
 
-commit 7bfcfa51c35cdd2d37e0d70fc11790642dd11fb3 upstream.
+commit ad4b3fb7ff9940bcdb1e4cd62bd189d10fa636ba upstream.
 
-The terminate timer needs to be initialized just once.
+Unfortunately with !CONFIG_PAGEFLAGS_EXTENDED, (!PageHead) is false, and
+(PageHead) is true, for tail pages.  If this is indeed the intended
+behavior, which I doubt because it breaks cache cleaning on some ARM
+systems, then the nomenclature is highly problematic.
 
-Signed-off-by: Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+This patch makes sure PageHead is only true for head pages and PageTail
+is only true for tail pages, and neither is true for non-compound pages.
+
+[ This buglet seems ancient - seems to have been introduced back in Apr
+  2008 in commit 6a1e7f777f61: "pageflags: convert to the use of new
+  macros".  And the reason nobody noticed is because the PageHead()
+  tests are almost all about just sanity-checking, and only used on
+  pages that are actual page heads.  The fact that the old code returned
+  true for tail pages too was thus not really noticeable.   - Linus ]
+
+Signed-off-by: Christoffer Dall <cdall@cs.columbia.edu>
+Acked-by:  Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Will Deacon <Will.Deacon@arm.com>
+Cc: Steve Capper <Steve.Capper@arm.com>
+Cc: Christoph Lameter <cl@linux.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/infiniband/hw/nes/nes.h       |    1 +
- drivers/infiniband/hw/nes/nes_hw.c    |    9 ++-------
- drivers/infiniband/hw/nes/nes_verbs.c |    4 +++-
- 3 files changed, 6 insertions(+), 8 deletions(-)
+ include/linux/page-flags.h |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/hw/nes/nes.h b/drivers/infiniband/hw/nes/nes.h
-index c438e46..3f41d9f 100644
---- a/drivers/infiniband/hw/nes/nes.h
-+++ b/drivers/infiniband/hw/nes/nes.h
-@@ -524,6 +524,7 @@ void nes_iwarp_ce_handler(struct nes_device *, struct nes_hw_cq *);
- int nes_destroy_cqp(struct nes_device *);
- int nes_nic_cm_xmit(struct sk_buff *, struct net_device *);
- void nes_recheck_link_status(struct work_struct *work);
-+void nes_terminate_timeout(unsigned long context);
- 
- /* nes_nic.c */
- struct net_device *nes_netdev_init(struct nes_device *, void __iomem *);
-diff --git a/drivers/infiniband/hw/nes/nes_hw.c b/drivers/infiniband/hw/nes/nes_hw.c
-index d42c9f4..96801c3 100644
---- a/drivers/infiniband/hw/nes/nes_hw.c
-+++ b/drivers/infiniband/hw/nes/nes_hw.c
-@@ -75,7 +75,6 @@ static void nes_process_iwarp_aeqe(struct nes_device *nesdev,
- static void process_critical_error(struct nes_device *nesdev);
- static void nes_process_mac_intr(struct nes_device *nesdev, u32 mac_number);
- static unsigned int nes_reset_adapter_ne020(struct nes_device *nesdev, u8 *OneG_Mode);
--static void nes_terminate_timeout(unsigned long context);
- static void nes_terminate_start_timer(struct nes_qp *nesqp);
- 
- #ifdef CONFIG_INFINIBAND_NES_DEBUG
-@@ -3522,7 +3521,7 @@ static void nes_terminate_received(struct nes_device *nesdev,
- }
- 
- /* Timeout routine in case terminate fails to complete */
--static void nes_terminate_timeout(unsigned long context)
-+void nes_terminate_timeout(unsigned long context)
- {
- 	struct nes_qp *nesqp = (struct nes_qp *)(unsigned long)context;
- 
-@@ -3532,11 +3531,7 @@ static void nes_terminate_timeout(unsigned long context)
- /* Set a timer in case hw cannot complete the terminate sequence */
- static void nes_terminate_start_timer(struct nes_qp *nesqp)
- {
--	init_timer(&nesqp->terminate_timer);
--	nesqp->terminate_timer.function = nes_terminate_timeout;
--	nesqp->terminate_timer.expires = jiffies + HZ;
--	nesqp->terminate_timer.data = (unsigned long)nesqp;
--	add_timer(&nesqp->terminate_timer);
-+	mod_timer(&nesqp->terminate_timer, (jiffies + HZ));
- }
- 
- /**
-diff --git a/drivers/infiniband/hw/nes/nes_verbs.c b/drivers/infiniband/hw/nes/nes_verbs.c
-index 8b8812d..2359568 100644
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -1404,6 +1404,9 @@ static struct ib_qp *nes_create_qp(struct ib_pd *ibpd,
- 	}
- 
- 	nesqp->sig_all = (init_attr->sq_sig_type == IB_SIGNAL_ALL_WR);
-+	init_timer(&nesqp->terminate_timer);
-+	nesqp->terminate_timer.function = nes_terminate_timeout;
-+	nesqp->terminate_timer.data = (unsigned long)nesqp;
- 
- 	/* update the QP table */
- 	nesdev->nesadapter->qp_table[nesqp->hwqp.qp_id-NES_FIRST_QPN] = nesqp;
-@@ -1413,7 +1416,6 @@ static struct ib_qp *nes_create_qp(struct ib_pd *ibpd,
- 	return &nesqp->ibqp;
- }
- 
--
- /**
-  * nes_clean_cq
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index c88d2a9..4dabf0f 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -361,7 +361,7 @@ static inline void ClearPageCompound(struct page *page)
+  * pages on the LRU and/or pagecache.
   */
+ TESTPAGEFLAG(Compound, compound)
+-__PAGEFLAG(Head, compound)
++__SETPAGEFLAG(Head, compound)  __CLEARPAGEFLAG(Head, compound)
+ 
+ /*
+  * PG_reclaim is used in combination with PG_compound to mark the
+@@ -373,8 +373,14 @@ __PAGEFLAG(Head, compound)
+  * PG_compound & PG_reclaim	=> Tail page
+  * PG_compound & ~PG_reclaim	=> Head page
+  */
++#define PG_head_mask ((1L << PG_compound))
+ #define PG_head_tail_mask ((1L << PG_compound) | (1L << PG_reclaim))
+ 
++static inline int PageHead(struct page *page)
++{
++	return ((page->flags & PG_head_tail_mask) == PG_head_mask);
++}
++
+ static inline int PageTail(struct page *page)
+ {
+ 	return ((page->flags & PG_head_tail_mask) == PG_head_tail_mask);
 -- 
 1.7.9.5
 
