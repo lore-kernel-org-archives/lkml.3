@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab3APFoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 00:44:37 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:48356 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751590Ab3APFn6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 00:43:58 -0500
-X-Sasl-enc: 59EFPOMyLxMag2HeAi6ixCc232QZ6BI5giuzkLd+ScoW 1358315037
-From: Alan Ott <alan@signal11.us>
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tony Cheneau <tony.cheneau@amnesiak.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Alan Ott <alan@signal11.us>
-Subject: [PATCH 1/2] 6lowpan: Refactor packet delivery into a function
-Date: Wed, 16 Jan 2013 00:43:56 -0500
-Message-Id: <1358315037-10043-2-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1358315037-10043-1-git-send-email-alan@signal11.us>
-References: <1358315037-10043-1-git-send-email-alan@signal11.us>
+	id S1754127Ab3APFwO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 00:52:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61842 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831Ab3APFwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 00:52:12 -0500
+Message-ID: <1358315515.14898.0.camel@cr0>
+Subject: Re: the patch "bridge: export multicast database via netlink" broke
+ kernel 3.8 uapi
+From: Cong Wang <amwang@redhat.com>
+To: Thomas Backlund <tmb@mageia.org>
+Cc: Eric Blake <eblake@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch
+Date: Wed, 16 Jan 2013 13:51:55 +0800
+In-Reply-To: <50F53596.4070200@mageia.org>
+References: <50F2FF1B.3020708@mageia.org> <50F313A5.3020707@mageia.org>
+	  <50F49B7E.50906@redhat.com> <50F52956.50201@mageia.org>
+	 <1358244688.4264.7.camel@cr0> <50F53596.4070200@mageia.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactor the handing of the skb's to the individual lowpan devices into a
-function.
+On Tue, 2013-01-15 at 12:55 +0200, Thomas Backlund wrote:
+> 
+> as it seemed to fix the libvirt case
+> 
+> but then asked it to be ignored after I tried to build connman,
+> and hit this conflict with glibc-2.17:
+> 
+> In file included from /usr/include/arpa/inet.h:22:0,
+>                   from ./include/connman/inet.h:25,
+>                   from src/connman.h:128,
+>                   from src/tethering.c:40:
+> /usr/include/netinet/in.h:35:5: error: expected identifier before 
+> numeric constant
+> /usr/include/netinet/in.h:197:8: error: redefinition of 'struct in6_addr'
+> In file included from /usr/include/linux/if_bridge.h:17:0,
+>                   from src/tethering.c:38:
+> /usr/include/linux/in6.h:30:8: note: originally defined here
+> In file included from /usr/include/arpa/inet.h:22:0,
+>                   from ./include/connman/inet.h:25,
+>                   from src/connman.h:128,
+>                   from src/tethering.c:40:
+> /usr/include/netinet/in.h:238:8: error: redefinition of 'struct 
+> sockaddr_in6'
+> In file included from /usr/include/linux/if_bridge.h:17:0,
+>                   from src/tethering.c:38:
+> /usr/include/linux/in6.h:46:8: note: originally defined here
+> In file included from /usr/include/arpa/inet.h:22:0,
+>                   from ./include/connman/inet.h:25,
+>                   from src/connman.h:128,
+>                   from src/tethering.c:40:
+> /usr/include/netinet/in.h:274:8: error: redefinition of 'struct ipv6_mreq'
+> In file included from /usr/include/linux/if_bridge.h:17:0,
+>                   from src/tethering.c:38:
+> /usr/include/linux/in6.h:54:8: note: originally defined here
+> make[1]: *** [src/src_connmand-tethering.o] Error 1
+> 
+> 
+> So I'm not sure it's the right one...
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- net/ieee802154/6lowpan.c | 38 ++++++++++++++++++++++++--------------
- 1 file changed, 24 insertions(+), 14 deletions(-)
+% rpm -q --whatprovides /usr/include/netinet/in.h 
+glibc-headers-2.14.90-24.fc16.9.x86_64
 
-diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index f651da6..1714cfa 100644
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -594,10 +594,32 @@ static int lowpan_header_create(struct sk_buff *skb,
- 	}
- }
- 
-+static int lowpan_give_skb_to_devices(struct sk_buff *skb)
-+{
-+	struct lowpan_dev_record *entry;
-+	struct sk_buff *skb_cp;
-+	int stat = NET_RX_SUCCESS;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(entry, &lowpan_devices, list)
-+		if (lowpan_dev_info(entry->ldev)->real_dev == skb->dev) {
-+			skb_cp = skb_copy(skb, GFP_ATOMIC);
-+			if (!skb_cp) {
-+				stat = -ENOMEM;
-+				break;
-+			}
-+
-+			skb_cp->dev = entry->ldev;
-+			stat = netif_rx(skb_cp);
-+		}
-+	rcu_read_unlock();
-+
-+	return stat;
-+}
-+
- static int lowpan_skb_deliver(struct sk_buff *skb, struct ipv6hdr *hdr)
- {
- 	struct sk_buff *new;
--	struct lowpan_dev_record *entry;
- 	int stat = NET_RX_SUCCESS;
- 
- 	new = skb_copy_expand(skb, sizeof(struct ipv6hdr), skb_tailroom(skb),
-@@ -614,19 +636,7 @@ static int lowpan_skb_deliver(struct sk_buff *skb, struct ipv6hdr *hdr)
- 	new->protocol = htons(ETH_P_IPV6);
- 	new->pkt_type = PACKET_HOST;
- 
--	rcu_read_lock();
--	list_for_each_entry_rcu(entry, &lowpan_devices, list)
--		if (lowpan_dev_info(entry->ldev)->real_dev == new->dev) {
--			skb = skb_copy(new, GFP_ATOMIC);
--			if (!skb) {
--				stat = -ENOMEM;
--				break;
--			}
--
--			skb->dev = entry->ldev;
--			stat = netif_rx(skb);
--		}
--	rcu_read_unlock();
-+	stat = lowpan_give_skb_to_devices(new);
- 
- 	kfree_skb(new);
- 
--- 
-1.7.11.2
+Seems we have conflicts with glibc headers...
+
 
