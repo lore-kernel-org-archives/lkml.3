@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791Ab3APQ3g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:29:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36454 "EHLO
+	id S1758400Ab3APQaA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:30:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36444 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756387Ab3APQHe (ORCPT
+	with ESMTP id S1757641Ab3APQHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:07:34 -0500
+	Wed, 16 Jan 2013 11:07:25 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>, Jan Kara <jack@suse.cz>,
+Cc: Tommi Rantala <tt.rantala@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 157/222] udf: don't increment lenExtents while writing to a hole
-Date: Wed, 16 Jan 2013 13:55:57 -0200
-Message-Id: <1358351822-7675-158-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 155/222] sctp: fix -ENOMEM result with invalid user space pointer in sendto() syscall
+Date: Wed, 16 Jan 2013 13:55:55 -0200
+Message-Id: <1358351822-7675-156-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,62 +28,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+From: Tommi Rantala <tt.rantala@gmail.com>
 
-commit fb719c59bdb4fca86ee1fd1f42ab3735ca12b6b2 upstream.
+commit 6e51fe7572590d8d86e93b547fab6693d305fd0d upstream.
 
-Incrementing lenExtents even while writing to a hole is bad
-for performance as calls to udf_discard_prealloc and
-udf_truncate_tail_extent would not return from start if
-isize != lenExtents
+Consider the following program, that sets the second argument to the
+sendto() syscall incorrectly:
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+ #include <string.h>
+ #include <arpa/inet.h>
+ #include <sys/socket.h>
+
+ int main(void)
+ {
+         int fd;
+         struct sockaddr_in sa;
+
+         fd = socket(AF_INET, SOCK_STREAM, 132 /*IPPROTO_SCTP*/);
+         if (fd < 0)
+                 return 1;
+
+         memset(&sa, 0, sizeof(sa));
+         sa.sin_family = AF_INET;
+         sa.sin_addr.s_addr = inet_addr("127.0.0.1");
+         sa.sin_port = htons(11111);
+
+         sendto(fd, NULL, 1, 0, (struct sockaddr *)&sa, sizeof(sa));
+
+         return 0;
+ }
+
+We get -ENOMEM:
+
+ $ strace -e sendto ./demo
+ sendto(3, NULL, 1, 0, {sa_family=AF_INET, sin_port=htons(11111), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 ENOMEM (Cannot allocate memory)
+
+Propagate the error code from sctp_user_addto_chunk(), so that we will
+tell user space what actually went wrong:
+
+ $ strace -e sendto ./demo
+ sendto(3, NULL, 1, 0, {sa_family=AF_INET, sin_port=htons(11111), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EFAULT (Bad address)
+
+Noticed while running Trinity (the syscall fuzzer).
+
+Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/udf/inode.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/sctp/chunk.c  |   13 +++++++++----
+ net/sctp/socket.c |    4 ++--
+ 2 files changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-index 8873c47..fb65df5 100644
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -574,6 +574,7 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
- 	struct udf_inode_info *iinfo = UDF_I(inode);
- 	int goal = 0, pgoal = iinfo->i_location.logicalBlockNum;
- 	int lastblock = 0;
-+	bool isBeyondEOF;
+diff --git a/net/sctp/chunk.c b/net/sctp/chunk.c
+index 9534bf9..0018b65 100644
+--- a/net/sctp/chunk.c
++++ b/net/sctp/chunk.c
+@@ -183,7 +183,7 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
  
- 	*err = 0;
- 	*new = 0;
-@@ -653,7 +654,7 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
- 	/* Are we beyond EOF? */
- 	if (etype == -1) {
- 		int ret;
--
-+		isBeyondEOF = 1;
- 		if (count) {
- 			if (c)
- 				laarr[0] = laarr[1];
-@@ -696,6 +697,7 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
- 		endnum = c + 1;
- 		lastblock = 1;
- 	} else {
-+		isBeyondEOF = 0;
- 		endnum = startnum = ((count > 2) ? 2 : count);
+ 	msg = sctp_datamsg_new(GFP_KERNEL);
+ 	if (!msg)
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
  
- 		/* if the current extent is in position 0,
-@@ -743,7 +745,8 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
- 			*err = -ENOSPC;
- 			return 0;
- 		}
--		iinfo->i_lenExtents += inode->i_sb->s_blocksize;
-+		if (isBeyondEOF)
-+			iinfo->i_lenExtents += inode->i_sb->s_blocksize;
+ 	/* Note: Calculate this outside of the loop, so that all fragments
+ 	 * have the same expiration.
+@@ -280,8 +280,11 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 
+ 		chunk = sctp_make_datafrag_empty(asoc, sinfo, len, frag, 0);
+ 
+-		if (!chunk)
++		if (!chunk) {
++			err = -ENOMEM;
+ 			goto errout;
++		}
++
+ 		err = sctp_user_addto_chunk(chunk, offset, len, msgh->msg_iov);
+ 		if (err < 0)
+ 			goto errout_chunk_free;
+@@ -315,8 +318,10 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 
+ 		chunk = sctp_make_datafrag_empty(asoc, sinfo, over, frag, 0);
+ 
+-		if (!chunk)
++		if (!chunk) {
++			err = -ENOMEM;
+ 			goto errout;
++		}
+ 
+ 		err = sctp_user_addto_chunk(chunk, offset, over,msgh->msg_iov);
+ 
+@@ -342,7 +347,7 @@ errout:
+ 		sctp_chunk_free(chunk);
+ 	}
+ 	sctp_datamsg_put(msg);
+-	return NULL;
++	return ERR_PTR(err);
+ }
+ 
+ /* Check whether this message has expired. */
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 31c7bfc..944cfce 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -1908,8 +1908,8 @@ SCTP_STATIC int sctp_sendmsg(struct kiocb *iocb, struct sock *sk,
+ 
+ 	/* Break the message into multiple chunks of maximum size. */
+ 	datamsg = sctp_datamsg_from_user(asoc, sinfo, msg, msg_len);
+-	if (!datamsg) {
+-		err = -ENOMEM;
++	if (IS_ERR(datamsg)) {
++		err = PTR_ERR(datamsg);
+ 		goto out_free;
  	}
  
- 	/* if the extent the requsted block is located in contains multiple
 -- 
 1.7.9.5
 
