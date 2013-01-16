@@ -1,41 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab3APMsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 07:48:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49448 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753587Ab3APMsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 07:48:12 -0500
-Message-ID: <50F6A187.7010101@suse.cz>
-Date: Wed, 16 Jan 2013 13:48:07 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753587Ab3APMu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 07:50:58 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:57947 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751474Ab3APMu5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 07:50:57 -0500
+Date: Wed, 16 Jan 2013 07:50:54 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: rp@svcs.cs.pdx.edu, linux-kernel@vger.kernel.org,
+        lttng-dev@lists.lttng.org, stern@rowland.harvard.edu,
+        khlebnikov@openvz.org, shemminger@vyatta.com
+Subject: Re: [lttng-dev] [PATCH] Add ACCESS_ONCE() to avoid compiler
+	splitting assignments
+Message-ID: <20130116125054.GA9734@Krystal>
+References: <20130115181936.GA30319@linux.vnet.ibm.com> <20130115235642.GA31367@Krystal>
 MIME-Version: 1.0
-To: Roland Eggner <edvx1@systemanalysen.net>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Dmitry Voytik <dvv.kernel@gmail.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] nconf:  add keybindings for vi-style menu navigation,
- rewrite help texts
-References: <20121228185108.GA13644@voyt-hp> <1356723607-17027-1-git-send-email-dvv.kernel@gmail.com> <20121229223415.GB28355@mobil.systemanalysen.net> <201301141924.37268.yann.morin.1998@free.fr> <20130115161031.GA5513@mobil.systemanalysen.net> <20130115162632.GB5513@mobil.systemanalysen.net>
-In-Reply-To: <20130115162632.GB5513@mobil.systemanalysen.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115235642.GA31367@Krystal>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.1.2013 17:26, Roland Eggner wrote:
->> From: Roland Eggner <edvx1@systemanalysen.net>
+* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > As noted by Konstantin Khlebnikov, gcc can split assignment of
+> > constants to long variables (https://lkml.org/lkml/2013/1/15/141),
+> > though assignment of NULL (0) is OK.  Assuming that a gcc bug is
+> > fixed (http://gcc.gnu.org/bugzilla/attachment.cgi?id=29169&action=diff
+> > has a patch), making the store be volatile keeps gcc from splitting.
+> > 
+> > This commit therefore applies ACCESS_ONCE() to CMM_STORE_SHARED(),
+> > which is the underlying primitive used by rcu_assign_pointer().
 > 
-> •  Implemented vi-style navigation <k> <j> <l> <h>, based on initial work by
->    Dmitry Voytik.  Using <?> <H> instead of <?> <h> for help related to current
->    menu entry avoids conflict.
+> Hi Paul,
+> 
+> I recognise that this is an issue in the Linux kernel, since a simple
+> store is used and expected to be performed atomically when aligned.
+> However, I think this does not affect liburcu, see below:
 
-It conflicts with previous behavior that people got used to, though.
+Side question: what gcc versions may issue non-atomic volatile stores ?
+I think we should at least document those. Bug
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=55981 seems to target gcc
+4.7.2, but I wonder when this issue first appeared on x86 and x86-64
+(and if it affects other architectures as well).
 
-Also, please split the patch at least into one part adding the new key
-binding and a second part rewriting the help texts.
+Thanks,
 
-Michal
+Mathieu
+
+> 
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > diff --git a/urcu/system.h b/urcu/system.h
+> > index 2a45f22..7a1887e 100644
+> > --- a/urcu/system.h
+> > +++ b/urcu/system.h
+> > @@ -49,7 +49,7 @@
+> >   */
+> >  #define CMM_STORE_SHARED(x, v)		\
+> >  	({				\
+> > -		__typeof__(x) _v = _CMM_STORE_SHARED(x, v);	\
+> > +		__typeof__(x) CMM_ACCESS_ONCE(_v) = _CMM_STORE_SHARED(x, v);	\
+> 
+> Here, the macro "_CMM_STORE_SHARED(x, v)" is doing the actual store.
+> It stores v into "x". So adding a CMM_ACCESS_ONCE(_v), as you propose
+> here, is really only making sure the return value (usually unused),
+> located on the stack, is accessed with a volatile access, which does not
+> make much sense.
+> 
+> What really matters is the _CMM_STORE_SHARED() macro:
+> 
+> #define _CMM_STORE_SHARED(x, v) ({ CMM_ACCESS_ONCE(x) = (v); })
+> 
+> which already uses a volatile access for the store. So this seems to be
+> a case where our preemptive use of volatile for stores in addition to
+> loads made us bug-free for a gcc behavior unexpected at the time we
+> implemented this macro. Just a touch of paranoia seems to be a good
+> thing sometimes. ;-)
+> 
+> Thoughts ?
+> 
+> Thanks,
+> 
+> Mathieu
+> 
+> >  		cmm_smp_wmc();		\
+> >  		_v;			\
+> >  	})
+> > 
+> > 
+> > _______________________________________________
+> > lttng-dev mailing list
+> > lttng-dev@lists.lttng.org
+> > http://lists.lttng.org/cgi-bin/mailman/listinfo/lttng-dev
+> 
+> -- 
+> Mathieu Desnoyers
+> EfficiOS Inc.
+> http://www.efficios.com
+> 
+> _______________________________________________
+> lttng-dev mailing list
+> lttng-dev@lists.lttng.org
+> http://lists.lttng.org/cgi-bin/mailman/listinfo/lttng-dev
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
