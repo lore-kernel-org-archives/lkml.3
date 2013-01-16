@@ -1,34 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809Ab3APB1c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 20:27:32 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37895 "EHLO e9.ny.us.ibm.com"
+	id S1756323Ab3APBar (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 20:30:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16838 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754976Ab3APB1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 20:27:31 -0500
-Message-ID: <50F601F7.3010000@linux.vnet.ibm.com>
-Date: Tue, 15 Jan 2013 17:27:19 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752637Ab3APBap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 20:30:45 -0500
+Date: Wed, 16 Jan 2013 01:29:15 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk,
+        snitzer@redhat.com, agk@redhat.com, neilb@suse.de
+Subject: Re: Bcache v. whatever
+Message-ID: <20130116012914.GA27245@agk-dp.fab.redhat.com>
+Mail-Followup-To: Kent Overstreet <koverstreet@google.com>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+	akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk,
+	snitzer@redhat.com, agk@redhat.com, neilb@suse.de
+References: <20130114223202.GV26407@google.com> <1358241656.2383.2.camel@dabdike.int.hansenpartnership.com> <20130115205912.GA26407@google.com> <1358291738.10591.23.camel@dabdike.int.hansenpartnership.com> <20130115233347.GD26407@google.com>
 MIME-Version: 1.0
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH 14/17] mm/memory_hotplug: factor out zone+pgdat growth.
-References: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com> <1358295894-24167-15-git-send-email-cody@linux.vnet.ibm.com>
-In-Reply-To: <1358295894-24167-15-git-send-email-cody@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011601-7182-0000-0000-000004766E5D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115233347.GD26407@google.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2013 04:24 PM, Cody P Schafer wrote:
-> Create a new function grow_pgdat_and_zone() which handles locking +
-> growth of a zone & the pgdat which it is associated with.
+On Tue, Jan 15, 2013 at 03:33:47PM -0800, Kent Overstreet wrote:
+> I haven't been active on dm-devel, besides the occasional cross
+> posting... not sure what activity you're referring to on the dm list,
+ 
+A caching framework based on dm has been proposed by Joe Thornber (the
+original author of dm).
 
-Why is this being factored out?  Will it be reused somewhere?
+Mike Snitzer is trying to adapt the performance tests for this dm-based
+framework to include the latest bcache code that you just posted to
+start to give us an idea of the circumstances in which each of them work
+well (or badly).
+
+1, Caching is a complicated feature: It's easy to get no benefit or even
+a negative benefit from a cache if you use an inappropriate policy or
+don't tune it to your I/O patterns.
+
+2. We now have several independent/overlapping implementations of this
+type of caching.  Comparing and contrasting them should help us to tease
+out the critical design elements and optimisations and decide which of
+them together or separately (or some hybrid) would enable the kernel to
+support the widest range of situations users require with the minimum
+of code and complexity.
+
+3. We all want to move quickly now, perhaps even with something in the
+next merge window if we can or otherwise the one after that.
+
+Alasdair
 
