@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932817Ab3APQJk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:09:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36804 "EHLO
+	id S932742Ab3APQJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:09:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36774 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932782Ab3APQJh (ORCPT
+	with ESMTP id S932694Ab3APQJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:09:37 -0500
+	Wed, 16 Jan 2013 11:09:18 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        Kiran Kumar Kella <kkiran@broadcom.com>,
+Cc: Christoph Paasch <christoph.paasch@uclouvain.be>,
         "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 188/222] tcp: refine SYN handling in tcp_validate_incoming
-Date: Wed, 16 Jan 2013 13:56:28 -0200
-Message-Id: <1358351822-7675-189-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 183/222] inet: Fix kmemleak in tcp_v4/6_syn_recv_sock and dccp_v4/6_request_recv_sock
+Date: Wed, 16 Jan 2013 13:56:23 -0200
+Message-Id: <1358351822-7675-184-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,54 +28,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-commit e371589917011efe6ff8c7dfb4e9e81934ac5855 upstream.
+commit e337e24d6624e74a558aa69071e112a65f7b5758 upstream.
 
-Followup of commit 0c24604b68fc (tcp: implement RFC 5961 4.2)
+If in either of the above functions inet_csk_route_child_sock() or
+__inet_inherit_port() fails, the newsk will not be freed:
 
-As reported by Vijay Subramanian, we should send a challenge ACK
-instead of a dup ack if a SYN flag is set on a packet received out of
-window.
+unreferenced object 0xffff88022e8a92c0 (size 1592):
+  comm "softirq", pid 0, jiffies 4294946244 (age 726.160s)
+  hex dump (first 32 bytes):
+    0a 01 01 01 0a 01 01 02 00 00 00 00 a7 cc 16 00  ................
+    02 00 03 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff8153d190>] kmemleak_alloc+0x21/0x3e
+    [<ffffffff810ab3e7>] kmem_cache_alloc+0xb5/0xc5
+    [<ffffffff8149b65b>] sk_prot_alloc.isra.53+0x2b/0xcd
+    [<ffffffff8149b784>] sk_clone_lock+0x16/0x21e
+    [<ffffffff814d711a>] inet_csk_clone_lock+0x10/0x7b
+    [<ffffffff814ebbc3>] tcp_create_openreq_child+0x21/0x481
+    [<ffffffff814e8fa5>] tcp_v4_syn_recv_sock+0x3a/0x23b
+    [<ffffffff814ec5ba>] tcp_check_req+0x29f/0x416
+    [<ffffffff814e8e10>] tcp_v4_do_rcv+0x161/0x2bc
+    [<ffffffff814eb917>] tcp_v4_rcv+0x6c9/0x701
+    [<ffffffff814cea9f>] ip_local_deliver_finish+0x70/0xc4
+    [<ffffffff814cec20>] ip_local_deliver+0x4e/0x7f
+    [<ffffffff814ce9f8>] ip_rcv_finish+0x1fc/0x233
+    [<ffffffff814cee68>] ip_rcv+0x217/0x267
+    [<ffffffff814a7bbe>] __netif_receive_skb+0x49e/0x553
+    [<ffffffff814a7cc3>] netif_receive_skb+0x50/0x82
 
-This permits the ratelimiting to work as intended, and to increase
-correct SNMP counters.
+This happens, because sk_clone_lock initializes sk_refcnt to 2, and thus
+a single sock_put() is not enough to free the memory. Additionally, things
+like xfrm, memcg, cookie_values,... may have been initialized.
+We have to free them properly.
 
-Suggested-by: Vijay Subramanian <subramanian.vijay@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Vijay Subramanian <subramanian.vijay@gmail.com>
-Cc: Kiran Kumar Kella <kkiran@broadcom.com>
+This is fixed by forcing a call to tcp_done(), ending up in
+inet_csk_destroy_sock, doing the final sock_put(). tcp_done() is necessary,
+because it ends up doing all the cleanup on xfrm, memcg, cookie_values,
+xfrm,...
+
+Before calling tcp_done, we have to set the socket to SOCK_DEAD, to
+force it entering inet_csk_destroy_sock. To avoid the warning in
+inet_csk_destroy_sock, inet_num has to be set to 0.
+As inet_csk_destroy_sock does a dec on orphan_count, we first have to
+increase it.
+
+Calling tcp_done() allows us to remove the calls to
+tcp_clear_xmit_timer() and tcp_cleanup_congestion_control().
+
+A similar approach is taken for dccp by calling dccp_done().
+
+This is in the kernel since 093d282321 (tproxy: fix hash locking issue
+when using port redirection in __inet_inherit_port()), thus since
+version >= 2.6.37.
+
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ipv4/tcp_input.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ include/net/inet_connection_sock.h |    1 +
+ net/dccp/ipv4.c                    |    4 ++--
+ net/dccp/ipv6.c                    |    3 ++-
+ net/ipv4/inet_connection_sock.c    |   16 ++++++++++++++++
+ net/ipv4/tcp_ipv4.c                |    6 ++----
+ net/ipv6/tcp_ipv6.c                |    3 ++-
+ 6 files changed, 25 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index e859775..afb436d 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5477,8 +5477,11 @@ static bool tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
- 		 * an acknowledgment should be sent in reply (unless the RST
- 		 * bit is set, if so drop the segment and return)".
- 		 */
--		if (!th->rst)
-+		if (!th->rst) {
-+			if (th->syn)
-+				goto syn_challenge;
- 			tcp_send_dupack(sk, skb);
-+		}
- 		goto discard;
- 	}
+diff --git a/include/net/inet_connection_sock.h b/include/net/inet_connection_sock.h
+index 7d83f90..d283595 100644
+--- a/include/net/inet_connection_sock.h
++++ b/include/net/inet_connection_sock.h
+@@ -318,6 +318,7 @@ extern void inet_csk_reqsk_queue_prune(struct sock *parent,
+ 				       const unsigned long max_rto);
  
-@@ -5508,6 +5511,7 @@ static bool tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
- 	 * RFC 5691 4.2 : Send a challenge ack
- 	 */
- 	if (th->syn) {
-+syn_challenge:
- 		if (syn_inerr)
- 			TCP_INC_STATS_BH(sock_net(sk), TCP_MIB_INERRS);
- 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPSYNCHALLENGE);
+ extern void inet_csk_destroy_sock(struct sock *sk);
++extern void inet_csk_prepare_forced_close(struct sock *sk);
+ 
+ /*
+  * LISTEN is a special case for poll..
+diff --git a/net/dccp/ipv4.c b/net/dccp/ipv4.c
+index 07f5579..18b9857 100644
+--- a/net/dccp/ipv4.c
++++ b/net/dccp/ipv4.c
+@@ -435,8 +435,8 @@ exit:
+ 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+ 	return NULL;
+ put_and_exit:
+-	bh_unlock_sock(newsk);
+-	sock_put(newsk);
++	inet_csk_prepare_forced_close(newsk);
++	dccp_done(newsk);
+ 	goto exit;
+ }
+ 
+diff --git a/net/dccp/ipv6.c b/net/dccp/ipv6.c
+index fa9512d..bb1fdd3 100644
+--- a/net/dccp/ipv6.c
++++ b/net/dccp/ipv6.c
+@@ -612,7 +612,8 @@ static struct sock *dccp_v6_request_recv_sock(struct sock *sk,
+ 	newinet->inet_rcv_saddr = LOOPBACK4_IPV6;
+ 
+ 	if (__inet_inherit_port(sk, newsk) < 0) {
+-		sock_put(newsk);
++		inet_csk_prepare_forced_close(newsk);
++		dccp_done(newsk);
+ 		goto out;
+ 	}
+ 	__inet6_hash(newsk, NULL);
+diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
+index f9ee741..108989e 100644
+--- a/net/ipv4/inet_connection_sock.c
++++ b/net/ipv4/inet_connection_sock.c
+@@ -673,6 +673,22 @@ void inet_csk_destroy_sock(struct sock *sk)
+ }
+ EXPORT_SYMBOL(inet_csk_destroy_sock);
+ 
++/* This function allows to force a closure of a socket after the call to
++ * tcp/dccp_create_openreq_child().
++ */
++void inet_csk_prepare_forced_close(struct sock *sk)
++{
++	/* sk_clone_lock locked the socket and set refcnt to 2 */
++	bh_unlock_sock(sk);
++	sock_put(sk);
++
++	/* The below has to be done to allow calling inet_csk_destroy_sock */
++	sock_set_flag(sk, SOCK_DEAD);
++	percpu_counter_inc(sk->sk_prot->orphan_count);
++	inet_sk(sk)->inet_num = 0;
++}
++EXPORT_SYMBOL(inet_csk_prepare_forced_close);
++
+ int inet_csk_listen_start(struct sock *sk, const int nr_table_entries)
+ {
+ 	struct inet_sock *inet = inet_sk(sk);
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 242edc6..2a95340 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1539,10 +1539,8 @@ exit:
+ 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+ 	return NULL;
+ put_and_exit:
+-	tcp_clear_xmit_timers(newsk);
+-	tcp_cleanup_congestion_control(newsk);
+-	bh_unlock_sock(newsk);
+-	sock_put(newsk);
++	inet_csk_prepare_forced_close(newsk);
++	tcp_done(newsk);
+ 	goto exit;
+ }
+ EXPORT_SYMBOL(tcp_v4_syn_recv_sock);
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 207251c..5d10b81 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1413,7 +1413,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
+ #endif
+ 
+ 	if (__inet_inherit_port(sk, newsk) < 0) {
+-		sock_put(newsk);
++		inet_csk_prepare_forced_close(newsk);
++		tcp_done(newsk);
+ 		goto out;
+ 	}
+ 	__inet6_hash(newsk, NULL);
 -- 
 1.7.9.5
 
