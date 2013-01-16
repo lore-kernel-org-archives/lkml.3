@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758759Ab3APQWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:22:45 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:65274 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758715Ab3APQWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:22:42 -0500
-Date: Wed, 16 Jan 2013 17:22:34 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers: avoid use after free of a pinctrl context pointer
-Message-ID: <Pine.LNX.4.64.1301161720440.19928@axis700.grange>
+	id S1758764Ab3APQW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:22:58 -0500
+Received: from mga01.intel.com ([192.55.52.88]:36047 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758737Ab3APQWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 11:22:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,480,1355126400"; 
+   d="scan'208";a="274537025"
+Message-ID: <50F6D3D2.3020407@linux.intel.com>
+Date: Wed, 16 Jan 2013 08:22:42 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:M2vb3zVPEk92zwpNfXQ4u47B5+NEhlTkXWLHcLauIaF
- iv70GZWxXLDC4UDdKjqAB9ffAwrO3vHFXTmgTAdFHkjHLlXWxW
- ryJRQNNrFa8sULlXRvvelvxq1uCf/h/uy9uO2SxguPz8QnBOGX
- f0VfagS9HyuUfn3Gf9IyTkhD8yJw8nOfr+AVl04Iz4ezkMFiyR
- 8sZjcYFH+jbdV/Hw4Fx/mijljduMijT8LfMa6eIuW8IDMeDssq
- KEyImE275nn6f+VaBepCBjVP2wW6W5rcEKujcQd5JJFkvmpf7a
- hUs9OrOGmZyIpCFPUEyY6Wbifc7HVA7YtW7ebbqo3vJ9ZZWTSh
- zeyaZKxl/oOQA61PosZ/2U2pvN2M+gXq7XV5z5F9hwzsvb3cxG
- jrb9VFi8fbmwg==
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Tejun Heo <tj@kernel.org>, Ming Lei <ming.lei@canonical.com>,
+        Alex Riesen <raa.lkml@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] module, async: async_synchronize_full() on module init
+ iff async is used
+References: <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com> <CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com> <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com> <20130115183204.GE2668@htj.dyndns.org> <CA+55aFzZ1NJz34r99N7+mU4CN5Ju4QpHrDoWv5Kbd5-Z4QzgaA@mail.gmail.com> <20130115235043.GJ2668@htj.dyndns.org> <CA+55aFzm4k2CyQ_mZVHyeasjw4ybqfO2SpJrZZNZeUsSW8PB=g@mail.gmail.com> <CA+55aFxLJ=Yfms9SkPJLjQ-ZASPNZC0JUBsb3OwonJvTCcBzxA@mail.gmail.com> <20130116025251.GM2668@htj.dyndns.org> <CA+55aFxttTkWG0gfUz3=V8A-9az3+qY3j0JZEAoKv0ne-QupZw@mail.gmail.com> <20130116032502.GN2668@htj.dyndns.org> <CA+55aFxCudzOv8e2XjHiT=Qhy9q+mrxUfSYAT=eU6Gq8uyNORw@mail.gmail.com>
+In-Reply-To: <CA+55aFxCudzOv8e2XjHiT=Qhy9q+mrxUfSYAT=eU6Gq8uyNORw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During probing, pinctrl context is allocated and assigned to the struct
-device::pins pointer. If probing fails or if the driver is later unbound
-and re-probed again, the memory is freed, but the pointer is not cleared.
-On a repeated probing attempt a non-NULL pointer indicates an already
-allocated context, which then gets used. To avoid this the pointer must
-be cleared.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
- drivers/base/dd.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> But no, it's not just some trivial one-liner. Especially the question
+> about "when to try to load the module that is given on the kernel
+> command line" is not trivial. Do we require that the module is in the
+> initrd and loadable basically immediate at boot? Do we try again after
+> switching the root filesystem? Things like that..
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 65631015..e5c71b5 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -302,6 +302,7 @@ probe_failed:
- 	devres_release_all(dev);
- 	driver_sysfs_remove(dev);
- 	dev->driver = NULL;
-+	dev->pins = NULL;
- 	dev_set_drvdata(dev, NULL);
- 
- 	if (ret == -EPROBE_DEFER) {
-@@ -505,6 +506,7 @@ static void __device_release_driver(struct device *dev)
- 			drv->remove(dev);
- 		devres_release_all(dev);
- 		dev->driver = NULL;
-+		dev->pins = NULL;
- 		dev_set_drvdata(dev, NULL);
- 		klist_remove(&dev->p->knode_driver);
- 		if (dev->bus)
--- 
-1.7.2.5
+to load it from the root fs you tend to need... an elevator ;-)
+
+
+I think it's pretty fair to users to say that if you want something by default at boot time,
+you need to build it in...
+but for us to try a modprobe from the initrd is not too bad I suppose.
+probably need to do this around the time we initialize the block layer
 
