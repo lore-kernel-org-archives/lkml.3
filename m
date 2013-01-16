@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932972Ab3APQKo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:10:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36878 "EHLO
+	id S932958Ab3APQKm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:10:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36873 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932860Ab3APQKf (ORCPT
+	with ESMTP id S932476Ab3APQKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:10:35 -0500
+	Wed, 16 Jan 2013 11:10:32 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Grant Likely <grant.likely@secretlab.ca>, Gabor Juhos <juhosg@openwrt.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 202/222] drm/radeon: add connector table for Mac G4 Silver
-Date: Wed, 16 Jan 2013 13:56:42 -0200
-Message-Id: <1358351822-7675-203-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 201/222] powerpc: Add missing NULL terminator to avoid boot panic on PPC40x
+Date: Wed, 16 Jan 2013 13:56:41 -0200
+Message-Id: <1358351822-7675-202-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,105 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit cafa59b9011a7790be4ddd5979419259844a165d upstream.
+commit e6449c9b2d90c1bd9a5985bf05ddebfd1631cd6b upstream.
 
-Apple cards do not provide data tables in the vbios
-so we have to hard code the connector parameters
-in the driver.
+The missing NULL terminator can cause a panic on
+PPC405 boards during boot:
 
-Reported-by: Albrecht Dreß <albrecht.dress@arcor.de>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+  Linux/PowerPC load: console=ttyS0,115200 root=/dev/mtdblock1 rootfstype=squashfs,jffs2 noinitrd init=/etc/preinit
+  Finalizing device tree... flat tree at 0x6a5160
+  bootconsole [udbg0] enabled
+  Page fault in user mode with in_atomic() = 1 mm = (null)
+  NIP = c0275f50  MSR = fffffffe
+  Oops: Weird page fault, sig: 11 [#1]
+  PowerPC 40x Platform
+  Modules linked in:
+  NIP: c0275f50 LR: c0275f60 CTR: c0280000
+  REGS: c0275eb0 TRAP: 636f7265   Not tainted  (3.7.1)
+  MSR: fffffffe <VEC,VSX,EE,PR,FP,ME,SE,BE,IR,DR,PMM,RI> CR: c06a6190  XER: 00000001
+  TASK = c02662a8[0] 'swapper' THREAD: c0274000
+  GPR00: c0275ec0 c000c658 c027c4bf 00000000 c0275ee0 c000a0ec c020a1a8 c020a1f0
+  GPR08: c020f631 c020f404 c025f078 c025f080 c0275f10
+   Call Trace:
+   ---[ end trace 31fd0ba7d8756001 ]---
+
+  Kernel panic - not syncing: Attempted to kill the idle task!
+
+The panic happens since commit 9597abe00c1bab2aedce6b49866bf6d1e81c9eed
+(sections: fix section conflicts in arch/powerpc), however the root
+cause of this is that the NULL terminator were not added in commit
+a4f740cf33f7f6c164bbde3c0cdbcc77b0c4997c (of/flattree: Add of_flat_dt_match()
+helper function).
+
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |   51 +++++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/radeon_mode.h    |    3 +-
- 2 files changed, 53 insertions(+), 1 deletion(-)
+ arch/powerpc/platforms/40x/ppc40x_simple.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_combios.c b/drivers/gpu/drm/radeon/radeon_combios.c
-index 576f4f6..558e5c0 100644
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -1536,6 +1536,9 @@ bool radeon_get_legacy_connector_info_from_table(struct drm_device *dev)
- 			   of_machine_is_compatible("PowerBook6,7")) {
- 			/* ibook */
- 			rdev->mode_info.connector_table = CT_IBOOK;
-+		} else if (of_machine_is_compatible("PowerMac3,5")) {
-+			/* PowerMac G4 Silver radeon 7500 */
-+			rdev->mode_info.connector_table = CT_MAC_G4_SILVER;
- 		} else if (of_machine_is_compatible("PowerMac4,4")) {
- 			/* emac */
- 			rdev->mode_info.connector_table = CT_EMAC;
-@@ -2200,6 +2203,54 @@ bool radeon_get_legacy_connector_info_from_table(struct drm_device *dev)
- 					    CONNECTOR_OBJECT_ID_SVIDEO,
- 					    &hpd);
- 		break;
-+	case CT_MAC_G4_SILVER:
-+		DRM_INFO("Connector Table: %d (mac g4 silver)\n",
-+			 rdev->mode_info.connector_table);
-+		/* DVI-I - tv dac, int tmds */
-+		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_DVI, 0, 0);
-+		hpd.hpd = RADEON_HPD_1; /* ??? */
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_DFP1_SUPPORT,
-+								0),
-+					  ATOM_DEVICE_DFP1_SUPPORT);
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_CRT2_SUPPORT,
-+								2),
-+					  ATOM_DEVICE_CRT2_SUPPORT);
-+		radeon_add_legacy_connector(dev, 0,
-+					    ATOM_DEVICE_DFP1_SUPPORT |
-+					    ATOM_DEVICE_CRT2_SUPPORT,
-+					    DRM_MODE_CONNECTOR_DVII, &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_SINGLE_LINK_DVI_I,
-+					    &hpd);
-+		/* VGA - primary dac */
-+		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_VGA, 0, 0);
-+		hpd.hpd = RADEON_HPD_NONE;
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_CRT1_SUPPORT,
-+								1),
-+					  ATOM_DEVICE_CRT1_SUPPORT);
-+		radeon_add_legacy_connector(dev, 1, ATOM_DEVICE_CRT1_SUPPORT,
-+					    DRM_MODE_CONNECTOR_VGA, &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_VGA,
-+					    &hpd);
-+		/* TV - TV DAC */
-+		ddc_i2c.valid = false;
-+		hpd.hpd = RADEON_HPD_NONE;
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_TV1_SUPPORT,
-+								2),
-+					  ATOM_DEVICE_TV1_SUPPORT);
-+		radeon_add_legacy_connector(dev, 2, ATOM_DEVICE_TV1_SUPPORT,
-+					    DRM_MODE_CONNECTOR_SVIDEO,
-+					    &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_SVIDEO,
-+					    &hpd);
-+		break;
- 	default:
- 		DRM_INFO("Connector table: %d (invalid)\n",
- 			 rdev->mode_info.connector_table);
-diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
-index ce32fa9..7a9ac40 100644
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -210,7 +210,8 @@ enum radeon_connector_table {
- 	CT_RN50_POWER,
- 	CT_MAC_X800,
- 	CT_MAC_G5_9600,
--	CT_SAM440EP
-+	CT_SAM440EP,
-+	CT_MAC_G4_SILVER
+diff --git a/arch/powerpc/platforms/40x/ppc40x_simple.c b/arch/powerpc/platforms/40x/ppc40x_simple.c
+index 9761206..f0eee75 100644
+--- a/arch/powerpc/platforms/40x/ppc40x_simple.c
++++ b/arch/powerpc/platforms/40x/ppc40x_simple.c
+@@ -57,7 +57,8 @@ static const char *board[] __initdata = {
+ 	"amcc,makalu",
+ 	"apm,klondike",
+ 	"est,hotfoot",
+-	"plathome,obs600"
++	"plathome,obs600",
++	NULL
  };
  
- enum radeon_dvo_chip {
+ static int __init ppc40x_probe(void)
 -- 
 1.7.9.5
 
