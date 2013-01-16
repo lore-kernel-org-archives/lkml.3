@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758742Ab3APQSd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:18:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36857 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932855Ab3APQKO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932903Ab3APQKO (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 16 Jan 2013 11:10:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36850 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932855Ab3APQKK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 11:10:10 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Tomasz Guszkowski <tsg@o2.pl>, "John W. Linville" <linville@tuxdriver.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 198/222] ath9k_hw: Fix RX gain initvals for AR9485
-Date: Wed, 16 Jan 2013 13:56:38 -0200
-Message-Id: <1358351822-7675-199-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 197/222] p54usb: add USB ID for T-Com Sinus 154 data II
+Date: Wed, 16 Jan 2013 13:56:37 -0200
+Message-Id: <1358351822-7675-198-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,36 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Tomasz Guszkowski <tsg@o2.pl>
 
-commit a796a1dd5da9645ad77aa687d1a890ecd63ab5a6 upstream.
+commit 3194b7fcdf6caea338b5d2c72d76fed80437649c upstream.
 
-Populate iniModesRxGain with the correct initvals
-array for AR9485 v1.1
+Added USB ID for T-Com Sinus 154 data II.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: Tomasz Guszkowski <tsg@o2.pl>
+Acked-by: Christian Lamparter <chunkeey@googlemail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[ herton: adjust context, INIT_INI_ARRAY still needs ARRAY_SIZE on 3.5 ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/ar9003_hw.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/p54/p54usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_hw.c b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
-index 4f692b9..83494ee 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_hw.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
-@@ -632,8 +632,8 @@ static void ar9003_rx_gain_table_mode0(struct ath_hw *ah)
- 				2);
- 	else if (AR_SREV_9485_11(ah))
- 		INIT_INI_ARRAY(&ah->iniModesRxGain,
--				ar9485Common_wo_xlna_rx_gain_1_1,
--				ARRAY_SIZE(ar9485Common_wo_xlna_rx_gain_1_1),
-+				ar9485_common_rx_gain_1_1,
-+				ARRAY_SIZE(ar9485_common_rx_gain_1_1),
- 				2);
- 	else if (AR_SREV_9580(ah))
- 		INIT_INI_ARRAY(&ah->iniModesRxGain,
+diff --git a/drivers/net/wireless/p54/p54usb.c b/drivers/net/wireless/p54/p54usb.c
+index effb044..4334291 100644
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -82,6 +82,7 @@ static struct usb_device_id p54u_table[] = {
+ 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
+ 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
+ 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
++	{USB_DEVICE(0x083a, 0x4503)},	/* T-Com Sinus 154 data II */
+ 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
+ 	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
+ 	{USB_DEVICE(0x083a, 0xf503)},	/* Accton FD7050E ver 1010ec  */
 -- 
 1.7.9.5
 
