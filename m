@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759140Ab3APKnY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:43:24 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:46564 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759121Ab3APKnU (ORCPT
+	id S1759175Ab3APKnu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:43:50 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:40235 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759045Ab3APKmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:43:20 -0500
-Message-ID: <50F68443.3040900@suse.cz>
-Date: Wed, 16 Jan 2013 11:43:15 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+	Wed, 16 Jan 2013 05:42:35 -0500
+Message-ID: <50F683D9.1080908@linux.vnet.ibm.com>
+Date: Wed, 16 Jan 2013 16:11:29 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM mailing list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: -next: no resume from suspend
-References: <50F3D9E8.6040802@suse.cz> <16191961.j5ydKsJ3d3@vostro.rjw.lan>
-In-Reply-To: <16191961.j5ydKsJ3d3@vostro.rjw.lan>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
+To: Ivo Sieben <meltedpianoman@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] tty: Only wakeup the line discipline idle queue when
+ queue is active
+References: <1355842130-15482-1-git-send-email-meltedpianoman@gmail.com> <50E3FDFA.4070203@suse.cz>	<20130102114311.66215bf5@pyramind.ukuu.org.uk> <CAMSQXEHmDb5rUQnT1JNcMCzdaN+gAr+1hR=PyPiDMu7vK5ykxA@mail.gmail.com> <50E4854E.8060801@suse.cz> <CAMSQXEGU2WmhmMqP7XMK2x39GN9iDDWpg-Wa7_cAauHWx5OWbQ@mail.gmail.com> <50F66120.50704@linux.vnet.ibm.com> <CAMSQXEE=Qp8kVcEp8nBhNDmOaDMUQUUou+5Z2f8-1znykqy6mQ@mail.gmail.com>
+In-Reply-To: <CAMSQXEE=Qp8kVcEp8nBhNDmOaDMUQUUou+5Z2f8-1znykqy6mQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011610-1396-0000-0000-0000026C4397
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2013 01:56 PM, Rafael J. Wysocki wrote:
-> On Monday, January 14, 2013 11:11:52 AM Jiri Slaby wrote:
->> Hi,
->>
->> since friday's -next (the last known to be working is the last monday's)
->> I cannot resume from suspend. The last thing I see with
->> no_console_suspend is:
->> i915: No ACPI video bus found
->>
->> But I used to see the message always, so this is no difference. Any idea
->> before I start bisecting?
+Hi Ivo,
+
+On 01/16/2013 02:46 PM, Ivo Sieben wrote:
+> Hi Preeti,
 > 
-> Well, what's the next message you normally see with no_console_suspend?
+> 2013/1/16 Preeti U Murthy <preeti@linux.vnet.ibm.com>:
+>> Hi Ivo,
+>> Can you explain how this problem could create a scheduler overhead?
+>> I am a little confused, because as far as i know,scheduler does not come
+>> in the picture of the wake up path right? select_task_rq() in
+>> try_to_wake_up() is where the scheduler comes in,and this is after the
+>> task wakes up.
+>>
+> 
+> Everytime the line discipline is dereferenced, the wakeup function is
+> called. The wakeup() function contains a critical section protected by
+> spinlocks. On a PREEMPT_RT system, a "normal" spinlock behaves just
+> like a mutex: scheduling is not disabled and it is still possible that
+> a new process on a higher RT priority is scheduled in. When a new -
+> higher priority - process is scheduled in just when the put_ldisc() is
+> in the critical section of the wakeup function, the higher priority
+> process (that uses the same TTY instance) will finally also
+> dereference the line discipline and try to wakeup the same waitqueue.
+> This causes the high priority process to  block on the same spinlock.
+> Priority inheritance will solve this blocked situation by a context
+> switch to the lower priority process, run until that process leaves
+> the critical section, and a context switch back to the higher priority
+> process. This is unnecessary since the waitqueue was empty after all
+> (during normal operation the waitqueue is empty most of the time).
+> This unnecessary context switch from/to the high priority process is
+> what a mean with "scheduler overhead" (maybe not a good name for it,
+> sorry for the confusion).
+> 
+> Does this makes sense to you?
 
-As I wrote in the other message, the kernel is spinning in
-acpi_rs_get_aml_length. There are weird resources in the list. For
-serial 00:05 there is resource with type and length equal to 0 and for
-parport_pc 00:06 there is resource type 58196295 with length of
-134284152. See:
-acpi_rs_get_aml_length: ffff8801b9f7b380 type=3 len=16
-acpi_rs_get_aml_length: ffff8801b9f7b390 type=0 len=0
-acpi_rs_get_aml_length: BAD ffff8801b9f7b390 type=0 len=0
-serial 00:05: activation failed
-dpm_run_callback(): pnp_bus_resume+0x0/0x80 returns -5
-PM: Device 00:05 failed to resume: error -5
-acpi_rs_get_aml_length: ffff8801b9f7b680 type=3 len=24
-acpi_rs_get_aml_length: ffff8801b9f7b698 type=58196295 len=134284152
-parport_pc 00:06: activation failed
-dpm_run_callback(): pnp_bus_resume+0x0/0x80 returns -5
-PM: Device 00:06 failed to resume: error -5
+Yes.Thank you very much for the explanation :) But I dont see how the
+context switching goes away with your patch.With your patch, when the
+higher priority thread comes in when the lower priority thread is
+running in the critical section,it will see the wait queue empty and
+"continue its execution" without now wanting to enter the critical
+section.So this means it will preempt the lower priority thread because
+it is not waiting on a lock anyway.There is a context switch here right?
+I dont see any problem in scheduling due to this,but I do think your
+patch is essential.
 
-if (!length)
-  return error;
+The entire logic of
+wakelist_active()
+  wake_up()
 
-makes it resume again with the errors above...
+could be integrated into wake_up(). I dont understand why we need a
+separate function to check the emptiness of the wake list. But as Oleg
+pointed out we must identify the places for this optimization.
 
-This was 3.8.0-rc3-next-20130114. Going to test 20130116 as there are
-these patches:
-616979e memory-hotplug: remove sysfs file of node
-a41a27d ACPI / PM: remove leading whitespace from #ifdef
-ace2342 ACPI / PM: Consolidate suspend-specific and hibernate-specific code
-27a5fb8 ACPI / PM: Move device power management functions to device_pm.c
-717a5d1 ACPI / PM: Export power states of ACPI devices via sysfs
-ee8f808 ACPI / PM: Common string representations of device power states
-44fed9b ACPI / PM: More visible function for retrieving device power states
-81ed027 ACPI / PM: Change the way power transitions to D3cold are
-carried out
-113542c ACPI: Use system level attribute of wakeup power resources
-c6fdf80 ACPI: Take power resource initialization errors into account
-b6568e5 ACPI / scan: Consolidate extraction of power resources lists
-8a0a4d6 ACPI / scan: Remove unnecessary initialization of local variables
-5c24aa4 ACPI / scan: Move power state initialization to a separate routine
-59e8500 ACPI / PM: Take order attribute of wakeup power resources into
-account
-f369253 ACPI / PM: Take order attribute of power resources into account
-3170b40 ACPI: Do not use device power states of power resources
-17ece8c ACPI: Drop power resources driver
-5e4cd24 ACPI / scan: Treat power resources in a special way
-5b32520 ACPI / scan: More straightforward preparation of ACPI device objects
-5a62e76 ACPI / PM: Rework the handling of devices depending on power
-resources
-5993c46 ACPI: update ej_event interface to take acpi_device
-05404d8 ACPI / scan: Add second pass to acpi_bus_trim()
-cecdb19 ACPI / scan: Change the implementation of acpi_bus_trim()
-ae28179 ACPI / scan: Drop the second argument of acpi_bus_trim()
-b17b537 ACPI / scan: Drop the second argument of acpi_device_unregister()
-a412a11 ACPI / glue: Fix build with ACPI_GLUE_DEBUG set
-abe9921 ACPI / scan: Fix check of device_attach() return value.
-e92a79b ACPI thermal: remove unnecessary newline from exception message
-2b16c77 ACPI sysfs: remove unnecessary newline from exception
-f1f37cb ACPI video: remove unnecessary newline from error messages
-b43e106 ACPICA: Cleanup table handler naming conflicts.
-42f8fb7 ACPICA: Source restructuring: split large files into 8 new files.
+Regards
+Preeti U Murthy
 
-thanks,
--- 
-js
-suse labs
