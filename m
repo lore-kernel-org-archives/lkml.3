@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab3APFoB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 00:44:01 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52449 "EHLO
+	id S1754140Ab3APFoh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 00:44:37 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:48356 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753610Ab3APFn7 (ORCPT
+	by vger.kernel.org with ESMTP id S1751590Ab3APFn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 00:43:59 -0500
-X-Sasl-enc: jYYSiQkMuxo+RenjafUIIAR6S3htV7mL6QoKAnHr8euu 1358315038
+	Wed, 16 Jan 2013 00:43:58 -0500
+X-Sasl-enc: 59EFPOMyLxMag2HeAi6ixCc232QZ6BI5giuzkLd+ScoW 1358315037
 From: Alan Ott <alan@signal11.us>
 To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
@@ -15,9 +15,9 @@ To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
 Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tony Cheneau <tony.cheneau@amnesiak.org>,
         Eric Dumazet <eric.dumazet@gmail.com>, Alan Ott <alan@signal11.us>
-Subject: [PATCH 2/2] 6lowpan: Handle uncompressed IPv6 packets over 6LoWPAN
-Date: Wed, 16 Jan 2013 00:43:57 -0500
-Message-Id: <1358315037-10043-3-git-send-email-alan@signal11.us>
+Subject: [PATCH 1/2] 6lowpan: Refactor packet delivery into a function
+Date: Wed, 16 Jan 2013 00:43:56 -0500
+Message-Id: <1358315037-10043-2-git-send-email-alan@signal11.us>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1358315037-10043-1-git-send-email-alan@signal11.us>
 References: <1358315037-10043-1-git-send-email-alan@signal11.us>
@@ -25,69 +25,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handle the reception of uncompressed packets (dispatch type = IPv6).
+Refactor the handing of the skb's to the individual lowpan devices into a
+function.
 
 Signed-off-by: Alan Ott <alan@signal11.us>
 ---
- net/ieee802154/6lowpan.c | 41 ++++++++++++++++++++++++++++++++---------
- 1 file changed, 32 insertions(+), 9 deletions(-)
+ net/ieee802154/6lowpan.c | 38 ++++++++++++++++++++++++--------------
+ 1 file changed, 24 insertions(+), 14 deletions(-)
 
 diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index 1714cfa..43bd1c0 100644
+index f651da6..1714cfa 100644
 --- a/net/ieee802154/6lowpan.c
 +++ b/net/ieee802154/6lowpan.c
-@@ -1147,19 +1147,42 @@ static int lowpan_rcv(struct sk_buff *skb, struct net_device *dev,
- 		goto drop;
- 
- 	/* check that it's our buffer */
--	switch (skb->data[0] & 0xe0) {
--	case LOWPAN_DISPATCH_IPHC:	/* ipv6 datagram */
--	case LOWPAN_DISPATCH_FRAG1:	/* first fragment header */
--	case LOWPAN_DISPATCH_FRAGN:	/* next fragments headers */
--		local_skb = skb_clone(skb, GFP_ATOMIC);
-+	if (skb->data[0] == LOWPAN_DISPATCH_IPV6) {
-+		/* Copy the packet so that the IPv6 header is
-+		 * properly aligned.
-+		 */
-+		local_skb = skb_copy_expand(skb, NET_SKB_PAD - 1,
-+						skb_tailroom(skb), GFP_ATOMIC);
- 		if (!local_skb)
- 			goto drop;
--		lowpan_process_data(local_skb);
- 
-+		local_skb->protocol = htons(ETH_P_IPV6);
-+		local_skb->pkt_type = PACKET_HOST;
-+
-+		/* Pull off the 1-byte of 6lowpan header. */
-+		skb_pull(local_skb, 1);
-+		skb_reset_network_header(local_skb);
-+		skb_set_transport_header(local_skb, sizeof(struct ipv6hdr));
-+
-+		lowpan_give_skb_to_devices(local_skb);
-+
-+		kfree_skb(local_skb);
- 		kfree_skb(skb);
--		break;
--	default:
--		break;
-+	} else {
-+		switch (skb->data[0] & 0xe0) {
-+		case LOWPAN_DISPATCH_IPHC:	/* ipv6 datagram */
-+		case LOWPAN_DISPATCH_FRAG1:	/* first fragment header */
-+		case LOWPAN_DISPATCH_FRAGN:	/* next fragments headers */
-+			local_skb = skb_clone(skb, GFP_ATOMIC);
-+			if (!local_skb)
-+				goto drop;
-+			lowpan_process_data(local_skb);
-+
-+			kfree_skb(skb);
-+			break;
-+		default:
-+			break;
-+		}
+@@ -594,10 +594,32 @@ static int lowpan_header_create(struct sk_buff *skb,
  	}
+ }
  
- 	return NET_RX_SUCCESS;
++static int lowpan_give_skb_to_devices(struct sk_buff *skb)
++{
++	struct lowpan_dev_record *entry;
++	struct sk_buff *skb_cp;
++	int stat = NET_RX_SUCCESS;
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(entry, &lowpan_devices, list)
++		if (lowpan_dev_info(entry->ldev)->real_dev == skb->dev) {
++			skb_cp = skb_copy(skb, GFP_ATOMIC);
++			if (!skb_cp) {
++				stat = -ENOMEM;
++				break;
++			}
++
++			skb_cp->dev = entry->ldev;
++			stat = netif_rx(skb_cp);
++		}
++	rcu_read_unlock();
++
++	return stat;
++}
++
+ static int lowpan_skb_deliver(struct sk_buff *skb, struct ipv6hdr *hdr)
+ {
+ 	struct sk_buff *new;
+-	struct lowpan_dev_record *entry;
+ 	int stat = NET_RX_SUCCESS;
+ 
+ 	new = skb_copy_expand(skb, sizeof(struct ipv6hdr), skb_tailroom(skb),
+@@ -614,19 +636,7 @@ static int lowpan_skb_deliver(struct sk_buff *skb, struct ipv6hdr *hdr)
+ 	new->protocol = htons(ETH_P_IPV6);
+ 	new->pkt_type = PACKET_HOST;
+ 
+-	rcu_read_lock();
+-	list_for_each_entry_rcu(entry, &lowpan_devices, list)
+-		if (lowpan_dev_info(entry->ldev)->real_dev == new->dev) {
+-			skb = skb_copy(new, GFP_ATOMIC);
+-			if (!skb) {
+-				stat = -ENOMEM;
+-				break;
+-			}
+-
+-			skb->dev = entry->ldev;
+-			stat = netif_rx(skb);
+-		}
+-	rcu_read_unlock();
++	stat = lowpan_give_skb_to_devices(new);
+ 
+ 	kfree_skb(new);
+ 
 -- 
 1.7.11.2
 
