@@ -1,32 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab3APP6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:58:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35714 "EHLO
+	id S1756974Ab3APP6z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:58:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35727 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756838Ab3APP6l (ORCPT
+	with ESMTP id S1756951Ab3APP6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:58:41 -0500
+	Wed, 16 Jan 2013 10:58:52 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vinson Lee <vlee@twitter.com>, Zheng Liu <wenqing.lz@taobao.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: Julius Werner <jwerner@chromium.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 018/222] perf test: fix a build error on builtin-test
-Date: Wed, 16 Jan 2013 13:53:38 -0200
-Message-Id: <1358351822-7675-19-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 023/222] xhci: fix null-pointer dereference when destroying half-built segment rings
+Date: Wed, 16 Jan 2013 13:53:43 -0200
+Message-Id: <1358351822-7675-24-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,149 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zheng Liu <gnehzuil.liu@gmail.com>
+From: Julius Werner <jwerner@chromium.org>
 
-commit 12f8f74b2a4d26c4facfa7ef99487cf0930f6ef7 upstream.
+commit 68e5254adb88bede68285f11fb442a4d34fb550c upstream.
 
-Recently I build perf and get a build error on builtin-test.c. The error is as
-following:
+xhci_alloc_segments_for_ring() builds a list of xhci_segments and links
+the tail to head at the end (forming a ring). When it bails out for OOM
+reasons half-way through, it tries to destroy its half-built list with
+xhci_free_segments_for_ring(), even though it is not a ring yet. This
+causes a null-pointer dereference upon hitting the last element.
 
-$ make
-    CC perf.o
-    CC builtin-test.o
-cc1: warnings being treated as errors
-builtin-test.c: In function ‘sched__get_first_possible_cpu’:
-builtin-test.c:977: warning: implicit declaration of function ‘CPU_ALLOC’
-builtin-test.c:977: warning: nested extern declaration of ‘CPU_ALLOC’
-builtin-test.c:977: warning: assignment makes pointer from integer without a cast
-builtin-test.c:978: warning: implicit declaration of function ‘CPU_ALLOC_SIZE’
-builtin-test.c:978: warning: nested extern declaration of ‘CPU_ALLOC_SIZE’
-builtin-test.c:979: warning: implicit declaration of function ‘CPU_ZERO_S’
-builtin-test.c:979: warning: nested extern declaration of ‘CPU_ZERO_S’
-builtin-test.c:982: warning: implicit declaration of function ‘CPU_FREE’
-builtin-test.c:982: warning: nested extern declaration of ‘CPU_FREE’
-builtin-test.c:992: warning: implicit declaration of function ‘CPU_ISSET_S’
-builtin-test.c:992: warning: nested extern declaration of ‘CPU_ISSET_S’
-builtin-test.c:998: warning: implicit declaration of function ‘CPU_CLR_S’
-builtin-test.c:998: warning: nested extern declaration of ‘CPU_CLR_S’
-make: *** [builtin-test.o] Error 1
+Furthermore, one of its callers (xhci_ring_alloc()) mistakenly believes
+the output parameters to be valid upon this kind of OOM failure, and
+calls xhci_ring_free() on them. Since the (incomplete) list/ring should
+already be destroyed in that case, this would lead to a use after free.
 
-This problem is introduced in 3e7c439a. CPU_ALLOC and related macros are
-missing in sched__get_first_possible_cpu function. In 54489c18, commiter
-mentioned that CPU_ALLOC has been removed. So CPU_ALLOC calls in this
-function are removed to let perf to be built.
+This patch fixes those issues by having xhci_alloc_segments_for_ring()
+destroy its half-built, non-circular list manually and destroying the
+invalid struct xhci_ring in xhci_ring_alloc() with a plain kfree().
 
-Signed-off-by: Vinson Lee <vlee@twitter.com>
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Vinson Lee <vlee@twitter.com>
-Cc: Zheng Liu <wenqing.lz@taobao.com>
-Link: http://lkml.kernel.org/r/1352422726-31114-1-git-send-email-vlee@twitter.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-[ herton: builtin-test.c wasn't under tests subdirectory in 3.5 ]
+This patch should be backported to kernels as old as 2.6.31, that
+contains the commit 0ebbab37422315a5d0cb29792271085bafdf38c0 "USB: xhci:
+Ring allocation and initialization."
+
+A separate patch will need to be developed for kernels older than 3.4,
+since the ring allocation code was refactored in that kernel.
+
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- tools/perf/builtin-test.c |   38 ++++++++++++--------------------------
- 1 file changed, 12 insertions(+), 26 deletions(-)
+ drivers/usb/host/xhci-mem.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 5a8727c..a3595f0 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -604,19 +604,13 @@ out_free_threads:
- #undef nsyscalls
- }
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 487bc08..fb51c70 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -205,7 +205,12 @@ static int xhci_alloc_segments_for_ring(struct xhci_hcd *xhci,
  
--static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t **maskp,
--					 size_t *sizep)
-+static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t *maskp)
- {
--	cpu_set_t *mask;
--	size_t size;
- 	int i, cpu = -1, nrcpus = 1024;
- realloc:
--	mask = CPU_ALLOC(nrcpus);
--	size = CPU_ALLOC_SIZE(nrcpus);
--	CPU_ZERO_S(size, mask);
-+	CPU_ZERO(maskp);
- 
--	if (sched_getaffinity(pid, size, mask) == -1) {
--		CPU_FREE(mask);
-+	if (sched_getaffinity(pid, sizeof(*maskp), maskp) == -1) {
- 		if (errno == EINVAL && nrcpus < (1024 << 8)) {
- 			nrcpus = nrcpus << 2;
- 			goto realloc;
-@@ -626,19 +620,14 @@ realloc:
- 	}
- 
- 	for (i = 0; i < nrcpus; i++) {
--		if (CPU_ISSET_S(i, size, mask)) {
--			if (cpu == -1) {
-+		if (CPU_ISSET(i, maskp)) {
-+			if (cpu == -1)
- 				cpu = i;
--				*maskp = mask;
--				*sizep = size;
--			} else
--				CPU_CLR_S(i, size, mask);
-+			else
-+				CPU_CLR(i, maskp);
+ 		next = xhci_segment_alloc(xhci, cycle_state, flags);
+ 		if (!next) {
+-			xhci_free_segments_for_ring(xhci, *first);
++			prev = *first;
++			while (prev) {
++				next = prev->next;
++				xhci_segment_free(xhci, prev);
++				prev = next;
++			}
+ 			return -ENOMEM;
  		}
- 	}
+ 		xhci_link_segments(xhci, prev, next, type);
+@@ -258,7 +263,7 @@ static struct xhci_ring *xhci_ring_alloc(struct xhci_hcd *xhci,
+ 	return ring;
  
--	if (cpu == -1)
--		CPU_FREE(mask);
--
- 	return cpu;
+ fail:
+-	xhci_ring_free(xhci, ring);
++	kfree(ring);
+ 	return NULL;
  }
  
-@@ -653,8 +642,8 @@ static int test__PERF_RECORD(void)
- 		.freq	    = 10,
- 		.mmap_pages = 256,
- 	};
--	cpu_set_t *cpu_mask = NULL;
--	size_t cpu_mask_size = 0;
-+	cpu_set_t cpu_mask;
-+	size_t cpu_mask_size = sizeof(cpu_mask);
- 	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
- 	struct perf_evsel *evsel;
- 	struct perf_sample sample;
-@@ -718,8 +707,7 @@ static int test__PERF_RECORD(void)
- 	evsel->attr.sample_type |= PERF_SAMPLE_TIME;
- 	perf_evlist__config_attrs(evlist, &opts);
- 
--	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask,
--					    &cpu_mask_size);
-+	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask);
- 	if (err < 0) {
- 		pr_debug("sched__get_first_possible_cpu: %s\n", strerror(errno));
- 		goto out_delete_evlist;
-@@ -730,9 +718,9 @@ static int test__PERF_RECORD(void)
- 	/*
- 	 * So that we can check perf_sample.cpu on all the samples.
- 	 */
--	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, cpu_mask) < 0) {
-+	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, &cpu_mask) < 0) {
- 		pr_debug("sched_setaffinity: %s\n", strerror(errno));
--		goto out_free_cpu_mask;
-+		goto out_delete_evlist;
- 	}
- 
- 	/*
-@@ -925,8 +913,6 @@ found_exit:
- 	}
- out_err:
- 	perf_evlist__munmap(evlist);
--out_free_cpu_mask:
--	CPU_FREE(cpu_mask);
- out_delete_evlist:
- 	perf_evlist__delete(evlist);
- out:
 -- 
 1.7.9.5
 
