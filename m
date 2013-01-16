@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab3APQFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:05:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36291 "EHLO
+	id S932359Ab3APQFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:05:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36297 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758354Ab3APQFj (ORCPT
+	with ESMTP id S932341Ab3APQFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:05:39 -0500
+	Wed, 16 Jan 2013 11:05:44 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, Thomas Weber <thomas@tomweber.eu>,
-        Tony Lindgren <tony@atomide.com>,
+Cc: Dan Williams <dcbw@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 128/222] OMAP: board-files: fix i2c_bus for tfp410
-Date: Wed, 16 Jan 2013 13:55:28 -0200
-Message-Id: <1358351822-7675-129-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 129/222] i2400m: add Intel 6150 device IDs
+Date: Wed, 16 Jan 2013 13:55:29 -0200
+Message-Id: <1358351822-7675-130-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,130 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit ca2e16faa7378878c1522a7c1b6c38211de3331d upstream.
+commit 999a7c5776a0ed2133645fa7e008bec05bda9254 upstream.
 
-The i2c handling in tfp410 driver, which handles converting parallel RGB
-to DVI, was changed in 958f2717b84e88bf833d996997fda8f73276f2af
-(OMAPDSS: TFP410: pdata rewrite). The patch changed what value the
-driver considers as invalid/undefined.  Before the patch, 0 was the
-invalid value, but as 0 is a valid bus number, the patch changed this to
--1.
+Add device IDs for WiMAX function of Intel 6150 cards.
 
-However, the fact was missed that many board files do not define the bus
-number at all, thus it's left to 0. This causes the driver to fail to
-get the i2c bus, exiting from the driver's probe with an error, meaning
-that the DVI output does not work for those boards.
-
-This patch fixes the issue by changing the i2c_bus number field in the
-driver's platform data from u16 to int, and setting the bus number to -1
-in the board files for the boards that did not define the bus. The
-exception is devkit8000, for which the bus is set to 1, which is the
-correct bus for that board.
-
-The bug exists in v3.5+ kernels.
-
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Reported-by: Thomas Weber <thomas@tomweber.eu>
-Cc: Thomas Weber <thomas@tomweber.eu>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/arm/mach-omap2/board-3430sdp.c      |    1 +
- arch/arm/mach-omap2/board-am3517evm.c    |    1 +
- arch/arm/mach-omap2/board-cm-t35.c       |    1 +
- arch/arm/mach-omap2/board-devkit8000.c   |    1 +
- arch/arm/mach-omap2/board-omap3evm.c     |    1 +
- arch/arm/mach-omap2/board-omap3stalker.c |    1 +
- include/video/omap-panel-tfp410.h        |    2 +-
- 7 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/net/wimax/i2400m/i2400m-usb.h |    3 +++
+ drivers/net/wimax/i2400m/usb.c        |    6 ++++++
+ 2 files changed, 9 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
-index a98c688..456fdbc 100644
---- a/arch/arm/mach-omap2/board-3430sdp.c
-+++ b/arch/arm/mach-omap2/board-3430sdp.c
-@@ -159,6 +159,7 @@ static struct omap_dss_device sdp3430_lcd_device = {
- 
- static struct tfp410_platform_data dvi_panel = {
- 	.power_down_gpio	= -1,
-+	.i2c_bus_num		= -1,
+diff --git a/drivers/net/wimax/i2400m/i2400m-usb.h b/drivers/net/wimax/i2400m/i2400m-usb.h
+index 6650fde..9f1e947 100644
+--- a/drivers/net/wimax/i2400m/i2400m-usb.h
++++ b/drivers/net/wimax/i2400m/i2400m-usb.h
+@@ -152,6 +152,9 @@ enum {
+ 	/* Device IDs */
+ 	USB_DEVICE_ID_I6050 = 0x0186,
+ 	USB_DEVICE_ID_I6050_2 = 0x0188,
++	USB_DEVICE_ID_I6150 = 0x07d6,
++	USB_DEVICE_ID_I6150_2 = 0x07d7,
++	USB_DEVICE_ID_I6150_3 = 0x07d9,
+ 	USB_DEVICE_ID_I6250 = 0x0187,
  };
  
- static struct omap_dss_device sdp3430_dvi_device = {
-diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
-index 18f6010..919dd66 100644
---- a/arch/arm/mach-omap2/board-am3517evm.c
-+++ b/arch/arm/mach-omap2/board-am3517evm.c
-@@ -209,6 +209,7 @@ static struct omap_dss_device am3517_evm_tv_device = {
- 
- static struct tfp410_platform_data dvi_panel = {
- 	.power_down_gpio	= -1,
-+	.i2c_bus_num		= -1,
- };
- 
- static struct omap_dss_device am3517_evm_dvi_device = {
-diff --git a/arch/arm/mach-omap2/board-cm-t35.c b/arch/arm/mach-omap2/board-cm-t35.c
-index ded100c..7e4cbda 100644
---- a/arch/arm/mach-omap2/board-cm-t35.c
-+++ b/arch/arm/mach-omap2/board-cm-t35.c
-@@ -243,6 +243,7 @@ static struct omap_dss_device cm_t35_lcd_device = {
- 
- static struct tfp410_platform_data dvi_panel = {
- 	.power_down_gpio	= CM_T35_DVI_EN_GPIO,
-+	.i2c_bus_num		= -1,
- };
- 
- static struct omap_dss_device cm_t35_dvi_device = {
-diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
-index 6567c1c..024b115 100644
---- a/arch/arm/mach-omap2/board-devkit8000.c
-+++ b/arch/arm/mach-omap2/board-devkit8000.c
-@@ -143,6 +143,7 @@ static struct omap_dss_device devkit8000_lcd_device = {
- 
- static struct tfp410_platform_data dvi_panel = {
- 	.power_down_gpio	= -1,
-+	.i2c_bus_num		= 1,
- };
- 
- static struct omap_dss_device devkit8000_dvi_device = {
-diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
-index 639bd07..dcae228 100644
---- a/arch/arm/mach-omap2/board-omap3evm.c
-+++ b/arch/arm/mach-omap2/board-omap3evm.c
-@@ -221,6 +221,7 @@ static struct omap_dss_device omap3_evm_tv_device = {
- 
- static struct tfp410_platform_data dvi_panel = {
- 	.power_down_gpio	= OMAP3EVM_DVI_PANEL_EN_GPIO,
-+	.i2c_bus_num		= -1,
- };
- 
- static struct omap_dss_device omap3_evm_dvi_device = {
-diff --git a/arch/arm/mach-omap2/board-omap3stalker.c b/arch/arm/mach-omap2/board-omap3stalker.c
-index b318f56..5387db6 100644
---- a/arch/arm/mach-omap2/board-omap3stalker.c
-+++ b/arch/arm/mach-omap2/board-omap3stalker.c
-@@ -121,6 +121,7 @@ static struct omap_dss_device omap3_stalker_tv_device = {
- 
- static struct tfp410_platform_data dvi_panel = {
- 	.power_down_gpio	= DSS_ENABLE_GPIO,
-+	.i2c_bus_num		= -1,
- };
- 
- static struct omap_dss_device omap3_stalker_dvi_device = {
-diff --git a/include/video/omap-panel-tfp410.h b/include/video/omap-panel-tfp410.h
-index 68c31d7..aef35e4 100644
---- a/include/video/omap-panel-tfp410.h
-+++ b/include/video/omap-panel-tfp410.h
-@@ -28,7 +28,7 @@ struct omap_dss_device;
-  * @power_down_gpio: gpio number for PD pin (or -1 if not available)
-  */
- struct tfp410_platform_data {
--	u16 i2c_bus_num;
-+	int i2c_bus_num;
- 	int power_down_gpio;
- };
- 
+diff --git a/drivers/net/wimax/i2400m/usb.c b/drivers/net/wimax/i2400m/usb.c
+index 713d033..080f363 100644
+--- a/drivers/net/wimax/i2400m/usb.c
++++ b/drivers/net/wimax/i2400m/usb.c
+@@ -510,6 +510,9 @@ int i2400mu_probe(struct usb_interface *iface,
+ 	switch (id->idProduct) {
+ 	case USB_DEVICE_ID_I6050:
+ 	case USB_DEVICE_ID_I6050_2:
++	case USB_DEVICE_ID_I6150:
++	case USB_DEVICE_ID_I6150_2:
++	case USB_DEVICE_ID_I6150_3:
+ 	case USB_DEVICE_ID_I6250:
+ 		i2400mu->i6050 = 1;
+ 		break;
+@@ -759,6 +762,9 @@ static
+ struct usb_device_id i2400mu_id_table[] = {
+ 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050) },
+ 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050_2) },
++	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150) },
++	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_2) },
++	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_3) },
+ 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6250) },
+ 	{ USB_DEVICE(0x8086, 0x0181) },
+ 	{ USB_DEVICE(0x8086, 0x1403) },
 -- 
 1.7.9.5
 
