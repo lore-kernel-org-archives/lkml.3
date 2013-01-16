@@ -1,123 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758169Ab3APDze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 22:55:34 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:7030 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756483Ab3APDzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 22:55:32 -0500
-X-IronPort-AV: E=Sophos;i="4.84,476,1355068800"; 
-   d="scan'208";a="6595715"
-Message-ID: <50F624BA.20208@cn.fujitsu.com>
-Date: Wed, 16 Jan 2013 11:55:38 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1758011Ab3APEBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 23:01:18 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:54177 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756664Ab3APEBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 23:01:17 -0500
+Date: Tue, 15 Jan 2013 23:01:15 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Tejun Heo <tj@kernel.org>
+cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Jens Axboe <axboe@kernel.dk>, USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: USB device cannot be reconnected and khubd "blocked for more
+ than 120 seconds"
+In-Reply-To: <20130116003530.GK2668@htj.dyndns.org>
+Message-ID: <Pine.LNX.4.44L0.1301152253070.26877-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: virtualization@lists.linux-foundation.org,
-        Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, hutao@cn.fujitsu.com, linux-scsi@vger.kernel.org,
-        mst@redhat.com, asias@redhat.com, stefanha@redhat.com,
-        nab@linux-iscsi.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH 2/2] virtio-scsi: reset virtqueue affinity when doing
- cpu hotplug
-References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <50F525E3.1000100@cn.fujitsu.com> <50F52677.80100@cn.fujitsu.com> <871udlztui.fsf@rustcorp.com.au>
-In-Reply-To: <871udlztui.fsf@rustcorp.com.au>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/16 11:54:45,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/16 11:54:45,
-	Serialize complete at 2013/01/16 11:54:45
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 11:31 AM, Rusty Russell wrote:
-> Wanlong Gao <gaowanlong@cn.fujitsu.com> writes:
->> Add hot cpu notifier to reset the request virtqueue affinity
->> when doing cpu hotplug.
-> 
-> You need to be careful to get_online_cpus() and put_online_cpus() here,
-> so CPUs can't go up and down in the middle of operations.
-> 
-> In particular, get_online_cpus()/put_online_cpus() around calls to
-> virtscsi_set_affinity() (except within notifiers).
+On Tue, 15 Jan 2013, Tejun Heo wrote:
 
-Yes, I'll take care of this, thank you.
+> Hello, Arjan.
+> 
+> On Tue, Jan 15, 2013 at 04:25:54PM -0800, Arjan van de Ven wrote:
+> > async fundamentally had the concept of a monotonic increasing number,
+> > and that you could always wait for "everyone before me".
+> > then people (like me) wanted exceptions to what "everyone" means ;-(
+> > I'm ok with going back to a single space and simplify the world.
+> 
+> If we want (or need) finer grained operation, we'll probably have to
+> head the other direction, so that we can definitively tell that an
+> async operation belongs to domains system, module load A and B, so
+> that each waiter knows what to wait for.
+> 
+> The current domain implementation is somewhere inbetween.  It's not
+> completely simplistic system and at the same time not developed enough
+> to do properly stacked flushing.
 
-> 
->> +static int virtscsi_cpu_callback(struct notifier_block *nfb,
->> +				 unsigned long action, void *hcpu)
->> +{
->> +	struct virtio_scsi *vscsi = container_of(nfb, struct virtio_scsi, nb);
->> +	switch(action) {
->> +	case CPU_ONLINE:
->> +	case CPU_ONLINE_FROZEN:
->> +	case CPU_DEAD:
->> +	case CPU_DEAD_FROZEN:
->> +		virtscsi_set_affinity(vscsi, true);
->> +		break;
->> +	default:
->> +		break;
->> +	}
->> +	return NOTIFY_OK;
->> +}
-> 
-> You probably want to remove affinities *before* the CPU goes down, and
-> restore it after the CPU comes up.
-> 
-> So, how about:
-> 
->         switch (action & ~CPU_TASKS_FROZEN) {
->         case CPU_ONLINE:
->         case CPU_DOWN_FAILED:
->                 virtscsi_set_affinity(vscsi, true, -1);
->                 break;
->         case CPU_DOWN_PREPARE:
->                 virtscsi_set_affinity(vscsi, true, (unsigned long)hcpu);
->                 break;
->         }
-> 
-> The extra argument to virtscsi_set_affinity() is to tell it to ignore a
-> cpu which seems online (because it's going down).
+I like your idea of chronological synchronization: Insist that anybody
+who wants to flush async jobs must get a cookie, and then only allow
+them to wait for async jobs started after the cookie was issued.
 
-OK, thank you very much for teaching this.
+I don't know if this is possible with the current implementation.  It 
+would require changing every call to async_synchronize_*(), and in a 
+nontrivial way.  But it might provide a proper solution to all these 
+problems.
 
-> 
->>  static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
->>  			     struct virtqueue *vq)
->>  {
->> @@ -888,6 +909,13 @@ static int __devinit virtscsi_probe(struct virtio_device *vdev)
->>  	if (err)
->>  		goto virtscsi_init_failed;
->>  
->> +	vscsi->nb.notifier_call = &virtscsi_cpu_callback;
->> +	err = register_hotcpu_notifier(&vscsi->nb);
->> +	if (err) {
->> +		pr_err("virtio_scsi: registering cpu notifier failed\n");
->> +		goto scsi_add_host_failed;
->> +	}
->> +
-> 
-> You have to clean this up if scsi_add_host() fails, I think.
+Can you think of any reasons why it wouldn't work in principle?  It 
+would prevent code from doing "wait until all currently-running async 
+jobs have finished" -- but arguably, nobody should be allowed to do 
+that anyway.
 
-Yeah, will do, thank you very much. 
+Alan Stern
 
-
-Regards,
-Wanlong Gao
-
-> 
-> Cheers,
-> Rusty.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
