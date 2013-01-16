@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab3APQHr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:07:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36580 "EHLO
+	id S932462Ab3APQHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:07:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36465 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932465Ab3APQHp (ORCPT
+	with ESMTP id S1758556Ab3APQHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:07:45 -0500
+	Wed, 16 Jan 2013 11:07:41 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Malcolm Priestley <tvboxspy@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 160/222] staging: vt6656: 64 bit fixes : correct all type sizes
-Date: Wed, 16 Jan 2013 13:56:00 -0200
-Message-Id: <1358351822-7675-161-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 159/222] staging: vt6656: 64 bit fixes: use u32 for QWORD definition.
+Date: Wed, 16 Jan 2013 13:55:59 -0200
+Message-Id: <1358351822-7675-160-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -30,45 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 7730492855a2f9c828599bcd8d62760f96d319e4 upstream.
+commit a552397d5e4ef0cc0bd3e9595d6acc9a3b381171 upstream.
 
-After this patch all BYTE/WORD/DWORD types can be replaced with the appropriate u sizes.
+Size of long issues replace with u32.
 
 Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/staging/vt6656/ttype.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/staging/vt6656/ttype.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/staging/vt6656/ttype.h b/drivers/staging/vt6656/ttype.h
-index 0f70562c..dfbf747 100644
+index 8e9450e..0f70562c 100644
 --- a/drivers/staging/vt6656/ttype.h
 +++ b/drivers/staging/vt6656/ttype.h
-@@ -44,9 +44,9 @@ typedef int             BOOL;
+@@ -29,6 +29,8 @@
+ #ifndef __TTYPE_H__
+ #define __TTYPE_H__
  
- /****** Simple typedefs  ***************************************************/
++#include <linux/types.h>
++
+ /******* Common definitions and typedefs ***********************************/
  
--typedef unsigned char   BYTE;           //  8-bit
--typedef unsigned short  WORD;           // 16-bit
--typedef unsigned long   DWORD;          // 32-bit
-+typedef u8 BYTE;
-+typedef u16 WORD;
-+typedef u32 DWORD;
- 
- // QWORD is for those situation that we want
- // an 8-byte-aligned 8 byte long structure
-@@ -62,8 +62,8 @@ typedef UQuadWord       QWORD;          // 64-bit
- 
- /****** Common pointer types ***********************************************/
- 
--typedef unsigned long   ULONG_PTR;      // 32-bit
--typedef unsigned long   DWORD_PTR;      // 32-bit
-+typedef u32 ULONG_PTR;
-+typedef u32 DWORD_PTR;
- 
- // boolean pointer
- 
+ typedef int             BOOL;
+@@ -51,8 +53,8 @@ typedef unsigned long   DWORD;          // 32-bit
+ // which is NOT really a floating point number.
+ typedef union tagUQuadWord {
+     struct {
+-        DWORD   dwLowDword;
+-        DWORD   dwHighDword;
++	u32 dwLowDword;
++	u32 dwHighDword;
+     } u;
+     double      DoNotUseThisField;
+ } UQuadWord;
 -- 
 1.7.9.5
 
