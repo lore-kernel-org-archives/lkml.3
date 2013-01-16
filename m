@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757499Ab3APQA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:00:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35895 "EHLO
+	id S1757537Ab3APQBE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:01:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35902 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757201Ab3APQA4 (ORCPT
+	with ESMTP id S1757513Ab3APQBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:00:56 -0500
+	Wed, 16 Jan 2013 11:01:01 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell Webb <russell.webb@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Mikael Pettersson <mikpe@it.uu.se>, Jeff Garzik <jgarzik@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 055/222] xhci: Add Lynx Point LP to list of Intel switchable hosts
-Date: Wed, 16 Jan 2013 13:54:15 -0200
-Message-Id: <1358351822-7675-56-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 054/222] sata_promise: fix hardreset lockdep error
+Date: Wed, 16 Jan 2013 13:54:14 -0200
+Message-Id: <1358351822-7675-55-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,61 +27,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell Webb <russell.webb@linux.intel.com>
+From: Mikael Pettersson <mikpe@it.uu.se>
 
-commit bb1e5dd7113d2fd178d3af9aca8f480ae0468edf upstream.
+commit 3100d49d3cd236443faae9d81137c81b22d36003 upstream.
 
-Like Lynx Point, Lynx Point LP is also switchable.  See
-1c12443ab8eba71a658fae4572147e56d1f84f66 for more details.
+sata_promise's pdc_hard_reset_port() needs to serialize because it
+flips a port-specific bit in controller register that's shared by
+all ports. The code takes the ata host lock for this, but that's
+broken because an interrupt may arrive on our irq during the hard
+reset sequence, and that too will take the ata host lock. With
+lockdep enabled a big nasty warning is seen.
 
-This patch should be backported to stable kernels as old as 3.0,
-that contain commit 69e848c2090aebba5698a1620604c7dccb448684
-"Intel xhci: Support EHCI/xHCI port switching."
+Fixed by adding private state to the ata host structure, containing
+a second lock used only for serializing the hard reset sequences.
+This eliminated the lockdep warnings both on my test rig and on
+the original reporter's machine.
 
-Signed-off-by: Russell Webb <russell.webb@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
+Tested-by: Adko Branil <adkobranil@yahoo.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/host/ehci-pci.c   |    3 ++-
- drivers/usb/host/pci-quirks.c |    4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/ata/sata_promise.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
-index 1234817..0909783 100644
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -362,7 +362,8 @@ static bool usb_is_intel_switchable_ehci(struct pci_dev *pdev)
- 		pdev->vendor == PCI_VENDOR_ID_INTEL &&
- 		(pdev->device == 0x1E26 ||
- 		 pdev->device == 0x8C2D ||
--		 pdev->device == 0x8C26);
-+		 pdev->device == 0x8C26 ||
-+		 pdev->device == 0x9C26);
+diff --git a/drivers/ata/sata_promise.c b/drivers/ata/sata_promise.c
+index 000fcc9..ef6e328 100644
+--- a/drivers/ata/sata_promise.c
++++ b/drivers/ata/sata_promise.c
+@@ -147,6 +147,10 @@ struct pdc_port_priv {
+ 	dma_addr_t		pkt_dma;
+ };
+ 
++struct pdc_host_priv {
++	spinlock_t hard_reset_lock;
++};
++
+ static int pdc_sata_scr_read(struct ata_link *link, unsigned int sc_reg, u32 *val);
+ static int pdc_sata_scr_write(struct ata_link *link, unsigned int sc_reg, u32 val);
+ static int pdc_ata_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
+@@ -801,9 +805,10 @@ static void pdc_hard_reset_port(struct ata_port *ap)
+ 	void __iomem *host_mmio = ap->host->iomap[PDC_MMIO_BAR];
+ 	void __iomem *pcictl_b1_mmio = host_mmio + PDC_PCI_CTL + 1;
+ 	unsigned int ata_no = pdc_ata_port_to_ata_no(ap);
++	struct pdc_host_priv *hpriv = ap->host->private_data;
+ 	u8 tmp;
+ 
+-	spin_lock(&ap->host->lock);
++	spin_lock(&hpriv->hard_reset_lock);
+ 
+ 	tmp = readb(pcictl_b1_mmio);
+ 	tmp &= ~(0x10 << ata_no);
+@@ -814,7 +819,7 @@ static void pdc_hard_reset_port(struct ata_port *ap)
+ 	writeb(tmp, pcictl_b1_mmio);
+ 	readb(pcictl_b1_mmio); /* flush */
+ 
+-	spin_unlock(&ap->host->lock);
++	spin_unlock(&hpriv->hard_reset_lock);
  }
  
- static void ehci_enable_xhci_companion(void)
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 39f9e4a..eb5563a 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -723,6 +723,7 @@ static int handshake(void __iomem *ptr, u32 mask, u32 done,
- }
+ static int pdc_sata_hardreset(struct ata_link *link, unsigned int *class,
+@@ -1182,6 +1187,7 @@ static int pdc_ata_init_one(struct pci_dev *pdev,
+ 	const struct ata_port_info *pi = &pdc_port_info[ent->driver_data];
+ 	const struct ata_port_info *ppi[PDC_MAX_PORTS];
+ 	struct ata_host *host;
++	struct pdc_host_priv *hpriv;
+ 	void __iomem *host_mmio;
+ 	int n_ports, i, rc;
+ 	int is_sataii_tx4;
+@@ -1218,6 +1224,11 @@ static int pdc_ata_init_one(struct pci_dev *pdev,
+ 		dev_err(&pdev->dev, "failed to allocate host\n");
+ 		return -ENOMEM;
+ 	}
++	hpriv = devm_kzalloc(&pdev->dev, sizeof *hpriv, GFP_KERNEL);
++	if (!hpriv)
++		return -ENOMEM;
++	spin_lock_init(&hpriv->hard_reset_lock);
++	host->private_data = hpriv;
+ 	host->iomap = pcim_iomap_table(pdev);
  
- #define PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI	0x8C31
-+#define PCI_DEVICE_ID_INTEL_LYNX_POINT_LP_XHCI	0x9C31
- 
- bool usb_is_intel_ppt_switchable_xhci(struct pci_dev *pdev)
- {
-@@ -736,7 +737,8 @@ bool usb_is_intel_lpt_switchable_xhci(struct pci_dev *pdev)
- {
- 	return pdev->class == PCI_CLASS_SERIAL_USB_XHCI &&
- 		pdev->vendor == PCI_VENDOR_ID_INTEL &&
--		pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI;
-+		(pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI ||
-+		 pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_LP_XHCI);
- }
- 
- bool usb_is_intel_switchable_xhci(struct pci_dev *pdev)
+ 	is_sataii_tx4 = pdc_is_sataii_tx4(pi->flags);
 -- 
 1.7.9.5
 
