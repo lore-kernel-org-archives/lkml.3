@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab3APJKK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 04:10:10 -0500
-Received: from re04.intra2net.com ([82.165.46.26]:55222 "EHLO
-	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226Ab3APJKC convert rfc822-to-8bit (ORCPT
+	id S932453Ab3APJKZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 04:10:25 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:39070 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932403Ab3APJKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 04:10:02 -0500
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Re: [perf PATCH] Use pclose() instead of fclose() on pipe stream
-Date: Wed, 16 Jan 2013 10:09:48 +0100
-Message-ID: <1798138.DOH3quA1zP@storm>
-Organization: Intra2net AG
-User-Agent: KMail/4.9.5 (Linux/3.6.10-2.fc17.x86_64; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130111041603.GB3054@ghostprotocols.net>
-References: <50D9CDFC.3010101@intra2net.com> <20130111041603.GB3054@ghostprotocols.net>
+	Wed, 16 Jan 2013 04:10:13 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130115141102.9a7d93cf4ea74c759ff9e9d5@canb.auug.org.au>
+References: <CA+icZUW1+BzWCfGkbBiekKO8b6KiyAiyXWAHFmVUey2dHnSTzw@mail.gmail.com>
+	<50F454C2.6000509@kernel.dk>
+	<CA+icZUX_uKSzvdhd4tMtgb+vUxqC=fS7tfSHhs29+xD_XQQjBQ@mail.gmail.com>
+	<CA+icZUV_dz2Bvu6o=YRFu6324ccVr1MaOEpRcw0rguppR5rQQg@mail.gmail.com>
+	<20130115141102.9a7d93cf4ea74c759ff9e9d5@canb.auug.org.au>
+Date: Wed, 16 Jan 2013 10:10:12 +0100
+Message-ID: <CA+icZUV2ChWTudqBL=UdrQXu2e01LZSn7_-MYZuYbPzX0ekvsg@mail.gmail.com>
+Subject: Re: [next-20130114] Call-trace in LTP (lite) madvise02 test
+ (block|mm|vfs related?)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-next <linux-next@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Roland McGrath <roland@hack.frob.com>, Hugh Dickins <hughd@google.com>,
+        Andy Lutomirski <luto@amacapital.net>, Shaohua Li <shli@fusionio.com>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On Tue, Jan 15, 2013 at 4:11 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> On Mon, 14 Jan 2013 22:09:18 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>
+>> Looks like this is the fix from Sasha [1].
+>> Culprit commit is [2].
+>> Testing...
+>>
+>> - Sedat -
+>>
+>> [1] https://patchwork.kernel.org/patch/1973481/
+>
+> OK, I added this patch ("mm: fix BUG on madvise early failure") to the
+> copy of the akpm tree in linux-next today.
+>
 
-On Friday, 11. January 2013 01:16:03 you wrote:
-> > Also fix descriptor leak on error
-> > 
-> > Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-> > ---
-> > 
-> >  tools/perf/util/sort.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> After applying this:
-> 
->     CC /home/acme/git/build/perf/util/cpumap.o
-> cc1: warnings being treated as errors
-> util/sort.c: In function ‘hist_entry__srcline_snprintf’:
-> util/sort.c:254: error: ‘fp’ may be used uninitialized in this function
-> make: *** [/home/acme/git/build/perf/util/sort.o] Error 1
+Thanks for applying the patch!
 
-Alright, looks like I've messed up the "early" error path.
-The "FILE *fp" pointer needs to be initialized to NULL.
+Can you add my Tested-by (see [1]), thanks!
+( I compiled 8 (in words eight) Linux-Next kernels to catch all
+regressions and setup my desired kernel-config options. )
 
-Should I send another patch or do you want to fix it on the fly?
+$ uname -r
+3.8.0-rc3-next20130114-8-iniza-generic
 
-What about the other patch
-"[perf PATCH] Fix possible (unlikely) buffer overflow"
+$ cat /proc/version
+Linux version 3.8.0-rc3-next20130114-8-iniza-generic
+(sedat.dilek@gmail.com@fambox) (gcc version 4.6.3 (Ubuntu/Linaro
+4.6.3-1ubuntu5) ) #1 SMP Tue Jan 15 10:05:32 CET 2013
 
-?
+And YES, I am running that kernel(s) in my daily working environment.
+My -8 kernel run successfully all LTP-lite tests...
+...which is a good orientation for a localmodconfig-ed kernel (minimal
+setup) but does not mean this release has no other bugs which I did
+not hit in my environment.
 
-Cheers,
-Thomas
+- Sedat -
 
+[1] http://marc.info/?l=linux-mm&m=135819894617603&w=2
+
+>> [2] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=0d18d770b9180ffc2c3f63b9eb8406ef80105e05
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
