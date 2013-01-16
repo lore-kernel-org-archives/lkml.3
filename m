@@ -1,166 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758859Ab3APKS7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:18:59 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:54034 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758251Ab3APKS4 (ORCPT
+	id S1758920Ab3APKZH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:25:07 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63558 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758706Ab3APKZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:18:56 -0500
-Date: Wed, 16 Jan 2013 11:18:22 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
-Message-ID: <20130116101822.GA17706@avionic-0098.adnet.avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <20130109231758.GA27065@obsidianresearch.com>
- <20130110071937.GG15212@avionic-0098.adnet.avionic-design.de>
- <201301100917.19577.arnd@arndb.de>
- <20130110102544.GA5546@avionic-0098.adnet.avionic-design.de>
- <20130110182007.GA28004@obsidianresearch.com>
- <20130110185505.GA22944@avionic-0098.adnet.avionic-design.de>
- <20130110190327.GA23110@avionic-0098.adnet.avionic-design.de>
- <20130110192417.GA18478@obsidianresearch.com>
+	Wed, 16 Jan 2013 05:25:05 -0500
+X-AuditID: 9c930179-b7b54ae000000e44-85-50f67ffef842
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 08/13] perf gtk/browser: Add support for event group view
+References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
+	<1358235117-12803-9-git-send-email-namhyung@kernel.org>
+	<20130115183405.GD5826@ghostprotocols.net>
+Date: Wed, 16 Jan 2013 19:25:02 +0900
+In-Reply-To: <20130115183405.GD5826@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Tue, 15 Jan 2013 15:34:05 -0300")
+Message-ID: <87a9s9mnlt.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
-Content-Disposition: inline
-In-Reply-To: <20130110192417.GA18478@obsidianresearch.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:vJviqzrfEGgbNFM2eTO8KwiZSKtTzBnqH7qJDoL7p79
- o0GPK+V5NHKmmCO0rBWo33cNtKJZrs3g32no9AyrOHP+AXLk1r
- vL4JdnglvDHEUgIwqkLFgsxkceJQaEKeNN8k+oxbBDyDhgWQIh
- 7w9mayCqfViuE+y/8nsMVL7ZHmrrbUtlTSM+YOYe4Suq0l7LMH
- 5j+Nw+P9peXWOb4kcB3RMN7TqePrx24Fw9vXUDdi2GnBHsxfuY
- yHDhson+H56L0ThNUze3UmLtkNEpa5yvWgbq31s4mfEgA47LOg
- tebfGgKy9xtmq2jQqmZg7QsWasTfLpVlMS5TnUfX93tXb1l6g9
- Zx8GhJ24FDQtYaH74KPy46KY10jg1XDku95VckLPZROzBgwRbu
- DZ0jqh95HXayoe5lBidZaFmVGez8WVU8I5HV7ZWKJAnV1ThNN1
- 35iAo
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 15 Jan 2013 15:34:05 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Jan 15, 2013 at 04:31:52PM +0900, Namhyung Kim escreveu:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> Show group members' overhead also when showing the leader's if event
+>> group is enabled.  Use macro for defining hpp functions which looks
+>> almost identical.
+>> 
+>> Unlike other hpp backend, GTK+ needs to print dummy 0.00% output since
+>> it's displayed with variable width fonts.  So that simply skipping
+>> with %*s trick won't work well here.
+>
+> I'm illiterate on GTK+ internals, but I kinda expected that it could
+> provide a way to avoid such things, i.e. a way to position the cursor
+> in such circumstance without having to actually print the '0.00%' :-\
 
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I also don't understand the internals so I just guess that it might
+(only?) be acheived by adding new columns for each group members.
 
-On Thu, Jan 10, 2013 at 12:24:17PM -0700, Jason Gunthorpe wrote:
-> On Thu, Jan 10, 2013 at 08:03:27PM +0100, Thierry Reding wrote:
->=20
-> > > > You'd piece a mapping together, each bus requires 16 64k mappings, a
-> > > > simple 2d array of busnr*16 of pointers would do the trick. A more
-> > > > clever solution would be to allocate contiguous virtual memory and
-> > > > split that up..
-> =20
-> > > Oh, I see. I'm not very familiar with the internals of remapping, so
-> > > I'll need to do some more reading. Thanks for the hints.
-> >=20
-> > I forgot to ask. What's the advantage of having a contiguous virtual
-> > memory area and splitting it up versus remapping each chunk separately?
->=20
-> Not alot, really, but it saves you from the pointer array and
-> associated overhead. IIRC it is fairly easy to do in the kernel.
->=20
-> Arnd's version is good too, but you would be restricted to aligned
-> powers of two for the bus number range in the DT, which is probably
-> not that big a deal either?
+Of course I'm fine with this way too, but one thing I'm not sure is how
+the column header look like.  Currently "Overhead" is displayed on the
+header for period of every group members - say, there's a group consists
+of two events: {branches,branch-misses}.  It'd look like:
 
-I've been trying to make this work, but this implementation always
-triggers a BUG_ON() in lib/ioremap.c, line 27:
+        Overhead  Command  Shared Object   Symbol
+  ..............  .......  .............  .......
+  98.32%  31.16%    a.out          a.out  [.] foo
 
-	27 		BUG_ON(!pte_none(*pte));
 
-which seems to indicate that the page is already mapped, right?
+Maybe we can use simple event name for this, but it seems it makes to
+hard to recognize which one is which if other output options like
+--show-total-period, --showcpuutilization and/or --show-nr-samples.
 
-Below is the relevant code:
+Adding current header name to event name will fix the problem but it
+probably occupies too much screen width especially for long named
+tracepoint or PMU-specific events like
+"compaction:mm_compaction_isolate_migratepages".
 
-struct tegra_pcie_bus {
-	struct vm_struct *area;
-	struct list_head list;
-	unsigned int nr;
-};
+  Overhead/branches  Overhead/branch-misses  sys/branches  sys/branch-misses  usr/branches  usr/branch-misses  Command  Shared Object   Symbol
+  .................  ......................  ............  .................  ............  .................  .......  .............  .......
+             98.32%                  31.16%         0.00%              0.00%        98.32%             31.16%    a.out          a.out  [.] foo
 
-static struct tegra_pcie_bus *tegra_pcie_bus_alloc(struct tegra_pcie *pcie,
-						   unsigned int busnr)
-{
-	unsigned long flags =3D VM_READ | VM_WRITE | VM_IO | VM_PFNMAP |
-			      VM_DONTEXPAND | VM_DONTDUMP;
-	phys_addr_t cs =3D pcie->cs->start;
-	struct tegra_pcie_bus *bus;
-	struct vm_struct *vm;
-	unsigned int i;
-	int err;
 
-	bus =3D devm_kzalloc(pcie->dev, sizeof(*bus), GFP_KERNEL);
-	if (!bus)
-		return ERR_PTR(-ENOMEM);
+If you have a better idea or other way to place the cursor without
+printing bogus 0.00% on GTK, please let me know.
 
-	INIT_LIST_HEAD(&bus->list);
-	bus->nr =3D busnr;
-
-	bus->area =3D get_vm_area(SZ_1M, VM_IOREMAP);
-	if (!bus->area) {
-		err =3D -ENOMEM;
-		goto free;
-	}
-
-	for (i =3D 0; i < 16; i++) {
-		unsigned long virt =3D (unsigned long)bus->area->addr +
-				     i * SZ_64K;
-		phys_addr_t phys =3D cs + busnr * SZ_64K + i * SZ_1M;
-
-		err =3D ioremap_page_range(virt, virt + SZ_64K - 1, phys,
-					 vm_get_page_prot(flags));
-		if (err < 0) {
-			dev_err(pcie->dev, "ioremap_page_range() failed: %d\n",
-				err);
-			goto unmap;
-		}
-	}
-
-	return bus;
-
-unmap:
-	vunmap(bus->area->addr);
-	free_vm_area(bus->area);
-free:
-	devm_kfree(pcie->dev, bus);
-	return ERR_PTR(err);
-}
-
-Anybody see what's wrong with that?
-
---82I3+IH0IqGh5yIs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ9n5tAAoJEN0jrNd/PrOhUlQP/RUVN/UfOSvzFvZTgmNnopVr
-uBS3wbP1GjJT+aMYih9UQyZMuyKfuiZrivc3pdcADdzxyrnNJ4nrHX/Ovsvbu274
-na483q/qLqwUCuU7oDg+0ntFC7XxPJadt2/vITq/MzhMRMy9V3cNBQAk+ga4NK/U
-WbZ4iX2sMsnJ6wQfFuLavOnXHivdGfgLZ2DaofoTb++TjlzO1bm5zh2rJ9Tc8VyM
-Umo93ebyGERRv/IsNGEfb3ZZ7QhyLcHsBDoow1XFfvja4poCumKNMHFz8bbiLK5w
-MOvEBoy/q+vwo7ZL3i3/YCxKxUoLQ/+dq6SbmXjDjVTjjiLWXH3t0lhkODoHsrWH
-YsiqBIK4bnDS6qNUGWYM8HlTzOHmhhIobkeT+Do/gA0P1gvsoKsh+YpfBiqVof27
-M9YDteY1M4pypSw6GctkDPwPTkSM1qCUpFXidvpya7jyrlMpncEG/NiYgEcGsNJP
-eyYJ+ky0CznzcuNukcGMa+NOt5eCZzBJnBmNoOU41M1kljZ06/AJKKOI8jsddf3q
-nZVDhxnavMXi7uagRpiQjc48oLdEVV2SdBtpVdLIQiHplme8EJj2sQ5c7/XY8WTd
-yVDcA3WWkdezFGWxya6C5sbsd2PI/G7qvg19h8GLQgC+CGS1ctRdYr/soLYBrMMT
-xIWtdPiPzIl1NqC6TT/S
-=z/1p
------END PGP SIGNATURE-----
-
---82I3+IH0IqGh5yIs--
+Thanks,
+Namhyung
