@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab3APA1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:27:40 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:59938 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758258Ab3APAZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 19:25:57 -0500
+	id S932729Ab3APA2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:28:17 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:39030 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758238Ab3APAZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 19:25:54 -0500
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux MM <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
+        Cody P Schafer <jmesmon@gmail.com>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 14/17] mm/memory_hotplug: factor out zone+pgdat growth.
-Date: Tue, 15 Jan 2013 16:24:51 -0800
-Message-Id: <1358295894-24167-15-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH 08/17] mm/page_alloc: use zone_spans_pfn() instead of open coded checks.
+Date: Tue, 15 Jan 2013 16:24:45 -0800
+Message-Id: <1358295894-24167-9-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.0.3
 In-Reply-To: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011600-7182-0000-0000-000004762F1C
+x-cbid: 13011600-3620-0000-0000-000000E82EA5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a new function grow_pgdat_and_zone() which handles locking +
-growth of a zone & the pgdat which it is associated with.
+From: Cody P Schafer <jmesmon@gmail.com>
+
+In 2 VM_BUG()s, avoid open coding zone ownership of pfns.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- mm/memory_hotplug.c | 16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ mm/page_alloc.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 0a74b86a..c6149a3 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -361,6 +361,16 @@ static void grow_pgdat_span(struct pglist_data *pgdat, unsigned long start_pfn,
- 					pgdat->node_start_pfn;
- }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 3911c1a..c5d70ce 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -242,9 +242,7 @@ static int page_outside_zone_boundaries(struct zone *zone, struct page *page)
  
-+static void grow_pgdat_and_zone(struct zone *zone, unsigned long start_pfn,
-+		unsigned long end_pfn)
-+{
-+	unsigned long flags;
-+	pgdat_resize_lock(zone->zone_pgdat, &flags);
-+	grow_zone_span(zone, start_pfn, end_pfn);
-+	grow_pgdat_span(zone->zone_pgdat, start_pfn, end_pfn);
-+	pgdat_resize_unlock(zone->zone_pgdat, &flags);
-+}
-+
- static int __meminit __add_zone(struct zone *zone, unsigned long phys_start_pfn)
- {
- 	struct pglist_data *pgdat = zone->zone_pgdat;
-@@ -375,11 +385,7 @@ static int __meminit __add_zone(struct zone *zone, unsigned long phys_start_pfn)
- 	if (ret)
- 		return ret;
+ 	do {
+ 		seq = zone_span_seqbegin(zone);
+-		if (pfn >= zone->zone_start_pfn + zone->spanned_pages)
+-			ret = 1;
+-		else if (pfn < zone->zone_start_pfn)
++		if (!zone_spans_pfn(zone, pfn))
+ 			ret = 1;
+ 	} while (zone_span_seqretry(zone, seq));
  
--	pgdat_resize_lock(zone->zone_pgdat, &flags);
--	grow_zone_span(zone, phys_start_pfn, phys_start_pfn + nr_pages);
--	grow_pgdat_span(zone->zone_pgdat, phys_start_pfn,
--			phys_start_pfn + nr_pages);
--	pgdat_resize_unlock(zone->zone_pgdat, &flags);
-+	grow_pgdat_and_zone(zone, phys_start_pfn, phys_start_pfn + nr_pages);
- 	memmap_init_zone(nr_pages, nid, zone_type,
- 			 phys_start_pfn, MEMMAP_HOTPLUG);
- 	return 0;
+@@ -5639,8 +5637,7 @@ void set_pageblock_flags_group(struct page *page, unsigned long flags,
+ 	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
+-	VM_BUG_ON(pfn < zone->zone_start_pfn);
+-	VM_BUG_ON(pfn >= zone->zone_start_pfn + zone->spanned_pages);
++	VM_BUG_ON(!zone_spans_pfn(zone, pfn));
+ 
+ 	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
+ 		if (flags & value)
 -- 
 1.8.0.3
 
