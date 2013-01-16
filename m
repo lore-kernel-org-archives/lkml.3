@@ -1,138 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758271Ab3APIMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 03:12:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41501 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753963Ab3APIMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 03:12:18 -0500
-Date: Wed, 16 Jan 2013 10:16:06 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sjur =?iso-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        virtualization@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sjur =?iso-8859-1?Q?Br=E6ndeland?= 
-	<sjur.brandeland@stericsson.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: [RFCv2 00/12] Introduce host-side virtio queue and CAIF Virtio.
-Message-ID: <20130116081606.GB11465@redhat.com>
-References: <20121206102750.GF10837@redhat.com>
- <877goc0wac.fsf@rustcorp.com.au>
- <CAJK669bP41oBhJ=MB64NS21Ag7XO5WswuTiVKCFTb96nvmyBiw@mail.gmail.com>
- <87pq1f2rj0.fsf@rustcorp.com.au>
- <87wqvl1g9s.fsf@rustcorp.com.au>
- <CAJK669Z-bGTeQe8qJpTJP7simbSvQ8cgFZefs5QRMkmxtFYY4g@mail.gmail.com>
- <87pq1c1uj4.fsf@rustcorp.com.au>
- <877gnk1ayv.fsf@rustcorp.com.au>
- <20130114173914.GB19207@redhat.com>
- <874nihzuoz.fsf@rustcorp.com.au>
+	id S932074Ab3APIMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 03:12:42 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46371 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757591Ab3APIMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 03:12:40 -0500
+Message-ID: <50F66083.7090600@linux.vnet.ibm.com>
+Date: Wed, 16 Jan 2013 13:40:43 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874nihzuoz.fsf@rustcorp.com.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        konrad@kernel.org, xen-devel@lists.xensource.com,
+        stable@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 1/2] ACPI: intel-idle: Don't register CPU notifier if
+ we are not running.
+References: <1358288604-24620-1-git-send-email-konrad.wilk@oracle.com> <1358288604-24620-2-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1358288604-24620-2-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011608-4790-0000-0000-0000067B93DB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 01:43:32PM +1030, Rusty Russell wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
-> >> +static int resize_iovec(struct vringh_iov *iov, gfp_t gfp)
-> >> +{
-> >> +	struct iovec *new;
-> >> +	unsigned int new_num = iov->max * 2;
-> >
-> > We must limit this I think, this is coming
-> > from userspace. How about UIO_MAXIOV?
+On 01/16/2013 03:53 AM, Konrad Rzeszutek Wilk wrote:
+> The 'intel_idle_probe' probes the CPU and sets the CPU notifier.
+> But if later on during the module initialization we fail (say
+> in cpuidle_register_driver) we stop loading but we neglected
+> to unregister the CPU notifier. This means that during CPU
+> hotplug events the system will fail:
 > 
-> We limit it to the ring size already;
-
-1. do we limit it in case there's a loop in the descriptor ring?
-2. do we limit it in case there are indirect descriptors?
-I guess I missed where we do this could you point this out to me?
-
-> UIO_MAXIOV is a weird choice here.
-
-It's kind of forced by the need to pass the iov on to the linux kernel,
-so we know that any guest using more is broken on existing hypervisors.
-
-Ring size is somewhat arbitrary too, isn't it?  A huge ring where we
-post lots of short descriptors (e.g. RX buffers) seems like a valid thing to do.
-
-> >> +static u16 __cold return_from_indirect(const struct vringh *vrh, int *up_next,
-> >> +				       struct vring_desc **descs, int *desc_max)
-> >
-> > Not sure it should be cold like that - virtio net uses indirect on data
-> > path.
+> calling  intel_idle_init+0x0/0x326 @ 1
+> intel_idle: MWAIT substates: 0x1120
+> intel_idle: v0.4 model 0x2A
+> intel_idle: lapic_timer_reliable_states 0xffffffff
+> intel_idle: intel_idle yielding to none
+> initcall intel_idle_init+0x0/0x326 returned -19 after 14 usecs
 > 
-> This is only when we have a chained, indirect descriptor (ie. we have to
-> go back up to the next entry in the main descriptor table).  That's
-> allowed in the spec, but noone does it.
-> >> +		/* Make sure it's OK, and get offset. */
-> >> +		if (!check_range(desc.addr, desc.len, &range, getrange)) {
-> >> +			err = -EINVAL;
-> >> +			goto fail;
-> >> +		}
-> >
-> > Hmm this looks like it will translate and
-> > validate immediate descriptors same way as indirect ones.
-> > vhost-net has different translation for regular descriptors
-> > and indirect ones, both for speed and to allow ring aliasing,
-> > so it has to know which is which.
+> ... some time later, offlining and onlining a CPU:
 > 
-> I see translate_desc() in both cases, what's different?
-> >> +		addr = (void *)(long)desc.addr + range.offset;
-> >
-> > I really dislike raw pointers that we must never dereference.
-> > Since we are forcing everything to __user anyway, why don't we
-> > tag all addresses as __user? The kernel users of this API
-> > can cast that away, this will keep the casts to minimum.
-> >
-> > Failing that, we can add our own class
-> > # define __virtio         __attribute__((noderef, address_space(2)))
+> cpu 3 spinlock event irq 62
+> BUG: unable to ] __cpuidle_register_device+0x1c/0x120
+> PGD 99b8b067 PUD 99b95067 PMD 0
+> Oops: 0000 [#1] SMP
+> Modules linked in: xen_evtchn nouveau mxm_wmi wmi radeon ttm i915 fbcon tileblit font atl1c bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
+> CPU 0
+> Pid: 2302, comm: udevd Not tainted 3.8.0-rc3upstream-00249-g09ad159 #1 MSI MS-7680/H61M-P23 (MS-7680)
+> RIP: e030:[<ffffffff814d956c>]  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
+> RSP: e02b:ffff88009dacfcb8  EFLAGS: 00010286
+> RAX: 0000000000000000 RBX: ffff880105380000 RCX: 000000000000001c
+> RDX: 0000000000000000 RSI: 0000000000000055 RDI: ffff880105380000
+> RBP: ffff88009dacfce8 R08: ffffffff81a4f048 R09: 0000000000000008
+> R10: 0000000000000008 R11: 0000000000000000 R12: ffff880105380000
+> R13: 00000000ffffffdd R14: 0000000000000000 R15: ffffffff81a523d0
+> FS:  00007f37bd83b7a0(0000) GS:ffff880105200000(0000) knlGS:0000000000000000
+> CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000000000008 CR3: 00000000a09ea000 CR4: 0000000000042660
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process udevd (pid: 2302, threadinfo ffff88009dace000, task ffff88009afb47f0)
+> Stack:
+>  ffffffff8107f2d0 ffffffff810c2fb7 ffff88009dacfce8 00000000ffffffea
+>  ffff880105380000 00000000ffffffdd ffff88009dacfd08 ffffffff814d9882
+>  0000000000000003 ffff880105380000 ffff88009dacfd28 ffffffff81340afd
+> Call Trace:
+>  [<ffffffff8107f2d0>] ? collect_cpu_info_local+0x30/0x30
+>  [<ffffffff810c2fb7>] ? __might_sleep+0xe7/0x100
+>  [<ffffffff814d9882>] cpuidle_register_device+0x32/0x70
+>  [<ffffffff81340afd>] intel_idle_cpu_init+0xad/0x110
+>  [<ffffffff81340bc8>] cpu_hotplug_notify+0x68/0x80
+>  [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
+>  [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
+>  [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
+>  [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
+>  [<ffffffff81652e18>] cpu_up+0xd9/0xec
+>  [<ffffffff8164a254>] store_online+0x94/0xd0
+>  [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
+>  [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
+>  [<ffffffff811a1024>] vfs_write+0xb4/0x130
+>  [<ffffffff811a17ea>] sys_write+0x5a/0xa0
+>  [<ffffffff816643a9>] system_call_fastpath+0x16/0x1b
+> Code: 03 18 00 c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 30 48 89 5d e8 4c 89 65 f0 48 89 fb 4c 89 6d f8 e8 84 08 00 00 <48> 8b 78 08 49 89 c4 e8 f8 7f c1 ff 89 c2 b8 ea ff ff ff 84 d2
+> RIP  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
+>  RSP <ffff88009dacfcb8>
 > 
-> In this case, perhaps we should leave addr as a u64?
-
-Point being? All users will cast to a pointer.
-It seems at first passing in raw pointers is cleaner,
-but it turns out in the API we are passing iovs around,
-and they are __user anyway.
-So using raw pointers here does not buy us anything,
-so let's use __user and gain extra static checks at no cost.
-
-
-> >> +		iov->iov[iov->i].iov_base = (__force __user void *)addr;
-> >> +		iov->iov[iov->i].iov_len = desc.len;
-> >> +		iov->i++;
-> >
-> >
-> > This looks like it won't do the right thing if desc.len spans multiple
-> > ranges. I don't know if this happens in practice but this is something
-> > vhost supports ATM.
+> This patch fixes it by moving the CPU notifier registration
+> as the last item to be done by the module.
 > 
-> Well, kind of.  I assumed that the bool (*getrange)(u64, struct
-> vringh_range *)) callback would meld any adjacent ranges if it needs to.
+> Cc: stable@vger.kernel.org # for 3.6 and above
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
 
-Confused. If addresses 0 to 0x1000 map to virtual addresses 0 to 0x1000
-and 0x1000 to 0x2000 map to virtual addresses 0x2000 to 0x3000, then
-a single descriptor covering 0 to 0x2000 in guest needs two
-iov entries. What can getrange do about it?
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
+Regards,
+Srivatsa S. Bhat
 
-> >> +/* All the information about an iovec. */
-> >> +struct vringh_iov {
-> >> +	struct iovec *iov;
-> >> +	unsigned i, max;
-> >> +	bool allocated;
-> >
-> > MAybe set iov = NULL when not allocated?
+>  drivers/idle/intel_idle.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> The idea was that iov points to the initial (on-stack?) iov, for the
-> fast path.
+> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> index 4ba384f..2df9414 100644
+> --- a/drivers/idle/intel_idle.c
+> +++ b/drivers/idle/intel_idle.c
+> @@ -448,8 +448,6 @@ static int intel_idle_probe(void)
+>  	else
+>  		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
 > 
-> I'm writing a more complete test at the moment, then I will look at how
-> this fits with vhost.c as it stands...
+> -	register_cpu_notifier(&cpu_hotplug_notifier);
+> -
+>  	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
+>  		" model 0x%X\n", boot_cpu_data.x86_model);
 > 
-> Cheers,
-> Rusty.
+> @@ -612,6 +610,7 @@ static int __init intel_idle_init(void)
+>  			return retval;
+>  		}
+>  	}
+> +	register_cpu_notifier(&cpu_hotplug_notifier);
+> 
+>  	return 0;
+>  }
+> 
+
