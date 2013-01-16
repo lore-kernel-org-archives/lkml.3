@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab3APCzO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 21:55:14 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:52318 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756105Ab3APCzM (ORCPT
+	id S1757706Ab3APDAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 22:00:54 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:47873 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab3APDAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 21:55:12 -0500
+	Tue, 15 Jan 2013 22:00:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1301151704100.7734@pobox.suse.cz>
-References: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com>
-	<alpine.LNX.2.00.1301031050060.27348@pobox.suse.cz>
-	<CAN+gG=GxiM-K6mSmQk4GVRbkkc5VwCW1wUeo1BEuXoZ+T-ir_A@mail.gmail.com>
-	<20130106200355.GA557@polaris.bitmath.org>
-	<alpine.LNX.2.00.1301151704100.7734@pobox.suse.cz>
-Date: Wed, 16 Jan 2013 03:55:10 +0100
-Message-ID: <CAN+gG=GhqNwiFn71NxF0ueckkh=hbKjkhix+EcaH_263Nd=sPg@mail.gmail.com>
-Subject: Re: [PATCH 00/11] Support of dual pen/multitouch and new default for
- win 7 certified devices
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20130116025251.GM2668@htj.dyndns.org>
+References: <CACVXFVNvBeHG2TgfNY-wRQYtqsd6v-3AAiQVPAECuRnJ--ON-g@mail.gmail.com>
+ <CA+55aFxV40V2WvNtJY3EC0F-B9wPk8CV2o1TTTyoF4CoWH7rhQ@mail.gmail.com>
+ <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
+ <CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com>
+ <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
+ <20130115183204.GE2668@htj.dyndns.org> <CA+55aFzZ1NJz34r99N7+mU4CN5Ju4QpHrDoWv5Kbd5-Z4QzgaA@mail.gmail.com>
+ <20130115235043.GJ2668@htj.dyndns.org> <CA+55aFzm4k2CyQ_mZVHyeasjw4ybqfO2SpJrZZNZeUsSW8PB=g@mail.gmail.com>
+ <CA+55aFxLJ=Yfms9SkPJLjQ-ZASPNZC0JUBsb3OwonJvTCcBzxA@mail.gmail.com> <20130116025251.GM2668@htj.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 15 Jan 2013 19:00:31 -0800
+X-Google-Sender-Auth: aZg7FKMK9g10QeDMBT5atyoy5sU
+Message-ID: <CA+55aFxttTkWG0gfUz3=V8A-9az3+qY3j0JZEAoKv0ne-QupZw@mail.gmail.com>
+Subject: Re: [PATCH] module, async: async_synchronize_full() on module init
+ iff async is used
+To: Tejun Heo <tj@kernel.org>
+Cc: Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 5:04 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Sun, 6 Jan 2013, Henrik Rydberg wrote:
+On Tue, Jan 15, 2013 at 6:52 PM, Tejun Heo <tj@kernel.org> wrote:
 >
->> > Henrik, you told us that you have a patch set fixing these
->> > dependencies on all the hid drivers, will you prepare it for 3.9? Do
->> > you want me to continue your work?
->>
->> Yes, no, yes. :-)
->>
->> That is, it would be great if you want to pick up those patches. I
->> will send you a pm shortly.
->
-> So, what is the status of this code now, please?
+> It makes me feel dirty but makes the problem go away and I can't think
+> of anything better, so here is the implementation of "used async"
+> workaround.
 
-Hi Jiri,
+Ok, people, can we get a tested-by (or "Nope, doesn't work") from the
+people who saw this?
 
-well here are my plans:
-1. polishing the support of Nexio 42" + new default class (95% done)
-2. add support for pen (it may requires more reviews) (60% done)
-3. cleanup Henrik's patches and send them. (1% done - I just went
-through them). Honestly, I don't know if I will be able to make it for
-3.9 for this series. For the time being, it only bothers me in my
-regressions tests, so depending on the work done, we may postpone it
-for later.
+That said, maybe we could just make the rule be that you can't pick a
+default IO scheduler that is modular.
 
-Last thing, this week, I'm in Boston. The good is that I should be
-able to test tomorrow Mika's patch about i2c-hid at Intel's lab
-directly, but I won't have much time to work on hid-multitouch before
-next Wednesday (the 23rd).
+And I *would* like to see the warning we discussed. Maybe there are
+other situations that can trigger this?
 
-Cheers,
-Benjamin
+Because something like that
 
->
-> Thanks,
->
-> --
-> Jiri Kosina
-> SUSE Labs
+    WARN_ON_ONCE(wait && i_am_async() && system_state == SYSTEM_RUNNING);
+
+in kernel/kmod.c (__request_module()) still sounds like a good idea to
+verify that this is the only thing that triggers it (of course, we'd
+need to somehow avoid the warning for the known case with the known
+workaround).
+
+             Linus
