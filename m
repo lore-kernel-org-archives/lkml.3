@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758448Ab3APQGU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:06:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36345 "EHLO
+	id S932444Ab3APQGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:06:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36367 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932407Ab3APQGR (ORCPT
+	with ESMTP id S932422Ab3APQG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:06:17 -0500
+	Wed, 16 Jan 2013 11:06:29 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sonny Rao <sonnyrao@chromium.org>, Puneet Kumar <puneetster@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 138/222] mm: fix calculation of dirtyable memory
-Date: Wed, 16 Jan 2013 13:55:38 -0200
-Message-Id: <1358351822-7675-139-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 141/222] dm persistent data: rename node to btree_node
+Date: Wed, 16 Jan 2013 13:55:41 -0200
+Message-Id: <1358351822-7675-142-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,85 +27,411 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sonny Rao <sonnyrao@chromium.org>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit c8b74c2f6604923de91f8aa6539f8bb934736754 upstream.
+commit 550929faf89e2e2cdb3e9945ea87d383989274cf upstream.
 
-The system uses global_dirtyable_memory() to calculate number of
-dirtyable pages/pages that can be allocated to the page cache.  A bug
-causes an underflow thus making the page count look like a big unsigned
-number.  This in turn confuses the dirty writeback throttling to
-aggressively write back pages as they become dirty (usually 1 page at a
-time).  This generally only affects systems with highmem because the
-underflowed count gets subtracted from the global count of dirtyable
-memory.
+This patch fixes a compilation failure on sparc32 by renaming struct node.
 
-The problem was introduced with v3.2-4896-gab8fabd
+struct node is already defined in include/linux/node.h. On sparc32, it
+happens to be included through other dependencies and persistent-data
+doesn't compile because of conflicting declarations.
 
-Fix is to ensure we don't get an underflowed total of either highmem or
-global dirtyable memory.
-
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-Signed-off-by: Puneet Kumar <puneetster@chromium.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Tested-by: Damien Wyart <damien.wyart@free.fr>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- mm/page-writeback.c |   25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
+ drivers/md/persistent-data/dm-btree-internal.h |   16 ++++----
+ drivers/md/persistent-data/dm-btree-remove.c   |   50 ++++++++++++------------
+ drivers/md/persistent-data/dm-btree-spine.c    |    6 +--
+ drivers/md/persistent-data/dm-btree.c          |   22 +++++------
+ 4 files changed, 47 insertions(+), 47 deletions(-)
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 93d8d2f..e252db8 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -187,6 +187,18 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
- 		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
- 	}
- 	/*
-+	 * Unreclaimable memory (kernel memory or anonymous memory
-+	 * without swap) can bring down the dirtyable pages below
-+	 * the zone's dirty balance reserve and the above calculation
-+	 * will underflow.  However we still want to add in nodes
-+	 * which are below threshold (negative values) to get a more
-+	 * accurate calculation but make sure that the total never
-+	 * underflows.
-+	 */
-+	if ((long)x < 0)
-+		x = 0;
-+
-+	/*
- 	 * Make sure that the number of highmem pages is never larger
- 	 * than the number of the total dirtyable memory. This can only
- 	 * occur in very strange VM situations but we want to make sure
-@@ -208,8 +220,8 @@ static unsigned long global_dirtyable_memory(void)
+diff --git a/drivers/md/persistent-data/dm-btree-internal.h b/drivers/md/persistent-data/dm-btree-internal.h
+index 5709bfe..accbb05 100644
+--- a/drivers/md/persistent-data/dm-btree-internal.h
++++ b/drivers/md/persistent-data/dm-btree-internal.h
+@@ -36,13 +36,13 @@ struct node_header {
+ 	__le32 padding;
+ } __packed;
+ 
+-struct node {
++struct btree_node {
+ 	struct node_header header;
+ 	__le64 keys[0];
+ } __packed;
+ 
+ 
+-void inc_children(struct dm_transaction_manager *tm, struct node *n,
++void inc_children(struct dm_transaction_manager *tm, struct btree_node *n,
+ 		  struct dm_btree_value_type *vt);
+ 
+ int new_block(struct dm_btree_info *info, struct dm_block **result);
+@@ -64,7 +64,7 @@ struct ro_spine {
+ void init_ro_spine(struct ro_spine *s, struct dm_btree_info *info);
+ int exit_ro_spine(struct ro_spine *s);
+ int ro_step(struct ro_spine *s, dm_block_t new_child);
+-struct node *ro_node(struct ro_spine *s);
++struct btree_node *ro_node(struct ro_spine *s);
+ 
+ struct shadow_spine {
+ 	struct dm_btree_info *info;
+@@ -98,17 +98,17 @@ int shadow_root(struct shadow_spine *s);
+ /*
+  * Some inlines.
+  */
+-static inline __le64 *key_ptr(struct node *n, uint32_t index)
++static inline __le64 *key_ptr(struct btree_node *n, uint32_t index)
  {
- 	unsigned long x;
- 
--	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
--	    dirty_balance_reserve;
-+	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
-+	x -= min(x, dirty_balance_reserve);
- 
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
-@@ -276,9 +288,12 @@ static unsigned long zone_dirtyable_memory(struct zone *zone)
- 	 * highmem zone can hold its share of dirty pages, so we don't
- 	 * care about vm_highmem_is_dirtyable here.
- 	 */
--	return zone_page_state(zone, NR_FREE_PAGES) +
--	       zone_reclaimable_pages(zone) -
--	       zone->dirty_balance_reserve;
-+	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
-+		zone_reclaimable_pages(zone);
-+
-+	/* don't allow this to underflow */
-+	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
-+	return nr_pages;
+ 	return n->keys + index;
  }
  
- /**
+-static inline void *value_base(struct node *n)
++static inline void *value_base(struct btree_node *n)
+ {
+ 	return &n->keys[le32_to_cpu(n->header.max_entries)];
+ }
+ 
+-static inline void *value_ptr(struct node *n, uint32_t index)
++static inline void *value_ptr(struct btree_node *n, uint32_t index)
+ {
+ 	uint32_t value_size = le32_to_cpu(n->header.value_size);
+ 	return value_base(n) + (value_size * index);
+@@ -117,7 +117,7 @@ static inline void *value_ptr(struct node *n, uint32_t index)
+ /*
+  * Assumes the values are suitably-aligned and converts to core format.
+  */
+-static inline uint64_t value64(struct node *n, uint32_t index)
++static inline uint64_t value64(struct btree_node *n, uint32_t index)
+ {
+ 	__le64 *values_le = value_base(n);
+ 
+@@ -127,7 +127,7 @@ static inline uint64_t value64(struct node *n, uint32_t index)
+ /*
+  * Searching for a key within a single node.
+  */
+-int lower_bound(struct node *n, uint64_t key);
++int lower_bound(struct btree_node *n, uint64_t key);
+ 
+ extern struct dm_block_validator btree_node_validator;
+ 
+diff --git a/drivers/md/persistent-data/dm-btree-remove.c b/drivers/md/persistent-data/dm-btree-remove.c
+index aa71e23..c4f2813 100644
+--- a/drivers/md/persistent-data/dm-btree-remove.c
++++ b/drivers/md/persistent-data/dm-btree-remove.c
+@@ -53,7 +53,7 @@
+ /*
+  * Some little utilities for moving node data around.
+  */
+-static void node_shift(struct node *n, int shift)
++static void node_shift(struct btree_node *n, int shift)
+ {
+ 	uint32_t nr_entries = le32_to_cpu(n->header.nr_entries);
+ 	uint32_t value_size = le32_to_cpu(n->header.value_size);
+@@ -79,7 +79,7 @@ static void node_shift(struct node *n, int shift)
+ 	}
+ }
+ 
+-static void node_copy(struct node *left, struct node *right, int shift)
++static void node_copy(struct btree_node *left, struct btree_node *right, int shift)
+ {
+ 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
+ 	uint32_t value_size = le32_to_cpu(left->header.value_size);
+@@ -108,7 +108,7 @@ static void node_copy(struct node *left, struct node *right, int shift)
+ /*
+  * Delete a specific entry from a leaf node.
+  */
+-static void delete_at(struct node *n, unsigned index)
++static void delete_at(struct btree_node *n, unsigned index)
+ {
+ 	unsigned nr_entries = le32_to_cpu(n->header.nr_entries);
+ 	unsigned nr_to_copy = nr_entries - (index + 1);
+@@ -128,7 +128,7 @@ static void delete_at(struct node *n, unsigned index)
+ 	n->header.nr_entries = cpu_to_le32(nr_entries - 1);
+ }
+ 
+-static unsigned merge_threshold(struct node *n)
++static unsigned merge_threshold(struct btree_node *n)
+ {
+ 	return le32_to_cpu(n->header.max_entries) / 3;
+ }
+@@ -136,7 +136,7 @@ static unsigned merge_threshold(struct node *n)
+ struct child {
+ 	unsigned index;
+ 	struct dm_block *block;
+-	struct node *n;
++	struct btree_node *n;
+ };
+ 
+ static struct dm_btree_value_type le64_type = {
+@@ -147,7 +147,7 @@ static struct dm_btree_value_type le64_type = {
+ 	.equal = NULL
+ };
+ 
+-static int init_child(struct dm_btree_info *info, struct node *parent,
++static int init_child(struct dm_btree_info *info, struct btree_node *parent,
+ 		      unsigned index, struct child *result)
+ {
+ 	int r, inc;
+@@ -177,7 +177,7 @@ static int exit_child(struct dm_btree_info *info, struct child *c)
+ 	return dm_tm_unlock(info->tm, c->block);
+ }
+ 
+-static void shift(struct node *left, struct node *right, int count)
++static void shift(struct btree_node *left, struct btree_node *right, int count)
+ {
+ 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
+ 	uint32_t nr_right = le32_to_cpu(right->header.nr_entries);
+@@ -203,11 +203,11 @@ static void shift(struct node *left, struct node *right, int count)
+ 	right->header.nr_entries = cpu_to_le32(nr_right + count);
+ }
+ 
+-static void __rebalance2(struct dm_btree_info *info, struct node *parent,
++static void __rebalance2(struct dm_btree_info *info, struct btree_node *parent,
+ 			 struct child *l, struct child *r)
+ {
+-	struct node *left = l->n;
+-	struct node *right = r->n;
++	struct btree_node *left = l->n;
++	struct btree_node *right = r->n;
+ 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
+ 	uint32_t nr_right = le32_to_cpu(right->header.nr_entries);
+ 	unsigned threshold = 2 * merge_threshold(left) + 1;
+@@ -239,7 +239,7 @@ static int rebalance2(struct shadow_spine *s, struct dm_btree_info *info,
+ 		      unsigned left_index)
+ {
+ 	int r;
+-	struct node *parent;
++	struct btree_node *parent;
+ 	struct child left, right;
+ 
+ 	parent = dm_block_data(shadow_current(s));
+@@ -270,9 +270,9 @@ static int rebalance2(struct shadow_spine *s, struct dm_btree_info *info,
+  * in right, then rebalance2.  This wastes some cpu, but I want something
+  * simple atm.
+  */
+-static void delete_center_node(struct dm_btree_info *info, struct node *parent,
++static void delete_center_node(struct dm_btree_info *info, struct btree_node *parent,
+ 			       struct child *l, struct child *c, struct child *r,
+-			       struct node *left, struct node *center, struct node *right,
++			       struct btree_node *left, struct btree_node *center, struct btree_node *right,
+ 			       uint32_t nr_left, uint32_t nr_center, uint32_t nr_right)
+ {
+ 	uint32_t max_entries = le32_to_cpu(left->header.max_entries);
+@@ -301,9 +301,9 @@ static void delete_center_node(struct dm_btree_info *info, struct node *parent,
+ /*
+  * Redistributes entries among 3 sibling nodes.
+  */
+-static void redistribute3(struct dm_btree_info *info, struct node *parent,
++static void redistribute3(struct dm_btree_info *info, struct btree_node *parent,
+ 			  struct child *l, struct child *c, struct child *r,
+-			  struct node *left, struct node *center, struct node *right,
++			  struct btree_node *left, struct btree_node *center, struct btree_node *right,
+ 			  uint32_t nr_left, uint32_t nr_center, uint32_t nr_right)
+ {
+ 	int s;
+@@ -343,12 +343,12 @@ static void redistribute3(struct dm_btree_info *info, struct node *parent,
+ 	*key_ptr(parent, r->index) = right->keys[0];
+ }
+ 
+-static void __rebalance3(struct dm_btree_info *info, struct node *parent,
++static void __rebalance3(struct dm_btree_info *info, struct btree_node *parent,
+ 			 struct child *l, struct child *c, struct child *r)
+ {
+-	struct node *left = l->n;
+-	struct node *center = c->n;
+-	struct node *right = r->n;
++	struct btree_node *left = l->n;
++	struct btree_node *center = c->n;
++	struct btree_node *right = r->n;
+ 
+ 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
+ 	uint32_t nr_center = le32_to_cpu(center->header.nr_entries);
+@@ -371,7 +371,7 @@ static int rebalance3(struct shadow_spine *s, struct dm_btree_info *info,
+ 		      unsigned left_index)
+ {
+ 	int r;
+-	struct node *parent = dm_block_data(shadow_current(s));
++	struct btree_node *parent = dm_block_data(shadow_current(s));
+ 	struct child left, center, right;
+ 
+ 	/*
+@@ -421,7 +421,7 @@ static int get_nr_entries(struct dm_transaction_manager *tm,
+ {
+ 	int r;
+ 	struct dm_block *block;
+-	struct node *n;
++	struct btree_node *n;
+ 
+ 	r = dm_tm_read_lock(tm, b, &btree_node_validator, &block);
+ 	if (r)
+@@ -438,7 +438,7 @@ static int rebalance_children(struct shadow_spine *s,
+ {
+ 	int i, r, has_left_sibling, has_right_sibling;
+ 	uint32_t child_entries;
+-	struct node *n;
++	struct btree_node *n;
+ 
+ 	n = dm_block_data(shadow_current(s));
+ 
+@@ -483,7 +483,7 @@ static int rebalance_children(struct shadow_spine *s,
+ 	return r;
+ }
+ 
+-static int do_leaf(struct node *n, uint64_t key, unsigned *index)
++static int do_leaf(struct btree_node *n, uint64_t key, unsigned *index)
+ {
+ 	int i = lower_bound(n, key);
+ 
+@@ -506,7 +506,7 @@ static int remove_raw(struct shadow_spine *s, struct dm_btree_info *info,
+ 		      uint64_t key, unsigned *index)
+ {
+ 	int i = *index, r;
+-	struct node *n;
++	struct btree_node *n;
+ 
+ 	for (;;) {
+ 		r = shadow_step(s, root, vt);
+@@ -556,7 +556,7 @@ int dm_btree_remove(struct dm_btree_info *info, dm_block_t root,
+ 	unsigned level, last_level = info->levels - 1;
+ 	int index = 0, r = 0;
+ 	struct shadow_spine spine;
+-	struct node *n;
++	struct btree_node *n;
+ 
+ 	init_shadow_spine(&spine, info);
+ 	for (level = 0; level < info->levels; level++) {
+diff --git a/drivers/md/persistent-data/dm-btree-spine.c b/drivers/md/persistent-data/dm-btree-spine.c
+index d9a7912..2f0805c 100644
+--- a/drivers/md/persistent-data/dm-btree-spine.c
++++ b/drivers/md/persistent-data/dm-btree-spine.c
+@@ -23,7 +23,7 @@ static void node_prepare_for_write(struct dm_block_validator *v,
+ 				   struct dm_block *b,
+ 				   size_t block_size)
+ {
+-	struct node *n = dm_block_data(b);
++	struct btree_node *n = dm_block_data(b);
+ 	struct node_header *h = &n->header;
+ 
+ 	h->blocknr = cpu_to_le64(dm_block_location(b));
+@@ -38,7 +38,7 @@ static int node_check(struct dm_block_validator *v,
+ 		      struct dm_block *b,
+ 		      size_t block_size)
+ {
+-	struct node *n = dm_block_data(b);
++	struct btree_node *n = dm_block_data(b);
+ 	struct node_header *h = &n->header;
+ 	size_t value_size;
+ 	__le32 csum_disk;
+@@ -164,7 +164,7 @@ int ro_step(struct ro_spine *s, dm_block_t new_child)
+ 	return r;
+ }
+ 
+-struct node *ro_node(struct ro_spine *s)
++struct btree_node *ro_node(struct ro_spine *s)
+ {
+ 	struct dm_block *block;
+ 
+diff --git a/drivers/md/persistent-data/dm-btree.c b/drivers/md/persistent-data/dm-btree.c
+index d12b2cc..371f3d4 100644
+--- a/drivers/md/persistent-data/dm-btree.c
++++ b/drivers/md/persistent-data/dm-btree.c
+@@ -38,7 +38,7 @@ static void array_insert(void *base, size_t elt_size, unsigned nr_elts,
+ /*----------------------------------------------------------------*/
+ 
+ /* makes the assumption that no two keys are the same. */
+-static int bsearch(struct node *n, uint64_t key, int want_hi)
++static int bsearch(struct btree_node *n, uint64_t key, int want_hi)
+ {
+ 	int lo = -1, hi = le32_to_cpu(n->header.nr_entries);
+ 
+@@ -58,12 +58,12 @@ static int bsearch(struct node *n, uint64_t key, int want_hi)
+ 	return want_hi ? hi : lo;
+ }
+ 
+-int lower_bound(struct node *n, uint64_t key)
++int lower_bound(struct btree_node *n, uint64_t key)
+ {
+ 	return bsearch(n, key, 0);
+ }
+ 
+-void inc_children(struct dm_transaction_manager *tm, struct node *n,
++void inc_children(struct dm_transaction_manager *tm, struct btree_node *n,
+ 		  struct dm_btree_value_type *vt)
+ {
+ 	unsigned i;
+@@ -77,7 +77,7 @@ void inc_children(struct dm_transaction_manager *tm, struct node *n,
+ 			vt->inc(vt->context, value_ptr(n, i));
+ }
+ 
+-static int insert_at(size_t value_size, struct node *node, unsigned index,
++static int insert_at(size_t value_size, struct btree_node *node, unsigned index,
+ 		      uint64_t key, void *value)
+ 		      __dm_written_to_disk(value)
+ {
+@@ -122,7 +122,7 @@ int dm_btree_empty(struct dm_btree_info *info, dm_block_t *root)
+ {
+ 	int r;
+ 	struct dm_block *b;
+-	struct node *n;
++	struct btree_node *n;
+ 	size_t block_size;
+ 	uint32_t max_entries;
+ 
+@@ -154,7 +154,7 @@ EXPORT_SYMBOL_GPL(dm_btree_empty);
+ #define MAX_SPINE_DEPTH 64
+ struct frame {
+ 	struct dm_block *b;
+-	struct node *n;
++	struct btree_node *n;
+ 	unsigned level;
+ 	unsigned nr_children;
+ 	unsigned current_child;
+@@ -295,7 +295,7 @@ EXPORT_SYMBOL_GPL(dm_btree_del);
+ /*----------------------------------------------------------------*/
+ 
+ static int btree_lookup_raw(struct ro_spine *s, dm_block_t block, uint64_t key,
+-			    int (*search_fn)(struct node *, uint64_t),
++			    int (*search_fn)(struct btree_node *, uint64_t),
+ 			    uint64_t *result_key, void *v, size_t value_size)
+ {
+ 	int i, r;
+@@ -406,7 +406,7 @@ static int btree_split_sibling(struct shadow_spine *s, dm_block_t root,
+ 	size_t size;
+ 	unsigned nr_left, nr_right;
+ 	struct dm_block *left, *right, *parent;
+-	struct node *ln, *rn, *pn;
++	struct btree_node *ln, *rn, *pn;
+ 	__le64 location;
+ 
+ 	left = shadow_current(s);
+@@ -491,7 +491,7 @@ static int btree_split_beneath(struct shadow_spine *s, uint64_t key)
+ 	size_t size;
+ 	unsigned nr_left, nr_right;
+ 	struct dm_block *left, *right, *new_parent;
+-	struct node *pn, *ln, *rn;
++	struct btree_node *pn, *ln, *rn;
+ 	__le64 val;
+ 
+ 	new_parent = shadow_current(s);
+@@ -576,7 +576,7 @@ static int btree_insert_raw(struct shadow_spine *s, dm_block_t root,
+ 			    uint64_t key, unsigned *index)
+ {
+ 	int r, i = *index, top = 1;
+-	struct node *node;
++	struct btree_node *node;
+ 
+ 	for (;;) {
+ 		r = shadow_step(s, root, vt);
+@@ -643,7 +643,7 @@ static int insert(struct dm_btree_info *info, dm_block_t root,
+ 	unsigned level, index = -1, last_level = info->levels - 1;
+ 	dm_block_t block = root;
+ 	struct shadow_spine spine;
+-	struct node *n;
++	struct btree_node *n;
+ 	struct dm_btree_value_type le64_type;
+ 
+ 	le64_type.context = NULL;
 -- 
 1.7.9.5
 
