@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab3APThs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 14:37:48 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:40254 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754249Ab3APThm (ORCPT
+	id S1757408Ab3APThr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 14:37:47 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:47967 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756938Ab3APThn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 14:37:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <2146678.ZYzAqhqxN1@vostro.rjw.lan>
-References: <1357944049-29620-1-git-send-email-yinghai@kernel.org>
-	<3905799.Wx2ixLIOL7@vostro.rjw.lan>
-	<CAE9FiQUivk3d0L8UENMBgoqeaC3pGAg=mobjsRupHFhH0VGp7Q@mail.gmail.com>
-	<2146678.ZYzAqhqxN1@vostro.rjw.lan>
-Date: Wed, 16 Jan 2013 11:37:40 -0800
-X-Google-Sender-Auth: 2oef2WIN0FwkN2diQQzRDUkeB2k
-Message-ID: <CAE9FiQW8bNs3_nV1QbDMFwxCwEy2a-1x2vi=FQ9raCYpbmnu4Q@mail.gmail.com>
-Subject: Re: [PATCH v8 14/22] ACPI: update ej_event interface to take acpi_device
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Jan 2013 14:37:43 -0500
+Message-ID: <1358365044.4593.186.camel@falcor1>
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        pjones@redhat.com, hpa@zytor.com, dhowells@redhat.com,
+        jwboyer@redhat.com, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org,
+        Ryan Ware <ryan.r.ware@intel.com>
+Date: Wed, 16 Jan 2013 14:37:24 -0500
+In-Reply-To: <20130116185741.GA3038@redhat.com>
+References: <871udloiku.fsf@xmission.com> <1358312159.4593.37.camel@falcor1>
+	 <87wqvdli1o.fsf@xmission.com> <1358344859.4593.66.camel@falcor1>
+	 <20130116144836.GB29845@redhat.com> <1358350391.4593.112.camel@falcor1>
+	 <20130116155406.GC29845@redhat.com> <1358357079.4593.135.camel@falcor1>
+	 <20130116182146.GE29845@redhat.com> <1358361912.4593.162.camel@falcor1>
+	 <20130116185741.GA3038@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011619-7408-0000-0000-00000BF02ED7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 6:05 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> acpi_power_transition() has to check if the device is power-manageable, since
-> otherwise the power resources lists will not be initialized.  It should be
-> fixed now.
+On Wed, 2013-01-16 at 13:57 -0500, Vivek Goyal wrote:
+> On Wed, Jan 16, 2013 at 01:45:12PM -0500, Mimi Zohar wrote:
+> 
+> [..]
+> > > Given the fact that signatures are stored in extended attributes, to me
+> > > the only way to sign executables in current IMA framework would to be
+> > > prepare file system image at build server and ship that image. And
+> > > then installer simply mounts that image (after making sure that proper
+> > > verification keys have been loaded in kernel).
+> > 
+> > That is one scenario.  Another scenario is to update packages to include
+> > extended attributes and to write those extended attributes on
+> > installation.
+> 
+> Ok, that's the point I am missing. So I can sign a file and signatures
+> are in a separate file. And these signatures are installed in extended
+> attributes at file installation time (IOW rpm installation time) on
+> target.
+> 
+> If all this works, this sounds reasonable so far. Except the point of
+> disabling ptrace and locking down memory. 
+> 
+> So what's the state of above work. Is there something I can play with.
 
-yes, it works now with pm/linux-next.
+Sorry, I'm not sure of the RPM implementation details of where/how the
+signatures are stored in the package, nor of the status of these
+changes.  Perhaps someone else on the mailing list knows.
 
-will resend updated patchset after new acpi-scan get into pci/next.
+thanks,
 
-Thanks
+Mimi
 
-Yinghai
+
+
