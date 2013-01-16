@@ -1,127 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab3APOoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 09:44:14 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46475 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab3APOoM (ORCPT
+	id S1754109Ab3APOoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 09:44:13 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:43032 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab3APOoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 09:44:12 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
-CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <rogerq@ti.com>
-Subject: [PATCH v6 00/22] OMAP USB Host cleanup
-Date: Wed, 16 Jan 2013 16:43:31 +0200
-Message-ID: <1358347433-329-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+From: sjur.brandeland@stericsson.com
+To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Cc: mporter@ti.com, =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Loic Pallardy <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Suman Anna <s-anna@ti.com>, Mark Grosen <mgrosen@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [RFCv3 00/11] remoteproc: Support bi-directional vdev config space
+Date: Wed, 16 Jan 2013 15:43:39 +0100
+Message-Id: <1358347430-9243-1-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-This patchset addresses the following
+Changes since v2:
+- Addressed review comments
+- Reworked patch "Load firmware once". 
 
-- Consolidate USB Host platform data.
-- Avoid addressing clocks one by one by name and use a for loop + bunch
-  of cleanups.
-- Get number of channels/ports dynamically either from revision register
-  or from platform data. Avoids getting clocks that are not present.
-- Add OMAP5 and HSIC mode (Not tested)
+This patch-set is not yet thoroughly tested, but works in my
+simulated environment.
 
-v6:
-- Added USB Host platform data consolidation patch as the first patch
-  based on request from Tony.
-- Rebased on v3.8-rc3
+This patch-set adds support for shared resource table between
+Linux kernel and remote devices. 
+- dynamically-allocated address of the vrings can be communicated
+- vdev statuses can be communicated
+- virtio config space becomes bi-directional
+- virtio feature negotiation is two-way 
+- Carveout can be allocated from start of device memory.
+  dma_alloc_coherent() aligns to size of memory area. So if you e.g. 
+  have 8Mb of memory, you cannot have carveout larger than 4Mb
+  unless the carveout is allocated from start of the device memory
+  area.
 
-v5:
-- Rebased on top of todays arm-soc/for-next
-- Removed the clock merging patch from the list.
-- Updated patches 14, 19 and 20 to accomodate the above change.
-- Added patch 22 to fix a build warning.
+NOTE: This change is not backwards compatible with existing
+device firmware! The memory allocation order changes. Previously
+the Virtio Rings were always allocated at start of the share memory
+area, but with this patch-set Virtio Rings are allocated after the
+Carveouts. The address of the vrings are set in the resource table.
 
-v4:
-- Added appropriate maintainers in to/cc
-- minor print message fix in patch 23 to maintain consistency
+Cheers,
+Sjur
 
-v3:
-- Rebased on arm-soc/for-next commit f979306c4d38d213c6977aaf3b1115e8ded71e3a
-- Rearranged patch that get rids of cpu_is_omap..() macros
-- Coding style fixes
+Sjur Brændeland (11):
+  remoteproc: Move enable_iommu to rproc_boot
+  remoteproc: Code cleanup of resource parsing
+  remoteproc: Move check on firmware name to rproc_add
+  remoteproc: Refactor function rproc_elf_find_rsc_table
+  remoteproc: Parse ELF file to find resource table address
+  remoteproc: Parse STE-firmware and find resource table address
+  remoteproc: Add state RPROC_LOADED
+  remoteproc: Set vring addresses in resource table
+  remoteproc: Load firmware once.
+  remoteproc: Support virtio config space.
+  remoteproc: Calculate max_notifyid by counting vrings
 
-v2:
-- Clocks are allocated dynamically based on number of ports available
-  on the platform
-- Reduced console spam if non critical clocks are not found on the platform.
-- Get rid of cpu_is_.. macros from USB host driver.
-
-cheers,
--roger
-
-The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
-
-  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
-
-are available in the git repository at:
-  git@github.com:rogerq/linux.git linux-usbhost11-part
-
-Roger Quadros (22):
-  mfd: omap-usb-host: Consolidate OMAP USB-HS platform data
-  mfd: omap-usb-tll: Fix channel count detection
-  mfd: omap-usb-tll: Use devm_kzalloc/ioremap and clean up error path
-  mfd: omap-usb-tll: Clean up clock handling
-  mfd: omap-usb-tll: introduce and use mode_needs_tll()
-  mfd: omap-usb-tll: Check for missing platform data in probe
-  mfd: omap-usb-tll: Fix error message
-  mfd: omap-usb-tll: serialize access to TLL device
-  mfd: omap-usb-tll: Add OMAP5 revision and HSIC support
-  mfd: omap_usb_host: Avoid missing platform data checks in
-    suspend/resume
-  mfd: omap-usb-host: Use devm_kzalloc() and devm_request_and_ioremap()
-  mfd: omap-usb-host: know about number of ports from revision register
-  mfd: omap-usb-host: override number of ports from platform data
-  mfd: omap-usb-host: cleanup clock management code
-  mfd: omap-usb-host: Manage HSIC clocks for HSIC mode
-  mfd: omap-usb-host: Get rid of unnecessary spinlock
-  mfd: omap-usb-host: clean up omap_usbhs_init()
-  USB: ehci-omap: Don't free gpios that we didn't request
-  ARM: OMAP3: clock data: get rid of unused USB host clock aliases and
-    dummies
-  ARM: OMAP4: clock data: get rid of unused USB host clock aliases
-  mfd: omap-usb-host: Don't spam console on clk_set_parent failure
-  mdf: omap-usb-host: get rid of build warning
-
- arch/arm/mach-omap2/board-3430sdp.c        |    2 +-
- arch/arm/mach-omap2/board-3630sdp.c        |    2 +-
- arch/arm/mach-omap2/board-am3517crane.c    |    2 +-
- arch/arm/mach-omap2/board-am3517evm.c      |    2 +-
- arch/arm/mach-omap2/board-cm-t35.c         |    2 +-
- arch/arm/mach-omap2/board-cm-t3517.c       |    2 +-
- arch/arm/mach-omap2/board-devkit8000.c     |    2 +-
- arch/arm/mach-omap2/board-igep0020.c       |    4 +-
- arch/arm/mach-omap2/board-omap3beagle.c    |    2 +-
- arch/arm/mach-omap2/board-omap3evm.c       |    2 +-
- arch/arm/mach-omap2/board-omap3pandora.c   |    2 +-
- arch/arm/mach-omap2/board-omap3stalker.c   |    2 +-
- arch/arm/mach-omap2/board-omap3touchbook.c |    2 +-
- arch/arm/mach-omap2/board-omap4panda.c     |    2 +-
- arch/arm/mach-omap2/board-overo.c          |    2 +-
- arch/arm/mach-omap2/board-zoom.c           |    2 +-
- arch/arm/mach-omap2/cclock3xxx_data.c      |   11 -
- arch/arm/mach-omap2/cclock44xx_data.c      |    7 -
- arch/arm/mach-omap2/usb-host.c             |   29 +--
- arch/arm/mach-omap2/usb.h                  |   20 +-
- drivers/mfd/omap-usb-host.c                |  543 ++++++++++++++++------------
- drivers/mfd/omap-usb-tll.c                 |  243 +++++++------
- drivers/usb/host/ehci-omap.c               |   14 +-
- include/linux/platform_data/usb-omap.h     |   24 +-
- 24 files changed, 484 insertions(+), 441 deletions(-)
+ drivers/remoteproc/remoteproc_core.c       |  264 +++++++++++++---------------
+ drivers/remoteproc/remoteproc_debugfs.c    |    1 +
+ drivers/remoteproc/remoteproc_elf_loader.c |   96 +++++++---
+ drivers/remoteproc/remoteproc_internal.h   |   16 ++
+ drivers/remoteproc/remoteproc_virtio.c     |   38 ++++-
+ drivers/remoteproc/ste_modem_rproc.c       |   43 +++--
+ include/linux/remoteproc.h                 |    7 +-
+ 7 files changed, 273 insertions(+), 192 deletions(-)
 
 -- 
-1.7.4.1
+1.7.5.4
 
