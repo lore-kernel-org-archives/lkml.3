@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab3APKid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:38:33 -0500
-Received: from canardo.mork.no ([148.122.252.1]:53814 "EHLO canardo.mork.no"
+	id S1759009Ab3APKma (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:42:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1095 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758752Ab3APKib convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:38:31 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        platform-driver-x86@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mattia Dongili <malattia@linux.it>
-Subject: Re: [GIT] x86 platform driver bugfixes for 3.8
-Organization: m
-References: <20130107171722.GA31427@srcf.ucam.org>
-	<CA+55aFzL00K+oURqcnSgbAAkD18DJ8-p1G8vd7KE6RD77dLmCQ@mail.gmail.com>
-	<20130107172616.GB31427@srcf.ucam.org>
-	<20130107174306.GC31427@srcf.ucam.org>
-Date: Wed, 16 Jan 2013 11:38:17 +0100
-In-Reply-To: <20130107174306.GC31427@srcf.ucam.org> (Matthew Garrett's message
-	of "Mon, 7 Jan 2013 17:43:06 +0000")
-Message-ID: <87ehhlifae.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1758935Ab3APKm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 05:42:29 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH V5 0/3] handle polling errors in vhost/vhost_net
+Date: Wed, 16 Jan 2013 18:33:58 +0800
+Message-Id: <1358332441-26859-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett <matthew.garrett@nebula.com> writes:
+This is an update version of last version to fix the handling of polling errors
+in vhost/vhost_net.
 
-> This set covers regressions and two obvious bugfixes. The rest can wait 
-> for 3.9.
+Currently, vhost and vhost_net ignore polling errors which can lead kernel
+crashing when it tries to remove itself from waitqueue after the polling
+failure. Fix this by:
 
-Hello Matthew,
+- examing the POLLERR when set backend and report erros to userspace
+- let tun always add to waitqueue in .poll() after the queue is created even if
+  it was detached.
 
-may I request that you include the patch
+Changes from V4:
+- check the detached state by tfile->detached and protect it by RCU
 
-      sony-laptop: fully enable SNY controlled modems
+Changes from V3:
+- make a smaller patch that doesn't touch the whole polling state and only check
+  the polliner errors in backend setting.
+- add a patch that allows tuntap to do polling/reading/writing when detached
+  which could simplify the work of its user.
 
-for 3.8 as well?  I'd even like it to go to stable if you and Mattia
-agree.
+Changes from v2:
+- check poll->wqh instead of the wrong assumption about POLLERR and waitqueue
+- drop the whole tx polling state check since it was replaced by the wqh
+  checking
+- drop the buggy tuntap patch
 
-My rationale is:
+Changes from v1:
+- restore the state before the ioctl when vhost_init_used() fails
+- log the error when meet polling errors in the data path
+- don't put into waitqueue when tun_chr_poll() return POLLERR
 
-Making the driver set the same 3 bits which Windows set is obviously a
-bug fix and not a new feature.  The fix is a simple oneliner, and is
-required for a number of "newer" laptops, where newer in this case
-includes most of 2012.  Without this fix rfkill will fail silently,
-causing the wwan module to appear to be available but not working
-because the radio is disabled.  This causes very hard to debug problems
-for end users and distributions. Ref the bugzilla:
-https://bugzilla.kernel.org/show_bug.cgi?id=47751
+Jason Wang (3):
+  vhost_net: correct error handling in vhost_net_set_backend()
+  vhost_net: handle polling errors when setting backend
+  tuntap: allow polling/writing/reading when detached
 
-See also the thread at http://ubuntuforums.org/showthread.php?t=2040205
-for an example of the problems this bug causes for end users.
+ drivers/net/tun.c     |   43 +++++++++++++++++++++++++------------------
+ drivers/vhost/net.c   |   41 ++++++++++++++++++++++++++++-------------
+ drivers/vhost/vhost.c |   18 +++++++++++++++---
+ drivers/vhost/vhost.h |    2 +-
+ 4 files changed, 69 insertions(+), 35 deletions(-)
 
-
-Thanks,
-Bjørn
