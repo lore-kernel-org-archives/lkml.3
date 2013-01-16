@@ -1,61 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758425Ab3APDyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 22:54:52 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:44495 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756664Ab3APDyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 22:54:51 -0500
+	id S1758169Ab3APDze (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 22:55:34 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:7030 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756483Ab3APDzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 22:55:32 -0500
+X-IronPort-AV: E=Sophos;i="4.84,476,1355068800"; 
+   d="scan'208";a="6595715"
+Message-ID: <50F624BA.20208@cn.fujitsu.com>
+Date: Wed, 16 Jan 2013 11:55:38 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130115224313.394976595@linuxfoundation.org>
-References: <20130115224313.394976595@linuxfoundation.org>
-Date: Tue, 15 Jan 2013 20:48:24 -0700
-Message-ID: <CAKocOOOVoViOdViChm58ZGM6M6FCkq5VUDZjfDvjBqF7PSoQnQ@mail.gmail.com>
-Subject: Re: [ 000/171] 3.4.26-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: virtualization@lists.linux-foundation.org,
+        Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, hutao@cn.fujitsu.com, linux-scsi@vger.kernel.org,
+        mst@redhat.com, asias@redhat.com, stefanha@redhat.com,
+        nab@linux-iscsi.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH 2/2] virtio-scsi: reset virtqueue affinity when doing
+ cpu hotplug
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <50F525E3.1000100@cn.fujitsu.com> <50F52677.80100@cn.fujitsu.com> <871udlztui.fsf@rustcorp.com.au>
+In-Reply-To: <871udlztui.fsf@rustcorp.com.au>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/16 11:54:45,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/16 11:54:45,
+	Serialize complete at 2013/01/16 11:54:45
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 3:42 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.4.26 release.
-> There are 171 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Jan 17 22:42:47 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.26-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
+On 01/16/2013 11:31 AM, Rusty Russell wrote:
+> Wanlong Gao <gaowanlong@cn.fujitsu.com> writes:
+>> Add hot cpu notifier to reset the request virtqueue affinity
+>> when doing cpu hotplug.
+> 
+> You need to be careful to get_online_cpus() and put_online_cpus() here,
+> so CPUs can't go up and down in the middle of operations.
+> 
+> In particular, get_online_cpus()/put_online_cpus() around calls to
+> virtscsi_set_affinity() (except within notifiers).
 
-Patches applied cleanly to 3.0.y, 3.4.y, and 3.7.y.
-Compiled and booted on the following systems:
-HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+Yes, I'll take care of this, thank you.
 
-Cross-compile tests:
-alpha: defconfig passed on all
-arm: defconfig passed on all
-arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.7.y
-c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.7.y.
-mips: defconfig passed on all
-mipsel: defconfig passed on all
-powerpc: wii_defconfig passed on all
-sh: defconfig passed on all
-sparc: defconfig passed on all
-tile: tilegx_defconfig passed on all
+> 
+>> +static int virtscsi_cpu_callback(struct notifier_block *nfb,
+>> +				 unsigned long action, void *hcpu)
+>> +{
+>> +	struct virtio_scsi *vscsi = container_of(nfb, struct virtio_scsi, nb);
+>> +	switch(action) {
+>> +	case CPU_ONLINE:
+>> +	case CPU_ONLINE_FROZEN:
+>> +	case CPU_DEAD:
+>> +	case CPU_DEAD_FROZEN:
+>> +		virtscsi_set_affinity(vscsi, true);
+>> +		break;
+>> +	default:
+>> +		break;
+>> +	}
+>> +	return NOTIFY_OK;
+>> +}
+> 
+> You probably want to remove affinities *before* the CPU goes down, and
+> restore it after the CPU comes up.
+> 
+> So, how about:
+> 
+>         switch (action & ~CPU_TASKS_FROZEN) {
+>         case CPU_ONLINE:
+>         case CPU_DOWN_FAILED:
+>                 virtscsi_set_affinity(vscsi, true, -1);
+>                 break;
+>         case CPU_DOWN_PREPARE:
+>                 virtscsi_set_affinity(vscsi, true, (unsigned long)hcpu);
+>                 break;
+>         }
+> 
+> The extra argument to virtscsi_set_affinity() is to tell it to ignore a
+> cpu which seems online (because it's going down).
 
--- Shuah
+OK, thank you very much for teaching this.
+
+> 
+>>  static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
+>>  			     struct virtqueue *vq)
+>>  {
+>> @@ -888,6 +909,13 @@ static int __devinit virtscsi_probe(struct virtio_device *vdev)
+>>  	if (err)
+>>  		goto virtscsi_init_failed;
+>>  
+>> +	vscsi->nb.notifier_call = &virtscsi_cpu_callback;
+>> +	err = register_hotcpu_notifier(&vscsi->nb);
+>> +	if (err) {
+>> +		pr_err("virtio_scsi: registering cpu notifier failed\n");
+>> +		goto scsi_add_host_failed;
+>> +	}
+>> +
+> 
+> You have to clean this up if scsi_add_host() fails, I think.
+
+Yeah, will do, thank you very much. 
+
+
+Regards,
+Wanlong Gao
+
+> 
+> Cheers,
+> Rusty.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
