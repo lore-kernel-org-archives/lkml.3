@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab3APRiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 12:38:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54265 "EHLO mail.zytor.com"
+	id S1756391Ab3APRpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 12:45:47 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35733 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754929Ab3APRit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 12:38:49 -0500
-Message-ID: <50F6E582.60905@zytor.com>
-Date: Wed, 16 Jan 2013 09:38:10 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v7u1 00/31] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org> <alpine.DEB.2.02.1301151214480.4978@kaball.uk.xensource.com> <CAE9FiQV1uxeHDVMcgNij7qAta+r2A52Jqwzb32Y1qgM13jUOeQ@mail.gmail.com> <CAE9FiQVhk4jc5WaOC5b+dn6Jo1w7s01MUBL16P43tNxav4kJzA@mail.gmail.com> <alpine.DEB.2.02.1301161048120.4978@kaball.uk.xensource.com> <CAE9FiQUYi_Bp2DW-G3Ht=Xz1rk+xks+NZe+-nAmvh4xR4dxVwA@mail.gmail.com>
-In-Reply-To: <CAE9FiQUYi_Bp2DW-G3Ht=Xz1rk+xks+NZe+-nAmvh4xR4dxVwA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753171Ab3APRpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 12:45:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,480,1355126400"; 
+   d="scan'208";a="272870996"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Cc: Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [Update] [PATCH v6 3/3] PM: Introduce Intel PowerClamp Driver
+Date: Wed, 16 Jan 2013 01:45:28 -0800
+Message-Id: <1358329528-1286-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 09:31 AM, Yinghai Lu wrote:
->
-> rom af4f3bc044d1556f89bd488c7ea75e2a162bb273 Mon Sep 17 00:00:00 2001
-> From: Yinghai Lu <yinghai@kernel.org>
-> Date: Mon, 14 Jan 2013 21:11:05 -0800
-> Subject: [PATCH] x86, mm: Fix page table early allocation offset checking
->
-> During debugging loading kernel above 4G, found that one page is not used
-> in pre-allocated BRK area for early page allocation.
->
-> pgt_buf_top is address that can not be used, so should check if that new
-> end is above that top, otherwise last page will not be used.
->
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-The first sentence here doesn't parse, and this description doesn't give 
-any hint to anyone who is researching this code in say, five years, what 
-problems this caused.
+---
+Need to include the proper nmi.h file such that
+local_touch_nmi is always declared.
 
-I can't really figure it out, either; from looking at the thread and the 
-patch I'm assuming the problem is somehow that the code failed to use 
-the last page in the brk buffer, which somehow lead to a Xen boot 
-failure... but the bits from here to there are totally unclear.
 
-	-hpa
+ drivers/thermal/intel_powerclamp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
+index 314b6fc..81ebf87 100644
+--- a/drivers/thermal/intel_powerclamp.c
++++ b/drivers/thermal/intel_powerclamp.c
+@@ -50,8 +50,8 @@
+ #include <linux/tick.h>
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+-#include <linux/nmi.h>
+ 
++#include <asm/nmi.h>
+ #include <asm/msr.h>
+ #include <asm/mwait.h>
+ #include <asm/cpu_device_id.h>
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.9.5
 
