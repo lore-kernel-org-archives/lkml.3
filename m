@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758956Ab3APKcn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:32:43 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53730 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758752Ab3APKcl (ORCPT
+	id S1758985Ab3APKdz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:33:55 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62703 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758727Ab3APKdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:32:41 -0500
-Message-ID: <1358332355.2384.11.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH v2 1/1] block: blk-merge: don't merge the pages with
- non-contiguous descriptors
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Subhash Jadavani <subhashj@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        martin.petersen@oracle.com, asias@redhat.com, tj@kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>
-Date: Wed, 16 Jan 2013 10:32:35 +0000
-In-Reply-To: <50F64AC1.3040304@codeaurora.org>
-References: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org>
-	 <1358266794.10591.8.camel@dabdike.int.hansenpartnership.com>
-	 <50F64AC1.3040304@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jan 2013 05:33:53 -0500
+X-AuditID: 9c930179-b7b54ae000000e44-f0-50f682101d78
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCHSET 00/13] perf report: Add support for event group view (v8)
+References: <1358235117-12803-1-git-send-email-namhyung@kernel.org>
+	<20130115183858.GF5826@ghostprotocols.net>
+Date: Wed, 16 Jan 2013 19:33:52 +0900
+In-Reply-To: <20130115183858.GF5826@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Tue, 15 Jan 2013 15:38:58 -0300")
+Message-ID: <87622xmn73.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-16 at 12:07 +0530, Subhash Jadavani wrote:
+On Tue, 15 Jan 2013 15:38:58 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Jan 15, 2013 at 04:31:44PM +0900, Namhyung Kim escreveu:
+>> This is my 8th attempt to enable the event group view for perf report.
+>> For basic idea and usage example, please see my initial post [1].
+>> 
+>> This version is rebased on the current acme/perf/core and it's mainly
+>> changed due to a refactoring of gtk browser.
+>> 
+>> You can get this via 'perf/group-v8' branch on my tree:
+>> 
+>> git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+>> 
+>> Any comments are welcome, thanks,
+>
+> It would be great if examples of this in use were provided.
+>
+> Detailed ones at that, showing how things were in the past, how the info
+> can be retrieved when using 'perf report --stdio', perhaps 'perf evlist'
+> can show the stored group information too, how the 'perf report' output
+> looks like when showing group info, things like that.
 
-> Now consider this call stack from MMC block driver (this is on the ARmv7 
-> based board):
->      [   98.918174] [<c001b50c>] (v7_dma_inv_range+0x30/0x48) from 
-> [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c)
->      [   98.927819] [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c) from 
-> [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c)
->      [   98.937982] [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c) from 
-> [<c0017ff8>] (dma_map_sg+0x3c/0x114)
+I think most of aforementioned things were on the initial post.  I
+thought it's too verbose to be contained to the cover letter every time
+so I just put the link.
 
-OK, so this is showing that ARM itself is making the assumption that the
-pages are contiguous in the page offset map.
+But I'll include it next time and work on the perf evlist too.
 
-Fix this by doing the increment via the pfn, which will do the right
-thing whatever the memory model.
-
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-
----
-
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 6b2fb87..ab88c5b 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -809,7 +809,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
- 			op(vaddr, len, dir);
- 		}
- 		offset = 0;
--		page++;
-+		page = pfn_to_page(page_to_pfn(page) + 1);
- 		left -= len;
- 	} while (left);
- }
-
-
+Thanks,
+Namhyung
