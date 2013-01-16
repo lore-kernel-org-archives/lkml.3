@@ -1,260 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab3APJDW (ORCPT <rfc822;w@1wt.eu>);
+	id S932390Ab3APJD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 04:03:26 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:54901 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932185Ab3APJDW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 04:03:22 -0500
-Received: from mga14.intel.com ([143.182.124.37]:9698 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932127Ab3APJBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 04:01:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,478,1355126400"; 
-   d="scan'208";a="191692391"
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
-        Aaron Lu <aaron.lu@intel.com>, Shane Huang <shane.huang@amd.com>
-Subject: [PATCH v7 2/4] block: add runtime pm helpers
-Date: Wed, 16 Jan 2013 17:02:19 +0800
-Message-Id: <1358326941-3725-3-git-send-email-aaron.lu@intel.com>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1358326941-3725-1-git-send-email-aaron.lu@intel.com>
-References: <1358326941-3725-1-git-send-email-aaron.lu@intel.com>
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r0G92aSN030618, This message is released by code: ctaloc0852
+Message-ID: <50F66CAD.6090003@realsil.com.cn>
+Date: Wed, 16 Jan 2013 17:02:37 +0800
+From: wwang <wei_wang@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: =?GB2312?B?zfXsvw==?= <wei_wang@realsil.com.cn>
+CC: "cjb@laptop.org" <cjb@laptop.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "oakad@yahoo.com" <oakad@yahoo.com>,
+        "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH v4 0/8] rtsx patchset for MFD and MMC tree
+References: <cover.1357638064.git.wei_wang@realsil.com.cn>
+In-Reply-To: <cover.1357638064.git.wei_wang@realsil.com.cn>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lin Ming <ming.m.lin@intel.com>
+于 2013年01月08日 17:57, 王炜 写道:
+> From: Wei WANG <wei_wang@realsil.com.cn>
+>
+> v2:
+> 1. Add commit message for patch 2
+> 2. Move pci_set_dma_mask before the pci_enable_device(pcidev) call
+>
+> v3:
+> 1. Add commit message for patch 3
+> 2. Add patch 8: Use macro defines to replace some variables
+>
+> v4:
+> 1. Describe why patch 3 is needed
+> 2. Modify a comment character in patch 7
+>
+> Wei WANG (8):
+>   MFD:rtsx: Fix typo in comment
+>   MFD:rtsx: Remove redundant code
+>   MFD:rtsx: Declare that the DMA address limitation is 32bit explicitly
+>   MFD:rtsx: Add callback function switch_output_voltage
+>   MMC:rtsx: Using callback function to switch output voltage
+>   MFD:rtsx: Add callback function conv_clk_and_div_n
+>   MFD:rtsx: Fix checkpatch warning
+>   MFD:rtsx: Use macro defines to replace some variables
+>
+>  drivers/mfd/rtl8411.c             |   29 ++++++++++++++++++++++++
+>  drivers/mfd/rts5209.c             |   21 +++++++++++++++++
+>  drivers/mfd/rts5229.c             |   21 +++++++++++++++++
+>  drivers/mfd/rtsx_pcr.c            |   45 +++++++++++++++++++++++++------------
+>  drivers/mfd/rtsx_pcr.h            |    3 +++
+>  drivers/mmc/host/rtsx_pci_sdmmc.c |   30 +++++--------------------
+>  include/linux/mfd/rtsx_common.h   |    3 +++
+>  include/linux/mfd/rtsx_pci.h      |   27 +++++++++++++++++-----
+>  8 files changed, 135 insertions(+), 44 deletions(-)
+>
+Hi Chris and Samuel:
 
-Add runtime pm helper functions:
+This patchset is trying to fix some bugs and some coding style issues.
+Would you please help to merge it to v3.8 kernel?
 
-void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-  - Initialization function for drivers to call.
-
-int blk_pre_runtime_suspend(struct request_queue *q)
-  - If any requests are in the queue, mark last busy and return -EBUSY.
-    Otherwise set q->rpm_status to RPM_SUSPENDING and return 0.
-
-void blk_post_runtime_suspend(struct request_queue *q, int err)
-  - If the suspend succeeded then set q->rpm_status to RPM_SUSPENDED.
-    Otherwise set it to RPM_ACTIVE.
-
-void blk_pre_runtime_resume(struct request_queue *q)
-  - Set q->rpm_status to RPM_RESUMING.
-
-void blk_post_runtime_resume(struct request_queue *q, int err)
-  - If the resume succeeded then set q->rpm_status to RPM_ACTIVE
-    and call __blk_run_queue, then mark last busy and autosuspend.
-    Otherwise set q->rpm_status to RPM_SUSPENDED.
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
----
- block/blk-core.c       | 136 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/blkdev.h |  27 ++++++++++
- 2 files changed, 163 insertions(+)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 66d3168..e441daf 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -30,6 +30,7 @@
- #include <linux/list_sort.h>
- #include <linux/delay.h>
- #include <linux/ratelimit.h>
-+#include <linux/pm_runtime.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/block.h>
-@@ -3043,6 +3044,141 @@ void blk_finish_plug(struct blk_plug *plug)
- }
- EXPORT_SYMBOL(blk_finish_plug);
- 
-+#ifdef CONFIG_PM_RUNTIME
-+/**
-+ * blk_pm_runtime_init - Block layer runtime PM initialization routine
-+ * @q: the queue of the device
-+ * @dev: the device the queue belongs to
-+ *
-+ * Description:
-+ *    Initialize runtime-PM-related fields for @q and start auto suspend for
-+ *    @dev. Drivers that want to take advantage of request-based runtime PM
-+ *    should call this function after @dev has been initialized, and its
-+ *    request queue @q has been allocated, and runtime PM for it can not happen
-+ *    yet(either due to disabled/forbidden or its usage_count > 0).
-+ *
-+ *    The block layer runtime PM is request based, so only works for drivers
-+ *    that use request as their IO unit instead of those directly use bio's.
-+ */
-+void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-+{
-+	q->dev = dev;
-+	q->rpm_status = RPM_ACTIVE;
-+	pm_runtime_use_autosuspend(q->dev);
-+	pm_runtime_mark_last_busy(q->dev);
-+	pm_runtime_autosuspend(q->dev);
-+}
-+EXPORT_SYMBOL(blk_pm_runtime_init);
-+
-+/**
-+ * blk_pre_runtime_suspend - Pre runtime suspend check
-+ * @q: the queue of the device
-+ *
-+ * Description:
-+ *    This function will check if runtime suspend is allowed for the device
-+ *    by examining if there are any requests pending in the queue. If there
-+ *    are requests pending, the device can not be runtime suspended; otherwise,
-+ *    the queue's status will be updated to SUSPENDING and the driver can
-+ *    proceed to suspend the device.
-+ *
-+ *    For the not allowed case, we mark last busy for the device so that
-+ *    runtime PM core will try to autosuspend it some time later.
-+ *
-+ *    This function should be called near the start of the device's
-+ *    runtime_suspend callback.
-+ *
-+ * Return:
-+ *    0		- OK to runtime suspend the device
-+ *    -EBUSY	- Device should not be runtime suspended
-+ */
-+int blk_pre_runtime_suspend(struct request_queue *q)
-+{
-+	int ret = 0;
-+
-+	spin_lock_irq(q->queue_lock);
-+	if (q->nr_pending) {
-+		ret = -EBUSY;
-+		pm_runtime_mark_last_busy(q->dev);
-+	} else {
-+		q->rpm_status = RPM_SUSPENDING;
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL(blk_pre_runtime_suspend);
-+
-+/**
-+ * blk_post_runtime_suspend - Post runtime suspend processing
-+ * @q: the queue of the device
-+ * @err: return value of the device's runtime_suspend function
-+ *
-+ * Description:
-+ *    Update the queue's runtime status according to the return value of the
-+ *    device's runtime suspend function.
-+ *
-+ *    This function should be called near the end of the device's
-+ *    runtime_suspend callback.
-+ */
-+void blk_post_runtime_suspend(struct request_queue *q, int err)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!err)
-+		q->rpm_status = RPM_SUSPENDED;
-+	else
-+		q->rpm_status = RPM_ACTIVE;
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_post_runtime_suspend);
-+
-+/**
-+ * blk_pre_runtime_resume - Pre runtime resume processing
-+ * @q: the queue of the device
-+ *
-+ * Description:
-+ *    Update the queue's runtime status to RESUMING in preparation for the
-+ *    runtime resume of the device.
-+ *
-+ *    This function should be called near the start of the device's
-+ *    runtime_resume callback.
-+ */
-+void blk_pre_runtime_resume(struct request_queue *q)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	q->rpm_status = RPM_RESUMING;
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_pre_runtime_resume);
-+
-+/**
-+ * blk_post_runtime_resume - Post runtime resume processing
-+ * @q: the queue of the device
-+ * @err: return value of the device's runtime_resume function
-+ *
-+ * Description:
-+ *    Update the queue's runtime status according to the return value of the
-+ *    device's runtime_resume function. If it is successfully resumed, process
-+ *    the requests that are queued into the device's queue when it is resuming
-+ *    and then mark last busy and initiate autosuspend for it.
-+ *
-+ *    This function should be called near the end of the device's
-+ *    runtime_resume callback.
-+ */
-+void blk_post_runtime_resume(struct request_queue *q, int err)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!err) {
-+		q->rpm_status = RPM_ACTIVE;
-+		__blk_run_queue(q);
-+		pm_runtime_mark_last_busy(q->dev);
-+		pm_runtime_autosuspend(q->dev);
-+	} else {
-+		q->rpm_status = RPM_SUSPENDED;
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_post_runtime_resume);
-+#endif
-+
- int __init blk_dev_init(void)
- {
- 	BUILD_BUG_ON(__REQ_NR_BITS > 8 *
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 78feda9..89d89c7 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -361,6 +361,12 @@ struct request_queue {
- 	 */
- 	struct kobject kobj;
- 
-+#ifdef CONFIG_PM_RUNTIME
-+	struct device		*dev;
-+	int			rpm_status;
-+	unsigned int		nr_pending;
-+#endif
-+
- 	/*
- 	 * queue settings
- 	 */
-@@ -961,6 +967,27 @@ struct request_queue *blk_alloc_queue_node(gfp_t, int);
- extern void blk_put_queue(struct request_queue *);
- 
- /*
-+ * block layer runtime pm functions
-+ */
-+#ifdef CONFIG_PM_RUNTIME
-+extern void blk_pm_runtime_init(struct request_queue *q, struct device *dev);
-+extern int blk_pre_runtime_suspend(struct request_queue *q);
-+extern void blk_post_runtime_suspend(struct request_queue *q, int err);
-+extern void blk_pre_runtime_resume(struct request_queue *q);
-+extern void blk_post_runtime_resume(struct request_queue *q, int err);
-+#else
-+static inline void blk_pm_runtime_init(struct request_queue *q,
-+	struct device *dev) {}
-+static inline int blk_pre_runtime_suspend(struct request_queue *q)
-+{
-+	return -ENOSYS;
-+}
-+static inline void blk_post_runtime_suspend(struct request_queue *q, int err) {}
-+static inline void blk_pre_runtime_resume(struct request_queue *q) {}
-+static inline void blk_post_runtime_resume(struct request_queue *q, int err) {}
-+#endif
-+
-+/*
-  * blk_plug permits building a queue of related requests by holding the I/O
-  * fragments for a short period. This allows merging of sequential requests
-  * into single larger request. As the requests are moved from a per-task list to
--- 
-1.8.0.2
-
+BR,
+Wei WANG
