@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab3APQEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:04:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36158 "EHLO
+	id S1758367Ab3APQE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:04:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36170 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758318Ab3APQEL (ORCPT
+	with ESMTP id S1758346Ab3APQET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:04:11 -0500
+	Wed, 16 Jan 2013 11:04:19 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jerome Glisse <jglisse@redhat.com>,
+Cc: Chris Boot <bootc@bootc.net>, Andy Grover <agrover@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 105/222] drm/radeon: fix amd afusion gpu setup aka sumo v2
-Date: Wed, 16 Jan 2013 13:55:05 -0200
-Message-Id: <1358351822-7675-106-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 107/222] sbp-target: fix error path in sbp_make_tpg()
+Date: Wed, 16 Jan 2013 13:55:07 -0200
+Message-Id: <1358351822-7675-108-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,80 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Chris Boot <bootc@bootc.net>
 
-commit bd25f0783dc3fb72e1e2779c2b99b2d34b67fa8a upstream.
+commit e1fe2060d7e8f58a69374135e32e90f0bb79a7fd upstream.
 
-Set the proper number of tile pipe that should be a multiple of
-pipe depending on the number of se engine.
+If the TPG memory is allocated successfully, but we fail further along
+in the function, a dangling pointer to freed memory is left in the TPort
+structure. This is mostly harmless, but does prevent re-trying the
+operation without first removing the TPort altogether.
 
-Fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=56405
-https://bugs.freedesktop.org/show_bug.cgi?id=56720
-
-v2: Don't change sumo2
-
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Chris Boot <bootc@bootc.net>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen.c  |    8 ++++----
- drivers/gpu/drm/radeon/evergreend.h |    2 ++
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ drivers/target/sbp/sbp_target.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index fb868675..2aa7fdb 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1639,7 +1639,7 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
- 	case CHIP_SUMO:
- 		rdev->config.evergreen.num_ses = 1;
- 		rdev->config.evergreen.max_pipes = 4;
--		rdev->config.evergreen.max_tile_pipes = 2;
-+		rdev->config.evergreen.max_tile_pipes = 4;
- 		if (rdev->pdev->device == 0x9648)
- 			rdev->config.evergreen.max_simds = 3;
- 		else if ((rdev->pdev->device == 0x9647) ||
-@@ -1662,7 +1662,7 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
- 		rdev->config.evergreen.sc_prim_fifo_size = 0x40;
- 		rdev->config.evergreen.sc_hiz_tile_fifo_size = 0x30;
- 		rdev->config.evergreen.sc_earlyz_tile_fifo_size = 0x130;
--		gb_addr_config = REDWOOD_GB_ADDR_CONFIG_GOLDEN;
-+		gb_addr_config = SUMO_GB_ADDR_CONFIG_GOLDEN;
- 		break;
- 	case CHIP_SUMO2:
- 		rdev->config.evergreen.num_ses = 1;
-@@ -1684,7 +1684,7 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
- 		rdev->config.evergreen.sc_prim_fifo_size = 0x40;
- 		rdev->config.evergreen.sc_hiz_tile_fifo_size = 0x30;
- 		rdev->config.evergreen.sc_earlyz_tile_fifo_size = 0x130;
--		gb_addr_config = REDWOOD_GB_ADDR_CONFIG_GOLDEN;
-+		gb_addr_config = SUMO2_GB_ADDR_CONFIG_GOLDEN;
- 		break;
- 	case CHIP_BARTS:
- 		rdev->config.evergreen.num_ses = 2;
-@@ -1732,7 +1732,7 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
- 		break;
- 	case CHIP_CAICOS:
- 		rdev->config.evergreen.num_ses = 1;
--		rdev->config.evergreen.max_pipes = 4;
-+		rdev->config.evergreen.max_pipes = 2;
- 		rdev->config.evergreen.max_tile_pipes = 2;
- 		rdev->config.evergreen.max_simds = 2;
- 		rdev->config.evergreen.max_backends = 1 * rdev->config.evergreen.num_ses;
-diff --git a/drivers/gpu/drm/radeon/evergreend.h b/drivers/gpu/drm/radeon/evergreend.h
-index d2f0528..735e515 100644
---- a/drivers/gpu/drm/radeon/evergreend.h
-+++ b/drivers/gpu/drm/radeon/evergreend.h
-@@ -45,6 +45,8 @@
- #define TURKS_GB_ADDR_CONFIG_GOLDEN          0x02010002
- #define CEDAR_GB_ADDR_CONFIG_GOLDEN          0x02010001
- #define CAICOS_GB_ADDR_CONFIG_GOLDEN         0x02010001
-+#define SUMO_GB_ADDR_CONFIG_GOLDEN           0x02010002
-+#define SUMO2_GB_ADDR_CONFIG_GOLDEN          0x02010002
+diff --git a/drivers/target/sbp/sbp_target.c b/drivers/target/sbp/sbp_target.c
+index 7e6136e..e935aaa 100644
+--- a/drivers/target/sbp/sbp_target.c
++++ b/drivers/target/sbp/sbp_target.c
+@@ -2221,20 +2221,23 @@ static struct se_portal_group *sbp_make_tpg(
+ 	tport->mgt_agt = sbp_management_agent_register(tport);
+ 	if (IS_ERR(tport->mgt_agt)) {
+ 		ret = PTR_ERR(tport->mgt_agt);
+-		kfree(tpg);
+-		return ERR_PTR(ret);
++		goto out_free_tpg;
+ 	}
  
- /* Registers */
+ 	ret = core_tpg_register(&sbp_fabric_configfs->tf_ops, wwn,
+ 			&tpg->se_tpg, (void *)tpg,
+ 			TRANSPORT_TPG_TYPE_NORMAL);
+-	if (ret < 0) {
+-		sbp_management_agent_unregister(tport->mgt_agt);
+-		kfree(tpg);
+-		return ERR_PTR(ret);
+-	}
++	if (ret < 0)
++		goto out_unreg_mgt_agt;
  
+ 	return &tpg->se_tpg;
++
++out_unreg_mgt_agt:
++	sbp_management_agent_unregister(tport->mgt_agt);
++out_free_tpg:
++	tport->tpg = NULL;
++	kfree(tpg);
++	return ERR_PTR(ret);
+ }
+ 
+ static void sbp_drop_tpg(struct se_portal_group *se_tpg)
 -- 
 1.7.9.5
 
