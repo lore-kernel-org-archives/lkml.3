@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758768Ab3APQ02 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:26:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:37417 "EHLO
+	id S1757072Ab3APQ0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:26:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36682 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758663Ab3APQ0F (ORCPT
+	with ESMTP id S932576Ab3APQIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:26:05 -0500
-Date: Wed, 16 Jan 2013 14:25:59 -0200
+	Wed, 16 Jan 2013 11:08:23 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Subject: Re: [ 3.5.y.z extended stable ] Linux 3.5.7.3 stable review
-Message-ID: <20130116162559.GA4324@herton-Z68MA-D2H-B3>
-References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 169/222] drm/radeon: add WAIT_UNTIL to evergreen VM safe reg list
+Date: Wed, 16 Jan 2013 13:56:09 -0200
+Message-Id: <1358351822-7675-170-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one missed the first introductory paragraph..., here it goes:
+3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
 
-I am announcing the review cycle for the 3.5.7.3 release of stable patches.
-This new release contains 222 patches. Proposed patches are posted as a
-response to this message. The same patches are also available at the
-following repository:
+------------------
 
-> git://kernel.ubuntu.com/ubuntu/linux.git linux-3.5.y-review
-> 
-> If there are any problems, or if anything is missing, please answer to
-> this or to any of the followup patches. Note that any answer should be
-> made at maximum in 3 days, after that the final release of 3.5.7.3 will be
-> made.
-> 
-> For more information about the 3.5.y.z extended stable tree, see
-> https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-> 
-> Included below are the diffstat and shortlog for this release.
-> 
-> -Herton
-> 
+From: Alex Deucher <alexander.deucher@amd.com>
 
+commit 668bbc81baf0f34df832d8aca5c7d5e19a493c68 upstream.
+
+It's used in a recent mesa commit:
+http://cgit.freedesktop.org/mesa/mesa/commit/?id=24b1206ab2dcd506aaac3ef656aebc8bc20cd27a
+and there may be some other cases in the future where it's required.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/gpu/drm/radeon/evergreen_cs.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/radeon/evergreen_cs.c b/drivers/gpu/drm/radeon/evergreen_cs.c
+index 33aeaa5..4324c0d 100644
+--- a/drivers/gpu/drm/radeon/evergreen_cs.c
++++ b/drivers/gpu/drm/radeon/evergreen_cs.c
+@@ -2672,6 +2672,7 @@ static bool evergreen_vm_reg_valid(u32 reg)
+ 
+ 	/* check config regs */
+ 	switch (reg) {
++	case WAIT_UNTIL:
+ 	case GRBM_GFX_INDEX:
+ 	case CP_STRMOUT_CNTL:
+ 	case CP_COHER_CNTL:
 -- 
-[]'s
-Herton
+1.7.9.5
+
