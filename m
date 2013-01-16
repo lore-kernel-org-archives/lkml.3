@@ -1,122 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758722Ab3APKOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:14:46 -0500
-Received: from csamuel.org ([74.50.50.137]:51061 "EHLO csamuel.org"
+	id S1758794Ab3APKOt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:14:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63301 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758365Ab3APKOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:14:42 -0500
-Message-ID: <50F67D75.9080508@csamuel.org>
-Date: Wed, 16 Jan 2013 21:14:13 +1100
-From: Chris Samuel <chris@csamuel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1758365Ab3APKOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 05:14:46 -0500
+Date: Wed, 16 Jan 2013 11:14:38 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH -tip] sched: Pair ttwu_activate() with uwtt_deactivate()
+Message-ID: <10a81412c1ac7549412b11a9aa0b5c70dac5de37.1358331166.git.agordeev@redhat.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        dhowells@redhat.com, Josh Boyer <jwboyer@gmail.com>
-Subject: [PATCH] MODSIGN: Warn when module signature checking fails
-Content-Type: multipart/mixed;
- boundary="------------010700070607010007060900"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010700070607010007060900
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Try to make reading of __schedule() bit more easy.
 
-/* Please CC me, I'm not on LKML */
-
-* Reworked from the original patch based on feedback from Josh Boyer
-* (putting the code in load_module()) and Rusty Russel (use
-* KERN_NOTICE).  Extended to cover the other failure modes.
-
-Currently if a signature check fails on module load for any reason no
-feedback is given, except if the failure is due to either not having
-the appropriate key or the signature is missing (both -ENOKEY) *and*
-we are not doing strict checking (module.sig_enforce is not set). In
-that situation only a contextless kernel taint message appears:
-
-Disabling lock debugging due to kernel taint
-
-This patch:
-
-a) Reports the reason why a module has failed to load (either one of
-    the explicit failures or an error propagated back from the crypto
-    infrastructure) if it is going to be a hard failure (err is set).
-
-b) causes a single warning to be emitted to explain why the kernel
-    is being tainted, before the above taint warning is output, when
-    the error is -ENOKEY (implicit in err=0 and sig_ok not being true)
-    and module.sig_enforce is not set.
-
-Found whilst trying to work out why all the 3.8 development kernels
-I was building and testing were warning about taints and why all modules
-were listed as forced load (F) in /proc/modules.
-
-It would be really nice to be able to work out what the name of the
-module is, but that doesn't appear to be possible from the information
-load_module() has access to, plus my kernel-fu is not great.
-
-Signed-off-by: Christopher Samuel <chris@csamuel.org>
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
-  kernel/module.c |   21 +++++++++++++++++++--
-  1 file changed, 19 insertions(+), 2 deletions(-)
+ kernel/sched/core.c |   42 ++++++++++++++++++++++++------------------
+ 1 files changed, 24 insertions(+), 18 deletions(-)
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 250092c..ec789d3 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3099,8 +3099,23 @@ static int load_module(struct load_info *info, 
-const char __user *uargs,
-  	long err;
-   	err = module_sig_check(info);
--	if (err)
-+	if (err) {
-+		switch (err) {
-+		case -EBADMSG:
-+			printk(KERN_NOTICE "Module verification failed: module signature 
-corrupt or unrecognised - not loading\n");
-+			break;
-+		case -ENOPKG:
-+			printk(KERN_NOTICE "Module verification failed: requisite algorithm 
-unavailable - not loading\n");
-+			break;
-+		case -ENOKEY:
-+			printk(KERN_NOTICE "Module verification failed: signature and/or 
-required key missing - not loading\n");
-+			break;
-+		default:
-+			printk(KERN_NOTICE "Module verification failed: supporting code 
-reported failure %ld - not loading\n",err);
-+			break;
-+		}
-  		goto free_copy;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 38413f6..dd54ded 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1272,6 +1272,27 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
+ 		wq_worker_waking_up(p, cpu_of(rq));
+ }
+ 
++static void try_to_wake_up_local(struct task_struct *p);
++
++static void uwtt_deactivate(struct rq *rq, struct task_struct *p, int de_flags)
++{
++	deactivate_task(rq, p, de_flags);
++	p->on_rq = 0;
++
++	/*
++	 * If a worker went to sleep, notify and ask workqueue
++	 * whether it wants to wake up a task to maintain
++	 * concurrency.
++	 */
++	if (p->flags & PF_WQ_WORKER) {
++		struct task_struct *to_wakeup;
++
++		to_wakeup = wq_worker_sleeping(p, cpu_of(rq));
++		if (to_wakeup)
++			try_to_wake_up_local(to_wakeup);
 +	}
-   	err = elf_header_check(info);
-  	if (err)
-@@ -3115,8 +3130,10 @@ static int load_module(struct load_info *info, 
-const char __user *uargs,
-   #ifdef CONFIG_MODULE_SIG
-  	mod->sig_ok = info->sig_ok;
--	if (!mod->sig_ok)
-+	if (!mod->sig_ok) {
-+		printk_once(KERN_NOTICE "Module verification failed: signature and/or 
-required key missing - tainting kernel\n");
-  		add_taint_module(mod, TAINT_FORCED_MODULE);
-+	}
-  #endif
-   	/* Now module is in final location, initialize linked lists, etc. */
++}
++
+ /*
+  * Mark the task runnable and perform wakeup-preemption.
+  */
+@@ -2907,25 +2928,10 @@ need_resched:
+ 
+ 	switch_count = &prev->nivcsw;
+ 	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+-		if (unlikely(signal_pending_state(prev->state, prev))) {
++		if (unlikely(signal_pending_state(prev->state, prev)))
+ 			prev->state = TASK_RUNNING;
+-		} else {
+-			deactivate_task(rq, prev, DEQUEUE_SLEEP);
+-			prev->on_rq = 0;
+-
+-			/*
+-			 * If a worker went to sleep, notify and ask workqueue
+-			 * whether it wants to wake up a task to maintain
+-			 * concurrency.
+-			 */
+-			if (prev->flags & PF_WQ_WORKER) {
+-				struct task_struct *to_wakeup;
+-
+-				to_wakeup = wq_worker_sleeping(prev, cpu);
+-				if (to_wakeup)
+-					try_to_wake_up_local(to_wakeup);
+-			}
+-		}
++		else
++			uwtt_deactivate(rq, prev, DEQUEUE_SLEEP);
+ 		switch_count = &prev->nvcsw;
+ 	}
+ 
 -- 
-1.7.10.4
+1.7.7.6
 
 
---------------010700070607010007060900
-Content-Type: text/plain; charset=UTF-8;
- name="Attached Message Part"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="Attached Message Part"
-
-
---------------010700070607010007060900--
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
