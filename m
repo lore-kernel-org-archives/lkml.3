@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab3APN4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:56:06 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43908 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755842Ab3APNyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756144Ab3APN4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:56:35 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42818 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755763Ab3APNyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 08:54:10 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         Tero Kristo <t-kristo@ti.com>
-Subject: [PATCH v2 07/11] mfd: twl-core: Do not create dummy pdata when booted with DT
-Date: Wed, 16 Jan 2013 14:53:55 +0100
-Message-ID: <1358344439-23017-8-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 06/11] mfd: twl-core: Do not try to call legacy mfd add_children() when booted with DT
+Date: Wed, 16 Jan 2013 14:53:54 +0100
+Message-ID: <1358344439-23017-7-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1358344439-23017-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1358344439-23017-1-git-send-email-peter.ujfalusi@ti.com>
@@ -23,76 +22,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When booted with DT we can manage without the dummy pdata.
+There is really no point to retry to add children devices in case the
+of_platform_populate() fails.
+We do not have any information provided via pdata in this case anyways.
+Depending on the boot type (legacy or DT) only execute either one.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/mfd/twl-core.c | 31 +++++++------------------------
- 1 file changed, 7 insertions(+), 24 deletions(-)
+ drivers/mfd/twl-core.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 86cca9e..547fed5 100644
+index fbff830..86cca9e 100644
 --- a/drivers/mfd/twl-core.c
 +++ b/drivers/mfd/twl-core.c
-@@ -1165,6 +1165,11 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	int				status;
- 	unsigned			i, num_slaves;
- 
-+	if (!node && !pdata) {
-+		dev_err(&client->dev, "no platform data\n");
-+		return -EINVAL;
-+	}
-+
- 	pdev = platform_device_alloc(DRIVER_NAME, -1);
- 	if (!pdev) {
- 		dev_err(&client->dev, "can't alloc pdev\n");
-@@ -1177,28 +1182,6 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 		return status;
+@@ -1305,10 +1305,9 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		twl_i2c_write_u8(TWL4030_MODULE_INTBR, temp, REG_GPPUPDCTR1);
  	}
  
--	if (node && !pdata) {
--		/*
--		 * XXX: Temporary pdata until the information is correctly
--		 * retrieved by every TWL modules from DT.
--		 */
--		pdata = devm_kzalloc(&client->dev,
--				     sizeof(struct twl4030_platform_data),
--				     GFP_KERNEL);
--		if (!pdata) {
--			status = -ENOMEM;
--			goto free;
--		}
--	}
--
--	if (!pdata) {
--		dev_dbg(&client->dev, "no platform data?\n");
--		status = -EINVAL;
--		goto free;
--	}
--
--	platform_set_drvdata(pdev, pdata);
--
- 	if (i2c_check_functionality(client->adapter, I2C_FUNC_I2C) == 0) {
- 		dev_dbg(&client->dev, "can't talk I2C?\n");
- 		status = -EIO;
-@@ -1264,7 +1247,7 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	inuse = true;
+-	status = -ENODEV;
+ 	if (node)
+ 		status = of_platform_populate(node, NULL, NULL, &client->dev);
+-	if (status)
++	else
+ 		status = add_children(pdata, irq_base, id->driver_data);
  
- 	/* setup clock framework */
--	clocks_init(&pdev->dev, pdata->clock);
-+	clocks_init(&pdev->dev, pdata ? pdata->clock : NULL);
- 
- 	/* read TWL IDCODE Register */
- 	if (twl_id == TWL4030_CLASS_ID) {
-@@ -1273,7 +1256,7 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	}
- 
- 	/* load power event scripts */
--	if (IS_ENABLED(CONFIG_TWL4030_POWER) && pdata->power)
-+	if (IS_ENABLED(CONFIG_TWL4030_POWER) && pdata && pdata->power)
- 		twl4030_power_init(pdata->power);
- 
- 	/* Maybe init the T2 Interrupt subsystem */
+ fail:
 -- 
 1.8.1
 
