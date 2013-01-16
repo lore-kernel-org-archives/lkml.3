@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab3APNVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:21:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5230 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab3APNVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:21:37 -0500
-Date: Wed, 16 Jan 2013 08:21:27 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, dhowells@redhat.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@redhat.com
-Subject: Re: [PATCH] MODSIGN: Add TAINT_NOKEY_MODULE
-Message-ID: <20130116132126.GE6964@hansolo.jdub.homelinux.org>
-References: <20130104191205.GD27554@hansolo.jdub.homelinux.org>
- <87bod14x44.fsf@rustcorp.com.au>
- <20130107145832.GA12363@hansolo.jdub.homelinux.org>
- <20130115190911.GA6964@hansolo.jdub.homelinux.org>
- <87y5ftyf51.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y5ftyf51.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756398Ab3APNYP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:24:15 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39676 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab3APNYO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 08:24:14 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH] regmap: debugfs: Fix last entry store in the offset cache
+Date: Wed, 16 Jan 2013 14:24:11 +0100
+Message-Id: <1358342651-19690-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 02:04:50PM +1030, Rusty Russell wrote:
-> Josh Boyer <jwboyer@redhat.com> writes:
-> > With module signing enabled but not in enforcing mode, we don't consider
-> > unsigned modules to be an error.  However, if we encounter an unsigned
-> > module we currently taint the module and kernel with TAINT_FORCED_MODULE.
-> > That also disables lockdep within the kernel.
-> 
-> How about this, instead?  Ingo?
+Commit e8d6539c8a94b88fc7ca5d6bdd9eeb0e64b434e4
+(regmap: debugfs: Make sure we store the last entry in the offset cache)
+causes regmap_debugfs_get_dump_start to unconditionally return base if
+the debugfs_off_cache is not empty when the function is called (because
+c == NULL). This effectively causes all but the first read from
+debugfs/regmap/*/registers to start from register position 0, which
+in turn results in infinitely looping debugfs register map output.
 
-That would work for me for the lockdep issue, sure.  I thought I'd make
-the unsigned/wrong key module case a bit more clear at the same time.
-Do you think that's worth doing aside from lockdep?  If so, and your
-patch seems acceptable to others, I'd be happy to respin my patch on
-top.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+ drivers/base/regmap/regmap-debugfs.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-I'll give your patch a test in just a bit.
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index 46a213a..b3369e6 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -114,15 +114,15 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+ 
+ 			p += map->debugfs_tot_len;
+ 		}
+-	}
+ 
+-	/* Close the last entry off if we didn't scan beyond it */
+-	if (c) {
+-		c->max = p - 1;
+-		list_add_tail(&c->list,
+-			      &map->debugfs_off_cache);
+-	} else {
+-		return base;
++		/* Close the last entry off if we didn't scan beyond it */
++		if (c) {
++			c->max = p - 1;
++			list_add_tail(&c->list,
++				      &map->debugfs_off_cache);
++		} else {
++			return base;
++		}
+ 	}
+ 
+ 	/*
+-- 
+1.7.10.4
 
-josh
