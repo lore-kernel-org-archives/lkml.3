@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab3APQ1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:27:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36664 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932412Ab3APQIL (ORCPT
+	id S932518Ab3APQ16 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:27:58 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:37756 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758750Ab3APQ1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:08:11 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 166/222] ext4: check dioread_nolock on remount
-Date: Wed, 16 Jan 2013 13:56:06 -0200
-Message-Id: <1358351822-7675-167-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 16 Jan 2013 11:27:54 -0500
+MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <1358311923.537.3.camel@gitbox>
+References: <20130116141411.8fadedee54ed35dc0eddd288@canb.auug.org.au>
+	<1358308153.32106.8.camel@gitbox>
+	<50F62D69.8080100@nvidia.com>
+	<1358311923.537.3.camel@gitbox>
+Date: Wed, 16 Jan 2013 08:27:54 -0800
+Message-ID: <CAOesGMgr_f-XGHOdMW3ugfXbVaUc4EALrbfJD=XeOKixxrY8PA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the tegra tree with the arm-soc tree
+From: Olof Johansson <olof@lixom.net>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Colin Cross <ccross@android.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+On Tue, Jan 15, 2013 at 8:52 PM, Tony Prisk <linux@prisktech.co.nz> wrote:
+> On Tue, 2013-01-15 at 21:32 -0700, Stephen Warren wrote:
+>> On 01/15/2013 08:49 PM, Tony Prisk wrote:
+>> > On Wed, 2013-01-16 at 14:14 +1100, Stephen Rothwell wrote:
+>> >> Hi all,
+>> >>
+>> >> Today's linux-next merge of the tegra tree got a conflict in
+>> >> drivers/clocksource/Makefile between commit ff7ec345f0ec ("timer: vt8500:
+>> >> Move timer code to drivers/clocksource") from the arm-soc tree and commit
+>> >> ac0fd9eca3ba ("ARM: tegra: move timer.c to drivers/clocksource/") from
+>> >> the tegra tree.
+>> >>
+>> >> I fixed it up (see below) and can carry the fix as necessary (no action
+>> >> is required).
+>> >>
+>> >
+>> > I don't know about everyone else, but I feel the preference should be to
+>> > keep things alphabetized where possible to help avoid with merge
+>> > conflicts later on. This is always a problem when we start tacking
+>> > things on the end of lists.
+>> >
+>> > I realise this Kconfig is not alphabetized anyway, but it's never too
+>> > early to start on the 'right' path.
+>>
+>> Sounds like a good idea, but the issue is: When to do the initial sort
+>> so it doesn't conflict with all the adds in a kernel cycle... Post and
+>> immediately commit a new patch near the end of the merge window?
+>
+> Given that the maintainer can quite safely do the patch (sorry
+> maintainers), I don't see any reason why it couldn't be done at the
+> point where they stop accepting patches for the merge-window. Once the
+> patches are stopped, sort the list in one last patch.
+>
+> It makes sense to get it done in this window if possible as the Kconfig
+> will only get bigger as time goes on, making sorting it more time
+> consuming.
 
-From: Jan Kara <jack@suse.cz>
+Actually, Russell wen through and reordered these not long ago, if I
+remember correctly. The current ordering is the same as in the
+structure definition, and should be kept that way.
 
-commit 261cb20cb2f0737a247aaf08dff7eb065e3e5b66 upstream.
 
-Currently we allow enabling dioread_nolock mount option on remount for
-filesystems where blocksize < PAGE_CACHE_SIZE.  This isn't really
-supported so fix the bug by moving the check for blocksize !=
-PAGE_CACHE_SIZE into parse_options(). Change the original PAGE_SIZE to
-PAGE_CACHE_SIZE along the way because that's what we are really
-interested in.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- fs/ext4/super.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 993392b..b045207 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1656,9 +1656,7 @@ static int parse_options(char *options, struct super_block *sb,
- 			 unsigned int *journal_ioprio,
- 			 int is_remount)
- {
--#ifdef CONFIG_QUOTA
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
--#endif
- 	char *p;
- 	substring_t args[MAX_OPT_ARGS];
- 	int token;
-@@ -1707,6 +1705,16 @@ static int parse_options(char *options, struct super_block *sb,
- 		}
- 	}
- #endif
-+	if (test_opt(sb, DIOREAD_NOLOCK)) {
-+		int blocksize =
-+			BLOCK_SIZE << le32_to_cpu(sbi->s_es->s_log_block_size);
-+
-+		if (blocksize < PAGE_CACHE_SIZE) {
-+			ext4_msg(sb, KERN_ERR, "can't mount with "
-+				 "dioread_nolock if block size != PAGE_SIZE");
-+			return 0;
-+		}
-+	}
- 	return 1;
- }
- 
-@@ -3410,15 +3418,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 			clear_opt(sb, DELALLOC);
- 	}
- 
--	blocksize = BLOCK_SIZE << le32_to_cpu(es->s_log_block_size);
--	if (test_opt(sb, DIOREAD_NOLOCK)) {
--		if (blocksize < PAGE_SIZE) {
--			ext4_msg(sb, KERN_ERR, "can't mount with "
--				 "dioread_nolock if block size != PAGE_SIZE");
--			goto failed_mount;
--		}
--	}
--
- 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
- 		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
- 
-@@ -3460,6 +3459,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	if (!ext4_feature_set_ok(sb, (sb->s_flags & MS_RDONLY)))
- 		goto failed_mount;
- 
-+	blocksize = BLOCK_SIZE << le32_to_cpu(es->s_log_block_size);
- 	if (blocksize < EXT4_MIN_BLOCK_SIZE ||
- 	    blocksize > EXT4_MAX_BLOCK_SIZE) {
- 		ext4_msg(sb, KERN_ERR,
--- 
-1.7.9.5
-
+-Olof
