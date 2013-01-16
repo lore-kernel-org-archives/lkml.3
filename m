@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab3APRMt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 12:12:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35718 "EHLO
+	id S1756806Ab3APP6c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:58:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35672 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694Ab3APP6o (ORCPT
+	with ESMTP id S1756545Ab3APP6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:58:44 -0500
+	Wed, 16 Jan 2013 10:58:18 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 021/222] xhci: Fix conditional check in bandwidth calculation.
-Date: Wed, 16 Jan 2013 13:53:41 -0200
-Message-Id: <1358351822-7675-22-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 014/222] iscsi-target: Always send a response before terminating iSCSI connection
+Date: Wed, 16 Jan 2013 13:53:34 -0200
+Message-Id: <1358351822-7675-15-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,54 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 392a07ae3316f2b90b39ce41e66d6f6b5c95de90 upstream.
+commit 1c5c12c666fda27c7c494b34934a0a0631a48130 upstream.
 
-David reports that at drivers/usb/host/xhci.c:2257:
+There are some cases, for example when the initiator sends an
+out-of-bounds ErrorRecoveryLevel value, where the iSCSI target
+terminates the connection without sending back any error.  Audit the
+login path and add appropriate iscsit_tx_login_rsp() calls to make
+sure this doesn't happen.
 
-static bool xhci_is_sync_in_ep(unsigned int ep_type)
-{
-    return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
-}
-
-The static analyser cppcheck says
-
-[linux-3.7-rc2/drivers/usb/host/xhci.c:2257]: (style) Redundant condition: If ep_type == 5, the comparison ep_type != 7 is always true.
-
-Maybe the original programmer intention was something like
-
-static bool xhci_is_sync_in_ep(unsigned int ep_type)
-{
-    return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
-}
-
-Fix this.
-
-This patch should be backported to stable kernels as old as 3.2, that
-contain the commit 2b69899934c63b7b9432568584fb4c4a2924f40c "xhci: USB
-3.0 BW checking."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/host/xhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target_login.c |    8 ++++----
+ drivers/target/iscsi/iscsi_target_nego.c  |   10 ++++++++--
+ 2 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 5f831c2..f67634b 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2253,7 +2253,7 @@ static bool xhci_is_async_ep(unsigned int ep_type)
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index 3cb7a4f..bc7d08f 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -131,13 +131,13 @@ int iscsi_check_for_session_reinstatement(struct iscsi_conn *conn)
  
- static bool xhci_is_sync_in_ep(unsigned int ep_type)
- {
--	return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
-+	return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
- }
+ 	initiatorname_param = iscsi_find_param_from_key(
+ 			INITIATORNAME, conn->param_list);
+-	if (!initiatorname_param)
+-		return -1;
+-
+ 	sessiontype_param = iscsi_find_param_from_key(
+ 			SESSIONTYPE, conn->param_list);
+-	if (!sessiontype_param)
++	if (!initiatorname_param || !sessiontype_param) {
++		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_INITIATOR_ERR,
++			ISCSI_LOGIN_STATUS_MISSING_FIELDS);
+ 		return -1;
++	}
  
- static unsigned int xhci_get_ss_bw_consumed(struct xhci_bw_info *ep_bw)
+ 	sessiontype = (strncmp(sessiontype_param->value, NORMAL, 6)) ? 1 : 0;
+ 
+diff --git a/drivers/target/iscsi/iscsi_target_nego.c b/drivers/target/iscsi/iscsi_target_nego.c
+index 2dba448..0184bea 100644
+--- a/drivers/target/iscsi/iscsi_target_nego.c
++++ b/drivers/target/iscsi/iscsi_target_nego.c
+@@ -628,8 +628,11 @@ static int iscsi_target_handle_csg_one(struct iscsi_conn *conn, struct iscsi_log
+ 			login->req_buf,
+ 			payload_length,
+ 			conn->param_list);
+-	if (ret < 0)
++	if (ret < 0) {
++		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_INITIATOR_ERR,
++				ISCSI_LOGIN_STATUS_INIT_ERR);
+ 		return -1;
++	}
+ 
+ 	if (login->first_request)
+ 		if (iscsi_target_check_first_request(conn, login) < 0)
+@@ -644,8 +647,11 @@ static int iscsi_target_handle_csg_one(struct iscsi_conn *conn, struct iscsi_log
+ 			login->rsp_buf,
+ 			&login->rsp_length,
+ 			conn->param_list);
+-	if (ret < 0)
++	if (ret < 0) {
++		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_INITIATOR_ERR,
++				ISCSI_LOGIN_STATUS_INIT_ERR);
+ 		return -1;
++	}
+ 
+ 	if (!login->auth_complete &&
+ 	     ISCSI_TPG_ATTRIB(ISCSI_TPG_C(conn))->authentication) {
 -- 
 1.7.9.5
 
