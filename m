@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758669Ab3APAJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:09:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42985 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437Ab3AOWdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 17:33:01 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 136/221] Revert "ALSA: hda - Shut up pins at power-saving mode with Conexnat codecs"
-Date: Tue, 15 Jan 2013 10:51:03 -0800
-Message-Id: <20130115185007.870436652@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.336.g94702dd
-In-Reply-To: <20130115184958.025580322@linuxfoundation.org>
-References: <20130115184958.025580322@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S932465Ab3APAKC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:10:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59887 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758513Ab3APAJ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 19:09:59 -0500
+Date: Tue, 15 Jan 2013 16:09:57 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 2/2] mm: forcely swapout when we are out of page cache
+Message-Id: <20130115160957.9ef860d7.akpm@linux-foundation.org>
+In-Reply-To: <20130111044327.GB6183@blaptop>
+References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+	<1357712474-27595-3-git-send-email-minchan@kernel.org>
+	<20130109162602.53a60e77.akpm@linux-foundation.org>
+	<20130110022306.GB14685@blaptop>
+	<20130110135828.c88bcaf1.akpm@linux-foundation.org>
+	<20130111044327.GB6183@blaptop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 11 Jan 2013 13:43:27 +0900
+Minchan Kim <minchan@kernel.org> wrote:
 
-------------------
+> Hi Andrew,
+> 
+> On Thu, Jan 10, 2013 at 01:58:28PM -0800, Andrew Morton wrote:
+> > On Thu, 10 Jan 2013 11:23:06 +0900
+> > Minchan Kim <minchan@kernel.org> wrote:
+> > 
+> > > > I have a feeling that laptop mode has bitrotted and these patches are
+> > > > kinda hacking around as-yet-not-understood failures...
+> > > 
+> > > Absolutely, this patch is last guard for unexpectable behavior.
+> > > As I mentioned in cover-letter, Luigi's problem could be solved either [1/2]
+> > > or [2/2] but I wanted to add this as last resort in case of unexpected
+> > > emergency. But you're right. It's not good to hide the problem like this path
+> > > so let's drop [2/2].
+> > > 
+> > > Also, I absolutely agree it has bitrotted so for correcting it, we need a
+> > > volunteer who have to inverstigate power saveing experiment with long time.
+> > > So [1/2] would be band-aid until that.
+> > 
+> > I'm inclined to hold off on 1/2 as well, really.
+> 
+> Then, what's your plan?
 
-From: David Henningsson <david.henningsson@canonical.com>
+My plan is to sit here until someone gets down and fully tests and
+fixes laptop-mode.  Making it work properly, reliably and as-designed.
 
-commit 7ed4165e2d01bdbbb4c1086eb73eadf0f64cbbf0 upstream.
+Or perhaps someone wants to make the case that we just don't need it
+any more (SSDs are silent!) and removes it all.
 
-This reverts commit 697c373e34613609cb5450f98b91fefb6e910588.
+> > 
+> > The point of laptop_mode isn't to save power btw - it is to minimise
+> > the frequency with which the disk drive is spun up.  By deferring and
+> > then batching writeout operations, basically.
+> 
+> I don't get it. Why should we minimise such frequency?
 
-The original patch was meant to remove clicking, but in fact caused even
-more clicking instead.
+Because my laptop was going clickety every minute and was keeping me
+awake.
 
-Thanks to c4pp4 for doing most of the work with this bug.
+> It's for saving the power to increase batter life.
 
-BugLink: https://bugs.launchpad.net/bugs/886975
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+It might well have that effect, dunno.  That wasn't my intent.  Testing
+needed!
 
----
- sound/pci/hda/patch_conexant.c |   16 ----------------
- 1 file changed, 16 deletions(-)
+> As I real all document about laptop_mode, they all said about the power
+> or battery life saving.
+> 
+> 1. Documentation/laptops/laptop-mode.txt
+> 2. http://linux.die.net/man/8/laptop_mode
+> 3. http://samwel.tk/laptop_mode/
+> 3. http://www.thinkwiki.org/wiki/Laptop-mode 
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -553,24 +553,12 @@ static int conexant_build_controls(struc
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
--static int conexant_suspend(struct hda_codec *codec)
--{
--	snd_hda_shutup_pins(codec);
--	return 0;
--}
--#endif
--
- static const struct hda_codec_ops conexant_patch_ops = {
- 	.build_controls = conexant_build_controls,
- 	.build_pcms = conexant_build_pcms,
- 	.init = conexant_init,
- 	.free = conexant_free,
- 	.set_power_state = conexant_set_power,
--#ifdef CONFIG_PM
--	.suspend = conexant_suspend,
--#endif
--	.reboot_notify = snd_hda_shutup_pins,
- };
- 
- #ifdef CONFIG_SND_HDA_INPUT_BEEP
-@@ -4393,10 +4381,6 @@ static const struct hda_codec_ops cx_aut
- 	.init = cx_auto_init,
- 	.free = conexant_free,
- 	.unsol_event = snd_hda_jack_unsol_event,
--#ifdef CONFIG_PM
--	.suspend = conexant_suspend,
--#endif
--	.reboot_notify = snd_hda_shutup_pins,
- };
- 
- /*
+Documentation creep ;)
 
-
+Ten years ago, gad: http://lwn.net/Articles/1652/
