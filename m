@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab3APNj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 08:39:27 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64984 "EHLO mga02.intel.com"
+	id S1754483Ab3APNnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 08:43:42 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:41874 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751419Ab3APNjZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 08:39:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,479,1355126400"; 
-   d="scan'208";a="272761329"
-Message-ID: <1358343551.12502.25.camel@smile>
-Subject: Re: [PATCH] dw_dmac: switch to use dma_pool API
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Date: Wed, 16 Jan 2013 15:39:11 +0200
-In-Reply-To: <CAOh2x=k2M_U_f4ztjCkO5rxGg=-P-5ghHKXPJHNVkWq8=-jqYg@mail.gmail.com>
-References: <1358327443-10562-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CAOh2x=k2M_U_f4ztjCkO5rxGg=-P-5ghHKXPJHNVkWq8=-jqYg@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	id S1751405Ab3APNnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 08:43:40 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org, "Moore, Robert" <robert.moore@intel.com>
+Subject: Re: [PATCH] ACPI: check zero length in acpi_rs_get_aml_length
+Date: Wed, 16 Jan 2013 14:49:32 +0100
+Message-ID: <3526578.G50o11JbOu@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1358334928-9736-1-git-send-email-jslaby@suse.cz>
+References: <1358334928-9736-1-git-send-email-jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-16 at 15:18 +0530, Viresh Kumar wrote: 
-> > @@ -1125,7 +1083,6 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
-> > +               memset(desc, 0, sizeof(struct dw_desc));
-> > +
-> 
-> why do we need this? We always fill all fields of this structure, isn't it?
+Hi,
 
-No, it is not. At least we don't fill everything at
-alloc_chan_resources() stage. Previous code used kzalloc. I decide to
-use memset to avoid potential side effects in the future.
+On Wednesday, January 16, 2013 12:15:28 PM Jiri Slaby wrote:
+> There is a bug somewhere in the code that does not set the resource
+> length. This makes the loop in acpi_rs_get_aml_length to loop forever.
+> So it is a good thing to have the check even if the bug is fixed.
+
+This needs to go through ACPICA upstream (Bob CCed).
+
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> ---
+>  drivers/acpi/acpica/rscalc.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/acpica/rscalc.c b/drivers/acpi/acpica/rscalc.c
+> index da178b4..c128f2e 100644
+> --- a/drivers/acpi/acpica/rscalc.c
+> +++ b/drivers/acpi/acpica/rscalc.c
+> @@ -198,7 +198,8 @@ acpi_rs_get_aml_length(struct acpi_resource * resource, acpi_size * size_needed)
+>  
+>  		/* Validate the descriptor type */
+>  
+> -		if (resource->type > ACPI_RESOURCE_TYPE_MAX) {
+> +		if (resource->type > ACPI_RESOURCE_TYPE_MAX ||
+> +				WARN_ON(!resource->length)) {
+
+So this cannot be a WARN_ON().
+
+>  			return_ACPI_STATUS(AE_AML_INVALID_RESOURCE_TYPE);
+>  		}
+>  
+
+Thanks,
+Rafael
+
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
