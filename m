@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab3APG6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 01:58:13 -0500
-Received: from mail.kernel.org ([198.145.19.201]:36568 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab3APG6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 01:58:11 -0500
-Date: Tue, 15 Jan 2013 22:59:05 -0800
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Stephen Hurd <shurd@broadcom.com>
-Cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] 8250/16?50: Add support for Broadcom TruManage
- redirected serial port
-Message-ID: <20130116065905.GA20170@kroah.com>
-References: <156984479488CD49A184F5CAB4AF934606FF55F8@IRVEXCHMB14.corp.ad.broadcom.com>
- <20121212044522.GA7224@kroah.com>
- <156984479488CD49A184F5CAB4AF934606FF5627@IRVEXCHMB14.corp.ad.broadcom.com>
+	id S1754454Ab3APHCd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 02:02:33 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:35411 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907Ab3APHCb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 02:02:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <156984479488CD49A184F5CAB4AF934606FF5627@IRVEXCHMB14.corp.ad.broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50F61061.4040201@zytor.com>
+References: <50F606A8.2080804@palosanto.com>
+	<50F61061.4040201@zytor.com>
+Date: Tue, 15 Jan 2013 23:02:29 -0800
+X-Google-Sender-Auth: wE27PCbhATCLWH787GrupoCDf9c
+Message-ID: <CAE9FiQUPBGi8kQ2bA2mdWz_gO1R9UmM-QdWXzEfTh6K0i+ZkGg@mail.gmail.com>
+Subject: Re: Use of memmap= to forcibly recover memory in 3GB-4GB range - is
+ this safe?
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: =?ISO-8859-1?Q?Alex_Villac=EDs_Lasso?= <a_villacis@palosanto.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 05:28:35AM +0000, Stephen Hurd wrote:
-> From: Stephen Hurd <shurd@broadcom.com>
-> 
-> Add support for the UART device present in Broadcom TruManage capable NetXtreme chips (ie: 5761m 5762, and 5725).
-> 
-> This implementation has a hidden transmit FIFO, so running in single-byte interrupt mode results in too many interrupts.  The UART_CAP_HFIFO capability was added to track this.  It continues to reload the THR as long as the THRE and TSRE bits are set in the LSR up to a specified limit (1024 is used here).
-> 
-> Signed-off-by: Stephen Hurd <shurd@broadcom.com>
-> 
-> ---
-> 
-> Patch against linux-2.7 from ftp.kernel.org downloaded Dec-11-2012.
+On Tue, Jan 15, 2013 at 6:28 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 01/15/2013 05:47 PM, Alex Villacís Lasso wrote:
 
-2.7?
+>> 2) I have recompiled the kernel to support the memtest parameter. When
+>> using it, the extra memory segment appears to be as healthy as other
+>> areas of memory. However this might only mean that it is wrapping into
+>> healthy low RAM.
 
-I need this against the linux-next release, can you please redo it, and
-not send it as an attachment, but put it all inline in the email
-properly like Documentation/email_clients.txt says?
+memtest should print out about the range.
 
-thanks,
+and if you are using 64bit kernel, it should test all memory
+except for range with kernel itself.
 
-greg k-h
+
+>>
+>> Is my reasoning sane? Is there a way to know, once and for all, whether
+>> the extra "memory" is real and safe to use or not?
+>
+>
+> Maybe you can get memtest86+ to test this phantom memory?  But yes, it does
+> sound like a BIOS bug.
+
+that may not help, because e820 from bios is not right.
+
+Yinghai
