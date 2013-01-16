@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478Ab3APFCf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 00:02:35 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49545 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab3APFCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 00:02:33 -0500
-Message-ID: <50F63452.1060004@ti.com>
-Date: Wed, 16 Jan 2013 10:32:10 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1751914Ab3APFR2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 00:17:28 -0500
+Received: from mga09.intel.com ([134.134.136.24]:43905 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831Ab3APFR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 00:17:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,476,1355126400"; 
+   d="scan'208";a="272605725"
+Date: Wed, 16 Jan 2013 07:20:54 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 1/3] x86: enable common clk on x86
+Message-ID: <20130116052054.GT13897@intel.com>
+References: <1358174788-24439-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1358174788-24439-2-git-send-email-mika.westerberg@linux.intel.com>
+ <1474259.FsoB54Sm0k@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Afzal Mohammed <afzal@ti.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 12/12] video: da8xx-fb: set upstream clock rate (if
- reqd)
-References: <cover.1358251447.git.afzal@ti.com> <26e787b021cda89a080f80657c2094b9ff2decaf.1358251448.git.afzal@ti.com> <20130115153222.23734.7924@quantum>
-In-Reply-To: <20130115153222.23734.7924@quantum>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1474259.FsoB54Sm0k@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/15/2013 9:02 PM, Mike Turquette wrote:
-> Quoting Afzal Mohammed (2013-01-15 05:44:36)
->> LCDC IP has a clock divider to adjust pixel clock, this limits pixel
->> clock range to fck/255 - fck/2(fck - rate of input clock to LCDC IP).
->> In the case of AM335x, where this IP is present, default fck is not
->> sufficient to provide normal pixel clock rates, hence rendering this
->> driver unusable on AM335x.
->>
->> If input clock too is configurable, allowable range of pixel clock
->> would increase. Here initially it is checked whether with present fck,
->> divider in IP could be configured to obtain required rate, if not,
->> fck is adjusted. This makes it usable on AM335x.
->>
->> Note:
->> A better (if allowable) solution may be to represent clock divider in
->> LCDC IP as a basic divider clock - the one defined in common clock
->> framework. But for this to happen, all the platform's using this driver
->> should be using common clock framework (DaVinci is yet to be converted
->> to use common clock framework). And it has to be determined whether
->> common clock framework allows this kind of a clock modelling inside a
->> driver and for this to be part of clock tree. Advantage of doing so
->> would be better resolution for pixel clock, even though without this
->> existing use cases are working properly. Or another extreme alternative
->> would be to replicate clk-divider of common clock framework inside the
->> driver, but that probably is not preferred and not worth as it would be
->> duplication and without much advantage to existing users.
->>
+On Wed, Jan 16, 2013 at 12:59:17AM +0100, Rafael J. Wysocki wrote:
+> On Monday, January 14, 2013 04:46:26 PM Mika Westerberg wrote:
+> > We are starting to see traditional SoC peripherals also in the x86 world,
+> > things like UART, I2C and SPI controllers that might already have a working
+> > device driver. These drivers typically take advantage of the Linux clk
+> > framework to control and retrieve information about the peripheral clock.
+> > 
+> > There hasn't been a standard way on x86 to pass the clock rate from
+> > whatever configuration system is used to the driver, but instead different
+> > variations have emerged, like adding this information to the platform data.
+> > 
+> > In order to use the standard Linux way we enable the common clk subsystem
+> > also on x86. This allows us to re-use the drivers with little or no
+> > modification wrt. clock API usage.
+> > 
+> > This patch was originally proposed by Mark Brown.
 > 
-> Afzal,
-> 
-> Modeling the divider inside your IP block as a clock is supported in the
-> common clock framework.  Linking up these sorts of clocks to the clock
-> tree was one of the original design goals of CCF.
-> 
-> Regarding DaVinci: converting that platform over to use CCF would be the
-> best approach.
+> Are there any side effects of selecting COMMON_CLK by an arch and if so then
+> what are they?
 
-This is work in progress. There are patches that have been posted. Work
-has been slow on this though due to lack of bandwidth.
+Selecting COMMON_CLK also selects HAVE_CLK, so drivers that are dependent
+on that option become available when you run make config.
 
-> An alternative would be that you could break
-> single-image boot for AM335x and DaVinci, by having AM335x use CCF and
-> DaVinci use the legacy clock framework.  From the LCDC driver's
+It also makes clk_get() and friends to return errors if the clock is not
+found (instead of returning NULL as in case with !HAVE_CLK). This means
+that if there is a driver that counted on the stubbed out clocks on x86 it
+will fail to get the clock after this patch. However, the patch that adds
+the stub functions was merged only lately:
 
-Single image for DaVinci and AM335x is not possible anyway since ARMv5
-and ARMv6+ cannot be supported in a single image.
+	commit 93abe8e4b13ae9a0428ce940a8a03ac72a7626f1
+	Author: Viresh Kumar <viresh.kumar@st.com>
+	Date:   Mon Jul 30 14:39:27 2012 -0700
 
-> perspective this should not matter and is indeed the purpose of the
-> clk.h api and clkdev interfaces, however looking at this driver I can
-> see there would still be a lot ifdef-ery going on... better to just
-> convert everything over to CCF.
-
-Waiting for DaVinci CCF to complete will be too long a wait. Probably
-convert to CCF just for AM335x ATM. There would be some ifdef'ry but
-hopefully that need not be inside function bodies. Would have to see the
-implementation, I guess.
-
-Thanks,
-Sekhar
+	    clk: add non CONFIG_HAVE_CLK routines
+	    
+	    Many drivers are shared between architectures that may or may not have
+	    HAVE_CLK selected for them.  To remove compilation errors for them we
+	    enclose clk_*() calls in these drivers within #ifdef CONFIG_HAVE_CLK,
+	    #endif.
+	    
+	    This patch removes the need of these CONFIG_HAVE_CLK statements, by
+	    introducing dummy routines when HAVE_CLK is not selected by platforms.
+	    So, definition of these routines will always be available.  These calls
+	    will return error for platforms that don't select HAVE_CLK.
