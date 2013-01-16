@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932848Ab3APQR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:17:27 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:49321 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758735Ab3APQRV convert rfc822-to-8bit (ORCPT
+	id S932943Ab3APQKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:10:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36867 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932933Ab3APQKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:17:21 -0500
-Date: Wed, 16 Jan 2013 16:17:16 +0000
-From: Andrew Murray <andrew.murray@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
-Message-ID: <20130116161716.GA10630@arm.com>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <20130115154038.GA11241@arm.com>
- <20130115211441.GA13139@avionic-0098.adnet.avionic-design.de>
- <201301161400.26587.arnd@arndb.de>
-MIME-Version: 1.0
-In-Reply-To: <201301161400.26587.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 16 Jan 2013 16:17:17.0053 (UTC) FILETIME=[F3C67AD0:01CDF404]
-X-MC-Unique: 113011616171911601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Wed, 16 Jan 2013 11:10:32 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Shan Hai <shan.hai@windriver.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 200/222] powerpc/vdso: Remove redundant locking in update_vsyscall_tz()
+Date: Wed, 16 Jan 2013 13:56:40 -0200
+Message-Id: <1358351822-7675-201-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 02:00:26PM +0000, Arnd Bergmann wrote:
-> On Tuesday 15 January 2013, Thierry Reding wrote:
-> > Is there actually hardware that supports this? I assumed that the MSI
-> > controller would have to be tightly coupled to the PCI host bridge in
-> > order to raise an interrupt when an MSI is received via PCI.
-> 
-> No, as long as it's guaranteed that the MSI notification won't arrive
-> at the CPU before any inbound DMA data before it, the MSI controller
-> can be anywhere. Typically, the MSI controller is actually closer to
-> the CPU core than to the PCI bridge. On X86, I believe the MSI address
-> is on normally on the the "local APIC" on each CPU.
+3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
 
-MSIs are indistinguishable from other memory-write transactions originating
-from the RC other than the address they target. Anything that can capture
-that write in the address space (even a page fault) could be an MSI controller
-and call interrupt handlers. And so the RC / MSI controllers don't need to
-be aware of each other.
+------------------
 
-Andrew Murray
+From: Shan Hai <shan.hai@windriver.com>
+
+commit ce73ec6db47af84d1466402781ae0872a9e7873c upstream.
+
+The locking in update_vsyscall_tz() is not only unnecessary because the vdso
+code copies the data unproteced in __kernel_gettimeofday() but also
+introduces a hard to reproduce race condition between update_vsyscall()
+and update_vsyscall_tz(), which causes user space process to loop
+forever in vdso code.
+
+The following patch removes the locking from update_vsyscall_tz().
+
+Locking is not only unnecessary because the vdso code copies the data
+unprotected in __kernel_gettimeofday() but also erroneous because updating
+the tb_update_count is not atomic and introduces a hard to reproduce race
+condition between update_vsyscall() and update_vsyscall_tz(), which further
+causes user space process to loop forever in vdso code.
+
+The below scenario describes the race condition,
+x==0	Boot CPU			other CPU
+	proc_P: x==0
+	    timer interrupt
+		update_vsyscall
+x==1		    x++;sync		settimeofday
+					    update_vsyscall_tz
+x==2						x++;sync
+x==3		    sync;x++
+						sync;x++
+	proc_P: x==3 (loops until x becomes even)
+
+Because the ++ operator would be implemented as three instructions and not
+atomic on powerpc.
+
+A similar change was made for x86 in commit 6c260d58634
+("x86: vdso: Remove bogus locking in update_vsyscall_tz")
+
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ arch/powerpc/kernel/time.c |    5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index be171ee..3c50ed9 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -750,13 +750,8 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
+ 
+ void update_vsyscall_tz(void)
+ {
+-	/* Make userspace gettimeofday spin until we're done. */
+-	++vdso_data->tb_update_count;
+-	smp_mb();
+ 	vdso_data->tz_minuteswest = sys_tz.tz_minuteswest;
+ 	vdso_data->tz_dsttime = sys_tz.tz_dsttime;
+-	smp_mb();
+-	++vdso_data->tb_update_count;
+ }
+ 
+ static void __init clocksource_init(void)
+-- 
+1.7.9.5
 
