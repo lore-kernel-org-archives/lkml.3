@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab3APPCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:02:39 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:38899 "EHLO comal.ext.ti.com"
+	id S1756399Ab3APPCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:02:38 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38901 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753846Ab3APPCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754033Ab3APPCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 10:02:32 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
@@ -19,9 +19,9 @@ CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <gregkh@linuxfoundation.org>, <leoli@freescale.com>,
         <eric.y.miao@gmail.com>, <haojian.zhuang@gmail.com>,
         <stern@rowland.harvard.edu>, <kishon@ti.com>
-Subject: [RFC PATCH 2/6] ARM: OMAP: USB: Add phy binding information
-Date: Wed, 16 Jan 2013 20:30:58 +0530
-Message-ID: <1358348462-27693-3-git-send-email-kishon@ti.com>
+Subject: [RFC PATCH 4/6] ARM: dts: OMAP: Add phandle to bind PHY with USB controller
+Date: Wed, 16 Jan 2013 20:31:00 +0530
+Message-ID: <1358348462-27693-5-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358348462-27693-1-git-send-email-kishon@ti.com>
 References: <1358348462-27693-1-git-send-email-kishon@ti.com>
@@ -31,45 +31,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is in preparation for the changes in PHY library to support adding
-and getting multiple PHYs of the same type. In the new design, the
-binding information between the PHY and the USB controller should be
-specified in the platform specific initialization code. So it's been
-done for OMAP platforms here.
+Added a phandle in the dt node for usb_otg to bind the PHY with the USB
+controller and also updated the documentation with the binding information.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
-This kind-of binding should be done in all the platforms (I've done only
-for OMAP platform). 
- arch/arm/mach-omap2/usb-musb.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+I'll add this patch in this series "usb: musb: add driver for control module"
+which contains the dt data to get MUSB working in dt boot in OMAP platforms.
+ Documentation/devicetree/bindings/usb/omap-usb.txt |    2 ++
+ arch/arm/boot/dts/omap3.dtsi                       |    1 +
+ arch/arm/boot/dts/omap4.dtsi                       |    3 ++-
+ arch/arm/boot/dts/twl4030.dtsi                     |    2 +-
+ 4 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
-index 9d27e3f..bbe2fa5 100644
---- a/arch/arm/mach-omap2/usb-musb.c
-+++ b/arch/arm/mach-omap2/usb-musb.c
-@@ -24,6 +24,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/io.h>
- #include <linux/usb/musb.h>
-+#include <linux/usb/phy.h>
+diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+index 3f0152b..591c4fc 100644
+--- a/Documentation/devicetree/bindings/usb/omap-usb.txt
++++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+@@ -18,6 +18,7 @@ OMAP MUSB GLUE
+    represents PERIPHERAL.
+  - power : Should be "50". This signifies the controller can supply upto
+    100mA when operating in host mode.
++ - usb_phy : the phandle for the PHY device
  
- #include "omap_device.h"
- #include "soc.h"
-@@ -85,8 +86,12 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
- 	musb_plat.mode = board_data->mode;
- 	musb_plat.extvbus = board_data->extvbus;
+ SOC specific device node entry
+ usb_otg_hs: usb_otg_hs@4a0ab000 {
+@@ -27,6 +28,7 @@ usb_otg_hs: usb_otg_hs@4a0ab000 {
+ 	multipoint = <1>;
+ 	num_eps = <16>;
+ 	ram_bits = <12>;
++	usb_phy = <&phy>;
+ };
  
--	if (cpu_is_omap44xx())
-+	if (cpu_is_omap44xx()) {
- 		musb_plat.has_mailbox = true;
-+		usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
-+	} else if (cpu_is_omap34xx()) {
-+		usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
-+	}
+ Board specific device node entry
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index 8d03736..ebbf596 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -404,6 +404,7 @@
+ 			interrupts = <0 92 0x4>, <0 93 0x4>;
+ 			interrupt-names = "mc", "dma";
+ 			ti,hwmods = "usb_otg_hs";
++			usb_phy = <&phy>;
+ 			multipoint = <1>;
+ 			num_eps = <16>;
+ 			ram_bits = <12>;
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 5d770be..531cb2d 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -438,7 +438,7 @@
+ 			#size-cells = <1>;
+ 			ranges;
+ 			ti,hwmods = "ocp2scp_usb_phy";
+-			usb2phy@4a0ad080 {
++			phy: usb2phy@4a0ad080 {
+ 				compatible = "ti,omap-usb2";
+ 				reg = <0x4a0ad080 0x58>;
+ 			};
+@@ -540,6 +540,7 @@
+ 			interrupts = <0 92 0x4>, <0 93 0x4>;
+ 			interrupt-names = "mc", "dma";
+ 			ti,hwmods = "usb_otg_hs";
++			usb_phy = <&phy>;
+ 			multipoint = <1>;
+ 			num_eps = <16>;
+ 			ram_bits = <12>;
+diff --git a/arch/arm/boot/dts/twl4030.dtsi b/arch/arm/boot/dts/twl4030.dtsi
+index ed0bc95..80f7c2b 100644
+--- a/arch/arm/boot/dts/twl4030.dtsi
++++ b/arch/arm/boot/dts/twl4030.dtsi
+@@ -67,7 +67,7 @@
+ 		#interrupt-cells = <1>;
+ 	};
  
- 	if (soc_is_am35xx()) {
- 		oh_name = "am35x_otg_hs";
+-	twl4030-usb {
++	phy: twl4030-usb {
+ 		compatible = "ti,twl4030-usb";
+ 		interrupts = <10>, <4>;
+ 		usb1v5-supply = <&vusb1v5>;
 -- 
 1.7.9.5
 
