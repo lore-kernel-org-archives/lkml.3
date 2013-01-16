@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab3APPVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:21:00 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:3920 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751557Ab3APPU6 (ORCPT
+	id S1756138Ab3APPVH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:21:07 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36427 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754929Ab3APPVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:20:58 -0500
-Date: Wed, 16 Jan 2013 15:20:57 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Liu Bo <bo.li.liu@oracle.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, zab@zabbo.net, penberg@kernel.org
-Subject: Re: [PATCH V2] mm/slab: add a leak decoder callback
-In-Reply-To: <1358305393-3507-1-git-send-email-bo.li.liu@oracle.com>
-Message-ID: <0000013c43f2e550-649fcc34-13c2-4e4b-81be-96d68e63cf60-000000@email.amazonses.com>
-References: <1358305393-3507-1-git-send-email-bo.li.liu@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	Wed, 16 Jan 2013 10:21:01 -0500
+Subject: Re: what is the function of do_softirq() ?
+From: anish kumar <anish198519851985@gmail.com>
+To: Anuz Pratap Singh Tomar <chambilkethakur@gmail.com>
+Cc: horseriver <horserivers@gmail.com>, kernelnewbies@kernelnewbies.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAJnfX5u1UJQCLpM2w92TbB+qHmB5TNdDigj+pebrJKN2EUQ7OA@mail.gmail.com>
+References: <20130115063105.GA18830@debian.localdomain>
+	 <CAJnfX5u1UJQCLpM2w92TbB+qHmB5TNdDigj+pebrJKN2EUQ7OA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Jan 2013 20:50:40 +0530
+Message-ID: <1358349640.1591.30.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jan 2013, Liu Bo wrote:
+On Wed, 2013-01-16 at 10:25 +0000, Anuz Pratap Singh Tomar wrote:
+> 
+> 
+> On Tue, Jan 15, 2013 at 6:31 AM, horseriver <horserivers@gmail.com>
+> wrote:
+>         hi:
+>         
+>            what is the function of do_softirq()?
+Softirq is basically same as bottom half except it is run in irq
+context.So the question which comes to mind is why softirq?Softirqs can
+run concurrently on several CPUs and that is why it used in networking.
+There are other advantages also but it is mostly use case dependent.
+>         
+>            It is called by ksoftirqd() ,which is setup by :
+>         kernel_thread(ksoftirqd, hcpu, CLONE_KERNEL) ; 
+ksoftirq is a saviour thread which takes up the execution of softirq if
+it finds out that softirq are executing one by one and thereby userspace
+is not being scheduled or none of other task is getting executed.As
+threads have low priority it lets other tasks run.
+>         
+> Please read "Understanding the Linux Kernel" Chapter on Interrupts and
+> Section on Softirqs and tasklets.  Page number 171(might be different
+> in other editions) onwards.
+> 
+> 
+> 
+>         thanks!
+>         
+>         _______________________________________________
+>         Kernelnewbies mailing list
+>         Kernelnewbies@kernelnewbies.org
+>         http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
+> 
+> 
+> 
+> -- 
+> Thank you 
+> Warm Regards
+> Anuz
+> _______________________________________________
+> Kernelnewbies mailing list
+> Kernelnewbies@kernelnewbies.org
+> http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
 
-> --- a/include/linux/slub_def.h
-> +++ b/include/linux/slub_def.h
-> @@ -93,6 +93,7 @@ struct kmem_cache {
->  	gfp_t allocflags;	/* gfp flags to use on each alloc */
->  	int refcount;		/* Refcount for slab cache destroy */
->  	void (*ctor)(void *);
-> +	void (*decoder)(void *);
 
-The field needs to be moved away from the first hot cachelines in
-kmem_cache.
-
-
-> index 3f3cd97..8c19bfd 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -193,6 +193,7 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
->  		s->object_size = s->size = size;
->  		s->align = calculate_alignment(flags, align, size);
->  		s->ctor = ctor;
-> +		s->decoder = NULL;
->
->  		if (memcg_register_cache(memcg, s, parent_cache)) {
->  			kmem_cache_free(kmem_cache, s);
-
-Not necessary since s is filled with zeros on allocation.
-
-> @@ -248,7 +249,7 @@ kmem_cache_create(const char *name, size_t size, size_t align,
->  }
->  EXPORT_SYMBOL(kmem_cache_create);
->
-> -void kmem_cache_destroy(struct kmem_cache *s)
-> +static void __kmem_cache_destroy(struct kmem_cache *s, void (*decoder)(void *))
->  {
->  	/* Destroy all the children caches if we aren't a memcg cache */
->  	kmem_cache_destroy_memcg_children(s);
-> @@ -259,6 +260,9 @@ void kmem_cache_destroy(struct kmem_cache *s)
->  	if (!s->refcount) {
->  		list_del(&s->list);
->
-> +		if (unlikely(decoder))
-> +			s->decoder = decoder;
-> +
->  		if (!__kmem_cache_shutdown(s)) {
->  			mutex_unlock(&slab_mutex);
->  			if (s->flags & SLAB_DESTROY_BY_RCU)
-
-Now that is a bit weird since __kmem_cache_destroy now sets a field in
-kmem_cache?
-
-If a kmem_cache has a decoder field set then it is no longer mergeable.
-
-It looks like the decoder field would have to be set on cache creation.
-
-If we do that then the functionality could be more generic. I always
-wanted to have a function that checks the object integrity as well.
-
-The cache validation could then go through all objects and in addition to
-checking the slab meta data integrity could also have the subsystem
-confirm the integrity of the object.
-
-> index ba2ca53..34b3b75 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -3098,6 +3098,8 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
->  	for_each_object(p, s, addr, page->objects) {
->
->  		if (!test_bit(slab_index(p, s, addr), map)) {
-> +			if (unlikely(s->decoder))
-> +				s->decoder(p);
->  			printk(KERN_ERR "INFO: Object 0x%p @offset=%tu\n",
->  							p, p - addr);
->  			print_tracking(s, p);
->
-
-Hmmm... The function is currently only used on kmem_cache_destroy but that
-may change.
