@@ -1,308 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758952Ab3APKg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 05:36:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34063 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758797Ab3APKgx (ORCPT
+	id S932280Ab3APKid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 05:38:33 -0500
+Received: from canardo.mork.no ([148.122.252.1]:53814 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758752Ab3APKib convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 05:36:53 -0500
-Message-ID: <50F682C0.3030009@canonical.com>
-Date: Wed, 16 Jan 2013 11:36:48 +0100
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 16 Jan 2013 05:38:31 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        platform-driver-x86@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mattia Dongili <malattia@linux.it>
+Subject: Re: [GIT] x86 platform driver bugfixes for 3.8
+Organization: m
+References: <20130107171722.GA31427@srcf.ucam.org>
+	<CA+55aFzL00K+oURqcnSgbAAkD18DJ8-p1G8vd7KE6RD77dLmCQ@mail.gmail.com>
+	<20130107172616.GB31427@srcf.ucam.org>
+	<20130107174306.GC31427@srcf.ucam.org>
+Date: Wed, 16 Jan 2013 11:38:17 +0100
+In-Reply-To: <20130107174306.GC31427@srcf.ucam.org> (Matthew Garrett's message
+	of "Mon, 7 Jan 2013 17:43:06 +0000")
+Message-ID: <87ehhlifae.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-To: Inki Dae <inki.dae@samsung.com>
-CC: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linaro-mm-sig@lists.linaro.org
-Subject: Re: [Linaro-mm-sig] [PATCH 5/7] seqno-fence: Hardware dma-buf implementation
- of fencing (v4)
-References: <1358253244-11453-1-git-send-email-maarten.lankhorst@canonical.com> <1358253244-11453-6-git-send-email-maarten.lankhorst@canonical.com> <CAAQKjZNiVE7Eknyfjf+d5o-SMzSd8wKHJ=Jn6_2=BprZXLcYbA@mail.gmail.com>
-In-Reply-To: <CAAQKjZNiVE7Eknyfjf+d5o-SMzSd8wKHJ=Jn6_2=BprZXLcYbA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 16-01-13 07:28, Inki Dae schreef:
-> 2013/1/15 Maarten Lankhorst <m.b.lankhorst@gmail.com>:
->> This type of fence can be used with hardware synchronization for simple
->> hardware that can block execution until the condition
->> (dma_buf[offset] - value) >= 0 has been met.
->>
->> A software fallback still has to be provided in case the fence is used
->> with a device that doesn't support this mechanism. It is useful to expose
->> this for graphics cards that have an op to support this.
->>
->> Some cards like i915 can export those, but don't have an option to wait,
->> so they need the software fallback.
->>
->> I extended the original patch by Rob Clark.
->>
->> v1: Original
->> v2: Renamed from bikeshed to seqno, moved into dma-fence.c since
->>     not much was left of the file. Lots of documentation added.
->> v3: Use fence_ops instead of custom callbacks. Moved to own file
->>     to avoid circular dependency between dma-buf.h and fence.h
->> v4: Add spinlock pointer to seqno_fence_init
->>
->> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->> ---
->>  Documentation/DocBook/device-drivers.tmpl |   1 +
->>  drivers/base/fence.c                      |  38 +++++++++++
->>  include/linux/seqno-fence.h               | 105 ++++++++++++++++++++++++++++++
->>  3 files changed, 144 insertions(+)
->>  create mode 100644 include/linux/seqno-fence.h
->>
->> diff --git a/Documentation/DocBook/device-drivers.tmpl b/Documentation/DocBook/device-drivers.tmpl
->> index 6f53fc0..ad14396 100644
->> --- a/Documentation/DocBook/device-drivers.tmpl
->> +++ b/Documentation/DocBook/device-drivers.tmpl
->> @@ -128,6 +128,7 @@ X!Edrivers/base/interface.c
->>  !Edrivers/base/dma-buf.c
->>  !Edrivers/base/fence.c
->>  !Iinclude/linux/fence.h
->> +!Iinclude/linux/seqno-fence.h
->>  !Edrivers/base/dma-coherent.c
->>  !Edrivers/base/dma-mapping.c
->>       </sect1>
->> diff --git a/drivers/base/fence.c b/drivers/base/fence.c
->> index 28e5ffd..1d3f29c 100644
->> --- a/drivers/base/fence.c
->> +++ b/drivers/base/fence.c
->> @@ -24,6 +24,7 @@
->>  #include <linux/slab.h>
->>  #include <linux/export.h>
->>  #include <linux/fence.h>
->> +#include <linux/seqno-fence.h>
->>
->>  atomic_t fence_context_counter = ATOMIC_INIT(0);
->>  EXPORT_SYMBOL(fence_context_counter);
->> @@ -284,3 +285,40 @@ out:
->>         return ret;
->>  }
->>  EXPORT_SYMBOL(fence_default_wait);
->> +
->> +static bool seqno_enable_signaling(struct fence *fence)
->> +{
->> +       struct seqno_fence *seqno_fence = to_seqno_fence(fence);
->> +       return seqno_fence->ops->enable_signaling(fence);
->> +}
->> +
->> +static bool seqno_signaled(struct fence *fence)
->> +{
->> +       struct seqno_fence *seqno_fence = to_seqno_fence(fence);
->> +       return seqno_fence->ops->signaled && seqno_fence->ops->signaled(fence);
->> +}
->> +
->> +static void seqno_release(struct fence *fence)
->> +{
->> +       struct seqno_fence *f = to_seqno_fence(fence);
->> +
->> +       dma_buf_put(f->sync_buf);
->> +       if (f->ops->release)
->> +               f->ops->release(fence);
->> +       else
->> +               kfree(f);
->> +}
->> +
->> +static long seqno_wait(struct fence *fence, bool intr, signed long timeout)
->> +{
->> +       struct seqno_fence *f = to_seqno_fence(fence);
->> +       return f->ops->wait(fence, intr, timeout);
->> +}
->> +
->> +const struct fence_ops seqno_fence_ops = {
->> +       .enable_signaling = seqno_enable_signaling,
->> +       .signaled = seqno_signaled,
->> +       .wait = seqno_wait,
->> +       .release = seqno_release
->> +};
->> +EXPORT_SYMBOL_GPL(seqno_fence_ops);
->> diff --git a/include/linux/seqno-fence.h b/include/linux/seqno-fence.h
->> new file mode 100644
->> index 0000000..603adc0
->> --- /dev/null
->> +++ b/include/linux/seqno-fence.h
->> @@ -0,0 +1,105 @@
->> +/*
->> + * seqno-fence, using a dma-buf to synchronize fencing
->> + *
->> + * Copyright (C) 2012 Texas Instruments
->> + * Copyright (C) 2012 Canonical Ltd
->> + * Authors:
->> + *   Rob Clark <rob.clark@linaro.org>
->> + *   Maarten Lankhorst <maarten.lankhorst@canonical.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify it
->> + * under the terms of the GNU General Public License version 2 as published by
->> + * the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful, but WITHOUT
->> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
->> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
->> + * more details.
->> + *
->> + * You should have received a copy of the GNU General Public License along with
->> + * this program.  If not, see <http://www.gnu.org/licenses/>.
->> + */
->> +
->> +#ifndef __LINUX_SEQNO_FENCE_H
->> +#define __LINUX_SEQNO_FENCE_H
->> +
->> +#include <linux/fence.h>
->> +#include <linux/dma-buf.h>
->> +
->> +struct seqno_fence {
->> +       struct fence base;
->> +
->> +       const struct fence_ops *ops;
->> +       struct dma_buf *sync_buf;
->> +       uint32_t seqno_ofs;
->> +};
-> Hi maarten,
->
-> I'm applying dma-fence v11 and seqno-fence v4 to exynos drm and have
-> some proposals.
->
-> The above seqno_fence structure has only one dmabuf. Shouldn't it have
-> mutiple dmabufs? For example, in case of drm driver, when pageflip is
-> requested, one framebuffer could have one more gem buffer for NV12M
-> format. And this means that one more exported dmabufs should be
-> sychronized with other devices. Below is simple structure for it,
-The fence guards a single operation, as such I didn't feel like more than one
-dma-buf was needed to guard it.
+Matthew Garrett <matthew.garrett@nebula.com> writes:
 
-Have you considered simply attaching multiple fences instead? Each with their own dma-buf.
-There has been some muttering about allowing multiple exclusive fences to be attached, for arm soc's.
+> This set covers regressions and two obvious bugfixes. The rest can wait 
+> for 3.9.
 
-But I'm also considering getting rid of the dma-buf member and add a function call to retrieve it, since
-the sync dma-buf member should not be changing often, and it would zap 2 atomic ops on every fence,
-but I want it replaced by something that's not 10x more complicated.
+Hello Matthew,
 
-Maybe "int get_sync_dma_buf(fence, old_dma_buf, &new_dma_buf)" that will set new_dma_buf = NULL
-if the old_dma_buf is unchanged, and return true + return a new reference to the sync dma_buf if it's not identical to old_dma_buf.
-old_dma_buf can also be NULL or a dma_buf that belongs to a different fence->context entirely. It might be capable of
-returning an error, in which case the fence would count as being signaled. This could reduce the need for separately checking
-fence_is_signaled first.
+may I request that you include the patch
 
-I think this would allow caching the synchronization dma_buf in a similar way without each fence needing
-to hold a reference to the dma_buf all the time, even for fences that are only used internally.
+      sony-laptop: fully enable SNY controlled modems
 
-> struct seqno_fence_dmabuf {
->         struct list_head        list;
->         int                            id;
->         struct dmabuf          *sync_buf;
->         uint32_t                   seqno_ops;
->         uint32_t                   seqno;
-> };
->
-> The member, id, could be used to identify which device sync_buf is
-> going to be accessed by. In case of drm driver, one framebuffer could
-> be accessed by one more devices, one is Display controller and another
-> is HDMI controller. So id would have crtc number.
-Why do you need this? the base fence already has a context member.
+for 3.8 as well?  I'd even like it to go to stable if you and Mattia
+agree.
 
-In fact I don't see why you need a linked list, at worst you'd need a static array since the amount of
-dma-bufs should already be known during allocation time.
+My rationale is:
 
-I would prefer to simply make reservation_object->fence_exclusive an array, since it would be easier to implement,
-and there have been some calls that arm might need such a thing.
+Making the driver set the same 3 bits which Windows set is obviously a
+bug fix and not a new feature.  The fix is a simple oneliner, and is
+required for a number of "newer" laptops, where newer in this case
+includes most of 2012.  Without this fix rfkill will fail silently,
+causing the wwan module to appear to be available but not working
+because the radio is disabled.  This causes very hard to debug problems
+for end users and distributions. Ref the bugzilla:
+https://bugzilla.kernel.org/show_bug.cgi?id=47751
+
+See also the thread at http://ubuntuforums.org/showthread.php?t=2040205
+for an example of the problems this bug causes for end users.
 
 
-> And seqno_fence structure could be defined like below,
->
-> struct seqno_fence {
->         struct list_head                sync_buf_list;
->         struct fence                      base;
->         const struct fence_ops     *ops;
-> };
->
-> In addition, I have implemented fence-helper framework for sw sync as
-> WIP and below is intefaces for it,
->
-> struct fence_helper {
->         struct list_head                    entries;
->         struct reservation_ticket       ticket;
->         struct seqno_fence              *sf;
->         spinlock_t                             lock;
->         void                                      *priv;
-> };
->
-> int fence_helper_init(struct fence_helper *fh, void *priv, void
-> (*remease)(struct fence *fence));
-> - This function is called at driver open so process unique context
-> would have a new seqno_fence instance. This function does just
-> seqno_fence_init call, initialize entries list and set device specific
-> fence release callback.
->
-> bool fence_helper_check_sync_buf(struct fence_helper *fh, struct
-> dma_buf *sync_buf, int id);
-> - This function is called before dma is started and checks if same
-> sync_bufs had already be committed to reservation_object,
-> bo->fence_shared[n]. And id could be used to identy which device
-> sync_buf is going to be accessed by.
->
-> int fence_helper_add_sync_buf(struct fence_helper *fh, struct dma_buf
-> *sync_buf, int id);
-> - This function is called if fence_helper_check_sync_buf() is true and
-> adds it seqno_fence's sync_buf_list wrapping sync_buf as
-> seqno_fence_dma_buf structure. With this function call, one
-> seqno_fence instance would have more sync_bufs. At this time, the
-> reference count to this sync_buf is taken.
->
-> void fence_helper_del_sync_buf(struct fence_helper *fh, int id);
-> - This function is called if some operation is failed after
-> fence_helper_add_sync_buf call to release relevant resources.
->
-> int fence_helper_init_reservation_entry(struct fence_helper *fh,
-> struct dma_buf *dmabuf, bool shared, int id);
-> - This function is called after fence_helper_add_sync_buf call and
-> calls reservation_entry_init function to set a reservation object of
-> sync_buf to a new reservation_entry object. And then the new
-> reservation_entry is added to fh->entries to track all sync_bufs this
-> device is going to access.
->
-> void fence_helper_fini_reservation_entry(struct fence_helper *fh, int id);
-> - This function is called if some operation is failed after
-> fence_helper_init_reservation_entry call to releae relevant resources.
->
-> int fence_helper_ticket_reserve(struct fence_helper *fh, int id);
-> - This function is called after fence_helper_init_reservation_entry
-> call and calls ticket_reserve function to reserve a ticket(locked for
-> each reservation entry in fh->entires)
->
-> void fence_helper_ticket_commit(struct fence_helper *fh, int id);
-> - This function is called after fence_helper_ticket_reserve() is
-> called to commit this device's fence to all reservation_objects of
-> each sync_buf. After that, once other devices try to access these
-> buffers, they would be blocked and unlock each reservation entry in
-> fh->entires.
->
-> int fence_helper_wait(struct fence_helper *fh, struct dma_buf *dmabuf,
-> bool intr);
-> - This function is called before fence_helper_add_sync_buf() is called
-> to wait for a signal from other devices.
->
-> int fence_helper_signal(struct fence_helper *fh, int id);
-> - This function is called by device's interrupt handler or somewhere
-> when dma access to this buffer has been completed and calls
-> fence_signal() with each fence registed to each reservation object in
-> fh->entries to notify dma access completion to other deivces. At this
-> time, other devices blocked would be waked up and forward their next
-> step.
->
-> For more detail, in addition, this function does the following,
-> - delete each reservation entry in fh->entries.
-> - release each seqno_fence_dmabuf object in seqno_fence's
-> sync_buf_list and call dma_buf_put() to put the reference count to
-> dmabuf.
->
->
-> Now the fence-helper framework is just WIP yet so there may be my
-> missing points. If you are ok, I'd like to post it as RFC.
-Way too complicated..
-
-
+Thanks,
+Bjørn
