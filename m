@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab3APP7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 10:59:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35774 "EHLO
+	id S1757176Ab3APP7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 10:59:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35785 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944Ab3APP71 (ORCPT
+	with ESMTP id S1757154Ab3APP7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 10:59:27 -0500
+	Wed, 16 Jan 2013 10:59:37 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: "Cho, Yu-Chen" <acho@suse.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 032/222] ACPI / battery: Correct battery capacity values on Thinkpads
-Date: Wed, 16 Jan 2013 13:53:52 -0200
-Message-Id: <1358351822-7675-33-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 034/222] Bluetooth: Add support for BCM20702A0 [04ca, 2003]
+Date: Wed, 16 Jan 2013 13:53:54 -0200
+Message-Id: <1358351822-7675-35-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,221 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamil Iskra <kamil@iskra.name>
+From: Jaroslav Resler <resler@cs.cas.cz>
 
-commit 4000e626156935dfb626321ce09cae2c833eabbb upstream.
+commit 0c1abbd1aa0416258881c303a88e618cbca0759c upstream.
 
-Add a quirk to correctly report battery capacity on 2010 and 2011
-Lenovo Thinkpad models.
+Add another vendor specific ID for BCM20702A0.
 
-The affected models that I tested (x201, t410, t410s, and x220)
-exhibit a problem where, when battery capacity reporting unit is mAh,
-the values being reported are wrong.  Pre-2010 and 2012 models appear
-to always report in mWh and are thus unaffected.  Also, in mid-2012
-Lenovo issued a BIOS update for the 2011 models that fixes the issue
-(tested on x220 with a post-1.29 BIOS).  No such update is available
-for the 2010 models, so those still need this patch.
+output of usb-devices:
+T:  Bus=01 Lev=02 Prnt=02 Port=03 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=04ca ProdID=2003 Rev= 1.12
+S:  Manufacturer=Broadcom Corp
+S:  Product=BCM20702A0
+S:  SerialNumber=446D57861623
+C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 
-Problem description: for some reason, the affected Thinkpads switch
-the reporting unit between mAh and mWh; generally, mAh is used when a
-laptop is plugged in and mWh when it's unplugged, although a
-suspend/resume or rmmod/modprobe is needed for the switch to take
-effect.  The values reported in mAh are *always* wrong.  This does
-not appear to be a kernel regression; I believe that the values were
-never reported correctly.  I tested back to kernel 2.6.34, with
-multiple machines and BIOS versions.
-
-Simply plugging a laptop into mains before turning it on is enough to
-reproduce the problem.  Here's a sample /proc/acpi/battery/BAT0/info
-from Thinkpad x220 (before a BIOS update) with a 4-cell battery:
-
-present:                 yes
-design capacity:         2886 mAh
-last full capacity:      2909 mAh
-battery technology:      rechargeable
-design voltage:          14800 mV
-design capacity warning: 145 mAh
-design capacity low:     13 mAh
-cycle count:              0
-capacity granularity 1:  1 mAh
-capacity granularity 2:  1 mAh
-model number:            42T4899
-serial number:           21064
-battery type:            LION
-OEM info:                SANYO
-
-Once the laptop switches the unit to mWh (unplug from mains, suspend,
-resume), the output changes to:
-
-present:                 yes
-design capacity:         28860 mWh
-last full capacity:      29090 mWh
-battery technology:      rechargeable
-design voltage:          14800 mV
-design capacity warning: 1454 mWh
-design capacity low:     200 mWh
-cycle count:              0
-capacity granularity 1:  1 mWh
-capacity granularity 2:  1 mWh
-model number:            42T4899
-serial number:           21064
-battery type:            LION
-OEM info:                SANYO
-
-Can you see how the values for "design capacity", etc., differ by a
-factor of 10 instead of 14.8 (the design voltage of this battery)?
-On the battery itself it says: 14.8V, 1.95Ah, 29Wh, so clearly the
-values reported in mWh are correct and the ones in mAh are not.
-
-My guess is that this problem has been around ever since those
-machines were released, but because the most common Thinkpad
-batteries are rated at 10.8V, the error (8%) is small enough that it
-simply hasn't been noticed or at least nobody could be bothered to
-look into it.
-
-My patch works around the problem by adjusting the incorrectly
-reported mAh values by "10000 / design_voltage".  The patch also has
-code to figure out if it should be activated or not.  It only
-activates on Lenovo Thinkpads, only when the unit is mAh, and, as an
-extra precaution, only when the battery capacity reported through
-ACPI does not match what is reported through DMI (I've never
-encountered a machine where the first two conditions would be true
-but the last would not, but better safe than sorry).
-
-I've been using this patch for close to a year on several systems
-without any problems.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=41062
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Cho, Yu-Chen <acho@suse.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/acpi/battery.c |   77 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 77 insertions(+)
+ drivers/bluetooth/btusb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index 7dd3f9f..6ea287e2 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -34,6 +34,7 @@
- #include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <asm/unaligned.h>
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index e1848be..406e0f9 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -104,6 +104,7 @@ static struct usb_device_id btusb_table[] = {
+ 	{ USB_DEVICE(0x0c10, 0x0000) },
  
- #ifdef CONFIG_ACPI_PROCFS_POWER
- #include <linux/proc_fs.h>
-@@ -95,6 +96,18 @@ enum {
- 	ACPI_BATTERY_ALARM_PRESENT,
- 	ACPI_BATTERY_XINFO_PRESENT,
- 	ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY,
-+	/* On Lenovo Thinkpad models from 2010 and 2011, the power unit
-+	   switches between mWh and mAh depending on whether the system
-+	   is running on battery or not.  When mAh is the unit, most
-+	   reported values are incorrect and need to be adjusted by
-+	   10000/design_voltage.  Verified on x201, t410, t410s, and x220.
-+	   Pre-2010 and 2012 models appear to always report in mWh and
-+	   are thus unaffected (tested with t42, t61, t500, x200, x300,
-+	   and x230).  Also, in mid-2012 Lenovo issued a BIOS update for
-+	   the 2011 models that fixes the issue (tested on x220 with a
-+	   post-1.29 BIOS), but as of Nov. 2012, no such update is
-+	   available for the 2010 models.  */
-+	ACPI_BATTERY_QUIRK_THINKPAD_MAH,
- };
+ 	/* Broadcom BCM20702A0 */
++	{ USB_DEVICE(0x04ca, 0x2003) },
+ 	{ USB_DEVICE(0x0489, 0xe042) },
+ 	{ USB_DEVICE(0x413c, 0x8197) },
  
- struct acpi_battery {
-@@ -429,6 +442,21 @@ static int acpi_battery_get_info(struct acpi_battery *battery)
- 	kfree(buffer.pointer);
- 	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags))
- 		battery->full_charge_capacity = battery->design_capacity;
-+	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags) &&
-+	    battery->power_unit && battery->design_voltage) {
-+		battery->design_capacity = battery->design_capacity *
-+		    10000 / battery->design_voltage;
-+		battery->full_charge_capacity = battery->full_charge_capacity *
-+		    10000 / battery->design_voltage;
-+		battery->design_capacity_warning =
-+		    battery->design_capacity_warning *
-+		    10000 / battery->design_voltage;
-+		/* Curiously, design_capacity_low, unlike the rest of them,
-+		   is correct.  */
-+		/* capacity_granularity_* equal 1 on the systems tested, so
-+		   it's impossible to tell if they would need an adjustment
-+		   or not if their values were higher.  */
-+	}
- 	return result;
- }
- 
-@@ -477,6 +505,11 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
- 	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
- 		battery->capacity_now = (battery->capacity_now *
- 				battery->full_charge_capacity) / 100;
-+	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags) &&
-+	    battery->power_unit && battery->design_voltage) {
-+		battery->capacity_now = battery->capacity_now *
-+		    10000 / battery->design_voltage;
-+	}
- 	return result;
- }
- 
-@@ -586,6 +619,24 @@ static void sysfs_remove_battery(struct acpi_battery *battery)
- 	mutex_unlock(&battery->sysfs_lock);
- }
- 
-+static void find_battery(const struct dmi_header *dm, void *private)
-+{
-+	struct acpi_battery *battery = (struct acpi_battery *)private;
-+	/* Note: the hardcoded offsets below have been extracted from
-+	   the source code of dmidecode.  */
-+	if (dm->type == DMI_ENTRY_PORTABLE_BATTERY && dm->length >= 8) {
-+		const u8 *dmi_data = (const u8 *)(dm + 1);
-+		int dmi_capacity = get_unaligned((const u16 *)(dmi_data + 6));
-+		if (dm->length >= 18)
-+			dmi_capacity *= dmi_data[17];
-+		if (battery->design_capacity * battery->design_voltage / 1000
-+		    != dmi_capacity &&
-+		    battery->design_capacity * 10 == dmi_capacity)
-+			set_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH,
-+				&battery->flags);
-+	}
-+}
-+
- /*
-  * According to the ACPI spec, some kinds of primary batteries can
-  * report percentage battery remaining capacity directly to OS.
-@@ -611,6 +662,32 @@ static void acpi_battery_quirks(struct acpi_battery *battery)
- 		battery->capacity_now = (battery->capacity_now *
- 				battery->full_charge_capacity) / 100;
- 	}
-+
-+	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags))
-+		return ;
-+
-+	if (battery->power_unit && dmi_name_in_vendors("LENOVO")) {
-+		const char *s;
-+		s = dmi_get_system_info(DMI_PRODUCT_VERSION);
-+		if (s && !strnicmp(s, "ThinkPad", 8)) {
-+			dmi_walk(find_battery, battery);
-+			if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH,
-+				     &battery->flags) &&
-+			    battery->design_voltage) {
-+				battery->design_capacity =
-+				    battery->design_capacity *
-+				    10000 / battery->design_voltage;
-+				battery->full_charge_capacity =
-+				    battery->full_charge_capacity *
-+				    10000 / battery->design_voltage;
-+				battery->design_capacity_warning =
-+				    battery->design_capacity_warning *
-+				    10000 / battery->design_voltage;
-+				battery->capacity_now = battery->capacity_now *
-+				    10000 / battery->design_voltage;
-+			}
-+		}
-+	}
- }
- 
- static int acpi_battery_update(struct acpi_battery *battery)
 -- 
 1.7.9.5
 
