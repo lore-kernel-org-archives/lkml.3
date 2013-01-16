@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793Ab3APQiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 11:38:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36270 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932316Ab3APQFZ (ORCPT
+	id S1758798Ab3APQiV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 11:38:21 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53876 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754483Ab3APQiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 11:05:25 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ondrej Zary <linux@rainbow-software.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 124/222] x86, 8042: Enable A20 using KBC to fix S3 resume on some MSI laptops
-Date: Wed, 16 Jan 2013 13:55:24 -0200
-Message-Id: <1358351822-7675-125-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1358351822-7675-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 16 Jan 2013 11:38:19 -0500
+Subject: [PATCH 00/10] goldfish: still swimming
+To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        mikechan@google.com
+From: Alan Cox <alan@linux.intel.com>
+Date: Wed, 16 Jan 2013 16:58:25 +0000
+Message-ID: <20130116165552.15183.92942.stgit@bob.linux.org.uk>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.3 -stable review patch.  If anyone has any objections, please let me know.
+This uses the newer macros and platform_driver stuff. The device registration is
+cleaned up as suggested by Arnd and it does indeed look better that way.
 
-------------------
+Alan
 
-From: Ondrej Zary <linux@rainbow-software.org>
-
-commit ad68652412276f68ad4fe3e1ecf5ee6880876783 upstream.
-
-Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
-line but resume code assumes that KBC was used.
-The laptop will not resume from S3 otherwise but powers off after a while
-and then powers on again stuck with a blank screen.
-
-Fix it by enabling A20 using KBC in i8042_platform_init for x86.
-
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Link: http://lkml.kernel.org/r/201212112218.06551.linux@rainbow-software.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/input/serio/i8042-x86ia64io.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index d6cc77a..5f306f7 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -921,6 +921,7 @@ static int __init i8042_platform_init(void)
- 	int retval;
- 
- #ifdef CONFIG_X86
-+	u8 a20_on = 0xdf;
- 	/* Just return if pre-detection shows no i8042 controller exist */
- 	if (!x86_platform.i8042_detect())
- 		return -ENODEV;
-@@ -960,6 +961,14 @@ static int __init i8042_platform_init(void)
- 
- 	if (dmi_check_system(i8042_dmi_dritek_table))
- 		i8042_dritek = true;
-+
-+	/*
-+	 * A20 was already enabled during early kernel init. But some buggy
-+	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
-+	 * resume from S3. So we do it here and hope that nothing breaks.
-+	 */
-+	i8042_command(&a20_on, 0x10d1);
-+	i8042_command(NULL, 0x00ff);	/* Null command for SMM firmware */
- #endif /* CONFIG_X86 */
- 
- 	return retval;
+Arve Hjønnevåg (4):
+      goldfish: tty driver
+      goldfish: framebuffer
+      goldfish: real time clock
+      goldfish: NAND flash driver
+
+Brian Swetland (1):
+      goldfish: virtual input event driver
+
+David 'Digit' Turner (1):
+      goldfish: add QEMU pipe driver
+
+Jun Nakajima (2):
+      goldfish: definitions for Goldfish on x86 platforms
+      goldfish: add the goldfish virtual bus
+
+Mike Lockwood (2):
+      goldfish: emulated MMC device
+      goldfish: power device
+
+
+ arch/x86/Kconfig                          |   12 +
+ arch/x86/platform/Makefile                |    1 
+ arch/x86/platform/goldfish/Makefile       |    1 
+ arch/x86/platform/goldfish/goldfish.c     |   51 ++
+ drivers/input/keyboard/Kconfig            |   11 +
+ drivers/input/keyboard/Makefile           |    1 
+ drivers/input/keyboard/goldfish_events.c  |  187 +++++++++
+ drivers/mmc/host/Kconfig                  |    7 
+ drivers/mmc/host/Makefile                 |    1 
+ drivers/mmc/host/goldfish.c               |  566 +++++++++++++++++++++++++++
+ drivers/mtd/devices/Kconfig               |    7 
+ drivers/mtd/devices/Makefile              |    3 
+ drivers/mtd/devices/goldfish_nand.c       |  464 ++++++++++++++++++++++
+ drivers/mtd/devices/goldfish_nand_reg.h   |   72 +++
+ drivers/platform/Kconfig                  |    4 
+ drivers/platform/Makefile                 |    1 
+ drivers/platform/goldfish/Kconfig         |    5 
+ drivers/platform/goldfish/Makefile        |    5 
+ drivers/platform/goldfish/goldfish_pipe.c |  618 +++++++++++++++++++++++++++++
+ drivers/platform/goldfish/pdev_bus.c      |  237 +++++++++++
+ drivers/power/Kconfig                     |    8 
+ drivers/power/Makefile                    |    1 
+ drivers/power/goldfish_battery.c          |  251 ++++++++++++
+ drivers/rtc/Kconfig                       |    9 
+ drivers/rtc/Makefile                      |    1 
+ drivers/rtc/rtc-goldfish.c                |  140 +++++++
+ drivers/tty/Kconfig                       |    6 
+ drivers/tty/Makefile                      |    1 
+ drivers/tty/goldfish.c                    |  332 ++++++++++++++++
+ drivers/video/Kconfig                     |    9 
+ drivers/video/Makefile                    |    1 
+ drivers/video/goldfishfb.c                |  316 +++++++++++++++
+ 32 files changed, 3327 insertions(+), 2 deletions(-)
+ create mode 100644 arch/x86/platform/goldfish/Makefile
+ create mode 100644 arch/x86/platform/goldfish/goldfish.c
+ create mode 100644 drivers/input/keyboard/goldfish_events.c
+ create mode 100644 drivers/mmc/host/goldfish.c
+ create mode 100644 drivers/mtd/devices/goldfish_nand.c
+ create mode 100644 drivers/mtd/devices/goldfish_nand_reg.h
+ create mode 100644 drivers/platform/goldfish/Kconfig
+ create mode 100644 drivers/platform/goldfish/Makefile
+ create mode 100644 drivers/platform/goldfish/goldfish_pipe.c
+ create mode 100644 drivers/platform/goldfish/pdev_bus.c
+ create mode 100644 drivers/power/goldfish_battery.c
+ create mode 100644 drivers/rtc/rtc-goldfish.c
+ create mode 100644 drivers/tty/goldfish.c
+ create mode 100644 drivers/video/goldfishfb.c
+
 -- 
-1.7.9.5
+What lives under the sea and carries a lot of people?
+An Octobus
 
