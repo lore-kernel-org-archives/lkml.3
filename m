@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632Ab3APAZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jan 2013 19:25:25 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:59487 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757872Ab3APAZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jan 2013 19:25:19 -0500
+	id S1758202Ab3APAZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jan 2013 19:25:46 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:39000 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758181Ab3APAZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jan 2013 19:25:43 -0500
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux MM <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 00/17] mm: zone & pgdat accessors plus some cleanup
-Date: Tue, 15 Jan 2013 16:24:37 -0800
-Message-Id: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH 01/17] mm/compaction: rename var zone_end_pfn to avoid conflicts with new function
+Date: Tue, 15 Jan 2013 16:24:38 -0800
+Message-Id: <1358295894-24167-2-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.0.3
+In-Reply-To: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1358295894-24167-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011600-7182-0000-0000-000004762DEB
+x-cbid: 13011600-3620-0000-0000-000000E82E8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Summaries:
+Patches that follow add a inline function zone_end_pfn(), which
+conflicts with the naming of a local variable in isolate_freepages().
 
-01 - removes the use of zone_end_pfn as a local var name.
-02 - adds zone_end_pfn(), zone_is_initialized(), zone_is_empty() and zone_spans_pfn()
-03 - adds a VM_BUG using zone_is_initialized() in __free_one_page()
+Rename the variable so it does not conflict.
 
-04 - add ensure_zone_is_initialized() (for memory_hotplug)
-05 - use the above addition.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ mm/compaction.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-06 - add pgdat_end_pfn() and pgdat_is_empty()
-
-07,08,09,10,11,12,16,17 - use the new helpers
-
-13 - avoid repeating checks for section in page flags by adding a define.
-14 - memory hotplug: factor out zone+pgdat growth.
-15 - add debugging message to VM_BUG check.
-
-As a general concern: spanned_pages & start_pfn (in pgdat & zone) are supposed
-to be locked (via a seqlock) when read (due to changes to them via
-memory_hotplug), but very few (only 1?) of their users appear to actually lock
-them.
-
---
-
- include/linux/mm.h     |  8 ++++--
- include/linux/mmzone.h | 34 ++++++++++++++++++++++---
- mm/compaction.c        | 10 ++++----
- mm/kmemleak.c          |  5 ++--
- mm/memory_hotplug.c    | 68 ++++++++++++++++++++++++++++----------------------
- mm/page_alloc.c        | 31 +++++++++++++----------
- mm/vmstat.c            |  2 +-
- 7 files changed, 100 insertions(+), 58 deletions(-)
+diff --git a/mm/compaction.c b/mm/compaction.c
+index c62bd06..1b52528 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -644,7 +644,7 @@ static void isolate_freepages(struct zone *zone,
+ 				struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn, end_pfn;
++	unsigned long high_pfn, low_pfn, pfn, z_end_pfn, end_pfn;
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
+ 
+@@ -663,7 +663,7 @@ static void isolate_freepages(struct zone *zone,
+ 	 */
+ 	high_pfn = min(low_pfn, pfn);
+ 
+-	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
++	z_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
+ 
+ 	/*
+ 	 * Isolate free pages until enough are available to migrate the
+@@ -706,7 +706,7 @@ static void isolate_freepages(struct zone *zone,
+ 		 * only scans within a pageblock
+ 		 */
+ 		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+-		end_pfn = min(end_pfn, zone_end_pfn);
++		end_pfn = min(end_pfn, z_end_pfn);
+ 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
+ 						   freelist, false);
+ 		nr_freepages += isolated;
+-- 
+1.8.0.3
 
