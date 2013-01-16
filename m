@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914Ab3APFR2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 00:17:28 -0500
-Received: from mga09.intel.com ([134.134.136.24]:43905 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831Ab3APFR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 00:17:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,476,1355126400"; 
-   d="scan'208";a="272605725"
-Date: Wed, 16 Jan 2013 07:20:54 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 1/3] x86: enable common clk on x86
-Message-ID: <20130116052054.GT13897@intel.com>
-References: <1358174788-24439-1-git-send-email-mika.westerberg@linux.intel.com>
- <1358174788-24439-2-git-send-email-mika.westerberg@linux.intel.com>
- <1474259.FsoB54Sm0k@vostro.rjw.lan>
+	id S1752466Ab3APFR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 00:17:57 -0500
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:39799 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab3APFRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 00:17:55 -0500
+Message-ID: <50F637D1.8070302@lab.ntt.co.jp>
+Date: Wed, 16 Jan 2013 14:17:05 +0900
+From: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1474259.FsoB54Sm0k@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Antonio Ospite <ospite@studenti.unina.it>
+Subject: Re: [PATCH v2] HID: add support for Sony RF receiver with USB product
+ id 0x0374
+References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>  <50F52986.2080002@lab.ntt.co.jp> <1358246448.4897.3.camel@nexus.lab.ntt.co.jp> <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 12:59:17AM +0100, Rafael J. Wysocki wrote:
-> On Monday, January 14, 2013 04:46:26 PM Mika Westerberg wrote:
-> > We are starting to see traditional SoC peripherals also in the x86 world,
-> > things like UART, I2C and SPI controllers that might already have a working
-> > device driver. These drivers typically take advantage of the Linux clk
-> > framework to control and retrieve information about the peripheral clock.
-> > 
-> > There hasn't been a standard way on x86 to pass the clock rate from
-> > whatever configuration system is used to the driver, but instead different
-> > variations have emerged, like adding this information to the platform data.
-> > 
-> > In order to use the standard Linux way we enable the common clk subsystem
-> > also on x86. This allows us to re-use the drivers with little or no
-> > modification wrt. clock API usage.
-> > 
-> > This patch was originally proposed by Mark Brown.
-> 
-> Are there any side effects of selecting COMMON_CLK by an arch and if so then
-> what are they?
+Hi Jiri,
 
-Selecting COMMON_CLK also selects HAVE_CLK, so drivers that are dependent
-on that option become available when you run make config.
+On 2013/01/16 01:02, Jiri Kosina wrote:
+> On Tue, 15 Jan 2013, Fernando Luis Vázquez Cao wrote:
+>
+>> Some Vaio desktop computers, among them the VGC-LN51JGB multimedia PC, have
+>> a RF receiver, multi-interface USB device 054c:0374, that is used to connect
+>> a wireless keyboard and a wireless mouse.
+>>
+>> The keyboard works flawlessly, but the mouse (VGP-WMS3 in my case) does not
+>> seem to be generating any pointer events. The problem is that the mouse pointer
+>> is wrongly declared as a constant non-data variable in the report descriptor
+>> (see lsusb and usbhid-dump output below), with the consequence that it is
+>> ignored by the HID code.
+>>
+>> Add this device to the have-special-driver list and fix up the report
+>> descriptor in the Sony-specific driver which happens to already have a fixup
+>> for a similar firmware bug.
+> Applied, thanks.
 
-It also makes clk_get() and friends to return errors if the clock is not
-found (instead of returning NULL as in case with !HAVE_CLK). This means
-that if there is a driver that counted on the stubbed out clocks on x86 it
-will fail to get the clock after this patch. However, the patch that adds
-the stub functions was merged only lately:
+Thank you.
 
-	commit 93abe8e4b13ae9a0428ce940a8a03ac72a7626f1
-	Author: Viresh Kumar <viresh.kumar@st.com>
-	Date:   Mon Jul 30 14:39:27 2012 -0700
+I noticed that the patch was tagged "for-3.9". Does this mean
+that it is too late to get it merged during the current release
+cycle?
 
-	    clk: add non CONFIG_HAVE_CLK routines
-	    
-	    Many drivers are shared between architectures that may or may not have
-	    HAVE_CLK selected for them.  To remove compilation errors for them we
-	    enclose clk_*() calls in these drivers within #ifdef CONFIG_HAVE_CLK,
-	    #endif.
-	    
-	    This patch removes the need of these CONFIG_HAVE_CLK statements, by
-	    introducing dummy routines when HAVE_CLK is not selected by platforms.
-	    So, definition of these routines will always be available.  These calls
-	    will return error for platforms that don't select HAVE_CLK.
+If possible, I would like to get it backported to 3.7-stable (and
+possibly 3.2 stable), since without it a whole family of Sony
+desktop computers is unusable under Linux out of the box.
+Should I do it myself or do you have a process in place for HID
+stable patches?
+
+Regards,
+Fernando
