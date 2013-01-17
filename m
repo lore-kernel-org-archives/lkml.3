@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759248Ab3AQHZm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 02:25:42 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18645 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759229Ab3AQHZl (ORCPT
+	id S1759251Ab3AQH34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 02:29:56 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:42453 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466Ab3AQH3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 02:25:41 -0500
-Date: Thu, 17 Jan 2013 10:25:23 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jake Champlin <jake.champlin.27@gmail.com>
-Cc: abbotti@mev.co.uk, devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, fmhess@users.sourceforge.net
-Subject: Re: [PATCH] Staging: comedi: ni_tio: Fixed whitespace / spacing issue
-Message-ID: <20130117072523.GJ4584@mwanda>
-References: <20130117010523.GA18848@gmail.com>
+	Thu, 17 Jan 2013 02:29:55 -0500
+Message-ID: <50F7A862.4050006@synopsys.com>
+Date: Thu, 17 Jan 2013 12:59:38 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130117010523.GA18848@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Newsgroups: gmane.linux.kernel,gmane.linux.kernel.cross-arch
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v1 25/31] ARC: [plat-arcfpga] Hooking up platform
+ to ARC UART
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-26-git-send-email-vgupta@synopsys.com> <201211071416.08012.arnd@arndb.de>
+In-Reply-To: <201211071416.08012.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 08:05:28PM -0500, Jake Champlin wrote:
-> Fixed a leading whitespace coding style issue.
+On Wednesday 07 November 2012 07:46 PM, Arnd Bergmann wrote:
+> On Wednesday 07 November 2012, Vineet Gupta wrote:
+>> +static struct platform_device arc_uart##n##_dev = {    \
+>> +       .name = "arc-uart",                             \
+>> +       .id = n,                                        \
+>> +       .num_resources = ARRAY_SIZE(arc_uart##n##_res), \
+>> +       .resource = arc_uart##n##_res,                  \
+>> +       .dev = {                                        \
+>> +               .platform_data = &arc_uart_info,        \
+>> +       },                                              \
+>> +}
+>> +
+>> +ARC_UART_DEV(0);
+>> +#if CONFIG_SERIAL_ARC_NR_PORTS > 1
+>> +ARC_UART_DEV(1);
+>> +#endif
+>> +
+>> +static struct platform_device *fpga_early_devs[] __initdata = {
+>> +#if defined(CONFIG_SERIAL_ARC_CONSOLE)
+>> +       &arc_uart0_dev,
+>> +#endif
+>> +};
 > 
-> Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/ni_tio.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> statically defining platform devices like this is considered very
+> bad style, especially since it prevents you from doing proper
+> boot-time configuration. Please get the available devices from
+> the boot loader. Normally this is done using a flattened device
+> tree blob that gets passed, unless you can probe the hardware
+> directly.
 > 
-> diff --git a/drivers/staging/comedi/drivers/ni_tio.c b/drivers/staging/comedi/drivers/ni_tio.c
-> index 98f8789..73e7cbe 100644
-> --- a/drivers/staging/comedi/drivers/ni_tio.c
-> +++ b/drivers/staging/comedi/drivers/ni_tio.c
-> @@ -276,7 +276,7 @@ static inline unsigned NI_660x_RTSI_Second_Gate_Select(unsigned n)
->  }
->  
->  static const unsigned int counter_status_mask =
-> -    COMEDI_COUNTER_ARMED | COMEDI_COUNTER_COUNTING;
-> +COMEDI_COUNTER_ARMED | COMEDI_COUNTER_COUNTING;
+> 	Arnd
+> 
 
-No.  It should be intended but just using tabs instead of spaces.
+So my strategy for v2 series (based off 3.8-rcx) is to introduce devicetree,
+multi-platform-image support (and other key fixes such as syscall restart issues)
+as slap-on patches on top of old code. This is not to avoid any chop-n-dice of
+fixing patches (I've done that in plenty between v1 and v2). Its just that, in
+absence of revision history for ARC port (in upstream later on) - it helps capture
+the evolution of some key features and also for the community it serves as a live
+documentation of bad designs and how they can be fixed.
 
-regards,
-dan carpenter
+Is that a reasonable approach for new port which is non-bisectable anyways ?
 
->  
->  static int __init ni_tio_init_module(void)
->  {
-> -- 
-> 1.8.1.1
-> 
-> 
-> -- 
-> Jake Champlin
-> jake.champlin.27@gmail.com
-> 8123742937
-> <MuttClient>
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+Thx,
+-Vineet
