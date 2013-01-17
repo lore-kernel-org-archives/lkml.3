@@ -1,501 +1,506 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758520Ab3AQCM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 21:12:59 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51492 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757862Ab3AQCM4 (ORCPT
+	id S1756821Ab3AQCPK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 21:15:10 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:33731 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754485Ab3AQCPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:12:56 -0500
-X-AuditID: 9c930179-b7b54ae000000e44-5d-50f75e246804
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 3/3] zram: get rid of lockdep warning
-Date: Thu, 17 Jan 2013 11:12:49 +0900
-Message-Id: <1358388769-30112-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358388769-30112-1-git-send-email-minchan@kernel.org>
-References: <1358388769-30112-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 16 Jan 2013 21:15:07 -0500
+Message-ID: <50F75EA7.4060309@systemhalted.org>
+Date: Wed, 16 Jan 2013 21:15:03 -0500
+From: "Carlos O'Donell" <carlos@systemhalted.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: vapier@gentoo.org, libc-alpha@sourceware.org, bhutchings@solarflare.com,
+        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
+        eblake@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
+        schwab@suse.de
+Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
+References: <50F6B761.8070106@linux-ipv6.org> <1358351232.2923.10.camel@bwh-desktop.uk.solarflarecom.com> <201301161205.04502.vapier@gentoo.org> <20130116.135744.697469565804508454.davem@davemloft.net>
+In-Reply-To: <20130116.135744.697469565804508454.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lockdep complains about recursive deadlock of zram->init_lock.
-[1] made it false positive because we can't request IO to zram
-before setting disksize. Anyway, we should shut lockdep up to
-avoid many reporting from user.
+On 01/16/2013 01:57 PM, David Miller wrote:
+> From: Mike Frysinger <vapier@gentoo.org>
+> Date: Wed, 16 Jan 2013 12:04:56 -0500
+> 
+>> certainly true, but the current expectation is that you don't mix your ABIs.  
+>> if you're programming with the C library API, then use the C library headers.  
+>> if you're banging directly on the kernel, then use the kernel headers.  not 
+>> saying it's a perfect solution, but it works for the vast majority of use 
+>> cases.
+> 
+> This isn't how real life works.
+> 
+> GLIBC itself brings in some of the kernel headers, as do various library
+> headers for libraries other than glibc.
+> 
+> So you can get these conflicting headers included indirectly, and it is
+> of no fault of any of the various parties involved.
+> 
+> We have to make them work when included at the same time somehow, and
+> this is totally unavoidable.
+> 
 
-This patch allocates zram's metadata out of lock so we can fix it.
-In addition, this patch replace GFP_KERNEL with GFP_NOIO/GFP_ATOMIC
-in request handle path for partial I/O.
+Just to put some code behind the comments I made earlier.
 
-[1] zram: give up lazy initialization of zram metadata
+Solution:
+=========
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+- Synchronize linux's `include/uapi/linux/in6.h' 
+  with glibc's `inet/netinet/in.h'.
+- Synchronize glibc's `inet/netinet/in.h with linux's
+  `include/uapi/linux/in6.h'.
+- Allow including the headers in either other.
+- First header included defines the structures and macros.
+
+Details:
+========
+
+The kernel promises not to break the UAPI ABI so I don't 
+see why we can't just have the two userspace headers
+coordinate?
+
+If you include the kernel headers first you get those,
+and if you include the glibc headers first you get those,
+and the following patch arranges a coordination and
+synchronization between the two.
+
+Let's handle `include/uapi/linux/in6.h' from linux, 
+and `inet/netinet/in.h' from glibc and ensure they compile
+in any order and preserve the required ABI.
+
+These two patches pass the following compile tests:
+
+cat >> test1.c <<EOF
+#include <netinet/in.h>
+#include <linux/in6.h>
+int main (void) {
+  return 0;
+}
+EOF
+gcc -c test1.c
+
+cat >> test2.c <<EOF
+#include <linux/in6.h>
+#include <netinet/in.h>
+int main (void) {
+  return 0;
+}
+EOF
+gcc -c test2.c
+
+One wrinkle is that the kernel has a different name for one of
+the members in ipv6_mreq. In the kernel patch we create a macro
+to cover the uses of the old name, and while that's not entirely
+clean it's one of the best solutions (aside from an anonymous
+union which has other issues).
+
+I've reviewed the code and it looks to me like the ABI is
+assured and everything matches on both sides.
+
+Comments?
+
+Notes:
+- You want netinet/in.h to include bits/in.h as early as possible,
+  but it needs in_addr so define in_addr early.
+- You want bits/in.h included as early as possible so you can use
+  the linux specific code to define __USE_KERNEL_DEFS based on 
+  the _UAPI_* macro definition and use those to cull in.h.
+- glibc was missing IPPROTO_MH, added here.
+
+glibc/
+
+2012-01-16  Carlos O'Donell  <carlos@redhat.com>
+
+	* sysdeps/unix/sysv/linux/bits/in.h
+	[_UAPI_LINUX_IN6_H]: Define __USE_KERNEL_IPV6_DEFS.
+	* inet/netinet/in.h: Move in_addr definition and bits/in.h inclusion
+	before __USE_KERNEL_IPV6_DEFS uses.
+	* inet/netinet/in.h [!__USE_KERNEL_IPV6_DEFS]: Define IPPROTO_MH, and
+	IPPROTO_BEETPH.
+	[__USE_KERNEL_IPV6_DEFS]: Don't define any of IPPROTO_*, in6_addr,
+	sockaddr_in6, or ipv6_mreq.
+
+diff --git a/inet/netinet/in.h b/inet/netinet/in.h
+index 89e3813..882739d 100644
+--- a/inet/netinet/in.h
++++ b/inet/netinet/in.h
+@@ -26,6 +26,20 @@
+ 
+ __BEGIN_DECLS
+ 
++/* Internet address.  */
++typedef uint32_t in_addr_t;
++struct in_addr
++  {
++    in_addr_t s_addr;
++  };
++
++/* Get system-specific definitions.  */
++#include <bits/in.h>
++
++/* If __USER_KERNEL_IPV6_DEFS is defined then the user has included the kernel
++   network headers first and we should use those ABI-identical definitions
++   instead of our own.  */
++#ifndef __USE_KERNEL_IPV6_DEFS
+ /* Standard well-defined IP protocols.  */
+ enum
+   {
+@@ -75,6 +89,8 @@ enum
+ #define IPPROTO_DSTOPTS		IPPROTO_DSTOPTS
+     IPPROTO_MTP = 92,	   /* Multicast Transport Protocol.  */
+ #define IPPROTO_MTP		IPPROTO_MTP
++    IPPROTO_BEETPH = 94,   /* IP option pseudo header for BEET.  */
++#define IPPROTO_BEETPH		IPPROTO_BEETPH
+     IPPROTO_ENCAP = 98,	   /* Encapsulation Header.  */
+ #define IPPROTO_ENCAP		IPPROTO_ENCAP
+     IPPROTO_PIM = 103,	   /* Protocol Independent Multicast.  */
+@@ -83,13 +99,15 @@ enum
+ #define IPPROTO_COMP		IPPROTO_COMP
+     IPPROTO_SCTP = 132,	   /* Stream Control Transmission Protocol.  */
+ #define IPPROTO_SCTP		IPPROTO_SCTP
++    IPPROTO_MH = 135,      /* IPv6 mobility header.  */
++#define IPPROTO_MH		IPPROTO_MH
+     IPPROTO_UDPLITE = 136, /* UDP-Lite protocol.  */
+ #define IPPROTO_UDPLITE		IPPROTO_UDPLITE
+     IPPROTO_RAW = 255,	   /* Raw IP packets.  */
+ #define IPPROTO_RAW		IPPROTO_RAW
+     IPPROTO_MAX
+   };
+-
++#endif /* !__USE_KERNEL_IPV6_DEFS */
+ 
+ /* Type to represent a port.  */
+ typedef uint16_t in_port_t;
+@@ -134,15 +152,6 @@ enum
+     IPPORT_USERRESERVED = 5000
+   };
+ 
+-
+-/* Internet address.  */
+-typedef uint32_t in_addr_t;
+-struct in_addr
+-  {
+-    in_addr_t s_addr;
+-  };
+-
+-
+ /* Definitions of the bits in an Internet address integer.
+ 
+    On subnets, host and network parts are found according to
+@@ -191,7 +200,7 @@ struct in_addr
+ #define INADDR_ALLRTRS_GROUP    ((in_addr_t) 0xe0000002) /* 224.0.0.2 */
+ #define INADDR_MAX_LOCAL_GROUP  ((in_addr_t) 0xe00000ff) /* 224.0.0.255 */
+ 
+-
++#ifndef __USE_KERNEL_IPV6_DEFS
+ /* IPv6 address */
+ struct in6_addr
+   {
+@@ -209,6 +218,7 @@ struct in6_addr
+ # define s6_addr32		__in6_u.__u6_addr32
+ #endif
+   };
++#endif /* !__USE_KERNEL_IPV6_DEFS */
+ 
+ extern const struct in6_addr in6addr_any;        /* :: */
+ extern const struct in6_addr in6addr_loopback;   /* ::1 */
+@@ -218,7 +228,6 @@ extern const struct in6_addr in6addr_loopback;   /* ::1 */
+ #define INET_ADDRSTRLEN 16
+ #define INET6_ADDRSTRLEN 46
+ 
+-
+ /* Structure describing an Internet socket address.  */
+ struct sockaddr_in
+   {
+@@ -233,6 +242,7 @@ struct sockaddr_in
+ 			   sizeof (struct in_addr)];
+   };
+ 
++#ifndef __USE_KERNEL_IPV6_DEFS
+ /* Ditto, for IPv6.  */
+ struct sockaddr_in6
+   {
+@@ -242,7 +252,7 @@ struct sockaddr_in6
+     struct in6_addr sin6_addr;	/* IPv6 address */
+     uint32_t sin6_scope_id;	/* IPv6 scope-id */
+   };
+-
++#endif /* !__USE_KERNEL_IPV6_DEFS */
+ 
+ #if defined __USE_MISC || defined __USE_GNU
+ /* IPv4 multicast request.  */
+@@ -268,7 +278,7 @@ struct ip_mreq_source
+   };
+ #endif
+ 
+-
++#ifndef __USE_KERNEL_IPV6_DEFS
+ /* Likewise, for IPv6.  */
+ struct ipv6_mreq
+   {
+@@ -278,7 +288,7 @@ struct ipv6_mreq
+     /* local interface */
+     unsigned int ipv6mr_interface;
+   };
+-
++#endif /* !__USE_KERNEL_IPV6_DEFS */
+ 
+ #if defined __USE_MISC || defined __USE_GNU
+ /* Multicast group request.  */
+@@ -349,10 +359,6 @@ struct group_filter
+ 				      * sizeof (struct sockaddr_storage)))
+ #endif
+ 
+-
+-/* Get system-specific definitions.  */
+-#include <bits/in.h>
+-
+ /* Functions to convert between host and network byte order.
+ 
+    Please note that these functions normally take `unsigned long int' or
+diff --git a/sysdeps/unix/sysv/linux/bits/in.h b/sysdeps/unix/sysv/linux/bits/in.h
+index e959b33..36bb72b 100644
+--- a/sysdeps/unix/sysv/linux/bits/in.h
++++ b/sysdeps/unix/sysv/linux/bits/in.h
+@@ -21,6 +21,15 @@
+ # error "Never use <bits/in.h> directly; include <netinet/in.h> instead."
+ #endif
+ 
++/* If the application has already included linux/in6.h from a linux-based
++   kernel then we will not define IPPROTO_* defines, in6_addr (nor the 
++   defines), sockaddr_in6, or ip_mreq.  The ABI used by the linux-kernel
++   and glibc match exactly.  Neither the linux kernel nor glibc should 
++   break this ABI without coordination.  */
++#ifdef _UAPI_LINUX_IN6_H
++# define __USE_KERNEL_IPV6_DEFS 
++#endif
++
+ /* Options for use with `getsockopt' and `setsockopt' at the IP level.
+    The first word in the comment at the right is the data type used;
+    "bool" means a boolean value stored in an `int'.  */
 ---
- drivers/staging/zram/zram_drv.c   |  194 +++++++++++++++++++------------------
- drivers/staging/zram/zram_drv.h   |   12 ++-
- drivers/staging/zram/zram_sysfs.c |   13 ++-
- 3 files changed, 118 insertions(+), 101 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 3693780..eb1bc37 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -71,22 +71,22 @@ static void zram_stat64_inc(struct zram *zram, u64 *v)
- 	zram_stat64_add(zram, v, 1);
- }
+linux/
+
+Compile tested and inspected.
+
+Signed-off-by: Carlos O'Donell <carlos@redhat.com>
+
+ include/uapi/linux/in.h      |   32 +-----------------------
+ include/uapi/linux/in6.h     |   50 +++++++++++++++++++++++++++++++------
+ include/uapi/linux/ipproto.h |    0 
+ include/uapi/linux/ipproto.h |   57 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 101 insertions(+), 38 deletions(-)
+
+diff --git a/include/uapi/linux/in.h b/include/uapi/linux/in.h
+index 9edb441..998ecb2 100644
+--- a/include/uapi/linux/in.h
++++ b/include/uapi/linux/in.h
+@@ -21,36 +21,8 @@
+ #include <linux/types.h>
+ #include <linux/socket.h>
  
--static int zram_test_flag(struct zram *zram, u32 index,
-+static int zram_test_flag(struct zram_meta *meta, u32 index,
- 			enum zram_pageflags flag)
- {
--	return zram->table[index].flags & BIT(flag);
-+	return meta->table[index].flags & BIT(flag);
- }
- 
--static void zram_set_flag(struct zram *zram, u32 index,
-+static void zram_set_flag(struct zram_meta *meta, u32 index,
- 			enum zram_pageflags flag)
- {
--	zram->table[index].flags |= BIT(flag);
-+	meta->table[index].flags |= BIT(flag);
- }
- 
--static void zram_clear_flag(struct zram *zram, u32 index,
-+static void zram_clear_flag(struct zram_meta *meta, u32 index,
- 			enum zram_pageflags flag)
- {
--	zram->table[index].flags &= ~BIT(flag);
-+	meta->table[index].flags &= ~BIT(flag);
- }
- 
- static int page_zero_filled(void *ptr)
-@@ -106,16 +106,17 @@ static int page_zero_filled(void *ptr)
- 
- static void zram_free_page(struct zram *zram, size_t index)
- {
--	unsigned long handle = zram->table[index].handle;
--	u16 size = zram->table[index].size;
-+	struct zram_meta *meta = zram->meta;
-+	unsigned long handle = meta->table[index].handle;
-+	u16 size = meta->table[index].size;
- 
- 	if (unlikely(!handle)) {
- 		/*
- 		 * No memory is allocated for zero filled pages.
- 		 * Simply clear zero page flag.
- 		 */
--		if (zram_test_flag(zram, index, ZRAM_ZERO)) {
--			zram_clear_flag(zram, index, ZRAM_ZERO);
-+		if (zram_test_flag(meta, index, ZRAM_ZERO)) {
-+			zram_clear_flag(meta, index, ZRAM_ZERO);
- 			zram_stat_dec(&zram->stats.pages_zero);
- 		}
- 		return;
-@@ -124,17 +125,17 @@ static void zram_free_page(struct zram *zram, size_t index)
- 	if (unlikely(size > max_zpage_size))
- 		zram_stat_dec(&zram->stats.bad_compress);
- 
--	zs_free(zram->mem_pool, handle);
-+	zs_free(meta->mem_pool, handle);
- 
- 	if (size <= PAGE_SIZE / 2)
- 		zram_stat_dec(&zram->stats.good_compress);
- 
- 	zram_stat64_sub(zram, &zram->stats.compr_size,
--			zram->table[index].size);
-+			meta->table[index].size);
- 	zram_stat_dec(&zram->stats.pages_stored);
- 
--	zram->table[index].handle = 0;
--	zram->table[index].size = 0;
-+	meta->table[index].handle = 0;
-+	meta->table[index].size = 0;
- }
- 
- static void handle_zero_page(struct bio_vec *bvec)
-@@ -159,20 +160,21 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- 	int ret = LZO_E_OK;
- 	size_t clen = PAGE_SIZE;
- 	unsigned char *cmem;
--	unsigned long handle = zram->table[index].handle;
-+	struct zram_meta *meta = zram->meta;
-+	unsigned long handle = meta->table[index].handle;
- 
--	if (!handle || zram_test_flag(zram, index, ZRAM_ZERO)) {
-+	if (!handle || zram_test_flag(meta, index, ZRAM_ZERO)) {
- 		memset(mem, 0, PAGE_SIZE);
- 		return 0;
- 	}
- 
--	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
--	if (zram->table[index].size == PAGE_SIZE)
-+	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
-+	if (meta->table[index].size == PAGE_SIZE)
- 		memcpy(mem, cmem, PAGE_SIZE);
- 	else
--		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
-+		ret = lzo1x_decompress_safe(cmem, meta->table[index].size,
- 						mem, &clen);
--	zs_unmap_object(zram->mem_pool, handle);
-+	zs_unmap_object(meta->mem_pool, handle);
- 
- 	/* Should NEVER happen. Return bio error if it does. */
- 	if (unlikely(ret != LZO_E_OK)) {
-@@ -190,11 +192,11 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 	int ret;
- 	struct page *page;
- 	unsigned char *user_mem, *uncmem = NULL;
+-/* Standard well-defined IP protocols.  */
+-enum {
+-  IPPROTO_IP = 0,		/* Dummy protocol for TCP		*/
+-  IPPROTO_ICMP = 1,		/* Internet Control Message Protocol	*/
+-  IPPROTO_IGMP = 2,		/* Internet Group Management Protocol	*/
+-  IPPROTO_IPIP = 4,		/* IPIP tunnels (older KA9Q tunnels use 94) */
+-  IPPROTO_TCP = 6,		/* Transmission Control Protocol	*/
+-  IPPROTO_EGP = 8,		/* Exterior Gateway Protocol		*/
+-  IPPROTO_PUP = 12,		/* PUP protocol				*/
+-  IPPROTO_UDP = 17,		/* User Datagram Protocol		*/
+-  IPPROTO_IDP = 22,		/* XNS IDP protocol			*/
+-  IPPROTO_DCCP = 33,		/* Datagram Congestion Control Protocol */
+-  IPPROTO_RSVP = 46,		/* RSVP protocol			*/
+-  IPPROTO_GRE = 47,		/* Cisco GRE tunnels (rfc 1701,1702)	*/
 -
-+	struct zram_meta *meta = zram->meta;
- 	page = bvec->bv_page;
- 
--	if (unlikely(!zram->table[index].handle) ||
--			zram_test_flag(zram, index, ZRAM_ZERO)) {
-+	if (unlikely(!meta->table[index].handle) ||
-+			zram_test_flag(meta, index, ZRAM_ZERO)) {
- 		handle_zero_page(bvec);
- 		return 0;
- 	}
-@@ -202,7 +204,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 	user_mem = kmap_atomic(page);
- 	if (is_partial_io(bvec))
- 		/* Use  a temporary buffer to decompress the page */
--		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+		uncmem = kmalloc(PAGE_SIZE, GFP_ATOMIC);
- 	else
- 		uncmem = user_mem;
- 
-@@ -241,16 +243,17 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	unsigned long handle;
- 	struct page *page;
- 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
-+	struct zram_meta *meta = zram->meta;
- 
- 	page = bvec->bv_page;
--	src = zram->compress_buffer;
-+	src = meta->compress_buffer;
- 
- 	if (is_partial_io(bvec)) {
- 		/*
- 		 * This is a partial IO. We need to read the full page
- 		 * before to write the changes.
- 		 */
--		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
- 		if (!uncmem) {
- 			pr_info("Error allocating temp memory!\n");
- 			ret = -ENOMEM;
-@@ -265,8 +268,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	 * System overwrites unused sectors. Free memory associated
- 	 * with this sector now.
- 	 */
--	if (zram->table[index].handle ||
--	    zram_test_flag(zram, index, ZRAM_ZERO))
-+	if (meta->table[index].handle ||
-+	    zram_test_flag(meta, index, ZRAM_ZERO))
- 		zram_free_page(zram, index);
- 
- 	user_mem = kmap_atomic(page);
-@@ -284,13 +287,13 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		if (!is_partial_io(bvec))
- 			kunmap_atomic(user_mem);
- 		zram_stat_inc(&zram->stats.pages_zero);
--		zram_set_flag(zram, index, ZRAM_ZERO);
-+		zram_set_flag(meta, index, ZRAM_ZERO);
- 		ret = 0;
- 		goto out;
- 	}
- 
- 	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
--			       zram->compress_workmem);
-+			       meta->compress_workmem);
- 
- 	if (!is_partial_io(bvec)) {
- 		kunmap_atomic(user_mem);
-@@ -311,14 +314,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			src = uncmem;
- 	}
- 
--	handle = zs_malloc(zram->mem_pool, clen);
-+	handle = zs_malloc(meta->mem_pool, clen);
- 	if (!handle) {
- 		pr_info("Error allocating memory for compressed "
- 			"page: %u, size=%zu\n", index, clen);
- 		ret = -ENOMEM;
- 		goto out;
- 	}
--	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
-+	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
- 
- 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
- 		src = kmap_atomic(page);
-@@ -326,10 +329,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
- 		kunmap_atomic(src);
- 
--	zs_unmap_object(zram->mem_pool, handle);
-+	zs_unmap_object(meta->mem_pool, handle);
- 
--	zram->table[index].handle = handle;
--	zram->table[index].size = clen;
-+	meta->table[index].handle = handle;
-+	meta->table[index].size = clen;
- 
- 	/* Update stats */
- 	zram_stat64_add(zram, &zram->stats.compr_size, clen);
-@@ -472,33 +475,24 @@ error:
- void __zram_reset_device(struct zram *zram)
- {
- 	size_t index;
-+	struct zram_meta *meta;
- 
- 	if (!zram->init_done)
- 		goto out;
- 
-+	meta = zram->meta;
- 	zram->init_done = 0;
+-  IPPROTO_IPV6	 = 41,		/* IPv6-in-IPv4 tunnelling		*/
 -
--	/* Free various per-device buffers */
--	kfree(zram->compress_workmem);
--	free_pages((unsigned long)zram->compress_buffer, 1);
+-  IPPROTO_ESP = 50,            /* Encapsulation Security Payload protocol */
+-  IPPROTO_AH = 51,             /* Authentication Header protocol       */
+-  IPPROTO_BEETPH = 94,	       /* IP option pseudo header for BEET */
+-  IPPROTO_PIM    = 103,		/* Protocol Independent Multicast	*/
 -
--	zram->compress_workmem = NULL;
--	zram->compress_buffer = NULL;
+-  IPPROTO_COMP   = 108,                /* Compression Header protocol */
+-  IPPROTO_SCTP   = 132,		/* Stream Control Transport Protocol	*/
+-  IPPROTO_UDPLITE = 136,	/* UDP-Lite (RFC 3828)			*/
 -
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
--		unsigned long handle = zram->table[index].handle;
-+		unsigned long handle = meta->table[index].handle;
- 		if (!handle)
- 			continue;
- 
--		zs_free(zram->mem_pool, handle);
-+		zs_free(meta->mem_pool, handle);
- 	}
- 
--	vfree(zram->table);
--	zram->table = NULL;
+-  IPPROTO_RAW	 = 255,		/* Raw IP packets			*/
+-  IPPROTO_MAX
+-};
 -
--	zs_destroy_pool(zram->mem_pool);
--	zram->mem_pool = NULL;
-+	zram_meta_free(zram->meta);
-+	zram->meta = NULL;
++/* Include IPPROTO_* defines. */
++#include <linux/ipproto.h>
  
- 	/* Reset stats */
- 	memset(&zram->stats, 0, sizeof(zram->stats));
-@@ -514,12 +508,64 @@ void zram_reset_device(struct zram *zram)
- 	up_write(&zram->init_lock);
- }
+ /* Internet address. */
+ struct in_addr {
+diff --git a/include/uapi/linux/in6.h b/include/uapi/linux/in6.h
+index f79c372..a2b16a5 100644
+--- a/include/uapi/linux/in6.h
++++ b/include/uapi/linux/in6.h
+@@ -23,6 +23,13 @@
  
--/* zram->init_lock should be held */
--int zram_init_device(struct zram *zram)
-+void zram_meta_free(struct zram_meta *meta)
- {
--	int ret;
--	size_t num_pages;
-+	zs_destroy_pool(meta->mem_pool);
-+	kfree(meta->compress_workmem);
-+	free_pages((unsigned long)meta->compress_buffer, 1);
-+	vfree(meta->table);
-+	kfree(meta);
-+}
+ #include <linux/types.h>
+ 
++/* If a glibc-based userspace has already included in.h, then we will not 
++ * define in6_addr (nor the defines), sockaddr_in6, or ipv6_mreq. The
++ * ABI used by the kernel and by glibc match exactly. Neither the kernel
++ * nor glibc should break this ABI without coordination.
++ */
++#ifndef _NETINET_IN_H
 +
-+struct zram_meta *zram_meta_alloc(u64 disksize)
-+{
-+ 	size_t num_pages;
-+	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
-+	if (!meta)
-+		goto out;
-+
-+	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-+	if (!meta->compress_workmem) {
-+		pr_err("Error allocating compressor working memory!\n");
-+		goto free_meta;
-+	}
-+
-+	meta->compress_buffer = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
-+	if (!meta->compress_buffer) {
-+		pr_err("Error allocating compressor buffer space\n");
-+		goto free_workmem;
-+	}
-+
-+	num_pages = disksize >> PAGE_SHIFT;
-+	meta->table = vzalloc(num_pages * sizeof(*meta->table));
-+	if (!meta->table) {
-+		pr_err("Error allocating zram address table\n");
-+		goto free_buffer;
-+	}
-+
-+	meta->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
-+	if (!meta->mem_pool) {
-+		pr_err("Error creating memory pool\n");
-+		goto free_table;
-+	}
-+
-+	return meta;
-+
-+free_table:
-+	vfree(meta->table);
-+free_buffer:
-+	free_pages((unsigned long)meta->compress_buffer, 1);
-+free_workmem:
-+	kfree(meta->compress_workmem);
-+free_meta:
-+	kfree(meta);
-+	meta = NULL;
-+out:
-+	return meta;
-+}
- 
-+void zram_init_device(struct zram *zram, struct zram_meta *meta)
-+{
- 	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
- 		pr_info(
- 		"There is little point creating a zram of greater than "
-@@ -534,51 +580,13 @@ int zram_init_device(struct zram *zram)
- 		);
- 	}
- 
--	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
--	if (!zram->compress_workmem) {
--		pr_err("Error allocating compressor working memory!\n");
--		ret = -ENOMEM;
--		goto fail_no_table;
--	}
--
--	zram->compress_buffer =
--		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
--	if (!zram->compress_buffer) {
--		pr_err("Error allocating compressor buffer space\n");
--		ret = -ENOMEM;
--		goto fail_no_table;
--	}
--
--	num_pages = zram->disksize >> PAGE_SHIFT;
--	zram->table = vzalloc(num_pages * sizeof(*zram->table));
--	if (!zram->table) {
--		pr_err("Error allocating zram address table\n");
--		ret = -ENOMEM;
--		goto fail_no_table;
--	}
--
- 	/* zram devices sort of resembles non-rotational disks */
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
- 
--	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
--	if (!zram->mem_pool) {
--		pr_err("Error creating memory pool\n");
--		ret = -ENOMEM;
--		goto fail;
--	}
--
-+	zram->meta = meta;
- 	zram->init_done = 1;
- 
- 	pr_debug("Initialization done!\n");
--	return 0;
--
--fail_no_table:
--	/* To prevent accessing table entries during cleanup */
--	zram->disksize = 0;
--fail:
--	__zram_reset_device(zram);
--	pr_err("Initialization failed: err=%d\n", ret);
--	return ret;
- }
- 
- static void zram_slot_free_notify(struct block_device *bdev,
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 5b671d1..2d1a3f1 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -83,11 +83,15 @@ struct zram_stats {
- 	u32 bad_compress;	/* % of pages with compression ratio>=75% */
+ /*
+  *	IPv6 address structure
+  */
+@@ -30,12 +37,20 @@
+ struct in6_addr {
+ 	union {
+ 		__u8		u6_addr8[16];
++#if !defined(__GLIBC__) \
++    || (defined(__GLIBC__) && (defined(__USE_MISC) || defined(__USE_GNU))) \
++    || defined(__KERNEL__)
+ 		__be16		u6_addr16[8];
+ 		__be32		u6_addr32[4];
++#endif
+ 	} in6_u;
++#if !defined(__GLIBC__) \
++    || (defined(__GLIBC__) && (defined(__USE_MISC) || defined(__USE_GNU))) \
++    || defined(__KERNEL__)
+ #define s6_addr			in6_u.u6_addr8
+ #define s6_addr16		in6_u.u6_addr16
+ #define s6_addr32		in6_u.u6_addr32
++#endif
  };
  
--struct zram {
--	struct zs_pool *mem_pool;
-+struct zram_meta {
- 	void *compress_workmem;
- 	void *compress_buffer;
- 	struct table *table;
-+	struct zs_pool *mem_pool;
+ /* IPv6 Wildcard Address (::) and Loopback Address (::1) defined in RFC2553
+@@ -56,9 +71,12 @@ struct ipv6_mreq {
+ 	struct in6_addr ipv6mr_multiaddr;
+ 
+ 	/* local IPv6 address of interface */
+-	int		ipv6mr_ifindex;
++	int		ipv6mr_interface;
++#define ipv6mr_ifindex	ipv6mr_interface
+ };
+ 
++#endif /* !_NET_INET_H */
++
+ #define ipv6mr_acaddr	ipv6mr_multiaddr
+ 
+ struct in6_flowlabel_req {
+@@ -116,16 +134,32 @@ struct in6_flowlabel_req {
+ #define IPV6_PRIORITY_14		0x0e00
+ #define IPV6_PRIORITY_15		0x0f00
+ 
++
++#ifndef _NETINET_IN_H
++#if defined (__GLIBC__)
++/* Include all of the other IPPROTO_* defines for userspace. */
++#include <linux/ipproto.h>
++#endif
+ /*
+  *	IPV6 extension headers
+  */
+-#define IPPROTO_HOPOPTS		0	/* IPv6 hop-by-hop options	*/
+-#define IPPROTO_ROUTING		43	/* IPv6 routing header		*/
+-#define IPPROTO_FRAGMENT	44	/* IPv6 fragmentation header	*/
+-#define IPPROTO_ICMPV6		58	/* ICMPv6			*/
+-#define IPPROTO_NONE		59	/* IPv6 no next header		*/
+-#define IPPROTO_DSTOPTS		60	/* IPv6 destination options	*/
+-#define IPPROTO_MH		135	/* IPv6 mobility header		*/
++enum {
++  IPPROTO_HOPOPTS = 0,		/* IPv6 hop-by-hop options      */
++#define IPPROTO_HOPOPTS		IPPROTO_HOPOPTS
++  IPPROTO_ROUTING = 43,		/* IPv6 routing header          */
++#define IPPROTO_ROUTING		IPPROTO_ROUTING
++  IPPROTO_FRAGMENT = 44,	/* IPv6 fragmentation header    */
++#define IPPROTO_FRAGMENT	IPPROTO_FRAGMENT
++  IPPROTO_ICMPV6 = 58,		/* ICMPv6                       */
++#define IPPROTO_ICMPV6		IPPROTO_ICMPV6
++  IPPROTO_NONE = 59,		/* IPv6 no next header          */
++#define IPPROTO_NONE		IPPROTO_NONE
++  IPPROTO_DSTOPTS = 60,		/* IPv6 destination options     */
++#define IPPROTO_DSTOPTS		IPPROTO_DSTOPTS
++  IPPROTO_MH = 135,		/* IPv6 mobility header         */
++#define IPPROTO_MH		IPPROTO_MH
++};
++#endif /* !_NETINET_IN_H */
+ 
+ /*
+  *	IPv6 TLV options.
+diff --git a/include/uapi/linux/ipproto.h b/include/uapi/linux/ipproto.h
+new file mode 100644
+index 0000000..5a183e6
+--- /dev/null
++++ b/include/uapi/linux/ipproto.h
+@@ -0,0 +1,57 @@
++#ifndef _UAPI_LINUX_IPPROTO_H
++#define _UAPI_LINUX_IPPROTO_H
++
++/* Standard well-defined IP protocols. */
++enum {
++  IPPROTO_IP = 0,		/* Dummy protocol for TCP. */
++#define IPPROTO_IP		IPPROTO_IP
++  IPPROTO_ICMP = 1,		/* Internet Control Message Protocol. */
++#define IPPROTO_ICMP		IPPROTO_ICMP
++  IPPROTO_IGMP = 2,		/* Internet Group Management Protocol. */
++#define IPPROTO_IGMP		IPPROTO_IGMP
++  IPPROTO_IPIP = 4,		/* IPIP tunnels (older KA9Q tunnels use 94). */
++#define IPPROTO_IPIP		IPPROTO_IPIP
++  IPPROTO_TCP = 6,		/* Transmission Control Protocol. */
++#define IPPROTO_TCP		IPPROTO_TCP
++  IPPROTO_EGP = 8,		/* Exterior Gateway Protocol. */
++#define IPPROTO_EGP		IPPROTO_EGP
++  IPPROTO_PUP = 12,		/* PUP protocol. */
++#define IPPROTO_PUP		IPPROTO_PUP
++  IPPROTO_UDP = 17,		/* User Datagram Protocol. */
++#define IPPROTO_UDP		IPPROTO_UDP
++  IPPROTO_IDP = 22,		/* XNS IDP protocol. */
++#define IPPROTO_IDP		IPPROTO_IDP
++  IPPROTO_TP = 29,		/* SO Transport Protocol Class 4. */
++#define IPPROTO_TP		IPPROTO_TP
++  IPPROTO_DCCP = 33,		/* Datagram Congestion Control Protocol. */
++#define IPPROTO_DCCP		IPPROTO_DCCP
++  IPPROTO_IPV6 = 41,		/* IPv6 header. */
++#define IPPROTO_IPV6		IPPROTO_IPV6
++  IPPROTO_RSVP = 46,		/* Reservation Protocol. */
++#define IPPROTO_RSVP		IPPROTO_RSVP
++  IPPROTO_GRE = 47,		/* General Routing Encapsulation. */
++#define IPPROTO_GRE		IPPROTO_GRE
++  IPPROTO_ESP = 50,		/* encapsulating security payload. */
++#define IPPROTO_ESP		IPPROTO_ESP
++  IPPROTO_AH = 51,		/* authentication header. */
++#define IPPROTO_AH		IPPROTO_AH
++  IPPROTO_MTP = 92,		/* Multicast Transport Protocol. */
++#define IPPROTO_MTP		IPPROTO_MTP
++  IPPROTO_BEETPH = 94,		/* IP option pseudo header for BEET. */
++#define IPPROTO_BEETPH		IPPROTO_BEETPH
++  IPPROTO_ENCAP = 98,		/* Encapsulation Header. */
++#define IPPROTO_ENCAP		IPPROTO_ENCAP
++  IPPROTO_PIM = 103,		/* Protocol Independent Multicast. */
++#define IPPROTO_PIM		IPPROTO_PIM
++  IPPROTO_COMP = 108,		/* Compression Header Protocol. */
++#define IPPROTO_COMP		IPPROTO_COMP
++  IPPROTO_SCTP = 132,		/* Stream Control Transmission Protocol. */
++#define IPPROTO_SCTP		IPPROTO_SCTP
++  IPPROTO_UDPLITE = 136,	/* UDP-Lite protocol. */
++#define IPPROTO_UDPLITE		IPPROTO_UDPLITE
++  IPPROTO_RAW = 255,		/* Raw IP packets. */
++#define IPPROTO_RAW		IPPROTO_RAW
++  IPPROTO_MAX
 +};
 +
-+struct zram {
-+	struct zram_meta *meta;
- 	spinlock_t stat64_lock;	/* protect 64-bit stats */
- 	struct rw_semaphore lock; /* protect compression buffers and table
- 				   * against concurrent read and writes */
-@@ -111,7 +115,9 @@ unsigned int zram_get_num_devices(void);
- extern struct attribute_group zram_disk_attr_group;
- #endif
- 
--extern int zram_init_device(struct zram *zram);
- extern void zram_reset_device(struct zram *zram);
-+extern struct zram_meta *zram_meta_alloc(u64 disksize);
-+extern void zram_meta_free(struct zram_meta *meta);
-+extern void zram_init_device(struct zram *zram, struct zram_meta *meta);
- 
- #endif
-diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-index 369db12..f41a0e6 100644
---- a/drivers/staging/zram/zram_sysfs.c
-+++ b/drivers/staging/zram/zram_sysfs.c
-@@ -56,24 +56,26 @@ static ssize_t disksize_store(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t len)
- {
- 	u64 disksize;
-+	struct zram_meta *meta;
- 	struct zram *zram = dev_to_zram(dev);
- 
- 	disksize = memparse(buf, NULL);
- 	if (!disksize)
- 		return -EINVAL;
--
-+	disksize = PAGE_ALIGN(disksize);
-+	meta = zram_meta_alloc(disksize);
- 	down_write(&zram->init_lock);
- 	if (zram->init_done) {
- 		up_write(&zram->init_lock);
-+		zram_meta_free(meta);
- 		pr_info("Cannot change disksize for initialized device\n");
- 		return -EBUSY;
- 	}
- 
--	zram->disksize = PAGE_ALIGN(disksize);
-+	zram->disksize = disksize;
- 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
--	zram_init_device(zram);
-+	zram_init_device(zram, meta);
- 	up_write(&zram->init_lock);
--
- 	return len;
- }
- 
-@@ -182,9 +184,10 @@ static ssize_t mem_used_total_show(struct device *dev,
- {
- 	u64 val = 0;
- 	struct zram *zram = dev_to_zram(dev);
-+	struct zram_meta *meta = zram->meta;
- 
- 	if (zram->init_done)
--		val = zs_get_total_size_bytes(zram->mem_pool);
-+		val = zs_get_total_size_bytes(meta->mem_pool);
- 
- 	return sprintf(buf, "%llu\n", val);
- }
--- 
-1.7.9.5
++#endif /* _UAPI_LINUX_IPPROTO_H */
+---
 
+Cheers,
+Carlos.
