@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab3AQIgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 03:36:00 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:62521 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932177Ab3AQIf7 (ORCPT
+	id S932222Ab3AQIgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 03:36:50 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13619 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755583Ab3AQIgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 03:35:59 -0500
+	Thu, 17 Jan 2013 03:36:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 17 Jan 2013 00:36:47 -0800
+Message-ID: <50F7B801.4020704@nvidia.com>
+Date: Thu, 17 Jan 2013 14:06:17 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1358411351-18506-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1358411351-18506-1-git-send-email-thierry.reding@avionic-design.de>
-Date: Thu, 17 Jan 2013 14:05:58 +0530
-X-Google-Sender-Auth: hXF5VQ2-u8zwbszUScM1_Pu3UVg
-Message-ID: <CAOh2x=mnHtqGD17fF8TVU4uX3ceHD8dDRv_k9NwWqk=FDJg=nQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: spear3xx: Fix pl080-related build failure
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Pritesh Raithatha <praithatha@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 1/2] pinctrl: tegra: add support for rcv-sel and drive
+ type
+References: <1357387375-25919-1-git-send-email-ldewangan@nvidia.com> <CACRpkdYe0MPC=jiOgzd0zRkiAFas21O80MiR8dp9UdmwptDfmw@mail.gmail.com>
+In-Reply-To: <CACRpkdYe0MPC=jiOgzd0zRkiAFas21O80MiR8dp9UdmwptDfmw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 1:59 PM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
-> Include linux/amba/pl08x.h to pull in the various PL080_* macros.
+On Thursday 17 January 2013 02:00 PM, Linus Walleij wrote:
+> On Sat, Jan 5, 2013 at 1:02 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
 >
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> ---
->  arch/arm/mach-spear3xx/spear3xx.c | 1 +
->  1 file changed, 1 insertion(+)
+>> From: Pritesh Raithatha <praithatha@nvidia.com>
+>>
+>> NVIDIA's Tegra114 added two more configuration parameter in pinmux i.e.
+>> rcv-sel and drive type.
+>>
+>> rcv-sel: Select between High and Normal VIL/VIH receivers.
+>>          RCVR_SEL=1: High VIL/VIH
+>>          RCVR_SEL=0: Normal VIL/VIH
+>>
+>> drv_type: Ouptput drive type:
+>>          33-50 ohm driver: 0x1
+>>          66-100ohm driver: 0x0
+>>
+>> Add support of these parameters to be configure from DTS file.
+>>
+>> Tegra20 and Tegra30 does not support this configuration and hence initialize their
+>> pinmux structure with reg = -1.
+>>
+>> Originally written by Pritesh Raithatha.
+>> Changes by ldewangan:
+>>          - remove drvtype_width as it is always 2.
+>>          - Better describe the change.
+>>
+>> Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
+>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Stephen, can you look at this patch?
 >
-> diff --git a/arch/arm/mach-spear3xx/spear3xx.c b/arch/arm/mach-spear3xx/spear3xx.c
-> index f9d754f..7c218d9 100644
-> --- a/arch/arm/mach-spear3xx/spear3xx.c
-> +++ b/arch/arm/mach-spear3xx/spear3xx.c
-> @@ -14,6 +14,7 @@
->  #define pr_fmt(fmt) "SPEAr3xx: " fmt
->
->  #include <linux/amba/pl022.h>
-> +#include <linux/amba/pl080.h>
->  #include <linux/amba/pl08x.h>
->  #include <linux/io.h>
->  #include <plat/pl080.h>
+> Authors: you need Stephen's ACK on this.
 
-Hi Thierry,
 
-Thanks for fixing it up. Though the log doesn't match the change well.
+Stephen have already given his reviewed by on thi series and I posted V2 
+version of taking care his comment.
+Stephen's comment was in
+Re: [PATCH 2/2] pinctrl: tegra114: add pinctrl driver for NVIDIA's 
+Tegra114 SoC
+
+
+Can you please review the v2 version of this series?
+
+
+Thanks,
+Laxman
