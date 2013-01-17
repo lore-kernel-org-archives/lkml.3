@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab3AQM5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 07:57:15 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:43611 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab3AQM5N (ORCPT
+	id S1756234Ab3AQM7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 07:59:09 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:38311 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab3AQM7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 07:57:13 -0500
-Date: Thu, 17 Jan 2013 13:57:02 +0100
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-usb@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
-Subject: Re: [PATCH] usb: musb: ux500: use clk_prepare_enable and
- clk_disable_unprepare
-Message-ID: <20130117125702.GA5007@balto.lan>
-Mail-Followup-To: Fabio Baltieri <fabio.baltieri@linaro.org>,
-	Felipe Balbi <balbi@ti.com>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	Ulf Hansson <ulf.hansson@linaro.org>, linux-usb@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-	Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
-References: <1357577261-31536-1-git-send-email-fabio.baltieri@linaro.org>
- <CACRpkdZD1i_tvDf6XFyk5muYjtDziQaMNGK6vvihhFJVztXUjw@mail.gmail.com>
- <20130110133818.GA22710@balto.lan>
- <CACRpkdbmgQ0xDfkbgqc=zDqMDUK0O6uQOf3kX9v1+=+N5s42bw@mail.gmail.com>
- <20130117105104.GN10814@arwen.pp.htv.fi>
+	Thu, 17 Jan 2013 07:59:08 -0500
+Message-ID: <50F7F58F.30505@ahsoftware.de>
+Date: Thu, 17 Jan 2013 13:58:55 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130117105104.GN10814@arwen.pp.htv.fi>
-X-Operating-System: Linux balto 3.8.0-rc3-00293-g406089d x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thiago Farina <tfransosi@gmail.com>
+CC: Axel Lin <axel.lin@ingics.com>, Jonathan Cameron <jic23@kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc: hid-sensor-time: Add missing spin_lock_init
+References: <1358387389.17958.1.camel@phoenix> <CACnwZYfV=czMR=FLwQseubK-G8GnuiVW_wsnFKTnw=rHrZ8dgg@mail.gmail.com>
+In-Reply-To: <CACnwZYfV=czMR=FLwQseubK-G8GnuiVW_wsnFKTnw=rHrZ8dgg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 12:51:04PM +0200, Felipe Balbi wrote:
-> > > Thanks for the ACK.  This bug was here unnoticed since 3.6 merge window,
-> > 
-> > Then it should have Cc: stable@kernel.org..
-> 
-> just added to my tree.
+Am 17.01.2013 02:58, schrieb Thiago Farina:
+> On Wed, Jan 16, 2013 at 11:49 PM, Axel Lin <axel.lin@ingics.com> wrote:
+>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>> ---
+>>   drivers/rtc/rtc-hid-sensor-time.c |    1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
+>> index 0438c9e..31c5728 100644
+>> --- a/drivers/rtc/rtc-hid-sensor-time.c
+>> +++ b/drivers/rtc/rtc-hid-sensor-time.c
+>> @@ -225,6 +225,7 @@ static int hid_time_probe(struct platform_device *pdev)
+>>
+>>          platform_set_drvdata(pdev, time_state);
+>>
+>> +       spin_lock_init(&time_state->lock_last_time);
+> Can you explain in the commit message why it is missing?
+>
+> For people not familiar with this code that isn't obvious.
+>
 
-Hi Felipe, thanks for adding the stable tag to the patch, but I actually
-made a bit of confusion with the versions, so I double checked and it
-turns out this is really needed on v3.7 stable, not v3.6.
+Every spinlock must be initialized once (to SPIN_LOCK_UNLOCKED or by 
+using spin_lock_init()). On most architectures SPIN_LOCK_UNLOCKED is 
+just zero, therefor  the kzalloc of the time_state does it (which likely 
+is the case why I haven't spotted any error without the initialization), 
+but that doesn't isn't true for all architectures.
 
-Will you be so kind to remove v3.6 from the stable tag from this
-patch?
+Regards,
 
-Thanks and sorry for the added noise!
-Fabio
+Alexander
 
--- 
-Fabio Baltieri
