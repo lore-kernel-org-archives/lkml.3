@@ -1,94 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3AQXBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 18:01:08 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:59145 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342Ab3AQXBF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 18:01:05 -0500
-Subject: Re: LIO - the broken iSCSI target implementation
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Andy Grover <agrover@redhat.com>
-Cc: Andreas Steinmetz <ast@domdv.de>, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org,
-        target-devel <target-devel@vger.kernel.org>,
-        Ritesh Raj Sarraf <rrs@debian.org>
-In-Reply-To: <50F87BCA.10201@redhat.com>
-References: <1358385543.7040.54.camel@host028-server-9.lan.domdv.de>
-	 <1358456179.18551.34.camel@haakon2.linux-iscsi.org>
-	 <50F87BCA.10201@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Jan 2013 15:00:56 -0800
-Message-ID: <1358463656.18551.158.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755200Ab3AQXBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 18:01:24 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:43996 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120Ab3AQXBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 18:01:23 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 3/3] ACPI: create Lynxpoint clocks if LPSS devices are found during scan
+Date: Fri, 18 Jan 2013 00:07:16 +0100
+Message-ID: <2120845.xiQTdAgPNJ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1358174788-24439-4-git-send-email-mika.westerberg@linux.intel.com>
+References: <1358174788-24439-1-git-send-email-mika.westerberg@linux.intel.com> <1358174788-24439-4-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-17 at 14:31 -0800, Andy Grover wrote:
-> On 01/17/2013 12:56 PM, Nicholas A. Bellinger wrote:
-> > On Thu, 2013-01-17 at 02:19 +0100, Andreas Steinmetz wrote:
-> >> This is not a technical point of view. This is a more or less political
-> >> and user point of view. And for any replies, I'm not subscribed (haven't
-> >> been now for years).
-> >>
-> >> As a user, I was in need for an iSCSI target. Actually, I needed to
-> >> export a SAS tape device (Ultrium 5) - which is one of the devices still
-> >> sufficiently expensive to go the iSCSI target way) - well, not any disks
-> >> (cheap enough, NFS available) or CD/DVD writers (I'd call these penny
-> >> targets nowadays).
-> >>
-> >> Thus, lio (http://www.linux-iscsi.org/) seemed to be the politically and
-> >> technically favoured solution. Except: it simply doesn't work, userspace
-> >> utilities are seemingly not maintained,
-> > 
-> > I'm not sure what you mean.  There are targetcli+rtslib packages are
-> > available for virtually every distribution
-> > 
-> > http://www.linux-iscsi.org/wiki/Targetcli#Linux_distributions
+On Monday, January 14, 2013 04:46:28 PM Mika Westerberg wrote:
+> Since we don't want to create the Lynxpoint LPSS clock tree on a machines
+> where no LPSS exists at all we look for the Lynxpoint device ACPI HIDs
+> during ACPI namespace scan and if a known device is seen we assume that it
+> is safe to create the LPSS clocks.
 > 
-> [CCing rrs@debian.org]
+> Therefore we allow init function to be passed via acpi_platform_device_ids[]
+> table which is called whenever the corresponding device is found.
 > 
-> No... actually upstream targetcli/rtslib are not very well maintained.
-> Around 5 patches each in the last year.
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+>  drivers/acpi/scan.c |   36 +++++++++++++++++++++++++++---------
+>  1 file changed, 27 insertions(+), 9 deletions(-)
 > 
-> Meanwhile, I have been actively maintaining branches at
-> github.com/agrover/targetcli-fb and github.com/agrover/rtslib-fb. We
-> have a man page and screencasts even. Feel free to file bugs against
-> them and I'll respond.
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 6a12702..8d9965e 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/kthread.h>
+>  #include <linux/dmi.h>
+>  #include <linux/nls.h>
+> +#include <linux/platform_device.h>
+>  
+>  #include <acpi/acpi_drivers.h>
+>  
+> @@ -29,6 +30,15 @@ extern struct acpi_device *acpi_root;
+>  
+>  static const char *dummy_hid = "device";
+>  
+> +static void lpt_lpss_init_once(void)
+> +{
+> +	static struct platform_device *pdev;
+> +
+> +	/* Lynxpoint LPSS clocks */
+> +	if (!pdev)
+> +		pdev = platform_device_register_simple("clk-lpt", -1, NULL, 0);
+> +}
+> +
+>  /*
+>   * The following ACPI IDs are known to be suitable for representing as
+>   * platform devices.
+> @@ -38,14 +48,14 @@ static const struct acpi_device_id acpi_platform_device_ids[] = {
+>  	{ "PNP0D40" },
+>  
+>  	/* Haswell LPSS devices */
+> -	{ "INT33C0", 0 },
+> -	{ "INT33C1", 0 },
+> -	{ "INT33C2", 0 },
+> -	{ "INT33C3", 0 },
+> -	{ "INT33C4", 0 },
+> -	{ "INT33C5", 0 },
+> -	{ "INT33C6", 0 },
+> -	{ "INT33C7", 0 },
+> +	{ "INT33C0", (kernel_ulong_t)lpt_lpss_init_once },
+> +	{ "INT33C1", (kernel_ulong_t)lpt_lpss_init_once },
+> +	{ "INT33C2", (kernel_ulong_t)lpt_lpss_init_once },
+> +	{ "INT33C3", (kernel_ulong_t)lpt_lpss_init_once },
+> +	{ "INT33C4", (kernel_ulong_t)lpt_lpss_init_once },
+> +	{ "INT33C5", (kernel_ulong_t)lpt_lpss_init_once },
+> +	{ "INT33C6", (kernel_ulong_t)lpt_lpss_init_once },
+> +	{ "INT33C7", (kernel_ulong_t)lpt_lpss_init_once },
+>  
+>  	{ }
+>  };
+> @@ -1580,6 +1590,7 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
+>  static acpi_status acpi_bus_device_attach(acpi_handle handle, u32 lvl_not_used,
+>  					  void *not_used, void **ret_not_used)
+>  {
+> +	const struct acpi_device_id *id;
+>  	acpi_status status = AE_OK;
+>  	struct acpi_device *device;
+>  	unsigned long long sta_not_used;
+> @@ -1595,7 +1606,14 @@ static acpi_status acpi_bus_device_attach(acpi_handle handle, u32 lvl_not_used,
+>  	if (acpi_bus_get_device(handle, &device))
+>  		return AE_CTRL_DEPTH;
+>  
+> -	if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
+> +	id = __acpi_match_device(device, acpi_platform_device_ids);
+> +	if (id) {
+> +		void (*init)(void) = (void (*)(void))id->driver_data;
+> +
+> +		/* Run any initialization if required */
+> +		if (init)
+> +			init();
+> +
+
+I'd prefer this to be done by acpi_create_platform_device() and you can add
+an extra arg to it for this purpose.
+
+Moreover the driver_data need not be a function pointer.  I actually think it
+should consist of a number of flags that may be set or unset and the 0 bit
+could be ACPI_PLATFORM_CLK or something like this.  Then, if that is set in
+its (new) second arg, acpi_create_platform_device() will do the
+platform_device_register_simple("clk-lpt", ...), if not done already.
+
+And yes, we may need those flags for other stuff.
+
+>  		/* This is a known good platform device. */
+>  		acpi_create_platform_device(device);
+>  	} else if (device_attach(&device->dev) < 0) {
 > 
-> But I'm only packaging for Fedora/RHEL, so random people on Debian etc.
-> get a bad experience. I'd like to see upstream accept my AGPLv3-licensed
-> patches, or have Debian package the -fb versions, either instead or in
-> addition to the upstream versions.
-> 
-
-So would I, but we've (RTS) been too busy having to work on other stuff
-to pay the extensive legal bills from the fallout that your previous
-public accusations have wrought. 
-
-Even though your over it, it doesn't mean other opportunists did not try
-to take advantage of the situation once you got tired and moved onto
-other target userspace related things.
-
-> (I'd kinda been waiting to bring it up until upstream had no commits in
-> a year, but since you mentioned it...)
-
-In any event, I don't really have a problem with merging the two if your
-finally over the fact the userspace code is AGPL licensed. 
-
-But please do this in a separate thread than piling on here.  Of course,
-your more than welcome to fix rtslib for pSCSI, which is broken on
-recent v3.x kernels.
-
-(Hint: it's because /sys/class/scsi_device/H:C:T:L/device/block/$BLOCK_DEV
- no longer exists in upstream sysfs, which is what we use to match the passed
- /dev/$SCSI_DEV to H:C:T:L, and nothing related to TCM ABI changes)
 
 Thanks,
+Rafael
 
---nab
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
