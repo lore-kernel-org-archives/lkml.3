@@ -1,41 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759332Ab3AQJ0P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 04:26:15 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:38204 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756130Ab3AQJ0N (ORCPT
+	id S1759347Ab3AQJ3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 04:29:23 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:50715 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756365Ab3AQJ3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 04:26:13 -0500
+	Thu, 17 Jan 2013 04:29:21 -0500
+Message-ID: <50F7C3CF.7000507@openwrt.org>
+Date: Thu, 17 Jan 2013 10:26:39 +0100
+From: Florian Fainelli <florian@openwrt.org>
+Organization: OpenWrt
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1357555480-24022-3-git-send-email-mika.westerberg@linux.intel.com>
-References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1357555480-24022-3-git-send-email-mika.westerberg@linux.intel.com>
-Date: Thu, 17 Jan 2013 10:26:13 +0100
-Message-ID: <CACRpkdYBwf+zYKf+e4_sVu7VCVjknmyj64V7BXOJvndt4F5-qA@mail.gmail.com>
-Subject: Re: [PATCH 02/11] spi/pxa2xx: convert to the pump message infrastructure
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        eric.y.miao@gmail.com, linux@arm.linux.org.uk,
-        haojian.zhuang@gmail.com, broonie@opensource.wolfsonmicro.com,
-        chao.bi@intel.com, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 69/86] drivers/vlynq: remove depends on CONFIG_EXPERIMENTAL
+References: <1358391258-1771-1-git-send-email-keescook@chromium.org> <1358391258-1771-70-git-send-email-keescook@chromium.org>
+In-Reply-To: <1358391258-1771-70-git-send-email-keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 7, 2013 at 11:44 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-
-> The SPI core provides infrastructure for standard message queueing so use
-> that instead of handling everything in the driver. This simplifies the
-> driver.
+On 01/17/2013 03:54 AM, Kees Cook wrote:
+> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+> while now and is almost always enabled by default. As agreed during the
+> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 >
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Cc: Florian Fainelli <florian@openwrt.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Wohoo!
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
+Acked-by: Florian Fainelli <florian@openwrt.org>
