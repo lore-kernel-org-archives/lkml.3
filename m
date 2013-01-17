@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758918Ab3AQDP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:15:29 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:59941 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756292Ab3AQCyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:54:35 -0500
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 06/86] drivers/net/ethernet/stmicro/stmmac: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:52:58 -0800
-Message-Id: <1358391258-1771-7-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
-References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1759025Ab3AQDPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:15:43 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:42943 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758432Ab3AQDPk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 22:15:40 -0500
+Date: Wed, 16 Jan 2013 22:15:38 -0500 (EST)
+Message-Id: <20130116.221538.1756411165313441486.davem@davemloft.net>
+To: carlos@systemhalted.org
+Cc: vapier@gentoo.org, libc-alpha@sourceware.org, bhutchings@solarflare.com,
+        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
+        eblake@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
+        schwab@suse.de
+Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and
+ <linux/in6.h>
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <50F75EA7.4060309@systemhalted.org>
+References: <201301161205.04502.vapier@gentoo.org>
+	<20130116.135744.697469565804508454.davem@davemloft.net>
+	<50F75EA7.4060309@systemhalted.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-while now and is almost always enabled by default. As agreed during the
-Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+From: Carlos O'Donell <carlos@systemhalted.org>
+Date: Wed, 16 Jan 2013 21:15:03 -0500
 
-CC: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- drivers/net/ethernet/stmicro/stmmac/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> +/* If a glibc-based userspace has already included in.h, then we will not 
+> + * define in6_addr (nor the defines), sockaddr_in6, or ipv6_mreq. The
+> + * ABI used by the kernel and by glibc match exactly. Neither the kernel
+> + * nor glibc should break this ABI without coordination.
+> + */
+> +#ifndef _NETINET_IN_H
+> +
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/Kconfig b/drivers/net/ethernet/stmicro/stmmac/Kconfig
-index 1164930..c0ea838 100644
---- a/drivers/net/ethernet/stmicro/stmmac/Kconfig
-+++ b/drivers/net/ethernet/stmicro/stmmac/Kconfig
-@@ -26,8 +26,8 @@ config STMMAC_PLATFORM
- 	  If unsure, say N.
- 
- config STMMAC_PCI
--	bool "STMMAC PCI bus support (EXPERIMENTAL)"
--	depends on STMMAC_ETH && PCI && EXPERIMENTAL
-+	bool "STMMAC PCI bus support"
-+	depends on STMMAC_ETH && PCI
- 	---help---
- 	  This is to select the Synopsys DWMAC available on PCI devices,
- 	  if you have a controller with this interface, say Y or M here.
--- 
-1.7.9.5
+I think we should shoot for a non-glibc-centric solution.
 
+I can't imagine that other libc's won't have the same exact problem
+with their netinet/in.h conflicting with the kernel's, redefining
+structures like in6_addr, that we'd want to provide a protection
+scheme for here as well.
+
+Let's pick some more generic names and themes for the CPP macros and
+comments we use to protect the header file blocks and describe that
+protection scheme.
+
+Thanks.
