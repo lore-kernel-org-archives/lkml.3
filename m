@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759624Ab3AQKop (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:44:45 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:35557 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759546Ab3AQKoc (ORCPT
+	id S1756554Ab3AQKqc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:46:32 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:63733 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab3AQKqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 05:44:32 -0500
+	Thu, 17 Jan 2013 05:46:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <50EEC2C6.9070109@free-electrons.com>
-References: <1357493688-25061-1-git-send-email-gregory.clement@free-electrons.com>
-	<1357493688-25061-3-git-send-email-gregory.clement@free-electrons.com>
-	<CACRpkdYu63TZDpHrGkg0cdqFCrVH1PiNFX8FcrxB9S_Vk9r=kg@mail.gmail.com>
-	<50EEC2C6.9070109@free-electrons.com>
-Date: Thu, 17 Jan 2013 11:44:31 +0100
-Message-ID: <CACRpkdZv615BfG5Ai76UdigKonwAv6fisNL0Eiu3=sK-vJx9UQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] gpio: pca953x: add support for pca9505
+In-Reply-To: <20130110133818.GA22710@balto.lan>
+References: <1357577261-31536-1-git-send-email-fabio.baltieri@linaro.org>
+	<CACRpkdZD1i_tvDf6XFyk5muYjtDziQaMNGK6vvihhFJVztXUjw@mail.gmail.com>
+	<20130110133818.GA22710@balto.lan>
+Date: Thu, 17 Jan 2013 11:46:30 +0100
+Message-ID: <CACRpkdbmgQ0xDfkbgqc=zDqMDUK0O6uQOf3kX9v1+=+N5s42bw@mail.gmail.com>
+Subject: Re: [PATCH] usb: musb: ux500: use clk_prepare_enable and clk_disable_unprepare
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+To: Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-usb@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 2:31 PM, Gregory CLEMENT
-<gregory.clement@free-electrons.com> wrote:
-
-> On 01/10/2013 12:15 PM, Linus Walleij wrote:
->> On Sun, Jan 6, 2013 at 6:34 PM, Gregory CLEMENT
->> <gregory.clement@free-electrons.com> wrote:
+On Thu, Jan 10, 2013 at 2:38 PM, Fabio Baltieri
+<fabio.baltieri@linaro.org> wrote:
+> On Thu, Jan 10, 2013 at 12:23:32PM +0100, Linus Walleij wrote:
+>> On Mon, Jan 7, 2013 at 5:47 PM, Fabio Baltieri
+>> <fabio.baltieri@linaro.org> wrote:
 >>
->>> Now that pca953x driver can handle GPIO expanders with more than 32
->>> bits this patch adds the support for the pca9505 which cam with 40
->>> GPIOs.
->>>
->>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>> > This patch converts the module to use clk_prepare_enable and
+>> > clk_disable_unprepare variants as required by common clock framework.
+>> >
+>> > Without this the system crash during probe function.
+>> >
+>> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 >>
->> Applied, thanks.
->>
-> Hello Linus,
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 >
-> I think it is a little too early to apply this patch because the 1st
-> one still have bug and is not yet applied.
+> Thanks for the ACK.  This bug was here unnoticed since 3.6 merge window,
 
-OK pulled it out. Could have been an issue with Grant's and my synchronized
-trees but we were lucky this time.
+Then it should have Cc: stable@kernel.org..
+
+> do you think it may make sense to add this driver to u8500_defconfig?  I
+> can send a patch if you say so...
+
+Yes, can you make a patch updating the defconfig and also enabling
+a few other things like charging maybe? Sync with Lee.
 
 Yours,
 Linus Walleij
