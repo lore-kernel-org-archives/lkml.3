@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab3AQUhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:37:52 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33901 "EHLO mga09.intel.com"
+	id S1757020Ab3AQUjm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:39:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33895 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757057Ab3AQUhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:37:48 -0500
+	id S1757057Ab3AQUhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 15:37:52 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="273439814"
+   d="scan'208";a="273439823"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 20/29] perf, tools: Add browser support for transaction flags v5
-Date: Thu, 17 Jan 2013 12:36:43 -0800
-Message-Id: <1358455012-12287-21-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 29/29] perf, tools: List kernel supplied event aliases in perf list v2
+Date: Thu, 17 Jan 2013 12:36:52 -0800
+Message-Id: <1358455012-12287-30-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,318 +26,191 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add histogram support for the transaction flags. Each flags instance becomes
-a separate histogram. Support sorting and displaying the flags in report
-and top.
+List the kernel supplied pmu event aliases in perf list
 
-The patch is fairly large, but it's really mostly just plumbing to pass the
-flags around.
+It's better when the users can actually see them.
 
-v2: Increase column. Fix flags decoding. Use longer strings for flags
-to be more user friendly.
-v3: Fix WERROR=1 build. Tidy display
-v4: Readd sort keys to manpage
-v5: Reimplement transaction flags display code
+v2: Fix pattern matching
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-report.txt |    2 +-
- tools/perf/Documentation/perf-top.txt    |    2 +-
- tools/perf/builtin-annotate.c            |    2 +-
- tools/perf/builtin-diff.c                |    8 ++-
- tools/perf/builtin-report.c              |    4 +-
- tools/perf/builtin-top.c                 |    4 +-
- tools/perf/util/hist.c                   |    7 ++-
- tools/perf/util/hist.h                   |    4 +-
- tools/perf/util/sort.c                   |   75 ++++++++++++++++++++++++++++++
- tools/perf/util/sort.h                   |    2 +
- 10 files changed, 98 insertions(+), 12 deletions(-)
+ tools/perf/Documentation/perf-list.txt |    4 +-
+ tools/perf/builtin-list.c              |    3 +
+ tools/perf/util/parse-events.c         |    5 ++-
+ tools/perf/util/pmu.c                  |   73 ++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h                  |    3 +
+ 5 files changed, 86 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 5dabd4d..87224ff 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -59,7 +59,7 @@ OPTIONS
- --sort=::
- 	Sort by key(s): pid, comm, dso, symbol, parent, srcline,
-         dso_from, dso_to, symbol_to, symbol_from, mispredict,
--        abort, intx, local_weight, weight
-+        abort, intx, local_weight, weight, transaction
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index d1e39dc..826f3d6 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -8,7 +8,7 @@ perf-list - List all symbolic event types
+ SYNOPSIS
+ --------
+ [verse]
+-'perf list' [hw|sw|cache|tracepoint|event_glob]
++'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
  
- -p::
- --parent=<regex>::
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index 3533e0a..82cc8e1 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -114,7 +114,7 @@ Default is to monitor all CPUS.
- --sort::
- 	Sort by key(s): pid, comm, dso, symbol, parent, srcline,
-         dso_from, dso_to, symbol_to, symbol_from, mispredict,
--        abort, intx,  local_weight, weight
-+        abort, intx,  local_weight, weight, transaction
+ DESCRIPTION
+ -----------
+@@ -104,6 +104,8 @@ To limit the list use:
+   'subsys_glob:event_glob' to filter by tracepoint subsystems such as sched,
+   block, etc.
  
- -n::
- --show-nr-samples::
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 1bacb7d..cb8fa96 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -62,7 +62,7 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
- 		return 0;
- 	}
++. 'pmu' to print the kernel supplied PMU events.
++
+ . If none of the above is matched, it will apply the supplied glob to all
+   events, printing the ones that match.
  
--	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1);
-+	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1, 0);
- 	if (he == NULL)
- 		return -ENOMEM;
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 1948ece..e79f423 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -13,6 +13,7 @@
  
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 03a322f..3fccdc4 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -249,9 +249,10 @@ int perf_diff__formula(char *buf, size_t size, struct hist_entry *he)
+ #include "util/parse-events.h"
+ #include "util/cache.h"
++#include "util/pmu.h"
  
- static int hists__add_entry(struct hists *self,
- 			    struct addr_location *al, u64 period,
--			    u64 weight)
-+			    u64 weight, u64 transaction)
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
  {
--	if (__hists__add_entry(self, al, NULL, period, weight) != NULL)
-+	if (__hists__add_entry(self, al, NULL, period, weight, transaction)
-+	    != NULL)
- 		return 0;
- 	return -ENOMEM;
- }
-@@ -273,7 +274,8 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
- 	if (al.filtered)
- 		return 0;
- 
--	if (hists__add_entry(&evsel->hists, &al, sample->period, sample->weight)) {
-+	if (hists__add_entry(&evsel->hists, &al, sample->period, sample->weight,
-+			     sample->transaction)) {
- 		pr_warning("problem incrementing symbol period, skipping event\n");
- 		return -1;
- 	}
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 5dc0edd..e6a74ef 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -147,7 +147,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 	}
- 
- 	he = __hists__add_entry(&evsel->hists, al, parent, sample->period,
--					sample->weight);
-+				sample->weight, sample->transaction);
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-@@ -598,7 +598,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
- 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
- 		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
--		   " abort, intx,  weight, local_weight"),
-+		   " abort, intx,  weight, local_weight, transaction"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 9f87db7..3d81721 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -272,7 +272,7 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 	struct hist_entry *he;
- 
- 	he = __hists__add_entry(&evsel->hists, al, NULL, sample->period,
--				sample->weight);
-+				sample->weight, sample->transaction);
- 	if (he == NULL)
- 		return NULL;
- 
-@@ -1233,7 +1233,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
- 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
- 		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
--		   " abort, intx, weight, local_weight"),
-+		   " abort, intx, weight, local_weight, transaction"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
- 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top, "output_type,min_percent, call_order",
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index a8d7647..28861de 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -112,6 +112,10 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
- 			hists__set_unres_dso_col_len(hists, HISTC_DSO_TO);
+@@ -37,6 +38,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			else if (strcmp(argv[i], "cache") == 0 ||
+ 				 strcmp(argv[i], "hwcache") == 0)
+ 				print_hwcache_events(NULL, false);
++			else if (strcmp(argv[i], "pmu") == 0)
++				print_pmu_events(NULL, false);
+ 			else if (strcmp(argv[i], "--raw-dump") == 0)
+ 				print_events(NULL, true);
+ 			else {
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 3409b15..18765f6 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -1078,6 +1078,8 @@ int print_hwcache_events(const char *event_glob, bool name_only)
  		}
  	}
-+
-+	if (h->transaction)
-+		hists__new_col_len(hists, HISTC_TRANSACTION, 
-+				   hist_entry__transaction_len());
+ 
++	if (printed)
++		printf("\n");
+ 	return printed;
  }
  
- void hists__output_recalc_col_len(struct hists *hists, int max_rows)
-@@ -361,7 +365,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
- struct hist_entry *__hists__add_entry(struct hists *self,
- 				      struct addr_location *al,
- 				      struct symbol *sym_parent, u64 period,
--				      u64 weight)
-+				      u64 weight, u64 transaction)
- {
- 	struct hist_entry entry = {
- 		.thread	= al->thread,
-@@ -380,6 +384,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
- 		.hists	= self,
-+		.transaction = transaction,
- 	};
+@@ -1132,11 +1134,12 @@ void print_events(const char *event_glob, bool name_only)
  
- 	return add_hist_entry(self, &entry, al, period, weight);
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 3767453..3c37f2e 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -53,6 +53,7 @@ enum hist_column {
- 	HISTC_SRCLINE,
- 	HISTC_LOCAL_WEIGHT,
- 	HISTC_GLOBAL_WEIGHT,
-+	HISTC_TRANSACTION,
- 	HISTC_NR_COLS, /* Last entry */
- };
+ 	print_hwcache_events(event_glob, name_only);
  
-@@ -78,9 +79,10 @@ struct hists {
- struct hist_entry *__hists__add_entry(struct hists *self,
- 				      struct addr_location *al,
- 				      struct symbol *parent, u64 period,
--				      u64 weight);
-+				      u64 weight, u64 transaction);
- int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
- int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
-+int hist_entry__transaction_len(void);
- int hist_entry__sort_snprintf(struct hist_entry *self, char *bf, size_t size,
- 			      struct hists *hists);
- void hist_entry__free(struct hist_entry *);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 76161c4..3f1165e 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -568,6 +568,78 @@ struct sort_entry sort_global_weight = {
- 	.se_width_idx	= HISTC_GLOBAL_WEIGHT,
- };
++	print_pmu_events(event_glob, name_only);
++
+ 	if (event_glob != NULL)
+ 		return;
  
-+static int64_t
-+sort__transaction_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	if (!name_only) {
+-		printf("\n");
+ 		printf("  %-50s [%s]\n",
+ 		       "rNNN",
+ 		       event_type_descriptors[PERF_TYPE_RAW]);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 9bdc60c..d1ecd54 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -552,3 +552,76 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
+ 	for (b = from; b <= to; b++)
+ 		set_bit(b, bits);
+ }
++
++static char *format_alias(char *buf, int len, struct perf_pmu *pmu,
++			  struct perf_pmu__alias *alias)
 +{
-+	return left->transaction - right->transaction;
++	snprintf(buf, len, "%s/%s/", pmu->name, alias->name);
++	return buf;
 +}
 +
-+static inline char *add_str(char *p, const char *str)
++static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
++			     struct perf_pmu__alias *alias)
 +{
-+	strcpy(p, str);
-+	return p + strlen(str);
++	snprintf(buf, len, "%s OR %s/%s/", alias->name, pmu->name, alias->name);
++	return buf;
 +}
 +
-+static struct txbit {
-+	unsigned flag;
-+	const char *name;
-+	int skip_for_len;
-+} txbits[] = {
-+	{ PERF_SAMPLE_TXN_ELISION,     "EL ", 0 },
-+	{ PERF_SAMPLE_TXN_TRANSACTION, "TX ", 1 },
-+	{ PERF_SAMPLE_TXN_SYNC,        "SYNC ", 1 },
-+	{ PERF_SAMPLE_TXN_ASYNC,       "ASYNC ", 0 },
-+	{ PERF_SAMPLE_TXN_RETRY,       "RETRY ", 0 },
-+	{ PERF_SAMPLE_TXN_CONFLICT,    "CON ", 0 },
-+	{ PERF_SAMPLE_TXN_CAPACITY,    "CAP ", 1 },
-+	{ PERF_SAMPLE_TXN_MEMORY,      "MEM ", 0 },
-+	{ PERF_SAMPLE_TXN_MISC,        "MISC ", 0 },
-+	{ 0, NULL, 0 }
-+};
-+
-+int hist_entry__transaction_len(void)
++static int cmp_string(const void *a, const void *b)
 +{
-+	int i;
-+	int len = 0;
++	const char * const *as = a;
++	const char * const *bs = b;
++	return strcmp(*as, *bs);
++}
 +
-+	for (i = 0; txbits[i].name; i++) {
-+		if (!txbits[i].skip_for_len)
-+			len += strlen(txbits[i].name);
++void print_pmu_events(const char *event_glob, bool name_only)
++{
++	struct perf_pmu *pmu;
++	struct perf_pmu__alias *alias;
++	char buf[1024];
++	int printed = 0;
++	int len, j;
++	char **aliases;
++
++	pmu = NULL;
++	len = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry (alias, &pmu->aliases, list)
++			len++;
++	aliases = malloc(sizeof(char *) * len);
++	if (!aliases)
++		return;
++	pmu = NULL;
++	j = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry (alias, &pmu->aliases, list) {
++			char *name = format_alias(buf, sizeof buf, pmu, alias);
++			bool is_cpu = !strcmp(pmu->name, "cpu");
++
++			if (event_glob != NULL &&
++			    !(strglobmatch(name, event_glob) ||
++			      (!is_cpu && strglobmatch(alias->name, event_glob))))
++				continue;
++			aliases[j] = name;
++			if (is_cpu && !name_only)
++				aliases[j] = format_alias_or(buf, sizeof buf,
++							      pmu, alias);
++			aliases[j] = strdup(aliases[j]);
++			j++;
++		}
++	len = j;
++	qsort(aliases, len, sizeof(char *), cmp_string);
++	for (j = 0; j < len; j++) {
++		if (name_only) {
++			printf("%s ", aliases[j]);
++			continue;
++		}
++		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
++		free(aliases[j]);
++		printed++;
 +	}
-+	len += 4; /* :XX<space> */
-+	return len;
++	if (printed)
++		printf("\n");
++	free(aliases);
 +}
 +
-+static int hist_entry__transaction_snprintf(struct hist_entry *self, char *bf,
-+	 			    	    size_t size, unsigned int width)
-+{
-+	u64 t = self->transaction;
-+	char buf[128];
-+	char *p = buf;
-+	int i;
-+
-+	for (i = 0; txbits[i].name; i++)
-+		if (txbits[i].flag & t)
-+			p = add_str(p, txbits[i].name);
-+	if (t && !(t & (PERF_SAMPLE_TXN_SYNC|PERF_SAMPLE_TXN_ASYNC)))
-+		p = add_str(p, "NEITHER ");
-+	if (t & PERF_SAMPLE_TXN_ABORT_MASK) {
-+		sprintf(p, ":%" PRIx64,
-+			(t & PERF_SAMPLE_TXN_ABORT_MASK) >>
-+			PERF_SAMPLE_TXN_ABORT_SHIFT);
-+		p += strlen(p);
-+	}
-+
-+	return repsep_snprintf(bf, size, "%-*s", width, buf);
-+}
-+
-+struct sort_entry sort_transaction = {
-+	.se_header	= "Transaction                ",
-+	.se_cmp		= sort__transaction_cmp,
-+	.se_snprintf	= hist_entry__transaction_snprintf,
-+	.se_width_idx	= HISTC_TRANSACTION,
-+};
-+
- struct sort_dimension {
- 	const char		*name;
- 	struct sort_entry	*entry;
-@@ -593,6 +665,7 @@ static struct sort_dimension sort_dimensions[] = {
- 	DIM(SORT_INTX, "intx", sort_intx),
- 	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
- 	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
-+	DIM(SORT_TRANSACTION, "transaction", sort_transaction),
- };
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index a313ed7..d9cb89b 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -3,6 +3,7 @@
  
- int sort_dimension__add(const char *tok)
-@@ -657,6 +730,8 @@ int sort_dimension__add(const char *tok)
- 				sort__first_dimension = SORT_GLOBAL_WEIGHT;
- 			else if (!strcmp(sd->name, "local_weight"))
- 				sort__first_dimension = SORT_LOCAL_WEIGHT;
-+			else if (!strcmp(sd->name, "transaction"))
-+				sort__first_dimension = SORT_TRANSACTION;
- 		}
+ #include <linux/bitops.h>
+ #include <linux/perf_event.h>
++#include <stdbool.h>
  
- 		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 4a22b1b..12530af0 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -86,6 +86,7 @@ struct hist_entry {
- 	struct map_symbol	ms;
- 	struct thread		*thread;
- 	u64			ip;
-+	u64			transaction;
- 	s32			cpu;
+ enum {
+ 	PERF_PMU_FORMAT_VALUE_CONFIG,
+@@ -53,5 +54,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
  
- 	struct hist_entry_diff	diff;
-@@ -142,6 +143,7 @@ enum sort_type {
- 	SORT_INTX,
- 	SORT_LOCAL_WEIGHT,
- 	SORT_GLOBAL_WEIGHT,
-+	SORT_TRANSACTION,
- };
+ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
  
- /*
++void print_pmu_events(const char *event_glob, bool name_only);
++
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
 -- 
 1.7.7.6
 
