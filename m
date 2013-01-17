@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758998Ab3AQDAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:00:35 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:46533 "EHLO smtp.outflux.net"
+	id S1759055Ab3AQDBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:01:16 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:41447 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758935Ab3AQCzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:55:01 -0500
+	id S1758921Ab3AQCzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 21:55:00 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
+Cc: Kees Cook <keescook@chromium.org>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 23/86] arch/arm/mach-s3c24xx: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:53:15 -0800
-Message-Id: <1358391258-1771-24-git-send-email-keescook@chromium.org>
+Subject: [PATCH 14/86] drivers/net/wireless/b43: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:53:06 -0800
+Message-Id: <1358391258-1771-15-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -27,30 +28,52 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-CC: Ben Dooks <ben-linux@fluff.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>
-CC: Russell King <linux@arm.linux.org.uk>
+CC: Stefano Brivio <stefano.brivio@polimi.it>
+CC: "John W. Linville" <linville@tuxdriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/arm/mach-s3c24xx/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/b43/Kconfig |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-index 25df14a..3445c4f 100644
---- a/arch/arm/mach-s3c24xx/Kconfig
-+++ b/arch/arm/mach-s3c24xx/Kconfig
-@@ -291,8 +291,8 @@ config MACH_JIVE
- 	  Say Y here if you are using the Logitech Jive.
+diff --git a/drivers/net/wireless/b43/Kconfig b/drivers/net/wireless/b43/Kconfig
+index 7a28d21..287c6b6 100644
+--- a/drivers/net/wireless/b43/Kconfig
++++ b/drivers/net/wireless/b43/Kconfig
+@@ -78,8 +78,8 @@ config B43_PCMCIA
+ 	  If unsure, say N.
  
- config MACH_JIVE_SHOW_BOOTLOADER
--	bool "Allow access to bootloader partitions in MTD (EXPERIMENTAL)"
--	depends on MACH_JIVE && EXPERIMENTAL
-+	bool "Allow access to bootloader partitions in MTD"
-+	depends on MACH_JIVE
+ config B43_SDIO
+-	bool "Broadcom 43xx SDIO device support (EXPERIMENTAL)"
+-	depends on B43 && SSB_SDIOHOST_POSSIBLE && EXPERIMENTAL
++	bool "Broadcom 43xx SDIO device support"
++	depends on B43 && SSB_SDIOHOST_POSSIBLE
+ 	select SSB_SDIOHOST
+ 	---help---
+ 	  Broadcom 43xx device support for Soft-MAC SDIO devices.
+@@ -109,8 +109,8 @@ config B43_PIO
+ 	default y
  
- config MACH_S3C2413
- 	bool
+ config B43_PHY_N
+-	bool "Support for 802.11n (N-PHY) devices (EXPERIMENTAL)"
+-	depends on B43 && EXPERIMENTAL
++	bool "Support for 802.11n (N-PHY) devices"
++	depends on B43
+ 	---help---
+ 	  Support for the N-PHY.
+ 
+@@ -130,8 +130,8 @@ config B43_PHY_LP
+ 	  (802.11a support is optional, and currently disabled).
+ 
+ config B43_PHY_HT
+-	bool "Support for HT-PHY (high throughput) devices (EXPERIMENTAL)"
+-	depends on B43 && EXPERIMENTAL
++	bool "Support for HT-PHY (high throughput) devices"
++	depends on B43
+ 	---help---
+ 	  Support for the HT-PHY.
+ 
 -- 
 1.7.9.5
 
