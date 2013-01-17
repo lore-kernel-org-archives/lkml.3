@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab3AQLfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 06:35:25 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45526 "EHLO bear.ext.ti.com"
+	id S1755945Ab3AQLb2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 06:31:28 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42743 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756103Ab3AQLbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 06:31:33 -0500
+	id S1752070Ab3AQLbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 06:31:16 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v7 16/22] mfd: omap-usb-host: Get rid of unnecessary spinlock
-Date: Thu, 17 Jan 2013 13:30:25 +0200
-Message-ID: <1358422231-24736-17-git-send-email-rogerq@ti.com>
+Subject: [PATCH v7 06/22] mfd: omap-usb-tll: Check for missing platform data in probe
+Date: Thu, 17 Jan 2013 13:30:15 +0200
+Message-ID: <1358422231-24736-7-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358422231-24736-1-git-send-email-rogerq@ti.com>
 References: <1358422231-24736-1-git-send-email-rogerq@ti.com>
@@ -24,113 +24,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver does not have an interrupt handler and
-we don't really need a spinlock, so get rid of it.
+No need to check for missing platform data in runtime_suspend/resume
+as it makes more sense to do it in the probe function.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-host.c |   16 ----------------
- 1 files changed, 0 insertions(+), 16 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index d9a242b..fcace6f 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -23,7 +23,6 @@
- #include <linux/delay.h>
- #include <linux/clk.h>
- #include <linux/dma-mapping.h>
--#include <linux/spinlock.h>
- #include <linux/gpio.h>
- #include <linux/platform_device.h>
- #include <linux/platform_data/usb-omap.h>
-@@ -108,7 +107,6 @@ struct usbhs_hcd_omap {
- 	struct usbhs_omap_platform_data	*pdata;
- 
- 	u32				usbhs_rev;
--	spinlock_t			lock;
- };
- /*-------------------------------------------------------------------------*/
- 
-@@ -276,13 +274,11 @@ static int usbhs_runtime_resume(struct device *dev)
- {
- 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
- 	struct usbhs_omap_platform_data	*pdata = omap->pdata;
--	unsigned long			flags;
- 	int i, r;
- 
- 	dev_dbg(dev, "usbhs_runtime_resume\n");
- 
- 	omap_tll_enable();
--	spin_lock_irqsave(&omap->lock, flags);
- 
- 	if (omap->ehci_logic_fck && !IS_ERR(omap->ehci_logic_fck))
- 		clk_enable(omap->ehci_logic_fck);
-@@ -324,8 +320,6 @@ static int usbhs_runtime_resume(struct device *dev)
- 		}
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index 6a43391..0e68c8a 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -225,6 +225,11 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
  	}
  
--	spin_unlock_irqrestore(&omap->lock, flags);
++	if (!pdata) {
++		dev_err(dev, "Platform data missing\n");
++		return -ENODEV;
++	}
++
+ 	spin_lock_init(&tll->lock);
+ 
+ 	tll->pdata = pdata;
+@@ -370,11 +375,6 @@ static int usbtll_runtime_resume(struct device *dev)
+ 
+ 	dev_dbg(dev, "usbtll_runtime_resume\n");
+ 
+-	if (!pdata) {
+-		dev_dbg(dev, "missing platform_data\n");
+-		return  -ENODEV;
+-	}
 -
- 	return 0;
- }
+ 	spin_lock_irqsave(&tll->lock, flags);
  
-@@ -333,13 +327,10 @@ static int usbhs_runtime_suspend(struct device *dev)
- {
- 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
- 	struct usbhs_omap_platform_data	*pdata = omap->pdata;
--	unsigned long			flags;
- 	int i;
+ 	for (i = 0; i < tll->nch; i++) {
+@@ -406,11 +406,6 @@ static int usbtll_runtime_suspend(struct device *dev)
  
- 	dev_dbg(dev, "usbhs_runtime_suspend\n");
+ 	dev_dbg(dev, "usbtll_runtime_suspend\n");
  
--	spin_lock_irqsave(&omap->lock, flags);
+-	if (!pdata) {
+-		dev_dbg(dev, "missing platform_data\n");
+-		return  -ENODEV;
+-	}
 -
- 	for (i = 0; i < omap->nports; i++) {
- 		switch (pdata->port_mode[i]) {
- 		case OMAP_EHCI_PORT_MODE_HSIC:
-@@ -362,7 +353,6 @@ static int usbhs_runtime_suspend(struct device *dev)
- 	if (omap->ehci_logic_fck && !IS_ERR(omap->ehci_logic_fck))
- 		clk_disable(omap->ehci_logic_fck);
+ 	spin_lock_irqsave(&tll->lock, flags);
  
--	spin_unlock_irqrestore(&omap->lock, flags);
- 	omap_tll_disable();
- 
- 	return 0;
-@@ -372,7 +362,6 @@ static void omap_usbhs_init(struct device *dev)
- {
- 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
- 	struct usbhs_omap_platform_data	*pdata = omap->pdata;
--	unsigned long			flags;
- 	unsigned			reg;
- 
- 	dev_dbg(dev, "starting TI HSUSB Controller\n");
-@@ -391,7 +380,6 @@ static void omap_usbhs_init(struct device *dev)
- 	}
- 
- 	pm_runtime_get_sync(dev);
--	spin_lock_irqsave(&omap->lock, flags);
- 
- 	reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
- 	/* setup ULPI bypass and burst configurations */
-@@ -454,8 +442,6 @@ static void omap_usbhs_init(struct device *dev)
- 	usbhs_write(omap->uhh_base, OMAP_UHH_HOSTCONFIG, reg);
- 	dev_dbg(dev, "UHH setup done, uhh_hostconfig=%x\n", reg);
- 
--	spin_unlock_irqrestore(&omap->lock, flags);
--
- 	pm_runtime_put_sync(dev);
- 	if (pdata->phy_reset) {
- 		/* Hold the PHY in RESET for enough time till
-@@ -521,8 +507,6 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		return -EADDRNOTAVAIL;
- 	}
- 
--	spin_lock_init(&omap->lock);
--
- 	omap->pdata = pdata;
- 
- 	pm_runtime_enable(dev);
+ 	for (i = 0; i < tll->nch; i++) {
 -- 
 1.7.4.1
 
