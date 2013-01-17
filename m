@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759044Ab3AQDQB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:16:01 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:64077 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758199Ab3AQDP5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 22:15:57 -0500
-Date: Wed, 16 Jan 2013 22:16:05 -0500
-From: Jake Champlin <jake.champlin.27@gmail.com>
-To: mfm@muteddisk.com
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        jake.champlin.27@gmail.com
-Subject: [PATCH 2/2] Staging: usbip: usbipcommon: Fixed single line bracing
- issue
-Message-ID: <20130117031600.GA1313@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758389Ab3AQCyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 21:54:33 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:52667 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757587Ab3AQCyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 21:54:31 -0500
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 04/86] drivers/net/ethernet/racal: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:52:56 -0800
+Message-Id: <1358391258-1771-5-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
+References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issue with single line braces.
+The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+while now and is almost always enabled by default. As agreed during the
+Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/staging/usbip/usbip_common.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/ethernet/racal/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
-index 75189fe..75aa5bf 100644
---- a/drivers/staging/usbip/usbip_common.c
-+++ b/drivers/staging/usbip/usbip_common.c
-@@ -672,9 +672,8 @@ int usbip_recv_iso(struct usbip_device *ud, struct urb *urb)
- 		return 0;
+diff --git a/drivers/net/ethernet/racal/Kconfig b/drivers/net/ethernet/racal/Kconfig
+index 01969e0..53c6af1 100644
+--- a/drivers/net/ethernet/racal/Kconfig
++++ b/drivers/net/ethernet/racal/Kconfig
+@@ -19,8 +19,8 @@ config NET_VENDOR_RACAL
+ if NET_VENDOR_RACAL
  
- 	/* my Bluetooth dongle gets ISO URBs which are np = 0 */
--	if (np == 0) {
-+	if (np == 0)
- 		return 0;
--	}
- 
- 	buff = kzalloc(size, GFP_KERNEL);
- 	if (!buff)
+ config NI5010
+-	tristate "NI5010 support (EXPERIMENTAL)"
+-	depends on ISA && EXPERIMENTAL && BROKEN_ON_SMP
++	tristate "NI5010 support"
++	depends on ISA && BROKEN_ON_SMP
+ 	---help---
+ 	  If you have a network (Ethernet) card of this type, say Y and read
+ 	  the Ethernet-HOWTO, available from
 -- 
-1.8.1.1
+1.7.9.5
 
-
--- 
-Jake Champlin
-jake.champlin.27@gmail.com
-8123742937
-<MuttClient>
