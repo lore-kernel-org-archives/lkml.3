@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab3AQPWg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 10:22:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37111 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755593Ab3AQPWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 10:22:35 -0500
-Date: Thu, 17 Jan 2013 10:21:41 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, pjones@redhat.com, hpa@zytor.com,
-        dhowells@redhat.com, jwboyer@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-Message-ID: <20130117152141.GB12165@redhat.com>
-References: <1358344859.4593.66.camel@falcor1>
- <20130116144836.GB29845@redhat.com>
- <1358350391.4593.112.camel@falcor1>
- <20130116163453.GD29845@redhat.com>
- <1358359715.4593.146.camel@falcor1>
- <20130116182804.GF29845@redhat.com>
- <1358364290.4593.178.camel@falcor1>
- <20130116215341.GA4222@redhat.com>
- <CALLzPKam_j==PXtNfQs93NbPTrYCjqM_0+XRfnvxrJBLdOJ-vQ@mail.gmail.com>
- <CALLzPKZhsKnzjLE_wbm=qYZcaFiKq+5LE6G1ZaphutCGFSFV7w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALLzPKZhsKnzjLE_wbm=qYZcaFiKq+5LE6G1ZaphutCGFSFV7w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756736Ab3AQPZB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 10:25:01 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:39404 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755593Ab3AQPZA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 10:25:00 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH 0/2] perf stat: add interval counter printing
+Date: Thu, 17 Jan 2013 16:24:45 +0100
+Message-Id: <1358436287-22883-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 05:06:09PM +0200, Kasatkin, Dmitry wrote:
+This small patchset extends perf stat with the -T option.
 
-[..]
-> One important thing to mention.
-> Protecting ELF-only does not help too much in protecting the system.
-> There are plenty of init, upstart and systemd scripts which must be
-> verified as well. IMA does it.
+The -T option enables interval printing. It expects
+an interval duration in milliseconds. Minimum is
+100ms. Once, activated perf stat prints events deltas
+since last printout. All modes are supported.
 
-Actually that would be a different requirement altogether. I am not
-trying to verify all the processes started by root. I am just trying
-to sign and verify signature of select user process and if signature
-are verified, kernel grants those processes extra capability and allow
-calling sys_kexec() when secureboot is enabled.
+$ perf stat -T 1000 -e cycles noploop 10
+noploop for 10 seconds
+1.000086918         2385155642 cycles                    #    0.000 GHz
+2.000267937         2392279774 cycles                    #    0.000 GHz
+3.000385400         2390971450 cycles                    #    0.000 GHz
+4.000504408         2390996752 cycles                    #    0.000 GHz
+5.000626878         2390853097 cycles                    #    0.000 GHz
 
-So for my use case, I don't care if there are so many other unsigned
-processes running in the system.
+The output format makes it easy to feed into a plotting program
+such as gnuplot when the -T option is used in combination with the -x
+option:
 
-Thanks
-Vivek
+$ perf stat -x, -T 1000 -e cycles noploop 10
+noploop for 10 seconds
+1.000084113,2378775498,cycles
+2.000245798,2391056897,cycles
+3.000354445,2392089414,cycles
+4.000459115,2390936603,cycles
+5.000565341,2392108173,cycles
+
+The first patch adds the code to keep previous counts. The second
+is the actual extension of perf stat.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+
+Stephane Eranian (2):
+  perf tools: add evsel prev_raw_count field
+  perf stat: add interval printing
+
+ tools/perf/Documentation/perf-stat.txt |    3 +
+ tools/perf/builtin-stat.c              |  156 ++++++++++++++++++++++++++++----
+ tools/perf/util/evsel.c                |   21 +++++
+ tools/perf/util/evsel.h                |    1 +
+ 4 files changed, 165 insertions(+), 16 deletions(-)
+
+-- 
+1.7.9.5
+
