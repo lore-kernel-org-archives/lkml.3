@@ -1,251 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187Ab3AQVEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 16:04:41 -0500
-Received: from talus.maths.usyd.edu.au ([129.78.68.1]:59570 "EHLO
-	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140Ab3AQVEk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 16:04:40 -0500
-X-smtpdoor-from: psz@maths.usyd.edu.au
-X-smtpdoor-want-Message-ID: <201301172104.r0HL4F9k005128@como.maths.usyd.edu.au>
-Date: Fri, 18 Jan 2013 08:04:15 +1100
-From: paul.szabo@sydney.edu.au
-Message-Id: <201301172104.r0HL4F9k005128@como.maths.usyd.edu.au>
-To: dave@linux.vnet.ibm.com, psz@maths.usyd.edu.au
-Subject: Re: [RFC] Reproducible OOM with just a few sleeps
-Cc: 695182@bugs.debian.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+	id S1756546Ab3AQVEt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 16:04:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38705 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754140Ab3AQVEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 16:04:47 -0500
+Date: Thu, 17 Jan 2013 22:04:42 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, jslaby@suse.cz
+Subject: Re: [PATCH] printk: Avoid softlockups in console_unlock()
+Message-ID: <20130117210442.GA23984@quack.suse.cz>
+References: <1358272714-23375-1-git-send-email-jack@suse.cz>
+ <20130115233742.e8571f92.akpm@linux-foundation.org>
+ <20130116101644.GA29162@quack.suse.cz>
+ <20130116145005.e20f4e53.akpm@linux-foundation.org>
+ <20130116235529.GA10251@quack.suse.cz>
+ <20130116161118.f6e2e6a4.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130116161118.f6e2e6a4.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Dave,
+On Wed 16-01-13 16:11:18, Andrew Morton wrote:
+> On Thu, 17 Jan 2013 00:55:29 +0100
+> Jan Kara <jack@suse.cz> wrote:
+> > > If this is all a problem then the calling code should stop doing so
+> > > much printing!
+> >   It's mostly a device discovery that triggers the issues in practice. They
+> > have over thousand of SCSI disks attached (multipath in use) and when each
+> > disk prints ~400 bytes of messages (just check your dmesg) you end up with
+> > ~30s worth of printing over 115200 console.
+> 
+> OK.
+> 
+> If they're using 110 baud (nobody remembers what this word means) then
+  Heh, I remember times when I was connecting to internet with 2400 baud
+modem via dialup. So I do remember what baud means from those times ;).
 
->> On my large machine, 'free' fails to show about 2GB memory ...
-> You probably have a memory hole. ...
-> The e820 map (during early boot in dmesg) or /proc/iomem will let you
-> locate your memory holes.
+> the 1000 chars will be too much.  More seriously, what happens if
+> they're using hardware flow control and someone kicks the cable out? 
+> Some people are going to want the kernel to just sit there waiting,
+> until the cable gets plugged in again.
+> 
+> > > And punting the operation to a kernel thread is a pretty radical change
+> > > - it surely adds significant risk that output will be lost.
+> >   I agree there is a higher chance the output will be lost.
+> > 
+> > > So hrm, I dunno.  Can we just put the touch_nmi_watchdog() in there
+> > > intially, see if it fixes things?  If people continue to hit problems
+> > > then we can take a second look?
+> >   OK, I'll see if I can get this tested on one of those machines...
+> 
+> Thanks.
+  So I played a bit with this. To make things easier for me I added
+artificial mdelay(len*10) (effectively simulating console able to print 100
+characters per second) just after call_console_drivers() so that I can
+trigger issues even on a machine easily available to me. Booting actually
+doesn't trigger any problems because there aren't enough things happening
+in parallel on common machine during boot but
+  echo t >/proc/sysrq-trigger &
+  for i in /lib/modules/3.8.0-rc3-0-default/kernel/fs/*/*.ko; do 
+    name=`basename $i`; name=${name%.ko}; modprobe $name
+  done
+easily triggers the problem (as modprobe uses both RCU & IPIs to signal all
+CPUs).
 
-Now that my machine is running an amd64 kernel, 'free' shows total Mem
-65854128 (up from 64447796 with PAE kernel), and I do not see much
-change in /proc/iomem output (below). Is that as should be?
+  Adding
+	touch_nmi_watchdog();
+	touch_all_softlockup_watchdogs();
+	rcu_cpu_stall_reset();
+  into the printk loop did stop all the warnings and the machine eventually
+came alive again after finishing printing sysrq-t output (while printing
+the machine was responding to ping but ssh stopped working after a while -
+not sure what was happening but apparently some IO requests weren't
+completing and maybe networking started dropping packets because it
+accumulated too much RCU work).
 
-Thanks, Paul
+So your suggestion seems certainly plausible. I was just wondering
+  a) Above three lines can be pretty expensive on big machines as they
+iterate over all CPUs. So we should probably limit it to once per jiffy or
+something like that?
+  b) Above three lines can make softlockup detection pretty useless if
+there's enough printk traffic (it would be enough to printk() something
+every 10s or so which can happen with netfilter logging packets or so).
+But if we touch the watchdogs only if we spend more than 1 jiffy in the
+console_unlock() we should hopefully touch those watchdogs only in rare
+cases of heavy printk traffic.
 
-Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
-School of Mathematics and Statistics   University of Sydney    Australia
+  Thoughts?
 
+								Honza
 
----
-
-root@zeno:~# uname -a
-Linux zeno.maths.usyd.edu.au 3.2.35-pk06.12-amd64 #2 SMP Thu Jan 17 13:19:53 EST 2013 x86_64 GNU/Linux
-root@zeno:~# free
-             total       used       free     shared    buffers     cached
-Mem:      65854128    1591704   64262424          0     227036     175620
--/+ buffers/cache:    1189048   64665080
-Swap:    195312636          0  195312636
-root@zeno:~# cat /proc/iomem
-00000000-0000ffff : reserved
-00010000-00099bff : System RAM
-00099c00-0009ffff : reserved
-000a0000-000bffff : PCI Bus 0000:00
-000c0000-000dffff : PCI Bus 0000:00
-  000c0000-000c7fff : Video ROM
-  000c8000-000cf5ff : Adapter ROM
-  000cf800-000d07ff : Adapter ROM
-  000d0800-000d0bff : Adapter ROM
-000e0000-000fffff : reserved
-  000f0000-000fffff : System ROM
-00100000-7e445fff : System RAM
-  01000000-0168f8c6 : Kernel code
-  0168f8c7-018f24bf : Kernel data
-  0197d000-019dafff : Kernel bss
-7e446000-7e565fff : ACPI Non-volatile Storage
-7e566000-7f1e2fff : reserved
-7f1e3000-7f25efff : ACPI Tables
-7f25f000-7f31cfff : reserved
-7f31d000-7f323fff : ACPI Non-volatile Storage
-7f324000-7f333fff : reserved
-7f334000-7f33bfff : ACPI Non-volatile Storage
-7f33c000-7f365fff : reserved
-7f366000-7f7fffff : ACPI Non-volatile Storage
-7f800000-7fffffff : RAM buffer
-80000000-dfffffff : PCI Bus 0000:00
-  80000000-8fffffff : PCI MMCONFIG 0000 [bus 00-ff]
-    80000000-8fffffff : reserved
-  90000000-9000000f : 0000:00:16.0
-  90000010-9000001f : 0000:00:16.1
-  dd000000-ddffffff : PCI Bus 0000:08
-    dd000000-ddffffff : 0000:08:03.0
-  de000000-de4fffff : PCI Bus 0000:07
-    de000000-de3fffff : 0000:07:00.0
-    de47c000-de47ffff : 0000:07:00.0
-  de600000-de6fffff : PCI Bus 0000:02
-  df000000-df8fffff : PCI Bus 0000:08
-    df000000-df7fffff : 0000:08:03.0
-    df800000-df803fff : 0000:08:03.0
-  df900000-df9fffff : PCI Bus 0000:07
-  dfa00000-dfafffff : PCI Bus 0000:02
-    dfa00000-dfa1ffff : 0000:02:00.1
-      dfa00000-dfa1ffff : igb
-    dfa20000-dfa3ffff : 0000:02:00.0
-      dfa20000-dfa3ffff : igb
-    dfa40000-dfa43fff : 0000:02:00.1
-      dfa40000-dfa43fff : igb
-    dfa44000-dfa47fff : 0000:02:00.0
-      dfa44000-dfa47fff : igb
-  dfb00000-dfb03fff : 0000:00:04.7
-  dfb04000-dfb07fff : 0000:00:04.6
-  dfb08000-dfb0bfff : 0000:00:04.5
-  dfb0c000-dfb0ffff : 0000:00:04.4
-  dfb10000-dfb13fff : 0000:00:04.3
-  dfb14000-dfb17fff : 0000:00:04.2
-  dfb18000-dfb1bfff : 0000:00:04.1
-  dfb1c000-dfb1ffff : 0000:00:04.0
-  dfb20000-dfb200ff : 0000:00:1f.3
-  dfb21000-dfb217ff : 0000:00:1f.2
-    dfb21000-dfb217ff : ahci
-  dfb22000-dfb223ff : 0000:00:1d.0
-    dfb22000-dfb223ff : ehci_hcd
-  dfb23000-dfb233ff : 0000:00:1a.0
-    dfb23000-dfb233ff : ehci_hcd
-  dfb25000-dfb25fff : 0000:00:05.4
-  dfffc000-dfffdfff : pnp 00:02
-e0000000-fbffffff : PCI Bus 0000:80
-  fbe00000-fbefffff : PCI Bus 0000:84
-    fbe00000-fbe3ffff : 0000:84:00.0
-    fbe40000-fbe5ffff : 0000:84:00.0
-    fbe60000-fbe63fff : 0000:84:00.0
-  fbf00000-fbf03fff : 0000:80:04.7
-  fbf04000-fbf07fff : 0000:80:04.6
-  fbf08000-fbf0bfff : 0000:80:04.5
-  fbf0c000-fbf0ffff : 0000:80:04.4
-  fbf10000-fbf13fff : 0000:80:04.3
-  fbf14000-fbf17fff : 0000:80:04.2
-  fbf18000-fbf1bfff : 0000:80:04.1
-  fbf1c000-fbf1ffff : 0000:80:04.0
-  fbf20000-fbf20fff : 0000:80:05.4
-  fbffe000-fbffffff : pnp 00:12
-fc000000-fcffffff : pnp 00:01
-fd000000-fdffffff : pnp 00:01
-fe000000-feafffff : pnp 00:01
-feb00000-febfffff : pnp 00:01
-fec00000-fec003ff : IOAPIC 0
-fec01000-fec013ff : IOAPIC 1
-fec40000-fec403ff : IOAPIC 2
-fed00000-fed003ff : HPET 0
-fed08000-fed08fff : pnp 00:0c
-fed1c000-fed3ffff : reserved
-  fed1c000-fed1ffff : pnp 00:0c
-fed45000-fedfffff : pnp 00:01
-fee00000-fee00fff : Local APIC
-ff000000-ffffffff : reserved
-  ff000000-ffffffff : pnp 00:0c
-100000000-107fffffff : System RAM
-root@zeno:~# 
-
----
-
-For comparison, output obtained (and reported previously) when machine
-was running PAE kernel:
-root@zeno:~# cat /proc/iomem
-00000000-0000ffff : reserved
-00010000-00099bff : System RAM
-00099c00-0009ffff : reserved
-000a0000-000bffff : PCI Bus 0000:00
-  000a0000-000bffff : Video RAM area
-000c0000-000dffff : PCI Bus 0000:00
-  000c0000-000c7fff : Video ROM
-  000c8000-000cf5ff : Adapter ROM
-  000cf800-000d07ff : Adapter ROM
-  000d0800-000d0bff : Adapter ROM
-000e0000-000fffff : reserved
-  000f0000-000fffff : System ROM
-00100000-7e445fff : System RAM
-  01000000-01610e15 : Kernel code
-  01610e16-01802dff : Kernel data
-  01880000-018b2fff : Kernel bss
-7e446000-7e565fff : ACPI Non-volatile Storage
-7e566000-7f1e2fff : reserved
-7f1e3000-7f25efff : ACPI Tables
-7f25f000-7f31cfff : reserved
-7f31d000-7f323fff : ACPI Non-volatile Storage
-7f324000-7f333fff : reserved
-7f334000-7f33bfff : ACPI Non-volatile Storage
-7f33c000-7f365fff : reserved
-7f366000-7f7fffff : ACPI Non-volatile Storage
-7f800000-7fffffff : RAM buffer
-80000000-dfffffff : PCI Bus 0000:00
-  80000000-8fffffff : PCI MMCONFIG 0000 [bus 00-ff]
-    80000000-8fffffff : reserved
-  90000000-9000000f : 0000:00:16.0
-  90000010-9000001f : 0000:00:16.1
-  dd000000-ddffffff : PCI Bus 0000:08
-    dd000000-ddffffff : 0000:08:03.0
-  de000000-de4fffff : PCI Bus 0000:07
-    de000000-de3fffff : 0000:07:00.0
-    de47c000-de47ffff : 0000:07:00.0
-  de600000-de6fffff : PCI Bus 0000:02
-  df000000-df8fffff : PCI Bus 0000:08
-    df000000-df7fffff : 0000:08:03.0
-    df800000-df803fff : 0000:08:03.0
-  df900000-df9fffff : PCI Bus 0000:07
-  dfa00000-dfafffff : PCI Bus 0000:02
-    dfa00000-dfa1ffff : 0000:02:00.1
-      dfa00000-dfa1ffff : igb
-    dfa20000-dfa3ffff : 0000:02:00.0
-      dfa20000-dfa3ffff : igb
-    dfa40000-dfa43fff : 0000:02:00.1
-      dfa40000-dfa43fff : igb
-    dfa44000-dfa47fff : 0000:02:00.0
-      dfa44000-dfa47fff : igb
-  dfb00000-dfb03fff : 0000:00:04.7
-  dfb04000-dfb07fff : 0000:00:04.6
-  dfb08000-dfb0bfff : 0000:00:04.5
-  dfb0c000-dfb0ffff : 0000:00:04.4
-  dfb10000-dfb13fff : 0000:00:04.3
-  dfb14000-dfb17fff : 0000:00:04.2
-  dfb18000-dfb1bfff : 0000:00:04.1
-  dfb1c000-dfb1ffff : 0000:00:04.0
-  dfb20000-dfb200ff : 0000:00:1f.3
-  dfb21000-dfb217ff : 0000:00:1f.2
-    dfb21000-dfb217ff : ahci
-  dfb22000-dfb223ff : 0000:00:1d.0
-    dfb22000-dfb223ff : ehci_hcd
-  dfb23000-dfb233ff : 0000:00:1a.0
-    dfb23000-dfb233ff : ehci_hcd
-  dfb25000-dfb25fff : 0000:00:05.4
-  dfffc000-dfffdfff : pnp 00:02
-e0000000-fbffffff : PCI Bus 0000:80
-  fbe00000-fbefffff : PCI Bus 0000:84
-    fbe00000-fbe3ffff : 0000:84:00.0
-    fbe40000-fbe5ffff : 0000:84:00.0
-    fbe60000-fbe63fff : 0000:84:00.0
-  fbf00000-fbf03fff : 0000:80:04.7
-  fbf04000-fbf07fff : 0000:80:04.6
-  fbf08000-fbf0bfff : 0000:80:04.5
-  fbf0c000-fbf0ffff : 0000:80:04.4
-  fbf10000-fbf13fff : 0000:80:04.3
-  fbf14000-fbf17fff : 0000:80:04.2
-  fbf18000-fbf1bfff : 0000:80:04.1
-  fbf1c000-fbf1ffff : 0000:80:04.0
-  fbf20000-fbf20fff : 0000:80:05.4
-  fbffe000-fbffffff : pnp 00:12
-fc000000-fcffffff : pnp 00:01
-fd000000-fdffffff : pnp 00:01
-fe000000-feafffff : pnp 00:01
-feb00000-febfffff : pnp 00:01
-fec00000-fec003ff : IOAPIC 0
-fec01000-fec013ff : IOAPIC 1
-fec40000-fec403ff : IOAPIC 2
-fed00000-fed003ff : HPET 0
-fed08000-fed08fff : pnp 00:0c
-fed1c000-fed3ffff : reserved
-  fed1c000-fed1ffff : pnp 00:0c
-fed45000-fedfffff : pnp 00:01
-fee00000-fee00fff : Local APIC
-ff000000-ffffffff : reserved
-  ff000000-ffffffff : pnp 00:0c
-100000000-107fffffff : System RAM
-root@zeno:~# 
+PS: sysrq-t was ~200 KB on that freshly booted machine so on a busy machine
+that would trigger softlockups with 115200 serial console as well (I
+actually do remember seeing it in some customer's reports). So it's not
+just boot. 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
