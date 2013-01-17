@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759477Ab3AQJ6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 04:58:50 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:51059 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759416Ab3AQJ6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 04:58:45 -0500
+	id S932150Ab3AQJ7Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 04:59:24 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53336 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759416Ab3AQJ7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 04:59:21 -0500
+Message-ID: <50F7CB70.5010003@ti.com>
+Date: Thu, 17 Jan 2013 10:59:12 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <50F7B801.4020704@nvidia.com>
-References: <1357387375-25919-1-git-send-email-ldewangan@nvidia.com>
-	<CACRpkdYe0MPC=jiOgzd0zRkiAFas21O80MiR8dp9UdmwptDfmw@mail.gmail.com>
-	<50F7B801.4020704@nvidia.com>
-Date: Thu, 17 Jan 2013 10:58:44 +0100
-Message-ID: <CACRpkdZTbkeEGnoYcn4VoDd+Nz_JtBUP3V8fA1qbE2ndEk0g7Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: tegra: add support for rcv-sel and drive type
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Luciano Coelho <coelho@ti.com>
+CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport power
+ functions
+References: <1358372702-13102-1-git-send-email-coelho@ti.com>  <50F7C4A7.5060202@ti.com> <1358415316.6252.20.camel@cumari.coelho.fi>
+In-Reply-To: <1358415316.6252.20.camel@cumari.coelho.fi>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 9:36 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> On Thursday 17 January 2013 02:00 PM, Linus Walleij wrote:
+Hi Luca,
 
->> Stephen, can you look at this patch?
->>
->> Authors: you need Stephen's ACK on this.
->
-> Stephen have already given his reviewed by on thi series and I posted V2
-> version of taking care his comment.
-> Stephen's comment was in
-> Re: [PATCH 2/2] pinctrl: tegra114: add pinctrl driver for NVIDIA's Tegra114
-> SoC
->
-> Can you please review the v2 version of this series?
+On 01/17/2013 10:35 AM, Luciano Coelho wrote:
+>> I just wonder how this is going to work with DT... You are not going to have
+>> the ability to use callback in this form.
+>> I think the GPIO handling should be done in the driver itself rather than in
+>> the board file.
+> 
+> I agree.  The problem is that it used to be in the ti-st driver itself,
+> but it has been removed in a patch that says "different platforms have
+> begun to have their own ways to power-up/down the chip." (eccf2979
+> drivers/misc/ti-st: remove gpio handling).
 
-Sure I'll get to it. Walking the INBOX in reverse order...
+Hrm, this is a strange patch for sure. Coming at times when we all suppose to
+move to DT and get rid of such callbacks for drivers.
 
-Thanks,
-Linus Walleij
+> This needs to be clarified first.  I think we could use this for now and
+> later fix this properly (hopefully move it back to the ti-st driver).
+
+Can the offending patch be reverted?
+As I said to Felipe, I don't have any objections against this patch. It fits
+the purpose. But with the DT support (and removing callbacks to platform code)
+you are going to have fair amount work.
+
+-- 
+Péter
