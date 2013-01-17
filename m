@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab3AQKgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:36:19 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54868 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759489Ab3AQKgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 05:36:16 -0500
-Message-ID: <1358418917.6252.31.camel@cumari.coelho.fi>
-Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport
- power functions
-From: Luciano Coelho <coelho@ti.com>
-To: <balbi@ti.com>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <tony@atomide.com>,
-        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Date: Thu, 17 Jan 2013 12:35:17 +0200
-In-Reply-To: <20130117100919.GJ10814@arwen.pp.htv.fi>
-References: <1358372702-13102-1-git-send-email-coelho@ti.com>
-	 <50F7C4A7.5060202@ti.com> <20130117093417.GH10814@arwen.pp.htv.fi>
-	 <50F7CA82.4050509@ti.com> <20130117100510.GI10814@arwen.pp.htv.fi>
-	 <20130117100919.GJ10814@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S932216Ab3AQKiF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:38:05 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48452 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759518Ab3AQKiD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 05:38:03 -0500
+Date: Thu, 17 Jan 2013 10:37:42 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Tejun Heo <tj@kernel.org>, Subhash Jadavani <subhashj@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        martin.petersen@oracle.com, asias@redhat.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/1] block: blk-merge: don't merge the pages with
+	non-contiguous descriptors
+Message-ID: <20130117103742.GX23505@n2100.arm.linux.org.uk>
+References: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org> <1358266794.10591.8.camel@dabdike.int.hansenpartnership.com> <50F64AC1.3040304@codeaurora.org> <1358332355.2384.11.camel@dabdike.int.hansenpartnership.com> <20130116231857.GU2668@htj.dyndns.org> <1358413880.2394.7.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358413880.2394.7.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-17 at 12:09 +0200, Felipe Balbi wrote:
-> On Thu, Jan 17, 2013 at 12:05:10PM +0200, Felipe Balbi wrote:
-> > Hi,
+On Thu, Jan 17, 2013 at 09:11:20AM +0000, James Bottomley wrote:
+> On Wed, 2013-01-16 at 15:18 -0800, Tejun Heo wrote:
+> > On Wed, Jan 16, 2013 at 10:32:35AM +0000, James Bottomley wrote:
+> > > diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> > > index 6b2fb87..ab88c5b 100644
+> > > --- a/arch/arm/mm/dma-mapping.c
+> > > +++ b/arch/arm/mm/dma-mapping.c
+> > > @@ -809,7 +809,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
+> > >  			op(vaddr, len, dir);
+> > >  		}
+> > >  		offset = 0;
+> > > -		page++;
+> > > +		page = pfn_to_page(page_to_pfn(page) + 1);
 > > 
-> > On Thu, Jan 17, 2013 at 10:55:14AM +0100, Peter Ujfalusi wrote:
-> > > On 01/17/2013 10:34 AM, Felipe Balbi wrote:
-> > > >> I just wonder how this is going to work with DT... You are not going to have
-> > > >> the ability to use callback in this form.
-> > > >> I think the GPIO handling should be done in the driver itself rather than in
-> > > >> the board file.
-> > > > 
-> > > > that can (should ?) be moved to ti-st eventually. In fact I don't know
-> > > > why it was removed in the first place, we would need Pavan to help us
-> > > > with that query.
-> > > 
-> > > Yes, this is a good question. I don't know what is the spacial thing platforms
-> > > need to do in the callback..
+> > Probably page = nth_page(page, 1) is the better form.
 > 
-> hah! looks like I found the reason:
+> It's the same thing.
 > 
-> http://git.omapzoom.org/?p=kernel/omap.git;a=blob;f=arch/arm/mach-omap2/board-44xx-54xx-connectivity.c;h=e4852b93e91b6daa8f85cca91a1e7fbcc778f45b;hb=594aedd9e7da0491523411f8999efd98297f4fe4#l177
-> 
-> IMHO:
-> 
-> a) removing gpio handling wasn't necessary, we could just check
-> 	if gpio_is_valid(nshutdown_gpio)
-> 
-> b) that whole omap_serial_ext_uart_enable() looks really hacky. I'm sure
-> 	we can come up with something better.
-> 
+> I'd actually prefer page = pfn_to_page(page_to_pfn(page) + 1); because
+> it makes the code look like the hack it is.  The preferred form for all
+> iterators like this should be to iterate over the pfn instead of a
+> pointer into the page arrays, because that will always work correctly no
+> matter how many weird and wonderful memory schemes we come up with.
 
-This out-of-tree code doesn't explain why we need to do the
-enable/disable in the board file.  We just need to do things a bit
-differently in the driver.  I'll start cleaning all this stuff up for
--next pretty soon.
-
-For now, ie. 3.7 (stable) and 3.8, do we agree in taking this patch so
-that TI-ST at least works on Panda? Simply reverting the gpio removal
-patch doesn't help, because we also need to handle the UART2 muxing
-(which my patch does as well).
-
---
-Cheers,
-Luca.
-
+So, why don't we update the code to do that then?
