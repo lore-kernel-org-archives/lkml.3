@@ -1,128 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab3AQLBy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 06:01:54 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56580 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752037Ab3AQLBw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 06:01:52 -0500
-Message-ID: <1358420507.2394.19.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH v2 1/1] block: blk-merge: don't merge the pages with
- non-contiguous descriptors
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Subhash Jadavani <subhashj@codeaurora.org>, Tejun Heo <tj@kernel.org>,
-        asias@redhat.com, linux-arm-kernel@lists.infradead.org
-Date: Thu, 17 Jan 2013 11:01:47 +0000
-In-Reply-To: <20130117104741.GY23505@n2100.arm.linux.org.uk>
-References: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org>
-	 <1358266794.10591.8.camel@dabdike.int.hansenpartnership.com>
-	 <50F64AC1.3040304@codeaurora.org>
-	 <1358332355.2384.11.camel@dabdike.int.hansenpartnership.com>
-	 <20130116231857.GU2668@htj.dyndns.org>
-	 <1358413880.2394.7.camel@dabdike.int.hansenpartnership.com>
-	 <20130117103742.GX23505@n2100.arm.linux.org.uk>
-	 <20130117104741.GY23505@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
+	id S1755426Ab3AQLEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 06:04:11 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55850 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752211Ab3AQLEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 06:04:09 -0500
+Message-ID: <50F7DA74.2020009@ti.com>
+Date: Thu, 17 Jan 2013 16:33:16 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-sh@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <balbi@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <b-cousson@ti.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <horms@verge.net.au>,
+        <magnus.damm@gmail.com>, <cbou@mail.ru>, <dwmw2@infradead.org>,
+        <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
+        <leoli@freescale.com>, <eric.y.miao@gmail.com>,
+        <haojian.zhuang@gmail.com>, <stern@rowland.harvard.edu>
+Subject: Re: [RFC PATCH 2/6] ARM: OMAP: USB: Add phy binding information
+References: <1358348462-27693-1-git-send-email-kishon@ti.com> <1358348462-27693-3-git-send-email-kishon@ti.com> <50F7C6C7.3030400@ti.com>
+In-Reply-To: <50F7C6C7.3030400@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-17 at 10:47 +0000, Russell King - ARM Linux wrote:
-> On Thu, Jan 17, 2013 at 10:37:42AM +0000, Russell King - ARM Linux wrote:
-> > On Thu, Jan 17, 2013 at 09:11:20AM +0000, James Bottomley wrote:
-> > > I'd actually prefer page = pfn_to_page(page_to_pfn(page) + 1); because
-> > > it makes the code look like the hack it is.  The preferred form for all
-> > > iterators like this should be to iterate over the pfn instead of a
-> > > pointer into the page arrays, because that will always work correctly no
-> > > matter how many weird and wonderful memory schemes we come up with.
-> > 
-> > So, why don't we update the code to do that then?
+Hi,
 
-We can, but it involves quite a rewrite within the arm dma-mapping code
-to use pfn instead of page.  It looks like it would make the code
-cleaner because there are a lot of page_to_pfn transformations in there.
-However, the current patch is the simplest one for stable and I don't
-actually have any arm build and test environments.
+On Thursday 17 January 2013 03:09 PM, Roger Quadros wrote:
+> On 01/16/2013 05:00 PM, Kishon Vijay Abraham I wrote:
+>> This is in preparation for the changes in PHY library to support adding
+>> and getting multiple PHYs of the same type. In the new design, the
+>> binding information between the PHY and the USB controller should be
+>> specified in the platform specific initialization code. So it's been
+>> done for OMAP platforms here.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>> This kind-of binding should be done in all the platforms (I've done only
+>> for OMAP platform).
+>>   arch/arm/mach-omap2/usb-musb.c |    7 ++++++-
+>>   1 file changed, 6 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
+>> index 9d27e3f..bbe2fa5 100644
+>> --- a/arch/arm/mach-omap2/usb-musb.c
+>> +++ b/arch/arm/mach-omap2/usb-musb.c
+>> @@ -24,6 +24,7 @@
+>>   #include <linux/dma-mapping.h>
+>>   #include <linux/io.h>
+>>   #include <linux/usb/musb.h>
+>> +#include <linux/usb/phy.h>
+>>
+>>   #include "omap_device.h"
+>>   #include "soc.h"
+>> @@ -85,8 +86,12 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
+>>   	musb_plat.mode = board_data->mode;
+>>   	musb_plat.extvbus = board_data->extvbus;
+>>
+>> -	if (cpu_is_omap44xx())
+>> +	if (cpu_is_omap44xx()) {
+>>   		musb_plat.has_mailbox = true;
+>> +		usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
+>> +	} else if (cpu_is_omap34xx()) {
+>> +		usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+>> +	}
+>
+> Are you sure than these OMAP platforms cannot be wired in any other way
+> to the PHY?
+>
+> If they can be then this association must come from the board files or
+> device tree.
 
-> Also, couldn't the addition of the scatterlist offset to the page also
-> be buggy too?
+I had given some thought about that and since all the existing OMAP 
+platforms had it this way, I added it here.
+You having pointed that out, I'll move these to board files.
 
-No, fortunately, offset must be within the first page from the point of
-view of block generated sg lists.  As long as nothing within arm
-violates this, it should be a safe assumption ... although the code
-seems to assume otherwise.
-
-James
-
-> So, what about this patch which addresses both additions by keeping our
-> iterator as a pfn as you suggest.  It also simplifies some of the code
-> in the loop too.
-> 
-> Can the original folk with the problem test this patch?
-> 
->  arch/arm/mm/dma-mapping.c |   18 ++++++++++--------
->  1 files changed, 10 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-> index 6b2fb87..076c26d 100644
-> --- a/arch/arm/mm/dma-mapping.c
-> +++ b/arch/arm/mm/dma-mapping.c
-> @@ -774,25 +774,27 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
->  	size_t size, enum dma_data_direction dir,
->  	void (*op)(const void *, size_t, int))
->  {
-> +	unsigned long pfn;
-> +	size_t left = size;
-> +
-> +	pfn = page_to_pfn(page) + offset / PAGE_SIZE;
-> +	offset %= PAGE_SIZE;
-> +
->  	/*
->  	 * A single sg entry may refer to multiple physically contiguous
->  	 * pages.  But we still need to process highmem pages individually.
->  	 * If highmem is not configured then the bulk of this loop gets
->  	 * optimized out.
->  	 */
-> -	size_t left = size;
->  	do {
->  		size_t len = left;
->  		void *vaddr;
->  
-> +		page = pfn_to_page(pfn);
-> +
->  		if (PageHighMem(page)) {
-> -			if (len + offset > PAGE_SIZE) {
-> -				if (offset >= PAGE_SIZE) {
-> -					page += offset / PAGE_SIZE;
-> -					offset %= PAGE_SIZE;
-> -				}
-> +			if (len + offset > PAGE_SIZE)
->  				len = PAGE_SIZE - offset;
-> -			}
->  			vaddr = kmap_high_get(page);
->  			if (vaddr) {
->  				vaddr += offset;
-> @@ -809,7 +811,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
->  			op(vaddr, len, dir);
->  		}
->  		offset = 0;
-> -		page++;
-> +		pfn++;
->  		left -= len;
->  	} while (left);
->  }
-
-Looks reasonable modulo all the simplification we could do if we can
-assume offset < PAGE_SIZE
-
-James
-
-
+Thanks
+Kishon
