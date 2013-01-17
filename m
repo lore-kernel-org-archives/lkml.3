@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab3AQXQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 18:16:14 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50584 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750963Ab3AQXQN (ORCPT
+	id S1754776Ab3AQXUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 18:20:40 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3887 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab3AQXUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 18:16:13 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Z/3Jc02433pBkWOBO/K4K
-Date: Thu, 17 Jan 2013 15:16:08 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Luciano Coelho <coelho@ti.com>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport
- power functions
-Message-ID: <20130117231608.GP14149@atomide.com>
-References: <1358372702-13102-1-git-send-email-coelho@ti.com>
- <50F7C4A7.5060202@ti.com>
- <20130117093417.GH10814@arwen.pp.htv.fi>
- <50F7CA82.4050509@ti.com>
- <20130117100510.GI10814@arwen.pp.htv.fi>
- <20130117100919.GJ10814@arwen.pp.htv.fi>
- <1358418917.6252.31.camel@cumari.coelho.fi>
- <50F7D535.6030205@ti.com>
- <20130117173131.GL14149@atomide.com>
- <1358445456.6252.64.camel@cumari.coelho.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358445456.6252.64.camel@cumari.coelho.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 17 Jan 2013 18:20:38 -0500
+X-Authority-Analysis: v=2.0 cv=UsXhxpMB c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=WIJlFdhv0j0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=_FnEdowTgBoA:10 a=e0rM7KXBUBkOxtCy9Q8A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358464837.23211.66.camel@gandalf.local.home>
+Subject: [RFC][PATCH] slub: Keep page and object in sync in slab_alloc_node()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
+        John Kacur <jkacur@gmail.com>,
+        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
+Date: Thu, 17 Jan 2013 18:20:37 -0500
+In-Reply-To: <1358464245.23211.62.camel@gandalf.local.home>
+References: <1358446258.23211.32.camel@gandalf.local.home>
+	 <1358447864.23211.34.camel@gandalf.local.home>
+	 <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com>
+	 <1358458996.23211.46.camel@gandalf.local.home>
+	 <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com>
+	 <1358462763.23211.57.camel@gandalf.local.home>
+	 <1358464245.23211.62.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Luciano Coelho <coelho@ti.com> [130117 10:04]:
-> Hi Tony,
-> 
-> On Thu, 2013-01-17 at 09:31 -0800, Tony Lindgren wrote:
-> > * Peter Ujfalusi <peter.ujfalusi@ti.com> [130117 02:44]:
-> > > On 01/17/2013 11:35 AM, Luciano Coelho wrote:
-> > > > This out-of-tree code doesn't explain why we need to do the
-> > > > enable/disable in the board file.  We just need to do things a bit
-> > > > differently in the driver.  I'll start cleaning all this stuff up for
-> > > > -next pretty soon.
-> > > > 
-> > > > For now, ie. 3.7 (stable) and 3.8, do we agree in taking this patch so
-> > > > that TI-ST at least works on Panda? Simply reverting the gpio removal
-> > > > patch doesn't help, because we also need to handle the UART2 muxing
-> > > > (which my patch does as well).
-> > > 
-> > > I don't see better way to fix this either. In any case, I give you my:
-> > > 
-> > > Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> > 
-> > So what is actually broken? The horrible bluetooth muxing over serial
-> > port? If so, let's rather fix it properly than even attempt to fix
-> > it as it seems that it's been broken for two merge windows now.
-> 
-> Yes, it is the horrible Bluetooth muxing over serial that is broken.  It
-> has been broken for two merge windows, because nobody seemed to care
-> until I started looking into it and tried to figure out how to get it to
-> work. :)
+In slab_alloc_node(), after the cpu_slab is assigned, if the task is
+preempted and moves to another CPU, there's nothing keeping the page and
+object in sync. The -rt kernel crashed because page was NULL and object
+was not, and the node_match() dereferences page. Even though the crash
+happened on -rt, there's nothing that's keeping this from happening on
+mainline.
 
-Heh I see.
+The easiest fix is to disable interrupts for the entire time from
+acquiring the current CPU cpu_slab and assigning the object and page.
+After that, it's fine to allow preemption.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 2fdd96f..c00ce80 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2317,6 +2317,8 @@ static __always_inline void *slab_alloc(struct kmem_cache *s,
+ 	struct kmem_cache_cpu *c;
+ 	struct page *page;
+ 	unsigned long tid;
++	unsigned long flags;
++	int new_object;
  
-> The implementation is really weak and there are loads of things I want
-> to start fixing/cleaning up.  This patch was just my intention to start
-> with a relatively clean table (ie. horrible or not, at least working).
-> 
-> 
-> > Also, let's just do absolutely minimal board-*.c file fixes now.
-> > This thing should be just moved to use DT so we can flip over omap4
-> > to be DT only and drop estimated 5k LOC from mach-omap2.
-> 
-> I totally agree, I'll start looking into that next.
-> 
-> But this patch is pretty small and simple, so why not include it to at
-> least fix the breakage in 3.7 and 3.8? Whether you take it or not now
-> won't make any difference in the 5k LOC in these kernel versions.
+ 	if (slab_pre_alloc_hook(s, gfpflags))
+ 		return NULL;
+@@ -2328,7 +2330,10 @@ redo:
+ 	 * enabled. We may switch back and forth between cpus while
+ 	 * reading from one cpu area. That does not matter as long
+ 	 * as we end up on the original cpu again when doing the cmpxchg.
++	 *
++	 * But we need to sync the setting of page and object.
+ 	 */
++	local_irq_save(flags);
+ 	c = __this_cpu_ptr(s->cpu_slab);
+ 
+ 	/*
+@@ -2338,11 +2343,14 @@ redo:
+ 	 * linked list in between.
+ 	 */
+ 	tid = c->tid;
+-	barrier();
+ 
+ 	object = c->freelist;
+ 	page = c->page;
+-	if (unlikely(!object || !node_match(page, node)))
++
++	new_object = !object || !node_match(page, node);
++	local_irq_restore(flags);
++
++	if (new_object)
+ 		object = __slab_alloc(s, gfpflags, node, addr, c);
+ 
+ 	else {
 
-Well we are planning to drop the non-DT support for omap4 as soon as it's
-usable with DT. For omap4 we are only carrying SDP and panda support to
-make this transition easier. The only bindings missing AFAIK are wl12xx and
-USB.
 
-If we add this, then it implies we're somehow supporting it, which is not
-the way to go IMHO as we need to get rid of these platform callbacks instead.
-
-What's your estimate of having minimal wl12xx WLAN DT binding available?
-
-Regards,
-
-Tony
