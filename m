@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234Ab3AQM7J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 07:59:09 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:38311 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab3AQM7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 07:59:08 -0500
-Message-ID: <50F7F58F.30505@ahsoftware.de>
-Date: Thu, 17 Jan 2013 13:58:55 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756310Ab3AQNDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:03:38 -0500
+Received: from fieldses.org ([174.143.236.118]:55472 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753867Ab3AQNDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 08:03:37 -0500
+Date: Thu, 17 Jan 2013 08:03:35 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Mark Lord <kernel@teksavvy.com>, linux-nfs@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
+Message-ID: <20130117130335.GD6598@fieldses.org>
+References: <50F42F85.50907@teksavvy.com>
+ <20130114203711.GA29982@fieldses.org>
+ <50F4D800.5040703@teksavvy.com>
+ <20130115205625.GH4940@fieldses.org>
+ <50F63882.8000607@parallels.com>
+ <50F72F03.5070806@teksavvy.com>
+ <50F786AF.4070107@parallels.com>
 MIME-Version: 1.0
-To: Thiago Farina <tfransosi@gmail.com>
-CC: Axel Lin <axel.lin@ingics.com>, Jonathan Cameron <jic23@kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtc: hid-sensor-time: Add missing spin_lock_init
-References: <1358387389.17958.1.camel@phoenix> <CACnwZYfV=czMR=FLwQseubK-G8GnuiVW_wsnFKTnw=rHrZ8dgg@mail.gmail.com>
-In-Reply-To: <CACnwZYfV=czMR=FLwQseubK-G8GnuiVW_wsnFKTnw=rHrZ8dgg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50F786AF.4070107@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 17.01.2013 02:58, schrieb Thiago Farina:
-> On Wed, Jan 16, 2013 at 11:49 PM, Axel Lin <axel.lin@ingics.com> wrote:
->> Signed-off-by: Axel Lin <axel.lin@ingics.com>
->> ---
->>   drivers/rtc/rtc-hid-sensor-time.c |    1 +
->>   1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
->> index 0438c9e..31c5728 100644
->> --- a/drivers/rtc/rtc-hid-sensor-time.c
->> +++ b/drivers/rtc/rtc-hid-sensor-time.c
->> @@ -225,6 +225,7 @@ static int hid_time_probe(struct platform_device *pdev)
->>
->>          platform_set_drvdata(pdev, time_state);
->>
->> +       spin_lock_init(&time_state->lock_last_time);
-> Can you explain in the commit message why it is missing?
->
-> For people not familiar with this code that isn't obvious.
->
+On Thu, Jan 17, 2013 at 09:05:51AM +0400, Stanislav Kinsbursky wrote:
+> 17.01.2013 02:51, Mark Lord пишет:
+> >On 13-01-16 12:20 AM, Stanislav Kinsbursky wrote:
+> >>
+> >>Mark, could you provide any call traces?
+> >
+> >Call traces from where/what?
+> >There's this one, posted earlier in the BUG report:
+> >
+> >kernel BUG at net/sunrpc/svc_xprt.c:921!
+> >Call Trace:
+> >  [<ffffffffa016a56a>] ? svc_recv+0xcc/0x338 [sunrpc]
+> >  [<ffffffffa0318bfc>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
+> >  [<ffffffffa0318c19>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
+> >  [<ffffffff810407e6>] ? kthread+0x81/0x89
+> >  [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
+> >  [<ffffffff812ea62c>] ? ret_from_fork+0x7c/0xb0
+> >  [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
+> >
+> 
+> Thanks!
+> I haven't seen the bug report.
+> Could you provide the link, please?
 
-Every spinlock must be initialized once (to SPIN_LOCK_UNLOCKED or by 
-using spin_lock_init()). On most architectures SPIN_LOCK_UNLOCKED is 
-just zero, therefor  the kzalloc of the time_state does it (which likely 
-is the case why I haven't spotted any error without the initialization), 
-but that doesn't isn't true for all architectures.
+There's no bz if that's what you're asking for.
 
-Regards,
+See the first message in the thread for the original report:
 
-Alexander
+	http://mid.gmane.org/<50F42F85.50907@teksavvy.com>
 
+--b.
