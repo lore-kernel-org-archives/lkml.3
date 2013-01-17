@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab3AQN2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:28:50 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:49394 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab3AQN2s (ORCPT
+	id S1754374Ab3AQNab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:30:31 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:51734 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab3AQNaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:28:48 -0500
-Date: Thu, 17 Jan 2013 13:28:43 +0000
-From: Cong Ding <dinggnu@gmail.com>
-To: Richard Mortimer <richm@oldelvet.org.uk>
-Cc: Sam Ravnborg <sam@ravnborg.org>, "David S. Miller" <davem@davemloft.net>,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] sparc: kernel/sbus.c: fix memory leakage
-Message-ID: <20130117132843.GD25615@gmail.com>
-References: <1358199372-11976-1-git-send-email-dinggnu@gmail.com>
- <20130116211309.GA13993@merkur.ravnborg.org>
- <20130116211725.GC18593@gmail.com>
- <20130116220018.GA14063@merkur.ravnborg.org>
- <20130116220153.GD18593@gmail.com>
- <50F7D577.8010506@oldelvet.org.uk>
- <20130117115637.GB25615@gmail.com>
- <50F7EED3.1050309@oldelvet.org.uk>
+	Thu, 17 Jan 2013 08:30:30 -0500
+Message-ID: <50F7FCDF.7040808@ti.com>
+Date: Thu, 17 Jan 2013 15:30:07 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F7EED3.1050309@oldelvet.org.uk>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: <balbi@ti.com>
+CC: <sameo@linux.intel.com>, <tony@atomide.com>, <kishon@ti.com>,
+        <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 22/22] mdf: omap-usb-host: get rid of build warning
+References: <1358422231-24736-1-git-send-email-rogerq@ti.com> <1358422231-24736-23-git-send-email-rogerq@ti.com> <20130117115046.GI18978@arwen.pp.htv.fi>
+In-Reply-To: <20130117115046.GI18978@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variable iommu and strbuf are not freed properly if it goes to error.
+On 01/17/2013 01:50 PM, Felipe Balbi wrote:
+> On Thu, Jan 17, 2013 at 01:30:31PM +0200, Roger Quadros wrote:
+>> Fixes the below build warning when driver is built-in.
+>>
+>> drivers/mfd/omap-usb-host.c:750:12: warning:
+>> ‘usbhs_omap_remove’ defined but not used [-Wunused-function]
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> 
+> should this go to stable too ?
+> 
+> (though it's not really a bug, so doesn't really matter, I guess).
+> 
+not a bug so let's not send this to stable.
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- arch/sparc/kernel/sbus.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/sparc/kernel/sbus.c b/arch/sparc/kernel/sbus.c
-index 1271b3a..be5bdf9 100644
---- a/arch/sparc/kernel/sbus.c
-+++ b/arch/sparc/kernel/sbus.c
-@@ -554,10 +554,8 @@ static void __init sbus_iommu_init(struct platform_device *op)
- 	regs = pr->phys_addr;
- 
- 	iommu = kzalloc(sizeof(*iommu), GFP_ATOMIC);
--	if (!iommu)
--		goto fatal_memory_error;
- 	strbuf = kzalloc(sizeof(*strbuf), GFP_ATOMIC);
--	if (!strbuf)
-+	if (!iommu || !strbuf)
- 		goto fatal_memory_error;
- 
- 	op->dev.archdata.iommu = iommu;
-@@ -656,6 +654,8 @@ static void __init sbus_iommu_init(struct platform_device *op)
- 	return;
- 
- fatal_memory_error:
-+	kfree(iommu);
-+	kfree(strbuf);
- 	prom_printf("sbus_iommu_init: Fatal memory allocation error.\n");
- }
- 
--- 
-1.7.4.5
-
+--
+cheers,
+-roger
