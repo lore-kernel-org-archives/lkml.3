@@ -1,120 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab3AQRgv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 12:36:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26950 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755655Ab3AQRgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 12:36:48 -0500
-Date: Thu, 17 Jan 2013 12:36:05 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, pjones@redhat.com,
-        hpa@zytor.com, dhowells@redhat.com, jwboyer@redhat.com
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-Message-ID: <20130117173605.GB2237@redhat.com>
-References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
- <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
- <1358437021.2689.52.camel@falcor1>
- <20130117155154.GC12165@redhat.com>
- <1358440365.2689.72.camel@falcor1>
+	id S1756251Ab3AQRhA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 12:37:00 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55936 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756134Ab3AQRgu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 12:36:50 -0500
+Subject: [PATCH 08/10] goldfish: real time clock
+To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        mikechan@google.com
+From: Alan Cox <alan@linux.intel.com>
+Date: Thu, 17 Jan 2013 17:57:00 +0000
+Message-ID: <20130117175659.24458.77148.stgit@bob.linux.org.uk>
+In-Reply-To: <20130117175228.24458.5465.stgit@bob.linux.org.uk>
+References: <20130117175228.24458.5465.stgit@bob.linux.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358440365.2689.72.camel@falcor1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 11:32:45AM -0500, Mimi Zohar wrote:
+From: Arve Hjønnevåg <arve@google.com>
 
-[..]
-> > > At this point, why would you want yet another method for signing files?
-> > 
-> > Are you saying that append signature instead of putting them in a section
-> > or are you saying that just use IMA.
-> > 
-> > - For the first, I am fine with appending too if that works better. So
-> >   what's wrong with current implementation. Just because we append the
-> >   signatures in case of modules, we should follow the same thing for
-> >   executables too?
-> 
-> No, I was saying that if this patch set were to be upstreamed, then the
-> signature verification, at least for ELF modules and ELF executables,
-> should be the same.  The patch would then be a lot smaller.
+Gets the current time from the host. Alarms are not supported yet.
 
-I don't think that patch is lot smaller. Initially I had written code
-where signatures were appended. Parsing the signature is little different
-from module. In case of modules, whole file is already in memory and
-in case of executables, we are reading selected portions of file in
-buffer. 
+Signed-off-by: Mike A. Chan <mikechan@google.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+[Ported to 3.4]
+Signed-off-by: Tom Keel <thomas.keel@intel.com>
+[Cleaned up to use ioremap, types, unload etc]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-So we don't share code while parsing, hence there is no significant
-code bloat when .signature section is added as opposed to appending
-signature.
+ drivers/rtc/Kconfig        |    9 +++
+ drivers/rtc/Makefile       |    1 
+ drivers/rtc/rtc-goldfish.c |  140 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 150 insertions(+)
+ create mode 100644 drivers/rtc/rtc-goldfish.c
 
-> 
-> > - If above comment is w.r.t use of IMA, then I have no issues in using
-> >   IMA as long as it can meet all the requirements. Looks like there is
-> >   a long TODO list before we get there. In fact for some things its not
-> >   even clear whether they fit in IMA or somehwere else.
-> > 
-> >   - Make sure IMA/EVM stuff chains into secureboot chain of trust.
-> 
-> For sure.
-> 
-> >   - Sort out all the memory locking related issues I mentioned in
-> >     other mail. You seemed to be of opinion that it is out of scope
-> >     for IMA, but I think it probably is nice extenstion.
-> 
-> Yes, it would be, but I'm not sure that your method of mmaping a file
-> with MAP_LOCKED is scalable, when all executables are signed.  If it is,
-> then why not do it in general?  Otherwise there needs to be a more
-> scalable solution.
 
-It is like running without swap enabled. There is definitely a cost
-involved and I think that justfies that to begin with why not everything
-should be signed. Probably a overkill.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 1466e6a..fa5a807 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -998,6 +998,15 @@ config RTC_DRV_BFIN
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-bfin.
+ 
++config RTC_DRV_GOLDFISH
++	tristate "GOLDFISH"
++	depends on GOLDFISH
++	help
++	  RTC driver for Goldfish Virtual Platform
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-goldfish.
++
+ config RTC_DRV_RS5C313
+ 	tristate "Ricoh RS5C313"
+ 	depends on SH_LANDISK
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index f774531..e24133f 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -52,6 +52,7 @@ obj-$(CONFIG_RTC_DRV_EM3027)	+= rtc-em3027.o
+ obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
+ obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
+ obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
++obj-$(CONFIG_RTC_DRV_GOLDFISH)	+= rtc-goldfish.o
+ obj-$(CONFIG_RTC_DRV_HID_SENSOR_TIME) += rtc-hid-sensor-time.o
+ obj-$(CONFIG_RTC_DRV_IMXDI)	+= rtc-imxdi.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
+diff --git a/drivers/rtc/rtc-goldfish.c b/drivers/rtc/rtc-goldfish.c
+new file mode 100644
+index 0000000..c67cd9e
+--- /dev/null
++++ b/drivers/rtc/rtc-goldfish.c
+@@ -0,0 +1,140 @@
++/*
++ * Copyright (C) 2007 Google, Inc.
++ * Copyright (C) 2012 Intel, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/irq.h>
++#include <linux/platform_device.h>
++#include <linux/rtc.h>
++#include <linux/export.h>
++#include <linux/slab.h>
++
++#define GOLDFISH_TIME_LOW		0x00
++#define GOLDFISH_TIME_HIGH		0x04
++#define GOLDFISH_ALARM_LOW		0x08
++#define GOLDFISH_ALARM_HIGH		0x0C
++#define GOLDFISH_CLEAR_TIMER_INT	0x10
++#define GOLDFISH_CLEAR_ALARM		0x14
++
++struct goldfish_rtc {
++	void __iomem *base;
++	u32 irq;
++	struct rtc_device *rtc;
++};
++
++static irqreturn_t goldfish_rtc_interrupt(int irq, void *dev_id)
++{
++	struct goldfish_rtc	*qrtc = dev_id;
++	unsigned long		events = 0;
++
++	writel(1, qrtc->base + GOLDFISH_CLEAR_TIMER_INT);
++	events = RTC_IRQF | RTC_AF;
++
++	rtc_update_irq(qrtc->rtc, 1, events);
++
++	return IRQ_HANDLED;
++}
++
++static int goldfish_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	int64_t time;
++	struct goldfish_rtc *qrtc = platform_get_drvdata(
++						to_platform_device(dev));
++
++	time = readl(qrtc->base + GOLDFISH_TIME_LOW);
++	time |= (int64_t)readl(qrtc->base + GOLDFISH_TIME_HIGH) << 32;
++	do_div(time, NSEC_PER_SEC);
++
++	rtc_time_to_tm(time, tm);
++	return 0;
++}
++
++static const struct rtc_class_ops goldfish_rtc_ops = {
++	.read_time	= goldfish_rtc_read_time,
++};
++
++static int goldfish_rtc_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct resource *r;
++	struct goldfish_rtc *qrtc;
++
++	qrtc = kzalloc(sizeof(*qrtc), GFP_KERNEL);
++	if (qrtc == NULL) {
++		ret = -ENOMEM;
++		goto err_qrtc_alloc_failed;
++	}
++	platform_set_drvdata(pdev, qrtc);
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (r == NULL) {
++		ret = -ENODEV;
++		goto err_no_io_base;
++	}
++	qrtc->base = ioremap(r->start, 0x18);
++	if (qrtc->base == NULL) {
++		ret = -ENOMEM;
++		goto err_no_io_base;
++	}
++	qrtc->irq = platform_get_irq(pdev, 0);
++	if (qrtc->irq < 0) {
++		ret = -ENODEV;
++		goto err_no_irq;
++	}
++	qrtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
++					&goldfish_rtc_ops, THIS_MODULE);
++	if (IS_ERR(qrtc->rtc)) {
++		ret = PTR_ERR(qrtc->rtc);
++		goto err_rtc_device_register_failed;
++	}
++
++	ret = request_irq(qrtc->irq, goldfish_rtc_interrupt, 0, pdev->name, qrtc);
++	if (ret)
++		goto request_irq;
++
++	return 0;
++
++	free_irq(qrtc->irq, qrtc);
++request_irq:
++	rtc_device_unregister(qrtc->rtc);
++err_rtc_device_register_failed:
++err_no_irq:
++	iounmap(qrtc->base);
++err_no_io_base:
++	kfree(qrtc);
++err_qrtc_alloc_failed:
++	return ret;
++}
++
++static int goldfish_rtc_remove(struct platform_device *pdev)
++{
++	struct goldfish_rtc	*qrtc = platform_get_drvdata(pdev);
++	free_irq(qrtc->irq, qrtc);
++	rtc_device_unregister(qrtc->rtc);
++	iounmap(qrtc->base);
++	kfree(qrtc);
++	return 0;
++}
++
++static struct platform_driver goldfish_timer = {
++	.probe = goldfish_rtc_probe,
++	.remove = goldfish_rtc_remove,
++	.driver = {
++		.name = "goldfish_rtc"
++	}
++};
++
++module_platform_driver(goldfish_timer);
++MODULE_LICENSE("GPL");
 
-And hence the idea of signing only very selected files on need basis.
-
-Those who want to lock down full user space, they can happily sign full
-user space and pay the penalty. But for general case, it might not make
-sense.
-
-Encrypted swap is one workaround. Which probably is more scalable then
-locking down all user space in memory. But that question arises only
-if we want to sign full user space in general case. And I think we 
-agree that it does not make much sense.
-
-> 
-> >     Or somehow a way needs to be found to make sure nobody can modify
-> >     process address space without processe's knowledge.
-> 
-> I'm not sure I understand.  Does your patch already address this?
-
-Well, I was repeating the same thing in ohter words. So if we do
-following.
-
-	- No shared libaries
-	- No ptrace
-	- Lock down current and future mappings so nothing is swapped out.
-
-Will it not make sure that a process address space is not modified without
-process knowledge. I think my patch has little bug. I might not have
-enabled a flag to lock down future mappings.
-
-> 
-> >   - Once all this works, then one needs to figure out all the RPM stuff
-> >     and plugins to make sure files can be singed on build server and
-> >     installed properly on target system.
-> 
-> Yes, we need the distros involvment in this to sign all files.
-> Immutable files should be signed with digital signatures.
-
-So you still think that I should take IMA path to solve my use case or it
-is reasonable to sign executable directly and I continue down my path.
-
-Thanks
-Vivek
