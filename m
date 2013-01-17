@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab3AQQ32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:29:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:34603 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757006Ab3AQQ31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:29:27 -0500
-Date: Thu, 17 Jan 2013 08:29:24 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Florian Westphal <fw@strlen.de>,
-        linux-kernel@vger.kernel.org, gaowanlong@cn.fujitsu.com,
-        frank@lichtenheld.de
-Subject: Re: regression, bisected: openpty fails from 3.7 onwards without
- devpts
-Message-ID: <20130117162924.GC1396@kroah.com>
-References: <20130110144626.GA26279@breakpoint.cc>
- <20130110155058.12f66e73@bob.linux.org.uk>
- <20130110162907.GB26279@breakpoint.cc>
- <50EEF8FD.9000004@suse.cz>
- <20130110224554.1724a791@bob.linux.org.uk>
- <50EF45DF.4010905@suse.cz>
- <50EFF366.2000303@suse.cz>
- <20130111124129.GA23516@breakpoint.cc>
- <50F00926.3070000@suse.cz>
- <20130111131802.2986ba61@bob.linux.org.uk>
+	id S1757221Ab3AQQa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:30:27 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59940 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757065Ab3AQQaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 11:30:25 -0500
+Message-ID: <50F8271B.3020706@wwwdotorg.org>
+Date: Thu, 17 Jan 2013 09:30:19 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130111131802.2986ba61@bob.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Simon Horman <horms@verge.net.au>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device
+ core
+References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com> <50EF27B4.60608@wwwdotorg.org> <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com> <9702060.jEbHySsCv0@avalon> <CACRpkdbFH6RCEEnXO=A9FVa0B5rtE9RkjXz9Hhy+w7NvwcBCgg@mail.gmail.com> <50F6E811.2040606@wwwdotorg.org> <CACRpkdbnyzppd-iom4PL3N3-YkuK+BRNzR577qVc6cPoTKxhTw@mail.gmail.com>
+In-Reply-To: <CACRpkdbnyzppd-iom4PL3N3-YkuK+BRNzR577qVc6cPoTKxhTw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 01:18:02PM +0000, Alan Cox wrote:
-> On Fri, 11 Jan 2013 13:44:22 +0100
-> Jiri Slaby <jslaby@suse.cz> wrote:
+On 01/16/2013 05:59 PM, Linus Walleij wrote:
+> On Wed, Jan 16, 2013 at 6:49 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 > 
-> > On 01/11/2013 01:41 PM, Florian Westphal wrote:
-> > > Jiri Slaby <jslaby@suse.cz> wrote:
-> > >> On 01/10/2013 11:51 PM, Jiri Slaby wrote:
-> > >>> On 01/10/2013 11:45 PM, Alan Cox wrote:
-> > >>>> So we should just fix TIOCGPTN on a pty with no suitable name
-> > >>>> answer to return -EINVAL
-> > >>>
-> > >>> Yes, I agree as I'm expressed in my second mail. Sorry for the
-> > >>> confusion.
-> > >>
-> > >> Does the attached patch help?
-> > > 
-> > > Yes, it does.  Thanks for fixing this.
-> > 
-> > Ok, now I'm not sure if we want the patch or to implement TIOCGPTN
-> > properly instead. Alan?
+>> Hmm. It's causing a lot of engineers here a lot of trouble, since they
+>> all see linux-next won't boot, and haven't been paying enough attention
+>> to know which commit to revert:-(. Lots of lost productivity:-(
+>>
+>> Simon, the offending commit:
+>>
+>> 6d3ef6b drivers/pinctrl: grab default handles from device core
+>>
+>> is still in next-20130116. Can you please remove it?
 > 
-> IMHO - fix now for the -rc tree where its clearly low risk, after that
-> whatever people feel like doing 8)
+> Not that this should be in the SH tree, but I have merged your fix
+> to the pinctrl tree and it should be in -next, does it fix the problem?
 
-I agree.  Jiri, should I take your posted patch for this?
+There were two problems; one was the issues handling hogs during DT->map
+conversion, for which you applied a patch. The other was the crashes due
+to incorrect devm_* usage and interactions with -EPROBE_DEFER in the
+patch which Simon applied, which requires that patch to be revised.
 
-thanks,
-
-greg k-h
+> Mainly asking because once Greg ACKs that patch I want to
+> put it into the pinctrl tree...
