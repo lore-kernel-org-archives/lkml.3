@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab3AQM1X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 07:27:23 -0500
-Received: from smtp-fw-33001.amazon.com ([207.171.189.228]:63614 "EHLO
-	smtp-fw-33001.amazon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab3AQM1V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 07:27:21 -0500
-X-IronPort-AV: E=Sophos;i="4.84,486,1355097600"; 
-   d="scan'208";a="443425046"
-Date: Thu, 17 Jan 2013 13:22:47 +0100
-From: Matt Wilson <msw@amazon.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        <annie.li@oracle.com>
-Subject: Re: [PATCH] xen/grant-table: Force to use v1 of grants.
-Message-ID: <20130117110829.GA21859@u109add4315675089e695.ant.amazon.com>
-References: <1358371369-19089-1-git-send-email-konrad.wilk@oracle.com>
+	id S1753188Ab3AQM2U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 07:28:20 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47552 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751814Ab3AQM2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 07:28:19 -0500
+Date: Thu, 17 Jan 2013 14:27:57 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>,
+        <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
+        <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 15/22] mfd: omap-usb-host: Manage HSIC clocks for HSIC
+ mode
+Message-ID: <20130117122757.GO18978@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1358422231-24736-1-git-send-email-rogerq@ti.com>
+ <1358422231-24736-16-git-send-email-rogerq@ti.com>
+ <20130117114522.GF18978@arwen.pp.htv.fi>
+ <50F7EA2A.2080705@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+wSiqF7c0ySQ2tNi"
 Content-Disposition: inline
-In-Reply-To: <1358371369-19089-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <50F7EA2A.2080705@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 04:22:49PM -0500, Konrad Rzeszutek Wilk wrote:
-> We have the framework to use v2, but there are no backends that
-> actually use it. The end result is that on PV we use v2 grants
-> and on PVHVM v1. The v1 has a capacity of 512 grants per page while
-> the v2 has 256 grants per page. This means we lose about 50%
-> capacity - and if we want more than 16 VIFs (each VIF takes
-> 512 grants), then we are hitting the max per guest of 32.
-> 
-> Note: The hypervisor provides an over-ride for the default
-> of 32 frames (pages) per guest: gnttab_max_nr_frames=X
+--+wSiqF7c0ySQ2tNi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think it would be better if the dom0/service domain and hypervisor
-prevent the guest from setting the version to 2 if the backend isn't
-going to make use of them. In the short term, we could add a Xen
-option to limit the supported version to 1.
+On Thu, Jan 17, 2013 at 02:10:18PM +0200, Roger Quadros wrote:
+> On 01/17/2013 01:45 PM, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Thu, Jan 17, 2013 at 01:30:24PM +0200, Roger Quadros wrote:
+> >> @@ -598,6 +639,24 @@ static int usbhs_omap_probe(struct platform_devic=
+e *pdev)
+> >>  				clkname, PTR_ERR(pclk));
+> >>  		else
+> >>  			omap->utmi_clk[i] =3D pclk;
+> >> +
+> >> +		snprintf(clkname, sizeof(clkname),
+> >> +				"usb_host_hs_hsic480m_p%d_clk", i + 1);
+> >=20
+> > do we really need to know the exact clock node name ?
+> >=20
+> I think so. Do you have a better suggestion?
 
-Matt
+update CLKDEV entries ? I mean, what if we have a new OMAP or AMxxxx
+device with a different clock name ? That will be a big bummer.
 
-> Oracle-bug: 16039922
-> CC: annie.li@oracle.com
-> CC: msw@amazon.com
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/xen/grant-table.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index 95ce9d0..568fd8f 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -1108,10 +1108,8 @@ static void gnttab_request_version(void)
->  	int rc;
->  	struct gnttab_set_version gsv;
->  
-> -	if (xen_hvm_domain())
-> -		gsv.version = 1;
-> -	else
-> -		gsv.version = 2;
-> +	gsv.version = 1;
-> +
->  	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv, 1);
->  	if (rc == 0 && gsv.version == 2) {
->  		grant_table_version = 2;
-> -- 
-> 1.8.0.2
+--=20
+balbi
+
+--+wSiqF7c0ySQ2tNi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ9+5NAAoJEIaOsuA1yqREuzkP/3BU7brjUqCad8Un6abf1Mzs
+JORFCt1ZdYWaxCHbo1lhjGdNNBTV0/jXUSlzrPvszc13A2WODJ4r3EIuIUdyE1id
+WL5sTQtJPFZCIhHLcaya/NCe9hXpgHf2KNyKe5Q+83QtduQe0bDOhdVgP3BncmLq
+j5l8ZtZndNJCLBjCXT8+F7yO6XpTAxBW4woXdGOn2KGFwu9WWGibIC/JVsMv9qvR
+l+KS1x+SaL1aEGUKuRh8PRmcmK//QYsFL6S4L2cKtfAgbaUd2TNUCQPLIOdwTeEJ
+yArQ1H7WCYBXLmtbBp/2PzMmAVPImBURkgjFl/KovQRUhauOTZ0CxOD5ScfPr7kv
+M9wesWCq9/ggHq/6vWWQB4AQ01NDjyhaVTXnJu5kNUdgOyrPrvYeRwFLkqnS5VWl
+nVmYFr+9jbHr/7HEp/qLmGBbs78ter23Pdd3SQc4BL27yFm0cqGnY+qRvqSC8j/r
+fTqq24p3ge0IL5TvPMUb278MrLFW1zKU7Srho8s7FO7Uo+o8VP+HkbZkotU07CFn
+sI65CsM+7TWCodxN+YZxIVJbFbm5+kB6bpv+xxCQg/nb2gZqA8RrnHo37zj3SiWE
+4SD1B8SodLmUJkduOFW8e+q5aqxk/knvyN11Jbz3T5VBCb2NrBFTB88gOUntWmOu
+wnMP5xjHXqKP4AqgkqtN
+=KBu5
+-----END PGP SIGNATURE-----
+
+--+wSiqF7c0ySQ2tNi--
