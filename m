@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab3AQLd1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 06:33:27 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56715 "EHLO arroyo.ext.ti.com"
+	id S1756512Ab3AQLdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 06:33:25 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42778 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756187Ab3AQLbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 06:31:43 -0500
+	id S1755526Ab3AQLbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 06:31:44 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v7 21/22] mfd: omap-usb-host: Don't spam console on clk_set_parent failure
-Date: Thu, 17 Jan 2013 13:30:30 +0200
-Message-ID: <1358422231-24736-22-git-send-email-rogerq@ti.com>
+Subject: [PATCH v7 07/22] mfd: omap-usb-tll: Fix error message
+Date: Thu, 17 Jan 2013 13:30:16 +0200
+Message-ID: <1358422231-24736-8-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358422231-24736-1-git-send-email-rogerq@ti.com>
 References: <1358422231-24736-1-git-send-email-rogerq@ti.com>
@@ -24,60 +24,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clk_set_parent is expected to fail on OMAP3 platforms. We don't
-consider that as fatal so don't spam console.
+omap_enable/disable_tll() can fail if TLL device is not
+initialized. It could be due to multiple reasons and not only
+due to missing platform data.
+
+Also make local variables static and use 'struct device *'
+instead of 'struct platform_device *' for global reference.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-host.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   21 ++++++++++++---------
+ 1 files changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index ecde38d..a1f73dc 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -668,32 +668,32 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 	}
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index 0e68c8a..81d2cac 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -109,8 +109,8 @@ struct usbtll_omap {
  
- 	if (is_ehci_phy_mode(pdata->port_mode[0])) {
--		/* for OMAP3 , the clk set paretn fails */
-+		/* for OMAP3, clk_set_parent fails */
- 		ret = clk_set_parent(omap->utmi_p1_gfclk,
- 					omap->xclk60mhsp1_ck);
- 		if (ret != 0)
--			dev_err(dev, "xclk60mhsp1_ck set parent"
--				"failed error:%d\n", ret);
-+			dev_dbg(dev, "xclk60mhsp1_ck set parent failed: %d\n",
-+					ret);
- 	} else if (is_ehci_tll_mode(pdata->port_mode[0])) {
- 		ret = clk_set_parent(omap->utmi_p1_gfclk,
- 					omap->init_60m_fclk);
- 		if (ret != 0)
--			dev_err(dev, "init_60m_fclk set parent"
--				"failed error:%d\n", ret);
-+			dev_dbg(dev, "P0 init_60m_fclk set parent failed: %d\n",
-+					ret);
- 	}
+ /*-------------------------------------------------------------------------*/
  
- 	if (is_ehci_phy_mode(pdata->port_mode[1])) {
- 		ret = clk_set_parent(omap->utmi_p2_gfclk,
- 					omap->xclk60mhsp2_ck);
- 		if (ret != 0)
--			dev_err(dev, "xclk60mhsp2_ck set parent"
--					"failed error:%d\n", ret);
-+			dev_dbg(dev, "xclk60mhsp2_ck set parent failed: %d\n",
-+					ret);
- 	} else if (is_ehci_tll_mode(pdata->port_mode[1])) {
- 		ret = clk_set_parent(omap->utmi_p2_gfclk,
- 						omap->init_60m_fclk);
- 		if (ret != 0)
--			dev_err(dev, "init_60m_fclk set parent"
--				"failed error:%d\n", ret);
-+			dev_dbg(dev, "P1 init_60m_fclk set parent failed: %d\n",
-+					ret);
- 	}
+-const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
+-struct platform_device	*tll_pdev;
++static const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
++static struct device	*tll_dev;
  
- 	omap_usbhs_init(dev);
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -337,7 +337,8 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 	pm_runtime_put_sync(dev);
+-	tll_pdev = pdev;
++	/* only after this can omap_tll_enable/disable work */
++	tll_dev = dev;
+ 
+ 	return 0;
+ 
+@@ -359,6 +360,8 @@ static int usbtll_omap_remove(struct platform_device *pdev)
+ 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
+ 	int i;
+ 
++	tll_dev = NULL;
++
+ 	for (i = 0; i < tll->nch; i++)
+ 		clk_put(tll->ch_clk[i]);
+ 
+@@ -438,21 +441,21 @@ static struct platform_driver usbtll_omap_driver = {
+ 
+ int omap_tll_enable(void)
+ {
+-	if (!tll_pdev) {
+-		pr_err("missing omap usbhs tll platform_data\n");
++	if (!tll_dev) {
++		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
+ 		return  -ENODEV;
+ 	}
+-	return pm_runtime_get_sync(&tll_pdev->dev);
++	return pm_runtime_get_sync(tll_dev);
+ }
+ EXPORT_SYMBOL_GPL(omap_tll_enable);
+ 
+ int omap_tll_disable(void)
+ {
+-	if (!tll_pdev) {
+-		pr_err("missing omap usbhs tll platform_data\n");
++	if (!tll_dev) {
++		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
+ 		return  -ENODEV;
+ 	}
+-	return pm_runtime_put_sync(&tll_pdev->dev);
++	return pm_runtime_put_sync(tll_dev);
+ }
+ EXPORT_SYMBOL_GPL(omap_tll_disable);
+ 
 -- 
 1.7.4.1
 
