@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab3AQKqc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:46:32 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:63733 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab3AQKqb (ORCPT
+	id S1756779Ab3AQKry (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:47:54 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:44879 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab3AQKrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 05:46:31 -0500
+	Thu, 17 Jan 2013 05:47:52 -0500
+Date: Thu, 17 Jan 2013 10:47:44 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: davem@davemloft.net
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Robert Marklund <robert.marklund@stericsson.com>,
+        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH 4/4 v3] net/smsc911x: Provide common clock functionality
+Message-ID: <20130117104744.GP20091@gmail.com>
+References: <20121220192441.GC14363@n2100.arm.linux.org.uk>
+ <20121220203514.GN2691@gmail.com>
+ <20121220205113.GD14363@n2100.arm.linux.org.uk>
+ <20121221091306.GO2691@gmail.com>
+ <20121221092421.GG14363@n2100.arm.linux.org.uk>
+ <20121221114105.GP2691@gmail.com>
+ <20130103111450.GC14714@gmail.com>
+ <CACRpkda-4C+ezaZFSkxsNbmHnBN8RCoCeGePaOF-DzV0XnkzQw@mail.gmail.com>
+ <20130109085555.GA31678@gmail.com>
+ <CACRpkdY+C8jNT7LsJvBkauN4+x4k4gGJKSe0ynY_HLTpmpgFPA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130110133818.GA22710@balto.lan>
-References: <1357577261-31536-1-git-send-email-fabio.baltieri@linaro.org>
-	<CACRpkdZD1i_tvDf6XFyk5muYjtDziQaMNGK6vvihhFJVztXUjw@mail.gmail.com>
-	<20130110133818.GA22710@balto.lan>
-Date: Thu, 17 Jan 2013 11:46:30 +0100
-Message-ID: <CACRpkdbmgQ0xDfkbgqc=zDqMDUK0O6uQOf3kX9v1+=+N5s42bw@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: ux500: use clk_prepare_enable and clk_disable_unprepare
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-usb@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdY+C8jNT7LsJvBkauN4+x4k4gGJKSe0ynY_HLTpmpgFPA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 2:38 PM, Fabio Baltieri
-<fabio.baltieri@linaro.org> wrote:
-> On Thu, Jan 10, 2013 at 12:23:32PM +0100, Linus Walleij wrote:
->> On Mon, Jan 7, 2013 at 5:47 PM, Fabio Baltieri
->> <fabio.baltieri@linaro.org> wrote:
->>
->> > This patch converts the module to use clk_prepare_enable and
->> > clk_disable_unprepare variants as required by common clock framework.
->> >
->> > Without this the system crash during probe function.
->> >
->> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
->>
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
-> Thanks for the ACK.  This bug was here unnoticed since 3.6 merge window,
 
-Then it should have Cc: stable@kernel.org..
+> >> > Some platforms provide clocks which require enabling before the
+> >> > SMSC911x chip will power on. This patch uses the new common clk
+> >> > framework to do just that. If no clock is provided, it will just
+> >> > be ignored and the driver will continue to assume that no clock
+> >> > is required for the chip to run successfully.
+> >> >
+> >> > Cc: Steve Glendinning <steve.glendinning@shawell.net>
+> >> > Cc: netdev@vger.kernel.org
+> >> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >>
+> >> Looks all right to me now:
+> >> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> >
+> > I still need a maintiner Ack for this before I can push it.
+> >
+> > Anyone?
+> 
+> Steve is there sometimes. But I'd ask David Miller to ACK
+> it if he's OK with the change.
+> 
+> Yours,
+> Linus Walleij
 
-> do you think it may make sense to add this driver to u8500_defconfig?  I
-> can send a patch if you say so...
+Hi David,
 
-Yes, can you make a patch updating the defconfig and also enabling
-a few other things like charging maybe? Sync with Lee.
+Does this [1] patch look okay to you too?
 
-Yours,
-Linus Walleij
+It's the last Ack I require before I can push the set.
+
+[1] https://patchwork.kernel.org/patch/1926971/
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
