@@ -1,93 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757181Ab3AQUnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:43:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33895 "EHLO mga09.intel.com"
+	id S1757000Ab3AQUni (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:43:38 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33809 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689Ab3AQUho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:37:44 -0500
+	id S1751814Ab3AQUhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 15:37:14 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="273439801"
+   d="scan'208";a="248567541"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
-        jolsa@redhat.com, namhyung@kernel.org
-Subject: perf PMU support for Haswell v7
-Date: Thu, 17 Jan 2013 12:36:23 -0800
-Message-Id: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
+        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 02/29] perf, x86: Basic Haswell PMU support v2
+Date: Thu, 17 Jan 2013 12:36:25 -0800
+Message-Id: <1358455012-12287-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
+References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Updated version for the latest master tree and fixes.  See end for details.
-All feedback addressed. Ready for merging.]
+From: Andi Kleen <ak@linux.intel.com>
 
-This adds perf PMU support for the upcoming Haswell core. The patchkit 
-is fairly large, mainly due to various enhancement for TSX. TSX tuning
-relies heavily on the PMU, so I tried hard to make all facilities 
-easily available. In addition it also has some other enhancements.
+Add basic Haswell PMU support.
 
-This includes changes to the core perf code, to the x86 specific part,
-to the perf user land tools and to KVM
+Similar to SandyBridge, but has a few new events. Further
+differences are handled in followon patches.
 
-Available at 
-git://git.kernel.org/pub/scm/linux/kernel/ak/linux-misc.git hsw/pmu3
+There are some new counter flags that need to be prevented
+from being set on fixed counters.
 
-High level overview:
+Contains fixes from Stephane Eranian
 
-- Basic Haswell PMU support
-- Easy high level TSX measurement in perf stat -T
-- Transaction events and attributes implemented with sysfs enumeration
-- Export arch perfmon events in sysfs 
-- Generic weightend profiling for memory latency and transaction abort costs.
-- Support for address profiling
-- Support for filtering events inside/outside transactions
-- KVM support to do this from guests
-- Support for filtering/displaying transaction abort types based on 
-PEBS information
-- LBR support for transactions
+v2: Folded TSX bits into standard FIXED_EVENT_CONSTRAINTS
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/include/asm/perf_event.h      |    3 +++
+ arch/x86/kernel/cpu/perf_event.h       |    5 ++++-
+ arch/x86/kernel/cpu/perf_event_intel.c |   29 +++++++++++++++++++++++++++++
+ 3 files changed, 36 insertions(+), 1 deletions(-)
 
-For more details on the Haswell PMU please see the SDM. For more details on TSX
-please see http://halobates.de/adding-lock-elision-to-linux.pdf
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 4fabcdf..4003bb6 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -29,6 +29,9 @@
+ #define ARCH_PERFMON_EVENTSEL_INV			(1ULL << 23)
+ #define ARCH_PERFMON_EVENTSEL_CMASK			0xFF000000ULL
+ 
++#define HSW_INTX					(1ULL << 32)
++#define HSW_INTX_CHECKPOINTED				(1ULL << 33)
++
+ #define AMD_PERFMON_EVENTSEL_GUESTONLY			(1ULL << 40)
+ #define AMD_PERFMON_EVENTSEL_HOSTONLY			(1ULL << 41)
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 115c1ea..8941899 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -219,11 +219,14 @@ struct cpu_hw_events {
+  *  - inv
+  *  - edge
+  *  - cnt-mask
++ *  - intx
++ *  - intx_cp
+  *  The other filters are supported by fixed counters.
+  *  The any-thread option is supported starting with v3.
+  */
++#define FIXED_EVENT_FLAGS (X86_RAW_EVENT_MASK|HSW_INTX|HSW_INTX_CHECKPOINTED)
+ #define FIXED_EVENT_CONSTRAINT(c, n)	\
+-	EVENT_CONSTRAINT(c, (1ULL << (32+n)), X86_RAW_EVENT_MASK)
++	EVENT_CONSTRAINT(c, (1ULL << (32+n)), FIXED_EVENT_FLAGS)
+ 
+ /*
+  * Constraint on the Event code + UMask
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 93b9e11..3a08534 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -133,6 +133,17 @@ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
+ 	EVENT_EXTRA_END
+ };
+ 
++static struct event_constraint intel_hsw_event_constraints[] =
++{
++	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
++	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
++	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
++	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
++	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
++	EVENT_CONSTRAINT_END
++};
++
+ static u64 intel_pmu_event_map(int hw_event)
+ {
+ 	return intel_perfmon_event_map[hw_event];
+@@ -2107,6 +2118,24 @@ __init int intel_pmu_init(void)
+ 		break;
+ 
+ 
++	case 60: /* Haswell Client */
++	case 70:
++	case 71:
++		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
++		       sizeof(hw_cache_event_ids));
++
++		intel_pmu_lbr_init_nhm();
++
++		x86_pmu.event_constraints = intel_hsw_event_constraints;
++
++		x86_pmu.extra_regs = intel_snb_extra_regs;
++		/* all extra regs are per-cpu when HT is on */
++		x86_pmu.er_flags |= ERF_HAS_RSP_1;
++		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
++
++		pr_cont("Haswell events, ");
++		break;
++
+ 	default:
+ 		switch (x86_pmu.version) {
+ 		case 1:
+-- 
+1.7.7.6
 
-Some of the added features could be added to older CPUs too. I plan
-to do this, but in separate patches.
-
-v2: Removed generic transaction events and qualifiers and use sysfs
-enumeration. Also export arch perfmon, so that the qualifiers work.
-Fixed various issues this exposed. Don't use a special macro for the
-TSX constraints anymore. Address other review feedback.
-Added pdir event in sysfs.
-
-v3: Fix various bugs and address review comments.
-tx-aborts instead of cpu/tx-aborts/ works now (with some limitations)
-cpu/instructions,intx=1/ works now
-
-v4:
-Addressed all review feedback (I hope). See changelog in individual patches.
-KVM support now works again with more changes.
-Forbid some more flag combinations that don't work well.
-
-v5:
-Rebased on latest perf/core. New method for sysfs events.
-Obsolete patches dropped. Added one patch from Stephane.
-Fixed generic aliases inside cpu//
-Improved transaction flags decoding
-Addressed all review feedback (except for two minor items in
-perf tools from Namhyung)
-
-v6:
-Fix WERROR=1 build with latest fixes.
-Address KVM feedback. 
-Improve transaction flags display.
-
-v7:
-Rebase to 3.8-rc3.
-Some minor fixes based on feedback.
-Fix for spurious NMI added.
-Removed debug patch for spurious NMIs.
-
--Andi
