@@ -1,109 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab3AQQW0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:22:26 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:51608 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab3AQQWY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:22:24 -0500
-Date: Thu, 17 Jan 2013 16:22:18 +0000
-From: Andrew Murray <andrew.murray@arm.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
-Message-ID: <20130117162218.GA29016@arm.com>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <20130115154038.GA11241@arm.com>
- <20130115211441.GA13139@avionic-0098.adnet.avionic-design.de>
- <201301161400.26587.arnd@arndb.de>
- <20130116161716.GA10630@arm.com>
- <20130116183101.GA28660@avionic-0098.adnet.avionic-design.de>
- <20130117154236.GA25943@arm.com>
- <20130117160501.GC2186@avionic-0098.adnet.avionic-design.de>
+	id S1757215Ab3AQQWw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:22:52 -0500
+Received: from mga09.intel.com ([134.134.136.24]:15808 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757108Ab3AQQWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 11:22:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130117160501.GC2186@avionic-0098.adnet.avionic-design.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 17 Jan 2013 16:22:19.0222 (UTC) FILETIME=[D24B8F60:01CDF4CE]
-X-MC-Unique: 113011716222208801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+In-Reply-To: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+Date: Thu, 17 Jan 2013 18:22:47 +0200
+Message-ID: <CALLzPKZgVUF4_ovyR48BddF33w0pBPvdhxtTQ5bk3M1H1N2LWA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] ELF executable signing and verification
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        zohar@linux.vnet.ibm.com, pjones@redhat.com, hpa@zytor.com,
+        dhowells@redhat.com, jwboyer@redhat.com,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 04:05:02PM +0000, Thierry Reding wrote:
-> On Thu, Jan 17, 2013 at 03:42:36PM +0000, Andrew Murray wrote:
-> > On Wed, Jan 16, 2013 at 06:31:01PM +0000, Thierry Reding wrote:
-> > > Alright, putting the functions into pci_ops doesn't sound like a very
-> > > good idea then. Or perhaps it would make sense for hardware where the
-> > > root complex and the MSI controller are handled by the same driver.
-> > > Basically it could be done as a shortcut and if those are not filled
-> > > in, the drivers could still opt to look up an MSI controller from a
-> > > phandle specified in DT.
-> > > 
-> > > Even another alternative would be to keep the functions within the
-> > > struct pci_ops and use generic ones if an external MSI controller is
-> > > used. Just tossing around ideas.
-> > 
-> > I think an ideal solution would be for additional logic in drivers/msi.c
-> > (e.g. in functions like msi_capability_init) to determine (based on the
-> > passed in pci_dev) which MSI controller ops to use. I'm not sure the best
-> > way to implement an association between an MSI controller and PCI busses
-> > (I believe arch/sparc does something like this - perhaps there will be
-> > inspiration there).
-> > 
-> > As you've pointed out, most RCs will have their own MSI controllers - so
-> > it should be easy to register and associate both together.
-> > 
-> > I've submitted my previous work on MSI controller registration, but it
-> > doesn't quite solve this problem - perhaps it can be a starting point?
-> 
-> We basically have two cases:
-> 
->   - The PCI host bridge contains registers for MSI support. In that case
->     it makes little sense to uncouple the MSI implementation from the
->     host bridge driver.
-> 
->   - An MSI controller exists outside of the PCI host bridge. The PCI
->     host bridge would in that case have to lookup an MSI controller (via
->     DT phandle or some other method).
-> 
-> In either of those cases, does it make sense to use the MSI support
-> outside the scope of the PCI infrastructure? That is, would devices
-> other than PCI devices be able to generate an MSI?
+On Tue, Jan 15, 2013 at 11:34 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> Hi,
+>
+> This is a very crude RFC for ELF executable signing and verification. This
+> has been done along the lines of module signature verification.
+>
+> Why do we need it
+> =================
+> With arrival of secureboot, sys_kexec() is deemed dangerous. One can
+> effectively bypass the secureboot feature and run its own kernel. So
+> matthew garret proposed disabling sys_kexec() in secureboot mode.
+>
+> https://lkml.org/lkml/2012/9/4/225
+>
+> Later in a separate thread it was discussed how to handle the issue
+> of sys_kexec() with secureboot.
+>
+> https://lkml.org/lkml/2012/10/24/451
+>
+> My takeaway from discussion was that we need to sign /sbin/kexec. Signed
+> executable can get extra capability and we can allow/disallow access to
+> sys_kexec() based on that capability (Thanks to Eric Biederman for the
+> idea).
+>
+> So that's my motivation to make user space signing work so that I can
+> get kdump working with secureboot enabled. There might be other people
+> who might find it useful in general.
+>
+> What does it do
+> ===============
+> I have written a utility "signelf" which can take a private key and
+> an x509 certificate and sign an ELF executable. This is very much done
+> along the lines of module signing. There are two major differences.
+> Signature are put in a section ".signature" instead of being appended
+> to executable. And we calculate digest of only PT_LOAD segments and not
+> the whole executable file.
+>
+> Upon exec(), we determine if executable is signed. If it is, then locks
+> down the pages in memory (using MAP_LOCKED) and verfies the signature.
+> If signature does not match, process is killed. Unsigned processes
+> don't get affected at all.
+>
+> Currently it is expected to use these patches only for statically linked
+> executables. No dynamic linking. In fact patches specifically disable
+> calling interpreter. This does not prevent against somebody using dlopen()
+> sutff. So don't sign binaries which do that.
 
-I've come around to your way of thinking. Your approach sounds good for
-registration of MSI ops - let the RC host driver do it (it probably has its
-own), or use a helper for following a phandle to get ops that are not part
-of the driver. MSIs won't be used outside of PCI devices.
+How dynamic linking and interpreter are related together?
 
-Though existing drivers will use MSI framework functions to request MSIs, that
-will result in callbacks to the arch_setup_msi_irqs type functions. These
-functions would need to be updated to find these new ops if they exist, i.e. by
-traversing the pci_dev structure up to the RC and finding a suitable structure.
+This is rather policy than enforcement.
+Protection works only for statically linked binaries, because dynamic
+libraries are not verified.
 
-Perhaps the msi ops could live alongside pci_ops in the pci_bus structure. This
-way when traversing up the buses from the provided pci_dev - the first bus with
-msi ops populated would be used?
+- Dmitry
 
-If no ops are found, the standard arch callbacks can be called - thus preserving
-exiting functionality.
-
-Andrew Murray
-
-
+>
+> HOWTO
+> =====
+> Currently module signing keys are automatically loaded in module keyring
+> so it is easiest to sign executable using the keys generated for module
+> signing.
+>
+> - Compile and boot into kernel with following options enabled.
+>         - CONFIG_MODULE_SIG=y
+>         - CONFIG_BINFMT_ELF_SIGNATURE=y
+>         - CONFIG_CRYPTO_SHA256=y
+>
+> - Compile "signelf" utility (Attached in a patch)
+>
+> - Install glibc-static
+>
+> - Compile a test program (say hello-world.c). Link statically with glibc
+>         gcc hello-world.c -o hello-world -static
+>
+> - Sign hello_world using keys generated during kernel build.
+>         signelf -i hello-world -o hello-world.signed -p linux-2.6/signing_key.priv -c linux-2.6/signing_key.x509
+>
+> - Run signed executable
+>         ./hello-world.signed
+>
+> This should run successfully. Now one can generate another pair of keys
+> and certificate and sign same binary using new keys. This new binary should
+> fail to execute as corresponding keys are not loaded in kernel.
+>
+>         openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 -config linux-2.6/x509.genkey -outform DER -out new_signing_key.x509 -keyout new_signing_key.priv
+>
+>         signelf -i hello-world -o hello-world.signed.new -p new_signing_key.priv -c new_signing_key.x509
+>
+> - Run this signed executable
+>         ./hello-world.signed.new
+>         Killed
+>
+> TODO
+> ====
+> - kexec related patches are yet to be done.
+> - Disable ptrace to signed processes so that one can not modify code/data
+>   of signed process.
+> - Sort out issues related to how key used for user space signing is loaded
+>   in kernel keyring.
+> - Sort out issues related to sharing keyring with modules.
+>
+> Thanks
+> Vivek
+> Vivek Goyal (3):
+>   module: export couple of functions for use in process signature
+>     verification
+>   binfmt_elf: Verify signature of signed elf binary
+>   binfmt_elf: Do not allow exec() if signed binary has intepreter
+>
+>  fs/Kconfig.binfmt       |    7 +
+>  fs/binfmt_elf.c         |  465 +++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/module.h  |    8 +
+>  kernel/module_signing.c |    4 +-
+>  4 files changed, 482 insertions(+), 2 deletions(-)
+>
+> --
+> 1.7.7.6
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
