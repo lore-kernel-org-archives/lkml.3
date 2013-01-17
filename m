@@ -1,79 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab3AQNHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:07:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41706 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755955Ab3AQNG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:06:59 -0500
-Date: Thu, 17 Jan 2013 15:06:55 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 1/3] KVM: x86: clean up reexecute_instruction
-Message-ID: <20130117130655.GC31120@redhat.com>
-References: <50F2D64C.4030804@linux.vnet.ibm.com>
+	id S1756627Ab3AQNLK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:11:10 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:33610 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776Ab3AQNLH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 08:11:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F2D64C.4030804@linux.vnet.ibm.com>
+In-Reply-To: <50F7EF23.8080903@ti.com>
+References: <1358348462-27693-1-git-send-email-kishon@ti.com>
+	<1358348462-27693-3-git-send-email-kishon@ti.com>
+	<CAFp+6iGEC9KgfuQz6nqnAY5JrmtPG=HkGw5yjKw7-1=8AG_=dg@mail.gmail.com>
+	<50F7EF23.8080903@ti.com>
+Date: Thu, 17 Jan 2013 18:41:04 +0530
+Message-ID: <CAFp+6iH3kxtx2fM9m50Skcb6aqJOhL4d+Vg6W3mo7uUoAp0F1Q@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/6] ARM: OMAP: USB: Add phy binding information
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: kishon <kishon@ti.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-sh@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, balbi@ti.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        b-cousson@ti.com, tony@atomide.com, linux@arm.linux.org.uk,
+        horms@verge.net.au, magnus.damm@gmail.com, cbou@mail.ru,
+        dwmw2@infradead.org, alexander.shishkin@linux.intel.com,
+        gregkh@linuxfoundation.org, leoli@freescale.com, eric.y.miao@gmail.com,
+        haojian.zhuang@gmail.com, stern@rowland.harvard.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the series:
-Reviewed-by: Gleb Natapov <gleb@redhat.com>
+Hi Kishon,
 
-On Sun, Jan 13, 2013 at 11:44:12PM +0800, Xiao Guangrong wrote:
-> Little cleanup for reexecute_instruction, also use gpa_to_gfn in
-> retry_instruction
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/x86.c |   13 ++++++-------
->  1 files changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 1c9c834..08cacd9 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -4761,19 +4761,18 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
->  	if (tdp_enabled)
->  		return false;
-> 
-> +	gpa = kvm_mmu_gva_to_gpa_system(vcpu, gva, NULL);
-> +	if (gpa == UNMAPPED_GVA)
-> +		return true; /* let cpu generate fault */
-> +
->  	/*
->  	 * if emulation was due to access to shadowed page table
->  	 * and it failed try to unshadow page and re-enter the
->  	 * guest to let CPU execute the instruction.
->  	 */
-> -	if (kvm_mmu_unprotect_page_virt(vcpu, gva))
-> +	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
->  		return true;
-> 
-> -	gpa = kvm_mmu_gva_to_gpa_system(vcpu, gva, NULL);
-> -
-> -	if (gpa == UNMAPPED_GVA)
-> -		return true; /* let cpu generate fault */
-> -
->  	/*
->  	 * Do not retry the unhandleable instruction if it faults on the
->  	 * readonly host memory, otherwise it will goto a infinite loop:
-> @@ -4828,7 +4827,7 @@ static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
->  	if (!vcpu->arch.mmu.direct_map)
->  		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
-> 
-> -	kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
-> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
-> 
->  	return true;
->  }
-> -- 
-> 1.7.7.6
 
---
-			Gleb.
+Thanks for the explanation.
+
+On Thu, Jan 17, 2013 at 6:01 PM, kishon <kishon@ti.com> wrote:
+> Hi,
+>
+>
+> On Thursday 17 January 2013 05:41 PM, Vivek Gautam wrote:
+>>
+>> Hi Kishon,
+>>
+>>
+>> On Wed, Jan 16, 2013 at 8:30 PM, Kishon Vijay Abraham I <kishon@ti.com>
+>> wrote:
+>>>
+>>> This is in preparation for the changes in PHY library to support adding
+>>> and getting multiple PHYs of the same type. In the new design, the
+>>> binding information between the PHY and the USB controller should be
+>>> specified in the platform specific initialization code. So it's been
+>>> done for OMAP platforms here.
+>>>
+>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>> ---
+>>> This kind-of binding should be done in all the platforms (I've done only
+>>> for OMAP platform).
+>>>   arch/arm/mach-omap2/usb-musb.c |    7 ++++++-
+>>>   1 file changed, 6 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/arch/arm/mach-omap2/usb-musb.c
+>>> b/arch/arm/mach-omap2/usb-musb.c
+>>> index 9d27e3f..bbe2fa5 100644
+>>> --- a/arch/arm/mach-omap2/usb-musb.c
+>>> +++ b/arch/arm/mach-omap2/usb-musb.c
+>>> @@ -24,6 +24,7 @@
+>>>   #include <linux/dma-mapping.h>
+>>>   #include <linux/io.h>
+>>>   #include <linux/usb/musb.h>
+>>> +#include <linux/usb/phy.h>
+>>>
+>>>   #include "omap_device.h"
+>>>   #include "soc.h"
+>>> @@ -85,8 +86,12 @@ void __init usb_musb_init(struct omap_musb_board_data
+>>> *musb_board_data)
+>>>          musb_plat.mode = board_data->mode;
+>>>          musb_plat.extvbus = board_data->extvbus;
+>>>
+>>> -       if (cpu_is_omap44xx())
+>>> +       if (cpu_is_omap44xx()) {
+>>>                  musb_plat.has_mailbox = true;
+>>> +               usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
+>>> +       } else if (cpu_is_omap34xx()) {
+>>> +               usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+>>> +       }
+>>
+>>
+>> Just trying to understand things here.
+>> Is the device name we are using here the platform device name (pdev->name)
+>> ?
+>
+>
+> it's pdev->dev.name.
+>
+>> If i am not wrong then for devices added through device tree
+>> the device name would actually include the device address in the string,
+>
+>
+> Ideally for device tree, devm_usb_get_phy_by_phandle() introduced in the 5th
+> patch of this series should be used.
+
+Ok.
+> usb_bind_phy should be called from platform specific initialization files
+> (like your board file), which won't get executed in dt boot.
+>
+Right.
+
+>> wouldn't that make things somewhat weird, since we will have to add
+>> such bindings
+>> using this address string.
+>>
+>> one more doubt please :)
+>> is it possible to bind phy in the controllers' driver somehow ?
+>
+> Thats not going to be good. Why do you need to do that?
+>
+I was certainly missing something while understanding your patches.
+That's why got some doubt on this. :)
+
+
+> Thanks
+> Kishon
+
+
+
+-- 
+Thanks & Regards
+Vivek
