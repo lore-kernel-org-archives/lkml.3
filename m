@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab3AQLdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 06:33:25 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42778 "EHLO comal.ext.ti.com"
+	id S1756457Ab3AQLdX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 06:33:23 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42779 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755526Ab3AQLbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756192Ab3AQLbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jan 2013 06:31:44 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <rogerq@ti.com>
-Subject: [PATCH v7 07/22] mfd: omap-usb-tll: Fix error message
-Date: Thu, 17 Jan 2013 13:30:16 +0200
-Message-ID: <1358422231-24736-8-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>, Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH v7 18/22] USB: ehci-omap: Don't free gpios that we didn't request
+Date: Thu, 17 Jan 2013 13:30:27 +0200
+Message-ID: <1358422231-24736-19-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358422231-24736-1-git-send-email-rogerq@ti.com>
 References: <1358422231-24736-1-git-send-email-rogerq@ti.com>
@@ -24,79 +24,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-omap_enable/disable_tll() can fail if TLL device is not
-initialized. It could be due to multiple reasons and not only
-due to missing platform data.
+This driver does not request any gpios so don't free them.
+Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
+with ehci-omap in use.
 
-Also make local variables static and use 'struct device *'
-instead of 'struct platform_device *' for global reference.
+CC: Alan Stern <stern@rowland.harvard.edu>
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-tll.c |   21 ++++++++++++---------
- 1 files changed, 12 insertions(+), 9 deletions(-)
+ drivers/usb/host/ehci-omap.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index 0e68c8a..81d2cac 100644
---- a/drivers/mfd/omap-usb-tll.c
-+++ b/drivers/mfd/omap-usb-tll.c
-@@ -109,8 +109,8 @@ struct usbtll_omap {
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 134c789..b96a4bf 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -288,7 +288,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
+ {
+ 	struct device *dev				= &pdev->dev;
+ 	struct usb_hcd *hcd				= dev_get_drvdata(dev);
+-	struct usbhs_omap_platform_data *pdata		= dev->platform_data;
  
- /*-------------------------------------------------------------------------*/
- 
--const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
--struct platform_device	*tll_pdev;
-+static const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
-+static struct device	*tll_dev;
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -337,7 +337,8 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 
- 	spin_unlock_irqrestore(&tll->lock, flags);
+ 	usb_remove_hcd(hcd);
+ 	disable_put_regulator(dev->platform_data);
+@@ -298,13 +297,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
  	pm_runtime_put_sync(dev);
--	tll_pdev = pdev;
-+	/* only after this can omap_tll_enable/disable work */
-+	tll_dev = dev;
+ 	pm_runtime_disable(dev);
  
+-	if (pdata->phy_reset) {
+-		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+-			gpio_free(pdata->reset_gpio_port[0]);
+-
+-		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+-			gpio_free(pdata->reset_gpio_port[1]);
+-	}
  	return 0;
- 
-@@ -359,6 +360,8 @@ static int usbtll_omap_remove(struct platform_device *pdev)
- 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
- 	int i;
- 
-+	tll_dev = NULL;
-+
- 	for (i = 0; i < tll->nch; i++)
- 		clk_put(tll->ch_clk[i]);
- 
-@@ -438,21 +441,21 @@ static struct platform_driver usbtll_omap_driver = {
- 
- int omap_tll_enable(void)
- {
--	if (!tll_pdev) {
--		pr_err("missing omap usbhs tll platform_data\n");
-+	if (!tll_dev) {
-+		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
- 		return  -ENODEV;
- 	}
--	return pm_runtime_get_sync(&tll_pdev->dev);
-+	return pm_runtime_get_sync(tll_dev);
  }
- EXPORT_SYMBOL_GPL(omap_tll_enable);
- 
- int omap_tll_disable(void)
- {
--	if (!tll_pdev) {
--		pr_err("missing omap usbhs tll platform_data\n");
-+	if (!tll_dev) {
-+		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
- 		return  -ENODEV;
- 	}
--	return pm_runtime_put_sync(&tll_pdev->dev);
-+	return pm_runtime_put_sync(tll_dev);
- }
- EXPORT_SYMBOL_GPL(omap_tll_disable);
  
 -- 
 1.7.4.1
