@@ -1,44 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759585Ab3AQKiu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:38:50 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4204 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759527Ab3AQKis (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 05:38:48 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 17 Jan 2013 02:38:18 -0800
-Message-ID: <50F7D47A.7070508@nvidia.com>
-Date: Thu, 17 Jan 2013 16:07:46 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1759609Ab3AQKi7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:38:59 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39236 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759527Ab3AQKiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 05:38:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,484,1355126400"; 
+   d="scan'208";a="274901827"
+Date: Thu, 17 Jan 2013 12:42:47 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-i2c@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Jean Delvare <khali@linux-fr.org>, dirk.brandewie@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] i2c-designware: always set the STOP bit after last
+ byte
+Message-ID: <20130117104247.GU2239@intel.com>
+References: <1358418667-4533-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1358418667-4533-3-git-send-email-mika.westerberg@linux.intel.com>
+ <20130117103248.GL10814@arwen.pp.htv.fi>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Subject: Re: [PATCH 3/4] gpio: palmas: Add support for Palams GPIO
-References: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com> <1357210020-19876-4-git-send-email-ldewangan@nvidia.com> <CACRpkdazCa_GMfrCnoYukiQKbKD41RiTG-MyO-5p+B-6-+Y=hA@mail.gmail.com> <20130117103529.GB7504@opensource.wolfsonmicro.com>
-In-Reply-To: <20130117103529.GB7504@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130117103248.GL10814@arwen.pp.htv.fi>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 January 2013 04:05 PM, Mark Brown wrote:
-> On Thu, Jan 17, 2013 at 11:34:42AM +0100, Linus Walleij wrote:
->
->> Do you want me to apply it to my GPIO tree or does it have
->> dependencies so you'll take it through MFD or something?
-> The MFD has been merged for a couple of releases now.
-Yes, Although this driver used the new API introduced in patch 1/4 but I 
-think it is fine to apply this in GPIO subsystem here as it is 
-independent driver.
+On Thu, Jan 17, 2013 at 12:32:48PM +0200, Felipe Balbi wrote:
+> Hi,
+> 
+> On Thu, Jan 17, 2013 at 12:31:05PM +0200, Mika Westerberg wrote:
+> > If IC_EMPTYFIFO_HOLD_MASTER_EN is set to one, the DesignWare I2C controller
+> > doesn't generate STOP on the bus when the FIFO is empty. This violates the
+> > rules of Linux I2C stack as it requires that the STOP is issued once the
+> > i2c_transfer() is finished.
+> > 
+> > However, there is no way to detect this from the hardware registers, so we
+> > must make sure that the STOP bit is always set once the last byte of the
+> > last message is transferred.
+> > 
+> > This patch is based on the work of Dirk Brandewie.
+> > 
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > ---
+> >  drivers/i2c/busses/i2c-designware-core.c |   16 ++++++++++++++--
+> >  1 file changed, 14 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+> > index f5258c2..94fd818 100644
+> > --- a/drivers/i2c/busses/i2c-designware-core.c
+> > +++ b/drivers/i2c/busses/i2c-designware-core.c
+> > @@ -413,11 +413,23 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+> >  		rx_limit = dev->rx_fifo_depth - dw_readl(dev, DW_IC_RXFLR);
+> >  
+> >  		while (buf_len > 0 && tx_limit > 0 && rx_limit > 0) {
+> > +			u32 cmd = 0;
+> > +
+> > +			/*
+> > +			 * If IC_EMPTYFIFO_HOLD_MASTER_EN is set we must
+> > +			 * manually set the stop bit. However, it cannot be
+> > +			 * detected from the registers so we set it always
+> > +			 * when writing/reading the last byte.
+> > +			 */
+> > +			if (dev->msg_write_idx == dev->msgs_num - 1 &&
+> > +			    buf_len == 1)
+> > +				cmd |= BIT(9);
+> > +
+> >  			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
+> > -				dw_writel(dev, 0x100, DW_IC_DATA_CMD);
+> > +				dw_writel(dev, cmd | 0x100, DW_IC_DATA_CMD);
+> >  				rx_limit--;
+> >  			} else
+> > -				dw_writel(dev, *buf++, DW_IC_DATA_CMD);
+> > +				dw_writel(dev, cmd | *buf++, DW_IC_DATA_CMD);
+> 
+> also need to send STP bit if I2C_M_STOP is set.
 
-
+True but only if the driver exposes I2C_FUNC_PROTOCOL_MANGLING, which is
+not done in this driver.
