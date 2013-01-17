@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab3AQPHK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 10:07:10 -0500
-Received: from mga09.intel.com ([134.134.136.24]:26856 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753691Ab3AQPHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 10:07:08 -0500
+	id S1756705Ab3AQPLd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 10:11:33 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:32816 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756544Ab3AQPLc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 10:11:32 -0500
+Date: Thu, 17 Jan 2013 10:11:31 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v7 3/4] block: implement runtime pm strategy
+In-Reply-To: <20130117051325.GA31469@aaronlu.sh.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1301171005560.1339-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <CALLzPKam_j==PXtNfQs93NbPTrYCjqM_0+XRfnvxrJBLdOJ-vQ@mail.gmail.com>
-References: <871udloiku.fsf@xmission.com>
-	<1358312159.4593.37.camel@falcor1>
-	<87wqvdli1o.fsf@xmission.com>
-	<1358344859.4593.66.camel@falcor1>
-	<20130116144836.GB29845@redhat.com>
-	<1358350391.4593.112.camel@falcor1>
-	<20130116163453.GD29845@redhat.com>
-	<1358359715.4593.146.camel@falcor1>
-	<20130116182804.GF29845@redhat.com>
-	<1358364290.4593.178.camel@falcor1>
-	<20130116215341.GA4222@redhat.com>
-	<CALLzPKam_j==PXtNfQs93NbPTrYCjqM_0+XRfnvxrJBLdOJ-vQ@mail.gmail.com>
-Date: Thu, 17 Jan 2013 17:06:09 +0200
-Message-ID: <CALLzPKZhsKnzjLE_wbm=qYZcaFiKq+5LE6G1ZaphutCGFSFV7w@mail.gmail.com>
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, pjones@redhat.com, hpa@zytor.com,
-        dhowells@redhat.com, jwboyer@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 4:58 PM, Kasatkin, Dmitry
-<dmitry.kasatkin@intel.com> wrote:
-> On Wed, Jan 16, 2013 at 11:53 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> On Wed, Jan 16, 2013 at 02:24:50PM -0500, Mimi Zohar wrote:
->> [..]
->>> > > Sorry, this is out of scope for IMA.  Dmitry has looked into this, but
->>> > > I'm not sure where it stands at the moment.
->>> >
->>> > Ok, so that's one reason that why I wrote these patcehs. IMA currently
->>> > is not doing following things to make sure address space of signed images
->>> > is not modified by others.
->>> >
->>> > - Protecting against modifications to pages on swap.
->>> > - Protecting against modifications by ptrace.
->>> > - Protecting against modifications which bypassed filesystem and directly
->>> >   wrote to the block.
->>> >
->>> > Locking down all the pages of signed binaries in memory hopefully should
->>> > solve above problems.
->>>
->>> Signing and verifying ELF executables goes back a long time ~2003/4,
->>> from a number of esteemed kernel developers, including Greg-KH and Serge
->>> Hallyn.
->>>
->>> IMA-appraisal isn't limited to appraising a single type of file, but is
->>> a generic mechanism for appraising all files.  If there are issues that
->>> aren't being addressed, then by all means, please help by addressing
->>> them.  Duplicating a large portion of the code is not productive.
->>
->> So do you have ideas on how to address above mentioned issues. Do they
->> fit into the realm of IMA/EVM or I just need to write separate code (which
->> I have already done).
->>
->> With above issues, IMA stuff for executable files sounds incomplete.
->>
->
-> swap is a last resort. healthy system uses swap minimally.
-> It is very easy to add /etc/crypttab which allows to have encrypted swap
->
-> # <target name> <source device>         <key file>      <options>
-> swap   /dev/sda6       /dev/urandom    swap
->
-> And it will eliminate plenty of possible attacks.
-> Processes have also RW data, modification of those will create huge
-> risk for the system...
->
-> But certain locking extensions like you implemented can be added to IMA as well.
->
-> It was said about ptrace already.
->
->
->> - Protecting against modifications which bypassed filesystem and directly  wrote to the block.
->
-> Can you please tell a bit more how this patch protect against direct
-> writing to the blocks?
->
-> Thanks,
-> Dmitry
->
->> Thanks
->> Vivek
+On Thu, 17 Jan 2013, Aaron Lu wrote:
 
-One important thing to mention.
-Protecting ELF-only does not help too much in protecting the system.
-There are plenty of init, upstart and systemd scripts which must be
-verified as well. IMA does it.
+> > > @@ -515,6 +516,27 @@ void elv_bio_merged(struct request_queue *q, struct request *rq,
+> > >  		e->type->ops.elevator_bio_merged_fn(q, rq, bio);
+> > >  }
+> > >  
+> > > +#ifdef CONFIG_PM_RUNTIME
+> > > +static void blk_pm_requeue_request(struct request *rq)
+> > > +{
+> > > +	if (!(rq->cmd_flags & REQ_PM))
+> > > +		rq->q->nr_pending--;
+> > > +}
+> > 
+> > You don't check q->dev here.  That's okay, but it means that
+> > q->nr_pending will be meaningless or wrong if any I/O takes place
+> > before blk_pm_runtime_init is called.
+> 
+> Right, so I had better check q->dev here too.
+> 
+> > 
+> > Therefore the kerneldoc for blk_pm_runtime_init should mention that it
+> > must not be called after any requests have been submitted.  Also
+> 
+> So with the q->dev check added above, I believe this is not needed.
 
-- Dmitry
+No, it is still needed.  With the q->dev check added, q->nr_pending 
+will always be 0 before blk_pm_runtime_init is called.  But if I/O is 
+taking place then the number of pending requests really isn't 0.
+
+Either you have to make sure the q->nr_pending is always correct, even 
+when runtime PM isn't being used, or else the caller has to make sure 
+that no I/O takes place before blk_pm_runtime_init is called.
+
+> ------------
+> > mention that blk_pm_runtime_init enables runtime PM for q->dev, so the
+> > caller shouldn't do it.
+> 
+> I may misunderstandd this in last email.
+> 
+> We didn't enable runtime PM for the device in blk_pm_runtime_init, just
+> some auto suspend related settings.
+
+Sorry, yes, you are right.  In fact, the caller has to make sure that 
+runtime PM is enabled before calling blk_pm_runtime_init; otherwise the 
+autosuspend timer might not work right.
+
+Alan Stern
+
