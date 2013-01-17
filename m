@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab3AQSy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 13:54:28 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:52160 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab3AQSy1 (ORCPT
+	id S1756189Ab3AQSy4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 13:54:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43553 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab3AQSyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 13:54:27 -0500
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tomas Winkler <tomas.winkler@intel.com>, linux-kernel@vger.kernel.org
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH char-misc-next] mei: Fix some more kernel-doc typos in hw-me.c
-Date: Thu, 17 Jan 2013 19:54:15 +0100
-Message-Id: <1358448855-791-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.8.1.1
+	Thu, 17 Jan 2013 13:54:55 -0500
+Message-ID: <50F848B3.9050800@canonical.com>
+Date: Thu, 17 Jan 2013 13:53:39 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: LKML <linux-kernel@vger.kernel.org>, pkondeti@codeaurora.org,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>,
+        stable@vger.kernel.org, stern@rowland.harvard.edu,
+        linux-usb@vger.kernel.org
+Subject: Re: [REVERT][v3.x.y] EHCI: Update qTD next pointer in QH overlay
+ region during unlink
+References: <50F84441.8080300@canonical.com> <20130117185156.GK13292@decadent.org.uk>
+In-Reply-To: <20130117185156.GK13292@decadent.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/17/2013 01:51 PM, Ben Hutchings wrote:
+> On Thu, Jan 17, 2013 at 01:34:41PM -0500, Joseph Salisbury wrote:
+>> Hello,
+>>
+>> Please consider reverting commit
+>> 3d037774b42ed677f699b1dce7d548d55f4e4c2b in mainline as well as in
+>> the current stable releases.  It was included upstream as of
+>> v3.6-rc6.  This commit introduced a regression, described in the
+>> following bug report:
+>>
+>> http://bugs.launchpad.net/bugs/1088733
+>>
+>> Reverting commit 3d037774b42ed677f699b1dce7d548d55f4e4c2b in the
+>> v3.2 kernel has been confirmed to resolve the aforementioned bug.
+>   
+> If it's wrong in mainline then the revert needs to be done there
+> and cc'd to stable.  We only revert directly in stable branches if
+> the revert is not appropriate in mainline.
+>
+> Ben.
+>
+Hi Ben,
 
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
- drivers/misc/mei/hw-me.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Understood.  Thanks for the feedback.  I'll resend as a patch to mainline.
 
-diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 93a2a56..94b203e 100644
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -236,7 +236,7 @@ irqreturn_t mei_interrupt_quick_handler(int irq, void *dev_id)
- /**
-  * mei_hbuf_filled_slots - gets number of device filled buffer slots
-  *
-- * @device: the device structure
-+ * @dev: the device structure
-  *
-  * returns number of filled slots
-  */
-@@ -289,7 +289,7 @@ int mei_hbuf_empty_slots(struct mei_device *dev)
-  * mei_write_message - writes a message to mei device.
-  *
-  * @dev: the device structure
-- * @hader: mei HECI header of message
-+ * @header: mei HECI header of message
-  * @buf: message payload will be written
-  *
-  * This function returns -EIO if write has failed
--- 
-1.7.9.5
+Thanks,
 
+Joe
