@@ -1,90 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab3AQNY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:24:27 -0500
-Received: from relay.parallels.com ([195.214.232.42]:46785 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298Ab3AQNYZ (ORCPT
+	id S1756652Ab3AQNYq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:24:46 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:52547 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab3AQNYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:24:25 -0500
-Message-ID: <50F7FB7E.2020503@parallels.com>
-Date: Thu, 17 Jan 2013 17:24:14 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Mark Lord <kernel@teksavvy.com>, <linux-nfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com> <50F72F03.5070806@teksavvy.com> <50F786AF.4070107@parallels.com> <20130117130335.GD6598@fieldses.org>
-In-Reply-To: <20130117130335.GD6598@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.18.163]
+	Thu, 17 Jan 2013 08:24:44 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH 0/7] cputime: Full dynticks task/cputime accounting v5                 
+Date: Thu, 17 Jan 2013 14:24:28 +0100
+Message-Id: <1358429075-3430-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-17.01.2013 17:03, J. Bruce Fields пишет:
-> On Thu, Jan 17, 2013 at 09:05:51AM +0400, Stanislav Kinsbursky wrote:
->> 17.01.2013 02:51, Mark Lord пишет:
->>> On 13-01-16 12:20 AM, Stanislav Kinsbursky wrote:
->>>>
->>>> Mark, could you provide any call traces?
->>>
->>> Call traces from where/what?
->>> There's this one, posted earlier in the BUG report:
->>>
->>> kernel BUG at net/sunrpc/svc_xprt.c:921!
->>> Call Trace:
->>>   [<ffffffffa016a56a>] ? svc_recv+0xcc/0x338 [sunrpc]
->>>   [<ffffffffa0318bfc>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
->>>   [<ffffffffa0318c19>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
->>>   [<ffffffff810407e6>] ? kthread+0x81/0x89
->>>   [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
->>>   [<ffffffff812ea62c>] ? ret_from_fork+0x7c/0xb0
->>>   [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
->>>
->>
->> Thanks!
->> I haven't seen the bug report.
->> Could you provide the link, please?
->
-> There's no bz if that's what you're asking for.
->
-> See the first message in the thread for the original report:
->
-> 	http://mid.gmane.org/<50F42F85.50907@teksavvy.com>
->
+Hi,
 
-Thanks, Bruce.
-This looks like the old issue I was trying to fix with "SUNRPC: protect service sockets lists during per-net shutdown".
-So, here is the problem as I see it: there is a transport, which is processed by service thread and it's processing is racing with per-net service shutdown:
+This patchset was formerly called "Generic virtual based cputime accounting"  
+but I changed the name to better reflect what it's all about.
 
-CPU#0:							CPU#1:
+This is	the part of the	full dynticks patchset that handles the	task and CPU
+time accounting	without	the tick.
 
-svc_recv						svc_close_net
-svc_get_next_xprt (list_del_init(xpt_ready))
-							svc_close_list (set XPT_BUSY and XPT_CLOSE)
-							svc_clear_pools(xprt was gained on CPU#0 already)
-							svc_delete_xprt (set XPT_DEAD)
-svc_handle_xprt (is XPT_CLOSE => svc_delete_xprt()
-BUG()
+It's available at:
 
-So, from my POW, we need some way to:
-1) Skip such in-progress transports on svc_close_net() call (there is not way to detect them, or at  least I don't see one)
-2) Delete the transport after somewhere after svc_xprt_received()
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	vtime/generic-v5
 
-But there is a problem with svc_xprt_received(): there is a call for svc_xprt_put() in it (svc_recv->svc_handle_xprt->svc_xprt_received->svc_xprt_put) . And if 
-we are the only user - then the transport will be destroyed. But transport is dereferenced later in svc_recv() after the svc_handle_xprt call.
+There have been a lot of changes since latest full dynticks patchset:
 
-What do you think, Bruce?
+- Use sched_clock() instead of jiffies for better precision. And because
+jiffies	granularity was requiring too much dirty hacks to make it working.
+(Thanks	Steven for the suggestion).
+
+- To fully support sched_clock(), use a	per nanosec granularity	in cputime_t
+
+- Fix a	deadlock with tsacct
+
+- Better description of the Kconfig
+
+- Don't	scale generic vtime accounting against CFS precise task	time accounting.
+Now that we use	sched_clock() we should have precise enough statistics.
+
+- Consolidate some code in the reader side
+
+- Make the reader irqsafe (fix potential deadlock against writers)
 
 
-> --b.
->
+Most of the work is done. There are just a few small things I need to care about
+to complete the full cputime support:
 
+* Also handle dynticks guest time accounting (p->gtime and p->utime). This
+require to bring a new accessor: task_gtime() and to add guest_enter() and
+guest_exit() on the context tracking subsystem. Then make the same treatment
+than with utime and stime. No big deal.
+
+* New tasks start their cputime accounting from schedule() on sched-in time
+(see arch_vtime_task_switch()). But I fear that idle tasks don't fall into this
+category. That's a small detail but I hope I can find some generic way to handle it.
+The boot init idle task is however handled.
+
+* Per nsec granularity requires that cputime_t directly maps to cputime64_t. This
+is fine on 64 bits archs and mostly fine in 32 bits archs as well because readers
+use seqlock to synchronize against writers. But reading struct kernel_cputstat
+is not protected. Not sure yet how to solve that.
+
+So I'll likely focus on these items on the next version. Let's hope we can make
+it ready for the next merge window.
+
+Thanks.
+
+---
+Frederic Weisbecker (7):
+      context_tracking: Export context state for generic vtime
+      cputime: Librarize per nsecs resolution cputime definitions
+      cputime: Move default nsecs_to_cputime() to jiffies based cputime file
+      cputime: Generic on-demand virtual cputime accounting
+      cputime: Allow dynamic switch between tick/virtual based cputime accounting
+      cputime: Use accessors to read task cputime stats
+      cputime: Safely read cputime of full dynticks CPUs
+
+
+ arch/alpha/kernel/osf_sys.c                  |    6 +-
+ arch/ia64/include/asm/cputime.h              |   92 +----------
+ arch/ia64/include/asm/thread_info.h          |    4 +-
+ arch/ia64/include/asm/xen/minstate.h         |    2 +-
+ arch/ia64/kernel/asm-offsets.c               |    2 +-
+ arch/ia64/kernel/entry.S                     |   16 +-
+ arch/ia64/kernel/fsys.S                      |    4 +-
+ arch/ia64/kernel/head.S                      |    4 +-
+ arch/ia64/kernel/ivt.S                       |    8 +-
+ arch/ia64/kernel/minstate.h                  |    2 +-
+ arch/ia64/kernel/time.c                      |    4 +-
+ arch/powerpc/configs/chroma_defconfig        |    2 +-
+ arch/powerpc/configs/corenet64_smp_defconfig |    2 +-
+ arch/powerpc/configs/pasemi_defconfig        |    2 +-
+ arch/powerpc/include/asm/cputime.h           |    6 +-
+ arch/powerpc/include/asm/lppaca.h            |    2 +-
+ arch/powerpc/include/asm/ppc_asm.h           |    4 +-
+ arch/powerpc/kernel/entry_64.S               |    4 +-
+ arch/powerpc/kernel/time.c                   |    4 +-
+ arch/powerpc/platforms/pseries/dtl.c         |    6 +-
+ arch/powerpc/platforms/pseries/setup.c       |    6 +-
+ arch/s390/kernel/vtime.c                     |    6 +-
+ arch/x86/kernel/apm_32.c                     |   11 +-
+ drivers/isdn/mISDN/stack.c                   |    7 +-
+ fs/binfmt_elf.c                              |    8 +-
+ fs/binfmt_elf_fdpic.c                        |    7 +-
+ include/asm-generic/cputime.h                |   66 +-------
+ include/asm-generic/cputime_jiffies.h        |   72 +++++++++
+ include/asm-generic/cputime_nsecs.h          |  104 ++++++++++++
+ include/linux/context_tracking.h             |   28 ++++
+ include/linux/hardirq.h                      |    4 +-
+ include/linux/init_task.h                    |   11 ++
+ include/linux/kernel_stat.h                  |    2 +-
+ include/linux/sched.h                        |   34 ++++
+ include/linux/tsacct_kern.h                  |    3 +
+ include/linux/vtime.h                        |   51 ++++--
+ init/Kconfig                                 |   23 +++-
+ kernel/acct.c                                |    6 +-
+ kernel/context_tracking.c                    |   22 +--
+ kernel/cpu.c                                 |    4 +-
+ kernel/delayacct.c                           |    7 +-
+ kernel/exit.c                                |    6 +-
+ kernel/fork.c                                |   14 ++
+ kernel/posix-cpu-timers.c                    |   28 +++-
+ kernel/sched/cputime.c                       |  219 +++++++++++++++++++++++---
+ kernel/signal.c                              |   12 +-
+ kernel/softirq.c                             |    6 +-
+ kernel/time/tick-sched.c                     |    5 +-
+ kernel/tsacct.c                              |   44 ++++--
+ 49 files changed, 696 insertions(+), 296 deletions(-)
+ create mode 100644 include/asm-generic/cputime_jiffies.h
+ create mode 100644 include/asm-generic/cputime_nsecs.h
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.5.4
