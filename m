@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483Ab3AQNpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:45:13 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33309 "EHLO arroyo.ext.ti.com"
+	id S1753653Ab3AQNtH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:49:07 -0500
+Received: from mout.web.de ([212.227.17.12]:58721 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab3AQNpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:45:12 -0500
-Message-ID: <50F80063.5080803@ti.com>
-Date: Thu, 17 Jan 2013 14:45:07 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
+	id S1750953Ab3AQNtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 08:49:06 -0500
+Message-ID: <50F800EB.6040104@web.de>
+Date: Thu, 17 Jan 2013 14:47:23 +0100
+From: Soeren Moch <smoch@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Michael Trimarchi <michael@amarulasolutions.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v3] gpio: twl4030: Cache the direction and output states
- in private data
-References: <1355996651-17805-1-git-send-email-peter.ujfalusi@ti.com> <CACRpkdZK8AA-osijVpbp7U-Wv0XUAVxDPQ3zxfCqWYb6WKjmwQ@mail.gmail.com> <50EEBD8F.6040101@ti.com> <CACRpkdaj5mKk3hy9_QmjcDw3KhZt1Zdx1CXB6ZWmvbhhRWyndA@mail.gmail.com>
-In-Reply-To: <CACRpkdaj5mKk3hy9_QmjcDw3KhZt1Zdx1CXB6ZWmvbhhRWyndA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Jason Cooper <jason@lakedaemon.net>, Greg KH <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all dma_alloc_coherent()
+ calls
+References: <20121119144826.f59667b2.akpm@linux-foundation.org> <20130116024014.GH25500@titan.lakedaemon.net> <50F61D86.4020801@web.de> <201301171049.30415.arnd@arndb.de>
+In-Reply-To: <201301171049.30415.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:1sromNvyIXotrsIdLN4z/1HF46BHzXEQVhDN7U/flGC
+ AvcLGN6+8xlA2Dh2T7grDS7e3jNDd/L4Om55BlIygsLjS8xL+c
+ jLOEgw5oe329GTS4qJemXkDTpN/XwpqdDR7hmcEznFgUaINUAZ
+ 6YmwqL3rSLzlUkC2pq2K981k34coOKPuVowoHg+6VzqNqGV5j2
+ meMyn1Tv3ihvN92YN3ilA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On 01/17/2013 11:43 AM, Linus Walleij wrote:
-> On Thu, Jan 10, 2013 at 2:09 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
->> On 01/10/2013 11:41 AM, Linus Walleij wrote:
-> 
->>> Sorry Peter this must have been missed somehow.
+On 17.01.2013 11:49, Arnd Bergmann wrote:
+> On Wednesday 16 January 2013, Soeren Moch wrote:
+>>>> I will see what I can do here. Is there an easy way to track the buffer
+>>>> usage without having to wait for complete exhaustion?
 >>>
->>> This does not apply to the current v3.8-rc3, could you respin
->>> this on top of Torvalds' tree?
+>>> DMA_API_DEBUG
 >>
->> Grant applied the patch which this one depends on:
->> [1] https://patchwork.kernel.org/patch/1844511/
-> 
-> Hm, it is not in mainline, nor on Grant's "merge" or "next"
-> branches so it must have fallen on the floor somehow.
-> 
-> I applied both the patches not, thanks!
+>> OK, maybe I can try this.
+>>>
+>
+> Any success with this? It should at least tell you if there is a
+> memory leak in one of the drivers.
 
-Thank you, I was planning to go through my pending patches tomorrow and resend
-or annoy maintainers with them.
+Not yet, sorry. I have to do all the tests in my limited spare time.
+Can you tell me what to search for in the debug output?
 
-Thanks again,
-Péter
+Soeren
