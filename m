@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3AQOSD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 09:18:03 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44316 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab3AQOSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 09:18:00 -0500
-Date: Thu, 17 Jan 2013 15:17:58 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Gopalakrishnan, Aravind" <Aravind.Gopalakrishnan@amd.com>,
-        Andre Przywara <andre@andrep.de>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas <linuxuser330250@gmx.net>
-Subject: Re: [PATCH] powernow-k8: Add a kconfig dependency on acpi-cpufreq
-Message-ID: <20130117141758.GA3386@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	"Gopalakrishnan, Aravind" <Aravind.Gopalakrishnan@amd.com>,
-	Andre Przywara <andre@andrep.de>,
-	"cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-	"linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Andreas <linuxuser330250@gmx.net>
-References: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20130117115436.GA3853@pd.tnic>
- <20130117115844.GB3853@pd.tnic>
- <7359167.GTsCEtNASI@vostro.rjw.lan>
+	id S1756434Ab3AQOZc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 09:25:32 -0500
+Received: from pop.mimer.no ([213.184.202.5]:4737 "EHLO mail01.mimer.no"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756324Ab3AQOZb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 09:25:31 -0500
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 09:25:30 EST
+X-Modus-BlackList: 10.22.4.53=OK;birgit.drablos@mimer.no=OK
+X-Modus-RBL: 10.22.4.53=OK
+X-Modus-Trusted: 10.22.4.53=NO
+X-Modus-Audit: FALSE;0;0;0
+Message-ID: <555b3a7909f74d6fa72527585e5e67c2.birgit.drablos@mimer.no>
+X-EM-APIVersion: 2, 0, 2, 6
+X-Priority: 3 (Normal)
+Reply-To: "" <cashadvancefinance@hotmail.com>
+From: "Cash Advance Finance" <birgit.drablos@mimer.no>
+To: lisbeth.frugard@tibe.no
+Subject: =?utf-8?B?U8O4a2UgZXR0ZXIgZW4gZ29kIGzDpW4gcMOlIGZhc3QgcmVudGUgcMOlIDMl?=
+Date: Thu, 17 Jan 2013 15:20:11 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <7359167.GTsCEtNASI@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 01:53:55PM +0100, Rafael J. Wysocki wrote:
-> Do we need that in -stable?
 
-Yes, please.
 
-Thanks.
 
--- 
-Regards/Gruss,
-    Boris.
+Hei,
+Vi er et privat lån lånegivere.
+vi gir lån til enkeltpersoner og selskaper
+organisasjon, bedrift organer.
+vi låne både sikret og usikret lån.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Vi gir ut lån til fast rente på 3%.
+
+Våre lave priser er variabel og omsettelige. Vi
+tilbyr de laveste prisene i lånemarkedet. Når
+søknaden er dokumentert, lånebetingelser er (som
+vedtatt av Rådet), hvoretter lånet er innvilget.
+
+      Å få et lån med vårt selskap, kan du fortelle
+oss størrelsen på lånet du trenger, og perioden som
+du kan betale tilbake lånet. vennligst kontakt oss på
+cashadvancefinance@hotmail.com.
+
+Håper å høre fra deg snart.
+
+På vegne av:
+Administrerende direktør og sekretær
+Elebe Austine
+Cash Advance Finance
+
