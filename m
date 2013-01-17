@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757986Ab3AQAb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 19:31:56 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:39803 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757875Ab3AQAby (ORCPT
+	id S1758103Ab3AQAc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 19:32:57 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:51771 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757579Ab3AQAc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 19:31:54 -0500
-Date: Thu, 17 Jan 2013 09:31:50 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-sh@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, balbi@ti.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        b-cousson@ti.com, tony@atomide.com, linux@arm.linux.org.uk,
-        magnus.damm@gmail.com, cbou@mail.ru, dwmw2@infradead.org,
-        alexander.shishkin@linux.intel.com, gregkh@linuxfoundation.org,
-        leoli@freescale.com, eric.y.miao@gmail.com, haojian.zhuang@gmail.com,
-        stern@rowland.harvard.edu
-Subject: Re: [RFC PATCH 3/6] usb: otg: utils: change the phy lib to support
- multiple PHYs of same type
-Message-ID: <20130117003150.GF19552@verge.net.au>
-References: <1358348462-27693-1-git-send-email-kishon@ti.com>
- <1358348462-27693-4-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358348462-27693-4-git-send-email-kishon@ti.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Jan 2013 19:32:56 -0500
+Date: Thu, 17 Jan 2013 11:32:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: error when fething the git.secretlab.ca trees
+Message-Id: <20130117113246.9235400430d1387f91134d7e@canb.auug.org.au>
+In-Reply-To: <CACxGe6udrYHtVwf50YsPCcrQ-3fCFEXP7pr2AGeVL=ja5VmZDA@mail.gmail.com>
+References: <20130117092536.f1a4e0ed60610845cc919b15@canb.auug.org.au>
+	<CACxGe6udrYHtVwf50YsPCcrQ-3fCFEXP7pr2AGeVL=ja5VmZDA@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__17_Jan_2013_11_32_46_+1100_Lq1Iec/DHVQIY3KE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 08:30:59PM +0530, Kishon Vijay Abraham I wrote:
-> In order to add support for multipe PHY's of the same type, the API's
-> for adding PHY and getting PHY has been changed. Now the binding
-> information of the PHY and controller should be done in platform file
-> using usb_bind_phy API. And for getting a PHY, the device pointer of the
-> USB controller and an index should be passed. Based on the binding
-> information that is added in the platform file, get_phy will return the
-> approappropriate PHY.
-> 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  arch/arm/mach-shmobile/board-marzen.c |    2 +-
+--Signature=_Thu__17_Jan_2013_11_32_46_+1100_Lq1Iec/DHVQIY3KE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Modification to the above file:
+Hi Grant,
 
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
+On Thu, 17 Jan 2013 00:16:12 +0000 Grant Likely <grant.likely@secretlab.ca>=
+ wrote:
+>
+> Thanks for letting me know. I was mucking about with my server to
+> enable gitolite. I probably messed it up. I've just tried to fix it.
+> Let me know if it is working now.
+
+Looks good, thanks.  I will start fetching your trees again tomorrow.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__17_Jan_2013_11_32_46_+1100_Lq1Iec/DHVQIY3KE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ90auAAoJEECxmPOUX5FEaeEP/AwaV9I8ZABFm3W7Afmnn1Vp
+C7Iu4YtJPd0uEmRBDd6Pe0IBVBrRsBmq5Zd2OlQU6xtM8Q/hGtIjQUG+Yxm3zKJ0
+lsR7i0T55kOZySlQpNZ4rqRfMCAneXouI+ucd7seo2Rz2NMWqZlOXwZvIilGxAYz
+1UK4cpAVr8gF+7RLPDyPPr8FiB+JNnIMTTAkg/EzL2yBU7L+3yybalPw9sP9ptOK
+0S20vjv3gTts2RFFy3EV09x4B6syX1LLTOKk6S26C4B3zZeB/PySZ8lCQ50PhfEm
+nYwFB0NfM+1FbjxcdfFokrCmQ6O2hD5/2LtUM87432OiMnf25y62chhpZzq4veA8
+Psx1uEGnqoPv4zASaISVO+YBrzX9x86+Wwc4ZlVH76nR/d4/c8zR7NQcIf6A47Dx
+4sbvEY2XFv85EC7pYIl+PsbjVmIq5MQFCYuaU2bzVoPfV+RnfclsDwKiIpy4MA9x
+rlWla0Pa9doHsuP06iU8T0LU7JJT6WwmzpGZp6/sRlHI3YKEIHPb0RXfzteRmZhB
+3+Dhtj+V1FIrzX0vB8zvjGWqU8IDa81eLlMxJHOdefY0C6flGyB1BHINA+bTYk7o
+gsziSEeEtfUO0LNraKHcYyC3trbCHc0akAgVFuuGRpwqSGDNht2is54ZQMc3ILaY
+D+NBZY7P1KCsOWR46NU6
+=gEZt
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_Jan_2013_11_32_46_+1100_Lq1Iec/DHVQIY3KE--
