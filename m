@@ -1,66 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab3AQVBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 16:01:48 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:33790 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab3AQVBr (ORCPT
+	id S1756187Ab3AQVEl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 16:04:41 -0500
+Received: from talus.maths.usyd.edu.au ([129.78.68.1]:59570 "EHLO
+	talus.maths.usyd.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140Ab3AQVEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 16:01:47 -0500
-X-Greylist: delayed 3369 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 16:01:47 EST
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: linux-kernel@vger.kernel.org
-Subject: btrfs userspace question - where's the utility to dump/restore?
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1358453135_1911P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 17 Jan 2013 15:05:35 -0500
-Message-ID: <6196.1358453135@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020209.50F85991.016F,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 17 Jan 2013 16:04:40 -0500
+X-smtpdoor-from: psz@maths.usyd.edu.au
+X-smtpdoor-want-Message-ID: <201301172104.r0HL4F9k005128@como.maths.usyd.edu.au>
+Date: Fri, 18 Jan 2013 08:04:15 +1100
+From: paul.szabo@sydney.edu.au
+Message-Id: <201301172104.r0HL4F9k005128@como.maths.usyd.edu.au>
+To: dave@linux.vnet.ibm.com, psz@maths.usyd.edu.au
+Subject: Re: [RFC] Reproducible OOM with just a few sleeps
+Cc: 695182@bugs.debian.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1358453135_1911P
-Content-Type: text/plain; charset=us-ascii
+Dear Dave,
 
-So I'm looking at playing with btrfs, and I start looking at the
-userspace pieces I'll need.  What I can't find is an equivalent
-of the ext[34] "dump/restore" package to dump data to an external
-backup device. Is 'tar cf --acls --selinux --xattrs /external/fs.dump'
-as good as it gets, or is something else recommended?
+>> On my large machine, 'free' fails to show about 2GB memory ...
+> You probably have a memory hole. ...
+> The e820 map (during early boot in dmesg) or /proc/iomem will let you
+> locate your memory holes.
 
---==_Exmh_1358453135_1911P
-Content-Type: application/pgp-signature
+Now that my machine is running an amd64 kernel, 'free' shows total Mem
+65854128 (up from 64447796 with PAE kernel), and I do not see much
+change in /proc/iomem output (below). Is that as should be?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Thanks, Paul
 
-iQIVAwUBUPhZjwdmEQWDXROgAQLKHhAAtddys/v5N2lULTfwQmDn0eVRKmIBG481
-zJIwP/NGwhNc1klbxb8zOPBEC7WCTiLy76XUBjIpZ/Qc2QOwQuUvmOmHIZXwv3Gy
-hmsoRgunu6WR4qd954cjQUpiqQVDznMdHmmCVroawrqZFUsKN2rFkNF3MWLo0rdd
-z4Mi+uKKw93SJ41PmT973WFdbIB7jWfg2q7HRZcuGvkk/aLG9i2XrqAPKDMY35F/
-z8I42Ye/MncNbS6drr/6YhJzvuBKK7NaXIH+E1n1Sy7YfbwIFlETmACKdBS1LKD5
-MUHirj+rCTw3ldi7TB1iu//1sXLX81TcNuEkzkTeWxP8/NLlT32xIYV7iRMlOXZ/
-cA3rykBKVTtPj1N5I19Zg0WD2JRCK3UB2883bF2d+LqNaBnmezJfSA0Puu3pYqsr
-cQwwWMfOfJ5laWngy1sc72J6cON0hU+ON+TbGrOvdhyNgi56DB+3N9g28B9NlJ0J
-o3IoV14+laIOySE+7dPIgB4lKHQQFJu5Z3UHgTl3V/TV1V0Y64i18dUqh1i21t+R
-jvdng4NykDlr5ZA3CizjEq7P0SdDtXbC6IBzhGdCxtWHn6j1Yu6BqDg9aitHO88v
-SpXQRn/VdR/+JpeQU6srZslETHSogYJd/1DtzBMA3QRwSxP4FrAwS4EDaloKK/ce
-iY2zbdOw5m0=
-=Vt4t
------END PGP SIGNATURE-----
+Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+School of Mathematics and Statistics   University of Sydney    Australia
 
---==_Exmh_1358453135_1911P--
 
+---
+
+root@zeno:~# uname -a
+Linux zeno.maths.usyd.edu.au 3.2.35-pk06.12-amd64 #2 SMP Thu Jan 17 13:19:53 EST 2013 x86_64 GNU/Linux
+root@zeno:~# free
+             total       used       free     shared    buffers     cached
+Mem:      65854128    1591704   64262424          0     227036     175620
+-/+ buffers/cache:    1189048   64665080
+Swap:    195312636          0  195312636
+root@zeno:~# cat /proc/iomem
+00000000-0000ffff : reserved
+00010000-00099bff : System RAM
+00099c00-0009ffff : reserved
+000a0000-000bffff : PCI Bus 0000:00
+000c0000-000dffff : PCI Bus 0000:00
+  000c0000-000c7fff : Video ROM
+  000c8000-000cf5ff : Adapter ROM
+  000cf800-000d07ff : Adapter ROM
+  000d0800-000d0bff : Adapter ROM
+000e0000-000fffff : reserved
+  000f0000-000fffff : System ROM
+00100000-7e445fff : System RAM
+  01000000-0168f8c6 : Kernel code
+  0168f8c7-018f24bf : Kernel data
+  0197d000-019dafff : Kernel bss
+7e446000-7e565fff : ACPI Non-volatile Storage
+7e566000-7f1e2fff : reserved
+7f1e3000-7f25efff : ACPI Tables
+7f25f000-7f31cfff : reserved
+7f31d000-7f323fff : ACPI Non-volatile Storage
+7f324000-7f333fff : reserved
+7f334000-7f33bfff : ACPI Non-volatile Storage
+7f33c000-7f365fff : reserved
+7f366000-7f7fffff : ACPI Non-volatile Storage
+7f800000-7fffffff : RAM buffer
+80000000-dfffffff : PCI Bus 0000:00
+  80000000-8fffffff : PCI MMCONFIG 0000 [bus 00-ff]
+    80000000-8fffffff : reserved
+  90000000-9000000f : 0000:00:16.0
+  90000010-9000001f : 0000:00:16.1
+  dd000000-ddffffff : PCI Bus 0000:08
+    dd000000-ddffffff : 0000:08:03.0
+  de000000-de4fffff : PCI Bus 0000:07
+    de000000-de3fffff : 0000:07:00.0
+    de47c000-de47ffff : 0000:07:00.0
+  de600000-de6fffff : PCI Bus 0000:02
+  df000000-df8fffff : PCI Bus 0000:08
+    df000000-df7fffff : 0000:08:03.0
+    df800000-df803fff : 0000:08:03.0
+  df900000-df9fffff : PCI Bus 0000:07
+  dfa00000-dfafffff : PCI Bus 0000:02
+    dfa00000-dfa1ffff : 0000:02:00.1
+      dfa00000-dfa1ffff : igb
+    dfa20000-dfa3ffff : 0000:02:00.0
+      dfa20000-dfa3ffff : igb
+    dfa40000-dfa43fff : 0000:02:00.1
+      dfa40000-dfa43fff : igb
+    dfa44000-dfa47fff : 0000:02:00.0
+      dfa44000-dfa47fff : igb
+  dfb00000-dfb03fff : 0000:00:04.7
+  dfb04000-dfb07fff : 0000:00:04.6
+  dfb08000-dfb0bfff : 0000:00:04.5
+  dfb0c000-dfb0ffff : 0000:00:04.4
+  dfb10000-dfb13fff : 0000:00:04.3
+  dfb14000-dfb17fff : 0000:00:04.2
+  dfb18000-dfb1bfff : 0000:00:04.1
+  dfb1c000-dfb1ffff : 0000:00:04.0
+  dfb20000-dfb200ff : 0000:00:1f.3
+  dfb21000-dfb217ff : 0000:00:1f.2
+    dfb21000-dfb217ff : ahci
+  dfb22000-dfb223ff : 0000:00:1d.0
+    dfb22000-dfb223ff : ehci_hcd
+  dfb23000-dfb233ff : 0000:00:1a.0
+    dfb23000-dfb233ff : ehci_hcd
+  dfb25000-dfb25fff : 0000:00:05.4
+  dfffc000-dfffdfff : pnp 00:02
+e0000000-fbffffff : PCI Bus 0000:80
+  fbe00000-fbefffff : PCI Bus 0000:84
+    fbe00000-fbe3ffff : 0000:84:00.0
+    fbe40000-fbe5ffff : 0000:84:00.0
+    fbe60000-fbe63fff : 0000:84:00.0
+  fbf00000-fbf03fff : 0000:80:04.7
+  fbf04000-fbf07fff : 0000:80:04.6
+  fbf08000-fbf0bfff : 0000:80:04.5
+  fbf0c000-fbf0ffff : 0000:80:04.4
+  fbf10000-fbf13fff : 0000:80:04.3
+  fbf14000-fbf17fff : 0000:80:04.2
+  fbf18000-fbf1bfff : 0000:80:04.1
+  fbf1c000-fbf1ffff : 0000:80:04.0
+  fbf20000-fbf20fff : 0000:80:05.4
+  fbffe000-fbffffff : pnp 00:12
+fc000000-fcffffff : pnp 00:01
+fd000000-fdffffff : pnp 00:01
+fe000000-feafffff : pnp 00:01
+feb00000-febfffff : pnp 00:01
+fec00000-fec003ff : IOAPIC 0
+fec01000-fec013ff : IOAPIC 1
+fec40000-fec403ff : IOAPIC 2
+fed00000-fed003ff : HPET 0
+fed08000-fed08fff : pnp 00:0c
+fed1c000-fed3ffff : reserved
+  fed1c000-fed1ffff : pnp 00:0c
+fed45000-fedfffff : pnp 00:01
+fee00000-fee00fff : Local APIC
+ff000000-ffffffff : reserved
+  ff000000-ffffffff : pnp 00:0c
+100000000-107fffffff : System RAM
+root@zeno:~# 
+
+---
+
+For comparison, output obtained (and reported previously) when machine
+was running PAE kernel:
+root@zeno:~# cat /proc/iomem
+00000000-0000ffff : reserved
+00010000-00099bff : System RAM
+00099c00-0009ffff : reserved
+000a0000-000bffff : PCI Bus 0000:00
+  000a0000-000bffff : Video RAM area
+000c0000-000dffff : PCI Bus 0000:00
+  000c0000-000c7fff : Video ROM
+  000c8000-000cf5ff : Adapter ROM
+  000cf800-000d07ff : Adapter ROM
+  000d0800-000d0bff : Adapter ROM
+000e0000-000fffff : reserved
+  000f0000-000fffff : System ROM
+00100000-7e445fff : System RAM
+  01000000-01610e15 : Kernel code
+  01610e16-01802dff : Kernel data
+  01880000-018b2fff : Kernel bss
+7e446000-7e565fff : ACPI Non-volatile Storage
+7e566000-7f1e2fff : reserved
+7f1e3000-7f25efff : ACPI Tables
+7f25f000-7f31cfff : reserved
+7f31d000-7f323fff : ACPI Non-volatile Storage
+7f324000-7f333fff : reserved
+7f334000-7f33bfff : ACPI Non-volatile Storage
+7f33c000-7f365fff : reserved
+7f366000-7f7fffff : ACPI Non-volatile Storage
+7f800000-7fffffff : RAM buffer
+80000000-dfffffff : PCI Bus 0000:00
+  80000000-8fffffff : PCI MMCONFIG 0000 [bus 00-ff]
+    80000000-8fffffff : reserved
+  90000000-9000000f : 0000:00:16.0
+  90000010-9000001f : 0000:00:16.1
+  dd000000-ddffffff : PCI Bus 0000:08
+    dd000000-ddffffff : 0000:08:03.0
+  de000000-de4fffff : PCI Bus 0000:07
+    de000000-de3fffff : 0000:07:00.0
+    de47c000-de47ffff : 0000:07:00.0
+  de600000-de6fffff : PCI Bus 0000:02
+  df000000-df8fffff : PCI Bus 0000:08
+    df000000-df7fffff : 0000:08:03.0
+    df800000-df803fff : 0000:08:03.0
+  df900000-df9fffff : PCI Bus 0000:07
+  dfa00000-dfafffff : PCI Bus 0000:02
+    dfa00000-dfa1ffff : 0000:02:00.1
+      dfa00000-dfa1ffff : igb
+    dfa20000-dfa3ffff : 0000:02:00.0
+      dfa20000-dfa3ffff : igb
+    dfa40000-dfa43fff : 0000:02:00.1
+      dfa40000-dfa43fff : igb
+    dfa44000-dfa47fff : 0000:02:00.0
+      dfa44000-dfa47fff : igb
+  dfb00000-dfb03fff : 0000:00:04.7
+  dfb04000-dfb07fff : 0000:00:04.6
+  dfb08000-dfb0bfff : 0000:00:04.5
+  dfb0c000-dfb0ffff : 0000:00:04.4
+  dfb10000-dfb13fff : 0000:00:04.3
+  dfb14000-dfb17fff : 0000:00:04.2
+  dfb18000-dfb1bfff : 0000:00:04.1
+  dfb1c000-dfb1ffff : 0000:00:04.0
+  dfb20000-dfb200ff : 0000:00:1f.3
+  dfb21000-dfb217ff : 0000:00:1f.2
+    dfb21000-dfb217ff : ahci
+  dfb22000-dfb223ff : 0000:00:1d.0
+    dfb22000-dfb223ff : ehci_hcd
+  dfb23000-dfb233ff : 0000:00:1a.0
+    dfb23000-dfb233ff : ehci_hcd
+  dfb25000-dfb25fff : 0000:00:05.4
+  dfffc000-dfffdfff : pnp 00:02
+e0000000-fbffffff : PCI Bus 0000:80
+  fbe00000-fbefffff : PCI Bus 0000:84
+    fbe00000-fbe3ffff : 0000:84:00.0
+    fbe40000-fbe5ffff : 0000:84:00.0
+    fbe60000-fbe63fff : 0000:84:00.0
+  fbf00000-fbf03fff : 0000:80:04.7
+  fbf04000-fbf07fff : 0000:80:04.6
+  fbf08000-fbf0bfff : 0000:80:04.5
+  fbf0c000-fbf0ffff : 0000:80:04.4
+  fbf10000-fbf13fff : 0000:80:04.3
+  fbf14000-fbf17fff : 0000:80:04.2
+  fbf18000-fbf1bfff : 0000:80:04.1
+  fbf1c000-fbf1ffff : 0000:80:04.0
+  fbf20000-fbf20fff : 0000:80:05.4
+  fbffe000-fbffffff : pnp 00:12
+fc000000-fcffffff : pnp 00:01
+fd000000-fdffffff : pnp 00:01
+fe000000-feafffff : pnp 00:01
+feb00000-febfffff : pnp 00:01
+fec00000-fec003ff : IOAPIC 0
+fec01000-fec013ff : IOAPIC 1
+fec40000-fec403ff : IOAPIC 2
+fed00000-fed003ff : HPET 0
+fed08000-fed08fff : pnp 00:0c
+fed1c000-fed3ffff : reserved
+  fed1c000-fed1ffff : pnp 00:0c
+fed45000-fedfffff : pnp 00:01
+fee00000-fee00fff : Local APIC
+ff000000-ffffffff : reserved
+  ff000000-ffffffff : pnp 00:0c
+100000000-107fffffff : System RAM
+root@zeno:~# 
