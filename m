@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758730Ab3AQEHX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 23:07:23 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:10814 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758201Ab3AQEHV (ORCPT
+	id S1758714Ab3AQELF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 23:11:05 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:49093 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757317Ab3AQELC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 23:07:21 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-9f-50f778f7786b
+	Wed, 16 Jan 2013 23:11:02 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-2e-50f779d4a3cd
 From: Kukjin Kim <kgene.kim@samsung.com>
 To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -18,41 +18,41 @@ References: <20130111153206.e075edb9b1e4a38d90f23ab6@canb.auug.org.au>
  <20130117145324.3f1f27fb5902b5a03135bf06@canb.auug.org.au>
 In-reply-to: <20130117145324.3f1f27fb5902b5a03135bf06@canb.auug.org.au>
 Subject: RE: linux-next: manual merge of the samsung tree with the arm-soc tree
-Date: Wed, 16 Jan 2013 20:06:59 -0800
-Message-id: <0c7d01cdf468$1ad400d0$507c0270$@samsung.com>
+Date: Wed, 16 Jan 2013 20:10:39 -0800
+Message-id: <0c8401cdf468$9e920c00$dbb62400$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQJ5C+EMbh6xTcK1+iIQ4sOv+ooGYQHRD6J6lugvqBA=
+Thread-index: AQJ5C+EMbh6xTcK1+iIQ4sOv+ooGYQHRD6J6lugw1UA=
 Content-language: en-us
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zfd3vFd8DDDZ1Wlhc3jWHzeLgwjZG
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJ2n7jKVtDKUnFq1yHmBsZG5i5GTg4JAROJ+R8XsEHY
-	YhIX7q0Hsrk4hASWMUocWfKQCabo07+3UIlFjBIXthxjB0kICfxllLjerQ5iswloSBx+/wws
-	LiKgK9H3bz4TSAOzwEVGif+TpzNDdDczStxacYwFpIpTwF1i/cvrYCuEBfwl+h99BrNZBFQl
-	jr2eAlbDK2ApcaX7AyOELSjxY/I9sDizgJbE+p3HmSBseYnNa95C/aMgsePsa0aIK6wknrQu
-	YYeoEZeY9OAhO8R8AYlvkw8BzeEAqpeV2HQA7DYJgVXsEn//P4OGhaTEwRU3WCYwSsxCsnoW
-	ktWzkKyehWTFAkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxghkSa1g3Flg8UhRgEORiUe
-	XsPL3wKEWBPLiitzDzFKcDArifCuyfseIMSbklhZlVqUH19UmpNafIjRB+jyicxSosn5wCSQ
-	VxJvaGxsYmZiamJuaWpuikNYSZyX8dSTACGB9MSS1OzU1ILUIphxTBycUg2Mug61rVdW/fW8
-	/nLlRLOkRXY1J7jffnjxz1uioW5Zr4+GlPjT2/fO9ftKRv3xstzfKSDfePP7ZqGZHqX9LKJ2
-	54QWfljOrPG1/WdKd3tapIjEbNc1pxTN8/wSt0TKvDvuJ2rdNive5sObts0vfdvVxVdJ5DWw
-	pq0sy56sd9RyifeszZcEWviUWIozEg21mIuKEwFFWRfg4QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jAd3vFd8DDDZtNrG4vGsOm8XBhW2M
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsVy+t8zA90rld8DDJ68N7W4vGsOm8XBhW2M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGXcXTOPtaCNpWJdx3bGBsYm5i5GTg4JAROJ/idzGCFs
+	MYkL99azdTFycQgJzGaU+DCrnw2m6E/LC6jEdEaJ/d2rmCCcv4wSix/1soBUsQloSBx+/4wd
+	xBYR0JXo+zcfrIhZ4CKjxP/J05khOpoZJW6tOAbWwSngLrH+5XUmEFtYwF+i/9FnMJtFQFXi
+	35cNrCA2r4ClxLZF3UwQtqDEj8n3wHqZBbQk1u88zgRhy0tsXvMW6iEFiR1nXzNCXGElMaHj
+	MxtEjbjEpAcP2SHmC0h8m3wIaA4HUL2sxKYDYLdJCKxil9h6bwoLxBxJiYMrbrBMYJSYhWT1
+	LCSrZyFZPQvJigWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxQmJNagfjygaLQ4wCHIxK
+	PLyGl78FCLEmlhVX5h5ilOBgVhLhXZP3PUCINyWxsiq1KD++qDQntfgQow/Q5ROZpUST84Fp
+	IK8k3tDY2MTMxNTE3NLU3BSHsJI4L+OpJwFCAumJJanZqakFqUUw45g4OKUaGItOdVZMzbCs
+	rZ2sIB1wP/Hpb4eiPzqFtnN13n1IvFO3MP9qY4fBElOr8CexTHaLj8cVbk/c6C9gvUpBOSdv
+	8/LUGQ92bT+6j81zff6tS7/uL+nXUEgRUZz598h3/m/MVgte9cS//reCy+GWrF5zY7nh1NMh
+	O9oV13zaaZnJIBEkHR9aq71zlxJLcUaioRZzUXEiAEKOw8/iAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsVy+t9jQd0rld8DDO5sN7S4vGsOm8XBhW2M
 	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm7D5xla2glaXi
-	1K5DzA2MjcxdjJwcEgImEp/+vWWDsMUkLtxbD2RzcQgJLGKUuLDlGDtIQkjgL6PE9W51EJtN
-	QEPi8PtnYHERAV2Jvn/zmUAamAUuMkr8nzydGaK7mVHi1opjLCBVnALuEutfXmcCsYUF/CX6
-	H30Gs1kEVCWOvZ4CVsMrYClxpfsDI4QtKPFj8j2wOLOAlsT6nceZIGx5ic1r3kKdrSCx4+xr
-	RogrrCSetC5hh6gRl5j04CH7BEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6hXnJhb
-	XJqXrpecn7uJERzHz6R2MK5ssDjEKMDBqMTDa3j5W4AQa2JZcWXuIUYJDmYlEd41ed8DhHhT
-	EiurUovy44tKc1KLDzH6AH06kVlKNDkfmGLySuINjU3MjCyNzCyMTMzNcQgrifMynnoSICSQ
-	nliSmp2aWpBaBDOOiYNTqoHRRayPa1r9Fo1p029pt3yQd+V6yBLwaqtUyJqIr0ltP66o+h+d
-	YCTxwvnt6d6ZLh93eLG4GT05IP773S7+5oPsnz8abREPEdFvz/5Vot/9W15wMVMTY8YB1S3c
-	AYKpab67XvJtZlcxt5A7XuB59pCq6xflFaes82YsXs+7JMTp6O1/zx33XeNRYinOSDTUYi4q
-	TgQAjMzSxRADAAA=
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm3F0zj7WgjaVi
+	Xcd2xgbGJuYuRk4OCQETiT8tL9ggbDGJC/fWA9lcHEIC0xkl9nevYoJw/jJKLH7UywJSxSag
+	IXH4/TN2EFtEQFei7998sCJmgYuMEv8nT2eG6GhmlLi14hhYB6eAu8T6l9eZQGxhAX+J/kef
+	wWwWAVWJf182sILYvAKWEtsWdTNB2IISPybfA+tlFtCSWL/zOBOELS+xec1bqLsVJHacfc0I
+	cYWVxISOz2wQNeISkx48ZJ/AKDQLyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL
+	89L1kvNzNzGCI/mZ1A7GlQ0WhxgFOBiVeHgNL38LEGJNLCuuzD3EKMHBrCTCuybve4AQb0pi
+	ZVVqUX58UWlOavEhRh+gTycyS4km5wOTTF5JvKGxiZmRpZGZhZGJuTkOYSVxXsZTTwKEBNIT
+	S1KzU1MLUotgxjFxcEo1MFZYrPKV3D5lwz/GyAC2D2GcCqLrTO6YNSRG1+xxPl5RWGZT1uGT
+	uIFDc9HnbPvyCR9msfyvW1yzK691xf2vTzLfaxxrX/L+cr/90uZ7rXmnZ/744Ll/zZ+9z18E
+	vfz+sCJQ6sXhsDoF9gLGhil/nW63L634NbG98lDZlOdtZ6b6/w+4tXzCpFlKLMUZiYZazEXF
+	iQBiYEBsEQMAAA==
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -75,10 +75,10 @@ to
 > > fix this mess up, thanks.
 > 
 > Ping?
-> 
+
 Oops, I missed above e-mail. Anyway, really?
 
-Let me look at soon and I will fix.
+Let me look at it soon and I will fix.
 
 Thanks for your information.
 
