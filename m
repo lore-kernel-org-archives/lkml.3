@@ -1,24 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202Ab3AQC4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 21:56:06 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:56684 "EHLO smtp.outflux.net"
+	id S1759222Ab3AQC4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 21:56:31 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:57765 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759189Ab3AQC4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:56:03 -0500
+	id S1759154Ab3AQCzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 21:55:48 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <james.l.morris@oracle.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: Kees Cook <keescook@chromium.org>, Len Brown <lenb@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 84/86] lib: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:54:16 -0800
-Message-Id: <1358391258-1771-85-git-send-email-keescook@chromium.org>
+Subject: [PATCH 36/86] drivers/acpi: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:53:28 -0800
+Message-Id: <1358391258-1771-37-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -31,61 +25,60 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: "Paul E. McKenney" <paul.mckenney@linaro.org>
-CC: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-CC: James Morris <james.l.morris@oracle.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Akinobu Mita <akinobu.mita@gmail.com>
-CC: Ingo Molnar <mingo@kernel.org>
+CC: Len Brown <lenb@kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- lib/Kconfig       |    2 +-
- lib/Kconfig.debug |    2 +-
- lib/Kconfig.kgdb  |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/acpi/Kconfig |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 75cdb77..3958dc4 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -322,7 +322,7 @@ config CPUMASK_OFFSTACK
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 38c5078..7ec178e 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -176,7 +176,6 @@ config ACPI_FAN
  
- config DISABLE_OBSOLETE_CPUMASK_FUNCTIONS
-        bool "Disable obsolete cpumask functions" if DEBUG_PER_CPU_MAPS
--       depends on EXPERIMENTAL && BROKEN
-+       depends on BROKEN
- 
- config CPU_RMAP
- 	bool
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 67604e5..849ecae 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -455,7 +455,7 @@ config HAVE_DEBUG_KMEMLEAK
- 
- config DEBUG_KMEMLEAK
- 	bool "Kernel memory leak detector"
--	depends on DEBUG_KERNEL && EXPERIMENTAL && HAVE_DEBUG_KMEMLEAK
-+	depends on DEBUG_KERNEL && HAVE_DEBUG_KMEMLEAK
- 	select DEBUG_FS
- 	select STACKTRACE if STACKTRACE_SUPPORT
- 	select KALLSYMS
-diff --git a/lib/Kconfig.kgdb b/lib/Kconfig.kgdb
-index 43cb93f..77439eb 100644
---- a/lib/Kconfig.kgdb
-+++ b/lib/Kconfig.kgdb
-@@ -5,7 +5,7 @@ config HAVE_ARCH_KGDB
- menuconfig KGDB
- 	bool "KGDB: kernel debugger"
- 	depends on HAVE_ARCH_KGDB
--	depends on DEBUG_KERNEL && EXPERIMENTAL
-+	depends on DEBUG_KERNEL
+ config ACPI_DOCK
+ 	bool "Dock"
+-	depends on EXPERIMENTAL
  	help
- 	  If you say Y here, it will be possible to remotely debug the
- 	  kernel using gdb.  It is recommended but not required, that
+ 	  This driver supports ACPI-controlled docking stations and removable
+ 	  drive bays such as the IBM Ultrabay and the Dell Module Bay.
+@@ -202,7 +201,7 @@ config ACPI_PROCESSOR
+ 	  the module will be called processor.
+ config ACPI_IPMI
+ 	tristate "IPMI"
+-	depends on EXPERIMENTAL && IPMI_SI && IPMI_HANDLER
++	depends on IPMI_SI && IPMI_HANDLER
+ 	default n
+ 	help
+ 	  This driver enables the ACPI to access the BMC controller. And it
+@@ -214,14 +213,13 @@ config ACPI_IPMI
+ 
+ config ACPI_HOTPLUG_CPU
+ 	bool
+-	depends on EXPERIMENTAL && ACPI_PROCESSOR && HOTPLUG_CPU
++	depends on ACPI_PROCESSOR && HOTPLUG_CPU
+ 	select ACPI_CONTAINER
+ 	default y
+ 
+ config ACPI_PROCESSOR_AGGREGATOR
+ 	tristate "Processor Aggregator"
+ 	depends on ACPI_PROCESSOR
+-	depends on EXPERIMENTAL
+ 	depends on X86
+ 	help
+ 	  ACPI 4.0 defines processor Aggregator, which enables OS to perform
+@@ -337,8 +335,7 @@ config X86_PM_TIMER
+ 	  systems require this timer. 
+ 
+ config ACPI_CONTAINER
+-	tristate "Container and Module Devices (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "Container and Module Devices"
+ 	default (ACPI_HOTPLUG_MEMORY || ACPI_HOTPLUG_CPU || ACPI_HOTPLUG_IO)
+ 	help
+ 	  This driver supports ACPI Container and Module devices (IDs
 -- 
 1.7.9.5
 
