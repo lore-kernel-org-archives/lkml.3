@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab3AQUkQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:40:16 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33895 "EHLO mga09.intel.com"
+	id S1757173Ab3AQUkO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:40:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33907 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757112Ab3AQUhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757119Ab3AQUhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jan 2013 15:37:51 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="273439816"
+   d="scan'208";a="273439815"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 22/29] tools, perf: Add a precise event qualifier v2
-Date: Thu, 17 Jan 2013 12:36:45 -0800
-Message-Id: <1358455012-12287-23-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 21/29] perf, x86: Move NMI clearing to end of PMI handler after the counter registers are reset
+Date: Thu, 17 Jan 2013 12:36:44 -0800
+Message-Id: <1358455012-12287-22-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,60 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a precise qualifier, like cpu/event=0x3c,precise=1/
+This avoids some problems with spurious PMIs on Haswell.
+Haswell seems to behave more like P4 in this regard. Do
+the same thing as the P4 perf handler by unmasking
+the NMI only at the end. Shouldn't make any difference
+for earlier non P4 cores.
 
-This is needed so that the kernel can request enabling PEBS
-for TSX events. The parser bails out on any sysfs parse errors,
-so this is needed in any case to handle any event on the TSX
-perf kernel.
-
-v2: Allow 3 as value
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/parse-events.c |    6 ++++++
- tools/perf/util/parse-events.h |    1 +
- tools/perf/util/parse-events.l |    1 +
- 3 files changed, 8 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 2d8d53be..5a157b0 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -526,6 +526,12 @@ do {								\
- 	case PARSE_EVENTS__TERM_TYPE_NAME:
- 		CHECK_TYPE_VAL(STR);
- 		break;
-+	case PARSE_EVENTS__TERM_TYPE_PRECISE:
-+		CHECK_TYPE_VAL(NUM);
-+		if ((unsigned)term->val.num > 3)
-+			return -EINVAL;
-+		attr->precise_ip = term->val.num;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index b7af80b..bed2c90 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -49,6 +49,7 @@ enum {
- 	PARSE_EVENTS__TERM_TYPE_NAME,
- 	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
- 	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
-+	PARSE_EVENTS__TERM_TYPE_PRECISE,
- };
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 20caf0a..d8acedd 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1133,16 +1133,6 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
  
- struct parse_events__term {
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index e9d1134..32a9000 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -169,6 +169,7 @@ period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
- branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- ,			{ return ','; }
- "/"			{ BEGIN(INITIAL); return '/'; }
-+precise			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_PRECISE); }
- {name_minus}		{ return str(yyscanner, PE_NAME); }
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	/*
+-	 * Some chipsets need to unmask the LVTPC in a particular spot
+-	 * inside the nmi handler.  As a result, the unmasking was pushed
+-	 * into all the nmi handlers.
+-	 *
+-	 * This handler doesn't seem to have any issues with the unmasking
+-	 * so it was left at the top.
+-	 */
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+@@ -1211,6 +1201,11 @@ again:
+ 
+ done:
+ 	intel_pmu_enable_all(0);
++	/*
++	 * Only unmask the NMI after the overflow counters
++	 * have been reset.
++	 */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 	return handled;
  }
  
 -- 
