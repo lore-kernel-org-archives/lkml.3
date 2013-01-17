@@ -1,215 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab3AQXj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 18:39:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56232 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891Ab3AQXj4 (ORCPT
+	id S1753963Ab3AQXk1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 18:40:27 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:31872 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752076Ab3AQXk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 18:39:56 -0500
-Date: Thu, 17 Jan 2013 15:39:54 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Abhijit Pawar <abhi.c.pawar@gmail.com>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Steve French <sfrench@samba.org>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
-        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com
-Subject: Re: [PATCH 4/4] fs: remove obsolete simple_strto<foo>
-Message-Id: <20130117153954.e36a474b.akpm@linux-foundation.org>
-In-Reply-To: <1354881319-23585-1-git-send-email-abhi.c.pawar@gmail.com>
-References: <1354881319-23585-1-git-send-email-abhi.c.pawar@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 17 Jan 2013 18:40:26 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkECAG6Zu08YNOOE/2dsb2JhbAANN4F7gzKrG4ZmAQEBAQMjBFIQCxgCAgUhAgIPAkYGDQEHAQGvGJJ7gSaOCoEUA4hClXeJWQ
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="212827044"
+Message-ID: <50F88BE7.80800@teksavvy.com>
+Date: Thu, 17 Jan 2013 18:40:23 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
+References: <50F42F85.50907@teksavvy.com> <50F7F898.5050605@teksavvy.com> <20130117135333.GF6598@fieldses.org>
+In-Reply-To: <20130117135333.GF6598@fieldses.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  7 Dec 2012 17:25:19 +0530
-Abhijit Pawar <abhi.c.pawar@gmail.com> wrote:
-
-> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
+On 13-01-17 08:53 AM, J. Bruce Fields wrote:
+> On Thu, Jan 17, 2013 at 08:11:52AM -0500, Mark Lord wrote:
+>> On 13-01-14 11:17 AM, Mark Lord wrote:
+>>>
+>>> Here's the code with the BUG() at net/sunrpc/svc_xprt.c line 921:
+>>>
+>>> /*
+>>>  * Remove a dead transport
+>>>  */
+>>> static void svc_delete_xprt(struct svc_xprt *xprt)
+>>> {
+>>>         struct svc_serv *serv = xprt->xpt_server;
+>>>         struct svc_deferred_req *dr;
+>>>
+>>>         /* Only do this once */
+>>>         if (test_and_set_bit(XPT_DEAD, &xprt->xpt_flags))
+>>>                 BUG();
+>>
+>>
+>> Shouldn't there also be a return statement after the BUG() line,
+>> inside the if-stmt ?
 > 
+> BUG() kills the thread that calls it
 
-The XFS part (or something like it) has been applied.
+Oh, does it?  Well, taken care of then, I guess.
+With a sledgehammer.
 
->
-> ...
->
-> --- a/fs/9p/v9fs.c
-> +++ b/fs/9p/v9fs.c
-> @@ -112,7 +112,7 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
->  	substring_t args[MAX_OPT_ARGS];
->  	char *p;
->  	int option = 0;
-> -	char *s, *e;
-> +	char *s;
->  	int ret = 0;
->  
->  	/* setup defaults */
-> @@ -249,8 +249,8 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
->  				v9ses->flags |= V9FS_ACCESS_CLIENT;
->  			} else {
->  				v9ses->flags |= V9FS_ACCESS_SINGLE;
-> -				v9ses->uid = simple_strtoul(s, &e, 10);
-> -				if (*e != '\0') {
-> +				ret = kstrtouint(s, 10, &v9ses->uid);
-> +				if (ret) {
->  					ret = -EINVAL;
->  					pr_info("Unknown access argument %s\n",
->  						s);
-
-Here we should propagate the kstrtouint() errno back to the caller
-rather than overwriting it with EINVAL.
-
-> diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-> index 5b3429a..95d9e09 100644
-> --- a/fs/btrfs/ioctl.c
-> +++ b/fs/btrfs/ioctl.c
-> @@ -1335,7 +1335,11 @@ static noinline int btrfs_ioctl_resize(struct btrfs_root *root,
->  		sizestr = devstr + 1;
->  		*devstr = '\0';
->  		devstr = vol_args->name;
-> -		devid = simple_strtoull(devstr, &end, 10);
-> +		ret = kstrtoull(devstr, 10, &devid);
-> +		if (ret) {
-> +			ret = -EINVAL;
-> +			goto out_free;
-> +		}
-
-Propagate the kstrtoull errno back to the caller.
-
->  		printk(KERN_INFO "btrfs: resizing devid %llu\n",
->  		       (unsigned long long)devid);
->  	}
->
-> ...
->
-> @@ -609,8 +610,9 @@ static ssize_t cifs_security_flags_proc_write(struct file *file,
->  	}
->  	/* else we have a number */
->  
-> -	flags = simple_strtoul(flags_string, NULL, 0);
-> -
-> +	rc = kstrtouint(flags_string, 0, &flags);
-> +	if (rc)
-> +		return -EINVAL;
-
-Here we should propagate the return value.
-
-But if this error path is taken, we might already have altered
-global_secflags.  Perhaps that change should be undone.  Or, better,
-check the string before starting to change state.
-
->  	cFYI(1, "sec flags 0x%x", flags);
->  
->  	if (flags <= 0)  {
-> --- a/fs/dlm/config.c
-> +++ b/fs/dlm/config.c
-> @@ -156,11 +156,14 @@ static ssize_t cluster_set(struct dlm_cluster *cl, unsigned int *cl_field,
->  			   const char *buf, size_t len)
->  {
->  	unsigned int x;
-> +	int rc;
->  
->  	if (!capable(CAP_SYS_ADMIN))
->  		return -EPERM;
->  
-> -	x = simple_strtoul(buf, NULL, 0);
-> +	rc = kstrtouint(buf, 0, &x);
-> +	if (rc)
-> +		return -EINVAL;
-
-Propagate it back.
-
->  	if (check_zero && !x)
->  		return -EINVAL;
-> @@ -729,7 +732,10 @@ static ssize_t comm_nodeid_read(struct dlm_comm *cm, char *buf)
->  static ssize_t comm_nodeid_write(struct dlm_comm *cm, const char *buf,
->  				 size_t len)
->  {
-> -	cm->nodeid = simple_strtol(buf, NULL, 0);
-> +	int rc;
-> +	rc = kstrtoint(buf, 0, &cm->nodeid);
-> +	if (rc)
-> +		return -EINVAL;
-
-Ditto
-
->  	return len;
->  }
->  
-> @@ -741,7 +747,10 @@ static ssize_t comm_local_read(struct dlm_comm *cm, char *buf)
->  static ssize_t comm_local_write(struct dlm_comm *cm, const char *buf,
->  				size_t len)
->  {
-> -	cm->local= simple_strtol(buf, NULL, 0);
-> +	int rc;
-> +	rc = kstrtoint(buf, 0, &cm->local);
-> +	if (rc)
-> +		return -EINVAL;
-
-Ditto
-
->  	if (cm->local && !local_comm)
->  		local_comm = cm;
->  	return len;
-> @@ -845,7 +854,10 @@ static ssize_t node_nodeid_write(struct dlm_node *nd, const char *buf,
->  				 size_t len)
->  {
->  	uint32_t seq = 0;
-> -	nd->nodeid = simple_strtol(buf, NULL, 0);
-> +	int rc;
-> +	rc = kstrtoint(buf, 0, &nd->nodeid);
-> +	if (rc)
-> +		return -EINVAL;
-
-Ditto
-
->  	dlm_comm_seq(nd->nodeid, &seq);
->  	nd->comm_seq = seq;
->  	return len;
-> @@ -859,7 +871,10 @@ static ssize_t node_weight_read(struct dlm_node *nd, char *buf)
->  static ssize_t node_weight_write(struct dlm_node *nd, const char *buf,
->  				 size_t len)
->  {
-> -	nd->weight = simple_strtol(buf, NULL, 0);
-> +	int rc;
-> +	rc = kstrtoint(buf, 0, &nd->weight);
-> +	if (rc)
-> +		return -EINVAL;
-
-Ditto
-
->  	return len;
->  }
->  
-> diff --git a/fs/dlm/lockspace.c b/fs/dlm/lockspace.c
-> index 2e99fb0..e83abfb 100644
-> --- a/fs/dlm/lockspace.c
-> +++ b/fs/dlm/lockspace.c
-> @@ -35,7 +35,10 @@ static struct task_struct *	scand_task;
->  static ssize_t dlm_control_store(struct dlm_ls *ls, const char *buf, size_t len)
->  {
->  	ssize_t ret = len;
-> -	int n = simple_strtol(buf, NULL, 0);
-> +	int n, rc;
-> +	rc = kstrtoint(buf, 0, &n);
-> +	if (rc)
-> +		return -EINVAL;
-
-etcetera
-
->  	ls = dlm_find_lockspace_local(ls->ls_local_handle);
->  	if (!ls)
->
-> ...
->
-
+:)
