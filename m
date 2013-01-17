@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab3AQWOB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 17:14:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10317 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751960Ab3AQWN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 17:13:59 -0500
-Date: Thu, 17 Jan 2013 17:13:48 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ebiederm@xmission.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        lisa.mitchell@hp.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v1 0/3] kdump, vmcore: Map vmcore memory in direct
- mapping region
-Message-ID: <20130117221348.GJ2237@redhat.com>
-References: <20130110115615.645.56499.stgit@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130110115615.645.56499.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752298Ab3AQWST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 17:18:19 -0500
+Received: from warthog.procyon.org.uk ([90.155.74.18]:59153 "EHLO
+	warthog.procyon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab3AQWSS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 17:18:18 -0500
+X-Greylist: delayed 3428 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 17:18:16 EST
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1358449049.2689.87.camel@falcor1>
+References: <1358449049.2689.87.camel@falcor1> <20130117180352.27885.79893.stgit@warthog.procyon.org.uk> <20130117180400.27885.2973.stgit@warthog.procyon.org.uk>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, dmitry.kasatkin@intel.com,
+        linux-kernel@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 2/3] KEYS: Separate the kernel signature checking keyring from module signing
+X-Mailer: MH-E 8.3.1; nmh 1.5; GNU Emacs 24.1.50
+Date: Thu, 17 Jan 2013 21:20:28 +0000
+Message-ID: <30183.1358457628@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 08:59:34PM +0900, HATAYAMA Daisuke wrote:
-> Currently, kdump reads the 1st kernel's memory, called old memory in
-> the source code, using ioremap per a single page. This causes big
-> performance degradation since page tables modification and tlb flush
-> happen each time the single page is read.
-> 
-> This issue turned out from Cliff's kernel-space filtering work.
-> 
-> To avoid calling ioremap, we map a whole 1st kernel's memory targeted
-> as vmcore regions in direct mapping table. By this we got big
-> performance improvement. See the following simple benchmark.
-> 
-> Machine spec:
-> 
-> | CPU    | Intel(R) Xeon(R) CPU E7- 4820  @ 2.00GHz (4 sockets, 8 cores) (*) |
-> | Memory | 32 GB                                                             |
-> | Kernel | 3.7 vanilla and with this patch set                               |
-> 
->  (*) only 1 cpu is used in the 2nd kenrel now.
-> 
-> Benchmark:
-> 
-> I executed the following commands on the 2nd kernel and recorded real
-> time.
-> 
->   $ time dd bs=$((4096 * n)) if=/proc/vmcore of=/dev/null
-> 
-> [3.7 vanilla]
-> 
-> | block size | time      | performance |
-> |       [KB] |           | [MB/sec]    |
-> |------------+-----------+-------------|
-> |          4 | 5m 46.97s | 93.56       |
-> |          8 | 4m 20.68s | 124.52      |
-> |         16 | 3m 37.85s | 149.01      |
-> 
-> [3.7 with this patch]
-> 
-> | block size | time   | performance |
-> |       [KB] |        |    [GB/sec] |
-> |------------+--------+-------------|
-> |          4 | 17.59s |        1.85 |
-> |          8 | 14.73s |        2.20 |
-> |         16 | 14.26s |        2.28 |
-> |         32 | 13.38s |        2.43 |
-> |         64 | 12.77s |        2.54 |
-> |        128 | 12.41s |        2.62 |
-> |        256 | 12.50s |        2.60 |
-> |        512 | 12.37s |        2.62 |
-> |       1024 | 12.30s |        2.65 |
-> |       2048 | 12.29s |        2.64 |
-> |       4096 | 12.32s |        2.63 |
-> 
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-These are impressive improvements. I missed the discussion on mmap().
-So why couldn't we provide mmap() interface for /proc/vmcore. If that
-works then application can select to mmap/unmap bigger chunks of file
-(instead ioremap mapping/remapping a page at a time). 
+> Lets assume accepting built in keys should is acceptable for all use
+> cases.  Adding additional keys from userspace is probably not acceptable
+> for all use cases.  Those keys should be added to specific 'trusted'
+> keyrings.
+> 
+> EVM and IMA-appraisal have separate keyrings for this reason.  I might
+> be interested in allowing third party packages to be installed and
+> executed, but that doesn't imply that a security.evm extended attribute,
+> signed by a third party application, is acceptable.
 
-And if application controls the size of mapping, then it can vary the
-size of mapping based on available amount of free memory. That way if
-somebody reserves less amount of memory, we could still dump but with
-some time penalty.
+We should probably look at using the capability of X.509 certificates to
+indicate what a key may be used for and noting that in the public_key struct.
 
-Thanks
-Vivek
+David
