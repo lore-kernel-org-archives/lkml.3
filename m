@@ -1,38 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab3AQUFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:05:06 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:52790 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755841Ab3AQUFE (ORCPT
+	id S1756406Ab3AQUHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:07:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43840 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755841Ab3AQUHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:05:04 -0500
-Date: Thu, 17 Jan 2013 15:05:02 -0500 (EST)
-Message-Id: <20130117.150502.1981147330754808185.davem@davemloft.net>
-To: nickolai@csail.mit.edu
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 3c574_cs: fix operator precedence between << and &
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1358443109-63402-1-git-send-email-nickolai@csail.mit.edu>
-References: <1358443109-63402-1-git-send-email-nickolai@csail.mit.edu>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jan 2013 15:07:19 -0500
+Date: Thu, 17 Jan 2013 18:07:11 -0200
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Alexander Beregalov <a.beregalov@gmail.com>,
+        Theodore Tso <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [ 36/71] ext4: lock i_mutex when truncating orphan inodes
+Message-ID: <20130117200710.GD2872@herton-Z68MA-D2H-B3>
+References: <20130115225340.367496998@linuxfoundation.org>
+ <20130115225343.033036403@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115225343.033036403@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nickolai Zeldovich <nickolai@csail.mit.edu>
-Date: Thu, 17 Jan 2013 12:18:29 -0500
+On Tue, Jan 15, 2013 at 02:54:33PM -0800, Greg Kroah-Hartman wrote:
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Theodore Ts'o <tytso@mit.edu>
+> 
+> commit 721e3eba21e43532e438652dd8f1fcdfce3187e7 upstream.
+> 
+> Commit c278531d39 added a warning when ext4_flush_unwritten_io() is
+> called without i_mutex being taken.  It had previously not been taken
+> during orphan cleanup since races weren't possible at that point in
+> the mount process, but as a result of this c278531d39, we will now see
+> a kernel WARN_ON in this case.  Take the i_mutex in
+> ext4_orphan_cleanup() to suppress this warning.
+> 
+> Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> The code to print the FIFO size in tc574_config computes it as:
-> 
->   8 << config & Ram_size
-> 
-> which evaluates the '<<' first, but the actual intent is to evaluate the
-> '&' first.  Add parentheses to enforce desired evaluation order.
-> 
-> Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
+By the description and looking at commit c278531d39, this change isn't
+needed for 3.0 or 3.4 kernels (anything <= 3.6), they don't contain
+commit c278531d39.
 
-Applied.
+> 
+> ---
+>  fs/ext4/super.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -2204,7 +2204,9 @@ static void ext4_orphan_cleanup(struct s
+>  				__func__, inode->i_ino, inode->i_size);
+>  			jbd_debug(2, "truncating inode %lu to %lld bytes\n",
+>  				  inode->i_ino, inode->i_size);
+> +			mutex_lock(&inode->i_mutex);
+>  			ext4_truncate(inode);
+> +			mutex_unlock(&inode->i_mutex);
+>  			nr_truncates++;
+>  		} else {
+>  			ext4_msg(sb, KERN_DEBUG,
+> 
+> 
+
+-- 
+[]'s
+Herton
