@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab3AQMcT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 07:32:19 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58700 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064Ab3AQMcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 07:32:16 -0500
-Message-ID: <50F7EF23.8080903@ti.com>
-Date: Thu, 17 Jan 2013 18:01:31 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <balbi@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <b-cousson@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <horms@verge.net.au>,
-        <magnus.damm@gmail.com>, <cbou@mail.ru>, <dwmw2@infradead.org>,
-        <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <leoli@freescale.com>, <eric.y.miao@gmail.com>,
-        <haojian.zhuang@gmail.com>, <stern@rowland.harvard.edu>
-Subject: Re: [RFC PATCH 2/6] ARM: OMAP: USB: Add phy binding information
-References: <1358348462-27693-1-git-send-email-kishon@ti.com> <1358348462-27693-3-git-send-email-kishon@ti.com> <CAFp+6iGEC9KgfuQz6nqnAY5JrmtPG=HkGw5yjKw7-1=8AG_=dg@mail.gmail.com>
-In-Reply-To: <CAFp+6iGEC9KgfuQz6nqnAY5JrmtPG=HkGw5yjKw7-1=8AG_=dg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753825Ab3AQMd1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 07:33:27 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:30770 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3AQMdZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 07:33:25 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-95-50f7ef94b2ba
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'open list'" <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org
+Cc: "'Chris Ball'" <cjb@laptop.org>, "'Will Newton'" <will.newton@imgtec.com>,
+        jh80.chung@samsung.com, "'Will Newton'" <will.newton@gmail.com>,
+        "'James Hogan'" <james.hogan@imgtec.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+Subject: [PATCH] MAINTAINERS: mmc: add maintainer entry for dw_mmc driver
+Date: Thu, 17 Jan 2013 21:33:23 +0900
+Message-id: <000c01cdf4ae$d77888a0$866999e0$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac30rtc8YpoUTCGcRRyk5Li0jGMQQg==
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zA90p778HGFy9yGVxedccNosj//sZ
+	HZg8Pm+SC2CM4rJJSc3JLEst0rdL4Mr491yt4Dl7xZMbgQ2Mh9i6GDk5JARMJLYeu8cKYYtJ
+	XLi3HijOxSEksIxRovntEVaYot8NH5ggEtMZJWY2/mKHcP4wSkza95cJpIpNQEvi75s3zCC2
+	iICnxI+Py8GKmAWeMEqs37EFbJQwUOLcpn6wBhYBVYkFV/6wgNi8ArYSS16eY4awBSV+TL4H
+	FmcWUJeYNG8RM4QtL7F5zVsgmwPoJHWJR391QUwRAT2JE9e0ISpEJPa9eMcIMV1A4tvkQywQ
+	1bISmw4wg1wjIdDNLjHr0DqoxyQlDq64wTKBUWwWksWzkCyehWTxLCQrFjCyrGIUTS1ILihO
+	Ss810itOzC0uzUvXS87P3cQIiRjpHYyrGiwOMQpwMCrx8Bpd/hYgxJpYVlyZe4hRgoNZSYRX
+	4dr3ACHelMTKqtSi/Pii0pzU4kOMPkCXT2SWEk3OB0ZzXkm8obGxiZmJqYm5pam5KQ5hJXFe
+	xlNPAoQE0hNLUrNTUwtSi2DGMXFwSjUwLr7742zE13udp2YbXtp4fur/j6n6zfZHO2wPSIRG
+	NXgURW/U4Ph3oNo2L+i169ylUw+3Cq1mLFA/myJh7tQa7/KXQ6Lxp8q+VJfFe/my1Kb5zrht
+	02l2Saf/v91PyVCWfwoHlioyGysciV4Y4ywY8XC77q39S2fuUT656uX0F0/Wnz/OvfnqMSWW
+	4oxEQy3mouJEAKIO6ejFAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t9jQd0p778HGCz8wmZxedccNosj//sZ
+	HZg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM+PdcreA5e8WT
+	G4ENjIfYuhg5OSQETCR+N3xggrDFJC7cWw8U5+IQEpjOKDGz8Rc7hPOHUWLSvr9gVWwCWhJ/
+	37xhBrFFBDwlfnxcDlbELPCEUWL9ji2sIAlhoMS5Tf1gDSwCqhILrvxhAbF5BWwllrw8xwxh
+	C0r8mHwPLM4soC4xad4iZghbXmLzmrdANgfQSeoSj/7qgpgiAnoSJ65pQ1SISOx78Y5xAqPA
+	LCSDZiEZNAvJoFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7HZ9I7GFc1WBxi
+	FOBgVOLhNbr8LUCINbGsuDL3EKMEB7OSCK/Cte8BQrwpiZVVqUX58UWlOanFhxh9gP6cyCwl
+	mpwPTBV5JfGGxiZmRpZGZhZGJubmOISVxHkZTz0JEBJITyxJzU5NLUgtghnHxMEp1cBY/fxV
+	6Z8txoGHZ8mLX5Uy+1w2jb1T/O8J2Y28zoIxhdl3nkodTI3bJ2T+sv6G92X7BfeOq18zKasp
+	8n4kc0z/SEj5g3fs5ekplSePq8mbST++0paw6j+n1a/c6p3lPz/u/XopzOnlksb/VzmeFzEd
+	bp1mek2BXzxYb8n3HyJNq3VmdV6Pu5KoxFKckWioxVxUnAgAWLdhq/QCAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add maintainer entry for the Synopsys DW host driver which
+is used in various SOC including EXYNOS series.
+As Will Newton will no longer be able to take care of dw_mmc*,
+I and Jaehoon Chung are willing to maintain it.
 
-On Thursday 17 January 2013 05:41 PM, Vivek Gautam wrote:
-> Hi Kishon,
->
->
-> On Wed, Jan 16, 2013 at 8:30 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->> This is in preparation for the changes in PHY library to support adding
->> and getting multiple PHYs of the same type. In the new design, the
->> binding information between the PHY and the USB controller should be
->> specified in the platform specific initialization code. So it's been
->> done for OMAP platforms here.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->> This kind-of binding should be done in all the platforms (I've done only
->> for OMAP platform).
->>   arch/arm/mach-omap2/usb-musb.c |    7 ++++++-
->>   1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
->> index 9d27e3f..bbe2fa5 100644
->> --- a/arch/arm/mach-omap2/usb-musb.c
->> +++ b/arch/arm/mach-omap2/usb-musb.c
->> @@ -24,6 +24,7 @@
->>   #include <linux/dma-mapping.h>
->>   #include <linux/io.h>
->>   #include <linux/usb/musb.h>
->> +#include <linux/usb/phy.h>
->>
->>   #include "omap_device.h"
->>   #include "soc.h"
->> @@ -85,8 +86,12 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
->>          musb_plat.mode = board_data->mode;
->>          musb_plat.extvbus = board_data->extvbus;
->>
->> -       if (cpu_is_omap44xx())
->> +       if (cpu_is_omap44xx()) {
->>                  musb_plat.has_mailbox = true;
->> +               usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
->> +       } else if (cpu_is_omap34xx()) {
->> +               usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
->> +       }
->
-> Just trying to understand things here.
-> Is the device name we are using here the platform device name (pdev->name) ?
+Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+---
+ MAINTAINERS |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-it's pdev->dev.name.
-> If i am not wrong then for devices added through device tree
-> the device name would actually include the device address in the string,
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 943a607..2b7beac 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6777,6 +6777,14 @@ F:	include/linux/dw_dmac.h
+ F:	drivers/dma/dw_dmac_regs.h
+ F:	drivers/dma/dw_dmac.c
+ 
++SYNOPSYS DESIGNWARE MMC/SD/SDIO DRIVER
++M:	Seungwon Jeon <tgih.jun@samsung.com>
++M:	Jaehoon Chung <jh80.chung@samsung.com>
++L:	linux-mmc@vger.kernel.org
++S:	Maintained
++F:	include/linux/mmc/dw_mmc.h
++F:	drivers/mmc/host/dw_mmc*
++
+ TIMEKEEPING, NTP
+ M:	John Stultz <johnstul@us.ibm.com>
+ M:	Thomas Gleixner <tglx@linutronix.de>
+-- 
+1.7.0.4
 
-Ideally for device tree, devm_usb_get_phy_by_phandle() introduced in the 
-5th patch of this series should be used.
-usb_bind_phy should be called from platform specific initialization 
-files (like your board file), which won't get executed in dt boot.
-> wouldn't that make things somewhat weird, since we will have to add
-> such bindings
-> using this address string.
->
-> one more doubt please :)
-> is it possible to bind phy in the controllers' driver somehow ?
-Thats not going to be good. Why do you need to do that?
 
-Thanks
-Kishon
