@@ -1,130 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab3AQQ1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:27:42 -0500
-Received: from mga06.intel.com ([134.134.136.21]:14982 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757082Ab3AQQ1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:27:40 -0500
+	id S1757195Ab3AQQ32 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:29:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:34603 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757006Ab3AQQ31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 11:29:27 -0500
+Date: Thu, 17 Jan 2013 08:29:24 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Florian Westphal <fw@strlen.de>,
+        linux-kernel@vger.kernel.org, gaowanlong@cn.fujitsu.com,
+        frank@lichtenheld.de
+Subject: Re: regression, bisected: openpty fails from 3.7 onwards without
+ devpts
+Message-ID: <20130117162924.GC1396@kroah.com>
+References: <20130110144626.GA26279@breakpoint.cc>
+ <20130110155058.12f66e73@bob.linux.org.uk>
+ <20130110162907.GB26279@breakpoint.cc>
+ <50EEF8FD.9000004@suse.cz>
+ <20130110224554.1724a791@bob.linux.org.uk>
+ <50EF45DF.4010905@suse.cz>
+ <50EFF366.2000303@suse.cz>
+ <20130111124129.GA23516@breakpoint.cc>
+ <50F00926.3070000@suse.cz>
+ <20130111131802.2986ba61@bob.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20130117151825.GA12165@redhat.com>
-References: <87wqvdli1o.fsf@xmission.com>
-	<1358344859.4593.66.camel@falcor1>
-	<20130116144836.GB29845@redhat.com>
-	<1358350391.4593.112.camel@falcor1>
-	<20130116163453.GD29845@redhat.com>
-	<1358359715.4593.146.camel@falcor1>
-	<20130116182804.GF29845@redhat.com>
-	<1358364290.4593.178.camel@falcor1>
-	<20130116215341.GA4222@redhat.com>
-	<CALLzPKam_j==PXtNfQs93NbPTrYCjqM_0+XRfnvxrJBLdOJ-vQ@mail.gmail.com>
-	<20130117151825.GA12165@redhat.com>
-Date: Thu, 17 Jan 2013 18:27:38 +0200
-Message-ID: <CALLzPKaa8eOBA7VxiGijUzoUzk-05cwD8e4A89yyQtCL0=g7qg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, pjones@redhat.com, hpa@zytor.com,
-        dhowells@redhat.com, jwboyer@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130111131802.2986ba61@bob.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 5:18 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Thu, Jan 17, 2013 at 04:58:02PM +0200, Kasatkin, Dmitry wrote:
->> On Wed, Jan 16, 2013 at 11:53 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > On Wed, Jan 16, 2013 at 02:24:50PM -0500, Mimi Zohar wrote:
->> > [..]
->> >> > > Sorry, this is out of scope for IMA.  Dmitry has looked into this, but
->> >> > > I'm not sure where it stands at the moment.
->> >> >
->> >> > Ok, so that's one reason that why I wrote these patcehs. IMA currently
->> >> > is not doing following things to make sure address space of signed images
->> >> > is not modified by others.
->> >> >
->> >> > - Protecting against modifications to pages on swap.
->> >> > - Protecting against modifications by ptrace.
->> >> > - Protecting against modifications which bypassed filesystem and directly
->> >> >   wrote to the block.
->> >> >
->> >> > Locking down all the pages of signed binaries in memory hopefully should
->> >> > solve above problems.
->> >>
->> >> Signing and verifying ELF executables goes back a long time ~2003/4,
->> >> from a number of esteemed kernel developers, including Greg-KH and Serge
->> >> Hallyn.
->> >>
->> >> IMA-appraisal isn't limited to appraising a single type of file, but is
->> >> a generic mechanism for appraising all files.  If there are issues that
->> >> aren't being addressed, then by all means, please help by addressing
->> >> them.  Duplicating a large portion of the code is not productive.
->> >
->> > So do you have ideas on how to address above mentioned issues. Do they
->> > fit into the realm of IMA/EVM or I just need to write separate code (which
->> > I have already done).
->> >
->> > With above issues, IMA stuff for executable files sounds incomplete.
->> >
->>
->> swap is a last resort. healthy system uses swap minimally.
->> It is very easy to add /etc/crypttab which allows to have encrypted swap
->>
->> # <target name> <source device>         <key file>      <options>
->> swap   /dev/sda6       /dev/urandom    swap
->>
->> And it will eliminate plenty of possible attacks.
->> Processes have also RW data, modification of those will create huge
->> risk for the system...
->
-> Hm..., encrypted swap is interesting. It might have overhead too. It is
-> one way of doing thing, but I think it would be better if we don't rely
-> on user has setup encrypted swap and provide a way to lock down memory of
-> signed executables.
->
->>
->> But certain locking extensions like you implemented can be added to IMA as well.
->
-> Cool. That would help. I am very new to IMA. If you have some ideas on
-> how to go about it, I can start looking into implementing it.
->
->>
->> It was said about ptrace already.
->
-> Sorry, did not get what was said about ptrace already? We need to disable
-> ptrace for signed executables. So can IMA set a process flag upon
-> signature verification and exec() code can give additional capability. And
-> as Eric mentioned that should automatically take care of ptrace issue.
->
->>
->> > - Protecting against modifications which bypassed filesystem and directly  wrote to the block.
->>
->> Can you please tell a bit more how this patch protect against direct
->> writing to the blocks?
->
-> If you have loaded all the pages from disk and locked them in memory and
-> verified the signature, then even if somebody modifies a block on disk
-> it does not matter. We will not read pages from disk anymore for this
-> exec(). We verified the signature of executable loaded in memory and
-> in-memory copy is intact.
->
-> So next time somebody tries to execute same binary it will fail (because
-> of modified block).
->
+On Fri, Jan 11, 2013 at 01:18:02PM +0000, Alan Cox wrote:
+> On Fri, 11 Jan 2013 13:44:22 +0100
+> Jiri Slaby <jslaby@suse.cz> wrote:
+> 
+> > On 01/11/2013 01:41 PM, Florian Westphal wrote:
+> > > Jiri Slaby <jslaby@suse.cz> wrote:
+> > >> On 01/10/2013 11:51 PM, Jiri Slaby wrote:
+> > >>> On 01/10/2013 11:45 PM, Alan Cox wrote:
+> > >>>> So we should just fix TIOCGPTN on a pty with no suitable name
+> > >>>> answer to return -EINVAL
+> > >>>
+> > >>> Yes, I agree as I'm expressed in my second mail. Sorry for the
+> > >>> confusion.
+> > >>
+> > >> Does the attached patch help?
+> > > 
+> > > Yes, it does.  Thanks for fixing this.
+> > 
+> > Ok, now I'm not sure if we want the patch or to implement TIOCGPTN
+> > properly instead. Alan?
+> 
+> IMHO - fix now for the -rc tree where its clearly low risk, after that
+> whatever people feel like doing 8)
 
-Ok. This is about the same as with swap.
+I agree.  Jiri, should I take your posted patch for this?
 
-It should be a 10 lines patch to IMA to lock down the memory.
-It may be controlled by the policy.
-IMA might also set new capability if needed.
+thanks,
 
-- Dmitry
-
-
-> Thanks
-> Vivek
+greg k-h
