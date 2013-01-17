@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758944Ab3AQDKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:10:03 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:53552 "EHLO smtp.outflux.net"
+	id S1758855Ab3AQDKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:10:00 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:39526 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758640Ab3AQCyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758642Ab3AQCyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 21:54:41 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -12,9 +12,9 @@ Cc: Kees Cook <keescook@chromium.org>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         Al Viro <viro@zeniv.linux.org.uk>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 72/86] fs/affs: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:54:04 -0800
-Message-Id: <1358391258-1771-73-git-send-email-keescook@chromium.org>
+Subject: [PATCH 79/86] fs/hfs: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:54:11 -0800
+Message-Id: <1358391258-1771-80-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -32,22 +32,22 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- fs/affs/Kconfig |    4 ++--
+ fs/hfs/Kconfig |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/affs/Kconfig b/fs/affs/Kconfig
-index cfad9af..a04d9e8 100644
---- a/fs/affs/Kconfig
-+++ b/fs/affs/Kconfig
+diff --git a/fs/hfs/Kconfig b/fs/hfs/Kconfig
+index b77c5bc..998e3a6 100644
+--- a/fs/hfs/Kconfig
++++ b/fs/hfs/Kconfig
 @@ -1,6 +1,6 @@
- config AFFS_FS
--	tristate "Amiga FFS file system support (EXPERIMENTAL)"
+ config HFS_FS
+-	tristate "Apple Macintosh file system support (EXPERIMENTAL)"
 -	depends on BLOCK && EXPERIMENTAL
-+	tristate "Amiga FFS file system support"
++	tristate "Apple Macintosh file system support"
 +	depends on BLOCK
+ 	select NLS
  	help
- 	  The Fast File System (FFS) is the common file system used on hard
- 	  disks by Amiga(tm) systems since AmigaOS Version 1.3 (34.20).  Say Y
+ 	  If you say Y here, you will be able to mount Macintosh-formatted
 -- 
 1.7.9.5
 
