@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab3AQWye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 17:54:34 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:41446 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab3AQWya (ORCPT
+	id S1755364Ab3AQWyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 17:54:40 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:47005 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab3AQWyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 17:54:30 -0500
+	Thu, 17 Jan 2013 17:54:37 -0500
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux MM <linux-mm@kvack.org>, David Hansen <dave@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
+        Cody P Schafer <jmesmon@gmail.com>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 9/9] mm/memory_hotplug: use pgdat_end_pfn() instead of open coding the same.
-Date: Thu, 17 Jan 2013 14:53:01 -0800
-Message-Id: <1358463181-17956-10-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH 5/9] mmzone: add pgdat_{end_pfn,is_empty}() helpers & consolidate.
+Date: Thu, 17 Jan 2013 14:52:57 -0800
+Message-Id: <1358463181-17956-6-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.0.3
 In-Reply-To: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011722-4834-0000-0000-000002B5BF48
+x-cbid: 13011722-3620-0000-0000-000000ED08A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace open coded pgdat_end_pfn() with helper function.
+From: Cody P Schafer <jmesmon@gmail.com>
+
+Add pgdat_end_pfn() and pgdat_is_empty() helpers which match the similar
+zone_*() functions.
+
+Change node_end_pfn() to be a wrapper of pgdat_end_pfn().
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- mm/memory_hotplug.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mmzone.h | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 016944f..6eb93a5 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -189,7 +189,7 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
- 	}
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 696cb7c..d7abff0 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -772,11 +772,17 @@ typedef struct pglist_data {
+ #define nid_page_nr(nid, pagenr) 	pgdat_page_nr(NODE_DATA(nid),(pagenr))
  
- 	pfn = pgdat->node_start_pfn;
--	end_pfn = pfn + pgdat->node_spanned_pages;
-+	end_pfn = pgdat_end_pfn(pgdat);
+ #define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
++#define node_end_pfn(nid) pgdat_end_pfn(NODE_DATA(nid))
  
- 	/* register_section info */
- 	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+-#define node_end_pfn(nid) ({\
+-	pg_data_t *__pgdat = NODE_DATA(nid);\
+-	__pgdat->node_start_pfn + __pgdat->node_spanned_pages;\
+-})
++static inline unsigned long pgdat_end_pfn(pg_data_t *pgdat)
++{
++	return pgdat->node_start_pfn + pgdat->node_spanned_pages;
++}
++
++static inline bool pgdat_is_empty(pg_data_t *pgdat)
++{
++	return !pgdat->node_start_pfn && !pgdat->node_spanned_pages;
++}
+ 
+ #include <linux/memory_hotplug.h>
+ 
 -- 
 1.8.0.3
 
