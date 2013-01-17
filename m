@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab3AQSwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 13:52:11 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46459 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752104Ab3AQSwJ (ORCPT
+	id S1756049Ab3AQSy2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 13:54:28 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:52160 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab3AQSy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 13:52:09 -0500
-Date: Thu, 17 Jan 2013 18:51:56 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, pkondeti@codeaurora.org,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Herton Krzesinski <herton.krzesinski@canonical.com>,
-        stable@vger.kernel.org, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org
-Message-ID: <20130117185156.GK13292@decadent.org.uk>
-References: <50F84441.8080300@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F84441.8080300@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [REVERT][v3.x.y] EHCI: Update qTD next pointer in QH overlay
- region during unlink
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Thu, 17 Jan 2013 13:54:27 -0500
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tomas Winkler <tomas.winkler@intel.com>, linux-kernel@vger.kernel.org
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [PATCH char-misc-next] mei: Fix some more kernel-doc typos in hw-me.c
+Date: Thu, 17 Jan 2013 19:54:15 +0100
+Message-Id: <1358448855-791-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 01:34:41PM -0500, Joseph Salisbury wrote:
-> Hello,
-> 
-> Please consider reverting commit
-> 3d037774b42ed677f699b1dce7d548d55f4e4c2b in mainline as well as in
-> the current stable releases.  It was included upstream as of
-> v3.6-rc6.  This commit introduced a regression, described in the
-> following bug report:
-> 
-> http://bugs.launchpad.net/bugs/1088733
-> 
-> Reverting commit 3d037774b42ed677f699b1dce7d548d55f4e4c2b in the
-> v3.2 kernel has been confirmed to resolve the aforementioned bug.
- 
-If it's wrong in mainline then the revert needs to be done there
-and cc'd to stable.  We only revert directly in stable branches if
-the revert is not appropriate in mainline.
 
-Ben.
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+---
+ drivers/misc/mei/hw-me.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 93a2a56..94b203e 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -236,7 +236,7 @@ irqreturn_t mei_interrupt_quick_handler(int irq, void *dev_id)
+ /**
+  * mei_hbuf_filled_slots - gets number of device filled buffer slots
+  *
+- * @device: the device structure
++ * @dev: the device structure
+  *
+  * returns number of filled slots
+  */
+@@ -289,7 +289,7 @@ int mei_hbuf_empty_slots(struct mei_device *dev)
+  * mei_write_message - writes a message to mei device.
+  *
+  * @dev: the device structure
+- * @hader: mei HECI header of message
++ * @header: mei HECI header of message
+  * @buf: message payload will be written
+  *
+  * This function returns -EIO if write has failed
 -- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+1.7.9.5
+
