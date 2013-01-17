@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab3AQBmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 20:42:43 -0500
-Received: from mail-ye0-f182.google.com ([209.85.213.182]:41625 "EHLO
-	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756821Ab3AQBmm (ORCPT
+	id S1758335Ab3AQBnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 20:43:06 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:57349 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758298Ab3AQBnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 20:42:42 -0500
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>
-Cc: jonghwa3.lee@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, durgadoss.r@intel.com, joe@perches.com
-Subject: [PATCH V3 2/3] thermal: exynos: Miscellaneous fixes to support falling threshold interrupt
-Date: Wed, 16 Jan 2013 17:42:18 -0800
-Message-Id: <1358386938-13577-1-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <CADGdYn4CeWB5zHuHrfSLYsyOCA_zcSgm9LHTwtei1zAhfmDJNQ@mail.gmail.com>
-References: <CADGdYn4CeWB5zHuHrfSLYsyOCA_zcSgm9LHTwtei1zAhfmDJNQ@mail.gmail.com>
+	Wed, 16 Jan 2013 20:43:01 -0500
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 05/17] workqueue: introduce WORK_OFFQ_CPU_NONE
+Date: Wed, 16 Jan 2013 17:42:37 -0800
+Message-Id: <1358386969-945-6-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1358386969-945-1-git-send-email-tj@kernel.org>
+References: <1358386969-945-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below fixes are done to support falling threshold interrupt,
-* Falling interrupt status macro corrected according to exynos5 data sheet.
-* The get trend function modified to calculate trip temperature correctly.
-* The clearing of interrupt status in the isr is now done after handling
-  the event that caused the interrupt.
+Currently, when a work item is off queue, high bits of its data
+encodes the last CPU it was on.  This is scheduled to be changed to
+pool ID, which will make it impossible to use WORK_CPU_NONE to
+indicate no association.
 
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+This patch limits the number of bits which are used for off-queue cpu
+number to 31 (so that the max fits in an int) and uses the highest
+possible value - WORK_OFFQ_CPU_NONE - to indicate no association.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
-Changes since V2,
-Incorporated Joe Perches <joe@perches.com> review comments about coding
-guidelines.
+ include/linux/workqueue.h | 10 +++++++++-
+ kernel/workqueue.c        |  4 ++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-This path is based on thermal maintainer next tree.
-
- drivers/thermal/exynos_thermal.c |   17 +++++++++++------
- 1 files changed, 11 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
-index dcd13f7..f4dd68a 100644
---- a/drivers/thermal/exynos_thermal.c
-+++ b/drivers/thermal/exynos_thermal.c
-@@ -82,7 +82,7 @@
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index ff68b1d..f8b3576 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -73,13 +73,21 @@ enum {
  
- #define EXYNOS_TRIMINFO_RELOAD		0x1
- #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
--#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 16)
-+#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
- #define EXYNOS_MUX_ADDR_VALUE		6
- #define EXYNOS_MUX_ADDR_SHIFT		20
- #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
-@@ -373,7 +373,14 @@ static int exynos_get_temp(struct thermal_zone_device *thermal,
- static int exynos_get_trend(struct thermal_zone_device *thermal,
- 			int trip, enum thermal_trend *trend)
+ 	WORK_OFFQ_CANCELING	= (1 << WORK_OFFQ_FLAG_BASE),
+ 
++	/*
++	 * When a work item is off queue, its high bits point to the last
++	 * cpu it was on.  Cap at 31 bits and use the highest number to
++	 * indicate that no cpu is associated.
++	 */
+ 	WORK_OFFQ_FLAG_BITS	= 1,
+ 	WORK_OFFQ_CPU_SHIFT	= WORK_OFFQ_FLAG_BASE + WORK_OFFQ_FLAG_BITS,
++	WORK_OFFQ_LEFT		= BITS_PER_LONG - WORK_OFFQ_CPU_SHIFT,
++	WORK_OFFQ_CPU_BITS	= WORK_OFFQ_LEFT <= 31 ? WORK_OFFQ_LEFT : 31,
++	WORK_OFFQ_CPU_NONE	= (1LU << WORK_OFFQ_CPU_BITS) - 1,
+ 
+ 	/* convenience constants */
+ 	WORK_STRUCT_FLAG_MASK	= (1UL << WORK_STRUCT_FLAG_BITS) - 1,
+ 	WORK_STRUCT_WQ_DATA_MASK = ~WORK_STRUCT_FLAG_MASK,
+-	WORK_STRUCT_NO_CPU	= (unsigned long)WORK_CPU_NONE << WORK_OFFQ_CPU_SHIFT,
++	WORK_STRUCT_NO_CPU	= (unsigned long)WORK_OFFQ_CPU_NONE << WORK_OFFQ_CPU_SHIFT,
+ 
+ 	/* bit mask for work_busy() return values */
+ 	WORK_BUSY_PENDING	= 1 << 0,
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 6e8bad6..9da3db2 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -600,7 +600,7 @@ static struct global_cwq *get_work_gcwq(struct work_struct *work)
+ 			(data & WORK_STRUCT_WQ_DATA_MASK))->pool->gcwq;
+ 
+ 	cpu = data >> WORK_OFFQ_CPU_SHIFT;
+-	if (cpu == WORK_CPU_NONE)
++	if (cpu == WORK_OFFQ_CPU_NONE)
+ 		return NULL;
+ 
+ 	BUG_ON(cpu >= nr_cpu_ids && cpu != WORK_CPU_UNBOUND);
+@@ -610,7 +610,7 @@ static struct global_cwq *get_work_gcwq(struct work_struct *work)
+ static void mark_work_canceling(struct work_struct *work)
  {
--	if (thermal->temperature >= trip)
-+	int ret;
-+	unsigned long trip_temp;
-+
-+	ret = exynos_get_trip_temp(thermal, trip, &trip_temp);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (thermal->temperature >= trip_temp)
- 		*trend = THERMAL_TREND_RAISING;
- 	else
- 		*trend = THERMAL_TREND_DROPPING;
-@@ -712,10 +719,9 @@ static void exynos_tmu_work(struct work_struct *work)
- 	struct exynos_tmu_data *data = container_of(work,
- 			struct exynos_tmu_data, irq_work);
+ 	struct global_cwq *gcwq = get_work_gcwq(work);
+-	unsigned long cpu = gcwq ? gcwq->cpu : WORK_CPU_NONE;
++	unsigned long cpu = gcwq ? gcwq->cpu : WORK_OFFQ_CPU_NONE;
  
-+	exynos_report_trigger();
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
--
--
- 	if (data->soc == SOC_ARCH_EXYNOS)
- 		writel(EXYNOS_TMU_CLEAR_RISE_INT |
- 				EXYNOS_TMU_CLEAR_FALL_INT,
-@@ -723,10 +729,9 @@ static void exynos_tmu_work(struct work_struct *work)
- 	else
- 		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
- 				data->base + EXYNOS_TMU_REG_INTCLEAR);
--
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
--	exynos_report_trigger();
-+
- 	enable_irq(data->irq);
- }
- 
+ 	set_work_data(work, (cpu << WORK_OFFQ_CPU_SHIFT) | WORK_OFFQ_CANCELING,
+ 		      WORK_STRUCT_PENDING);
 -- 
-1.7.5.4
+1.8.0.2
 
