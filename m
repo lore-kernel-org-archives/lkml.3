@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758103Ab3AQAc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 19:32:57 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:51771 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757579Ab3AQAc4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 19:32:56 -0500
-Date: Thu, 17 Jan 2013 11:32:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: error when fething the git.secretlab.ca trees
-Message-Id: <20130117113246.9235400430d1387f91134d7e@canb.auug.org.au>
-In-Reply-To: <CACxGe6udrYHtVwf50YsPCcrQ-3fCFEXP7pr2AGeVL=ja5VmZDA@mail.gmail.com>
-References: <20130117092536.f1a4e0ed60610845cc919b15@canb.auug.org.au>
-	<CACxGe6udrYHtVwf50YsPCcrQ-3fCFEXP7pr2AGeVL=ja5VmZDA@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__17_Jan_2013_11_32_46_+1100_Lq1Iec/DHVQIY3KE"
+	id S1758129Ab3AQAf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 19:35:27 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:50502 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757751Ab3AQAf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 19:35:26 -0500
+Message-ID: <50F7475F.90609@parallels.com>
+Date: Wed, 16 Jan 2013 16:35:43 -0800
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <xfs@oss.sgi.com>,
+        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com> <1354058086-27937-10-git-send-email-david@fromorbit.com> <50F6FDC8.5020909@parallels.com> <20130116225521.GF2498@dastard>
+In-Reply-To: <20130116225521.GF2498@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [216.239.55.193]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Jan_2013_11_32_46_+1100_Lq1Iec/DHVQIY3KE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Grant,
+>> The superblocks only, are present by the dozens even in a small system,
+>> and I believe the whole goal of this API is to get more users to switch
+>> to it. This can easily use up a respectable bunch of megs.
+>>
+>> Isn't it a bit too much ?
+> 
+> Maybe, but for active superblocks it only takes a handful of cached
+> inodes to make this 16k look like noise, so I didn't care. Indeed, a
+> typical active filesystem could be consuming gigabytes of memory in
+> the slab, so 16k is a tiny amount of overhead to track this amount
+> of memory more efficiently.
+> 
+> Most other LRU/shrinkers are tracking large objects and only have a
+> single LRU instance machine wide. Hence the numbers arguments don't
+> play out well in favour of a more complex, dynamic solution for
+> them, either. Sometimes dumb and simple is the best approach ;)
+> 
 
-On Thu, 17 Jan 2013 00:16:12 +0000 Grant Likely <grant.likely@secretlab.ca>=
- wrote:
->
-> Thanks for letting me know. I was mucking about with my server to
-> enable gitolite. I probably messed it up. I've just tried to fix it.
-> Let me know if it is working now.
+Being dumb and simple myself, I'm of course forced to agree.
+Let me give you more context so you can understand my deepest fears better:
 
-Looks good, thanks.  I will start fetching your trees again tomorrow.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> I am wondering if we can't do better in here and at least allocate+grow
+>> according to the actual number of nodes.
+> 
+> We could add hotplug notifiers and grow/shrink the node array as
+> they get hot plugged, but that seems unnecessarily complex given
+> how rare such operations are.
+> 
+> If superblock proliferation is the main concern here, then doing
+> somethign as simple as allowing filesystems to specify they want
+> numa aware LRU lists via a mount_bdev() flag would solve this
+> problem. If the flag is set, then full numa lists are created.
+> Otherwise the LRU list simply has a "single node" and collapses all node
+> IDs down to 0 and ignores all NUMA optimisations...
+> 
+> That way the low item count virtual filesystems like proc, sys,
+> hugetlbfs, etc won't use up memory, but filesytems that actually
+> make use of NUMA awareness still get the more expensive, scalable
+> implementation. Indeed, any subsystem that is not performance or
+> location sensitive can use the simple single list version, so we can
+> avoid overhead in that manner system wide...
+> 
 
---Signature=_Thu__17_Jan_2013_11_32_46_+1100_Lq1Iec/DHVQIY3KE
-Content-Type: application/pgp-signature
+Deepest fears:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+1) snakes.
 
-iQIcBAEBCAAGBQJQ90auAAoJEECxmPOUX5FEaeEP/AwaV9I8ZABFm3W7Afmnn1Vp
-C7Iu4YtJPd0uEmRBDd6Pe0IBVBrRsBmq5Zd2OlQU6xtM8Q/hGtIjQUG+Yxm3zKJ0
-lsR7i0T55kOZySlQpNZ4rqRfMCAneXouI+ucd7seo2Rz2NMWqZlOXwZvIilGxAYz
-1UK4cpAVr8gF+7RLPDyPPr8FiB+JNnIMTTAkg/EzL2yBU7L+3yybalPw9sP9ptOK
-0S20vjv3gTts2RFFy3EV09x4B6syX1LLTOKk6S26C4B3zZeB/PySZ8lCQ50PhfEm
-nYwFB0NfM+1FbjxcdfFokrCmQ6O2hD5/2LtUM87432OiMnf25y62chhpZzq4veA8
-Psx1uEGnqoPv4zASaISVO+YBrzX9x86+Wwc4ZlVH76nR/d4/c8zR7NQcIf6A47Dx
-4sbvEY2XFv85EC7pYIl+PsbjVmIq5MQFCYuaU2bzVoPfV+RnfclsDwKiIpy4MA9x
-rlWla0Pa9doHsuP06iU8T0LU7JJT6WwmzpGZp6/sRlHI3YKEIHPb0RXfzteRmZhB
-3+Dhtj+V1FIrzX0vB8zvjGWqU8IDa81eLlMxJHOdefY0C6flGyB1BHINA+bTYk7o
-gsziSEeEtfUO0LNraKHcYyC3trbCHc0akAgVFuuGRpwqSGDNht2is54ZQMc3ILaY
-D+NBZY7P1KCsOWR46NU6
-=gEZt
------END PGP SIGNATURE-----
+2) It won't surprise you to know that I am adapting your work, which
+provides a very sane and helpful API, to memcg shrinking.
 
---Signature=_Thu__17_Jan_2013_11_32_46_+1100_Lq1Iec/DHVQIY3KE--
+The dumb and simple approach in there is to copy all lrus that are
+marked memcg aware at memcg creation time. The API is kept the same,
+but when you do something like list_lru_add(lru, obj), for instance, we
+derive the memcg context from obj and relay it to the right list.
+
+Statically allocating those arrays for all possible combinations is
+basically our way to guarantee that the lookups will be cheap.
+Otherwise, we always need to ask the question: "is dentries from this
+superblock currently billed to this memcg?", and if yes, allocate memory
+in list_lru_add or other steady state operations.
+
+But of course, if we copy all the per node stuff as well, we are
+basically talking about that amount of memory per memcg, which means
+each memcg will now have an extra overhead of some megs, which is way
+too big.
+
+Using online nodes+grow was one of the approaches we considered.
+Making the memcg list single-noded while keeping the global lists
+node-aware also works for us.
+Your current suggestion of going per-node only in the performance
+critical filesystems could also possibly work, provided this count is
+expected to be small.
