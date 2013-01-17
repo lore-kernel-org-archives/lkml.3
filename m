@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab3AQTGD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 14:06:03 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:2758 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752293Ab3AQTGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 14:06:00 -0500
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Subject: Re: tg3 v3.123 in 100Mbps Full-Duplex mode with autoneg off
-From: "Michael Chan" <mchan@broadcom.com>
-To: "Marcin Miotk" <marcinmiotk81@gmail.com>
-cc: =?UTF-8?Q?=E7=8E=8B=E9=87=91=E6=B5=A6?= <jinpuwang@gmail.com>,
-        nsujir@broadcom.com, "Benjamin Li" <benli@broadcom.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAMXyS3PBAOraPTYRW9BSmoccVWAuY0RzZNgKe-L4Z3WHQDDgbA@mail.gmail.com>
-References: <CAMXyS3Mvc8SkJxu4fCcUn+XpNcHrzEQ=M5w2eenVr-YKwa3AEQ@mail.gmail.com>
- <CAMXyS3MRx3D__60xtt4G4CCyHSTW2iHd1x1AR1LCQkrZrOiJ2g@mail.gmail.com>
- <CAD9gYJL1GjZtPuEWozmgM37NzhJeAO1Oe69Tnzxi5bCPMijmcA@mail.gmail.com>
- <1357703565.7140.217.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
- <CAMXyS3PhStKo_xeiTRH+kbZXNUcwmMvrvTHrDOR-6qkuUCVH2A@mail.gmail.com>
- <1358206365.4596.23.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
- <CAMXyS3PBAOraPTYRW9BSmoccVWAuY0RzZNgKe-L4Z3WHQDDgbA@mail.gmail.com>
-Date: Thu, 17 Jan 2013 11:04:17 -0800
-Message-ID: <1358449457.4596.64.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-MIME-Version: 1.0
-X-WSS-ID: 7CE695DF3Q43611456-15-01
-Content-Type: text/plain;
- charset=cp1252
+	id S1756742Ab3AQTGM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 14:06:12 -0500
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:59609 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756640Ab3AQTGJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 14:06:09 -0500
+X-Greylist: delayed 885 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 14:06:08 EST
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id
+	:subject:from:to:cc:date:in-reply-to:references:content-type
+	:content-transfer-encoding:mime-version; q=dns; s=sasl; b=LnE6NQ
+	c1Vz3OyaRuuA8qgZk+7jQ3xqIrA1ig7+IcL9dsjySfaiV4usk2+eO9P3G/gAJPvV
+	ytG4Xgt3VXtxIfPGhrajNpocfbiUNmDfiRbNxhh/BHZoKogu6GYwAHm6ubO7/dPb
+	Nja4JfouLbzqDblCXk/avpIgbpgCMX33cotnA=
+Message-ID: <1358448677.26320.22.camel@doorstop.aus.2wire.com>
+Subject: Re: [PATCH 1/2] leds: simply LED trigger list management
+From: Nathan Lynch <ntl@pobox.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Bryan Wu <cooloney@gmail.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 17 Jan 2013 12:51:17 -0600
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E17700@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F69E17700@DQHE02.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Pobox-Relay-ID: E2AD4ADC-60D6-11E2-8875-0A4F0E5B5709-04752483!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-17 at 17:59 +0100, Marcin Miotk wrote:
-> root@XXXXXX ~ # cat miitool_non_working_3.4.11
-> Using SIOCGMIIPHY=0x8947
-> eth1: 100 Mbit, full duplex, no link
->   registers for MII PHY 1:
->     2100 7949 0020 6340 0041 0000 0004 2001
->     0000 0000 0000 0000 0000 0000 0000 3000
->     0001 2000 0000 0000 0000 0000 0000 4000
->     7277 1000 0000 ffff 2801 0000 0000 0000
->   product info: vendor 00:08:18, model 52 rev 0
->   basic mode:   100 Mbit, full duplex
->   basic status: no link
->   capabilities: 100baseTx-FD 100baseTx-HD 10baseT-FD 10baseT-HD
->   advertising:  10baseT-FD
+On Thu, 2013-01-17 at 01:06 +0000, Kim, Milo wrote:
+> @@ -242,17 +233,15 @@ EXPORT_SYMBOL_GPL(led_trigger_unregister);
+>  void led_trigger_event(struct led_trigger *trig,
+>  			enum led_brightness brightness)
+>  {
+> -	struct list_head *entry;
+> +	struct led_classdev *led_cdev;
+>  
+>  	if (!trig)
+>  		return;
+>  
+>  	read_lock(&trig->leddev_list_lock);
+> -	list_for_each(entry, &trig->led_cdevs) {
+> -		struct led_classdev *led_cdev;
+> -
+> -		led_cdev = list_entry(entry, struct led_classdev, trig_list);
+> -		led_set_brightness(led_cdev, brightness);
+> +	list_for_each_entry(led_cdev, &leds_list, node) {
+> +		if (led_cdev->trigger == trig)
+> +			led_set_brightness(led_cdev, brightness);
+>  	}
+>  	read_unlock(&trig->leddev_list_lock);
 
-Autoneg is disabled, so the advertising register that is advertising
-only 10Mbps Full Duplex should not matter.  What matters is that
-register 0 has set it to 100Mbps Full Duplex.
-> 
-> 
-> What looks suspicious here is the last line of mii-tool output:
-> 'advertising: 10baseT-FD', while only 100baseTx-FD is set on a switch.
-> 'mii-tool -vvv eth1' on working 3.0.9 gives output like below:
-> 
-> root@XXX ~ # cat miitool_working_3.0.9
-> Using SIOCGMIIPHY=0x8947
-> eth1: 100 Mbit, full duplex, link ok
->   registers for MII PHY 1:
->     2100 794d 0020 6340 0501 0000 0004 2001
->     0000 0000 0000 0000 0000 0000 0000 3000
->     0001 0301 0000 0000 0000 0000 0000 4000
->     7277 0504 0000 ffff 2801 0000 0000 0000
->   product info: vendor 00:08:18, model 52 rev 0
->   basic mode:   100 Mbit, full duplex
->   basic status: link ok
->   capabilities: 100baseTx-FD 100baseTx-HD 10baseT-FD 10baseT-HD
->   advertising:  100baseTx-FD flow-control
-> 
-In the working case, register 0 where it matters is the same (autoneg
-disabled and 100Mbps Full Duplex).  Register 4 happens to advertise the
-same 100 Mbps Full duplex forced speed, and apparently your link partner
-cares about that, which is very strange because autoneg is disabled.
-
-There apparently has been a change in behavior in the tg3 code, but
-again it should not matter.  The 3.7 kernel that I tested on behaved the
-same as your non-working case but it worked for me.  I guess I can try
-to restore the original behavior.  I'll need time to look through all
-the changes.
-
-
+Continuing to use trig->leddev_list_lock doesn't seem right.  Shouldn't
+traversal of leds_list be guarded by the leds_list_lock rwsem?  And if
+so, is it safe to use a potentially-blocking lock in this context?
 
 
