@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759293Ab3AQIEd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 03:04:33 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:29127 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759262Ab3AQIE3 (ORCPT
+	id S1759307Ab3AQIEt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 03:04:49 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11398 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759229Ab3AQIEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 03:04:29 -0500
-From: dev@snitselaar.org
-To: james.l.morris@oracle.com
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jerry Snitselaar <jerry.snitselaar@oracle.com>
-Subject: [PATCH] security/device_cgroup: lock assert fails in dev_exception_clean()
-Date: Thu, 17 Jan 2013 01:04:14 -0700
-Message-Id: <1358409854-3574-1-git-send-email-dev@snitselaar.org>
-X-Mailer: git-send-email 1.8.1.191.g414c78c
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 17 Jan 2013 03:04:47 -0500
+Message-ID: <50F7B079.50201@huawei.com>
+Date: Thu, 17 Jan 2013 16:04:09 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 4/6] cgroup: remove duplicate RCU free on struct cgroup
+References: <50F7B040.2020906@huawei.com>
+In-Reply-To: <50F7B040.2020906@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+When destroying cgroup, though in cgroup_diput() we've called
+synchronize_rcu(), we then still have to free cgroup via call_rcu().
 
-devcgroup_css_free() calls dev_exception_clean() without the devcgroup_mutex being locked.
+The story is, long ago to fix a race between reading /proc/sched_debug
+and freeing cgroup, the code was changed to utilize call_rcu().
 
-Shutting down a kvm virt was giving me the following trace:
+Now we've splitted part of cpu cgroup css_alloc/free to css_online/offline,
+which makes the race vanish, and this grants us to remove call_rcu().
 
-[36280.732764] ------------[ cut here ]------------
-[36280.732778] WARNING: at /home/snits/dev/linux/security/device_cgroup.c:172 dev_exception_clean+0xa9/0xc0()
-[36280.732782] Hardware name: Studio XPS 8100
-[36280.732785] Modules linked in: xt_REDIRECT fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat xt_CHECKSUM iptable_mangle bridge stp llc nf_conntrack_ipv4 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 nf_defrag_ipv4 ip6table_filter it87 hwmon_vid xt_state nf_conntrack ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq coretemp snd_seq_device crc32c_intel snd_pcm snd_page_alloc snd_timer snd broadcom tg3 serio_raw i7core_edac edac_core ptp pps_core lpc_ich pcspkr mfd_core soundcore microcode i2c_i801 nfsd auth_rpcgss nfs_acl lockd vhost_net sunrpc tun macvtap macvlan kvm_intel kvm uinput binfmt_misc autofs4 usb_storage firewire_ohci firewire_core crc_itu_t radeon drm_kms_helper ttm
-[36280.732921] Pid: 933, comm: libvirtd Tainted: G        W    3.8.0-rc3-00307-g4c217de #1
-[36280.732922] Call Trace:
-[36280.732927]  [<ffffffff81044303>] warn_slowpath_common+0x93/0xc0
-[36280.732930]  [<ffffffff8104434a>] warn_slowpath_null+0x1a/0x20
-[36280.732932]  [<ffffffff812deaf9>] dev_exception_clean+0xa9/0xc0
-[36280.732934]  [<ffffffff812deb2a>] devcgroup_css_free+0x1a/0x30
-[36280.732938]  [<ffffffff810ccd76>] cgroup_diput+0x76/0x210
-[36280.732941]  [<ffffffff8119eac0>] d_delete+0x120/0x180
-[36280.732943]  [<ffffffff81195cff>] vfs_rmdir+0xef/0x130
-[36280.732945]  [<ffffffff81195e47>] do_rmdir+0x107/0x1c0
-[36280.732949]  [<ffffffff8132d17e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[36280.732951]  [<ffffffff81198646>] sys_rmdir+0x16/0x20
-[36280.732954]  [<ffffffff8173bd82>] system_call_fastpath+0x16/0x1b
-[36280.732956] ---[ end trace ca39dced899a7d9f ]---
-
-
-Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- security/device_cgroup.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/cgroup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index 19ecc8d..d794abc 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -215,7 +215,9 @@ static void devcgroup_css_free(struct cgroup *cgroup)
- 	struct dev_cgroup *dev_cgroup;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 23a0ce1..d7fefeb 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -892,7 +892,7 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+ 		simple_xattrs_free(&cgrp->xattrs);
  
- 	dev_cgroup = cgroup_to_devcgroup(cgroup);
-+	mutex_lock(&devcgroup_mutex);
- 	dev_exception_clean(dev_cgroup);
-+	mutex_unlock(&devcgroup_mutex);
- 	kfree(dev_cgroup);
- }
- 
+ 		ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
+-		kfree_rcu(cgrp, rcu_head);
++		kfree(cgrp);
+ 	} else {
+ 		struct cfent *cfe = __d_cfe(dentry);
+ 		struct cgroup *cgrp = dentry->d_parent->d_fsdata;
 -- 
-1.8.1.191.g414c78c
-
+1.8.0.2
