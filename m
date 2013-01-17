@@ -1,81 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab3AQRfi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 12:35:38 -0500
-Received: from smtp-out-070.synserver.de ([212.40.185.70]:1104 "EHLO
-	smtp-out-070.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab3AQRfe (ORCPT
+	id S1755779Ab3AQRgS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 12:36:18 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55920 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776Ab3AQRgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 12:35:34 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 30985
-Message-ID: <50F83695.506@metafoo.de>
-Date: Thu, 17 Jan 2013 18:36:21 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+	Thu, 17 Jan 2013 12:36:16 -0500
+Subject: [PATCH 05/10] goldfish: framebuffer
+To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        mikechan@google.com
+From: Alan Cox <alan@linux.intel.com>
+Date: Thu, 17 Jan 2013 17:56:23 +0000
+Message-ID: <20130117175456.24458.39612.stgit@bob.linux.org.uk>
+In-Reply-To: <20130117175228.24458.5465.stgit@bob.linux.org.uk>
+References: <20130117175228.24458.5465.stgit@bob.linux.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Alessandro Rubini <rubini@gnudd.com>
-CC: christophe.leroy@c-s.fr, jic23@cam.ac.uk, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, patrick.vasseur@c-s.fr
-Subject: Re: [PATCH] IIO ADC support for AD7923
-References: <50F199F7.7020600@metafoo.de>  <201301080842.r088gKWO031124@localhost.localdomain> <20130108091414.GA28404@mail.gnudd.com> <20130117171100.GA24398@mail.gnudd.com>
-In-Reply-To: <20130117171100.GA24398@mail.gnudd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2013 06:11 PM, Alessandro Rubini wrote:
->>> I wonder if IIO config symbols should have IIO_ in their name, so
->>> people looking at config files knows what they actually are.
->>> Actually, all USB drivers have USB in their config name, which is
->>> useful even if e.g. "PL2303" cannot be but USB.
->>>
->>> On the other hand, AD7923 and all the others can well be driven by
->>> something else than IIO, even if currently this is the only mainstream
->>> option.
->>
->> No, IIO is and should be the only option for these devices. We really don't
->> want to drivers for the same device in different subsystems of the kernel.
-> 
-> We really don't want a non-USB driver for a USB device, but still the
-> name is in the config symbol and is useful. And this is an hardware
-> constraint.
-> 
-> And your argument may well have applied to comedi. But they wisely
-> made the right choice and allowed iio to take over and possibly drive
-> the same devices.
-> 
-> But sure your code is perfect and no other subsystem will ever be needed.
-> 
+From: Arve Hjønnevåg <arve@google.com>
 
-I'm not implying IIO is perfect. IIO has certain shortcomings and some of
-these shortcomings have been addressed in ZIO.
+Framebuffer support for the Goldfish emulator. This takes the Google emulator
+and applies the x86 cleanups as well as moving the blank methods to the usual
+Linux place and dropping the Android early suspend logic (for now at least, that
+can be looked at as Android and upstream converge). Dropped various oddities
+like setting MTRRs on a virtual frame buffer emulation...
 
-Still it's a very bad idea to have two subsystem which have a huge overlap
-in both functionality and targeted devices. It will gives us all lots of
-headaches later on. As IIO continues to evolve it will get support for some
-of the features that only ZIO supports at the moment and as ZIO grows it
-will get support for features currently only supported by IIO. So in the end
-we have two frameworks for the very same purpose.
+With the drivers so far you can now boot a Linux initrd and have fun.
 
-Btw. I'd be arguing the same way if ZIO was currently inside the kernel and
-Jonathan came along and proposed to merge IIO.
+Signed-off-by: Mike A. Chan <mikechan@google.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+[cleaned up to handle x86]
+Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
+Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
+Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
+Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
+[ported to 3.4]
+Signed-off-by: Tom Keel <thomas.keel@intel.com>
+[cleaned up for style and 3.7, moved blank methods]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-> 
-> [...]
->
-> But yes, you are right. I'm working on another I/O subsystem. We are
-> gong to release zio-1.0 in a few days, because the thing is mature
-> and used in production.
-> 
-> I hope to meet you in person at fosdem and be able to talk over a beer
-> or two.
-> 
+ drivers/video/Kconfig      |    9 +
+ drivers/video/Makefile     |    1 
+ drivers/video/goldfishfb.c |  316 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 326 insertions(+)
+ create mode 100644 drivers/video/goldfishfb.c
 
-Looking forward to meeting you :)
 
-- Lars
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index e7068c5..a913997 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -2183,6 +2183,15 @@ config FB_XILINX
+ 	  framebuffer. ML300 carries a 640*480 LCD display on the board,
+ 	  ML403 uses a standard DB15 VGA connector.
+ 
++config FB_GOLDFISH
++	tristate "Goldfish Framebuffer"
++	depends on FB
++	select FB_CFB_FILLRECT
++	select FB_CFB_COPYAREA
++	select FB_CFB_IMAGEBLIT
++	---help---
++	  Framebuffer driver for Goldfish Virtual Platform
++
+ config FB_COBALT
+ 	tristate "Cobalt server LCD frame buffer support"
+ 	depends on FB && (MIPS_COBALT || MIPS_SEAD3)
+diff --git a/drivers/video/Makefile b/drivers/video/Makefile
+index 768a137..3363f67 100644
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -98,6 +98,7 @@ obj-$(CONFIG_FB_ATMEL)		  += atmel_lcdfb.o
+ obj-$(CONFIG_FB_PVR2)             += pvr2fb.o
+ obj-$(CONFIG_FB_VOODOO1)          += sstfb.o
+ obj-$(CONFIG_FB_ARMCLCD)	  += amba-clcd.o
++obj-$(CONFIG_FB_GOLDFISH)         += goldfishfb.o
+ obj-$(CONFIG_FB_68328)            += 68328fb.o
+ obj-$(CONFIG_FB_GBE)              += gbefb.o
+ obj-$(CONFIG_FB_CIRRUS)		  += cirrusfb.o
+diff --git a/drivers/video/goldfishfb.c b/drivers/video/goldfishfb.c
+new file mode 100644
+index 0000000..f7f5c29
+--- /dev/null
++++ b/drivers/video/goldfishfb.c
+@@ -0,0 +1,316 @@
++/*
++ * Copyright (C) 2007 Google, Inc.
++ * Copyright (C) 2012 Intel, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/dma-mapping.h>
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/mm.h>
++#include <linux/fb.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/ioport.h>
++#include <linux/platform_device.h>
++
++enum {
++	FB_GET_WIDTH        = 0x00,
++	FB_GET_HEIGHT       = 0x04,
++	FB_INT_STATUS       = 0x08,
++	FB_INT_ENABLE       = 0x0c,
++	FB_SET_BASE         = 0x10,
++	FB_SET_ROTATION     = 0x14,
++	FB_SET_BLANK        = 0x18,
++	FB_GET_PHYS_WIDTH   = 0x1c,
++	FB_GET_PHYS_HEIGHT  = 0x20,
++
++	FB_INT_VSYNC             = 1U << 0,
++	FB_INT_BASE_UPDATE_DONE  = 1U << 1
++};
++
++struct goldfish_fb {
++	void __iomem *reg_base;
++	int irq;
++	spinlock_t lock;
++	wait_queue_head_t wait;
++	int base_update_count;
++	int rotation;
++	struct fb_info fb;
++	u32 cmap[16];
++};
++
++static irqreturn_t goldfish_fb_interrupt(int irq, void *dev_id)
++{
++	unsigned long irq_flags;
++	struct goldfish_fb *fb = dev_id;
++	u32 status;
++
++	spin_lock_irqsave(&fb->lock, irq_flags);
++	status = readl(fb->reg_base + FB_INT_STATUS);
++	if (status & FB_INT_BASE_UPDATE_DONE) {
++		fb->base_update_count++;
++		wake_up(&fb->wait);
++	}
++	spin_unlock_irqrestore(&fb->lock, irq_flags);
++	return status ? IRQ_HANDLED : IRQ_NONE;
++}
++
++static inline u32 convert_bitfield(int val, struct fb_bitfield *bf)
++{
++	unsigned int mask = (1 << bf->length) - 1;
++
++	return (val >> (16 - bf->length) & mask) << bf->offset;
++}
++
++static int
++goldfish_fb_setcolreg(unsigned int regno, unsigned int red, unsigned int green,
++		 unsigned int blue, unsigned int transp, struct fb_info *info)
++{
++	struct goldfish_fb *fb = container_of(info, struct goldfish_fb, fb);
++
++	if (regno < 16) {
++		fb->cmap[regno] = convert_bitfield(transp, &fb->fb.var.transp) |
++				  convert_bitfield(blue, &fb->fb.var.blue) |
++				  convert_bitfield(green, &fb->fb.var.green) |
++				  convert_bitfield(red, &fb->fb.var.red);
++		return 0;
++	} else {
++		return 1;
++	}
++}
++
++static int goldfish_fb_check_var(struct fb_var_screeninfo *var,
++							struct fb_info *info)
++{
++	if ((var->rotate & 1) != (info->var.rotate & 1)) {
++		if ((var->xres != info->var.yres) ||
++				(var->yres != info->var.xres) ||
++				(var->xres_virtual != info->var.yres) ||
++				(var->yres_virtual > info->var.xres * 2) ||
++				(var->yres_virtual < info->var.xres)) {
++			return -EINVAL;
++		}
++	} else {
++		if ((var->xres != info->var.xres) ||
++		   (var->yres != info->var.yres) ||
++		   (var->xres_virtual != info->var.xres) ||
++		   (var->yres_virtual > info->var.yres * 2) ||
++		   (var->yres_virtual < info->var.yres)) {
++			return -EINVAL;
++		}
++	}
++	if ((var->xoffset != info->var.xoffset) ||
++			(var->bits_per_pixel != info->var.bits_per_pixel) ||
++			(var->grayscale != info->var.grayscale)) {
++		return -EINVAL;
++	}
++	return 0;
++}
++
++static int goldfish_fb_set_par(struct fb_info *info)
++{
++	struct goldfish_fb *fb = container_of(info, struct goldfish_fb, fb);
++	if (fb->rotation != fb->fb.var.rotate) {
++		info->fix.line_length = info->var.xres * 2;
++		fb->rotation = fb->fb.var.rotate;
++		writel(fb->rotation, fb->reg_base + FB_SET_ROTATION);
++	}
++	return 0;
++}
++
++
++static int goldfish_fb_pan_display(struct fb_var_screeninfo *var,
++							struct fb_info *info)
++{
++	unsigned long irq_flags;
++	int base_update_count;
++	struct goldfish_fb *fb = container_of(info, struct goldfish_fb, fb);
++
++	spin_lock_irqsave(&fb->lock, irq_flags);
++	base_update_count = fb->base_update_count;
++	writel(fb->fb.fix.smem_start + fb->fb.var.xres * 2 * var->yoffset,
++						fb->reg_base + FB_SET_BASE);
++	spin_unlock_irqrestore(&fb->lock, irq_flags);
++	wait_event_timeout(fb->wait,
++			fb->base_update_count != base_update_count, HZ / 15);
++	if (fb->base_update_count == base_update_count)
++		pr_err("goldfish_fb_pan_display: timeout wating for base update\n");
++	return 0;
++}
++
++static int goldfish_fb_blank(int blank, struct fb_info *info)
++{
++	struct goldfish_fb *fb = container_of(info, struct goldfish_fb, fb);
++	switch (blank) {
++	case FB_BLANK_NORMAL:
++		writel(1, fb->reg_base + FB_SET_BLANK);
++		break;
++	case FB_BLANK_UNBLANK:
++		writel(0, fb->reg_base + FB_SET_BLANK);
++		break;
++	}
++	return 0;
++}
++
++static struct fb_ops goldfish_fb_ops = {
++	.owner          = THIS_MODULE,
++	.fb_check_var   = goldfish_fb_check_var,
++	.fb_set_par     = goldfish_fb_set_par,
++	.fb_setcolreg   = goldfish_fb_setcolreg,
++	.fb_pan_display = goldfish_fb_pan_display,
++	.fb_blank	= goldfish_fb_blank,
++	.fb_fillrect    = cfb_fillrect,
++	.fb_copyarea    = cfb_copyarea,
++	.fb_imageblit   = cfb_imageblit,
++};
++
++
++static int goldfish_fb_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct resource *r;
++	struct goldfish_fb *fb;
++	size_t framesize;
++	u32 width, height;
++	dma_addr_t fbpaddr;
++
++	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
++	if (fb == NULL) {
++		ret = -ENOMEM;
++		goto err_fb_alloc_failed;
++	}
++	spin_lock_init(&fb->lock);
++	init_waitqueue_head(&fb->wait);
++	platform_set_drvdata(pdev, fb);
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (r == NULL) {
++		ret = -ENODEV;
++		goto err_no_io_base;
++	}
++	fb->reg_base = ioremap(r->start, PAGE_SIZE);
++	if (fb->reg_base == NULL) {
++		ret = -ENOMEM;
++		goto err_no_io_base;
++	}
++
++	fb->irq = platform_get_irq(pdev, 0);
++	if (fb->irq <= 0) {
++		ret = -ENODEV;
++		goto err_no_irq;
++	}
++
++	width = readl(fb->reg_base + FB_GET_WIDTH);
++	height = readl(fb->reg_base + FB_GET_HEIGHT);
++
++	fb->fb.fbops		= &goldfish_fb_ops;
++	fb->fb.flags		= FBINFO_FLAG_DEFAULT;
++	fb->fb.pseudo_palette	= fb->cmap;
++	fb->fb.fix.type		= FB_TYPE_PACKED_PIXELS;
++	fb->fb.fix.visual = FB_VISUAL_TRUECOLOR;
++	fb->fb.fix.line_length = width * 2;
++	fb->fb.fix.accel	= FB_ACCEL_NONE;
++	fb->fb.fix.ypanstep = 1;
++
++	fb->fb.var.xres		= width;
++	fb->fb.var.yres		= height;
++	fb->fb.var.xres_virtual	= width;
++	fb->fb.var.yres_virtual	= height * 2;
++	fb->fb.var.bits_per_pixel = 16;
++	fb->fb.var.activate	= FB_ACTIVATE_NOW;
++	fb->fb.var.height	= readl(fb->reg_base + FB_GET_PHYS_HEIGHT);
++	fb->fb.var.width	= readl(fb->reg_base + FB_GET_PHYS_WIDTH);
++	fb->fb.var.pixclock	= 10000;
++
++	fb->fb.var.red.offset = 11;
++	fb->fb.var.red.length = 5;
++	fb->fb.var.green.offset = 5;
++	fb->fb.var.green.length = 6;
++	fb->fb.var.blue.offset = 0;
++	fb->fb.var.blue.length = 5;
++
++	framesize = width * height * 2 * 2;
++	fb->fb.screen_base = dma_alloc_coherent(&pdev->dev, framesize,
++						&fbpaddr, GFP_KERNEL);
++	pr_debug("allocating frame buffer %d * %d, got %p\n",
++					width, height, fb->fb.screen_base);
++	if (fb->fb.screen_base == 0) {
++		ret = -ENOMEM;
++		goto err_alloc_screen_base_failed;
++	}
++	fb->fb.fix.smem_start = fbpaddr;
++	fb->fb.fix.smem_len = framesize;
++
++	ret = fb_set_var(&fb->fb, &fb->fb.var);
++	if (ret)
++		goto err_fb_set_var_failed;
++
++	ret = request_irq(fb->irq, goldfish_fb_interrupt, IRQF_SHARED,
++							pdev->name, fb);
++	if (ret)
++		goto err_request_irq_failed;
++
++	writel(FB_INT_BASE_UPDATE_DONE, fb->reg_base + FB_INT_ENABLE);
++	goldfish_fb_pan_display(&fb->fb.var, &fb->fb); /* updates base */
++
++	ret = register_framebuffer(&fb->fb);
++	if (ret)
++		goto err_register_framebuffer_failed;
++	return 0;
++
++err_register_framebuffer_failed:
++	free_irq(fb->irq, fb);
++err_request_irq_failed:
++err_fb_set_var_failed:
++	dma_free_coherent(&pdev->dev, framesize,
++				fb->fb.screen_base, fb->fb.fix.smem_start);
++err_alloc_screen_base_failed:
++err_no_irq:
++	iounmap(fb->reg_base);
++err_no_io_base:
++	kfree(fb);
++err_fb_alloc_failed:
++	return ret;
++}
++
++static int goldfish_fb_remove(struct platform_device *pdev)
++{
++	size_t framesize;
++	struct goldfish_fb *fb = platform_get_drvdata(pdev);
++
++	framesize = fb->fb.var.xres_virtual * fb->fb.var.yres_virtual * 2;
++	unregister_framebuffer(&fb->fb);
++	free_irq(fb->irq, fb);
++
++	dma_free_coherent(&pdev->dev, framesize, fb->fb.screen_base,
++						fb->fb.fix.smem_start);
++	iounmap(fb->reg_base);
++	return 0;
++}
++
++
++static struct platform_driver goldfish_fb_driver = {
++	.probe		= goldfish_fb_probe,
++	.remove		= goldfish_fb_remove,
++	.driver = {
++		.name = "goldfish_fb"
++	}
++};
++
++module_platform_driver(goldfish_fb_driver);
++
++MODULE_LICENSE("GPL v2");
 
