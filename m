@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab3AQR0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 12:26:42 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:45966 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754776Ab3AQR0l (ORCPT
+	id S1755335Ab3AQR05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 12:26:57 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26004 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191Ab3AQR04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 12:26:41 -0500
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>
-Subject: [PATCH] Link platform device resources properly.
-Date: Thu, 17 Jan 2013 19:26:36 +0200
-Message-Id: <1358443596-30631-1-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
+	Thu, 17 Jan 2013 12:26:56 -0500
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
+        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
+        minchan@kernel.org, dan.magenheimer@oracle.com
+Subject: [PATCH 1/5] staging: ramster: disable build in anticipation of renaming
+Date: Thu, 17 Jan 2013 09:26:33 -0800
+Message-Id: <1358443597-9845-2-git-send-email-dan.magenheimer@oracle.com>
+X-Mailer: git-send-email 1.7.5.1
+In-Reply-To: <1358443597-9845-1-git-send-email-dan.magenheimer@oracle.com>
+References: <1358443597-9845-1-git-send-email-dan.magenheimer@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The resources of the platform devices created by the OF core were
-not properly linked. Make sure that they are, so that we don't get
-any crashes when trying to remove the device.
+In staging, disable ramster build in anticipation of renaming to zcache
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 ---
- drivers/of/device.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/staging/Kconfig  |    2 --
+ drivers/staging/Makefile |    1 -
+ 2 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/of/device.c b/drivers/of/device.c
-index 4c74e4f..d75fcaf 100644
---- a/drivers/of/device.c
-+++ b/drivers/of/device.c
-@@ -62,6 +62,9 @@ int of_device_add(struct platform_device *ofdev)
- 	if (!ofdev->dev.parent)
- 		set_dev_node(&ofdev->dev, of_node_to_nid(ofdev->dev.of_node));
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index db8a512..eb61455 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -126,8 +126,6 @@ source "drivers/staging/csr/Kconfig"
  
-+	/* make sure we add the resources to the appropriate lists */
-+	platform_device_link_resources(ofdev);
-+
- 	return device_add(&ofdev->dev);
- }
+ source "drivers/staging/omap-thermal/Kconfig"
  
+-source "drivers/staging/ramster/Kconfig"
+-
+ source "drivers/staging/silicom/Kconfig"
+ 
+ source "drivers/staging/ced1401/Kconfig"
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index a9d5479..18420b8 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -55,7 +55,6 @@ obj-$(CONFIG_USB_G_CCG)		+= ccg/
+ obj-$(CONFIG_WIMAX_GDM72XX)	+= gdm72xx/
+ obj-$(CONFIG_CSR_WIFI)		+= csr/
+ obj-$(CONFIG_OMAP_BANDGAP)	+= omap-thermal/
+-obj-$(CONFIG_ZCACHE2)		+= ramster/
+ obj-$(CONFIG_NET_VENDOR_SILICOM)	+= silicom/
+ obj-$(CONFIG_CED1401)		+= ced1401/
+ obj-$(CONFIG_DRM_IMX)		+= imx-drm/
 -- 
-1.7.12
+1.7.1
 
