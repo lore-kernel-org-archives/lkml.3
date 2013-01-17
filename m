@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab3AQNzk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:55:40 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:43018 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab3AQNzj (ORCPT
+	id S1755771Ab3AQN7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:59:00 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:57944 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077Ab3AQN67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:55:39 -0500
-Date: Thu, 17 Jan 2013 08:55:30 -0500
-From: Jake Champlin <jake.champlin.27@gmail.com>
-To: abbotti@mev.co.uk
-Cc: fmhess@users.sourceforge.net, gregkh@linuxfoundation.org,
-        jake.champlin.27@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: Comedi: ni_tio: Fixed spacing issue
-Message-ID: <20130117135520.GA1985@gmail.com>
+	Thu, 17 Jan 2013 08:58:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50F7D47A.7070508@nvidia.com>
+References: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com>
+	<1357210020-19876-4-git-send-email-ldewangan@nvidia.com>
+	<CACRpkdazCa_GMfrCnoYukiQKbKD41RiTG-MyO-5p+B-6-+Y=hA@mail.gmail.com>
+	<20130117103529.GB7504@opensource.wolfsonmicro.com>
+	<50F7D47A.7070508@nvidia.com>
+Date: Thu, 17 Jan 2013 14:58:58 +0100
+Message-ID: <CACRpkdY613HDX7OVEzttkCMUmZSWEzqNYHbP1yBbtewDVm14VA@mail.gmail.com>
+Subject: Re: [rtc-linux] Re: [PATCH 3/4] gpio: palmas: Add support for Palams GPIO
+From: Linus Walleij <linus.walleij@linaro.org>
+To: rtc-linux@googlegroups.com
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issue from spaces to tabs.
+On Thu, Jan 17, 2013 at 11:37 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> On Thursday 17 January 2013 04:05 PM, Mark Brown wrote:
+>>
+>> On Thu, Jan 17, 2013 at 11:34:42AM +0100, Linus Walleij wrote:
+>>
+>>> Do you want me to apply it to my GPIO tree or does it have
+>>> dependencies so you'll take it through MFD or something?
+>>
+>> The MFD has been merged for a couple of releases now.
+>
+> Yes, Although this driver used the new API introduced in patch 1/4 but I
+> think it is fine to apply this in GPIO subsystem here as it is independent
+> driver.
 
-Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
----
- drivers/staging/comedi/drivers/ni_tio.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+OK that's what fooled me.
 
-diff --git a/drivers/staging/comedi/drivers/ni_tio.c b/drivers/staging/comedi/drivers/ni_tio.c
-index 98f8789..2252877 100644
---- a/drivers/staging/comedi/drivers/ni_tio.c
-+++ b/drivers/staging/comedi/drivers/ni_tio.c
-@@ -276,7 +276,7 @@ static inline unsigned NI_660x_RTSI_Second_Gate_Select(unsigned n)
- }
- 
- static const unsigned int counter_status_mask =
--    COMEDI_COUNTER_ARMED | COMEDI_COUNTER_COUNTING;
-+	COMEDI_COUNTER_ARMED | COMEDI_COUNTER_COUNTING;
- 
- static int __init ni_tio_init_module(void)
- {
--- 
-1.8.1.1
+Patch applied!
 
-
--- 
-Jake Champlin
-jake.champlin.27@gmail.com
-
+Yours,
+Linus Walleij
