@@ -1,212 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab3ASAYW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 19:24:22 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:34468 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab3ASAYU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 19:24:20 -0500
+	id S1754466Ab3ASAZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 19:25:43 -0500
+Received: from ozlabs.org ([203.10.76.45]:52372 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752570Ab3ASAZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 19:25:41 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjurbren@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        virtualization@lists.linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: Re: [RFCv2 00/12] Introduce host-side virtio queue and CAIF Virtio.
+In-Reply-To: <87k3rcy2y2.fsf@rustcorp.com.au>
+References: <20121206102750.GF10837@redhat.com> <877goc0wac.fsf@rustcorp.com.au> <CAJK669bP41oBhJ=MB64NS21Ag7XO5WswuTiVKCFTb96nvmyBiw@mail.gmail.com> <87pq1f2rj0.fsf@rustcorp.com.au> <87wqvl1g9s.fsf@rustcorp.com.au> <CAJK669Z-bGTeQe8qJpTJP7simbSvQ8cgFZefs5QRMkmxtFYY4g@mail.gmail.com> <87pq1c1uj4.fsf@rustcorp.com.au> <877gnk1ayv.fsf@rustcorp.com.au> <20130114173914.GB19207@redhat.com> <874nihzuoz.fsf@rustcorp.com.au> <20130116081606.GB11465@redhat.com> <87k3rcy2y2.fsf@rustcorp.com.au>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 17 Jan 2013 21:05:49 +1030
+Message-ID: <87d2x4xfju.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUWYVkiVAAjeBL5r4h0tdHrnFCo0b8x5whXaf1RGhGmHng@mail.gmail.com>
-References: <CA+icZUW-mfMtNSY-d-=0WpX=fRBqoNx5jcX3S8x4tvGdvUc+8g@mail.gmail.com>
-	<2890633.q9n75klkI9@vostro.rjw.lan>
-	<CA+icZUVz7UPX0n=f85e=dcAMY6rgZZqj-7CqW7t4Zdtu9nPuBA@mail.gmail.com>
-	<1922388.1PvyliEuQR@vostro.rjw.lan>
-	<CA+icZUWYVkiVAAjeBL5r4h0tdHrnFCo0b8x5whXaf1RGhGmHng@mail.gmail.com>
-Date: Sat, 19 Jan 2013 01:24:18 +0100
-Message-ID: <CA+icZUWVdLZX=U7g0DHCPRS1hcdOmW=OKcowfo2mBKRqenHAGw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 18 [ BROKEN suspend: jbd2|acpi|pm? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>, x86@kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 1:00 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Sat, Jan 19, 2013 at 12:58 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> On Saturday, January 19, 2013 12:41:11 AM Sedat Dilek wrote:
->>> On Sat, Jan 19, 2013 at 12:39 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>> > On Saturday, January 19, 2013 12:28:55 AM Sedat Dilek wrote:
->>> >> On Sat, Jan 19, 2013 at 12:25 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>> >> > On Friday, January 18, 2013 11:56:53 PM Sedat Dilek wrote:
->>> >> >> On Fri, Jan 18, 2013 at 11:35 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> >> >> > On Fri, Jan 18, 2013 at 11:20 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>> >> >> >> On Friday, January 18, 2013 11:11:07 PM Sedat Dilek wrote:
->>> >> >> >>> On Fri, Jan 18, 2013 at 5:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> >> >> >>> > Hi all,
->>> >> >> >>> >
->>> >> >> >>> > Changes since 20130117:
->>> >> >> >>> >
->>> >> >> >>> > Undropped tree: samung
->>> >> >> >>> >
->>> >> >> >>> > The powerpc tree still had a build failure.
->>> >> >> >>> >
->>> >> >> >>> > The driver-core tree gained a build failure for which I applied a merge
->>> >> >> >>> > fix patch.
->>> >> >> >>> >
->>> >> >> >>> > The gpio-lw tree gained a build failure so I used the version from
->>> >> >> >>> > next-20130117.
->>> >> >> >>> >
->>> >> >> >>> > The samsung tree lost the majority of its conflicts but gained more
->>> >> >> >>> > against the arm-soc and slave-dma tree.
->>> >> >> >>> >
->>> >> >> >>> > ----------------------------------------------------------------------------
->>> >> >> >>> >
->>> >> >> >>>
->>> >> >> >>> From my dmesg diff-file:
->>> >> >> >>>
->>> >> >> >>> +[  288.730849] PM: Syncing filesystems ... done.
->>> >> >> >>> +[  294.050498] Freezing user space processes ... (elapsed 0.04 seconds) done.
->>> >> >> >>> +[  294.097024] Freezing remaining freezable tasks ...
->>> >> >> >>> +[  314.098849] Freezing of tasks failed after 20.01 seconds (1 tasks
->>> >> >> >>> refusing to freeze, wq_busy=0):
->>> >> >> >>> +[  314.098862] jbd2/loop0-8    D ffffffff8180d780     0   297      2 0x00000000
->>> >> >> >>> +[  314.098865]  ffff880117ec5b68 0000000000000046 ffff880117ec5b08
->>> >> >> >>> ffffffff81044c29
->>> >> >> >>> +[  314.098868]  ffff88011829dc80 ffff880117ec5fd8 ffff880117ec5fd8
->>> >> >> >>> ffff880117ec5fd8
->>> >> >> >>> +[  314.098871]  ffff880119b34560 ffff88011829dc80 ffff880117ec5b68
->>> >> >> >>> ffff88011fad4738
->>> >> >> >>> +[  314.098873] Call Trace:
->>> >> >> >>> +[  314.098881]  [<ffffffff81044c29>] ? default_spin_lock_flags+0x9/0x10
->>> >> >> >>> +[  314.098885]  [<ffffffff811c63e0>] ? __wait_on_buffer+0x30/0x30
->>> >> >> >>> +[  314.098888]  [<ffffffff816b4b59>] schedule+0x29/0x70
->>> >> >> >>> +[  314.098890]  [<ffffffff816b4c2f>] io_schedule+0x8f/0xd0
->>> >> >> >>> +[  314.098892]  [<ffffffff811c63ee>] sleep_on_buffer+0xe/0x20
->>> >> >> >>> +[  314.098896]  [<ffffffff816b342f>] __wait_on_bit+0x5f/0x90
->>> >> >> >>> +[  314.098898]  [<ffffffff811c5aa1>] ? submit_bh+0x121/0x1e0
->>> >> >> >>> +[  314.098900]  [<ffffffff811c63e0>] ? __wait_on_buffer+0x30/0x30
->>> >> >> >>> +[  314.098903]  [<ffffffff816b34dc>] out_of_line_wait_on_bit+0x7c/0x90
->>> >> >> >>> +[  314.098906]  [<ffffffff8107eb00>] ? autoremove_wake_function+0x40/0x40
->>> >> >> >>> +[  314.098909]  [<ffffffff811c63de>] __wait_on_buffer+0x2e/0x30
->>> >> >> >>> +[  314.098913]  [<ffffffff8128a6a1>]
->>> >> >> >>> jbd2_journal_commit_transaction+0x1791/0x1960
->>> >> >> >>> +[  314.098917]  [<ffffffff8109269d>] ? sched_clock_cpu+0xbd/0x110
->>> >> >> >>> +[  314.098920]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
->>> >> >> >>> +[  314.098923]  [<ffffffff81069fbf>] ? try_to_del_timer_sync+0x4f/0x70
->>> >> >> >>> +[  314.098925]  [<ffffffff8128e4e8>] kjournald2+0xb8/0x240
->>> >> >> >>> +[  314.098927]  [<ffffffff8107eac0>] ? add_wait_queue+0x60/0x60
->>> >> >> >>> +[  314.098929]  [<ffffffff8128e430>] ? commit_timeout+0x10/0x10
->>> >> >> >>> +[  314.098931]  [<ffffffff8107ded0>] kthread+0xc0/0xd0
->>> >> >> >>> +[  314.098933]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
->>> >> >> >>> +[  314.098936]  [<ffffffff816be52c>] ret_from_fork+0x7c/0xb0
->>> >> >> >>> +[  314.098938]  [<ffffffff8107de10>] ? flush_kthread_worker+0xb0/0xb0
->>> >> >> >>> +[  314.098969]
->>> >> >> >>> +[  314.098970] Restarting kernel threads ... done.
->>> >> >> >>> +[  314.099052] Restarting tasks ... done.
->>> >> >> >>>
->>> >> >> >>> Please, have a lot at it.
->>> >> >> >>
->>> >> >> >> This is a freezer failure while freezing kernel threads, so I don't think it's
->>> >> >> >> related to ACPI or PM directly.
->>> >> >> >>
->>> >> >> >> Does it happen on every suspend?
->>> >> >> >>
->>> >> >> >
->>> >> >> > No, I only did one S/R.
->>> >> >> >
->>> >> >> > I have built a 2nd new kernel where I pulled-in latest pm.git#linux-next.
->>> >> >> > With this kernel two S/Rs were fine - but that says not much.
->>> >> >> >
->>> >> >>
->>> >> >> After several S/Rs on the "buggy" -1 kernel I know see in my syslogs:
->>> >> >>
->>> >> >> Jan 18 23:50:02 fambox kernel: [  141.853828] Disabling non-boot CPUs ...
->>> >> >> Jan 18 23:50:02 fambox kernel: [  141.956943] smpboot: CPU 1 is now offline
->>> >> >> Jan 18 23:50:02 fambox kernel: [  141.957438] NOHZ: local_softirq_pending 02
->>> >> >> Jan 18 23:50:02 fambox kernel: [  141.957454] NOHZ: local_softirq_pending 02
->>> >> >> Jan 18 23:50:02 fambox kernel: [  142.060830] smpboot: CPU 2 is now offline
->>> >> >> Jan 18 23:50:02 fambox kernel: [  142.164639] smpboot: CPU 3 is now offline
->>> >> >
->>> >> > Are you worried about the "local_softirq_pending" messages?
->>> >> >
->>> >>
->>> >> That's the only new messages I have seen after several S/Rs.
+Rusty Russell <rusty@rustcorp.com.au> writes:
+> "Michael S. Tsirkin" <mst@redhat.com> writes:
+>> On Wed, Jan 16, 2013 at 01:43:32PM +1030, Rusty Russell wrote:
+>>> "Michael S. Tsirkin" <mst@redhat.com> writes:
+>>> >> +static int resize_iovec(struct vringh_iov *iov, gfp_t gfp)
+>>> >> +{
+>>> >> +	struct iovec *new;
+>>> >> +	unsigned int new_num = iov->max * 2;
 >>> >
->>> > They are kind of unusual.
->>> >
->>> > Anyway, they seem to be related to CPU hotplug (CPU offline), so you can try
->>> > if you can trigger them through the sysfs CPU offline/online interface.
->>> >
->>>
->>> Can you explain that a bit clearer or give some sample lines for testing?
+>>> > We must limit this I think, this is coming
+>>> > from userspace. How about UIO_MAXIOV?
+>>> 
+>>> We limit it to the ring size already;
 >>
->> There is a sysfs file
->>
->> /sys/devices/system/cpu/cpuX/online
->>
->> (where X=0,1,2,3,...) for each CPU core in the system.  The value read from it
->> indicates whether or not the given core is online (1 means online).  Writing 0
->> to it means that the given core should be put offline.  Writing 1 means to put
->> it back online.  You can simply write first 0s and than 1s to those files
->> for CPUs > 0 multiple times in a row and see if that triggers messages like the
->> above.  If it does, that may mean there's been a change in kernel/cpu.c, for
->> example, that causes it to appear.  The change may have been made somewhere in
->> arch/x86 too, though.
->>
->
+>> 1. do we limit it in case there's a loop in the descriptor ring?
 
-TESTCASE:
+I didn't get a chance to do these revisions, as I spent today debugging
+the test framework.  I won't get any more work on it until next week, so
+I've posted a rough series anyway for feedback (can also be found
+in my pending-rebases branch on kernel.org).
 
-root# cat /sys/devices/system/cpu/cpu3/online
-1
-
-root# echo "0" > /sys/devices/system/cpu/cpu3/online
-
-...machine freezes immediately!
-
-I had 3 terminals open logging kernlog, syslog and messages, but no
-lines displayed!
-Machine required a hard/cold reboot.
-
-- Sedat -
-
-> [ CCing x86 folks ]
->
-> Thanks for the explanations.
->
->>> >> If you have a testcase for me to reproduce it here, I would be happy.
->>> >
->>> > Do you mean the freezer-related issue?
->>> >
->>>
->>> Any one as I am still stepping in the dark.
->>> I checked my disc-space as I built a lot of software today and run
->>> once out of space.
->>> But 1.7GiB should be enough on / for testing.
->>> I wanted to run the new LTP version I built the last days.
->>> Let's see what I get...
->>
->> Stress-testing the freezer is rather easy and doesn't require disk space.
->> All it takes is to echo "freezer" to /sys/power/pm_test and then do
->> "echo mem > /sys/power/state && sleep 1" in a loop.  This is described in
->> Documentation/power/basic-pm-debugging.txt IIRC.
->>
->
-> Didn't know there is some cool docs about PM around.
-> I will look into this.
->
-> Furthermore, I have seen on a restart...
->
->      BUG: soft lockup - CPU#3 stuck for 23s! [kworker/3:2:6079]
->
-> ...approx 10 lines and a nothing happened I turned the machine off via
-> power-button.
->
-> - Sedat -
->
->> Thanks,
->> Rafael
->>
->>
->> --
->> I speak only for myself.
->> Rafael J. Wysocki, Intel Open Source Technology Center.
+Thanks!
+Rusty.
