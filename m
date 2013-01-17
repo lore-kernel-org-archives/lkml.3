@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759014Ab3AQGQp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 01:16:45 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43728 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428Ab3AQGQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 01:16:44 -0500
-Message-ID: <1358403338.6252.16.camel@cumari.coelho.fi>
-Subject: Re: [PATCH 55/86] drivers/net/wireless/ti/wl1251: remove depends on
- CONFIG_EXPERIMENTAL
-From: Luciano Coelho <coelho@ti.com>
-To: Kees Cook <keescook@chromium.org>
-CC: <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Thu, 17 Jan 2013 08:15:38 +0200
-In-Reply-To: <1358391258-1771-56-git-send-email-keescook@chromium.org>
-References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
-	 <1358391258-1771-56-git-send-email-keescook@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1759098Ab3AQG1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 01:27:21 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:64949 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab3AQG1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 01:27:20 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1358379808-16449-1-git-send-email-alcooperx@gmail.com>
+References: <1358379808-16449-1-git-send-email-alcooperx@gmail.com>
+Date: Thu, 17 Jan 2013 07:27:19 +0100
+X-Google-Sender-Auth: LkTbMTicR-wlVa3713-ojwaW_RA
+Message-ID: <CAMuHMdUSRM6dauiRtSs20YVfHmNrROrc4RpZL+dKA_e2t82J6A@mail.gmail.com>
+Subject: Re: [PATCH V2] mips: function tracer: Fix broken function tracing
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Al Cooper <alcooperx@gmail.com>
+Cc: rostedt@goodmis.org, ddaney.cavm@gmail.com, ralf@linux-mips.org,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+On Thu, Jan 17, 2013 at 12:43 AM, Al Cooper <alcooperx@gmail.com> wrote:
+> Part of the sequence is "addiu sp,sp,-8" in the delay slot after every
+> call to the trace routine "_mcount" (some legacy thing where 2 arguments
+> used to be pushed on the stack). The _mcount routine is expected to
+> adjust the sp by +8 before returning.
 
-On Wed, 2013-01-16 at 18:53 -0800, Kees Cook wrote:
-> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-> while now and is almost always enabled by default. As agreed during the
-> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
-> 
-> Cc: Luciano Coelho <coelho@ti.com>
-> Cc: "John W. Linville" <linville@tuxdriver.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  drivers/net/wireless/ti/wl1251/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/wireless/ti/wl1251/Kconfig b/drivers/net/wireless/ti/wl1251/Kconfig
-> index 1fb6584..8fec4ed 100644
-> --- a/drivers/net/wireless/ti/wl1251/Kconfig
-> +++ b/drivers/net/wireless/ti/wl1251/Kconfig
-> @@ -1,6 +1,6 @@
->  menuconfig WL1251
->  	tristate "TI wl1251 driver support"
-> -	depends on MAC80211 && EXPERIMENTAL && GENERIC_HARDIRQS
-> +	depends on MAC80211 && GENERIC_HARDIRQS
->  	select FW_LOADER
->  	select CRC7
->  	---help---
+So when not disabled, the original jalr and addiu will be there, so _mcount has
+to adjust sp.
 
-This is already in my tree and will be sent up to wireless-next this
-week.
+> The problem is that when tracing is disabled for a function, the
+> "jalr _mcount" instruction is replaced with a nop, but the
+> "addiu sp,sp,-8" is still executed and the stack pointer is left
+> trashed. When frame pointers are enabled the problem is masked
+> because any access to the stack is done through the frame
+> pointer and the stack pointer is restored from the frame pointer when
+> the function returns.
+>
+> This patch writes two nops starting at the address of the "jalr _mcount"
+> instruction whenever tracing is disabled. This means that the
+> "addiu sp,sp.-8" will be converted to a nop along with the "jalr".
+
+When disabled, there will be two nops.
+
+> This is SMP safe because the first time this happens is during
+> ftrace_init() which is before any other processor has been started.
+> Subsequent calls to enable/disable tracing when other CPUs ARE running
+> will still be safe because the enable will only change the first nop
+> to a "jalr" and the disable, while writing 2 nops, will only be changing
+
+When re-enabled, there will be a jalr and a nop, which differs from the initial
+case, so _mcount doesn't have to adjust sp?
+
+> @@ -69,7 +68,7 @@ NESTED(ftrace_caller, PT_SIZE, ra)
+>         .globl _mcount
+>  _mcount:
+>         b       ftrace_stub
+> -        nop
+> +       addiu sp,sp,8
+>         lw      t1, function_trace_stop
+>         bnez    t1, ftrace_stub
+>         nop
+
+But _mcount will always adjust the stack pointer?
+What am I missing?
+
+Gr{oetje,eeting}s,
+
+                        Geert
 
 --
-Cheers,
-Luca.
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
