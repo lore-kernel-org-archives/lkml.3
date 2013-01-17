@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab3AQTAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 14:00:04 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:42004 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab3AQTAB (ORCPT
+	id S1756731Ab3AQTAm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 14:00:42 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:35486 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756362Ab3AQTAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 14:00:01 -0500
-Date: Thu, 17 Jan 2013 19:00:00 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Roger Quadros <rogerq@ti.com>
-cc: Tony Lindgren <tony@atomide.com>, balbi@ti.com, sameo@linux.intel.com,
-        kishon@ti.com, sshtylyov@mvista.com, bjorn@mork.no,
-        linux@arm.linux.org.uk, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rajendra Nayak <rnayak@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Mike Turquette <mturquette@linaro.com>
-Subject: Re: [PATCH v7 19/22] ARM: OMAP3: clock data: get rid of unused USB
- host clock aliases and dummies
-In-Reply-To: <20130117170321.GJ14149@atomide.com>
-Message-ID: <alpine.DEB.2.00.1301171854280.14118@utopia.booyaka.com>
-References: <1358422231-24736-1-git-send-email-rogerq@ti.com> <1358422231-24736-20-git-send-email-rogerq@ti.com> <20130117170321.GJ14149@atomide.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 17 Jan 2013 14:00:39 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130117185935.GC16568@mtj.dyndns.org>
+References: <CA+55aFxttTkWG0gfUz3=V8A-9az3+qY3j0JZEAoKv0ne-QupZw@mail.gmail.com>
+ <20130116032502.GN2668@htj.dyndns.org> <CA+55aFxCudzOv8e2XjHiT=Qhy9q+mrxUfSYAT=eU6Gq8uyNORw@mail.gmail.com>
+ <20130116164832.GP2668@htj.dyndns.org> <50F6DD4D.3070808@linux.intel.com>
+ <CA+55aFyjrXzKMqmOuMo9z24OZj3kD4O4M4y_O-h=r6udCz2MyA@mail.gmail.com>
+ <20130116213032.GS2668@htj.dyndns.org> <CA+55aFzdf44QOZn4KS6tT09COFsmCg80sTah1XpeoErJxAzbRQ@mail.gmail.com>
+ <20130117183830.GA16568@mtj.dyndns.org> <CA+55aFzeUPbvEMDTKis98TKkY68k4GtzPXCWEQVKKzWf7eVDoQ@mail.gmail.com>
+ <20130117185935.GC16568@mtj.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Jan 2013 11:00:18 -0800
+X-Google-Sender-Auth: EnV7iLrJXRcrMbh64yxliuQq-WA
+Message-ID: <CA+55aFwrYz2qWw0FPaJdDjpq7LNyjOZ3Mb=hmjzxjg_+bPtprA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] init, block: try to load default elevator module
+ early during boot
+To: Tejun Heo <tj@kernel.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+On Thu, Jan 17, 2013 at 10:59 AM, Tejun Heo <tj@kernel.org> wrote:
+>
+> If you're okay with it, I'll route these two and the patches to add
+> warning through a wq branch.  There's already a wq/for-3.9 patch which
+> am_i_async() can make use of, so it's gonna be easier this way.
 
-On Thu, 17 Jan 2013, Tony Lindgren wrote:
+Sounds good to me. Thanks,
 
-> * Roger Quadros <rogerq@ti.com> [130117 03:34]:
-> > We don't need multiple aliases for the OMAP USB host clocks and neither
-> > the dummy clocks so remove them.
-> 
-> It's best that Paul queues this and the next patch as these clock alias
-> clean-up patches can be done separately. That way the dependency between
-> arch/arm/*omap* code is cut away as these files should be moved to live
-> under drivers/clk/omap.
-
-Per Tony's request, I'll queue these two cleanup patches for 3.10 -- or 
-whatever Linus will call it.
-
-
-- Paul
+             Linus
