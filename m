@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558Ab3AQK2L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:28:11 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52944 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759493Ab3AQK2F (ORCPT
+	id S1759544Ab3AQK2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:28:09 -0500
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:51550 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759505Ab3AQK2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jan 2013 05:28:05 -0500
-Date: Thu, 17 Jan 2013 10:23:26 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zij@mx0.arm.com>
-Subject: Re: [RFC 0/4] perf tool: Adding ratios support
-Message-ID: <20130117102325.GA3699@mudshark.cambridge.arm.com>
-References: <1358257194-8204-1-git-send-email-jolsa@redhat.com>
- <20130116131318.GF16543@mudshark.cambridge.arm.com>
- <20130116133033.GC1042@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130116133033.GC1042@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130109150427.GL3931@n2100.arm.linux.org.uk>
+References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com>
+	<201301081259.29839.arnd@arndb.de>
+	<CAAVeFu+4VbCbj9TaeMm+NMDJ9_M4-j4O0ONF7Yh_un63wS38+Q@mail.gmail.com>
+	<201301091035.23206.arnd@arndb.de>
+	<20130109104414.GF3931@n2100.arm.linux.org.uk>
+	<20130109111055.GG3931@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.02.1301090932400.6300@xanadu.home>
+	<20130109150427.GL3931@n2100.arm.linux.org.uk>
+Date: Thu, 17 Jan 2013 11:28:04 +0100
+Message-ID: <CACRpkdYgD67OA-gmxdwZJXhtjwk1sRnntCzh4Q2RHbhoQ6TUhw@mail.gmail.com>
+Subject: Re: [PATCH] Proposed removal of IS_ERR_OR_NULL() (was: Re: [PATCH
+ 1/4] gpiolib: introduce descriptor-based GPIO interface)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 01:30:33PM +0000, Jiri Olsa wrote:
-> On Wed, Jan 16, 2013 at 01:13:18PM +0000, Will Deacon wrote:
-> > On Tue, Jan 15, 2013 at 01:39:50PM +0000, Jiri Olsa wrote:
-> > > The formula can currently contain any event from the set::events
-> > > plus any number (int). There'll be support in future for outside
-> > > values runtime and other if needed.
-> > 
-> > Just to say that I *really* like this idea! If we extended it to include
-> > other operators then it would help us on ARM, where we often have events
-> > like 'cache accesses' and 'cache misses' but not 'cache hits'.
-> 
-> great, thanks for sharing this
-> 
-> The current operators set is just basic one to show the idea,
-> it can/will be expanded.
+On Wed, Jan 9, 2013 at 4:04 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
 
-Makes sense.
+> So, it seems there's some concensus building here, and it seems that
+> I've become the chosen victi^wvolunteer for this.  So, here's a patch.
+> It's missing a Guns-supplied-by: tag though.
+>
+> From: Russell King <rmk+kernel@arm.linux.org.uk>
+> Subject: Mark IS_ERR_OR_NULL() deprecated
 
-> > > My current thinking is to have generic formulas file(s) for architectural
-> > > events and add arch-specific ones once when we have the support for
-> > > non-architectural events (already sent RFC, v2 is on its way..).
-> > 
-> > Would the architectural formula files also be in userspace, or is there any
-> > merit to including useful PMU-specific formulae in sysfs, along with the
-> > other PMU files?
-> 
-> hum, isn't this too specific for sysfs files?
-> 
-> I think that's going to be the perf tool specific info.. so it's going
-> to be placed in its configuration files.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Understood. It would just be nice if the ARM perf backend could implement
-more of the generic events, which would be possible if the kernel could
-expose these formulae for those. Plumbing that together probably still
-requires userspace changes though, in which case it's not worth it.
+Following the tradition of computer science an alternate title of
+the patch could be "IS_ERR_OR_NULL() considered harmful".
 
-Will
+Yours,
+Linus Walleij
