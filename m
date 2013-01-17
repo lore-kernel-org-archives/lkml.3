@@ -1,207 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759313Ab3AQIq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 03:46:59 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42771 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759215Ab3AQIq6 (ORCPT
+	id S932200Ab3AQIyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 03:54:55 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56235 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759267Ab3AQIyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 03:46:58 -0500
-Message-ID: <50F7BA40.9070104@linux.vnet.ibm.com>
-Date: Thu, 17 Jan 2013 14:15:52 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: Mike Galbraith <bitbucket@online.de>, LKML <linux-kernel@vger.kernel.org>,
-        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Venki Pallipadi <venki@google.com>,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, srikar@linux.vnet.ibm.com
-Subject: Re: sched: Consequences of integrating the Per Entity Load Tracking
- Metric into the Load Balancer
-References: <50E3B61A.3040808@linux.vnet.ibm.com> <1357114354.5586.39.camel@marge.simpson.net> <50E55F99.6090104@linux.vnet.ibm.com> <1357373590.5690.172.camel@marge.simpson.net> <1357489955.5717.21.camel@marge.simpson.net> <50EA5D41.4090502@linux.vnet.ibm.com> <1357544184.5792.140.camel@marge.simpson.net> <50EBDBB7.5060803@linux.vnet.ibm.com> <50F6B455.2040508@intel.com>
-In-Reply-To: <50F6B455.2040508@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 17 Jan 2013 03:54:53 -0500
+Message-ID: <1358412887.2394.0.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH v2 1/1] block: blk-merge: don't merge the pages with
+ non-contiguous descriptors
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Subhash Jadavani <subhashj@codeaurora.org>, martin.petersen@oracle.com,
+        linux-scsi@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org, tj@kernel.org,
+        asias@redhat.com, linux-arm-kernel@lists.infradead.org
+Date: Thu, 17 Jan 2013 08:54:47 +0000
+In-Reply-To: <20130116231401.GV23505@n2100.arm.linux.org.uk>
+References: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org>
+	 <1358266794.10591.8.camel@dabdike.int.hansenpartnership.com>
+	 <50F64AC1.3040304@codeaurora.org>
+	 <1358332355.2384.11.camel@dabdike.int.hansenpartnership.com>
+	 <20130116231401.GV23505@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011708-5140-0000-0000-000002A25FFF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
-
-On 01/16/2013 07:38 PM, Alex Shi wrote:
-> On 01/08/2013 04:41 PM, Preeti U Murthy wrote:
->> Hi Mike,
->>
->> Thank you very much for such a clear and comprehensive explanation.
->> So when I put together the problem and the proposed solution pieces in the current
->> scheduler scalability,the following was what I found:
->>
->> 1. select_idle_sibling() is needed as an agent to correctly find the right cpu for wake
->>    up tasks to go to."Correctly" would be to find an idle cpu at the lowest cost possible.
->> 2."Cost could be lowered" either by optimizing the order of searching for an idle cpu or
->>    restricting the search to a few cpus alone.
->> 3. The former has the problem that it would not prevent bouncing tasks all over the domain
->>    sharing an L3 cache,which could potentially affect the fast moving tasks.
->> 4. The latter has the problem that it is not aggressive enough in finding an idle cpu.
->>
->> This is some tangled problem,but I think the solution at best could be smoothed to a a flowchart.
->>
->>        STEP1                       STEP2                STEP3
->>  _____________________
->> |                     |
->> |See if the idle buddy|No    _________________  Yes   ________________
->> |is free at all sched |---->| Do we search the|----> |Optimized search|
->> |domains              |     |sched domains    |      |________________|
->> |_____________________|     |for an idle cpu  |                 |
->>           |Yes              |_________________|                \|/
->>          \|/                        |No: saturated     Return target cpu
->>         Return                     \|/     system
->>         cpu buddy                Return prev_cpu
->>
+On Wed, 2013-01-16 at 23:14 +0000, Russell King - ARM Linux wrote:
+> On Wed, Jan 16, 2013 at 10:32:35AM +0000, James Bottomley wrote:
+> > On Wed, 2013-01-16 at 12:07 +0530, Subhash Jadavani wrote:
+> > 
+> > > Now consider this call stack from MMC block driver (this is on the ARmv7 
+> > > based board):
+> > >      [   98.918174] [<c001b50c>] (v7_dma_inv_range+0x30/0x48) from 
+> > > [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c)
+> > >      [   98.927819] [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c) from 
+> > > [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c)
+> > >      [   98.937982] [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c) from 
+> > > [<c0017ff8>] (dma_map_sg+0x3c/0x114)
+> > 
+> > OK, so this is showing that ARM itself is making the assumption that the
+> > pages are contiguous in the page offset map.
+> > 
+> > Fix this by doing the increment via the pfn, which will do the right
+> > thing whatever the memory model.
+> > 
+> > Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 > 
-> 
-> 
-> I re-written the patch as following. hackbench/aim9 doest show clean performance change.
-> Actually we can get some profit. it also will be very slight. :) 
-> BTW, it still need another patch before apply this. Just to show the logical.
-> 
-> ===========
-> From 145ff27744c8ac04eda056739fe5aa907a00877e Mon Sep 17 00:00:00 2001
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Fri, 11 Jan 2013 16:49:03 +0800
-> Subject: [PATCH 3/7] sched: select_idle_sibling optimization
-> 
-> Current logical in this function will insist to wake up the task in a
-> totally idle group, otherwise it would rather back to previous cpu.
+> Ok.  What would you like the patch summary line for this to be -
+> the existing one seems to be a little wrong given the content of
+> this patch...
 
-As Namhyung pointed out this could be the waking cpu as well.
-> 
-> The new logical will try to wake up the task on any idle cpu in the same
-> cpu socket (in same sd_llc), while idle cpu in the smaller domain has
-> higher priority.
+how about
 
-Here is where the problem of large sockets come in.select_idle_sibling()
-has its main weakness here.No doubt that this patch could improve
-performance over the current logic,but will still retain the major
-drawback of searching for an idle cpu in a large socket in the worst case.
-> 
-> It should has some help on burst wake up benchmarks like aim7.
-> 
-> Original-patch-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/fair.c |   40 +++++++++++++++++++---------------------
->  1 files changed, 19 insertions(+), 21 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index e116215..fa40e49 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3253,13 +3253,13 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
->  /*
->   * Try and locate an idle CPU in the sched_domain.
->   */
-> -static int select_idle_sibling(struct task_struct *p)
-> +static int select_idle_sibling(struct task_struct *p,
-> +				struct sched_domain *affine_sd, int sync)
+arm: fix struct page iterator in dma_cache_maint() to work with
+sparsemem
 
-As Namhyung pointed out where is affine_sd being used?
->  {
->  	int cpu = smp_processor_id();
->  	int prev_cpu = task_cpu(p);
->  	struct sched_domain *sd;
->  	struct sched_group *sg;
-> -	int i;
-> 
->  	/*
->  	 * If the task is going to be woken-up on this cpu and if it is
-> @@ -3281,27 +3281,25 @@ static int select_idle_sibling(struct task_struct *p)
->  	/*
->  	 * Otherwise, iterate the domains and find an elegible idle cpu.
->  	 */
-> -	sd = rcu_dereference(per_cpu(sd_llc, prev_cpu));
-> -	for_each_lower_domain(sd) {
-> +	for_each_domain(prev_cpu, sd) {
+?
 
-Why is prev_cpu being used? Ideally it should be the target cpu
-(waking/prev) depending on what wake_affine() decides.
+James
 
->  		sg = sd->groups;
->  		do {
-> -			if (!cpumask_intersects(sched_group_cpus(sg),
-> -						tsk_cpus_allowed(p)))
-> -				goto next;
-> -
-> -			for_each_cpu(i, sched_group_cpus(sg)) {
-> -				if (!idle_cpu(i))
-> -					goto next;
-> -			}
-> -
-> -			prev_cpu = cpumask_first_and(sched_group_cpus(sg),
-> -					tsk_cpus_allowed(p));
-> -			goto done;
-> -next:
-> -			sg = sg->next;
-> -		} while (sg != sd->groups);
-> +			int nr_busy = atomic_read(&sg->sgp->nr_busy_cpus);
-> +			int i;
-> +
-> +			/* no idle cpu in the group */
-> +			if (nr_busy == sg->group_weight)
-> +				continue;
-> +			for_each_cpu_and(i, sched_group_cpus(sg),
-> +							tsk_cpus_allowed(p))
-> +				if (idle_cpu(i))
-> +					return i;
-> +		} while (sg = sg->next, sg != sd->groups);
-> +
-> +		/* only wake up task on the same cpu socket as prev cpu */
-> +		if (sd == per_cpu(sd_llc, prev_cpu))
-> +			break;
->  	}
-> -done:
->  	return prev_cpu;
+> > 
+> > ---
+> > 
+> > diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> > index 6b2fb87..ab88c5b 100644
+> > --- a/arch/arm/mm/dma-mapping.c
+> > +++ b/arch/arm/mm/dma-mapping.c
+> > @@ -809,7 +809,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
+> >  			op(vaddr, len, dir);
+> >  		}
+> >  		offset = 0;
+> > -		page++;
+> > +		page = pfn_to_page(page_to_pfn(page) + 1);
+> >  		left -= len;
+> >  	} while (left);
+> >  }
+> > 
+> > 
+> > 
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-target cpu needs to be returned right? I dont understand why prev_cpu is
-considered everywhere.
-
->  }
-> 
-> @@ -3355,7 +3353,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->  	}
-> 
->  	if (affine_sd) {
-> -		new_cpu = select_idle_sibling(p, prev_cpu);
-> +		new_cpu = select_idle_sibling(p, affine_sd, sync);
->  		goto unlock;
->  	}
-
-To overcome the drawback of large sockets, I had suggested using
-blocked_load+runnable_load of PJT's metric and in select_idle_sibling()
-querying only the L2 cache domains.
-
-https://lkml.org/lkml/2013/1/8/619
-
-What do you think about this?
-
-
-> 
-
-Regards
-Preeti U Murthy
 
