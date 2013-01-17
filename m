@@ -1,53 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab3AQEPc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 23:15:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45443 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758393Ab3AQEPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 23:15:31 -0500
-Date: Wed, 16 Jan 2013 20:16:33 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Takashi Iwai <tiwai@suse.de>, sedat.dilek@gmail.com,
-        Jiri Kosina <jkosina@suse.cz>, linux-fbdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: 3.8-rc2 lockdep complains about console_lock vs.
- fb_notifier_list.rwsem
-Message-ID: <20130117041633.GA21551@kroah.com>
-References: <CA+icZUUxgRsGkYAmZ=JxTwPvdhTzpGLcxm6+VSq9jnfYPVXj4Q@mail.gmail.com>
- <s5hpq16zfox.wl%tiwai@suse.de>
- <CA+icZUWFKzccbHrU0pxK-T2TdwyDsTTNxP_22zmGTPbcAmhMaQ@mail.gmail.com>
- <s5hpq1531yn.wl%tiwai@suse.de>
- <20130117024246.GF20928@kroah.com>
- <20130116195416.c2d9a107.akpm@linux-foundation.org>
+	id S1758876Ab3AQEWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 23:22:52 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:44024 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758373Ab3AQEWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 23:22:50 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AksNAKx791B5LIZq/2dsb2JhbABEhVWyGYYXF3OCHgEBBAE6HCMFCwgDDgoJJQ8FJQMhExuHeAW5NRWRIwOWC4lOhnyDCQ
+Date: Thu, 17 Jan 2013 15:22:45 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, xfs@oss.sgi.com, Greg Thelen <gthelen@google.com>,
+        Ying Han <yinghan@google.com>, Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
+Message-ID: <20130117042245.GG2498@dastard>
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
+ <1354058086-27937-10-git-send-email-david@fromorbit.com>
+ <50F6FDC8.5020909@parallels.com>
+ <20130116225521.GF2498@dastard>
+ <50F7475F.90609@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130116195416.c2d9a107.akpm@linux-foundation.org>
+In-Reply-To: <50F7475F.90609@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 07:54:16PM -0800, Andrew Morton wrote:
-> On Wed, 16 Jan 2013 18:42:46 -0800 Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+On Wed, Jan 16, 2013 at 04:35:43PM -0800, Glauber Costa wrote:
 > 
-> > > FWIW, Andrew took my patch in mm:
-> > >   http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
-> > >   http://ozlabs.org/~akpm/mmots/broken-out/fb-yet-another-band-aid-for-fixing-lockdep-mess.patch
+> >> The superblocks only, are present by the dozens even in a small system,
+> >> and I believe the whole goal of this API is to get more users to switch
+> >> to it. This can easily use up a respectable bunch of megs.
+> >>
+> >> Isn't it a bit too much ?
 > > 
+> > Maybe, but for active superblocks it only takes a handful of cached
+> > inodes to make this 16k look like noise, so I didn't care. Indeed, a
+> > typical active filesystem could be consuming gigabytes of memory in
+> > the slab, so 16k is a tiny amount of overhead to track this amount
+> > of memory more efficiently.
 > > 
-> > Ok, so, which one should I take for 3.8?  And ideally the fb maintainer
-> > should do this, not I, right?
+> > Most other LRU/shrinkers are tracking large objects and only have a
+> > single LRU instance machine wide. Hence the numbers arguments don't
+> > play out well in favour of a more complex, dynamic solution for
+> > them, either. Sometimes dumb and simple is the best approach ;)
+> > 
 > 
-> Please see http://www.spinics.net/lists/linux-fbdev/msg08954.html
+> Being dumb and simple myself, I'm of course forced to agree.
+
+:)
+
+> Let me give you more context so you can understand my deepest fears better:
 > 
-> Tomi might be able to review the above for us.  I think we need both. 
-> If nothing else happens I intend to send both Linuswards for 3.8 in a
-> week or two.
+> >> I am wondering if we can't do better in here and at least allocate+grow
+> >> according to the actual number of nodes.
+> > 
+> > We could add hotplug notifiers and grow/shrink the node array as
+> > they get hot plugged, but that seems unnecessarily complex given
+> > how rare such operations are.
+> > 
+> > If superblock proliferation is the main concern here, then doing
+> > somethign as simple as allowing filesystems to specify they want
+> > numa aware LRU lists via a mount_bdev() flag would solve this
+> > problem. If the flag is set, then full numa lists are created.
+> > Otherwise the LRU list simply has a "single node" and collapses all node
+> > IDs down to 0 and ignores all NUMA optimisations...
+> > 
+> > That way the low item count virtual filesystems like proc, sys,
+> > hugetlbfs, etc won't use up memory, but filesytems that actually
+> > make use of NUMA awareness still get the more expensive, scalable
+> > implementation. Indeed, any subsystem that is not performance or
+> > location sensitive can use the simple single list version, so we can
+> > avoid overhead in that manner system wide...
+> > 
+> 
+> Deepest fears:
+> 
+> 1) snakes.
 
-Ok, that sounds fine with me, thanks for doing that.
+Snakes are merely poisonous. Drop Bears are far more dangerous :P
 
-greg k-h
+> 2) It won't surprise you to know that I am adapting your work, which
+> provides a very sane and helpful API, to memcg shrinking.
+> 
+> The dumb and simple approach in there is to copy all lrus that are
+> marked memcg aware at memcg creation time. The API is kept the same,
+> but when you do something like list_lru_add(lru, obj), for instance, we
+> derive the memcg context from obj and relay it to the right list.
+
+At which point, you don't want the overhead of per-node lists.
+
+The problem I see here is that someone might still need the
+scalability of the per-node lists. If someone runs a large memcg in terms
+of CPU and memory, then we most definitely are going to need to
+retain per-node lists regardless of the fact that the workload is
+running in a constrained environment. And if you are running a mix
+of large and small containers, then one static solution is not going
+to cut it for some workload.
+
+This is a problem that superblock contexts don't care about - they
+are global by their very nature. Hence I'm wondering if trying to
+fit these two very different behaviours into the one LRU list is
+the wrong approach.
+
+Consider this: these patches give us a generic LRU list structure.
+It currently uses a list_head in each object for indexing, and we
+are talking about single LRU lists because of this limitation and
+trying to build infrastructure that can support this indexing
+mechanism.
+
+I think that all of thses problems go away if we replace the
+list_head index in the object with a "struct lru_item" index. To
+start with, it's just a s/list_head/lru_item/ changeover, but from
+there we can expand.
+
+What I'm getting at is that we want to have multiple axis of
+tracking and reclaim, but we only have a single axis for tracking.
+If the lru_item grew a second list_head called "memcg_lru", then
+suddenly the memcg LRUs can be maintained separately to the global
+(per-superblock) LRU. i.e.:
+
+struct lru_item {
+	struct list_head global_list;
+	struct list_head memcg_list;
+}
+
+And then you can use whatever tracking structure you want for a
+memcg LRU list. Indeed, this would allow per-node lists for the
+global LRU, and whatever LRU type is appropriate for the memcg using
+the object (e.g. single list for small memcgs, per-node for large
+memcgs)....
+
+i.e. rather than trying to make the infrastructure jump through hoops
+to only have one LRU index per object, have a second index that
+allows memcg's to have a separate LRU index and a method for the
+global LRU structure to find them. This woul dallow memcg specific
+shrinker callouts switch to the memcg LRU rather than the global LRU
+and operate on that. That way we still only instantiate a single
+LRU/shrinker pair per cache context, but the memcg code doesn't need
+to duplicate the entire LRU infrastructure into every memcg that
+contains that type of object for that cache context....
+
+/me stops rambling....
+
+> Your current suggestion of going per-node only in the performance
+> critical filesystems could also possibly work, provided this count is
+> expected to be small.
+
+The problem is deciding on a per filesystem basis. I was thinking
+that all filesytsems of a specific type would use a particular type
+of structure, not that specific instances of a filesystem could use
+different types....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
