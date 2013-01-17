@@ -1,108 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab3AQSLE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 13:11:04 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2468 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3AQSLB (ORCPT
+	id S1755405Ab3AQSRM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 13:17:12 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:55001 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198Ab3AQSRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 13:11:01 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=oXIPL4Nt11QA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M6_IcvDMBAAA:10 a=vFMqDF5-2I8-eUAWslEA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358446258.23211.32.camel@gandalf.local.home>
-Subject: [RFC][PATCH] slub: Check for page NULL before doing the node_match
- check
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@gmail.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Date: Thu, 17 Jan 2013 13:10:58 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jan 2013 13:17:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130116171952.GQ2668@htj.dyndns.org>
+References: <CALxABCaE3=XpGmgNJs1pre11aJ8T0pntVzf_mA6_OYNzis9nvQ@mail.gmail.com>
+ <Pine.LNX.4.44L0.1301131153520.17578-100000@netrider.rowland.org>
+ <CALxABCYtKJD4YrPxy6p+Frim8erccp3ine7SVEV9ReoaRh1BWQ@mail.gmail.com>
+ <CACVXFVPMH-CHGw2EVwgYK5ozn1NAygT0f9=Df4vhSJmYYOZBMw@mail.gmail.com>
+ <CACVXFVNvBeHG2TgfNY-wRQYtqsd6v-3AAiQVPAECuRnJ--ON-g@mail.gmail.com>
+ <CA+55aFxV40V2WvNtJY3EC0F-B9wPk8CV2o1TTTyoF4CoWH7rhQ@mail.gmail.com>
+ <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
+ <CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com>
+ <CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
+ <20130115183204.GE2668@htj.dyndns.org> <20130116171952.GQ2668@htj.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Jan 2013 10:16:50 -0800
+X-Google-Sender-Auth: UfZVvU3ngJYbqD3VRXTzUL2OwfE
+Message-ID: <CA+55aFxfheczjP22pESE7zXS1hnK3=mOgcGjMHDeoQ2W4D0MDw@mail.gmail.com>
+Subject: Re: [PATCH] async: fix __lowest_in_progress()
+To: Tejun Heo <tj@kernel.org>
+Cc: Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the -rt kernel (mrg), we hit the following dump:
+Tejun, mind explaining this one a bit more to me?
 
-BUG: unable to handle kernel NULL pointer dereference at           (null) 
-IP: [<ffffffff811573f1>] kmem_cache_alloc_node+0x51/0x180 
-PGD a2d39067 PUD b1641067 PMD 0  
-Oops: 0000 [#1] PREEMPT SMP  
-Modules linked in: sunrpc cpufreq_ondemand ipv6 tg3 joydev sg serio_raw pcspkr k8temp amd64_edac_mod edac_core i2c_piix4 e100 mii shpchp ext4 mbcache jbd2 sd_mod crc_t10dif sr_mod cdrom sata_svw ata_generic pata_acpi pata_serverworks radeon ttm drm_kms_helper drm hwmon i2c_algo_bit i2c_core dm_mirror dm_region_hash dm_log dm_mod 
-CPU 3  
-Pid: 20878, comm: hackbench Not tainted 3.6.11-rt25.14.el6rt.x86_64 #1 empty empty/Tyan Transport GT24-B3992 
-RIP: 0010:[<ffffffff811573f1>]  [<ffffffff811573f1>] kmem_cache_alloc_node+0x51/0x180 
-RSP: 0018:ffff8800a9b17d70  EFLAGS: 00010213 
-RAX: 0000000000000000 RBX: 0000000001200011 RCX: ffff8800a06d8000 
-RDX: 0000000004d92a03 RSI: 00000000000000d0 RDI: ffff88013b805500 
-RBP: ffff8800a9b17dc0 R08: ffff88023fd14d10 R09: ffffffff81041cbd 
-R10: 00007f4e3f06e9d0 R11: 0000000000000246 R12: ffff88013b805500 
-R13: ffff8801ff46af40 R14: 0000000000000001 R15: 0000000000000000 
-FS:  00007f4e3f06e700(0000) GS:ffff88023fd00000(0000) knlGS:0000000000000000 
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b 
-CR2: 0000000000000000 CR3: 00000000a2d3a000 CR4: 00000000000007e0 
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000 
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400 
-Process hackbench (pid: 20878, threadinfo ffff8800a9b16000, task ffff8800a06d8000) 
-Stack: 
- ffff8800a9b17da0 ffffffff81202e08 ffff8800a9b17de0 000000d001200011 
- 0000000001200011 0000000001200011 0000000000000000 0000000000000000 
- 00007f4e3f06e9d0 0000000000000000 ffff8800a9b17e60 ffffffff81041cbd 
-Call Trace: 
- [<ffffffff81202e08>] ? current_has_perm+0x68/0x80 
- [<ffffffff81041cbd>] copy_process+0xdd/0x15b0 
- [<ffffffff810a2125>] ? rt_up_read+0x25/0x30 
- [<ffffffff8104369a>] do_fork+0x5a/0x360 
- [<ffffffff8107c66b>] ? migrate_enable+0xeb/0x220 
- [<ffffffff8100b068>] sys_clone+0x28/0x30 
- [<ffffffff81527423>] stub_clone+0x13/0x20 
- [<ffffffff81527152>] ? system_call_fastpath+0x16/0x1b 
-Code: 89 fc 89 75 cc 41 89 d6 4d 8b 04 24 65 4c 03 04 25 48 ae 00 00 49 8b 50 08 4d 8b 28 49 8b 40 10 4d 85 ed 74 12 41 83 fe ff 74 27 <48> 8b 00 48 c1 e8 3a 41 39 c6 74 1b 8b 75 cc 4c 89 c9 44 89 f2  
-RIP  [<ffffffff811573f1>] kmem_cache_alloc_node+0x51/0x180 
- RSP <ffff8800a9b17d70> 
-CR2: 0000000000000000 
----[ end trace 0000000000000002 ]--- 
+If ordering matters, and we have a running queue and a pending queue,
+how could the pending queue *ever* be lower than the running one?
 
-Now, this uses SLUB pretty much unmodified, but as it is the -rt kernel
-with CONFIG_PREEMPT_RT set, spinlocks are mutexes, although they do
-disable migration. But the SLUB code is relatively lockless, and the
-spin_locks there are raw_spin_locks (not converted to mutexes), thus I
-believe this bug can happen in mainline without -rt features. The -rt
-patch is just good at triggering mainline bugs ;-)
+That implies that something was taken off the pending queue and put on
+the running queue out of order, right?
 
-Anyway, looking at where this crashed, it seems that the page variable
-can be NULL when passed to the node_match() function (which does not
-check if it is NULL). When this happens we get the above panic.
+And that in turn implies that there isn't much of a "lowest" ordering
+at all, so how could anybody even care about what lowest is? It seems
+to be a meaningless measure.
 
-As page is only used in slab_alloc() to check if the node matches, if
-it's NULL I'm assuming that we can say it doesn't and call the
-__slab_alloc() code. Is this a correct assumption?
+So with that in mind, I don't see what semantics the first part of the
+patch fixes. Can you explain more?
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/mm/slub.c b/mm/slub.c
-index 2d9511a..85b95d5 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2399,7 +2399,7 @@ redo:
- 
- 	object = c->freelist;
- 	page = c->page;
--	if (unlikely(!object || !node_match(page, node)))
-+	if (unlikely(!object || !page || !node_match(page, node)))
- 		object = __slab_alloc(s, gfpflags, node, addr, c);
- 
- 	else {
-
-
-
+               Linus
