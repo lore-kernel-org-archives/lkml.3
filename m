@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab3AQFGI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 00:06:08 -0500
-Received: from relay.parallels.com ([195.214.232.42]:38042 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab3AQFGH (ORCPT
+	id S1754506Ab3AQFI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 00:08:28 -0500
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:47436 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753637Ab3AQFI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 00:06:07 -0500
-Message-ID: <50F786AF.4070107@parallels.com>
-Date: Thu, 17 Jan 2013 09:05:51 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 17 Jan 2013 00:08:26 -0500
+Message-ID: <50F7873C.1030304@synopsys.com>
+Date: Thu, 17 Jan 2013 10:38:12 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com> <50F72F03.5070806@teksavvy.com>
-In-Reply-To: <50F72F03.5070806@teksavvy.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.18.163]
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC Patch v1 48/55] ARC: [plat-arfpga] BVCI Latency Unit setup
+References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <1352720953-24321-18-git-send-email-vgupta@synopsys.com> <201211121402.45019.arnd@arndb.de>
+In-Reply-To: <201211121402.45019.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-17.01.2013 02:51, Mark Lord пишет:
-> On 13-01-16 12:20 AM, Stanislav Kinsbursky wrote:
->>
->> Mark, could you provide any call traces?
->
-> Call traces from where/what?
-> There's this one, posted earlier in the BUG report:
->
-> kernel BUG at net/sunrpc/svc_xprt.c:921!
-> Call Trace:
->   [<ffffffffa016a56a>] ? svc_recv+0xcc/0x338 [sunrpc]
->   [<ffffffffa0318bfc>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
->   [<ffffffffa0318c19>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
->   [<ffffffff810407e6>] ? kthread+0x81/0x89
->   [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
->   [<ffffffff812ea62c>] ? ret_from_fork+0x7c/0xb0
->   [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
->
+On Monday 12 November 2012 07:32 PM, Arnd Bergmann wrote:
+> On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
+>> +       /* TBD: rewrite this using I/O macros */
+>> +       volatile unsigned int *base = (unsigned int *)BVCI_LAT_UNIT_BASE;
+>> +       volatile unsigned int *lat_unit = (unsigned int *)base + 21;
+>> +       volatile unsigned int *lat_val = (unsigned int *)base + 22;
+> 
+> Yes, you should do as the comment says.
+> 
+> 	Arnd
+> 
 
-Thanks!
-I haven't seen the bug report.
-Could you provide the link, please?
+Done.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+Thx,
+-Vineet
