@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab3AQQDq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:03:46 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:33224 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757060Ab3AQQDo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:03:44 -0500
-Date: Thu, 17 Jan 2013 11:03:43 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Venu Byravarasu <vbyravarasu@nvidia.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 4/4] usb: Add APIs to access host registers from Tegra
- PHY
-In-Reply-To: <20130117153229.GA21904@arwen.pp.htv.fi>
-Message-ID: <Pine.LNX.4.44L0.1301171054220.1339-100000@iolanthe.rowland.org>
+	id S1757008Ab3AQQFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:05:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18097 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756824Ab3AQQFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 11:05:46 -0500
+Date: Thu, 17 Jan 2013 17:05:16 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Ulrich Drepper <drepper@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [RFC 0/4] perf tool: Adding ratios support
+Message-ID: <20130117160516.GA4724@krava.brq.redhat.com>
+References: <1358257194-8204-1-git-send-email-jolsa@redhat.com>
+ <CAOPLpQeHTCwr4tuHi0nORCn+LKJRzEGoCWhC-rj30nLe7bY5Nw@mail.gmail.com>
+ <20130116142549.GD1042@krava.brq.redhat.com>
+ <CAOPLpQcohbB7tekbaezTkKaLVWKaZgMjR-YjCTKxQnix2+pn=A@mail.gmail.com>
+ <87pq14lixn.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pq14lixn.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jan 2013, Felipe Balbi wrote:
-
-> On Thu, Jan 17, 2013 at 10:21:53AM -0500, Alan Stern wrote:
-> > On Thu, 17 Jan 2013, Felipe Balbi wrote:
-> > 
-> > > > Bits 31 & 30 from PORTSC register were allocated by our SOC designers
-> > > > to inform the host controller about the PHY type to be used. 
-> > > 
-> > > Wow, that's something you should never do. PORTSC register belongs to
-> > > the EHCI controller and those bits are reserved for future use and they
-> > > *MUST* return zero. I wouldn't be surprised if current EHCI driver
-> > > assumes those bits will be zero and/or makes sure they're set to zero
-> > > when writing to PORTSC register.
-> > 
-> > In fact, those bits _have_ been assigned an official purpose in the 
-> > EHCI-1.1 addendum.  Presumably the Tegra hardware only supports 
-> > EHCI-1.0.
+On Thu, Jan 17, 2013 at 10:03:32AM +0900, Namhyung Kim wrote:
+> Hi,
 > 
-> I see, they're used for device addresses now.
+> On Wed, 16 Jan 2013 10:12:14 -0500, Ulrich Drepper wrote:
+> > On Wed, Jan 16, 2013 at 9:25 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+> >> I was thinking having config files (global and arch specific)
+> >> comming with perf having predefined formulas.
+> >
+> > All the more reason to not mention the file name or really any source
+> > for the definition of the formula in the name,
+> >
+> >
+> >> 1)  -e 'ratio/branch-rate/'  # special event class
+> >> 2)  -e 'ratio-branch-rate'   # 'ratio-' prefix
+> >> 3)  -e cpu/branch-rate/      # handled like aliases, ratio name would need to be unique
+> >>   ... ?
+> >
+> > I think 3 is the most extensible.  Perhaps use the syntax used in
+> > other places.  We have these :u suffixes etc.  Perhaps have :r or :R
+> > or whatever.
 > 
-> How can we make sure on Tegra systems we won't use those top two bits ?
+> I don't think it's a good idea.  The ':r' syntax is for modifiers to the
+> existing events so it doesn't match to this case IMHO.
+> 
+> I prefer a special event class like 1 since it's possible to include
+> non-cpu events to a ratio/formular.  In that case, using 'cpu' in the
+> PMU name can be misleading.
+> 
+> >
+> > Given the other comments, we might want to avoid right away "ratio".
+> > If the mechanism is generalized it could be used to express "counter1
+> > - counter2" for events which cannot be expressed with a single counter
+> > but are not really ratios.
+> 
+> Agreed.  Looks like "formular" is better.
 
-ehci-hcd doesn't use those device address bits at all.  They are meant
-for the LPM (Link Power Management) extension, which ehci-hcd doesn't
-support.  Even if support gets added in the future, we'll know that the
-LPM capability isn't present unless bit 17 in the HCCPARAMS register is
-set.
+agreed, I think I wouldn't touch modifiers for this
+also, 'ratio' is not good choice, formula seems better
 
-On the other hand, what I wrote earlier about not overwriting those 
-bits wasn't quite correct.  ehci-hcd _does_ overwrite them with 0's 
-during shutdown or removal.  I don't know if this will matter for the 
-Tegra platform.
-
-Alan Stern
-
+jirka
