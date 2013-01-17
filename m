@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab3AQGCT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 01:02:19 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:49338 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754659Ab3AQGCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 01:02:17 -0500
-Date: Thu, 17 Jan 2013 15:02:14 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
-Message-ID: <20130117060214.GC1197@verge.net.au>
-References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com>
- <50EF27B4.60608@wwwdotorg.org>
- <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com>
- <9702060.jEbHySsCv0@avalon>
- <CACRpkdbFH6RCEEnXO=A9FVa0B5rtE9RkjXz9Hhy+w7NvwcBCgg@mail.gmail.com>
- <50F6E811.2040606@wwwdotorg.org>
+	id S1755209Ab3AQGEk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 01:04:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35093 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753472Ab3AQGEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 01:04:39 -0500
+Message-ID: <50F79422.6090405@zytor.com>
+Date: Wed, 16 Jan 2013 22:03:14 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F6E811.2040606@wwwdotorg.org>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wujianguo@huawei.com" <wujianguo@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "lliubbo@gmail.com" <lliubbo@gmail.com>,
+        "jaegeuk.hanse@gmail.com" <jaegeuk.hanse@gmail.com>,
+        "glommer@parallels.com" <glommer@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com> <50F440F5.3030006@zytor.com> <20130114143456.3962f3bd.akpm@linux-foundation.org> <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com> <20130114144601.1c40dc7e.akpm@linux-foundation.org> <50F647E8.509@jp.fujitsu.com> <20130116132953.6159b673.akpm@linux-foundation.org> <50F72F17.9030805@zytor.com> <50F78750.8070403@jp.fujitsu.com>
+In-Reply-To: <50F78750.8070403@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 10:49:05AM -0700, Stephen Warren wrote:
-> On 01/11/2013 01:45 PM, Linus Walleij wrote:
-> > On Fri, Jan 11, 2013 at 9:36 PM, Laurent Pinchart
-> > <laurent.pinchart@ideasonboard.com> wrote:
-> > 
-> >> I've sent several patch series for the SH PFC (Pin Function Controller) to the
-> >> linux-sh mailing list. One of the series included pinctrl core patches for
-> >> easier testing, but I made it clear that they should *not* be pushed to
-> >> mainline through the SH tree.
-> > 
-> > No big deal, what fun is linux-next if we don't break it ;-)
-> 
-> Hmm. It's causing a lot of engineers here a lot of trouble, since they
-> all see linux-next won't boot, and haven't been paying enough attention
-> to know which commit to revert:-(. Lots of lost productivity:-(
-> 
-> Simon, the offending commit:
-> 
-> 6d3ef6b drivers/pinctrl: grab default handles from device core
-> 
-> is still in next-20130116. Can you please remove it?
+On 01/16/2013 09:08 PM, Yasuaki Ishimatsu wrote:
+>
+> I thought about the method of specifying the node. But I think
+> this method is inconvenience. Node number is decided by OS.
+> So the number is changed easily.
+>
+> for example:
+>
+> o exmaple 1
+>    System has 3 nodes:
+>    node0, node1, node2
+>
+>    When user remove node1, the system has:
+>    node0, node2
+>
+>    But after rebooting the system, the system has:
+>    node0, node1
+>
+>    So node2 becomes node1.
+>
+> o example 2:
+>    System has 2 nodes:
+>    0x40000000 - 0x7fffffff : node0
+>    0xc0000000 - 0xffffffff : node1
+>
+>    When user add a node wchih memory range is [0x80000000 - 0xbfffffff],
+>    system has:
+>    0x40000000 - 0x7fffffff : node0
+>    0xc0000000 - 0xffffffff : node1
+>    0x80000000 - 0xbfffffff : node2
+>
+>    But after rebooting the system, the system's node may become:
+>    0x40000000 - 0x7fffffff : node0
+>    0x80000000 - 0xbfffffff : node1
+>    0xc0000000 - 0xffffffff : node2
+>
+>    So node nunber is changed.
+>
+> Specifying node number may be easy method than specifying memory
+> range. But if user uses node number for specifying removable memory,
+> user always need to care whether node number is changed or not at
+> every hotplug operation.
+>
 
-I removed the commit yesterday.
-Please let me know if it seems to be lingering.
+
+Well, there are only two options:
+
+1. The user doesn't care which nodes are movable.  In that case, the 
+user may just want to specify a target as a percentage of memory to make 
+movable -- effectively a "slider" on the performance vs. reliability 
+spectrum.  The kernel can then assign nodes arbitrarily.
+
+2. If the user *does* care which nodes are movable, then the user needs 
+to be able to specify that *in a way that makes sense to the user*. 
+This may mean involving the DMI information as well as SRAT in order to 
+get "silk screen" type information out.
+
+	-hpa
+
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
