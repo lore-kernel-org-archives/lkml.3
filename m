@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3AQMpr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 07:45:47 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:25808
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755606Ab3AQMpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 07:45:44 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <gregkh@linuxfoundation.org>
-CC: <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] serial: imx: Remove unused 'tty' variable
-Date: Thu, 17 Jan 2013 10:45:13 -0200
-Message-ID: <1358426713-16780-1-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755806Ab3AQMrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 07:47:07 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45872 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752198Ab3AQMrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 07:47:06 -0500
+Message-ID: <50F7F2B8.8050500@ti.com>
+Date: Thu, 17 Jan 2013 14:46:48 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: <balbi@ti.com>
+CC: <sameo@linux.intel.com>, <tony@atomide.com>, <kishon@ti.com>,
+        <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v7 18/22] USB: ehci-omap: Don't free gpios that we didn't
+ request
+References: <1358422231-24736-1-git-send-email-rogerq@ti.com> <1358422231-24736-19-git-send-email-rogerq@ti.com> <20130117114838.GH18978@arwen.pp.htv.fi>
+In-Reply-To: <20130117114838.GH18978@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2e124b4a39 (TTY: switch tty_flip_buffer_push) introduced the following 
-build warning:
+On 01/17/2013 01:48 PM, Felipe Balbi wrote:
+> On Thu, Jan 17, 2013 at 01:30:27PM +0200, Roger Quadros wrote:
+>> This driver does not request any gpios so don't free them.
+>> Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
+>> with ehci-omap in use.
+>>
+>> CC: Alan Stern <stern@rowland.harvard.edu>
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> 
+> should this go to stable ?
+> 
+Yes it should.
 
-drivers/tty/serial/imx.c:519:21: warning: unused variable 'tty' [-Wunused-variable]
-
-Remove the unused 'tty' variable.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/tty/serial/imx.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-index be26345..a220f77 100644
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -516,7 +516,6 @@ static irqreturn_t imx_rxint(int irq, void *dev_id)
- {
- 	struct imx_port *sport = dev_id;
- 	unsigned int rx, flg, ignored = 0;
--	struct tty_struct *tty = sport->port.state->port.tty;
- 	struct tty_port *port = &sport->port.state->port;
- 	unsigned long flags, temp;
- 
--- 
-1.7.9.5
-
-
+--
+cheers,
+-roger
