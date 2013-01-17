@@ -1,60 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab3AQSWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 13:22:18 -0500
-Received: from mail.prodrive.nl ([212.61.153.67]:44997 "EHLO mail.prodrive.nl"
+	id S1755875Ab3AQS1B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 13:27:01 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:36523 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab3AQSWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 13:22:17 -0500
-From: Stef van Os <stef.van.os@prodrive.nl>
-To: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
-        <wfp5p@virginia.edu>, <gregkh@linuxfoundation.org>, <sr@denx.de>,
-        <plagnioj@jcrosoft.com>
-CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Stef van Os <stef.van.os@prodrive.nl>
-Subject: [PATCH 1/1] mtd: physmap_of: fix illegal dereference
-Date: Thu, 17 Jan 2013 19:22:12 +0100
-Message-ID: <1358446932-7238-1-git-send-email-stef.van.os@prodrive.nl>
-X-Mailer: git-send-email 1.7.2.5
+	id S1752070Ab3AQS07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 13:26:59 -0500
+Date: Thu, 17 Jan 2013 19:26:53 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: lars@metafoo.de
+Cc: christophe.leroy@c-s.fr, jic23@cam.ac.uk, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, patrick.vasseur@c-s.fr
+Subject: Re: [PATCH] IIO ADC support for AD7923
+Message-ID: <20130117182653.GA27657@mail.gnudd.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-TM-AS-Product-Ver: IMSVA-8.2.0.1520-7.0.0.1014-19564.001
-X-TM-AS-Result: No--17.319-5.0-31-10
-X-imss-scan-details: No--17.319-5.0-31-10
-X-TM-AS-User-Approved-Sender: No
-X-TMASE-Version: IMSVA-8.2.0.1520-7.0.1014-19564.001
-X-TMASE-Result: 10--17.319300-5.000000
-X-TMASE-MatchedRID: d+baqQ3qUqdaDdlHsEs+7ULhYg/sa1gs5Y0kb0hqaty3LDb3luvXBKRG
-	wX+NnBzgv+io1+NFyY0BtjkcfRMmqdjMn8qi5/yFFYJUGv4DL3yH7D1bP/FcOmxZRBWPMUZWlR1
-	cT9YafQW1M9j+NBdIc+TCMddcL/gjkGUtrowrXLg=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <50F83695.506@metafoo.de>
+References: <50F83695.506@metafoo.de>  <50F199F7.7020600@metafoo.de>
+  <201301080842.r088gKWO031124@localhost.localdomain>
+ <20130108091414.GA28404@mail.gnudd.com>
+ <20130117171100.GA24398@mail.gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-d68cbdd introduced a new way of getting the name of an mtd
-partion. The character pointer is not initialized, and only
-checked against NULL, not at other random garbage.
-This patch fixes the resulting panic.
+Thank you Lars for you constructive attitude.
 
-Signed-off-by: Stef van Os <stef.van.os@prodrive.nl>
----
- drivers/mtd/maps/physmap_of.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+See you at fosdem
 
-diff --git a/drivers/mtd/maps/physmap_of.c b/drivers/mtd/maps/physmap_of.c
-index 67cc73c..7901d72 100644
---- a/drivers/mtd/maps/physmap_of.c
-+++ b/drivers/mtd/maps/physmap_of.c
-@@ -170,7 +170,7 @@ static int of_flash_probe(struct platform_device *dev)
- 	resource_size_t res_size;
- 	struct mtd_part_parser_data ppdata;
- 	bool map_indirect;
--	const char *mtd_name;
-+	const char *mtd_name = NULL;
- 
- 	match = of_match_device(of_flash_match, &dev->dev);
- 	if (!match)
--- 
-1.7.2.5
-
+/alessandro
