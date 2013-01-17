@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283Ab3AQUlQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:41:16 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33895 "EHLO mga09.intel.com"
+	id S1757203Ab3AQUlN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:41:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33901 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757069Ab3AQUht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757063Ab3AQUht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jan 2013 15:37:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="273439817"
+   d="scan'208";a="273439820"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 23/29] perf, x86: improve sysfs event mapping with event string
-Date: Thu, 17 Jan 2013 12:36:46 -0800
-Message-Id: <1358455012-12287-24-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 26/29] perf, tools: Add perf stat --transaction v2
+Date: Thu, 17 Jan 2013 12:36:49 -0800
+Message-Id: <1358455012-12287-27-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -24,131 +24,233 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-This patch extends Jiri's changes to make generic
-events mapping visible via sysfs. The patch extends
-the mechanism to non-generic events by allowing
-the mappings to be hardcoded in strings.
+Add support to perf stat to print the basic transactional execution statistics:
+Total cycles, Cycles in Transaction, Cycles in aborted transsactions
+using the intx and intx_checkpoint qualifiers.
+Transaction Starts and Elision Starts, to compute the average transaction length.
 
-This mechanism will be used by the PEBS-LL patch
-later on.
+This is a reasonable overview over the success of the transactions.
 
-[AK: Make events_sysfs_show unstatic again to fix compilation]
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Enable with a new --transaction / -T option.
+
+This requires measuring these events in a group, since they depend on each
+other.
+
+This is implemented by using TM sysfs events exported by the kernel
+
+v2: Only print the extended statistics when the option is enabled.
+This avoids negative output when the user specifies the -T events
+in separate groups.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |   28 +++++++++++++---------------
- arch/x86/kernel/cpu/perf_event.h |   26 ++++++++++++++++++++++++++
- 2 files changed, 39 insertions(+), 15 deletions(-)
+ tools/perf/Documentation/perf-stat.txt |    4 +
+ tools/perf/builtin-stat.c              |  101 +++++++++++++++++++++++++++++++-
+ tools/perf/util/evsel.h                |    6 ++
+ 3 files changed, 108 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index ec3c549..6cdc012 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1316,20 +1316,22 @@ static struct attribute_group x86_pmu_format_group = {
- 	.attrs = NULL,
- };
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index cf0c310..0d5b8cb 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -114,6 +114,10 @@ with it.  --append may be used here.  Examples:
  
--struct perf_pmu_events_attr {
--	struct device_attribute attr;
--	u64 id;
--};
--
- /*
-  * Remove all undefined events (x86_pmu.event_map(id) == 0)
-  * out of events_attr attributes.
-  */
- static void __init filter_events(struct attribute **attrs)
+ perf stat --repeat 10 --null --sync --pre 'make -s O=defconfig-build/clean' -- make -s -j64 O=defconfig-build/ bzImage
+ 
++-T::
++--transaction::
++
++Print statistics of transactional execution if supported.
+ 
+ EXAMPLES
+ --------
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index c247fac..9d1c5e2 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -65,6 +65,29 @@
+ #define CNTR_NOT_SUPPORTED	"<not supported>"
+ #define CNTR_NOT_COUNTED	"<not counted>"
+ 
++static const char *transaction_attrs[] = {
++	"task-clock",
++	"{"
++	"instructions,"
++	"cycles,"
++	"cpu/cycles-t/,"
++	"cpu/cycles-ct/,"
++	"cpu/tx-start/,"
++	"cpu/el-start/"
++	"}"
++};
++
++/* must match the transaction_attrs above */
++enum {
++	T_TASK_CLOCK,
++	T_INSTRUCTIONS,
++	T_CYCLES,
++	T_CYCLES_INTX,
++	T_CYCLES_INTX_CP,
++	T_TRANSACTION_START,
++	T_ELISION_START
++};
++
+ static struct perf_evlist	*evsel_list;
+ 
+ static struct perf_target	target = {
+@@ -78,6 +101,7 @@ static bool			no_aggr				= false;
+ static pid_t			child_pid			= -1;
+ static bool			null_run			=  false;
+ static int			detailed_run			=  0;
++static bool			transaction_run			=  false;
+ static bool			big_num				=  true;
+ static int			big_num_opt			=  -1;
+ static const char		*csv_sep			= NULL;
+@@ -127,7 +151,11 @@ static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
+ static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
++static struct stats runtime_cycles_intx_stats[MAX_NR_CPUS];
++static struct stats runtime_cycles_intxcp_stats[MAX_NR_CPUS];
+ static struct stats walltime_nsecs_stats;
++static struct stats runtime_transaction_stats[MAX_NR_CPUS];
++static struct stats runtime_elision_stats[MAX_NR_CPUS];
+ 
+ static int create_perf_stat_counter(struct perf_evsel *evsel)
  {
-+	struct device_attribute *d;
-+	struct perf_pmu_events_attr *pmu_attr;
- 	int i, j;
- 
- 	for (i = 0; attrs[i]; i++) {
-+		d = (struct device_attribute *)attrs[i];
-+		pmu_attr = container_of(d, struct perf_pmu_events_attr, attr);
-+		/* str trumps id */
-+		if (pmu_attr->event_str)
-+			continue;
- 		if (x86_pmu.event_map(i))
- 			continue;
- 
-@@ -1341,24 +1343,20 @@ static void __init filter_events(struct attribute **attrs)
- 	}
+@@ -187,6 +215,18 @@ static inline int nsec_counter(struct perf_evsel *evsel)
+ 	return 0;
  }
  
--static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
-+ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
- 			  char *page)
- {
- 	struct perf_pmu_events_attr *pmu_attr = \
- 		container_of(attr, struct perf_pmu_events_attr, attr);
- 
- 	u64 config = x86_pmu.event_map(pmu_attr->id);
--	return x86_pmu.events_sysfs_show(page, config);
--}
- 
--#define EVENT_VAR(_id)  event_attr_##_id
--#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
-+	/* string trumps id */
-+	if (pmu_attr->event_str)
-+		return sprintf(page, "%s", pmu_attr->event_str);
- 
--#define EVENT_ATTR(_name, _id)					\
--static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
--	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
--	.id   =  PERF_COUNT_HW_##_id,				\
--};
-+	return x86_pmu.events_sysfs_show(page, config);
++static struct perf_evsel *nth_evsel(int n)
++{
++	struct perf_evsel *ev;
++	int j;
++
++	j = 0;
++	list_for_each_entry (ev, &evsel_list->entries, node)
++		if (j++ == n)
++			return ev;
++	return NULL;
 +}
- 
- EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
- EVENT_ATTR(instructions,		INSTRUCTIONS		);
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index d55e502..8253b73 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -425,6 +425,29 @@ do {									\
- #define ERF_NO_HT_SHARING	1
- #define ERF_HAS_RSP_1		2
- 
-+#define EVENT_VAR(_id)  event_attr_##_id
-+#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
 +
-+#define EVENT_ATTR(_name, _id)					\
-+static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
-+	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
-+	.id   =  PERF_COUNT_HW_##_id,				\
-+	.event_str = NULL,					\
-+};
-+
-+#define EVENT_ATTR_STR(_name, v, str)				  \
-+static struct perf_pmu_events_attr event_attr_##v = {		  \
-+	.attr      = __ATTR(_name, 0444, events_sysfs_show, NULL),\
-+	.id        =  0,					  \
-+	.event_str =  str,					  \
-+};
-+
-+struct perf_pmu_events_attr {
-+	struct device_attribute attr;
-+	u64 id;
-+	const char *event_str;
-+};
-+
- extern struct x86_pmu x86_pmu __read_mostly;
+ /*
+  * Update various tracking values we maintain to print
+  * more semantic information such as miss/hit ratios,
+@@ -198,8 +238,14 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
+ 		update_stats(&runtime_nsecs_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
+ 		update_stats(&runtime_cycles_stats[0], count[0]);
+-	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
+-		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_INTX)))
++		update_stats(&runtime_cycles_intx_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_INTX_CP)))
++		update_stats(&runtime_cycles_intxcp_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
++		update_stats(&runtime_transaction_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
++		update_stats(&runtime_elision_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
+ 		update_stats(&runtime_stalled_cycles_back_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
+@@ -661,7 +707,7 @@ static void print_ll_cache_misses(int cpu,
  
- DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
-@@ -643,6 +666,9 @@ int p6_pmu_init(void);
+ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ {
+-	double total, ratio = 0.0;
++	double total, ratio = 0.0, total2;
+ 	char cpustr[16] = { '\0', };
+ 	const char *fmt;
  
- int knc_pmu_init(void);
+@@ -761,6 +807,41 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 			ratio = 1.0 * avg / total;
  
-+ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
-+			  char *page);
+ 		fprintf(output, " # %8.3f GHz                    ", ratio);
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_INTX)) &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_stats[cpu]);
++		if (total)
++			fprintf(output,
++				" #   %5.2f%% transactional cycles   ",
++				100.0 * (avg / total));
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_INTX_CP)) &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_stats[cpu]);
++		total2 = avg_stats(&runtime_cycles_intx_stats[cpu]);
++		if (total)
++			fprintf(output,
++				" #   %5.2f%% aborted cycles         ",
++				100.0 * ((total2-avg) / total));
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
++		   avg > 0 &&
++		   runtime_cycles_intx_stats[cpu].n != 0 &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_intx_stats[cpu]);
 +
- #else /* CONFIG_CPU_SUP_INTEL */
++		if (total)
++			ratio = total / avg;
++
++		fprintf(output, " # %8.0f cycles / transaction ", ratio);
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
++		   avg > 0 &&
++		   runtime_cycles_intx_stats[cpu].n != 0 &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_intx_stats[cpu]);
++
++		if (total)
++			ratio = total / avg;
++
++		fprintf(output, " # %8.0f cycles / elision     ", ratio);
+ 	} else if (runtime_nsecs_stats[cpu].n != 0) {
+ 		char unit = 'M';
  
- static inline void reserve_ds_buffers(void)
+@@ -1067,6 +1148,18 @@ static int add_default_attributes(void)
+ 	if (null_run)
+ 		return 0;
+ 
++	if (transaction_run) {
++		unsigned i;
++
++		for (i = 0; i < ARRAY_SIZE(transaction_attrs); i++) {
++			if (parse_events(evsel_list, transaction_attrs[i], 0)) {
++				fprintf(stderr, "Cannot set up transaction events\n");
++				return -1;
++			}
++		}
++		return 0;
++	}
++
+ 	if (!evsel_list->nr_entries) {
+ 		if (perf_evlist__add_default_attrs(evsel_list, default_attrs) < 0)
+ 			return -1;
+@@ -1145,6 +1238,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			"command to run prior to the measured command"),
+ 	OPT_STRING(0, "post", &post_cmd, "command",
+ 			"command to run after to the measured command"),
++	OPT_BOOLEAN('T', "transaction", &transaction_run,
++		    "hardware transaction statistics"),
+ 	OPT_END()
+ 	};
+ 	const char * const stat_usage[] = {
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 3d2b801..dc6a309 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -158,6 +158,12 @@ static inline bool perf_evsel__match2(struct perf_evsel *e1,
+ 	       (e1->attr.config == e2->attr.config);
+ }
+ 
++#define perf_evsel__cmp(a, b)			\
++	((a) &&					\
++	 (b) &&					\
++	 (a)->attr.type == (b)->attr.type &&	\
++	 (a)->attr.config == (b)->attr.config)
++
+ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 			      int cpu, int thread, bool scale);
+ 
 -- 
 1.7.7.6
 
