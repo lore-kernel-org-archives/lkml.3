@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab3AQSpV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 13:45:21 -0500
-Received: from smtprelay0100.hostedemail.com ([216.40.44.100]:58176 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751814Ab3AQSpT (ORCPT
+	id S1755606Ab3AQSqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 13:46:22 -0500
+Received: from mail-gh0-f177.google.com ([209.85.160.177]:40553 "EHLO
+	mail-gh0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab3AQSqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 13:45:19 -0500
-X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 13:45:19 EST
-X-Panda: scanned!
-X-Session-Marker: 6A61736F6E40776172722E6E6574
-X-Filterd-Recvd-Size: 2517
-Message-ID: <50F844A3.9020300@warr.net>
-Date: Thu, 17 Jan 2013 12:36:19 -0600
-From: Jason Warr <jason@warr.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 17 Jan 2013 13:46:21 -0500
+Date: Thu, 17 Jan 2013 10:38:30 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 1/2] init, block: try to load default elevator module
+ early during boot
+Message-ID: <20130117183830.GA16568@mtj.dyndns.org>
+References: <CA+55aFxLJ=Yfms9SkPJLjQ-ZASPNZC0JUBsb3OwonJvTCcBzxA@mail.gmail.com>
+ <20130116025251.GM2668@htj.dyndns.org>
+ <CA+55aFxttTkWG0gfUz3=V8A-9az3+qY3j0JZEAoKv0ne-QupZw@mail.gmail.com>
+ <20130116032502.GN2668@htj.dyndns.org>
+ <CA+55aFxCudzOv8e2XjHiT=Qhy9q+mrxUfSYAT=eU6Gq8uyNORw@mail.gmail.com>
+ <20130116164832.GP2668@htj.dyndns.org>
+ <50F6DD4D.3070808@linux.intel.com>
+ <CA+55aFyjrXzKMqmOuMo9z24OZj3kD4O4M4y_O-h=r6udCz2MyA@mail.gmail.com>
+ <20130116213032.GS2668@htj.dyndns.org>
+ <CA+55aFzdf44QOZn4KS6tT09COFsmCg80sTah1XpeoErJxAzbRQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Amit Kale <akale@stec-inc.com>
-CC: "thornber@redhat.com" <thornber@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
-        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
-Subject: Re: [dm-devel] Announcement: STEC EnhanceIO SSD caching software
- for Linux kernel
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD> <CAMM=eLdgD8GKeK48SU2rfC49u3H4WRf9-xFxM4ymVPbKkx+mCw@mail.gmail.com> <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D70CE@MYMBX.MY.STEC-INC.AD> <20130116104546.GA3869@raspberrypi> <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D720A@MYMBX.MY.STEC-INC.AD> <20130117132620.GA2438@raspberrypi> <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7248@MYMBX.MY.STEC-INC.AD>
-In-Reply-To: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7248@MYMBX.MY.STEC-INC.AD>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzdf44QOZn4KS6tT09COFsmCg80sTah1XpeoErJxAzbRQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Linus.
 
-On 01/17/2013 11:53 AM, Amit Kale wrote:
->>> 9. Performance - Throughput is generally most important. Latency is
->> >   also one more performance comparison point. Performance under
->> >   different load classes can be measured.
->> > 
->> >   I think latency is more important than throughput.  Spindles are
->> >   pretty good at throughput.  In fact the mq policy tries to spot when
->> >   we're doing large linear ios and stops hit counting; best leave this
->> >   stuff on the spindle.
-> I disagree. Latency is taken care of automatically when the number of application threads rises.
->
+On Thu, Jan 17, 2013 at 10:05:53AM -0800, Linus Torvalds wrote:
+> And here I was really hoping that there was a third patch in the
+> series that added the warning...
+> 
+> We don't currently have a "am I an async worker" helper function for
+> the warning to use, which is something very much up your alley.
 
-Can you explain what you mean by that in a little more detail?
+Oh yeah, it's coming.  I just wanted to finish something else first
+and, as turning on PF_WQ_WORKER on a rescuer thread has some chance of
+developing into an obscure difficult-to-trigger and diagnose problem,
+don't want to hurry it too much.
 
-As an enterprise level user I see both as important overall.  However,
-the biggest driving factor in wanting a cache device in front of any
-sort of target in my use cases is to hide latency as the number of
-threads reading and writing to the backing device go up.  So for me the
-cache is basically a tier stage where your ability to keep dirty blocks
-on it is determined by the specific use case.
+Thanks.
+
+-- 
+tejun
