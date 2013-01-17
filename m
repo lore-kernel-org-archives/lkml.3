@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab3AQKiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:38:05 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48452 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759518Ab3AQKiD (ORCPT
+	id S1759585Ab3AQKiu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:38:50 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4204 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759527Ab3AQKis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 05:38:03 -0500
-Date: Thu, 17 Jan 2013 10:37:42 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Tejun Heo <tj@kernel.org>, Subhash Jadavani <subhashj@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        martin.petersen@oracle.com, asias@redhat.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/1] block: blk-merge: don't merge the pages with
-	non-contiguous descriptors
-Message-ID: <20130117103742.GX23505@n2100.arm.linux.org.uk>
-References: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org> <1358266794.10591.8.camel@dabdike.int.hansenpartnership.com> <50F64AC1.3040304@codeaurora.org> <1358332355.2384.11.camel@dabdike.int.hansenpartnership.com> <20130116231857.GU2668@htj.dyndns.org> <1358413880.2394.7.camel@dabdike.int.hansenpartnership.com>
+	Thu, 17 Jan 2013 05:38:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 17 Jan 2013 02:38:18 -0800
+Message-ID: <50F7D47A.7070508@nvidia.com>
+Date: Thu, 17 Jan 2013 16:07:46 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358413880.2394.7.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+Subject: Re: [PATCH 3/4] gpio: palmas: Add support for Palams GPIO
+References: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com> <1357210020-19876-4-git-send-email-ldewangan@nvidia.com> <CACRpkdazCa_GMfrCnoYukiQKbKD41RiTG-MyO-5p+B-6-+Y=hA@mail.gmail.com> <20130117103529.GB7504@opensource.wolfsonmicro.com>
+In-Reply-To: <20130117103529.GB7504@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 09:11:20AM +0000, James Bottomley wrote:
-> On Wed, 2013-01-16 at 15:18 -0800, Tejun Heo wrote:
-> > On Wed, Jan 16, 2013 at 10:32:35AM +0000, James Bottomley wrote:
-> > > diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-> > > index 6b2fb87..ab88c5b 100644
-> > > --- a/arch/arm/mm/dma-mapping.c
-> > > +++ b/arch/arm/mm/dma-mapping.c
-> > > @@ -809,7 +809,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
-> > >  			op(vaddr, len, dir);
-> > >  		}
-> > >  		offset = 0;
-> > > -		page++;
-> > > +		page = pfn_to_page(page_to_pfn(page) + 1);
-> > 
-> > Probably page = nth_page(page, 1) is the better form.
-> 
-> It's the same thing.
-> 
-> I'd actually prefer page = pfn_to_page(page_to_pfn(page) + 1); because
-> it makes the code look like the hack it is.  The preferred form for all
-> iterators like this should be to iterate over the pfn instead of a
-> pointer into the page arrays, because that will always work correctly no
-> matter how many weird and wonderful memory schemes we come up with.
+On Thursday 17 January 2013 04:05 PM, Mark Brown wrote:
+> On Thu, Jan 17, 2013 at 11:34:42AM +0100, Linus Walleij wrote:
+>
+>> Do you want me to apply it to my GPIO tree or does it have
+>> dependencies so you'll take it through MFD or something?
+> The MFD has been merged for a couple of releases now.
+Yes, Although this driver used the new API introduced in patch 1/4 but I 
+think it is fine to apply this in GPIO subsystem here as it is 
+independent driver.
 
-So, why don't we update the code to do that then?
+
