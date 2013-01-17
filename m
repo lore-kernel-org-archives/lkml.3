@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab3AQUob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:44:31 -0500
-Received: from mga14.intel.com ([143.182.124.37]:19403 "EHLO mga14.intel.com"
+	id S1756968Ab3AQUoa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:44:30 -0500
+Received: from mga14.intel.com ([143.182.124.37]:64949 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756546Ab3AQUhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756580Ab3AQUhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jan 2013 15:37:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="192371707"
+   d="scan'208";a="192371709"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
-        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 01/29] perf, x86: Add PEBSv2 record support
-Date: Thu, 17 Jan 2013 12:36:24 -0800
-Message-Id: <1358455012-12287-2-git-send-email-andi@firstfloor.org>
+        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>,
+        avi@redhat.com, gleb@redhat.com
+Subject: [PATCH 05/29] perf, kvm: Support the intx/intx_cp modifiers in KVM arch perfmon emulation v4
+Date: Thu, 17 Jan 2013 12:36:28 -0800
+Message-Id: <1358455012-12287-6-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,191 +27,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add support for the v2 PEBS format. It has a superset of the v1 PEBS
-fields, but has a longer record so we need to adjust the code paths.
+This is not arch perfmon, but older CPUs will just ignore it. This makes
+it possible to do at least some TSX measurements from a KVM guest
 
-The main advantage is the new "EventingRip" support which directly
-gives the instruction, not off-by-one instruction. So with precise == 2
-we use that directly and don't try to use LBRs and walking basic blocks.
-This lowers the overhead significantly.
-
-Some other features are added in later patches.
-
+Cc: avi@redhat.com
+Cc: gleb@redhat.com
+v2: Various fixes to address review feedback
+v3: Ignore the bits when no CPUID. No #GP. Force raw events with TSX bits.
+v4: Use reserved bits for #GP
+Cc: gleb@redhat.com
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c          |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_ds.c |  101 ++++++++++++++++++++++-------
- 2 files changed, 79 insertions(+), 24 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/pmu.c              |   32 ++++++++++++++++++++++++--------
+ 2 files changed, 25 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4428fd1..ec3c549 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -403,7 +403,7 @@ int x86_pmu_hw_config(struct perf_event *event)
- 		 * check that PEBS LBR correction does not conflict with
- 		 * whatever the user is asking with attr->branch_sample_type
- 		 */
--		if (event->attr.precise_ip > 1) {
-+		if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
- 			u64 *br_type = &event->attr.branch_sample_type;
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index dc87b65..703a1f8 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -320,6 +320,7 @@ struct kvm_pmu {
+ 	u64 global_ovf_ctrl;
+ 	u64 counter_bitmask[2];
+ 	u64 global_ctrl_mask;
++	u64 reserved_bits;
+ 	u8 version;
+ 	struct kvm_pmc gp_counters[INTEL_PMC_MAX_GENERIC];
+ 	struct kvm_pmc fixed_counters[INTEL_PMC_MAX_FIXED];
+diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
+index cfc258a..89405d0 100644
+--- a/arch/x86/kvm/pmu.c
++++ b/arch/x86/kvm/pmu.c
+@@ -160,7 +160,7 @@ static void stop_counter(struct kvm_pmc *pmc)
  
- 			if (has_branch_stack(event)) {
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 826054a..9d0dae0 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -41,6 +41,12 @@ struct pebs_record_nhm {
- 	u64 status, dla, dse, lat;
- };
- 
-+struct pebs_record_v2 {
-+	struct pebs_record_nhm nhm;
-+	u64 eventingrip;
-+	u64 tsx_tuning;
-+};
-+
- void init_debug_store_on_cpu(int cpu)
+ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
+ 		unsigned config, bool exclude_user, bool exclude_kernel,
+-		bool intr)
++		bool intr, bool intx, bool intx_cp)
  {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
-@@ -559,8 +565,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- {
- 	/*
- 	 * We cast to pebs_record_core since that is a subset of
--	 * both formats and we don't use the other fields in this
--	 * routine.
-+	 * both formats.
- 	 */
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct pebs_record_core *pebs = __pebs;
-@@ -588,7 +593,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	regs.bp = pebs->bp;
- 	regs.sp = pebs->sp;
+ 	struct perf_event *event;
+ 	struct perf_event_attr attr = {
+@@ -173,6 +173,10 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
+ 		.exclude_kernel = exclude_kernel,
+ 		.config = config,
+ 	};
++	if (intx)
++		attr.config |= HSW_INTX;
++	if (intx_cp)
++		attr.config |= HSW_INTX_CHECKPOINTED;
  
--	if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
-+	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
-+		regs.ip = ((struct pebs_record_v2 *)pebs)->eventingrip;
-+		regs.flags |= PERF_EFLAGS_EXACT;
-+	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
- 		regs.flags |= PERF_EFLAGS_EXACT;
- 	else
- 		regs.flags &= ~PERF_EFLAGS_EXACT;
-@@ -641,35 +649,21 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
- 	__intel_pmu_pebs_event(event, iregs, at);
+ 	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
+ 
+@@ -206,7 +210,8 @@ static unsigned find_arch_event(struct kvm_pmu *pmu, u8 event_select,
+ 	return arch_events[i].event_type;
  }
  
--static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-+static void intel_pmu_drain_pebs_common(struct pt_regs *iregs, void *at,
-+					void *top)
+-static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
++static void reprogram_gp_counter(struct kvm_pmu *pmu, struct kvm_pmc *pmc, 
++				 u64 eventsel)
  {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct debug_store *ds = cpuc->ds;
--	struct pebs_record_nhm *at, *top;
- 	struct perf_event *event = NULL;
- 	u64 status = 0;
--	int bit, n;
--
--	if (!x86_pmu.pebs_active)
--		return;
--
--	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
--	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-+	int bit;
+ 	unsigned config, type = PERF_TYPE_RAW;
+ 	u8 event_select, unit_mask;
+@@ -226,7 +231,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
  
- 	ds->pebs_index = ds->pebs_buffer_base;
- 
--	n = top - at;
--	if (n <= 0)
--		return;
-+	for ( ; at < top; at += x86_pmu.pebs_record_size) {
-+		struct pebs_record_nhm *p = at;
- 
--	/*
--	 * Should not happen, we program the threshold at 1 and do not
--	 * set a reset value.
--	 */
--	WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
--
--	for ( ; at < top; at++) {
--		for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
-+		for_each_set_bit(bit, (unsigned long *)&p->status, x86_pmu.max_pebs_events) {
- 			event = cpuc->events[bit];
- 			if (!test_bit(bit, cpuc->active_mask))
- 				continue;
-@@ -692,6 +686,61 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
- 	}
+ 	if (!(eventsel & (ARCH_PERFMON_EVENTSEL_EDGE |
+ 				ARCH_PERFMON_EVENTSEL_INV |
+-				ARCH_PERFMON_EVENTSEL_CMASK))) {
++				ARCH_PERFMON_EVENTSEL_CMASK |
++				HSW_INTX |
++				HSW_INTX_CHECKPOINTED))) {
+ 		config = find_arch_event(&pmc->vcpu->arch.pmu, event_select,
+ 				unit_mask);
+ 		if (config != PERF_COUNT_HW_MAX)
+@@ -239,7 +246,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
+ 	reprogram_counter(pmc, type, config,
+ 			!(eventsel & ARCH_PERFMON_EVENTSEL_USR),
+ 			!(eventsel & ARCH_PERFMON_EVENTSEL_OS),
+-			eventsel & ARCH_PERFMON_EVENTSEL_INT);
++			eventsel & ARCH_PERFMON_EVENTSEL_INT,
++			(eventsel & HSW_INTX),
++			(eventsel & HSW_INTX_CHECKPOINTED));
  }
  
-+static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct debug_store *ds = cpuc->ds;
-+	struct pebs_record_nhm *at, *top;
-+	int n;
-+
-+	if (!x86_pmu.pebs_active)
-+		return;
-+
-+	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
-+	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-+
-+	ds->pebs_index = ds->pebs_buffer_base;
-+
-+	n = top - at;
-+	if (n <= 0)
-+		return;
-+
-+	/*
-+	 * Should not happen, we program the threshold at 1 and do not
-+	 * set a reset value.
-+	 */
-+	WARN_ONCE(n > x86_pmu.max_pebs_events,
-+		  "Unexpected number of pebs records %d\n", n);
-+
-+	return intel_pmu_drain_pebs_common(iregs, at, top);
-+}
-+
-+static void intel_pmu_drain_pebs_v2(struct pt_regs *iregs)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct debug_store *ds = cpuc->ds;
-+	struct pebs_record_v2 *at, *top;
-+	int n;
-+
-+	if (!x86_pmu.pebs_active)
-+		return;
-+
-+	at  = (struct pebs_record_v2 *)(unsigned long)ds->pebs_buffer_base;
-+	top = (struct pebs_record_v2 *)(unsigned long)ds->pebs_index;
-+
-+	n = top - at;
-+	if (n <= 0)
-+		return;
-+	/*
-+	 * Should not happen, we program the threshold at 1 and do not
-+	 * set a reset value.
-+	 */
-+	WARN_ONCE(n > x86_pmu.max_pebs_events,
-+		  "Unexpected number of pebs records %d\n", n);
-+
-+	return intel_pmu_drain_pebs_common(iregs, at, top);
-+}
-+
- /*
-  * BTS, PEBS probe and setup
-  */
-@@ -723,6 +772,12 @@ void intel_ds_init(void)
- 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
- 			break;
+ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
+@@ -256,7 +265,7 @@ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
+ 			arch_events[fixed_pmc_events[idx]].event_type,
+ 			!(en & 0x2), /* exclude user */
+ 			!(en & 0x1), /* exclude kernel */
+-			pmi);
++			pmi, false, false);
+ }
  
-+		case 2:
-+			printk(KERN_CONT "PEBS fmt2%c, ", pebs_type);
-+			x86_pmu.pebs_record_size = sizeof(struct pebs_record_v2);
-+			x86_pmu.drain_pebs = intel_pmu_drain_pebs_v2;
-+			break;
+ static inline u8 fixed_en_pmi(u64 ctrl, int idx)
+@@ -289,7 +298,7 @@ static void reprogram_idx(struct kvm_pmu *pmu, int idx)
+ 		return;
+ 
+ 	if (pmc_is_gp(pmc))
+-		reprogram_gp_counter(pmc, pmc->eventsel);
++		reprogram_gp_counter(pmu, pmc, pmc->eventsel);
+ 	else {
+ 		int fidx = idx - INTEL_PMC_IDX_FIXED;
+ 		reprogram_fixed_counter(pmc,
+@@ -400,8 +409,8 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
+ 		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
+ 			if (data == pmc->eventsel)
+ 				return 0;
+-			if (!(data & 0xffffffff00200000ull)) {
+-				reprogram_gp_counter(pmc, data);
++			if (!(data & pmu->reserved_bits)) {
++				reprogram_gp_counter(pmu, pmc, data);
+ 				return 0;
+ 			}
+ 		}
+@@ -442,6 +451,7 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
+ 	pmu->counter_bitmask[KVM_PMC_GP] = 0;
+ 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
+ 	pmu->version = 0;
++	pmu->reserved_bits = 0xffffffff00200000ull;
+ 
+ 	entry = kvm_find_cpuid_entry(vcpu, 0xa, 0);
+ 	if (!entry)
+@@ -470,6 +480,12 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
+ 	pmu->global_ctrl = ((1 << pmu->nr_arch_gp_counters) - 1) |
+ 		(((1ull << pmu->nr_arch_fixed_counters) - 1) << INTEL_PMC_IDX_FIXED);
+ 	pmu->global_ctrl_mask = ~pmu->global_ctrl;
 +
- 		default:
- 			printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
- 			x86_pmu.pebs = 0;
++	entry = kvm_find_cpuid_entry(vcpu, 7, 0);
++	if (entry &&
++	    (boot_cpu_has(X86_FEATURE_HLE) || boot_cpu_has(X86_FEATURE_RTM)) &&
++	    (entry->ebx & (X86_FEATURE_HLE|X86_FEATURE_RTM)))
++		pmu->reserved_bits ^= HSW_INTX|HSW_INTX_CHECKPOINTED;
+ }
+ 
+ void kvm_pmu_init(struct kvm_vcpu *vcpu)
 -- 
 1.7.7.6
 
