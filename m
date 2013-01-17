@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab3AQB6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 20:58:53 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:61651 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758303Ab3AQB6v (ORCPT
+	id S1758231Ab3AQCEd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 21:04:33 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:51840 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755928Ab3AQCEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 20:58:51 -0500
-Message-ID: <50F75AD7.7000703@systemhalted.org>
-Date: Wed, 16 Jan 2013 20:58:47 -0500
-From: "Carlos O'Donell" <carlos@systemhalted.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: bhutchings@solarflare.com, yoshfuji@linux-ipv6.org, amwang@redhat.com,
-        tmb@mageia.org, eblake@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
-        libc-alpha@sourceware.org, schwab@suse.de
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
-References: <1358316366.14898.8.camel@cr0> <50F6B761.8070106@linux-ipv6.org> <1358351232.2923.10.camel@bwh-desktop.uk.solarflarecom.com> <20130116.164511.2027039182184636075.davem@davemloft.net>
-In-Reply-To: <20130116.164511.2027039182184636075.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jan 2013 21:04:32 -0500
+Date: Thu, 17 Jan 2013 13:04:23 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: linux-next: manual merge of the tty tree with Linus' tree
+Message-Id: <20130117130423.63a5e1004942853bf6a49e56@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__17_Jan_2013_13_04_23_+1100_orS2AKMBsVDkVbHD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 04:45 PM, David Miller wrote:
-> From: Ben Hutchings <bhutchings@solarflare.com>
-> Date: Wed, 16 Jan 2013 15:47:12 +0000
-> 
->> On Wed, 2013-01-16 at 23:21 +0900, YOSHIFUJI Hideaki wrote:
->>> Cong Wang wrote:
->>>> (Cc'ing some glibc developers...)
->>>>
->>>> Hello,
->>>>
->>>> In glibc source file inet/netinet/in.h and kernel source file
->>>> include/uapi/linux/in6.h, both define struct in6_addr, and both are
->>>> visible to user applications. Thomas reported a conflict below.
->>>>
->>>> So, how can we handle this? /me is wondering why we didn't see this
->>>> before.
->> [...]
->>> This is not a new issue.  In addition to this,
->>> netinet/in.h also conflits with linux/in.h.
->>>
->>> We might have
->>>  #if !defined(__GLIBC__) || !defined(_NETINET_IN_H)
->>>  :
->>>  #endif
->>> around those conflicting definitions in uapi/linux/in{,6}.h.
->>
->> This only solves half the problem, as <netinet/in.h> might be included
->> after <linux/in.h>.  Also, not all Linux userland uses glibc.
-> 
-> So I've been looking at reasonable ways to fix this.
-> 
-> What would be really nice is if GCC treated multiple identical
-> definitions of structures the same way it handles multiple identical
-> definitions of CPP defines.  Which is to silently accept them.
-> 
-> But that's not the case, so we need a different solution.
-> 
-> Another thing to do is to use a new structure for in6_addr in kernel
-> headers exported to userland.
-> 
-> If we were to make the structure members and accessor macros identical
-> we could avoid breaking most if not all apps.
-> 
-> However the type name is different so:
-> 
-> 	struct in6_addr *p = &kern_struct->member;
-> 
-> wouldn't work so well.  And you couldn't fix up the sources to these
-> kinds of accesses in a way that work cleanly both before and after
-> changing the kernel headers.
-> 
-> I'm out of ideas for today.
+--Signature=_Thu__17_Jan_2013_13_04_23_+1100_orS2AKMBsVDkVbHD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So I just went down the rabbit hole, and the further I get the
-closer I get to having two exact copies of the same definitions
-in both glibc and the kernel and using whichever one was included
-first.
+Hi Greg,
 
-Is anyone opposed to that kind of solution?
+Today's linux-next merge of the tty tree got a conflict in
+drivers/staging/sb105x/Kconfig between commit db210312f77b ("staging:
+Make SystemBase PCI Multiport UART only for x86") from the  tree and
+commit e27a7d7977b0 ("Staging: sb105x: mark it BROKEN") from the tty tree.
 
-There is some ugliness there.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
 Cheers,
-Carlos.
- 
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/staging/sb105x/Kconfig
+index 1facad6,3d0d0eb..0000000
+--- a/drivers/staging/sb105x/Kconfig
++++ b/drivers/staging/sb105x/Kconfig
+@@@ -1,8 -1,7 +1,8 @@@
+  config SB105X
+  	tristate "SystemBase PCI Multiport UART"
+  	select SERIAL_CORE
+- 	depends on PCI
++ 	depends on PCI && BROKEN
+ +	depends on X86
+  	help
+  	  A driver for the SystemBase Multi-2/PCI serial card
+ =20
+
+--Signature=_Thu__17_Jan_2013_13_04_23_+1100_orS2AKMBsVDkVbHD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ91wnAAoJEECxmPOUX5FEVlEQAJSy/9HZqpQ7AjjwP57uBksS
+3AKQKF+gsS3JWuj96N0YYEFWEvyIxHz3XCAaV2X3nuznyv/OJK/LuIDb94QhqJiw
+0uNJW9OnoUtoThBmeTvsRwyWW6DKHvX6oAFNHE5nTm4aGhNrYgXRF+FObRRiW8CC
+ybLUKlaYzkIbW/brwPk1WTZnQ8cxAGo0UZq74pf42bERDrh1IrHW/BqTaYsQCWkV
+m2lNGZU66Q365lx0VF0P+FjbhfsNBlhyVTWcgEaQ3pk4pPuFoaXvjfCBMu56H8jD
+k/FzLHOg9Ar22eCF4OagWiuPNeSISN8vfs9Js7p4WIS9tQ36wtdFDXtJD8hZ1YZ4
+RTkz2Y5mDMGYkwief9brtbPDmjM0h2C8d3iuW7N3hTi7WqLBjfsHc02PUMXYe8yU
+cZCHY5q+IQ0nwui4sH5LCB8oHrmhfP02nDm2+10FP/B9mXMqsdKHtOfr45UrylYC
+8VpKXwAbWXtAVrAvan+9hrM9IPv0H8DmN12FLvA0xBL74i4nGFdrRI3UXBCoMBNH
+KxBNHCDuf4pkivKzo/sfOPfmo6IuEhNMtfJDUTw5ST5WVwqmO5g52daB7VuNnZCP
+2W+gZqbt5duQjPr0Lv06WbkZwrc2xmgWTuMMvP+PauokCooFa8c7CZ1lifpQs3Nc
+FxxY0kL3Eq3sdEGTAkSz
+=8puR
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_Jan_2013_13_04_23_+1100_orS2AKMBsVDkVbHD--
