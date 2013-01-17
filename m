@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab3AQGEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 01:04:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35093 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472Ab3AQGEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 01:04:39 -0500
-Message-ID: <50F79422.6090405@zytor.com>
-Date: Wed, 16 Jan 2013 22:03:14 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755271Ab3AQGNO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 01:13:14 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:51617 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab3AQGNN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 01:13:13 -0500
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "wujianguo@huawei.com" <wujianguo@huawei.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "lliubbo@gmail.com" <lliubbo@gmail.com>,
-        "jaegeuk.hanse@gmail.com" <jaegeuk.hanse@gmail.com>,
-        "glommer@parallels.com" <glommer@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
-References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com> <50F440F5.3030006@zytor.com> <20130114143456.3962f3bd.akpm@linux-foundation.org> <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com> <20130114144601.1c40dc7e.akpm@linux-foundation.org> <50F647E8.509@jp.fujitsu.com> <20130116132953.6159b673.akpm@linux-foundation.org> <50F72F17.9030805@zytor.com> <50F78750.8070403@jp.fujitsu.com>
-In-Reply-To: <50F78750.8070403@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1358391258-1771-67-git-send-email-keescook@chromium.org>
+References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
+	<1358391258-1771-67-git-send-email-keescook@chromium.org>
+Date: Thu, 17 Jan 2013 07:13:12 +0100
+X-Google-Sender-Auth: UHua7wi6qI3dtnWYj16qnfedTpI
+Message-ID: <CAMuHMdUfMUYjFEft=UDsdnvD2ASQavCGWBwj6H+XUSNJ5UiuZQ@mail.gmail.com>
+Subject: Re: [PATCH 66/86] drivers/video/console: remove depends on CONFIG_EXPERIMENTAL
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Jiri Kosina <jkosina@suse.cz>, Paul Bolle <pebolle@tiscali.nl>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 09:08 PM, Yasuaki Ishimatsu wrote:
->
-> I thought about the method of specifying the node. But I think
-> this method is inconvenience. Node number is decided by OS.
-> So the number is changed easily.
->
-> for example:
->
-> o exmaple 1
->    System has 3 nodes:
->    node0, node1, node2
->
->    When user remove node1, the system has:
->    node0, node2
->
->    But after rebooting the system, the system has:
->    node0, node1
->
->    So node2 becomes node1.
->
-> o example 2:
->    System has 2 nodes:
->    0x40000000 - 0x7fffffff : node0
->    0xc0000000 - 0xffffffff : node1
->
->    When user add a node wchih memory range is [0x80000000 - 0xbfffffff],
->    system has:
->    0x40000000 - 0x7fffffff : node0
->    0xc0000000 - 0xffffffff : node1
->    0x80000000 - 0xbfffffff : node2
->
->    But after rebooting the system, the system's node may become:
->    0x40000000 - 0x7fffffff : node0
->    0x80000000 - 0xbfffffff : node1
->    0xc0000000 - 0xffffffff : node2
->
->    So node nunber is changed.
->
-> Specifying node number may be easy method than specifying memory
-> range. But if user uses node number for specifying removable memory,
-> user always need to care whether node number is changed or not at
-> every hotplug operation.
->
+On Thu, Jan 17, 2013 at 3:53 AM, Kees Cook <keescook@chromium.org> wrote:
+> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+> while now and is almost always enabled by default. As agreed during the
+> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
+>  config MDA_CONSOLE
+>         depends on !M68K && !PARISC && ISA
+> -       tristate "MDA text console (dual-headed) (EXPERIMENTAL)"
+> +       tristate "MDA text console (dual-headed)"
 
-Well, there are only two options:
+This is not a "depends on" line.
 
-1. The user doesn't care which nodes are movable.  In that case, the 
-user may just want to specify a target as a percentage of memory to make 
-movable -- effectively a "slider" on the performance vs. reliability 
-spectrum.  The kernel can then assign nodes arbitrarily.
+Gr{oetje,eeting}s,
 
-2. If the user *does* care which nodes are movable, then the user needs 
-to be able to specify that *in a way that makes sense to the user*. 
-This may mean involving the DMI information as well as SRAT in order to 
-get "silk screen" type information out.
+                        Geert
 
-	-hpa
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
