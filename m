@@ -1,132 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab3AQXgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 18:36:45 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50864 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3AQXgo (ORCPT
+	id S1753644Ab3AQXj6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 18:39:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56232 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891Ab3AQXj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 18:36:44 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-ca-50f88b09752e
-Date: Fri, 18 Jan 2013 08:36:42 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/2] mm: prevent to add a page to swap if may_writepage
- is unset
-Message-ID: <20130117233641.GA31368@blaptop>
-References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
- <1357712474-27595-2-git-send-email-minchan@kernel.org>
- <20130116134155.18092f1a.akpm@linux-foundation.org>
- <20130117005314.GB18669@blaptop>
- <20130117142238.e32c46d5.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130117142238.e32c46d5.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 17 Jan 2013 18:39:56 -0500
+Date: Thu, 17 Jan 2013 15:39:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Abhijit Pawar <abhi.c.pawar@gmail.com>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Steve French <sfrench@samba.org>,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
+        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com
+Subject: Re: [PATCH 4/4] fs: remove obsolete simple_strto<foo>
+Message-Id: <20130117153954.e36a474b.akpm@linux-foundation.org>
+In-Reply-To: <1354881319-23585-1-git-send-email-abhi.c.pawar@gmail.com>
+References: <1354881319-23585-1-git-send-email-abhi.c.pawar@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 02:22:38PM -0800, Andrew Morton wrote:
-> On Thu, 17 Jan 2013 09:53:14 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
+On Fri,  7 Dec 2012 17:25:19 +0530
+Abhijit Pawar <abhi.c.pawar@gmail.com> wrote:
+
+> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
 > 
-> > Recently, Luigi reported there are lots of free swap space when
-> > OOM happens. It's easily reproduced on zram-over-swap, where
-> > many instance of memory hogs are running and laptop_mode is enabled.
-> > He said there was no problem when he disabled laptop_mode.
-> > 
-> > The problem when I investigate problem is following as.
-> > 
-> > Assumption for easy explanation: There are no page cache page in system
-> > because they all are already reclaimed.
-> > 
-> > 1. try_to_free_pages disable may_writepage when laptop_mode is enabled.
-> > 2. shrink_inactive_list isolates victim pages from inactive anon lru list.
-> > 3. shrink_page_list adds them to swapcache via add_to_swap but it doesn't
-> >    pageout because sc->may_writepage is 0 so the page is rotated back into
-> >    inactive anon lru list. The add_to_swap made the page Dirty by SetPageDirty
-> > 4. 3 couldn't reclaim any pages so do_try_to_free_pages increase priority and
-> >    retry reclaim with higher priority.
-> > 5. shrink_inactlive_list try to isolate victim pages from inactive anon lru list
-> >    but got failed because it try to isolate pages with ISOLATE_CLEAN mode but
-> >    inactive anon lru list is full of dirty pages by 3 so it just returns
-> >    without  any reclaim progress.
-> > 6. do_try_to_free_pages doesn't set may_write due to zero total_scanned.
-> 
-> s/may_write/may_writepage/
 
-Thanks!
+The XFS part (or something like it) has been applied.
 
-> 
-> >    Because sc->nr_scanned is increased by shrink_page_list but we don't call
-> >    shrink_page_list in 5 due to short of isolated pages.
-> 
-> This is the bug, is it not?
-> 
-> In laptop mode, we still need to write out dirty swapcache at some
-> point.  An appropriate time to do this is when the scanning priority is
+>
+> ...
+>
+> --- a/fs/9p/v9fs.c
+> +++ b/fs/9p/v9fs.c
+> @@ -112,7 +112,7 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
+>  	substring_t args[MAX_OPT_ARGS];
+>  	char *p;
+>  	int option = 0;
+> -	char *s, *e;
+> +	char *s;
+>  	int ret = 0;
+>  
+>  	/* setup defaults */
+> @@ -249,8 +249,8 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
+>  				v9ses->flags |= V9FS_ACCESS_CLIENT;
+>  			} else {
+>  				v9ses->flags |= V9FS_ACCESS_SINGLE;
+> -				v9ses->uid = simple_strtoul(s, &e, 10);
+> -				if (*e != '\0') {
+> +				ret = kstrtouint(s, 10, &v9ses->uid);
+> +				if (ret) {
+>  					ret = -EINVAL;
+>  					pr_info("Unknown access argument %s\n",
+>  						s);
 
-Yes and when to some point is really important. Now, the point for that is
-depends on on the number of scanned pages by shrink_page_list. It means we
-must isolate victim pages from inactive LRU list and call shrink_page_list
-to increase sc->nr_scanned but unfortunately, we have various filters to
-decrease CPU consumption and LRU churning when VM try to isolate victim pages
-so it could prevent isolating victim pages from LRU list.
+Here we should propagate the kstrtouint() errno back to the caller
+rather than overwriting it with EINVAL.
 
-> getting high.  But it seems that this ISOLATE_CLEAN->total_scanned
+> diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+> index 5b3429a..95d9e09 100644
+> --- a/fs/btrfs/ioctl.c
+> +++ b/fs/btrfs/ioctl.c
+> @@ -1335,7 +1335,11 @@ static noinline int btrfs_ioctl_resize(struct btrfs_root *root,
+>  		sizestr = devstr + 1;
+>  		*devstr = '\0';
+>  		devstr = vol_args->name;
+> -		devid = simple_strtoull(devstr, &end, 10);
+> +		ret = kstrtoull(devstr, 10, &devid);
+> +		if (ret) {
+> +			ret = -EINVAL;
+> +			goto out_free;
+> +		}
 
-Yes. I absolutely agree on that some point should depend on priority, NOT
-the number of scanned pages. And I already said to you about that.
-https://lkml.org/lkml/2013/1/10/643
+Propagate the kstrtoull errno back to the caller.
 
-We used to use such heuristic in several places in VM, ie DEF_PRIORITY - 2
-But why I hesitate with the patch is that I think this patch should go to
-stable tree so the patch should be really small and have no side effect so
-I don't wanted to change laptop_mode behavior heavily caused by changing
-condition for may_writepage trigger point.
+>  		printk(KERN_INFO "btrfs: resizing devid %llu\n",
+>  		       (unsigned long long)devid);
+>  	}
+>
+> ...
+>
+> @@ -609,8 +610,9 @@ static ssize_t cifs_security_flags_proc_write(struct file *file,
+>  	}
+>  	/* else we have a number */
+>  
+> -	flags = simple_strtoul(flags_string, NULL, 0);
+> -
+> +	rc = kstrtouint(flags_string, 0, &flags);
+> +	if (rc)
+> +		return -EINVAL;
 
-> interaction is preventing that.
-> 
-> (An enhancement to laptop mode would be to opportunistically write out
-> dirty swapcache in or around laptop_mode_timer_fn()).
+Here we should propagate the return value.
 
-It could but it should be another patch and VM shouldn't rely on ONLY
-laptop_mode_timer_fn, IMHO. VM should have own rule to reclaim pages
-regardless of laptop_mode's help to prevent OOM kill.
+But if this error path is taken, we might already have altered
+global_secflags.  Perhaps that change should be undone.  Or, better,
+check the string before starting to change state.
 
-> 
-> > Above loop is continued until OOM happens.
-> > The problem didn't happen before [1] was merged because old logic's isolatation
-> > in shrink_inactive_list was successful and tried to call shrink_page_list
-> > to pageout them but it still ends up failed to page out by may_writepage.
-> > But important point is that sc->nr_scanned was increased althoug we couldn't
-> > swap out them so do_try_to_free_pages could set may_writepages.
-> > So this patch need to go stable tree althoug it's a band-aid.
-> > Then, for latest linus tree, we should fix laptop_mode's fundamental
-> > problem.
-> 
-> Well.  Perhaps we can do that now.
+>  	cFYI(1, "sec flags 0x%x", flags);
+>  
+>  	if (flags <= 0)  {
+> --- a/fs/dlm/config.c
+> +++ b/fs/dlm/config.c
+> @@ -156,11 +156,14 @@ static ssize_t cluster_set(struct dlm_cluster *cl, unsigned int *cl_field,
+>  			   const char *buf, size_t len)
+>  {
+>  	unsigned int x;
+> +	int rc;
+>  
+>  	if (!capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+> -	x = simple_strtoul(buf, NULL, 0);
+> +	rc = kstrtouint(buf, 0, &x);
+> +	if (rc)
+> +		return -EINVAL;
 
-Okay. If you don't object my suggestion, I will send patches next week.
-Thanks for the review, Andrew!
+Propagate it back.
 
-> 
-> > [1] f80c067[mm: zone_reclaim: make isolate_lru_page() filter-aware]
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>  	if (check_zero && !x)
+>  		return -EINVAL;
+> @@ -729,7 +732,10 @@ static ssize_t comm_nodeid_read(struct dlm_comm *cm, char *buf)
+>  static ssize_t comm_nodeid_write(struct dlm_comm *cm, const char *buf,
+>  				 size_t len)
+>  {
+> -	cm->nodeid = simple_strtol(buf, NULL, 0);
+> +	int rc;
+> +	rc = kstrtoint(buf, 0, &cm->nodeid);
+> +	if (rc)
+> +		return -EINVAL;
 
--- 
-Kind regards,
-Minchan Kim
+Ditto
+
+>  	return len;
+>  }
+>  
+> @@ -741,7 +747,10 @@ static ssize_t comm_local_read(struct dlm_comm *cm, char *buf)
+>  static ssize_t comm_local_write(struct dlm_comm *cm, const char *buf,
+>  				size_t len)
+>  {
+> -	cm->local= simple_strtol(buf, NULL, 0);
+> +	int rc;
+> +	rc = kstrtoint(buf, 0, &cm->local);
+> +	if (rc)
+> +		return -EINVAL;
+
+Ditto
+
+>  	if (cm->local && !local_comm)
+>  		local_comm = cm;
+>  	return len;
+> @@ -845,7 +854,10 @@ static ssize_t node_nodeid_write(struct dlm_node *nd, const char *buf,
+>  				 size_t len)
+>  {
+>  	uint32_t seq = 0;
+> -	nd->nodeid = simple_strtol(buf, NULL, 0);
+> +	int rc;
+> +	rc = kstrtoint(buf, 0, &nd->nodeid);
+> +	if (rc)
+> +		return -EINVAL;
+
+Ditto
+
+>  	dlm_comm_seq(nd->nodeid, &seq);
+>  	nd->comm_seq = seq;
+>  	return len;
+> @@ -859,7 +871,10 @@ static ssize_t node_weight_read(struct dlm_node *nd, char *buf)
+>  static ssize_t node_weight_write(struct dlm_node *nd, const char *buf,
+>  				 size_t len)
+>  {
+> -	nd->weight = simple_strtol(buf, NULL, 0);
+> +	int rc;
+> +	rc = kstrtoint(buf, 0, &nd->weight);
+> +	if (rc)
+> +		return -EINVAL;
+
+Ditto
+
+>  	return len;
+>  }
+>  
+> diff --git a/fs/dlm/lockspace.c b/fs/dlm/lockspace.c
+> index 2e99fb0..e83abfb 100644
+> --- a/fs/dlm/lockspace.c
+> +++ b/fs/dlm/lockspace.c
+> @@ -35,7 +35,10 @@ static struct task_struct *	scand_task;
+>  static ssize_t dlm_control_store(struct dlm_ls *ls, const char *buf, size_t len)
+>  {
+>  	ssize_t ret = len;
+> -	int n = simple_strtol(buf, NULL, 0);
+> +	int n, rc;
+> +	rc = kstrtoint(buf, 0, &n);
+> +	if (rc)
+> +		return -EINVAL;
+
+etcetera
+
+>  	ls = dlm_find_lockspace_local(ls->ls_local_handle);
+>  	if (!ls)
+>
+> ...
+>
+
