@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab3AQEip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 23:38:45 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16916 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758395Ab3AQEio (ORCPT
+	id S1758937Ab3AQEjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 23:39:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44089 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758447Ab3AQEjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 23:38:44 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 16 Jan 2013 20:37:26 -0800
-Message-ID: <50F78030.6080305@nvidia.com>
-Date: Thu, 17 Jan 2013 10:08:08 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: tegra: config: enable SERIAL_TEGRA
-References: <1358341572-8154-1-git-send-email-ldewangan@nvidia.com> <50F6EA0A.4080904@wwwdotorg.org>
-In-Reply-To: <50F6EA0A.4080904@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Wed, 16 Jan 2013 23:39:23 -0500
+Date: Wed, 16 Jan 2013 20:43:52 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        tytso@mit.edu, viro@zeniv.linux.org.uk, rminnich@sandia.gov,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        gnehzuil.liu@gmail.com, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        linux-ext4@vger.kernel.org, hirofumi@mail.parknet.co.jp
+Subject: Re: [PATCH v2.4 0/3] mm/fs: Remove unnecessary waiting for stable
+ pages
+Message-Id: <20130116204352.9d343964.akpm@linux-foundation.org>
+In-Reply-To: <20130117024902.GJ6426@blackbox.djwong.org>
+References: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
+	<20130115144608.722180b7.akpm@linux-foundation.org>
+	<20130116002246.GI6426@blackbox.djwong.org>
+	<20130115163359.16d64ab4.akpm@linux-foundation.org>
+	<20130117024902.GJ6426@blackbox.djwong.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 January 2013 11:27 PM, Stephen Warren wrote:
-> On 01/16/2013 06:06 AM, Laxman Dewangan wrote:
->> Enable high speed serial driver for tegra platform.
-> Thanks, I've applied patch 1 to Tegra's for-3.9/defconfig branch and
-> patch 2 to Tegra's for-3.9/dt branch.
->
-> Just as an FYI, the dt branch is merged into my for-next branch, and
-> sent upstream, before the defconfig branch, so your patch order was
-> reversed relative to that, but it's not an issue here.
+On Wed, 16 Jan 2013 18:49:02 -0800 "Darrick J. Wong" <darrick.wong@oracle.com> wrote:
 
-Thanks for applying it. There is no issue on the reversing the sequence.
+> > 
+> > The problem back in 2001 was that we held lock_page() across the
+> > duration of page writeback, so if another thread came in and tried to
+> > dirty the page, it would block on lock_page() until IO completion.  I
+> > can't remember whether writeback would also block read().  Maybe it did,
+> > in which case the effects of this patchset won't be as dramatic as were
+> > the effects of splitting PG_lock into PG_lock and PG_writeback.
+> 
+> Now that you've stirred my memory, I /do/ dimly recall that Linux waited for
+> writeback back in the old days.  At least we'll be back to that.
 
+Not really.  2.4 did writeback by walking a standalone list of
+buffer_heads, without locking their containing page.  I removed all
+that and did writeback of the page instead.  That immediately caused
+this problem, because the 2.4 writepage held lock_page() across
+writeout.  So I changed that to drop lock_page() immediately after
+submission and added PG_writeback to flag the under-writeback state. 
+The second change went in pretty much immediately - all within the
+same 2.5.x release, probably.
 
-> Question: How do I test this; do I just fire up bluez(?) and point it at
-> the UARTC serial port, or is there more to it?
+> As a side note, the average latency of a write to a non-DIF disk dropped down
+> to nearly nothing.
 
-I tested this in may pieces, not with the bluez.
-I tested this in downstream with linux-next dma, this new serial driver, 
-some hacks in the board files with bluetooth.
+Some hard numbers in the changelog would be nice.  Did you try dbench-on-ext2?
 
-Then I tested this again on linux-next with some hacks in board-dt filew 
-with invoking  the driver from cardhu dts file. In this I tested driver 
-registration, basic write is wokring or not with some register 
-dump/interrupt, Not checked data integrity as not connected the serial 
-sniffer. The idea is that nothing should be crash in linux-next. The 
-basic driver code is already tested with bluetooth.
+> > 
+> > Do we generate nice kernel messages (at mount or device-probe time)
+> > which will permit people to work out which strategy their device/fs is
+> > using?
+> 
+> No.  /sys/devices/virtual/bdi/*/stable_pages_required will tell you
+> stable pages are on or not, but so far only ext3 uses snapshots and the rest
+> just wait.  Do you think a printk would be useful?
 
-
-
-
+Nope, if we can query the mode under /sys then that should be sufficient.
