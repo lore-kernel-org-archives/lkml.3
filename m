@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759088Ab3AQDBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:01:34 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:56680 "EHLO smtp.outflux.net"
+	id S1758997Ab3AQDBd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:01:33 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:58274 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758201Ab3AQCzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758601Ab3AQCzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 21:55:00 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Kees Cook <keescook@chromium.org>, Kumar Gala <galak@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 15/86] drivers/net/wireless/ipw2x00: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:53:07 -0800
-Message-Id: <1358391258-1771-16-git-send-email-keescook@chromium.org>
+Subject: [PATCH 31/86] arch/powerpc/platforms/85xx: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:53:23 -0800
+Message-Id: <1358391258-1771-32-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -28,28 +27,27 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-CC: Stanislav Yakovlev <stas.yakovlev@gmail.com>
-CC: "John W. Linville" <linville@tuxdriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>
+CC: Kumar Gala <galak@kernel.crashing.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/net/wireless/ipw2x00/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/85xx/Kconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/wireless/ipw2x00/Kconfig b/drivers/net/wireless/ipw2x00/Kconfig
-index 2715b10..91c0cb3 100644
---- a/drivers/net/wireless/ipw2x00/Kconfig
-+++ b/drivers/net/wireless/ipw2x00/Kconfig
-@@ -137,7 +137,7 @@ config IPW2200_PROMISCUOUS
+diff --git a/arch/powerpc/platforms/85xx/Kconfig b/arch/powerpc/platforms/85xx/Kconfig
+index 02d02a0..92ab60a 100644
+--- a/arch/powerpc/platforms/85xx/Kconfig
++++ b/arch/powerpc/platforms/85xx/Kconfig
+@@ -277,7 +277,6 @@ config P5040_DS
  
- config IPW2200_QOS
-         bool "Enable QoS support"
--        depends on IPW2200 && EXPERIMENTAL
-+        depends on IPW2200
- 
- config IPW2200_DEBUG
- 	bool "Enable full debugging output in IPW2200 module."
+ config PPC_QEMU_E500
+ 	bool "QEMU generic e500 platform"
+-	depends on EXPERIMENTAL
+ 	select DEFAULT_UIMAGE
+ 	help
+ 	  This option enables support for running as a QEMU guest using
 -- 
 1.7.9.5
 
