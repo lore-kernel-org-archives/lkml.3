@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab3AQUhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:37:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33809 "EHLO mga09.intel.com"
+	id S1756911Ab3AQUhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:37:18 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33822 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756799Ab3AQUhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756828Ab3AQUhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jan 2013 15:37:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="248567544"
+   d="scan'208";a="248567543"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 24/29] perf, x86: Support CPU specific sysfs events
-Date: Thu, 17 Jan 2013 12:36:47 -0800
-Message-Id: <1358455012-12287-25-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 13/29] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v3
+Date: Thu, 17 Jan 2013 12:36:36 -0800
+Message-Id: <1358455012-12287-14-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,75 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a way for the CPU initialization code to register additional events,
-and merge them into the events attribute directory. Used in the next
-patch.
+With checkpointed counters there can be a situation where the counter
+is overflowing, aborts the transaction, is set back to a non overflowing
+checkpoint, causes interupt. The interrupt doesn't see the overflow
+because it has been checkpointed.  This is then a spurious PMI, typically with a
+ugly NMI message.  It can also lead to excessive aborts.
 
+Avoid this problem by:
+- Using the full counter width for counting counters (previous patch)
+- Forbid sampling for checkpointed counters. It's not too useful anyways,
+checkpointing is mainly for counting.
+- On a PMI always set back checkpointed counters to zero.
+
+v2: Add unlikely. Add comment
+v3: Allow large sampling periods with CP for KVM
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |   29 +++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event.h |    1 +
- 2 files changed, 30 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   34 ++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 6cdc012..e3a202a 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1343,6 +1343,30 @@ static void __init filter_events(struct attribute **attrs)
- 	}
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index bc21bce..9b4dda5 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1079,6 +1079,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ int intel_pmu_save_and_restart(struct perf_event *event)
+ {
+ 	x86_perf_event_update(event);
++	/*
++	 * For a checkpointed counter always reset back to 0.  This
++	 * avoids a situation where the counter overflows, aborts the
++	 * transaction and is then set back to shortly before the
++	 * overflow, and overflows and aborts again.
++	 */
++	if (unlikely(event->hw.config & HSW_INTX_CHECKPOINTED)) {
++		/* No race with NMIs because the counter should not be armed */
++		wrmsrl(event->hw.event_base, 0);
++		local64_set(&event->hw.prev_count, 0);
++	}
+ 	return x86_perf_event_set_period(event);
  }
  
-+/* Merge two pointer arrays */
-+static __init struct attribute **merge_attr(struct attribute **a,
-+					    struct attribute **b)
-+{
-+	struct attribute **new;
-+	int j, i;
-+
-+	for (j = 0; a[j]; j++)
-+		;
-+	for (i = 0; b[i]; i++)
-+		j++;
-+	j++;
-+	new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
-+	if (!new)
-+		return a;
-+	j = 0;
-+	for (i = 0; a[i]; i++)
-+		new[j++] = a[i];
-+	for (i = 0; b[i]; i++)
-+		new[j++] = b[i];
-+	new[j] = NULL;
-+	return new;
-+}
-+
- ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
- 			  char *page)
- {
-@@ -1480,6 +1504,11 @@ static int __init init_hw_perf_events(void)
- 	else
- 		filter_events(x86_pmu_events_group.attrs);
+@@ -1162,6 +1173,15 @@ again:
+ 		x86_pmu.drain_pebs(regs);
+ 	}
  
-+	if (x86_pmu.cpu_events)
-+		x86_pmu_events_group.attrs =
-+			merge_attr(x86_pmu_events_group.attrs,
-+				   x86_pmu.cpu_events);
++	/*
++ 	 * To avoid spurious interrupts with perf stat always reset checkpointed
++ 	 * counters.
++ 	 *
++	 * XXX move somewhere else.
++	 */
++	if (cpuc->events[2] && (cpuc->events[2]->hw.config & HSW_INTX_CHECKPOINTED))
++		status |= (1ULL << 2);
 +
- 	pr_info("... version:                %d\n",     x86_pmu.version);
- 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
- 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 8253b73..ba5d043 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -360,6 +360,7 @@ struct x86_pmu {
- 	struct attribute **format_attrs;
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
  
- 	ssize_t		(*events_sysfs_show)(char *page, u64 config);
-+	struct attribute **cpu_events;
+@@ -1615,6 +1635,20 @@ static int hsw_hw_config(struct perf_event *event)
+ 	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
+ 	      event->attr.precise_ip > 0))
+ 		return -EIO;
++	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
++		/*
++		 * Sampling of checkpointed events can cause situations where
++		 * the CPU constantly aborts because of a overflow, which is
++		 * then checkpointed back and ignored. Forbid checkpointing
++		 * for sampling.
++		 *
++		 * But still allow a long sampling period, so that perf stat
++		 * from KVM works.
++		 */
++		if (event->attr.sample_period > 0 &&
++		    event->attr.sample_period < 0x7fffffff)
++			return -EIO;
++	}
+ 	return 0;
+ }
  
- 	/*
- 	 * CPU Hotplug hooks
 -- 
 1.7.7.6
 
