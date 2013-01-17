@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab3AQW4K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 17:56:10 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:36636 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab3AQWyR (ORCPT
+	id S1755513Ab3AQW4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 17:56:09 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:41279 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755214Ab3AQWyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jan 2013 17:54:17 -0500
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux MM <linux-mm@kvack.org>, David Hansen <dave@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Cody P Schafer <jmesmon@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 4/9] mm/page_alloc: add a VM_BUG in __free_one_page() if the zone is uninitialized.
-Date: Thu, 17 Jan 2013 14:52:56 -0800
-Message-Id: <1358463181-17956-5-git-send-email-cody@linux.vnet.ibm.com>
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH v2 0/9] mm: zone & pgdat accessors plus some cleanup
+Date: Thu, 17 Jan 2013 14:52:52 -0800
+Message-Id: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.0.3
-In-Reply-To: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011722-2876-0000-0000-0000043302F5
+x-cbid: 13011722-4834-0000-0000-000002B5BEAE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cody P Schafer <jmesmon@gmail.com>
+Summaries:
+1 - avoid repeating checks for section in page flags by adding a define.
+2 - add & switch to zone_end_pfn() and zone_spans_pfn()
+3 - adds zone_is_initialized() & zone_is_empty()
+4 - adds a VM_BUG using zone_is_initialized() in __free_one_page()
+5 - add pgdat_end_pfn() and pgdat_is_empty()
+6 - add debugging message to VM_BUG check.
+7 - add ensure_zone_is_initialized() (for memory_hotplug)
+8 - use the above addition in memory_hotplug
+9 - use pgdat_end_pfn()
 
-Freeing pages to uninitialized zones is not handled by
-__free_one_page(), and should never happen when the code is correct.
+As a general concern: spanned_pages & start_pfn (in pgdat & zone) are supposed
+to be locked (via a seqlock) when read (due to changes to them via
+memory_hotplug), but very few (only 1?) of their users appear to actually lock
+them.
 
-Ran into this while writing some code that dynamically onlines extra
-zones.
+--
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- mm/page_alloc.c | 2 ++
- 1 file changed, 2 insertions(+)
+Since v1:
+ - drop zone+pgdat growth factoring (I use this in some WIP code to resign the
+   NUMA node a page belongs to, will send with that patchset)
+ - merge zone_end_pfn() & zone_spans_pfn() introduction & usage
+ - split zone_is_initialized() & zone_is_empty() out from the above.
+ - add a missing semicolon
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index e2574ea..f8ed277 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -530,6 +530,8 @@ static inline void __free_one_page(struct page *page,
- 	unsigned long uninitialized_var(buddy_idx);
- 	struct page *buddy;
- 
-+	VM_BUG_ON(!zone_is_initialized(zone));
-+
- 	if (unlikely(PageCompound(page)))
- 		if (unlikely(destroy_compound_page(page, order)))
- 			return;
--- 
-1.8.0.3
+ include/linux/mm.h     |  8 ++++++--
+ include/linux/mmzone.h | 34 +++++++++++++++++++++++++++++----
+ mm/compaction.c        | 10 +++++-----
+ mm/kmemleak.c          |  5 ++---
+ mm/memory_hotplug.c    | 52 ++++++++++++++++++++++++++------------------------
+ mm/page_alloc.c        | 31 +++++++++++++++++-------------
+ mm/vmstat.c            |  2 +-
+ 7 files changed, 89 insertions(+), 53 deletions(-)
 
