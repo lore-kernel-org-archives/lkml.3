@@ -1,63 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab3AQQ1a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:27:30 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41983 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757073Ab3AQQ13 (ORCPT
+	id S1757230Ab3AQQ1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:27:42 -0500
+Received: from mga06.intel.com ([134.134.136.21]:14982 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757082Ab3AQQ1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:27:29 -0500
-Message-ID: <50F8266C.5030605@wwwdotorg.org>
-Date: Thu, 17 Jan 2013 09:27:24 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 17 Jan 2013 11:27:40 -0500
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: tegra: config: enable SERIAL_TEGRA
-References: <1358341572-8154-1-git-send-email-ldewangan@nvidia.com> <50F6EA0A.4080904@wwwdotorg.org> <50F78030.6080305@nvidia.com>
-In-Reply-To: <50F78030.6080305@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130117151825.GA12165@redhat.com>
+References: <87wqvdli1o.fsf@xmission.com>
+	<1358344859.4593.66.camel@falcor1>
+	<20130116144836.GB29845@redhat.com>
+	<1358350391.4593.112.camel@falcor1>
+	<20130116163453.GD29845@redhat.com>
+	<1358359715.4593.146.camel@falcor1>
+	<20130116182804.GF29845@redhat.com>
+	<1358364290.4593.178.camel@falcor1>
+	<20130116215341.GA4222@redhat.com>
+	<CALLzPKam_j==PXtNfQs93NbPTrYCjqM_0+XRfnvxrJBLdOJ-vQ@mail.gmail.com>
+	<20130117151825.GA12165@redhat.com>
+Date: Thu, 17 Jan 2013 18:27:38 +0200
+Message-ID: <CALLzPKaa8eOBA7VxiGijUzoUzk-05cwD8e4A89yyQtCL0=g7qg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, pjones@redhat.com, hpa@zytor.com,
+        dhowells@redhat.com, jwboyer@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 09:38 PM, Laxman Dewangan wrote:
-> On Wednesday 16 January 2013 11:27 PM, Stephen Warren wrote:
->> On 01/16/2013 06:06 AM, Laxman Dewangan wrote:
->>> Enable high speed serial driver for tegra platform.
->> Thanks, I've applied patch 1 to Tegra's for-3.9/defconfig branch and
->> patch 2 to Tegra's for-3.9/dt branch.
+On Thu, Jan 17, 2013 at 5:18 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Thu, Jan 17, 2013 at 04:58:02PM +0200, Kasatkin, Dmitry wrote:
+>> On Wed, Jan 16, 2013 at 11:53 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> > On Wed, Jan 16, 2013 at 02:24:50PM -0500, Mimi Zohar wrote:
+>> > [..]
+>> >> > > Sorry, this is out of scope for IMA.  Dmitry has looked into this, but
+>> >> > > I'm not sure where it stands at the moment.
+>> >> >
+>> >> > Ok, so that's one reason that why I wrote these patcehs. IMA currently
+>> >> > is not doing following things to make sure address space of signed images
+>> >> > is not modified by others.
+>> >> >
+>> >> > - Protecting against modifications to pages on swap.
+>> >> > - Protecting against modifications by ptrace.
+>> >> > - Protecting against modifications which bypassed filesystem and directly
+>> >> >   wrote to the block.
+>> >> >
+>> >> > Locking down all the pages of signed binaries in memory hopefully should
+>> >> > solve above problems.
+>> >>
+>> >> Signing and verifying ELF executables goes back a long time ~2003/4,
+>> >> from a number of esteemed kernel developers, including Greg-KH and Serge
+>> >> Hallyn.
+>> >>
+>> >> IMA-appraisal isn't limited to appraising a single type of file, but is
+>> >> a generic mechanism for appraising all files.  If there are issues that
+>> >> aren't being addressed, then by all means, please help by addressing
+>> >> them.  Duplicating a large portion of the code is not productive.
+>> >
+>> > So do you have ideas on how to address above mentioned issues. Do they
+>> > fit into the realm of IMA/EVM or I just need to write separate code (which
+>> > I have already done).
+>> >
+>> > With above issues, IMA stuff for executable files sounds incomplete.
+>> >
 >>
->> Just as an FYI, the dt branch is merged into my for-next branch, and
->> sent upstream, before the defconfig branch, so your patch order was
->> reversed relative to that, but it's not an issue here.
-> 
-> Thanks for applying it. There is no issue on the reversing the sequence.
-> 
-> 
->> Question: How do I test this; do I just fire up bluez(?) and point it at
->> the UARTC serial port, or is there more to it?
-> 
-> I tested this in may pieces, not with the bluez.
-> I tested this in downstream with linux-next dma, this new serial driver,
-> some hacks in the board files with bluetooth.
-> 
-> Then I tested this again on linux-next with some hacks in board-dt filew
-> with invoking  the driver from cardhu dts file. In this I tested driver
-> registration, basic write is wokring or not with some register
-> dump/interrupt, Not checked data integrity as not connected the serial
-> sniffer. The idea is that nothing should be crash in linux-next. The
-> basic driver code is already tested with bluetooth.
+>> swap is a last resort. healthy system uses swap minimally.
+>> It is very easy to add /etc/crypttab which allows to have encrypted swap
+>>
+>> # <target name> <source device>         <key file>      <options>
+>> swap   /dev/sda6       /dev/urandom    swap
+>>
+>> And it will eliminate plenty of possible attacks.
+>> Processes have also RW data, modification of those will create huge
+>> risk for the system...
+>
+> Hm..., encrypted swap is interesting. It might have overhead too. It is
+> one way of doing thing, but I think it would be better if we don't rely
+> on user has setup encrypted swap and provide a way to lock down memory of
+> signed executables.
+>
+>>
+>> But certain locking extensions like you implemented can be added to IMA as well.
+>
+> Cool. That would help. I am very new to IMA. If you have some ideas on
+> how to go about it, I can start looking into implementing it.
+>
+>>
+>> It was said about ptrace already.
+>
+> Sorry, did not get what was said about ptrace already? We need to disable
+> ptrace for signed executables. So can IMA set a process flag upon
+> signature verification and exec() code can give additional capability. And
+> as Eric mentioned that should automatically take care of ptrace issue.
+>
+>>
+>> > - Protecting against modifications which bypassed filesystem and directly  wrote to the block.
+>>
+>> Can you please tell a bit more how this patch protect against direct
+>> writing to the blocks?
+>
+> If you have loaded all the pages from disk and locked them in memory and
+> verified the signature, then even if somebody modifies a block on disk
+> it does not matter. We will not read pages from disk anymore for this
+> exec(). We verified the signature of executable loaded in memory and
+> in-memory copy is intact.
+>
+> So next time somebody tries to execute same binary it will fail (because
+> of modified block).
+>
 
-Well, my question was more about what user-space tools/configuration/...
-do I need to bring up Bluetooth to test this? I assume that now both the
-driver and DT patches are in linux-next, I shouldn't have to touch the
-kernel at all to make this work?
+Ok. This is about the same as with swap.
 
+It should be a 10 lines patch to IMA to lock down the memory.
+It may be controlled by the policy.
+IMA might also set new capability if needed.
+
+- Dmitry
+
+
+> Thanks
+> Vivek
