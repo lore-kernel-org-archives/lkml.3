@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758469Ab3AQCyg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 21:54:36 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:52058 "EHLO smtp.outflux.net"
+	id S1758897Ab3AQDPB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:15:01 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:59479 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758263Ab3AQCyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:54:31 -0500
+	id S1758447Ab3AQCyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 21:54:35 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>, "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 02/86] drivers/net/ethernet/icplus: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:52:54 -0800
-Message-Id: <1358391258-1771-3-git-send-email-keescook@chromium.org>
+Subject: [PATCH 07/86] drivers/net/ethernet/sun: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:52:59 -0800
+Message-Id: <1358391258-1771-8-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -29,22 +29,24 @@ Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/net/ethernet/icplus/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/sun/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/icplus/Kconfig b/drivers/net/ethernet/icplus/Kconfig
-index 3aff81d..5119ef1 100644
---- a/drivers/net/ethernet/icplus/Kconfig
-+++ b/drivers/net/ethernet/icplus/Kconfig
-@@ -4,7 +4,7 @@
+diff --git a/drivers/net/ethernet/sun/Kconfig b/drivers/net/ethernet/sun/Kconfig
+index 57bfd85..ae3a355 100644
+--- a/drivers/net/ethernet/sun/Kconfig
++++ b/drivers/net/ethernet/sun/Kconfig
+@@ -32,8 +32,8 @@ config HAPPYMEAL
+ 	  will be called sunhme.
  
- config IP1000
- 	tristate "IP1000 Gigabit Ethernet support"
--	depends on PCI && EXPERIMENTAL
-+	depends on PCI
- 	select NET_CORE
- 	select MII
+ config SUNBMAC
+-	tristate "Sun BigMAC 10/100baseT support (EXPERIMENTAL)"
+-	depends on SBUS && EXPERIMENTAL
++	tristate "Sun BigMAC 10/100baseT support"
++	depends on SBUS
+ 	select CRC32
  	---help---
+ 	  This driver supports the "be" interface available as an Sbus option.
 -- 
 1.7.9.5
 
