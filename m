@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab3AQUhP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:37:15 -0500
-Received: from mga01.intel.com ([192.55.52.88]:44888 "EHLO mga01.intel.com"
+	id S1756981Ab3AQUhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:37:20 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33809 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab3AQUhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:37:11 -0500
+	id S1756799Ab3AQUhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 15:37:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="275147226"
+   d="scan'208";a="248567544"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 04/29] perf, x86: Support the TSX intx/intx_cp qualifiers v2
-Date: Thu, 17 Jan 2013 12:36:27 -0800
-Message-Id: <1358455012-12287-5-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 24/29] perf, x86: Support CPU specific sysfs events
+Date: Thu, 17 Jan 2013 12:36:47 -0800
+Message-Id: <1358455012-12287-25-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,122 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Implement the TSX transaction and checkpointed transaction qualifiers for
-Haswell. This allows e.g. to profile the number of cycles in transactions.
+Add a way for the CPU initialization code to register additional events,
+and merge them into the events attribute directory. Used in the next
+patch.
 
-The checkpointed qualifier requires forcing the event to
-counter 2, implement this with a custom constraint for Haswell.
-
-Also add sysfs format attributes for intx/intx_cp
-
-[Updated from earlier version that used generic attributes, now does
-raw + sysfs formats]
-v2: Moved bad hunk. Forbid some bad combinations.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   61 ++++++++++++++++++++++++++++++++
- 1 files changed, 61 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   29 +++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.h |    1 +
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 634f639..44e18c02 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -13,6 +13,7 @@
- #include <linux/slab.h>
- #include <linux/export.h>
- 
-+#include <asm/cpufeature.h>
- #include <asm/hardirq.h>
- #include <asm/apic.h>
- 
-@@ -1597,6 +1598,44 @@ static void core_pmu_enable_all(int added)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 6cdc012..e3a202a 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1343,6 +1343,30 @@ static void __init filter_events(struct attribute **attrs)
  	}
  }
  
-+static int hsw_hw_config(struct perf_event *event)
++/* Merge two pointer arrays */
++static __init struct attribute **merge_attr(struct attribute **a,
++					    struct attribute **b)
 +{
-+	int ret = intel_pmu_hw_config(event);
++	struct attribute **new;
++	int j, i;
 +
-+	if (ret)
-+		return ret;
-+	if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
-+		return 0;
-+	event->hw.config |= event->attr.config & (HSW_INTX|HSW_INTX_CHECKPOINTED);
-+
-+	/* 
-+	 * INTX/INTX-CP do not play well with PEBS or ANY thread mode.
-+	 */
-+	if ((event->hw.config & (HSW_INTX|HSW_INTX_CHECKPOINTED)) &&
-+	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
-+	      event->attr.precise_ip > 0))
-+		return -EIO;
-+	return 0;
++	for (j = 0; a[j]; j++)
++		;
++	for (i = 0; b[i]; i++)
++		j++;
++	j++;
++	new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
++	if (!new)
++		return a;
++	j = 0;
++	for (i = 0; a[i]; i++)
++		new[j++] = a[i];
++	for (i = 0; b[i]; i++)
++		new[j++] = b[i];
++	new[j] = NULL;
++	return new;
 +}
 +
-+static struct event_constraint counter2_constraint = 
-+			EVENT_CONSTRAINT(0, 0x4, 0);
-+
-+static struct event_constraint *
-+hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
-+{
-+	struct event_constraint *c = intel_get_event_constraints(cpuc, event);
-+
-+	/* Handle special quirk on intx_checkpointed only in counter 2 */
-+	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
-+		if (c->idxmsk64 & (1U << 2))
-+			return &counter2_constraint;
-+		return &emptyconstraint;
-+	}
-+
-+	return c;
-+}
-+
- PMU_FORMAT_ATTR(event,	"config:0-7"	);
- PMU_FORMAT_ATTR(umask,	"config:8-15"	);
- PMU_FORMAT_ATTR(edge,	"config:18"	);
-@@ -1604,6 +1643,8 @@ PMU_FORMAT_ATTR(pc,	"config:19"	);
- PMU_FORMAT_ATTR(any,	"config:21"	); /* v3 + */
- PMU_FORMAT_ATTR(inv,	"config:23"	);
- PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
-+PMU_FORMAT_ATTR(intx,	"config:32"	);
-+PMU_FORMAT_ATTR(intx_cp,"config:33"	);
+ ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
+ 			  char *page)
+ {
+@@ -1480,6 +1504,11 @@ static int __init init_hw_perf_events(void)
+ 	else
+ 		filter_events(x86_pmu_events_group.attrs);
  
- static struct attribute *intel_arch_formats_attr[] = {
- 	&format_attr_event.attr,
-@@ -1761,6 +1802,23 @@ static struct attribute *intel_arch3_formats_attr[] = {
- 	NULL,
- };
- 
-+/* Arch3 + TSX support */
-+static struct attribute *intel_hsw_formats_attr[] __read_mostly = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_pc.attr,
-+	&format_attr_any.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask.attr,
-+	&format_attr_intx.attr,
-+	&format_attr_intx_cp.attr,
++	if (x86_pmu.cpu_events)
++		x86_pmu_events_group.attrs =
++			merge_attr(x86_pmu_events_group.attrs,
++				   x86_pmu.cpu_events);
 +
-+	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
-+	NULL,
-+};
-+
-+
- static __initconst const struct x86_pmu intel_pmu = {
- 	.name			= "Intel",
- 	.handle_irq		= intel_pmu_handle_irq,
-@@ -2135,6 +2193,9 @@ __init int intel_pmu_init(void)
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
- 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+ 	pr_info("... version:                %d\n",     x86_pmu.version);
+ 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+ 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 8253b73..ba5d043 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -360,6 +360,7 @@ struct x86_pmu {
+ 	struct attribute **format_attrs;
  
-+		x86_pmu.hw_config = hsw_hw_config;
-+		x86_pmu.get_event_constraints = hsw_get_event_constraints;
-+		x86_pmu.format_attrs = intel_hsw_formats_attr;
- 		pr_cont("Haswell events, ");
- 		break;
+ 	ssize_t		(*events_sysfs_show)(char *page, u64 config);
++	struct attribute **cpu_events;
  
+ 	/*
+ 	 * CPU Hotplug hooks
 -- 
 1.7.7.6
 
