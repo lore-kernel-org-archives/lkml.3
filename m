@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab3AQMZS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 07:25:18 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:64712 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab3AQMZQ (ORCPT
+	id S1752798Ab3AQM1X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 07:27:23 -0500
+Received: from smtp-fw-33001.amazon.com ([207.171.189.228]:63614 "EHLO
+	smtp-fw-33001.amazon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3AQM1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 07:25:16 -0500
-From: sjur.brandeland@stericsson.com
-To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-kernel@vger.kernel.org,
-        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
-Subject: [PATCH] remoteproc: Deallocate firmware image on shutdown
-Date: Thu, 17 Jan 2013 13:25:00 +0100
-Message-Id: <1358425500-4720-1-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 17 Jan 2013 07:27:21 -0500
+X-IronPort-AV: E=Sophos;i="4.84,486,1355097600"; 
+   d="scan'208";a="443425046"
+Date: Thu, 17 Jan 2013 13:22:47 +0100
+From: Matt Wilson <msw@amazon.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
+        <annie.li@oracle.com>
+Subject: Re: [PATCH] xen/grant-table: Force to use v1 of grants.
+Message-ID: <20130117110829.GA21859@u109add4315675089e695.ant.amazon.com>
+References: <1358371369-19089-1-git-send-email-konrad.wilk@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1358371369-19089-1-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
+On Wed, Jan 16, 2013 at 04:22:49PM -0500, Konrad Rzeszutek Wilk wrote:
+> We have the framework to use v2, but there are no backends that
+> actually use it. The end result is that on PV we use v2 grants
+> and on PVHVM v1. The v1 has a capacity of 512 grants per page while
+> the v2 has 256 grants per page. This means we lose about 50%
+> capacity - and if we want more than 16 VIFs (each VIF takes
+> 512 grants), then we are hitting the max per guest of 32.
+> 
+> Note: The hypervisor provides an over-ride for the default
+> of 32 frames (pages) per guest: gnttab_max_nr_frames=X
 
-Fixes coherent memory leakage, caused by non-deallocated
-firmware image chunk.
+I think it would be better if the dom0/service domain and hypervisor
+prevent the guest from setting the version to 2 if the backend isn't
+going to make use of them. In the short term, we could add a Xen
+option to limit the supported version to 1.
 
-Signed-off-by: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
----
+Matt
 
-This fix is intended for v3.8.
-
-Thanks,
-Sjur
-
- drivers/remoteproc/ste_modem_rproc.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/remoteproc/ste_modem_rproc.c b/drivers/remoteproc/ste_modem_rproc.c
-index a7743c0..fb95c42 100644
---- a/drivers/remoteproc/ste_modem_rproc.c
-+++ b/drivers/remoteproc/ste_modem_rproc.c
-@@ -240,6 +240,8 @@ static int sproc_drv_remove(struct platform_device *pdev)
- 
- 	/* Unregister as remoteproc device */
- 	rproc_del(sproc->rproc);
-+	dma_free_coherent(sproc->rproc->dev.parent, SPROC_FW_SIZE,
-+			  sproc->fw_addr, sproc->fw_dma_addr);
- 	rproc_put(sproc->rproc);
- 
- 	mdev->drv_data = NULL;
-@@ -297,10 +299,13 @@ static int sproc_probe(struct platform_device *pdev)
- 	/* Register as a remoteproc device */
- 	err = rproc_add(rproc);
- 	if (err)
--		goto free_rproc;
-+		goto free_mem;
- 
- 	return 0;
- 
-+free_mem:
-+	dma_free_coherent(rproc->dev.parent, SPROC_FW_SIZE,
-+			  sproc->fw_addr, sproc->fw_dma_addr);
- free_rproc:
- 	/* Reset device data upon error */
- 	mdev->drv_data = NULL;
--- 
-1.7.5.4
-
+> Oracle-bug: 16039922
+> CC: annie.li@oracle.com
+> CC: msw@amazon.com
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/xen/grant-table.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index 95ce9d0..568fd8f 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -1108,10 +1108,8 @@ static void gnttab_request_version(void)
+>  	int rc;
+>  	struct gnttab_set_version gsv;
+>  
+> -	if (xen_hvm_domain())
+> -		gsv.version = 1;
+> -	else
+> -		gsv.version = 2;
+> +	gsv.version = 1;
+> +
+>  	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv, 1);
+>  	if (rc == 0 && gsv.version == 2) {
+>  		grant_table_version = 2;
+> -- 
+> 1.8.0.2
