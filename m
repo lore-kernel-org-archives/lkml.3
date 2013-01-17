@@ -1,187 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759276Ab3AQIE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 03:04:26 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:35713 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759260Ab3AQIEX (ORCPT
+	id S1759293Ab3AQIEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 03:04:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:29127 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759262Ab3AQIE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 03:04:23 -0500
-Message-ID: <50F7B051.4000507@huawei.com>
-Date: Thu, 17 Jan 2013 16:03:29 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 2/6] sched: split out tg creation/destruction to css_online/css_offline
-References: <50F7B040.2020906@huawei.com>
-In-Reply-To: <50F7B040.2020906@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	Thu, 17 Jan 2013 03:04:29 -0500
+From: dev@snitselaar.org
+To: james.l.morris@oracle.com
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jerry Snitselaar <jerry.snitselaar@oracle.com>
+Subject: [PATCH] security/device_cgroup: lock assert fails in dev_exception_clean()
+Date: Thu, 17 Jan 2013 01:04:14 -0700
+Message-Id: <1358409854-3574-1-git-send-email-dev@snitselaar.org>
+X-Mailer: git-send-email 1.8.1.191.g414c78c
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this change, it's safe to access tg->css.cgroup while iterating
-the global task_group list.
+From: Jerry Snitselaar <jerry.snitselaar@oracle.com>
 
-This is a preparation for later patches.
+devcgroup_css_free() calls dev_exception_clean() without the devcgroup_mutex being locked.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Shutting down a kvm virt was giving me the following trace:
+
+[36280.732764] ------------[ cut here ]------------
+[36280.732778] WARNING: at /home/snits/dev/linux/security/device_cgroup.c:172 dev_exception_clean+0xa9/0xc0()
+[36280.732782] Hardware name: Studio XPS 8100
+[36280.732785] Modules linked in: xt_REDIRECT fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat xt_CHECKSUM iptable_mangle bridge stp llc nf_conntrack_ipv4 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 nf_defrag_ipv4 ip6table_filter it87 hwmon_vid xt_state nf_conntrack ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq coretemp snd_seq_device crc32c_intel snd_pcm snd_page_alloc snd_timer snd broadcom tg3 serio_raw i7core_edac edac_core ptp pps_core lpc_ich pcspkr mfd_core soundcore microcode i2c_i801 nfsd auth_rpcgss nfs_acl lockd vhost_net sunrpc tun macvtap macvlan kvm_intel kvm uinput binfmt_misc autofs4 usb_storage firewire_ohci firewire_core crc_itu_t radeon drm_kms_helper ttm
+[36280.732921] Pid: 933, comm: libvirtd Tainted: G        W    3.8.0-rc3-00307-g4c217de #1
+[36280.732922] Call Trace:
+[36280.732927]  [<ffffffff81044303>] warn_slowpath_common+0x93/0xc0
+[36280.732930]  [<ffffffff8104434a>] warn_slowpath_null+0x1a/0x20
+[36280.732932]  [<ffffffff812deaf9>] dev_exception_clean+0xa9/0xc0
+[36280.732934]  [<ffffffff812deb2a>] devcgroup_css_free+0x1a/0x30
+[36280.732938]  [<ffffffff810ccd76>] cgroup_diput+0x76/0x210
+[36280.732941]  [<ffffffff8119eac0>] d_delete+0x120/0x180
+[36280.732943]  [<ffffffff81195cff>] vfs_rmdir+0xef/0x130
+[36280.732945]  [<ffffffff81195e47>] do_rmdir+0x107/0x1c0
+[36280.732949]  [<ffffffff8132d17e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[36280.732951]  [<ffffffff81198646>] sys_rmdir+0x16/0x20
+[36280.732954]  [<ffffffff8173bd82>] system_call_fastpath+0x16/0x1b
+[36280.732956] ---[ end trace ca39dced899a7d9f ]---
+
+
+Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
 ---
- include/linux/sched.h     |  3 +++
- kernel/sched/auto_group.c |  3 +++
- kernel/sched/core.c       | 49 +++++++++++++++++++++++++++++++++++++----------
- 3 files changed, 45 insertions(+), 10 deletions(-)
+ security/device_cgroup.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 206bb08..577eb97 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2750,7 +2750,10 @@ extern void normalize_rt_tasks(void);
- extern struct task_group root_task_group;
+diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+index 19ecc8d..d794abc 100644
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -215,7 +215,9 @@ static void devcgroup_css_free(struct cgroup *cgroup)
+ 	struct dev_cgroup *dev_cgroup;
  
- extern struct task_group *sched_create_group(struct task_group *parent);
-+extern void sched_online_group(struct task_group *tg,
-+			       struct task_group *parent);
- extern void sched_destroy_group(struct task_group *tg);
-+extern void sched_offline_group(struct task_group *tg);
- extern void sched_move_task(struct task_struct *tsk);
- #ifdef CONFIG_FAIR_GROUP_SCHED
- extern int sched_group_set_shares(struct task_group *tg, unsigned long shares);
-diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
-index 0984a21..64de5f8 100644
---- a/kernel/sched/auto_group.c
-+++ b/kernel/sched/auto_group.c
-@@ -35,6 +35,7 @@ static inline void autogroup_destroy(struct kref *kref)
- 	ag->tg->rt_se = NULL;
- 	ag->tg->rt_rq = NULL;
- #endif
-+	sched_offline_group(ag->tg);
- 	sched_destroy_group(ag->tg);
+ 	dev_cgroup = cgroup_to_devcgroup(cgroup);
++	mutex_lock(&devcgroup_mutex);
+ 	dev_exception_clean(dev_cgroup);
++	mutex_unlock(&devcgroup_mutex);
+ 	kfree(dev_cgroup);
  }
  
-@@ -76,6 +77,8 @@ static inline struct autogroup *autogroup_create(void)
- 	if (IS_ERR(tg))
- 		goto out_free;
- 
-+	sched_online_group(tg, &root_task_group);
-+
- 	kref_init(&ag->kref);
- 	init_rwsem(&ag->lock);
- 	ag->id = atomic_inc_return(&autogroup_seq_nr);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 257002c..1061672 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7159,7 +7159,6 @@ static void free_sched_group(struct task_group *tg)
- struct task_group *sched_create_group(struct task_group *parent)
- {
- 	struct task_group *tg;
--	unsigned long flags;
- 
- 	tg = kzalloc(sizeof(*tg), GFP_KERNEL);
- 	if (!tg)
-@@ -7171,6 +7170,17 @@ struct task_group *sched_create_group(struct task_group *parent)
- 	if (!alloc_rt_sched_group(tg, parent))
- 		goto err;
- 
-+	return tg;
-+
-+err:
-+	free_sched_group(tg);
-+	return ERR_PTR(-ENOMEM);
-+}
-+
-+void sched_online_group(struct task_group *tg, struct task_group *parent)
-+{
-+	unsigned long flags;
-+
- 	spin_lock_irqsave(&task_group_lock, flags);
- 	list_add_rcu(&tg->list, &task_groups);
- 
-@@ -7180,12 +7190,6 @@ struct task_group *sched_create_group(struct task_group *parent)
- 	INIT_LIST_HEAD(&tg->children);
- 	list_add_rcu(&tg->siblings, &parent->children);
- 	spin_unlock_irqrestore(&task_group_lock, flags);
--
--	return tg;
--
--err:
--	free_sched_group(tg);
--	return ERR_PTR(-ENOMEM);
- }
- 
- /* rcu callback to free various structures associated with a task group */
-@@ -7198,6 +7202,12 @@ static void free_sched_group_rcu(struct rcu_head *rhp)
- /* Destroy runqueue etc associated with a task group */
- void sched_destroy_group(struct task_group *tg)
- {
-+	/* wait for possible concurrent references to cfs_rqs complete */
-+	call_rcu(&tg->rcu, free_sched_group_rcu);
-+}
-+
-+void sched_offline_group(struct task_group *tg)
-+{
- 	unsigned long flags;
- 	int i;
- 
-@@ -7209,9 +7219,6 @@ void sched_destroy_group(struct task_group *tg)
- 	list_del_rcu(&tg->list);
- 	list_del_rcu(&tg->siblings);
- 	spin_unlock_irqrestore(&task_group_lock, flags);
--
--	/* wait for possible concurrent references to cfs_rqs complete */
--	call_rcu(&tg->rcu, free_sched_group_rcu);
- }
- 
- /* change task's runqueue when it moves between groups.
-@@ -7563,6 +7570,19 @@ static struct cgroup_subsys_state *cpu_cgroup_css_alloc(struct cgroup *cgrp)
- 	return &tg->css;
- }
- 
-+static int cpu_cgroup_css_online(struct cgroup *cgrp)
-+{
-+	struct task_group *tg = cgroup_tg(cgrp);
-+	struct task_group *parent;
-+
-+	if (!cgrp->parent)
-+		return 0;
-+
-+	parent = cgroup_tg(cgrp->parent);
-+	sched_online_group(tg, parent);
-+	return 0;
-+}
-+
- static void cpu_cgroup_css_free(struct cgroup *cgrp)
- {
- 	struct task_group *tg = cgroup_tg(cgrp);
-@@ -7570,6 +7590,13 @@ static void cpu_cgroup_css_free(struct cgroup *cgrp)
- 	sched_destroy_group(tg);
- }
- 
-+static void cpu_cgroup_css_offline(struct cgroup *cgrp)
-+{
-+	struct task_group *tg = cgroup_tg(cgrp);
-+
-+	sched_offline_group(tg);
-+}
-+
- static int cpu_cgroup_can_attach(struct cgroup *cgrp,
- 				 struct cgroup_taskset *tset)
- {
-@@ -7925,6 +7952,8 @@ struct cgroup_subsys cpu_cgroup_subsys = {
- 	.name		= "cpu",
- 	.css_alloc	= cpu_cgroup_css_alloc,
- 	.css_free	= cpu_cgroup_css_free,
-+	.css_online	= cpu_cgroup_css_online,
-+	.css_offline	= cpu_cgroup_css_offline,
- 	.can_attach	= cpu_cgroup_can_attach,
- 	.attach		= cpu_cgroup_attach,
- 	.exit		= cpu_cgroup_exit,
 -- 
-1.8.0.2
+1.8.1.191.g414c78c
+
