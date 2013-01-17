@@ -1,118 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab3AQVgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 16:36:10 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40743 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064Ab3AQVgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 16:36:07 -0500
-Date: Thu, 17 Jan 2013 22:36:02 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: dAgeCKo <dagecko@free.fr>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        Shane Huang <Shane.Huang@amd.com>,
-        =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-Subject: Re: Fwd: Linux - AMD SB950 USB Regression
-Message-ID: <20130117213602.GA5998@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, dAgeCKo <dagecko@free.fr>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	linux-kernel@vger.kernel.org,
-	Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-	Shane Huang <Shane.Huang@amd.com>,
-	=?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-References: <50C9FCD6.6050809@free.fr>
- <50E6AD77.1000707@free.fr>
- <50F036CF.7010109@free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50F036CF.7010109@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756482Ab3AQVg3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 16:36:29 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:51121 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754823Ab3AQVg2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 16:36:28 -0500
+Subject: Re: [RFC][PATCH] slub: Check for page NULL before doing the
+ node_match check
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
+        John Kacur <jkacur@gmail.com>,
+        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
+In-Reply-To: <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com>
+References: <1358446258.23211.32.camel@gandalf.local.home>
+	 <1358447864.23211.34.camel@gandalf.local.home>
+	 <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Jan 2013 13:36:23 -0800
+Message-ID: <1358458583.11051.7.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-(leaving in the rest for reference, answer below, adding Alan, Joerg,
-Shane and linux-usb to CC).
-
-On Fri, Jan 11, 2013 at 04:59:11PM +0100, dAgeCKo wrote:
-> the bug has been resolved after a BIOS upgrade. Since the mainboard
-> constructor said me that it's impossible that the BIOS was an issue
-> since their Windows users do not face the same issue, I beleived it
-> could have come from the Linux kernel.
+On Thu, 2013-01-17 at 21:28 +0000, Christoph Lameter wrote:
+> On Thu, 17 Jan 2013, Steven Rostedt wrote:
 > 
-> Bye.
+> > > --- a/mm/slub.c
+> > > +++ b/mm/slub.c
+> > > @@ -2399,7 +2399,7 @@ redo:
+> > >
+> > >  	object = c->freelist;
+> > >  	page = c->page;
+> > > -	if (unlikely(!object || !node_match(page, node)))
+> > > +	if (unlikely(!object || !page || !node_match(page, node)))
+> >
+> > I'm still trying to see if c->freelist != NULL and c->page == NULL isn't
+> > a bug. The cmpxchg_doubles are a little confusing. If it's not expected
+> > that page is NULL but freelist isn't than we need to figure out why it
+> > happened.
 > 
-> Le 04/01/2013 11:22, dAgeCKo a écrit :
-> >
-> >Hello,
-> >
-> >Some months ago I noticed that my USB controler (and also my network
-> >controler) does not work anymore on newer kernels from my debian wheezy
-> >distribution.
-> >
-> >I then reported a bug for the former one here:
-> >
-> >https://bugzilla.kernel.org/show_bug.cgi?id=47791
-> >
-> >With some helps and time, I could locate the source of the regression,
-> >that is an old commit from the year 2010 you seem to commit. Git
-> >besection identified the commit as:
-> >
-> >git bisect bad 5c80cc78de46aef6cd5e714208da05c3f7f548f8
-> >
-> >Someone from the usb kernel mailing list (Alan Stern) then asked me to
-> >write an email to you, in my hope the bug to be solved.
-> >
-> >Some informations were said on the bug tracker, but if you need any
-> >other information that could help you in any manner, please let me know.
-> >
-> >Please note that the regression only involves USB2 ports of the
-> >mainboard, not the USB3 ports.
+> hmmm.. We may want to change the sequence of updates to c->page and
+> c->freelist. Update c->freelist to be NULL first so that we always enter
+> the slow path for these cases where we can do more expensive
+> synchronization.
+> 
+> Index: linux/mm/slub.c
+> ===================================================================
+> --- linux.orig/mm/slub.c	2013-01-15 10:42:08.490183607 -0600
+> +++ linux/mm/slub.c	2013-01-17 15:27:48.973051155 -0600
+> @@ -1993,8 +1993,8 @@ static inline void flush_slab(struct kme
+>  	deactivate_slab(s, c->page, c->freelist);
+> 
+>  	c->tid = next_tid(c->tid);
+> -	c->page = NULL;
+>  	c->freelist = NULL;
+> +	c->page = NULL;
+>  }
+> 
+>  /*
+> @@ -2227,8 +2227,8 @@ redo:
+>  	if (unlikely(!node_match(page, node))) {
+>  		stat(s, ALLOC_NODE_MISMATCH);
+>  		deactivate_slab(s, page, c->freelist);
+> -		c->page = NULL;
+>  		c->freelist = NULL;
+> +		c->page = NULL;
+>  		goto new_slab;
+>  	}
+> 
+> @@ -2239,8 +2239,8 @@ redo:
+>  	 */
+>  	if (unlikely(!pfmemalloc_match(page, gfpflags))) {
+>  		deactivate_slab(s, page, c->freelist);
+> -		c->page = NULL;
+>  		c->freelist = NULL;
+> +		c->page = NULL;
+>  		goto new_slab;
+>  	}
+> 
 
-So, there seems to be some serious breakage with GART on SB9xx. I don't
-know whether this is the platform BIOS or the vendor BIOS causing it
-because the original bug reporter says he observes the issue on an MSI
-board and I'm experiencing this on my favourite bunch ASUS.
+Without appropriate barriers, this change is a shoot in the dark.
 
-So, if you use the GART as an IOMMU, i.e.:
 
-Jan 17 22:08:15 pd kernel: [    0.924063] PCI-DMA: using GART IOMMU.
-Jan 17 22:08:15 pd kernel: [    0.924120] PCI-DMA: Reserving 64MB of IOMMU area in the AGP aperture
 
-USB ports start choking like this:
 
-Jan 17 22:08:15 pd kernel: [    3.229909] usb 4-1: device descriptor read/64, error -32
-Jan 17 22:08:15 pd kernel: [    3.432786] usb 4-1: new high-speed USB device number 3 using ehci-pci
-Jan 17 22:08:15 pd kernel: [    3.534684] usb 4-1: device descriptor read/64, error -32
-Jan 17 22:08:15 pd kernel: [    3.737642] usb 4-1: device descriptor read/64, error -32
 
-I'd go and venture a guess here since I don't have an idea that DMA
-somehow gets busted with the GART and thus the errors.
-
-Now, those boards normally have an IOMMU too so if you go and enable
-
-CONFIG_AMD_IOMMU=y
-
-the problem is gone (we're using the real IOMMU for DMA mapping, etc,
-etc). So dAgeCKo, that would be another thing you could do: try enabling
-the IOMMU in the BIOS and the above CONFIG option and the issue would be
-fixed too.
-
-At least this fixes it on my box.
-
-To the question "how do we fix the GART issue?" I have no answer and
-would expect more informed opinions from someone else.
-
-Thanks and HTH.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
