@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab3AQUkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:40:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33907 "EHLO mga09.intel.com"
+	id S1757058Ab3AQUkM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:40:12 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33901 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757119Ab3AQUhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757123Ab3AQUhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jan 2013 15:37:51 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="273439815"
+   d="scan'208";a="273439821"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 21/29] perf, x86: Move NMI clearing to end of PMI handler after the counter registers are reset
-Date: Thu, 17 Jan 2013 12:36:44 -0800
-Message-Id: <1358455012-12287-22-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 27/29] perf, x86: Add a Haswell precise instructions event v2
+Date: Thu, 17 Jan 2013 12:36:50 -0800
+Message-Id: <1358455012-12287-28-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,49 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-This avoids some problems with spurious PMIs on Haswell.
-Haswell seems to behave more like P4 in this regard. Do
-the same thing as the P4 perf handler by unmasking
-the NMI only at the end. Shouldn't make any difference
-for earlier non P4 cores.
+Add a instructions-p event alias that uses the PDIR randomized instruction
+retirement event. This is useful to avoid some systematic sampling shadow
+problems. Normally PEBS sampling has a systematic shadow. With PDIR
+enabled the hardware adds some randomization that statistically avoids
+this problem. In this sense, it's more precise over a whole sampling
+interval, but an individual sample can be less precise. But since we
+sample overall it's a more precise event.
 
+This could be used before using the explicit event code syntax, but it's easier
+and more user friendly to use with an "instructions-p" alias. I expect
+this will eventually become a common use case.
+
+Right now for Haswell, will add to Ivy Bridge later too.
+
+v2: Use new sysfs infrastructure
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 20caf0a..d8acedd 100644
+index 022246a..fa20a19 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1133,16 +1133,6 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+@@ -2027,6 +2027,7 @@ EVENT_ATTR_STR(cycles-t,       cycles_t,       "event=0x3c,intx=1");
+ EVENT_ATTR_STR(cycles-ct,      cycles_ct,      "event=0x3c,intx=1,intx_cp=1");
+ EVENT_ATTR_STR(instructions-t, instructions_t, "event=0xc0,intx=1");
+ EVENT_ATTR_STR(instructions-ct,instructions_ct,"event=0xc0,intx=1,intx_cp=1");
++EVENT_ATTR_STR(instructions-p, instructions_p, "event=0xc0,umask=0x01,precise=2");
  
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
--	/*
--	 * Some chipsets need to unmask the LVTPC in a particular spot
--	 * inside the nmi handler.  As a result, the unmasking was pushed
--	 * into all the nmi handlers.
--	 *
--	 * This handler doesn't seem to have any issues with the unmasking
--	 * so it was left at the top.
--	 */
--	apic_write(APIC_LVTPC, APIC_DM_NMI);
--
- 	intel_pmu_disable_all();
- 	handled = intel_pmu_drain_bts_buffer();
- 	status = intel_pmu_get_status();
-@@ -1211,6 +1201,11 @@ again:
- 
- done:
- 	intel_pmu_enable_all(0);
-+	/*
-+	 * Only unmask the NMI after the overflow counters
-+	 * have been reset.
-+	 */
-+	apic_write(APIC_LVTPC, APIC_DM_NMI);
- 	return handled;
- }
+ static struct attribute *hsw_events_attrs[] = {
+ 	EVENT_PTR(tx_start),
+@@ -2047,6 +2048,7 @@ static struct attribute *hsw_events_attrs[] = {
+ 	EVENT_PTR(cycles_ct),
+ 	EVENT_PTR(instructions_t),
+ 	EVENT_PTR(instructions_ct),
++	EVENT_PTR(instructions_p),
+ 	NULL
+ };
  
 -- 
 1.7.7.6
