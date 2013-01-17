@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757717Ab3AQAbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 19:31:39 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:40560 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756874Ab3AQAbi convert rfc822-to-8bit (ORCPT
+	id S1757986Ab3AQAb4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 19:31:56 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:39803 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757875Ab3AQAby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 19:31:38 -0500
+	Wed, 16 Jan 2013 19:31:54 -0500
+Date: Thu, 17 Jan 2013 09:31:50 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-sh@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, balbi@ti.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        b-cousson@ti.com, tony@atomide.com, linux@arm.linux.org.uk,
+        magnus.damm@gmail.com, cbou@mail.ru, dwmw2@infradead.org,
+        alexander.shishkin@linux.intel.com, gregkh@linuxfoundation.org,
+        leoli@freescale.com, eric.y.miao@gmail.com, haojian.zhuang@gmail.com,
+        stern@rowland.harvard.edu
+Subject: Re: [RFC PATCH 3/6] usb: otg: utils: change the phy lib to support
+ multiple PHYs of same type
+Message-ID: <20130117003150.GF19552@verge.net.au>
+References: <1358348462-27693-1-git-send-email-kishon@ti.com>
+ <1358348462-27693-4-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <50F744A1.1080806@palosanto.com>
-References: <50F606A8.2080804@palosanto.com>
-	<CAE9FiQXg29gdrC8RK0Z8vLexju3yNpu9MvJcYHUoPnCNceSWkw@mail.gmail.com>
-	<50F744A1.1080806@palosanto.com>
-Date: Wed, 16 Jan 2013 16:31:36 -0800
-X-Google-Sender-Auth: N96FXWxLB6I3XSDIEz-xCzk-Z_A
-Message-ID: <CAE9FiQVOYk8GLhPU2z2AiTk6qFKcf0WTii+1ckbmyDY79436vg@mail.gmail.com>
-Subject: Re: Use of memmap= to forcibly recover memory in 3GB-4GB range - is
- this safe?
-From: Yinghai Lu <yinghai@kernel.org>
-To: =?ISO-8859-1?Q?Alex_Villac=EDs_Lasso?= <a_villacis@palosanto.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358348462-27693-4-git-send-email-kishon@ti.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 4:24 PM, Alex Villacís Lasso
-<a_villacis@palosanto.com> wrote:
-> El 16/01/13 02:11, Yinghai Lu escribió:
->
->> On Tue, Jan 15, 2013 at 5:47 PM, Alex Villacís Lasso
->> <a_villacis@palosanto.com> wrote:
->>>
->>> [    0.000000] e820: BIOS-provided physical RAM map:
->>> [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009f3ff]
->>> usable
->>> [    0.000000] BIOS-e820: [mem 0x000000000009f400-0x000000000009ffff]
->>> reserved
->>> [    0.000000] BIOS-e820: [mem 0x00000000000f0000-0x00000000000fffff]
->>> reserved
->>> [    0.000000] BIOS-e820: [mem 0x0000000000100000-0x00000000cf58ffff]
->>> usable
->>> [    0.000000] BIOS-e820: [mem 0x00000000cf590000-0x00000000cf5e2fff]
->>> ACPI
->>> NVS
->>> [    0.000000] BIOS-e820: [mem 0x00000000cf5e3000-0x00000000cf5effff]
->>> ACPI
->>> data
->>> [    0.000000] BIOS-e820: [mem 0x00000000cf5f0000-0x00000000cf5fffff]
->>> reserved
->>> [    0.000000] BIOS-e820: [mem 0x00000000e0000000-0x00000000efffffff]
->>> reserved
->>> [    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000ffffffff]
->>> reserved
->>> [    0.000000] NX (Execute Disable) protection: active
->>
->> ..
->>>
->>> [    0.000000] original variable MTRRs
->>> [    0.000000] reg 0, base: 4GB, range: 512MB, type WB
->>> [    0.000000] reg 1, base: 4608MB, range: 256MB, type WB
->>> [    0.000000] reg 2, base: 0GB, range: 2GB, type WB
->>> [    0.000000] reg 3, base: 2GB, range: 1GB, type WB
->>> [    0.000000] reg 4, base: 3GB, range: 256MB, type WB
->>> [    0.000000] reg 5, base: 3319MB, range: 1MB, type UC
->>> [    0.000000] reg 6, base: 3320MB, range: 8MB, type UC
->>> [    0.000000] reg 7, base: 3318MB, range: 1MB, type UC
->>> [    0.000000] total RAM covered: 4086M
->>
->> Can you apply attached debug patch to see if the raw e820 is right from
->> BIOS ?
+On Wed, Jan 16, 2013 at 08:30:59PM +0530, Kishon Vijay Abraham I wrote:
+> In order to add support for multipe PHY's of the same type, the API's
+> for adding PHY and getting PHY has been changed. Now the binding
+> information of the PHY and controller should be done in platform file
+> using usb_bind_phy API. And for getting a PHY, the device pointer of the
+> USB controller and an index should be passed. Based on the binding
+> information that is added in the platform file, get_phy will return the
+> approappropriate PHY.
+> 
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  arch/arm/mach-shmobile/board-marzen.c |    2 +-
 
-> Done. The output is attached. I see no difference between raw and sanitized
-> maps.
+Modification to the above file:
 
-yeah, it is BIOS problem.
-
-you may either live with memmap= or try to get one BIOS update.
-
-Yinghai
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
