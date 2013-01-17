@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab3AQW4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 17:56:46 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38029 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755091Ab3AQWyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 17:54:15 -0500
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux MM <linux-mm@kvack.org>, David Hansen <dave@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 3/9] mm: add zone_is_empty() and zone_is_initialized()
-Date: Thu, 17 Jan 2013 14:52:55 -0800
-Message-Id: <1358463181-17956-4-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.0.3
-In-Reply-To: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011722-7182-0000-0000-00000487B128
+	id S1755026Ab3AQXBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 18:01:08 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:59145 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754342Ab3AQXBF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 18:01:05 -0500
+Subject: Re: LIO - the broken iSCSI target implementation
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Andy Grover <agrover@redhat.com>
+Cc: Andreas Steinmetz <ast@domdv.de>, linux-kernel@vger.kernel.org,
+        hch@infradead.org, torvalds@linux-foundation.org,
+        target-devel <target-devel@vger.kernel.org>,
+        Ritesh Raj Sarraf <rrs@debian.org>
+In-Reply-To: <50F87BCA.10201@redhat.com>
+References: <1358385543.7040.54.camel@host028-server-9.lan.domdv.de>
+	 <1358456179.18551.34.camel@haakon2.linux-iscsi.org>
+	 <50F87BCA.10201@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Jan 2013 15:00:56 -0800
+Message-ID: <1358463656.18551.158.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factoring out these 2 checks makes it more clear what we are actually
-checking for.
+On Thu, 2013-01-17 at 14:31 -0800, Andy Grover wrote:
+> On 01/17/2013 12:56 PM, Nicholas A. Bellinger wrote:
+> > On Thu, 2013-01-17 at 02:19 +0100, Andreas Steinmetz wrote:
+> >> This is not a technical point of view. This is a more or less political
+> >> and user point of view. And for any replies, I'm not subscribed (haven't
+> >> been now for years).
+> >>
+> >> As a user, I was in need for an iSCSI target. Actually, I needed to
+> >> export a SAS tape device (Ultrium 5) - which is one of the devices still
+> >> sufficiently expensive to go the iSCSI target way) - well, not any disks
+> >> (cheap enough, NFS available) or CD/DVD writers (I'd call these penny
+> >> targets nowadays).
+> >>
+> >> Thus, lio (http://www.linux-iscsi.org/) seemed to be the politically and
+> >> technically favoured solution. Except: it simply doesn't work, userspace
+> >> utilities are seemingly not maintained,
+> > 
+> > I'm not sure what you mean.  There are targetcli+rtslib packages are
+> > available for virtually every distribution
+> > 
+> > http://www.linux-iscsi.org/wiki/Targetcli#Linux_distributions
+> 
+> [CCing rrs@debian.org]
+> 
+> No... actually upstream targetcli/rtslib are not very well maintained.
+> Around 5 patches each in the last year.
+> 
+> Meanwhile, I have been actively maintaining branches at
+> github.com/agrover/targetcli-fb and github.com/agrover/rtslib-fb. We
+> have a man page and screencasts even. Feel free to file bugs against
+> them and I'll respond.
+> 
+> But I'm only packaging for Fedora/RHEL, so random people on Debian etc.
+> get a bad experience. I'd like to see upstream accept my AGPLv3-licensed
+> patches, or have Debian package the -fb versions, either instead or in
+> addition to the upstream versions.
+> 
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- include/linux/mmzone.h | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+So would I, but we've (RTS) been too busy having to work on other stuff
+to pay the extensive legal bills from the fallout that your previous
+public accusations have wrought. 
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index d91d964..696cb7c 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -553,6 +553,16 @@ static inline bool zone_spans_pfn(const struct zone *zone, unsigned long pfn)
- 	return zone->zone_start_pfn <= pfn && pfn < zone_end_pfn(zone);
- }
- 
-+static inline bool zone_is_initialized(struct zone *zone)
-+{
-+	return !!zone->wait_table;
-+}
-+
-+static inline bool zone_is_empty(struct zone *zone)
-+{
-+	return zone->spanned_pages == 0;
-+}
-+
- /*
-  * The "priority" of VM scanning is how much of the queues we will scan in one
-  * go. A value of 12 for DEF_PRIORITY implies that we will scan 1/4096th of the
--- 
-1.8.0.3
+Even though your over it, it doesn't mean other opportunists did not try
+to take advantage of the situation once you got tired and moved onto
+other target userspace related things.
+
+> (I'd kinda been waiting to bring it up until upstream had no commits in
+> a year, but since you mentioned it...)
+
+In any event, I don't really have a problem with merging the two if your
+finally over the fact the userspace code is AGPL licensed. 
+
+But please do this in a separate thread than piling on here.  Of course,
+your more than welcome to fix rtslib for pSCSI, which is broken on
+recent v3.x kernels.
+
+(Hint: it's because /sys/class/scsi_device/H:C:T:L/device/block/$BLOCK_DEV
+ no longer exists in upstream sysfs, which is what we use to match the passed
+ /dev/$SCSI_DEV to H:C:T:L, and nothing related to TCM ABI changes)
+
+Thanks,
+
+--nab
 
