@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759055Ab3AQDBQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:01:16 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:41447 "EHLO smtp.outflux.net"
+	id S1759088Ab3AQDBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:01:34 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:56680 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758921Ab3AQCzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758201Ab3AQCzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 21:55:00 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>,
-        Stefano Brivio <stefano.brivio@polimi.it>,
+        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
         "John W. Linville" <linville@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 14/86] drivers/net/wireless/b43: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:53:06 -0800
-Message-Id: <1358391258-1771-15-git-send-email-keescook@chromium.org>
+Subject: [PATCH 15/86] drivers/net/wireless/ipw2x00: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:53:07 -0800
+Message-Id: <1358391258-1771-16-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -28,52 +28,28 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-CC: Stefano Brivio <stefano.brivio@polimi.it>
+CC: Stanislav Yakovlev <stas.yakovlev@gmail.com>
 CC: "John W. Linville" <linville@tuxdriver.com>
 Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/net/wireless/b43/Kconfig |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/wireless/ipw2x00/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/b43/Kconfig b/drivers/net/wireless/b43/Kconfig
-index 7a28d21..287c6b6 100644
---- a/drivers/net/wireless/b43/Kconfig
-+++ b/drivers/net/wireless/b43/Kconfig
-@@ -78,8 +78,8 @@ config B43_PCMCIA
- 	  If unsure, say N.
+diff --git a/drivers/net/wireless/ipw2x00/Kconfig b/drivers/net/wireless/ipw2x00/Kconfig
+index 2715b10..91c0cb3 100644
+--- a/drivers/net/wireless/ipw2x00/Kconfig
++++ b/drivers/net/wireless/ipw2x00/Kconfig
+@@ -137,7 +137,7 @@ config IPW2200_PROMISCUOUS
  
- config B43_SDIO
--	bool "Broadcom 43xx SDIO device support (EXPERIMENTAL)"
--	depends on B43 && SSB_SDIOHOST_POSSIBLE && EXPERIMENTAL
-+	bool "Broadcom 43xx SDIO device support"
-+	depends on B43 && SSB_SDIOHOST_POSSIBLE
- 	select SSB_SDIOHOST
- 	---help---
- 	  Broadcom 43xx device support for Soft-MAC SDIO devices.
-@@ -109,8 +109,8 @@ config B43_PIO
- 	default y
+ config IPW2200_QOS
+         bool "Enable QoS support"
+-        depends on IPW2200 && EXPERIMENTAL
++        depends on IPW2200
  
- config B43_PHY_N
--	bool "Support for 802.11n (N-PHY) devices (EXPERIMENTAL)"
--	depends on B43 && EXPERIMENTAL
-+	bool "Support for 802.11n (N-PHY) devices"
-+	depends on B43
- 	---help---
- 	  Support for the N-PHY.
- 
-@@ -130,8 +130,8 @@ config B43_PHY_LP
- 	  (802.11a support is optional, and currently disabled).
- 
- config B43_PHY_HT
--	bool "Support for HT-PHY (high throughput) devices (EXPERIMENTAL)"
--	depends on B43 && EXPERIMENTAL
-+	bool "Support for HT-PHY (high throughput) devices"
-+	depends on B43
- 	---help---
- 	  Support for the HT-PHY.
- 
+ config IPW2200_DEBUG
+ 	bool "Enable full debugging output in IPW2200 module."
 -- 
 1.7.9.5
 
