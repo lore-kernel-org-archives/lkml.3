@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab3AQRBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 12:01:37 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:37705 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab3AQRBf (ORCPT
+	id S1757372Ab3AQRBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 12:01:45 -0500
+Received: from mga06.intel.com ([134.134.136.21]:37161 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752708Ab3AQRBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 12:01:35 -0500
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, wine-devel@winehq.org
-Subject: [PATCH v2 5/8] CIFS: Use NT_CREATE_ANDX command for forcemand mounts
-Date: Thu, 17 Jan 2013 20:53:01 +0400
-Message-Id: <1358441584-8783-5-git-send-email-piastry@etersoft.ru>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1358441584-8783-1-git-send-email-piastry@etersoft.ru>
-References: <1358441584-8783-1-git-send-email-piastry@etersoft.ru>
+	Thu, 17 Jan 2013 12:01:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <1358440365.2689.72.camel@falcor1>
+References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+	<1358285695-26173-3-git-send-email-vgoyal@redhat.com>
+	<1358437021.2689.52.camel@falcor1>
+	<20130117155154.GC12165@redhat.com>
+	<1358440365.2689.72.camel@falcor1>
+Date: Thu, 17 Jan 2013 19:01:40 +0200
+Message-ID: <CALLzPKYHUDj6gxz44_bOe1ggoeqZd2HaA3R34OXgHqGR9X7AcQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, pjones@redhat.com, hpa@zytor.com,
+        dhowells@redhat.com, jwboyer@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-forcemand mount option now lets us use Windows mandatory style of
-byte-range locks even if server supports posix ones - switches on
-Windows locking mechanism. Share flags is another locking mehanism
-provided by Windows semantic that can be used by NT_CREATE_ANDX
-command. This patch combines all Windows locking mechanism in one
-mount option by using NT_CREATE_ANDX to open files if forcemand is on.
+commit f6bf2c4c0339dabac435f518bb1fcb617fdef8f1
+Author: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Date:   Thu Jan 17 18:50:43 2013 +0200
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
----
- fs/cifs/dir.c  | 1 +
- fs/cifs/file.c | 6 ++++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+    ima: lock down memory if binary is digitally signed
 
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index 12ee773..06be419 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -185,6 +185,7 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
- 	}
- 
- 	if (tcon->unix_ext && cap_unix(tcon->ses) && !tcon->broken_posix_open &&
-+	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
- 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 			le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		rc = cifs_posix_open(full_path, &newinode, inode->i_sb, mode,
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 4ddf450..bb10486 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -426,8 +426,9 @@ int cifs_open(struct inode *inode, struct file *file)
- 	else
- 		oplock = 0;
- 
--	if (!tcon->broken_posix_open && tcon->unix_ext &&
--	    cap_unix(tcon->ses) && (CIFS_UNIX_POSIX_PATH_OPS_CAP &
-+	if (!tcon->broken_posix_open && tcon->unix_ext && cap_unix(tcon->ses)
-+	    && ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
-+	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		/* can not refresh inode info since size could be stale */
- 		rc = cifs_posix_open(full_path, &inode, inode->i_sb,
-@@ -575,6 +576,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
- 		oplock = 0;
- 
- 	if (tcon->unix_ext && cap_unix(tcon->ses) &&
-+	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
- 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		/*
--- 
-1.8.1.1
+    This patch set a flag in the linux_binprm structure if binary is
+    digitally signed. The flag is used to lock down memory when loading
+    ELF binary.
 
+    Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 0c42cdb..ba94d13 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -44,6 +44,8 @@
+ #define user_siginfo_t siginfo_t
+ #endif
+
++#define LSM_UNSAFE_DIGSIG	16
++
+ static int load_elf_binary(struct linux_binprm *bprm);
+ static int load_elf_library(struct file *);
+ static unsigned long elf_map(struct file *, unsigned long, struct elf_phdr *,
+@@ -788,6 +790,9 @@ static int load_elf_binary(struct linux_binprm *bprm)
+
+ 		elf_flags = MAP_PRIVATE | MAP_DENYWRITE | MAP_EXECUTABLE;
+
++		if (bprm->unsafe & LSM_UNSAFE_DIGSIG)
++			elf_flags |= MAP_LOCKED;
++
+ 		vaddr = elf_ppnt->p_vaddr;
+ 		if (loc->elf_ex.e_type == ET_EXEC || load_addr_set) {
+ 			elf_flags |= MAP_FIXED;
+diff --git a/security/integrity/ima/ima_main.c
+b/security/integrity/ima/ima_main.c
+index b359fb5..50d9959 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -27,6 +27,8 @@
+
+ #include "ima.h"
+
++#define LSM_UNSAFE_DIGSIG	16
++
+ int ima_initialized;
+
+ #ifdef CONFIG_IMA_APPRAISE
+@@ -315,10 +317,19 @@ int ima_file_mmap(struct file *file, unsigned long prot)
+  */
+ int ima_bprm_check(struct linux_binprm *bprm)
+ {
+-	return process_measurement(bprm->file,
++	int err;
++	struct integrity_iint_cache *iint;
++
++	err = process_measurement(bprm->file,
+ 				 (strcmp(bprm->filename, bprm->interp) == 0) ?
+ 				 bprm->filename : bprm->interp,
+ 				 MAY_EXEC, BPRM_CHECK);
++
++	iint = integrity_iint_find(bprm->file->f_dentry->d_inode);
++	if (iint && (iint->flags & IMA_DIGSIG))
++		bprm->unsafe |= LSM_UNSAFE_DIGSIG;
++
++	return err;
+ }
+
+ /**
