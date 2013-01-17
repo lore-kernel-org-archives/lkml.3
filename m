@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3AQOeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 09:34:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:29911 "EHLO mga02.intel.com"
+	id S1756247Ab3AQOfG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 09:35:06 -0500
+Received: from mga11.intel.com ([192.55.52.93]:12674 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab3AQOeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 09:34:13 -0500
+	id S1753867Ab3AQOfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 09:35:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="asc'?scan'208";a="273275154"
-Message-ID: <1358433343.2731.254.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] mtd: gpmi: dump the BCH registers
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Huang Shijie <b32955@freescale.com>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Thu, 17 Jan 2013 16:35:43 +0200
-In-Reply-To: <1358147969-31878-1-git-send-email-b32955@freescale.com>
-References: <1358147969-31878-1-git-send-email-b32955@freescale.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-dLgDS2nTpVnFBGZAuouM"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+   d="scan'208";a="274985056"
+Message-ID: <1358433288.20319.7.camel@rzhang1-mobl4>
+Subject: Re: [PATCH v6 1/3] tick: export nohz tick idle symbols for module
+ use
+From: Zhang Rui <rui.zhang@intel.com>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Joe Perches <joe@perches.com>, Rob Landley <rob@landley.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Date: Thu, 17 Jan 2013 22:34:48 +0800
+In-Reply-To: <1357297965-17839-2-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1357297965-17839-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	 <1357297965-17839-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-01-04 at 03:12 -0800, Jacob Pan wrote:
+> Allow drivers such as intel_powerclamp to use these apis for
+> turning on/off ticks during idle.
+> 
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
---=-dLgDS2nTpVnFBGZAuouM
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+applied to thermal -next.
 
-On Mon, 2013-01-14 at 15:19 +0800, Huang Shijie wrote:
-> Dump the BCH registers in gpmi_dump_info().
->=20
-> Signed-off-by: Huang Shijie <b32955@freescale.com>
+thanks,
+rui
 > ---
->  drivers/mtd/nand/gpmi-nand/bch-regs.h |    2 ++
->  drivers/mtd/nand/gpmi-nand/gpmi-lib.c |    5 +++++
->  2 files changed, 7 insertions(+), 0 deletions(-)
+>  kernel/time/tick-sched.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index d58e552..a767757 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -553,6 +553,7 @@ void tick_nohz_idle_enter(void)
+>  
+>  	local_irq_enable();
+>  }
+> +EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
+>  
+>  /**
+>   * tick_nohz_irq_exit - update next tick event from interrupt exit
+> @@ -681,6 +682,7 @@ void tick_nohz_idle_exit(void)
+>  
+>  	local_irq_enable();
+>  }
+> +EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
+>  
+>  static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
+>  {
 
-Pushed to l2-mtd.git, thanks!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-dLgDS2nTpVnFBGZAuouM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ+Aw/AAoJECmIfjd9wqK0k3YP/2hhD2v2sRGj4/RmLVQNjBdl
-Ou2sE/u0zK3kdlVTDasmhOZ03NgNjp1UKWiC9basZuTDHD+oWmy9rMwtMN1zLWza
-2hTJ2hWEgo5EGTbN8WEnD8UXjMKctVBLB8/IPXQ8YZpyu6VL8vTWbA5AvN9cb8Iv
-74uASlKLgQJVIjHZONmi5ohUIoF9QG5TG0QlupYYs5MY+Ch+xPUtvY5D8NcO6mdh
-b22zdPMN9bAjIqUoqPCjDV8O8qBPFWjR9G6yHZ4hM3mszYduTGId8b34Elt8TgFP
-GfQ1+mpZEycGzsxSnEKbSHoUK0hFUIgeN6TOpVbXQhcqqeGmNLXs/u5OT7CGSasr
-8gQkH8+b2HOY9NKrVaI+bn3EuXVkEWADFh/+KVyDmbH4l9zwDAto6uzdqKeXrGrj
-DR+8cwrIXoc4sZGgS3UmsM22YPor7lhTsx5yOK7W6Gn5sZq94ESYCRKO1ialdSsv
-AMpkRziPRO9R/kcwjKLEFKBv1s/WCUBMrRJXR8flcDP5Bmxr2iEt3aao5D9Oy69I
-rTmVv6/9aM7es11/pC/WJwl072Caj1mNLrkL5+7mt0zy45NE0WOJlN+G2P5mXe5J
-i3bw0mPsLCYaoMaintlKmNTDrKyjQCcjQofxNel6gxPbIbicJjI9hE03HfTL4vzr
-S9Crk9Pn0b1xGYWpp1wB
-=W+fs
------END PGP SIGNATURE-----
-
---=-dLgDS2nTpVnFBGZAuouM--
 
