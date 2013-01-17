@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab3AQUiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:38:00 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33895 "EHLO mga09.intel.com"
+	id S1757389Ab3AQUh7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:37:59 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33901 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756988Ab3AQUhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:37:46 -0500
+	id S1757022Ab3AQUhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 15:37:47 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="273439802"
+   d="scan'208";a="273439808"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 03/29] perf, x86: Basic Haswell PEBS support v3
-Date: Thu, 17 Jan 2013 12:36:26 -0800
-Message-Id: <1358455012-12287-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 11/29] perf, tools: Support sorting by intx, abort branch flags v2
+Date: Thu, 17 Jan 2013 12:36:34 -0800
+Message-Id: <1358455012-12287-12-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,96 +26,202 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add basic PEBS support for Haswell.
-The constraints are similar to SandyBridge with a few new events.
+Extend the perf branch sorting code to support sorting by intx
+or abort qualifiers. Also print out those qualifiers.
 
-v2: Readd missing pebs_aliases
-v3: Readd missing hunk. Fix some constraints.
+v2: Readd flags to man pages
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.h          |    2 ++
- arch/x86/kernel/cpu/perf_event_intel.c    |    6 ++++--
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   29 +++++++++++++++++++++++++++++
- 3 files changed, 35 insertions(+), 2 deletions(-)
+ tools/perf/Documentation/perf-report.txt |    4 ++-
+ tools/perf/Documentation/perf-top.txt    |    4 ++-
+ tools/perf/builtin-report.c              |    3 +-
+ tools/perf/builtin-top.c                 |    4 ++-
+ tools/perf/perf.h                        |    4 ++-
+ tools/perf/util/hist.h                   |    2 +
+ tools/perf/util/sort.c                   |   55 ++++++++++++++++++++++++++++++
+ tools/perf/util/sort.h                   |    2 +
+ 8 files changed, 73 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 8941899..1567b0d 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -596,6 +596,8 @@ extern struct event_constraint intel_snb_pebs_event_constraints[];
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index f4d91be..cb4216d 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -57,7 +57,9 @@ OPTIONS
  
- extern struct event_constraint intel_ivb_pebs_event_constraints[];
+ -s::
+ --sort=::
+-	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
++	Sort by key(s): pid, comm, dso, symbol, parent, srcline,
++        dso_from, dso_to, symbol_to, symbol_from, mispredict,
++        abort, intx
  
-+extern struct event_constraint intel_hsw_pebs_event_constraints[];
-+
- struct event_constraint *intel_pebs_constraints(struct perf_event *event);
+ -p::
+ --parent=<regex>::
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 5b80d84..1398b73 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -112,7 +112,9 @@ Default is to monitor all CPUS.
  
- void intel_pmu_pebs_enable(struct perf_event *event);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 3a08534..634f639 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -826,7 +826,8 @@ static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
- 		return true;
+ -s::
+ --sort::
+-	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
++	Sort by key(s): pid, comm, dso, symbol, parent, srcline,
++        dso_from, dso_to, symbol_to, symbol_from, mispredict,
++        abort, intx
  
- 	/* implicit branch sampling to correct PEBS skid */
--	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
-+	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
-+	    x86_pmu.intel_cap.pebs_format < 2)
- 		return true;
- 
- 	return false;
-@@ -2127,8 +2128,9 @@ __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_nhm();
- 
- 		x86_pmu.event_constraints = intel_hsw_event_constraints;
--
-+		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
- 		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
- 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 9d0dae0..16d7c58 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -427,6 +427,35 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
-         EVENT_CONSTRAINT_END
+ -n::
+ --show-nr-samples::
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index fc25100..072c388 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -596,7 +596,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "Use the stdio interface"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+-		   " dso_from, symbol_to, symbol_from, mispredict"),
++		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
++		   " abort, intx"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c9ff395..6cfb678 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1230,7 +1230,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
++		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
++		   " abort, intx"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top, "output_type,min_percent, call_order",
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 2c340e7..c6d315b 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -197,7 +197,9 @@ struct ip_callchain {
+ struct branch_flags {
+ 	u64 mispred:1;
+ 	u64 predicted:1;
+-	u64 reserved:62;
++	u64 intx:1;
++	u64 abort:1;
++	u64 reserved:60;
  };
  
-+struct event_constraint intel_hsw_pebs_event_constraints[] = {
-+	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-+	INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-+	INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-+	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-+	INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
-+	INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
-+	INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
-+	INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
-+	INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-+	INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-+	INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x02d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
-+	INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
-+	INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
+ struct branch_entry {
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 8b091a5..4ae7c25 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -44,6 +44,8 @@ enum hist_column {
+ 	HISTC_PARENT,
+ 	HISTC_CPU,
+ 	HISTC_MISPREDICT,
++	HISTC_INTX,
++	HISTC_ABORT,
+ 	HISTC_SYMBOL_FROM,
+ 	HISTC_SYMBOL_TO,
+ 	HISTC_DSO_FROM,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index cfd1c0f..a8d1f1a 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -476,6 +476,55 @@ struct sort_entry sort_mispredict = {
+ 	.se_width_idx	= HISTC_MISPREDICT,
+ };
+ 
++static int64_t
++sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->branch_info->flags.abort !=
++		right->branch_info->flags.abort;
++}
 +
-+	EVENT_CONSTRAINT_END
++static int hist_entry__abort_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	static const char *out = ".";
++
++	if (self->branch_info->flags.abort)
++		out = "A";
++	return repsep_snprintf(bf, size, "%-*s", width, out);
++}
++
++struct sort_entry sort_abort = {
++	.se_header	= "Transaction abort",
++	.se_cmp		= sort__abort_cmp,
++	.se_snprintf	= hist_entry__abort_snprintf,
++	.se_width_idx	= HISTC_ABORT,
 +};
 +
- struct event_constraint *intel_pebs_constraints(struct perf_event *event)
- {
- 	struct event_constraint *c;
++static int64_t
++sort__intx_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->branch_info->flags.intx !=
++		right->branch_info->flags.intx;
++}
++
++static int hist_entry__intx_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	static const char *out = ".";
++
++	if (self->branch_info->flags.intx)
++		out = "T";
++
++	return repsep_snprintf(bf, size, "%-*s", width, out);
++}
++
++struct sort_entry sort_intx = {
++	.se_header	= "Branch in transaction",
++	.se_cmp		= sort__intx_cmp,
++	.se_snprintf	= hist_entry__intx_snprintf,
++	.se_width_idx	= HISTC_INTX,
++};
++
+ struct sort_dimension {
+ 	const char		*name;
+ 	struct sort_entry	*entry;
+@@ -497,6 +546,8 @@ static struct sort_dimension sort_dimensions[] = {
+ 	DIM(SORT_CPU, "cpu", sort_cpu),
+ 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
+ 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
++	DIM(SORT_ABORT, "abort", sort_abort),
++	DIM(SORT_INTX, "intx", sort_intx)
+ };
+ 
+ int sort_dimension__add(const char *tok)
+@@ -553,6 +604,10 @@ int sort_dimension__add(const char *tok)
+ 				sort__first_dimension = SORT_DSO_TO;
+ 			else if (!strcmp(sd->name, "mispredict"))
+ 				sort__first_dimension = SORT_MISPREDICT;
++			else if (!strcmp(sd->name, "intx"))
++				sort__first_dimension = SORT_INTX;
++			else if (!strcmp(sd->name, "abort"))
++				sort__first_dimension = SORT_ABORT;
+ 		}
+ 
+ 		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index b4e8c3b..f811a0a 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -137,6 +137,8 @@ enum sort_type {
+ 	SORT_SYM_TO,
+ 	SORT_MISPREDICT,
+ 	SORT_SRCLINE,
++	SORT_ABORT,
++	SORT_INTX,
+ };
+ 
+ /*
 -- 
 1.7.7.6
 
