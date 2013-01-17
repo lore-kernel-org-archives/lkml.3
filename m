@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759242Ab3AQC6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 21:58:03 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:46429 "EHLO smtp.outflux.net"
+	id S1759195Ab3AQC6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 21:58:01 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:37921 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759062Ab3AQCzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759065Ab3AQCzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 21:55:23 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Russell King <linux@arm.linux.org.uk>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
+Cc: Kees Cook <keescook@chromium.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 61/86] drivers/scsi/arm: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:53:53 -0800
-Message-Id: <1358391258-1771-62-git-send-email-keescook@chromium.org>
+Subject: [PATCH 35/86] arch/tile/kvm: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:53:27 -0800
+Message-Id: <1358391258-1771-36-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -26,43 +27,28 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-CC: Russell King <linux@arm.linux.org.uk>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Chris Metcalf <cmetcalf@tilera.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/scsi/arm/Kconfig |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/tile/kvm/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/arm/Kconfig b/drivers/scsi/arm/Kconfig
-index a8587f1..cfd172a 100644
---- a/drivers/scsi/arm/Kconfig
-+++ b/drivers/scsi/arm/Kconfig
-@@ -64,19 +64,19 @@ config SCSI_POWERTECSCSI
- 	  you have one of these, say Y. If unsure, say N.
+diff --git a/arch/tile/kvm/Kconfig b/arch/tile/kvm/Kconfig
+index 669fcdb..2298cb1 100644
+--- a/arch/tile/kvm/Kconfig
++++ b/arch/tile/kvm/Kconfig
+@@ -18,7 +18,7 @@ if VIRTUALIZATION
  
- comment "The following drivers are not fully supported"
--	depends on ARCH_ACORN && EXPERIMENTAL
-+	depends on ARCH_ACORN
- 
- config SCSI_CUMANA_1
--	tristate "CumanaSCSI I support (EXPERIMENTAL)"
--	depends on ARCH_ACORN && EXPERIMENTAL && SCSI
-+	tristate "CumanaSCSI I support"
-+	depends on ARCH_ACORN && SCSI
- 	select SCSI_SPI_ATTRS
- 	help
- 	  This enables support for the Cumana SCSI I card. If you have an
- 	  Acorn system with one of these, say Y. If unsure, say N.
- 
- config SCSI_OAK1
--	tristate "Oak SCSI support (EXPERIMENTAL)"
--	depends on ARCH_ACORN && EXPERIMENTAL && SCSI
-+	tristate "Oak SCSI support"
-+	depends on ARCH_ACORN && SCSI
- 	select SCSI_SPI_ATTRS
- 	help
- 	  This enables support for the Oak SCSI card. If you have an Acorn
+ config KVM
+ 	tristate "Kernel-based Virtual Machine (KVM) support"
+-	depends on HAVE_KVM && MODULES && EXPERIMENTAL
++	depends on HAVE_KVM && MODULES
+ 	select PREEMPT_NOTIFIERS
+ 	select ANON_INODES
+ 	---help---
 -- 
 1.7.9.5
 
