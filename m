@@ -1,172 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab3AQLP1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 06:15:27 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42150 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905Ab3AQLPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 06:15:24 -0500
-Message-ID: <50F7DD2C.90500@ti.com>
-Date: Thu, 17 Jan 2013 16:44:52 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <balbi@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <b-cousson@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <horms@verge.net.au>,
-        <magnus.damm@gmail.com>, <cbou@mail.ru>, <dwmw2@infradead.org>,
-        <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <leoli@freescale.com>, <eric.y.miao@gmail.com>,
-        <haojian.zhuang@gmail.com>, <stern@rowland.harvard.edu>
-Subject: Re: [RFC PATCH 1/6] usb: otg: Add an API to bind the USB controller
- and PHY
-References: <1358348462-27693-1-git-send-email-kishon@ti.com> <1358348462-27693-2-git-send-email-kishon@ti.com> <50F7C643.600@ti.com>
-In-Reply-To: <50F7C643.600@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1753587Ab3AQLT1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 06:19:27 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56630 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751944Ab3AQLT0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 06:19:26 -0500
+Message-ID: <1358421561.2394.27.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH v2 1/1] block: blk-merge: don't merge the pages with
+ non-contiguous descriptors
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Subhash Jadavani <subhashj@codeaurora.org>, Tejun Heo <tj@kernel.org>,
+        asias@redhat.com, linux-arm-kernel@lists.infradead.org
+Date: Thu, 17 Jan 2013 11:19:21 +0000
+In-Reply-To: <20130117110438.GZ23505@n2100.arm.linux.org.uk>
+References: <1358265681-25671-1-git-send-email-subhashj@codeaurora.org>
+	 <1358266794.10591.8.camel@dabdike.int.hansenpartnership.com>
+	 <50F64AC1.3040304@codeaurora.org>
+	 <1358332355.2384.11.camel@dabdike.int.hansenpartnership.com>
+	 <20130116231857.GU2668@htj.dyndns.org>
+	 <1358413880.2394.7.camel@dabdike.int.hansenpartnership.com>
+	 <20130117103742.GX23505@n2100.arm.linux.org.uk>
+	 <20130117104741.GY23505@n2100.arm.linux.org.uk>
+	 <1358420507.2394.19.camel@dabdike.int.hansenpartnership.com>
+	 <20130117110438.GZ23505@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2013-01-17 at 11:04 +0000, Russell King - ARM Linux wrote:
+> On Thu, Jan 17, 2013 at 11:01:47AM +0000, James Bottomley wrote:
+> > On Thu, 2013-01-17 at 10:47 +0000, Russell King - ARM Linux wrote:
+> > > Also, couldn't the addition of the scatterlist offset to the page also
+> > > be buggy too?
+> > 
+> > No, fortunately, offset must be within the first page from the point of
+> > view of block generated sg lists.  As long as nothing within arm
+> > violates this, it should be a safe assumption ... although the code
+> > seems to assume otherwise.
+> 
+> Are you absolutely sure about that?  I believe I have seen cases where
+> that has been violated in the past, though it was many years ago.
 
-On Thursday 17 January 2013 03:07 PM, Roger Quadros wrote:
-> On 01/16/2013 05:00 PM, Kishon Vijay Abraham I wrote:
->> New platforms are added which has multiple PHY's (of same type) and
->> which has multiple USB controllers. The binding information has to be
->> present in the PHY library (otg.c) in order for it to return the
->> appropriate PHY whenever the USB controller request for the PHY. So
->> added a new API to pass the binding information. This API should be
->> called by platform specific initialization code.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>   drivers/usb/otg/otg.c   |   37 +++++++++++++++++++++++++++++++++++++
->>   include/linux/usb/phy.h |   22 ++++++++++++++++++++++
->>   2 files changed, 59 insertions(+)
->>
->> diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
->> index a30c041..492ba2f 100644
->> --- a/drivers/usb/otg/otg.c
->> +++ b/drivers/usb/otg/otg.c
->> @@ -18,6 +18,7 @@
->>   #include <linux/usb/otg.h>
->>
->>   static LIST_HEAD(phy_list);
->> +static LIST_HEAD(phy_bind_list);
->>   static DEFINE_SPINLOCK(phy_lock);
->>
->>   static struct usb_phy *__usb_find_phy(struct list_head *list,
->> @@ -201,6 +202,42 @@ void usb_remove_phy(struct usb_phy *x)
->>   }
->>   EXPORT_SYMBOL(usb_remove_phy);
->>
->> +/**
->> + * usb_bind_phy - bind the phy and the controller that uses the phy
->> + * @dev_name: the device name of the device that will bind to the phy
->> + * @index: index to specify the port number
->> + * @phy_dev_name: the device name of the phy
->> + *
->> + * Fills the phy_bind structure with the dev_name and phy_dev_name. This will
->> + * be used when the phy driver registers the phy and when the controller
->> + * requests this phy.
->> + *
->> + * To be used by platform specific initialization code.
->> + */
->> +struct usb_phy_bind __init *usb_bind_phy(const char *dev_name, u8 index,
->> +				const char *phy_dev_name)
->> +{
->> +	struct usb_phy_bind *phy_bind;
->> +	unsigned long flags;
->> +
->> +	phy_bind = kzalloc(sizeof(*phy_bind), GFP_KERNEL);
->> +	if (!phy_bind) {
->> +		pr_err("phy_bind(): No memory for phy_bind");
->
-> Function name in comment doesn't match the actual.
-> Instead, you could use
-> 	pr_err("%s ...", __func__);
->
->> +		return ERR_PTR(-ENOMEM);
->> +	}
->> +
->> +	phy_bind->dev_name = dev_name;
->> +	phy_bind->phy_dev_name = phy_dev_name;
->> +	phy_bind->index = index;
->> +
->> +	spin_lock_irqsave(&phy_lock, flags);
->> +	list_add_tail(&phy_bind->list, &phy_bind_list);
->> +	spin_unlock_irqrestore(&phy_lock, flags);
->> +
->> +	return phy_bind;
->> +}
->> +EXPORT_SYMBOL_GPL(usb_bind_phy);
->> +
->>   const char *otg_state_string(enum usb_otg_state state)
->>   {
->>   	switch (state) {
->> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
->> index a29ae1e..fbeab1a 100644
->> --- a/include/linux/usb/phy.h
->> +++ b/include/linux/usb/phy.h
->> @@ -106,6 +106,21 @@ struct usb_phy {
->>   			enum usb_device_speed speed);
->>   };
->>
->> +/**
->> + * struct usb_phy_bind - represent the binding for the phy
->> + * @dev_name: the device name of the device that will bind to the phy
->> + * @phy_dev_name: the device name of the phy
->> + * @index: used if a single controller uses multiple phys
->> + * @phy: reference to the phy
->> + * @list: to maintain a linked list of the binding information
->> + */
->> +struct usb_phy_bind {
->> +	const char	*dev_name;
->> +	const char	*phy_dev_name;
->> +	u8		index;
->> +	struct usb_phy	*phy;
->> +	struct list_head list;
->> +};
->>
->>   /* for board-specific init logic */
->>   extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
->> @@ -151,6 +166,8 @@ extern struct usb_phy *devm_usb_get_phy(struct device *dev,
->>   	enum usb_phy_type type);
->>   extern void usb_put_phy(struct usb_phy *);
->>   extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
->> +extern struct usb_phy_bind *usb_bind_phy(const char *dev_name, u8 index,
->> +				const char *phy_dev_name);
->>   #else
->>   static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
->>   {
->> @@ -171,6 +188,11 @@ static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *x)
->>   {
->>   }
->>
->> +static inline struct usb_phy_bind *usb_bind_phy(const char *dev_name, u8 index,
->> +				const char *phy_dev_name)
->> +{
->> +	return NULL;
->> +}
->>   #endif
->>
->>   static inline int
->>
->
-> Controllers like ehci-omap which don't need OTG functionality would
-> benefit from this API. Can we make these PHY APIs not dependent on OTG /
-> OTG_UTILS?
+>From the point of view of the block layer, absolutely: the scatterlist
+is generated from an array of bio_vecs.  Each bio_vec is a page, offset
+and length element and obeys the rule that offset must be within the
+page and offset + length cannot stray over the page.
 
-Actually much of whatever is in otg.c can be used by controllers which 
-don't have OTG functionality (except otg_state_string). I vaguely 
-remember, there was a patch that renamed otg.c to phy.c etc.. I'm not 
-sure what happened to that.
+>From the point of view of other arm stuff, I don't know.
 
-Thanks
-Kishon
+James
+
+
