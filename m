@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab3AQLbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 06:31:23 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45500 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755274Ab3AQLbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 06:31:16 -0500
+	id S1750866Ab3AQLiT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 06:38:19 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47465 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755662Ab3AQLbW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 06:31:22 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v7 05/22] mfd: omap-usb-tll: introduce and use mode_needs_tll()
-Date: Thu, 17 Jan 2013 13:30:14 +0200
-Message-ID: <1358422231-24736-6-git-send-email-rogerq@ti.com>
+Subject: [PATCH v7 12/22] mfd: omap-usb-host: know about number of ports from revision register
+Date: Thu, 17 Jan 2013 13:30:21 +0200
+Message-ID: <1358422231-24736-13-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358422231-24736-1-git-send-email-rogerq@ti.com>
 References: <1358422231-24736-1-git-send-email-rogerq@ti.com>
@@ -24,74 +25,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a handy macro to check if the port requires the
-USB TLL module or not. Use it to Enable the TLL module and manage
-the clocks.
+The revision register should tell us how many ports are present.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-tll.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+ drivers/mfd/omap-usb-host.c |   33 ++++++++++++++++++++++++++++-----
+ 1 files changed, 28 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index 4ce134b..6a43391 100644
---- a/drivers/mfd/omap-usb-tll.c
-+++ b/drivers/mfd/omap-usb-tll.c
-@@ -95,6 +95,10 @@
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 310aaa9..26319ca 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -91,6 +91,8 @@
  
- #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
  
-+/* only PHY and UNUSED modes don't need TLL */
-+#define omap_usb_mode_needs_tll(x)	((x != OMAP_USBHS_PORT_MODE_UNUSED) &&\
-+					 (x != OMAP_EHCI_PORT_MODE_PHY))
+ struct usbhs_hcd_omap {
++	int				nports;
 +
- struct usbtll_omap {
- 	int					nch;	/* num. of channels */
- 	struct usbhs_omap_platform_data		*pdata;
-@@ -211,6 +215,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	unsigned long				flags;
- 	int					ret = 0;
- 	int					i, ver;
-+	bool needs_tll;
+ 	struct clk			*xclk60mhsp1_ck;
+ 	struct clk			*xclk60mhsp2_ck;
+ 	struct clk			*utmi_p1_fck;
+@@ -347,8 +349,6 @@ static void omap_usbhs_init(struct device *dev)
  
- 	dev_dbg(dev, "starting TI HSUSB TLL Controller\n");
+ 	pm_runtime_get_sync(dev);
+ 	spin_lock_irqsave(&omap->lock, flags);
+-	omap->usbhs_rev = usbhs_read(omap->uhh_base, OMAP_UHH_REVISION);
+-	dev_dbg(dev, "OMAP UHH_REVISION 0x%x\n", omap->usbhs_rev);
  
-@@ -281,12 +286,11 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
+ 	/* setup ULPI bypass and burst configurations */
+@@ -483,7 +483,32 @@ static int usbhs_omap_probe(struct platform_device *pdev)
  
- 	spin_lock_irqsave(&tll->lock, flags);
+ 	pm_runtime_enable(dev);
  
--	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
--	    is_ehci_tll_mode(pdata->port_mode[1]) ||
--	    is_ehci_tll_mode(pdata->port_mode[2]) ||
--	    is_ohci_port(pdata->port_mode[0]) ||
--	    is_ohci_port(pdata->port_mode[1]) ||
--	    is_ohci_port(pdata->port_mode[2])) {
-+	needs_tll = false;
-+	for (i = 0; i < tll->nch; i++)
-+		needs_tll |= omap_usb_mode_needs_tll(pdata->port_mode[i]);
+-	for (i = 0; i < OMAP3_HS_USB_PORTS; i++)
++	platform_set_drvdata(pdev, omap);
++	pm_runtime_get_sync(dev);
 +
-+	if (needs_tll) {
++	omap->usbhs_rev = usbhs_read(omap->uhh_base, OMAP_UHH_REVISION);
++
++	/* we need to call runtime suspend before we update omap->nports
++	 * to prevent unbalanced clk_disable()
++	 */
++	pm_runtime_put_sync(dev);
++
++	switch (omap->usbhs_rev) {
++	case OMAP_USBHS_REV1:
++		omap->nports = 3;
++		break;
++	case OMAP_USBHS_REV2:
++		omap->nports = 2;
++		break;
++	default:
++		omap->nports = OMAP3_HS_USB_PORTS;
++		dev_dbg(dev,
++		  "USB HOST Rev : 0x%d not recognized, assuming %d ports\n",
++		   omap->usbhs_rev, omap->nports);
++		break;
++	}
++
++	for (i = 0; i < omap->nports; i++)
+ 		if (is_ehci_phy_mode(i) || is_ehci_tll_mode(i) ||
+ 			is_ehci_hsic_mode(i)) {
+ 			omap->ehci_logic_fck = clk_get(dev, "ehci_logic_fck");
+@@ -573,8 +598,6 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 				"failed error:%d\n", ret);
+ 	}
  
- 		/* Program Common TLL register */
- 		reg = usbtll_read(base, OMAP_TLL_SHARED_CONF);
-@@ -374,7 +378,7 @@ static int usbtll_runtime_resume(struct device *dev)
- 	spin_lock_irqsave(&tll->lock, flags);
- 
- 	for (i = 0; i < tll->nch; i++) {
--		if (is_ehci_tll_mode(pdata->port_mode[i])) {
-+		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
- 			int r;
- 
- 			if (!tll->ch_clk[i])
-@@ -410,7 +414,7 @@ static int usbtll_runtime_suspend(struct device *dev)
- 	spin_lock_irqsave(&tll->lock, flags);
- 
- 	for (i = 0; i < tll->nch; i++) {
--		if (is_ehci_tll_mode(pdata->port_mode[i])) {
-+		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
- 			if (tll->ch_clk[i])
- 				clk_disable(tll->ch_clk[i]);
- 		}
+-	platform_set_drvdata(pdev, omap);
+-
+ 	omap_usbhs_init(dev);
+ 	ret = omap_usbhs_alloc_children(pdev);
+ 	if (ret) {
 -- 
 1.7.4.1
 
