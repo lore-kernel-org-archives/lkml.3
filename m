@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757002Ab3AQQCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:02:34 -0500
-Received: from mail.prodrive.nl ([212.61.153.67]:7098 "EHLO mail.prodrive.nl"
+	id S1757034Ab3AQQDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:03:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:33583 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756737Ab3AQQCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:02:32 -0500
-X-Greylist: delayed 1567 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 11:02:32 EST
-From: Stef van Os <stef.van.os@prodrive.nl>
-To: <chohnstaedt@innominate.com>, <davem@davemloft.net>,
-        <srinivas.kandagatla@st.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Stef van Os <stef.van.os@prodrive.nl>
-Subject: [PATCH 1/1] phy/marvell: remove fiber/copper autoselect on 88e1111
-Date: Thu, 17 Jan 2013 16:36:18 +0100
-Message-ID: <1358436978-7504-1-git-send-email-stef.van.os@prodrive.nl>
-X-Mailer: git-send-email 1.7.2.5
+	id S1756824Ab3AQQD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 11:03:28 -0500
+Date: Thu, 17 Jan 2013 08:03:26 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Chris Perl <chris.perl@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [ 18/71] SUNRPC: Ensure we release the socket write lock if the
+ rpc_task exits early
+Message-ID: <20130117160326.GA5885@kroah.com>
+References: <20130115225340.367496998@linuxfoundation.org>
+ <20130115225341.755424315@linuxfoundation.org>
+ <20130117151458.GA2872@herton-Z68MA-D2H-B3>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-TM-AS-Product-Ver: IMSVA-8.2.0.1520-7.0.0.1014-19564.000
-X-TM-AS-Result: No--6.632-5.0-31-10
-X-imss-scan-details: No--6.632-5.0-31-10
-X-TM-AS-User-Approved-Sender: No
-X-TMASE-Version: IMSVA-8.2.0.1520-7.0.1014-19564.000
-X-TMASE-Result: 10--6.631500-5.000000
-X-TMASE-MatchedRID: 7hQvYNNB0HPU4D7YCSb+lLMsPmSZxbpk+eBf9ovw8I0wEhHW5KVAz/bF
-	CxAQ6srCvdT86VL/Xf8BtjkcfRMmqSnPugGsN3p5Q4r9bxJdsVuZ2scyRQcer0UNHQAoZf5cNT0
-	2hqjbFakv64ytQjJ6bseQPcxT2kjddB0ntd9Tzp47AFczfjr/7KmCSLIQzpZkT2gIwc/uozHCtE
-	vF9M+6GPdxfodjojG1BRKGnZFkgyc=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130117151458.GA2872@herton-Z68MA-D2H-B3>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the code that always enables copper/fiber autoselect,
-ignoring the DIS_FC strapping pin. The default value for this
-register is autoselect on anyway, and if you explicitly disable
-autoselect via strapping you probably really don't want
-autoselect.
+On Thu, Jan 17, 2013 at 01:14:59PM -0200, Herton Ronaldo Krzesinski wrote:
+> On Tue, Jan 15, 2013 at 02:54:15PM -0800, Greg Kroah-Hartman wrote:
+> > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > 
+> > commit 87ed50036b866db2ec2ba16b2a7aec4a2b0b7c39 upstream.
+> > 
+> > If the rpc_task exits while holding the socket write lock before it has
+> > allocated an rpc slot, then the usual mechanism for releasing the write
+> > lock in xprt_release() is defeated.
+> > 
+> > The problem occurs if the call to xprt_lock_write() initially fails, so
+> > that the rpc_task is put on the xprt->sending wait queue. If the task
+> > exits after being assigned the lock by __xprt_lock_write_func, but
+> > before it has retried the call to xprt_lock_and_alloc_slot(), then
+> > it calls xprt_release() while holding the write lock, but will
+> > immediately exit due to the test for task->tk_rqstp != NULL.
+> > 
+> > Reported-by: Chris Perl <chris.perl@gmail.com>
+> > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> This is marked only for kernel versions 3.1 and later, which looks
+> correct as it seems to address a problem starting with commit
+> 43cedbf0e8dfb9c5610eb7985d5f21263e313802
 
-Signed-off-by: Stef van Os <stef.van.os@prodrive.nl>
----
- drivers/net/phy/marvell.c |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+Ah, good catch, I've now dropped it from the 3.0-stable queue, thanks.
 
-diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
-index 5d2a3f2..22dec9c 100644
---- a/drivers/net/phy/marvell.c
-+++ b/drivers/net/phy/marvell.c
-@@ -353,15 +353,6 @@ static int m88e1111_config_init(struct phy_device *phydev)
- 	int err;
- 	int temp;
- 
--	/* Enable Fiber/Copper auto selection */
--	temp = phy_read(phydev, MII_M1111_PHY_EXT_SR);
--	temp &= ~MII_M1111_HWCFG_FIBER_COPPER_AUTO;
--	phy_write(phydev, MII_M1111_PHY_EXT_SR, temp);
--
--	temp = phy_read(phydev, MII_BMCR);
--	temp |= BMCR_RESET;
--	phy_write(phydev, MII_BMCR, temp);
--
- 	if ((phydev->interface == PHY_INTERFACE_MODE_RGMII) ||
- 	    (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID) ||
- 	    (phydev->interface == PHY_INTERFACE_MODE_RGMII_RXID) ||
--- 
-1.7.2.5
-
+greg k-h
