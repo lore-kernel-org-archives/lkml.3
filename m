@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab3AQFdP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 00:33:15 -0500
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:54574 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab3AQFdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 00:33:14 -0500
-X-Greylist: delayed 956 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 00:33:14 EST
-Message-ID: <50F7894D.3070901@cs.wisc.edu>
-Date: Wed, 16 Jan 2013 23:17:01 -0600
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1752965Ab3AQFrE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 00:47:04 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:41160 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab3AQFrB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 00:47:01 -0500
+Message-ID: <50F79047.1080907@linux.vnet.ibm.com>
+Date: Thu, 17 Jan 2013 13:46:47 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-CC: linux-scsi@vger.kernel.org, JBottomley@parallels.com,
-        linux-kernel@vger.kernel.org, kxie@chelsio.com,
-        Divy La Rey <divy@chelsio.com>
-Subject: Re: [PATCH] cxgb4i: Remove the scsi host device when removing device
-References: <1357931529-10248-1-git-send-email-cascardo@linux.vnet.ibm.com>
-In-Reply-To: <1357931529-10248-1-git-send-email-cascardo@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Ram Pai <linuxram@us.ibm.com>
+Subject: [RFC PATCH v2 0/3] sched: simplify the select_task_rq_fair()
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011705-9264-0000-0000-00000302CBD8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2013 01:12 PM, Thadeu Lima de Souza Cascardo wrote:
-> When doing a hotplug remove of a cxgb4 device, there are still dandling
-> symlinks at /sys/class/scsi_host/hostX to the removed PCI device. The
-> upper layer device may also try to send data, which may crash the
-> system.
-> 
-> The DETACH message from the lower level driver is sent to the ULD when
-> the device is removed, when the scsi host should be removed from the
-> system, avoiding any problems.
-> 
-> After this patch, there are no more dangling symlinks and many attempts
-> to crash the system while there is SCSI activity and removing the device
-> have failed. Adding the device back again works as expected, with the
-> scsi hosts showing up again.
-> 
-> Based on a patch by Karen Xie.
-> 
-> Cc: Karen Xie <kxie@chelsio.com>
-> Cc: Divy La Rey <divy@chelsio.com>
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-> ---
->  drivers/scsi/cxgbi/cxgb4i/cxgb4i.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-> index f924b3c..3fecf35 100644
-> --- a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-> +++ b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-> @@ -1564,6 +1564,7 @@ static int t4_uld_state_change(void *handle, enum cxgb4_state state)
->  		break;
->  	case CXGB4_STATE_DETACH:
->  		pr_info("cdev 0x%p, DETACH.\n", cdev);
-> +		cxgbi_device_unregister(cdev);
->  		break;
->  	default:
->  		pr_info("cdev 0x%p, unknown state %d.\n", cdev, state);
-> 
+v2 change log:
+	Fix code style issues.
+	Fix BUG of NULL affine_sd.
+	Add the support for NUMA domain.
+	Other small fix according to the old logical.
+	Provide more test data with finer granularity.
 
-Patch looks ok to me.
+This patch set is trying to simplify the select_task_rq_fair() with
+schedule balance map.
 
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
+After get rid of the complex code and reorganize the logical, pgbench show
+the improvement, more the clients, bigger the improvement.
+
+				Prev:		Post:
+
+	| db_size | clients |	| tps  |	|  tps  | 
+	+---------+---------+   +------+        +-------+
+	| 22 MB   |       1 |   |10794 |        | 10862 |
+	| 22 MB   |       2 |   |21567 |        | 21711 |
+	| 22 MB   |       4 |   |41621 |        | 42609 |
+	| 22 MB   |       8 |   |53883 |        | 58184 |	+7.98%
+	| 22 MB   |      12 |   |50818 |        | 53464 |	+5.21%
+	| 22 MB   |      16 |   |50463 |        | 55034 |	+9.06%
+	| 22 MB   |      24 |   |46698 |        | 53702 |	+15.00%
+	| 22 MB   |      32 |   |43404 |        | 54030 |	+24.48%
+	| 7484 MB |       1 |   | 7974 |        |  8431 |
+	| 7484 MB |       2 |   |19341 |        | 19509 |
+	| 7484 MB |       4 |   |36808 |        | 38038 |
+	| 7484 MB |       8 |   |47821 |        | 50377 |	+5.34%
+	| 7484 MB |      12 |   |45913 |        | 49128 |	+7.00%
+	| 7484 MB |      16 |   |46478 |        | 49670 |	+6.87%
+	| 7484 MB |      24 |   |42793 |        | 48461 |	+13.25%
+	| 7484 MB |      32 |   |36329 |        | 48436 |	+33.33%
+	| 15 GB   |       1 |   | 7636 |        |  7852 |
+	| 15 GB   |       2 |   |19195 |        | 19369 |
+	| 15 GB   |       4 |   |35975 |        | 37323 |
+	| 15 GB   |       8 |   |47919 |        | 50246 |	+4.86%
+	| 15 GB   |      12 |   |45397 |        | 48608 |	+7.07%
+	| 15 GB   |      16 |   |45926 |        | 49192 |	+7.11%
+	| 15 GB   |      24 |   |42184 |        | 48007 |	+13.80%
+	| 15 GB   |      32 |   |35983 |        | 47955 |	+33.27%
+
+Please check the patch for more details about schedule balance map.
+
+Support the NUMA domain but not tested.
+Support the rebuild of domain but not tested.
+
+Comments are very welcomed.
+
+BTW:
+	Compared with 3.7.0-rc6, 3.8.0-rc3 show big improvement with few
+	clients, but get some damage with many clients, whatever, this patch
+	set will help both of them to gain better performance.
+
+Test with:
+	12 cpu X86 server and linux-next 3.8.0-rc3.
+
+Michael Wang (3):
+	[RFC PATCH v2 1/3] sched: schedule balance map foundation
+	[RFC PATCH v2 2/3] sched: build schedule balance map
+	[RFC PATCH v2 3/3] sched: simplify select_task_rq_fair() with schedule balance map
+
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ b/kernel/sched/core.c  |   44 ++++++++++++++++
+ b/kernel/sched/fair.c  |  131 +++++++++++++++++++++++++------------------------
+ b/kernel/sched/sched.h |   14 +++++
+ kernel/sched/core.c    |   70 ++++++++++++++++++++++++++
+ 4 files changed, 197 insertions(+), 62 deletions(-)
 
