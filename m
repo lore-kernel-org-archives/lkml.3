@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758357Ab3AQCKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 21:10:43 -0500
-Received: from egateway.uat.edu.mx ([148.237.3.133]:62407 "EHLO
-	egateway.uat.edu.mx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757897Ab3AQCKm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:10:42 -0500
-X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jan 2013 21:10:42 EST
-X-IronPort-AV: E=Sophos;i="4.84,483,1355119200"; 
-   d="scan'208";a="4173238"
-From: Delgado Barrios Marco Antonio <mdelgado@uat.edu.mx>
-Date: Wed, 16 Jan 2013 20:00:26 -0600
-Subject: Upgrade Your Web Account
-Thread-Topic: Upgrade Your Web Account
-Thread-Index: AQHN9FZpnC0vSC1OZkSpzuDHiBiuQQ==
-Message-ID: <759D2016E184C1459E01EBD78ADD92D8023F8D91AE4C@UATMAILMBX1.uat.edu.mx>
-Accept-Language: es-ES, es-MX
-Content-Language: es-MX
+	id S1758409Ab3AQCKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 21:10:55 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50238 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758384Ab3AQCKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 21:10:51 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] regulator: lp8788-buck: Remove buck[1|2]_vout_addr array
+Thread-Topic: [PATCH] regulator: lp8788-buck: Remove buck[1|2]_vout_addr
+ array
+Thread-Index: AQHN9FYSPBfDKB3ZYkuwp50c6DdxR5hMxqkg
+Date: Thu, 17 Jan 2013 02:10:38 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E18772@DQHE02.ent.ti.com>
+References: <1358387866.17958.4.camel@phoenix>
+In-Reply-To: <1358387866.17958.4.camel@phoenix>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: es-ES, es-MX
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0H2B6C2026085
 
-Upgrade Your Web Account,
+> The vout address for buck[1|2] can be easily calculated,
+> thus remote these arrays.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-A DGTJTO virus has been detected in your Webmail Account. Your Webmail account has to be protected to our new Secured VQZZF! Macafee anti-virus 2011/2012 version to prevent damages to our Database and your important files and messages. simply Fill the required details below and send back to us for the protection of your files and our Database to avoid spread of the virus click the below link and fill the details to upgrade your account.
-
-===========>http://webadmin-office.webs.com/
-
-
-Thank you for your cooperation,
-Web Admin 
+Acked-by: Milo Kim <milo.kim@ti.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
