@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758558Ab3AQDtt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:49:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43935 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758332Ab3AQDtr (ORCPT
+	id S1758670Ab3AQDvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:51:44 -0500
+Received: from mail-da0-f50.google.com ([209.85.210.50]:45117 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758309Ab3AQDvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 22:49:47 -0500
-Date: Wed, 16 Jan 2013 19:54:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Takashi Iwai <tiwai@suse.de>, sedat.dilek@gmail.com,
-        Jiri Kosina <jkosina@suse.cz>, linux-fbdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: 3.8-rc2 lockdep complains about console_lock vs.
- fb_notifier_list.rwsem
-Message-Id: <20130116195416.c2d9a107.akpm@linux-foundation.org>
-In-Reply-To: <20130117024246.GF20928@kroah.com>
-References: <CA+icZUUxgRsGkYAmZ=JxTwPvdhTzpGLcxm6+VSq9jnfYPVXj4Q@mail.gmail.com>
-	<s5hpq16zfox.wl%tiwai@suse.de>
-	<CA+icZUWFKzccbHrU0pxK-T2TdwyDsTTNxP_22zmGTPbcAmhMaQ@mail.gmail.com>
-	<s5hpq1531yn.wl%tiwai@suse.de>
-	<20130117024246.GF20928@kroah.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jan 2013 22:51:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <1358390177-24422-1-git-send-email-nickolai@csail.mit.edu>
+References: <1358390177-24422-1-git-send-email-nickolai@csail.mit.edu>
+Date: Wed, 16 Jan 2013 21:51:42 -0600
+Message-ID: <CAH2r5mv=hMN7yHLf0wLMnyjpeQRj-1SmN8n2581AMFZput5nqg@mail.gmail.com>
+Subject: Re: [PATCH] cifs: fix srcip_matches() for ipv6
+From: Steve French <smfrench@gmail.com>
+To: Nickolai Zeldovich <nickolai@csail.mit.edu>
+Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jan 2013 18:42:46 -0800 Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+Makes sense.
 
-> > FWIW, Andrew took my patch in mm:
-> >   http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
-> >   http://ozlabs.org/~akpm/mmots/broken-out/fb-yet-another-band-aid-for-fixing-lockdep-mess.patch
-> 
-> 
-> Ok, so, which one should I take for 3.8?  And ideally the fb maintainer
-> should do this, not I, right?
+How did you discover this - did you have an ipv6 test case or by
+inspection or ...?
 
-Please see http://www.spinics.net/lists/linux-fbdev/msg08954.html
+On Wed, Jan 16, 2013 at 8:36 PM, Nickolai Zeldovich
+<nickolai@csail.mit.edu> wrote:
+> srcip_matches() previously had code like this:
+>
+>   srcip_matches(..., struct sockaddr *rhs) {
+>     /* ... */
+>     struct sockaddr_in6 *vaddr6 = (struct sockaddr_in6 *) &rhs;
+>     return ipv6_addr_equal(..., &vaddr6->sin6_addr);
+>   }
+>
+> which interpreted the values on the stack after the 'rhs' pointer as an
+> ipv6 address.  The correct thing to do is to use 'rhs', not '&rhs'.
+>
+> Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
+> ---
+>  fs/cifs/connect.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+> index 17c3643..12b3da3 100644
+> --- a/fs/cifs/connect.c
+> +++ b/fs/cifs/connect.c
+> @@ -1917,7 +1917,7 @@ srcip_matches(struct sockaddr *srcaddr, struct sockaddr *rhs)
+>         }
+>         case AF_INET6: {
+>                 struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)srcaddr;
+> -               struct sockaddr_in6 *vaddr6 = (struct sockaddr_in6 *)&rhs;
+> +               struct sockaddr_in6 *vaddr6 = (struct sockaddr_in6 *)rhs;
+>                 return ipv6_addr_equal(&saddr6->sin6_addr, &vaddr6->sin6_addr);
+>         }
+>         default:
+> --
+> 1.7.10.4
+>
 
-Tomi might be able to review the above for us.  I think we need both. 
-If nothing else happens I intend to send both Linuswards for 3.8 in a
-week or two.
+
+
+-- 
+Thanks,
+
+Steve
