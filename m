@@ -1,123 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab3AQBsm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 20:48:42 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:60458 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901Ab3AQBsk (ORCPT
+	id S1758284Ab3AQBso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 20:48:44 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:56369 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757865Ab3AQBsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 20:48:40 -0500
-Date: Wed, 16 Jan 2013 17:48:36 -0800
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>,
-        jmoyer@redhat.com
-Subject: Re: [PATCHSET] workqueue: remove gcwq and make worker_pool the only
- backend abstraction
-Message-ID: <20130117014836.GW2668@htj.dyndns.org>
-References: <1358386969-945-1-git-send-email-tj@kernel.org>
+	Wed, 16 Jan 2013 20:48:42 -0500
+Message-ID: <50F75875.30909@linaro.org>
+Date: Wed, 16 Jan 2013 17:48:37 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358386969-945-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arun Sharma <asharma@fb.com>, sanjay@google.com,
+        Paul Turner <pjt@google.com>, David Rientjes <rientjes@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC 1/8] Introduce new system call mvolatile
+References: <1357187286-18759-1-git-send-email-minchan@kernel.org> <1357187286-18759-2-git-send-email-minchan@kernel.org>
+In-Reply-To: <1357187286-18759-2-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forgot to cc Jens and Jeff.
+On 01/02/2013 08:27 PM, Minchan Kim wrote:
+> This patch adds new system call m[no]volatile.
+> If someone asks is_volatile system call, it could be added, too.
 
-Jens, Jeff, the patchset itself probably won't interest you guys too
-much but it's part of effort towards worker pool w/ custom attributes.
-I'm working toward a design where the custom pools are integral part
-of workqueue which share all the interface and semantics, which
-probably is a bit more involved than implementing something on the
-side but I think the end result will be much better this way.
+So some nits below from my initial playing around with this patchset.
 
-I'm aiming 3.9 merge window but that could be too ambitious.  Will
-keep you guys in the loop.
+> +/*
+> + * Return -EINVAL if range doesn't include a right vma at all.
+> + * Return -ENOMEM with interrupting range opeartion if memory is not enough to
+> + * merge/split vmas.
+> + * Return 0 if range consists of only proper vmas.
+> + * Return 1 if part of range includes inavlid area(ex, hole/huge/ksm/mlock/
+> + * special area)
+> + */
+> +SYSCALL_DEFINE2(mvolatile, unsigned long, start, size_t, len)
+> +{
+> +	unsigned long end, tmp;
+> +	struct vm_area_struct *vma, *prev;
+> +	bool invalid = false;
+> +	int error = -EINVAL;
+> +
+> +	down_write(&current->mm->mmap_sem);
+> +	if (start & ~PAGE_MASK)
+> +		goto out;
+> +
+> +	len &= PAGE_MASK;
+> +	if (!len)
+> +		goto out;
+> +
+> +	end = start + len;
+> +	if (end < start)
+> +		goto out;
+> +
+> +	vma = find_vma_prev(current->mm, start, &prev);
+> +	if (!vma)
+> +		goto out;
+> +
+> +	if (start > vma->vm_start)
+> +		prev = vma;
+> +
+> +	for (;;) {
+> +		/* Here start < (end|vma->vm_end). */
+> +		if (start < vma->vm_start) {
+> +			start = vma->vm_start;
+> +			if (start >= end)
+> +				goto out;
+> +			invalid = true;
+> +		}
+> +
+> +		/* Here vma->vm_start <= start < (end|vma->vm_end) */
+> +		tmp = vma->vm_end;
+> +		if (end < tmp)
+> +			tmp = end;
+> +
+> +		/* Here vma->vm_start <= start < tmp <= (end|vma->vm_end). */
+> +		error = do_mvolatile(vma, &prev, start, tmp);
+> +		if (error == -ENOMEM) {
+> +			up_write(&current->mm->mmap_sem);
+> +			return error;
+> +		}
+> +		if (error == -EINVAL)
+> +			invalid = true;
+> +		else
+> +			error = 0;
+> +		start = tmp;
+> +		if (prev && start < prev->vm_end)
+> +			start = prev->vm_end;
+> +		if (start >= end)
+> +			break;
+> +
+> +		vma = prev->vm_next;
+> +		if (!vma)
+> +			break;
+> +	}
+> +out:
+> +	up_write(&current->mm->mmap_sem);
+> +	return invalid ? 1 : 0;
+> +}
 
-Thanks.
+The error logic here is really strange. If any of the early error cases 
+are triggered (ie: (start & ~PAGE_MASK), etc), then we jump to out and 
+return 0 (instead of EINVAL). I don't think that's what you intended.
 
-On Wed, Jan 16, 2013 at 05:42:32PM -0800, Tejun Heo wrote:
-> Hello,
-> 
-> Currently, on the backend side, there are two layers of abstraction.
-> For each CPU and the special unbound wq-specific CPU, there's one
-> global_cwq.  gcwq in turn hosts two worker_pools - one for normal
-> priority, the other for highpri - each of which actually serves the
-> work items.
-> 
-> worker_pool is the later addition to support separate pool of workers
-> for highpri workqueues.  Stuff was moved to worker_pool on as-needed
-> basis and, as a result, the two pools belonging to the same CPU share
-> some stuff in the gcwq - most notably the lock and the hash table for
-> work items currently being executed.
-> 
-> It seems like we'll need to support worker pools with custom
-> attributes, which is planned to be implemented as extra worker_pools
-> for the unbound CPU.  Removing gcwq and having worker_pool as the top
-> level abstraction makes things much simpler for such designs.  Also,
-> there's scalability benefit to not sharing locking and busy hash among
-> different worker pools as worker pools w/ custom attributes are likely
-> to have widely different memory / cpu locality characteristics.
-> 
-> In retrospect, it might have been less churn if we just converted to
-> have multiple gcwqs per CPU when we were adding highpri pool support.
-> Oh well, such is life and the name worker_pool fits the role much
-> better anyway at this point.
-> 
-> This patchset moves the remaining stuff in gcwq to worker_pool and
-> then removes gcwq entirely making worker_pool the top level and the
-> only backend abstraction.  In the process, this patchset also prepares
-> for later addition of worker_pools with custom attributes.
-> 
-> This patchset shouldn't introduce any visible differences outside of
-> workqueue proper and contains the following 17 patches.
-> 
->  0001-workqueue-unexport-work_cpu.patch
->  0002-workqueue-use-std_-prefix-for-the-standard-per-cpu-p.patch
->  0003-workqueue-make-GCWQ_DISASSOCIATED-a-pool-flag.patch
->  0004-workqueue-make-GCWQ_FREEZING-a-pool-flag.patch
->  0005-workqueue-introduce-WORK_OFFQ_CPU_NONE.patch
->  0006-workqueue-add-worker_pool-id.patch
->  0007-workqueue-record-pool-ID-instead-of-CPU-in-work-data.patch
->  0008-workqueue-move-busy_hash-from-global_cwq-to-worker_p.patch
->  0009-workqueue-move-global_cwq-cpu-to-worker_pool.patch
->  0010-workqueue-move-global_cwq-lock-to-worker_pool.patch
->  0011-workqueue-make-hotplug-processing-per-pool.patch
->  0012-workqueue-make-freezing-thawing-per-pool.patch
->  0013-workqueue-replace-for_each_worker_pool-with-for_each.patch
->  0014-workqueue-remove-worker_pool-gcwq.patch
->  0015-workqueue-remove-global_cwq.patch
->  0016-workqueue-rename-nr_running-variables.patch
->  0017-workqueue-post-global_cwq-removal-cleanups.patch
-> 
-> 0001-0002 are misc preps.
-> 
-> 0003-0004 move flags from gcwq to pool.
-> 
-> 0005-0007 make work->data off-queue backlink point to worker_pools
-> instead of CPUs, which is necessary to move busy_hash to pool.
-> 
-> 0008-0010 move busy_hash, cpu and locking to pool.
-> 
-> 0011-0014 make operations per-pool and remove gcwq usages.
-> 
-> 0015-0017 remove gcwq and cleanup afterwards.
-> 
-> This patchset is on top of wq/for-3.9 023f27d3d6f ("workqueue: fix
-> find_worker_executing_work() brekage from hashtable conversion") and
-> available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.9-remove-gcwq
-> 
-> Thanks.
-> 
->  include/linux/workqueue.h        |   17
->  include/trace/events/workqueue.h |    2
->  kernel/workqueue.c               |  897 +++++++++++++++++++--------------------
->  3 files changed, 461 insertions(+), 455 deletions(-)
 
--- 
-tejun
+> +/*
+> + * Return -ENOMEM with interrupting range opeartion if memory is not enough
+> + * to merge/split vmas.
+> + * Return 1 if part of range includes purged's one, otherwise, return 0
+> + */
+> +SYSCALL_DEFINE2(mnovolatile, unsigned long, start, size_t, len)
+> +{
+> +	unsigned long end, tmp;
+> +	struct vm_area_struct *vma, *prev;
+> +	int ret, error = -EINVAL;
+> +	bool is_purged = false;
+> +
+> +	down_write(&current->mm->mmap_sem);
+> +	if (start & ~PAGE_MASK)
+> +		goto out;
+> +
+> +	len &= PAGE_MASK;
+> +	if (!len)
+> +		goto out;
+> +
+> +	end = start + len;
+> +	if (end < start)
+> +		goto out;
+> +
+> +	vma = find_vma_prev(current->mm, start, &prev);
+> +	if (!vma)
+> +		goto out;
+> +
+> +	if (start > vma->vm_start)
+> +		prev = vma;
+> +
+> +	for (;;) {
+> +		/* Here start < (end|vma->vm_end). */
+> +		if (start < vma->vm_start) {
+> +			start = vma->vm_start;
+> +			if (start >= end)
+> +				goto out;
+> +		}
+> +
+> +		/* Here vma->vm_start <= start < (end|vma->vm_end) */
+> +		tmp = vma->vm_end;
+> +		if (end < tmp)
+> +			tmp = end;
+> +
+> +		/* Here vma->vm_start <= start < tmp <= (end|vma->vm_end). */
+> +		error = do_mnovolatile(vma, &prev, start, tmp, &is_purged);
+> +		if (error) {
+> +			WARN_ON(error != -ENOMEM);
+> +			goto out;
+> +		}
+> +		start = tmp;
+> +		if (prev && start < prev->vm_end)
+> +			start = prev->vm_end;
+> +		if (start >= end)
+> +			break;
+> +
+> +		vma = prev->vm_next;
+> +		if (!vma)
+> +			break;
+> +	}
+
+I'm still not sure how this logic improves over the madvise case. If we 
+catch an error mid-way through setting a series of vmas to non-volatile, 
+we end up exiting and losing state (ie: if only the first vma was 
+purged, but half way through 10 vmas we get a ENOMEM error. So the first 
+vma is now non-volatile, but we do not return the purged flag ).
+
+If we're going to have a new syscall for this (which I'm not sure is the 
+right approach), we should make use of multiple arguments so we can 
+return if data was purged, even if we hit an error midway).
+
+Alternatively, if we can find a way to allocate any necessary memory 
+before we do any vma volatility state changes, then we can return ENOMEM 
+then and be confident we won't end up with failed partial state change 
+(this is the approach I used in my fallocate-volatile patches).
+
+thanks
+-john
