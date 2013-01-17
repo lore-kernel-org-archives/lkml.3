@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab3AQNQK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:16:10 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:60205 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3AQNQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:16:08 -0500
-Date: Thu, 17 Jan 2013 13:16:04 +0000
-From: Cong Ding <dinggnu@gmail.com>
-To: Richard Mortimer <richm@oldelvet.org.uk>
-Cc: Sam Ravnborg <sam@ravnborg.org>, "David S. Miller" <davem@davemloft.net>,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sparc: kernel/sbus.c: fix memory leakage
-Message-ID: <20130117131604.GC25615@gmail.com>
-References: <1358199372-11976-1-git-send-email-dinggnu@gmail.com>
- <20130116211309.GA13993@merkur.ravnborg.org>
- <20130116211725.GC18593@gmail.com>
- <20130116220018.GA14063@merkur.ravnborg.org>
- <20130116220153.GD18593@gmail.com>
- <50F7D577.8010506@oldelvet.org.uk>
- <20130117115637.GB25615@gmail.com>
- <50F7EED3.1050309@oldelvet.org.uk>
+	id S1753846Ab3AQNTo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:19:44 -0500
+Received: from nm5-vm1.bullet.mail.bf1.yahoo.com ([98.139.213.155]:22506 "HELO
+	nm5-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750953Ab3AQNTn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 08:19:43 -0500
+X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 08:19:43 EST
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 808534.40990.bm@omp1040.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com.br;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=q7Z/FTb9RVg4nPbzxlp25J6AitBFyhIygzRaN0lMUDvQN32jxranKiWUNsbI/F0XXQXzsNsc9rHeaoC1lnWM3k/ua00Sbc8FWNnYko1FkHGS9ji5Vlbs40uT9bWA8KA7A33rpJb1sP7cEEt44/TYZ0ximpEC+3+pEeooJ/ZXs5w=;
+X-YMail-OSG: iPTt.G8VM1mOHC902qzVejdagIlqQ.0qDSOj7xXvvnAbrky
+ QCzjR_DpemfL4N_DeCLdy
+X-Rocket-MIMEInfo: 001.001,CgoKCgpEZWFyIFNpci9NYWRhbSwKV2UgYXJlIGludGVyZXN0ZWQgaW4gcHVyY2hhc2luZyB5b3VyIHByb2R1Y3RzIGFuZCB3ZSBzaW5jZXJlbHkgIGhvcGUgdG8gZXN0YWJsaXNoIGEgbG9uZy10ZXJtIGJ1c2luZXNzIHJlbGF0aW9uIHdpdGggeW91ciAgZXN0ZWVtZWQgY29tcGFueS4gUGxlYXNlIGtpbmRseSBzZW5kIG1lIHlvdXIgbGF0ZXN0IGNhdGFsb2cuIEFsc28sIGluZm9ybSBtZSBhYm91dCB0aGUgTWluaW11bSBPcmRlciBRdWFudGl0eSwgRGVsaXZlcnkgdGltZSAgb3IgRk9CLCBhbmQgcGF5bWVudCABMAEBAQE-
+X-RocketYMMF: ruthsatoure
+X-Mailer: YahooMailClassic/15.1.2 YahooMailWebService/0.8.130.494
+Message-ID: <1358428462.23385.YahooMailClassic@web140902.mail.bf1.yahoo.com>
+Date: Thu, 17 Jan 2013 05:14:22 -0800 (PST)
+From: agrrointertradesltd@gmail.com
+Reply-To: agrrointertradesltd@gmail.com
+Subject: INQUIRY
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F7EED3.1050309@oldelvet.org.uk>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 12:30:11PM +0000, Richard Mortimer wrote:
-> 
-> 
-> On 17/01/2013 11:56, Cong Ding wrote:
-> >On Thu, Jan 17, 2013 at 10:41:59AM +0000, Richard Mortimer wrote:
-> >>
-> >>
-> >>On 16/01/2013 22:01, Cong Ding wrote:
-> >>>the variable iommu and strbuf are not freed if it goes to error.
-> >>>
-> >>>Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> >>>---
-> >>>  arch/sparc/kernel/sbus.c |    2 ++
-> >>>  1 file changed, 2 insertions(+)
-> >>>
-> >>>diff --git a/arch/sparc/kernel/sbus.c b/arch/sparc/kernel/sbus.c
-> >>>index 1271b3a..78aa26b 100644
-> >>>--- a/arch/sparc/kernel/sbus.c
-> >>>+++ b/arch/sparc/kernel/sbus.c
-> >>>@@ -656,6 +656,8 @@ static void __init sbus_iommu_init(struct platform_device *op)
-> >>>  	return;
-> >>>
-> >>>  fatal_memory_error:
-> >>>+	kfree(strbuf);
-> >>
-> >>strbuf will be uninitialized if the iommu allocation fails. I don't
-> >>have a particular preference for how to fix this but tend to dislike
-> >>initial assignment with NULL because it hides other control flow
-> >>issues.
-> >Sorry I didn't notice strbuf will be uninitialized here. But if we don't
-> >initially assign a NULL value to strbuf, I cannot find a way to handle it
-> >besides the first version patch. Did you have any suggestions? For me, I like
-> >the first version.
-> 
-> Two thoughts...
-> 
-> 1 - just use a goto target for the iommu allocation failure and make
-> that skip the strbuf free call. The others use the existing
-> fatal_memory_error label.
-this looks ugly. If we do in this way, why not version 1?
-> 
-> 2 - Move the strbuf kzalloc up 2 lines so that it occurs before the
-> test for iommu.
-> 
-> 2b - In case (2) above the failure test could be changed to
-> if (!iommu || !strbuf)
-> to remove duplication of goto.
-I will send a new version by using this solution.
-Thanks, - cong
 
+
+
+
+
+Dear Sir/Madam,
+We are interested in purchasing your products and we sincerely  hope to establish a long-term business relation with your  esteemed company. Please kindly send me your latest catalog. Also, inform me about the Minimum Order Quantity, Delivery time  or FOB, and payment terms warranty.Please contact us via:
+(agrrointertradesltd@gmail.com )
+Your early reply is highly appreciated.
+Thank You!
+Best Regards,
+______________________________ __
+Mr, Abdul Karimu
+(Purchasing Manager)
+Mage Trade Star Co., Ltd.
+Tel: +60102149434
+Email: agrrointertradesltd@gmail.com
