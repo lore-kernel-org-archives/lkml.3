@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab3AQPkU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 10:40:20 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:35537 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756289Ab3AQPkS convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:2>);
-	Thu, 17 Jan 2013 10:40:18 -0500
-Message-Id: <50F8297002000078000B6E64@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Thu, 17 Jan 2013 15:40:16 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Matt Fleming" <matt@console-pimps.org>
-Cc: "Bjorn Helgaas" <bhelgaas@google.com>,
-        "Matthew Garrett" <mjg59@srcf.ucam.org>,
-        "linux-efi" <linux-efi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix setup_efi_pci()
-References: <50F3D70402000078000B530E@nat28.tlf.novell.com>
- <1358425782.8203.413.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1358425782.8203.413.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756906Ab3AQPmn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 10:42:43 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:58287 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756676Ab3AQPmk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 10:42:40 -0500
+Date: Thu, 17 Jan 2013 15:42:36 +0000
+From: Andrew Murray <andrew.murray@arm.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
+Message-ID: <20130117154236.GA25943@arm.com>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130115154038.GA11241@arm.com>
+ <20130115211441.GA13139@avionic-0098.adnet.avionic-design.de>
+ <201301161400.26587.arnd@arndb.de>
+ <20130116161716.GA10630@arm.com>
+ <20130116183101.GA28660@avionic-0098.adnet.avionic-design.de>
+MIME-Version: 1.0
+In-Reply-To: <20130116183101.GA28660@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 17 Jan 2013 15:42:37.0862 (UTC) FILETIME=[46E4DC60:01CDF4C9]
+X-MC-Unique: 113011715423816801
+Content-Type: text/plain; charset=WINDOWS-1252
 Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.01.13 at 13:29, Matt Fleming <matt@console-pimps.org> wrote:
-> On Mon, 2013-01-14 at 08:59 +0000, Jan Beulich wrote:
->> This fixes three issues:
->> - missing parentheses around a flag test
->> - wrong memory type used for allocation intended to persist post-boot
->> - four similar build warnings on 32-bit (casts between different size
->>   pointers and integers)
->> 
->> Signed-off-by: Jan Beulich <jbeulich@suse.com>
->> 
->> ---
->>  arch/x86/boot/compressed/eboot.c |   12 ++++++------
->>  1 file changed, 6 insertions(+), 6 deletions(-)
+On Wed, Jan 16, 2013 at 06:31:01PM +0000, Thierry Reding wrote:
+> Alright, putting the functions into pci_ops doesn't sound like a very
+> good idea then. Or perhaps it would make sense for hardware where the
+> root complex and the MSI controller are handled by the same driver.
+> Basically it could be done as a shortcut and if those are not filled
+> in, the drivers could still opt to look up an MSI controller from a
+> phandle specified in DT.
 > 
-> Jan, could you resubmit items 2 and 3 as separate patches please?
+> Even another alternative would be to keep the functions within the
+> struct pci_ops and use generic ones if an external MSI controller is
+> used. Just tossing around ideas.
 
-Sure, will do (probably only after rc4 though).
+I think an ideal solution would be for additional logic in drivers/msi.c
+(e.g. in functions like msi_capability_init) to determine (based on the
+passed in pci_dev) which MSI controller ops to use. I'm not sure the best
+way to implement an association between an MSI controller and PCI busses
+(I believe arch/sparc does something like this - perhaps there will be
+inspiration there).
 
-> Item 1 on your list has already been fixed in Linus' tree,
+As you've pointed out, most RCs will have their own MSI controllers - so
+it should be easy to register and associate both together.
 
-Yet I know I checked the tree right before sending...
+I've submitted my previous work on MSI controller registration, but it
+doesn't quite solve this problem - perhaps it can be a starting point?
 
-Jan
-
-> commit 886d751a2ea99a160f2d0a472231566d9cb0cf58
-> Author: Sasha Levin <sasha.levin@oracle.com>
-> Date:   Thu Dec 20 14:11:33 2012 -0500
-> 
->     x86, efi: correct precedence of operators in setup_efi_pci
->     
->     With the current code, the condition in the if() doesn't make much sense 
-> due
->     precedence of operators.
->     
->     Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->     Link: 
-> http://lkml.kernel.org/r/1356030701-16284-25-git-send-email-sasha.levi 
->     Cc: Matt Fleming <matt.fleming@intel.com>
->     Cc: Matthew Garrett <mjg@redhat.com>
->     Cc: Bjorn Helgaas <bhelgaas@google.com>
->     Cc: Seth Forshee <seth.forshee@canonical.com>
->     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> 
-> -- 
-> Matt Fleming, Intel Open Source Technology Center
-
-
+Andrew Murray
 
