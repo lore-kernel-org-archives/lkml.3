@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab3AQLir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 06:38:47 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45505 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755533Ab3AQLbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 06:31:19 -0500
+	id S1755179Ab3AQLbD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 06:31:03 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47431 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454Ab3AQLa6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 06:30:58 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v7 13/22] mfd: omap-usb-host: override number of ports from platform data
-Date: Thu, 17 Jan 2013 13:30:22 +0200
-Message-ID: <1358422231-24736-14-git-send-email-rogerq@ti.com>
+Subject: [PATCH v7 02/22] mfd: omap-usb-tll: Fix channel count detection
+Date: Thu, 17 Jan 2013 13:30:11 +0200
+Message-ID: <1358422231-24736-3-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358422231-24736-1-git-send-email-rogerq@ti.com>
 References: <1358422231-24736-1-git-send-email-rogerq@ti.com>
@@ -24,74 +25,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both OMAP4 and 5 exhibit the same revision ID in the REVISION register
-but they have different number of ports i.e. 2 and 3 respectively.
-So we can't rely on REVISION register for number of ports on OMAP5
-and depend on platform data (or device tree) instead.
+Fix channel count detecion for REV2. Also, don't give up
+if we don't recognize the IP Revision. We assume the default
+number of channels (i.e. 3) for unrecognized IPs.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-host.c            |   34 +++++++++++++++++++------------
- include/linux/platform_data/usb-omap.h |    1 +
- 2 files changed, 22 insertions(+), 13 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 26319ca..779588b 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -493,19 +493,27 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 	 */
- 	pm_runtime_put_sync(dev);
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index e459489..9658e18 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -98,6 +98,7 @@
+ struct usbtll_omap {
+ 	struct clk				*usbtll_p1_fck;
+ 	struct clk				*usbtll_p2_fck;
++	int					nch;	/* num. of channels */
+ 	struct usbhs_omap_platform_data		*pdata;
+ 	/* secure the register updates */
+ 	spinlock_t				lock;
+@@ -210,7 +211,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	unsigned				reg;
+ 	unsigned long				flags;
+ 	int					ret = 0;
+-	int					i, ver, count;
++	int					i, ver;
  
--	switch (omap->usbhs_rev) {
--	case OMAP_USBHS_REV1:
--		omap->nports = 3;
--		break;
--	case OMAP_USBHS_REV2:
--		omap->nports = 2;
--		break;
--	default:
--		omap->nports = OMAP3_HS_USB_PORTS;
--		dev_dbg(dev,
--		  "USB HOST Rev : 0x%d not recognized, assuming %d ports\n",
--		   omap->usbhs_rev, omap->nports);
--		break;
-+	/*
-+	 * If platform data contains nports then use that
-+	 * else make out number of ports from USBHS revision
-+	 */
-+	if (pdata->nports) {
-+		omap->nports = pdata->nports;
-+	} else {
-+		switch (omap->usbhs_rev) {
-+		case OMAP_USBHS_REV1:
-+			omap->nports = 3;
-+			break;
-+		case OMAP_USBHS_REV2:
-+			omap->nports = 2;
-+			break;
-+		default:
-+			omap->nports = OMAP3_HS_USB_PORTS;
-+			dev_dbg(dev,
-+			 "USB HOST Rev:0x%d not recognized, assuming %d ports\n",
-+			 omap->usbhs_rev, omap->nports);
-+			break;
-+		}
+ 	dev_dbg(dev, "starting TI HSUSB TLL Controller\n");
+ 
+@@ -262,16 +263,18 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	ver =  usbtll_read(base, OMAP_USBTLL_REVISION);
+ 	switch (ver) {
+ 	case OMAP_USBTLL_REV1:
+-	case OMAP_USBTLL_REV2:
+-		count = OMAP_TLL_CHANNEL_COUNT;
++		tll->nch = OMAP_TLL_CHANNEL_COUNT;
+ 		break;
++	case OMAP_USBTLL_REV2:
+ 	case OMAP_USBTLL_REV3:
+-		count = OMAP_REV2_TLL_CHANNEL_COUNT;
++		tll->nch = OMAP_REV2_TLL_CHANNEL_COUNT;
+ 		break;
+ 	default:
+-		dev_err(dev, "TLL version failed\n");
+-		ret = -ENODEV;
+-		goto err_ioremap;
++		tll->nch = OMAP_TLL_CHANNEL_COUNT;
++		dev_dbg(dev,
++		 "USB TLL Rev : 0x%x not recognized, assuming %d channels\n",
++			ver, tll->nch);
++		break;
  	}
  
- 	for (i = 0; i < omap->nports; i++)
-diff --git a/include/linux/platform_data/usb-omap.h b/include/linux/platform_data/usb-omap.h
-index 04c7537..925a4a7 100644
---- a/include/linux/platform_data/usb-omap.h
-+++ b/include/linux/platform_data/usb-omap.h
-@@ -39,6 +39,7 @@ enum usbhs_omap_port_mode {
- };
+ 	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
+@@ -291,7 +294,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		usbtll_write(base, OMAP_TLL_SHARED_CONF, reg);
  
- struct usbhs_omap_platform_data {
-+	int				nports;
- 	enum usbhs_omap_port_mode	port_mode[OMAP3_HS_USB_PORTS];
- 	int				reset_gpio_port[OMAP3_HS_USB_PORTS];
- 	struct regulator		*regulator[OMAP3_HS_USB_PORTS];
+ 		/* Enable channels now */
+-		for (i = 0; i < count; i++) {
++		for (i = 0; i < tll->nch; i++) {
+ 			reg = usbtll_read(base,	OMAP_TLL_CHANNEL_CONF(i));
+ 
+ 			if (is_ohci_port(pdata->port_mode[i])) {
+@@ -319,7 +322,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-err_ioremap:
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 	iounmap(base);
+ 	pm_runtime_put_sync(dev);
 -- 
 1.7.4.1
 
