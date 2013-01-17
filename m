@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab3AQMpi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 07:45:38 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59166 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814Ab3AQMph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 07:45:37 -0500
-Message-ID: <50F7F25C.3060909@ti.com>
-Date: Thu, 17 Jan 2013 14:45:16 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755970Ab3AQMpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 07:45:47 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:25808
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755606Ab3AQMpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 07:45:44 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h1155h)
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <gregkh@linuxfoundation.org>
+CC: <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] serial: imx: Remove unused 'tty' variable
+Date: Thu, 17 Jan 2013 10:45:13 -0200
+Message-ID: <1358426713-16780-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <sameo@linux.intel.com>, <tony@atomide.com>, <kishon@ti.com>,
-        <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 15/22] mfd: omap-usb-host: Manage HSIC clocks for HSIC
- mode
-References: <1358422231-24736-1-git-send-email-rogerq@ti.com> <1358422231-24736-16-git-send-email-rogerq@ti.com> <20130117114522.GF18978@arwen.pp.htv.fi> <50F7EA2A.2080705@ti.com> <20130117122757.GO18978@arwen.pp.htv.fi>
-In-Reply-To: <20130117122757.GO18978@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2013 02:27 PM, Felipe Balbi wrote:
-> On Thu, Jan 17, 2013 at 02:10:18PM +0200, Roger Quadros wrote:
->> On 01/17/2013 01:45 PM, Felipe Balbi wrote:
->>> Hi,
->>>
->>> On Thu, Jan 17, 2013 at 01:30:24PM +0200, Roger Quadros wrote:
->>>> @@ -598,6 +639,24 @@ static int usbhs_omap_probe(struct platform_device *pdev)
->>>>  				clkname, PTR_ERR(pclk));
->>>>  		else
->>>>  			omap->utmi_clk[i] = pclk;
->>>> +
->>>> +		snprintf(clkname, sizeof(clkname),
->>>> +				"usb_host_hs_hsic480m_p%d_clk", i + 1);
->>>
->>> do we really need to know the exact clock node name ?
->>>
->> I think so. Do you have a better suggestion?
-> 
-> update CLKDEV entries ? I mean, what if we have a new OMAP or AMxxxx
-> device with a different clock name ? That will be a big bummer.
-> 
+Commit 2e124b4a39 (TTY: switch tty_flip_buffer_push) introduced the following 
+build warning:
 
-In that case we simply need to add the relevant CLKDEV entries/aliases
-for the new platform. I don't think anything needs to be changed in the
-driver. We are still using clk_get(dev, clk_name), so the CLKDEV
-framework will return the best matching clock for the device.
+drivers/tty/serial/imx.c:519:21: warning: unused variable 'tty' [-Wunused-variable]
 
---
-cheers,
--roger
+Remove the unused 'tty' variable.
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/tty/serial/imx.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index be26345..a220f77 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -516,7 +516,6 @@ static irqreturn_t imx_rxint(int irq, void *dev_id)
+ {
+ 	struct imx_port *sport = dev_id;
+ 	unsigned int rx, flg, ignored = 0;
+-	struct tty_struct *tty = sport->port.state->port.tty;
+ 	struct tty_port *port = &sport->port.state->port;
+ 	unsigned long flags, temp;
+ 
+-- 
+1.7.9.5
+
+
