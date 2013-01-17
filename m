@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab3AQB2U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 20:28:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39418 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758257Ab3AQB2S (ORCPT
+	id S1758134Ab3AQBmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 20:42:43 -0500
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:41625 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756821Ab3AQBmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 20:28:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130116153744.70210fa3.akpm@linux-foundation.org>
-References: <1357352744-8138-1-git-send-email-ming.lei@canonical.com>
-	<20130116153744.70210fa3.akpm@linux-foundation.org>
-Date: Thu, 17 Jan 2013 09:28:14 +0800
-Message-ID: <CACVXFVOipr0VMyPQaZTLckxTaPan7ZneERUqZ1S_mYo11A5AeA@mail.gmail.com>
-Subject: Re: [PATCH v7 0/6] solve deadlock caused by memory allocation with I/O
-From: Ming Lei <ming.lei@canonical.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Jan 2013 20:42:42 -0500
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>
+Cc: jonghwa3.lee@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, durgadoss.r@intel.com, joe@perches.com
+Subject: [PATCH V3 2/3] thermal: exynos: Miscellaneous fixes to support falling threshold interrupt
+Date: Wed, 16 Jan 2013 17:42:18 -0800
+Message-Id: <1358386938-13577-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <CADGdYn4CeWB5zHuHrfSLYsyOCA_zcSgm9LHTwtei1zAhfmDJNQ@mail.gmail.com>
+References: <CADGdYn4CeWB5zHuHrfSLYsyOCA_zcSgm9LHTwtei1zAhfmDJNQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 7:37 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sat,  5 Jan 2013 10:25:38 +0800
-> Ming Lei <ming.lei@canonical.com> wrote:
->
->> This patchset try to solve one deadlock problem which might be caused
->> by memory allocation with block I/O during runtime PM and block device
->> error handling path. Traditionly, the problem is addressed by passing
->> GFP_NOIO statically to mm, but that is not a effective solution, see
->> detailed description in patch 1's commit log.
->>
->> This patch set introduces one process flag and trys to fix the deadlock
->> problem on block device/network device during runtime PM or usb bus reset.
->
-> The patchset doesn't look like the worst thing I've ever applied ;)
->
-> One thing I'm wondering: during suspend and resume, why are GFP_KERNEL
-> allocation attempts even getting down to the device layer?  Presumably
-> the page scanner is encountering dirty pagecache or dirty swapcache
-> pages?
->
-> If so, I wonder if we could avoid the whole problem by appropriately
-> syncing all dirty memory back to storage before starting to turn devices
-> off?
+Below fixes are done to support falling threshold interrupt,
+* Falling interrupt status macro corrected according to exynos5 data sheet.
+* The get trend function modified to calculate trip temperature correctly.
+* The clearing of interrupt status in the isr is now done after handling
+  the event that caused the interrupt.
 
-The patchset is to address the probable deadlock problem by GFP_KERNEL
-during runtime suspend/resume which is per block/network device. I am
-wondering if syncing all dirty memory is suitable or necessary during
-per-storage/network device runtime resume/suspend:
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+Changes since V2,
+Incorporated Joe Perches <joe@perches.com> review comments about coding
+guidelines.
 
-      - sys_sync is very slow and runtime pm operation is frequent
+This path is based on thermal maintainer next tree.
 
-      - it is not efficient because only sync dirty memory against the affected
-        device is needed in theory and not necessary to sync all
+ drivers/thermal/exynos_thermal.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-     - we still need some synchronization to avoid accessing the storage
-       between sys_sync and device suspend, just like system sleep case,
-       pm_restrict_gfp_mask is needed even sys_sync has been done
-       inside enter_state().
+diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+index dcd13f7..f4dd68a 100644
+--- a/drivers/thermal/exynos_thermal.c
++++ b/drivers/thermal/exynos_thermal.c
+@@ -82,7 +82,7 @@
+ 
+ #define EXYNOS_TRIMINFO_RELOAD		0x1
+ #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
+-#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 16)
++#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
+ #define EXYNOS_MUX_ADDR_VALUE		6
+ #define EXYNOS_MUX_ADDR_SHIFT		20
+ #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
+@@ -373,7 +373,14 @@ static int exynos_get_temp(struct thermal_zone_device *thermal,
+ static int exynos_get_trend(struct thermal_zone_device *thermal,
+ 			int trip, enum thermal_trend *trend)
+ {
+-	if (thermal->temperature >= trip)
++	int ret;
++	unsigned long trip_temp;
++
++	ret = exynos_get_trip_temp(thermal, trip, &trip_temp);
++	if (ret < 0)
++		return ret;
++
++	if (thermal->temperature >= trip_temp)
+ 		*trend = THERMAL_TREND_RAISING;
+ 	else
+ 		*trend = THERMAL_TREND_DROPPING;
+@@ -712,10 +719,9 @@ static void exynos_tmu_work(struct work_struct *work)
+ 	struct exynos_tmu_data *data = container_of(work,
+ 			struct exynos_tmu_data, irq_work);
+ 
++	exynos_report_trigger();
+ 	mutex_lock(&data->lock);
+ 	clk_enable(data->clk);
+-
+-
+ 	if (data->soc == SOC_ARCH_EXYNOS)
+ 		writel(EXYNOS_TMU_CLEAR_RISE_INT |
+ 				EXYNOS_TMU_CLEAR_FALL_INT,
+@@ -723,10 +729,9 @@ static void exynos_tmu_work(struct work_struct *work)
+ 	else
+ 		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
+ 				data->base + EXYNOS_TMU_REG_INTCLEAR);
+-
+ 	clk_disable(data->clk);
+ 	mutex_unlock(&data->lock);
+-	exynos_report_trigger();
++
+ 	enable_irq(data->irq);
+ }
+ 
+-- 
+1.7.5.4
 
-So looks the approach in the patch is simpler and more efficient, :-)
-
-Also, with the patchset, we can avoid many GFP_NOIO allocation
-which is fragile and not easy to use.
-
-Thanks,
---
-Ming Lei
