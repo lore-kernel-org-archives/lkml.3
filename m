@@ -1,153 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab3AQIFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 03:05:32 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36816 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759261Ab3AQIF2 (ORCPT
+	id S1759352Ab3AQIFu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 03:05:50 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:47916 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759261Ab3AQIFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 03:05:28 -0500
-Message-ID: <50F7B09A.7040600@huawei.com>
-Date: Thu, 17 Jan 2013 16:04:42 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Thu, 17 Jan 2013 03:05:48 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 5/6] cgroup: remove synchronize_rcu() from cgroup_diput()
-References: <50F7B040.2020906@huawei.com>
-In-Reply-To: <50F7B040.2020906@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1358409781-27145-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1358409781-27145-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Thu, 17 Jan 2013 13:35:47 +0530
+X-Google-Sender-Auth: 22auhyEOZT7nDGkWUX_ZCuHc-gw
+Message-ID: <CAOh2x=kvAdpaAf11tde=tAcGc=BeVBFr8WgisKseSKoQ5NBr4w@mail.gmail.com>
+Subject: Re: [PATCH v4] dw_dmac: don't exceed AHB master number in dwc_get_data_width
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free cgroup via call_rcu(). The actual work is done through workqueue.
+On Thu, Jan 17, 2013 at 1:33 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> The driver assumes that hardware has two AHB masters which might not be always
+> true. In such cases we must not exceed number of the AHB masters present in the
+> hardware. In the proposed scheme in this patch, we would choose the master with
+> highest possible number whenever we exceed max AHB masters.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- include/linux/cgroup.h |  1 +
- kernel/cgroup.c        | 73 ++++++++++++++++++++++++++++++--------------------
- 2 files changed, 45 insertions(+), 29 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 8118a31..900af59 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -203,6 +203,7 @@ struct cgroup {
- 
- 	/* For RCU-protected deletion */
- 	struct rcu_head rcu_head;
-+	struct work_struct free_work;
- 
- 	/* List of events which userspace want to receive */
- 	struct list_head event_list;
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index d7fefeb..83ac78b 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -852,12 +852,52 @@ static struct inode *cgroup_new_inode(umode_t mode, struct super_block *sb)
- 	return inode;
- }
- 
-+static void cgroup_free_fn(struct work_struct *work)
-+{
-+	struct cgroup *cgrp = container_of(work, struct cgroup, free_work);
-+	struct cgroup_subsys *ss;
-+
-+	mutex_lock(&cgroup_mutex);
-+	/*
-+	 * Release the subsystem state objects.
-+	 */
-+	for_each_subsys(cgrp->root, ss)
-+		ss->css_free(cgrp);
-+
-+	cgrp->root->number_of_cgroups--;
-+	mutex_unlock(&cgroup_mutex);
-+
-+	/*
-+	 * Drop the active superblock reference that we took when we
-+	 * created the cgroup
-+	 */
-+	deactivate_super(cgrp->root->sb);
-+
-+	/*
-+	 * if we're getting rid of the cgroup, refcount should ensure
-+	 * that there are no pidlists left.
-+	 */
-+	BUG_ON(!list_empty(&cgrp->pidlists));
-+
-+	simple_xattrs_free(&cgrp->xattrs);
-+
-+	ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
-+	kfree(cgrp);
-+}
-+
-+static void cgroup_free_rcu(struct rcu_head *head)
-+{
-+	struct cgroup *cgrp = container_of(head, struct cgroup, rcu_head);
-+
-+	schedule_work(&cgrp->free_work);
-+}
-+
- static void cgroup_diput(struct dentry *dentry, struct inode *inode)
- {
- 	/* is dentry a directory ? if so, kfree() associated cgroup */
- 	if (S_ISDIR(inode->i_mode)) {
- 		struct cgroup *cgrp = dentry->d_fsdata;
--		struct cgroup_subsys *ss;
-+
- 		BUG_ON(!(cgroup_is_removed(cgrp)));
- 		/* It's possible for external users to be holding css
- 		 * reference counts on a cgroup; css_put() needs to
-@@ -865,34 +905,7 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
- 		 * the reference count in order to know if it needs to
- 		 * queue the cgroup to be handled by the release
- 		 * agent */
--		synchronize_rcu();
--
--		mutex_lock(&cgroup_mutex);
--		/*
--		 * Release the subsystem state objects.
--		 */
--		for_each_subsys(cgrp->root, ss)
--			ss->css_free(cgrp);
--
--		cgrp->root->number_of_cgroups--;
--		mutex_unlock(&cgroup_mutex);
--
--		/*
--		 * Drop the active superblock reference that we took when we
--		 * created the cgroup
--		 */
--		deactivate_super(cgrp->root->sb);
--
--		/*
--		 * if we're getting rid of the cgroup, refcount should ensure
--		 * that there are no pidlists left.
--		 */
--		BUG_ON(!list_empty(&cgrp->pidlists));
--
--		simple_xattrs_free(&cgrp->xattrs);
--
--		ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
--		kfree(cgrp);
-+		call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
- 	} else {
- 		struct cfent *cfe = __d_cfe(dentry);
- 		struct cgroup *cgrp = dentry->d_parent->d_fsdata;
-@@ -4163,6 +4176,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	if (test_bit(CGRP_CPUSET_CLONE_CHILDREN, &parent->flags))
- 		set_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
- 
-+	INIT_WORK(&cgrp->free_work, cgroup_free_fn);
-+
- 	for_each_subsys(root, ss) {
- 		struct cgroup_subsys_state *css;
- 
--- 
-1.8.0.2
+Looks good now.
