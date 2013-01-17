@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759516Ab3AQKVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:21:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40612 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759491Ab3AQKVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 05:21:12 -0500
-Date: Thu, 17 Jan 2013 11:21:07 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] time: x86: report_lost_ticks doesn't exist any more
-Message-ID: <alpine.LNX.2.00.1301171118260.14768@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1759524Ab3AQKWk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:22:40 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37094 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759491Ab3AQKWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 05:22:38 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130109130004.GF31678@gmail.com>
+References: <1357725965-27342-1-git-send-email-lee.jones@linaro.org>
+	<1357725965-27342-2-git-send-email-lee.jones@linaro.org>
+	<201301091018.55058.arnd@arndb.de>
+	<20130109103510.GE3931@n2100.arm.linux.org.uk>
+	<20130109110840.GD31678@gmail.com>
+	<20130109111209.GH3931@n2100.arm.linux.org.uk>
+	<20130109122323.GE31678@gmail.com>
+	<20130109123853.GJ3931@n2100.arm.linux.org.uk>
+	<20130109130004.GF31678@gmail.com>
+Date: Thu, 17 Jan 2013 11:22:38 +0100
+Message-ID: <CACRpkdZfhuR=dcx1Si=Yz=ezaEpTUNbDdfa32ZaT1OJ24RkXog@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: ux500: Turn on the 'heartbeat' LED trigger
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'report_lost_ticks' parameter has been removed back in 2007 through 
-1489939f0ab ("time: x86_64: convert x86_64 to use GENERIC_TIME").
+On Wed, Jan 9, 2013 at 2:00 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- Documentation/x86/x86_64/boot-options.txt |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+>> If a user has to edit the configuration files in order to configure the
+>> kernel as they desire, then the configuration system has failed - or we
+>> have failed to properly think out how to represent the allowable
+>> configurations.
+>
+> Understood. Thanks for the explanation.
+>
+> Linus, is it okay to put these in the defconfig instead?
+>
+> If so, I'll fixup.
 
-diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
-index de38429..e015a83 100644
---- a/Documentation/x86/x86_64/boot-options.txt
-+++ b/Documentation/x86/x86_64/boot-options.txt
-@@ -112,10 +112,6 @@ Timing
-   This can be used to work around timing problems on multiprocessor systems
-   with not properly synchronized CPUs.
- 
--  report_lost_ticks
--  Report when timer interrupts are lost because some code turned off
--  interrupts for too long.
--
-   nohpet
-   Don't use the HPET timer.
- 
--- 
-Jiri Kosina
-SUSE Labs
+Sure, go ahead (I bet I already have a patch higher up
+in my mailbox).
+
+Yours,
+Linus Walleij
