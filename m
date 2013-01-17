@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab3AQQa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:30:27 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59940 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757065Ab3AQQaZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:30:25 -0500
-Message-ID: <50F8271B.3020706@wwwdotorg.org>
-Date: Thu, 17 Jan 2013 09:30:19 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757258Ab3AQQag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:30:36 -0500
+Received: from mga02.intel.com ([134.134.136.20]:24576 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757227Ab3AQQad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 11:30:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
+   d="scan'208";a="273324236"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wujianguo@huawei.com" <wujianguo@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "lliubbo@gmail.com" <lliubbo@gmail.com>,
+        "jaegeuk.hanse@gmail.com" <jaegeuk.hanse@gmail.com>,
+        "glommer@parallels.com" <glommer@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH v5 0/5] Add movablecore_map boot option
+Thread-Topic: [PATCH v5 0/5] Add movablecore_map boot option
+Thread-Index: AQHN8jfezP7hxPPawkaXDMerNaAcgJhJm6qAgABUxAD//3o84IAAiNyAgAISxwCAAPydgIAAFvqAgABpLACAAA9IAIAAJ0zw
+Date: Thu, 17 Jan 2013 16:30:31 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1C986D98@ORSMSX108.amr.corp.intel.com>
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com>
+ <50F440F5.3030006@zytor.com>
+ <20130114143456.3962f3bd.akpm@linux-foundation.org>
+ <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com>
+ <20130114144601.1c40dc7e.akpm@linux-foundation.org>
+ <50F647E8.509@jp.fujitsu.com>
+ <20130116132953.6159b673.akpm@linux-foundation.org>
+ <50F72F17.9030805@zytor.com> <50F78750.8070403@jp.fujitsu.com>
+ <50F79422.6090405@zytor.com>
+In-Reply-To: <50F79422.6090405@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Simon Horman <horms@verge.net.au>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device
- core
-References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com> <50EF27B4.60608@wwwdotorg.org> <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com> <9702060.jEbHySsCv0@avalon> <CACRpkdbFH6RCEEnXO=A9FVa0B5rtE9RkjXz9Hhy+w7NvwcBCgg@mail.gmail.com> <50F6E811.2040606@wwwdotorg.org> <CACRpkdbnyzppd-iom4PL3N3-YkuK+BRNzR577qVc6cPoTKxhTw@mail.gmail.com>
-In-Reply-To: <CACRpkdbnyzppd-iom4PL3N3-YkuK+BRNzR577qVc6cPoTKxhTw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0HGUbRR030540
 
-On 01/16/2013 05:59 PM, Linus Walleij wrote:
-> On Wed, Jan 16, 2013 at 6:49 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> 
->> Hmm. It's causing a lot of engineers here a lot of trouble, since they
->> all see linux-next won't boot, and haven't been paying enough attention
->> to know which commit to revert:-(. Lots of lost productivity:-(
->>
->> Simon, the offending commit:
->>
->> 6d3ef6b drivers/pinctrl: grab default handles from device core
->>
->> is still in next-20130116. Can you please remove it?
-> 
-> Not that this should be in the SH tree, but I have merged your fix
-> to the pinctrl tree and it should be in -next, does it fix the problem?
+> 2. If the user *does* care which nodes are movable, then the user needs 
+> to be able to specify that *in a way that makes sense to the user*. 
+> This may mean involving the DMI information as well as SRAT in order to 
+> get "silk screen" type information out.
 
-There were two problems; one was the issues handling hogs during DT->map
-conversion, for which you applied a patch. The other was the crashes due
-to incorrect devm_* usage and interactions with -EPROBE_DEFER in the
-patch which Simon applied, which requires that patch to be revised.
+One reason they might care would be which I/O devices are connected
+to each node.  DMI might be a good way to get an invariant name for the
+node, but they might also want to specify in terms of what they actually
+want. E.g. "eth0 and eth4 are a redundant bonded pair of NICs - don't
+mark both these nodes as removable".  Though this is almost certainly not
+a job for kernel options, but for some user configuration tool that would
+spit out the DMI names.
 
-> Mainly asking because once Greg ACKs that patch I want to
-> put it into the pinctrl tree...
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
