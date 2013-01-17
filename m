@@ -1,72 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758241Ab3AQCfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 21:35:07 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:45342 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757940Ab3AQCfF (ORCPT
+	id S1758359Ab3AQCfo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 21:35:44 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59574 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758267Ab3AQCfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:35:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUGMTLDyTZTsaHFaVc0VF7JoNPkPAWQGXq3OUdn9jir6Q@mail.gmail.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1301151214480.4978@kaball.uk.xensource.com>
-	<CAE9FiQV1uxeHDVMcgNij7qAta+r2A52Jqwzb32Y1qgM13jUOeQ@mail.gmail.com>
-	<CAE9FiQVhk4jc5WaOC5b+dn6Jo1w7s01MUBL16P43tNxav4kJzA@mail.gmail.com>
-	<alpine.DEB.2.02.1301161048120.4978@kaball.uk.xensource.com>
-	<CAE9FiQUYi_Bp2DW-G3Ht=Xz1rk+xks+NZe+-nAmvh4xR4dxVwA@mail.gmail.com>
-	<50F6E582.60905@zytor.com>
-	<CAE9FiQUGMTLDyTZTsaHFaVc0VF7JoNPkPAWQGXq3OUdn9jir6Q@mail.gmail.com>
-Date: Wed, 16 Jan 2013 18:35:02 -0800
-X-Google-Sender-Auth: T21-S4Drk3p9FxpXLGkADZ7S2SM
-Message-ID: <CAE9FiQUFQ2zxQXaMcTPsiq-3aXWs4LpBoN5XaX4c9sy2sGfEfQ@mail.gmail.com>
-Subject: Re: [PATCH v7u1 00/31] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Jan 2013 21:35:43 -0500
+Date: Thu, 17 Jan 2013 13:35:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>
+Subject: linux-next: manual merge of the staging tree with Linus' tree
+Message-Id: <20130117133533.c005e3b2ee5c489e94902e3a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__17_Jan_2013_13_35_33_+1100_4/UDtCo6YFn3gQW9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 10:20 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Jan 16, 2013 at 9:38 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 01/16/2013 09:31 AM, Yinghai Lu wrote:
->>>
->>>
->>
->> The first sentence here doesn't parse, and this description doesn't give any
->> hint to anyone who is researching this code in say, five years, what
->> problems this caused.
->>
->> I can't really figure it out, either; from looking at the thread and the
->> patch I'm assuming the problem is somehow that the code failed to use the
->> last page in the brk buffer, which somehow lead to a Xen boot failure... but
->> the bits from here to there are totally unclear.
->
-> ok, let me try again.
-> tip:x86/mm2 does not fail on xen testing from Stefano and Konrad.
->
-> Stefano found booting failure with PV xen with for-x86-boot.
->
-> for-x86-boot has one patch that is trying to get back an wasted page
-> in pre-allocated BRK
-> and that cause xen pv fails with 2G setup.
-> that patch just uncover one bug in x86/mm2.
->
-> So questions:
-> 1. do we need to rebase x86/mm2 to fold the two patches in. ?
-> 2. or just put fixes at beginning for-x86-boot ?
->
+--Signature=_Thu__17_Jan_2013_13_35_33_+1100_4/UDtCo6YFn3gQW9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I updated for-x86-boot branch via second path.
-    git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-x86-boot
+Hi Greg,
+
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/zram/zram_drv.c between commit 397c60668aa5 ("staging:
+zram: fix invalid memory references during disk write") from Linus' tree
+and commit d178a07c4bd3 ("staging: zram: drop zram_stat_dec/inc
+functions") from the staging tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/staging/zram/zram_drv.c
+index f2a73bd,6762b99..0000000
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@@ -300,19 -291,17 +289,19 @@@ static int zram_bvec_write(struct zram=20
+ =20
+  	user_mem =3D kmap_atomic(page);
+ =20
+ -	if (is_partial_io(bvec))
+ +	if (is_partial_io(bvec)) {
+  		memcpy(uncmem + offset, user_mem + bvec->bv_offset,
+  		       bvec->bv_len);
+ -	else
+ +		kunmap_atomic(user_mem);
+ +		user_mem =3D NULL;
+ +	} else {
+  		uncmem =3D user_mem;
+ +	}
+ =20
+  	if (page_zero_filled(uncmem)) {
+ -		kunmap_atomic(user_mem);
+ -		if (is_partial_io(bvec))
+ -			kfree(uncmem);
+ +		if (!is_partial_io(bvec))
+ +			kunmap_atomic(user_mem);
+- 		zram_stat_inc(&zram->stats.pages_zero);
++ 		zram->stats.pages_zero++;
+  		zram_set_flag(zram, index, ZRAM_ZERO);
+  		ret =3D 0;
+  		goto out;
+@@@ -333,11 -320,9 +322,11 @@@
+  	}
+ =20
+  	if (unlikely(clen > max_zpage_size)) {
+- 		zram_stat_inc(&zram->stats.bad_compress);
++ 		zram->stats.bad_compress++;
+ -		src =3D uncmem;
+  		clen =3D PAGE_SIZE;
+ +		src =3D NULL;
+ +		if (is_partial_io(bvec))
+ +			src =3D uncmem;
+  	}
+ =20
+  	handle =3D zs_malloc(zram->mem_pool, clen);
+@@@ -362,14 -343,13 +351,14 @@@
+ =20
+  	/* Update stats */
+  	zram_stat64_add(zram, &zram->stats.compr_size, clen);
+- 	zram_stat_inc(&zram->stats.pages_stored);
++ 	zram->stats.pages_stored++;
+  	if (clen <=3D PAGE_SIZE / 2)
+- 		zram_stat_inc(&zram->stats.good_compress);
++ 		zram->stats.good_compress++;
+ =20
+ -	return 0;
+ -
+  out:
+ +	if (is_partial_io(bvec))
+ +		kfree(uncmem);
+ +
+  	if (ret)
+  		zram_stat64_inc(zram, &zram->stats.failed_writes);
+  	return ret;
+
+--Signature=_Thu__17_Jan_2013_13_35_33_+1100_4/UDtCo6YFn3gQW9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ92N1AAoJEECxmPOUX5FEEp0QAKV+K6Y4rsGOidycwypTYIM+
+MELF2fpsfdaOs19QlgC96riV8Dydl8w0Q+tX6gBhNhfXMDR0BMKQIwZLK1pXi8Pz
+uk7bqs7zIoYJn59r8Fnn2GUWPXMKV6xpzct57TkXbMPIfCr7DlLh65070Iu87EZ4
+mcxB7GnJiQo1oBdQfJ59W8lkjF4rqLXTIt+QJgL81kgUUcUWTGGp3g0rnfWBn96P
+ydznBjvkCDYUVWU9uDrBT6IEN/bm4c4Yi8YyxPHIhSf9YmhC9LAOAEC1OOkk4Ew5
+ypl0hHkDUfMCu/RN2QDZBJBsRFhp7u3ISx5GHHZpSV5r2r+TZzCusVWbEAI4vIHV
+DbaSb2zAuGX52JuPPRC/5YTLOEL8Z4pjLngFQH5rJ7XVL6eLAk8/Z0QQqepuD4MU
+tY01Xf/v3ry5mOhEvW6q9j6wv/YdIesXTJZoFx2g21fcT122f8blzc9CafFCVCsh
+XZIiX6zseyl3l7eVVHh4xIsNG3chC4+XFgC0Epd4p24M6B/EObjoBjE9qLOtq93k
+CKRsPLgKMJ7Jp2GGRTl0WeESFBJTJoUP94ABcpzdJ+TMj1rVysf3DgE4NER3ctoY
+lgFaAnZNerTjm7y917gGEwRTghmJvTdeVEtdB57ppfhSg3mC0D1gkJzyF//kNQjb
+Jg6akGNcPVUnpWKN7AaK
+=dHNg
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_Jan_2013_13_35_33_+1100_4/UDtCo6YFn3gQW9--
