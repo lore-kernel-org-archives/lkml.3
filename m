@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab3AQRVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 12:21:31 -0500
-Received: from mga03.intel.com ([143.182.124.21]:27616 "EHLO mga03.intel.com"
+	id S1753969Ab3AQRZo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 12:25:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51089 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab3AQRVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 12:21:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="192293910"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Lance Ortiz <lance.ortiz@hp.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v10 3/3] aerdrv: Cleanup log output for AER
-Thread-Topic: [PATCH v10 3/3] aerdrv: Cleanup log output for AER
-Thread-Index: AQHN9DzTsAAIqEuZ8k+pCRGSwN7eb5hNxM7w
-Date: Thu, 17 Jan 2013 17:21:26 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1C986E72@ORSMSX108.amr.corp.intel.com>
-References: <20130116235102.16015.77379.stgit@grignak.americas.hpqcorp.net>
- <20130116235116.16015.62519.stgit@grignak.americas.hpqcorp.net>
-In-Reply-To: <20130116235116.16015.62519.stgit@grignak.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1751804Ab3AQRZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 12:25:42 -0500
+Date: Thu, 17 Jan 2013 12:25:37 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        zohar@linux.vnet.ibm.com, pjones@redhat.com, hpa@zytor.com,
+        dhowells@redhat.com, jwboyer@redhat.com,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 0/3] ELF executable signing and verification
+Message-ID: <20130117172537.GA2237@redhat.com>
+References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+ <CALLzPKZgVUF4_ovyR48BddF33w0pBPvdhxtTQ5bk3M1H1N2LWA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALLzPKZgVUF4_ovyR48BddF33w0pBPvdhxtTQ5bk3M1H1N2LWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0HHLVsm030940
 
-> These changes make cper_print_aer more consistent with aer_print_error
-> and clean things up by eliminating the use of the prefix variable and
-> replacing it with dev_printk.
+On Thu, Jan 17, 2013 at 06:22:47PM +0200, Kasatkin, Dmitry wrote:
 
-Applied v10 series and put it into my "next" branch so linux-next will
-grab it on the next cycle.  Will try to interest the "tip" maintainers in
-pulling again in a few days.
+[..]
+> > Currently it is expected to use these patches only for statically linked
+> > executables. No dynamic linking. In fact patches specifically disable
+> > calling interpreter. This does not prevent against somebody using dlopen()
+> > sutff. So don't sign binaries which do that.
+> 
+> How dynamic linking and interpreter are related together?
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Well interpreter will do the dynamic linking automatically? So I blocked
+that.
+
+> 
+> This is rather policy than enforcement.
+> Protection works only for statically linked binaries, because dynamic
+> libraries are not verified.
+
+Agreed.
+
+Thanks
+Vivek
