@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab3AQVA6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 16:00:58 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:44511 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814Ab3AQVA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 16:00:56 -0500
-Date: Thu, 17 Jan 2013 23:00:34 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-CC: Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
-        <balbi@ti.com>, <sameo@linux.intel.com>, <kishon@ti.com>,
-        <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Rajendra Nayak <rnayak@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Mike Turquette <mturquette@linaro.com>
-Subject: Re: [PATCH v7 19/22] ARM: OMAP3: clock data: get rid of unused USB
- host clock aliases and dummies
-Message-ID: <20130117210034.GA27671@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1358422231-24736-1-git-send-email-rogerq@ti.com>
- <1358422231-24736-20-git-send-email-rogerq@ti.com>
- <20130117170321.GJ14149@atomide.com>
- <alpine.DEB.2.00.1301171854280.14118@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1301171854280.14118@utopia.booyaka.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756298Ab3AQVBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 16:01:48 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:33790 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755370Ab3AQVBr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 16:01:47 -0500
+X-Greylist: delayed 3369 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 16:01:47 EST
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: linux-kernel@vger.kernel.org
+Subject: btrfs userspace question - where's the utility to dump/restore?
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1358453135_1911P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 17 Jan 2013 15:05:35 -0500
+Message-ID: <6196.1358453135@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.50F85991.016F,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Q68bSM7Ycu6FN28Q
+--==_Exmh_1358453135_1911P
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+So I'm looking at playing with btrfs, and I start looking at the
+userspace pieces I'll need.  What I can't find is an equivalent
+of the ext[34] "dump/restore" package to dump data to an external
+backup device. Is 'tar cf --acls --selinux --xattrs /external/fs.dump'
+as good as it gets, or is something else recommended?
 
-On Thu, Jan 17, 2013 at 07:00:00PM +0000, Paul Walmsley wrote:
-> Hi Roger,
->=20
-> On Thu, 17 Jan 2013, Tony Lindgren wrote:
->=20
-> > * Roger Quadros <rogerq@ti.com> [130117 03:34]:
-> > > We don't need multiple aliases for the OMAP USB host clocks and neith=
-er
-> > > the dummy clocks so remove them.
-> >=20
-> > It's best that Paul queues this and the next patch as these clock alias
-> > clean-up patches can be done separately. That way the dependency between
-> > arch/arm/*omap* code is cut away as these files should be moved to live
-> > under drivers/clk/omap.
->=20
-> Per Tony's request, I'll queue these two cleanup patches for 3.10 -- or=
-=20
-> whatever Linus will call it.
-
-do you mean v3.9 ?
-
---=20
-balbi
-
---Q68bSM7Ycu6FN28Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--==_Exmh_1358453135_1911P
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-iQIcBAEBAgAGBQJQ+GZyAAoJEIaOsuA1yqREs3QP/1IPmpKggK+3L301ktZ2veFo
-FoZy5CKQDqvnt0aJPb/N0DksQ7Z35Pd8ftwdVkh71vAWhHHpx7GRZZ7/FNbEu4n2
-YwggQVP9nSrHaoFs1KyDQcKOapECpLBU8PZtBGQcNp2Wpyn/l+kwVdpiMirA+3ks
-WzMri85F+ZEY+ZEyQcwckBAw2q0s6VQF3G5fMbxT5Bx2XF/tCi6WhbyAr2kjFAU+
-92xcn2kTD/2h3hrlhx1x0Jj0NSCatkD2PHkbeMbVBHzOh6g+6ScNITkPnsKyB0Nb
-fiRLHmMvMaxEjzOlh1oHqVpvY6gDl6ErvPRGs37uf6EuxauKPTeYtDENA5HagISp
-okfuCNnd+ZbAiGysAtP8EQS1adtkhRIWw7c0EZvUHOkEmtfahQu+ehd/Sq0E8uVL
-tDTcL9pNCHpJ9G9o4GCLNWYKgn+33SKaPx0PEcYVjN5yIRxjpSnHawDyECigevN2
-CdkFIOUCRo50WwQsopUx7o54F0CgQ0XRFt4asI1s80Uo0Ptmz5/Q2tjAI0Ki7yEb
-Y1xu78E8Q+zfSLwHNXiqvRsGV6ZDis5b0UTrkXBpqXq1dIm+2YR0b2VPm5U8L7ob
-kr3n6Nz8HEUAotXlxU7MIDCG5bKgl/KA+9fj0k8wMnGNZevHBEbjwsVLNfYH4cJD
-PPGhbV5pugYXQhVxCZx4
-=IuWq
+iQIVAwUBUPhZjwdmEQWDXROgAQLKHhAAtddys/v5N2lULTfwQmDn0eVRKmIBG481
+zJIwP/NGwhNc1klbxb8zOPBEC7WCTiLy76XUBjIpZ/Qc2QOwQuUvmOmHIZXwv3Gy
+hmsoRgunu6WR4qd954cjQUpiqQVDznMdHmmCVroawrqZFUsKN2rFkNF3MWLo0rdd
+z4Mi+uKKw93SJ41PmT973WFdbIB7jWfg2q7HRZcuGvkk/aLG9i2XrqAPKDMY35F/
+z8I42Ye/MncNbS6drr/6YhJzvuBKK7NaXIH+E1n1Sy7YfbwIFlETmACKdBS1LKD5
+MUHirj+rCTw3ldi7TB1iu//1sXLX81TcNuEkzkTeWxP8/NLlT32xIYV7iRMlOXZ/
+cA3rykBKVTtPj1N5I19Zg0WD2JRCK3UB2883bF2d+LqNaBnmezJfSA0Puu3pYqsr
+cQwwWMfOfJ5laWngy1sc72J6cON0hU+ON+TbGrOvdhyNgi56DB+3N9g28B9NlJ0J
+o3IoV14+laIOySE+7dPIgB4lKHQQFJu5Z3UHgTl3V/TV1V0Y64i18dUqh1i21t+R
+jvdng4NykDlr5ZA3CizjEq7P0SdDtXbC6IBzhGdCxtWHn6j1Yu6BqDg9aitHO88v
+SpXQRn/VdR/+JpeQU6srZslETHSogYJd/1DtzBMA3QRwSxP4FrAwS4EDaloKK/ce
+iY2zbdOw5m0=
+=Vt4t
 -----END PGP SIGNATURE-----
 
---Q68bSM7Ycu6FN28Q--
+--==_Exmh_1358453135_1911P--
+
