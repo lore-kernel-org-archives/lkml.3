@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891Ab3AQFDh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 00:03:37 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18164 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab3AQFDf convert rfc822-to-8bit (ORCPT
+	id S1753531Ab3AQFGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 00:06:08 -0500
+Received: from relay.parallels.com ([195.214.232.42]:38042 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab3AQFGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 00:03:35 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 16 Jan 2013 21:03:34 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 17 Jan 2013 06:03:27 +0100
-Subject: Re: [PATCH v4 2/9] clk: tegra: Add tegra specific clocks
-Thread-Topic: [PATCH v4 2/9] clk: tegra: Add tegra specific clocks
-Thread-Index: Ac30b/4ZwasueALuQyqCz4H6HLk5Zw==
-Message-ID: <20130117.070327.1625310713330263780.hdoyu@nvidia.com>
-References: <1357890387-23245-3-git-send-email-pgaikwad@nvidia.com><20130116.171242.2189136612266237422.hdoyu@nvidia.com><50F7096C.7020803@wwwdotorg.org>
-In-Reply-To: <50F7096C.7020803@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Thu, 17 Jan 2013 00:06:07 -0500
+Message-ID: <50F786AF.4070107@parallels.com>
+Date: Thu, 17 Jan 2013 09:05:51 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Mark Lord <kernel@teksavvy.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
+References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com> <50F72F03.5070806@teksavvy.com>
+In-Reply-To: <50F72F03.5070806@teksavvy.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren <swarren@wwwdotorg.org> wrote @ Wed, 16 Jan 2013 21:11:24 +0100:
+17.01.2013 02:51, Mark Lord пишет:
+> On 13-01-16 12:20 AM, Stanislav Kinsbursky wrote:
+>>
+>> Mark, could you provide any call traces?
+>
+> Call traces from where/what?
+> There's this one, posted earlier in the BUG report:
+>
+> kernel BUG at net/sunrpc/svc_xprt.c:921!
+> Call Trace:
+>   [<ffffffffa016a56a>] ? svc_recv+0xcc/0x338 [sunrpc]
+>   [<ffffffffa0318bfc>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
+>   [<ffffffffa0318c19>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
+>   [<ffffffff810407e6>] ? kthread+0x81/0x89
+>   [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
+>   [<ffffffff812ea62c>] ? ret_from_fork+0x7c/0xb0
+>   [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
+>
 
-> >> +static int clk_frac_div_set_rate(struct clk_hw *hw, unsigned long rate,
-> >> +                               unsigned long parent_rate)
-> >> +{
-> >> +       struct tegra_clk_frac_div *divider = to_clk_frac_div(hw);
-> >> +       int div;
-> >> +       unsigned long flags = 0;
-> > 
-> > nit, is "flags" not needed to initialize here?
-> 
-> It avoids a compiler warning; the compiler doesn't that the if condition
-> that guards the path that uses flags is the same condition as the path
-> that initializes it. Or, it may be related to the fact that
-> spin_lock_irqsave() writes to the value through a pointer parameter, and
-> the compiler doesn't know it's an out-only parameter.
+Thanks!
+I haven't seen the bug report.
+Could you provide the link, please?
 
-It might be better to append the special comment /* GCC */[1] on that line.
-
-[1] https://lwn.net/Articles/529954/
+-- 
+Best regards,
+Stanislav Kinsbursky
