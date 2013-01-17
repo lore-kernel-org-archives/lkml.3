@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab3AQIgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 03:36:50 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13619 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583Ab3AQIgs (ORCPT
+	id S1759301Ab3AQIhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 03:37:16 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:45459 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759231Ab3AQIhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 03:36:48 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 17 Jan 2013 00:36:47 -0800
-Message-ID: <50F7B801.4020704@nvidia.com>
-Date: Thu, 17 Jan 2013 14:06:17 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 17 Jan 2013 03:37:13 -0500
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 1/2] pinctrl: tegra: add support for rcv-sel and drive
- type
-References: <1357387375-25919-1-git-send-email-ldewangan@nvidia.com> <CACRpkdYe0MPC=jiOgzd0zRkiAFas21O80MiR8dp9UdmwptDfmw@mail.gmail.com>
-In-Reply-To: <CACRpkdYe0MPC=jiOgzd0zRkiAFas21O80MiR8dp9UdmwptDfmw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130116194759.GA4502@redhat.com>
+References: <87wqvdli1o.fsf@xmission.com>
+	<1358344859.4593.66.camel@falcor1>
+	<20130116144836.GB29845@redhat.com>
+	<1358350391.4593.112.camel@falcor1>
+	<20130116155406.GC29845@redhat.com>
+	<1358357079.4593.135.camel@falcor1>
+	<20130116182146.GE29845@redhat.com>
+	<1358361912.4593.162.camel@falcor1>
+	<20130116185741.GA3038@redhat.com>
+	<1358365044.4593.186.camel@falcor1>
+	<20130116194759.GA4502@redhat.com>
+Date: Thu, 17 Jan 2013 10:37:11 +0200
+Message-ID: <CALrft9-vWX6U+g5KduHWK7s_PE9Le6NL7B478MzGRjS40a34tw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+From: Elena Reshetova <elena.reshetova@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, pjones@redhat.com, hpa@zytor.com,
+        dhowells@redhat.com, jwboyer@redhat.com,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org,
+        Ryan Ware <ryan.r.ware@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 January 2013 02:00 PM, Linus Walleij wrote:
-> On Sat, Jan 5, 2013 at 1:02 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
->
->> From: Pritesh Raithatha <praithatha@nvidia.com>
->>
->> NVIDIA's Tegra114 added two more configuration parameter in pinmux i.e.
->> rcv-sel and drive type.
->>
->> rcv-sel: Select between High and Normal VIL/VIH receivers.
->>          RCVR_SEL=1: High VIL/VIH
->>          RCVR_SEL=0: Normal VIL/VIH
->>
->> drv_type: Ouptput drive type:
->>          33-50 ohm driver: 0x1
->>          66-100ohm driver: 0x0
->>
->> Add support of these parameters to be configure from DTS file.
->>
->> Tegra20 and Tegra30 does not support this configuration and hence initialize their
->> pinmux structure with reg = -1.
->>
->> Originally written by Pritesh Raithatha.
->> Changes by ldewangan:
->>          - remove drvtype_width as it is always 2.
->>          - Better describe the change.
->>
->> Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
->> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> Stephen, can you look at this patch?
->
-> Authors: you need Stephen's ACK on this.
+>> > Ok, that's the point I am missing. So I can sign a file and signatures
+>> > are in a separate file. And these signatures are installed in extended
+>> > attributes at file installation time (IOW rpm installation time) on
+>> > target.
+>> >
+>> > If all this works, this sounds reasonable so far. Except the point of
+>> > disabling ptrace and locking down memory.
+>> >
+>> > So what's the state of above work. Is there something I can play with.
 
+Let me try to comment on this one a bit.
+Thewhole idea behind extending rpm plugin interface was to have an extensive
+ set of hooks that would allow rpm plugins to perform needed additional things.
+Plugins can be different dependening on a ditsibution need, and if a
+distribution
+needs to bootstrap IMA signatures, this can also be done in  one of
+plugins hooks.
 
-Stephen have already given his reviewed by on thi series and I posted V2 
-version of taking care his comment.
-Stephen's comment was in
-Re: [PATCH 2/2] pinctrl: tegra114: add pinctrl driver for NVIDIA's 
-Tegra114 SoC
+Now about hook status: we have so far integrated to rpm master branch
+only a subset of hooks.
+Mainly the cause has been that I am far from working on it all the
+time unfortunately.
+Currently I am looking at the filesystem hooks and hoping to send some
+version of that patch soon.
 
+When the hooks will be integrated,it is really up to plugin
+implementor to design how thing wil happen.
+There will be a hook that would be called after file from a package is
+placed to filesystem, where
+plugin can do many things, like setting MAC labels or setting IMA
+signatures on a file.
+The way signature will be stored in a package is also currently open,
+there can be a number of options here.
+You can define a special rpm header TAG and during package build
+embeed all the informaiton about
+signatures there together with the file name. This way plugin can
+parse the header tag info, get all signatures info
+and when the right hook is called, setup the IMA signature attribute.
+But as I said, this is just one way of doing it
+and may not be the best one.
 
-Can you please review the v2 version of this series?
-
-
-Thanks,
-Laxman
+Best Regards,
+Elena.
