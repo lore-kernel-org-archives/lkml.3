@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab3AQNj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:39:29 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:63067 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab3AQNj2 (ORCPT
+	id S1755278Ab3AQNlA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:41:00 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:50385 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776Ab3AQNk6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:39:28 -0500
-Date: Thu, 17 Jan 2013 13:39:21 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH] ARM: ux500: Include the PRCMU's Secure Registers in
- DB8500's DT
-Message-ID: <20130117133921.GQ20091@gmail.com>
-References: <1357901029-9073-1-git-send-email-lee.jones@linaro.org>
- <CACRpkdZhRESXHNVFPzUx7H0ppZ+KSfPOJ2bPS+-CQyv6+8=oZQ@mail.gmail.com>
+	Thu, 17 Jan 2013 08:40:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZhRESXHNVFPzUx7H0ppZ+KSfPOJ2bPS+-CQyv6+8=oZQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <63f2f7f3-fd03-433e-8990-d60d38954e7b@zimbra>
+References: <88cea640-8f88-4fd4-9cb0-77ed482d7e19@zimbra>
+	<63f2f7f3-fd03-433e-8990-d60d38954e7b@zimbra>
+Date: Thu, 17 Jan 2013 14:40:58 +0100
+Message-ID: <CACRpkdYRYBG9jh2h+s1RM5QtgcDNcG9pORWpX462qpNZ4FxkuQ@mail.gmail.com>
+Subject: Re: [PATCH v2] lpc_ich: fix gpio base and control offsets
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Aaron Sierra <asierra@xes-inc.com>
+Cc: =?ISO-8859-1?B?QWfzY3MgUOFs?= <agocs.pal.86@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jan 2013, Linus Walleij wrote:
+On Tue, Jan 15, 2013 at 9:42 PM, Aaron Sierra <asierra@xes-inc.com> wrote:
 
-> On Fri, Jan 11, 2013 at 11:43 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > Currently we only include the PRCMU's primary registers when
-> > referencing the register count in the 'reg' property. This patch
-> > expands that count to include the secure registers also.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Will you push this to ARM SoC or shall I queue it?
+> In ICH5 and earlier the GPIOBASE and GPIOCTRL registers are found at
+> offsets 0x58 and 0x5C, respectively. This patch allows GPIO access to
+> properly be enabled (and disabled) for these chipsets.
+>
+> Signed-off-by: Agócs Pál <agocs.pal.86@gmail.com>
+> Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
 
-I'll take it.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+For the GPIO parts. I honestly know very little about PCI.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yours,
+Linus Walleij
