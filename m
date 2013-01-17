@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab3AQVzl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 16:55:41 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42222 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752293Ab3AQVzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 16:55:40 -0500
-Message-ID: <50F8734C.2080906@linux.vnet.ibm.com>
-Date: Thu, 17 Jan 2013 13:55:24 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756508Ab3AQV4d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 16:56:33 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:33269 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753171Ab3AQV4b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 16:56:31 -0500
+Date: Thu, 17 Jan 2013 21:56:30 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
+        John Kacur <jkacur@gmail.com>,
+        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
+Subject: Re: [RFC][PATCH] slub: Check for page NULL before doing the node_match
+ check
+In-Reply-To: <alpine.DEB.2.02.1301171547370.2774@gentwo.org>
+Message-ID: <0000013c4a8363ed-ba83975a-7b62-4a9e-981b-8b44d8030431-000000@email.amazonses.com>
+References: <1358446258.23211.32.camel@gandalf.local.home>  <1358447864.23211.34.camel@gandalf.local.home>  <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com> <1358458996.23211.46.camel@gandalf.local.home>
+ <alpine.DEB.2.02.1301171547370.2774@gentwo.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: paul.szabo@sydney.edu.au
-CC: psz@maths.usyd.edu.au, 695182@bugs.debian.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] Reproducible OOM with just a few sleeps
-References: <201301172104.r0HL4F9k005128@como.maths.usyd.edu.au>
-In-Reply-To: <201301172104.r0HL4F9k005128@como.maths.usyd.edu.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011721-7182-0000-0000-000004877A6C
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2013 01:04 PM, paul.szabo@sydney.edu.au wrote:
->>> On my large machine, 'free' fails to show about 2GB memory ...
->> You probably have a memory hole. ...
->> The e820 map (during early boot in dmesg) or /proc/iomem will let you
->> locate your memory holes.
-> 
-> Now that my machine is running an amd64 kernel, 'free' shows total Mem
-> 65854128 (up from 64447796 with PAE kernel), and I do not see much
-> change in /proc/iomem output (below). Is that as should be?
+on Thu, 17 Jan 2013, Christoph Lameter wrote:
 
-Yeah, that all looks sane.  Your increased memory is because your 64GB
-machine had some of its memory mapped _above_ the 64GB physical memory
-limit that PAE has.
+> Ditto which leaves us with:
+>
+> Index: linux/mm/slub.c
+> ===================================================================
+> --- linux.orig/mm/slub.c	2013-01-17 15:49:57.417491975 -0600
+> +++ linux/mm/slub.c	2013-01-17 15:50:49.010287150 -0600
+> @@ -1993,8 +1993,9 @@ static inline void flush_slab(struct kme
+>  	deactivate_slab(s, c->page, c->freelist);
+>
+>  	c->tid = next_tid(c->tid);
+> -	c->page = NULL;
+>  	c->freelist = NULL;
+> +	barrier();
+> +	c->page = NULL;
+>  }
 
-/proc/iomem is generally just a dump of what the hardware *is*, so it
-shouldn't change between kernels.
+But the larger question is why is flush_slab() called with interrupts
+enabled?
+
+RT?
 
