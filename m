@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab3AQUkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:40:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33901 "EHLO mga09.intel.com"
+	id S1757035Ab3AQUhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:37:46 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33895 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757123Ab3AQUhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:37:51 -0500
+	id S1753390Ab3AQUho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 15:37:44 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="273439821"
+   d="scan'208";a="273439803"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 27/29] perf, x86: Add a Haswell precise instructions event v2
-Date: Thu, 17 Jan 2013 12:36:50 -0800
-Message-Id: <1358455012-12287-28-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 06/29] perf, x86: Support PERF_SAMPLE_ADDR on Haswell
+Date: Thu, 17 Jan 2013 12:36:29 -0800
+Message-Id: <1358455012-12287-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,45 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a instructions-p event alias that uses the PDIR randomized instruction
-retirement event. This is useful to avoid some systematic sampling shadow
-problems. Normally PEBS sampling has a systematic shadow. With PDIR
-enabled the hardware adds some randomization that statistically avoids
-this problem. In this sense, it's more precise over a whole sampling
-interval, but an individual sample can be less precise. But since we
-sample overall it's a more precise event.
+Haswell supplies the address for every PEBS memory event, so always fill it in
+when the user requested it.  It will be 0 when not useful (no memory access)
 
-This could be used before using the explicit event code syntax, but it's easier
-and more user friendly to use with an "instructions-p" alias. I expect
-this will eventually become a common use case.
-
-Right now for Haswell, will add to Ivy Bridge later too.
-
-v2: Use new sysfs infrastructure
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 022246a..fa20a19 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2027,6 +2027,7 @@ EVENT_ATTR_STR(cycles-t,       cycles_t,       "event=0x3c,intx=1");
- EVENT_ATTR_STR(cycles-ct,      cycles_ct,      "event=0x3c,intx=1,intx_cp=1");
- EVENT_ATTR_STR(instructions-t, instructions_t, "event=0xc0,intx=1");
- EVENT_ATTR_STR(instructions-ct,instructions_ct,"event=0xc0,intx=1,intx_cp=1");
-+EVENT_ATTR_STR(instructions-p, instructions_p, "event=0xc0,umask=0x01,precise=2");
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 16d7c58..aa0f5fa 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -630,6 +630,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	else
+ 		regs.flags &= ~PERF_EFLAGS_EXACT;
  
- static struct attribute *hsw_events_attrs[] = {
- 	EVENT_PTR(tx_start),
-@@ -2047,6 +2048,7 @@ static struct attribute *hsw_events_attrs[] = {
- 	EVENT_PTR(cycles_ct),
- 	EVENT_PTR(instructions_t),
- 	EVENT_PTR(instructions_ct),
-+	EVENT_PTR(instructions_p),
- 	NULL
- };
++	if ((event->attr.sample_type & PERF_SAMPLE_ADDR) &&
++		x86_pmu.intel_cap.pebs_format >= 2)
++		data.addr = ((struct pebs_record_v2 *)pebs)->nhm.dla;
++
+ 	if (has_branch_stack(event))
+ 		data.br_stack = &cpuc->lbr_stack;
  
 -- 
 1.7.7.6
