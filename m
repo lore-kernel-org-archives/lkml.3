@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab3AQICo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 03:02:44 -0500
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:36095 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754466Ab3AQICn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 03:02:43 -0500
-From: Haojun Bao <hjbao@marvell.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-CC: Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Date: Thu, 17 Jan 2013 00:01:51 -0800
-Subject: [PATCH] Do not tweak clock in pxa serial write() function
-Thread-Topic: [PATCH] Do not tweak clock in pxa serial write() function
-Thread-Index: Ac30iOglvZvromCqQ9Sg7uMP1p99Ow==
-Message-ID: <87k3rc44sq.fsf@bj-lt7.marvell.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Gnus/5.130006 (Ma Gnus v0.6) Emacs/24.2 (gnu/linux)
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1759223Ab3AQIDS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 03:03:18 -0500
+Received: from mga03.intel.com ([143.182.124.21]:4894 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758866Ab3AQIDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 03:03:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,484,1355126400"; 
+   d="scan'208";a="244967200"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v4] dw_dmac: don't exceed AHB master number in dwc_get_data_width
+Date: Thu, 17 Jan 2013 10:03:01 +0200
+Message-Id: <1358409781-27145-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The driver assumes that hardware has two AHB masters which might not be always
+true. In such cases we must not exceed number of the AHB masters present in the
+hardware. In the proposed scheme in this patch, we would choose the master with
+highest possible number whenever we exceed max AHB masters.
 
-The write() function could be used by printk(), which is atomic and
-tweaking clock there can cause "BUG: sleeping function called from
-invalid context".
-
-Signed-off-by: Bao Haojun <hjbao@marvell.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/tty/serial/pxa.c |    2 --
- 1 file changed, 2 deletions(-)
+Since v3:
+ - substitute "else if" by "else", we don't pass anything else than SRC_MASTER
+   or DST_MASTER
 
-diff --git a/drivers/tty/serial/pxa.c b/drivers/tty/serial/pxa.c
-index 2764828..fa1d5ae 100644
---- a/drivers/tty/serial/pxa.c
-+++ b/drivers/tty/serial/pxa.c
-@@ -673,7 +673,6 @@ serial_pxa_console_write(struct console *co, const char *s, unsigned int count)
- 	unsigned long flags;
- 	int locked = 1;
- 
--	clk_prepare_enable(up->clk);
- 
- 	local_irq_save(flags);
- 	if (up->port.sysrq)
-@@ -702,7 +701,6 @@ serial_pxa_console_write(struct console *co, const char *s, unsigned int count)
- 		spin_unlock(&up->port.lock);
- 	local_irq_restore(flags);
- 
--	clk_disable_unprepare(up->clk);
+ drivers/dma/dw_dmac.c |   33 ++++++++++++++++++++-------------
+ 1 file changed, 20 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 30ff2a4..2ab3f3c 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -46,13 +46,29 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
+ 	return slave ? slave->src_master : 1;
  }
  
- #ifdef CONFIG_CONSOLE_POLL
++#define SRC_MASTER	0
++#define DST_MASTER	1
++
++static inline unsigned int dwc_get_master(struct dma_chan *chan, int master)
++{
++	struct dw_dma *dw = to_dw_dma(chan->device);
++	struct dw_dma_slave *dws = chan->private;
++	unsigned int m;
++
++	if (master == SRC_MASTER)
++		m = dwc_get_sms(dws);
++	else
++		m = dwc_get_dms(dws);
++
++	return min_t(unsigned int, dw->nr_masters - 1, m);
++}
++
+ #define DWC_DEFAULT_CTLLO(_chan) ({				\
+-		struct dw_dma_slave *__slave = (_chan->private);	\
+ 		struct dw_dma_chan *_dwc = to_dw_dma_chan(_chan);	\
+ 		struct dma_slave_config	*_sconfig = &_dwc->dma_sconfig;	\
+ 		bool _is_slave = is_slave_direction(_dwc->direction);	\
+-		int _dms = dwc_get_dms(__slave);		\
+-		int _sms = dwc_get_sms(__slave);		\
++		int _dms = dwc_get_master(_chan, DST_MASTER);		\
++		int _sms = dwc_get_master(_chan, SRC_MASTER);		\
+ 		u8 _smsize = _is_slave ? _sconfig->src_maxburst :	\
+ 			DW_DMA_MSIZE_16;			\
+ 		u8 _dmsize = _is_slave ? _sconfig->dst_maxburst :	\
+@@ -73,20 +89,11 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
+  */
+ #define NR_DESCS_PER_CHANNEL	64
+ 
+-#define SRC_MASTER	0
+-#define DST_MASTER	1
+-
+ static inline unsigned int dwc_get_data_width(struct dma_chan *chan, int master)
+ {
+ 	struct dw_dma *dw = to_dw_dma(chan->device);
+-	struct dw_dma_slave *dws = chan->private;
+-
+-	if (master == SRC_MASTER)
+-		return dw->data_width[dwc_get_sms(dws)];
+-	else if (master == DST_MASTER)
+-		return dw->data_width[dwc_get_dms(dws)];
+ 
+-	return 0;
++	return dw->data_width[dwc_get_master(chan, master)];
+ }
+ 
+ /*----------------------------------------------------------------------*/
 -- 
 1.7.10.4
+
