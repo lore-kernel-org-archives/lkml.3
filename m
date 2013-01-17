@@ -1,42 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759334Ab3AQIO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 03:14:56 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:60931 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759301Ab3AQIOy (ORCPT
+	id S1759360Ab3AQIQh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 03:16:37 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:58647 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466Ab3AQIQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 03:14:54 -0500
+	Thu, 17 Jan 2013 03:16:36 -0500
 MIME-Version: 1.0
-In-Reply-To: <1355481842-17952-2-git-send-email-jy0922.shim@samsung.com>
-References: <1355481842-17952-1-git-send-email-jy0922.shim@samsung.com>
-	<1355481842-17952-2-git-send-email-jy0922.shim@samsung.com>
-Date: Thu, 17 Jan 2013 09:14:53 +0100
-Message-ID: <CACRpkdZtiqk6WKjORFrFacd_wG7KMeCd4QedbSG3eROJ2om6FA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: samsung: add GPIO interrupt registration for exynos5
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Joonyoung Shim <jy0922.shim@samsung.com>, kyungmin.park@samsung.com,
-        Thomas Abraham <thomas.abraham@linaro.com>, kgene.kim@samsung.com
-Cc: grant.likely@secretlab.ca, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1358391258-1771-18-git-send-email-keescook@chromium.org>
+References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
+	<1358391258-1771-18-git-send-email-keescook@chromium.org>
+Date: Thu, 17 Jan 2013 09:16:35 +0100
+Message-ID: <CAL1gcdMmmzNBtPeb1evC5rZWeZ=nOZcOqVa2mLfhZuLEmLo=2w@mail.gmail.com>
+Subject: Re: [PATCH 17/86] drivers/net/wireless/rt2x00: remove depends on CONFIG_EXPERIMENTAL
+From: Gertjan van Wingerde <gwingerde@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 11:44 AM, Joonyoung Shim
-<jy0922.shim@samsung.com> wrote:
-
-> This adds GPIO interrupt registration and modification needs to register
-> GPIO interrupt rightly for exynos5 SoCs. EXYNOS5_GPYx gpios shouldn't be
-> counted to GPIO interrupt group register number because they doesn't
-> support GPIO interrupt, so their struct samsung_gpio_cfg should be
-> initialized to &samsung_gpio_cfgs[8] in declaration ahead.
+On Thu, Jan 17, 2013 at 3:53 AM, Kees Cook <keescook@chromium.org> wrote:
+> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+> while now and is almost always enabled by default. As agreed during the
+> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 >
-> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
+> CC: Ivo van Doorn <IvDoorn@gmail.com>
+> CC: Gertjan van Wingerde <gwingerde@gmail.com>
+> CC: Helmut Schaa <helmut.schaa@googlemail.com>
+> CC: "John W. Linville" <linville@tuxdriver.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-This patch has been floating for a while, Kyungmin, Kukjin, Thomas:
-shall it be applied?
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
 
-Yours,
-Linus Walleij
+> ---
+>  drivers/net/wireless/rt2x00/Kconfig |    5 -----
+>  1 file changed, 5 deletions(-)
+>
+> diff --git a/drivers/net/wireless/rt2x00/Kconfig b/drivers/net/wireless/rt2x00/Kconfig
+> index c7548da..44d6ead 100644
+> --- a/drivers/net/wireless/rt2x00/Kconfig
+> +++ b/drivers/net/wireless/rt2x00/Kconfig
+> @@ -82,7 +82,6 @@ config RT2800PCI_RT33XX
+>
+>  config RT2800PCI_RT35XX
+>         bool "rt2800pci - Include support for rt35xx devices (EXPERIMENTAL)"
+> -       depends on EXPERIMENTAL
+>         default y
+>         ---help---
+>           This adds support for rt35xx wireless chipset family to the
+> @@ -92,7 +91,6 @@ config RT2800PCI_RT35XX
+>
+>  config RT2800PCI_RT53XX
+>         bool "rt2800pci - Include support for rt53xx devices (EXPERIMENTAL)"
+> -       depends on EXPERIMENTAL
+>         default y
+>         ---help---
+>           This adds support for rt53xx wireless chipset family to the
+> @@ -101,7 +99,6 @@ config RT2800PCI_RT53XX
+>
+>  config RT2800PCI_RT3290
+>         bool "rt2800pci - Include support for rt3290 devices (EXPERIMENTAL)"
+> -       depends on EXPERIMENTAL
+>         default y
+>         ---help---
+>           This adds support for rt3290 wireless chipset family to the
+> @@ -159,7 +156,6 @@ config RT2800USB_RT33XX
+>
+>  config RT2800USB_RT35XX
+>         bool "rt2800usb - Include support for rt35xx devices (EXPERIMENTAL)"
+> -       depends on EXPERIMENTAL
+>         default y
+>         ---help---
+>           This adds support for rt35xx wireless chipset family to the
+> @@ -168,7 +164,6 @@ config RT2800USB_RT35XX
+>
+>  config RT2800USB_RT53XX
+>         bool "rt2800usb - Include support for rt53xx devices (EXPERIMENTAL)"
+> -       depends on EXPERIMENTAL
+>         ---help---
+>           This adds support for rt53xx wireless chipset family to the
+>           rt2800usb driver.
+> --
+> 1.7.9.5
+>
+
+
+
+--
+---
+Gertjan
