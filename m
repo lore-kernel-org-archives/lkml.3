@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759612Ab3AQKlF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:41:05 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40764 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759550Ab3AQKlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 05:41:02 -0500
-Message-ID: <50F7D535.6030205@ti.com>
-Date: Thu, 17 Jan 2013 11:40:53 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
+	id S1759605Ab3AQKnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:43:25 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:44111 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759531Ab3AQKnX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 05:43:23 -0500
 MIME-Version: 1.0
-To: Luciano Coelho <coelho@ti.com>
-CC: <balbi@ti.com>, <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport power
- functions
-References: <1358372702-13102-1-git-send-email-coelho@ti.com>  <50F7C4A7.5060202@ti.com> <20130117093417.GH10814@arwen.pp.htv.fi>  <50F7CA82.4050509@ti.com> <20130117100510.GI10814@arwen.pp.htv.fi>  <20130117100919.GJ10814@arwen.pp.htv.fi> <1358418917.6252.31.camel@cumari.coelho.fi>
-In-Reply-To: <1358418917.6252.31.camel@cumari.coelho.fi>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <50EEBD8F.6040101@ti.com>
+References: <1355996651-17805-1-git-send-email-peter.ujfalusi@ti.com>
+	<CACRpkdZK8AA-osijVpbp7U-Wv0XUAVxDPQ3zxfCqWYb6WKjmwQ@mail.gmail.com>
+	<50EEBD8F.6040101@ti.com>
+Date: Thu, 17 Jan 2013 11:43:22 +0100
+Message-ID: <CACRpkdaj5mKk3hy9_QmjcDw3KhZt1Zdx1CXB6ZWmvbhhRWyndA@mail.gmail.com>
+Subject: Re: [PATCH v3] gpio: twl4030: Cache the direction and output states
+ in private data
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Michael Trimarchi <michael@amarulasolutions.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2013 11:35 AM, Luciano Coelho wrote:
-> This out-of-tree code doesn't explain why we need to do the
-> enable/disable in the board file.  We just need to do things a bit
-> differently in the driver.  I'll start cleaning all this stuff up for
-> -next pretty soon.
-> 
-> For now, ie. 3.7 (stable) and 3.8, do we agree in taking this patch so
-> that TI-ST at least works on Panda? Simply reverting the gpio removal
-> patch doesn't help, because we also need to handle the UART2 muxing
-> (which my patch does as well).
+On Thu, Jan 10, 2013 at 2:09 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> On 01/10/2013 11:41 AM, Linus Walleij wrote:
 
-I don't see better way to fix this either. In any case, I give you my:
+>> Sorry Peter this must have been missed somehow.
+>>
+>> This does not apply to the current v3.8-rc3, could you respin
+>> this on top of Torvalds' tree?
+>
+> Grant applied the patch which this one depends on:
+> [1] https://patchwork.kernel.org/patch/1844511/
 
-Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Hm, it is not in mainline, nor on Grant's "merge" or "next"
+branches so it must have fallen on the floor somehow.
 
+I applied both the patches not, thanks!
 
+Linus Walleij
