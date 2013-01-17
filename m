@@ -1,41 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758409Ab3AQCKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 21:10:55 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50238 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758384Ab3AQCKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:10:51 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] regulator: lp8788-buck: Remove buck[1|2]_vout_addr array
-Thread-Topic: [PATCH] regulator: lp8788-buck: Remove buck[1|2]_vout_addr
- array
-Thread-Index: AQHN9FYSPBfDKB3ZYkuwp50c6DdxR5hMxqkg
-Date: Thu, 17 Jan 2013 02:10:38 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E18772@DQHE02.ent.ti.com>
-References: <1358387866.17958.4.camel@phoenix>
-In-Reply-To: <1358387866.17958.4.camel@phoenix>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1758476Ab3AQCMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 21:12:55 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51492 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757862Ab3AQCMy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 21:12:54 -0500
+X-AuditID: 9c930179-b7b54ae000000e44-54-50f75e24fe89
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH 1/3] zram: force disksize setting before using zram
+Date: Thu, 17 Jan 2013 11:12:47 +0900
+Message-Id: <1358388769-30112-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0H2B6C2026085
 
-> The vout address for buck[1|2] can be easily calculated,
-> thus remote these arrays.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Now zram document syas "set disksize is optional"
+but partly it's wrong. When you try to use zram firstly after
+booting, you must set disksize, otherwise zram can't work because
+zram gendisk's size is 0. But once you do it, you can use zram freely
+after reset because reset doesn't reset to zero paradoxically.
+So in this time, disksize setting is optional.:(
+It's inconsitent for user behavior and not straightforward.
 
-Acked-by: Milo Kim <milo.kim@ti.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+This patch forces always setting disksize firstly before using zram.
+Yes. It changes current behavior so someone could complain when
+he upgrades zram. Apparently it could be a problem if zram is mainline
+but it still lives in staging so behavior could be changed for right
+way to go. Let them excuse.
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/staging/zram/zram.txt     |   27 +++++++++---------
+ drivers/staging/zram/zram_drv.c   |   55 +++++++++++++------------------------
+ drivers/staging/zram/zram_drv.h   |    5 +---
+ drivers/staging/zram/zram_sysfs.c |    6 +---
+ 4 files changed, 35 insertions(+), 58 deletions(-)
+
+diff --git a/drivers/staging/zram/zram.txt b/drivers/staging/zram/zram.txt
+index 5f75d29..765d790 100644
+--- a/drivers/staging/zram/zram.txt
++++ b/drivers/staging/zram/zram.txt
+@@ -23,17 +23,17 @@ Following shows a typical sequence of steps for using zram.
+ 	This creates 4 devices: /dev/zram{0,1,2,3}
+ 	(num_devices parameter is optional. Default: 1)
+ 
+-2) Set Disksize (Optional):
+-	Set disk size by writing the value to sysfs node 'disksize'
+-	(in bytes). If disksize is not given, default value of 25%
+-	of RAM is used.
+-
+-	# Initialize /dev/zram0 with 50MB disksize
+-	echo $((50*1024*1024)) > /sys/block/zram0/disksize
+-
+-	NOTE: disksize cannot be changed if the disk contains any
+-	data. So, for such a disk, you need to issue 'reset' (see below)
+-	before you can change its disksize.
++2) Set Disksize
++        Set disk size by writing the value to sysfs node 'disksize'.
++        The value can be either in bytes or you can use mem suffixes.
++        Examples:
++            # Initialize /dev/zram0 with 50MB disksize
++            echo $((50*1024*1024)) > /sys/block/zram0/disksize
++
++            # Using mem suffixes
++            echo 256K > /sys/block/zram0/disksize
++            echo 512M > /sys/block/zram0/disksize
++            echo 1G > /sys/block/zram0/disksize
+ 
+ 3) Activate:
+ 	mkswap /dev/zram0
+@@ -65,8 +65,9 @@ Following shows a typical sequence of steps for using zram.
+ 	echo 1 > /sys/block/zram0/reset
+ 	echo 1 > /sys/block/zram1/reset
+ 
+-	(This frees all the memory allocated for the given device).
+-
++	This frees all the memory allocated for the given device and
++	resets the disksize to zero. You must set the disksize again
++	before reusing the device.
+ 
+ Please report any problems at:
+  - Mailing list: linux-mm-cc at laptop dot org
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index f2a73bd..e583a80 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -104,35 +104,6 @@ static int page_zero_filled(void *ptr)
+ 	return 1;
+ }
+ 
+-static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
+-{
+-	if (!zram->disksize) {
+-		pr_info(
+-		"disk size not provided. You can use disksize_kb module "
+-		"param to specify size.\nUsing default: (%u%% of RAM).\n",
+-		default_disksize_perc_ram
+-		);
+-		zram->disksize = default_disksize_perc_ram *
+-					(totalram_bytes / 100);
+-	}
+-
+-	if (zram->disksize > 2 * (totalram_bytes)) {
+-		pr_info(
+-		"There is little point creating a zram of greater than "
+-		"twice the size of memory since we expect a 2:1 compression "
+-		"ratio. Note that zram uses about 0.1%% of the size of "
+-		"the disk when not in use so a huge zram is "
+-		"wasteful.\n"
+-		"\tMemory Size: %zu kB\n"
+-		"\tSize you selected: %llu kB\n"
+-		"Continuing anyway ...\n",
+-		totalram_bytes >> 10, zram->disksize
+-		);
+-	}
+-
+-	zram->disksize &= PAGE_MASK;
+-}
+-
+ static void zram_free_page(struct zram *zram, size_t index)
+ {
+ 	unsigned long handle = zram->table[index].handle;
+@@ -506,6 +477,9 @@ void __zram_reset_device(struct zram *zram)
+ {
+ 	size_t index;
+ 
++	if (!zram->init_done)
++		goto out;
++
+ 	zram->init_done = 0;
+ 
+ 	/* Free various per-device buffers */
+@@ -532,8 +506,9 @@ void __zram_reset_device(struct zram *zram)
+ 
+ 	/* Reset stats */
+ 	memset(&zram->stats, 0, sizeof(zram->stats));
+-
++out:
+ 	zram->disksize = 0;
++	set_capacity(zram->disk, 0);
+ }
+ 
+ void zram_reset_device(struct zram *zram)
+@@ -549,13 +524,24 @@ int zram_init_device(struct zram *zram)
+ 	size_t num_pages;
+ 
+ 	down_write(&zram->init_lock);
+-
+ 	if (zram->init_done) {
+ 		up_write(&zram->init_lock);
+ 		return 0;
+ 	}
+ 
+-	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
++	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
++		pr_info(
++		"There is little point creating a zram of greater than "
++		"twice the size of memory since we expect a 2:1 compression "
++		"ratio. Note that zram uses about 0.1%% of the size of "
++		"the disk when not in use so a huge zram is "
++		"wasteful.\n"
++		"\tMemory Size: %zu kB\n"
++		"\tSize you selected: %llu kB\n"
++		"Continuing anyway ...\n",
++		(totalram_pages << PAGE_SHIFT) >> 10, zram->disksize
++		);
++	}
+ 
+ 	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+ 	if (!zram->compress_workmem) {
+@@ -580,8 +566,6 @@ int zram_init_device(struct zram *zram)
+ 		goto fail_no_table;
+ 	}
+ 
+-	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+-
+ 	/* zram devices sort of resembles non-rotational disks */
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+ 
+@@ -764,8 +748,7 @@ static void __exit zram_exit(void)
+ 		zram = &zram_devices[i];
+ 
+ 		destroy_device(zram);
+-		if (zram->init_done)
+-			zram_reset_device(zram);
++		zram_reset_device(zram);
+ 	}
+ 
+ 	unregister_blkdev(zram_major, "zram");
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index df2eec4..5b671d1 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -28,9 +28,6 @@ static const unsigned max_num_devices = 32;
+ 
+ /*-- Configurable parameters */
+ 
+-/* Default zram disk size: 25% of total RAM */
+-static const unsigned default_disksize_perc_ram = 25;
+-
+ /*
+  * Pages that compress to size greater than this are stored
+  * uncompressed in memory.
+@@ -115,6 +112,6 @@ extern struct attribute_group zram_disk_attr_group;
+ #endif
+ 
+ extern int zram_init_device(struct zram *zram);
+-extern void __zram_reset_device(struct zram *zram);
++extern void zram_reset_device(struct zram *zram);
+ 
+ #endif
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index de1eacf..4143af9 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -110,11 +110,7 @@ static ssize_t reset_store(struct device *dev,
+ 	if (bdev)
+ 		fsync_bdev(bdev);
+ 
+-	down_write(&zram->init_lock);
+-	if (zram->init_done)
+-		__zram_reset_device(zram);
+-	up_write(&zram->init_lock);
+-
++	zram_reset_device(zram);
+ 	return len;
+ }
+ 
+-- 
+1.7.9.5
+
