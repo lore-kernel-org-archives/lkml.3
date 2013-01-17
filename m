@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab3AQLci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 06:32:38 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47505 "EHLO
+	id S1756398Ab3AQLc5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 06:32:57 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47503 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756208Ab3AQLbq (ORCPT
+	with ESMTP id S1756204Ab3AQLbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 06:31:46 -0500
+	Thu, 17 Jan 2013 06:31:45 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <rogerq@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Rajendra Nayak <rnayak@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Mike Turquette <mturquette@linaro.com>
-Subject: [PATCH v7 19/22] ARM: OMAP3: clock data: get rid of unused USB host clock aliases and dummies
-Date: Thu, 17 Jan 2013 13:30:28 +0200
-Message-ID: <1358422231-24736-20-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>
+Subject: [PATCH v7 08/22] mfd: omap-usb-tll: serialize access to TLL device
+Date: Thu, 17 Jan 2013 13:30:17 +0200
+Message-ID: <1358422231-24736-9-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358422231-24736-1-git-send-email-rogerq@ti.com>
 References: <1358422231-24736-1-git-send-email-rogerq@ti.com>
@@ -27,60 +25,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need multiple aliases for the OMAP USB host clocks and neither
-the dummy clocks so remove them.
-
-CC: Paul Walmsley <paul@pwsan.com>
-CC: Rajendra Nayak <rnayak@ti.com>
-CC: Benoit Cousson <b-cousson@ti.com>
-CC: Mike Turquette <mturquette@linaro.com>
+Get rid of the unnecessary spin_lock_irqsave/restore() as there is
+no interrupt handler for this driver. Instead we serialize access
+to tll_dev using a global spinlock.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Paul Walmsley <paul@pwsan.com>
 ---
- arch/arm/mach-omap2/cclock3xxx_data.c |   11 -----------
- 1 files changed, 0 insertions(+), 11 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   53 ++++++++++++++++++++++---------------------
+ 1 files changed, 27 insertions(+), 26 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/cclock3xxx_data.c
-index 6ef8758..b58ec96 100644
---- a/arch/arm/mach-omap2/cclock3xxx_data.c
-+++ b/arch/arm/mach-omap2/cclock3xxx_data.c
-@@ -3291,8 +3291,6 @@ static struct omap_clk omap3xxx_clks[] = {
- 	CLK(NULL,	"cpefuse_fck",	&cpefuse_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- 	CLK(NULL,	"ts_fck",	&ts_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- 	CLK(NULL,	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
--	CLK("usbhs_omap",	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
--	CLK("usbhs_tll",	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- 	CLK(NULL,	"core_96m_fck",	&core_96m_fck,	CK_3XXX),
- 	CLK(NULL,	"mmchs3_fck",	&mmchs3_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- 	CLK(NULL,	"mmchs2_fck",	&mmchs2_fck,	CK_3XXX),
-@@ -3329,8 +3327,6 @@ static struct omap_clk omap3xxx_clks[] = {
- 	CLK(NULL,	"pka_ick",	&pka_ick,	CK_34XX | CK_36XX),
- 	CLK(NULL,	"core_l4_ick",	&core_l4_ick,	CK_3XXX),
- 	CLK(NULL,	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
--	CLK("usbhs_omap",	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
--	CLK("usbhs_tll",	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- 	CLK("omap_hsmmc.2",	"ick",	&mmchs3_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- 	CLK(NULL,	"mmchs3_ick",	&mmchs3_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- 	CLK(NULL,	"icr_ick",	&icr_ick,	CK_34XX | CK_36XX),
-@@ -3393,17 +3389,10 @@ static struct omap_clk omap3xxx_clks[] = {
- 	CLK(NULL,	"usbhost_120m_fck", &usbhost_120m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- 	CLK(NULL,	"usbhost_48m_fck", &usbhost_48m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- 	CLK(NULL,	"usbhost_ick",	&usbhost_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
--	CLK("usbhs_omap",	"usbhost_ick",	&usbhost_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- 	CLK(NULL,	"utmi_p1_gfclk",	&dummy_ck,	CK_3XXX),
- 	CLK(NULL,	"utmi_p2_gfclk",	&dummy_ck,	CK_3XXX),
- 	CLK(NULL,	"xclk60mhsp1_ck",	&dummy_ck,	CK_3XXX),
- 	CLK(NULL,	"xclk60mhsp2_ck",	&dummy_ck,	CK_3XXX),
--	CLK(NULL,	"usb_host_hs_utmi_p1_clk",	&dummy_ck,	CK_3XXX),
--	CLK(NULL,	"usb_host_hs_utmi_p2_clk",	&dummy_ck,	CK_3XXX),
--	CLK("usbhs_omap",	"usb_tll_hs_usb_ch0_clk",	&dummy_ck,	CK_3XXX),
--	CLK("usbhs_omap",	"usb_tll_hs_usb_ch1_clk",	&dummy_ck,	CK_3XXX),
--	CLK("usbhs_tll",	"usb_tll_hs_usb_ch0_clk",	&dummy_ck,	CK_3XXX),
--	CLK("usbhs_tll",	"usb_tll_hs_usb_ch1_clk",	&dummy_ck,	CK_3XXX),
- 	CLK(NULL,	"init_60m_fclk",	&dummy_ck,	CK_3XXX),
- 	CLK(NULL,	"usim_fck",	&usim_fck,	CK_3430ES2PLUS | CK_36XX),
- 	CLK(NULL,	"gpt1_fck",	&gpt1_fck,	CK_3XXX),
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index 81d2cac..9f9cfc2 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -103,14 +103,13 @@ struct usbtll_omap {
+ 	int					nch;	/* num. of channels */
+ 	struct usbhs_omap_platform_data		*pdata;
+ 	struct clk				**ch_clk;
+-	/* secure the register updates */
+-	spinlock_t				lock;
+ };
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+ static const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
+ static struct device	*tll_dev;
++static DEFINE_SPINLOCK(tll_lock);	/* serialize access to tll_dev */
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -212,7 +211,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	struct resource				*res;
+ 	struct usbtll_omap			*tll;
+ 	unsigned				reg;
+-	unsigned long				flags;
+ 	int					ret = 0;
+ 	int					i, ver;
+ 	bool needs_tll;
+@@ -230,8 +228,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	spin_lock_init(&tll->lock);
+-
+ 	tll->pdata = pdata;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -246,8 +242,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	pm_runtime_enable(dev);
+ 	pm_runtime_get_sync(dev);
+ 
+-	spin_lock_irqsave(&tll->lock, flags);
+-
+ 	ver =  usbtll_read(base, OMAP_USBTLL_REVISION);
+ 	switch (ver) {
+ 	case OMAP_USBTLL_REV1:
+@@ -265,8 +259,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		break;
+ 	}
+ 
+-	spin_unlock_irqrestore(&tll->lock, flags);
+-
+ 	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
+ 						GFP_KERNEL);
+ 	if (!tll->ch_clk) {
+@@ -289,8 +281,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 			tll->ch_clk[i] = fck;
+ 	}
+ 
+-	spin_lock_irqsave(&tll->lock, flags);
+-
+ 	needs_tll = false;
+ 	for (i = 0; i < tll->nch; i++)
+ 		needs_tll |= omap_usb_mode_needs_tll(pdata->port_mode[i]);
+@@ -335,10 +325,11 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	spin_unlock_irqrestore(&tll->lock, flags);
+ 	pm_runtime_put_sync(dev);
+ 	/* only after this can omap_tll_enable/disable work */
++	spin_lock(&tll_lock);
+ 	tll_dev = dev;
++	spin_unlock(&tll_lock);
+ 
+ 	return 0;
+ 
+@@ -360,7 +351,9 @@ static int usbtll_omap_remove(struct platform_device *pdev)
+ 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
+ 	int i;
+ 
++	spin_lock(&tll_lock);
+ 	tll_dev = NULL;
++	spin_unlock(&tll_lock);
+ 
+ 	for (i = 0; i < tll->nch; i++)
+ 		clk_put(tll->ch_clk[i]);
+@@ -373,13 +366,10 @@ static int usbtll_runtime_resume(struct device *dev)
+ {
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+ 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
+-	unsigned long				flags;
+ 	int i;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_resume\n");
+ 
+-	spin_lock_irqsave(&tll->lock, flags);
+-
+ 	for (i = 0; i < tll->nch; i++) {
+ 		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
+ 			int r;
+@@ -395,8 +385,6 @@ static int usbtll_runtime_resume(struct device *dev)
+ 		}
+ 	}
+ 
+-	spin_unlock_irqrestore(&tll->lock, flags);
+-
+ 	return 0;
+ }
+ 
+@@ -404,13 +392,10 @@ static int usbtll_runtime_suspend(struct device *dev)
+ {
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+ 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
+-	unsigned long				flags;
+ 	int i;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_suspend\n");
+ 
+-	spin_lock_irqsave(&tll->lock, flags);
+-
+ 	for (i = 0; i < tll->nch; i++) {
+ 		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
+ 			if (tll->ch_clk[i])
+@@ -418,8 +403,6 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 		}
+ 	}
+ 
+-	spin_unlock_irqrestore(&tll->lock, flags);
+-
+ 	return 0;
+ }
+ 
+@@ -441,21 +424,39 @@ static struct platform_driver usbtll_omap_driver = {
+ 
+ int omap_tll_enable(void)
+ {
++	int ret;
++
++	spin_lock(&tll_lock);
++
+ 	if (!tll_dev) {
+ 		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
+-		return  -ENODEV;
++		ret = -ENODEV;
++	} else {
++		ret = pm_runtime_get_sync(tll_dev);
+ 	}
+-	return pm_runtime_get_sync(tll_dev);
++
++	spin_unlock(&tll_lock);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(omap_tll_enable);
+ 
+ int omap_tll_disable(void)
+ {
++	int ret;
++
++	spin_lock(&tll_lock);
++
+ 	if (!tll_dev) {
+ 		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
+-		return  -ENODEV;
++		ret = -ENODEV;
++	} else {
++		ret = pm_runtime_put_sync(tll_dev);
+ 	}
+-	return pm_runtime_put_sync(tll_dev);
++
++	spin_unlock(&tll_lock);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(omap_tll_disable);
+ 
 -- 
 1.7.4.1
 
