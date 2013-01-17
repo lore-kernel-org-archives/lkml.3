@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759026Ab3AQDCA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:02:00 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:48752 "EHLO smtp.outflux.net"
+	id S1758899Ab3AQCyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 21:54:54 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:37089 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758903Ab3AQCyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:54:55 -0500
+	id S1758774Ab3AQCyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 21:54:52 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Beulich <JBeulich@novell.com>, Mel Gorman <mel@csn.ul.ie>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 85/86] mm: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:54:17 -0800
-Message-Id: <1358391258-1771-86-git-send-email-keescook@chromium.org>
+Subject: [PATCH 16/86] drivers/net/wireless/p54: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:53:08 -0800
+Message-Id: <1358391258-1771-17-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -30,30 +28,27 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Jan Beulich <JBeulich@novell.com>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: David Rientjes <rientjes@google.com>
+CC: Christian Lamparter <chunkeey@googlemail.com>
+CC: "John W. Linville" <linville@tuxdriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- mm/Kconfig |    2 +-
+ drivers/net/wireless/p54/Kconfig |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 278e3ab..308fdca 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
+diff --git a/drivers/net/wireless/p54/Kconfig b/drivers/net/wireless/p54/Kconfig
+index 0ec55b5..15ea36b 100644
+--- a/drivers/net/wireless/p54/Kconfig
++++ b/drivers/net/wireless/p54/Kconfig
 @@ -1,6 +1,6 @@
- config SELECT_MEMORY_MODEL
- 	def_bool y
--	depends on EXPERIMENTAL || ARCH_SELECT_MEMORY_MODEL
-+	depends on ARCH_SELECT_MEMORY_MODEL
- 
- choice
- 	prompt "Memory model"
+ config P54_COMMON
+ 	tristate "Softmac Prism54 support"
+-	depends on MAC80211 && EXPERIMENTAL
++	depends on MAC80211
+ 	select FW_LOADER
+ 	select CRC_CCITT
+ 	---help---
 -- 
 1.7.9.5
 
