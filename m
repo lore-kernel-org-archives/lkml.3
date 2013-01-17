@@ -1,63 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab3AQRGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 12:06:09 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30225 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab3AQRGI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 12:06:08 -0500
-X-Authority-Analysis: v=2.0 cv=T70Ovo2Q c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZF3fSwPLIvUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=PNVBakpotukA:10 a=8Mp7U4MB-6elABKeDl4A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358442365.23211.17.camel@gandalf.local.home>
-Subject: slob: Check for NULL pointer before calling ctor()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Date: Thu, 17 Jan 2013 12:06:05 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754816Ab3AQRHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 12:07:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:36140 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751804Ab3AQRHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 12:07:21 -0500
+Date: Thu, 17 Jan 2013 09:07:19 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>
+Subject: Re: [PATCH] platform: Fix platform device resource linking
+Message-ID: <20130117170719.GB9163@kroah.com>
+References: <1357252270-5955-1-git-send-email-panto@antoniou-consulting.com>
+ <20130103224020.GB4571@kroah.com>
+ <CD23CDD8-5740-4649-8876-ADDFCFF30C35@antoniou-consulting.com>
+ <20130117163159.GD1396@kroah.com>
+ <95056678-DF1A-4C49-BEAE-C5EBD7E56405@antoniou-consulting.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <95056678-DF1A-4C49-BEAE-C5EBD7E56405@antoniou-consulting.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While doing some code inspection, I noticed that the slob constructor
-method can be called with a NULL pointer. If memory is tight and slob
-fails to allocate with slob_alloc() or slob_new_pages() it still calls
-the ctor() method with a NULL pointer. Looking at the first ctor()
-method I found, I noticed that it can not handle a NULL pointer (I'm
-sure others probably can't either):
+On Thu, Jan 17, 2013 at 06:50:19PM +0200, Pantelis Antoniou wrote:
+> 
+> On Jan 17, 2013, at 6:31 PM, Greg Kroah-Hartman wrote:
+> 
+> > On Fri, Jan 04, 2013 at 12:43:46AM +0200, Pantelis Antoniou wrote:
+> >> Hi Greg,
+> >> 
+> >> On Jan 4, 2013, at 12:40 AM, Greg Kroah-Hartman wrote:
+> >> 
+> >>> On Fri, Jan 04, 2013 at 12:31:10AM +0200, Pantelis Antoniou wrote:
+> >>>> Platform device removal uncovered a number of problems with
+> >>>> the way resources are handled in the core platform code.
+> >>>> 
+> >>>> Resources now form child/parent linkages and this requires
+> >>>> proper linking of the resources. On top of that the OF core
+> >>>> directly creates it's own platform devices. Simplify things
+> >>>> by providing helper functions that manage the linking properly.
+> >>>> 
+> >>>> Two functions are provided:
+> >>>> 
+> >>>> platform_device_link_resources(), which links all the
+> >>>> linkable resources (if not already linked).
+> >>>> 
+> >>>> and platform_device_unlink_resources(), which unlinks all the
+> >>>> resources.
+> >>> 
+> >>> Who would call these functions, and why?
+> >>> 
+> >>> And why have we never seen problems with removing platform devices
+> >>> previously?
+> >>> 
+> >> 
+> >> Have you tried removing devices that were created via DT and 
+> >> not using platform data?
+> > 
+> > Don't you think that answering two questions with another question as
+> > something that isn't very helpful?  :)
+> > 
+> > Dropped from my queue, please resend when you can provide the needed
+> > information.
+> > 
+> > thanks,
+> > 
+> 
+> That's not very nice, but anyway...
 
-static void sighand_ctor(void *data)
-{
-        struct sighand_struct *sighand = data;
+What would you have me do if you were in my shoes?
 
-        spin_lock_init(&sighand->siglock);
-        init_waitqueue_head(&sighand->signalfd_wqh);
-}
+> In a nutshell, we have to exercise the platform device subsystem, in ways
+> that never happened before, so all sorts of weird bugs that no-one has seen
+> before.
 
-The solution is to only call the ctor() method if allocation succeeded.
+Why do you have to do this?  What are you doing that is so different
+from everyone else?  What drivers are you using that trigger this type
+of thing?
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> In that case, the code path for creating platform devices from DT is
+> not the same as the one that is used when creating platform device from
+> a board file.
 
-diff --git a/mm/slob.c b/mm/slob.c
-index a99fdf7..48fcb90 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -554,7 +554,7 @@ void *kmem_cache_alloc_node(struct kmem_cache *c, gfp_t flags, int node)
- 					    flags, node);
- 	}
- 
--	if (c->ctor)
-+	if (b && c->ctor)
- 		c->ctor(b);
- 
- 	kmemleak_alloc_recursive(b, c->size, 1, c->flags, flags);
+Why not?
 
+> Take a look at platform_device_add() in drivers/base/platform.c and
+> drivers/of/device.c
+> 
+> platform_device_add() properly links the resources by using insert_resource(),
+> while of_device_add() doesn't bother with it. Now when we try to unregister
+> the device everything will is fine in the platform device case, since the resources
+> are linked properly. In the DT case we will crash spectacularly in 
+> __release_resource at the first line (p = &old->parent->child), since no-one bothered
+> to fill in the parent pointer.
 
+So, isn't that a bug in the DT case?  A device always has to have a
+parent, as you have found out.  Hm, maybe not "root" devices, but you
+don't have many of those, right?
+
+> That's what the patches do; first the code in platform_device_add() that perform the
+> resource linking is factored as a separate function (platform_device_link_resources).
+> 
+> The platform_device_unlink_resources() function, just makes things more clearer. 
+
+But you added a new function that no one calls, which is what I am
+objecting to.
+
+thanks,
+
+greg k-h
