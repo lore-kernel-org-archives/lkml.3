@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab3AQUl6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:41:58 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33895 "EHLO mga09.intel.com"
+	id S1757097Ab3AQUl5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:41:57 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33901 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756851Ab3AQUhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756961Ab3AQUhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jan 2013 15:37:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="273439807"
+   d="scan'208";a="273439805"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 10/29] perf, tools: Add abort_tx,no_tx,in_tx branch filter options to perf record -j v3
-Date: Thu, 17 Jan 2013 12:36:33 -0800
-Message-Id: <1358455012-12287-11-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 08/29] perf, x86: Disable LBR recording for unknown LBR_FMT
+Date: Thu, 17 Jan 2013 12:36:31 -0800
+Message-Id: <1358455012-12287-9-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,44 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Make perf record -j aware of the new in_tx,no_tx,abort_tx branch qualifiers.
+When the LBR format is unknown disable LBR recording. This prevents
+crashes when the LBR address is misdecoded and mis-sign extended.
 
-v2: ABORT -> ABORTTX
-v3: Add more _
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-record.txt |    3 +++
- tools/perf/builtin-record.c              |    3 +++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 938e890..f7d74b2 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -172,6 +172,9 @@ following filters are defined:
-         - u:  only when the branch target is at the user level
-         - k: only when the branch target is in the kernel
-         - hv: only when the target is at the hypervisor level
-+	- in_tx: only when the target is in a hardware transaction
-+	- no_tx: only when the target is not in a hardware transaction
-+	- abort_tx: only when the target is a hardware transaction abort
- 
- +
- The option requires at least one branch type among any, any_call, any_ret, ind_call.
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f3151d3..e7da893 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -781,6 +781,9 @@ static const struct branch_mode branch_modes[] = {
- 	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
- 	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
- 	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
-+	BRANCH_OPT("abort_tx", PERF_SAMPLE_BRANCH_ABORTTX),
-+	BRANCH_OPT("in_tx", PERF_SAMPLE_BRANCH_INTX),
-+	BRANCH_OPT("no_tx", PERF_SAMPLE_BRANCH_NOTX),
- 	BRANCH_END
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 2af6695b..ad5af13 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -13,6 +13,7 @@ enum {
+ 	LBR_FORMAT_EIP		= 0x02,
+ 	LBR_FORMAT_EIP_FLAGS	= 0x03,
+ 	LBR_FORMAT_EIP_FLAGS2	= 0x04,
++	LBR_FORMAT_MAX_KNOWN	= LBR_FORMAT_EIP_FLAGS2,
  };
  
+ /*
+@@ -392,7 +393,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ 	/*
+ 	 * no LBR on this PMU
+ 	 */
+-	if (!x86_pmu.lbr_nr)
++	if (!x86_pmu.lbr_nr || x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
+ 		return -EOPNOTSUPP;
+ 
+ 	/*
 -- 
 1.7.7.6
 
