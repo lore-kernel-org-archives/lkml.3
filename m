@@ -1,66 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab3AQXft (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 18:35:49 -0500
-Received: from mail.us.es ([193.147.175.20]:35378 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751656Ab3AQXfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 18:35:47 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.6/16515. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-96.3/7.5):. 
- Processed in 1.687327 secs); 17 Jan 2013 23:35:45 -0000
-X-Envelope-From: pneira@us.es
-Date: Fri, 18 Jan 2013 00:35:39 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Gabor Juhos <juhosg@openwrt.org>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v4] netfilter: nf_conntrack_sip: Handle Cisco 7941/7945
- IP phones
-Message-ID: <20130117233539.GA15576@1984>
-References: <1355805238-2460-1-git-send-email-cernekee@gmail.com>
+	id S1753350Ab3AQXgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 18:36:45 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50864 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab3AQXgo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 18:36:44 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-ca-50f88b09752e
+Date: Fri, 18 Jan 2013 08:36:42 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] mm: prevent to add a page to swap if may_writepage
+ is unset
+Message-ID: <20130117233641.GA31368@blaptop>
+References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+ <1357712474-27595-2-git-send-email-minchan@kernel.org>
+ <20130116134155.18092f1a.akpm@linux-foundation.org>
+ <20130117005314.GB18669@blaptop>
+ <20130117142238.e32c46d5.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355805238-2460-1-git-send-email-cernekee@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130117142238.e32c46d5.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 08:33:58PM -0800, Kevin Cernekee wrote:
-> Most SIP devices use a source port of 5060/udp on SIP requests, so the
-> response automatically comes back to port 5060:
+On Thu, Jan 17, 2013 at 02:22:38PM -0800, Andrew Morton wrote:
+> On Thu, 17 Jan 2013 09:53:14 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
 > 
->     phone_ip:5060 -> proxy_ip:5060   REGISTER
->     proxy_ip:5060 -> phone_ip:5060   100 Trying
+> > Recently, Luigi reported there are lots of free swap space when
+> > OOM happens. It's easily reproduced on zram-over-swap, where
+> > many instance of memory hogs are running and laptop_mode is enabled.
+> > He said there was no problem when he disabled laptop_mode.
+> > 
+> > The problem when I investigate problem is following as.
+> > 
+> > Assumption for easy explanation: There are no page cache page in system
+> > because they all are already reclaimed.
+> > 
+> > 1. try_to_free_pages disable may_writepage when laptop_mode is enabled.
+> > 2. shrink_inactive_list isolates victim pages from inactive anon lru list.
+> > 3. shrink_page_list adds them to swapcache via add_to_swap but it doesn't
+> >    pageout because sc->may_writepage is 0 so the page is rotated back into
+> >    inactive anon lru list. The add_to_swap made the page Dirty by SetPageDirty
+> > 4. 3 couldn't reclaim any pages so do_try_to_free_pages increase priority and
+> >    retry reclaim with higher priority.
+> > 5. shrink_inactlive_list try to isolate victim pages from inactive anon lru list
+> >    but got failed because it try to isolate pages with ISOLATE_CLEAN mode but
+> >    inactive anon lru list is full of dirty pages by 3 so it just returns
+> >    without  any reclaim progress.
+> > 6. do_try_to_free_pages doesn't set may_write due to zero total_scanned.
 > 
-> The newer Cisco IP phones, however, use a randomly chosen high source
-> port for the SIP request but expect the response on port 5060:
-> 
->     phone_ip:49173 -> proxy_ip:5060  REGISTER
->     proxy_ip:5060 -> phone_ip:5060   100 Trying
-> 
-> Standard Linux NAT, with or without nf_nat_sip, will send the reply back
-> to port 49173, not 5060:
-> 
->     phone_ip:49173 -> proxy_ip:5060  REGISTER
->     proxy_ip:5060 -> phone_ip:49173  100 Trying
-> 
-> But the phone is not listening on 49173, so it will never see the reply.
-> 
-> This patch modifies nf_*_sip to work around this quirk by extracting
-> the SIP response port from the Via: header, iff the source IP in the
-> packet header matches the source IP in the SIP request.
+> s/may_write/may_writepage/
 
-Applied, thanks Kevin.
+Thanks!
+
+> 
+> >    Because sc->nr_scanned is increased by shrink_page_list but we don't call
+> >    shrink_page_list in 5 due to short of isolated pages.
+> 
+> This is the bug, is it not?
+> 
+> In laptop mode, we still need to write out dirty swapcache at some
+> point.  An appropriate time to do this is when the scanning priority is
+
+Yes and when to some point is really important. Now, the point for that is
+depends on on the number of scanned pages by shrink_page_list. It means we
+must isolate victim pages from inactive LRU list and call shrink_page_list
+to increase sc->nr_scanned but unfortunately, we have various filters to
+decrease CPU consumption and LRU churning when VM try to isolate victim pages
+so it could prevent isolating victim pages from LRU list.
+
+> getting high.  But it seems that this ISOLATE_CLEAN->total_scanned
+
+Yes. I absolutely agree on that some point should depend on priority, NOT
+the number of scanned pages. And I already said to you about that.
+https://lkml.org/lkml/2013/1/10/643
+
+We used to use such heuristic in several places in VM, ie DEF_PRIORITY - 2
+But why I hesitate with the patch is that I think this patch should go to
+stable tree so the patch should be really small and have no side effect so
+I don't wanted to change laptop_mode behavior heavily caused by changing
+condition for may_writepage trigger point.
+
+> interaction is preventing that.
+> 
+> (An enhancement to laptop mode would be to opportunistically write out
+> dirty swapcache in or around laptop_mode_timer_fn()).
+
+It could but it should be another patch and VM shouldn't rely on ONLY
+laptop_mode_timer_fn, IMHO. VM should have own rule to reclaim pages
+regardless of laptop_mode's help to prevent OOM kill.
+
+> 
+> > Above loop is continued until OOM happens.
+> > The problem didn't happen before [1] was merged because old logic's isolatation
+> > in shrink_inactive_list was successful and tried to call shrink_page_list
+> > to pageout them but it still ends up failed to page out by may_writepage.
+> > But important point is that sc->nr_scanned was increased althoug we couldn't
+> > swap out them so do_try_to_free_pages could set may_writepages.
+> > So this patch need to go stable tree althoug it's a band-aid.
+> > Then, for latest linus tree, we should fix laptop_mode's fundamental
+> > problem.
+> 
+> Well.  Perhaps we can do that now.
+
+Okay. If you don't object my suggestion, I will send patches next week.
+Thanks for the review, Andrew!
+
+> 
+> > [1] f80c067[mm: zone_reclaim: make isolate_lru_page() filter-aware]
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
