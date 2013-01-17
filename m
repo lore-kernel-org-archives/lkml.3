@@ -1,103 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab3AQQIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:08:38 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59467 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756918Ab3AQQIf (ORCPT
+	id S1757152Ab3AQQW0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:22:26 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:51608 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757061Ab3AQQWY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:08:35 -0500
-Message-ID: <50F821DD.1040609@ti.com>
-Date: Thu, 17 Jan 2013 18:07:57 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 17 Jan 2013 11:22:24 -0500
+Date: Thu, 17 Jan 2013 16:22:18 +0000
+From: Andrew Murray <andrew.murray@arm.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
+Message-ID: <20130117162218.GA29016@arm.com>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130115154038.GA11241@arm.com>
+ <20130115211441.GA13139@avionic-0098.adnet.avionic-design.de>
+ <201301161400.26587.arnd@arndb.de>
+ <20130116161716.GA10630@arm.com>
+ <20130116183101.GA28660@avionic-0098.adnet.avionic-design.de>
+ <20130117154236.GA25943@arm.com>
+ <20130117160501.GC2186@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <balbi@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <b-cousson@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <horms@verge.net.au>,
-        <magnus.damm@gmail.com>, <cbou@mail.ru>, <dwmw2@infradead.org>,
-        <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <leoli@freescale.com>, <eric.y.miao@gmail.com>,
-        <haojian.zhuang@gmail.com>, <stern@rowland.harvard.edu>
-Subject: Re: [RFC PATCH 3/6] usb: otg: utils: change the phy lib to support
- multiple PHYs of same type
-References: <1358348462-27693-1-git-send-email-kishon@ti.com> <1358348462-27693-4-git-send-email-kishon@ti.com>
-In-Reply-To: <1358348462-27693-4-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130117160501.GC2186@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 17 Jan 2013 16:22:19.0222 (UTC) FILETIME=[D24B8F60:01CDF4CE]
+X-MC-Unique: 113011716222208801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 05:00 PM, Kishon Vijay Abraham I wrote:
-> In order to add support for multipe PHY's of the same type, the API's
-> for adding PHY and getting PHY has been changed. Now the binding
-> information of the PHY and controller should be done in platform file
-> using usb_bind_phy API. And for getting a PHY, the device pointer of the
-> USB controller and an index should be passed. Based on the binding
-> information that is added in the platform file, get_phy will return the
-> approappropriate PHY.
+On Thu, Jan 17, 2013 at 04:05:02PM +0000, Thierry Reding wrote:
+> On Thu, Jan 17, 2013 at 03:42:36PM +0000, Andrew Murray wrote:
+> > On Wed, Jan 16, 2013 at 06:31:01PM +0000, Thierry Reding wrote:
+> > > Alright, putting the functions into pci_ops doesn't sound like a very
+> > > good idea then. Or perhaps it would make sense for hardware where the
+> > > root complex and the MSI controller are handled by the same driver.
+> > > Basically it could be done as a shortcut and if those are not filled
+> > > in, the drivers could still opt to look up an MSI controller from a
+> > > phandle specified in DT.
+> > > 
+> > > Even another alternative would be to keep the functions within the
+> > > struct pci_ops and use generic ones if an external MSI controller is
+> > > used. Just tossing around ideas.
+> > 
+> > I think an ideal solution would be for additional logic in drivers/msi.c
+> > (e.g. in functions like msi_capability_init) to determine (based on the
+> > passed in pci_dev) which MSI controller ops to use. I'm not sure the best
+> > way to implement an association between an MSI controller and PCI busses
+> > (I believe arch/sparc does something like this - perhaps there will be
+> > inspiration there).
+> > 
+> > As you've pointed out, most RCs will have their own MSI controllers - so
+> > it should be easy to register and associate both together.
+> > 
+> > I've submitted my previous work on MSI controller registration, but it
+> > doesn't quite solve this problem - perhaps it can be a starting point?
 > 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  arch/arm/mach-shmobile/board-marzen.c |    2 +-
->  drivers/power/ab8500_charger.c        |    2 +-
->  drivers/power/isp1704_charger.c       |    2 +-
->  drivers/power/pda_power.c             |    2 +-
->  drivers/power/twl4030_charger.c       |    2 +-
->  drivers/usb/chipidea/udc.c            |    2 +-
->  drivers/usb/dwc3/core.c               |    4 +-
->  drivers/usb/gadget/fsl_udc_core.c     |    2 +-
->  drivers/usb/gadget/mv_udc_core.c      |    2 +-
->  drivers/usb/gadget/omap_udc.c         |    2 +-
->  drivers/usb/gadget/pxa25x_udc.c       |    2 +-
->  drivers/usb/gadget/pxa27x_udc.c       |    2 +-
->  drivers/usb/gadget/s3c-hsudc.c        |    2 +-
->  drivers/usb/host/ehci-fsl.c           |    2 +-
->  drivers/usb/host/ehci-msm.c           |    2 +-
->  drivers/usb/host/ehci-mv.c            |    2 +-
->  drivers/usb/host/ehci-tegra.c         |    2 +-
->  drivers/usb/host/ohci-omap.c          |    2 +-
->  drivers/usb/musb/am35x.c              |    2 +-
->  drivers/usb/musb/blackfin.c           |    2 +-
->  drivers/usb/musb/da8xx.c              |    2 +-
->  drivers/usb/musb/davinci.c            |    2 +-
->  drivers/usb/musb/musb_dsps.c          |    2 +-
->  drivers/usb/musb/omap2430.c           |    2 +-
->  drivers/usb/musb/tusb6010.c           |    2 +-
->  drivers/usb/musb/ux500.c              |    2 +-
->  drivers/usb/otg/ab8500-usb.c          |    3 +-
->  drivers/usb/otg/fsl_otg.c             |    5 ++-
->  drivers/usb/otg/gpio_vbus.c           |    3 +-
->  drivers/usb/otg/isp1301_omap.c        |    3 +-
->  drivers/usb/otg/msm_otg.c             |    3 +-
->  drivers/usb/otg/mv_otg.c              |    3 +-
->  drivers/usb/otg/nop-usb-xceiv.c       |    3 +-
->  drivers/usb/otg/otg.c                 |   67 +++++++++++++++------------------
->  drivers/usb/otg/twl4030-usb.c         |    3 +-
->  drivers/usb/phy/mv_u3d_phy.c          |    3 +-
->  drivers/usb/phy/omap-usb2.c           |   11 ++----
->  drivers/usb/phy/rcar-phy.c            |    3 +-
->  include/linux/usb/phy.h               |   12 +++---
->  39 files changed, 87 insertions(+), 89 deletions(-)
+> We basically have two cases:
+> 
+>   - The PCI host bridge contains registers for MSI support. In that case
+>     it makes little sense to uncouple the MSI implementation from the
+>     host bridge driver.
+> 
+>   - An MSI controller exists outside of the PCI host bridge. The PCI
+>     host bridge would in that case have to lookup an MSI controller (via
+>     DT phandle or some other method).
+> 
+> In either of those cases, does it make sense to use the MSI support
+> outside the scope of the PCI infrastructure? That is, would devices
+> other than PCI devices be able to generate an MSI?
 
-I think it better to leave the existing add/get APIs as they are add add
-new APIs that support multiple PHYs. You could probably mark the old
-ones as deprecated.
+I've come around to your way of thinking. Your approach sounds good for
+registration of MSI ops - let the RC host driver do it (it probably has its
+own), or use a helper for following a phandle to get ops that are not part
+of the driver. MSIs won't be used outside of PCI devices.
 
-That way you don't need to wait till all users are converted and tested.
+Though existing drivers will use MSI framework functions to request MSIs, that
+will result in callbacks to the arch_setup_msi_irqs type functions. These
+functions would need to be updated to find these new ops if they exist, i.e. by
+traversing the pci_dev structure up to the RC and finding a suitable structure.
 
-e.g. you could name the new APIs as
+Perhaps the msi ops could live alongside pci_ops in the pci_bus structure. This
+way when traversing up the buses from the provided pci_dev - the first bus with
+msi ops populated would be used?
 
-usb_add_phy_dev(struct usb_phy *phy);
-usb_get_phy_dev(struct device *dev, int index);
+If no ops are found, the standard arch callbacks can be called - thus preserving
+exiting functionality.
 
---
-cheers,
--roger
+Andrew Murray
+
 
