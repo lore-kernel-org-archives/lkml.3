@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab3AQWzq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 17:55:46 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:41729 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3AQWzo (ORCPT
+	id S1755620Ab3AQW4K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 17:56:10 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36636 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab3AQWyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 17:55:44 -0500
-Date: Fri, 18 Jan 2013 09:55:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
-Subject: Re: [PATCH v2 0/8] Add O_DENY* support for VFS and CIFS/NFS
-Message-Id: <20130118095538.fdd0b3be90739b9fd9179b5d@canb.auug.org.au>
-In-Reply-To: <1358441537-8672-1-git-send-email-piastry@etersoft.ru>
-References: <1358441537-8672-1-git-send-email-piastry@etersoft.ru>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__18_Jan_2013_09_55_38_+1100_7TSfPL.ufZ3ugG+I"
+	Thu, 17 Jan 2013 17:54:17 -0500
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Linux MM <linux-mm@kvack.org>, David Hansen <dave@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Cody P Schafer <jmesmon@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH 4/9] mm/page_alloc: add a VM_BUG in __free_one_page() if the zone is uninitialized.
+Date: Thu, 17 Jan 2013 14:52:56 -0800
+Message-Id: <1358463181-17956-5-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.0.3
+In-Reply-To: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011722-2876-0000-0000-0000043302F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__18_Jan_2013_09_55_38_+1100_7TSfPL.ufZ3ugG+I
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Cody P Schafer <jmesmon@gmail.com>
 
-Hi Pavel,
+Freeing pages to uninitialized zones is not handled by
+__free_one_page(), and should never happen when the code is correct.
 
-On Thu, 17 Jan 2013 20:52:09 +0400 Pavel Shilovsky <piastry@etersoft.ru> wr=
-ote:
->
-> This patchset adds support of O_DENY* flags for Linux fs layer. These fla=
-gs can be used by any application that needs share reservations to organize=
- a file access. VFS already has some sort of this capability - now it's don=
-e through flock/LOCK_MAND mechanis, but that approach is non-atomic. This p=
-atchset build new capabilities on top of the existing one but doesn't bring=
- any changes into the flock call semantic.
+Ran into this while writing some code that dynamically onlines extra
+zones.
 
-This has probably been discussed, but is Linux's leases implementation
-not sufficient?  Just wondering.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ mm/page_alloc.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index e2574ea..f8ed277 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -530,6 +530,8 @@ static inline void __free_one_page(struct page *page,
+ 	unsigned long uninitialized_var(buddy_idx);
+ 	struct page *buddy;
+ 
++	VM_BUG_ON(!zone_is_initialized(zone));
++
+ 	if (unlikely(PageCompound(page)))
+ 		if (unlikely(destroy_compound_page(page, order)))
+ 			return;
+-- 
+1.8.0.3
 
---Signature=_Fri__18_Jan_2013_09_55_38_+1100_7TSfPL.ufZ3ugG+I
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ+IFqAAoJEECxmPOUX5FE+gAQAJwLoVKNYzoQS/zD5Qk+ahFn
-4wS6YX/afeFPoQhLujcl+LtgSAH6/Ck2T+OxPfrzxCqVXyhtWDz5tZ7aomQTw9fr
-J9nzWDzOYQRbn5UV07XzR0p4iQcglCBrHs1b4Jqt3f+p6zUYeGjxQNrCf4DFcB+b
-EnBUYkpIkGCsEUgIeknN2EJuL3XKz0a1Th7V7QwhQwRMOQYxAt3/X0fCSpjyxLDJ
-e0i/cnMshvI4ECLTG8YmPaU0aigU4zWO810NvlhUQByBxqMMy/x64mloPesI8SJd
-magfHroh1Shsxay+QRYnEzOoQb+cm531radEzOsUiD30VzR8ANZi80S6zBS8DAYV
-7Cc6WHGuoKvG3+uYaq7j6EyCcc/M0gzZHrj2kL9lPUpTcHdB15FCjysE67qX4eut
-EKNWHQHOGN01XKqZgh/7uuKeqo2sM6igLdIqzU06/cjGFYlTncxQP41IPJs1xYBc
-j+1M1TaDm5CPePUGq9YUk1mK977mQTsEE9+kMUhn+nlQBcY5HdIQbgB/K74qJqIt
-1rUONBpSTdb6bXz6GKbJEIGZy+JRIhUFt8wDee9Qc7QZQKWlhSe0lx0vUREdUIqI
-FCfhIw1atAcq0FyU9FGx3VEYJVdYuAz139zAMbC0AuJyR0tarDmY9ZuRxeW60z3h
-NLDPSpog2wpX+jdtVTuF
-=UbCB
------END PGP SIGNATURE-----
-
---Signature=_Fri__18_Jan_2013_09_55_38_+1100_7TSfPL.ufZ3ugG+I--
