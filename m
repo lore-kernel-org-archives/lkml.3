@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab3AQDRJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:17:09 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:51882 "EHLO smtp.outflux.net"
+	id S1759163Ab3AQDRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:17:08 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:58813 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757464Ab3AQCyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758286Ab3AQCyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jan 2013 21:54:31 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>, "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 05/86] drivers/net/ethernet/seeq: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:52:57 -0800
-Message-Id: <1358391258-1771-6-git-send-email-keescook@chromium.org>
+Subject: [PATCH 03/86] drivers/net/ethernet/microchip: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:52:55 -0800
+Message-Id: <1358391258-1771-4-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -29,31 +29,31 @@ Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/net/ethernet/seeq/Kconfig |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/net/ethernet/microchip/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/seeq/Kconfig b/drivers/net/ethernet/seeq/Kconfig
-index 29f1853..2366fa0 100644
---- a/drivers/net/ethernet/seeq/Kconfig
-+++ b/drivers/net/ethernet/seeq/Kconfig
-@@ -6,7 +6,6 @@ config NET_VENDOR_SEEQ
- 	bool "SEEQ devices"
+diff --git a/drivers/net/ethernet/microchip/Kconfig b/drivers/net/ethernet/microchip/Kconfig
+index 8163fd0..afaf0c0 100644
+--- a/drivers/net/ethernet/microchip/Kconfig
++++ b/drivers/net/ethernet/microchip/Kconfig
+@@ -5,7 +5,7 @@
+ config NET_VENDOR_MICROCHIP
+ 	bool "Microchip devices"
  	default y
- 	depends on HAS_IOMEM
--	depends on (ARM && ARCH_ACORN) || SGI_HAS_SEEQ || EXPERIMENTAL
+-	depends on SPI && EXPERIMENTAL
++	depends on SPI
  	---help---
  	  If you have a network (Ethernet) card belonging to this class, say Y
  	  and read the Ethernet-HOWTO, available from
-@@ -27,8 +26,7 @@ config ARM_ETHER3
- 	  should say Y to this option if you wish to use it with Linux.
+@@ -20,7 +20,7 @@ if NET_VENDOR_MICROCHIP
  
- config SEEQ8005
--	tristate "SEEQ8005 support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	tristate "SEEQ8005 support"
+ config ENC28J60
+ 	tristate "ENC28J60 support"
+-	depends on SPI && EXPERIMENTAL
++	depends on SPI
+ 	select CRC32
  	---help---
- 	  This is a driver for the SEEQ 8005 network (Ethernet) card.  If this
- 	  is for you, read the Ethernet-HOWTO, available from
+ 	  Support for the Microchip EN28J60 ethernet chip.
 -- 
 1.7.9.5
 
