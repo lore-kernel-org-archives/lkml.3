@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758484Ab3AQFrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 00:47:48 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:41161 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239Ab3AQFrr (ORCPT
+	id S1758940Ab3AQFsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 00:48:32 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:58451 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab3AQFsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 00:47:47 -0500
-Message-ID: <50F79079.504@linux.vnet.ibm.com>
-Date: Thu, 17 Jan 2013 13:47:37 +0800
+	Thu, 17 Jan 2013 00:48:31 -0500
+Message-ID: <50F790A5.10107@linux.vnet.ibm.com>
+Date: Thu, 17 Jan 2013 13:48:21 +0800
 From: Michael Wang <wangyun@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
@@ -18,137 +18,124 @@ CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
         Namhyung Kim <namhyung@kernel.org>, Ram Pai <linuxram@us.ibm.com>
-Subject: [RFC PATCH v2 1/3] sched: schedule balance map foundation
+Subject: [RFC PATCH v2 2/3] sched: build schedule balance map
 References: <50F79047.1080907@linux.vnet.ibm.com>
 In-Reply-To: <50F79047.1080907@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011705-6102-0000-0000-000002DDD1E3
+x-cbid: 13011705-5490-0000-0000-000002D28DE2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to get rid of the complex code in select_task_rq_fair(),
-approach to directly get sd on each level with proper flag is
-required.
+This patch will build schedule balance map as designed, now
+cpu_sbm->sd[f][l] can directly locate the sd of cpu on level 'l'
+with flag 'f' supported.
 
-Schedule balance map is the solution, which record the sd according
-to it's flag and level.
-
-For example, cpu_sbm->sd[wake][l] will locate the sd of cpu which
-support wake up on level l.
-
-This patch contain the foundation of schedule balance map in order
-to serve the follow patches.
+In order to quickly locate the lower sd while changing the base cpu,
+the level with empty sd in map will be filled with the lower sd.
 
 Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 ---
- kernel/sched/core.c  |   44 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/sched.h |   14 ++++++++++++++
- 2 files changed, 58 insertions(+), 0 deletions(-)
+ kernel/sched/core.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 70 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 257002c..092c801 100644
+index 092c801..0c63303 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -5575,6 +5575,9 @@ static void update_top_cache_domain(int cpu)
- 	per_cpu(sd_llc_id, cpu) = id;
- }
+@@ -5578,6 +5578,62 @@ static void update_top_cache_domain(int cpu)
+ static int sbm_max_level;
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct sched_balance_map, sbm_array);
  
-+static int sbm_max_level;
-+DEFINE_PER_CPU_SHARED_ALIGNED(struct sched_balance_map, sbm_array);
++static void build_sched_balance_map(int cpu)
++{
++	struct sched_balance_map *sbm = &per_cpu(sbm_array, cpu);
++	struct sched_domain *sd = cpu_rq(cpu)->sd;
++	struct sched_domain *top_sd = NULL;
++	int i, type, level = 0;
++
++	memset(sbm->top_level, 0, sizeof((*sbm).top_level));
++	memset(sbm->affine_map, 0, sizeof((*sbm).affine_map));
++	for (type = 0; type < SBM_MAX_TYPE; type++) {
++		memset(sbm->sd[type], 0,
++			sizeof(struct sched_domain *) * sbm_max_level);
++	}
++
++	while (sd) {
++		if (!(sd->flags & SD_LOAD_BALANCE))
++			continue;
++
++		if (sd->flags & SD_BALANCE_EXEC) {
++			sbm->top_level[SBM_EXEC_TYPE] = sd->level;
++			sbm->sd[SBM_EXEC_TYPE][sd->level] = sd;
++		}
++
++		if (sd->flags & SD_BALANCE_FORK) {
++			sbm->top_level[SBM_FORK_TYPE] = sd->level;
++			sbm->sd[SBM_FORK_TYPE][sd->level] = sd;
++		}
++
++		if (sd->flags & SD_BALANCE_WAKE) {
++			sbm->top_level[SBM_WAKE_TYPE] = sd->level;
++			sbm->sd[SBM_WAKE_TYPE][sd->level] = sd;
++		}
++
++		if (sd->flags & SD_WAKE_AFFINE) {
++			for_each_cpu(i, sched_domain_span(sd)) {
++				if (!sbm->affine_map[i])
++					sbm->affine_map[i] = sd;
++			}
++		}
++
++		sd = sd->parent;
++	}
++
++	/*
++	 * fill the hole to get lower level sd easily.
++	 */
++	for (type = 0; type < SBM_MAX_TYPE; type++) {
++		level = sbm->top_level[type];
++		top_sd = sbm->sd[type][level];
++		if ((++level != sbm_max_level) && top_sd) {
++			for (; level < sbm_max_level; level++)
++				sbm->sd[type][level] = top_sd;
++		}
++	}
++}
 +
  /*
   * Attach the domain 'sd' to 'cpu' as its base domain. Callers must
   * hold the hotplug lock.
-@@ -6037,6 +6040,46 @@ static struct sched_domain_topology_level default_topology[] = {
+@@ -5587,6 +5643,9 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 	struct sched_domain *tmp;
++	struct sched_balance_map *sbm = &per_cpu(sbm_array, cpu);
++
++	rcu_assign_pointer(rq->sbm, NULL);
  
- static struct sched_domain_topology_level *sched_domain_topology = default_topology;
+ 	/* Remove the sched domains which do not contribute to scheduling. */
+ 	for (tmp = sd; tmp; ) {
+@@ -5619,6 +5678,17 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
+ 	destroy_sched_domains(tmp, cpu);
  
-+static void sched_init_sbm(void)
-+{
-+	size_t size;
-+	int cpu, type, node;
-+	struct sched_balance_map *sbm;
-+	struct sched_domain_topology_level *tl;
+ 	update_top_cache_domain(cpu);
++
++	/* disable sbm if initialization failed or sd detached. */
++	if (!sbm_max_level || !sd)
++		return;
 +
 +	/*
-+	 * Inelegant method, any good idea?
++	 * synchronize_rcu() is unnecessary here since
++	 * destroy_sched_domains() already do the work.
 +	 */
-+	for (tl = sched_domain_topology; tl->init; tl++, sbm_max_level++)
-+		;
-+
-+	for_each_possible_cpu(cpu) {
-+		sbm = &per_cpu(sbm_array, cpu);
-+		node = cpu_to_node(cpu);
-+		size = sizeof(struct sched_domain *) * sbm_max_level;
-+
-+		for (type = 0; type < SBM_MAX_TYPE; type++) {
-+			sbm->sd[type] = kmalloc_node(size, GFP_KERNEL, node);
-+			WARN_ON(!sbm->sd[type]);
-+			if (!sbm->sd[type])
-+				goto failed;
-+		}
-+	}
-+
-+	return;
-+
-+failed:
-+	for_each_possible_cpu(cpu) {
-+		sbm = &per_cpu(sbm_array, cpu);
-+
-+		for (type = 0; type < SBM_MAX_TYPE; type++)
-+			kfree(sbm->sd[type]);
-+	}
-+
-+	/* prevent further work */
-+	sbm_max_level = 0;
-+}
-+
- #ifdef CONFIG_NUMA
++	build_sched_balance_map(cpu);
++	rcu_assign_pointer(rq->sbm, sbm);
+ }
  
- static int sched_domains_numa_levels;
-@@ -6765,6 +6808,7 @@ void __init sched_init_smp(void)
- 	alloc_cpumask_var(&fallback_doms, GFP_KERNEL);
- 
- 	sched_init_numa();
-+	sched_init_sbm();
- 
- 	get_online_cpus();
- 	mutex_lock(&sched_domains_mutex);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index fc88644..d060913 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -349,6 +349,19 @@ struct root_domain {
- 
- extern struct root_domain def_root_domain;
- 
-+enum {
-+	SBM_EXEC_TYPE,
-+	SBM_FORK_TYPE,
-+	SBM_WAKE_TYPE,
-+	SBM_MAX_TYPE
-+};
-+
-+struct sched_balance_map {
-+	struct sched_domain **sd[SBM_MAX_TYPE];
-+	int top_level[SBM_MAX_TYPE];
-+	struct sched_domain *affine_map[NR_CPUS];
-+};
-+
- #endif /* CONFIG_SMP */
- 
- /*
-@@ -416,6 +429,7 @@ struct rq {
- #ifdef CONFIG_SMP
- 	struct root_domain *rd;
- 	struct sched_domain *sd;
-+	struct sched_balance_map *sbm;
- 
- 	unsigned long cpu_power;
- 
+ /* cpus with isolated domains */
 -- 
 1.7.4.1
 
