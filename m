@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758389Ab3AQCyd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 21:54:33 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:52667 "EHLO smtp.outflux.net"
+	id S1759110Ab3AQDQd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:16:33 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:42431 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757587Ab3AQCyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:54:31 -0500
+	id S1758368Ab3AQCyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 21:54:33 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, "David S. Miller" <davem@davemloft.net>,
+Cc: Kees Cook <keescook@chromium.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 04/86] drivers/net/ethernet/racal: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:52:56 -0800
-Message-Id: <1358391258-1771-5-git-send-email-keescook@chromium.org>
+Subject: [PATCH 21/86] Documentation/networking: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:53:13 -0800
+Message-Id: <1358391258-1771-22-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -25,28 +26,37 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
+CC: Rob Landley <rob@landley.net>
 Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/net/ethernet/racal/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/networking/cs89x0.txt |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/racal/Kconfig b/drivers/net/ethernet/racal/Kconfig
-index 01969e0..53c6af1 100644
---- a/drivers/net/ethernet/racal/Kconfig
-+++ b/drivers/net/ethernet/racal/Kconfig
-@@ -19,8 +19,8 @@ config NET_VENDOR_RACAL
- if NET_VENDOR_RACAL
+diff --git a/Documentation/networking/cs89x0.txt b/Documentation/networking/cs89x0.txt
+index c725d33..cc91a15 100644
+--- a/Documentation/networking/cs89x0.txt
++++ b/Documentation/networking/cs89x0.txt
+@@ -386,15 +386,13 @@ tristate 'CS89x0 support' CONFIG_CS89x0
  
- config NI5010
--	tristate "NI5010 support (EXPERIMENTAL)"
--	depends on ISA && EXPERIMENTAL && BROKEN_ON_SMP
-+	tristate "NI5010 support"
-+	depends on ISA && BROKEN_ON_SMP
- 	---help---
- 	  If you have a network (Ethernet) card of this type, say Y and read
- 	  the Ethernet-HOWTO, available from
+ Example:
+ 
+-     if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+-       tristate 'ICL EtherTeam 16i/32 support' CONFIG_ETH16I
+-     fi
++     tristate 'ICL EtherTeam 16i/32 support' CONFIG_ETH16I
+ 
+      tristate 'CS89x0 support' CONFIG_CS89x0
+ 
+      tristate 'NE2000/NE1000 support' CONFIG_NE2000
+-     if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+-       tristate 'NI5210 support' CONFIG_NI52
++
++     tristate 'NI5210 support' CONFIG_NI52
+ 
+ 
+ b.) In /usr/src/linux/drivers/net/Makefile, add the following lines: 
 -- 
 1.7.9.5
 
