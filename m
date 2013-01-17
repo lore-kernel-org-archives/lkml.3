@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759039Ab3AQDKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:10:30 -0500
-Received: from 94.43.138.210.xn.2iij.net ([210.138.43.94]:43466 "EHLO
-	mail.st-paulia.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758866Ab3AQDK1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 22:10:27 -0500
-Message-ID: <50F76BA0.90502@linux-ipv6.org>
-Date: Thu, 17 Jan 2013 12:10:24 +0900
-From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Organization: USAGI Project
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Carlos O'Donell" <carlos@systemhalted.org>
-CC: David Miller <davem@davemloft.net>, vapier@gentoo.org,
-        libc-alpha@sourceware.org, bhutchings@solarflare.com,
-        amwang@redhat.com, tmb@mageia.org, eblake@redhat.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        libvirt-list@redhat.com, tgraf@suug.ch, schwab@suse.de,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
-References: <50F6B761.8070106@linux-ipv6.org> <1358351232.2923.10.camel@bwh-desktop.uk.solarflarecom.com> <201301161205.04502.vapier@gentoo.org> <20130116.135744.697469565804508454.davem@davemloft.net> <50F75EA7.4060309@systemhalted.org>
-In-Reply-To: <50F75EA7.4060309@systemhalted.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758944Ab3AQDKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:10:03 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:53552 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758640Ab3AQCyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 21:54:41 -0500
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 72/86] fs/affs: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:54:04 -0800
+Message-Id: <1358391258-1771-73-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
+References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Carlos O'Donell wrote:
-> diff --git a/include/uapi/linux/in6.h b/include/uapi/linux/in6.h
-> index f79c372..a2b16a5 100644
-> --- a/include/uapi/linux/in6.h
-> +++ b/include/uapi/linux/in6.h
-:
->  #define IPV6_PRIORITY_14		0x0e00
->  #define IPV6_PRIORITY_15		0x0f00
->  
-> +
-> +#ifndef _NETINET_IN_H
-> +#if defined (__GLIBC__)
-> +/* Include all of the other IPPROTO_* defines for userspace. */
-> +#include <linux/ipproto.h>
-> +#endif
->  /*
->   *	IPV6 extension headers
+The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+while now and is almost always enabled by default. As agreed during the
+Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-Overall, it looks good, but why including linux/ipproto.h?
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ fs/affs/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---yoshfuji
+diff --git a/fs/affs/Kconfig b/fs/affs/Kconfig
+index cfad9af..a04d9e8 100644
+--- a/fs/affs/Kconfig
++++ b/fs/affs/Kconfig
+@@ -1,6 +1,6 @@
+ config AFFS_FS
+-	tristate "Amiga FFS file system support (EXPERIMENTAL)"
+-	depends on BLOCK && EXPERIMENTAL
++	tristate "Amiga FFS file system support"
++	depends on BLOCK
+ 	help
+ 	  The Fast File System (FFS) is the common file system used on hard
+ 	  disks by Amiga(tm) systems since AmigaOS Version 1.3 (34.20).  Say Y
+-- 
+1.7.9.5
+
