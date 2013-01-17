@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab3AQFJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 00:09:51 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:50921 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750714Ab3AQFJs (ORCPT
+	id S1758958Ab3AQFM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 00:12:28 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:37775 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758341Ab3AQFM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 00:09:48 -0500
-X-Sasl-enc: G74wyTMWKIWDhUlWYwOK1Duz4u/Ls+BOYdbHxfmB09DH 1358399387
-From: Alan Ott <alan@signal11.us>
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tony Cheneau <tony.cheneau@amnesiak.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Alan Ott <alan@signal11.us>
-Subject: [PATCH v2 0/2] Handle Uncompressed IPv6 on 6LoWPAN
-Date: Thu, 17 Jan 2013 00:09:46 -0500
-Message-Id: <1358399388-30062-1-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1358315037-10043-1-git-send-email-alan@signal11.us>
-References: <1358315037-10043-1-git-send-email-alan@signal11.us>
+	Thu, 17 Jan 2013 00:12:26 -0500
+Message-ID: <50F7878C.4020800@synopsys.com>
+Date: Thu, 17 Jan 2013 10:39:32 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC Patch v1 52/55] ARC: Support for single cycle Close Coupled
+ Mem (CCM)
+References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <1352720953-24321-22-git-send-email-vgupta@synopsys.com> <201211121410.02682.arnd@arndb.de>
+In-Reply-To: <201211121410.02682.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This has been tested by exchanging data with with the Contiki operating
-system using a Redwire Econotag.  Contiki had to be set to send uncompressed
-data, and had to have a #define modified to enable reception and processing
-of header-compressed packets when not set to send compressed data.
+On Monday 12 November 2012 07:40 PM, Arnd Bergmann wrote:
+> On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
+>> +config ARC_DCCM_SZ
+>> +       int "DCCM Size in KB"
+>> +       default "64"
+>> +       depends on ARC_HAS_DCCM
+>> +
+>> +config ARC_DCCM_BASE
+>> +       hex "DCCM map address"
+>> +       default "0xA0000000"
+>> +       depends on ARC_HAS_DCCM
+>> +
+> 
+> I suppose these should be configured from the device tree at boot time, not
+> during the build process.
+> 
+> I also wonder if the interface should be unified with what we use for
+> accessing the sram on some of the ARM platforms.
+> 
+> 	Arnd
+> 
 
-Version 2 fixes a format issue pointed out by David Miller.
+Actually in ARC Port these are used in Linker script to layout the kernel
+code/data at the addr where these hardware blocks are wired up. So can't be done
+at runtime.
 
-Alan Ott (2):
-  6lowpan: Refactor packet delivery into a function
-  6lowpan: Handle uncompressed IPv6 packets over 6LoWPAN
-
- net/ieee802154/6lowpan.c | 79 ++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 56 insertions(+), 23 deletions(-)
-
--- 
-1.7.11.2
-
+-Vineet
