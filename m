@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab3AQWbw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 17:31:52 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:35529 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750814Ab3AQWbv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 17:31:51 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18v1xGGp/o3iLi9fq361fbk
-Date: Thu, 17 Jan 2013 14:31:39 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Felipe Balbi <balbi@ti.com>, Roger Quadros <rogerq@ti.com>,
-        sameo@linux.intel.com, kishon@ti.com, sshtylyov@mvista.com,
-        bjorn@mork.no, linux@arm.linux.org.uk, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rajendra Nayak <rnayak@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Mike Turquette <mturquette@linaro.com>
-Subject: Re: [PATCH v7 19/22] ARM: OMAP3: clock data: get rid of unused USB
- host clock aliases and dummies
-Message-ID: <20130117223138.GN14149@atomide.com>
-References: <1358422231-24736-1-git-send-email-rogerq@ti.com>
- <1358422231-24736-20-git-send-email-rogerq@ti.com>
- <20130117170321.GJ14149@atomide.com>
- <alpine.DEB.2.00.1301171854280.14118@utopia.booyaka.com>
- <20130117210034.GA27671@arwen.pp.htv.fi>
- <alpine.DEB.2.00.1301172228140.14118@utopia.booyaka.com>
+	id S1753711Ab3AQWcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 17:32:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32525 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752965Ab3AQWcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 17:32:12 -0500
+Message-ID: <50F87BCA.10201@redhat.com>
+Date: Thu, 17 Jan 2013 14:31:38 -0800
+From: Andy Grover <agrover@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1301172228140.14118@utopia.booyaka.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Andreas Steinmetz <ast@domdv.de>, linux-kernel@vger.kernel.org,
+        hch@infradead.org, torvalds@linux-foundation.org,
+        target-devel <target-devel@vger.kernel.org>,
+        Ritesh Raj Sarraf <rrs@debian.org>
+Subject: Re: LIO - the broken iSCSI target implementation
+References: <1358385543.7040.54.camel@host028-server-9.lan.domdv.de> <1358456179.18551.34.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1358456179.18551.34.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Walmsley <paul@pwsan.com> [130117 14:33]:
-> On Thu, 17 Jan 2013, Felipe Balbi wrote:
+On 01/17/2013 12:56 PM, Nicholas A. Bellinger wrote:
+> On Thu, 2013-01-17 at 02:19 +0100, Andreas Steinmetz wrote:
+>> This is not a technical point of view. This is a more or less political
+>> and user point of view. And for any replies, I'm not subscribed (haven't
+>> been now for years).
+>>
+>> As a user, I was in need for an iSCSI target. Actually, I needed to
+>> export a SAS tape device (Ultrium 5) - which is one of the devices still
+>> sufficiently expensive to go the iSCSI target way) - well, not any disks
+>> (cheap enough, NFS available) or CD/DVD writers (I'd call these penny
+>> targets nowadays).
+>>
+>> Thus, lio (http://www.linux-iscsi.org/) seemed to be the politically and
+>> technically favoured solution. Except: it simply doesn't work, userspace
+>> utilities are seemingly not maintained,
 > 
-> > do you mean v3.9 ?
+> I'm not sure what you mean.  There are targetcli+rtslib packages are
+> available for virtually every distribution
 > 
-> It sounds like the other patches need to be merged first before these 
-> cleanups can be merged.  So rather than adding a merge order dependency 
-> during 3.9, it seems best to queue the non-essential clock cleanup side 
-> for 3.10.
+> http://www.linux-iscsi.org/wiki/Targetcli#Linux_distributions
 
-How about let's do it in a late cleanup branch towards the end of the
-v3.9 merge window?
+[CCing rrs@debian.org]
 
-Regards,
+No... actually upstream targetcli/rtslib are not very well maintained.
+Around 5 patches each in the last year.
 
-Tony
+Meanwhile, I have been actively maintaining branches at
+github.com/agrover/targetcli-fb and github.com/agrover/rtslib-fb. We
+have a man page and screencasts even. Feel free to file bugs against
+them and I'll respond.
+
+But I'm only packaging for Fedora/RHEL, so random people on Debian etc.
+get a bad experience. I'd like to see upstream accept my AGPLv3-licensed
+patches, or have Debian package the -fb versions, either instead or in
+addition to the upstream versions.
+
+(I'd kinda been waiting to bring it up until upstream had no commits in
+a year, but since you mentioned it...)
+
+Regards -- Andy
