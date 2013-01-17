@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab3AQLbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 06:31:48 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45528 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756135Ab3AQLbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 06:31:38 -0500
+	id S1756384Ab3AQLci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 06:32:38 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47505 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756208Ab3AQLbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 06:31:46 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <rogerq@ti.com>
-Subject: [PATCH v7 10/22] mfd: omap_usb_host: Avoid missing platform data checks in suspend/resume
-Date: Thu, 17 Jan 2013 13:30:19 +0200
-Message-ID: <1358422231-24736-11-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Rajendra Nayak <rnayak@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Mike Turquette <mturquette@linaro.com>
+Subject: [PATCH v7 19/22] ARM: OMAP3: clock data: get rid of unused USB host clock aliases and dummies
+Date: Thu, 17 Jan 2013 13:30:28 +0200
+Message-ID: <1358422231-24736-20-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358422231-24736-1-git-send-email-rogerq@ti.com>
 References: <1358422231-24736-1-git-send-email-rogerq@ti.com>
@@ -24,43 +27,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the unnecessary missing platform data checks
-in runtime_suspend/resume. We are already checking for missing
-platform data in probe.
+We don't need multiple aliases for the OMAP USB host clocks and neither
+the dummy clocks so remove them.
+
+CC: Paul Walmsley <paul@pwsan.com>
+CC: Rajendra Nayak <rnayak@ti.com>
+CC: Benoit Cousson <b-cousson@ti.com>
+CC: Mike Turquette <mturquette@linaro.com>
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Paul Walmsley <paul@pwsan.com>
 ---
- drivers/mfd/omap-usb-host.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+ arch/arm/mach-omap2/cclock3xxx_data.c |   11 -----------
+ 1 files changed, 0 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index d6e6b8c..061366d 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -277,11 +277,6 @@ static int usbhs_runtime_resume(struct device *dev)
- 
- 	dev_dbg(dev, "usbhs_runtime_resume\n");
- 
--	if (!pdata) {
--		dev_dbg(dev, "missing platform_data\n");
--		return  -ENODEV;
--	}
--
- 	omap_tll_enable();
- 	spin_lock_irqsave(&omap->lock, flags);
- 
-@@ -309,11 +304,6 @@ static int usbhs_runtime_suspend(struct device *dev)
- 
- 	dev_dbg(dev, "usbhs_runtime_suspend\n");
- 
--	if (!pdata) {
--		dev_dbg(dev, "missing platform_data\n");
--		return  -ENODEV;
--	}
--
- 	spin_lock_irqsave(&omap->lock, flags);
- 
- 	if (is_ehci_tll_mode(pdata->port_mode[0]))
+diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/cclock3xxx_data.c
+index 6ef8758..b58ec96 100644
+--- a/arch/arm/mach-omap2/cclock3xxx_data.c
++++ b/arch/arm/mach-omap2/cclock3xxx_data.c
+@@ -3291,8 +3291,6 @@ static struct omap_clk omap3xxx_clks[] = {
+ 	CLK(NULL,	"cpefuse_fck",	&cpefuse_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"ts_fck",	&ts_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs_omap",	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs_tll",	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"core_96m_fck",	&core_96m_fck,	CK_3XXX),
+ 	CLK(NULL,	"mmchs3_fck",	&mmchs3_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"mmchs2_fck",	&mmchs2_fck,	CK_3XXX),
+@@ -3329,8 +3327,6 @@ static struct omap_clk omap3xxx_clks[] = {
+ 	CLK(NULL,	"pka_ick",	&pka_ick,	CK_34XX | CK_36XX),
+ 	CLK(NULL,	"core_l4_ick",	&core_l4_ick,	CK_3XXX),
+ 	CLK(NULL,	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs_omap",	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs_tll",	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK("omap_hsmmc.2",	"ick",	&mmchs3_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"mmchs3_ick",	&mmchs3_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"icr_ick",	&icr_ick,	CK_34XX | CK_36XX),
+@@ -3393,17 +3389,10 @@ static struct omap_clk omap3xxx_clks[] = {
+ 	CLK(NULL,	"usbhost_120m_fck", &usbhost_120m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"usbhost_48m_fck", &usbhost_48m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"usbhost_ick",	&usbhost_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs_omap",	"usbhost_ick",	&usbhost_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"utmi_p1_gfclk",	&dummy_ck,	CK_3XXX),
+ 	CLK(NULL,	"utmi_p2_gfclk",	&dummy_ck,	CK_3XXX),
+ 	CLK(NULL,	"xclk60mhsp1_ck",	&dummy_ck,	CK_3XXX),
+ 	CLK(NULL,	"xclk60mhsp2_ck",	&dummy_ck,	CK_3XXX),
+-	CLK(NULL,	"usb_host_hs_utmi_p1_clk",	&dummy_ck,	CK_3XXX),
+-	CLK(NULL,	"usb_host_hs_utmi_p2_clk",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs_omap",	"usb_tll_hs_usb_ch0_clk",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs_omap",	"usb_tll_hs_usb_ch1_clk",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs_tll",	"usb_tll_hs_usb_ch0_clk",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs_tll",	"usb_tll_hs_usb_ch1_clk",	&dummy_ck,	CK_3XXX),
+ 	CLK(NULL,	"init_60m_fclk",	&dummy_ck,	CK_3XXX),
+ 	CLK(NULL,	"usim_fck",	&usim_fck,	CK_3430ES2PLUS | CK_36XX),
+ 	CLK(NULL,	"gpt1_fck",	&gpt1_fck,	CK_3XXX),
 -- 
 1.7.4.1
 
