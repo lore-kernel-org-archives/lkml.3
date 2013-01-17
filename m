@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab3AQUnx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:43:53 -0500
+	id S1756754Ab3AQUhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:37:13 -0500
 Received: from mga14.intel.com ([143.182.124.37]:19403 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756689Ab3AQUhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:37:13 -0500
+	id S1751814Ab3AQUhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 15:37:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="245260905"
+   d="scan'208";a="245260901"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 19/29] perf, tools: Add support for record transaction flags v3
-Date: Thu, 17 Jan 2013 12:36:42 -0800
-Message-Id: <1358455012-12287-20-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 12/29] perf, x86: Support full width counting
+Date: Thu, 17 Jan 2013 12:36:35 -0800
+Message-Id: <1358455012-12287-13-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,121 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add the glue in the user tools to record transaction flags with
---transaction (-T was already taken) and dump them.
+Recent Intel CPUs have a new alternative MSR range for perfctrs that allows
+writing the full counter width. Enable this range if the hardware reports it
+using a new capability bit. This lowers overhead of perf stat slightly because
+it has to do less interrupts to accumulate the counter value. On Haswell it
+also avoids some problems with TSX aborting when the end of the counter
+range is reached.
 
-Followon patches will use them.
-
-v2: Fix manpage
-v3: Move transaction to the end
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-record.txt |    4 +++-
- tools/perf/builtin-record.c              |    2 ++
- tools/perf/perf.h                        |    1 +
- tools/perf/util/event.h                  |    1 +
- tools/perf/util/evsel.c                  |    9 +++++++++
- tools/perf/util/session.c                |    3 +++
- 6 files changed, 19 insertions(+), 1 deletions(-)
+ arch/x86/include/uapi/asm/msr-index.h  |    3 +++
+ arch/x86/kernel/cpu/perf_event.h       |    1 +
+ arch/x86/kernel/cpu/perf_event_intel.c |    6 ++++++
+ 3 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 6f3405e..c73dd25 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -185,12 +185,14 @@ is enabled for all the sampling events. The sampled branch type is the same for
- The various filters must be specified as a comma separated list: --branch-filter any_ret,u,k
- Note that this feature may not be available on all processors.
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index 433a59f..af41a77 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -163,6 +163,9 @@
+ #define MSR_KNC_EVNTSEL0               0x00000028
+ #define MSR_KNC_EVNTSEL1               0x00000029
  
---W::
- --weight::
- Enable weightened sampling. An additional weight is recorded per sample and can be
- displayed with the weight and local_weight sort keys.  This currently works for TSX
- abort events and some memory events in precise mode on modern Intel CPUs.
- 
-+--transaction::
-+Record transaction flags for transaction related events.
++/* Alternative perfctr range with full access. */
++#define MSR_IA32_PMC0			0x000004c1
 +
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 4e568aa..8b81f3e 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -1064,6 +1064,8 @@ const struct option record_options[] = {
- 		     parse_branch_stack),
- 	OPT_BOOLEAN('W', "weight", &record.opts.sample_weight,
- 		    "sample by weight (on special events only)"),
-+	OPT_BOOLEAN(0, "transaction", &record.opts.sample_transaction,
-+		    "sample transaction flags (special events only)"),
- 	OPT_END()
+ /* AMD64 MSRs. Not complete. See the architecture manual for a more
+    complete list. */
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 1567b0d..ce2a863 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -278,6 +278,7 @@ union perf_capabilities {
+ 		u64	pebs_arch_reg:1;
+ 		u64	pebs_format:4;
+ 		u64	smm_freeze:1;
++		u64	fw_write:1;
+ 	};
+ 	u64	capabilities;
  };
- 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 7058155..025cc53 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -250,6 +250,7 @@ struct perf_record_opts {
- 	u64	     default_interval;
- 	u64	     user_interval;
- 	u16	     stack_dump_size;
-+	bool	     sample_transaction;
- };
- 
- #endif
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index a97fbbe..84b070d 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -89,6 +89,7 @@ struct perf_sample {
- 	u64 stream_id;
- 	u64 period;
- 	u64 weight;
-+	u64 transaction;
- 	u32 cpu;
- 	u32 raw_size;
- 	void *raw_data;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 805d33e..68145f4 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -513,6 +513,9 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 	if (opts->sample_weight)
- 		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
- 
-+	if (opts->sample_transaction)
-+		attr->sample_type	|= PERF_SAMPLE_TRANSACTION;
-+
- 	attr->mmap = track;
- 	attr->comm = track;
- 
-@@ -1068,6 +1071,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 		array++;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 44e18c02..bc21bce 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2247,5 +2247,11 @@ __init int intel_pmu_init(void)
+ 		}
  	}
  
-+	data->transaction = 0;
-+	if (type & PERF_SAMPLE_TRANSACTION) {
-+		data->transaction = *array;
-+		array++;
++	/* Support full width counters using alternative MSR range */
++	if (x86_pmu.intel_cap.fw_write) {
++		x86_pmu.max_period = x86_pmu.cntval_mask;
++		x86_pmu.perfctr = MSR_IA32_PMC0;
 +	}
 +
  	return 0;
  }
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 3de9097..076dd77 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1009,6 +1009,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
- 
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		printf("... weight: %" PRIu64 "\n", sample->weight);
-+
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		printf("... transaction: %" PRIx64 "\n", sample->transaction);
- }
- 
- static struct machine *
 -- 
 1.7.7.6
 
