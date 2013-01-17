@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab3AQUjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:39:22 -0500
+	id S1756947Ab3AQUhw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:37:52 -0500
 Received: from mga09.intel.com ([134.134.136.24]:33901 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757144Ab3AQUhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:37:53 -0500
+	id S1757057Ab3AQUhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 15:37:48 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="273439819"
+   d="scan'208";a="273439814"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 25/29] perf, x86: Add Haswell TSX event aliases v2
-Date: Thu, 17 Jan 2013 12:36:48 -0800
-Message-Id: <1358455012-12287-26-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 20/29] perf, tools: Add browser support for transaction flags v5
+Date: Thu, 17 Jan 2013 12:36:43 -0800
+Message-Id: <1358455012-12287-21-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,111 +26,318 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add infrastructure to generate event aliases in /sys/devices/cpu/events/
+Add histogram support for the transaction flags. Each flags instance becomes
+a separate histogram. Support sorting and displaying the flags in report
+and top.
 
-And use this to set up user friendly aliases for the common TSX events.
-TSX tuning relies heavily on the PMU, so it's important to be user friendly.
+The patch is fairly large, but it's really mostly just plumbing to pass the
+flags around.
 
-This replaces the generic transaction events in an earlier version
-of this patchkit.
-
-tx-start/commit/abort  to count RTM transactions
-el-start/commit/abort  to count HLE ("elision") transactions
-tx-conflict/overflow   to count conflict/overflow for both combined.
-
-The general abort events exist in precise and non precise variants
-Since the common case is sampling plain "tx-aborts" in precise.
-
-This is very important because abort sampling only really works
-with PEBS enabled, otherwise it would report the IP after the abort,
-not the abort point. But counting with PEBS has more overhead,
-so also have tx/el-abort-count aliases that do not enable PEBS
-for perf stat.
-
-It would be nice to switch automatically between those two, like in the
-previous version, but that would need more new infrastructure for sysfs
-first.
-
-There is an tx-abort<->tx-aborts alias too, because I found myself
-using both variants.
-
-Also added friendly aliases for cpu/cycles,intx=1/ and
-cpu/cycles,intx=1,intx_cp=1/ and the same for instructions.
-These will be used by perf stat -T, and are also useful for users directly.
-
-So for example to get transactional cycles can use "perf stat -e cycles-t"
-
-v2: Move to new sysfs infrastructure
+v2: Increase column. Fix flags decoding. Use longer strings for flags
+to be more user friendly.
+v3: Fix WERROR=1 build. Tidy display
+v4: Readd sort keys to manpage
+v5: Reimplement transaction flags display code
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   47 ++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+ tools/perf/Documentation/perf-report.txt |    2 +-
+ tools/perf/Documentation/perf-top.txt    |    2 +-
+ tools/perf/builtin-annotate.c            |    2 +-
+ tools/perf/builtin-diff.c                |    8 ++-
+ tools/perf/builtin-report.c              |    4 +-
+ tools/perf/builtin-top.c                 |    4 +-
+ tools/perf/util/hist.c                   |    7 ++-
+ tools/perf/util/hist.h                   |    4 +-
+ tools/perf/util/sort.c                   |   75 ++++++++++++++++++++++++++++++
+ tools/perf/util/sort.h                   |    2 +
+ 10 files changed, 98 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index d8acedd..022246a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2004,6 +2004,52 @@ static __init void intel_nehalem_quirk(void)
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 5dabd4d..87224ff 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -59,7 +59,7 @@ OPTIONS
+ --sort=::
+ 	Sort by key(s): pid, comm, dso, symbol, parent, srcline,
+         dso_from, dso_to, symbol_to, symbol_from, mispredict,
+-        abort, intx, local_weight, weight
++        abort, intx, local_weight, weight, transaction
+ 
+ -p::
+ --parent=<regex>::
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 3533e0a..82cc8e1 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -114,7 +114,7 @@ Default is to monitor all CPUS.
+ --sort::
+ 	Sort by key(s): pid, comm, dso, symbol, parent, srcline,
+         dso_from, dso_to, symbol_to, symbol_from, mispredict,
+-        abort, intx,  local_weight, weight
++        abort, intx,  local_weight, weight, transaction
+ 
+ -n::
+ --show-nr-samples::
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 1bacb7d..cb8fa96 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -62,7 +62,7 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+ 		return 0;
  	}
+ 
+-	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1);
++	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1, 0);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 03a322f..3fccdc4 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -249,9 +249,10 @@ int perf_diff__formula(char *buf, size_t size, struct hist_entry *he)
+ 
+ static int hists__add_entry(struct hists *self,
+ 			    struct addr_location *al, u64 period,
+-			    u64 weight)
++			    u64 weight, u64 transaction)
+ {
+-	if (__hists__add_entry(self, al, NULL, period, weight) != NULL)
++	if (__hists__add_entry(self, al, NULL, period, weight, transaction)
++	    != NULL)
+ 		return 0;
+ 	return -ENOMEM;
+ }
+@@ -273,7 +274,8 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
+ 	if (al.filtered)
+ 		return 0;
+ 
+-	if (hists__add_entry(&evsel->hists, &al, sample->period, sample->weight)) {
++	if (hists__add_entry(&evsel->hists, &al, sample->period, sample->weight,
++			     sample->transaction)) {
+ 		pr_warning("problem incrementing symbol period, skipping event\n");
+ 		return -1;
+ 	}
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 5dc0edd..e6a74ef 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -147,7 +147,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	}
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, parent, sample->period,
+-					sample->weight);
++				sample->weight, sample->transaction);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+@@ -598,7 +598,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+ 		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
+-		   " abort, intx,  weight, local_weight"),
++		   " abort, intx,  weight, local_weight, transaction"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 9f87db7..3d81721 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -272,7 +272,7 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	struct hist_entry *he;
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, NULL, sample->period,
+-				sample->weight);
++				sample->weight, sample->transaction);
+ 	if (he == NULL)
+ 		return NULL;
+ 
+@@ -1233,7 +1233,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+ 		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
+-		   " abort, intx, weight, local_weight"),
++		   " abort, intx, weight, local_weight, transaction"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top, "output_type,min_percent, call_order",
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index a8d7647..28861de 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -112,6 +112,10 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+ 			hists__set_unres_dso_col_len(hists, HISTC_DSO_TO);
+ 		}
+ 	}
++
++	if (h->transaction)
++		hists__new_col_len(hists, HISTC_TRANSACTION, 
++				   hist_entry__transaction_len());
  }
  
-+/* Haswell special events */
-+EVENT_ATTR_STR(tx-start,       tx_start,       "event=0xc9,umask=0x1");
-+EVENT_ATTR_STR(tx-commit,      tx_commit,      "event=0xc9,umask=0x2");
-+EVENT_ATTR_STR(tx-abort,       tx_abort,       "event=0xc9,umask=0x4,precise=2");
-+EVENT_ATTR_STR(tx-abort-count, tx_abort_count, "event=0xc9,umask=0x4");
-+/* alias */
-+EVENT_ATTR_STR(tx-aborts,      tx_aborts,      "event=0xc9,umask=0x4,precise=2");
-+EVENT_ATTR_STR(tx-capacity,    tx_capacity,    "event=0x54,umask=0x2");
-+EVENT_ATTR_STR(tx-conflict,    tx_conflict,    "event=0x54,umask=0x1");
-+EVENT_ATTR_STR(el-start,       el_start,       "event=0xc8,umask=0x1");
-+EVENT_ATTR_STR(el-commit,      el_commit,      "event=0xc8,umask=0x2");
-+EVENT_ATTR_STR(el-abort,       el_abort,       "event=0xc8,umask=0x4,precise=2");
-+EVENT_ATTR_STR(el-abort-count, el_abort_count, "event=0xc8,umask=0x4");
-+/* alias */
-+EVENT_ATTR_STR(el-aborts,      el_aborts,      "event=0xc8,umask=0x4,precise=2");
-+/* shared with tx-* */
-+EVENT_ATTR_STR(el-capacity,    el_capacity,    "event=0x54,umask=0x2");
-+/* shared with tx-* */
-+EVENT_ATTR_STR(el-conflict,    el_conflict,    "event=0x54,umask=0x1");
-+EVENT_ATTR_STR(cycles-t,       cycles_t,       "event=0x3c,intx=1");
-+EVENT_ATTR_STR(cycles-ct,      cycles_ct,      "event=0x3c,intx=1,intx_cp=1");
-+EVENT_ATTR_STR(instructions-t, instructions_t, "event=0xc0,intx=1");
-+EVENT_ATTR_STR(instructions-ct,instructions_ct,"event=0xc0,intx=1,intx_cp=1");
+ void hists__output_recalc_col_len(struct hists *hists, int max_rows)
+@@ -361,7 +365,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
+ struct hist_entry *__hists__add_entry(struct hists *self,
+ 				      struct addr_location *al,
+ 				      struct symbol *sym_parent, u64 period,
+-				      u64 weight)
++				      u64 weight, u64 transaction)
+ {
+ 	struct hist_entry entry = {
+ 		.thread	= al->thread,
+@@ -380,6 +384,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
+ 		.parent = sym_parent,
+ 		.filtered = symbol__parent_filter(sym_parent),
+ 		.hists	= self,
++		.transaction = transaction,
+ 	};
+ 
+ 	return add_hist_entry(self, &entry, al, period, weight);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 3767453..3c37f2e 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -53,6 +53,7 @@ enum hist_column {
+ 	HISTC_SRCLINE,
+ 	HISTC_LOCAL_WEIGHT,
+ 	HISTC_GLOBAL_WEIGHT,
++	HISTC_TRANSACTION,
+ 	HISTC_NR_COLS, /* Last entry */
+ };
+ 
+@@ -78,9 +79,10 @@ struct hists {
+ struct hist_entry *__hists__add_entry(struct hists *self,
+ 				      struct addr_location *al,
+ 				      struct symbol *parent, u64 period,
+-				      u64 weight);
++				      u64 weight, u64 transaction);
+ int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
+ int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
++int hist_entry__transaction_len(void);
+ int hist_entry__sort_snprintf(struct hist_entry *self, char *bf, size_t size,
+ 			      struct hists *hists);
+ void hist_entry__free(struct hist_entry *);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 76161c4..3f1165e 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -568,6 +568,78 @@ struct sort_entry sort_global_weight = {
+ 	.se_width_idx	= HISTC_GLOBAL_WEIGHT,
+ };
+ 
++static int64_t
++sort__transaction_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->transaction - right->transaction;
++}
 +
-+static struct attribute *hsw_events_attrs[] = {
-+	EVENT_PTR(tx_start),
-+	EVENT_PTR(tx_commit),
-+	EVENT_PTR(tx_abort),
-+	EVENT_PTR(tx_aborts),
-+	EVENT_PTR(tx_abort_count),
-+	EVENT_PTR(tx_capacity),
-+	EVENT_PTR(tx_conflict),
-+	EVENT_PTR(el_start),
-+	EVENT_PTR(el_commit),
-+	EVENT_PTR(el_abort),
-+	EVENT_PTR(el_aborts),
-+	EVENT_PTR(el_abort_count),
-+	EVENT_PTR(el_capacity),
-+	EVENT_PTR(el_conflict),
-+	EVENT_PTR(cycles_t),
-+	EVENT_PTR(cycles_ct),
-+	EVENT_PTR(instructions_t),
-+	EVENT_PTR(instructions_ct),
-+	NULL
++static inline char *add_str(char *p, const char *str)
++{
++	strcpy(p, str);
++	return p + strlen(str);
++}
++
++static struct txbit {
++	unsigned flag;
++	const char *name;
++	int skip_for_len;
++} txbits[] = {
++	{ PERF_SAMPLE_TXN_ELISION,     "EL ", 0 },
++	{ PERF_SAMPLE_TXN_TRANSACTION, "TX ", 1 },
++	{ PERF_SAMPLE_TXN_SYNC,        "SYNC ", 1 },
++	{ PERF_SAMPLE_TXN_ASYNC,       "ASYNC ", 0 },
++	{ PERF_SAMPLE_TXN_RETRY,       "RETRY ", 0 },
++	{ PERF_SAMPLE_TXN_CONFLICT,    "CON ", 0 },
++	{ PERF_SAMPLE_TXN_CAPACITY,    "CAP ", 1 },
++	{ PERF_SAMPLE_TXN_MEMORY,      "MEM ", 0 },
++	{ PERF_SAMPLE_TXN_MISC,        "MISC ", 0 },
++	{ 0, NULL, 0 }
 +};
 +
- __init int intel_pmu_init(void)
- {
- 	union cpuid10_edx edx;
-@@ -2229,6 +2275,7 @@ __init int intel_pmu_init(void)
- 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
- 		x86_pmu.format_attrs = intel_hsw_formats_attr;
- 		x86_pmu.memory_lat_events = intel_hsw_memory_latency_events;
-+		x86_pmu.cpu_events = hsw_events_attrs;
- 		pr_cont("Haswell events, ");
- 		break;
++int hist_entry__transaction_len(void)
++{
++	int i;
++	int len = 0;
++
++	for (i = 0; txbits[i].name; i++) {
++		if (!txbits[i].skip_for_len)
++			len += strlen(txbits[i].name);
++	}
++	len += 4; /* :XX<space> */
++	return len;
++}
++
++static int hist_entry__transaction_snprintf(struct hist_entry *self, char *bf,
++	 			    	    size_t size, unsigned int width)
++{
++	u64 t = self->transaction;
++	char buf[128];
++	char *p = buf;
++	int i;
++
++	for (i = 0; txbits[i].name; i++)
++		if (txbits[i].flag & t)
++			p = add_str(p, txbits[i].name);
++	if (t && !(t & (PERF_SAMPLE_TXN_SYNC|PERF_SAMPLE_TXN_ASYNC)))
++		p = add_str(p, "NEITHER ");
++	if (t & PERF_SAMPLE_TXN_ABORT_MASK) {
++		sprintf(p, ":%" PRIx64,
++			(t & PERF_SAMPLE_TXN_ABORT_MASK) >>
++			PERF_SAMPLE_TXN_ABORT_SHIFT);
++		p += strlen(p);
++	}
++
++	return repsep_snprintf(bf, size, "%-*s", width, buf);
++}
++
++struct sort_entry sort_transaction = {
++	.se_header	= "Transaction                ",
++	.se_cmp		= sort__transaction_cmp,
++	.se_snprintf	= hist_entry__transaction_snprintf,
++	.se_width_idx	= HISTC_TRANSACTION,
++};
++
+ struct sort_dimension {
+ 	const char		*name;
+ 	struct sort_entry	*entry;
+@@ -593,6 +665,7 @@ static struct sort_dimension sort_dimensions[] = {
+ 	DIM(SORT_INTX, "intx", sort_intx),
+ 	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
+ 	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
++	DIM(SORT_TRANSACTION, "transaction", sort_transaction),
+ };
  
+ int sort_dimension__add(const char *tok)
+@@ -657,6 +730,8 @@ int sort_dimension__add(const char *tok)
+ 				sort__first_dimension = SORT_GLOBAL_WEIGHT;
+ 			else if (!strcmp(sd->name, "local_weight"))
+ 				sort__first_dimension = SORT_LOCAL_WEIGHT;
++			else if (!strcmp(sd->name, "transaction"))
++				sort__first_dimension = SORT_TRANSACTION;
+ 		}
+ 
+ 		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 4a22b1b..12530af0 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -86,6 +86,7 @@ struct hist_entry {
+ 	struct map_symbol	ms;
+ 	struct thread		*thread;
+ 	u64			ip;
++	u64			transaction;
+ 	s32			cpu;
+ 
+ 	struct hist_entry_diff	diff;
+@@ -142,6 +143,7 @@ enum sort_type {
+ 	SORT_INTX,
+ 	SORT_LOCAL_WEIGHT,
+ 	SORT_GLOBAL_WEIGHT,
++	SORT_TRANSACTION,
+ };
+ 
+ /*
 -- 
 1.7.7.6
 
