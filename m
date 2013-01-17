@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757347Ab3AQQcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:32:20 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:46335 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757181Ab3AQQcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:32:17 -0500
-Date: Thu, 17 Jan 2013 08:26:55 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	id S1757261Ab3AQQeK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:34:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15971 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757163Ab3AQQeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 11:34:08 -0500
+Date: Thu, 17 Jan 2013 18:38:07 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <james.l.morris@oracle.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 84/86] lib: remove depends on CONFIG_EXPERIMENTAL
-Message-ID: <20130117162650.GA3159@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 64/86] drivers/vhost: remove depends on
+ CONFIG_EXPERIMENTAL
+Message-ID: <20130117163807.GA19315@redhat.com>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
- <1358391258-1771-85-git-send-email-keescook@chromium.org>
+ <1358391258-1771-65-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358391258-1771-85-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011716-2876-0000-0000-00000431BF2E
+In-Reply-To: <1358391258-1771-65-git-send-email-keescook@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 06:54:16PM -0800, Kees Cook wrote:
+On Wed, Jan 16, 2013 at 06:53:56PM -0800, Kees Cook wrote:
 > The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 > while now and is almost always enabled by default. As agreed during the
 > Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 > 
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> CC: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> CC: James Morris <james.l.morris@oracle.com>
 > CC: "Michael S. Tsirkin" <mst@redhat.com>
-> CC: Akinobu Mita <akinobu.mita@gmail.com>
-> CC: Ingo Molnar <mingo@kernel.org>
 > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > Signed-off-by: Kees Cook <keescook@chromium.org>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+It's used in production, it's time it lost EXPERIMENTAL tag anyway.
+
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+
 
 > ---
->  lib/Kconfig       |    2 +-
->  lib/Kconfig.debug |    2 +-
->  lib/Kconfig.kgdb  |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
+>  drivers/vhost/Kconfig     |    4 ++--
+>  drivers/vhost/Kconfig.tcm |    4 ++--
+>  2 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> diff --git a/lib/Kconfig b/lib/Kconfig
-> index 75cdb77..3958dc4 100644
-> --- a/lib/Kconfig
-> +++ b/lib/Kconfig
-> @@ -322,7 +322,7 @@ config CPUMASK_OFFSTACK
-> 
->  config DISABLE_OBSOLETE_CPUMASK_FUNCTIONS
->         bool "Disable obsolete cpumask functions" if DEBUG_PER_CPU_MAPS
-> -       depends on EXPERIMENTAL && BROKEN
-> +       depends on BROKEN
-> 
->  config CPU_RMAP
->  	bool
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 67604e5..849ecae 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -455,7 +455,7 @@ config HAVE_DEBUG_KMEMLEAK
-> 
->  config DEBUG_KMEMLEAK
->  	bool "Kernel memory leak detector"
-> -	depends on DEBUG_KERNEL && EXPERIMENTAL && HAVE_DEBUG_KMEMLEAK
-> +	depends on DEBUG_KERNEL && HAVE_DEBUG_KMEMLEAK
->  	select DEBUG_FS
->  	select STACKTRACE if STACKTRACE_SUPPORT
->  	select KALLSYMS
-> diff --git a/lib/Kconfig.kgdb b/lib/Kconfig.kgdb
-> index 43cb93f..77439eb 100644
-> --- a/lib/Kconfig.kgdb
-> +++ b/lib/Kconfig.kgdb
-> @@ -5,7 +5,7 @@ config HAVE_ARCH_KGDB
->  menuconfig KGDB
->  	bool "KGDB: kernel debugger"
->  	depends on HAVE_ARCH_KGDB
-> -	depends on DEBUG_KERNEL && EXPERIMENTAL
-> +	depends on DEBUG_KERNEL
->  	help
->  	  If you say Y here, it will be possible to remotely debug the
->  	  kernel using gdb.  It is recommended but not required, that
+> diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
+> index 202bba6..bf24317 100644
+> --- a/drivers/vhost/Kconfig
+> +++ b/drivers/vhost/Kconfig
+> @@ -1,6 +1,6 @@
+>  config VHOST_NET
+> -	tristate "Host kernel accelerator for virtio net (EXPERIMENTAL)"
+> -	depends on NET && EVENTFD && (TUN || !TUN) && (MACVTAP || !MACVTAP) && EXPERIMENTAL
+> +	tristate "Host kernel accelerator for virtio net"
+> +	depends on NET && EVENTFD && (TUN || !TUN) && (MACVTAP || !MACVTAP)
+>  	---help---
+>  	  This kernel module can be loaded in host kernel to accelerate
+>  	  guest networking with virtio_net. Not to be confused with virtio_net
+> diff --git a/drivers/vhost/Kconfig.tcm b/drivers/vhost/Kconfig.tcm
+> index a9c6f76..7e3aa28 100644
+> --- a/drivers/vhost/Kconfig.tcm
+> +++ b/drivers/vhost/Kconfig.tcm
+> @@ -1,6 +1,6 @@
+>  config TCM_VHOST
+> -	tristate "TCM_VHOST fabric module (EXPERIMENTAL)"
+> -	depends on TARGET_CORE && EVENTFD && EXPERIMENTAL && m
+> +	tristate "TCM_VHOST fabric module"
+> +	depends on TARGET_CORE && EVENTFD && m
+>  	default n
+>  	---help---
+>  	Say M here to enable the TCM_VHOST fabric module for use with virtio-scsi guests
 > -- 
 > 1.7.9.5
-> 
-
