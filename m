@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab3AQR30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 12:29:26 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52093 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab3AQR3Y convert rfc822-to-8bit (ORCPT
+	id S1754680Ab3AQRbi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 12:31:38 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18289 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752611Ab3AQRbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 12:29:24 -0500
-Date: Thu, 17 Jan 2013 17:29:17 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: [GIT PULL] clockevents: decouple broadcast mechanism from drivers
-Message-ID: <20130117172910.GA10070@e106331-lin.cambridge.arm.com>
+	Thu, 17 Jan 2013 12:31:36 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+Qd5PbwPiolS+X27KqiVk9
+Date: Thu, 17 Jan 2013 09:31:31 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Luciano Coelho <coelho@ti.com>, balbi@ti.com, linux-omap@vger.kernel.org,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport
+ power functions
+Message-ID: <20130117173131.GL14149@atomide.com>
+References: <1358372702-13102-1-git-send-email-coelho@ti.com>
+ <50F7C4A7.5060202@ti.com>
+ <20130117093417.GH10814@arwen.pp.htv.fi>
+ <50F7CA82.4050509@ti.com>
+ <20130117100510.GI10814@arwen.pp.htv.fi>
+ <20130117100919.GJ10814@arwen.pp.htv.fi>
+ <1358418917.6252.31.camel@cumari.coelho.fi>
+ <50F7D535.6030205@ti.com>
 MIME-Version: 1.0
-Thread-Topic: [GIT PULL] clockevents: decouple broadcast mechanism from
- drivers
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 17 Jan 2013 17:29:21.0045 (UTC) FILETIME=[2F7D0C50:01CDF4D8]
-X-MC-Unique: 113011717292207901
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <50F7D535.6030205@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [130117 02:44]:
+> On 01/17/2013 11:35 AM, Luciano Coelho wrote:
+> > This out-of-tree code doesn't explain why we need to do the
+> > enable/disable in the board file.  We just need to do things a bit
+> > differently in the driver.  I'll start cleaning all this stuff up for
+> > -next pretty soon.
+> > 
+> > For now, ie. 3.7 (stable) and 3.8, do we agree in taking this patch so
+> > that TI-ST at least works on Panda? Simply reverting the gpio removal
+> > patch doesn't help, because we also need to handle the UART2 muxing
+> > (which my patch does as well).
+> 
+> I don't see better way to fix this either. In any case, I give you my:
+> 
+> Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-These are the generic timer patches I posted a few days ago [1], with
-the fixes you requested previously.
+So what is actually broken? The horrible bluetooth muxing over serial
+port? If so, let's rather fix it properly than even attempt to fix
+it as it seems that it's been broken for two merge windows now.
 
-Please could you pull these into your tree, and create a public branch
-for me to base my other patches on?
+Also, let's just do absolutely minimal board-*.c file fixes now.
+This thing should be just moved to use DT so we can flip over omap4
+to be DT only and drop estimated 5k LOC from mach-omap2.
 
-Thanks,
-Mark.
+Regards,
 
-[1] https://lkml.org/lkml/2013/1/14/276
-
-The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
-
-  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
-
-are available in the git repository at:
-
-  git://linux-arm.org/linux-mr.git for-tglx/timer-broadcast
-
-for you to fetch changes up to a9a71292273e2a9ca694ca37aad4b61a3a1fcdee:
-
-  clockevents: Add generic timer broadcast function (2013-01-14 16:55:01 +0000)
-
-----------------------------------------------------------------
-Mark Rutland (2):
-      clockevents: Add generic timer broadcast receiver
-      clockevents: Add generic timer broadcast function
-
- include/linux/clockchips.h   |  9 +++++++++
- kernel/time/Kconfig          |  4 ++++
- kernel/time/tick-broadcast.c | 28 ++++++++++++++++++++++++++++
- 3 files changed, 41 insertions(+)
-
+Tony 
