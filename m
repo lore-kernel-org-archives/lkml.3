@@ -1,165 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab3AQUoa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:44:30 -0500
-Received: from mga14.intel.com ([143.182.124.37]:64949 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756580Ab3AQUhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:37:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="192371709"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
-        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        avi@redhat.com, gleb@redhat.com
-Subject: [PATCH 05/29] perf, kvm: Support the intx/intx_cp modifiers in KVM arch perfmon emulation v4
-Date: Thu, 17 Jan 2013 12:36:28 -0800
-Message-Id: <1358455012-12287-6-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
-References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
+	id S1756746Ab3AQUq1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:46:27 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53363 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab3AQUqZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 15:46:25 -0500
+Date: Thu, 17 Jan 2013 15:46:22 -0500 (EST)
+Message-Id: <20130117.154622.1758706863368180089.davem@davemloft.net>
+To: nickolai@csail.mit.edu
+Cc: steffen.klassert@secunet.com, herbert@gondor.hengli.com.au,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/xfrm/xfrm_replay: avoid division by zero
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1358449108-67839-1-git-send-email-nickolai@csail.mit.edu>
+References: <1358449108-67839-1-git-send-email-nickolai@csail.mit.edu>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Nickolai Zeldovich <nickolai@csail.mit.edu>
+Date: Thu, 17 Jan 2013 13:58:28 -0500
 
-This is not arch perfmon, but older CPUs will just ignore it. This makes
-it possible to do at least some TSX measurements from a KVM guest
+> All of the xfrm_replay->advance functions in xfrm_replay.c check if
+> x->replay_esn->replay_window is zero (and return if so).  However,
+> one of them, xfrm_replay_advance_bmp(), divides by that value (in the
+> '%' operator) before doing the check, which can potentially trigger
+> a divide-by-zero exception.  Some compilers will also assume that the
+> earlier division means the value cannot be zero later, and thus will
+> eliminate the subsequent zero check as dead code.
+> 
+> This patch moves the division to after the check.
+> 
+> Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
 
-Cc: avi@redhat.com
-Cc: gleb@redhat.com
-v2: Various fixes to address review feedback
-v3: Ignore the bits when no CPUID. No #GP. Force raw events with TSX bits.
-v4: Use reserved bits for #GP
-Cc: gleb@redhat.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/pmu.c              |   32 ++++++++++++++++++++++++--------
- 2 files changed, 25 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index dc87b65..703a1f8 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -320,6 +320,7 @@ struct kvm_pmu {
- 	u64 global_ovf_ctrl;
- 	u64 counter_bitmask[2];
- 	u64 global_ctrl_mask;
-+	u64 reserved_bits;
- 	u8 version;
- 	struct kvm_pmc gp_counters[INTEL_PMC_MAX_GENERIC];
- 	struct kvm_pmc fixed_counters[INTEL_PMC_MAX_FIXED];
-diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
-index cfc258a..89405d0 100644
---- a/arch/x86/kvm/pmu.c
-+++ b/arch/x86/kvm/pmu.c
-@@ -160,7 +160,7 @@ static void stop_counter(struct kvm_pmc *pmc)
- 
- static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
- 		unsigned config, bool exclude_user, bool exclude_kernel,
--		bool intr)
-+		bool intr, bool intx, bool intx_cp)
- {
- 	struct perf_event *event;
- 	struct perf_event_attr attr = {
-@@ -173,6 +173,10 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
- 		.exclude_kernel = exclude_kernel,
- 		.config = config,
- 	};
-+	if (intx)
-+		attr.config |= HSW_INTX;
-+	if (intx_cp)
-+		attr.config |= HSW_INTX_CHECKPOINTED;
- 
- 	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
- 
-@@ -206,7 +210,8 @@ static unsigned find_arch_event(struct kvm_pmu *pmu, u8 event_select,
- 	return arch_events[i].event_type;
- }
- 
--static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
-+static void reprogram_gp_counter(struct kvm_pmu *pmu, struct kvm_pmc *pmc, 
-+				 u64 eventsel)
- {
- 	unsigned config, type = PERF_TYPE_RAW;
- 	u8 event_select, unit_mask;
-@@ -226,7 +231,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
- 
- 	if (!(eventsel & (ARCH_PERFMON_EVENTSEL_EDGE |
- 				ARCH_PERFMON_EVENTSEL_INV |
--				ARCH_PERFMON_EVENTSEL_CMASK))) {
-+				ARCH_PERFMON_EVENTSEL_CMASK |
-+				HSW_INTX |
-+				HSW_INTX_CHECKPOINTED))) {
- 		config = find_arch_event(&pmc->vcpu->arch.pmu, event_select,
- 				unit_mask);
- 		if (config != PERF_COUNT_HW_MAX)
-@@ -239,7 +246,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
- 	reprogram_counter(pmc, type, config,
- 			!(eventsel & ARCH_PERFMON_EVENTSEL_USR),
- 			!(eventsel & ARCH_PERFMON_EVENTSEL_OS),
--			eventsel & ARCH_PERFMON_EVENTSEL_INT);
-+			eventsel & ARCH_PERFMON_EVENTSEL_INT,
-+			(eventsel & HSW_INTX),
-+			(eventsel & HSW_INTX_CHECKPOINTED));
- }
- 
- static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
-@@ -256,7 +265,7 @@ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
- 			arch_events[fixed_pmc_events[idx]].event_type,
- 			!(en & 0x2), /* exclude user */
- 			!(en & 0x1), /* exclude kernel */
--			pmi);
-+			pmi, false, false);
- }
- 
- static inline u8 fixed_en_pmi(u64 ctrl, int idx)
-@@ -289,7 +298,7 @@ static void reprogram_idx(struct kvm_pmu *pmu, int idx)
- 		return;
- 
- 	if (pmc_is_gp(pmc))
--		reprogram_gp_counter(pmc, pmc->eventsel);
-+		reprogram_gp_counter(pmu, pmc, pmc->eventsel);
- 	else {
- 		int fidx = idx - INTEL_PMC_IDX_FIXED;
- 		reprogram_fixed_counter(pmc,
-@@ -400,8 +409,8 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
- 		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
- 			if (data == pmc->eventsel)
- 				return 0;
--			if (!(data & 0xffffffff00200000ull)) {
--				reprogram_gp_counter(pmc, data);
-+			if (!(data & pmu->reserved_bits)) {
-+				reprogram_gp_counter(pmu, pmc, data);
- 				return 0;
- 			}
- 		}
-@@ -442,6 +451,7 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
- 	pmu->counter_bitmask[KVM_PMC_GP] = 0;
- 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
- 	pmu->version = 0;
-+	pmu->reserved_bits = 0xffffffff00200000ull;
- 
- 	entry = kvm_find_cpuid_entry(vcpu, 0xa, 0);
- 	if (!entry)
-@@ -470,6 +480,12 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
- 	pmu->global_ctrl = ((1 << pmu->nr_arch_gp_counters) - 1) |
- 		(((1ull << pmu->nr_arch_fixed_counters) - 1) << INTEL_PMC_IDX_FIXED);
- 	pmu->global_ctrl_mask = ~pmu->global_ctrl;
-+
-+	entry = kvm_find_cpuid_entry(vcpu, 7, 0);
-+	if (entry &&
-+	    (boot_cpu_has(X86_FEATURE_HLE) || boot_cpu_has(X86_FEATURE_RTM)) &&
-+	    (entry->ebx & (X86_FEATURE_HLE|X86_FEATURE_RTM)))
-+		pmu->reserved_bits ^= HSW_INTX|HSW_INTX_CHECKPOINTED;
- }
- 
- void kvm_pmu_init(struct kvm_vcpu *vcpu)
--- 
-1.7.7.6
-
+I'm assuming Steffen will take care of this patch.
