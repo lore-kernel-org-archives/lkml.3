@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758294Ab3AQBnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 20:43:00 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:33222 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758199Ab3AQBmz (ORCPT
+	id S1758261Ab3AQBm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 20:42:58 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:41104 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758191Ab3AQBmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 20:42:55 -0500
+	Wed, 16 Jan 2013 20:42:54 -0500
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/17] workqueue: unexport work_cpu()
-Date: Wed, 16 Jan 2013 17:42:33 -0800
-Message-Id: <1358386969-945-2-git-send-email-tj@kernel.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCHSET] workqueue: remove gcwq and make worker_pool the only backend abstraction
+Date: Wed, 16 Jan 2013 17:42:32 -0800
+Message-Id: <1358386969-945-1-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1358386969-945-1-git-send-email-tj@kernel.org>
-References: <1358386969-945-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function no longer has any external users.  Unexport it.  It will
-be removed later on.
+Hello,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/workqueue.h | 1 -
- kernel/workqueue.c        | 4 ++--
- 2 files changed, 2 insertions(+), 3 deletions(-)
+Currently, on the backend side, there are two layers of abstraction.
+For each CPU and the special unbound wq-specific CPU, there's one
+global_cwq.  gcwq in turn hosts two worker_pools - one for normal
+priority, the other for highpri - each of which actually serves the
+work items.
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 2b58905..ff68b1d 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -426,7 +426,6 @@ extern bool cancel_delayed_work_sync(struct delayed_work *dwork);
- extern void workqueue_set_max_active(struct workqueue_struct *wq,
- 				     int max_active);
- extern bool workqueue_congested(unsigned int cpu, struct workqueue_struct *wq);
--extern unsigned int work_cpu(struct work_struct *work);
- extern unsigned int work_busy(struct work_struct *work);
- 
- /*
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 7967f34..4275ae7 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -476,6 +476,7 @@ static atomic_t unbound_pool_nr_running[NR_WORKER_POOLS] = {
- };
- 
- static int worker_thread(void *__worker);
-+static unsigned int work_cpu(struct work_struct *work);
- 
- static int worker_pool_pri(struct worker_pool *pool)
- {
-@@ -3428,13 +3429,12 @@ EXPORT_SYMBOL_GPL(workqueue_congested);
-  * RETURNS:
-  * CPU number if @work was ever queued.  WORK_CPU_NONE otherwise.
-  */
--unsigned int work_cpu(struct work_struct *work)
-+static unsigned int work_cpu(struct work_struct *work)
- {
- 	struct global_cwq *gcwq = get_work_gcwq(work);
- 
- 	return gcwq ? gcwq->cpu : WORK_CPU_NONE;
- }
--EXPORT_SYMBOL_GPL(work_cpu);
- 
- /**
-  * work_busy - test whether a work is currently pending or running
--- 
-1.8.0.2
+worker_pool is the later addition to support separate pool of workers
+for highpri workqueues.  Stuff was moved to worker_pool on as-needed
+basis and, as a result, the two pools belonging to the same CPU share
+some stuff in the gcwq - most notably the lock and the hash table for
+work items currently being executed.
 
+It seems like we'll need to support worker pools with custom
+attributes, which is planned to be implemented as extra worker_pools
+for the unbound CPU.  Removing gcwq and having worker_pool as the top
+level abstraction makes things much simpler for such designs.  Also,
+there's scalability benefit to not sharing locking and busy hash among
+different worker pools as worker pools w/ custom attributes are likely
+to have widely different memory / cpu locality characteristics.
+
+In retrospect, it might have been less churn if we just converted to
+have multiple gcwqs per CPU when we were adding highpri pool support.
+Oh well, such is life and the name worker_pool fits the role much
+better anyway at this point.
+
+This patchset moves the remaining stuff in gcwq to worker_pool and
+then removes gcwq entirely making worker_pool the top level and the
+only backend abstraction.  In the process, this patchset also prepares
+for later addition of worker_pools with custom attributes.
+
+This patchset shouldn't introduce any visible differences outside of
+workqueue proper and contains the following 17 patches.
+
+ 0001-workqueue-unexport-work_cpu.patch
+ 0002-workqueue-use-std_-prefix-for-the-standard-per-cpu-p.patch
+ 0003-workqueue-make-GCWQ_DISASSOCIATED-a-pool-flag.patch
+ 0004-workqueue-make-GCWQ_FREEZING-a-pool-flag.patch
+ 0005-workqueue-introduce-WORK_OFFQ_CPU_NONE.patch
+ 0006-workqueue-add-worker_pool-id.patch
+ 0007-workqueue-record-pool-ID-instead-of-CPU-in-work-data.patch
+ 0008-workqueue-move-busy_hash-from-global_cwq-to-worker_p.patch
+ 0009-workqueue-move-global_cwq-cpu-to-worker_pool.patch
+ 0010-workqueue-move-global_cwq-lock-to-worker_pool.patch
+ 0011-workqueue-make-hotplug-processing-per-pool.patch
+ 0012-workqueue-make-freezing-thawing-per-pool.patch
+ 0013-workqueue-replace-for_each_worker_pool-with-for_each.patch
+ 0014-workqueue-remove-worker_pool-gcwq.patch
+ 0015-workqueue-remove-global_cwq.patch
+ 0016-workqueue-rename-nr_running-variables.patch
+ 0017-workqueue-post-global_cwq-removal-cleanups.patch
+
+0001-0002 are misc preps.
+
+0003-0004 move flags from gcwq to pool.
+
+0005-0007 make work->data off-queue backlink point to worker_pools
+instead of CPUs, which is necessary to move busy_hash to pool.
+
+0008-0010 move busy_hash, cpu and locking to pool.
+
+0011-0014 make operations per-pool and remove gcwq usages.
+
+0015-0017 remove gcwq and cleanup afterwards.
+
+This patchset is on top of wq/for-3.9 023f27d3d6f ("workqueue: fix
+find_worker_executing_work() brekage from hashtable conversion") and
+available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.9-remove-gcwq
+
+Thanks.
+
+ include/linux/workqueue.h        |   17
+ include/trace/events/workqueue.h |    2
+ kernel/workqueue.c               |  897 +++++++++++++++++++--------------------
+ 3 files changed, 461 insertions(+), 455 deletions(-)
+
+--
+tejun
