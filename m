@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab3AQT73 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 14:59:29 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:60405 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab3AQT72 (ORCPT
+	id S1756199Ab3AQUBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:01:25 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:52744 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab3AQUBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 14:59:28 -0500
-Date: Thu, 17 Jan 2013 11:59:23 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Tomas Winkler <tomas.winkler@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: mei: Fix typo "@hader" in mei_write_message()
-Message-ID: <20130117195923.GA12747@kroah.com>
-References: <1357634896-9944-1-git-send-email-sedat.dilek@gmail.com>
- <20130117181720.GA12352@kroah.com>
- <CA+icZUUdZHSa5OLfPUbxw2MVqG5LvV=dPrprQBciWPCUeNRO_w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUUdZHSa5OLfPUbxw2MVqG5LvV=dPrprQBciWPCUeNRO_w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Jan 2013 15:01:24 -0500
+Date: Thu, 17 Jan 2013 15:01:22 -0500 (EST)
+Message-Id: <20130117.150122.2295173415520467788.davem@davemloft.net>
+To: keescook@chromium.org
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 05/86] drivers/net/ethernet/seeq: remove depends on
+ CONFIG_EXPERIMENTAL
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAGXu5jJtkeOyjbUFtcycRAtFyykjLCUZ8s0ePM527SoNj_hkag@mail.gmail.com>
+References: <1358391258-1771-6-git-send-email-keescook@chromium.org>
+	<20130116.221108.1062607586895392221.davem@davemloft.net>
+	<CAGXu5jJtkeOyjbUFtcycRAtFyykjLCUZ8s0ePM527SoNj_hkag@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 07:51:09PM +0100, Sedat Dilek wrote:
-> On Thu, Jan 17, 2013 at 7:17 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Jan 08, 2013 at 09:48:16AM +0100, Sedat Dilek wrote:
-> >> This was introduced by:
-> >>
-> >> commit 438763f37eb9664b6372bdfee990f8c33acdc63c
-> >> "mei: drop redundant length parameter from mei_write_message function"
-> >>
-> >> First seen in linux-next (next-20120108).
-> >>
-> >> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
-> >> Acked-by: Tomas Winkler <tomas.winkler@intel.com>
-> >> ---
-> >>  drivers/misc/mei/interface.c |    2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > This patch no longer applies to my tree, can you please redo it against
-> > the latest char-misc.next branch?
-> >
+From: Kees Cook <keescook@chromium.org>
+Date: Thu, 17 Jan 2013 09:03:40 -0800
+
+> On Wed, Jan 16, 2013 at 7:11 PM, David Miller <davem@davemloft.net> wrote:
+>> Partially CC:'ing a mailing list for a subset of patches, without also
+>> CC:'ing that list on your openning "00/xxx" email explaing what you're
+>> doing and why is kind of pointless.
 > 
-> I have sent an updated version (see [1]).
-> Looks like I sent that to Thomas and LKML.
-> Shall I resend it to you?
+> Hm? 0/86 got sent to lkml: https://lkml.org/lkml/2013/1/16/845
+> 
+> If you mean I didn't CC each of the people on the 0/86 email, yeah,
+> that was intentional since it's a long list of people and lkml tends
+> to drop emails with giant CC lists. I figured this was the sanest of
+> the various sub-optional solutions.
 
-It looks like you just did, I'll take that one.
+Just CC: the relevant mailing lists.
 
-thanks,
-
-greg k-h
+Not everyone reads lkml, even I don't, it's too much noise and makes
+me less effective in my work.
