@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3AQQbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:31:09 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:32984 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757082Ab3AQQbG (ORCPT
+	id S1757285Ab3AQQcF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:32:05 -0500
+Received: from mail3.vodafone.ie ([213.233.128.45]:20670 "EHLO
+	mail3.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757082Ab3AQQb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:31:06 -0500
-Message-ID: <50F82745.6050507@wwwdotorg.org>
-Date: Thu, 17 Jan 2013 09:31:01 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 17 Jan 2013 11:31:59 -0500
+X-Greylist: delayed 593 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 11:31:59 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqsBABAk+FBtTSm9/2dsb2JhbAANHRqDdYIJR7d2gxEBAQEDASMPAQU6BxALDQsCAgUWCwICCQMCAQIBRRMBBwEBiA8NBSynf3CRRYEjjGyCFoETA5cohHGFLYgE
+Message-ID: <50F8252C.2060404@draigBrady.com>
+Date: Thu, 17 Jan 2013 16:22:04 +0000
+From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Simon Horman <horms@verge.net.au>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device
- core
-References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com> <50EF27B4.60608@wwwdotorg.org> <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com> <9702060.jEbHySsCv0@avalon> <CACRpkdbFH6RCEEnXO=A9FVa0B5rtE9RkjXz9Hhy+w7NvwcBCgg@mail.gmail.com> <50F6E811.2040606@wwwdotorg.org> <20130117060214.GC1197@verge.net.au>
-In-Reply-To: <20130117060214.GC1197@verge.net.au>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org
+CC: Eric Blake <eblake@redhat.com>
+Subject: Re: RFC: allow empty symlink targets
+References: <1358427833-3847-1-git-send-email-P@draigBrady.com>
+In-Reply-To: <1358427833-3847-1-git-send-email-P@draigBrady.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2013 11:02 PM, Simon Horman wrote:
-> On Wed, Jan 16, 2013 at 10:49:05AM -0700, Stephen Warren wrote:
->> On 01/11/2013 01:45 PM, Linus Walleij wrote:
->>> On Fri, Jan 11, 2013 at 9:36 PM, Laurent Pinchart
->>> <laurent.pinchart@ideasonboard.com> wrote:
->>>
->>>> I've sent several patch series for the SH PFC (Pin Function Controller) to the
->>>> linux-sh mailing list. One of the series included pinctrl core patches for
->>>> easier testing, but I made it clear that they should *not* be pushed to
->>>> mainline through the SH tree.
->>>
->>> No big deal, what fun is linux-next if we don't break it ;-)
->>
->> Hmm. It's causing a lot of engineers here a lot of trouble, since they
->> all see linux-next won't boot, and haven't been paying enough attention
->> to know which commit to revert:-(. Lots of lost productivity:-(
->>
->> Simon, the offending commit:
->>
->> 6d3ef6b drivers/pinctrl: grab default handles from device core
->>
->> is still in next-20130116. Can you please remove it?
-> 
-> I removed the commit yesterday.
-> Please let me know if it seems to be lingering.
+On 01/17/2013 01:03 PM, Pádraig Brady wrote:
+> The discussion leading to this is at http://bugs.gnu.org/13447
+> In summary other systems allow an empty target for a symlink,
+> and POSIX specifies that it should be allowed?
 
-Thanks. I believe it's gone from next-20130117, judging by a quick
-search through "git log" at least.
+In relation to this, Eric Blake said:
+
+ > In today's Austin Group meeting, I was tasked to open a new bug that
+ > would state specifically how the empty symlink is resolved; the intent
+ > is to allow both Solaris behavior (current directory) and BSD behavior
+ > (ENOENT).  Meanwhile, everyone was in agreement that the Linux kernel
+ > has a bug for rejecting the creation of an empty symlink, but once that
+ > bug is fixed, then Linux can choose either Solaris or BSD behavior for
+ > how to resolve such a symlink.
+ >
+ > It will probably be a bug report similar to this one, which regarded how
+ > to handle a symlink containing just slashes:
+ > http://austingroupbugs.net/view.php?id=541
+
+thanks,
+Pádraig.
