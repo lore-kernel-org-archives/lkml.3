@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab3AQR3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 12:29:09 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:49037 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab3AQR3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 12:29:07 -0500
-Date: Thu, 17 Jan 2013 09:28:14 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: acme@ghostprotocols.net
-Cc: jolsa@redhat.com, Anton Blanchard <anton@au1.ibm.com>, paulus@samba.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: [PATCH] perf: Fix PMU format parsing test failure
-Message-ID: <20130117172814.GA18882@us.ibm.com>
+	id S1754950Ab3AQR30 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 12:29:26 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52093 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab3AQR3Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 12:29:24 -0500
+Date: Thu, 17 Jan 2013 17:29:17 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: [GIT PULL] clockevents: decouple broadcast mechanism from drivers
+Message-ID: <20130117172910.GA10070@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux 2.0.32 on an i486
+Thread-Topic: [GIT PULL] clockevents: decouple broadcast mechanism from
+ drivers
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011717-9360-0000-0000-00000F57DFB0
+X-OriginalArrivalTime: 17 Jan 2013 17:29:21.0045 (UTC) FILETIME=[2F7D0C50:01CDF4D8]
+X-MC-Unique: 113011717292207901
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thomas,
 
->From 776e6d7942754f139c27753213c9cf4617536618 Mon Sep 17 00:00:00 2001
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Date: Thu, 17 Jan 2013 09:11:30 -0800
-Subject: [PATCH] perf; Fix PMU format parsing test failure
+These are the generic timer patches I posted a few days ago [1], with
+the fixes you requested previously.
 
-On POWER, the 'perf format parsing' test always fails.
+Please could you pull these into your tree, and create a public branch
+for me to base my other patches on?
 
-Looks like it is because memset() is being passed number of longs
-rather than number of bytes. It is interesting that the test always
-passes on my x86 box.
+Thanks,
+Mark.
 
-With this patch, the test passes on POWER and continues to pass on x86.
+[1] https://lkml.org/lkml/2013/1/14/276
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
----
- tools/perf/util/include/linux/bitops.h |    1 +
- tools/perf/util/pmu.c                  |    2 +-
- 2 files changed, 2 insertions(+), 1 deletions(-)
+The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
 
-diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-index a55d8cf..45cf10a 100644
---- a/tools/perf/util/include/linux/bitops.h
-+++ b/tools/perf/util/include/linux/bitops.h
-@@ -14,6 +14,7 @@
- #define BITS_TO_LONGS(nr)       DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
- #define BITS_TO_U64(nr)         DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u64))
- #define BITS_TO_U32(nr)         DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u32))
-+#define BITS_TO_BYTES(nr)       DIV_ROUND_UP(nr, BITS_PER_BYTE)
- 
- #define for_each_set_bit(bit, addr, size) \
- 	for ((bit) = find_first_bit((addr), (size));		\
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 9bdc60c..b93ff14 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -548,7 +548,7 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
- 	if (!to)
- 		to = from;
- 
--	memset(bits, 0, BITS_TO_LONGS(PERF_PMU_FORMAT_BITS));
-+	memset(bits, 0, BITS_TO_BYTES(PERF_PMU_FORMAT_BITS));
- 	for (b = from; b <= to; b++)
- 		set_bit(b, bits);
- }
--- 
-1.7.1
+  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
+
+are available in the git repository at:
+
+  git://linux-arm.org/linux-mr.git for-tglx/timer-broadcast
+
+for you to fetch changes up to a9a71292273e2a9ca694ca37aad4b61a3a1fcdee:
+
+  clockevents: Add generic timer broadcast function (2013-01-14 16:55:01 +0000)
+
+----------------------------------------------------------------
+Mark Rutland (2):
+      clockevents: Add generic timer broadcast receiver
+      clockevents: Add generic timer broadcast function
+
+ include/linux/clockchips.h   |  9 +++++++++
+ kernel/time/Kconfig          |  4 ++++
+ kernel/time/tick-broadcast.c | 28 ++++++++++++++++++++++++++++
+ 3 files changed, 41 insertions(+)
 
