@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab3AQWST (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 17:18:19 -0500
-Received: from warthog.procyon.org.uk ([90.155.74.18]:59153 "EHLO
-	warthog.procyon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab3AQWSS (ORCPT
+	id S1753472Ab3AQWSs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 17:18:48 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46746 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab3AQWSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 17:18:18 -0500
-X-Greylist: delayed 3428 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 17:18:16 EST
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1358449049.2689.87.camel@falcor1>
-References: <1358449049.2689.87.camel@falcor1> <20130117180352.27885.79893.stgit@warthog.procyon.org.uk> <20130117180400.27885.2973.stgit@warthog.procyon.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, dmitry.kasatkin@intel.com,
-        linux-kernel@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 2/3] KEYS: Separate the kernel signature checking keyring from module signing
-X-Mailer: MH-E 8.3.1; nmh 1.5; GNU Emacs 24.1.50
-Date: Thu, 17 Jan 2013 21:20:28 +0000
-Message-ID: <30183.1358457628@warthog.procyon.org.uk>
+	Thu, 17 Jan 2013 17:18:46 -0500
+Message-ID: <50F878C3.9030002@wwwdotorg.org>
+Date: Thu, 17 Jan 2013 15:18:43 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: balbi@ti.com
+CC: Venu Byravarasu <vbyravarasu@nvidia.com>, gregkh@linuxfoundation.org,
+        stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] usb: Add APIs to access host registers from Tegra
+ PHY
+References: <1358411292-12288-1-git-send-email-vbyravarasu@nvidia.com> <20130117090255.GD10814@arwen.pp.htv.fi>
+In-Reply-To: <20130117090255.GD10814@arwen.pp.htv.fi>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-
-> Lets assume accepting built in keys should is acceptable for all use
-> cases.  Adding additional keys from userspace is probably not acceptable
-> for all use cases.  Those keys should be added to specific 'trusted'
-> keyrings.
+On 01/17/2013 02:02 AM, Felipe Balbi wrote:
+> Hi,
 > 
-> EVM and IMA-appraisal have separate keyrings for this reason.  I might
-> be interested in allowing third party packages to be installed and
-> executed, but that doesn't imply that a security.evm extended attribute,
-> signed by a third party application, is acceptable.
+> On Thu, Jan 17, 2013 at 01:58:12PM +0530, Venu Byravarasu wrote:
+>> As Tegra PHY driver need to access one of the Host registers, 
+>> added few APIs to ehci tegra driver.
+>> 
+>> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> 
+> Stephen is this another of those patches you're gonna take care of 
+> yourself ?
 
-We should probably look at using the capability of X.509 certificates to
-indicate what a key may be used for and noting that in the public_key struct.
+Yes; in kernel 3.9, I believe I need to take any significant Tegra
+EHCI or PHY patches through the Tegra tree due to the need to change
+the Tegra device trees in lock-step with some of the code changes, and
+other Tegra-related changes also changing the USB-related nodes in
+device tree e.g. to add clocks properties.
 
-David
+Hopefully we get enough USB patches into 3.9 that the dependencies are
+then removed, and we can revert back to the usual merging path in 3.10...
