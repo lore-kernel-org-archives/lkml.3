@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3AQTvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 14:51:00 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:52610 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033Ab3AQTu7 (ORCPT
+	id S1756156Ab3AQT73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 14:59:29 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:60405 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755114Ab3AQT72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 14:50:59 -0500
-Date: Thu, 17 Jan 2013 14:50:56 -0500 (EST)
-Message-Id: <20130117.145056.60689530330513006.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2013-01-17
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130117173239.GA2098@tuxdriver.com>
-References: <20130117173239.GA2098@tuxdriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jan 2013 14:59:28 -0500
+Date: Thu, 17 Jan 2013 11:59:23 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Tomas Winkler <tomas.winkler@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: mei: Fix typo "@hader" in mei_write_message()
+Message-ID: <20130117195923.GA12747@kroah.com>
+References: <1357634896-9944-1-git-send-email-sedat.dilek@gmail.com>
+ <20130117181720.GA12352@kroah.com>
+ <CA+icZUUdZHSa5OLfPUbxw2MVqG5LvV=dPrprQBciWPCUeNRO_w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUUdZHSa5OLfPUbxw2MVqG5LvV=dPrprQBciWPCUeNRO_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Thu, 17 Jan 2013 12:32:40 -0500
+On Thu, Jan 17, 2013 at 07:51:09PM +0100, Sedat Dilek wrote:
+> On Thu, Jan 17, 2013 at 7:17 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Tue, Jan 08, 2013 at 09:48:16AM +0100, Sedat Dilek wrote:
+> >> This was introduced by:
+> >>
+> >> commit 438763f37eb9664b6372bdfee990f8c33acdc63c
+> >> "mei: drop redundant length parameter from mei_write_message function"
+> >>
+> >> First seen in linux-next (next-20120108).
+> >>
+> >> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+> >> Acked-by: Tomas Winkler <tomas.winkler@intel.com>
+> >> ---
+> >>  drivers/misc/mei/interface.c |    2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > This patch no longer applies to my tree, can you please redo it against
+> > the latest char-misc.next branch?
+> >
+> 
+> I have sent an updated version (see [1]).
+> Looks like I sent that to Thomas and LKML.
+> Shall I resend it to you?
 
-> This batch of fixes is intended for 3.8...
-> 
-> Included is a Bluetooth pull.  Gustavo says:
-> 
-> "A few fixes for 3.8. Five of them are just new devices ids addition.
-> Apart from the that there is fix to a kernel memory leak to userspace from
-> Anderson Lizardo, two interoperability fixes from Jaganath Kanakkassery and
-> Szymon Janc. And a crash fix by me."
-> 
-> Along with that, Amitkumar Karwar brings a pair of mwifiex fixes for
-> problems related to handling of band information within the driver.
-> These problems can lead to association failures.
-> 
-> Sujith Manoharan fixes a memory leak in the ath9k_htc code (originally
-> reported by Larry Finger).
-> 
-> The big hero this round is Felix Fietkau.  Felix gives us seven
-> ath9k fixes, including a fix for a race condition, the removal of a
-> double-free, and a fix for a deadlock, among others.
-> 
-> These have all been in linux-next for at least a couple of days,
-> with no complaints so far.  Please let me know if there are problems!
+It looks like you just did, I'll take that one.
 
-Pulled, thanks John.
+thanks,
+
+greg k-h
