@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab3AQTUp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 14:20:45 -0500
-Received: from plane.gmane.org ([80.91.229.3]:35246 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814Ab3AQTUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 14:20:44 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: rh <richard_hubbe11@lavabit.com>
-Subject: Re: [PATCH 76/86] fs/btrfs: remove depends on CONFIG_EXPERIMENTAL
-Date: Thu, 17 Jan 2013 11:20:30 -0800
-Message-ID: <20130117112030.6fa36b08cdf227c8c6e6f7b3@lavabit.com>
-References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
-	<1358391258-1771-77-git-send-email-keescook@chromium.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755934Ab3AQTWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 14:22:41 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:63981 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791Ab3AQTWj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 14:22:39 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Steven King <sfking@fdwdc.com>
+Subject: Re: [PATCH 0/4] gpio: introduce descriptor-based interface
+Date: Thu, 17 Jan 2013 19:22:13 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg Ungerer <gerg@uclinux.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Alex Courbot <acourbot@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <50F7E83E.8000105@uclinux.org> <201301170850.43655.sfking@fdwdc.com>
+In-Reply-To: <201301170850.43655.sfking@fdwdc.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: ip68-227-87-145.sb.sd.cox.net
-User-Agent: dsodnetnin
-X-Mailer: EZnn0.37p
-X-Newsreader: EZnn0.37p
-X-Gmane-NNTP-Posting-Host: EZnn0.37p
-Original-Received: from slem by 1.1 with local
-X-No-Archive: yes
-Archive: no
-X-Archive: expiry=11
-X-Archive: encrypt
-X-Operating-System: Barebones_6.1
-X-Gmane-NNTP-Posting-Host: 192.168.1.1
+Message-Id: <201301171922.13432.arnd@arndb.de>
+X-Provags-ID: V02:K0:2vNRE9B3AZmi+m7yV3uroDrT2N9Y2/I/J3iQjYlhzlU
+ CbgtNFy1mG2GipuojO3zwfqz8Olqdl+q+rHS8Xcc094YFFiWg3
+ FWk8Ht98jIpk7USpu0IxDrbb2VsmdY07JkZLy3SOwRc8MrX2qB
+ l+n6fgOQLP1I0AcRduGmUZMjBd9ISZb+QcFF/eRFWpU+sp56mN
+ qDzSUaJmvLvwA/OFh1YqAK8131x/QNrXDgMLC+3+/Ww1T5TKzE
+ ULi3CvuNmC3+KyQk+LVUsbDlihsCWPm3f8vZJ7exVuyVApBfW0
+ Rxc6OZCzW1Rj2L9qzx9GRp5lh6z97adoSw1mZbSlnDN3V//ZNf
+ 0owHL9J2JnuYon3S0Pbk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jan 2013 18:54:08 -0800
-Kees Cook <keescook@chromium.org> wrote:
+On Thursday 17 January 2013, Steven King wrote:
+> I haven't been keeping up with the kernel list of late, can someone point me 
+> to what''s being discussed so I can see what were talking about here?
 
-> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-> while now and is almost always enabled by default. As agreed during
-> the Linux kernel summit, remove it from any "depends on" lines in
-> Kconfigs.
-> 
-> Cc: Chris Mason <chris.mason@fusionio.com>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  fs/btrfs/Kconfig |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/fs/btrfs/Kconfig b/fs/btrfs/Kconfig
-> index d33f01c..ccd25ba 100644
-> --- a/fs/btrfs/Kconfig
-> +++ b/fs/btrfs/Kconfig
-> @@ -1,6 +1,5 @@
->  config BTRFS_FS
-> -	tristate "Btrfs filesystem (EXPERIMENTAL) Unstable disk
-> format"
-> -	depends on EXPERIMENTAL
-> +	tristate "Btrfs filesystem Unstable disk format"
+We are discussion about changes to the GPIO API, in particular about
+adding a descriptor (i.e. pointer to struct) based interface to
+replace integers as the primary key.
 
-No longer an experiment but still "Unstable".  But is it broken?
-Or is it staging or a pet? 
->From my naive point of view it seems like this set of patches is
-unleashing a bunch of bad stuff onto anyone that actually sets
-CONFIG_EXPERIMENTAL "n". But I guess it's supposed to get caught in
-linux-next.
+Any kind of change on this level is currently problematic because it
+is basically impossible to tell which files are implementing the
+current interface and would need to get changed along with changing
+gpiolib. If everything goes through gpiolib, it's much easier
+to make compatible extensions in one place.
 
->  	select LIBCRC32C
->  	select ZLIB_INFLATE
->  	select ZLIB_DEFLATE
-> -- 
-> 1.7.9.5
-> 
+Do you have any numbers about how much of a difference for your
+platforms we are talking about at most?
 
-
--- 
-
-
+	Arnd
