@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab3AQA7y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 19:59:54 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:59962 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab3AQA7w (ORCPT
+	id S1758165Ab3AQBDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 20:03:37 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57164 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755928Ab3AQBDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 19:59:52 -0500
+	Wed, 16 Jan 2013 20:03:36 -0500
+X-AuditID: 9c930179-b7b54ae000000e44-60-50f74de5dfc7
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ulrich Drepper <drepper@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [RFC 0/4] perf tool: Adding ratios support
+References: <1358257194-8204-1-git-send-email-jolsa@redhat.com>
+	<CAOPLpQeHTCwr4tuHi0nORCn+LKJRzEGoCWhC-rj30nLe7bY5Nw@mail.gmail.com>
+	<20130116142549.GD1042@krava.brq.redhat.com>
+	<CAOPLpQcohbB7tekbaezTkKaLVWKaZgMjR-YjCTKxQnix2+pn=A@mail.gmail.com>
+Date: Thu, 17 Jan 2013 10:03:32 +0900
+In-Reply-To: <CAOPLpQcohbB7tekbaezTkKaLVWKaZgMjR-YjCTKxQnix2+pn=A@mail.gmail.com>
+	(Ulrich Drepper's message of "Wed, 16 Jan 2013 10:12:14 -0500")
+Message-ID: <87pq14lixn.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <50F6E811.2040606@wwwdotorg.org>
-References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com>
-	<50EF27B4.60608@wwwdotorg.org>
-	<CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com>
-	<9702060.jEbHySsCv0@avalon>
-	<CACRpkdbFH6RCEEnXO=A9FVa0B5rtE9RkjXz9Hhy+w7NvwcBCgg@mail.gmail.com>
-	<50F6E811.2040606@wwwdotorg.org>
-Date: Thu, 17 Jan 2013 01:59:52 +0100
-Message-ID: <CACRpkdbnyzppd-iom4PL3N3-YkuK+BRNzR577qVc6cPoTKxhTw@mail.gmail.com>
-Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Simon Horman <horms@verge.net.au>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-next@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 6:49 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+Hi,
 
-> Hmm. It's causing a lot of engineers here a lot of trouble, since they
-> all see linux-next won't boot, and haven't been paying enough attention
-> to know which commit to revert:-(. Lots of lost productivity:-(
+On Wed, 16 Jan 2013 10:12:14 -0500, Ulrich Drepper wrote:
+> On Wed, Jan 16, 2013 at 9:25 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+>> I was thinking having config files (global and arch specific)
+>> comming with perf having predefined formulas.
 >
-> Simon, the offending commit:
+> All the more reason to not mention the file name or really any source
+> for the definition of the formula in the name,
 >
-> 6d3ef6b drivers/pinctrl: grab default handles from device core
 >
-> is still in next-20130116. Can you please remove it?
+>> 1)  -e 'ratio/branch-rate/'  # special event class
+>> 2)  -e 'ratio-branch-rate'   # 'ratio-' prefix
+>> 3)  -e cpu/branch-rate/      # handled like aliases, ratio name would need to be unique
+>>   ... ?
+>
+> I think 3 is the most extensible.  Perhaps use the syntax used in
+> other places.  We have these :u suffixes etc.  Perhaps have :r or :R
+> or whatever.
 
-Not that this should be in the SH tree, but I have merged your fix
-to the pinctrl tree and it should be in -next, does it fix the problem?
+I don't think it's a good idea.  The ':r' syntax is for modifiers to the
+existing events so it doesn't match to this case IMHO.
 
-Mainly asking because once Greg ACKs that patch I want to
-put it into the pinctrl tree...
+I prefer a special event class like 1 since it's possible to include
+non-cpu events to a ratio/formular.  In that case, using 'cpu' in the
+PMU name can be misleading.
 
-Yours,
-Linus Walleij
+>
+> Given the other comments, we might want to avoid right away "ratio".
+> If the mechanism is generalized it could be used to express "counter1
+> - counter2" for events which cannot be expressed with a single counter
+> but are not really ratios.
+
+Agreed.  Looks like "formular" is better.
+
+Thanks,
+Namhyung
