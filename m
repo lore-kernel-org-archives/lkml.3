@@ -1,124 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758276Ab3AQB6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 20:58:24 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:54889 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755859Ab3AQB6X (ORCPT
+	id S1758351Ab3AQB6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 20:58:53 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:61651 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758303Ab3AQB6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 20:58:23 -0500
+	Wed, 16 Jan 2013 20:58:51 -0500
+Message-ID: <50F75AD7.7000703@systemhalted.org>
+Date: Wed, 16 Jan 2013 20:58:47 -0500
+From: "Carlos O'Donell" <carlos@systemhalted.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Date: Wed, 16 Jan 2013 17:57:52 -0800
-Message-ID: <CAPLs8y8JFGEgB8Hhig66D0_+QTwBWsVGe9aq-pQNx_YWAkd+6A@mail.gmail.com>
-Subject: does io_cancel always return -EAGAIN?
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: David Miller <davem@davemloft.net>
+CC: bhutchings@solarflare.com, yoshfuji@linux-ipv6.org, amwang@redhat.com,
+        tmb@mageia.org, eblake@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
+        libc-alpha@sourceware.org, schwab@suse.de
+Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
+References: <1358316366.14898.8.camel@cr0> <50F6B761.8070106@linux-ipv6.org> <1358351232.2923.10.camel@bwh-desktop.uk.solarflarecom.com> <20130116.164511.2027039182184636075.davem@davemloft.net>
+In-Reply-To: <20130116.164511.2027039182184636075.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is io_cancel implemented by drivers the Linux kernel?
+On 01/16/2013 04:45 PM, David Miller wrote:
+> From: Ben Hutchings <bhutchings@solarflare.com>
+> Date: Wed, 16 Jan 2013 15:47:12 +0000
+> 
+>> On Wed, 2013-01-16 at 23:21 +0900, YOSHIFUJI Hideaki wrote:
+>>> Cong Wang wrote:
+>>>> (Cc'ing some glibc developers...)
+>>>>
+>>>> Hello,
+>>>>
+>>>> In glibc source file inet/netinet/in.h and kernel source file
+>>>> include/uapi/linux/in6.h, both define struct in6_addr, and both are
+>>>> visible to user applications. Thomas reported a conflict below.
+>>>>
+>>>> So, how can we handle this? /me is wondering why we didn't see this
+>>>> before.
+>> [...]
+>>> This is not a new issue.  In addition to this,
+>>> netinet/in.h also conflits with linux/in.h.
+>>>
+>>> We might have
+>>>  #if !defined(__GLIBC__) || !defined(_NETINET_IN_H)
+>>>  :
+>>>  #endif
+>>> around those conflicting definitions in uapi/linux/in{,6}.h.
+>>
+>> This only solves half the problem, as <netinet/in.h> might be included
+>> after <linux/in.h>.  Also, not all Linux userland uses glibc.
+> 
+> So I've been looking at reasonable ways to fix this.
+> 
+> What would be really nice is if GCC treated multiple identical
+> definitions of structures the same way it handles multiple identical
+> definitions of CPP defines.  Which is to silently accept them.
+> 
+> But that's not the case, so we need a different solution.
+> 
+> Another thing to do is to use a new structure for in6_addr in kernel
+> headers exported to userland.
+> 
+> If we were to make the structure members and accessor macros identical
+> we could avoid breaking most if not all apps.
+> 
+> However the type name is different so:
+> 
+> 	struct in6_addr *p = &kern_struct->member;
+> 
+> wouldn't work so well.  And you couldn't fix up the sources to these
+> kinds of accesses in a way that work cleanly both before and after
+> changing the kernel headers.
+> 
+> I'm out of ideas for today.
 
-io_cancel depends on kiocb->ki_cancel being set:
-- https://github.com/torvalds/linux/blob/v3.7/fs/aio.c#L1734
+So I just went down the rabbit hole, and the further I get the
+closer I get to having two exact copies of the same definitions
+in both glibc and the kernel and using whichever one was included
+first.
 
+Is anyone opposed to that kind of solution?
 
-Seems that ki_cancel is only set by some usb/gadget code:
+There is some ugliness there.
 
-http://livegrep.com/search?q=ki_cancel
+Cheers,
+Carlos.
+ 
 
-$ git grep ki_cancel
-  drivers/usb/gadget/inode.c:     iocb->ki_cancel = ep_aio_cancel;
-  fs/aio.c:               cancel = iocb->ki_cancel;
-  fs/aio.c:       req->ki_cancel = NULL;
-  fs/aio.c:       req->ki_cancel = NULL;
-  fs/aio.c:       if (kiocb && kiocb->ki_cancel) {
-  fs/aio.c:               cancel = kiocb->ki_cancel;
-  include/linux/aio.h:    int                     (*ki_cancel)(struct
-kiocb *, struct io_event *);
-
-
-
-
-======
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <libaio.h>
-
-int main(int argc, char* argv[]) {
-  io_context_t ctx;
-  int fd = open("/proc/self/exe", O_RDONLY);
-
-  int rc = io_queue_init(10, &ctx);
-  if (rc != 0) {
-    fprintf(stderr, "io_queue_init: %s\n", strerror(-rc));
-    return 1;
-  }
-
-  struct iocb cb;
-  struct iocb* pcb = &cb;
-
-  char buf[4096];
-  // read 4K from the start of the file
-  io_prep_pread(&cb, fd, buf, sizeof(buf), 0);
-  rc = io_submit(ctx, 1, &pcb);
-  if (rc != 1) {
-    fprintf(stderr, "io_submit: %s\n", strerror(-rc));
-    return 1;
-  }
-
-  io_event event;
-  rc = io_cancel(ctx, &cb, &event);
-  if (rc != 0) {
-    fprintf(stderr, "io_cancel: %s\n", strerror(-rc));
-    // fall through to show that the read operation was correct
-    // return 1;
-  }
-
-  rc = io_getevents(ctx, 1, 1, &event, NULL);
-  if (rc != 1) {
-    fprintf(stderr, "io_getevents: %s\n", strerror(-rc));
-    return 1;
-  }
-
-
-  if (event.obj != &cb) {
-    fprintf(stderr, "io_getevents: unknown cb\n");
-    return -1;
-  }
-
-  if (event.res != sizeof(buf)) {
-    fprintf(stderr, "io_getevents: didn't read all what we requested\n");
-    return -1;
-  }
-
-  rc = io_queue_release(ctx);
-  if (rc != 0) {
-    fprintf(stderr, "io_queue_release: %s\n", strerror(-rc));
-    return 1;
-  }
-  return 0;
-}
-
-======
-
-
-Relevant output from strace:
-
-  open("/proc/self/exe", O_RDONLY)        = 3
-  io_setup(10, {140328162443264})         = 0
-  io_submit(140328162443264, 1, {{(nil), 0, 0, 0, 3}}) = 1
-  io_cancel(140328162443264, {(nil), 0, 0, 0, 3}, {...}) = -1 EINVAL
-(Invalid argument)
-  write(2, "io_cancel: Invalid argument\n", 28io_cancel: Invalid argument) = 28
-  io_getevents(140328162443264, 1, 1, {{(nil), 0x7fff41536a60, 4096,
-0}}, NULL) = 1
-  io_destroy(140328162443264)             = 0
-
---
- .
-..: Lucian
