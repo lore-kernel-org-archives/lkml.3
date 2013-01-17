@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab3AQWyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 17:54:18 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:33601 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab3AQWyM (ORCPT
+	id S1755282Ab3AQWyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 17:54:25 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:41390 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab3AQWyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 17:54:12 -0500
+	Thu, 17 Jan 2013 17:54:22 -0500
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux MM <linux-mm@kvack.org>, David Hansen <dave@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 1/9] mm: add SECTION_IN_PAGE_FLAGS
-Date: Thu, 17 Jan 2013 14:52:53 -0800
-Message-Id: <1358463181-17956-2-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH 6/9] mm/page_alloc: add informative debugging message in page_outside_zone_boundaries()
+Date: Thu, 17 Jan 2013 14:52:58 -0800
+Message-Id: <1358463181-17956-7-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.0.3
 In-Reply-To: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011722-2398-0000-0000-0000102DD8C9
+x-cbid: 13011722-4834-0000-0000-000002B5BF13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of directly utilizing a combination of config options to determine this,
-add a macro to specifically address it.
+Add a debug message which prints when a page is found outside of the
+boundaries of the zone it should belong to. Format is:
+	"page $pfn outside zone [ $start_pfn - $end_pfn ]"
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- include/linux/mm.h | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ mm/page_alloc.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 66e2f7c..ef69564 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -625,6 +625,10 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
- #define NODE_NOT_IN_PAGE_FLAGS
- #endif
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f8ed277..f1783cf 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -239,13 +239,20 @@ static int page_outside_zone_boundaries(struct zone *zone, struct page *page)
+ 	int ret = 0;
+ 	unsigned seq;
+ 	unsigned long pfn = page_to_pfn(page);
++	unsigned long sp, start_pfn;
  
-+#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
-+#define SECTION_IN_PAGE_FLAGS
-+#endif
+ 	do {
+ 		seq = zone_span_seqbegin(zone);
++		start_pfn = zone->zone_start_pfn;
++		sp = zone->spanned_pages;
+ 		if (!zone_spans_pfn(zone, pfn))
+ 			ret = 1;
+ 	} while (zone_span_seqretry(zone, seq));
+ 
++	if (ret)
++		pr_debug("page %lu outside zone [ %lu - %lu ]\n",
++			pfn, start_pfn, start_pfn + sp);
 +
- /*
-  * Define the bit shifts to access each section.  For non-existent
-  * sections we define the shift as 0; that plus a 0 mask ensures
-@@ -727,7 +731,7 @@ static inline struct zone *page_zone(const struct page *page)
- 	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
+ 	return ret;
  }
  
--#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
-+#ifdef SECTION_IN_PAGE_FLAGS
- static inline void set_page_section(struct page *page, unsigned long section)
- {
- 	page->flags &= ~(SECTIONS_MASK << SECTIONS_PGSHIFT);
-@@ -757,7 +761,7 @@ static inline void set_page_links(struct page *page, enum zone_type zone,
- {
- 	set_page_zone(page, zone);
- 	set_page_node(page, node);
--#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
-+#ifdef SECTION_IN_PAGE_FLAGS
- 	set_page_section(page, pfn_to_section_nr(pfn));
- #endif
- }
 -- 
 1.8.0.3
 
