@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab3AQKud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:50:33 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:63722 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab3AQKuX (ORCPT
+	id S1756690Ab3AQKvW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:51:22 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46150 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab3AQKvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 05:50:23 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Soeren Moch <smoch@web.de>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all dma_alloc_coherent() calls
-Date: Thu, 17 Jan 2013 10:49:30 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jason Cooper <jason@lakedaemon.net>, Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-References: <20121119144826.f59667b2.akpm@linux-foundation.org> <20130116024014.GH25500@titan.lakedaemon.net> <50F61D86.4020801@web.de>
-In-Reply-To: <50F61D86.4020801@web.de>
+	Thu, 17 Jan 2013 05:51:21 -0500
+Date: Thu, 17 Jan 2013 12:51:04 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Fabio Baltieri <fabio.baltieri@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
+Subject: Re: [PATCH] usb: musb: ux500: use clk_prepare_enable and
+ clk_disable_unprepare
+Message-ID: <20130117105104.GN10814@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1357577261-31536-1-git-send-email-fabio.baltieri@linaro.org>
+ <CACRpkdZD1i_tvDf6XFyk5muYjtDziQaMNGK6vvihhFJVztXUjw@mail.gmail.com>
+ <20130110133818.GA22710@balto.lan>
+ <CACRpkdbmgQ0xDfkbgqc=zDqMDUK0O6uQOf3kX9v1+=+N5s42bw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301171049.30415.arnd@arndb.de>
-X-Provags-ID: V02:K0:VQ8zYUZXF5RKjdlEC5+6M441FcIwh6fUuLSbcm12A2w
- hEkLLcPWBWqqrI3qQc12FMJIMZ95yEBnM23IpA1oU5EWUBY5Oz
- 7U1CrzAvN6u2My1A//2snod7CV4L1dwf9x29Kfojx1zr/eUBNr
- 7LfrWIE3ScvyuO40uF1Jlh6vwTOIdwIAhVxkS6yaMSzS3BvDE+
- 1vqaAOcxTuHUm3Si7OoBlgc62IJ76bStz1rd4Pgt8V9MBpNEn6
- MNNyiz93iMDLO7kUFsvmRvBDoJtZyIFElVNIHTXCMsYxU+DP6M
- J7SitH90mq6ubaS8mwX0f4BtPmSia416zROd/4V3Dd19pSY0h6
- AbVb8OOq3kIXv88BZank=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Sk71+Upln2BLuDmg"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbmgQ0xDfkbgqc=zDqMDUK0O6uQOf3kX9v1+=+N5s42bw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 January 2013, Soeren Moch wrote:
-> >> I will see what I can do here. Is there an easy way to track the buffer
-> >> usage without having to wait for complete exhaustion?
-> >
-> > DMA_API_DEBUG
-> 
-> OK, maybe I can try this.
-> >
+--Sk71+Upln2BLuDmg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Any success with this? It should at least tell you if there is a
-memory leak in one of the drivers.
+On Thu, Jan 17, 2013 at 11:46:30AM +0100, Linus Walleij wrote:
+> On Thu, Jan 10, 2013 at 2:38 PM, Fabio Baltieri
+> <fabio.baltieri@linaro.org> wrote:
+> > On Thu, Jan 10, 2013 at 12:23:32PM +0100, Linus Walleij wrote:
+> >> On Mon, Jan 7, 2013 at 5:47 PM, Fabio Baltieri
+> >> <fabio.baltieri@linaro.org> wrote:
+> >>
+> >> > This patch converts the module to use clk_prepare_enable and
+> >> > clk_disable_unprepare variants as required by common clock framework.
+> >> >
+> >> > Without this the system crash during probe function.
+> >> >
+> >> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> >>
+> >> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> >
+> > Thanks for the ACK.  This bug was here unnoticed since 3.6 merge window,
+>=20
+> Then it should have Cc: stable@kernel.org..
 
-	Arnd
+just added to my tree.
+
+--=20
+balbi
+
+--Sk71+Upln2BLuDmg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ99eYAAoJEIaOsuA1yqRENC4P/3oRQd7UA8l1OceYB1MGG1rx
+U6MT2HDCwVU2DBI+TFV3PasCUMW3XX211HFnc98OLngsKR/vmYzM/bWZ3ZVvdEk7
+XhBe67+3GRhAaqEK3UnudqYrVhhH164Rtq8UJu6WCax7ngDr9aG+0iaViIIawMqx
+v8yeG1BGGg/b9qv4yePHl8+t3GkBlxiYavn0Yxa3wTwWUVmG317kDuV/eu7Yk90O
+01J6hE9LDe6k+ovY0MGK0P+eQU8fGuEqGY3kAW3MzMTqbXdtCtArWNV34L/55TDT
+ULr0mjZVqZ0yK7uu8z2kUvmq/5psttP35E6HgZFiLE1UTeaVpo263iS/exN+XDFs
+UTTToRfiRQytXsyN9Yd0SNktFnt0fymuJZ3kiR1Tbr2SahX/TSFZ4EbDmI4pkuLQ
+MUtW4DLzEHRm6c/B89hNAGC59no7yjeZQIdUh9WnmYvbf2acfmIqxYJn6AL8YXnM
+NVoh3LJfrlUdtlEJuSWYoq7et6sPQQHxwCVPtr+DGtGziK2atbJldIKUNJpgq9B3
+TOHmKQ+SALT5Kt6dfADP4rQ5W1cOpH84KLE8cefSpkh+Y4Bjy4m5p8/zlg6P41Qo
+cROU85BS+onulU7gIf5L5LgbkcSf2q/kL1zTq/nachF+Jcktpw9lg/XhuoJ/Di26
+UTT9ESue2k7wYxHtxLNS
+=QEjX
+-----END PGP SIGNATURE-----
+
+--Sk71+Upln2BLuDmg--
