@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759544Ab3AQK2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:28:09 -0500
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:51550 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759505Ab3AQK2F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 05:28:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130109150427.GL3931@n2100.arm.linux.org.uk>
-References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com>
-	<201301081259.29839.arnd@arndb.de>
-	<CAAVeFu+4VbCbj9TaeMm+NMDJ9_M4-j4O0ONF7Yh_un63wS38+Q@mail.gmail.com>
-	<201301091035.23206.arnd@arndb.de>
-	<20130109104414.GF3931@n2100.arm.linux.org.uk>
-	<20130109111055.GG3931@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.02.1301090932400.6300@xanadu.home>
-	<20130109150427.GL3931@n2100.arm.linux.org.uk>
-Date: Thu, 17 Jan 2013 11:28:04 +0100
-Message-ID: <CACRpkdYgD67OA-gmxdwZJXhtjwk1sRnntCzh4Q2RHbhoQ6TUhw@mail.gmail.com>
-Subject: Re: [PATCH] Proposed removal of IS_ERR_OR_NULL() (was: Re: [PATCH
- 1/4] gpiolib: introduce descriptor-based GPIO interface)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759553Ab3AQKaN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:30:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:49714 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759520Ab3AQKaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 05:30:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,484,1355126400"; 
+   d="scan'208";a="248240258"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        dirk.brandewie@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] i2c-designware: always set the STOP bit after last byte
+Date: Thu, 17 Jan 2013 12:31:05 +0200
+Message-Id: <1358418667-4533-3-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1358418667-4533-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1358418667-4533-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 4:04 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
+If IC_EMPTYFIFO_HOLD_MASTER_EN is set to one, the DesignWare I2C controller
+doesn't generate STOP on the bus when the FIFO is empty. This violates the
+rules of Linux I2C stack as it requires that the STOP is issued once the
+i2c_transfer() is finished.
 
-> So, it seems there's some concensus building here, and it seems that
-> I've become the chosen victi^wvolunteer for this.  So, here's a patch.
-> It's missing a Guns-supplied-by: tag though.
->
-> From: Russell King <rmk+kernel@arm.linux.org.uk>
-> Subject: Mark IS_ERR_OR_NULL() deprecated
+However, there is no way to detect this from the hardware registers, so we
+must make sure that the STOP bit is always set once the last byte of the
+last message is transferred.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+This patch is based on the work of Dirk Brandewie.
 
-Following the tradition of computer science an alternate title of
-the patch could be "IS_ERR_OR_NULL() considered harmful".
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/i2c/busses/i2c-designware-core.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-Yours,
-Linus Walleij
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index f5258c2..94fd818 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -413,11 +413,23 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+ 		rx_limit = dev->rx_fifo_depth - dw_readl(dev, DW_IC_RXFLR);
+ 
+ 		while (buf_len > 0 && tx_limit > 0 && rx_limit > 0) {
++			u32 cmd = 0;
++
++			/*
++			 * If IC_EMPTYFIFO_HOLD_MASTER_EN is set we must
++			 * manually set the stop bit. However, it cannot be
++			 * detected from the registers so we set it always
++			 * when writing/reading the last byte.
++			 */
++			if (dev->msg_write_idx == dev->msgs_num - 1 &&
++			    buf_len == 1)
++				cmd |= BIT(9);
++
+ 			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
+-				dw_writel(dev, 0x100, DW_IC_DATA_CMD);
++				dw_writel(dev, cmd | 0x100, DW_IC_DATA_CMD);
+ 				rx_limit--;
+ 			} else
+-				dw_writel(dev, *buf++, DW_IC_DATA_CMD);
++				dw_writel(dev, cmd | *buf++, DW_IC_DATA_CMD);
+ 			tx_limit--; buf_len--;
+ 		}
+ 
+-- 
+1.7.10.4
+
