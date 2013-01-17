@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab3AQQFr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:05:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18097 "EHLO mx1.redhat.com"
+	id S1757114Ab3AQQF7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:05:59 -0500
+Received: from mail.kernel.org ([198.145.19.201]:33703 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756824Ab3AQQFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:05:46 -0500
-Date: Thu, 17 Jan 2013 17:05:16 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ulrich Drepper <drepper@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [RFC 0/4] perf tool: Adding ratios support
-Message-ID: <20130117160516.GA4724@krava.brq.redhat.com>
-References: <1358257194-8204-1-git-send-email-jolsa@redhat.com>
- <CAOPLpQeHTCwr4tuHi0nORCn+LKJRzEGoCWhC-rj30nLe7bY5Nw@mail.gmail.com>
- <20130116142549.GD1042@krava.brq.redhat.com>
- <CAOPLpQcohbB7tekbaezTkKaLVWKaZgMjR-YjCTKxQnix2+pn=A@mail.gmail.com>
- <87pq14lixn.fsf@sejong.aot.lge.com>
+	id S1757063Ab3AQQF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 11:05:57 -0500
+Date: Thu, 17 Jan 2013 08:05:47 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Steve Hodgson <steve@purestorage.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [ 037/221] iscsi-target: Fix bug in handling of ExpStatSN ACK
+ during u32 wrap-around
+Message-ID: <20130117160547.GB5885@kroah.com>
+References: <20130115184958.025580322@linuxfoundation.org>
+ <20130115185000.709964724@linuxfoundation.org>
+ <1358429844.15692.134.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87pq14lixn.fsf@sejong.aot.lge.com>
+In-Reply-To: <1358429844.15692.134.camel@deadeye.wl.decadent.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 10:03:32AM +0900, Namhyung Kim wrote:
-> Hi,
+On Thu, Jan 17, 2013 at 01:37:24PM +0000, Ben Hutchings wrote:
+> On Tue, 2013-01-15 at 10:49 -0800, Greg Kroah-Hartman wrote:
+> > 3.7-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Steve Hodgson <steve@purestorage.com>
+> > 
+> > commit 64c13330a38935120501b19c97a3e6095747c7a1 upstream.
+> > 
+> > This patch fixes a bug in the hanlding of initiator provided ExpStatSN and
+> > individual iscsi_cmd->stat_sn comparision during iscsi_conn->stat_sn
+> > wrap-around within iscsit_ack_from_expstatsn() code.
+> > 
+> > This bug would manifest itself as iscsi_cmd descriptors not being Acked
+> > by a lower ExpStatSn, causing them to be leaked until an iSCSI connection
+> > or session reinstatement event occurs to release all commands.
+> > 
+> > Also fix up two other uses of incorrect CmdSN SNA comparison to use wrapper
+> > usage from include/scsi/iscsi_proto.h.
+> [...]
 > 
-> On Wed, 16 Jan 2013 10:12:14 -0500, Ulrich Drepper wrote:
-> > On Wed, Jan 16, 2013 at 9:25 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> >> I was thinking having config files (global and arch specific)
-> >> comming with perf having predefined formulas.
-> >
-> > All the more reason to not mention the file name or really any source
-> > for the definition of the formula in the name,
-> >
-> >
-> >> 1)  -e 'ratio/branch-rate/'  # special event class
-> >> 2)  -e 'ratio-branch-rate'   # 'ratio-' prefix
-> >> 3)  -e cpu/branch-rate/      # handled like aliases, ratio name would need to be unique
-> >>   ... ?
-> >
-> > I think 3 is the most extensible.  Perhaps use the syntax used in
-> > other places.  We have these :u suffixes etc.  Perhaps have :r or :R
-> > or whatever.
+> You'll need to add this fix:
 > 
-> I don't think it's a good idea.  The ':r' syntax is for modifiers to the
-> existing events so it doesn't match to this case IMHO.
+> commit 64fe4f4f181cc2fe97d4176bf6ee6e3725ae33ec
+> Author: Roland Dreier <roland@purestorage.com>
+> Date:   Mon Jan 7 11:45:16 2013 -0800
 > 
-> I prefer a special event class like 1 since it's possible to include
-> non-cpu events to a ratio/formular.  In that case, using 'cpu' in the
-> PMU name can be misleading.
-> 
-> >
-> > Given the other comments, we might want to avoid right away "ratio".
-> > If the mechanism is generalized it could be used to express "counter1
-> > - counter2" for events which cannot be expressed with a single counter
-> > but are not really ratios.
-> 
-> Agreed.  Looks like "formular" is better.
+>     iscsi-target: Fix CmdSN comparison (use cmd->cmd_sn instead of cmd->stat_sn)
 
-agreed, I think I wouldn't touch modifiers for this
-also, 'ratio' is not good choice, formula seems better
+Thanks for that, now queued up.
 
-jirka
+greg k-h
