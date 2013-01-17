@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab3AQMaX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 07:30:23 -0500
-Received: from racecourse.oldelvet.net ([93.93.128.81]:47567 "EHLO
-	racecourse.oldelvet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab3AQMaW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 07:30:22 -0500
-Message-ID: <50F7EED3.1050309@oldelvet.org.uk>
-Date: Thu, 17 Jan 2013 12:30:11 +0000
-From: Richard Mortimer <richm@oldelvet.org.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754142Ab3AQMcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 07:32:19 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58700 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752064Ab3AQMcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 07:32:16 -0500
+Message-ID: <50F7EF23.8080903@ti.com>
+Date: Thu, 17 Jan 2013 18:01:31 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Cong Ding <dinggnu@gmail.com>
-CC: Sam Ravnborg <sam@ravnborg.org>, "David S. Miller" <davem@davemloft.net>,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sparc: kernel/sbus.c: fix memory leakage
-References: <1358199372-11976-1-git-send-email-dinggnu@gmail.com> <20130116211309.GA13993@merkur.ravnborg.org> <20130116211725.GC18593@gmail.com> <20130116220018.GA14063@merkur.ravnborg.org> <20130116220153.GD18593@gmail.com> <50F7D577.8010506@oldelvet.org.uk> <20130117115637.GB25615@gmail.com>
-In-Reply-To: <20130117115637.GB25615@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-sh@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <balbi@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <b-cousson@ti.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <horms@verge.net.au>,
+        <magnus.damm@gmail.com>, <cbou@mail.ru>, <dwmw2@infradead.org>,
+        <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
+        <leoli@freescale.com>, <eric.y.miao@gmail.com>,
+        <haojian.zhuang@gmail.com>, <stern@rowland.harvard.edu>
+Subject: Re: [RFC PATCH 2/6] ARM: OMAP: USB: Add phy binding information
+References: <1358348462-27693-1-git-send-email-kishon@ti.com> <1358348462-27693-3-git-send-email-kishon@ti.com> <CAFp+6iGEC9KgfuQz6nqnAY5JrmtPG=HkGw5yjKw7-1=8AG_=dg@mail.gmail.com>
+In-Reply-To: <CAFp+6iGEC9KgfuQz6nqnAY5JrmtPG=HkGw5yjKw7-1=8AG_=dg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-
-On 17/01/2013 11:56, Cong Ding wrote:
-> On Thu, Jan 17, 2013 at 10:41:59AM +0000, Richard Mortimer wrote:
+On Thursday 17 January 2013 05:41 PM, Vivek Gautam wrote:
+> Hi Kishon,
+>
+>
+> On Wed, Jan 16, 2013 at 8:30 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>> This is in preparation for the changes in PHY library to support adding
+>> and getting multiple PHYs of the same type. In the new design, the
+>> binding information between the PHY and the USB controller should be
+>> specified in the platform specific initialization code. So it's been
+>> done for OMAP platforms here.
 >>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>> This kind-of binding should be done in all the platforms (I've done only
+>> for OMAP platform).
+>>   arch/arm/mach-omap2/usb-musb.c |    7 ++++++-
+>>   1 file changed, 6 insertions(+), 1 deletion(-)
 >>
->> On 16/01/2013 22:01, Cong Ding wrote:
->>> the variable iommu and strbuf are not freed if it goes to error.
->>>
->>> Signed-off-by: Cong Ding <dinggnu@gmail.com>
->>> ---
->>>   arch/sparc/kernel/sbus.c |    2 ++
->>>   1 file changed, 2 insertions(+)
->>>
->>> diff --git a/arch/sparc/kernel/sbus.c b/arch/sparc/kernel/sbus.c
->>> index 1271b3a..78aa26b 100644
->>> --- a/arch/sparc/kernel/sbus.c
->>> +++ b/arch/sparc/kernel/sbus.c
->>> @@ -656,6 +656,8 @@ static void __init sbus_iommu_init(struct platform_device *op)
->>>   	return;
->>>
->>>   fatal_memory_error:
->>> +	kfree(strbuf);
+>> diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
+>> index 9d27e3f..bbe2fa5 100644
+>> --- a/arch/arm/mach-omap2/usb-musb.c
+>> +++ b/arch/arm/mach-omap2/usb-musb.c
+>> @@ -24,6 +24,7 @@
+>>   #include <linux/dma-mapping.h>
+>>   #include <linux/io.h>
+>>   #include <linux/usb/musb.h>
+>> +#include <linux/usb/phy.h>
 >>
->> strbuf will be uninitialized if the iommu allocation fails. I don't
->> have a particular preference for how to fix this but tend to dislike
->> initial assignment with NULL because it hides other control flow
->> issues.
-> Sorry I didn't notice strbuf will be uninitialized here. But if we don't
-> initially assign a NULL value to strbuf, I cannot find a way to handle it
-> besides the first version patch. Did you have any suggestions? For me, I like
-> the first version.
-
-Two thoughts...
-
-1 - just use a goto target for the iommu allocation failure and make 
-that skip the strbuf free call. The others use the existing 
-fatal_memory_error label.
-
-2 - Move the strbuf kzalloc up 2 lines so that it occurs before the test 
-for iommu.
-
-2b - In case (2) above the failure test could be changed to
-if (!iommu || !strbuf)
-to remove duplication of goto.
-
-I'd probably go for 2/2b to address Sam's initial comment.
-
-Regards
-
-Richard
-
-
-> - cong
+>>   #include "omap_device.h"
+>>   #include "soc.h"
+>> @@ -85,8 +86,12 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
+>>          musb_plat.mode = board_data->mode;
+>>          musb_plat.extvbus = board_data->extvbus;
 >>
->> Regards
->>
->> Richard
->>
->>> +	kfree(iommu);
->>>   	prom_printf("sbus_iommu_init: Fatal memory allocation error.\n");
->>>   }
->>>
->>>
+>> -       if (cpu_is_omap44xx())
+>> +       if (cpu_is_omap44xx()) {
+>>                  musb_plat.has_mailbox = true;
+>> +               usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
+>> +       } else if (cpu_is_omap34xx()) {
+>> +               usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+>> +       }
+>
+> Just trying to understand things here.
+> Is the device name we are using here the platform device name (pdev->name) ?
+
+it's pdev->dev.name.
+> If i am not wrong then for devices added through device tree
+> the device name would actually include the device address in the string,
+
+Ideally for device tree, devm_usb_get_phy_by_phandle() introduced in the 
+5th patch of this series should be used.
+usb_bind_phy should be called from platform specific initialization 
+files (like your board file), which won't get executed in dt boot.
+> wouldn't that make things somewhat weird, since we will have to add
+> such bindings
+> using this address string.
+>
+> one more doubt please :)
+> is it possible to bind phy in the controllers' driver somehow ?
+Thats not going to be good. Why do you need to do that?
+
+Thanks
+Kishon
