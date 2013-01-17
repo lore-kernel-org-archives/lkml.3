@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab3AQR15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 12:27:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:31125 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab3AQR1n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 12:27:43 -0500
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org, dan.magenheimer@oracle.com
-Subject: [PATCH 0/5] staging: zcache: move new zcache code base from ramster
-Date: Thu, 17 Jan 2013 09:26:32 -0800
-Message-Id: <1358443597-9845-1-git-send-email-dan.magenheimer@oracle.com>
-X-Mailer: git-send-email 1.7.5.1
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1753594Ab3AQR3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 12:29:09 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:49037 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751152Ab3AQR3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 12:29:07 -0500
+Date: Thu, 17 Jan 2013 09:28:14 -0800
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: acme@ghostprotocols.net
+Cc: jolsa@redhat.com, Anton Blanchard <anton@au1.ibm.com>, paulus@samba.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: [PATCH] perf: Fix PMU format parsing test failure
+Message-ID: <20130117172814.GA18882@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011717-9360-0000-0000-00000F57DFB0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg --
 
-With "old zcache" now removed, we can now move "new zcache" from its
-temporary home (in drivers/staging/ramster) to reclaim sole possession
-of the name "zcache".
+>From 776e6d7942754f139c27753213c9cf4617536618 Mon Sep 17 00:00:00 2001
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Date: Thu, 17 Jan 2013 09:11:30 -0800
+Subject: [PATCH] perf; Fix PMU format parsing test failure
 
-Note that [PATCH 2/5] will require a manual:
+On POWER, the 'perf format parsing' test always fails.
 
-# git mv drivers/staging/ramster drivers/staging/zcache
+Looks like it is because memset() is being passed number of longs
+rather than number of bytes. It is interesting that the test always
+passes on my x86 box.
 
-so I have elided the 10000 line remove patch and 10000 line add patch
-to save massive unnecessary cruft from the list servers.  If it would be
-more convenient for you that I should post that full patch, please let
-me know.
+With this patch, the test passes on POWER and continues to pass on x86.
 
-This patchset should apply cleanly to staging-next as of today.
-
-Thanks,
-Dan
-
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
-Diffstat:
+ tools/perf/util/include/linux/bitops.h |    1 +
+ tools/perf/util/pmu.c                  |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
- drivers/staging/Kconfig                            |    4 +-
- drivers/staging/Makefile                           |    2 +-
- drivers/staging/ramster/Kconfig                    |   31 -
- drivers/staging/ramster/Makefile                   |    6 -
- drivers/staging/ramster/ramster.h                  |   59 -
- drivers/staging/ramster/ramster/heartbeat.c        |  462 ----
- drivers/staging/ramster/ramster/heartbeat.h        |   87 -
- drivers/staging/ramster/ramster/masklog.c          |  155 --
- drivers/staging/ramster/ramster/masklog.h          |  220 --
- drivers/staging/ramster/ramster/nodemanager.c      |  995 ---------
- drivers/staging/ramster/ramster/nodemanager.h      |   88 -
- drivers/staging/ramster/ramster/r2net.c            |  414 ----
- drivers/staging/ramster/ramster/ramster.c          |  985 ---------
- drivers/staging/ramster/ramster/ramster.h          |  161 --
- .../staging/ramster/ramster/ramster_nodemanager.h  |   39 -
- drivers/staging/ramster/ramster/tcp.c              | 2253 --------------------
- drivers/staging/ramster/ramster/tcp.h              |  159 --
- drivers/staging/ramster/ramster/tcp_internal.h     |  248 ---
- drivers/staging/ramster/tmem.c                     |  894 --------
- drivers/staging/ramster/tmem.h                     |  259 ---
- drivers/staging/ramster/zbud.c                     | 1060 ---------
- drivers/staging/ramster/zbud.h                     |   33 -
- drivers/staging/ramster/zcache-main.c              | 1820 ----------------
- drivers/staging/ramster/zcache.h                   |   53 -
- drivers/staging/zcache/Kconfig                     |   26 +
- drivers/staging/zcache/Makefile                    |    6 +
- drivers/staging/zcache/ramster.h                   |   59 +
- drivers/staging/zcache/ramster/heartbeat.c         |  462 ++++
- drivers/staging/zcache/ramster/heartbeat.h         |   87 +
- drivers/staging/zcache/ramster/masklog.c           |  155 ++
- drivers/staging/zcache/ramster/masklog.h           |  220 ++
- drivers/staging/zcache/ramster/nodemanager.c       |  995 +++++++++
- drivers/staging/zcache/ramster/nodemanager.h       |   88 +
- drivers/staging/zcache/ramster/r2net.c             |  414 ++++
- drivers/staging/zcache/ramster/ramster.c           |  985 +++++++++
- drivers/staging/zcache/ramster/ramster.h           |  161 ++
- .../staging/zcache/ramster/ramster_nodemanager.h   |   39 +
- drivers/staging/zcache/ramster/tcp.c               | 2253 ++++++++++++++++++++
- drivers/staging/zcache/ramster/tcp.h               |  159 ++
- drivers/staging/zcache/ramster/tcp_internal.h      |  248 +++
- drivers/staging/zcache/tmem.c                      |  894 ++++++++
- drivers/staging/zcache/tmem.h                      |  259 +++
- drivers/staging/zcache/zbud.c                      | 1060 +++++++++
- drivers/staging/zcache/zbud.h                      |   33 +
- drivers/staging/zcache/zcache-main.c               | 1820 ++++++++++++++++
- drivers/staging/zcache/zcache.h                    |   53 +
- 46 files changed, 10479 insertions(+), 10484 deletions(-)
+diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
+index a55d8cf..45cf10a 100644
+--- a/tools/perf/util/include/linux/bitops.h
++++ b/tools/perf/util/include/linux/bitops.h
+@@ -14,6 +14,7 @@
+ #define BITS_TO_LONGS(nr)       DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
+ #define BITS_TO_U64(nr)         DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u64))
+ #define BITS_TO_U32(nr)         DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u32))
++#define BITS_TO_BYTES(nr)       DIV_ROUND_UP(nr, BITS_PER_BYTE)
+ 
+ #define for_each_set_bit(bit, addr, size) \
+ 	for ((bit) = find_first_bit((addr), (size));		\
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 9bdc60c..b93ff14 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -548,7 +548,7 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
+ 	if (!to)
+ 		to = from;
+ 
+-	memset(bits, 0, BITS_TO_LONGS(PERF_PMU_FORMAT_BITS));
++	memset(bits, 0, BITS_TO_BYTES(PERF_PMU_FORMAT_BITS));
+ 	for (b = from; b <= to; b++)
+ 		set_bit(b, bits);
+ }
+-- 
+1.7.1
+
