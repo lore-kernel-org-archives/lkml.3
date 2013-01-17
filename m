@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759311Ab3AQIHo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 03:07:44 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:32813 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759229Ab3AQIHm (ORCPT
+	id S1759334Ab3AQIO4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 03:14:56 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:60931 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759301Ab3AQIOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 03:07:42 -0500
-Date: Thu, 17 Jan 2013 00:07:40 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Kees Cook <keescook@chromium.org>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Beulich <JBeulich@novell.com>, Mel Gorman <mel@csn.ul.ie>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 85/86] mm: remove depends on CONFIG_EXPERIMENTAL
-In-Reply-To: <1358391258-1771-86-git-send-email-keescook@chromium.org>
-Message-ID: <alpine.DEB.2.00.1301170007150.27318@chino.kir.corp.google.com>
-References: <1358391258-1771-1-git-send-email-keescook@chromium.org> <1358391258-1771-86-git-send-email-keescook@chromium.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 17 Jan 2013 03:14:54 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1355481842-17952-2-git-send-email-jy0922.shim@samsung.com>
+References: <1355481842-17952-1-git-send-email-jy0922.shim@samsung.com>
+	<1355481842-17952-2-git-send-email-jy0922.shim@samsung.com>
+Date: Thu, 17 Jan 2013 09:14:53 +0100
+Message-ID: <CACRpkdZtiqk6WKjORFrFacd_wG7KMeCd4QedbSG3eROJ2om6FA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: samsung: add GPIO interrupt registration for exynos5
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Joonyoung Shim <jy0922.shim@samsung.com>, kyungmin.park@samsung.com,
+        Thomas Abraham <thomas.abraham@linaro.com>, kgene.kim@samsung.com
+Cc: grant.likely@secretlab.ca, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jan 2013, Kees Cook wrote:
+On Fri, Dec 14, 2012 at 11:44 AM, Joonyoung Shim
+<jy0922.shim@samsung.com> wrote:
 
-> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-> while now and is almost always enabled by default. As agreed during the
-> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
-> 
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Jan Beulich <JBeulich@novell.com>
-> CC: Mel Gorman <mel@csn.ul.ie>
-> CC: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> CC: David Rientjes <rientjes@google.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+> This adds GPIO interrupt registration and modification needs to register
+> GPIO interrupt rightly for exynos5 SoCs. EXYNOS5_GPYx gpios shouldn't be
+> counted to GPIO interrupt group register number because they doesn't
+> support GPIO interrupt, so their struct samsung_gpio_cfg should be
+> initialized to &samsung_gpio_cfgs[8] in declaration ahead.
+>
+> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
 
-Acked-by: David Rientjes <rientjes@google.com>
+This patch has been floating for a while, Kyungmin, Kukjin, Thomas:
+shall it be applied?
 
-Thanks for keeping ARCH_SELECT_MEMORY_MODEL around.
+Yours,
+Linus Walleij
