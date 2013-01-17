@@ -1,169 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab3AQLTl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 06:19:41 -0500
-Received: from mga14.intel.com ([143.182.124.37]:20151 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab3AQLTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 06:19:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,484,1355126400"; 
-   d="asc'?scan'208";a="245035438"
-Message-ID: <1358421664.2731.228.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v2] mtd: vt8500: Add support for Wondermedia Serial
- Flash Controller
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Thu, 17 Jan 2013 13:21:04 +0200
-In-Reply-To: <1358272414-6266-1-git-send-email-linux@prisktech.co.nz>
-References: <1358272414-6266-1-git-send-email-linux@prisktech.co.nz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-X5RpUSkhjIONZypM2RaN"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1754037Ab3AQL0B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 06:26:01 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:65311 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab3AQLZ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 06:25:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <201301101008.45091.arnd@arndb.de>
+References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com>
+	<201301091046.13020.arnd@arndb.de>
+	<2270940.DTxEYMZtED@percival>
+	<201301101008.45091.arnd@arndb.de>
+Date: Thu, 17 Jan 2013 12:25:57 +0100
+Message-ID: <CACRpkdZ8f4FVL5cd3etMf5ENoSCd=ivfnSmAN41+hNvuvD+7mg@mail.gmail.com>
+Subject: Re: [PATCH 0/4] gpio: introduce descriptor-based interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>, Alex Courbot <acourbot@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Roland Stigge <stigge@antcom.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 10, 2013 at 11:08 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 10 January 2013, Alex Courbot wrote:
 
---=-X5RpUSkhjIONZypM2RaN
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+>> > Regarding the integration of pinctrl with gpio,
+>> > I was thinking in the past that we could make pinctrl provide everything
+>> > that gpiolib does, and have a generic gpiolib driver on top of pinctrl
+>> > so that platforms don't need to implement both interfaces but only need
+>> > to provide a pure pinctrl driver. Not sure if this makes any sense.
+>>
+>> That would work if all GPIOs were connected to a ball, but how about GPIO
+>> expanders that are external to the chip? They have no use for pinctrl AFAICT.
+>> On the other hand, maybe we can have one pinctrl-gpio driver for those chips
+>> where pinctrl alone can emulate all the functionality of a GPIO controller.
+>> Maybe such a driver exists already?
+>
+> I don't think we have that yet, but it would be another option: rather
+> than putting a generic gpiolib driver on top of pinctrl, we could have
+> pinctrl support for all gpios that go through gpiolib, and move device
+> drivers over to use pinctrl as the way to manage gpios rather than the
+> classic gpio drivers. That would be a larger change though, and require
+> that we pull in the pinctrl subsystem on a lot of machines that don't
+> need it today.
 
-On Wed, 2013-01-16 at 06:53 +1300, Tony Prisk wrote:
-> This patch adds support for the Wondermedia serial flash controller
-> found on WM8505, WM8650 and WM8850 SoCs.
->=20
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> ---
-> v2:
-> Change Kconfig depends to ARCH_VT8500 as this driver can't be used on oth=
-er
-> platforms.
+Not quite following but have the following loose idea:
 
-Sparse still complains:
+- Add API such as <linux/pinctrl/gpio.h> with struct pin_gpio_ops {}
+  or similar. As orthogonal to the mux and config interfaces we already
+  have.
 
-@@ @@
-+drivers/mtd/devices/wmt_sflash.c:442:24: warning: cast removes address spa=
-ce of expression [sparse]
-+drivers/mtd/devices/wmt_sflash.c:458:17: warning: incorrect type in argume=
-nt 1 (different address spaces) [sparse]
-+drivers/mtd/devices/wmt_sflash.c:458:17:    expected void volatile [nodere=
-f] <asn:2>*<noident> [sparse]
-+drivers/mtd/devices/wmt_sflash.c:458:17:    got unsigned char [usertype] *=
-<noident> [sparse]
-+drivers/mtd/devices/wmt_sflash.c:465:25: warning: incorrect type in argume=
-nt 1 (different address spaces) [sparse]
-+drivers/mtd/devices/wmt_sflash.c:465:25:    expected void volatile [nodere=
-f] <asn:2>*<noident> [sparse]
-+drivers/mtd/devices/wmt_sflash.c:465:25:    got unsigned char [usertype] *=
-<noident> [sparse]
+- Add ops like .set_input(), .set_output(), .drive_high() and .drive_low()
+  (etc) to the ops struct so all functionality currently provided by
+  gpiolib can be implemened by a driver.
 
-Also, checkpatch.pl has a valid complaint:
+- Make global pin numbers optional in gpiolib for the next part...
 
-WARNING:CONFIG_DESCRIPTION: please write a paragraph that describes the con=
-fig symbol fully
-#26: FILE: drivers/mtd/devices/Kconfig:131:
-+config MTD_WMT_SFLASH
+- Register a generic GPIO chip on top of the pinctrl-gpio.c, preferably
+  only supporting Alex' descriptors.
 
-total: 0 errors, 1 warnings, 636 lines checked
+- Provide a userspace interface to pinctrl with something like /dev/pinctrlN
+  with an ioctl() interface, solving also Roland Stigge's issue with
+  driving many pins at the same time in a smooth way.
 
-...
+Sounds like a plan?
 
-> +/* WinBond */
-> +#define WB_W25X40BV		0x3013	/* 512 KB */
-> +#define WB_X16A			0x3015	/* 2 MB */
-> +#define WB_X32			0x3016	/* 4 MB */
-> +#define WB_X64			0x3017	/* 8 MB */
-> +
-> +
-> +#define SF_ID(mfr, mdl)		((mfr << 16) | mdl)
+I'd like to avoid the either-or-approach where you have to use
+pinctrl only or only gpiolib, so a compatibility layer kindof.
 
-The flash manufacturer IDs are not specific to this driver, and should
-be defined in a common header.
+I'm prepping a talk at ELC so will try to jot down something more
+substantial.
 
-
-> +
-> +#define FLASH_UNKNOWN		0x00ffffff
-> +
-> +struct wmt_flash_id {
-> +	u32	id;
-> +	u32	size;		/* Size in KB */
-> +};
-> +
-> +static struct wmt_flash_id flash_ids[] =3D {
-> +	{ SF_ID(MFR_SPANSION,	SPAN_FL016A),	2048 },
-> +	{ SF_ID(MFR_SPANSION,	SPAN_FL064A),	8192 },
-> +	{ SF_ID(MFR_EON,	EON_25P16),	2048 },
-> +	{ SF_ID(MFR_EON,	EON_25P64),	8192 },
-> +	{ SF_ID(MFR_EON,	EON_25F40),	512 },
-> +	{ SF_ID(MFR_EON,	EON_25F16),	2048 },
-> +	{ SF_ID(MFR_ATMEL,	AT_25DF041A),	512 },
-> +	{ SF_ID(MFR_NUMONYX,	NX_25P16),	2048 },
-> +	{ SF_ID(MFR_NUMONYX,	NX_25P64),	8192 },
-> +	{ SF_ID(MFR_FUDAN,	FM_25F04),	512 },
-> +	{ SF_ID(MFR_SST,	SST_VF016B),	2048 },
-> +	{ SF_ID(MFR_MXIC,	MX_L512),	64 },
-> +	{ SF_ID(MFR_MXIC,	MX_L4005A),	512 },
-> +	{ SF_ID(MFR_MXIC,	MX_L1605D),	2048 },
-> +	{ SF_ID(MFR_MXIC,	MX_L3205D),	4192 },
-> +	{ SF_ID(MFR_MXIC,	MX_L6405D),	8192 },
-> +	{ SF_ID(MFR_MXIC,	MX_L1635D),	2048 },
-> +	{ SF_ID(MFR_MXIC,	MX_L3235D),	4192 },
-> +	{ SF_ID(MFR_MXIC,	MX_L12805D),	16384 },
-> +	{ SF_ID(MFR_WINBOND,	WB_W25X40BV),	512 },
-> +	{ SF_ID(MFR_WINBOND,	WB_X16A),	2048 },
-> +	{ SF_ID(MFR_WINBOND,	WB_X32),	4096 },
-> +	{ SF_ID(MFR_WINBOND,	WB_X64),	8192 },
-> +	{ 0, 0 },
-> +};
-
-Probably this should also be outside of the driver, since it is not
-specific to this driver.
-
-> +static u32 sf_get_chip_size(struct device *dev, u32 id)
-> +{
-> +	int i;
-> +	for (i =3D 0; flash_ids[i].id !=3D 0; i++)
-> +		if (flash_ids[i].id =3D=3D id)
-> +			return flash_ids[i].size * 1024;
-> +
-> +	dev_err(dev, "Unknown flash id (%08x)\n", id);
-> +	return 0;
-> +}
-
-And this.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-X5RpUSkhjIONZypM2RaN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ996gAAoJECmIfjd9wqK0S7oQALLlfrbb72mitN8Tn3quj+sM
-fN70SwQSiHgDDReJjuxmlOu0fTe1VSH+Ap+xT66HQj5OBgsoigrBLMTZnHJOj/6T
-fsmIVucnolqrK6nq7fdPOAb+L//kVqM/eXfqKVl3pnlaPqYAwvCdxDHnxnJQjB0/
-GkySda8PybSJLStiX+qydt3+VyU4cf+d2/6qiiemocd/BqX9nxwzNV6dogdyaAZK
-22P4qMfpCRL+Z4U6MWnujZQyaaGo44NnPg9QA9CPjaK8JrbMBj9XalBYJfspbawf
-CYyNyrzCSAtYvlCSirhCHn36uwAvWvBY8Vy/zXbcj+bMRogBL5ewF9q+Y0p/YQWB
-AnkYR44qHTFX1Qj7EMm04t6ZXGSpcskGZemEinZvfIZPlaqYszUcVTZwJskQMJYT
-mMe8WAinOJG6MsCxt4xGbmEebw8Kgd07uqyXvXWf4SwIaQmhBz8y2GcrXRLUP/s7
-HQqRe6JUTTv3xlGTE/d88bUi6IvoLIMHu4Y2yH6euCxYu5IQMOJGytP0/ylrqogq
-8O6ZRXK6mcvS6G38ODp8bRv/bLedNsVJwCPmtGIY8bCy46punlLa0W5APL60JAq4
-xH4uGoh8/jpKNTqu+1g6dD72QBoUj/iraM9Jbikp/cLRQ/ROukpmo8TSWXExiezm
-PvKWDHTt9UuWY47mFmJf
-=Xz1m
------END PGP SIGNATURE-----
-
---=-X5RpUSkhjIONZypM2RaN--
-
+Yours,
+Linus Walleij
