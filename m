@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab3AQNPX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:15:23 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:49352 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab3AQNPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:15:22 -0500
-Date: Thu, 17 Jan 2013 15:15:10 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, <linux-usb@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
-Subject: Re: [PATCH] usb: musb: ux500: use clk_prepare_enable and
- clk_disable_unprepare
-Message-ID: <20130117131510.GS18978@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1357577261-31536-1-git-send-email-fabio.baltieri@linaro.org>
- <CACRpkdZD1i_tvDf6XFyk5muYjtDziQaMNGK6vvihhFJVztXUjw@mail.gmail.com>
- <20130110133818.GA22710@balto.lan>
- <CACRpkdbmgQ0xDfkbgqc=zDqMDUK0O6uQOf3kX9v1+=+N5s42bw@mail.gmail.com>
- <20130117105104.GN10814@arwen.pp.htv.fi>
- <20130117125702.GA5007@balto.lan>
+	id S1755673Ab3AQNQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:16:10 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:60205 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab3AQNQI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 08:16:08 -0500
+Date: Thu, 17 Jan 2013 13:16:04 +0000
+From: Cong Ding <dinggnu@gmail.com>
+To: Richard Mortimer <richm@oldelvet.org.uk>
+Cc: Sam Ravnborg <sam@ravnborg.org>, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] sparc: kernel/sbus.c: fix memory leakage
+Message-ID: <20130117131604.GC25615@gmail.com>
+References: <1358199372-11976-1-git-send-email-dinggnu@gmail.com>
+ <20130116211309.GA13993@merkur.ravnborg.org>
+ <20130116211725.GC18593@gmail.com>
+ <20130116220018.GA14063@merkur.ravnborg.org>
+ <20130116220153.GD18593@gmail.com>
+ <50F7D577.8010506@oldelvet.org.uk>
+ <20130117115637.GB25615@gmail.com>
+ <50F7EED3.1050309@oldelvet.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eHrxbAcqt/LxKPZN"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130117125702.GA5007@balto.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50F7EED3.1050309@oldelvet.org.uk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---eHrxbAcqt/LxKPZN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 17, 2013 at 12:30:11PM +0000, Richard Mortimer wrote:
+> 
+> 
+> On 17/01/2013 11:56, Cong Ding wrote:
+> >On Thu, Jan 17, 2013 at 10:41:59AM +0000, Richard Mortimer wrote:
+> >>
+> >>
+> >>On 16/01/2013 22:01, Cong Ding wrote:
+> >>>the variable iommu and strbuf are not freed if it goes to error.
+> >>>
+> >>>Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> >>>---
+> >>>  arch/sparc/kernel/sbus.c |    2 ++
+> >>>  1 file changed, 2 insertions(+)
+> >>>
+> >>>diff --git a/arch/sparc/kernel/sbus.c b/arch/sparc/kernel/sbus.c
+> >>>index 1271b3a..78aa26b 100644
+> >>>--- a/arch/sparc/kernel/sbus.c
+> >>>+++ b/arch/sparc/kernel/sbus.c
+> >>>@@ -656,6 +656,8 @@ static void __init sbus_iommu_init(struct platform_device *op)
+> >>>  	return;
+> >>>
+> >>>  fatal_memory_error:
+> >>>+	kfree(strbuf);
+> >>
+> >>strbuf will be uninitialized if the iommu allocation fails. I don't
+> >>have a particular preference for how to fix this but tend to dislike
+> >>initial assignment with NULL because it hides other control flow
+> >>issues.
+> >Sorry I didn't notice strbuf will be uninitialized here. But if we don't
+> >initially assign a NULL value to strbuf, I cannot find a way to handle it
+> >besides the first version patch. Did you have any suggestions? For me, I like
+> >the first version.
+> 
+> Two thoughts...
+> 
+> 1 - just use a goto target for the iommu allocation failure and make
+> that skip the strbuf free call. The others use the existing
+> fatal_memory_error label.
+this looks ugly. If we do in this way, why not version 1?
+> 
+> 2 - Move the strbuf kzalloc up 2 lines so that it occurs before the
+> test for iommu.
+> 
+> 2b - In case (2) above the failure test could be changed to
+> if (!iommu || !strbuf)
+> to remove duplication of goto.
+I will send a new version by using this solution.
+Thanks, - cong
 
-Hi,
-
-On Thu, Jan 17, 2013 at 01:57:02PM +0100, Fabio Baltieri wrote:
-> On Thu, Jan 17, 2013 at 12:51:04PM +0200, Felipe Balbi wrote:
-> > > > Thanks for the ACK.  This bug was here unnoticed since 3.6 merge wi=
-ndow,
-> > >=20
-> > > Then it should have Cc: stable@kernel.org..
-> >=20
-> > just added to my tree.
->=20
-> Hi Felipe, thanks for adding the stable tag to the patch, but I actually
-> made a bit of confusion with the versions, so I double checked and it
-> turns out this is really needed on v3.7 stable, not v3.6.
->=20
-> Will you be so kind to remove v3.6 from the stable tag from this
-> patch?
-
-rebasing a "stable" branch is the most annoying you can ask me to do, I
-will do it this time and hope I don't break anyone tracking my branches.
-
-Next time, please be more careful.
-
-cheers
-
---=20
-balbi
-
---eHrxbAcqt/LxKPZN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ9/leAAoJEIaOsuA1yqRErrAP/A1bQaKb00cO/KyVPY7kUJbv
-OGE4dzdu5zm76KDQ4JwHX47KqxFWj5Hr/oKUfbMgT/c4fhAVGgdposkqeTy5y+EP
-VhYKpUDkaosfJZ4fJoxko3DDZyUq76Rq+iLtQhyCgy4v6eycctg06wXj9z2Ynpco
-A/IFzsRjZpKx4tm27zqF3cP+F+CptS2Rpzx4Wfz0uAdOZVXTvKkig5To58HK6FQS
-2lEObP9TWKcijdXfW5PEC70QMznrquWICibShFYSJ8iZNWk4ak7aPieS96cXoXoB
-RhewtczXv2RkbTFqnxWZV7HAYBgruqvgkYMK6dZi6a0XFgsGUF3UOMiuJki4zhO5
-SpsD3IdAQJoQnpbAUpeXjWCTaiBsQaZ4rayzCzisHDqS6zF6u4GpCAaSX/O0wMwS
-qygQVjhbKUUpnDzNh5imZxdnqVB8dPg0buUB/1NSYd4qEDFfmFiEgVE8I5R4TpIW
-LIxApDTPcnyKbL9j43vHvRVNl/KUm+xP8EXaSnlOSGsGPPuUlkuW1bBrqF5+h8Tv
-icLaJ0ctkJo3jqQHWKgVbzh3ns0tM5/D1XeIswjpg0p1vePU0KMrvlTygWKmVe1d
-HdHXaKLG7fMEj5wYR7SMzRDIZF8IhYOuWr0HLTMx2dUlMzSDgrcQ5e7+DRhh2Nda
-cnL9YUzYY6i5yxQRgn9U
-=RAnj
------END PGP SIGNATURE-----
-
---eHrxbAcqt/LxKPZN--
