@@ -1,130 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab3AQOin (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 09:38:43 -0500
-Received: from mx2.fusionio.com ([66.114.96.31]:40021 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab3AQOim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 09:38:42 -0500
-X-ASG-Debug-ID: 1358433521-0421b52b7d102890001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Thu, 17 Jan 2013 09:38:39 -0500
-From: Chris Mason <chris.mason@fusionio.com>
-To: Dan Williams <djbw@fb.com>, LKML <linux-kernel@vger.kernel.org>,
-        <neilb@suse.de>
-Subject: dma engine bugs
-Message-ID: <20130117143839.GJ15956@shiny>
-X-ASG-Orig-Subj: dma engine bugs
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Dan Williams <djbw@fb.com>, LKML <linux-kernel@vger.kernel.org>,
-	neilb@suse.de
+	id S1756393Ab3AQOjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 09:39:25 -0500
+Received: from mga06.intel.com ([134.134.136.21]:55417 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753083Ab3AQOjY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 09:39:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1358433521
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.120114
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <20130116182146.GE29845@redhat.com>
+References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
+	<1358285695-26173-3-git-send-email-vgoyal@redhat.com>
+	<871udloiku.fsf@xmission.com>
+	<1358312159.4593.37.camel@falcor1>
+	<87wqvdli1o.fsf@xmission.com>
+	<1358344859.4593.66.camel@falcor1>
+	<20130116144836.GB29845@redhat.com>
+	<1358350391.4593.112.camel@falcor1>
+	<20130116155406.GC29845@redhat.com>
+	<1358357079.4593.135.camel@falcor1>
+	<20130116182146.GE29845@redhat.com>
+Date: Thu, 17 Jan 2013 16:39:21 +0200
+Message-ID: <CALLzPKaB6rmNCeKJmHOSNgV2G9CDyhpXCmPaNtGYBRxniwMGKg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, pjones@redhat.com, hpa@zytor.com,
+        dhowells@redhat.com, jwboyer@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Sorry resend with the right address for Dan ]
+On Wed, Jan 16, 2013 at 8:21 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Wed, Jan 16, 2013 at 12:24:39PM -0500, Mimi Zohar wrote:
+>> On Wed, 2013-01-16 at 10:54 -0500, Vivek Goyal wrote:
+>> > On Wed, Jan 16, 2013 at 10:33:11AM -0500, Mimi Zohar wrote:
+>> >
+>> > [..]
+>> > > > - Also I really could not figure out where does the private signing key
+>> > > >   lives. I got the impression that we need to trust installer and
+>> > > >   signing somehow happens at installation time. And we wanted signing
+>> > > >   to happen at build server and could not trust installer for that.
+>> > >
+>> > > Dmitry's ima-evm-utils package signs files.  Depending on the options,
+>> > > both the EVM and IMA extended attributes are created.
+>> >
+>> > I was going through following presentation.
+>> >
+>> > http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
+>> >
+>> > On slide 8, it mentons signing.
+>> >
+>> >     evmctl sign --imahash /path/to/file
+>> >     evmctl sign --imasig /path/to/file
+>> >
+>> > Can't figure out where does the key for signing come from? Is it already
+>> > loaded in any of kernel keyrings.
+>> >
+>> > If yes, I think this is non-starter. One can not distribute the private
+>> > key.
+>>
+>> No, the default key location is /etc/keys/privkey_evm.pem, but can be
+>> specified.  Prior to Dmitry's updating the package yesterday, the last
+>> parameter was the key pathname.  After the update, you can specify the
+>> key location with the new --key option.
+>>
+>> > Also I am assuming that this is done at installation time? If yes, then
+>> > again it does not work as installer does not have private key.
+>>
+>> Not necessarily.  The original use case scenario was creating an image
+>> with both EVM and IMA digital signatures and then flashing the image.
+>
+> But distributions don't ship pre-setup root file system. It is created
+> and labeled at installation time. So if we want to use IMA, we need to
+> sign files at installation time. That means private keys need to be
+> accessible to installer (using --key option). And that does not work for
+> this use case.
+>
+>>
 
-Hi Dan,
+This wrong again.. Private should be used during installation time at all...
 
-I'm doing some benchmarking on MD raid5/6 on 4 fusionio cards in an HP
-DL380p.  I'm doing 128K randomw writes on a 4 drive raid6 with a 64K
-stripe size per drive.  I have 4 fio processes sending down the aio/dio,
-and a high queue depth (8192).
 
-When I bump up the MD raid stripe cache size, I'm running into
-soft lockups in the async memcopy code:
-
-[34336.959645] BUG: soft lockup - CPU#6 stuck for 22s! [fio:38296]
-[34336.959648] BUG: soft lockup - CPU#9 stuck for 22s! [md0_raid6:5172]
-[34336.959704] Modules linked in: raid456 async_raid6_recov async_pq
-async_xor async_memcpy async_tx iomemory_vsl(O) binfmt_misc
-cpufreq_conservative cpufreq_userspace cpufreq_powersave pcc_cpufreq
-mperf loop dm_mod coretemp kvm_intel kvm ghash_clmulni_intel sr_mod
-cdrom aesni_intel ablk_helper cryptd lrw aes_x86_64 ata_generic xts
-gf128mul ioatdma sb_edac gpio_ich ata_piix hid_generic dca edac_core
-lpc_ich microcode serio_raw mfd_core hpilo hpwdt button container tg3 sg
-acpi_power_meter usbhid mgag200 ttm drm_kms_helper drm i2c_algo_bit
-sysimgblt sysfillrect syscopyarea uhci_hcd crc32c_intel ehci_hcd hpsa
-processor thermal_sys scsi_dh_rdac scsi_dh_hp_sw scsi_dh_emc
-scsi_dh_alua scsi_dh btrfs raid6_pq zlib_deflate xor libcrc32c asix
-usbnet usbcore usb_common
-
-[34336.959709] CPU 9
-[34336.959709] Pid: 5172, comm: md0_raid6 Tainted: G        W  O 3.7.1-1-default #2 HP ProLiant DL380p Gen8
-[34336.959720] RIP: 0010:[<ffffffff815381ad>]  [<ffffffff815381ad>] _raw_spin_unlock_irqrestore+0xd/0x20
-[34336.959721] RSP: 0018:ffff8807af6db858  EFLAGS: 00000292
-[34336.959722] RAX: 0000000000001000 RBX: ffff8810176fd000 RCX: 0000000000000292
-[34336.959723] RDX: 0000000000001000 RSI: 0000000000000292 RDI: 0000000000000292
-[34336.959724] RBP: ffff8807af6db858 R08: ffff881017e40440 R09: ffff880f554fabc0
-[34336.959725] R10: 0000000000002000 R11: 0000000000000000 R12: ffff881017e40460
-[34336.959726] R13: 0000000000000040 R14: 0000000000000001 R15: ffff881017e40480
-[34336.959728] FS:  0000000000000000(0000) GS:ffff88103f660000(0000) knlGS:0000000000000000
-[34336.959729] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[34336.959730] CR2: 00000000035cf458 CR3: 0000000001a0b000 CR4: 00000000000407e0
-[34336.959731] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[34336.959733] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[34336.959734] Process md0_raid6 (pid: 5172, threadinfo ffff8807af6da000, task ffff88077d7725c0)
-[34336.959735] Stack:
-[34336.959738]  ffff8807af6db898 ffffffff8114f287 ffff8807af6db8b8 0000000000000000
-[34336.959740]  0000000000000000 00000000005bd84a ffff881015f2fa18 ffff881017632a38
-[34336.959742]  ffff8807af6db8e8 ffffffffa057adf4 0000000000000000 ffff881015f2fa18
-[34336.959743] Call Trace:
-[34336.959750]  [<ffffffff8114f287>] dma_pool_alloc+0x67/0x270
-[34336.959758]  [<ffffffffa057adf4>] ioat2_alloc_ring_ent+0x34/0xc0 [ioatdma]
-[34336.959761]  [<ffffffffa057afc5>] reshape_ring+0x145/0x370 [ioatdma]
-[34336.959764]  [<ffffffff8153841d>] ? _raw_spin_lock_bh+0x2d/0x40
-[34336.959767]  [<ffffffffa057b2d9>] ioat2_check_space_lock+0xe9/0x240 [ioatdma]
-[34336.959768]  [<ffffffff81538381>] ? _raw_spin_unlock_bh+0x11/0x20
-[34336.959771]  [<ffffffffa057b48c>] ioat2_dma_prep_memcpy_lock+0x5c/0x280 [ioatdma]
-[34336.959773]  [<ffffffffa03102df>] ? do_async_gen_syndrome+0x29f/0x3d0 [async_pq]
-[34336.959775]  [<ffffffff81538381>] ? _raw_spin_unlock_bh+0x11/0x20
-[34336.959790]  [<ffffffffa057ac22>] ? ioat2_tx_submit_unlock+0x92/0x100 [ioatdma]
-[34336.959792]  [<ffffffffa02f8207>] async_memcpy+0x207/0x1000 [async_memcpy]
-[34336.959795]  [<ffffffffa031f67d>] async_copy_data+0x9d/0x150 [raid456]
-[34336.959797]  [<ffffffffa03206ba>] __raid_run_ops+0x4ca/0x990 [raid456]
-[34336.959802]  [<ffffffff811b7c42>] ? __aio_put_req+0x102/0x150
-[34336.959805]  [<ffffffffa031c7ae>] ?  handle_stripe_dirtying+0x30e/0x440 [raid456]
-[34336.959807]  [<ffffffffa03217a8>] handle_stripe+0x528/0x10b0 [raid456]
-[34336.959810]  [<ffffffffa03226f0>] handle_active_stripes+0x1e0/0x270 [raid456]
-[34336.959814]  [<ffffffff81293bb3>] ? blk_flush_plug_list+0xb3/0x220
-[34336.959817]  [<ffffffffa03229a0>] raid5d+0x220/0x3c0 [raid456]
-[34336.959822]  [<ffffffff81413b0e>] md_thread+0x12e/0x160
-[34336.959828]  [<ffffffff8106bfa0>] ? wake_up_bit+0x40/0x40
-[34336.959829]  [<ffffffff814139e0>] ? md_rdev_init+0x110/0x110
-[34336.959831]  [<ffffffff8106b806>] kthread+0xc6/0xd0
-[34336.959834]  [<ffffffff8106b740>] ?  kthread_freezable_should_stop+0x70/0x70
-[34336.959849]  [<ffffffff8154047c>] ret_from_fork+0x7c/0xb0
-[34336.959851]  [<ffffffff8106b740>] ?  kthread_freezable_should_stop+0x70/0x70
-
-Since I'm running on fast cards, I assumed MD was just hammering on this
-path so much that MD needed a cond_resched().  But now that I've
-sprinkled conditional pixie dust everywhere I'm still seeing exactly the
-same trace, and the lockups keep flowing forever, even after I've
-stopped all new IO.
-
-Looking at ioat2_check_space_lock(), it is looping when the ring
-allocation fails.  We're trying to grow our ring with atomic allocations
-and not giving up the CPU?
-
-I'm not sure what the right answer is for a patch.  If it is safe for
-the callers we could add the cond_resched() but still we might fail to
-grow the ring.
-
-Would it be better to fallback to synchronous operations if we can't get
-into the ring?
-
--chris
+>> > On slide 11, it talks about importing public keys in kernel keyring from
+>> > initramfs. As we discussed this will need modification as these keys
+>> > need to be signed and signing public key should already be part of
+>> > kernel keyring.
+>>
+>> It's been a long process upstreaming all the different pieces involved.
+>> The initial design/step was to load the public key on a keyring.  Since
+>> then we've added support for multiple keyrings(eg. EVM, IMA, etc).  The
+>> next step is to tie this in with secure boot.
+>>
+>> > So looking at the signing process, it really does not look like that
+>> > I can sign the executable at build server. It looks it needs to be
+>> > signed by installer at install time and private key needs to be available
+>> > to installer?
+>>
+>> No, the build server can sign the files, so the private key is not
+>> required on the target.  These signatures need to be included in the
+>> package.  Elena Reshetova gave a talk at the last LSS
+>> (http://lwn.net/Articles/518265/), describing changes to RPM to write
+>> the security extended attributes.
+>
+> Following is from article.
+>
+> "The other hooks that Reshetova proposed are associated with the individual
+> files in a package. Those would allow things like security labeling or
+> calculating hashes on the file contents (for integrity purposes)."
+>
+> IIUC, these hooks will execute on the target. So hash and all signatures
+> should still be generated on target and not build server?
+>
+> Given the fact that signatures are stored in extended attributes, to me
+> the only way to sign executables in current IMA framework would to be
+> prepare file system image at build server and ship that image. And
+> then installer simply mounts that image (after making sure that proper
+> verification keys have been loaded in kernel).
+>
+> And this image will pretty much be static. As you don't have private key
+> you can't install more packages and sign these.
+>
+> So it will be something like one image per signed package (in worst case).
+>
+> I don't think starting to ship signed file system images as compared
+> to signed files is a better idea.
+>
+> Thanks
+> Vivek
