@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab3AQVoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 16:44:25 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15308 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755864Ab3AQVoX (ORCPT
+	id S1756644Ab3AQVrB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 16:47:01 -0500
+Received: from mga10.intel.com ([192.55.52.92]:1848 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753698Ab3AQVq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 16:44:23 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1dK1Tq4abSwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=daFlbPKOXuoA:10 a=M9TZjGZPBGT3v9G97LcA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358459061.23211.47.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH] slub: Check for page NULL before doing the
- node_match check
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
+	Thu, 17 Jan 2013 16:46:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130117205543.GA6133@redhat.com>
+References: <20130116144836.GB29845@redhat.com>
+	<1358350391.4593.112.camel@falcor1>
+	<20130116163453.GD29845@redhat.com>
+	<1358359715.4593.146.camel@falcor1>
+	<20130116182804.GF29845@redhat.com>
+	<1358364290.4593.178.camel@falcor1>
+	<20130116215341.GA4222@redhat.com>
+	<CALLzPKam_j==PXtNfQs93NbPTrYCjqM_0+XRfnvxrJBLdOJ-vQ@mail.gmail.com>
+	<20130117151825.GA12165@redhat.com>
+	<y0my5frsg5w.fsf@fche.csb>
+	<20130117205543.GA6133@redhat.com>
+Date: Thu, 17 Jan 2013 23:46:57 +0200
+Message-ID: <CALLzPKaizfTZCh3A0w8-RyAy4qwgXSyckYpHttrUawLnmYjFGw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, pjones@redhat.com, hpa@zytor.com,
+        dhowells@redhat.com, jwboyer@redhat.com,
         Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@gmail.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Date: Thu, 17 Jan 2013 16:44:21 -0500
-In-Reply-To: <1358458583.11051.7.camel@edumazet-glaptop>
-References: <1358446258.23211.32.camel@gandalf.local.home>
-	 <1358447864.23211.34.camel@gandalf.local.home>
-	 <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com>
-	 <1358458583.11051.7.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-17 at 13:36 -0800, Eric Dumazet wrote:
+On Thu, Jan 17, 2013 at 10:55 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Thu, Jan 17, 2013 at 03:33:47PM -0500, Frank Ch. Eigler wrote:
+>> Vivek Goyal <vgoyal@redhat.com> writes:
+>>
+>> > [...]
+>> >> Can you please tell a bit more how this patch protect against direct
+>> >> writing to the blocks?
+>> >
+>> > If you have loaded all the pages from disk and locked them in memory and
+>> > verified the signature, then even if somebody modifies a block on disk
+>> > it does not matter. We will not read pages from disk anymore for this
+>> > exec(). We verified the signature of executable loaded in memory and
+>> > in-memory copy is intact.
+>>
+>> Does this imply dramatically increasing physical RAM pressure and load
+>> latency, because binaries (and presumably all their shared libraries)
+>> have to be locked & loaded?  (Else if they are paged out to
+>> encrypted-swap, is that sufficient protection against manipulation?)
+>
+> Even if you employ encrypted-swap, we still need to lock down any code
+> and data which lives in executable file on disk to avoid the case of
+> it being modified directly by writing to a block. Looks like IMA will not
+> detect that case.
+>
 
-> > Index: linux/mm/slub.c
-> > ===================================================================
-> > --- linux.orig/mm/slub.c	2013-01-15 10:42:08.490183607 -0600
-> > +++ linux/mm/slub.c	2013-01-17 15:27:48.973051155 -0600
-> > @@ -1993,8 +1993,8 @@ static inline void flush_slab(struct kme
-> >  	deactivate_slab(s, c->page, c->freelist);
-> > 
-> >  	c->tid = next_tid(c->tid);
-> > -	c->page = NULL;
-> >  	c->freelist = NULL;
-> > +	c->page = NULL;
-> >  }
-> > 
-> >  /*
-> > @@ -2227,8 +2227,8 @@ redo:
-> >  	if (unlikely(!node_match(page, node))) {
-> >  		stat(s, ALLOC_NODE_MISMATCH);
-> >  		deactivate_slab(s, page, c->freelist);
-> > -		c->page = NULL;
-> >  		c->freelist = NULL;
-> > +		c->page = NULL;
-> >  		goto new_slab;
-> >  	}
-> > 
-> > @@ -2239,8 +2239,8 @@ redo:
-> >  	 */
-> >  	if (unlikely(!pfmemalloc_match(page, gfpflags))) {
-> >  		deactivate_slab(s, page, c->freelist);
-> > -		c->page = NULL;
-> >  		c->freelist = NULL;
-> > +		c->page = NULL;
-> >  		goto new_slab;
-> >  	}
-> > 
-> 
-> Without appropriate barriers, this change is a shoot in the dark.
+See my IMA patch I set today, which does locking the same way as you do.
 
-Totally agree.
+- Dmitry
 
--- Steve
-
-
+> May be we can only lock down any information which is loaded from
+> executable file. Rest of the pages can be swapped to encrypted swap.
+>
+> As long as number of signed binaries are small, I think RAM pressure might
+> not be a problem but yes, if we sign everything, it will become an issue.
+>
+> I am not sure how kernel can enforce the requirement of encrypted swap. If
+> we leave it to user as a recommendation, then we have the potential that
+> some hacker can bypass the whole thing. So it is not enforceable.
+>
+> May be there could be a config option if that's enabled swapping works only
+> if it is encrypted.
+>
+> So locking few select statically compiled executables completely in memory
+> I think should not be too much of trouble and solve the problem I have at
+> hand.
+>
+> For the more generic case of completely locked system, we will have to
+> conditionally modify the code to lock only any info loaded from executable
+> and allow swapping other data to encrypted swap. This one we can look into
+> once somebody really wants to use it.
+>
+> Thanks
+> Vivek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
