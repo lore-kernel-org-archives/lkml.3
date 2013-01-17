@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab3AQQYb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:24:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56186 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757064Ab3AQQY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:24:29 -0500
-Date: Thu, 17 Jan 2013 11:24:12 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Nickolai Zeldovich <nickolai@csail.mit.edu>
-Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cifs: fix srcip_matches() for ipv6
-Message-ID: <20130117112412.095f7aef@corrin.poochiereds.net>
-In-Reply-To: <1358390177-24422-1-git-send-email-nickolai@csail.mit.edu>
-References: <1358390177-24422-1-git-send-email-nickolai@csail.mit.edu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757204Ab3AQQ1a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:27:30 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41983 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757073Ab3AQQ13 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 11:27:29 -0500
+Message-ID: <50F8266C.5030605@wwwdotorg.org>
+Date: Thu, 17 Jan 2013 09:27:24 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: config: enable SERIAL_TEGRA
+References: <1358341572-8154-1-git-send-email-ldewangan@nvidia.com> <50F6EA0A.4080904@wwwdotorg.org> <50F78030.6080305@nvidia.com>
+In-Reply-To: <50F78030.6080305@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jan 2013 21:36:17 -0500
-Nickolai Zeldovich <nickolai@csail.mit.edu> wrote:
+On 01/16/2013 09:38 PM, Laxman Dewangan wrote:
+> On Wednesday 16 January 2013 11:27 PM, Stephen Warren wrote:
+>> On 01/16/2013 06:06 AM, Laxman Dewangan wrote:
+>>> Enable high speed serial driver for tegra platform.
+>> Thanks, I've applied patch 1 to Tegra's for-3.9/defconfig branch and
+>> patch 2 to Tegra's for-3.9/dt branch.
+>>
+>> Just as an FYI, the dt branch is merged into my for-next branch, and
+>> sent upstream, before the defconfig branch, so your patch order was
+>> reversed relative to that, but it's not an issue here.
+> 
+> Thanks for applying it. There is no issue on the reversing the sequence.
+> 
+> 
+>> Question: How do I test this; do I just fire up bluez(?) and point it at
+>> the UARTC serial port, or is there more to it?
+> 
+> I tested this in may pieces, not with the bluez.
+> I tested this in downstream with linux-next dma, this new serial driver,
+> some hacks in the board files with bluetooth.
+> 
+> Then I tested this again on linux-next with some hacks in board-dt filew
+> with invoking  the driver from cardhu dts file. In this I tested driver
+> registration, basic write is wokring or not with some register
+> dump/interrupt, Not checked data integrity as not connected the serial
+> sniffer. The idea is that nothing should be crash in linux-next. The
+> basic driver code is already tested with bluetooth.
 
-> srcip_matches() previously had code like this:
-> 
->   srcip_matches(..., struct sockaddr *rhs) {
->     /* ... */
->     struct sockaddr_in6 *vaddr6 = (struct sockaddr_in6 *) &rhs;
->     return ipv6_addr_equal(..., &vaddr6->sin6_addr);
->   }
-> 
-> which interpreted the values on the stack after the 'rhs' pointer as an
-> ipv6 address.  The correct thing to do is to use 'rhs', not '&rhs'.
-> 
-> Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
-> ---
->  fs/cifs/connect.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-> index 17c3643..12b3da3 100644
-> --- a/fs/cifs/connect.c
-> +++ b/fs/cifs/connect.c
-> @@ -1917,7 +1917,7 @@ srcip_matches(struct sockaddr *srcaddr, struct sockaddr *rhs)
->  	}
->  	case AF_INET6: {
->  		struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)srcaddr;
-> -		struct sockaddr_in6 *vaddr6 = (struct sockaddr_in6 *)&rhs;
-> +		struct sockaddr_in6 *vaddr6 = (struct sockaddr_in6 *)rhs;
->  		return ipv6_addr_equal(&saddr6->sin6_addr, &vaddr6->sin6_addr);
->  	}
->  	default:
+Well, my question was more about what user-space tools/configuration/...
+do I need to bring up Bluetooth to test this? I assume that now both the
+driver and DT patches are in linux-next, I shouldn't have to touch the
+kernel at all to make this work?
 
-Nice catch...
-
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
