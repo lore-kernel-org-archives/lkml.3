@@ -1,63 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab3AQNDi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:03:38 -0500
-Received: from fieldses.org ([174.143.236.118]:55472 "EHLO fieldses.org"
+	id S1756515Ab3AQND7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:03:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61742 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753867Ab3AQNDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:03:37 -0500
-Date: Thu, 17 Jan 2013 08:03:35 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Mark Lord <kernel@teksavvy.com>, linux-nfs@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-Message-ID: <20130117130335.GD6598@fieldses.org>
-References: <50F42F85.50907@teksavvy.com>
- <20130114203711.GA29982@fieldses.org>
- <50F4D800.5040703@teksavvy.com>
- <20130115205625.GH4940@fieldses.org>
- <50F63882.8000607@parallels.com>
- <50F72F03.5070806@teksavvy.com>
- <50F786AF.4070107@parallels.com>
+	id S1756316Ab3AQND6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 08:03:58 -0500
+From: =?UTF-8?q?P=C3=A1draig=20Brady?= <P@draigBrady.com>
+To: linux-kernel@vger.kernel.org
+Subject: RFC: allow empty symlink targets
+Date: Thu, 17 Jan 2013 13:03:52 +0000
+Message-Id: <1358427833-3847-1-git-send-email-P@draigBrady.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <50F786AF.4070107@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 09:05:51AM +0400, Stanislav Kinsbursky wrote:
-> 17.01.2013 02:51, Mark Lord пишет:
-> >On 13-01-16 12:20 AM, Stanislav Kinsbursky wrote:
-> >>
-> >>Mark, could you provide any call traces?
-> >
-> >Call traces from where/what?
-> >There's this one, posted earlier in the BUG report:
-> >
-> >kernel BUG at net/sunrpc/svc_xprt.c:921!
-> >Call Trace:
-> >  [<ffffffffa016a56a>] ? svc_recv+0xcc/0x338 [sunrpc]
-> >  [<ffffffffa0318bfc>] ? nfs_callback_authenticate+0x20/0x20 [nfsv4]
-> >  [<ffffffffa0318c19>] ? nfs4_callback_svc+0x1d/0x3c [nfsv4]
-> >  [<ffffffff810407e6>] ? kthread+0x81/0x89
-> >  [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
-> >  [<ffffffff812ea62c>] ? ret_from_fork+0x7c/0xb0
-> >  [<ffffffff81040765>] ? kthread_freezable_should_stop+0x36/0x36
-> >
-> 
-> Thanks!
-> I haven't seen the bug report.
-> Could you provide the link, please?
+The discussion leading to this is at http://bugs.gnu.org/13447
+In summary other systems allow an empty target for a symlink,
+and POSIX specifies that it should be allowed?
 
-There's no bz if that's what you're asking for.
+thanks,
+Pádraig.
 
-See the first message in the thread for the original report:
-
-	http://mid.gmane.org/<50F42F85.50907@teksavvy.com>
-
---b.
