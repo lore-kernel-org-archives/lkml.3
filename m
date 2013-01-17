@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab3AQMrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 07:47:07 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:45872 "EHLO comal.ext.ti.com"
+	id S1755931Ab3AQMsE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 07:48:04 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:43294 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752198Ab3AQMrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 07:47:06 -0500
-Message-ID: <50F7F2B8.8050500@ti.com>
-Date: Thu, 17 Jan 2013 14:46:48 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1751814Ab3AQMsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 07:48:02 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Gopalakrishnan, Aravind" <Aravind.Gopalakrishnan@amd.com>,
+        Andre Przywara <andre@andrep.de>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas <linuxuser330250@gmx.net>
+Subject: Re: [PATCH] powernow-k8: Add a kconfig dependency on acpi-cpufreq
+Date: Thu, 17 Jan 2013 13:53:55 +0100
+Message-ID: <7359167.GTsCEtNASI@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130117115844.GB3853@pd.tnic>
+References: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com> <20130117115436.GA3853@pd.tnic> <20130117115844.GB3853@pd.tnic>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <sameo@linux.intel.com>, <tony@atomide.com>, <kishon@ti.com>,
-        <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH v7 18/22] USB: ehci-omap: Don't free gpios that we didn't
- request
-References: <1358422231-24736-1-git-send-email-rogerq@ti.com> <1358422231-24736-19-git-send-email-rogerq@ti.com> <20130117114838.GH18978@arwen.pp.htv.fi>
-In-Reply-To: <20130117114838.GH18978@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2013 01:48 PM, Felipe Balbi wrote:
-> On Thu, Jan 17, 2013 at 01:30:27PM +0200, Roger Quadros wrote:
->> This driver does not request any gpios so don't free them.
->> Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
->> with ehci-omap in use.
->>
->> CC: Alan Stern <stern@rowland.harvard.edu>
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
+On Thursday, January 17, 2013 12:58:44 PM Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> Date: Thu, 17 Jan 2013 12:44:20 +0100
+> Subject: [PATCH] powernow-k8: Add a kconfig dependency on acpi-cpufreq
 > 
-> should this go to stable ?
+> Andreas reports in https://bugzilla.kernel.org/show_bug.cgi?id=51741
+> that with his Gentoo config, acpi-cpufreq wasn't enabled and powernow-k8
+> couldn't handoff properly to acpi-cpufreq leading to running without
+> P-state support (i.e., cores are constantly in P0).
 > 
-Yes it should.
+> To alleaviate that, we need to make powernow-k8 depend on acpi-cpufreq
+> so that acpi-cpufreq is always present.
 
---
-cheers,
--roger
+OK
+
+Do we need that in -stable?
+
+Rafael
+
+
+> Cc: Andre Przywara <andre@andrep.de>
+> Reported-by: Andreas <linuxuser330250@gmx.net>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  drivers/cpufreq/Kconfig.x86 | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
+> index 934854ae5eb4..7227cd734042 100644
+> --- a/drivers/cpufreq/Kconfig.x86
+> +++ b/drivers/cpufreq/Kconfig.x86
+> @@ -106,7 +106,7 @@ config X86_POWERNOW_K7_ACPI
+>  config X86_POWERNOW_K8
+>  	tristate "AMD Opteron/Athlon64 PowerNow!"
+>  	select CPU_FREQ_TABLE
+> -	depends on ACPI && ACPI_PROCESSOR
+> +	depends on ACPI && ACPI_PROCESSOR && X86_ACPI_CPUFREQ
+>  	help
+>  	  This adds the CPUFreq driver for K8/early Opteron/Athlon64 processors.
+>  	  Support for K10 and newer processors is now in acpi-cpufreq.
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
