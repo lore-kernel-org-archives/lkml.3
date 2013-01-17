@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405Ab3AQNLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:11:55 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:9613 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752962Ab3AQNLy (ORCPT
+	id S1756563Ab3AQNMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:12:40 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:37484 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab3AQNMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:11:54 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkECAG6Zu08YNOOE/2dsb2JhbAANN4F7gzKrG4ZmAQEBAQMjBFERCxgCAgUWCwICCQMCAQIBRQYBDAgBAa8YknuBJo4KgRQDiEKVd4lZ
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="212771245"
-Message-ID: <50F7F898.5050605@teksavvy.com>
-Date: Thu, 17 Jan 2013 08:11:52 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Thu, 17 Jan 2013 08:12:39 -0500
+X-IronPort-AV: E=Sophos;i="4.84,486,1355097600"; 
+   d="scan'208";a="722635"
+Message-ID: <1358428356.13856.55.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH] xen/grant-table: Force to use v1 of grants.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "annie.li@oracle.com" <annie.li@oracle.com>,
+        "msw@amazon.com" <msw@amazon.com>
+Date: Thu, 17 Jan 2013 13:12:36 +0000
+In-Reply-To: <1358371369-19089-1-git-send-email-konrad.wilk@oracle.com>
+References: <1358371369-19089-1-git-send-email-konrad.wilk@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-References: <50F42F85.50907@teksavvy.com>
-In-Reply-To: <50F42F85.50907@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-01-14 11:17 AM, Mark Lord wrote:
->
-> Here's the code with the BUG() at net/sunrpc/svc_xprt.c line 921:
-> 
-> /*
->  * Remove a dead transport
->  */
-> static void svc_delete_xprt(struct svc_xprt *xprt)
-> {
->         struct svc_serv *serv = xprt->xpt_server;
->         struct svc_deferred_req *dr;
-> 
->         /* Only do this once */
->         if (test_and_set_bit(XPT_DEAD, &xprt->xpt_flags))
->                 BUG();
+On Wed, 2013-01-16 at 21:22 +0000, Konrad Rzeszutek Wilk wrote:
+> Note: The hypervisor provides an over-ride for the default
+> of 32 frames (pages) per guest: gnttab_max_nr_frames=X
 
+Should we consider increasing this value?
 
-Shouldn't there also be a return statement after the BUG() line,
-inside the if-stmt ?
+Ian.
 
-I mean, the comment says "only do this once", but it actually
-appears to end up doing it twice, despite the test.
-
-??
