@@ -1,120 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab3AQQgj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 11:36:39 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:52093 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756987Ab3AQQgh (ORCPT
+	id S1757281Ab3AQQkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 11:40:13 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54625 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757211Ab3AQQkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 11:36:37 -0500
-Message-ID: <1358440365.2689.72.camel@falcor1>
-Subject: Re: [PATCH 2/3] binfmt_elf: Verify signature of signed elf binary
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, pjones@redhat.com,
-        hpa@zytor.com, dhowells@redhat.com, jwboyer@redhat.com
-Date: Thu, 17 Jan 2013 11:32:45 -0500
-In-Reply-To: <20130117155154.GC12165@redhat.com>
-References: <1358285695-26173-1-git-send-email-vgoyal@redhat.com>
-	 <1358285695-26173-3-git-send-email-vgoyal@redhat.com>
-	 <1358437021.2689.52.camel@falcor1> <20130117155154.GC12165@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011716-7282-0000-0000-00001337D27B
+	Thu, 17 Jan 2013 11:40:10 -0500
+Date: Thu, 17 Jan 2013 16:39:41 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+Cc: "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "prathyush.k@samsung.com" <prathyush.k@samsung.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
+        "inki.dae@samsung.com" <inki.dae@samsung.com>,
+        "subash.ramaswamy@linaro.org" <subash.ramaswamy@linaro.org>,
+        "sanghyun75.lee@samsung.com" <sanghyun75.lee@samsung.com>,
+        "rahul.sharma@samsung.com" <rahul.sharma@samsung.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v5 06/14] ARM: EXYNOS: add System MMU definition to DT
+Message-ID: <20130117163941.GL3699@mudshark.cambridge.arm.com>
+References: <003601cdd790$082a1310$187e3930$%cho@samsung.com>
+ <20130116115114.GB16543@mudshark.cambridge.arm.com>
+ <20130116.184321.179736289870581833.hdoyu@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130116.184321.179736289870581833.hdoyu@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-17 at 10:51 -0500, Vivek Goyal wrote:
-> On Thu, Jan 17, 2013 at 10:37:01AM -0500, Mimi Zohar wrote:
-> > On Tue, 2013-01-15 at 16:34 -0500, Vivek Goyal wrote:
-> > > If a binary is signed, verify its signature. If signature is not valid, do
-> > > not allow execution. If binary is not signed, execution is allowed
-> > > unconditionally.
-> > > 
-> > > CONFIG_BINFMT_ELF_SIGNATURE controls whether elf binary signature support
-> > > is compiled in or not.
-> > > 
-> > > Signature are expected to be present in elf section ".section". This code
-> > > is written along the lines of module signature verification code. Just
-> > > that I have removed the magic string. It is not needed as signature is
-> > > expected to be present in a specific section.
+Hi Hiroshi,
+
+On Wed, Jan 16, 2013 at 04:43:21PM +0000, Hiroshi Doyu wrote:
+> Will Deacon <will.deacon@arm.com> wrote @ Wed, 16 Jan 2013 12:51:14 +0100:
+> > Given that this information is not discoverable, it needs to be encoded
+> > in the device tree, but where? I can see two approaches:
 > > 
-> > Right, it's written along the lines of the original module signature
-> > verification code, where the signature was in the ELF header, not the
-> > version that was upstreamed, where the signature was appended.
+> >   1. For each IOMMU node, list phandles to the devices connected to it
+> >      and have a corresponding list of StreamIDs.
 > > 
-> > > I put the signature into a section, instead of appending it so that
-> > > strip operation works fine.
+> > or
 > > 
-> > Wouldn't the original reasons for not embedding the signature in the ELF
-> > header for modules apply here too?  
-> 
-> I think rusty wanted to append signatures. He thought it is much easier.
-> Adding a .signature section makes life easier for user space tools. One
-> can strip files even after signing.
-> 
-> Not that I am married to the idea of putting signature in a section. Just
-> that it sounded reasonable enough to do for an RFC. So if appending 
-> signature proves to be better, it is easy to implement that.
+> >   2. For each device wishing to use an IOMMU, have a phandle to the
+> >      IOMMU node and a separate StreamID property. The IOMMU would then
+> >      parse this information when the device is added to the bus.
 > > 
-> > > One signs and verifies  all the areas mapped by PT_LOAD segments of elf
-> > > binary. Typically Elf header is mapped in first PT_LOAD segment. As adding
-> > > .signature section can change three elf header fields (e_shoff, e_shnum
-> > > and e_shstrndx), these fields are excluded from digest calculation
-> > > 
-> > > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > 
-> > At this point, why would you want yet another method for signing files?
+> > Although I prefer the second approach, it has the downside of affecting
+> > all device bindings that wish to use an IOMMU, so I'm open to any other
+> > ideas.
 > 
-> Are you saying that append signature instead of putting them in a section
-> or are you saying that just use IMA.
+> Actually the above summarize tegra SMMU situation well too. For
+> example, each IOMMU'able device has IOVA constraint that some of the
+> address area isn't available because of its MMIO. This info needs to
+> be described in DT. If <IOMMU phandle> + some parametes are embedded
+> in a device node, that info could be dealt at a bus notifier(*1).
 > 
-> - For the first, I am fine with appending too if that works better. So
->   what's wrong with current implementation. Just because we append the
->   signatures in case of modules, we should follow the same thing for
->   executables too?
+> *1: http://lists.linuxfoundation.org/pipermail/iommu/2012-November/004934.html
 
-No, I was saying that if this patch set were to be upstreamed, then the
-signature verification, at least for ELF modules and ELF executables,
-should be the same.  The patch would then be a lot smaller.
+I've been thinking about this a bit more and, unfortunately, my conclusion
+is that method (2) above is problematic, so we do need something similar to
+(1).
 
-> - If above comment is w.r.t use of IMA, then I have no issues in using
->   IMA as long as it can meet all the requirements. Looks like there is
->   a long TODO list before we get there. In fact for some things its not
->   even clear whether they fit in IMA or somehwere else.
-> 
->   - Make sure IMA/EVM stuff chains into secureboot chain of trust.
+The reason for this comes about when dealing with chained IOMMUs. In this
+case, each IOMMU in the chain needs to know about all of the masters hanging
+beneath it (potentially behind other IOMMUs) but may also need to supplement
+each device with additional data relevant to that point in the IOMMU chain.
+In the case of the ARM System MMU, this could be StreamID information (as
+the StreamID for a device can change as the transaction stream passes
+through an SMMU) and for your case it could be that the DMA window is
+widened along the chain.
 
-For sure.
+So, extending the mmu-master property described in this thread to be
+"mmu-masters : a list of phandles to device nodes representing bus masters
+for which the IOMMU can provide a translation" is probably a good start.
 
->   - Sort out all the memory locking related issues I mentioned in
->     other mail. You seemed to be of opinion that it is out of scope
->     for IMA, but I think it probably is nice extenstion.
-
-Yes, it would be, but I'm not sure that your method of mmaping a file
-with MAP_LOCKED is scalable, when all executables are signed.  If it is,
-then why not do it in general?  Otherwise there needs to be a more
-scalable solution.
-
->     Or somehow a way needs to be found to make sure nobody can modify
->     process address space without processe's knowledge.
-
-I'm not sure I understand.  Does your patch already address this?
-
->   - Once all this works, then one needs to figure out all the RPM stuff
->     and plugins to make sure files can be singed on build server and
->     installed properly on target system.
-
-Yes, we need the distros involvment in this to sign all files.
-Immutable files should be signed with digital signatures.  Mutable files
-should have hashes.
-
-thanks,
-
-Mimi
-
-
+Will
