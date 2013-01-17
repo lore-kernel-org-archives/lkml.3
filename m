@@ -1,142 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759597Ab3AQKcT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 05:32:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41271 "EHLO mx2.suse.de"
+	id S932209Ab3AQKcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 05:32:54 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54719 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759468Ab3AQKcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 05:32:14 -0500
-Date: Thu, 17 Jan 2013 11:32:08 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: Jan Kara <jack@suse.cz>, axboe@kernel.dk, lucho@ionkov.net,
-        ericvh@gmail.com, tytso@mit.edu, viro@zeniv.linux.org.uk,
-        rminnich@sandia.gov, martin.petersen@oracle.com, neilb@suse.de,
-        david@fromorbit.com, gnehzuil.liu@gmail.com,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        linux-fsdevel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
-        linux-ext4@vger.kernel.org, hirofumi@mail.parknet.co.jp
-Subject: Re: [PATCH 4/6] block: Optionally snapshot page contents to
- provide stable pages during write
-Message-ID: <20130117103208.GA12562@quack.suse.cz>
-References: <20130115054235.1563.12967.stgit@blackbox.djwong.org>
- <20130115054305.1563.48197.stgit@blackbox.djwong.org>
- <20130116020000.GA25806@quack.suse.cz>
- <20130117030132.GK6426@blackbox.djwong.org>
+	id S1757731Ab3AQKcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 05:32:51 -0500
+Message-ID: <50F7D346.3040101@ti.com>
+Date: Thu, 17 Jan 2013 12:32:38 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130117030132.GK6426@blackbox.djwong.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>,
+        <kishon@ti.com>, <bjorn@mork.no>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 03/22] mfd: omap-usb-tll: Use devm_kzalloc/ioremap
+ and clean up error path
+References: <1358347433-329-1-git-send-email-rogerq@ti.com> <1358347433-329-4-git-send-email-rogerq@ti.com> <50F70164.3080105@mvista.com> <50F7C074.5070803@ti.com>
+In-Reply-To: <50F7C074.5070803@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 16-01-13 19:01:32, Darrick J. Wong wrote:
-> > > diff --git a/block/blk-core.c b/block/blk-core.c
-> > > index c973249..277134c 100644
-> > > --- a/block/blk-core.c
-> > > +++ b/block/blk-core.c
-> > > @@ -1474,6 +1474,11 @@ void blk_queue_bio(struct request_queue *q, struct bio *bio)
-> > >  	 */
-> > >  	blk_queue_bounce(q, &bio);
-> > >  
-> > > +	if (bio_integrity_enabled(bio) && bio_integrity_prep(bio)) {
-> > > +		bio_endio(bio, -EIO);
-> > > +		return;
-> > > +	}
-> > > +
-> > >  	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA)) {
-> > >  		spin_lock_irq(q->queue_lock);
-> > >  		where = ELEVATOR_INSERT_FLUSH;
-> > > @@ -1714,9 +1719,6 @@ generic_make_request_checks(struct bio *bio)
-> > >  	 */
-> > >  	blk_partition_remap(bio);
-> > >  
-> > > -	if (bio_integrity_enabled(bio) && bio_integrity_prep(bio))
-> > > -		goto end_io;
-> > > -
-> >   Umm, why did you move this hunk?
+On 01/17/2013 11:12 AM, Roger Quadros wrote:
+> On 01/16/2013 09:37 PM, Sergei Shtylyov wrote:
+>> Hello.
+>>
+>> On 01/16/2013 05:43 PM, Roger Quadros wrote:
+>>
+>>> Use devm_ variants of kzalloc() and ioremap(). Simplify the error path.
+>>
+>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>> ---
+>>>  drivers/mfd/omap-usb-tll.c |   36 +++++++++++-------------------------
+>>>  1 files changed, 11 insertions(+), 25 deletions(-)
+>>
+>>> diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+>>> index 9658e18..53ed10b 100644
+>>> --- a/drivers/mfd/omap-usb-tll.c
+>>> +++ b/drivers/mfd/omap-usb-tll.c
+>> [...]
+>>> -	base = ioremap(res->start, resource_size(res));
+>>> +	base = devm_request_and_ioremap(dev, res);
+>>>  	if (!base) {
+>>> -		dev_err(dev, "TLL ioremap failed\n");
+>>>  		ret = -ENOMEM;
+>>
+>>    -EADDRNOTAVAIL as the comment to devm_request_and_ioremap() suggests.
+>>
 > 
-> I moved it so that the integrity data are generated against the contents of the
-> bounce buffer because the write paths don't wait for writeback to finish if the
-> snapshotting mode is enabled, which means (I think) that programs can wander in
-> and scribble on the original page in between bio_integrity_prep and
-> blk_queue_bounce.
-  Ah, I see. OK.
-
-> > >  	if (bio_check_eod(bio, nr_sectors))
-> > >  		goto end_io;
-> > 
-> > > diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-> > > index 780d4c6..0144fbb 100644
-> > > --- a/include/uapi/linux/fs.h
-> > > +++ b/include/uapi/linux/fs.h
-> > > @@ -69,6 +69,7 @@ struct inodes_stat_t {
-> > >  #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
-> > >  #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
-> > >  #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
-> > > +#define MS_SNAP_STABLE	256	/* Snapshot pages during writeback, if needed */
-> > >  #define MS_NOATIME	1024	/* Do not update access times. */
-> > >  #define MS_NODIRATIME	2048	/* Do not update directory access times */
-> > >  #define MS_BIND		4096
-> >   Please don't mix MS_SNAP_STABLE flag among flags passed by mount(2)
-> > syscall. I think putting it at 1 << 27 might be acceptable. I remember
-> > Al Viro saying something along the lines that kernel internal superblock
-> > flags should be separated from those passed from userspace into a special
-> > superblock entry but that's a different story I guess.
+> I changed it deliberately to ENOMEM, as I could not find EADDRNOTAVAIL
+> defined in all architectures.
 > 
-> Ok, I'll change it to 1<<27.  I'll add a comment stating that we're trying to
-> keep internal sb flags separate.  It looks like those last four flags are all
-> internal?
-  Yes. Flags with low numbers are part of kernel ABI...
+> ENOMEM shouldn't harm.
+> 
 
-> > > diff --git a/mm/bounce.c b/mm/bounce.c
-> > > index 0420867..a5b30f9 100644
-> > > --- a/mm/bounce.c
-> > > +++ b/mm/bounce.c
-> > > @@ -178,8 +178,44 @@ static void bounce_end_io_read_isa(struct bio *bio, int err)
-> > >  	__bounce_end_io_read(bio, isa_page_pool, err);
-> > >  }
-> > >  
-> > > +#ifdef CONFIG_NEED_BOUNCE_POOL
-> > > +static int must_snapshot_stable_pages(struct bio *bio)
-> > > +{
-> > > +	struct page *page;
-> > > +	struct backing_dev_info *bdi;
-> > > +	struct address_space *mapping;
-> > > +	struct bio_vec *from;
-> > > +	int i;
-> > > +
-> > > +	if (bio_data_dir(bio) != WRITE)
-> > > +		return 0;
-> > > +
-> > > +	/*
-> > > +	 * Based on the first page that has a valid mapping, decide whether or
-> > > +	 * not we have to employ bounce buffering to guarantee stable pages.
-> > > +	 */
-> > > +	bio_for_each_segment(from, bio, i) {
-> > > +		page = from->bv_page;
-> > > +		mapping = page_mapping(page);
-> > > +		if (!mapping)
-> > > +			continue;
-> > > +		bdi = mapping->backing_dev_info;
-> > > +		if (!bdi_cap_stable_pages_required(bdi))
-> > > +			return 0;
-> > > +		return mapping->host->i_sb->s_flags & MS_SNAP_STABLE;
-> > > +	}
-> > > +
-> > > +	return 0;
-> > > +}
-> >   How about using q->backing_dev_info for the
-> > bdi_cap_stable_pages_required() check? It will be a fast path and this check
-> > will be faster..
-> Ok.
-  And maybe I should have told explicitely that then you can move the check
-before bio_for_each_segment() loop...
+Correcting myself,
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+It is defined here
+
+include/uapi/asm-generic/errno.h:#define        EADDRNOTAVAIL   99
+/* Cannot assign requested address */
+
+So i'll update both patches.
+
+--
+cheers,
+-roger
+
