@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3AQNYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 08:24:46 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:52547 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab3AQNYo (ORCPT
+	id S1756732Ab3AQNYw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 08:24:52 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:34237 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab3AQNYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 08:24:44 -0500
+	Thu, 17 Jan 2013 08:24:50 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -19,133 +19,398 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
         Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH 0/7] cputime: Full dynticks task/cputime accounting v5                 
-Date: Thu, 17 Jan 2013 14:24:28 +0100
-Message-Id: <1358429075-3430-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/7] cputime: Librarize per nsecs resolution cputime definitions
+Date: Thu, 17 Jan 2013 14:24:30 +0100
+Message-Id: <1358429075-3430-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1358429075-3430-1-git-send-email-fweisbec@gmail.com>
+References: <1358429075-3430-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The full dynticks cputime accounting that we'll soon introduce
+will rely on sched_clock(). And its clock can have a per
+nanosecond granularity.
 
-This patchset was formerly called "Generic virtual based cputime accounting"  
-but I changed the name to better reflect what it's all about.
+To prepare for this, we need to have a cputime_t implementation
+that has this precision.
 
-This is	the part of the	full dynticks patchset that handles the	task and CPU
-time accounting	without	the tick.
+ia64 virtual cputime accounting already uses that granularity
+so all we need is to librarize its implementation in the asm
+generic headers.
 
-It's available at:
+Also librarize the default per jiffy granularity cputime_t
+as well so that we can easily pick either implementation
+depending on the cputime accounting config we choose.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	vtime/generic-v5
-
-There have been a lot of changes since latest full dynticks patchset:
-
-- Use sched_clock() instead of jiffies for better precision. And because
-jiffies	granularity was requiring too much dirty hacks to make it working.
-(Thanks	Steven for the suggestion).
-
-- To fully support sched_clock(), use a	per nanosec granularity	in cputime_t
-
-- Fix a	deadlock with tsacct
-
-- Better description of the Kconfig
-
-- Don't	scale generic vtime accounting against CFS precise task	time accounting.
-Now that we use	sched_clock() we should have precise enough statistics.
-
-- Consolidate some code in the reader side
-
-- Make the reader irqsafe (fix potential deadlock against writers)
-
-
-Most of the work is done. There are just a few small things I need to care about
-to complete the full cputime support:
-
-* Also handle dynticks guest time accounting (p->gtime and p->utime). This
-require to bring a new accessor: task_gtime() and to add guest_enter() and
-guest_exit() on the context tracking subsystem. Then make the same treatment
-than with utime and stime. No big deal.
-
-* New tasks start their cputime accounting from schedule() on sched-in time
-(see arch_vtime_task_switch()). But I fear that idle tasks don't fall into this
-category. That's a small detail but I hope I can find some generic way to handle it.
-The boot init idle task is however handled.
-
-* Per nsec granularity requires that cputime_t directly maps to cputime64_t. This
-is fine on 64 bits archs and mostly fine in 32 bits archs as well because readers
-use seqlock to synchronize against writers. But reading struct kernel_cputstat
-is not protected. Not sure yet how to solve that.
-
-So I'll likely focus on these items on the next version. Let's hope we can make
-it ready for the next merge window.
-
-Thanks.
-
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 ---
-Frederic Weisbecker (7):
-      context_tracking: Export context state for generic vtime
-      cputime: Librarize per nsecs resolution cputime definitions
-      cputime: Move default nsecs_to_cputime() to jiffies based cputime file
-      cputime: Generic on-demand virtual cputime accounting
-      cputime: Allow dynamic switch between tick/virtual based cputime accounting
-      cputime: Use accessors to read task cputime stats
-      cputime: Safely read cputime of full dynticks CPUs
-
-
- arch/alpha/kernel/osf_sys.c                  |    6 +-
- arch/ia64/include/asm/cputime.h              |   92 +----------
- arch/ia64/include/asm/thread_info.h          |    4 +-
- arch/ia64/include/asm/xen/minstate.h         |    2 +-
- arch/ia64/kernel/asm-offsets.c               |    2 +-
- arch/ia64/kernel/entry.S                     |   16 +-
- arch/ia64/kernel/fsys.S                      |    4 +-
- arch/ia64/kernel/head.S                      |    4 +-
- arch/ia64/kernel/ivt.S                       |    8 +-
- arch/ia64/kernel/minstate.h                  |    2 +-
- arch/ia64/kernel/time.c                      |    4 +-
- arch/powerpc/configs/chroma_defconfig        |    2 +-
- arch/powerpc/configs/corenet64_smp_defconfig |    2 +-
- arch/powerpc/configs/pasemi_defconfig        |    2 +-
- arch/powerpc/include/asm/cputime.h           |    6 +-
- arch/powerpc/include/asm/lppaca.h            |    2 +-
- arch/powerpc/include/asm/ppc_asm.h           |    4 +-
- arch/powerpc/kernel/entry_64.S               |    4 +-
- arch/powerpc/kernel/time.c                   |    4 +-
- arch/powerpc/platforms/pseries/dtl.c         |    6 +-
- arch/powerpc/platforms/pseries/setup.c       |    6 +-
- arch/s390/kernel/vtime.c                     |    6 +-
- arch/x86/kernel/apm_32.c                     |   11 +-
- drivers/isdn/mISDN/stack.c                   |    7 +-
- fs/binfmt_elf.c                              |    8 +-
- fs/binfmt_elf_fdpic.c                        |    7 +-
- include/asm-generic/cputime.h                |   66 +-------
- include/asm-generic/cputime_jiffies.h        |   72 +++++++++
- include/asm-generic/cputime_nsecs.h          |  104 ++++++++++++
- include/linux/context_tracking.h             |   28 ++++
- include/linux/hardirq.h                      |    4 +-
- include/linux/init_task.h                    |   11 ++
- include/linux/kernel_stat.h                  |    2 +-
- include/linux/sched.h                        |   34 ++++
- include/linux/tsacct_kern.h                  |    3 +
- include/linux/vtime.h                        |   51 ++++--
- init/Kconfig                                 |   23 +++-
- kernel/acct.c                                |    6 +-
- kernel/context_tracking.c                    |   22 +--
- kernel/cpu.c                                 |    4 +-
- kernel/delayacct.c                           |    7 +-
- kernel/exit.c                                |    6 +-
- kernel/fork.c                                |   14 ++
- kernel/posix-cpu-timers.c                    |   28 +++-
- kernel/sched/cputime.c                       |  219 +++++++++++++++++++++++---
- kernel/signal.c                              |   12 +-
- kernel/softirq.c                             |    6 +-
- kernel/time/tick-sched.c                     |    5 +-
- kernel/tsacct.c                              |   44 ++++--
- 49 files changed, 696 insertions(+), 296 deletions(-)
+ arch/ia64/include/asm/cputime.h       |   88 ++----------------------------
+ include/asm-generic/cputime.h         |   62 +---------------------
+ include/asm-generic/cputime_jiffies.h |   66 ++++++++++++++++++++++
+ include/asm-generic/cputime_nsecs.h   |   96 +++++++++++++++++++++++++++++++++
+ 4 files changed, 167 insertions(+), 145 deletions(-)
  create mode 100644 include/asm-generic/cputime_jiffies.h
  create mode 100644 include/asm-generic/cputime_nsecs.h
 
+diff --git a/arch/ia64/include/asm/cputime.h b/arch/ia64/include/asm/cputime.h
+index 7fcf7f0..371ac96 100644
+--- a/arch/ia64/include/asm/cputime.h
++++ b/arch/ia64/include/asm/cputime.h
+@@ -19,91 +19,11 @@
+ #define __IA64_CPUTIME_H
+ 
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING
+-#include <asm-generic/cputime.h>
++# include <asm-generic/cputime.h>
+ #else
+-
+-#include <linux/time.h>
+-#include <linux/jiffies.h>
+-#include <asm/processor.h>
+-
+-typedef u64 __nocast cputime_t;
+-typedef u64 __nocast cputime64_t;
+-
+-#define cputime_one_jiffy		jiffies_to_cputime(1)
+-
+-/*
+- * Convert cputime <-> jiffies (HZ)
+- */
+-#define cputime_to_jiffies(__ct)	\
+-	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
+-#define jiffies_to_cputime(__jif)	\
+-	(__force cputime_t)((__jif) * (NSEC_PER_SEC / HZ))
+-#define cputime64_to_jiffies64(__ct)	\
+-	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
+-#define jiffies64_to_cputime64(__jif)	\
+-	(__force cputime64_t)((__jif) * (NSEC_PER_SEC / HZ))
+-
+-/*
+- * Convert cputime <-> microseconds
+- */
+-#define cputime_to_usecs(__ct)		\
+-	((__force u64)(__ct) / NSEC_PER_USEC)
+-#define usecs_to_cputime(__usecs)	\
+-	(__force cputime_t)((__usecs) * NSEC_PER_USEC)
+-#define usecs_to_cputime64(__usecs)	\
+-	(__force cputime64_t)((__usecs) * NSEC_PER_USEC)
+-
+-/*
+- * Convert cputime <-> seconds
+- */
+-#define cputime_to_secs(__ct)		\
+-	((__force u64)(__ct) / NSEC_PER_SEC)
+-#define secs_to_cputime(__secs)		\
+-	(__force cputime_t)((__secs) * NSEC_PER_SEC)
+-
+-/*
+- * Convert cputime <-> timespec (nsec)
+- */
+-static inline cputime_t timespec_to_cputime(const struct timespec *val)
+-{
+-	u64 ret = val->tv_sec * NSEC_PER_SEC + val->tv_nsec;
+-	return (__force cputime_t) ret;
+-}
+-static inline void cputime_to_timespec(const cputime_t ct, struct timespec *val)
+-{
+-	val->tv_sec  = (__force u64) ct / NSEC_PER_SEC;
+-	val->tv_nsec = (__force u64) ct % NSEC_PER_SEC;
+-}
+-
+-/*
+- * Convert cputime <-> timeval (msec)
+- */
+-static inline cputime_t timeval_to_cputime(struct timeval *val)
+-{
+-	u64 ret = val->tv_sec * NSEC_PER_SEC + val->tv_usec * NSEC_PER_USEC;
+-	return (__force cputime_t) ret;
+-}
+-static inline void cputime_to_timeval(const cputime_t ct, struct timeval *val)
+-{
+-	val->tv_sec = (__force u64) ct / NSEC_PER_SEC;
+-	val->tv_usec = ((__force u64) ct % NSEC_PER_SEC) / NSEC_PER_USEC;
+-}
+-
+-/*
+- * Convert cputime <-> clock (USER_HZ)
+- */
+-#define cputime_to_clock_t(__ct)	\
+-	((__force u64)(__ct) / (NSEC_PER_SEC / USER_HZ))
+-#define clock_t_to_cputime(__x)		\
+-	(__force cputime_t)((__x) * (NSEC_PER_SEC / USER_HZ))
+-
+-/*
+- * Convert cputime64 to clock.
+- */
+-#define cputime64_to_clock_t(__ct)	\
+-	cputime_to_clock_t((__force cputime_t)__ct)
+-
++# include <asm/processor.h>
++# include <asm-generic/cputime-nsecs.h>
+ extern void arch_vtime_task_switch(struct task_struct *tsk);
+-
+ #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
++
+ #endif /* __IA64_CPUTIME_H */
+diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
+index 9a62937..c6eddf5 100644
+--- a/include/asm-generic/cputime.h
++++ b/include/asm-generic/cputime.h
+@@ -4,66 +4,6 @@
+ #include <linux/time.h>
+ #include <linux/jiffies.h>
+ 
+-typedef unsigned long __nocast cputime_t;
+-
+-#define cputime_one_jiffy		jiffies_to_cputime(1)
+-#define cputime_to_jiffies(__ct)	(__force unsigned long)(__ct)
+-#define cputime_to_scaled(__ct)		(__ct)
+-#define jiffies_to_cputime(__hz)	(__force cputime_t)(__hz)
+-
+-typedef u64 __nocast cputime64_t;
+-
+-#define cputime64_to_jiffies64(__ct)	(__force u64)(__ct)
+-#define jiffies64_to_cputime64(__jif)	(__force cputime64_t)(__jif)
+-
+-#define nsecs_to_cputime64(__ct)	\
+-	jiffies64_to_cputime64(nsecs_to_jiffies64(__ct))
+-
+-
+-/*
+- * Convert cputime to microseconds and back.
+- */
+-#define cputime_to_usecs(__ct)		\
+-	jiffies_to_usecs(cputime_to_jiffies(__ct))
+-#define usecs_to_cputime(__usec)	\
+-	jiffies_to_cputime(usecs_to_jiffies(__usec))
+-#define usecs_to_cputime64(__usec)	\
+-	jiffies64_to_cputime64(nsecs_to_jiffies64((__usec) * 1000))
+-
+-/*
+- * Convert cputime to seconds and back.
+- */
+-#define cputime_to_secs(jif)		(cputime_to_jiffies(jif) / HZ)
+-#define secs_to_cputime(sec)		jiffies_to_cputime((sec) * HZ)
+-
+-/*
+- * Convert cputime to timespec and back.
+- */
+-#define timespec_to_cputime(__val)	\
+-	jiffies_to_cputime(timespec_to_jiffies(__val))
+-#define cputime_to_timespec(__ct,__val)	\
+-	jiffies_to_timespec(cputime_to_jiffies(__ct),__val)
+-
+-/*
+- * Convert cputime to timeval and back.
+- */
+-#define timeval_to_cputime(__val)	\
+-	jiffies_to_cputime(timeval_to_jiffies(__val))
+-#define cputime_to_timeval(__ct,__val)	\
+-	jiffies_to_timeval(cputime_to_jiffies(__ct),__val)
+-
+-/*
+- * Convert cputime to clock and back.
+- */
+-#define cputime_to_clock_t(__ct)	\
+-	jiffies_to_clock_t(cputime_to_jiffies(__ct))
+-#define clock_t_to_cputime(__x)		\
+-	jiffies_to_cputime(clock_t_to_jiffies(__x))
+-
+-/*
+- * Convert cputime64 to clock.
+- */
+-#define cputime64_to_clock_t(__ct)	\
+-	jiffies_64_to_clock_t(cputime64_to_jiffies64(__ct))
++#include <asm-generic/cputime_jiffies.h>
+ 
+ #endif
+diff --git a/include/asm-generic/cputime_jiffies.h b/include/asm-generic/cputime_jiffies.h
+new file mode 100644
+index 0000000..b747f1f
+--- /dev/null
++++ b/include/asm-generic/cputime_jiffies.h
+@@ -0,0 +1,66 @@
++#ifndef _ASM_GENERIC_CPUTIME_JIFFIES_H
++#define _ASM_GENERIC_CPUTIME_JIFFIES_H
++
++typedef unsigned long __nocast cputime_t;
++
++#define cputime_one_jiffy		jiffies_to_cputime(1)
++#define cputime_to_jiffies(__ct)	(__force unsigned long)(__ct)
++#define cputime_to_scaled(__ct)		(__ct)
++#define jiffies_to_cputime(__hz)	(__force cputime_t)(__hz)
++
++typedef u64 __nocast cputime64_t;
++
++#define cputime64_to_jiffies64(__ct)	(__force u64)(__ct)
++#define jiffies64_to_cputime64(__jif)	(__force cputime64_t)(__jif)
++
++#define nsecs_to_cputime64(__ct)	\
++	jiffies64_to_cputime64(nsecs_to_jiffies64(__ct))
++
++
++/*
++ * Convert cputime to microseconds and back.
++ */
++#define cputime_to_usecs(__ct)		\
++	jiffies_to_usecs(cputime_to_jiffies(__ct))
++#define usecs_to_cputime(__usec)	\
++	jiffies_to_cputime(usecs_to_jiffies(__usec))
++#define usecs_to_cputime64(__usec)	\
++	jiffies64_to_cputime64(nsecs_to_jiffies64((__usec) * 1000))
++
++/*
++ * Convert cputime to seconds and back.
++ */
++#define cputime_to_secs(jif)		(cputime_to_jiffies(jif) / HZ)
++#define secs_to_cputime(sec)		jiffies_to_cputime((sec) * HZ)
++
++/*
++ * Convert cputime to timespec and back.
++ */
++#define timespec_to_cputime(__val)	\
++	jiffies_to_cputime(timespec_to_jiffies(__val))
++#define cputime_to_timespec(__ct,__val)	\
++	jiffies_to_timespec(cputime_to_jiffies(__ct),__val)
++
++/*
++ * Convert cputime to timeval and back.
++ */
++#define timeval_to_cputime(__val)	\
++	jiffies_to_cputime(timeval_to_jiffies(__val))
++#define cputime_to_timeval(__ct,__val)	\
++	jiffies_to_timeval(cputime_to_jiffies(__ct),__val)
++
++/*
++ * Convert cputime to clock and back.
++ */
++#define cputime_to_clock_t(__ct)	\
++	jiffies_to_clock_t(cputime_to_jiffies(__ct))
++#define clock_t_to_cputime(__x)		\
++	jiffies_to_cputime(clock_t_to_jiffies(__x))
++
++/*
++ * Convert cputime64 to clock.
++ */
++#define cputime64_to_clock_t(__ct)	\
++	jiffies_64_to_clock_t(cputime64_to_jiffies64(__ct))
++
++#endif
+diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
+new file mode 100644
+index 0000000..c73d182
+--- /dev/null
++++ b/include/asm-generic/cputime_nsecs.h
+@@ -0,0 +1,96 @@
++/*
++ * Definitions for measuring cputime in nsecs resolution.
++ *
++ * Based on <arch/ia64/include/asm/cputime.h>
++ *
++ * Copyright (C) 2007 FUJITSU LIMITED
++ * Copyright (C) 2007 Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ *
++ */
++
++#ifndef _ASM_GENERIC_CPUTIME_NSECS_H
++#define _ASM_GENERIC_CPUTIME_NSECS_H
++
++typedef u64 __nocast cputime_t;
++typedef u64 __nocast cputime64_t;
++
++#define cputime_one_jiffy		jiffies_to_cputime(1)
++
++/*
++ * Convert cputime <-> jiffies (HZ)
++ */
++#define cputime_to_jiffies(__ct)	\
++	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
++#define jiffies_to_cputime(__jif)	\
++	(__force cputime_t)((__jif) * (NSEC_PER_SEC / HZ))
++#define cputime64_to_jiffies64(__ct)	\
++	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
++#define jiffies64_to_cputime64(__jif)	\
++	(__force cputime64_t)((__jif) * (NSEC_PER_SEC / HZ))
++
++/*
++ * Convert cputime <-> microseconds
++ */
++#define cputime_to_usecs(__ct)		\
++	((__force u64)(__ct) / NSEC_PER_USEC)
++#define usecs_to_cputime(__usecs)	\
++	(__force cputime_t)((__usecs) * NSEC_PER_USEC)
++#define usecs_to_cputime64(__usecs)	\
++	(__force cputime64_t)((__usecs) * NSEC_PER_USEC)
++
++/*
++ * Convert cputime <-> seconds
++ */
++#define cputime_to_secs(__ct)		\
++	((__force u64)(__ct) / NSEC_PER_SEC)
++#define secs_to_cputime(__secs)		\
++	(__force cputime_t)((__secs) * NSEC_PER_SEC)
++
++/*
++ * Convert cputime <-> timespec (nsec)
++ */
++static inline cputime_t timespec_to_cputime(const struct timespec *val)
++{
++	u64 ret = val->tv_sec * NSEC_PER_SEC + val->tv_nsec;
++	return (__force cputime_t) ret;
++}
++static inline void cputime_to_timespec(const cputime_t ct, struct timespec *val)
++{
++	val->tv_sec  = (__force u64) ct / NSEC_PER_SEC;
++	val->tv_nsec = (__force u64) ct % NSEC_PER_SEC;
++}
++
++/*
++ * Convert cputime <-> timeval (msec)
++ */
++static inline cputime_t timeval_to_cputime(struct timeval *val)
++{
++	u64 ret = val->tv_sec * NSEC_PER_SEC + val->tv_usec * NSEC_PER_USEC;
++	return (__force cputime_t) ret;
++}
++static inline void cputime_to_timeval(const cputime_t ct, struct timeval *val)
++{
++	val->tv_sec = (__force u64) ct / NSEC_PER_SEC;
++	val->tv_usec = ((__force u64) ct % NSEC_PER_SEC) / NSEC_PER_USEC;
++}
++
++/*
++ * Convert cputime <-> clock (USER_HZ)
++ */
++#define cputime_to_clock_t(__ct)	\
++	((__force u64)(__ct) / (NSEC_PER_SEC / USER_HZ))
++#define clock_t_to_cputime(__x)		\
++	(__force cputime_t)((__x) * (NSEC_PER_SEC / USER_HZ))
++
++/*
++ * Convert cputime64 to clock.
++ */
++#define cputime64_to_clock_t(__ct)	\
++	cputime_to_clock_t((__force cputime_t)__ct)
++
++#endif
 -- 
 1.7.5.4
+
