@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab3AQMN3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 07:13:29 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47009 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754776Ab3AQMN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 07:13:27 -0500
-Message-ID: <50F7EAD1.8050107@ti.com>
-Date: Thu, 17 Jan 2013 14:13:05 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <sameo@linux.intel.com>, <tony@atomide.com>, <kishon@ti.com>,
-        <sshtylyov@mvista.com>, <bjorn@mork.no>, <linux@arm.linux.org.uk>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 17/22] mfd: omap-usb-host: clean up omap_usbhs_init()
-References: <1358422231-24736-1-git-send-email-rogerq@ti.com> <1358422231-24736-18-git-send-email-rogerq@ti.com> <20130117114804.GG18978@arwen.pp.htv.fi>
-In-Reply-To: <20130117114804.GG18978@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1756135Ab3AQMZS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 07:25:18 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:64712 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850Ab3AQMZQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 07:25:16 -0500
+From: sjur.brandeland@stericsson.com
+To: Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
+Subject: [PATCH] remoteproc: Deallocate firmware image on shutdown
+Date: Thu, 17 Jan 2013 13:25:00 +0100
+Message-Id: <1358425500-4720-1-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2013 01:48 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Thu, Jan 17, 2013 at 01:30:26PM +0200, Roger Quadros wrote:
->> +	if (is_omap_usbhs_rev1(omap))
->> +		reg = omap_usbhs_rev1_hostconfig(omap, reg);
->> +	else if (is_omap_usbhs_rev2(omap))
->> +		reg = omap_usbhs_rev2_hostconfig(omap, reg);
-> 
-> Any way you could maybe:
-> 
-> rev = omap_usbhs_revision(omap)
-> switch(rev) {
-> case REV1:
-> 	foo();
-> 	break;
-> case REV2:
-> 	bar();
-> 	break;
-> default:	/* highest revision */
-> 	baz();
-> }
-> 
-> could be done in a later patch however.
-> 
-I'll fix it in this series.
+From: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
 
---
-cheers,
--roger
+Fixes coherent memory leakage, caused by non-deallocated
+firmware image chunk.
+
+Signed-off-by: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
+---
+
+This fix is intended for v3.8.
+
+Thanks,
+Sjur
+
+ drivers/remoteproc/ste_modem_rproc.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/remoteproc/ste_modem_rproc.c b/drivers/remoteproc/ste_modem_rproc.c
+index a7743c0..fb95c42 100644
+--- a/drivers/remoteproc/ste_modem_rproc.c
++++ b/drivers/remoteproc/ste_modem_rproc.c
+@@ -240,6 +240,8 @@ static int sproc_drv_remove(struct platform_device *pdev)
+ 
+ 	/* Unregister as remoteproc device */
+ 	rproc_del(sproc->rproc);
++	dma_free_coherent(sproc->rproc->dev.parent, SPROC_FW_SIZE,
++			  sproc->fw_addr, sproc->fw_dma_addr);
+ 	rproc_put(sproc->rproc);
+ 
+ 	mdev->drv_data = NULL;
+@@ -297,10 +299,13 @@ static int sproc_probe(struct platform_device *pdev)
+ 	/* Register as a remoteproc device */
+ 	err = rproc_add(rproc);
+ 	if (err)
+-		goto free_rproc;
++		goto free_mem;
+ 
+ 	return 0;
+ 
++free_mem:
++	dma_free_coherent(rproc->dev.parent, SPROC_FW_SIZE,
++			  sproc->fw_addr, sproc->fw_dma_addr);
+ free_rproc:
+ 	/* Reset device data upon error */
+ 	mdev->drv_data = NULL;
+-- 
+1.7.5.4
+
