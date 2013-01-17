@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271Ab3AQGNO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 01:13:14 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:51617 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927Ab3AQGNN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 01:13:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <1358391258-1771-67-git-send-email-keescook@chromium.org>
-References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
-	<1358391258-1771-67-git-send-email-keescook@chromium.org>
-Date: Thu, 17 Jan 2013 07:13:12 +0100
-X-Google-Sender-Auth: UHua7wi6qI3dtnWYj16qnfedTpI
-Message-ID: <CAMuHMdUfMUYjFEft=UDsdnvD2ASQavCGWBwj6H+XUSNJ5UiuZQ@mail.gmail.com>
-Subject: Re: [PATCH 66/86] drivers/video/console: remove depends on CONFIG_EXPERIMENTAL
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+	id S1759014Ab3AQGQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 01:16:45 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43728 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751428Ab3AQGQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 01:16:44 -0500
+Message-ID: <1358403338.6252.16.camel@cumari.coelho.fi>
+Subject: Re: [PATCH 55/86] drivers/net/wireless/ti/wl1251: remove depends on
+ CONFIG_EXPERIMENTAL
+From: Luciano Coelho <coelho@ti.com>
 To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Jiri Kosina <jkosina@suse.cz>, Paul Bolle <pebolle@tiscali.nl>,
-        Arnd Bergmann <arnd@arndb.de>,
+CC: <linux-kernel@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Date: Thu, 17 Jan 2013 08:15:38 +0200
+In-Reply-To: <1358391258-1771-56-git-send-email-keescook@chromium.org>
+References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
+	 <1358391258-1771-56-git-send-email-keescook@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 3:53 AM, Kees Cook <keescook@chromium.org> wrote:
+Hi Kees,
+
+On Wed, 2013-01-16 at 18:53 -0800, Kees Cook wrote:
 > The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 > while now and is almost always enabled by default. As agreed during the
 > Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+> 
+> Cc: Luciano Coelho <coelho@ti.com>
+> Cc: "John W. Linville" <linville@tuxdriver.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  drivers/net/wireless/ti/wl1251/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/wireless/ti/wl1251/Kconfig b/drivers/net/wireless/ti/wl1251/Kconfig
+> index 1fb6584..8fec4ed 100644
+> --- a/drivers/net/wireless/ti/wl1251/Kconfig
+> +++ b/drivers/net/wireless/ti/wl1251/Kconfig
+> @@ -1,6 +1,6 @@
+>  menuconfig WL1251
+>  	tristate "TI wl1251 driver support"
+> -	depends on MAC80211 && EXPERIMENTAL && GENERIC_HARDIRQS
+> +	depends on MAC80211 && GENERIC_HARDIRQS
+>  	select FW_LOADER
+>  	select CRC7
+>  	---help---
 
->  config MDA_CONSOLE
->         depends on !M68K && !PARISC && ISA
-> -       tristate "MDA text console (dual-headed) (EXPERIMENTAL)"
-> +       tristate "MDA text console (dual-headed)"
-
-This is not a "depends on" line.
-
-Gr{oetje,eeting}s,
-
-                        Geert
+This is already in my tree and will be sent up to wireless-next this
+week.
 
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Cheers,
+Luca.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
