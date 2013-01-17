@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab3AQUni (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:43:38 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33809 "EHLO mga09.intel.com"
+	id S1757138Ab3AQUnx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:43:53 -0500
+Received: from mga14.intel.com ([143.182.124.37]:19403 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814Ab3AQUhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:37:14 -0500
+	id S1756689Ab3AQUhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 15:37:13 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="248567541"
+   d="scan'208";a="245260905"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 02/29] perf, x86: Basic Haswell PMU support v2
-Date: Thu, 17 Jan 2013 12:36:25 -0800
-Message-Id: <1358455012-12287-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 19/29] perf, tools: Add support for record transaction flags v3
+Date: Thu, 17 Jan 2013 12:36:42 -0800
+Message-Id: <1358455012-12287-20-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,105 +26,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add basic Haswell PMU support.
+Add the glue in the user tools to record transaction flags with
+--transaction (-T was already taken) and dump them.
 
-Similar to SandyBridge, but has a few new events. Further
-differences are handled in followon patches.
+Followon patches will use them.
 
-There are some new counter flags that need to be prevented
-from being set on fixed counters.
-
-Contains fixes from Stephane Eranian
-
-v2: Folded TSX bits into standard FIXED_EVENT_CONSTRAINTS
+v2: Fix manpage
+v3: Move transaction to the end
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/perf_event.h      |    3 +++
- arch/x86/kernel/cpu/perf_event.h       |    5 ++++-
- arch/x86/kernel/cpu/perf_event_intel.c |   29 +++++++++++++++++++++++++++++
- 3 files changed, 36 insertions(+), 1 deletions(-)
+ tools/perf/Documentation/perf-record.txt |    4 +++-
+ tools/perf/builtin-record.c              |    2 ++
+ tools/perf/perf.h                        |    1 +
+ tools/perf/util/event.h                  |    1 +
+ tools/perf/util/evsel.c                  |    9 +++++++++
+ tools/perf/util/session.c                |    3 +++
+ 6 files changed, 19 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 4fabcdf..4003bb6 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -29,6 +29,9 @@
- #define ARCH_PERFMON_EVENTSEL_INV			(1ULL << 23)
- #define ARCH_PERFMON_EVENTSEL_CMASK			0xFF000000ULL
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 6f3405e..c73dd25 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -185,12 +185,14 @@ is enabled for all the sampling events. The sampled branch type is the same for
+ The various filters must be specified as a comma separated list: --branch-filter any_ret,u,k
+ Note that this feature may not be available on all processors.
  
-+#define HSW_INTX					(1ULL << 32)
-+#define HSW_INTX_CHECKPOINTED				(1ULL << 33)
+--W::
+ --weight::
+ Enable weightened sampling. An additional weight is recorded per sample and can be
+ displayed with the weight and local_weight sort keys.  This currently works for TSX
+ abort events and some memory events in precise mode on modern Intel CPUs.
+ 
++--transaction::
++Record transaction flags for transaction related events.
 +
- #define AMD_PERFMON_EVENTSEL_GUESTONLY			(1ULL << 40)
- #define AMD_PERFMON_EVENTSEL_HOSTONLY			(1ULL << 41)
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 115c1ea..8941899 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -219,11 +219,14 @@ struct cpu_hw_events {
-  *  - inv
-  *  - edge
-  *  - cnt-mask
-+ *  - intx
-+ *  - intx_cp
-  *  The other filters are supported by fixed counters.
-  *  The any-thread option is supported starting with v3.
-  */
-+#define FIXED_EVENT_FLAGS (X86_RAW_EVENT_MASK|HSW_INTX|HSW_INTX_CHECKPOINTED)
- #define FIXED_EVENT_CONSTRAINT(c, n)	\
--	EVENT_CONSTRAINT(c, (1ULL << (32+n)), X86_RAW_EVENT_MASK)
-+	EVENT_CONSTRAINT(c, (1ULL << (32+n)), FIXED_EVENT_FLAGS)
- 
- /*
-  * Constraint on the Event code + UMask
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 93b9e11..3a08534 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -133,6 +133,17 @@ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
- 	EVENT_EXTRA_END
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 4e568aa..8b81f3e 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -1064,6 +1064,8 @@ const struct option record_options[] = {
+ 		     parse_branch_stack),
+ 	OPT_BOOLEAN('W', "weight", &record.opts.sample_weight,
+ 		    "sample by weight (on special events only)"),
++	OPT_BOOLEAN(0, "transaction", &record.opts.sample_transaction,
++		    "sample transaction flags (special events only)"),
+ 	OPT_END()
  };
  
-+static struct event_constraint intel_hsw_event_constraints[] =
-+{
-+	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-+	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-+	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
-+	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
-+	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
-+	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static u64 intel_pmu_event_map(int hw_event)
- {
- 	return intel_perfmon_event_map[hw_event];
-@@ -2107,6 +2118,24 @@ __init int intel_pmu_init(void)
- 		break;
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 7058155..025cc53 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -250,6 +250,7 @@ struct perf_record_opts {
+ 	u64	     default_interval;
+ 	u64	     user_interval;
+ 	u16	     stack_dump_size;
++	bool	     sample_transaction;
+ };
  
+ #endif
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index a97fbbe..84b070d 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -89,6 +89,7 @@ struct perf_sample {
+ 	u64 stream_id;
+ 	u64 period;
+ 	u64 weight;
++	u64 transaction;
+ 	u32 cpu;
+ 	u32 raw_size;
+ 	void *raw_data;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 805d33e..68145f4 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -513,6 +513,9 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 	if (opts->sample_weight)
+ 		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
  
-+	case 60: /* Haswell Client */
-+	case 70:
-+	case 71:
-+		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
-+		       sizeof(hw_cache_event_ids));
++	if (opts->sample_transaction)
++		attr->sample_type	|= PERF_SAMPLE_TRANSACTION;
 +
-+		intel_pmu_lbr_init_nhm();
+ 	attr->mmap = track;
+ 	attr->comm = track;
+ 
+@@ -1068,6 +1071,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		array++;
+ 	}
+ 
++	data->transaction = 0;
++	if (type & PERF_SAMPLE_TRANSACTION) {
++		data->transaction = *array;
++		array++;
++	}
 +
-+		x86_pmu.event_constraints = intel_hsw_event_constraints;
+ 	return 0;
+ }
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 3de9097..076dd77 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1009,6 +1009,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
+ 
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		printf("... weight: %" PRIu64 "\n", sample->weight);
 +
-+		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		/* all extra regs are per-cpu when HT is on */
-+		x86_pmu.er_flags |= ERF_HAS_RSP_1;
-+		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-+
-+		pr_cont("Haswell events, ");
-+		break;
-+
- 	default:
- 		switch (x86_pmu.version) {
- 		case 1:
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		printf("... transaction: %" PRIx64 "\n", sample->transaction);
+ }
+ 
+ static struct machine *
 -- 
 1.7.7.6
 
