@@ -1,33 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab3AQS1B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 13:27:01 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:36523 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070Ab3AQS07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 13:26:59 -0500
-Date: Thu, 17 Jan 2013 19:26:53 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: lars@metafoo.de
-Cc: christophe.leroy@c-s.fr, jic23@cam.ac.uk, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, patrick.vasseur@c-s.fr
-Subject: Re: [PATCH] IIO ADC support for AD7923
-Message-ID: <20130117182653.GA27657@mail.gnudd.com>
+	id S1753850Ab3AQSgA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 13:36:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43467 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab3AQSf6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 13:35:58 -0500
+Message-ID: <50F84441.8080300@canonical.com>
+Date: Thu, 17 Jan 2013 13:34:41 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <50F83695.506@metafoo.de>
-References: <50F83695.506@metafoo.de>  <50F199F7.7020600@metafoo.de>
-  <201301080842.r088gKWO031124@localhost.localdomain>
- <20130108091414.GA28404@mail.gnudd.com>
- <20130117171100.GA24398@mail.gnudd.com>
+To: Ben Hutchings <ben@decadent.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        pkondeti@codeaurora.org, Greg KH <gregkh@linuxfoundation.org>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>
+CC: stable@vger.kernel.org, stern@rowland.harvard.edu,
+        linux-usb@vger.kernel.org
+Subject: [REVERT][v3.x.y] EHCI: Update qTD next pointer in QH overlay region
+ during unlink
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you Lars for you constructive attitude.
+Hello,
 
-See you at fosdem
+Please consider reverting commit 
+3d037774b42ed677f699b1dce7d548d55f4e4c2b in mainline as well as in the 
+current stable releases.  It was included upstream as of v3.6-rc6.  This 
+commit introduced a regression, described in the following bug report:
 
-/alessandro
+http://bugs.launchpad.net/bugs/1088733
+
+Reverting commit 3d037774b42ed677f699b1dce7d548d55f4e4c2b in the v3.2 
+kernel has been confirmed to resolve the aforementioned bug.
+
+
+Sincerely,
+
+Joseph Salisbury
+
