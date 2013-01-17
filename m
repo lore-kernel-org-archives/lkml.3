@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899Ab3AQCyy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 21:54:54 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:37089 "EHLO smtp.outflux.net"
+	id S1758990Ab3AQDCf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:02:35 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:47476 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758774Ab3AQCyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 21:54:52 -0500
+	id S1758885Ab3AQCyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jan 2013 21:54:53 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Alex Dubov <oakad@yahoo.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 16/86] drivers/net/wireless/p54: remove depends on CONFIG_EXPERIMENTAL
-Date: Wed, 16 Jan 2013 18:53:08 -0800
-Message-Id: <1358391258-1771-17-git-send-email-keescook@chromium.org>
+Subject: [PATCH 53/86] drivers/memstick: remove depends on CONFIG_EXPERIMENTAL
+Date: Wed, 16 Jan 2013 18:53:45 -0800
+Message-Id: <1358391258-1771-54-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358391258-1771-1-git-send-email-keescook@chromium.org>
 References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
@@ -28,27 +27,27 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-CC: Christian Lamparter <chunkeey@googlemail.com>
-CC: "John W. Linville" <linville@tuxdriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Alex Dubov <oakad@yahoo.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/net/wireless/p54/Kconfig |    2 +-
+ drivers/memstick/Kconfig |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/p54/Kconfig b/drivers/net/wireless/p54/Kconfig
-index 0ec55b5..15ea36b 100644
---- a/drivers/net/wireless/p54/Kconfig
-+++ b/drivers/net/wireless/p54/Kconfig
-@@ -1,6 +1,6 @@
- config P54_COMMON
- 	tristate "Softmac Prism54 support"
--	depends on MAC80211 && EXPERIMENTAL
-+	depends on MAC80211
- 	select FW_LOADER
- 	select CRC_CCITT
- 	---help---
+diff --git a/drivers/memstick/Kconfig b/drivers/memstick/Kconfig
+index f0ca41c..1314605 100644
+--- a/drivers/memstick/Kconfig
++++ b/drivers/memstick/Kconfig
+@@ -3,7 +3,7 @@
+ #
+ 
+ menuconfig MEMSTICK
+-	tristate "Sony MemoryStick card support (EXPERIMENTAL)"
++	tristate "Sony MemoryStick card support"
+ 	help
+ 	  Sony MemoryStick is a proprietary storage/extension card protocol.
+ 
 -- 
 1.7.9.5
 
