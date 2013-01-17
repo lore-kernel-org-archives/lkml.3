@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3AQTsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 14:48:21 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:44232 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab3AQTsU (ORCPT
+	id S1756213Ab3AQTvA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 14:51:00 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:52610 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755033Ab3AQTu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 14:48:20 -0500
-Date: Thu, 17 Jan 2013 11:48:16 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Hozza <thozza@redhat.com>
-Cc: kys@microsoft.com, jasowang@redhat.com, haiyangz@microsoft.com,
-        linux-kernel@vger.kernel.org, habdi@microsoft.com
-Subject: Re: [PATCH 2/2] tools: hv: Use CLOEXEC when opening kvp_pool files
-Message-ID: <20130117194816.GA11884@kroah.com>
-References: <1357644403-11140-1-git-send-email-thozza@redhat.com>
- <1357644403-11140-2-git-send-email-thozza@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357644403-11140-2-git-send-email-thozza@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Jan 2013 14:50:59 -0500
+Date: Thu, 17 Jan 2013 14:50:56 -0500 (EST)
+Message-Id: <20130117.145056.60689530330513006.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2013-01-17
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130117173239.GA2098@tuxdriver.com>
+References: <20130117173239.GA2098@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 12:26:43PM +0100, Tomas Hozza wrote:
-> Use CLOEXEC flag when opening kvp_pool_x files to prevent file
-> descriptor leakage. Not using it was causing a problem when
-> SELinux was enabled.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Thu, 17 Jan 2013 12:32:40 -0500
+
+> This batch of fixes is intended for 3.8...
 > 
-> Signed-off-by: Tomas Hozza <thozza@redhat.com>
-> Acked-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  tools/hv/hv_kvp_daemon.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+> Included is a Bluetooth pull.  Gustavo says:
+> 
+> "A few fixes for 3.8. Five of them are just new devices ids addition.
+> Apart from the that there is fix to a kernel memory leak to userspace from
+> Anderson Lizardo, two interoperability fixes from Jaganath Kanakkassery and
+> Szymon Janc. And a crash fix by me."
+> 
+> Along with that, Amitkumar Karwar brings a pair of mwifiex fixes for
+> problems related to handling of band information within the driver.
+> These problems can lead to association failures.
+> 
+> Sujith Manoharan fixes a memory leak in the ath9k_htc code (originally
+> reported by Larry Finger).
+> 
+> The big hero this round is Felix Fietkau.  Felix gives us seven
+> ath9k fixes, including a fix for a race condition, the removal of a
+> double-free, and a fix for a deadlock, among others.
+> 
+> These have all been in linux-next for at least a couple of days,
+> with no complaints so far.  Please let me know if there are problems!
 
-This patch no longer applies, care to redo it and resend?
-
-thanks,
-
-greg k-h
+Pulled, thanks John.
