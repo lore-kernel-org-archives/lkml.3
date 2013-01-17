@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab3AQUhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 15:37:18 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33822 "EHLO mga09.intel.com"
+	id S1757240Ab3AQUhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 15:37:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33895 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756828Ab3AQUhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 15:37:15 -0500
+	id S1753691Ab3AQUhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 15:37:48 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,486,1355126400"; 
-   d="scan'208";a="248567543"
+   d="scan'208";a="273439812"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 13/29] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v3
-Date: Thu, 17 Jan 2013 12:36:36 -0800
-Message-Id: <1358455012-12287-14-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 17/29] perf, core: Add generic transaction flags v3
+Date: Thu, 17 Jan 2013 12:36:40 -0800
+Message-Id: <1358455012-12287-18-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
 References: <1358455012-12287-1-git-send-email-andi@firstfloor.org>
@@ -26,84 +26,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With checkpointed counters there can be a situation where the counter
-is overflowing, aborts the transaction, is set back to a non overflowing
-checkpoint, causes interupt. The interrupt doesn't see the overflow
-because it has been checkpointed.  This is then a spurious PMI, typically with a
-ugly NMI message.  It can also lead to excessive aborts.
+Add a generic qualifier for transaction events, as a new sample
+type that returns a flag word. This is particularly useful
+for qualifying aborts: to distinguish aborts which happen
+due to asynchronous events (like conflicts caused by another
+CPU) versus instructions that lead to an abort.
 
-Avoid this problem by:
-- Using the full counter width for counting counters (previous patch)
-- Forbid sampling for checkpointed counters. It's not too useful anyways,
-checkpointing is mainly for counting.
-- On a PMI always set back checkpointed counters to zero.
+The tuning strategies are very different for those cases,
+so it's important to distinguish them easily and early.
 
-v2: Add unlikely. Add comment
-v3: Allow large sampling periods with CP for KVM
+Since it's inconvenient and inflexible to filter for this
+in the kernel we report all the events out and allow
+some post processing in user space.
+
+The flags are based on the Intel TSX events, but should be fairly
+generic and mostly applicable to other architectures too. In addition
+to various flag words there's also reserved space to report an
+program supplied abort code. For TSX this is used to distinguish specific
+classes of aborts, like a lock busy abort when doing lock elision.
+
+This adds the perf core glue needed for reporting the new flag word out.
+
+v2: Add MEM/MISC
+v3: Move transaction to the end
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   34 ++++++++++++++++++++++++++++++++
- 1 files changed, 34 insertions(+), 0 deletions(-)
+ include/linux/perf_event.h      |    2 ++
+ include/uapi/linux/perf_event.h |   26 ++++++++++++++++++++++++--
+ kernel/events/core.c            |    6 ++++++
+ 3 files changed, 32 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index bc21bce..9b4dda5 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1079,6 +1079,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
- int intel_pmu_save_and_restart(struct perf_event *event)
- {
- 	x86_perf_event_update(event);
-+	/*
-+	 * For a checkpointed counter always reset back to 0.  This
-+	 * avoids a situation where the counter overflows, aborts the
-+	 * transaction and is then set back to shortly before the
-+	 * overflow, and overflows and aborts again.
-+	 */
-+	if (unlikely(event->hw.config & HSW_INTX_CHECKPOINTED)) {
-+		/* No race with NMIs because the counter should not be armed */
-+		wrmsrl(event->hw.event_base, 0);
-+		local64_set(&event->hw.prev_count, 0);
-+	}
- 	return x86_perf_event_set_period(event);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index c9686c8..c32fba3 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -589,6 +589,7 @@ struct perf_sample_data {
+ 	struct perf_regs_user		regs_user;
+ 	u64				stack_user_size;
+ 	u64				weight;
++	u64				transaction;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -603,6 +604,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->regs_user.regs = NULL;
+ 	data->stack_user_size = 0;
+ 	data->weight = 0;
++	data->transaction = 0;
  }
  
-@@ -1162,6 +1173,15 @@ again:
- 		x86_pmu.drain_pebs(regs);
- 	}
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 6f80062..8c0d439 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -133,9 +133,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
+ 	PERF_SAMPLE_WEIGHT			= 1U << 14,
++	PERF_SAMPLE_TRANSACTION			= 1U << 15,
  
-+	/*
-+ 	 * To avoid spurious interrupts with perf stat always reset checkpointed
-+ 	 * counters.
-+ 	 *
-+	 * XXX move somewhere else.
-+	 */
-+	if (cpuc->events[2] && (cpuc->events[2]->hw.config & HSW_INTX_CHECKPOINTED))
-+		status |= (1ULL << 2);
+-	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+-
++	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
+ };
+ 
+ /*
+@@ -179,6 +179,28 @@ enum perf_sample_regs_abi {
+ };
+ 
+ /*
++ * Values for the transaction event qualifier, mostly for abort events.
++ */
++enum {
++	PERF_SAMPLE_TXN_ELISION     = (1 << 0), /* From elision */
++	PERF_SAMPLE_TXN_TRANSACTION = (1 << 1), /* From transaction */
++	PERF_SAMPLE_TXN_SYNC        = (1 << 2), /* Instruction is related */
++	PERF_SAMPLE_TXN_ASYNC       = (1 << 3), /* Instruction not related */
++	PERF_SAMPLE_TXN_RETRY       = (1 << 4), /* Retry possible */
++	PERF_SAMPLE_TXN_CONFLICT    = (1 << 5), /* Conflict abort */
++	PERF_SAMPLE_TXN_CAPACITY    = (1 << 6), /* Capacity abort */
++	PERF_SAMPLE_TXN_MEMORY      = (1 << 7), /* Memory related abort */
++	PERF_SAMPLE_TXN_MISC        = (1 << 8), /* Misc aborts */
 +
- 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
- 		struct perf_event *event = cpuc->events[bit];
++	PERF_SAMPLE_TXN_MAX	    = (1 << 9),  /* non-ABI */
++
++	/* bits 24..31 are reserved for the abort code */
++
++	PERF_SAMPLE_TXN_ABORT_MASK  = 0xff000000,
++	PERF_SAMPLE_TXN_ABORT_SHIFT = 24,
++};
++
++/*
+  * The format of the data returned by read() on a perf event fd,
+  * as specified by attr.read_format:
+  *
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 749bdf4..b4078a0 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -955,6 +955,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		size += sizeof(data->weight);
  
-@@ -1615,6 +1635,20 @@ static int hsw_hw_config(struct perf_event *event)
- 	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
- 	      event->attr.precise_ip > 0))
- 		return -EIO;
-+	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
-+		/*
-+		 * Sampling of checkpointed events can cause situations where
-+		 * the CPU constantly aborts because of a overflow, which is
-+		 * then checkpointed back and ignored. Forbid checkpointing
-+		 * for sampling.
-+		 *
-+		 * But still allow a long sampling period, so that perf stat
-+		 * from KVM works.
-+		 */
-+		if (event->attr.sample_period > 0 &&
-+		    event->attr.sample_period < 0x7fffffff)
-+			return -EIO;
-+	}
- 	return 0;
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		size += sizeof(data->transaction);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		size += event->read_size;
+ 
+@@ -4175,6 +4178,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		perf_output_put(handle, data->weight);
++
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		perf_output_put(handle, data->transaction);
  }
  
+ void perf_prepare_sample(struct perf_event_header *header,
 -- 
 1.7.7.6
 
