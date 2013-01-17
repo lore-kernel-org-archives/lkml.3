@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759025Ab3AQDPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jan 2013 22:15:43 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:42943 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758432Ab3AQDPk (ORCPT
+	id S1759044Ab3AQDQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jan 2013 22:16:01 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:64077 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758199Ab3AQDP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jan 2013 22:15:40 -0500
-Date: Wed, 16 Jan 2013 22:15:38 -0500 (EST)
-Message-Id: <20130116.221538.1756411165313441486.davem@davemloft.net>
-To: carlos@systemhalted.org
-Cc: vapier@gentoo.org, libc-alpha@sourceware.org, bhutchings@solarflare.com,
-        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
-        eblake@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
-        schwab@suse.de
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and
- <linux/in6.h>
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <50F75EA7.4060309@systemhalted.org>
-References: <201301161205.04502.vapier@gentoo.org>
-	<20130116.135744.697469565804508454.davem@davemloft.net>
-	<50F75EA7.4060309@systemhalted.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jan 2013 22:15:57 -0500
+Date: Wed, 16 Jan 2013 22:16:05 -0500
+From: Jake Champlin <jake.champlin.27@gmail.com>
+To: mfm@muteddisk.com
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        jake.champlin.27@gmail.com
+Subject: [PATCH 2/2] Staging: usbip: usbipcommon: Fixed single line bracing
+ issue
+Message-ID: <20130117031600.GA1313@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Carlos O'Donell <carlos@systemhalted.org>
-Date: Wed, 16 Jan 2013 21:15:03 -0500
+Fixed coding style issue with single line braces.
 
-> +/* If a glibc-based userspace has already included in.h, then we will not 
-> + * define in6_addr (nor the defines), sockaddr_in6, or ipv6_mreq. The
-> + * ABI used by the kernel and by glibc match exactly. Neither the kernel
-> + * nor glibc should break this ABI without coordination.
-> + */
-> +#ifndef _NETINET_IN_H
-> +
+Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
+---
+ drivers/staging/usbip/usbip_common.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-I think we should shoot for a non-glibc-centric solution.
+diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
+index 75189fe..75aa5bf 100644
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -672,9 +672,8 @@ int usbip_recv_iso(struct usbip_device *ud, struct urb *urb)
+ 		return 0;
+ 
+ 	/* my Bluetooth dongle gets ISO URBs which are np = 0 */
+-	if (np == 0) {
++	if (np == 0)
+ 		return 0;
+-	}
+ 
+ 	buff = kzalloc(size, GFP_KERNEL);
+ 	if (!buff)
+-- 
+1.8.1.1
 
-I can't imagine that other libc's won't have the same exact problem
-with their netinet/in.h conflicting with the kernel's, redefining
-structures like in6_addr, that we'd want to provide a protection
-scheme for here as well.
 
-Let's pick some more generic names and themes for the CPP macros and
-comments we use to protect the header file blocks and describe that
-protection scheme.
-
-Thanks.
+-- 
+Jake Champlin
+jake.champlin.27@gmail.com
+8123742937
+<MuttClient>
