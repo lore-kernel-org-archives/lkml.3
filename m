@@ -1,120 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759356Ab3AQJTt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 04:19:49 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:36612 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755787Ab3AQJTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 04:19:46 -0500
-From: Philip Avinash <avinashphilip@ti.com>
-To: <thierry.reding@avionic-design.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>,
-        Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH v2 2/2] pwm: pwm-tiecap: Low power sleep support
-Date: Thu, 17 Jan 2013 14:50:03 +0530
-Message-ID: <1358414403-13431-3-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358414403-13431-1-git-send-email-avinashphilip@ti.com>
-References: <1358414403-13431-1-git-send-email-avinashphilip@ti.com>
+	id S1759297Ab3AQJZA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 04:25:00 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:64157 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755997Ab3AQJY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 04:24:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1358391258-1771-26-git-send-email-keescook@chromium.org>
+References: <1358391258-1771-1-git-send-email-keescook@chromium.org>
+	<1358391258-1771-26-git-send-email-keescook@chromium.org>
+Date: Thu, 17 Jan 2013 10:24:56 +0100
+Message-ID: <CAHTX3dKAdrnDQLBhA-vEiQP+BHHaHJ55AsCB642TrdeFCA1h3g@mail.gmail.com>
+Subject: Re: [PATCH 25/86] arch/microblaze/platform: remove depends on CONFIG_EXPERIMENTAL
+From: Michal Simek <monstr@monstr.eu>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In low power modes of AM33XX platforms, peripherals power is cut off.
-This patch supports low power sleep transition support for ECAP driver.
+2013/1/17 Kees Cook <keescook@chromium.org>:
+> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+> while now and is almost always enabled by default. As agreed during the
+> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+>
+> CC: Michal Simek <monstr@monstr.eu>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
----
-Changes since v1:
-	- check the enabled status of pwm device for handling module
-	  enable/disable on resume/suspend
+Acked-by: Michal Simek <monstr@monstr.eu>
 
- drivers/pwm/pwm-tiecap.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+Thanks,
+Michal
 
-diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
-index 5cf016d..05b676d 100644
---- a/drivers/pwm/pwm-tiecap.c
-+++ b/drivers/pwm/pwm-tiecap.c
-@@ -41,10 +41,17 @@
- #define ECCTL2_SYNC_SEL_DISA	(BIT(7) | BIT(6))
- #define ECCTL2_TSCTR_FREERUN	BIT(4)
- 
-+struct ecap_context {
-+	u32	cap3;
-+	u32	cap4;
-+	u16	ecctl2;
-+};
-+
- struct ecap_pwm_chip {
- 	struct pwm_chip	chip;
- 	unsigned int	clk_rate;
- 	void __iomem	*mmio_base;
-+	struct ecap_context ctx;
- };
- 
- static inline struct ecap_pwm_chip *to_ecap_pwm_chip(struct pwm_chip *chip)
-@@ -288,11 +295,57 @@ static int ecap_pwm_remove(struct platform_device *pdev)
- 	return pwmchip_remove(&pc->chip);
- }
- 
-+void ecap_pwm_save_context(struct ecap_pwm_chip *pc)
-+{
-+	pm_runtime_get_sync(pc->chip.dev);
-+	pc->ctx.ecctl2 = readw(pc->mmio_base + ECCTL2);
-+	pc->ctx.cap4 = readl(pc->mmio_base + CAP4);
-+	pc->ctx.cap3 = readl(pc->mmio_base + CAP3);
-+	pm_runtime_put_sync(pc->chip.dev);
-+}
-+
-+void ecap_pwm_restore_context(struct ecap_pwm_chip *pc)
-+{
-+	writel(pc->ctx.cap3, pc->mmio_base + CAP3);
-+	writel(pc->ctx.cap4, pc->mmio_base + CAP4);
-+	writew(pc->ctx.ecctl2, pc->mmio_base + ECCTL2);
-+}
-+
-+static int ecap_pwm_suspend(struct device *dev)
-+{
-+	struct ecap_pwm_chip *pc = dev_get_drvdata(dev);
-+	struct pwm_device *pwm = pc->chip.pwms;
-+
-+	ecap_pwm_save_context(pc);
-+
-+	/* Disable explicitly if PWM is running */
-+	if (test_bit(PWMF_ENABLED, &pwm->flags))
-+		pm_runtime_put_sync(dev);
-+
-+	return 0;
-+}
-+
-+static int ecap_pwm_resume(struct device *dev)
-+{
-+	struct ecap_pwm_chip *pc = dev_get_drvdata(dev);
-+	struct pwm_device *pwm = pc->chip.pwms;
-+
-+	/* Enable explicitly if PWM was running */
-+	if (test_bit(PWMF_ENABLED, &pwm->flags))
-+		pm_runtime_get_sync(dev);
-+
-+	ecap_pwm_restore_context(pc);
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(ecap_pwm_pm_ops, ecap_pwm_suspend, ecap_pwm_resume);
-+
- static struct platform_driver ecap_pwm_driver = {
- 	.driver = {
- 		.name	= "ecap",
- 		.owner	= THIS_MODULE,
- 		.of_match_table = ecap_of_match,
-+		.pm	= &ecap_pwm_pm_ops,
- 	},
- 	.probe = ecap_pwm_probe,
- 	.remove = ecap_pwm_remove,
 -- 
-1.7.9.5
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian
