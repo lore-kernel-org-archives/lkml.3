@@ -1,155 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab3ARBzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 20:55:20 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:63187 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab3ARBzS (ORCPT
+	id S1755127Ab3ARCFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 21:05:16 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:63400 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020Ab3ARCFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 20:55:18 -0500
-Message-ID: <1358474106.25899.1.camel@phoenix>
-Subject: [PATCH RESEND] regulator: s5m8767: Convert to
- regulator_[get|set]_voltage_sel_regmap
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>,
-        Inderpal Singh <inderpal.singh@linaro.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Fri, 18 Jan 2013 09:55:06 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 17 Jan 2013 21:05:11 -0500
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH 3/4 v4] serial: vt8500: UART uses gated clock rather than 24Mhz reference
+Date: Fri, 18 Jan 2013 15:05:31 +1300
+Message-Id: <1358474732-5422-2-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358474732-5422-1-git-send-email-linux@prisktech.co.nz>
+References: <1358474732-5422-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+UART modules on Wondermedia SoCs are connected via a gated clock
+source, rather than directly to the 24Mhz reference clock. While
+uboot enables UART0 for debugging, other UART ports are unavailable
+until the clock is enabled.
+
+This patch checks that a valid clock is actually passed from devicetree,
+enables the clock in probe. This change removes the fallback when a
+clock was not specified as it doesn't apply any longer (and would only
+work if the UART clock was already enabled).
+
+DTSI files are updated for VT8500, WM8505 and WM8650.
+
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
-This patch was sent on https://lkml.org/lkml/2012/12/28/91
-This resend re-generate the patch against topic/s5m8767 branch.
+ arch/arm/boot/dts/vt8500.dtsi      |   40 +++++++++++++++++++++---
+ arch/arm/boot/dts/wm8505.dtsi      |   60 ++++++++++++++++++++++++++++++++----
+ arch/arm/boot/dts/wm8650.dtsi      |   20 ++++++++++--
+ drivers/tty/serial/vt8500_serial.c |   34 +++++++++++---------
+ 4 files changed, 127 insertions(+), 27 deletions(-)
 
- drivers/regulator/s5m8767.c |   50 +++++++++++--------------------------------
- 1 file changed, 12 insertions(+), 38 deletions(-)
-
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index 94b8e48..aa0ccef 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -255,10 +255,8 @@ static int s5m8767_reg_disable(struct regulator_dev *rdev)
- 	return sec_reg_update(s5m8767->iodev, reg, ~mask, mask);
- }
+diff --git a/arch/arm/boot/dts/vt8500.dtsi b/arch/arm/boot/dts/vt8500.dtsi
+index d8645e9..cf31ced 100644
+--- a/arch/arm/boot/dts/vt8500.dtsi
++++ b/arch/arm/boot/dts/vt8500.dtsi
+@@ -45,6 +45,38 @@
+ 					compatible = "fixed-clock";
+ 					clock-frequency = <24000000>;
+ 				};
++
++				clkuart0: uart0 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <1>;
++				};
++
++				clkuart1: uart1 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <2>;
++				};
++
++				clkuart2: uart2 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <3>;
++				};
++
++				clkuart3: uart3 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <4>;
++				};
+ 			};
+ 		};
  
--static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
-+static int s5m8767_get_vsel_reg(int reg_id, struct s5m8767_info *s5m8767)
- {
--	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
--	int reg_id = rdev_get_id(rdev);
- 	int reg;
+@@ -83,28 +115,28 @@
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8200000 0x1040>;
+ 			interrupts = <32>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart0>;
+ 		};
  
- 	switch (reg_id) {
-@@ -296,31 +294,7 @@ static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
- 		return -EINVAL;
- 	}
+ 		uart@d82b0000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd82b0000 0x1040>;
+ 			interrupts = <33>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart1>;
+ 		};
  
--	*_reg = reg;
--
--	return 0;
--}
--
--static int s5m8767_get_voltage_sel(struct regulator_dev *rdev)
--{
--	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
--	int reg, mask, ret;
--	int reg_id = rdev_get_id(rdev);
--	unsigned int val;
--
--	ret = s5m8767_get_voltage_register(rdev, &reg);
--	if (ret)
--		return ret;
--
--	mask = (reg_id < S5M8767_BUCK1) ? 0x3f : 0xff;
--
--	ret = sec_reg_read(s5m8767->iodev, reg, &val);
--	if (ret)
--		return ret;
--
--	val &= mask;
--
--	return val;
-+	return reg;
- }
+ 		uart@d8210000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8210000 0x1040>;
+ 			interrupts = <47>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart2>;
+ 		};
  
- static int s5m8767_convert_voltage_to_sel(const struct sec_voltage_desc *desc,
-@@ -372,15 +346,13 @@ static int s5m8767_set_voltage_sel(struct regulator_dev *rdev,
- {
- 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
- 	int reg_id = rdev_get_id(rdev);
--	int reg, mask, ret = 0, old_index, index = 0;
-+	int old_index, index = 0;
- 	u8 *buck234_vol = NULL;
+ 		uart@d82c0000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd82c0000 0x1040>;
+ 			interrupts = <50>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart3>;
+ 		};
  
- 	switch (reg_id) {
- 	case S5M8767_LDO1 ... S5M8767_LDO28:
--		mask = 0x3f;
- 		break;
- 	case S5M8767_BUCK1 ... S5M8767_BUCK6:
--		mask = 0xff;
- 		if (reg_id == S5M8767_BUCK2 && s5m8767->buck2_gpiodvs)
- 			buck234_vol = &s5m8767->buck2_vol[0];
- 		else if (reg_id == S5M8767_BUCK3 && s5m8767->buck3_gpiodvs)
-@@ -391,7 +363,6 @@ static int s5m8767_set_voltage_sel(struct regulator_dev *rdev,
- 	case S5M8767_BUCK7 ... S5M8767_BUCK8:
- 		return -EINVAL;
- 	case S5M8767_BUCK9:
--		mask = 0xff;
- 		break;
- 	default:
- 		return -EINVAL;
-@@ -411,11 +382,7 @@ static int s5m8767_set_voltage_sel(struct regulator_dev *rdev,
- 		else
- 			return s5m8767_set_low(s5m8767);
- 	} else {
--		ret = s5m8767_get_voltage_register(rdev, &reg);
--		if (ret)
--			return ret;
+ 		rtc@d8100000 {
+diff --git a/arch/arm/boot/dts/wm8505.dtsi b/arch/arm/boot/dts/wm8505.dtsi
+index 330f833..e74a1c0 100644
+--- a/arch/arm/boot/dts/wm8505.dtsi
++++ b/arch/arm/boot/dts/wm8505.dtsi
+@@ -59,6 +59,54 @@
+ 					compatible = "fixed-clock";
+ 					clock-frequency = <24000000>;
+ 				};
++
++				clkuart0: uart0 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <1>;
++				};
++
++				clkuart1: uart1 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <2>;
++				};
++
++				clkuart2: uart2 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <3>;
++				};
++
++				clkuart3: uart3 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <4>;
++				};
++
++				clkuart4: uart4 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <22>;
++				};
++
++				clkuart5: uart5 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <23>;
++				};
+ 			};
+ 		};
+ 
+@@ -96,42 +144,42 @@
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8200000 0x1040>;
+ 			interrupts = <32>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart0>;
+ 		};
+ 
+ 		uart@d82b0000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd82b0000 0x1040>;
+ 			interrupts = <33>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart1>;
+ 		};
+ 
+ 		uart@d8210000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8210000 0x1040>;
+ 			interrupts = <47>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart2>;
+ 		};
+ 
+ 		uart@d82c0000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd82c0000 0x1040>;
+ 			interrupts = <50>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart3>;
+ 		};
+ 
+ 		uart@d8370000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8370000 0x1040>;
+ 			interrupts = <31>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart4>;
+ 		};
+ 
+ 		uart@d8380000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8380000 0x1040>;
+ 			interrupts = <30>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart5>;
+ 		};
+ 
+ 		rtc@d8100000 {
+diff --git a/arch/arm/boot/dts/wm8650.dtsi b/arch/arm/boot/dts/wm8650.dtsi
+index 83b9467..db3c0a1 100644
+--- a/arch/arm/boot/dts/wm8650.dtsi
++++ b/arch/arm/boot/dts/wm8650.dtsi
+@@ -75,6 +75,22 @@
+ 					reg = <0x204>;
+ 				};
+ 
++				clkuart0: uart0 {
++ 					#clock-cells = <0>;
++ 					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <1>;
++ 				};
++
++				clkuart1: uart1 {
++					#clock-cells = <0>;
++					compatible = "via,vt8500-device-clock";
++					clocks = <&ref24>;
++					enable-reg = <0x250>;
++					enable-bit = <2>;
++				};
++
+ 				arm: arm {
+ 					#clock-cells = <0>;
+ 					compatible = "via,vt8500-device-clock";
+@@ -128,14 +144,14 @@
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd8200000 0x1040>;
+ 			interrupts = <32>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart0>;
+ 		};
+ 
+ 		uart@d82b0000 {
+ 			compatible = "via,vt8500-uart";
+ 			reg = <0xd82b0000 0x1040>;
+ 			interrupts = <33>;
+-			clocks = <&ref24>;
++			clocks = <&clkuart1>;
+ 		};
+ 
+ 		rtc@d8100000 {
+diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
+index 3e76dff..1061e57 100644
+--- a/drivers/tty/serial/vt8500_serial.c
++++ b/drivers/tty/serial/vt8500_serial.c
+@@ -593,6 +593,23 @@ static int vt8500_serial_probe(struct platform_device *pdev)
+ 	if (!vt8500_port)
+ 		return -ENOMEM;
+ 
++	vt8500_port->uart.membase = devm_request_and_ioremap(&pdev->dev, mmres);
++	if (!vt8500_port->uart.membase)
++		return -EADDRNOTAVAIL;
++
++	vt8500_port->clk = of_clk_get(pdev->dev.of_node, 0);
++	if (IS_ERR(vt8500_port->clk)) {
++		dev_err(&pdev->dev, "failed to get clock\n");
++		ret = -EINVAL;
++		goto err;
++	}
++
++	ret = clk_prepare_enable(vt8500_port->clk);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to enable clock\n");
++		goto err;
++	}
++
+ 	vt8500_port->uart.type = PORT_VT8500;
+ 	vt8500_port->uart.iotype = UPIO_MEM;
+ 	vt8500_port->uart.mapbase = mmres->start;
+@@ -602,25 +619,11 @@ static int vt8500_serial_probe(struct platform_device *pdev)
+ 	vt8500_port->uart.line = port;
+ 	vt8500_port->uart.dev = &pdev->dev;
+ 	vt8500_port->uart.flags = UPF_IOREMAP | UPF_BOOT_AUTOCONF;
 -
--		return sec_reg_update(s5m8767->iodev, reg, selector, mask);
-+		return regulator_set_voltage_sel_regmap(rdev, selector);
- 	}
- }
+-	vt8500_port->clk = of_clk_get(pdev->dev.of_node, 0);
+-	if (vt8500_port->clk) {
+-		vt8500_port->uart.uartclk = clk_get_rate(vt8500_port->clk);
+-	} else {
+-		/* use the default of 24Mhz if not specified and warn */
+-		pr_warn("%s: serial clock source not specified\n", __func__);
+-		vt8500_port->uart.uartclk = 24000000;
+-	}
++	vt8500_port->uart.uartclk = clk_get_rate(vt8500_port->clk);
  
-@@ -440,7 +407,7 @@ static struct regulator_ops s5m8767_ops = {
- 	.is_enabled		= s5m8767_reg_is_enabled,
- 	.enable			= s5m8767_reg_enable,
- 	.disable		= s5m8767_reg_disable,
--	.get_voltage_sel	= s5m8767_get_voltage_sel,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel	= s5m8767_set_voltage_sel,
- 	.set_voltage_time_sel	= s5m8767_set_voltage_time_sel,
- };
-@@ -747,11 +714,18 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
- 				(desc->max - desc->min) / desc->step + 1;
- 			regulators[id].min_uV = desc->min;
- 			regulators[id].uV_step = desc->step;
-+			regulators[id].vsel_reg =
-+				s5m8767_get_vsel_reg(id, s5m8767);
-+			if (id < S5M8767_BUCK1)
-+				regulators[id].vsel_mask = 0x3f;
-+			else
-+				regulators[id].vsel_mask = 0xff;
- 		}
+ 	snprintf(vt8500_port->name, sizeof(vt8500_port->name),
+ 		 "VT8500 UART%d", pdev->id);
  
- 		config.dev = s5m8767->dev;
- 		config.init_data = pdata->regulators[i].initdata;
- 		config.driver_data = s5m8767;
-+		config.regmap = iodev->regmap;
+-	vt8500_port->uart.membase = devm_request_and_ioremap(&pdev->dev, mmres);
+-	if (!vt8500_port->uart.membase) {
+-		ret = -EADDRNOTAVAIL;
+-		goto err;
+-	}
+-
+ 	vt8500_uart_ports[port] = vt8500_port;
  
- 		rdev[i] = regulator_register(&regulators[id], &config);
- 		if (IS_ERR(rdev[i])) {
+ 	uart_add_one_port(&vt8500_uart_driver, &vt8500_port->uart);
+@@ -639,6 +642,7 @@ static int vt8500_serial_remove(struct platform_device *pdev)
+ 	struct vt8500_port *vt8500_port = platform_get_drvdata(pdev);
+ 
+ 	platform_set_drvdata(pdev, NULL);
++	clk_disable_unprepare(vt8500_port->clk);
+ 	uart_remove_one_port(&vt8500_uart_driver, &vt8500_port->uart);
+ 	kfree(vt8500_port);
+ 
 -- 
 1.7.9.5
-
-
 
