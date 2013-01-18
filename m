@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab3AROXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 09:23:04 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37080 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab3AROXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 09:23:01 -0500
-Date: Fri, 18 Jan 2013 16:22:51 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-CC: <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        <jg1.han@samsung.com>, <linux-samsung-soc@vger.kernel.org>,
-        <p.paneri@samsung.com>, <gregkh@linuxfoundation.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kgene.kim@samsung.com>,
-        <rob.herring@calxeda.com>, <sylvester.nawrocki@gmail.com>
-Subject: Re: [PATCH v7 2/4] usb: phy: samsung: Add host phy support to
- samsung-phy driver
-Message-ID: <20130118142251.GL4672@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1357916550-11421-3-git-send-email-gautam.vivek@samsung.com>
- <1358166135-22073-1-git-send-email-gautam.vivek@samsung.com>
- <20130118131633.GJ4672@arwen.pp.htv.fi>
- <CAFp+6iF9H+n1Fwr89es-jtDAN=ht1PuXQER9vQ=jG2RZQTceWw@mail.gmail.com>
+	id S1755728Ab3AROYN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 09:24:13 -0500
+Received: from 94.43.138.210.xn.2iij.net ([210.138.43.94]:45736 "EHLO
+	mail.st-paulia.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751833Ab3AROYL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 09:24:11 -0500
+Message-ID: <50F95B0A.1090205@linux-ipv6.org>
+Date: Fri, 18 Jan 2013 23:24:10 +0900
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Organization: USAGI Project
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yaPAUYI/0vT2YKpA"
-Content-Disposition: inline
-In-Reply-To: <CAFp+6iF9H+n1Fwr89es-jtDAN=ht1PuXQER9vQ=jG2RZQTceWw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Carlos O'Donell" <carlos@systemhalted.org>
+CC: Pedro Alves <palves@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
+        David Miller <davem@davemloft.net>, libc-alpha@sourceware.org,
+        bhutchings@solarflare.com, amwang@redhat.com, tmb@mageia.org,
+        eblake@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
+        schwab@suse.de, YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
+References: <201301161205.04502.vapier@gentoo.org> <50F75EA7.4060309@systemhalted.org> <20130116.221538.1756411165313441486.davem@davemloft.net> <201301172320.19905.vapier@gentoo.org> <CAE2sS1jMhnRcoo1oe7wQ+SP=40u9mkps6vXua8TQQ4Tbf2qKOQ@mail.gmail.com> <50F927A5.5060409@redhat.com> <50F94FA6.6070005@systemhalted.org>
+In-Reply-To: <50F94FA6.6070005@systemhalted.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---yaPAUYI/0vT2YKpA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Carlos O'Donell wrote:
+> On 01/18/2013 05:44 AM, Pedro Alves wrote:
+>> On 01/18/2013 04:22 AM, Carlos O'Donell wrote:
+>>> On Thu, Jan 17, 2013 at 11:20 PM, Mike Frysinger <vapier@gentoo.org> wrote:
+>>>> On Wednesday 16 January 2013 22:15:38 David Miller wrote:
+>>>>> From: Carlos O'Donell <carlos@systemhalted.org>
+>>>>> Date: Wed, 16 Jan 2013 21:15:03 -0500
+>>>>>
+>>>>>> +/* If a glibc-based userspace has already included in.h, then we will
+>>>>>> not + * define in6_addr (nor the defines), sockaddr_in6, or ipv6_mreq.
+>>>>>> The + * ABI used by the kernel and by glibc match exactly. Neither the
+>>>>>> kernel + * nor glibc should break this ABI without coordination.
+>>>>>> + */
+>>>>>> +#ifndef _NETINET_IN_H
+>>>>>> +
+>>>>>
+>>>>> I think we should shoot for a non-glibc-centric solution.
+>>>>>
+>>>>> I can't imagine that other libc's won't have the same exact problem
+>>>>> with their netinet/in.h conflicting with the kernel's, redefining
+>>>>> structures like in6_addr, that we'd want to provide a protection
+>>>>> scheme for here as well.
+>>>>
+>>>> yes, the kernel's use of __GLIBC__ in exported headers has already caused
+>>>> problems in the past.  fortunately, it's been reduced down to just one case
+>>>> now (stat.h).  let's not balloon it back up.
+>>>> -mike
+>>>
+>>> I also see coda.h has grown a __GLIBC__ usage.
+>>>
+>>> In the next revision of the patch I created a single libc-compat.h header
+>>> which encompasses the logic for any libc that wants to coordinate with
+>>> the kernel headers.
+>>
+>>
+>>> It's simple enough to move all of the __GLIBC__ uses into libc-compat.h,
+>>> then you control userspace libc coordination from one file.
+>>
+>> How about just deciding on a single macro/symbol both the
+>> kernel and libc (any libc that needs this) define?  Something
+>> like both the kernel and userland doing:
+>> 
+>> #ifndef __IPV6_BITS_DEFINED
+>> #define __IPV6_BITS_DEFINED
+>> ...
+>> define in6_addr, sockaddr_in6, ipv6_mreq, whatnot
+>> #endif
 
-On Fri, Jan 18, 2013 at 07:51:08PM +0530, Vivek Gautam wrote:
-> Hi Felipe,
->=20
->=20
-> On Fri, Jan 18, 2013 at 6:46 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > Hi,
-> >
-> > On Mon, Jan 14, 2013 at 05:52:15PM +0530, Vivek Gautam wrote:
-> >> This patch adds host phy support to samsung-usbphy driver and
-> >> further adds support for samsung's exynos5250 usb-phy.
-> >>
-> >> Signed-off-by: Praveen Paneri <p.paneri@samsung.com>
-> >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> >
-> > Missing Kukjim's Acked-by here
-> >
->=20
-> Hope you are fine with the changes happened after discussion in thread:
-> [PATCH v5 2/4] usb: phy: samsung: Add host phy support to samsung-phy dri=
-ver
->=20
-> Is it something you want me to modify in this patch ?
+Hmm, how should we handle future structs/enums then?
+For example, if I want to have in6_flowlabel_req{} defined in
+glibc, what should we do?
 
-please send the final patch and we shall see. After quickly browsing
-that thread, I didn't see anything scary, but I'd like to see your final
-version before giving my final answer ;-)
+We probably want to have __LIBC_HAS_STRUCT_IN6_FLOWLABEL_REQ
+defined.
 
---=20
-balbi
-
---yaPAUYI/0vT2YKpA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ+Vq7AAoJEIaOsuA1yqREVhMP/iytQnQsMkL1bgqiPk5RenN1
-iOd437Hs++ASP4iaCREbymedkGtu7nYhPKAtJbO2rj9/cHwksjUxEmEU/OlaFzvF
-ARsHaFeBdVmZZJHYLP1IDGgd5KFW1n45n1vc8ML/wVPbQ8ZHrXUd1lGAX8aH8wx3
-oJjoGHP6C8NOuQcEoAPoIcTFQSKWUBntWpEHT0EaU2swHi3D/OFY6AGfhF3U6QEi
-ApcLH4Kob3gXyoPp7An48qsrQH1HX5gXyICTOLQNgEFq5WlZ2Ri8BEc/GQ3AuRu2
-G8Ih1IdfqVoc1NE3YloIDT6q540dd9681BTGGCGxeauqtqGyC5Bw5fHUAiXPj/sH
-ectJ3cjQbiGC6kcpwhC3HrvYeuxK8ZH67zfR+QF6D17KIS664/sU58KhjisEjIG8
-gJhv1eV0hr/GQVdxBUhTg5kTfPs+7FKi3SvxukbM971JksYRdJHQubafLOz5dPEO
-qTCYWMc2wXO7cQcm/vuo/Q7hp604BGntfiZB2H4KcxkRzEizKoFuR+983YkKDMU4
-bUfUOnCkihuDG/USqS18Gw/oPKnkGeRArPagaMLFcu1xv4n2tv7tYhjz1Y9VY7Dr
-+r8hENofT8lsdtCX8OiexgpJ4e83qhT6hKJRGhqfiDvR2jj0csiszwJNPvt/04rZ
-9xe4C/J4/nof42VJHKqe
-=yMgC
------END PGP SIGNATURE-----
-
---yaPAUYI/0vT2YKpA--
+--yoshfuji
