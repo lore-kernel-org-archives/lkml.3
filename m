@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab3ARVY4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:24:56 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:43723 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755813Ab3ARVYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 16:24:54 -0500
-Date: Fri, 18 Jan 2013 22:24:48 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Olivier Doucet <webmaster@ajeux.com>
-Cc: linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Performance issue since 3.2.6
-Message-ID: <20130118212447.GB3252@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Olivier Doucet <webmaster@ajeux.com>, linux-kernel@vger.kernel.org,
-	Venkatesh Pallipadi <venki@google.com>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>
-References: <CAPPqfY1-sYT8rcPoJ6BD0axq=oczq+xbGFSQj=uth4wc_cvkGw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAPPqfY1-sYT8rcPoJ6BD0axq=oczq+xbGFSQj=uth4wc_cvkGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756148Ab3ARVZG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:25:06 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8113 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab3ARVZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 16:25:04 -0500
+X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=uNd_0Ub4VdcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Y3YARPKVEf4A:10 a=rVzeZ-utLmd_9Cz6G7kA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1358544300.7383.37.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/5] jump label: constify lookup functions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, fweisbec@gmail.com,
+        rusty@rustcorp.com.au, ananth@in.ibm.com,
+        anil.s.keshavamurthy@intel.com, masami.hiramatsu.pt@hitachi.com,
+        jbaron@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        MartinSchwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-s390 <linux-s390@vger.kernel.org>
+Date: Fri, 18 Jan 2013 16:25:00 -0500
+In-Reply-To: <1357772960-4436-2-git-send-email-sasha.levin@oracle.com>
+References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com>
+	 <1357772960-4436-2-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good description.
-
-I'm leaving the whole email in for reference, see below:
-
-On Fri, Jan 18, 2013 at 10:05:41PM +0100, Olivier Doucet wrote:
-> Hello,
+On Wed, 2013-01-09 at 18:09 -0500, Sasha Levin wrote:
+> Modify the parameters of all the lookup and the bookkeeping functions which
+> should be const to const.
 > 
-> I think I found a performance issue in kernel. This problem was
-> introduced in 3.2.6 and is affecting all version, including 3.7.1
-> (latest tested).
-> 
-> I measured several kernel builds with a homebrew LAMP platform
-> benchmark (250 runs, average value kept).
-> 
-> Kernel 3.2.0 was on production so far, and I tried an upgrade to 3.7.1
-> (latest kernel at that time). No software other than the kernel was
-> modified. Kernel was built with the same .config file (new options
-> left with default value).
-> Difference in performance was quite huge :
-> Kernel 3.7.1 : ~ 3250 queries / second
-> Kernel 3.2.0 : ~ 4300 queries / second
-> 
-> Yes, this is a 25% performance drop ...
-> 
-> To narrow things down, I tested several kernels :
-> 3.2.0 to 3.2.5 : OK
-> 3.2.6, 3.2.11, 3.2.28, 3.2.36, 3.7.1 : PERFORMANCE DROP
-> On faulty kernels, performance drop is always the same.
-> 
-> At this step, I know that bug was introduced in version 3.2.6. I then
-> used git bisect (amazing tool btw) to find the faulty commit :
-> f51d67a64f32cd81ea8b67ca964fb7cf7e783b2e	PM / QoS: CPU C-state
-> breakage with PM Qos change
-> 
-> Next test : I used a 3.2.6 and reverted this patch : performance was
-> back to normal.
-> I also reverted this patch on 3.2.36 (latest 3.2.X), and performance
-> was also OK. I was unable to revert this patch on 3.7.1 (structure of
-> the source file  /include/linux/pm_qos.h changed too heavily).
-> 
-> Kernel was built on a x86_64 platform with binutils 2.19.1 and gcc 4.4.0.
-> .config file used : https://gist.github.com/4567342
-> Benchmark was run on a dual CPU INTEL L5630 with 4GB of RAM
-> 
-> What can I do to resolve this problem ?
+> For example, jump_label_text_reserved() doesn't modify the memory it works on,
+> it just checks whether there are any jump labels there.
 
-Btw, the commit-id you've given is the stable commit-id but this is
-still ok, the mainline commit is mentioned in the commit message and is:
+This is dependent on the module patch, which Rusty is taking. I need to
+see that he has it before this can go in. At least see it in linux-next.
 
-commit d020283dc694c9ec31b410f522252f7a8397e67d
-Author: Venkatesh Pallipadi <venki@google.com>
-Date:   Fri Feb 3 22:22:25 2012 +0100
+Also, you should have Cc'd the linux-arch mailing list. I'll send it
+there.
 
-    PM / QoS: CPU C-state breakage with PM Qos change
+> 
+> Note I couldn't test the non-x86 architectures, but the changes are rather
+> trivial.
 
-So, let's invite the parties from the commit to CC, see what they have
-to say.
+I ran it on 25 archs, and s390 hit:
 
-Thanks.
+/work/autotest/nobackup/cross-linux.git/arch/s390/kernel/jump_label.c: In function 'arch_jump_label_transform':
+/work/autotest/nobackup/cross-linux.git/arch/s390/kernel/jump_label.c:58:13: warning: assignment discards 'const' qualifier from pointer target type [enabled by default]
 
--- 
-Regards/Gruss,
-    Boris.
+-- Steve
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Here's the patch:
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/arch/s390/kernel/jump_label.c
+b/arch/s390/kernel/jump_label.c
+index 85fa643..ef047ef 100644
+--- a/arch/s390/kernel/jump_label.c
++++ b/arch/s390/kernel/jump_label.c
+@@ -18,7 +18,7 @@ struct insn {
+ } __packed;
+ 
+ struct insn_args {
+-	struct jump_entry *entry;
++	const struct jump_entry *entry;
+ 	enum jump_label_type type;
+ };
+ 
+
+
