@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750980Ab3ARHhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 02:37:55 -0500
-Received: from norkia.v3.sk ([91.210.183.14]:37363 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab3ARHhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 02:37:54 -0500
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: Marcel Holtmann <marcel@holtmann.org>, Bing Zhao <bzhao@marvell.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, David Woodhouse <dwmw2@infradead.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        libertas-dev@lists.infradead.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lubomir Rintel <lkundrak@v3.sk>
-Subject: [PATCH] bluetooth: btmrvl_sdio: look for sd8688 firmware in proper location
-Date: Fri, 18 Jan 2013 08:37:23 +0100
-Message-Id: <1358494643-29765-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <477F20668A386D41ADCC57781B1F70430D13FDB783@SC-VEXCH1.marvell.com>
-References: <477F20668A386D41ADCC57781B1F70430D13FDB783@SC-VEXCH1.marvell.com>
+	id S1750939Ab3ARHjF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 02:39:05 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35473 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab3ARHjD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 02:39:03 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50F8FBE9.6040501@jp.fujitsu.com>
+Date: Fri, 18 Jan 2013 16:38:17 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, <tony.luck@intel.com>,
+        <akpm@linux-foundation.org>, <tangchen@cn.fujitsu.com>,
+        <jiang.liu@huawei.com>, <wujianguo@huawei.com>, <wency@cn.fujitsu.com>,
+        <laijs@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>, <yinghai@kernel.org>,
+        <rob@landley.net>, <minchan.kim@gmail.com>, <mgorman@suse.de>,
+        <rientjes@google.com>, <guz.fnst@cn.fujitsu.com>,
+        <rusty@rustcorp.com.au>, <lliubbo@gmail.com>,
+        <jaegeuk.hanse@gmail.com>, <glommer@parallels.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com> <50F440F5.3030006@zytor.com> <20130114143456.3962f3bd.akpm@linux-foundation.org> <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com> <20130114144601.1c40dc7e.akpm@linux-foundation.org> <50F647E8.509@jp.fujitsu.com> <20130116132953.6159b673.akpm@linux-foundation.org> <50F72F17.9030805@zytor.com> <50F78750.8070403@jp.fujitsu.com> <50F79422.6090405@zytor.com> <3908561D78D1C84285E8C5FCA982C28F1C986D98@ORSMSX108.amr.corp.intel.com> <50F85ED5.3010003@jp.fujitsu.com> <50F8E63F.5040401@jp.fujitsu.com> <818a2b0a-f471-413f-9231-6167eb2d9607@email.android.com>
+In-Reply-To: <818a2b0a-f471-413f-9231-6167eb2d9607@email.android.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
----
- drivers/bluetooth/btmrvl_sdio.c |    8 ++++----
- drivers/bluetooth/btmrvl_sdio.h |    6 ++++--
- 2 files changed, 8 insertions(+), 6 deletions(-)
+2013/01/18 15:25, H. Peter Anvin wrote:
+> We already do DMI parsing in the kernel...
 
-diff --git a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
-index 3f4bfc8..bc27d01 100644
---- a/drivers/bluetooth/btmrvl_sdio.c
-+++ b/drivers/bluetooth/btmrvl_sdio.c
-@@ -83,8 +83,8 @@ static const struct btmrvl_sdio_card_reg btmrvl_reg_87xx = {
- };
- 
- static const struct btmrvl_sdio_device btmrvl_sdio_sd8688 = {
--	.helper		= "sd8688_helper.bin",
--	.firmware	= "sd8688.bin",
-+	.helper		= "mrvl/sd8688_helper.bin",
-+	.firmware	= "mrvl/sd8688.bin",
- 	.reg		= &btmrvl_reg_8688,
- 	.sd_blksz_fw_dl	= 64,
- };
-@@ -1179,7 +1179,7 @@ MODULE_AUTHOR("Marvell International Ltd.");
- MODULE_DESCRIPTION("Marvell BT-over-SDIO driver ver " VERSION);
- MODULE_VERSION(VERSION);
- MODULE_LICENSE("GPL v2");
--MODULE_FIRMWARE("sd8688_helper.bin");
--MODULE_FIRMWARE("sd8688.bin");
-+MODULE_FIRMWARE("mrvl/sd8688_helper.bin");
-+MODULE_FIRMWARE("mrvl/sd8688.bin");
- MODULE_FIRMWARE("mrvl/sd8787_uapsta.bin");
- MODULE_FIRMWARE("mrvl/sd8797_uapsta.bin");
-diff --git a/drivers/bluetooth/btmrvl_sdio.h b/drivers/bluetooth/btmrvl_sdio.h
-index 43d35a6..4a5a019 100644
---- a/drivers/bluetooth/btmrvl_sdio.h
-+++ b/drivers/bluetooth/btmrvl_sdio.h
-@@ -84,7 +84,9 @@ struct btmrvl_sdio_card {
- 	struct sdio_func *func;
- 	u32 ioport;
- 	const char *helper;
-+	const char *helper2;
- 	const char *firmware;
-+	const char *firmware2;
- 	const struct btmrvl_sdio_card_reg *reg;
- 	u16 sd_blksz_fw_dl;
- 	u8 rx_unit;
-@@ -92,8 +94,8 @@ struct btmrvl_sdio_card {
- };
- 
- struct btmrvl_sdio_device {
--	const char *helper;
--	const char *firmware;
-+	const char *helper, *helper2;
-+	const char *firmware, *firmware2;
- 	const struct btmrvl_sdio_card_reg *reg;
- 	u16 sd_blksz_fw_dl;
- };
--- 
-1.7.1
+Thank you for giving the infomation.
+
+Is your mention /sys/firmware/dmi/entries?
+
+If so, my box does not have memory information.
+My box has only type 0, 1, 2, 3, 4, 7, 8, 9, 38, 127 in DMI.
+At least, my box cannot use the information...
+
+If users use the boot parameter for investigating firmware bugs
+or debugging, users cannot use DMI information on like my box.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+> Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>
+>> 2013/01/18 5:28, KOSAKI Motohiro wrote:
+>>> On 1/17/2013 11:30 AM, Luck, Tony wrote:
+>>>>> 2. If the user *does* care which nodes are movable, then the user
+>> needs
+>>>>> to be able to specify that *in a way that makes sense to the user*.
+>>>>> This may mean involving the DMI information as well as SRAT in
+>> order to
+>>>>> get "silk screen" type information out.
+>>>>
+>>>> One reason they might care would be which I/O devices are connected
+>>>> to each node.  DMI might be a good way to get an invariant name for
+>> the
+>>>> node, but they might also want to specify in terms of what they
+>> actually
+>>>> want. E.g. "eth0 and eth4 are a redundant bonded pair of NICs -
+>> don't
+>>>> mark both these nodes as removable".  Though this is almost
+>> certainly not
+>>>> a job for kernel options, but for some user configuration tool that
+>> would
+>>>> spit out the DMI names.
+>>>
+>>> I agree DMI parsing should be done in userland if we really need DMI
+>> parsing.
+>>>
+>>
+>> If users use the boot parameter for bugs or debugging,  users need
+>> a method which sets in detail range of movable memory. So specifying
+>> node number is not enough because whole memory becomes movable memory.
+>>
+>> For this, we are discussing other ways, memory range and DMI
+>> information.
+>> By using DMI information, users may get an invariant name. But is it
+>> really user friendly interface? I don't think so.
+>>
+>> You will think using memory range is not user friendly interface too.
+>> But I think that using memory range is friendlier than using DMI
+>> information since we can get easily memory range. So from developper
+>> side, using memory range is good.
+>>
+>> Of course, using SRAT information is necessary solution. So we are
+>> developing it now.
+>>
+>> Thanks,
+>> Yasuaki Ishimatsu
+>
+
 
