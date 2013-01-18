@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab3ARR7l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 12:59:41 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47454 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751858Ab3ARR7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 12:59:40 -0500
-Date: Fri, 18 Jan 2013 19:58:11 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v3 4/4] usb: Add APIs to access host registers from Tegra
- PHY
-Message-ID: <20130118175811.GD1035@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <Pine.LNX.4.44L0.1301181029350.1988-100000@iolanthe.rowland.org>
- <50F98646.6040209@wwwdotorg.org>
+	id S1753644Ab3ARSFy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 13:05:54 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:25962 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751507Ab3ARSFw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 13:05:52 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Tne1HbYEJEtApZbnkkkpU
+Date: Fri, 18 Jan 2013 10:05:49 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Luciano Coelho <coelho@ti.com>, "Cousson, Benoit" <b-cousson@ti.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-omap@vger.kernel.org,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport
+ power functions
+Message-ID: <20130118180548.GR14149@atomide.com>
+References: <20130117100510.GI10814@arwen.pp.htv.fi>
+ <20130117100919.GJ10814@arwen.pp.htv.fi>
+ <1358418917.6252.31.camel@cumari.coelho.fi>
+ <50F7D535.6030205@ti.com>
+ <20130117173131.GL14149@atomide.com>
+ <1358445456.6252.64.camel@cumari.coelho.fi>
+ <20130117231608.GP14149@atomide.com>
+ <1358499533.6252.80.camel@cumari.coelho.fi>
+ <20130118173635.GE15361@atomide.com>
+ <20130118175408.GC1035@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="t0UkRYy7tHLRMCai"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50F98646.6040209@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130118175408.GC1035@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---t0UkRYy7tHLRMCai
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Felipe Balbi <balbi@ti.com> [130118 09:57]:
+> Hi,
+> 
+> On Fri, Jan 18, 2013 at 09:36:35AM -0800, Tony Lindgren wrote:
+> > * Luciano Coelho <coelho@ti.com> [130118 01:03]:
+> > > On Thu, 2013-01-17 at 15:16 -0800, Tony Lindgren wrote:
+> > > > * Luciano Coelho <coelho@ti.com> [130117 10:04]:
+> > > > > But this patch is pretty small and simple, so why not include it to at
+> > > > > least fix the breakage in 3.7 and 3.8? Whether you take it or not now
+> > > > > won't make any difference in the 5k LOC in these kernel versions.
+> > > > 
+> > > > Well we are planning to drop the non-DT support for omap4 as soon as it's
+> > > > usable with DT. For omap4 we are only carrying SDP and panda support to
+> > > > make this transition easier. The only bindings missing AFAIK are wl12xx and
+> > > > USB.
+> > > 
+> > > In my view this is a regression and it should be fixed with as simple a
+> > > patch as possible.  The alternative to my solution is to revert the
+> > > patch that removed the enable/disable from the ti-st driver *and* fix
+> > > u-boot, because if it doesn't mux the UART2 pins properly (and it
+> > > doesn't) the shared transport still won't work.
+> > 
+> > Fixing the muxing here makes sense naturally as we cannot do that in the driver
+> > until we've flipped things over to use DT.
+> > 
+> > But I don't think we should fix the driver regression by adding more platform
+> > callbacks as we are getting rid of them anyways.
+> 
+> it's not adding more callbacks, solely implementing them as it should
+> have been done on Pavan's original patch.
 
-On Fri, Jan 18, 2013 at 10:28:38AM -0700, Stephen Warren wrote:
-> On 01/18/2013 08:30 AM, Alan Stern wrote:
-> > On Fri, 18 Jan 2013, Venu Byravarasu wrote:
-> >=20
-> >> As Tegra PHY driver needs to access one of the Host registers,
-> >> added few APIs.
-> >>
-> >> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> >> ---
-> >> delta from v2:
-> >> Renamed USB_PORTSC1 to TEGRA_USB_PORTSC1.
-> >> Removed tegra_ehci_set_wakeon_events() and its references.
-> >> Used standard defines for accessing PORTSC fields defined in ehci_def.h
-> >> Included OCC bit of PORTSC as part of TEGRA_PORTSC1_RWC_BITS.
-> >>
-> >> delta from v1:
-> >> Taken care of RWC bits, while accessing PORTSC register.
-> >=20
-> > Acked-by: Alan Stern <stern@rowland.harvard.edu>
->=20
-> Felipe, you said on a previous version that you weren't sure if you
-> could ack this since it means the PHY driver is touching EHCI
-> registers... I don't think we really have much choice w.r.t. what the
-> driver is doing, since it's driven purely by HW design. Is this updated
-> patched at least OK for you not to NAK it, and hence I can apply it? Than=
-ks.
+It certainly is adding new callback functions to board-*.c files looking
+at the diffstat :)
 
-Sure I will not block it, please go ahead and apply it through your tree
-;-)
+IMHO the right fix is to revert eccf2979 that caused the regression and then
+adding the muxing to the board-*.c file(s).
 
-cheers
+It's OK for the driver to call the standard GPIO functions, and those will
+be needed in the driver for the DT case anyways.
 
---=20
-balbi
+Regards,
 
---t0UkRYy7tHLRMCai
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ+Y0zAAoJEIaOsuA1yqREGFMQAI0CpFhyjcZ/jeQMajQnAEm0
-2lzA4ZjTjTp/GKRJixsuVoZSkRfoYFup2RPiI0RucZ5Yric5oXEQOitauFDPdv29
-JVo+ucWAT1qbxL7ArUAhITcPC+3sgx3TaFREThwEAB1QpKIJwLAFp2M0FLDJPj9R
-PBESTmc2wLD+vy58CNDonuIv6A5Yi7S+QRXlHfrXsNHQD/zgWnAAdaOldtbpttIQ
-6v17qM45ionipEfuvk+O4HHBT4ZN6dJA9jygHnHgBrbfrukYBPTcR2UGtIVRfoEn
-0+6ttAOuQSIpNnaHhpusxZHtOEggzNLoNBmYgdbaqZtfdDNYnjTQnyr5tFV6LpId
-vopHx4Py76eVCGdq4gskI9wDn6+WG6288+APo3SdgkjbBSFyYELpq4eFDPqc7iOT
-8oy3DeV/8w8M1oYXDLL5eXwFLc7CSXEwCHv372jTDkNzwlhMW5c7Rxz9cKYvCv04
-ieq6oABOA3a4a7Nvf3hdKDUXNj9g0AkSV57ITkeoLdNkL/3gWBy9yFZmsGgp/3l1
-XcOv2R/WjIq4szimJJQ63eUpCKokOLsByWlFHtQXwM0RQZR/FL/1Ww/hsjOsp4P2
-Zwl6d1KdrkfB5N50KQXHw7jzxgbWDQ19hISl8ic4hLipMdNsUK9sZc9k+TPJtV1w
-bVTxdTN9iV2mHFrL6wc2
-=SDN5
------END PGP SIGNATURE-----
-
---t0UkRYy7tHLRMCai--
+Tony
