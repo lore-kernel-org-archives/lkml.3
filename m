@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab3ARMfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:35:23 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:59334 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab3ARMfS (ORCPT
+	id S1757150Ab3ARMfb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:35:31 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:61773 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab3ARMf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:35:18 -0500
+	Fri, 18 Jan 2013 07:35:26 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 48/76] ARC: Module support
-Date: Fri, 18 Jan 2013 17:55:02 +0530
-Message-ID: <1358511930-7424-49-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 70/76] ARC: [Review] Multi-platform image #3: switch to board callback
+Date: Fri, 18 Jan 2013 17:55:24 +0530
+Message-ID: <1358511930-7424-71-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -23,148 +23,247 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/include/asm/module.h |    4 ++
- arch/arc/kernel/Makefile      |    1 +
- arch/arc/kernel/module.c      |  103 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 108 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/kernel/module.c
+-platform API is retired and instead callbacks are used
 
-diff --git a/arch/arc/include/asm/module.h b/arch/arc/include/asm/module.h
-index 165d768..234b435 100644
---- a/arch/arc/include/asm/module.h
-+++ b/arch/arc/include/asm/module.h
-@@ -14,4 +14,8 @@
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arc/include/asm/irq.h               |    1 -
+ arch/arc/include/asm/smp.h               |    5 ---
+ arch/arc/kernel/irq.c                    |    2 -
+ arch/arc/kernel/setup.c                  |    5 ---
+ arch/arc/kernel/smp.c                    |    1 -
+ arch/arc/plat-arcfpga/include/plat/irq.h |    2 +
+ arch/arc/plat-arcfpga/include/plat/smp.h |    2 +
+ arch/arc/plat-arcfpga/irq.c              |    2 +-
+ arch/arc/plat-arcfpga/platform.c         |   50 +++++++++++++++++++++++++-----
+ arch/arc/plat-arcfpga/smp.c              |    4 +--
+ 10 files changed, 48 insertions(+), 26 deletions(-)
+
+diff --git a/arch/arc/include/asm/irq.h b/arch/arc/include/asm/irq.h
+index c91b2e4..f1b318d 100644
+--- a/arch/arc/include/asm/irq.h
++++ b/arch/arc/include/asm/irq.h
+@@ -17,7 +17,6 @@
+ #include <asm-generic/irq.h>
  
- #include <asm-generic/module.h>
+ extern void __init arc_init_IRQ(void);
+-extern void __init plat_init_IRQ(void);
+ extern int __init get_hw_config_num_irq(void);
  
-+#define MODULE_PROC_FAMILY "ARC700"
+ void __cpuinit arc_local_timer_setup(unsigned int cpu);
+diff --git a/arch/arc/include/asm/smp.h b/arch/arc/include/asm/smp.h
+index f91f194..0cff3a5 100644
+--- a/arch/arc/include/asm/smp.h
++++ b/arch/arc/include/asm/smp.h
+@@ -46,10 +46,6 @@ extern int smp_ipi_irq_setup(int cpu, int irq);
+  * arc_platform_smp_cpuinfo:
+  *	returns a string containing info for /proc/cpuinfo
+  *
+- * arc_platform_smp_init_cpu:
+- *	Called from start_kernel_secondary to do any CPU local setup
+- *	such as starting a timer, setting up IPI etc
+- *
+  * arc_platform_smp_wait_to_boot:
+  *	Called from early bootup code for non-Master CPUs to "park" them
+  *
+@@ -64,7 +60,6 @@ extern int smp_ipi_irq_setup(int cpu, int irq);
+  *	Takes @cpu which got IPI at @irq to do any IPI clearing
+  */
+ extern const char *arc_platform_smp_cpuinfo(void);
+-extern void arc_platform_smp_init_cpu(void);
+ extern void arc_platform_smp_wait_to_boot(int cpu);
+ extern void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc);
+ extern void arc_platform_ipi_send(const struct cpumask *callmap);
+diff --git a/arch/arc/kernel/irq.c b/arch/arc/kernel/irq.c
+index 1198168..551c10d 100644
+--- a/arch/arc/kernel/irq.c
++++ b/arch/arc/kernel/irq.c
+@@ -124,7 +124,6 @@ void __init init_onchip_IRQ(void)
+ void __init init_IRQ(void)
+ {
+ 	init_onchip_IRQ();
+-	plat_init_IRQ();
+ 
+ 	/* Any external intc can be setup here */
+ 	if (machine_desc->init_irq)
+@@ -132,7 +131,6 @@ void __init init_IRQ(void)
+ 
+ #ifdef CONFIG_SMP
+ 	/* Master CPU can initialize it's side of IPI */
+-	arc_platform_smp_init_cpu();
+ 	if (machine_desc->init_smp)
+ 		machine_desc->init_smp(smp_processor_id());
+ #endif
+diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
+index 20273b8..e591c6a 100644
+--- a/arch/arc/kernel/setup.c
++++ b/arch/arc/kernel/setup.c
+@@ -319,10 +319,6 @@ void __init setup_processor(void)
+ 	arc_chk_fpu();
+ }
+ 
+-void __init __attribute__((weak)) arc_platform_early_init(void)
+-{
+-}
+-
+ void __init setup_arch(char **cmdline_p)
+ {
+ #ifdef CONFIG_CMDLINE_UBOOT
+@@ -347,7 +343,6 @@ void __init setup_arch(char **cmdline_p)
+ 	parse_early_param();
+ 
+ 	/* Platform/board specific: e.g. early console registration */
+-	arc_platform_early_init();
+ 	if (machine_desc->init_early)
+ 		machine_desc->init_early();
+ 
+diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
+index 0f6212c..6843846 100644
+--- a/arch/arc/kernel/smp.c
++++ b/arch/arc/kernel/smp.c
+@@ -126,7 +126,6 @@ void __cpuinit start_kernel_secondary(void)
+ 
+ 	pr_info("## CPU%u LIVE ##: Executing Code...\n", cpu);
+ 
+-	arc_platform_smp_init_cpu();
+ 	if (machine_desc->init_smp)
+ 		machine_desc->init_smp(smp_processor_id());
+ 
+diff --git a/arch/arc/plat-arcfpga/include/plat/irq.h b/arch/arc/plat-arcfpga/include/plat/irq.h
+index 255b90e..6515df2 100644
+--- a/arch/arc/plat-arcfpga/include/plat/irq.h
++++ b/arch/arc/plat-arcfpga/include/plat/irq.h
+@@ -32,4 +32,6 @@
+ #define IDU_INTERRUPT_0 16
+ #endif
+ 
++extern void __init plat_fpga_init_IRQ(void);
 +
-+#define MODULE_ARCH_VERMAGIC MODULE_PROC_FAMILY
+ #endif
+diff --git a/arch/arc/plat-arcfpga/include/plat/smp.h b/arch/arc/plat-arcfpga/include/plat/smp.h
+index 8c5e46c..27822ac 100644
+--- a/arch/arc/plat-arcfpga/include/plat/smp.h
++++ b/arch/arc/plat-arcfpga/include/plat/smp.h
+@@ -110,6 +110,8 @@ struct idu_irq_status {
+ extern void idu_irq_set_tgtcpu(uint8_t irq, uint32_t mask);
+ extern void idu_irq_set_mode(uint8_t irq, uint8_t dest_mode, uint8_t trig_mode);
+ 
++extern void iss_model_init_smp(unsigned int cpu);
 +
- #endif /* _ASM_ARC_MODULE_H */
-diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
-index a3c4a31..b4b9ab6 100644
---- a/arch/arc/kernel/Makefile
-+++ b/arch/arc/kernel/Makefile
-@@ -12,6 +12,7 @@ obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o \
- 	   signal.o traps.o sys.o troubleshoot.o stacktrace.o clk.o
+ #endif	/* CONFIG_SMP */
  
- obj-$(CONFIG_OF)			+= devtree.o
-+obj-$(CONFIG_MODULES)			+= arcksyms.o module.o
+ #endif
+diff --git a/arch/arc/plat-arcfpga/irq.c b/arch/arc/plat-arcfpga/irq.c
+index 590edd1..0ea43c2 100644
+--- a/arch/arc/plat-arcfpga/irq.c
++++ b/arch/arc/plat-arcfpga/irq.c
+@@ -11,7 +11,7 @@
+ #include <linux/interrupt.h>
+ #include <asm/irq.h>
  
- obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
- CFLAGS_fpu.o   += -mdpfp
-diff --git a/arch/arc/kernel/module.c b/arch/arc/kernel/module.c
-new file mode 100644
-index 0000000..723ad35
---- /dev/null
-+++ b/arch/arc/kernel/module.c
-@@ -0,0 +1,103 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
+-void __init plat_init_IRQ(void)
++void __init plat_fpga_init_IRQ(void)
+ {
+ 	/*
+ 	 * SMP Hack because UART IRQ hardwired to cpu0 (boot-cpu) but if the
+diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
+index c07636e..05ed64d 100644
+--- a/arch/arc/plat-arcfpga/platform.c
++++ b/arch/arc/plat-arcfpga/platform.c
+@@ -18,7 +18,9 @@
+ #include <asm/setup.h>
+ #include <asm/irq.h>
+ #include <asm/clk.h>
++#include <asm/mach_desc.h>
+ #include <plat/memmap.h>
++#include <plat/smp.h>
+ 
+ /*-----------------------BVCI Latency Unit -----------------------------*/
+ 
+@@ -162,10 +164,7 @@ static void arc_fpga_serial_init(void)
+ 
+ #endif	/* CONFIG_SERIAL_ARC */
+ 
+-/*
+- * Early Platform Initialization called from setup_arch()
+- */
+-void __init arc_platform_early_init(void)
++static void __init plat_fpga_early_init(void)
+ {
+ 	pr_info("[plat-arcfpga]: registering early dev resources\n");
+ 
+@@ -181,7 +180,7 @@ static struct of_dev_auxdata plat_auxdata_lookup[] __initdata = {
+ 	{}
+ };
+ 
+-int __init fpga_plat_init(void)
++static void __init plat_fpga_populate_dev(void)
+ {
+ 	pr_info("[plat-arcfpga]: registering device resources\n");
+ 
+@@ -191,7 +190,42 @@ int __init fpga_plat_init(void)
+ 	 */
+ 	of_platform_populate(NULL, of_default_bus_match_table,
+ 			     plat_auxdata_lookup, NULL);
+-
+-	return 0;
+ }
+-arch_initcall(fpga_plat_init);
++
++/*----------------------- Machine Descriptions ------------------------------
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Machine description is simply a set of platform/board specific callbacks
++ * This is not directly related to DeviceTree based dynamic device creation,
++ * however as part of early device tree scan, we also select the right
++ * callback set, by matching the DT compatible name.
 + */
 +
-+#include <linux/module.h>
-+#include <linux/moduleloader.h>
-+#include <linux/kernel.h>
-+#include <linux/elf.h>
-+#include <linux/vmalloc.h>
-+#include <linux/slab.h>
-+#include <linux/fs.h>
-+#include <linux/string.h>
++static const char *aa4_compat[] __initdata = {
++	"snps,arc-angel4",
++	NULL,
++};
 +
-+static inline void arc_write_me(unsigned short *addr, unsigned long value)
-+{
-+	*addr = (value & 0xffff0000) >> 16;
-+	*(addr + 1) = (value & 0xffff);
-+}
++MACHINE_START(ANGEL4, "angel4")
++	.dt_compat	= aa4_compat,
++	.init_early	= plat_fpga_early_init,
++	.init_machine	= plat_fpga_populate_dev,
++	.init_irq	= plat_fpga_init_IRQ,
++#ifdef CONFIG_SMP
++	.init_smp	= iss_model_init_smp,
++#endif
++MACHINE_END
 +
-+int module_frob_arch_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
-+			      char *secstr, struct module *mod)
-+{
-+    return 0;
-+}
++static const char *ml509_compat[] __initdata = {
++	"snps,arc-ml509",
++	NULL,
++};
 +
-+void module_arch_cleanup(struct module *mod)
-+{
-+}
-+
-+int apply_relocate_add(Elf32_Shdr *sechdrs,
-+		       const char *strtab,
-+		       unsigned int symindex,	/* sec index for sym tbl */
-+		       unsigned int relsec,	/* sec index for relo sec */
-+		       struct module *module)
-+{
-+	int i, n;
-+	Elf32_Rela *rel_entry = (void *)sechdrs[relsec].sh_addr;
-+	Elf32_Sym *sym_entry, *sym_sec;
-+	Elf32_Addr relocation;
-+	Elf32_Addr location;
-+	Elf32_Addr sec_to_patch;
-+	int relo_type;
-+
-+	sec_to_patch = sechdrs[sechdrs[relsec].sh_info].sh_addr;
-+	sym_sec = (Elf32_Sym *) sechdrs[symindex].sh_addr;
-+	n = sechdrs[relsec].sh_size / sizeof(*rel_entry);
-+
-+	pr_debug("\n========== Module Sym reloc ===========================\n");
-+	pr_debug("Section to fixup %x\n", sec_to_patch);
-+	pr_debug("=========================================================\n");
-+	pr_debug("rela->r_off | rela->addend | sym->st_value | ADDR | VALUE\n");
-+	pr_debug("=========================================================\n");
-+
-+	/* Loop thru entries in relocation section */
-+	for (i = 0; i < n; i++) {
-+
-+		/* This is where to make the change */
-+		location = sec_to_patch + rel_entry[i].r_offset;
-+
-+		/* This is the symbol it is referring to.  Note that all
-+		   undefined symbols have been resolved.  */
-+		sym_entry = sym_sec + ELF32_R_SYM(rel_entry[i].r_info);
-+
-+		relocation = sym_entry->st_value + rel_entry[i].r_addend;
-+
-+		pr_debug("\t%x\t\t%x\t\t%x  %x %x [%s]\n",
-+			rel_entry[i].r_offset, rel_entry[i].r_addend,
-+			sym_entry->st_value, location, relocation,
-+			strtab + sym_entry->st_name);
-+
-+		/* This assumes modules are built with -mlong-calls
-+		 * so any branches/jumps are absolute 32 bit jmps
-+		 * global data access again is abs 32 bit.
-+		 * Both of these are handled by same relocation type
-+		 */
-+		relo_type = ELF32_R_TYPE(rel_entry[i].r_info);
-+
-+		if (likely(R_ARC_32_ME == relo_type))
-+			arc_write_me((unsigned short *)location, relocation);
-+		else if (R_ARC_32 == relo_type)
-+			*((Elf32_Addr *) location) = relocation;
-+		else
-+			goto relo_err;
-+
-+	}
-+	return 0;
-+
-+relo_err:
-+	pr_err("%s: unknown relocation: %u\n",
-+		module->name, ELF32_R_TYPE(rel_entry[i].r_info));
-+	return -ENOEXEC;
-+
-+}
-+
-+int module_finalize(const Elf32_Ehdr *hdr, const Elf_Shdr *sechdrs,
-+		    struct module *mod)
-+{
-+    return 0;
-+}
++MACHINE_START(ML509, "ml509")
++	.dt_compat	= ml509_compat,
++	.init_early	= plat_fpga_early_init,
++	.init_machine	= plat_fpga_populate_dev,
++	.init_irq	= plat_fpga_init_IRQ,
++#ifdef CONFIG_SMP
++	.init_smp	= iss_model_init_smp,
++#endif
++MACHINE_END
+diff --git a/arch/arc/plat-arcfpga/smp.c b/arch/arc/plat-arcfpga/smp.c
+index a95fcdb..fec1879 100644
+--- a/arch/arc/plat-arcfpga/smp.c
++++ b/arch/arc/plat-arcfpga/smp.c
+@@ -63,10 +63,8 @@ void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc)
+  * -Master      : init_IRQ()
+  * -Other(s)    : start_kernel_secondary()
+  */
+-void arc_platform_smp_init_cpu(void)
++void iss_model_init_smp(unsigned int cpu)
+ {
+-	int cpu = smp_processor_id();
+-
+ 	/* Check if CPU is configured for more than 16 interrupts */
+ 	if (NR_IRQS <= 16 || get_hw_config_num_irq() <= 16)
+ 		panic("[arcfpga] IRQ system can't support IDU IPI\n");
 -- 
 1.7.4.1
 
