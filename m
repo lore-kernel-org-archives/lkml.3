@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab3ARPFU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 10:05:20 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:52216 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756286Ab3ARPFO (ORCPT
+	id S1756419Ab3ARPFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 10:05:34 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:46374 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756275Ab3ARPFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 10:05:14 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [PATCH v2 69/76] ARC: [Review] Multi-platform image #2: Board callback Infrastructure
-Date: Fri, 18 Jan 2013 15:05:10 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-70-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1358511930-7424-70-git-send-email-vgupta@synopsys.com>
+	Fri, 18 Jan 2013 10:05:30 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301181505.10350.arnd@arndb.de>
-X-Provags-ID: V02:K0:GI8WT2t9MyzjxlDsxXt8SVG8/jz6fmozwNfvmbytpxr
- A0yVSo9PmKRwA1wPSqLW2QxUKqK7zOVfXwPA//rCYjM0PnrRk8
- T9aSwROqw1CHNJMdypC3+j5RehPlrjycdJcu11Ytlxt7avzVrv
- DZhOxJrJgMH33VVxuQEWdCc9ECUKLYv8tTDEvziU3gm9u25Yhu
- GVf9ktUy7nZvnw2VmjKO6d/Ks0QzkI5gT2DbiADU0rIGWvOuOv
- 2pCMn0w/fjKt9lBGM54VJlibvVYpkjSgiJaiXc5Tj0QDcbAY0/
- OpSH2F6joJXJaOROfNBJlIi/RudtW0zex5JN3NBbgp9ST/GLfF
- iuSFsTjQROONepT38LYI=
+In-Reply-To: <50EF27B4.60608@wwwdotorg.org>
+References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com>
+	<50EF27B4.60608@wwwdotorg.org>
+Date: Fri, 18 Jan 2013 16:05:27 +0100
+Message-ID: <CACRpkdYK9r9XvQ7t+WOpDOi+RnFb9DGJiFNx5VFGkuuJf=VmgA@mail.gmail.com>
+Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-next@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 January 2013, Vineet Gupta wrote:
-> The orig platform code orgnaization was singleton design pattern - only
-> one platform (and board thereof) would build at a time.
-> 
-> Thus any platform/board specific code (e.g. irq init, early init ...)
-> expected by ARC common code was exported as well defined set of APIs,
-> with only ONE instance building ever.
-> 
-> Now with multiple-platform build requirement, that design of code no
-> longer holds - multiple board specific calls need to build at the same
-> time - so ARC common code can't use the API approach, it needs a
-> callback based design where each board registers it's specific set of
-> functions, and at runtime, depending on board detection, the callbacks
-> are used from the registry.
-> 
-> This commit adds all the infrastructure, where board specific callbacks
-> are specified as a "machine description".
-> 
-> All the hooks are placed in right spots, no board callbacks registered
-> yet (with MACHINE_STARt/END constructs) so the hooks will not run.
-> 
-> Next commit will actually convert the platform to this infrastructure.
-> 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
+On Thu, Jan 10, 2013 at 9:42 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+>> +     /* Allocate a pin state container on-the-fly */
+>> +     if (!dev->pins) {
+>> +             dpi = devm_kzalloc(dev, sizeof(*dpi), GFP_KERNEL);
+>
+> This is allocated using a devm_ function. If -EPROBE_DEFER is returned
+> below after the assignment to dev->pins or if the driver's own probe()
+> returns -EPROBE_DEFER, this allocation will be freed by the driver core.
+> This can leave dev->pins pointing to something non-NULL, yet invalid.
 
-> +struct machine_desc {
-> +	const char		*name;
-> +	const char		**dt_compat;
-> +
-> +	void			(*init_early)(void);
-> +	void			(*init_irq)(void);
-> +	void			(*init_time)(void);
-> +	void			(*init_machine)(void);
-> +	void			(*init_late)(void);
-> +
-> +#ifdef CONFIG_SMP
-> +	void			(*init_smp)(unsigned int);
-> +#endif
+OK I (think I) fixed it like this:
 
-On ARM, it turned out helpful to list these in the order in 
-which they get called. I assume that at least init_smp
-is currently not in that order.
+For the second deferral, set dev->pins to NULL.
 
-Also, we are slowly making some of these obsolete on
-ARM: For platforms that at DT-only, the timer and
-irq code is now in drivers/irqchip and drivers/clocksource
-and can get automatically initialized.
+I did some other fixes here to explicitly devm_kfree() the container
+if no pinctrl handle was found. No point in keeping it around.
 
-It probably makese sense for you to keep the above structure
-for now, but you can also think about obsoleting some
-of the calls in the future. It may be a good idea to have
-a default version for each of these but still allow overriding
-them for maximum flexibility in the platform.
+>> +     if (!dpi->p) {
+>> +             dpi->p = devm_pinctrl_get(dev);
+>
+> That won't succeed for a pinctrl device that has a default state in
+> order to implement hogs. This will then cause the pin controller device
+> to always defer probe and never activate. This will leave HW
+> unconfigured and/or prevent other devices from successfully calling
+> pinctrl_get().
 
-	Arnd
+Fixed by your suggested patch, thanks.
+
+>> +     /*
+>> +      * See if somebody else (such as the device core) has already
+>> +      * obtained a handle to the pinctrl for this device. In that case,
+>> +      * return another pointer to it.
+>> +      */
+>>       p = find_pinctrl(dev);
+>> -     if (p != NULL)
+>> -             return ERR_PTR(-EBUSY);
+>
+> I deliberately returned an error here, because there's no reference
+> counting on the struct pinctrl objects. If a driver calls pinctrl_get(),
+> with the new code below, it will retrieve the same struct. If it later
+> calls pinctrl_put(), the put will immediately free the structure. This
+> will invalidate the pointers that reference it in struct device's pins
+> field.
+>
+> This issue will probably trigger on Tegra, since we at least have a
+> pinctrl-based I2C mux that calls pinctrl_get().
+
+OK I just introduced a reference counter using <linux/kref.h>.
+
+I've retested on U300 and U8500.
+
+Yours,
+Linus Walleij
