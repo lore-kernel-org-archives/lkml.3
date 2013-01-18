@@ -1,36 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab3ARUzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 15:55:40 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:60286 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab3ARUzi (ORCPT
+	id S1755398Ab3ARUzj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 15:55:39 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:25031 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab3ARUzi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Jan 2013 15:55:38 -0500
 MIME-Version: 1.0
-X-Originating-IP: [93.172.50.55]
-In-Reply-To: <1358541741-20708-1-git-send-email-dinggnu@gmail.com>
-References: <1358541741-20708-1-git-send-email-dinggnu@gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 18 Jan 2013 22:55:15 +0200
-Message-ID: <CAK=WgbbW+Kje8fMNmSAy+qM6sLcoqZcLcev8w115BfGrQzHk2A@mail.gmail.com>
-Subject: Re: [PATCH] iommu: omap-iommu.c: remove unnecessary null pointer check
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Tony Lindgren <tony@atomide.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <aad182a2-a21e-4b77-88dc-db859f71ee9e@default>
+Date: Fri, 18 Jan 2013 12:53:25 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, sjenning@linux.vnet.ibm.com,
+        minchan@kernel.org
+Subject: RE: [PATCH 0/5] staging: zcache: move new zcache code base from
+ ramster
+References: <1358443597-9845-1-git-send-email-dan.magenheimer@oracle.com>
+ <20130118204617.GB4788@kroah.com>
+In-Reply-To: <20130118204617.GB4788@kroah.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 10:42 PM, Cong Ding <dinggnu@gmail.com> wrote:
-> The pointer obj is dereferenced in line 146 and 149 respectively, so it is not
-> necessary to check null again in line 149 and 175. And I have checked that all
-> the callers of these two functions guarantee the parameter obj passed is not
-> null.
->
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Subject: Re: [PATCH 0/5] staging: zcache: move new zcache code base from ramster
+> 
+> On Thu, Jan 17, 2013 at 09:26:32AM -0800, Dan Magenheimer wrote:
+> > Hi Greg --
+> >
+> > With "old zcache" now removed, we can now move "new zcache" from its
+> > temporary home (in drivers/staging/ramster) to reclaim sole possession
+> > of the name "zcache".
+> >
+> > Note that [PATCH 2/5] will require a manual:
+> >
+> > # git mv drivers/staging/ramster drivers/staging/zcache
+> 
+> Ick, no, use git to generate the patch with rename style, and it will
+> create the tiny patch that does this which I can then apply (-M is the
+> option you want to 'git format-patch').
+> 
+> Care to resend this in that format so that I can apply this properly?
 
-Acked-by: Ohad Ben-Cohen <ohad@wizery.com>
+Will do.  You learn something new (-M) every day.
+
+Thanks,
+Dan
