@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab3ARLmX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 06:42:23 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:56299 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab3ARLmT (ORCPT
+	id S1755269Ab3ARLm3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 06:42:29 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:44001 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab3ARLm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 06:42:19 -0500
-Subject: [PATCH 1/5] e1000e: fix resuming from runtime-suspend
+	Fri, 18 Jan 2013 06:42:26 -0500
+Subject: [PATCH 3/5] PCI: revert preparing for wakeup in runtime-suspend
+ finalization
 To: linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Date: Fri, 18 Jan 2013 15:42:14 +0400
-Message-ID: <20130118114214.6698.24975.stgit@zurg>
+        Bjorn Helgaas <bhelgaas@google.com>, Dave Airlie <airlied@redhat.com>
+Date: Fri, 18 Jan 2013 15:42:22 +0400
+Message-ID: <20130118114222.6698.7103.stgit@zurg>
 In-Reply-To: <20130118113019.6698.25941.stgit@zurg>
 References: <20130118113019.6698.25941.stgit@zurg>
 User-Agent: StGit/0.15
@@ -25,42 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
-("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
+This patch effectively reverts commit 42eca2302146fed51335b95128e949ee6f54478f
+("PCI: Don't touch card regs after runtime suspend D3")
+
+| This patch checks whether the pci state is saved and doesn't attempt to hit
+| any registers after that point if it is.
+
+This seems completely wrong. Yes, PCI configuration space has been saved by
+driver, but this doesn't means that all job is done and device has been
+suspended and ready for waking up in the future.
+
+For example driver e1000e for ethernet in my thinkpad x220 saves pci-state
+but device cannot wakeup after that, because it needs some ACPI callbacks
+which usually called from pci_finish_runtime_suspend().
+
+| Optimus (dual-gpu) laptops seem to have their own form of D3cold, but
+| unfortunately enter it on normal D3 transitions via the ACPI callback.
+
+Hardware which disappears from the bus unexpectedly is exception, so let's
+handle it as an exception. Its driver should set device state to D3cold and
+the rest code will handle it properly.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: e1000-devel@lists.sourceforge.net
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Bruce Allan <bruce.w.allan@intel.com>
+Cc: linux-pci@vger.kernel.org
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Dave Airlie <airlied@redhat.com>
 ---
- drivers/net/ethernet/intel/e1000e/netdev.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/pci/pci-driver.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index fbf75fd..2853c11 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -5691,14 +5691,17 @@ static int e1000_runtime_suspend(struct device *dev)
- 	struct pci_dev *pdev = to_pci_dev(dev);
- 	struct net_device *netdev = pci_get_drvdata(pdev);
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
-+	int retval;
-+	bool wake;
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index f79cbcd..030dbf0 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -1005,10 +1005,11 @@ static int pci_pm_runtime_suspend(struct device *dev)
+ 		return 0;
+ 	}
  
--	if (e1000e_pm_ready(adapter)) {
--		bool wake;
-+	if (!e1000e_pm_ready(adapter))
-+		return 0;
- 
--		__e1000_shutdown(pdev, &wake, true);
+-	if (!pci_dev->state_saved) {
++	if (!pci_dev->state_saved)
+ 		pci_save_state(pci_dev);
++
++	if (pci_dev->current_state != PCI_D3cold)
+ 		pci_finish_runtime_suspend(pci_dev);
 -	}
-+	retval = __e1000_shutdown(pdev, &wake, true);
-+	if (!retval)
-+		e1000_power_off(pdev, true, wake);
  
--	return 0;
-+	return retval;
+ 	return 0;
  }
- 
- static int e1000_idle(struct device *dev)
 
