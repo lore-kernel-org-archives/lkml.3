@@ -1,105 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3ARTWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 14:22:19 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:60567 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751815Ab3ARTWR (ORCPT
+	id S1755278Ab3ARTWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 14:22:35 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:49354 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815Ab3ARTWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 14:22:17 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Hrr5PMecuIae5K8pmTO76
-Date: Fri, 18 Jan 2013 11:22:12 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Luciano Coelho <coelho@ti.com>
-Cc: "Cousson, Benoit" <b-cousson@ti.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport
- power functions
-Message-ID: <20130118192211.GT14149@atomide.com>
-References: <20130117100510.GI10814@arwen.pp.htv.fi>
- <20130117100919.GJ10814@arwen.pp.htv.fi>
- <1358418917.6252.31.camel@cumari.coelho.fi>
- <50F7D535.6030205@ti.com>
- <20130117173131.GL14149@atomide.com>
- <1358445456.6252.64.camel@cumari.coelho.fi>
- <20130117231608.GP14149@atomide.com>
- <1358499533.6252.80.camel@cumari.coelho.fi>
- <20130118173635.GE15361@atomide.com>
- <1358536096.6252.121.camel@cumari.coelho.fi>
+	Fri, 18 Jan 2013 14:22:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358536096.6252.121.camel@cumari.coelho.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1357681398-23956-3-git-send-email-maxime.ripard@free-electrons.com>
+References: <1357681398-23956-1-git-send-email-maxime.ripard@free-electrons.com>
+	<1357681398-23956-3-git-send-email-maxime.ripard@free-electrons.com>
+Date: Fri, 18 Jan 2013 20:22:32 +0100
+Message-ID: <CACRpkdb9ZGUy4Fa3pLLEDe71Goix6k_tXKs6nnffCeTnW6YAUA@mail.gmail.com>
+Subject: Re: [PATCH 2/7] ARM: sunxi: Add pinctrl driver for Allwinner SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, Stefan Roese <sr@denx.de>,
+        Alejandro Mery <amery@geeks.cl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Luciano Coelho <coelho@ti.com> [130118 11:12]:
-> On Fri, 2013-01-18 at 09:36 -0800, Tony Lindgren wrote:
-> > * Luciano Coelho <coelho@ti.com> [130118 01:03]:
-> > > On Thu, 2013-01-17 at 15:16 -0800, Tony Lindgren wrote:
-> > > > * Luciano Coelho <coelho@ti.com> [130117 10:04]:
-> > > > > But this patch is pretty small and simple, so why not include it to at
-> > > > > least fix the breakage in 3.7 and 3.8? Whether you take it or not now
-> > > > > won't make any difference in the 5k LOC in these kernel versions.
-> > > > 
-> > > > Well we are planning to drop the non-DT support for omap4 as soon as it's
-> > > > usable with DT. For omap4 we are only carrying SDP and panda support to
-> > > > make this transition easier. The only bindings missing AFAIK are wl12xx and
-> > > > USB.
-> > > 
-> > > In my view this is a regression and it should be fixed with as simple a
-> > > patch as possible.  The alternative to my solution is to revert the
-> > > patch that removed the enable/disable from the ti-st driver *and* fix
-> > > u-boot, because if it doesn't mux the UART2 pins properly (and it
-> > > doesn't) the shared transport still won't work.
-> > 
-> > Fixing the muxing here makes sense naturally as we cannot do that in the driver
-> > until we've flipped things over to use DT.
-> > 
-> > But I don't think we should fix the driver regression by adding more platform
-> > callbacks as we are getting rid of them anyways.
-> 
-> Okay, you're right.  We need at least to pass the GPIO number from the
-> board file to the driver so that it knows what to switch.  This is also
-> something that it will need from DT in the future.
+On Tue, Jan 8, 2013 at 10:43 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
 
-Yes I agree, the GPIO number needs to be passed in the fix. 
- 
-> > > > If we add this, then it implies we're somehow supporting it, which is not
-> > > > the way to go IMHO as we need to get rid of these platform callbacks instead.
-> > > 
-> > > It's a regression fix, not a new feature.  I also think these callbacks
-> > > are silly, but it's the quickest solution I found for 3.7 and 3.8.
-> > 
-> > Right, so how about let's fix the regression in the driver, and add the
-> > muxing to platform init code? 
-> 
-> Agreed.  I'll cook up a patch to revert the changes in eccf2979 (it
-> doesn't revert cleanly) and change the panda board file to do the muxing
-> and set the gpio number in the pdata for the driver to use.
+> +config PINCTRL_SUNXI
+> +       bool
+> +       select PINMUX
+> +       select GENERIC_PINCONF
 
-OK thanks. 
-  
-> > > > What's your estimate of having minimal wl12xx WLAN DT binding available?
-> > > 
-> > > To tell you the truth, I haven't even started looking into DT for wl12xx
-> > > myself.  So I have no idea when it will be ready.  Benoit has been
-> > > looking into it, but I don't know how far he is.
-> > 
-> > If it's going to take long we should just init the platform data for
-> > it temporarily even in the DT boot case until the binding is available.
-> 
-> I'll start looking into this now.  It's not going to be that simple, I'm
-> sure, but I need to look more into DT in general to be able to say
-> something more accurate.  I'll let you know as soon as I know more. :)
+Very nice that you use generic pinconf!
 
-OK thanks!
+> +++ b/drivers/pinctrl/pinctrl-sunxi.c
+(...)
+> +       switch (pinconf_to_config_param(config)) {
+> +       case PIN_CONFIG_DRIVE_STRENGTH:
+> +               strength = pinconf_to_config_argument(config);
+> +               /*
+> +                * We convert from mA to what the register expects:
+> +                *   - 0: 10mA
+> +                *   - 1: 20mA
+> +                *   - 2: 30mA
+> +                *   - 3: 40mA
+> +                */
 
-Tony
+Nitpick: remove the "-" (dash), some newcomer will invariably
+interpret the numbers as negative :-/
+
+Don't you want some bounds checking here?
+
+if (strength > 40) { bail out }
+
+> +               dlevel = strength / 10 - 1;
+> +               val = readl(pctl->membase + sunxi_dlevel_reg(g->pin));
+> +               mask = ((1 << DLEVEL_PINS_BITS) - 1) << sunxi_dlevel_offset(g->pin);
+
+Uhhh ... ((1 << DLEVEL_PINS_BITS) - 1) ...
+
+Which in this case is ((1 << 4) - 1). So ...
+
+10000 - 1 = 01111
+
+So this is a way to say "mask four lowest bits".
+
+What about just adding this instead then:
+
+#define DLEVEL_PINS_MASK 0x0f
+
+> +               val &= ~mask;
+> +               val |= dlevel << sunxi_dlevel_offset(g->pin);
+> +               writel(val, pctl->membase + sunxi_dlevel_reg(g->pin));
+> +               break;
+> +       case PIN_CONFIG_BIAS_PULL_UP:
+> +               val = readl(pctl->membase + sunxi_pull_reg(g->pin));
+> +               mask = ((1 << PULL_PINS_BITS) - 1) << sunxi_pull_offset(g->pin);
+
+Same. #define a MASK.
+
+> +               val &= ~mask;
+> +               val |= 1 << sunxi_pull_offset(g->pin);
+> +               writel(val, pctl->membase + sunxi_pull_reg(g->pin));
+> +               break;
+> +       case PIN_CONFIG_BIAS_PULL_DOWN:
+> +               val = readl(pctl->membase + sunxi_pull_reg(g->pin));
+> +               mask = ((1 << PULL_PINS_BITS) - 1) << sunxi_pull_offset(g->pin);
+
+Dito.
+
+> +               val &= ~mask;
+> +               val |= 2 << sunxi_pull_offset(g->pin);
+> +               writel(val, pctl->membase + sunxi_pull_reg(g->pin));
+> +               break;
+> +       default:
+> +               break;
+> +       }
+> +
+> +       /* cache the config value */
+> +       g->config = config;
+> +
+> +       return 0;
+> +}
+(...)
+> +static void sunxi_pmx_set(struct pinctrl_dev *pctldev,
+> +                                unsigned pin,
+> +                                u8 config)
+> +{
+> +       struct sunxi_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
+> +
+> +       u32 val = readl(pctl->membase + sunxi_mux_reg(pin));
+> +       u32 mask = ((1 << MUX_PINS_BITS) - 1) << sunxi_mux_offset(pin);
+
+Dito.
+
+> +       writel((val & ~mask) | config << sunxi_mux_offset(pin),
+> +               pctl->membase + sunxi_mux_reg(pin));
+> +}
+(...)
+> +static struct of_device_id sunxi_pinctrl_match[] __devinitconst = {
+> +       {}
+> +};
+
+What is this supposed to match?
+
+Maybe I don't understand DT boilerplate at all times, bear with me.
+
+> +MODULE_DEVICE_TABLE(of, sunxi_pinctrl_match);
+(...)
+> +static int __devinit sunxi_pinctrl_add_function(struct sunxi_pinctrl *pctl,
+> +                                       const char *name)
+
+__devinit is deleted in the kernel so I would get a regression if I
+tried to apply this patch. Just remove __devinit.
+
+(...)
+> +static int __devinit sunxi_pinctrl_build_state(struct platform_device *pdev)
+
+Dito.
+
+(...)
+> +static int __devinit sunxi_pinctrl_probe(struct platform_device *pdev)
+
+Dito.
+
+(...)
+> +++ b/drivers/pinctrl/pinctrl-sunxi.h
+(...)
+> +/*
+> + * The sunXi PIO registers are organized as is:
+> + * 0x00 - 0x0c Muxing values.
+> + *             8 pins per register, each pin having a 4bits value
+> + * 0x10                Pin values
+> + *             32 bits per register, each pin corresponding to one bit
+> + * 0x14 - 0x18 Drive level
+> + *             16 pins per register, each pin having a 2bits value
+> + * 0x1c - 0x20 Pull-Up values
+> + *             16 pins per register, each pin having a 2bits value
+> + *
+> + * This is for the first bank. Each bank will have the same layout,
+> + * with an offset being a multiple of 0x24.
+> + *
+> + * The following functions calculate from the pin number the register
+> + * and the bit offset that we should access.
+> + */
+
+Very nice with this documentation!
+
+Yours,
+Linus Walleij
