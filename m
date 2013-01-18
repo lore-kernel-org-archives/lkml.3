@@ -1,114 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab3ARRru (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 12:47:50 -0500
-Received: from myspam1.stec-inc.com ([210.19.18.169]:49396 "HELO
-	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751618Ab3ARRrs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 12:47:48 -0500
-X-ASG-Debug-ID: 1358531264-053ea90dcf1bf720001-xx1T2L
-X-Barracuda-Envelope-From: akale@stec-inc.com
-X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
-From: Amit Kale <akale@stec-inc.com>
-X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
-X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
-To: Jason Warr <jason@warr.net>,
-        device-mapper development <dm-devel@redhat.com>,
-        "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
-        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
-Date: Sat, 19 Jan 2013 01:44:30 +0800
-Subject: RE: [dm-devel] Announcement: STEC EnhanceIO SSD caching software
- for Linux kernel
-Thread-Topic: [dm-devel] Announcement: STEC EnhanceIO SSD caching software
- for Linux kernel
-X-ASG-Orig-Subj: RE: [dm-devel] Announcement: STEC EnhanceIO SSD caching software
- for Linux kernel
-Thread-Index: Ac31mwzTiVd9Of8oSEa/FpeEUoMuyAABufgw
-Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7345@MYMBX.MY.STEC-INC.AD>
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
- <CAMM=eLdgD8GKeK48SU2rfC49u3H4WRf9-xFxM4ymVPbKkx+mCw@mail.gmail.com>
- <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D70CE@MYMBX.MY.STEC-INC.AD>
- <20130116104546.GA3869@raspberrypi>
- <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D720A@MYMBX.MY.STEC-INC.AD>
- <20130117132620.GA2438@raspberrypi>
- <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7248@MYMBX.MY.STEC-INC.AD>
- <50F844A3.9020300@warr.net>
- <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D72F1@MYMBX.MY.STEC-INC.AD>
- <50F970A3.4000403@warr.net> <20130118161135.GA3118@raspberrypi>
- <50F97C0F.9010405@warr.net>
-In-Reply-To: <50F97C0F.9010405@warr.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754687Ab3ARRsN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 12:48:13 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55583 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751858Ab3ARRsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 12:48:11 -0500
+Date: Fri, 18 Jan 2013 09:46:54 -0800
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
+        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 6/6][v3] perf: Document the ABI of perf sysfs entries
+Message-ID: <20130118174654.GA12575@us.ibm.com>
+References: <20130110010347.GA32590@us.ibm.com>
+ <20130110010703.GF32590@us.ibm.com>
+ <20130115185759.GG5826@ghostprotocols.net>
+ <20130116113013.GA1042@krava.brq.redhat.com>
+ <20130116185815.GA3351@us.ibm.com>
+ <20130117141145.GA3817@krava.brq.redhat.com>
 MIME-Version: 1.0
-X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
-X-Barracuda-Start-Time: 1358531264
-X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.120219
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130117141145.GA3817@krava.brq.redhat.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011817-7182-0000-0000-0000048BDDF2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jason Warr [mailto:jason@warr.net]
-> Sent: Friday, January 18, 2013 10:15 PM
-> To: Amit Kale; device-mapper development; kent.overstreet@gmail.com;
-> Mike Snitzer; LKML; linux-bcache@vger.kernel.org
-> Subject: Re: [dm-devel] Announcement: STEC EnhanceIO SSD caching
-> software for Linux kernel
-> 
-> 
-> On 01/18/2013 10:11 AM, thornber@redhat.com wrote:
-> > On Fri, Jan 18, 2013 at 09:56:19AM -0600, Jason Warr wrote:
-> >> If I can help test and benchmark all three of these solutions please
-> >> ask.  I have allot of hardware resources available to me and perhaps
-> >> I can add value from an outsiders perspective.
-> > We'd love your help.  Perhaps you could devise a test that represents
-> > how you'd use it?
-> >
-> > - Joe
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-bcache" in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> As much as I dislike Oracle that is one of my primary applications.  I
-> am attempting to get one of my customers to setup an Oracle instance
-> that is modular in that I can move the storage around to fit a
-> particular hardware setup and have a consistent benchmark that they use
-> in the real world to gauge performance.  One of them is a debit card
-> transaction clearing entity on multi-TB databases so latency REALLY
-> matters there.  
+Jiri Olsa [jolsa@redhat.com] wrote:
+| Maybe it'd worth to mention, that it does not need to be just 'event',
+| but anything from /sys/bus/event_source/devices/<dev>/format directory,
+| like
+| 
+| 		The can be multiple terms like 'event=0xNNNN' specified
+| 		and separated with comma. All available terms are located
+| 		in /sys/bus/event_source/devices/<dev>/format file.
+| 
+| Please feel free to rephrase or use proper English ;-)
+| 
+| otherwise it's ok,
+| jirka
 
-I am curious as to how SSD latency matters so much in the overall transaction times.
+Agree.  Thanks for the review. Here is the updated patch.
 
-We do a lot of performance measurements using SQL database benchmarks. Transaction times vary a lot depending on location of data, complexity of the transaction etc. Typically TPM (transactions per minute) is of primary interest for TPC-C.
+---
+>From 1e3cc6b3ef87f533985b10574af472361e39eecd Mon Sep 17 00:00:00 2001
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Date: Tue, 8 Jan 2013 22:31:49 -0800
+Subject: [PATCH] perf: Document the ABI of perf sysfs entries
 
-> Hopefully I'll have a couple of them setup within a
-> week.  At that point I may need help in getting the proper kernel trees
-> and patch sets munged into a working kernel.  That seems to be the spot
-> where I fall over most of the time.
-> 
-> Unfortunately I probably could not share this specific setup but it is
-> likely that I can derive a version from it that can be opened.
+This patchset addes two new sets of files to sysfs for POWER architecture.
 
-That'll be good. I'll check with our testing team whether they can run TPC-C comparisons for these three caching solutions.
+	- perf event config format in /sys/devices/cpu/format/event
+	- generic and POWER-specific perf events in /sys/devices/cpu/events/
 
--Amit
+The format of the first file is already documented in:
 
-PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+	sysfs-bus-event_source-devices-format
+
+Document the format of the second set of files '/sys/devices/cpu/events/*'
+which would also become part of the ABI.
+
+Changelog[v3.2]: (small changes to this one patch).
+	[Jiri Olsa]: Mention that multiple event= like terms can be specified
+	in the 'events' file.
+
+Changelog[v3.1]:
+	(small changes to just this one patch).
+	[Jiri Olsa]: Remove the documentation for the 'config format' file
+	as it is already documented in 'Documentation/ABI/testing/'.
+	[Jiri Olsa]: Move the documentation of 'events' also to 'testing'
+	from 'stable'.
+
+Changelog[v3]:
+	[Greg KH] Include ABI documentation.
+
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+---
+ .../testing/sysfs-bus-event_source-devices-events  |   62 ++++++++++++++++++++
+ 1 files changed, 62 insertions(+), 0 deletions(-)
+ delete mode 100644 Documentation/ABI/stable/sysfs-devices-cpu-events
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+
+diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-events b/Documentation/ABI/stable/sysfs-devices-cpu-events
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+new file mode 100644
+index 0000000..0adeb52
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+@@ -0,0 +1,62 @@
++What:		/sys/devices/cpu/events/
++		/sys/devices/cpu/events/branch-misses
++		/sys/devices/cpu/events/cache-references
++		/sys/devices/cpu/events/cache-misses
++		/sys/devices/cpu/events/stalled-cycles-frontend
++		/sys/devices/cpu/events/branch-instructions
++		/sys/devices/cpu/events/stalled-cycles-backend
++		/sys/devices/cpu/events/instructions
++		/sys/devices/cpu/events/cpu-cycles
++
++Date:		2013/01/08
++
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++
++Description:	Generic performance monitoring events
++
++		A collection of performance monitoring events that may be
++		supported by many/most CPUs. These events can be monitored
++		using the 'perf(1)' tool.
++
++		The contents of each file would look like:
++
++			event=0xNNNN
++
++		where 'N' is a hex digit and the number '0xNNNN' shows the
++		"raw code" for the perf event identified by the file's
++		"basename".
++
++
++What: 		/sys/devices/cpu/events/PM_LD_MISS_L1
++		/sys/devices/cpu/events/PM_LD_REF_L1
++		/sys/devices/cpu/events/PM_CYC
++		/sys/devices/cpu/events/PM_BRU_FIN
++		/sys/devices/cpu/events/PM_GCT_NOSLOT_CYC
++		/sys/devices/cpu/events/PM_BRU_MPRED
++		/sys/devices/cpu/events/PM_INST_CMPL
++		/sys/devices/cpu/events/PM_CMPLU_STALL
++
++Date:		2013/01/08
++
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++		Linux Powerpc mailing list <linuxppc-dev@ozlabs.org>
++
++Description:	POWER-systems specific performance monitoring events
++
++		A collection of performance monitoring events that may be
++		supported by the POWER CPU. These events can be monitored
++		using the 'perf(1)' tool.
++
++		These events may not be supported by other CPUs.
++
++		The contents of each file would look like:
++
++			event=0xNNNN
++
++		where 'N' is a hex digit and the number '0xNNNN' shows the
++		"raw code" for the perf event identified by the file's
++		"basename".
++
++		Further, multiple terms like 'event=0xNNNN' can be specified
++		and separated with comma. All available terms are defined in
++		the /sys/bus/event_source/devices/<dev>/format file.
+-- 
+1.7.1
 
 
-
-This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
