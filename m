@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab3ARPEt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 10:04:49 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3173 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab3ARPEr (ORCPT
+	id S1756362Ab3ARPFU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 10:05:20 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:52216 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756286Ab3ARPFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 10:04:47 -0500
-X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=HJMuRcDKq34A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=RPfT3mj6-UMA:10 a=NTnuq6hLqWjDspvfNeYA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358521484.7383.8.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH v2] slub: Keep page and object in sync in
- slab_alloc_node()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@gmail.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Date: Fri, 18 Jan 2013 10:04:44 -0500
-In-Reply-To: <0000013c4e1ea131-b8ab56b9-bfca-44fe-b5da-f030551194c9-000000@email.amazonses.com>
-References: <1358446258.23211.32.camel@gandalf.local.home>
-	 <1358447864.23211.34.camel@gandalf.local.home>
-	 <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com>
-	 <1358458996.23211.46.camel@gandalf.local.home>
-	 <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com>
-	 <1358462763.23211.57.camel@gandalf.local.home>
-	 <1358464245.23211.62.camel@gandalf.local.home>
-	 <1358464837.23211.66.camel@gandalf.local.home>
-	 <1358468598.23211.67.camel@gandalf.local.home>
-	 <1358468924.23211.69.camel@gandalf.local.home>
-	 <0000013c4e1ea131-b8ab56b9-bfca-44fe-b5da-f030551194c9-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Fri, 18 Jan 2013 10:05:14 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [PATCH v2 69/76] ARC: [Review] Multi-platform image #2: Board callback Infrastructure
+Date: Fri, 18 Jan 2013 15:05:10 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-70-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1358511930-7424-70-git-send-email-vgupta@synopsys.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201301181505.10350.arnd@arndb.de>
+X-Provags-ID: V02:K0:GI8WT2t9MyzjxlDsxXt8SVG8/jz6fmozwNfvmbytpxr
+ A0yVSo9PmKRwA1wPSqLW2QxUKqK7zOVfXwPA//rCYjM0PnrRk8
+ T9aSwROqw1CHNJMdypC3+j5RehPlrjycdJcu11Ytlxt7avzVrv
+ DZhOxJrJgMH33VVxuQEWdCc9ECUKLYv8tTDEvziU3gm9u25Yhu
+ GVf9ktUy7nZvnw2VmjKO6d/Ks0QzkI5gT2DbiADU0rIGWvOuOv
+ 2pCMn0w/fjKt9lBGM54VJlibvVYpkjSgiJaiXc5Tj0QDcbAY0/
+ OpSH2F6joJXJaOROfNBJlIi/RudtW0zex5JN3NBbgp9ST/GLfF
+ iuSFsTjQROONepT38LYI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-18 at 14:44 +0000, Christoph Lameter wrote:
-> On Thu, 17 Jan 2013, Steven Rostedt wrote:
+On Friday 18 January 2013, Vineet Gupta wrote:
+> The orig platform code orgnaization was singleton design pattern - only
+> one platform (and board thereof) would build at a time.
 > 
-> > In slab_alloc_node(), after the cpu_slab is assigned, if the task is
-> > preempted and moves to another CPU, there's nothing keeping the page and
-> > object in sync. The -rt kernel crashed because page was NULL and object
-> > was not, and the node_match() dereferences page. Even though the crash
-> > happened on -rt, there's nothing that's keeping this from happening on
-> > mainline.
-> >
-> > The easiest fix is to disable interrupts for the entire time from
-> > acquiring the current CPU cpu_slab and assigning the object and page.
-> > After that, it's fine to allow preemption.
+> Thus any platform/board specific code (e.g. irq init, early init ...)
+> expected by ARC common code was exported as well defined set of APIs,
+> with only ONE instance building ever.
 > 
-> Its easiest to just check for the NULL pointer as initally done. The call
-> to __slab_alloc can do what the fastpath does.
+> Now with multiple-platform build requirement, that design of code no
+> longer holds - multiple board specific calls need to build at the same
+> time - so ARC common code can't use the API approach, it needs a
+> callback based design where each board registers it's specific set of
+> functions, and at runtime, depending on board detection, the callbacks
+> are used from the registry.
 > 
-> And the fastpath will verify that the c->page pointer was not changed.
+> This commit adds all the infrastructure, where board specific callbacks
+> are specified as a "machine description".
+> 
+> All the hooks are placed in right spots, no board callbacks registered
+> yet (with MACHINE_STARt/END constructs) so the hooks will not run.
+> 
+> Next commit will actually convert the platform to this infrastructure.
+> 
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
 
-The problem is that the changes can happen on another CPU, which means
-that barrier isn't sufficient.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-	CPU0			CPU1
-	----			----
-<cpu fetches c->page>
-			updates c->tid
-			updates c->page
-			updates c->freelist
-<cpu fetches c->tid>
-<cpu fetches c->freelist>
+> +struct machine_desc {
+> +	const char		*name;
+> +	const char		**dt_compat;
+> +
+> +	void			(*init_early)(void);
+> +	void			(*init_irq)(void);
+> +	void			(*init_time)(void);
+> +	void			(*init_machine)(void);
+> +	void			(*init_late)(void);
+> +
+> +#ifdef CONFIG_SMP
+> +	void			(*init_smp)(unsigned int);
+> +#endif
 
-  node_match() succeeds even though
-    current c->page wont
+On ARM, it turned out helpful to list these in the order in 
+which they get called. I assume that at least init_smp
+is currently not in that order.
 
- this_cpu_cmpxchg_double() only tests
-   the object (freelist) and tid, both which
-   will match, but the page that was tested
-   isn't the right one.
+Also, we are slowly making some of these obsolete on
+ARM: For platforms that at DT-only, the timer and
+irq code is now in drivers/irqchip and drivers/clocksource
+and can get automatically initialized.
 
+It probably makese sense for you to keep the above structure
+for now, but you can also think about obsoleting some
+of the calls in the future. It may be a good idea to have
+a default version for each of these but still allow overriding
+them for maximum flexibility in the platform.
 
-That barrier() is meaningless as soon as another CPU is involved. The
-CPU can order things anyway it wants, even if the assembly did in
-differently. Due to cacheline misses and such, we have no idea if
-c->page has been prefetched into memory or not.
-
-We may get by with just disabling preemption and testing for page ==
-NULL (just in case an interrupt comes in between objects and page and
-resets that). But we can't grab freelist and page if c points to another
-CPUs object.
-
--- Steve
-
+	Arnd
