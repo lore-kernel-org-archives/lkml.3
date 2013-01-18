@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab3AROVP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 09:21:15 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:55801 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab3AROVN (ORCPT
+	id S1753581Ab3AROVM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 09:21:12 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:37970 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab3AROVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 09:21:13 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [PATCH v2 09/76] ARC: Checksum/byteorder/swab routines
-Date: Fri, 18 Jan 2013 14:21:09 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-10-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1358511930-7424-10-git-send-email-vgupta@synopsys.com>
+	Fri, 18 Jan 2013 09:21:10 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301181421.09458.arnd@arndb.de>
-X-Provags-ID: V02:K0:+yf6Dzp/vFodp6M/OyfWBEMbuhN6vpcAIb3WD90VbQX
- 47dRlwMKEk+xgV05vB9Ky+MOcl9/BvWw+TTrnltW7aYtUpEYPw
- kSptVdODfX2vv3YKdyhBbnqwbSvR7Ay4pbOFHifpP6ahV1Qprf
- 7SCwWEGkVLUgdCEy/myreFhdzIGVk/kFFRw9m2FwnjqWDmQVPS
- LODY3oQxy5svjtxdbhJ3WKvfWe/VGlI+MwgLCjkYavopsGnsTx
- O7a169ZEwo+eM3zsLNY66KvGdnozHmZE0fRwIrWRQW183M0Y9Q
- f11nGjqP6vQ6dqcvHFCPBsXNaKSfjCnkHzIdqg1UIfJfvYLmV/
- gFRFe+DiBAX755/xdN14=
+In-Reply-To: <20130118131633.GJ4672@arwen.pp.htv.fi>
+References: <1357916550-11421-3-git-send-email-gautam.vivek@samsung.com>
+	<1358166135-22073-1-git-send-email-gautam.vivek@samsung.com>
+	<20130118131633.GJ4672@arwen.pp.htv.fi>
+Date: Fri, 18 Jan 2013 19:51:08 +0530
+Message-ID: <CAFp+6iF9H+n1Fwr89es-jtDAN=ht1PuXQER9vQ=jG2RZQTceWw@mail.gmail.com>
+Subject: Re: [PATCH v7 2/4] usb: phy: samsung: Add host phy support to
+ samsung-phy driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: balbi@ti.com
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, jg1.han@samsung.com,
+        linux-samsung-soc@vger.kernel.org, p.paneri@samsung.com,
+        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, rob.herring@calxeda.com,
+        sylvester.nawrocki@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 January 2013, Vineet Gupta wrote:
-> TBD: do_csum still needs to be written in asm
+Hi Felipe,
 
-Do you actually expect a lot of improvement in do_csum?
-I would hope that gcc can actually generate a pretty
-good version of it, unless you have some 64-bit add-with-carry
-instruction or something else that you could make use of.
 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+On Fri, Jan 18, 2013 at 6:46 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Mon, Jan 14, 2013 at 05:52:15PM +0530, Vivek Gautam wrote:
+>> This patch adds host phy support to samsung-usbphy driver and
+>> further adds support for samsung's exynos5250 usb-phy.
+>>
+>> Signed-off-by: Praveen Paneri <p.paneri@samsung.com>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>
+> Missing Kukjim's Acked-by here
+>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Hope you are fine with the changes happened after discussion in thread:
+[PATCH v5 2/4] usb: phy: samsung: Add host phy support to samsung-phy driver
+
+Is it something you want me to modify in this patch ?
+
+
+-- 
+Thanks & Regards
+Vivek
