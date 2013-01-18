@@ -1,111 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab3ARSwO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 13:52:14 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6644 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab3ARSwN (ORCPT
+	id S1753253Ab3ARS5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 13:57:50 -0500
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:50697 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab3ARS5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 13:52:13 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=HJMuRcDKq34A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=RPfT3mj6-UMA:10 a=bJxBL_JUdif7w-WkzrQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358535129.7383.25.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH v2] slub: Keep page and object in sync in
- slab_alloc_node()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@gmail.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Date: Fri, 18 Jan 2013 13:52:09 -0500
-In-Reply-To: <0000013c4eec1cbd-fb392b9f-b39e-4bcf-a043-2fa76fb8d35a-000000@email.amazonses.com>
-References: <1358446258.23211.32.camel@gandalf.local.home>
-	 <1358447864.23211.34.camel@gandalf.local.home>
-	 <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com>
-	 <1358458996.23211.46.camel@gandalf.local.home>
-	 <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com>
-	 <1358462763.23211.57.camel@gandalf.local.home>
-	 <1358464245.23211.62.camel@gandalf.local.home>
-	 <1358464837.23211.66.camel@gandalf.local.home>
-	 <1358468598.23211.67.camel@gandalf.local.home>
-	 <1358468924.23211.69.camel@gandalf.local.home>
-	 <0000013c4e1ea131-b8ab56b9-bfca-44fe-b5da-f030551194c9-000000@email.amazonses.com>
-	 <1358521484.7383.8.camel@gandalf.local.home>
-	 <1358524501.7383.17.camel@gandalf.local.home>
-	 <0000013c4eec1cbd-fb392b9f-b39e-4bcf-a043-2fa76fb8d35a-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
+	Fri, 18 Jan 2013 13:57:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id
+	:subject:from:to:cc:date:in-reply-to:references:content-type
+	:mime-version:content-transfer-encoding; q=dns; s=sasl; b=vRg1f0
+	V4cZR0TYTiTBSquJF7J+7zXFjyCMZ400dYSsDM7o3fkYw13pAyAEnLxJwLE0J95h
+	4YcOlkDULhYRuJWMq65eqzwqFo3N3VnlL1goL+IsHEZoI11Jm4RPX3lRm+QsuqOM
+	ziDxsrfbSzA1spSi1p728a2V1bqR+kMEgfdys=
+Message-ID: <1358535466.23663.40.camel@orca.stoopid.dyndns.org>
+Subject: Re: [PATCH 1/2] leds: simply LED trigger list management
+From: Nathan Lynch <ntl@pobox.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Bryan Wu <cooloney@gmail.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Jan 2013 12:57:46 -0600
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E19873@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F69E17700@DQHE02.ent.ti.com>
+ <1358448677.26320.22.camel@doorstop.aus.2wire.com>
+ <A874F61F95741C4A9BA573A70FE3998F69E19873@DQHE02.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: F36375F2-61A0-11E2-9503-0A4F0E5B5709-04752483!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-18 at 18:29 +0000, Christoph Lameter wrote:
-> On Fri, 18 Jan 2013, Steven Rostedt wrote:
-> 
-> > On Fri, 2013-01-18 at 10:04 -0500, Steven Rostedt wrote:
-> >
-> > Just to be more complete:
-> >
-> > > 	CPU0			CPU1
-> > > 	----			----
-> > 			c = __this_cpu_ptr(s->cpu_slab);
-> > 			<migrates to CPU0>
-> >
-> > > <cpu fetches c->page>
-> > 			<another task>
-> >
-> > > 			updates c->tid
-> 
-> We can avoid the above scenario by doing a cpu local fetch.
-> 
-> i.e.
-> `	tid = this_cpu_read(s->cpu_slab->tid);
-
-I'm curious to why not just add the preempt disable? It's rather quick
-and avoids all this complex trickery, which is just prone to bugs. It
-would make it much easier for others to review as well, and also keeps
-the setting of page, objects and cpu_slab consistent with everything
-else (which is assigned under preempt(irq)_disable).
-
-
-> 
-> 
-> > > 			updates c->page
-> > > 			updates c->freelist
-> > > <cpu fetches c->tid>
-> > > <cpu fetches c->freelist>
+On Fri, 2013-01-18 at 00:00 +0000, Kim, Milo wrote:
+> > -----Original Message-----
+> > From: Nathan Lynch [mailto:ntl@pobox.com]
+> > 
+> > On Thu, 2013-01-17 at 01:06 +0000, Kim, Milo wrote:
+> > > @@ -242,17 +233,15 @@ EXPORT_SYMBOL_GPL(led_trigger_unregister);
+> > >  void led_trigger_event(struct led_trigger *trig,
+> > >  			enum led_brightness brightness)
+> > >  {
+> > > -	struct list_head *entry;
+> > > +	struct led_classdev *led_cdev;
 > > >
-> > >   node_match() succeeds even though
-> > >     current c->page wont
+> > >  	if (!trig)
+> > >  		return;
 > > >
-> >
-> >  <migrates back to CPU 1>
-> >
-> > >  this_cpu_cmpxchg_double() only tests
-> > >    the object (freelist) and tid, both which
-> > >    will match, but the page that was tested
-> > >    isn't the right one.
-> > >
-> >
-> > Yes, it's very unlikely, but we are in the business of dealing with the
-> > very unlikely. That's because in our business, the very unlikely is very
-> > likely. Damn, I need to buy a lotto ticket!
+> > >  	read_lock(&trig->leddev_list_lock);
+> > > -	list_for_each(entry, &trig->led_cdevs) {
+> > > -		struct led_classdev *led_cdev;
+> > > -
+> > > -		led_cdev = list_entry(entry, struct led_classdev,
+> > trig_list);
+> > > -		led_set_brightness(led_cdev, brightness);
+> > > +	list_for_each_entry(led_cdev, &leds_list, node) {
+> > > +		if (led_cdev->trigger == trig)
+> > > +			led_set_brightness(led_cdev, brightness);
+> > >  	}
+> > >  	read_unlock(&trig->leddev_list_lock);
+> > 
+> > Continuing to use trig->leddev_list_lock doesn't seem right.  Shouldn't
+> > traversal of leds_list be guarded by the leds_list_lock rwsem?  And if
+> > so, is it safe to use a potentially-blocking lock in this context?
+> > 
 > 
-> Well, the consequence would be that an object from another node than
-> desired will be allocated. Not that severe of an issue.
+> (Sorry for the typo in title: 'simply' -> 'simplify')
+> 
+> Thanks for your opinion. I agree with you.
+> The read_lock()/unlock() of 'leddev_list_lock' should be replaced with
+> down_read()/up_read() of 'leds_list_lock'.
+> Then, RW lock of led_trigger can be removed also.
 
-Yes, it's not that severe of an issue, but it is still incorrect code.
-Why not just allocate on whatever node you want then? Why bother with
-the check at all?
+But led_trigger_event() can be called from atomic/interrupt context, no?
+We can't use a rwsem in this path.
 
--- Steve
+And I meant to mention earlier -- this change would cause this function
+to scan all led devices in the system, whereas right now it consults
+only the leds that are associated with the trigger.  That seems like a
+step backwards for a potentially performance-sensitive path.
+
+
+> BTW, I need more education about the concurrency.
+> We can see complex RW down/up safe code with list management in LED class driver.
+> RW semaphores are 'leds_list_lock', 'triggers_list_lock' and 'trigger_lock'.
+> Are those are safe access in case a user-space via sysfs and driver API calls by
+>  LED device(s) can happen at the same time?
+> If so, can we make them more simple?
+>
+> I think *entry point* of access can be wrapped with semaphores or MUTEX
+> rather than guard code for accessing LED lists one by one.
+
+It seems to me that the relatively fine-grained lists and locks that
+exist right now provide a certain level of flexibility and performance
+that would be hard to achieve with a coarser model.
 
 
