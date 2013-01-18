@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab3ARNWF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 08:22:05 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:65439 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab3ARNWE (ORCPT
+	id S1755511Ab3ARNX2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 08:23:28 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:48651 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab3ARNX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 08:22:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+Z25wWsv6z+GEQzvUhPL1NXnE-ha+pkobD7X-eUnds3jp2a8g@mail.gmail.com>
+	Fri, 18 Jan 2013 08:23:27 -0500
+From: Abhilash Kesavan <a.kesavan@samsung.com>
+To: myungjoo.ham@samsung.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, kgene.kim@samsung.com
+Cc: kyungmin.park@samsung.com, rjw@sisk.pl, jhbird.choi@samsung.com
+Subject: [PATCH v4 1/4] ARM: EXYNOS5: Add PPMU device tree support
+Date: Fri, 18 Jan 2013 18:53:14 +0530
+Message-Id: <1358515394-7423-1-git-send-email-a.kesavan@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1357733199-17206-1-git-send-email-a.kesavan@samsung.com>
 References: <1357733199-17206-1-git-send-email-a.kesavan@samsung.com>
-	<1357733199-17206-4-git-send-email-a.kesavan@samsung.com>
-	<CA+Z25wWsv6z+GEQzvUhPL1NXnE-ha+pkobD7X-eUnds3jp2a8g@mail.gmail.com>
-Date: Fri, 18 Jan 2013 18:52:02 +0530
-Message-ID: <CAM4voa=_43XqvOBzYYzO7H3DQ6Avw=rQgZLZ6FQSvp1v9rPEGA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] PM/Devfreq: Add Exynos5-bus devfreq driver for Exynos5250
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Cc: myungjoo.ham@samsung.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, kgene.kim@samsung.com,
-        kyungmin.park@samsung.com, rjw@sisk.pl, jhbird.choi@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rajagopal,
+PPMU is required by the devfreq driver. Add a device tree
+node for it.
 
-Thanks for the review. Sorry for the late response, have been a little
-busy with other things,
+Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+---
+Changes since v3:
+* Modified the dt bindings as per updated devfreq driver
+Changes before v3:
+* No change
 
-[...]
->> +#include "../governor.h"
->
-> This header file is meant for governors use. What's the need of it here?
-I was using a custom monitor function and needed update_devfreq for
-it. Will change this in the next version.
-[...]
->> +       stat->current_frequency = data->curr_freq;
->> +       stat->busy_time = data->busy;
->> +       stat->total_time = 100;
->
-> How is busy_time is relative to total_time here? busy_time <=
-> total_time is guaranteed?
-Will modify the get_dev_status function to do PPMU reads and populate
-the device status structure.
->
-[...]
-> Again, update_devfreq() is meant for devfreq governors use. Why is the devfreq
-> driver is doing devfreq governor job? any specific reason? The devfreq device
-> load monitoring is done by governors.
->
-Same as above.
-[...]
->> +       .polling_ms             = 0,
->
-> why is polling_ms is set to zero? It defeats the purpose of devfreq driver.
-I bypassed the devfreq_monitor with the new custom function created. Am fixing
-this.
+Tested after merging for-rafael branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/mzx/devfreq.git
+with for-next branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
 
-I have now done this on the lines of the exynos4 driver. Will re-post in a bit.
+ .../bindings/arm/exynos/ppmu-exynos5.txt           |   24 ++++++++++++++++++++
+ arch/arm/boot/dts/exynos5250.dtsi                  |    5 ++++
+ 2 files changed, 29 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/exynos/ppmu-exynos5.txt
 
-Regards,
-Abhilash
+diff --git a/Documentation/devicetree/bindings/arm/exynos/ppmu-exynos5.txt b/Documentation/devicetree/bindings/arm/exynos/ppmu-exynos5.txt
+new file mode 100644
+index 0000000..06d40d5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/exynos/ppmu-exynos5.txt
+@@ -0,0 +1,24 @@
++Exynos5 PPMU driver
++-------------------
++
++Performance events are primitive values used to get performance data. These
++events provide information about the behavior of the SoC that can be used
++when analyzing system performance. These events are made visible using the
++PPMU logic.
++Exynos5 PPMU driver is used by the exynos5 devfreq driver to control the bus
++frequency/voltage.
++
++Required properties:
++- compatible: should be one of the following.
++	* samsung,exynos5-ppmu - for exynos5250 type ppmu.
++- reg:
++	* physical base address of the Right PPMU and length of memory mapped
++	region
++
++Example:
++--------
++
++	ppmu {
++		compatible = "samsung,exynos5250-ppmu";
++		reg = <0x13660000 0x2000>;
++	};
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index 30485de..96ef6ed 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -732,4 +732,9 @@
+ 		interrupt-parent = <&combiner>;
+ 		interrupts = <24 1>;
+ 	};
++
++	ppmu {
++		compatible = "samsung,exynos5250-ppmu";
++		reg = <0x13660000 0x2000>;	/* PPMU_DDR_RIGHT */
++	};
+ };
+-- 
+1.7.8.6
+
