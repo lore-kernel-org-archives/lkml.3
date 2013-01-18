@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab3ARLtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 06:49:36 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52042 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751461Ab3ARLte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 06:49:34 -0500
-Date: Fri, 18 Jan 2013 13:48:59 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <balbi@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <b-cousson@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <horms@verge.net.au>,
-        <magnus.damm@gmail.com>, <cbou@mail.ru>, <dwmw2@infradead.org>,
-        <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <leoli@freescale.com>, <eric.y.miao@gmail.com>,
-        <haojian.zhuang@gmail.com>, <stern@rowland.harvard.edu>
-Subject: Re: [RFC PATCH 0/6] USB: Add multiple PHYs of same type
-Message-ID: <20130118114859.GC4379@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1358348462-27693-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gr/z0/N6AeWAPJVB"
-Content-Disposition: inline
-In-Reply-To: <1358348462-27693-1-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753028Ab3ARLyj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 06:54:39 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:49767 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab3ARLyi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 06:54:38 -0500
+From: Alexandru Copot <alex.mihai.c@gmail.com>
+To: rusty@rustcorp.com.au
+Cc: mst@redhat.com, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Alexandru Copot <alex.mihai.c@gmail.com>,
+        Daniel Baluta <dbaluta@ixiacom.com>
+Subject: [PATCH] virtio: suppress kmemleak false positive
+Date: Fri, 18 Jan 2013 13:54:21 +0200
+Message-Id: <1358510061-12164-1-git-send-email-alex.mihai.c@gmail.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---gr/z0/N6AeWAPJVB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+While doing simple IPv6 tests in KVM virtual machines,
+(add an IPv6 address to eth0) kmemleak complains about
+an unreferenced object:
 
-On Wed, Jan 16, 2013 at 08:30:56PM +0530, Kishon Vijay Abraham I wrote:
-> New platforms are being added which has multiple PHY's (of same type) and
-> which has multiple USB controllers. The binding information has to be
-> present in the PHY library (otg.c) in order for it to return the
-> appropriate PHY whenever the USB controller request for the PHY. So
-> added a new API to pass the binding information. This API should be
-> called by platform specific initialization code.
->=20
-> So the binding should be done something like
-> usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto"); specifying the U=
-SB
-> controller device name, index, and the PHY device name.
-> I have done this binding for OMAP platforms, but it should be done for
-> all the platforms.
->=20
-> After this design, the phy can be got by passing the USB controller device
-> pointer and the index.
->=20
-> Developed this patch series on
-> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
-> after applying "usb: musb: add driver for control module" patch series.
->=20
-> Did basic enumeration testing in omap4 panda, omap4 sdp and omap3 beagle.
+unreferenced object 0xffff88001e804120 (size 32):
+  comm "softirq", pid 0, jiffies 4294900928 (age 631.544s)
+  hex dump (first 32 bytes):
+    28 cb fd 1d 00 00 00 00 0c 00 00 00 01 00 01 00  (...............
+    02 d0 83 1d 00 00 00 00 6e 00 00 00 00 00 00 00  ........n.......
+  backtrace:
+    [<ffffffff815ed721>] kmemleak_alloc+0x21/0x50
+    [<ffffffff8111d0b0>] __kmalloc+0xe0/0x160
+    [<ffffffff81362b7c>] virtqueue_add_buf+0x1fc/0x3d0
+    [<ffffffff8140cbd3>] start_xmit+0x153/0x3a0
+    [<ffffffff8150887e>] dev_hard_start_xmit+0x21e/0x470
+    [<ffffffff815247ce>] sch_direct_xmit+0xfe/0x280
+    [<ffffffff81509014>] dev_queue_xmit+0x1f4/0x5d0
+    [<ffffffff81592e91>] ip6_finish_output2+0x101/0x450
+    [<ffffffff81595ae8>] ip6_finish_output+0x98/0x200
+    [<ffffffff81595ca1>] ip6_output+0x51/0x1b0
+    [<ffffffff815b51af>] mld_sendpack+0x19f/0x360
+    [<ffffffff815b59b4>] mld_ifc_timer_expire+0x194/0x290
+    [<ffffffff8104b794>] call_timer_fn+0x74/0xf0
+    [<ffffffff8104bb1b>] run_timer_softirq+0x18b/0x220
+    [<ffffffff81045f81>] __do_softirq+0xe1/0x1c0
+    [<ffffffff8160a4fc>] call_softirq+0x1c/0x30
 
-please resend without RFC so I can apply.
+Seems the function vring_add_indirect stores an array of
+struct vring_desc by using virt_to_phys and kmemleak
+doesn't track the pointer.
 
---=20
-balbi
+The following patch can fix this.
 
---gr/z0/N6AeWAPJVB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Alexandru Copot <alex.mihai.c@gmail.com>
+CC: Daniel Baluta <dbaluta@ixiacom.com>
+---
+ drivers/virtio/virtio_ring.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index ffd7e7d..730baa4 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -23,6 +23,7 @@
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/hrtimer.h>
++#include <linux/kmemleak.h>
+ 
+ /* virtio guest is communicating with a virtual "device" that actually runs on
+  * a host processor.  Memory barriers are used to control SMP effects. */
+@@ -141,6 +142,11 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
+ 	if (!desc)
+ 		return -ENOMEM;
+ 
++	/* This pointer is passed below by its physical address so
++	 * kmemleak would show a false positive without it.
++	 */
++	kmemleak_not_leak(desc);
++
+ 	/* Transfer entries from the sg list into the indirect page */
+ 	for (i = 0; i < out; i++) {
+ 		desc[i].flags = VRING_DESC_F_NEXT;
+-- 
+1.8.1
 
-iQIcBAEBAgAGBQJQ+TarAAoJEIaOsuA1yqREwzUQAKHNzbmIGRA5JB0JwaDvCLZS
-mDMznav6/TG9h4yxznFxg6o8dxtEnQxCCM3jxgR6GCSn4OiIB3hjkMJb3gwbNZzz
-34jJsYKh/zrvsx+ZBbpwe9RpS6nQ3t5bGWQ1asw0BsTsDjHj9ve6HuoPvqmhVROU
-Md1+NS9mMwgQZVCwFk6Ex+/0eggopWpveReIsHZYIIAVCHMg6m6qFQm898yTSFJL
-xgzPrq9LVt1lcqHkrcc6w5A9DXqtWq1tFmucFcNUaIWCO3Y+vgaL4ypjjI0psxuc
-3tT2cYIsCxMiZIhRTNZqUR8TDI6Ps+vz/nqxdaH2dmjdS1YtonzqQbEUVGKP9dpB
-hRxCNRHhxTJBdQsHctgvCbhfwzKZJUk0HRldL+35H86Sj5UefXeb+A29kkA4l4kn
-g0f7qL8KarZlLHtJ/QwbCNm8POrABUzT0Ps2tay2hgyUPJ8A/2xGg+BEeJijogmD
-5X7MH1kz0W55fnKCZ3gn+mK3eqJMNxZ9n4m4tOpAPH50vcYaD3iy7f9EczbztLaG
-VG8EYEYczkh0eLrXAXgN4LfZmImgmYIvYJqvngjgTqdoQ5b8S/78TBerHVIwxfqn
-yE5h514NdlSus5XrfPhqQpw8jARnnFq2XGc2I4x3gMq8JXioBBYQf1PMp7QXl+l8
-okED+iP6snMtIwHr3Gs6
-=pVWA
------END PGP SIGNATURE-----
-
---gr/z0/N6AeWAPJVB--
