@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350Ab3ARG35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 01:29:57 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:61219 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab3ARG3z convert rfc822-to-8bit (ORCPT
+	id S1751374Ab3ARGe7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 01:34:59 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:49968 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab3ARGe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 01:29:55 -0500
+	Fri, 18 Jan 2013 01:34:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130118095538.fdd0b3be90739b9fd9179b5d@canb.auug.org.au>
-References: <1358441537-8672-1-git-send-email-piastry@etersoft.ru>
-	<20130118095538.fdd0b3be90739b9fd9179b5d@canb.auug.org.au>
-Date: Fri, 18 Jan 2013 10:29:54 +0400
-X-Google-Sender-Auth: rB9gvbCjJZMvR5OAoeMgpEfTaVQ
-Message-ID: <CAKywueQ33k3uGHP4LV=7KCq-V3D=3PEanbYTzVEnXwT0V-fXjA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/8] Add O_DENY* support for VFS and CIFS/NFS
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <003001cdf519$6d21c690$476553b0$@samsung.com>
+References: <CAFp+6iE7zEJ7E_pRCOYz5mQqbk-MFE6Hwr02pRRT1yP+X3z7kQ@mail.gmail.com>
+	<1358230225-2770-1-git-send-email-gautam.vivek@samsung.com>
+	<003001cdf519$6d21c690$476553b0$@samsung.com>
+Date: Fri, 18 Jan 2013 12:04:55 +0530
+Message-ID: <CAFp+6iEmPg4G1hQfM1EKUBbXHKupF4mNh5v48jQWS5TyLV_Mow@mail.gmail.com>
+Subject: Re: [PATCH v7] usb: phy: samsung: Add support to set pmu isolation
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        l.majewski@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux@arm.linux.org.uk, p.paneri@samsung.com,
+        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        balbi@ti.com, kyungmin.park@samsung.com, cpgs@samsung.com,
+        ben-linux@fluff.org, sylvester.nawrocki@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/18 Stephen Rothwell <sfr@canb.auug.org.au>:
-> Hi Pavel,
->
-> On Thu, 17 Jan 2013 20:52:09 +0400 Pavel Shilovsky <piastry@etersoft.ru> wrote:
->>
->> This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
->
-> This has probably been discussed, but is Linux's leases implementation
-> not sufficient?  Just wondering.
+HI Kukjin,
 
-As I understand it, leases play different role: they allow to cache a
-data for the particular open and then flush it when a lease break
-comes. But we need to protect opens from being done if their
-access/share mode is not suitable for previously done opens. E.g. if
-we have already opened a file with O_RDONLY | O_DENYWRITE we can't
-open it again with any of O_WRONLY, O_RDWR and O_DENYREAD flags (of
-course all these things should only work if O_DENYMAND is specified
-for the first and the second opens).
+On Fri, Jan 18, 2013 at 6:46 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> Vivek Gautam wrote:
+>>
+>> Adding support to parse device node data in order to get
+>> required properties to set pmu isolation for usb-phy.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+>> Reviewed-by: Doug Anderson <dianders@chromium.org>
+>
+> This looks good to me,
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>
+Thanks
+
+> Vivek, could you please re-send following in one series?
+> - [PATCH v9 1/2] usb: phy: samsung: Introducing usb phy driver for hsotg
+> - [PATCH v8 2/2] usb: s3c-hsotg: Adding phy driver support
+>
+
+Praveen will re-send this patch-series asap.
+
+> As I know, this should be applied on top of above patches.
+>
+
+
 
 -- 
-Best regards,
-Pavel Shilovsky.
+Thanks & Regards
+Vivek
