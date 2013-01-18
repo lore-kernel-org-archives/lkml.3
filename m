@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab3ARQI3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 11:08:29 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:45604 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755345Ab3ARQI0 (ORCPT
+	id S1755593Ab3ARQId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 11:08:33 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:65527 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755345Ab3ARQIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 11:08:26 -0500
+	Fri, 18 Jan 2013 11:08:31 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -16,9 +16,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
-Subject: [RFC PATCH v5 6/8] pci_slot: replace printk(KERN_xxx) with pr_xxx()
-Date: Sat, 19 Jan 2013 00:07:44 +0800
-Message-Id: <1358525267-14268-7-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v5 7/8] PCI/PCIe: add "pci=nopciehp" to disable PCIe native hotplug
+Date: Sat, 19 Jan 2013 00:07:45 +0800
+Message-Id: <1358525267-14268-8-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
 References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
@@ -26,34 +26,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial changes to replace printk(KERN_xxx) with pr_xxx().
+If user specifies "pci=nopciehp" on kernel boot command line, OSPM
+won't claim PCIe native hotplug service from firmware and no PCIe
+port devices will be created for PCIe native hotplug service.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- drivers/acpi/pci_slot.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ Documentation/kernel-parameters.txt |    2 ++
+ drivers/acpi/pci_root.c             |    3 ++-
+ drivers/pci/pci.c                   |    2 ++
+ drivers/pci/pcie/portdrv_core.c     |    5 +++--
+ drivers/pci/pcie/portdrv_pci.c      |    3 +++
+ include/linux/pci.h                 |    9 +++++++++
+ 6 files changed, 21 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
-index 2b38f4d..3b821db 100644
---- a/drivers/acpi/pci_slot.c
-+++ b/drivers/acpi/pci_slot.c
-@@ -52,13 +52,12 @@ module_param(debug, bool, 0644);
- ACPI_MODULE_NAME("pci_slot");
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 9776f06..28dd0ad 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2106,6 +2106,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 		noaer		[PCIE] If the PCIEAER kernel config parameter is
+ 				enabled, this kernel boot option can be used to
+ 				disable the use of PCIE advanced error reporting.
++		nopciehp	[PCIE] this kernel boot option can be used to
++				disable PCIe native hotplug.
+ 		nodomains	[PCI] Disable support for multiple PCI
+ 				root domains (aka PCI segments, in ACPI-speak).
+ 		nommconf	[X86] Disable use of MMCONFIG for PCI
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index c6200ff..c37eedb 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -551,8 +551,9 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+ 	if (!pcie_ports_disabled
+ 	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
+ 		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
+-			| OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
+ 			| OSC_PCI_EXPRESS_PME_CONTROL;
++		if (!pcie_native_hotplug_disabled)
++			flags |= OSC_PCI_EXPRESS_NATIVE_HP_CONTROL;
  
- #define MY_NAME "pci_slot"
--#define err(format, arg...) printk(KERN_ERR "%s: " format , MY_NAME , ## arg)
--#define info(format, arg...) printk(KERN_INFO "%s: " format , MY_NAME , ## arg)
-+#define err(format, arg...) pr_err("%s: " format , MY_NAME , ## arg)
-+#define info(format, arg...) pr_info("%s: " format , MY_NAME , ## arg)
- #define dbg(format, arg...)					\
- 	do {							\
- 		if (debug)					\
--			printk(KERN_DEBUG "%s: " format,	\
--				MY_NAME , ## arg);		\
-+			pr_debug("%s: " format,	MY_NAME , ## arg); \
- 	} while (0)
+ 		if (pci_aer_available()) {
+ 			if (aer_acpi_firmware_first())
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 2f8f4c6..34b2c83 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3869,6 +3869,8 @@ static int __init pci_setup(char *str)
+ 				pci_no_msi();
+ 			} else if (!strcmp(str, "noaer")) {
+ 				pci_no_aer();
++			} else if (!strcmp(str, "nopciehp")) {
++				pcie_no_native_hotplug();
+ 			} else if (!strncmp(str, "realloc=", 8)) {
+ 				pci_realloc_get_opt(str + 8);
+ 			} else if (!strncmp(str, "realloc", 7)) {
+diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
+index ed129b4..e7e1679 100644
+--- a/drivers/pci/pcie/portdrv_core.c
++++ b/drivers/pci/pcie/portdrv_core.c
+@@ -263,8 +263,9 @@ static int get_port_device_capability(struct pci_dev *dev)
  
- #define SLOT_NAME_SIZE 21		/* Inspired by #define in acpiphp.h */
+ 	err = pcie_port_platform_notify(dev, &cap_mask);
+ 	if (!pcie_ports_auto) {
+-		cap_mask = PCIE_PORT_SERVICE_PME | PCIE_PORT_SERVICE_HP
+-				| PCIE_PORT_SERVICE_VC;
++		cap_mask = PCIE_PORT_SERVICE_PME | PCIE_PORT_SERVICE_VC;
++		if (!pcie_native_hotplug_disabled)
++			cap_mask |= PCIE_PORT_SERVICE_HP;
+ 		if (pci_aer_available())
+ 			cap_mask |= PCIE_PORT_SERVICE_AER;
+ 	} else if (err) {
+diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+index 0761d90..018cee0 100644
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -40,6 +40,9 @@ bool pcie_ports_disabled;
+  */
+ bool pcie_ports_auto = true;
+ 
++/* If set, the PCIe native hotplug will not be used. */
++bool pcie_native_hotplug_disabled;
++
+ static int __init pcie_port_setup(char *str)
+ {
+ 	if (!strncmp(str, "compat", 6)) {
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 12e5447..715e17b 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1138,9 +1138,18 @@ extern int pci_msi_enabled(void);
+ #ifdef CONFIG_PCIEPORTBUS
+ extern bool pcie_ports_disabled;
+ extern bool pcie_ports_auto;
++extern bool pcie_native_hotplug_disabled;
++
++static inline void pcie_no_native_hotplug(void)
++{
++	pcie_native_hotplug_disabled = true;
++}
+ #else
+ #define pcie_ports_disabled	true
+ #define pcie_ports_auto		false
++#define pcie_native_hotplug_disabled	true
++
++static inline void pcie_no_native_hotplug(void) { }
+ #endif
+ 
+ #ifndef CONFIG_PCIEASPM
 -- 
 1.7.9.5
 
