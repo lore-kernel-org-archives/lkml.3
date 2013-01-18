@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab3ARM15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:27:57 -0500
-Received: from kiruna.synopsys.com ([198.182.44.80]:61709 "EHLO
+	id S1756177Ab3ARM2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:28:07 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:61711 "EHLO
 	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3ARM1z (ORCPT
+	with ESMTP id S1755942Ab3ARM2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:27:55 -0500
+	Fri, 18 Jan 2013 07:28:03 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 15/76] ARC: Non-MMU Exception Handling
-Date: Fri, 18 Jan 2013 17:54:29 +0530
-Message-ID: <1358511930-7424-16-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 16/76] ARC: Syscall support (no-legacy-syscall ABI)
+Date: Fri, 18 Jan 2013 17:54:30 +0530
+Message-ID: <1358511930-7424-17-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -24,157 +24,401 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arc/include/asm/hw_irq.h |    7 --
- arch/arc/kernel/traps.c       |  125 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 125 insertions(+), 7 deletions(-)
- delete mode 100644 arch/arc/include/asm/hw_irq.h
- create mode 100644 arch/arc/kernel/traps.c
+ arch/arc/include/asm/ptrace.h   |    5 ++
+ arch/arc/include/asm/syscall.h  |   72 +++++++++++++++++++++++
+ arch/arc/include/asm/syscalls.h |   30 ++++++++++
+ arch/arc/include/asm/unistd.h   |   29 ++++++++++
+ arch/arc/kernel/entry.S         |   49 ++++++++++++++++
+ arch/arc/kernel/process.c       |  119 +++++++++++++++++++++++++++++++++++++++
+ arch/arc/kernel/sys.c           |   19 ++++++
+ 7 files changed, 323 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/include/asm/syscall.h
+ create mode 100644 arch/arc/include/asm/syscalls.h
+ create mode 100644 arch/arc/include/asm/unistd.h
+ create mode 100644 arch/arc/kernel/process.c
+ create mode 100644 arch/arc/kernel/sys.c
 
-diff --git a/arch/arc/include/asm/hw_irq.h b/arch/arc/include/asm/hw_irq.h
-deleted file mode 100644
-index fd565ab..0000000
---- a/arch/arc/include/asm/hw_irq.h
-+++ /dev/null
-@@ -1,7 +0,0 @@
--/*
-- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
-diff --git a/arch/arc/kernel/traps.c b/arch/arc/kernel/traps.c
+diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
+index 561c7eb..9abbb7c 100644
+--- a/arch/arc/include/asm/ptrace.h
++++ b/arch/arc/include/asm/ptrace.h
+@@ -125,6 +125,11 @@ struct user_regs_struct {
+ 		sp = -1;	\
+ 	sp;			\
+ })
++
++/* return 1 if in syscall, 0 if Intr or Exception */
++#define in_syscall(regs) (((regs->orig_r8) >= 0 && \
++			   (regs->orig_r8 <= NR_syscalls)) ? 1 : 0)
++
+ #endif /* !__ASSEMBLY__ */
+ 
+ #endif /* __KERNEL__ */
+diff --git a/arch/arc/include/asm/syscall.h b/arch/arc/include/asm/syscall.h
 new file mode 100644
-index 0000000..fd2457c
+index 0000000..33ab304
 --- /dev/null
-+++ b/arch/arc/kernel/traps.c
-@@ -0,0 +1,125 @@
++++ b/arch/arc/include/asm/syscall.h
+@@ -0,0 +1,72 @@
 +/*
-+ * Traps/Non-MMU Exception handling for ARC
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _ASM_ARC_SYSCALL_H
++#define _ASM_ARC_SYSCALL_H  1
++
++#include <linux/err.h>
++#include <linux/sched.h>
++#include <asm/unistd.h>
++#include <asm/ptrace.h>		/* in_syscall() */
++
++static inline long
++syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
++{
++	if (user_mode(regs) && in_syscall(regs))
++		return regs->orig_r8;
++	else
++		return -1;
++}
++
++static inline void
++syscall_rollback(struct task_struct *task, struct pt_regs *regs)
++{
++	/* XXX: I can't fathom how pt_regs->r8 will be clobbered ? */
++	regs->r8 = regs->orig_r8;
++}
++
++static inline long
++syscall_get_error(struct task_struct *task, struct pt_regs *regs)
++{
++	/* 0 if syscall succeeded, otherwise -Errorcode */
++	return IS_ERR_VALUE(regs->r0) ? regs->r0 : 0;
++}
++
++static inline long
++syscall_get_return_value(struct task_struct *task, struct pt_regs *regs)
++{
++	return regs->r0;
++}
++
++static inline void
++syscall_set_return_value(struct task_struct *task, struct pt_regs *regs,
++			 int error, long val)
++{
++	regs->r0 = (long) error ?: val;
++}
++
++/*
++ * @i:      argument index [0,5]
++ * @n:      number of arguments; n+i must be [1,6].
++ */
++static inline void
++syscall_get_arguments(struct task_struct *task, struct pt_regs *regs,
++		      unsigned int i, unsigned int n, unsigned long *args)
++{
++	unsigned long *inside_ptregs = &(regs->r0);
++	inside_ptregs -= i;
++
++	BUG_ON((i + n) > 6);
++
++	while (n--) {
++		args[i++] = (*inside_ptregs);
++		inside_ptregs--;
++	}
++}
++
++#endif
+diff --git a/arch/arc/include/asm/syscalls.h b/arch/arc/include/asm/syscalls.h
+new file mode 100644
+index 0000000..cf5d2f5
+--- /dev/null
++++ b/arch/arc/include/asm/syscalls.h
+@@ -0,0 +1,30 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _ASM_ARC_SYSCALLS_H
++#define _ASM_ARC_SYSCALLS_H  1
++
++#ifdef __KERNEL__
++
++#include <linux/compiler.h>
++#include <linux/linkage.h>
++#include <linux/types.h>
++
++int sys_execve_wrapper(int, int, int);
++int sys_clone_wrapper(int, int, int, int, int);
++int sys_fork_wrapper(void);
++int sys_vfork_wrapper(void);
++int sys_cacheflush(uint32_t, uint32_t uint32_t);
++int sys_arc_settls(void *);
++int sys_arc_gettls(void);
++
++#include <asm-generic/syscalls.h>
++
++#endif	/* __KERNEL__ */
++
++#endif
+diff --git a/arch/arc/include/asm/unistd.h b/arch/arc/include/asm/unistd.h
+new file mode 100644
+index 0000000..6a2d101
+--- /dev/null
++++ b/arch/arc/include/asm/unistd.h
+@@ -0,0 +1,29 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/******** no-legacy-syscalls-ABI *******/
++
++#define sys_mmap2 sys_mmap_pgoff
++
++#include <asm-generic/unistd.h>
++
++#define NR_syscalls	__NR_syscalls
++
++/* ARC specific syscall */
++#define __NR_cacheflush		(__NR_arch_specific_syscall + 0)
++#define __NR_arc_settls		(__NR_arch_specific_syscall + 1)
++#define __NR_arc_gettls		(__NR_arch_specific_syscall + 2)
++
++__SYSCALL(__NR_cacheflush, sys_cacheflush)
++__SYSCALL(__NR_arc_settls, sys_arc_settls)
++__SYSCALL(__NR_arc_gettls, sys_arc_gettls)
++
++
++/* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
++#define __NR_sysfs		(__NR_arch_specific_syscall + 3)
++__SYSCALL(__NR_sysfs, sys_sysfs)
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
+index a4acc9e..d378c8e 100644
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -7,6 +7,10 @@
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+  *
++ * TBD:
++ *  -remove the low level wrappers for execve/fork/vfork
++ *   needed before task_pt_regs was invented. This saves a branch per call
++ *
+  * vineetg: Nov 2010:
+  *  -Vector table jumps (@8 bytes) converted into branches (@4 bytes)
+  *  -To maintain the slot size of 8 bytes/vector, added nop, which is
+@@ -569,3 +573,48 @@ ARC_ENTRY ret_from_fork
+ 	bl  @schedule_tail
+ 	b @ret_from_exception
+ ARC_EXIT ret_from_fork
++
++;################### Special Sys Call Wrappers ##########################
++
++ARC_ENTRY sys_execve_wrapper
++	; copy pointer to pt_regs as a parameter
++	mov  r3, sp
++	bl  @sys_execve
++
++	b ret_from_system_call
++ARC_EXIT sys_execve_wrapper
++
++; TBD: call do_fork directly from here
++ARC_ENTRY sys_fork_wrapper
++	; copy pointer to pt_regs as a parameter
++	mov  r0, sp
++	SAVE_CALLEE_SAVED_USER
++	bl  @sys_fork
++	DISCARD_CALLEE_SAVED_USER
++
++	b ret_from_system_call
++ARC_EXIT sys_fork_wrapper
++
++ARC_ENTRY sys_vfork_wrapper
++	; copy pointer to pt_regs as a parameter
++	mov  r0, sp
++	SAVE_CALLEE_SAVED_USER
++	bl  @sys_vfork
++	DISCARD_CALLEE_SAVED_USER
++
++	b ret_from_system_call
++ARC_EXIT sys_vfork_wrapper
++
++ARC_ENTRY sys_clone_wrapper
++	; clone sys-call takes 2 mandatary args: @flags and @child-stack
++	; and it can take 3 var-args, depending on flags
++	; To keep sys_clone( ) signature constant, we assume all 5 args
++	; and set the helper @prtegs in next free reg
++	; this is cheap since our args are in regs, not on stack
++	mov r5, sp  ; pt_regs
++	SAVE_CALLEE_SAVED_USER
++	bl  @sys_clone
++	DISCARD_CALLEE_SAVED_USER
++
++	b ret_from_system_call
++ARC_EXIT sys_clone_wrapper
+diff --git a/arch/arc/kernel/process.c b/arch/arc/kernel/process.c
+new file mode 100644
+index 0000000..21d1889
+--- /dev/null
++++ b/arch/arc/kernel/process.c
+@@ -0,0 +1,119 @@
++/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ * Rahul Trivedi: Codito Technologies 2004
++ * Amit Bhor, Kanika Nema: Codito Technologies 2004
 + */
 +
++#include <linux/errno.h>
++#include <linux/module.h>
 +#include <linux/sched.h>
-+#include <linux/kdebug.h>
-+#include <linux/uaccess.h>
-+#include <asm/ptrace.h>
-+#include <asm/setup.h>
++#include <linux/mm.h>
++#include <linux/fs.h>
++#include <linux/unistd.h>
++#include <linux/ptrace.h>
++#include <linux/slab.h>
++#include <linux/syscalls.h>
++#include <linux/elf.h>
++#include <linux/tick.h>
 +
-+void __init trap_init(void)
++asmlinkage int sys_fork(struct pt_regs *regs)
 +{
-+	return;
++	return do_fork(SIGCHLD, regs->sp, regs, 0, NULL, NULL);
 +}
 +
-+void die(const char *str, struct pt_regs *regs, unsigned long address,
-+	 unsigned long cause_reg)
++asmlinkage int sys_vfork(struct pt_regs *regs)
 +{
-+	show_kernel_fault_diag(str, regs, address, cause_reg);
++	return do_fork(CLONE_VFORK | CLONE_VM | SIGCHLD, regs->sp, regs, 0,
++		       NULL, NULL);
++}
 +
-+	/* DEAD END */
-+	__asm__("flag 1");
++/* Per man, C-lib clone( ) is as follows
++ *
++ * int clone(int (*fn)(void *), void *child_stack,
++ *           int flags, void *arg, ...
++ *           pid_t *ptid, struct user_desc *tls, pid_t *ctid);
++ *
++ * @fn and @arg are of userland thread-hnalder and thus of no use
++ * in sys-call, hence excluded in sys_clone arg list.
++ * The only addition is ptregs, needed by fork core, although now-a-days
++ * task_pt_regs() can be called anywhere to get that.
++ */
++asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
++			 int __user *parent_tidptr, void *tls,
++			 int __user *child_tidptr, struct pt_regs *regs)
++{
++	if (!newsp)
++		newsp = regs->sp;
++
++	return do_fork(clone_flags, newsp, regs, 0, parent_tidptr,
++		       child_tidptr);
++}
++
++int sys_execve(const char __user *filenamei, const char __user *__user *argv,
++	       const char __user *__user *envp, struct pt_regs *regs)
++{
++	long error;
++	struct filename *filename;
++
++	filename = getname(filenamei);
++	error = PTR_ERR(filename);
++	if (IS_ERR(filename))
++		goto out;
++
++	error = do_execve(filename->name, argv, envp, regs);
++	putname(filename);
++out:
++	return error;
++}
++
++int kernel_execve(const char *filename, const char *const argv[],
++		  const char *const envp[])
++{
++	/*
++	 * Although the arguments (order, number) to this function are
++	 * same as sys call, we don't need to setup args in regs again.
++	 * However in case mainline kernel changes the order of args to
++	 * kernel_execve, that assumtion will break.
++	 * So to be safe, let gcc know the args for sys call.
++	 * If they match no extra code will be generated
++	 */
++	register int arg2 asm("r1") = (int)argv;
++	register int arg3 asm("r2") = (int)envp;
++
++	register int filenm_n_ret asm("r0") = (int)filename;
++
++	__asm__ __volatile__(
++		"mov   r8, %1	\n\t"
++		"trap0		\n\t"
++		: "+r"(filenm_n_ret)
++		: "i"(__NR_execve), "r"(arg2), "r"(arg3)
++		: "r8", "memory");
++
++	return filenm_n_ret;
++}
++EXPORT_SYMBOL(kernel_execve);
++
++SYSCALL_DEFINE1(arc_settls, void *, user_tls_data_ptr)
++{
++	task_thread_info(current)->thr_ptr = (unsigned int)user_tls_data_ptr;
++	return 0;
 +}
 +
 +/*
-+ * Helper called for bulk of exceptions NOT needing specific handling
-+ *  -for user faults enqueues requested signal
-+ *  -for kernel, chk if due to copy_(to|from)_user, otherwise die()
++ * We return the user space TLS data ptr as sys-call return code
++ * Ideally it should be copy to user.
++ * However we can cheat by the fact that some sys-calls do return
++ * absurdly high values
++ * Since the tls dat aptr is not going to be in range of 0xFFFF_xxxx
++ * it won't be considered a sys-call error
++ * and it will be loads better than copy-to-user, which is a definite
++ * D-TLB Miss
 + */
-+static noinline int handle_exception(unsigned long cause, char *str,
-+				     struct pt_regs *regs, siginfo_t *info)
++SYSCALL_DEFINE0(arc_gettls)
 +{
-+	if (user_mode(regs)) {
-+		struct task_struct *tsk = current;
-+
-+		tsk->thread.fault_address = (__force unsigned int)info->si_addr;
-+		tsk->thread.cause_code = cause;
-+
-+		force_sig_info(info->si_signo, info, tsk);
-+
-+	} else {
-+		/* If not due to copy_(to|from)_user, we are doomed */
-+		if (fixup_exception(regs))
-+			return 0;
-+
-+		die(str, regs, (unsigned long)info->si_addr, cause);
-+	}
-+
-+	return 1;
++	return task_thread_info(current)->thr_ptr;
 +}
+diff --git a/arch/arc/kernel/sys.c b/arch/arc/kernel/sys.c
+new file mode 100644
+index 0000000..4c30345
+--- /dev/null
++++ b/arch/arc/kernel/sys.c
+@@ -0,0 +1,19 @@
 +
-+#define DO_ERROR_INFO(signr, str, name, sicode) \
-+int name(unsigned long cause, unsigned long address, struct pt_regs *regs) \
-+{						\
-+	siginfo_t info = {			\
-+		.si_signo = signr,		\
-+		.si_errno = 0,			\
-+		.si_code  = sicode,		\
-+		.si_addr = (void __user *)address,	\
-+	};					\
-+	return handle_exception(cause, str, regs, &info);\
-+}
++#include <linux/syscalls.h>
++#include <linux/signal.h>
++#include <linux/unistd.h>
 +
-+/*
-+ * Entry points for exceptions NOT needing specific handling
-+ */
-+DO_ERROR_INFO(SIGILL, "Priv Op/Disabled Extn", do_privilege_fault, ILL_PRVOPC)
-+DO_ERROR_INFO(SIGILL, "Invalid Extn Insn", do_extension_fault, ILL_ILLOPC)
-+DO_ERROR_INFO(SIGILL, "Illegal Insn (or Seq)", insterror_is_error, ILL_ILLOPC)
-+DO_ERROR_INFO(SIGBUS, "Invalid Mem Access", do_memory_error, BUS_ADRERR)
-+DO_ERROR_INFO(SIGTRAP, "Breakpoint Set", trap_is_brkpt, TRAP_BRKPT)
++#include <asm/syscalls.h>
 +
-+DO_ERROR_INFO(SIGSEGV, "Misaligned Access", do_misaligned_access, SEGV_ACCERR)
++#define sys_execve	sys_execve_wrapper
++#define sys_clone	sys_clone_wrapper
++#define sys_fork	sys_fork_wrapper
++#define sys_vfork	sys_vfork_wrapper
 +
-+/*
-+ * Entry point for miscll errors such as Nested Exceptions
-+ *  -Duplicate TLB entry is handled seperately though
-+ */
-+void do_machine_check_fault(unsigned long cause, unsigned long address,
-+			    struct pt_regs *regs)
-+{
-+	die("Machine Check Exception", regs, address, cause);
-+}
++#undef __SYSCALL
++#define __SYSCALL(nr, call) [nr] = (call),
 +
-+/*
-+ * Entry point for traps induced by ARCompact TRAP_S <n> insn
-+ * This is same family as TRAP0/SWI insn (use the same vector).
-+ * The only difference being SWI insn take no operand, while TRAP_S does
-+ * which reflects in ECR Reg as 8 bit param.
-+ * Thus TRAP_S <n> can be used for specific purpose
-+ *  -1 used for software breakpointing (gdb)
-+ *  -2 used by kprobes
-+ */
-+void do_non_swi_trap(unsigned long cause, unsigned long address,
-+			struct pt_regs *regs)
-+{
-+	unsigned int param = cause & 0xff;
-+
-+	switch (param) {
-+	case 1:
-+		trap_is_brkpt(cause, address, regs);
-+		break;
-+
-+	default:
-+		break;
-+	}
-+}
-+
-+/*
-+ * Entry point for Instruction Error Exception
-+ */
-+void do_insterror_or_kprobe(unsigned long cause,
-+				       unsigned long address,
-+				       struct pt_regs *regs)
-+{
-+	insterror_is_error(cause, address, regs);
-+}
++void *sys_call_table[NR_syscalls] = {
++	[0 ... NR_syscalls-1] = sys_ni_syscall,
++#include <asm/unistd.h>
++};
 -- 
 1.7.4.1
 
