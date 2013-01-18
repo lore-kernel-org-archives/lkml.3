@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab3ARTy3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 14:54:29 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:44444 "EHLO bear.ext.ti.com"
+	id S1755675Ab3ARTy2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 14:54:28 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47563 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755640Ab3ARTxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755673Ab3ARTxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Jan 2013 14:53:06 -0500
 From: Nishanth Menon <nm@ti.com>
 To: linux-pm <linux-pm@vger.kernel.org>
@@ -13,9 +13,9 @@ CC: Rafael <rjw@sisk.pl>, Kevin <khilman@deeprootsystems.com>,
         lkml <linux-kernel@vger.kernel.org>, lo <linux-omap@vger.kernel.org>,
         Jack <jack@embed.me.uk>, Alexander <holler@ahsoftware.de>,
         Nishanth Menon <nm@ti.com>
-Subject: [PATCH 4/4] PM / devfreq: exynos4_bus: honor RCU lock usage
-Date: Fri, 18 Jan 2013 13:52:35 -0600
-Message-ID: <1358538755-29109-5-git-send-email-nm@ti.com>
+Subject: [PATCH 2/4] cpufreq: cpufreq-cpu0: use RCU locks around usage of OPP
+Date: Fri, 18 Jan 2013 13:52:33 -0600
+Message-ID: <1358538755-29109-3-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358538755-29109-1-git-send-email-nm@ti.com>
 References: <1358538755-29109-1-git-send-email-nm@ti.com>
@@ -25,273 +25,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OPP pointers cannot be expected to be valid beyond the boundary
-of rcu_read_lock and rcu_read_unlock. Unfortunately, the current
-exynos4 busfreq driver does not honor the usage constraint and stores
-the OPP pointer in struct busfreq_data. This could potentially
-become invalid later such as: across devfreq opp change decisions,
-resulting in unpredictable behavior.
+OPP pointer is RCU protected, hence after finding it, de-reference
+also should be protected with the same RCU context else the OPP
+pointer may become invalid.
 
-To fix this, we introduce a busfreq specific busfreq_opp_info
-structure which is used to handle OPP information. OPP information
-is de-referenced to voltage and frequency pairs as needed into
-busfreq_opp_info structure and used as needed.
+Reported-by: Jack Mitchell <jack@embed.me.uk>
+Tested-by: Alexander Holler <holler@ahsoftware.de>
+Tested-by: Jack Mitchell <jack@embed.me.uk>
+Acked-by: Alexander Holler <holler@ahsoftware.de>
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/devfreq/exynos4_bus.c |   94 +++++++++++++++++++++++++++++------------
- 1 file changed, 67 insertions(+), 27 deletions(-)
+ drivers/cpufreq/cpufreq-cpu0.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
-index 80c745e..6d72f12 100644
---- a/drivers/devfreq/exynos4_bus.c
-+++ b/drivers/devfreq/exynos4_bus.c
-@@ -73,6 +73,16 @@ enum busclk_level_idx {
- #define EX4210_LV_NUM	(LV_2 + 1)
- #define EX4x12_LV_NUM	(LV_4 + 1)
+Fixes warning as shown in: http://pastebin.com/6Y0bpCFi
+Something similar to this was attempted to be addressed by: https://patchwork.kernel.org/patch/879022/
+[    2.321123] ===============================
+[    2.325591] [ INFO: suspicious RCU usage. ]
+[    2.330063] 3.8.0-rc4-00291-gbb85e3f-dirty #2 Not tainted
+[    2.335805] -------------------------------
+[    2.340270] drivers/base/power/opp.c:157 suspicious rcu_dereference_check() usage!
+[    2.348285] other info that might help us debug this:
+[    2.356769] rcu_scheduler_active = 1, debug_locks = 1
+[    2.363727] no locks held by swapper/0/1.
+[    2.368006] stack backtrace:
+[    2.372707] [<c0013678>] (unwind_backtrace+0x0/0xe0) from [<c03475bc>] (opp_get_voltage+0x78/0xc8)
+[    2.382219] [<c03475bc>] (opp_get_voltage+0x78/0xc8) from [<c04046e4>] (cpu0_cpufreq_driver_init+0x154/0x208)
+[    2.392727] [<c04046e4>] (cpu0_cpufreq_driver_init+0x154/0x208) from [<c0008878>] (do_one_initcall+0x90/0x164)
+[    2.403323] [<c0008878>] (do_one_initcall+0x90/0x164) from [<c0547698>] (kernel_init+0xf8/0x290)
+[    2.412646] [<c0547698>] (kernel_init+0xf8/0x290) from [<c000d9b0>] (ret_from_fork+0x14/0x24)
+
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index 52bf36d..debc5a7 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -71,12 +71,15 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+ 	}
  
-+/**
-+ * struct busfreq_opp_info - opp information for bus
-+ * @rate:	Frequency in hertz
-+ * @volt:	Voltage in microvolts corresponding to this OPP
-+ */
-+struct busfreq_opp_info {
-+	unsigned long rate;
-+	unsigned long volt;
-+};
-+
- struct busfreq_data {
- 	enum exynos4_busf_type type;
- 	struct device *dev;
-@@ -80,7 +90,7 @@ struct busfreq_data {
- 	bool disabled;
- 	struct regulator *vdd_int;
- 	struct regulator *vdd_mif; /* Exynos4412/4212 only */
--	struct opp *curr_opp;
-+	struct busfreq_opp_info curr_oppinfo;
- 	struct exynos4_ppmu dmc[2];
- 
- 	struct notifier_block pm_notifier;
-@@ -296,13 +306,14 @@ static unsigned int exynos4x12_clkdiv_sclkip[][3] = {
- };
- 
- 
--static int exynos4210_set_busclk(struct busfreq_data *data, struct opp *opp)
-+static int exynos4210_set_busclk(struct busfreq_data *data,
-+				 struct busfreq_opp_info *oppi)
- {
- 	unsigned int index;
- 	unsigned int tmp;
- 
- 	for (index = LV_0; index < EX4210_LV_NUM; index++)
--		if (opp_get_freq(opp) == exynos4210_busclk_table[index].clk)
-+		if (oppi->rate == exynos4210_busclk_table[index].clk)
- 			break;
- 
- 	if (index == EX4210_LV_NUM)
-@@ -361,13 +372,14 @@ static int exynos4210_set_busclk(struct busfreq_data *data, struct opp *opp)
- 	return 0;
- }
- 
--static int exynos4x12_set_busclk(struct busfreq_data *data, struct opp *opp)
-+static int exynos4x12_set_busclk(struct busfreq_data *data,
-+				 struct busfreq_opp_info *oppi)
- {
- 	unsigned int index;
- 	unsigned int tmp;
- 
- 	for (index = LV_0; index < EX4x12_LV_NUM; index++)
--		if (opp_get_freq(opp) == exynos4x12_mifclk_table[index].clk)
-+		if (oppi->rate == exynos4x12_mifclk_table[index].clk)
- 			break;
- 
- 	if (index == EX4x12_LV_NUM)
-@@ -576,11 +588,12 @@ static int exynos4x12_get_intspec(unsigned long mifclk)
- 	return -EINVAL;
- }
- 
--static int exynos4_bus_setvolt(struct busfreq_data *data, struct opp *opp,
--			       struct opp *oldopp)
-+static int exynos4_bus_setvolt(struct busfreq_data *data,
-+			       struct busfreq_opp_info *oppi,
-+			       struct busfreq_opp_info *oldoppi)
- {
- 	int err = 0, tmp;
--	unsigned long volt = opp_get_voltage(opp);
-+	unsigned long volt = oppi->volt;
- 
- 	switch (data->type) {
- 	case TYPE_BUSF_EXYNOS4210:
-@@ -595,11 +608,11 @@ static int exynos4_bus_setvolt(struct busfreq_data *data, struct opp *opp,
- 		if (err)
- 			break;
- 
--		tmp = exynos4x12_get_intspec(opp_get_freq(opp));
-+		tmp = exynos4x12_get_intspec(oppi->rate);
- 		if (tmp < 0) {
- 			err = tmp;
- 			regulator_set_voltage(data->vdd_mif,
--					      opp_get_voltage(oldopp),
-+					      oldoppi->volt,
- 					      MAX_SAFEVOLT);
- 			break;
- 		}
-@@ -609,7 +622,7 @@ static int exynos4_bus_setvolt(struct busfreq_data *data, struct opp *opp,
- 		/*  Try to recover */
- 		if (err)
- 			regulator_set_voltage(data->vdd_mif,
--					      opp_get_voltage(oldopp),
-+					      oldoppi->volt,
- 					      MAX_SAFEVOLT);
- 		break;
- 	default:
-@@ -626,17 +639,26 @@ static int exynos4_bus_target(struct device *dev, unsigned long *_freq,
- 	struct platform_device *pdev = container_of(dev, struct platform_device,
- 						    dev);
- 	struct busfreq_data *data = platform_get_drvdata(pdev);
--	struct opp *opp = devfreq_recommended_opp(dev, _freq, flags);
--	unsigned long freq = opp_get_freq(opp);
--	unsigned long old_freq = opp_get_freq(data->curr_opp);
-+	struct opp *opp;
-+	unsigned long freq;
-+	unsigned long old_freq = data->curr_oppinfo.rate;
-+	struct busfreq_opp_info	new_oppinfo;
- 
--	if (IS_ERR(opp))
-+	rcu_read_lock();
-+	opp = devfreq_recommended_opp(dev, _freq, flags);
-+	if (IS_ERR(opp)) {
-+		rcu_read_unlock();
- 		return PTR_ERR(opp);
-+	}
-+	new_oppinfo.rate = opp_get_freq(opp);
-+	new_oppinfo.volt = opp_get_voltage(opp);
-+	rcu_read_unlock();
-+	freq = new_oppinfo.rate;
- 
- 	if (old_freq == freq)
- 		return 0;
- 
--	dev_dbg(dev, "targetting %lukHz %luuV\n", freq, opp_get_voltage(opp));
-+	dev_dbg(dev, "targetting %lukHz %luuV\n", freq, new_oppinfo.volt);
- 
- 	mutex_lock(&data->lock);
- 
-@@ -644,17 +666,18 @@ static int exynos4_bus_target(struct device *dev, unsigned long *_freq,
- 		goto out;
- 
- 	if (old_freq < freq)
--		err = exynos4_bus_setvolt(data, opp, data->curr_opp);
-+		err = exynos4_bus_setvolt(data, &new_oppinfo,
-+					  &data->curr_oppinfo);
- 	if (err)
- 		goto out;
- 
- 	if (old_freq != freq) {
- 		switch (data->type) {
- 		case TYPE_BUSF_EXYNOS4210:
--			err = exynos4210_set_busclk(data, opp);
-+			err = exynos4210_set_busclk(data, &new_oppinfo);
- 			break;
- 		case TYPE_BUSF_EXYNOS4x12:
--			err = exynos4x12_set_busclk(data, opp);
-+			err = exynos4x12_set_busclk(data, &new_oppinfo);
- 			break;
- 		default:
- 			err = -EINVAL;
-@@ -664,11 +687,12 @@ static int exynos4_bus_target(struct device *dev, unsigned long *_freq,
- 		goto out;
- 
- 	if (old_freq > freq)
--		err = exynos4_bus_setvolt(data, opp, data->curr_opp);
-+		err = exynos4_bus_setvolt(data, &new_oppinfo,
-+					  &data->curr_oppinfo);
- 	if (err)
- 		goto out;
- 
--	data->curr_opp = opp;
-+	data->curr_oppinfo = new_oppinfo;
- out:
- 	mutex_unlock(&data->lock);
- 	return err;
-@@ -702,7 +726,7 @@ static int exynos4_bus_get_dev_status(struct device *dev,
- 
- 	exynos4_read_ppmu(data);
- 	busier_dmc = exynos4_get_busier_dmc(data);
--	stat->current_frequency = opp_get_freq(data->curr_opp);
-+	stat->current_frequency = data->curr_oppinfo.rate;
- 
- 	if (busier_dmc)
- 		addr = S5P_VA_DMC1;
-@@ -933,6 +957,7 @@ static int exynos4_busfreq_pm_notifier_event(struct notifier_block *this,
- 	struct busfreq_data *data = container_of(this, struct busfreq_data,
- 						 pm_notifier);
- 	struct opp *opp;
-+	struct busfreq_opp_info	new_oppinfo;
- 	unsigned long maxfreq = ULONG_MAX;
- 	int err = 0;
- 
-@@ -943,18 +968,29 @@ static int exynos4_busfreq_pm_notifier_event(struct notifier_block *this,
- 
- 		data->disabled = true;
- 
+ 	if (cpu_reg) {
 +		rcu_read_lock();
- 		opp = opp_find_freq_floor(data->dev, &maxfreq);
-+		if (IS_ERR(opp)) {
+ 		opp = opp_find_freq_ceil(cpu_dev, &freq_Hz);
+ 		if (IS_ERR(opp)) {
 +			rcu_read_unlock();
-+			dev_err(data->dev, "%s: unable to find a min freq\n",
-+				__func__);
-+			return PTR_ERR(opp);
-+		}
-+		new_oppinfo.rate = opp_get_freq(opp);
-+		new_oppinfo.volt = opp_get_voltage(opp);
-+		rcu_read_unlock();
- 
--		err = exynos4_bus_setvolt(data, opp, data->curr_opp);
-+		err = exynos4_bus_setvolt(data, &new_oppinfo,
-+					  &data->curr_oppinfo);
- 		if (err)
- 			goto unlock;
- 
- 		switch (data->type) {
- 		case TYPE_BUSF_EXYNOS4210:
--			err = exynos4210_set_busclk(data, opp);
-+			err = exynos4210_set_busclk(data, &new_oppinfo);
- 			break;
- 		case TYPE_BUSF_EXYNOS4x12:
--			err = exynos4x12_set_busclk(data, opp);
-+			err = exynos4x12_set_busclk(data, &new_oppinfo);
- 			break;
- 		default:
- 			err = -EINVAL;
-@@ -962,7 +998,7 @@ static int exynos4_busfreq_pm_notifier_event(struct notifier_block *this,
- 		if (err)
- 			goto unlock;
- 
--		data->curr_opp = opp;
-+		data->curr_oppinfo = new_oppinfo;
- unlock:
- 		mutex_unlock(&data->lock);
- 		if (err)
-@@ -1027,13 +1063,17 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+ 			pr_err("failed to find OPP for %ld\n", freq_Hz);
+ 			return PTR_ERR(opp);
  		}
- 	}
- 
-+	rcu_read_lock();
- 	opp = opp_find_freq_floor(dev, &exynos4_devfreq_profile.initial_freq);
- 	if (IS_ERR(opp)) {
+ 		volt = opp_get_voltage(opp);
 +		rcu_read_unlock();
- 		dev_err(dev, "Invalid initial frequency %lu kHz.\n",
- 			exynos4_devfreq_profile.initial_freq);
- 		return PTR_ERR(opp);
+ 		tol = volt * voltage_tolerance / 100;
+ 		volt_old = regulator_get_voltage(cpu_reg);
  	}
--	data->curr_opp = opp;
-+	data->curr_oppinfo.rate = opp_get_freq(opp);
-+	data->curr_oppinfo.volt = opp_get_voltage(opp);
-+	rcu_read_unlock();
- 
- 	platform_set_drvdata(pdev, data);
- 
+@@ -236,12 +239,14 @@ static int cpu0_cpufreq_driver_init(void)
+ 		 */
+ 		for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
+ 			;
++		rcu_read_lock();
+ 		opp = opp_find_freq_exact(cpu_dev,
+ 				freq_table[0].frequency * 1000, true);
+ 		min_uV = opp_get_voltage(opp);
+ 		opp = opp_find_freq_exact(cpu_dev,
+ 				freq_table[i-1].frequency * 1000, true);
+ 		max_uV = opp_get_voltage(opp);
++		rcu_read_unlock();
+ 		ret = regulator_set_voltage_time(cpu_reg, min_uV, max_uV);
+ 		if (ret > 0)
+ 			transition_latency += ret * 1000;
 -- 
 1.7.9.5
 
