@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab3ARNS2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 08:18:28 -0500
-Received: from antcom.de ([188.40.178.216]:50037 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751511Ab3ARNS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 08:18:27 -0500
-Message-ID: <50F94B9F.7020908@antcom.de>
-Date: Fri, 18 Jan 2013 14:18:23 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.11) Gecko/20121123 Icedove/10.0.11
+	id S1755335Ab3ARNWF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 08:22:05 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:65439 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab3ARNWE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 08:22:04 -0500
 MIME-Version: 1.0
-To: Stijn Devriendt <highguy@gmail.com>
-CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, sr@denx.de, wg@grandegger.com,
-        tru@work-microwave.de, mark.rutland@arm.com
-Subject: Re: [PATCH RESEND 1/6 v13] gpio: Add a block GPIO API to gpiolib
-References: <1358250716-21986-1-git-send-email-stigge@antcom.de> <1358250716-21986-2-git-send-email-stigge@antcom.de> <CAOY=C6EE1yxjxUR6XvxW5tbY8FPBeO2Nqo6wMeD5R3zAVYD+Ag@mail.gmail.com>
-In-Reply-To: <CAOY=C6EE1yxjxUR6XvxW5tbY8FPBeO2Nqo6wMeD5R3zAVYD+Ag@mail.gmail.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+Z25wWsv6z+GEQzvUhPL1NXnE-ha+pkobD7X-eUnds3jp2a8g@mail.gmail.com>
+References: <1357733199-17206-1-git-send-email-a.kesavan@samsung.com>
+	<1357733199-17206-4-git-send-email-a.kesavan@samsung.com>
+	<CA+Z25wWsv6z+GEQzvUhPL1NXnE-ha+pkobD7X-eUnds3jp2a8g@mail.gmail.com>
+Date: Fri, 18 Jan 2013 18:52:02 +0530
+Message-ID: <CAM4voa=_43XqvOBzYYzO7H3DQ6Avw=rQgZLZ6FQSvp1v9rPEGA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] PM/Devfreq: Add Exynos5-bus devfreq driver for Exynos5250
+From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Cc: myungjoo.ham@samsung.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, kgene.kim@samsung.com,
+        kyungmin.park@samsung.com, rjw@sisk.pl, jhbird.choi@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stijn,
+Hi Rajagopal,
 
-On 01/18/2013 01:13 PM, Stijn Devriendt wrote:
-> Hi Roland,
-> 
-> This mail has been long overdue due to issues with some internal
-> permission-tool.
-> Just to be clear, this is not a competing implementation, it's what we
-> currently use as-is. I'm just posting this as a reference to see if
-> perhaps more concepts could be reused. It's based on a 2.6.32 kernel.
-> 
-> It includes:
-> - labels in sysfs (to provide useful names to userspace)
-> - gpio group support
-> - exporting individual/groups of gpios dictated by platform-data or device-tree
-> - open-drain support (different from mainline)
-> - examplary support for multi-gpio to pcf8575 driver
-> - gpio_direction_output_keep() function that prevents toggling when
-> changing direction
-> 
-> Provided-as-is-by: Stijn Devriendt <sdevrien@cisco.com>
+Thanks for the review. Sorry for the late response, have been a little
+busy with other things,
 
-Thanks for posting.
+[...]
+>> +#include "../governor.h"
+>
+> This header file is meant for governors use. What's the need of it here?
+I was using a custom monitor function and needed update_devfreq for
+it. Will change this in the next version.
+[...]
+>> +       stat->current_frequency = data->curr_freq;
+>> +       stat->busy_time = data->busy;
+>> +       stat->total_time = 100;
+>
+> How is busy_time is relative to total_time here? busy_time <=
+> total_time is guaranteed?
+Will modify the get_dev_status function to do PPMU reads and populate
+the device status structure.
+>
+[...]
+> Again, update_devfreq() is meant for devfreq governors use. Why is the devfreq
+> driver is doing devfreq governor job? any specific reason? The devfreq device
+> load monitoring is done by governors.
+>
+Same as above.
+[...]
+>> +       .polling_ms             = 0,
+>
+> why is polling_ms is set to zero? It defeats the purpose of devfreq driver.
+I bypassed the devfreq_monitor with the new custom function created. Am fixing
+this.
 
-Except for open-drain support, everything in the above list is supported
-in the last posted version of block GPIO.
+I have now done this on the lines of the exynos4 driver. Will re-post in a bit.
 
-So please tell if there are certain details you would like to discuss
-about or need an alternative implementation.
-
-Thanks in advance,
-
-Roland
+Regards,
+Abhilash
