@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab3ARVZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:25:06 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8113 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab3ARVZE (ORCPT
+	id S1756171Ab3ARVZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:25:14 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:42007 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754412Ab3ARVZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 16:25:04 -0500
-X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=uNd_0Ub4VdcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Y3YARPKVEf4A:10 a=rVzeZ-utLmd_9Cz6G7kA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358544300.7383.37.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/5] jump label: constify lookup functions
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, fweisbec@gmail.com,
-        rusty@rustcorp.com.au, ananth@in.ibm.com,
-        anil.s.keshavamurthy@intel.com, masami.hiramatsu.pt@hitachi.com,
-        jbaron@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        MartinSchwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-s390 <linux-s390@vger.kernel.org>
-Date: Fri, 18 Jan 2013 16:25:00 -0500
-In-Reply-To: <1357772960-4436-2-git-send-email-sasha.levin@oracle.com>
-References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com>
-	 <1357772960-4436-2-git-send-email-sasha.levin@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Jan 2013 16:25:11 -0500
+Date: Fri, 18 Jan 2013 16:25:10 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v7 4/4] sd: change to auto suspend mode
+In-Reply-To: <1358326941-3725-5-git-send-email-aaron.lu@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1301181613060.1190-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-09 at 18:09 -0500, Sasha Levin wrote:
-> Modify the parameters of all the lookup and the bookkeeping functions which
-> should be const to const.
+On Wed, 16 Jan 2013, Aaron Lu wrote:
+
+> From: Lin Ming <ming.m.lin@intel.com>
 > 
-> For example, jump_label_text_reserved() doesn't modify the memory it works on,
-> it just checks whether there are any jump labels there.
-
-This is dependent on the module patch, which Rusty is taking. I need to
-see that he has it before this can go in. At least see it in linux-next.
-
-Also, you should have Cc'd the linux-arch mailing list. I'll send it
-there.
-
+> Uses block layer runtime pm helper functions in
+> scsi_runtime_suspend/resume.
+> Remove scsi_autopm_* from sd open/release path and check_events path.
+> And remove the quiesce call in runtime suspend path, as we know there is
+> no request to quiesce for the device.
 > 
-> Note I couldn't test the non-x86 architectures, but the changes are rather
-> trivial.
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 
-I ran it on 25 archs, and s390 hit:
+> --- a/drivers/scsi/scsi_sysfs.c
+> +++ b/drivers/scsi/scsi_sysfs.c
+> @@ -893,6 +893,8 @@ int scsi_sysfs_add_sdev(struct scsi_device *sdev)
+>  	 */
+>  	scsi_autopm_get_device(sdev);
+>  
+> +	blk_pm_runtime_init(rq, &sdev->sdev_gendev);
+> +
+>  	error = device_add(&sdev->sdev_gendev);
+>  	if (error) {
+>  		sdev_printk(KERN_INFO, sdev,
 
-/work/autotest/nobackup/cross-linux.git/arch/s390/kernel/jump_label.c: In function 'arch_jump_label_transform':
-/work/autotest/nobackup/cross-linux.git/arch/s390/kernel/jump_label.c:58:13: warning: assignment discards 'const' qualifier from pointer target type [enabled by default]
+Someone just asked about the default autosuspend delay, and I realized
+your patch series doesn't set one.  Since we don't know the properties
+of the disk drive at this point (or even whether the device is a disk
+drive), the only safe course is to call
 
--- Steve
+	pm_runtime_set_autosuspend_delay(&sdev->sdev_gendev, -1);
 
-Here's the patch:
+before calling blk_pm_runtime_init().  Then autosuspends will be 
+prevented until userspace writes a non-negative value into the device's 
+control/autosuspend_delay_ms file.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+The kerneldoc for blk_pm_runtime_init() should mention that the caller 
+needs to set the autosuspend delay beforehand.
 
-diff --git a/arch/s390/kernel/jump_label.c
-b/arch/s390/kernel/jump_label.c
-index 85fa643..ef047ef 100644
---- a/arch/s390/kernel/jump_label.c
-+++ b/arch/s390/kernel/jump_label.c
-@@ -18,7 +18,7 @@ struct insn {
- } __packed;
- 
- struct insn_args {
--	struct jump_entry *entry;
-+	const struct jump_entry *entry;
- 	enum jump_label_type type;
- };
- 
-
+Alan Stern
 
