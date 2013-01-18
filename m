@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab3ARMfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:35:53 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:58926 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815Ab3ARMfs (ORCPT
+	id S1757195Ab3ARMgk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:36:40 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:59336 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757071Ab3ARMfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:35:48 -0500
+	Fri, 18 Jan 2013 07:35:19 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH v2 65/76] ARC: UAPI Disintegrate arch/arc/include/asm
-Date: Fri, 18 Jan 2013 17:55:19 +0530
-Message-ID: <1358511930-7424-66-git-send-email-vgupta@synopsys.com>
+CC: <arnd@arndb.de>, Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH v2 57/76] ARC: kgdb support
+Date: Fri, 18 Jan 2013 17:55:11 +0530
+Message-ID: <1358511930-7424-58-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -24,843 +25,356 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. ./genfilelist.pl arch/arc/include/asm/
+From: Mischa Jonker <mjonker@synopsys.com>
 
-2. Create arch/arc/include/uapi/asm/Kbuild as follows
-
-	+# UAPI Header export list
-	+include include/uapi/asm-generic/Kbuild.asm
-
-3. ./disintegrate-one.pl arch/arc/include/{,uapi/}asm/<above-list>
-
-4. Edit arch/arc/include/asm/Kbuild to remove ref to
-	asm-generic/Kbuild.asm
-
+Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: David Howells <dhowells@redhat.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>
 ---
- arch/arc/include/asm/Kbuild            |    8 ---
- arch/arc/include/asm/byteorder.h       |   18 ------
- arch/arc/include/asm/cachectl.h        |   28 ---------
- arch/arc/include/asm/page.h            |   30 +---------
- arch/arc/include/asm/ptrace.h          |   37 +-----------
- arch/arc/include/asm/setup.h           |    3 +-
- arch/arc/include/asm/sigcontext.h      |   23 --------
- arch/arc/include/asm/signal.h          |   27 ---------
- arch/arc/include/asm/swab.h            |   98 --------------------------------
- arch/arc/include/asm/unistd.h          |   34 -----------
- arch/arc/include/uapi/asm/Kbuild       |   11 ++++
- arch/arc/include/uapi/asm/byteorder.h  |   18 ++++++
- arch/arc/include/uapi/asm/cachectl.h   |   28 +++++++++
- arch/arc/include/uapi/asm/page.h       |   39 +++++++++++++
- arch/arc/include/uapi/asm/ptrace.h     |   46 +++++++++++++++
- arch/arc/include/uapi/asm/sigcontext.h |   23 ++++++++
- arch/arc/include/uapi/asm/signal.h     |   27 +++++++++
- arch/arc/include/uapi/asm/swab.h       |   98 ++++++++++++++++++++++++++++++++
- arch/arc/include/uapi/asm/unistd.h     |   34 +++++++++++
- 19 files changed, 329 insertions(+), 301 deletions(-)
- delete mode 100644 arch/arc/include/asm/byteorder.h
- delete mode 100644 arch/arc/include/asm/cachectl.h
- delete mode 100644 arch/arc/include/asm/sigcontext.h
- delete mode 100644 arch/arc/include/asm/signal.h
- delete mode 100644 arch/arc/include/asm/swab.h
- delete mode 100644 arch/arc/include/asm/unistd.h
- create mode 100644 arch/arc/include/uapi/asm/Kbuild
- create mode 100644 arch/arc/include/uapi/asm/byteorder.h
- create mode 100644 arch/arc/include/uapi/asm/cachectl.h
- create mode 100644 arch/arc/include/uapi/asm/page.h
- create mode 100644 arch/arc/include/uapi/asm/ptrace.h
- create mode 100644 arch/arc/include/uapi/asm/setup.h
- create mode 100644 arch/arc/include/uapi/asm/sigcontext.h
- create mode 100644 arch/arc/include/uapi/asm/signal.h
- create mode 100644 arch/arc/include/uapi/asm/swab.h
- create mode 100644 arch/arc/include/uapi/asm/unistd.h
+ arch/arc/Kconfig            |    3 +-
+ arch/arc/include/asm/kgdb.h |   61 +++++++++++++
+ arch/arc/kernel/Makefile    |    1 +
+ arch/arc/kernel/kgdb.c      |  205 +++++++++++++++++++++++++++++++++++++++++++
+ arch/arc/kernel/traps.c     |    6 ++
+ 5 files changed, 275 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arc/include/asm/kgdb.h
+ create mode 100644 arch/arc/kernel/kgdb.c
 
-diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
-index b24089c..48af742 100644
---- a/arch/arc/include/asm/Kbuild
-+++ b/arch/arc/include/asm/Kbuild
-@@ -1,11 +1,3 @@
--include include/asm-generic/Kbuild.asm
--
--# 7-Oct-12: Jeremy Bennett <jeremy.bennett@embecosm.com>. Some of these
--# headers, beyond those specified in the generic set are needed by user code.
--
--header-y += page.h
--header-y += cachectl.h
--
- generic-y += auxvec.h
- generic-y += bugs.h
- generic-y += bitsperlong.h
-diff --git a/arch/arc/include/asm/byteorder.h b/arch/arc/include/asm/byteorder.h
-deleted file mode 100644
-index 9da71d4..0000000
---- a/arch/arc/include/asm/byteorder.h
-+++ /dev/null
-@@ -1,18 +0,0 @@
--/*
-- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#ifndef __ASM_ARC_BYTEORDER_H
--#define __ASM_ARC_BYTEORDER_H
--
--#ifdef CONFIG_CPU_BIG_ENDIAN
--#include <linux/byteorder/big_endian.h>
--#else
--#include <linux/byteorder/little_endian.h>
--#endif
--
--#endif /* ASM_ARC_BYTEORDER_H */
-diff --git a/arch/arc/include/asm/cachectl.h b/arch/arc/include/asm/cachectl.h
-deleted file mode 100644
-index 51c73f0..0000000
---- a/arch/arc/include/asm/cachectl.h
-+++ /dev/null
-@@ -1,28 +0,0 @@
--/*
-- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#ifndef __ARC_ASM_CACHECTL_H
--#define __ARC_ASM_CACHECTL_H
--
--/*
-- * ARC ABI flags defined for Android's finegrained cacheflush requirements
-- */
--#define CF_I_INV	0x0002
--#define CF_D_FLUSH	0x0010
--#define CF_D_FLUSH_INV	0x0020
--
--#define CF_DEFAULT	(CF_I_INV | CF_D_FLUSH)
--
--/*
-- * Standard flags expected by cacheflush system call users
-- */
--#define ICACHE	CF_I_INV
--#define DCACHE	CF_D_FLUSH
--#define BCACHE	(CF_I_INV | CF_D_FLUSH)
--
--#endif
-diff --git a/arch/arc/include/asm/page.h b/arch/arc/include/asm/page.h
-index d111d0c..dfe1f8a 100644
---- a/arch/arc/include/asm/page.h
-+++ b/arch/arc/include/asm/page.h
-@@ -5,37 +5,11 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  */
--
- #ifndef __ASM_ARC_PAGE_H
- #define __ASM_ARC_PAGE_H
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index d735de8..b954387 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -23,6 +23,7 @@ config ARC
+ 	select GENERIC_PENDING_IRQ if SMP
+ 	select GENERIC_SIGALTSTACK
+ 	select GENERIC_SMP_IDLE_THREAD
++	select HAVE_ARCH_KGDB
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_KPROBES
+@@ -383,7 +384,7 @@ config ARC_DW2_UNWIND
  
--/* PAGE_SHIFT determines the page size */
--#if defined(CONFIG_ARC_PAGE_SIZE_16K)
--#define PAGE_SHIFT 14
--#elif defined(CONFIG_ARC_PAGE_SIZE_4K)
--#define PAGE_SHIFT 12
--#else
--/*
-- * Default 8k
-- * done this way (instead of under CONFIG_ARC_PAGE_SIZE_8K) because adhoc
-- * user code (busybox appletlib.h) expects PAGE_SHIFT to be defined w/o
-- * using the correct uClibc header and in their build our autoconf.h is
-- * not available
-- */
--#define PAGE_SHIFT 13
--#endif
--
--#ifdef __ASSEMBLY__
--#define PAGE_SIZE	(1 << PAGE_SHIFT)
--#define PAGE_OFFSET	(0x80000000)
--#else
--#define PAGE_SIZE	(1UL << PAGE_SHIFT)	/* Default 8K */
--#define PAGE_OFFSET	(0x80000000UL)	/* Kernel starts at 2G onwards */
--#endif
-+#include <uapi/asm/page.h>
+ config ARC_DBG_TLB_PARANOIA
+ 	bool "Paranoia Checks in Low Level TLB Handlers"
+-	depends on ARC_DBG && !SMP
++	depends on ARC_DBG
+ 	default n
  
--#define PAGE_MASK	(~(PAGE_SIZE-1))
--
--#ifdef __KERNEL__
- 
- #ifndef __ASSEMBLY__
- 
-@@ -129,6 +103,4 @@ typedef unsigned long pgtable_t;
- 
- #endif /* !__ASSEMBLY__ */
- 
--#endif /* __KERNEL__ */
--
- #endif
-diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
-index fd68c4b..a50cfeb 100644
---- a/arch/arc/include/asm/ptrace.h
-+++ b/arch/arc/include/asm/ptrace.h
-@@ -7,42 +7,11 @@
-  *
-  * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
-  */
--
- #ifndef __ASM_ARC_PTRACE_H
- #define __ASM_ARC_PTRACE_H
- 
--/*
-- * XXX: ABI hack.
-- * The offset calc can be cleanly done in asm-offset.c, however gdb includes
-- * this header directly.
-- */
--#define PT_bta		4
--#define PT_lp_start	8
--#define PT_lp_end	12
--#define PT_lp_count	16
--#define PT_status32	20
--#define PT_ret		24
--#define PT_blink	28
--#define PT_fp		32
--#define PT_r26		36
--#define PT_r12		40
--#define PT_r11		44
--#define PT_r10		48
--#define PT_r9		52
--#define PT_r8		56
--#define PT_r7		60
--#define PT_r6		64
--#define PT_r5		68
--#define PT_r4		72
--#define PT_r3		76
--#define PT_r2		80
--#define PT_r1		84
--#define PT_r0		88
--#define PT_sp		92
--#define PT_orig_r0	96
--#define PT_orig_r8	100
--
--#ifdef __KERNEL__
-+#include <uapi/asm/ptrace.h>
-+
- 
- #ifndef __ASSEMBLY__
- 
-@@ -153,6 +122,4 @@ struct user_regs_struct {
- #define orig_r8_IS_IRQ1			0x0010
- #define orig_r8_IS_IRQ2			0x0020
- 
--#endif /* __KERNEL__ */
--
- #endif /* __ASM_PTRACE_H */
-diff --git a/arch/arc/include/asm/setup.h b/arch/arc/include/asm/setup.h
-index fc97411..229e506 100644
---- a/arch/arc/include/asm/setup.h
-+++ b/arch/arc/include/asm/setup.h
-@@ -5,11 +5,12 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  */
--
- #ifndef __ASMARC_SETUP_H
- #define __ASMARC_SETUP_H
- 
-+
- #include <linux/types.h>
-+#include <uapi/asm/setup.h>
- 
- #define COMMAND_LINE_SIZE 256
- 
-diff --git a/arch/arc/include/asm/sigcontext.h b/arch/arc/include/asm/sigcontext.h
-deleted file mode 100644
-index f21b541..0000000
---- a/arch/arc/include/asm/sigcontext.h
-+++ /dev/null
-@@ -1,23 +0,0 @@
--/*
-- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#ifndef _ASM_ARC_SIGCONTEXT_H
--#define _ASM_ARC_SIGCONTEXT_H
--
--#include <asm/ptrace.h>
--
--/*
-- * Signal context structure - contains all info to do with the state
-- * before the signal handler was invoked.  Note: only add new entries
-- * to the end of the structure.
-- */
--struct sigcontext {
--	struct pt_regs regs;
--};
--
--#endif /* _ASM_ARC_SIGCONTEXT_H */
-diff --git a/arch/arc/include/asm/signal.h b/arch/arc/include/asm/signal.h
-deleted file mode 100644
-index fad62f7..0000000
---- a/arch/arc/include/asm/signal.h
-+++ /dev/null
-@@ -1,27 +0,0 @@
--/*
-- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
-- */
--
--#ifndef _ASM_ARC_SIGNAL_H
--#define _ASM_ARC_SIGNAL_H
--
--/*
-- * This is much needed for ARC sigreturn optimization.
-- * This allows uClibc to piggback the addr of a sigreturn stub in sigaction,
-- * which allows sigreturn based re-entry into kernel after handling signal.
-- * W/o this kernel needs to "synthesize" the sigreturn trampoline on user
-- * mode stack which in turn forces the following:
-- * -TLB Flush (after making the stack page executable)
-- * -Cache line Flush (to make I/D Cache lines coherent)
-- */
--#define SA_RESTORER	0x04000000
--
--#include <asm-generic/signal.h>
--
--#endif /* _ASM_ARC_SIGNAL_H */
-diff --git a/arch/arc/include/asm/swab.h b/arch/arc/include/asm/swab.h
-deleted file mode 100644
-index 095599a..0000000
---- a/arch/arc/include/asm/swab.h
-+++ /dev/null
-@@ -1,98 +0,0 @@
--/*
-- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * vineetg: May 2011
-- *  -Support single cycle endian-swap insn in ARC700 4.10
-- *
-- * vineetg: June 2009
-- *  -Better htonl implementation (5 instead of 9 ALU instructions)
-- *  -Hardware assisted single cycle bswap (Use Case of ARC custom instrn)
-- */
--
--#ifndef __ASM_ARC_SWAB_H
--#define __ASM_ARC_SWAB_H
--
--#include <linux/types.h>
--
--/* Native single cycle endian swap insn */
--#ifdef CONFIG_ARC_HAS_SWAPE
--
--#define __arch_swab32(x)		\
--({					\
--	unsigned int tmp = x;		\
--	__asm__(			\
--	"	swape	%0, %1	\n"	\
--	: "=r" (tmp)			\
--	: "r" (tmp));			\
--	tmp;				\
--})
--
--#else
--
--/* Several ways of Endian-Swap Emulation for ARC
-- * 0: kernel generic
-- * 1: ARC optimised "C"
-- * 2: ARC Custom instruction
-- */
--#define ARC_BSWAP_TYPE	1
--
--#if (ARC_BSWAP_TYPE == 1)		/******* Software only ********/
--
--/* The kernel default implementation of htonl is
-- *		return  x<<24 | x>>24 |
-- *		 (x & (__u32)0x0000ff00UL)<<8 | (x & (__u32)0x00ff0000UL)>>8;
-- *
-- * This generates 9 instructions on ARC (excluding the ld/st)
-- *
-- * 8051fd8c:	ld     r3,[r7,20]	; Mem op : Get the value to be swapped
-- * 8051fd98:	asl    r5,r3,24		; get  3rd Byte
-- * 8051fd9c:	lsr    r2,r3,24		; get  0th Byte
-- * 8051fda0:	and    r4,r3,0xff00
-- * 8051fda8:	asl    r4,r4,8		; get 1st Byte
-- * 8051fdac:	and    r3,r3,0x00ff0000
-- * 8051fdb4:	or     r2,r2,r5		; combine 0th and 3rd Bytes
-- * 8051fdb8:	lsr    r3,r3,8		; 2nd Byte at correct place in Dst Reg
-- * 8051fdbc:	or     r2,r2,r4		; combine 0,3 Bytes with 1st Byte
-- * 8051fdc0:	or     r2,r2,r3		; combine 0,3,1 Bytes with 2nd Byte
-- * 8051fdc4:	st     r2,[r1,20]	; Mem op : save result back to mem
-- *
-- * Joern suggested a better "C" algorithm which is great since
-- * (1) It is portable to any architecure
-- * (2) At the same time it takes advantage of ARC ISA (rotate intrns)
-- */
--
--#define __arch_swab32(x)					\
--({	unsigned long __in = (x), __tmp;			\
--	__tmp = __in << 8 | __in >> 24; /* ror tmp,in,24 */	\
--	__in = __in << 24 | __in >> 8; /* ror in,in,8 */	\
--	__tmp ^= __in;						\
--	__tmp &= 0xff00ff;					\
--	__tmp ^ __in;						\
--})
--
--#elif (ARC_BSWAP_TYPE == 2)	/* Custom single cycle bwap instruction */
--
--#define __arch_swab32(x)						\
--({									\
--	unsigned int tmp = x;						\
--	__asm__(							\
--	"	.extInstruction	bswap, 7, 0x00, SUFFIX_NONE, SYNTAX_2OP	\n"\
--	"	bswap  %0, %1						\n"\
--	: "=r" (tmp)							\
--	: "r" (tmp));							\
--	tmp;								\
--})
--
--#endif /* ARC_BSWAP_TYPE=zzz */
--
--#endif /* CONFIG_ARC_HAS_SWAPE */
--
--#if !defined(__STRICT_ANSI__) || defined(__KERNEL__)
--#define __SWAB_64_THRU_32__
--#endif
--
--#endif
-diff --git a/arch/arc/include/asm/unistd.h b/arch/arc/include/asm/unistd.h
-deleted file mode 100644
-index 6f30484..0000000
---- a/arch/arc/include/asm/unistd.h
-+++ /dev/null
-@@ -1,34 +0,0 @@
--/*
-- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--/******** no-legacy-syscalls-ABI *******/
--
--#define __ARCH_WANT_SYS_EXECVE
--#define __ARCH_WANT_SYS_CLONE
--#define __ARCH_WANT_SYS_VFORK
--#define __ARCH_WANT_SYS_FORK
--
--#define sys_mmap2 sys_mmap_pgoff
--
--#include <asm-generic/unistd.h>
--
--#define NR_syscalls	__NR_syscalls
--
--/* ARC specific syscall */
--#define __NR_cacheflush		(__NR_arch_specific_syscall + 0)
--#define __NR_arc_settls		(__NR_arch_specific_syscall + 1)
--#define __NR_arc_gettls		(__NR_arch_specific_syscall + 2)
--
--__SYSCALL(__NR_cacheflush, sys_cacheflush)
--__SYSCALL(__NR_arc_settls, sys_arc_settls)
--__SYSCALL(__NR_arc_gettls, sys_arc_gettls)
--
--
--/* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
--#define __NR_sysfs		(__NR_arch_specific_syscall + 3)
--__SYSCALL(__NR_sysfs, sys_sysfs)
-diff --git a/arch/arc/include/uapi/asm/Kbuild b/arch/arc/include/uapi/asm/Kbuild
+ config ARC_DBG_TLB_MISS_COUNT
+diff --git a/arch/arc/include/asm/kgdb.h b/arch/arc/include/asm/kgdb.h
 new file mode 100644
-index 0000000..2736244
+index 0000000..f3c4934
 --- /dev/null
-+++ b/arch/arc/include/uapi/asm/Kbuild
-@@ -0,0 +1,11 @@
-+# UAPI Header export list
-+include include/uapi/asm-generic/Kbuild.asm
-+header-y += page.h
-+header-y += setup.h
-+header-y += byteorder.h
-+header-y += cachectl.h
-+header-y += ptrace.h
-+header-y += sigcontext.h
-+header-y += signal.h
-+header-y += swab.h
-+header-y += unistd.h
-diff --git a/arch/arc/include/uapi/asm/byteorder.h b/arch/arc/include/uapi/asm/byteorder.h
-new file mode 100644
-index 0000000..9da71d4
---- /dev/null
-+++ b/arch/arc/include/uapi/asm/byteorder.h
-@@ -0,0 +1,18 @@
++++ b/arch/arc/include/asm/kgdb.h
+@@ -0,0 +1,61 @@
 +/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ * kgdb support for ARC
++ *
++ * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef __ASM_ARC_BYTEORDER_H
-+#define __ASM_ARC_BYTEORDER_H
++#ifndef __ARC_KGDB_H__
++#define __ARC_KGDB_H__
 +
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+#include <linux/byteorder/big_endian.h>
-+#else
-+#include <linux/byteorder/little_endian.h>
-+#endif
++#ifdef CONFIG_KGDB
 +
-+#endif /* ASM_ARC_BYTEORDER_H */
-diff --git a/arch/arc/include/uapi/asm/cachectl.h b/arch/arc/include/uapi/asm/cachectl.h
-new file mode 100644
-index 0000000..51c73f0
---- /dev/null
-+++ b/arch/arc/include/uapi/asm/cachectl.h
-@@ -0,0 +1,28 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++#include <asm/user.h>
 +
-+#ifndef __ARC_ASM_CACHECTL_H
-+#define __ARC_ASM_CACHECTL_H
++/* to ensure compatibility with Linux 2.6.35, we don't implement the get/set
++ * register API yet */
++#undef DBG_MAX_REG_NUM
 +
-+/*
-+ * ARC ABI flags defined for Android's finegrained cacheflush requirements
-+ */
-+#define CF_I_INV	0x0002
-+#define CF_D_FLUSH	0x0010
-+#define CF_D_FLUSH_INV	0x0020
++#define GDB_MAX_REGS		39
 +
-+#define CF_DEFAULT	(CF_I_INV | CF_D_FLUSH)
++#define BREAK_INSTR_SIZE	2
++#define CACHE_FLUSH_IS_SAFE	1
++#define NUMREGBYTES		(GDB_MAX_REGS * 4)
++#define BUFMAX			2048
 +
-+/*
-+ * Standard flags expected by cacheflush system call users
-+ */
-+#define ICACHE	CF_I_INV
-+#define DCACHE	CF_D_FLUSH
-+#define BCACHE	(CF_I_INV | CF_D_FLUSH)
++static inline void arch_kgdb_breakpoint(void)
++{
++	__asm__ __volatile__ ("trap_s	0x4\n");
++}
 +
-+#endif
-diff --git a/arch/arc/include/uapi/asm/page.h b/arch/arc/include/uapi/asm/page.h
-new file mode 100644
-index 0000000..e5d41e0
---- /dev/null
-+++ b/arch/arc/include/uapi/asm/page.h
-@@ -0,0 +1,39 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++extern void kgdb_trap(struct pt_regs *regs, int param);
 +
-+#ifndef _UAPI__ASM_ARC_PAGE_H
-+#define _UAPI__ASM_ARC_PAGE_H
-+
-+/* PAGE_SHIFT determines the page size */
-+#if defined(CONFIG_ARC_PAGE_SIZE_16K)
-+#define PAGE_SHIFT 14
-+#elif defined(CONFIG_ARC_PAGE_SIZE_4K)
-+#define PAGE_SHIFT 12
-+#else
-+/*
-+ * Default 8k
-+ * done this way (instead of under CONFIG_ARC_PAGE_SIZE_8K) because adhoc
-+ * user code (busybox appletlib.h) expects PAGE_SHIFT to be defined w/o
-+ * using the correct uClibc header and in their build our autoconf.h is
-+ * not available
-+ */
-+#define PAGE_SHIFT 13
-+#endif
-+
-+#ifdef __ASSEMBLY__
-+#define PAGE_SIZE	(1 << PAGE_SHIFT)
-+#define PAGE_OFFSET	(0x80000000)
-+#else
-+#define PAGE_SIZE	(1UL << PAGE_SHIFT)	/* Default 8K */
-+#define PAGE_OFFSET	(0x80000000UL)	/* Kernel starts at 2G onwards */
-+#endif
-+
-+#define PAGE_MASK	(~(PAGE_SIZE-1))
-+
-+
-+#endif /* _UAPI__ASM_ARC_PAGE_H */
-diff --git a/arch/arc/include/uapi/asm/ptrace.h b/arch/arc/include/uapi/asm/ptrace.h
-new file mode 100644
-index 0000000..bccf4ab
---- /dev/null
-+++ b/arch/arc/include/uapi/asm/ptrace.h
-@@ -0,0 +1,46 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
-+ */
-+
-+#ifndef _UAPI__ASM_ARC_PTRACE_H
-+#define _UAPI__ASM_ARC_PTRACE_H
-+
-+/*
-+ * XXX: ABI hack.
-+ * The offset calc can be cleanly done in asm-offset.c, however gdb includes
-+ * this header directly.
-+ */
-+#define PT_bta		4
-+#define PT_lp_start	8
-+#define PT_lp_end	12
-+#define PT_lp_count	16
-+#define PT_status32	20
-+#define PT_ret		24
-+#define PT_blink	28
-+#define PT_fp		32
-+#define PT_r26		36
-+#define PT_r12		40
-+#define PT_r11		44
-+#define PT_r10		48
-+#define PT_r9		52
-+#define PT_r8		56
-+#define PT_r7		60
-+#define PT_r6		64
-+#define PT_r5		68
-+#define PT_r4		72
-+#define PT_r3		76
-+#define PT_r2		80
-+#define PT_r1		84
-+#define PT_r0		88
-+#define PT_sp		92
-+#define PT_orig_r0	96
-+#define PT_orig_r8	100
-+
-+
-+#endif /* _UAPI__ASM_ARC_PTRACE_H */
-diff --git a/arch/arc/include/uapi/asm/setup.h b/arch/arc/include/uapi/asm/setup.h
-new file mode 100644
-index 0000000..e69de29
-diff --git a/arch/arc/include/uapi/asm/sigcontext.h b/arch/arc/include/uapi/asm/sigcontext.h
-new file mode 100644
-index 0000000..f21b541
---- /dev/null
-+++ b/arch/arc/include/uapi/asm/sigcontext.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _ASM_ARC_SIGCONTEXT_H
-+#define _ASM_ARC_SIGCONTEXT_H
-+
-+#include <asm/ptrace.h>
-+
-+/*
-+ * Signal context structure - contains all info to do with the state
-+ * before the signal handler was invoked.  Note: only add new entries
-+ * to the end of the structure.
-+ */
-+struct sigcontext {
-+	struct pt_regs regs;
++enum arc700_linux_regnums {
++	_R0		= 0,
++	_R1, _R2, _R3, _R4, _R5, _R6, _R7, _R8, _R9, _R10, _R11, _R12, _R13,
++	_R14, _R15, _R16, _R17, _R18, _R19, _R20, _R21, _R22, _R23, _R24,
++	_R25, _R26,
++	_BTA		= 27,
++	_LP_START	= 28,
++	_LP_END		= 29,
++	_LP_COUNT	= 30,
++	_STATUS32	= 31,
++	_BLINK		= 32,
++	_FP		= 33,
++	__SP		= 34,
++	_EFA		= 35,
++	_RET		= 36,
++	_ORIG_R8	= 37,
++	_STOP_PC	= 38
 +};
 +
-+#endif /* _ASM_ARC_SIGCONTEXT_H */
-diff --git a/arch/arc/include/uapi/asm/signal.h b/arch/arc/include/uapi/asm/signal.h
-new file mode 100644
-index 0000000..fad62f7
---- /dev/null
-+++ b/arch/arc/include/uapi/asm/signal.h
-@@ -0,0 +1,27 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
-+ */
-+
-+#ifndef _ASM_ARC_SIGNAL_H
-+#define _ASM_ARC_SIGNAL_H
-+
-+/*
-+ * This is much needed for ARC sigreturn optimization.
-+ * This allows uClibc to piggback the addr of a sigreturn stub in sigaction,
-+ * which allows sigreturn based re-entry into kernel after handling signal.
-+ * W/o this kernel needs to "synthesize" the sigreturn trampoline on user
-+ * mode stack which in turn forces the following:
-+ * -TLB Flush (after making the stack page executable)
-+ * -Cache line Flush (to make I/D Cache lines coherent)
-+ */
-+#define SA_RESTORER	0x04000000
-+
-+#include <asm-generic/signal.h>
-+
-+#endif /* _ASM_ARC_SIGNAL_H */
-diff --git a/arch/arc/include/uapi/asm/swab.h b/arch/arc/include/uapi/asm/swab.h
-new file mode 100644
-index 0000000..095599a
---- /dev/null
-+++ b/arch/arc/include/uapi/asm/swab.h
-@@ -0,0 +1,98 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * vineetg: May 2011
-+ *  -Support single cycle endian-swap insn in ARC700 4.10
-+ *
-+ * vineetg: June 2009
-+ *  -Better htonl implementation (5 instead of 9 ALU instructions)
-+ *  -Hardware assisted single cycle bswap (Use Case of ARC custom instrn)
-+ */
-+
-+#ifndef __ASM_ARC_SWAB_H
-+#define __ASM_ARC_SWAB_H
-+
-+#include <linux/types.h>
-+
-+/* Native single cycle endian swap insn */
-+#ifdef CONFIG_ARC_HAS_SWAPE
-+
-+#define __arch_swab32(x)		\
-+({					\
-+	unsigned int tmp = x;		\
-+	__asm__(			\
-+	"	swape	%0, %1	\n"	\
-+	: "=r" (tmp)			\
-+	: "r" (tmp));			\
-+	tmp;				\
-+})
-+
 +#else
-+
-+/* Several ways of Endian-Swap Emulation for ARC
-+ * 0: kernel generic
-+ * 1: ARC optimised "C"
-+ * 2: ARC Custom instruction
-+ */
-+#define ARC_BSWAP_TYPE	1
-+
-+#if (ARC_BSWAP_TYPE == 1)		/******* Software only ********/
-+
-+/* The kernel default implementation of htonl is
-+ *		return  x<<24 | x>>24 |
-+ *		 (x & (__u32)0x0000ff00UL)<<8 | (x & (__u32)0x00ff0000UL)>>8;
-+ *
-+ * This generates 9 instructions on ARC (excluding the ld/st)
-+ *
-+ * 8051fd8c:	ld     r3,[r7,20]	; Mem op : Get the value to be swapped
-+ * 8051fd98:	asl    r5,r3,24		; get  3rd Byte
-+ * 8051fd9c:	lsr    r2,r3,24		; get  0th Byte
-+ * 8051fda0:	and    r4,r3,0xff00
-+ * 8051fda8:	asl    r4,r4,8		; get 1st Byte
-+ * 8051fdac:	and    r3,r3,0x00ff0000
-+ * 8051fdb4:	or     r2,r2,r5		; combine 0th and 3rd Bytes
-+ * 8051fdb8:	lsr    r3,r3,8		; 2nd Byte at correct place in Dst Reg
-+ * 8051fdbc:	or     r2,r2,r4		; combine 0,3 Bytes with 1st Byte
-+ * 8051fdc0:	or     r2,r2,r3		; combine 0,3,1 Bytes with 2nd Byte
-+ * 8051fdc4:	st     r2,[r1,20]	; Mem op : save result back to mem
-+ *
-+ * Joern suggested a better "C" algorithm which is great since
-+ * (1) It is portable to any architecure
-+ * (2) At the same time it takes advantage of ARC ISA (rotate intrns)
-+ */
-+
-+#define __arch_swab32(x)					\
-+({	unsigned long __in = (x), __tmp;			\
-+	__tmp = __in << 8 | __in >> 24; /* ror tmp,in,24 */	\
-+	__in = __in << 24 | __in >> 8; /* ror in,in,8 */	\
-+	__tmp ^= __in;						\
-+	__tmp &= 0xff00ff;					\
-+	__tmp ^ __in;						\
-+})
-+
-+#elif (ARC_BSWAP_TYPE == 2)	/* Custom single cycle bwap instruction */
-+
-+#define __arch_swab32(x)						\
-+({									\
-+	unsigned int tmp = x;						\
-+	__asm__(							\
-+	"	.extInstruction	bswap, 7, 0x00, SUFFIX_NONE, SYNTAX_2OP	\n"\
-+	"	bswap  %0, %1						\n"\
-+	: "=r" (tmp)							\
-+	: "r" (tmp));							\
-+	tmp;								\
-+})
-+
-+#endif /* ARC_BSWAP_TYPE=zzz */
-+
-+#endif /* CONFIG_ARC_HAS_SWAPE */
-+
-+#if !defined(__STRICT_ANSI__) || defined(__KERNEL__)
-+#define __SWAB_64_THRU_32__
++static inline void kgdb_trap(struct pt_regs *regs, int param)
++{
++}
 +#endif
 +
-+#endif
-diff --git a/arch/arc/include/uapi/asm/unistd.h b/arch/arc/include/uapi/asm/unistd.h
++#endif	/* __ARC_KGDB_H__ */
+diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
+index eda40d7..8a8518e 100644
+--- a/arch/arc/kernel/Makefile
++++ b/arch/arc/kernel/Makefile
+@@ -17,6 +17,7 @@ obj-$(CONFIG_SMP) 			+= smp.o
+ obj-$(CONFIG_ARC_DW2_UNWIND)		+= unwind.o
+ obj-$(CONFIG_KPROBES)      		+= kprobes.o
+ obj-$(CONFIG_ARC_MISALIGN_ACCESS) 	+= unaligned.o
++obj-$(CONFIG_KGDB)			+= kgdb.o
+ 
+ obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
+ CFLAGS_fpu.o   += -mdpfp
+diff --git a/arch/arc/kernel/kgdb.c b/arch/arc/kernel/kgdb.c
 new file mode 100644
-index 0000000..6f30484
+index 0000000..2888ba5
 --- /dev/null
-+++ b/arch/arc/include/uapi/asm/unistd.h
-@@ -0,0 +1,34 @@
++++ b/arch/arc/kernel/kgdb.c
+@@ -0,0 +1,205 @@
 +/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ * kgdb support for ARC
++ *
++ * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +
-+/******** no-legacy-syscalls-ABI *******/
++#include <linux/kgdb.h>
++#include <asm/disasm.h>
++#include <asm/cacheflush.h>
 +
-+#define __ARCH_WANT_SYS_EXECVE
-+#define __ARCH_WANT_SYS_CLONE
-+#define __ARCH_WANT_SYS_VFORK
-+#define __ARCH_WANT_SYS_FORK
++static void to_gdb_regs(unsigned long *gdb_regs, struct pt_regs *kernel_regs,
++			struct callee_regs *cregs)
++{
++	int regno;
 +
-+#define sys_mmap2 sys_mmap_pgoff
++	for (regno = 0; regno <= 26; regno++)
++		gdb_regs[_R0 + regno] = get_reg(regno, kernel_regs, cregs);
 +
-+#include <asm-generic/unistd.h>
++	for (regno = 27; regno < GDB_MAX_REGS; regno++)
++		gdb_regs[regno] = 0;
 +
-+#define NR_syscalls	__NR_syscalls
++	gdb_regs[_FP]		= kernel_regs->fp;
++	gdb_regs[__SP]		= kernel_regs->sp;
++	gdb_regs[_BLINK]	= kernel_regs->blink;
++	gdb_regs[_RET]		= kernel_regs->ret;
++	gdb_regs[_STATUS32]	= kernel_regs->status32;
++	gdb_regs[_LP_COUNT]	= kernel_regs->lp_count;
++	gdb_regs[_LP_END]	= kernel_regs->lp_end;
++	gdb_regs[_LP_START]	= kernel_regs->lp_start;
++	gdb_regs[_BTA]		= kernel_regs->bta;
++	gdb_regs[_STOP_PC]	= kernel_regs->ret;
++}
 +
-+/* ARC specific syscall */
-+#define __NR_cacheflush		(__NR_arch_specific_syscall + 0)
-+#define __NR_arc_settls		(__NR_arch_specific_syscall + 1)
-+#define __NR_arc_gettls		(__NR_arch_specific_syscall + 2)
++static void from_gdb_regs(unsigned long *gdb_regs, struct pt_regs *kernel_regs,
++			struct callee_regs *cregs)
++{
++	int regno;
 +
-+__SYSCALL(__NR_cacheflush, sys_cacheflush)
-+__SYSCALL(__NR_arc_settls, sys_arc_settls)
-+__SYSCALL(__NR_arc_gettls, sys_arc_gettls)
++	for (regno = 0; regno <= 26; regno++)
++		set_reg(regno, gdb_regs[regno + _R0], kernel_regs, cregs);
++
++	kernel_regs->fp		= gdb_regs[_FP];
++	kernel_regs->sp		= gdb_regs[__SP];
++	kernel_regs->blink	= gdb_regs[_BLINK];
++	kernel_regs->ret	= gdb_regs[_RET];
++	kernel_regs->status32	= gdb_regs[_STATUS32];
++	kernel_regs->lp_count	= gdb_regs[_LP_COUNT];
++	kernel_regs->lp_end	= gdb_regs[_LP_END];
++	kernel_regs->lp_start	= gdb_regs[_LP_START];
++	kernel_regs->bta	= gdb_regs[_BTA];
++}
 +
 +
-+/* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
-+#define __NR_sysfs		(__NR_arch_specific_syscall + 3)
-+__SYSCALL(__NR_sysfs, sys_sysfs)
++void pt_regs_to_gdb_regs(unsigned long *gdb_regs, struct pt_regs *kernel_regs)
++{
++	to_gdb_regs(gdb_regs, kernel_regs, (struct callee_regs *)
++		current->thread.callee_reg);
++}
++
++void gdb_regs_to_pt_regs(unsigned long *gdb_regs, struct pt_regs *kernel_regs)
++{
++	from_gdb_regs(gdb_regs, kernel_regs, (struct callee_regs *)
++		current->thread.callee_reg);
++}
++
++void sleeping_thread_to_gdb_regs(unsigned long *gdb_regs,
++				 struct task_struct *task)
++{
++	if (task)
++		to_gdb_regs(gdb_regs, task_pt_regs(task),
++			(struct callee_regs *) task->thread.callee_reg);
++}
++
++struct single_step_data_t {
++	uint16_t opcode[2];
++	unsigned long address[2];
++	int is_branch;
++	int armed;
++} single_step_data;
++
++static void undo_single_step(struct pt_regs *regs)
++{
++	if (single_step_data.armed) {
++		int i;
++
++		for (i = 0; i < (single_step_data.is_branch ? 2 : 1); i++) {
++			memcpy((void *) single_step_data.address[i],
++				&single_step_data.opcode[i],
++				BREAK_INSTR_SIZE);
++
++			flush_icache_range(single_step_data.address[i],
++				single_step_data.address[i] +
++				BREAK_INSTR_SIZE);
++		}
++		single_step_data.armed = 0;
++	}
++}
++
++static void place_trap(unsigned long address, void *save)
++{
++	memcpy(save, (void *) address, BREAK_INSTR_SIZE);
++	memcpy((void *) address, &arch_kgdb_ops.gdb_bpt_instr,
++		BREAK_INSTR_SIZE);
++	flush_icache_range(address, address + BREAK_INSTR_SIZE);
++}
++
++static void do_single_step(struct pt_regs *regs)
++{
++	single_step_data.is_branch = disasm_next_pc((unsigned long)
++		regs->ret, regs, (struct callee_regs *)
++		current->thread.callee_reg,
++		&single_step_data.address[0],
++		&single_step_data.address[1]);
++
++	place_trap(single_step_data.address[0], &single_step_data.opcode[0]);
++
++	if (single_step_data.is_branch) {
++		place_trap(single_step_data.address[1],
++			&single_step_data.opcode[1]);
++	}
++
++	single_step_data.armed++;
++}
++
++int kgdb_arch_handle_exception(int e_vector, int signo, int err_code,
++			       char *remcomInBuffer, char *remcomOutBuffer,
++			       struct pt_regs *regs)
++{
++	unsigned long addr;
++	char *ptr;
++
++	undo_single_step(regs);
++
++	switch (remcomInBuffer[0]) {
++	case 's':
++	case 'c':
++		ptr = &remcomInBuffer[1];
++		if (kgdb_hex2long(&ptr, &addr))
++			regs->ret = addr;
++
++	case 'D':
++	case 'k':
++		atomic_set(&kgdb_cpu_doing_single_step, -1);
++
++		if (remcomInBuffer[0] == 's') {
++			do_single_step(regs);
++			atomic_set(&kgdb_cpu_doing_single_step,
++				   smp_processor_id());
++		}
++
++		return 0;
++	}
++	return -1;
++}
++
++unsigned long kgdb_arch_pc(int exception, struct pt_regs *regs)
++{
++	return instruction_pointer(regs);
++}
++
++int kgdb_arch_init(void)
++{
++	single_step_data.armed = 0;
++	return 0;
++}
++
++void kgdb_trap(struct pt_regs *regs, int param)
++{
++	/* trap_s 3 is used for breakpoints that overwrite existing
++	 * instructions, while trap_s 4 is used for compiled breakpoints.
++	 *
++	 * with trap_s 3 breakpoints the original instruction needs to be
++	 * restored and continuation needs to start at the location of the
++	 * breakpoint.
++	 *
++	 * with trap_s 4 (compiled) breakpoints, continuation needs to
++	 * start after the breakpoint.
++	 */
++	if (param == 3)
++		instruction_pointer(regs) -= BREAK_INSTR_SIZE;
++
++	kgdb_handle_exception(1, SIGTRAP, 0, regs);
++}
++
++void kgdb_arch_exit(void)
++{
++}
++
++void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long ip)
++{
++	instruction_pointer(regs) = ip;
++}
++
++struct kgdb_arch arch_kgdb_ops = {
++	/* breakpoint instruction: TRAP_S 0x3 */
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	.gdb_bpt_instr		= {0x78, 0x7e},
++#else
++	.gdb_bpt_instr		= {0x7e, 0x78},
++#endif
++};
+diff --git a/arch/arc/kernel/traps.c b/arch/arc/kernel/traps.c
+index ec802c5..7496995 100644
+--- a/arch/arc/kernel/traps.c
++++ b/arch/arc/kernel/traps.c
+@@ -20,6 +20,7 @@
+ #include <asm/setup.h>
+ #include <asm/kprobes.h>
+ #include <asm/unaligned.h>
++#include <asm/kgdb.h>
+ 
+ void __init trap_init(void)
+ {
+@@ -141,6 +142,11 @@ void do_non_swi_trap(unsigned long cause, unsigned long address,
+ 		trap_is_kprobe(param, address, regs);
+ 		break;
+ 
++	case 3:
++	case 4:
++		kgdb_trap(regs, param);
++		break;
++
+ 	default:
+ 		break;
+ 	}
 -- 
 1.7.4.1
 
