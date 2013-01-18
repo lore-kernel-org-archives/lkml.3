@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab3ARS5u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 13:57:50 -0500
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:50697 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab3ARS5t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 13:57:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id
-	:subject:from:to:cc:date:in-reply-to:references:content-type
-	:mime-version:content-transfer-encoding; q=dns; s=sasl; b=vRg1f0
-	V4cZR0TYTiTBSquJF7J+7zXFjyCMZ400dYSsDM7o3fkYw13pAyAEnLxJwLE0J95h
-	4YcOlkDULhYRuJWMq65eqzwqFo3N3VnlL1goL+IsHEZoI11Jm4RPX3lRm+QsuqOM
-	ziDxsrfbSzA1spSi1p728a2V1bqR+kMEgfdys=
-Message-ID: <1358535466.23663.40.camel@orca.stoopid.dyndns.org>
-Subject: Re: [PATCH 1/2] leds: simply LED trigger list management
-From: Nathan Lynch <ntl@pobox.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Bryan Wu <cooloney@gmail.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Jan 2013 12:57:46 -0600
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E19873@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F69E17700@DQHE02.ent.ti.com>
- <1358448677.26320.22.camel@doorstop.aus.2wire.com>
- <A874F61F95741C4A9BA573A70FE3998F69E19873@DQHE02.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: F36375F2-61A0-11E2-9503-0A4F0E5B5709-04752483!a-pb-sasl-quonix.pobox.com
+	id S1753867Ab3ARTA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 14:00:29 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:46333 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751686Ab3ARTA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 14:00:27 -0500
+Date: Fri, 18 Jan 2013 20:00:21 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "Gopalakrishnan, Aravind" <Aravind.Gopalakrishnan@amd.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, Andre Przywara <andre@andrep.de>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas <linuxuser330250@gmx.net>
+Subject: Re: [PATCH] drivers/cpufreq: Warn user when powernow-k8 tries to
+ fall back to acpi-cpufreq and it is unavailable.
+Message-ID: <20130118190021.GD4062@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	"Gopalakrishnan, Aravind" <Aravind.Gopalakrishnan@amd.com>,
+	"rjw@sisk.pl" <rjw@sisk.pl>, Andre Przywara <andre@andrep.de>,
+	"cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+	"linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Andreas <linuxuser330250@gmx.net>
+References: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20130111144940.GB21882@liondog.tnic>
+ <20130111165054.GD10751@liondog.tnic>
+ <4923C2DE085EEB4FAB1D375DD09D0BA6100CF170@sausexdag04.amd.com>
+ <20130117115436.GA3853@pd.tnic>
+ <20130118162347.GA31499@srcf.ucam.org>
+ <20130118170755.GB4062@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130118170755.GB4062@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-18 at 00:00 +0000, Kim, Milo wrote:
-> > -----Original Message-----
-> > From: Nathan Lynch [mailto:ntl@pobox.com]
-> > 
-> > On Thu, 2013-01-17 at 01:06 +0000, Kim, Milo wrote:
-> > > @@ -242,17 +233,15 @@ EXPORT_SYMBOL_GPL(led_trigger_unregister);
-> > >  void led_trigger_event(struct led_trigger *trig,
-> > >  			enum led_brightness brightness)
-> > >  {
-> > > -	struct list_head *entry;
-> > > +	struct led_classdev *led_cdev;
-> > >
-> > >  	if (!trig)
-> > >  		return;
-> > >
-> > >  	read_lock(&trig->leddev_list_lock);
-> > > -	list_for_each(entry, &trig->led_cdevs) {
-> > > -		struct led_classdev *led_cdev;
-> > > -
-> > > -		led_cdev = list_entry(entry, struct led_classdev,
-> > trig_list);
-> > > -		led_set_brightness(led_cdev, brightness);
-> > > +	list_for_each_entry(led_cdev, &leds_list, node) {
-> > > +		if (led_cdev->trigger == trig)
-> > > +			led_set_brightness(led_cdev, brightness);
-> > >  	}
-> > >  	read_unlock(&trig->leddev_list_lock);
-> > 
-> > Continuing to use trig->leddev_list_lock doesn't seem right.  Shouldn't
-> > traversal of leds_list be guarded by the leds_list_lock rwsem?  And if
-> > so, is it safe to use a potentially-blocking lock in this context?
-> > 
-> 
-> (Sorry for the typo in title: 'simply' -> 'simplify')
-> 
-> Thanks for your opinion. I agree with you.
-> The read_lock()/unlock() of 'leddev_list_lock' should be replaced with
-> down_read()/up_read() of 'leds_list_lock'.
-> Then, RW lock of led_trigger can be removed also.
-
-But led_trigger_event() can be called from atomic/interrupt context, no?
-We can't use a rwsem in this path.
-
-And I meant to mention earlier -- this change would cause this function
-to scan all led devices in the system, whereas right now it consults
-only the leds that are associated with the trigger.  That seems like a
-step backwards for a potentially performance-sensitive path.
-
-
-> BTW, I need more education about the concurrency.
-> We can see complex RW down/up safe code with list management in LED class driver.
-> RW semaphores are 'leds_list_lock', 'triggers_list_lock' and 'trigger_lock'.
-> Are those are safe access in case a user-space via sysfs and driver API calls by
->  LED device(s) can happen at the same time?
-> If so, can we make them more simple?
+On Fri, Jan 18, 2013 at 06:07:55PM +0100, Borislav Petkov wrote:
+> > Just flip the link order? It's only the way it is because in the
+> > past we wanted to try hardware-specific drivers before more generic
+> > ones, and I don't think that's a concern in this case now.
 >
-> I think *entry point* of access can be wrapped with semaphores or MUTEX
-> rather than guard code for accessing LED lists one by one.
+> Yeah, I heard that the acpi-idle and intel-idle drivers do that and also
+> heard that it was a hack. It doesn't look too ugly IMHO:
+>
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=2671717265ae6e720a9ba5f13fbec3a718983b65
 
-It seems to me that the relatively fine-grained lists and locks that
-exist right now provide a certain level of flexibility and performance
-that would be hard to achieve with a coarser model.
+Haha, this turns into one of those chicken-or-the-egg problems:
 
+>From <drivers/cpufreq/Makefile>:
 
+##################################################################################
+# x86 drivers.
+# Link order matters. K8 is preferred to ACPI because of firmware bugs in early
+# K8 systems.
+...
+
+Great. :(
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
