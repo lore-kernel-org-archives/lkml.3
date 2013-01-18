@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab3ARPQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 10:16:58 -0500
-Received: from mail-ia0-f181.google.com ([209.85.210.181]:43674 "EHLO
-	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab3ARPQ5 (ORCPT
+	id S1754932Ab3ARPRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 10:17:39 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:36431 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab3ARPRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 10:16:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <1357681398-23956-2-git-send-email-maxime.ripard@free-electrons.com>
-References: <1357681398-23956-1-git-send-email-maxime.ripard@free-electrons.com>
-	<1357681398-23956-2-git-send-email-maxime.ripard@free-electrons.com>
-Date: Fri, 18 Jan 2013 16:16:56 +0100
-Message-ID: <CACRpkdZYxO10yq7y3QyFHxKuS44AuT73wTfVH=4BcAq=GsKG7g@mail.gmail.com>
-Subject: Re: [PATCH 1/7] pinctrl: pinconf-generic: add drive strength parameter
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, Stefan Roese <sr@denx.de>,
-        Alejandro Mery <amery@geeks.cl>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 18 Jan 2013 10:17:37 -0500
+Message-ID: <1358522198.26115.6.camel@falcor1.watson.ibm.com>
+Subject: Re: [RFC 0/1] ima/evm: signature verification support using
+ asymmetric keys
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, jmorris@namei.org,
+        linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 18 Jan 2013 10:16:38 -0500
+In-Reply-To: <27882.1358445829@warthog.procyon.org.uk>
+References: <1358365541.4593.190.camel@falcor1>
+	 <cover.1358246017.git.dmitry.kasatkin@intel.com>
+	 <27882.1358445829@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011815-5518-0000-0000-00000AD72F25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 8, 2013 at 10:43 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
+On Thu, 2013-01-17 at 18:03 +0000, David Howells wrote:
 
-> Some pin configurations IP allows to set the current output to the pin.
-> This patch adds such a parameter to the pinconf-generic mechanism.
->
-> This parameter takes as argument the drive strength in mA.
->
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> I would also like to have a look at altering your trusted key type[*] to be a
+> subtype of asymmetric keys so that the asymmetric key type can cover keys from
+> more sources:
+> 
+> 	- Compiled-in keys.
+> 	- Keys from UEFI db.
+> 	- Keys from TPM (ie. the trusted key stuff).
+> 	- Keys loaded by the administrator _if_ they are validated by a key the
+> 	  kernel already has.
+> 	
+> [*] I believe that that's your asymmetric key type and that your encrypted key
+>     type is your symmetric key type.
 
-Patch applied!
+Both trusted and encrypted keys are random number symmetric keys.
+Trusted keys are random number symmetric keys, generated and RSA-sealed
+by the TPM.
 
-Thanks,
-Linus Walleij
+Mimi
+
+
