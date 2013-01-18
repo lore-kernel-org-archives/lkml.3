@@ -1,58 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3ARXFA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 18:05:00 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:39058 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab3ARXE7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 18:04:59 -0500
+	id S1754816Ab3ARXGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 18:06:13 -0500
+Received: from mga03.intel.com ([143.182.124.21]:21518 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753252Ab3ARXGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 18:06:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,495,1355126400"; 
+   d="scan'208";a="192803624"
+Date: Fri, 18 Jan 2013 15:06:04 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com
+Subject: Re: [PATCH v6 07/18] perf: add generic memory sampling interface
+Message-ID: <20130118230604.GJ4051@tassilo.jf.intel.com>
+References: <1358264386-24633-1-git-send-email-eranian@google.com>
+ <1358264386-24633-8-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <5156.1358549663@warthog.procyon.org.uk>
-References: <CA+icZUV+ewSfwdGv+XjzVMF+V5d1t3r6MWGvoBgf08CN=KpBgQ@mail.gmail.com>
-	<CA+icZUXNbhX4a0ZG039O5dWiZHpuVM-mwOSD_4g+f==xWD=4Zw@mail.gmail.com>
-	<5156.1358549663@warthog.procyon.org.uk>
-Date: Sat, 19 Jan 2013 00:04:58 +0100
-Message-ID: <CA+icZUW_-3Bg9PSBoht0mqikVb1wn+21BNFy8Fsm5thZfNunXw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 18 [MODSIGN: KEYS:]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358264386-24633-8-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 11:54 PM, David Howells <dhowells@redhat.com> wrote:
-> Sedat Dilek <sedat.dilek@gmail.com> wrote:
->
->> Culprit seems to be...
->>
->> commit d6941c0c6bd42c725e45240a86c4add92e9bfb3e
->> "KEYS: Separate the kernel signature checking keyring from module signing"
->
-> Try updating.  I pushed a new version out today.  This is now at commit ID
-> c82af351e270e0d95059d09a1975b61494fbbcd7.
->
+>  extern void perf_output_sample(struct perf_output_handle *handle,
+> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> index 7e24641..8283218 100644
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -133,9 +133,9 @@ enum perf_event_sample_format {
+>  	PERF_SAMPLE_REGS_USER			= 1U << 12,
+>  	PERF_SAMPLE_STACK_USER			= 1U << 13,
+>  	PERF_SAMPLE_WEIGHT			= 1U << 14,
+> +	PERF_SAMPLE_DSRC			= 1U << 15,
 
-Thanks for the information!
+This conflicts with similar extensions in the Haswell patchkit,
+but that can be worked out by just moving some numbers (and making
+sure the input/output calls are still in the right place)
 
-OK, I see... s/select/depends on...
 
- +config SYSTEM_TRUSTED_KEYRING
- +      bool "Provide system-wide ring of trusted keys"
--+      select KEYS
-++      depends on KEYS
+> +union perf_mem_dsrc {
+> +	__u64 val;
+> +	struct {
+> +		__u64   mem_op:5,	/* type of opcode */
+> +			mem_lvl:14,	/* memory hierarchy level */
+> +			mem_snoop:5,	/* snoop mode */
+> +			mem_lock:2,	/* lock instr */
+> +			mem_dtlb:7,	/* tlb access */
+> +			mem_rsvd:31;
+> +	};
+> +};
+> +
+> +/* type of opcode (load/store/prefetch,code) */
+> +#define PERF_MEM_OP_NA		0x01 /* not available */
+> +#define PERF_MEM_OP_LOAD	0x02 /* load instruction */
+> +#define PERF_MEM_OP_STORE	0x04 /* store instruction */
+> +#define PERF_MEM_OP_PFETCH	0x08 /* prefetch */
+> +#define PERF_MEM_OP_EXEC	0x10 /* code (execution) */
+> +#define PERF_MEM_OP_SHIFT	0
 
-That should fix it :-).
-I set SYSTEM_TRUSTED_KEYRING=y in kernel-config.
+Do we really need the shift? it's implicit in the bitfield right?
 
-BAD: http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=patch;h=d6941c0c6bd42c725e45240a86c4add92e9bfb3e
+> +/* memory hierarchy (memory level, hit or miss) */
+> +#define PERF_MEM_LVL_NA		0x01  /* not available */
+> +#define PERF_MEM_LVL_HIT	0x02  /* hit level */
+> +#define PERF_MEM_LVL_MISS	0x04  /* miss level  */
+> +#define PERF_MEM_LVL_L1		0x08  /* L1 */
+> +#define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
+> +#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
+> +#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
+> +#define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
+> +#define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
+> +#define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
+> +#define PERF_MEM_LVL_REM_CCE1	0x400 /* Remote Cache (1 hop) */
+> +#define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
+> +#define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
+> +#define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
 
-GOOD: http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=patch;h=c82af351e270e0d95059d09a1975b61494fbbcd7
+I would leave some free bits here, obviously this doesn't cover all
+that may be possible in system architecture. Also why is this a bit mask, 
+you can only hit one level right? So perhaps a number.
 
-- Sedat -
+> +/* TLB access */
+> +#define PERF_MEM_TLB_NA		0x01 /* not available */
+> +#define PERF_MEM_TLB_HIT	0x02 /* hit level */
+> +#define PERF_MEM_TLB_MISS	0x04 /* miss level */
+> +#define PERF_MEM_TLB_L1		0x08 /* L1 */
+> +#define PERF_MEM_TLB_L2		0x10 /* L2 */
+> +#define PERF_MEM_TLB_WK		0x20 /* Hardware Walker*/
+> +#define PERF_MEM_TLB_OS		0x40 /* OS fault handler */
 
-> David
+
+Same
+
+
+> +#define PERF_MEM_TLB_SHIFT	26
+> +
+> +#define PERF_MEM_S(a, s) \
+> +	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
+
+Is that used by anything?
+
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
