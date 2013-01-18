@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab3ARMVs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:21:48 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52950 "EHLO bear.ext.ti.com"
+	id S1755836Ab3ARMVr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:21:47 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60929 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755389Ab3ARMSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755387Ab3ARMSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Jan 2013 07:18:12 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>, <balbi@ti.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <rogerq@ti.com>
-Subject: [PATCH v8 10/22] mfd: omap-usb-tll: Add OMAP5 revision and HSIC support
-Date: Fri, 18 Jan 2013 14:17:13 +0200
-Message-ID: <1358511445-26656-11-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        <stable@kernel.org>
+Subject: [PATCH v8 01/22] USB: ehci-omap: Don't free gpios that we didn't request
+Date: Fri, 18 Jan 2013 14:17:04 +0200
+Message-ID: <1358511445-26656-2-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511445-26656-1-git-send-email-rogerq@ti.com>
 References: <1358511445-26656-1-git-send-email-rogerq@ti.com>
@@ -24,65 +25,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TLL module on OMAP5 has 3 channels.
-HSIC mode requires the TLL channel to be in Transparent UTMI mode.
+This driver does not request any gpios so don't free them.
+Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
+with ehci-omap in use.
+
+Without this patch, EHCI will break on repeated insmod/rmmod
+of ehci_hcd for all OMAP2+ platforms that use EHCI and
+set 'phy_reset = true' in usbhs_omap_board_data.
+i.e.
+
+board-3430sdp.c:	.phy_reset  = true,
+board-3630sdp.c:	.phy_reset  = true,
+board-am3517crane.c:	.phy_reset  = true,
+board-am3517evm.c:	.phy_reset  = true,
+board-cm-t3517.c:	.phy_reset  = true,
+board-cm-t35.c:	.phy_reset  = true,
+board-devkit8000.c:	.phy_reset  = true,
+board-igep0020.c:	.phy_reset = true,
+board-igep0020.c:	.phy_reset = true,
+board-omap3beagle.c:	.phy_reset  = true,
+board-omap3evm.c:	.phy_reset  = true,
+board-omap3pandora.c:	.phy_reset  = true,
+board-omap3stalker.c:	.phy_reset = true,
+board-omap3touchbook.c:	.phy_reset  = true,
+board-omap4panda.c:	.phy_reset  = false,
+board-overo.c:	.phy_reset  = true,
+board-zoom.c:	.phy_reset		= true,
+
+CC: Alan Stern <stern@rowland.harvard.edu>
+Cc: stable@kernel.org
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/mfd/omap-usb-tll.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ drivers/usb/host/ehci-omap.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index 9f9cfc2..fc0ac9f 100644
---- a/drivers/mfd/omap-usb-tll.c
-+++ b/drivers/mfd/omap-usb-tll.c
-@@ -54,10 +54,13 @@
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index ac17a7c..e9d9b09 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -288,7 +288,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
+ {
+ 	struct device *dev				= &pdev->dev;
+ 	struct usb_hcd *hcd				= dev_get_drvdata(dev);
+-	struct ehci_hcd_omap_platform_data *pdata	= dev->platform_data;
  
- #define	OMAP_TLL_CHANNEL_CONF(num)			(0x040 + 0x004 * num)
- #define OMAP_TLL_CHANNEL_CONF_FSLSMODE_SHIFT		24
-+#define OMAP_TLL_CHANNEL_CONF_DRVVBUS			(1 << 16)
-+#define OMAP_TLL_CHANNEL_CONF_CHRGVBUS			(1 << 15)
- #define	OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF		(1 << 11)
- #define	OMAP_TLL_CHANNEL_CONF_ULPI_ULPIAUTOIDLE		(1 << 10)
- #define	OMAP_TLL_CHANNEL_CONF_UTMIAUTOIDLE		(1 << 9)
- #define	OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE		(1 << 8)
-+#define OMAP_TLL_CHANNEL_CONF_MODE_TRANSPARENT_UTMI	(2 << 1)
- #define OMAP_TLL_CHANNEL_CONF_CHANMODE_FSLS		(1 << 1)
- #define	OMAP_TLL_CHANNEL_CONF_CHANEN			(1 << 0)
+ 	usb_remove_hcd(hcd);
+ 	disable_put_regulator(dev->platform_data);
+@@ -298,13 +297,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
+ 	pm_runtime_put_sync(dev);
+ 	pm_runtime_disable(dev);
  
-@@ -92,6 +95,7 @@
- #define OMAP_USBTLL_REV1		0x00000015	/* OMAP3 */
- #define OMAP_USBTLL_REV2		0x00000018	/* OMAP 3630 */
- #define OMAP_USBTLL_REV3		0x00000004	/* OMAP4 */
-+#define OMAP_USBTLL_REV4		0x00000006	/* OMAP5 */
+-	if (pdata->phy_reset) {
+-		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+-			gpio_free(pdata->reset_gpio_port[0]);
+-
+-		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+-			gpio_free(pdata->reset_gpio_port[1]);
+-	}
+ 	return 0;
+ }
  
- #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
- 
-@@ -245,6 +249,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	ver =  usbtll_read(base, OMAP_USBTLL_REVISION);
- 	switch (ver) {
- 	case OMAP_USBTLL_REV1:
-+	case OMAP_USBTLL_REV4:
- 		tll->nch = OMAP_TLL_CHANNEL_COUNT;
- 		break;
- 	case OMAP_USBTLL_REV2:
-@@ -313,6 +318,15 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 				reg &= ~(OMAP_TLL_CHANNEL_CONF_UTMIAUTOIDLE
- 					| OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF
- 					| OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE);
-+			} else if (pdata->port_mode[i] ==
-+					OMAP_EHCI_PORT_MODE_HSIC) {
-+				/*
-+				 * HSIC Mode requires UTMI port configurations
-+				 */
-+				reg |= OMAP_TLL_CHANNEL_CONF_DRVVBUS
-+				 | OMAP_TLL_CHANNEL_CONF_CHRGVBUS
-+				 | OMAP_TLL_CHANNEL_CONF_MODE_TRANSPARENT_UTMI
-+				 | OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF;
- 			} else {
- 				continue;
- 			}
 -- 
 1.7.4.1
 
