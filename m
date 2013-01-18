@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab3ARRRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 12:17:15 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:53114 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab3ARRRM (ORCPT
+	id S1754008Ab3ARR2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 12:28:43 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35475 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab3ARR2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 12:17:12 -0500
-X-Originating-IP: 217.70.178.140
-X-Originating-IP: 50.43.39.152
-Date: Fri, 18 Jan 2013 09:17:05 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Millenbach <jmillenbach@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jamey Sharp <jamey@minilop.net>
-Subject: Re: [PATCHv4] tty: Added a CONFIG_TTY option to allow removal of TTY
-Message-ID: <20130118171704.GA6152@leaf>
-References: <1358491462-16562-1-git-send-email-jmillenbach@gmail.com>
+	Fri, 18 Jan 2013 12:28:41 -0500
+Message-ID: <50F98646.6040209@wwwdotorg.org>
+Date: Fri, 18 Jan 2013 10:28:38 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358491462-16562-1-git-send-email-jmillenbach@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: balbi@ti.com
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] usb: Add APIs to access host registers from Tegra
+ PHY
+References: <Pine.LNX.4.44L0.1301181029350.1988-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1301181029350.1988-100000@iolanthe.rowland.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 10:44:22PM -0800, Joe Millenbach wrote:
-> The option allows you to remove TTY and compile without errors. This
-> saves space on systems that won't support TTY interfaces anyway.
-> bloat-o-meter output is below.
+On 01/18/2013 08:30 AM, Alan Stern wrote:
+> On Fri, 18 Jan 2013, Venu Byravarasu wrote:
 > 
-> The bulk of this patch consists of Kconfig changes adding "depends on
-> TTY" to various serial devices and similar drivers that require the TTY
-> layer.  Ideally, these dependencies would occur on a common intermediate
-> symbol such as SERIO, but most drivers "select SERIO" rather than
-> "depends on SERIO", and "select" does not respect dependencies.
+>> As Tegra PHY driver needs to access one of the Host registers,
+>> added few APIs.
+>>
+>> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+>> ---
+>> delta from v2:
+>> Renamed USB_PORTSC1 to TEGRA_USB_PORTSC1.
+>> Removed tegra_ehci_set_wakeon_events() and its references.
+>> Used standard defines for accessing PORTSC fields defined in ehci_def.h
+>> Included OCC bit of PORTSC as part of TEGRA_PORTSC1_RWC_BITS.
+>>
+>> delta from v1:
+>> Taken care of RWC bits, while accessing PORTSC register.
 > 
-> bloat-o-meter output comparing our previous minimal to new minimal by
-> removing TTY.  The list is filtered to not show removed entries with awk
-> '$3 != "-"' as the list was very long.
-> 
-> add/remove: 0/226 grow/shrink: 2/14 up/down: 6/-35356 (-35350)
-> function                                     old     new   delta
-> chr_dev_init                                 166     170      +4
-> allow_signal                                  80      82      +2
-> static.__warned                              143     142      -1
-> disallow_signal                               63      62      -1
-> __set_special_pids                            95      94      -1
-> unregister_console                           126     121      -5
-> start_kernel                                 546     541      -5
-> register_console                             593     588      -5
-> copy_from_user                                45      40      -5
-> sys_setsid                                   128     120      -8
-> sys_vhangup                                   32      19     -13
-> do_exit                                     1543    1526     -17
-> bitmap_zero                                   60      40     -20
-> arch_local_irq_save                          137     117     -20
-> release_task                                 674     652     -22
-> static.spin_unlock_irqrestore                308     260     -48
-> 
-> Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
-> Reviewed-by: Jamey Sharp <jamey@minilop.net>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
+Felipe, you said on a previous version that you weren't sure if you
+could ack this since it means the PHY driver is touching EHCI
+registers... I don't think we really have much choice w.r.t. what the
+driver is doing, since it's driven purely by HW design. Is this updated
+patched at least OK for you not to NAK it, and hence I can apply it? Thanks.
