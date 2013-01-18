@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751070Ab3ARHqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 02:46:00 -0500
-Received: from norkia.v3.sk ([91.210.183.14]:56959 "EHLO norkia.v3.sk"
+	id S1751290Ab3ARHq2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 02:46:28 -0500
+Received: from norkia.v3.sk ([91.210.183.14]:56972 "EHLO norkia.v3.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab3ARHp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 02:45:59 -0500
-Subject: Re: [PATCH 2/2] dma: mv_xor: do not sync the DMA buffer after
- being deallocated
+	id S1751010Ab3ARHq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 02:46:27 -0500
 From: Lubomir Rintel <lkundrak@v3.sk>
 To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1358083137.13136.1.camel@hobbes>
-References: <1356636228-23096-1-git-send-email-lkundrak@v3.sk>
-	 <1356636228-23096-2-git-send-email-lkundrak@v3.sk>
-	 <20130104171033.4a244c3d@skate>  <1358083137.13136.1.camel@hobbes>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Jan 2013 08:45:54 +0100
-Message-ID: <1358495154.28503.5.camel@unicorn>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-27.el6) 
-Content-Transfer-Encoding: 7bit
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Lubomir Rintel <lkundrak@v3.sk>
+Subject: [PATCH 1/3] dma: mv_xor: do not sync the DMA buffer after being deallocated
+Date: Fri, 18 Jan 2013 08:46:20 +0100
+Message-Id: <1358495182-30964-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1358495154.28503.5.camel@unicorn>
+References: <1358495154.28503.5.camel@unicorn>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-01-13 at 14:18 +0100, Lubomir Rintel wrote:
-> On Fri, 2013-01-04 at 17:10 +0100, Thomas Petazzoni wrote:
-> > Dear Lubomir Rintel,
-> > 
-> > On Thu, 27 Dec 2012 20:23:48 +0100, Lubomir Rintel wrote:
-> > 
-> > >  	dma_sync_single_for_cpu(dma_chan->device->dev, dest_dma,
-> > >  				MV_XOR_TEST_SIZE, DMA_FROM_DEVICE);
-> > > +	dma_unmap_single(dma_chan->device->dev, dest_dma, MV_XOR_TEST_SIZE,
-> > > +			 DMA_FROM_DEVICE);
-> > 
-> > I would assume that dma_unmap_single() implies a
-> > dma_sync_single_for_cpu() since you're unmapping the DMA buffer. So if
-> > you use dma_unmap_single(), I think you can remove the call to
-> > dma_sync_single_for_cpu().
-> 
-> Yes, it indeed seems to be the case (comment for arm_dma_unmap_page():
-> "After this call, reads by the CPU to the buffer are guaranteed to see
-> whatever the device wrote there.".
-> 
-> > >  	dma_sync_single_for_cpu(dma_chan->device->dev, dest_dma,
-> > >  				PAGE_SIZE, DMA_FROM_DEVICE);
-> > > +	dma_unmap_page(dma_chan->device->dev, dest_dma, PAGE_SIZE,
-> > > +		       DMA_FROM_DEVICE);
-> > 
-> > Ditto.
-> > 
-> > Also, the mv_xor_memcpy_self_test() function not only dma_map_single()
-> > the destination buffer, but also the source buffer. So presumably, the
-> > source buffer should also be dma_unmap_single()'d.
-> > 
-> > And for the mv_xor_xor_self_test() function, multiple source buffers
-> > are dma_map_page()'d, so they should all be dma_unmap_page()'d I guess,
-> > not only the destination buffer.
-> 
-> Those get released by the mv_xor_run_tx_complete_actions() callback.
-> 
-> I will follow up with an updated patch.
+DMA_CHECK was unhappy:
+mv_xor mv_xor.0: DMA-API: device driver tries to sync DMA memory it has not allocated [device address=0x000000001f3a1a40] [size=2000 bytes]
 
-Actually, after cleaning up the sync a couple more selfcheck warnings
-popped up. I'd be very thankful if you could take a look (patches
-chained to this message).
+Deallocation, which involves a sync, happens automatically by
+mv_xor_slot_cleanup() once the transfer is finished.
+
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+---
+ drivers/dma/mv_xor.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index e666983..8b81a04 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -960,8 +960,6 @@ static int mv_xor_memcpy_self_test(struct mv_xor_chan *mv_chan)
+ 		goto free_resources;
+ 	}
+ 
+-	dma_sync_single_for_cpu(dma_chan->device->dev, dest_dma,
+-				MV_XOR_TEST_SIZE, DMA_FROM_DEVICE);
+ 	if (memcmp(src, dest, MV_XOR_TEST_SIZE)) {
+ 		dev_err(dma_chan->device->dev,
+ 			"Self-test copy failed compare, disabling\n");
+@@ -1054,8 +1052,6 @@ mv_xor_xor_self_test(struct mv_xor_chan *mv_chan)
+ 		goto free_resources;
+ 	}
+ 
+-	dma_sync_single_for_cpu(dma_chan->device->dev, dest_dma,
+-				PAGE_SIZE, DMA_FROM_DEVICE);
+ 	for (i = 0; i < (PAGE_SIZE / sizeof(u32)); i++) {
+ 		u32 *ptr = page_address(dest);
+ 		if (ptr[i] != cmp_word) {
+-- 
+1.7.1
 
