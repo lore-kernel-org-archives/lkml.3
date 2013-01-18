@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab3ARKsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 05:48:09 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51492 "EHLO comal.ext.ti.com"
+	id S1755179Ab3ARKsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 05:48:19 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51509 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649Ab3ARKsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 05:48:00 -0500
+	id S1754950Ab3ARKsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 05:48:13 -0500
 From: "Patil, Rachna" <rachna@ti.com>
 To: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
@@ -19,9 +19,9 @@ CC: Samuel Ortiz <sameo@linux.intel.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
         "Patil, Rachna" <rachna@ti.com>
-Subject: [PATCH v3 6/8] input: ti_am335x_tsc: Add DT support
-Date: Fri, 18 Jan 2013 16:18:36 +0530
-Message-ID: <bb761fb0d90e46681c6d7ffc38f21fb62ba0b511.1358502134.git.rachna@ti.com>
+Subject: [PATCH v3 8/8] arm/dts: AM335x-evm: Add TSC/ADC MFD device support
+Date: Fri, 18 Jan 2013 16:18:59 +0530
+Message-ID: <1e33c3c4ac95fad513bf2785a5acff7a5f56d4b0.1358502134.git.rachna@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1358502134.git.rachna@ti.com>
 References: <cover.1358502134.git.rachna@ti.com>
@@ -33,141 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Patil, Rachna" <rachna@ti.com>
 
-Add DT support for client touchscreen driver
+Add support for core multifunctional device along
+with its clients touchscreen and ADC.
 
 Signed-off-by: Patil, Rachna <rachna@ti.com>
 ---
- drivers/input/touchscreen/ti_am335x_tsc.c |   94 +++++++++++++++++++++++++----
- 1 file changed, 81 insertions(+), 13 deletions(-)
+ arch/arm/boot/dts/am335x-evm.dts |   13 +++++++++++++
+ arch/arm/boot/dts/am33xx.dtsi    |    8 ++++++++
+ 2 files changed, 21 insertions(+)
 
-diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index 064d2b2..249dac5 100644
---- a/drivers/input/touchscreen/ti_am335x_tsc.c
-+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -26,6 +26,8 @@
- #include <linux/io.h>
- #include <linux/input/ti_am335x_tsc.h>
- #include <linux/delay.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- 
- #include <linux/mfd/ti_am335x_tscadc.h>
- 
-@@ -366,6 +368,74 @@ static irqreturn_t titsc_irq(int irq, void *dev)
- 	return IRQ_HANDLED;
- }
- 
-+static int titsc_parse_dt(struct ti_tscadc_dev *tscadc_dev,
-+					struct titsc *ts_dev)
-+{
-+	struct device_node *node = tscadc_dev->dev->of_node;
-+	int err, i;
-+	u32 val32, wires_conf[4];
+diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
+index d649644..ea28476 100644
+--- a/arch/arm/boot/dts/am335x-evm.dts
++++ b/arch/arm/boot/dts/am335x-evm.dts
+@@ -244,3 +244,16 @@
+ &cpsw_emac1 {
+ 	phy_id = <&davinci_mdio>, <1>;
+ };
 +
-+	if (!node)
-+		return -EINVAL;
-+	else {
-+		node = of_find_node_by_name(node, "tsc");
-+		if (!node)
-+			return -EINVAL;
-+		else {
-+			err = of_property_read_u32(node, "wires", &val32);
-+			if (err < 0)
-+				goto error_ret;
-+			else
-+				ts_dev->wires = val32;
++&tscadc {
++	tsc {
++		wires = <4>;
++		x-plate-resistance = <200>;
++		steps-to-configure = <5>;
++		wire-config = <0x00 0x11 0x22 0x33>;
++	};
 +
-+			err = of_property_read_u32(node,
-+					"x-plate-resistance", &val32);
-+			if (err < 0)
-+				goto error_ret;
-+			else
-+				ts_dev->x_plate_resistance = val32;
++	adc {
++		adc-channels = <4>;
++	};
++};
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index c2f14e8..211ec42 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -385,5 +385,13 @@
+ 				mac-address = [ 00 00 00 00 00 00 ];
+ 			};
+ 		};
 +
-+			err = of_property_read_u32(node,
-+					"steps-to-configure", &val32);
-+			if (err < 0)
-+				goto error_ret;
-+			else
-+				ts_dev->steps_to_configure = val32;
-+
-+			err = of_property_read_u32_array(node, "wire-config",
-+					wires_conf, ARRAY_SIZE(wires_conf));
-+			if (err < 0)
-+				goto error_ret;
-+			else {
-+				for (i = 0; i < ARRAY_SIZE(wires_conf); i++)
-+					ts_dev->config_inp[i] = wires_conf[i];
-+			}
-+		}
-+	}
-+	return 0;
-+
-+error_ret:
-+	return err;
-+}
-+
-+static int titsc_parse_pdata(struct ti_tscadc_dev *tscadc_dev,
-+					struct titsc *ts_dev)
-+{
-+	struct mfd_tscadc_board	*pdata = tscadc_dev->dev->platform_data;
-+
-+	if (!pdata)
-+		return -EINVAL;
-+
-+	ts_dev->wires = pdata->tsc_init->wires;
-+	ts_dev->x_plate_resistance =
-+		pdata->tsc_init->x_plate_resistance;
-+	ts_dev->steps_to_configure =
-+		pdata->tsc_init->steps_to_configure;
-+	memcpy(ts_dev->config_inp, pdata->tsc_init->wire_config,
-+		sizeof(pdata->tsc_init->wire_config));
-+	return 0;
-+}
-+
- /*
-  * The functions for inserting/removing driver as a module.
-  */
-@@ -375,16 +445,8 @@ static int titsc_probe(struct platform_device *pdev)
- 	struct titsc *ts_dev;
- 	struct input_dev *input_dev;
- 	struct ti_tscadc_dev *tscadc_dev = pdev->dev.platform_data;
--	struct mfd_tscadc_board	*pdata;
- 	int err;
- 
--	pdata = tscadc_dev->dev->platform_data;
--
--	if (!pdata) {
--		dev_err(&pdev->dev, "Could not find platform data\n");
--		return -EINVAL;
--	}
--
- 	/* Allocate memory for device */
- 	ts_dev = kzalloc(sizeof(struct titsc), GFP_KERNEL);
- 	input_dev = input_allocate_device();
-@@ -398,11 +460,17 @@ static int titsc_probe(struct platform_device *pdev)
- 	ts_dev->mfd_tscadc = tscadc_dev;
- 	ts_dev->input = input_dev;
- 	ts_dev->irq = tscadc_dev->irq;
--	ts_dev->wires = pdata->tsc_init->wires;
--	ts_dev->x_plate_resistance = pdata->tsc_init->x_plate_resistance;
--	ts_dev->steps_to_configure = pdata->tsc_init->steps_to_configure;
--	memcpy(ts_dev->config_inp, pdata->tsc_init->wire_config,
--			sizeof(pdata->tsc_init->wire_config));
-+
-+	if (tscadc_dev->dev->platform_data)
-+		err = titsc_parse_pdata(tscadc_dev, ts_dev);
-+	else
-+		err = titsc_parse_dt(tscadc_dev, ts_dev);
-+
-+	if (err) {
-+		dev_err(&pdev->dev, "Could not find platform data\n");
-+		err = -EINVAL;
-+		goto err_free_mem;
-+	}
- 
- 	err = request_irq(ts_dev->irq, titsc_irq,
- 			  0, pdev->dev.driver->name, ts_dev);
++		tscadc: tscadc@44e0d000 {
++			compatible = "ti,ti-tscadc";
++			reg = <0x44e0d000 0x1000>;
++			interrupt-parent = <&intc>;
++			interrupts = <16>;
++			ti,hwmods = "adc_tsc";
++		};
+ 	};
+ };
 -- 
 1.7.9.5
 
