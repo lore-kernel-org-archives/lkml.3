@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3ARQXz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 11:23:55 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:45905 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754310Ab3ARQXx (ORCPT
+	id S1755179Ab3ARQ1g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 11:27:36 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:63362 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab3ARQ1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 11:23:53 -0500
-Date: Fri, 18 Jan 2013 16:23:47 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Borislav Petkov <bp@alien8.de>,
-        "Gopalakrishnan, Aravind" <Aravind.Gopalakrishnan@amd.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, Andre Przywara <andre@andrep.de>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas <linuxuser330250@gmx.net>
-Subject: Re: [PATCH] drivers/cpufreq: Warn user when powernow-k8 tries to
- fall back to acpi-cpufreq and it is unavailable.
-Message-ID: <20130118162347.GA31499@srcf.ucam.org>
-References: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20130111144940.GB21882@liondog.tnic>
- <20130111165054.GD10751@liondog.tnic>
- <4923C2DE085EEB4FAB1D375DD09D0BA6100CF170@sausexdag04.amd.com>
- <20130117115436.GA3853@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130117115436.GA3853@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 18 Jan 2013 11:27:34 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v3 0/2] perf stat: add interval counter printing
+Date: Fri, 18 Jan 2013 17:26:47 +0100
+Message-Id: <1358526409-9382-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 12:54:37PM +0100, Borislav Petkov wrote:
+This small patchset extends perf stat with the -I option.
 
-> So, handoff to acpi-cpufreq still has some issues. When both are
-> built-in, the module_init functions turn into normal initcalls and
-> in that case, they're executed in link order and it can happen that
-> powernowk8_init() runs before acpi_cpufreq_init().
+The -I option enables interval printing. It expects
+an interval duration in milliseconds. Minimum is
+100ms. Once, activated perf stat prints events deltas
+since last printout. All modes are supported.
 
-Just flip the link order? It's only the way it is because in the past we 
-wanted to try hardware-specific drivers before more generic ones, and I 
-don't think that's a concern in this case now.
+$ perf stat -I 1000 -e cycles noploop 10
+noploop for 10 seconds
+1.000086918         2385155642 cycles                    #    0.000 GHz
+2.000267937         2392279774 cycles                    #    0.000 GHz
+3.000385400         2390971450 cycles                    #    0.000 GHz
+4.000504408         2390996752 cycles                    #    0.000 GHz
+5.000626878         2390853097 cycles                    #    0.000 GHz
+
+The output format makes it easy to feed into a plotting program
+such as gnuplot when the -I option is used in combination with the -x
+option:
+
+$ perf stat -x, -I 1000 -e cycles noploop 10
+noploop for 10 seconds
+1.000084113,2378775498,cycles
+2.000245798,2391056897,cycles
+3.000354445,2392089414,cycles
+4.000459115,2390936603,cycles
+5.000565341,2392108173,cycles
+
+The first patch adds the code to keep previous counts. The second
+is the actual extension of perf stat.
+
+In v2, we changed the option from -T to -I based on feedback
+from Andi Kleen (who is using -T in an upcoming patch).
+
+In v3, added compute_deltas() to evsel.c to factorize
+deltas computation based on Jiri's comments.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+
+Stephane Eranian (2):
+  perf tools: add evsel prev_raw_count field
+  perf stat: add interval printing
+
+ tools/perf/Documentation/perf-stat.txt |    4 +
+ tools/perf/builtin-stat.c              |  157 ++++++++++++++++++++++++++++----
+ tools/perf/util/evsel.c                |   26 ++++++
+ tools/perf/util/evsel.h                |    1 +
+ 4 files changed, 172 insertions(+), 16 deletions(-)
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.9.5
+
