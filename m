@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751146Ab3ARIQP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 03:16:15 -0500
-Received: from nskntqsrv03p.mx.bigpond.com ([61.9.168.237]:39415 "EHLO
-	nskntqsrv03p.mx.bigpond.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751032Ab3ARIQO (ORCPT
+	id S1750957Ab3ARIYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 03:24:00 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:44736 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750759Ab3ARIX7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 03:16:14 -0500
-X-Greylist: delayed 5333 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jan 2013 03:16:13 EST
-X-Authority-Analysis: v=2.0 cv=FNuZNpUs c=1 sm=1
- a=tpHzvNDyw14p4wpd1xf5Bw==:17 a=4QTP58DfdrcA:10 a=fAaKLWLAU3UA:10
- a=H5rnqBSDAAAA:8 a=YvqQfTbJdaQA:10 a=VwQbUJbxAAAA:8 a=0Ll975wjfA4zU0QK88gA:9
- a=tpHzvNDyw14p4wpd1xf5Bw==:117
-Date: Fri, 18 Jan 2013 16:47:16 +1000
-From: Greg Ungerer <gerg@goober.accelcon.com>
-Message-Id: <201301180647.r0I6lGbf020653@goober.accelcon.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-m68k@vger.kernel.org>,
-        <uclinux-dev@uclinux.org>, <geert@linux-m68k.org>
-Subject: [git pull] m68knommu arch fixes for 3.8
-To: <torvalds@linux-foundation.org>
-X-Mailer: mail (GNU Mailutils 2.1)
+	Fri, 18 Jan 2013 03:23:59 -0500
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: Michal Bachraty <michal.bachraty@streamunlimited.com>,
+        "tiwai@suse.de" <tiwai@suse.de>, "perex@perex.cz" <perex@perex.cz>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [alsa-devel] [PATCH] ALSA: ASoC: McASP: Fix data rotation for
+	playback. Enables 24bit audio playback
+Thread-Topic: [alsa-devel] [PATCH] ALSA: ASoC: McASP: Fix data rotation for
+	playback. Enables 24bit audio playback
+Thread-Index: AQHN8+mxIASE72Az3Uq09EIP5eXiZJhOwdkw
+Date: Fri, 18 Jan 2013 08:22:53 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EB49910@DBDE01.ent.ti.com>
+References: <1358260860-10370-1-git-send-email-michal.bachraty@streamunlimited.com>
+In-Reply-To: <1358260860-10370-1-git-send-email-michal.bachraty@streamunlimited.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Jan 15, 2013 at 20:11:00, Michal Bachraty wrote:
+> Signed-off-by: Michal Bachraty <michal.bachraty@streamunlimited.com>
 
-Can you please pull the m68knommu git tree, for-linus branch, at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
-
-It contains a couple of fixes, both affecting compilation of non-mmu m68k
-targets.
-
-Regards
-Greg
+Even simple patches need a simple changelog.
+Add a brief description about what & why it is done?
 
 
+> ---
+>  sound/soc/davinci/davinci-mcasp.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
+> index 13f8d73..a03bece 100644
+> --- a/sound/soc/davinci/davinci-mcasp.c
+> +++ b/sound/soc/davinci/davinci-mcasp.c
+> @@ -626,7 +626,7 @@ static int davinci_config_channel_size(struct davinci_audio_dev *dev,
+>  				       int word_length)
+>  {
+>  	u32 fmt;
+> -	u32 rotate = (32 - word_length) / 4;
+> +	u32 rotate = (word_length / 4) & 0x7;
+>  	u32 mask = (1ULL << word_length) - 1;
+>  
+>  	/*
+> -- 
+> 1.7.9.5
+> 
+> _______________________________________________
+> Alsa-devel mailing list
+> Alsa-devel@alsa-project.org
+> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+> 
 
 
-The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
-  Linus Torvalds (1):
-        Linux 3.8-rc2
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
-
-Greg Ungerer (2):
-      m68knommu: add KMAP definitions for non-MMU definitions
-      m68k: fix conditional use of init_pointer_table
-
- arch/m68k/include/asm/pgtable_no.h |    2 ++
- arch/m68k/mm/init.c                |    8 +++++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
+Regards, 
+Gururaja
