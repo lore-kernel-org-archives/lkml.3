@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab3ARMSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:18:13 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60926 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754720Ab3ARMSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:18:10 -0500
+	id S1755640Ab3ARMSX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:18:23 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53857 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720Ab3ARMSO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 07:18:14 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>, <balbi@ti.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v8 11/22] mfd: omap_usb_host: Avoid missing platform data checks in suspend/resume
-Date: Fri, 18 Jan 2013 14:17:14 +0200
-Message-ID: <1358511445-26656-12-git-send-email-rogerq@ti.com>
+Subject: [PATCH v8 14/22] mfd: omap-usb-host: override number of ports from platform data
+Date: Fri, 18 Jan 2013 14:17:17 +0200
+Message-ID: <1358511445-26656-15-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511445-26656-1-git-send-email-rogerq@ti.com>
 References: <1358511445-26656-1-git-send-email-rogerq@ti.com>
@@ -24,44 +25,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the unnecessary missing platform data checks
-in runtime_suspend/resume. We are already checking for missing
-platform data in probe.
+Both OMAP4 and 5 exhibit the same revision ID in the REVISION register
+but they have different number of ports i.e. 2 and 3 respectively.
+So we can't rely on REVISION register for number of ports on OMAP5
+and depend on platform data (or device tree) instead.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/omap-usb-host.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+ drivers/mfd/omap-usb-host.c            |   34 +++++++++++++++++++------------
+ include/linux/platform_data/usb-omap.h |    1 +
+ 2 files changed, 22 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index d6e6b8c..061366d 100644
+index 26319ca..779588b 100644
 --- a/drivers/mfd/omap-usb-host.c
 +++ b/drivers/mfd/omap-usb-host.c
-@@ -277,11 +277,6 @@ static int usbhs_runtime_resume(struct device *dev)
+@@ -493,19 +493,27 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 	 */
+ 	pm_runtime_put_sync(dev);
  
- 	dev_dbg(dev, "usbhs_runtime_resume\n");
+-	switch (omap->usbhs_rev) {
+-	case OMAP_USBHS_REV1:
+-		omap->nports = 3;
+-		break;
+-	case OMAP_USBHS_REV2:
+-		omap->nports = 2;
+-		break;
+-	default:
+-		omap->nports = OMAP3_HS_USB_PORTS;
+-		dev_dbg(dev,
+-		  "USB HOST Rev : 0x%d not recognized, assuming %d ports\n",
+-		   omap->usbhs_rev, omap->nports);
+-		break;
++	/*
++	 * If platform data contains nports then use that
++	 * else make out number of ports from USBHS revision
++	 */
++	if (pdata->nports) {
++		omap->nports = pdata->nports;
++	} else {
++		switch (omap->usbhs_rev) {
++		case OMAP_USBHS_REV1:
++			omap->nports = 3;
++			break;
++		case OMAP_USBHS_REV2:
++			omap->nports = 2;
++			break;
++		default:
++			omap->nports = OMAP3_HS_USB_PORTS;
++			dev_dbg(dev,
++			 "USB HOST Rev:0x%d not recognized, assuming %d ports\n",
++			 omap->usbhs_rev, omap->nports);
++			break;
++		}
+ 	}
  
--	if (!pdata) {
--		dev_dbg(dev, "missing platform_data\n");
--		return  -ENODEV;
--	}
--
- 	omap_tll_enable();
- 	spin_lock_irqsave(&omap->lock, flags);
+ 	for (i = 0; i < omap->nports; i++)
+diff --git a/include/linux/platform_data/usb-omap.h b/include/linux/platform_data/usb-omap.h
+index 04c7537..925a4a7 100644
+--- a/include/linux/platform_data/usb-omap.h
++++ b/include/linux/platform_data/usb-omap.h
+@@ -39,6 +39,7 @@ enum usbhs_omap_port_mode {
+ };
  
-@@ -309,11 +304,6 @@ static int usbhs_runtime_suspend(struct device *dev)
- 
- 	dev_dbg(dev, "usbhs_runtime_suspend\n");
- 
--	if (!pdata) {
--		dev_dbg(dev, "missing platform_data\n");
--		return  -ENODEV;
--	}
--
- 	spin_lock_irqsave(&omap->lock, flags);
- 
- 	if (is_ehci_tll_mode(pdata->port_mode[0]))
+ struct usbhs_omap_platform_data {
++	int				nports;
+ 	enum usbhs_omap_port_mode	port_mode[OMAP3_HS_USB_PORTS];
+ 	int				reset_gpio_port[OMAP3_HS_USB_PORTS];
+ 	struct regulator		*regulator[OMAP3_HS_USB_PORTS];
 -- 
 1.7.4.1
 
