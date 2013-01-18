@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab3ARBPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 20:15:47 -0500
-Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.23]:43304
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754872Ab3ARBPq convert rfc822-to-8bit (ORCPT
+	id S1755265Ab3ARBQh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 20:16:37 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:30913 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140Ab3ARBQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 20:15:46 -0500
-X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jan 2013 20:15:46 EST
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -3
-X-BigFish: PS-3(zz98dI9371I154dI542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: RE: [PATCH 1/1] X86: Handle Hyper-V vmbus interrupts as special
- hypervisor interrupts
-Thread-Topic: [PATCH 1/1] X86: Handle Hyper-V vmbus interrupts as special
- hypervisor interrupts
-Thread-Index: AQHN9RC9go3bU96kuUWjPmeK6MjrpZhOOgiAgAALYdA=
-Date: Fri, 18 Jan 2013 01:07:42 +0000
-Message-ID: <7bde61b74da845149c4fd1f65d802693@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1358469577-8794-1-git-send-email-kys@microsoft.com>
- <20130118002347.GB3959@kroah.com>
-In-Reply-To: <20130118002347.GB3959@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.124.4]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(24454001)(51704002)(54534002)(13464002)(76482001)(59766001)(54356001)(56776001)(33646001)(53806001)(4396001)(54316002)(50466001)(74662001)(31966008)(44976002)(47776002)(74502001)(47446002)(47976001)(46406002)(79102001)(50986001)(49866001)(77982001)(56816002)(47736001)(5343635001)(6806001)(46102001)(16676001)(51856001)(23726001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB035;H:TK5EX14HUBC103.redmond.corp.microsoft.com;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0730093765
+	Thu, 17 Jan 2013 20:16:34 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-7b-50f8a270c38d
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, balbi@ti.com,
+        thomas.abraham@linaro.org, sylvester.nawrocki@gmail.com,
+        t.figa@samsung.com, ben-linux@fluff.org,
+        broonie@opensource.wolfsonmicro.com, l.majewski@samsung.com,
+        kyungmin.park@samsung.com, grant.likely@secretlab.ca, heiko@sntech.de,
+        dianders@chromium.org, p.paneri@samsung.com, cpgs@samsung.com
+References: <CAFp+6iE7zEJ7E_pRCOYz5mQqbk-MFE6Hwr02pRRT1yP+X3z7kQ@mail.gmail.com>
+ <1358230225-2770-1-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1358230225-2770-1-git-send-email-gautam.vivek@samsung.com>
+Subject: RE: [PATCH v7] usb: phy: samsung: Add support to set pmu isolation
+Date: Thu, 17 Jan 2013 17:16:16 -0800
+Message-id: <003001cdf519$6d21c690$476553b0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQFfIFOtPFr8BgNDjsIUf+5VUNUUPgJnNuz4mRhHayA=
+Content-language: en-us
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t8zfd2CRT8CDLrn6Fhc3jWHzWLG+X1M
+	FouWtTI7MHt83iQXwBjFZZOSmpNZllqkb5fAlTHx9DH2goWsFX+uH2JrYFzA0sXIySEhYCJx
+	ofs0M4QtJnHh3no2EFtIYBmjxNcfBjA1F1fvZ+9i5AKKL2KUOLvrJZTzl1Hix7XbYB1sAhoS
+	h98/YwexRQQ8JO4eWw5WxCzQyCLRfv4WO8TYCYwSjzuzQGxOoKJvWyaDrRYW8JboX3EUbBCL
+	gKrE5n/7wWxeAUuJv7OfMkLYghI/Jt8DO5tZQEti87YmVghbXmLzmrdQLyhI7Dj7mhHiCCuJ
+	59sWsUHUiEtMevCQHWK+gMS3yYeA5nAA1ctKbDrADHKnhMA6domLsxcyQsyRlDi44gYL0LWz
+	kKyehWT1LCSrZyFZsYCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGSMRJ7WBc2WBxiFGA
+	g1GJh5dL/UeAEGtiWXFl7iFGCQ5mJRFepTKgEG9KYmVValF+fFFpTmrxIUYfoMsnMkuJJucD
+	k0FeSbyhsbGJmYmpibmlqbkpDmElcV7GU08ChATSE0tSs1NTC1KLYMYxcXBKNTAqtelt0f0b
+	eF/HpPfasuuG65pneGw3sp5zpF/pt9/aGZs6ds1qXDR9QZlGZTe341v1h5N8up+WiZ52cpVz
+	j2M9U2n9PlBkR/vPpXJKnNJSyvc8hPOU3k7y2zvndO7Zz9a/TLIXxf9adCfS6dOHXRPT2tfd
+	5HXbxfE1QnXbolDpz5kLd87w2LlPiaU4I9FQi7moOBEA94lTq+UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+xgG7Boh8BBl3bNCwu75rDZjHj/D4m
+	i0XLWpkdmD0+b5ILYIxqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xN
+	tVVy8QnQdcvMAZqvpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8yYePoY
+	e8FC1oo/1w+xNTAuYOli5OSQEDCRuLh6PzuELSZx4d56ti5GLg4hgUWMEmd3vWSHcP4ySvy4
+	dpsNpIpNQEPi8PtnYB0iAh4Sd48tBytiFmhkkWg/fwssISQwgVHicWcWiM0JVPRty2RmEFtY
+	wFuif8VRsEEsAqoSm//tB7N5BSwl/s5+yghhC0r8mHwP7DxmAS2JzduaWCFseYnNa94yQ5yq
+	ILHj7GtGiCOsJJ5vW8QGUSMuMenBQ/YJjEKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3X
+	UK84Mbe4NC9dLzk/dxMjOKKfSe1gXNlgcYhRgINRiYeXS/1HgBBrYllxZe4hRgkOZiURXqUy
+	oBBvSmJlVWpRfnxRaU5q8SFGH6BPJzJLiSbnA5NNXkm8obGJmZGlkZmFkYm5OQ5hJXFexlNP
+	AoQE0hNLUrNTUwtSi2DGMXFwSjUwbg5/1F3Jczbo7HxpAz5esQ0enY2C+/UVw6ofTfm0dca2
+	yQulCrbwKUdvnWGlW7l6xou7V7rfTxCuObF5Z7ZZ6/ujritqPafrdxUWNtXLvdkXJLLNpvXk
+	8hOTr8cvWuGivr/kzUWrY/tu1fHXr9947+Ya9Z47Th0fpmT6/rZR26SwJ/CtxJy/ckosxRmJ
+	hlrMRcWJAKbCVoQVAwAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, January 17, 2013 7:24 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de
-> Subject: Re: [PATCH 1/1] X86: Handle Hyper-V vmbus interrupts as special
-> hypervisor interrupts
+Vivek Gautam wrote:
 > 
-> On Thu, Jan 17, 2013 at 04:39:37PM -0800, K. Y. Srinivasan wrote:
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Adding support to parse device node data in order to get
+> required properties to set pmu isolation for usb-phy.
 > 
-> No changelog entry describing the patch?
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
 
-I sent the wrong version of the patch by mistake. I will send the one with the changelog shortly.
-> 
-> > ---
-> >  arch/x86/include/asm/irq_vectors.h |    2 +
-> >  arch/x86/include/asm/mshyperv.h    |    4 +++
-> >  arch/x86/kernel/cpu/mshyperv.c     |   39
-> ++++++++++++++++++++++++++++++++++++
-> >  arch/x86/kernel/entry_32.S         |    7 ++++++
-> >  arch/x86/kernel/entry_64.S         |    5 ++++
-> >  5 files changed, 57 insertions(+), 0 deletions(-)
-> 
-> This patch needs to go through the x86 maintainers, which you didn't
-> include all of on the To: line, any reason why?
-I have included Thomas as this was an interrupt related patch. I will however include x86 maintainers
-when I resend with the change log.
+This looks good to me,
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-Thank you,
+Vivek, could you please re-send following in one series?
+- [PATCH v9 1/2] usb: phy: samsung: Introducing usb phy driver for hsotg
+- [PATCH v8 2/2] usb: s3c-hsotg: Adding phy driver support
 
-K. Y
- 
+As I know, this should be applied on top of above patches.
+
+Thanks.
+
+- Kukjin
 
 
