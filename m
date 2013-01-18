@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab3ARMWy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:22:54 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52941 "EHLO bear.ext.ti.com"
+	id S1751052Ab3ARMSD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:18:03 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52929 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755265Ab3ARMSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:18:05 -0500
+	id S1755026Ab3ARMSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 07:18:00 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>, <balbi@ti.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v8 09/22] mfd: omap-usb-tll: serialize access to TLL device
-Date: Fri, 18 Jan 2013 14:17:12 +0200
-Message-ID: <1358511445-26656-10-git-send-email-rogerq@ti.com>
+Subject: [PATCH v8 06/22] mfd: omap-usb-tll: introduce and use mode_needs_tll()
+Date: Fri, 18 Jan 2013 14:17:09 +0200
+Message-ID: <1358511445-26656-7-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511445-26656-1-git-send-email-rogerq@ti.com>
 References: <1358511445-26656-1-git-send-email-rogerq@ti.com>
@@ -24,193 +24,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the unnecessary spin_lock_irqsave/restore() as there is
-no interrupt handler for this driver. Instead we serialize access
-to tll_dev using a global spinlock.
+This is a handy macro to check if the port requires the
+USB TLL module or not. Use it to Enable the TLL module and manage
+the clocks.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/omap-usb-tll.c |   53 ++++++++++++++++++++++---------------------
- 1 files changed, 27 insertions(+), 26 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   20 ++++++++++++--------
+ 1 files changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index 81d2cac..9f9cfc2 100644
+index 4ce134b..6a43391 100644
 --- a/drivers/mfd/omap-usb-tll.c
 +++ b/drivers/mfd/omap-usb-tll.c
-@@ -103,14 +103,13 @@ struct usbtll_omap {
+@@ -95,6 +95,10 @@
+ 
+ #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
+ 
++/* only PHY and UNUSED modes don't need TLL */
++#define omap_usb_mode_needs_tll(x)	((x != OMAP_USBHS_PORT_MODE_UNUSED) &&\
++					 (x != OMAP_EHCI_PORT_MODE_PHY))
++
+ struct usbtll_omap {
  	int					nch;	/* num. of channels */
  	struct usbhs_omap_platform_data		*pdata;
- 	struct clk				**ch_clk;
--	/* secure the register updates */
--	spinlock_t				lock;
- };
- 
- /*-------------------------------------------------------------------------*/
- 
- static const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
- static struct device	*tll_dev;
-+static DEFINE_SPINLOCK(tll_lock);	/* serialize access to tll_dev */
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -212,7 +211,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	struct resource				*res;
- 	struct usbtll_omap			*tll;
- 	unsigned				reg;
--	unsigned long				flags;
+@@ -211,6 +215,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	unsigned long				flags;
  	int					ret = 0;
  	int					i, ver;
- 	bool needs_tll;
-@@ -230,8 +228,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
++	bool needs_tll;
  
--	spin_lock_init(&tll->lock);
--
- 	tll->pdata = pdata;
+ 	dev_dbg(dev, "starting TI HSUSB TLL Controller\n");
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -246,8 +242,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	pm_runtime_enable(dev);
- 	pm_runtime_get_sync(dev);
+@@ -281,12 +286,11 @@ static int usbtll_omap_probe(struct platform_device *pdev)
  
--	spin_lock_irqsave(&tll->lock, flags);
--
- 	ver =  usbtll_read(base, OMAP_USBTLL_REVISION);
- 	switch (ver) {
- 	case OMAP_USBTLL_REV1:
-@@ -265,8 +259,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		break;
- 	}
+ 	spin_lock_irqsave(&tll->lock, flags);
  
--	spin_unlock_irqrestore(&tll->lock, flags);
--
- 	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
- 						GFP_KERNEL);
- 	if (!tll->ch_clk) {
-@@ -289,8 +281,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 			tll->ch_clk[i] = fck;
- 	}
+-	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
+-	    is_ehci_tll_mode(pdata->port_mode[1]) ||
+-	    is_ehci_tll_mode(pdata->port_mode[2]) ||
+-	    is_ohci_port(pdata->port_mode[0]) ||
+-	    is_ohci_port(pdata->port_mode[1]) ||
+-	    is_ohci_port(pdata->port_mode[2])) {
++	needs_tll = false;
++	for (i = 0; i < tll->nch; i++)
++		needs_tll |= omap_usb_mode_needs_tll(pdata->port_mode[i]);
++
++	if (needs_tll) {
  
--	spin_lock_irqsave(&tll->lock, flags);
--
- 	needs_tll = false;
- 	for (i = 0; i < tll->nch; i++)
- 		needs_tll |= omap_usb_mode_needs_tll(pdata->port_mode[i]);
-@@ -335,10 +325,11 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		}
- 	}
+ 		/* Program Common TLL register */
+ 		reg = usbtll_read(base, OMAP_TLL_SHARED_CONF);
+@@ -374,7 +378,7 @@ static int usbtll_runtime_resume(struct device *dev)
+ 	spin_lock_irqsave(&tll->lock, flags);
  
--	spin_unlock_irqrestore(&tll->lock, flags);
- 	pm_runtime_put_sync(dev);
- 	/* only after this can omap_tll_enable/disable work */
-+	spin_lock(&tll_lock);
- 	tll_dev = dev;
-+	spin_unlock(&tll_lock);
- 
- 	return 0;
- 
-@@ -360,7 +351,9 @@ static int usbtll_omap_remove(struct platform_device *pdev)
- 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
- 	int i;
- 
-+	spin_lock(&tll_lock);
- 	tll_dev = NULL;
-+	spin_unlock(&tll_lock);
- 
- 	for (i = 0; i < tll->nch; i++)
- 		clk_put(tll->ch_clk[i]);
-@@ -373,13 +366,10 @@ static int usbtll_runtime_resume(struct device *dev)
- {
- 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
- 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
--	unsigned long				flags;
- 	int i;
- 
- 	dev_dbg(dev, "usbtll_runtime_resume\n");
- 
--	spin_lock_irqsave(&tll->lock, flags);
--
  	for (i = 0; i < tll->nch; i++) {
- 		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
+-		if (is_ehci_tll_mode(pdata->port_mode[i])) {
++		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
  			int r;
-@@ -395,8 +385,6 @@ static int usbtll_runtime_resume(struct device *dev)
- 		}
- 	}
  
--	spin_unlock_irqrestore(&tll->lock, flags);
--
- 	return 0;
- }
+ 			if (!tll->ch_clk[i])
+@@ -410,7 +414,7 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 	spin_lock_irqsave(&tll->lock, flags);
  
-@@ -404,13 +392,10 @@ static int usbtll_runtime_suspend(struct device *dev)
- {
- 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
- 	struct usbhs_omap_platform_data		*pdata = tll->pdata;
--	unsigned long				flags;
- 	int i;
- 
- 	dev_dbg(dev, "usbtll_runtime_suspend\n");
- 
--	spin_lock_irqsave(&tll->lock, flags);
--
  	for (i = 0; i < tll->nch; i++) {
- 		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
+-		if (is_ehci_tll_mode(pdata->port_mode[i])) {
++		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
  			if (tll->ch_clk[i])
-@@ -418,8 +403,6 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 				clk_disable(tll->ch_clk[i]);
  		}
- 	}
- 
--	spin_unlock_irqrestore(&tll->lock, flags);
--
- 	return 0;
- }
- 
-@@ -441,21 +424,39 @@ static struct platform_driver usbtll_omap_driver = {
- 
- int omap_tll_enable(void)
- {
-+	int ret;
-+
-+	spin_lock(&tll_lock);
-+
- 	if (!tll_dev) {
- 		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
--		return  -ENODEV;
-+		ret = -ENODEV;
-+	} else {
-+		ret = pm_runtime_get_sync(tll_dev);
- 	}
--	return pm_runtime_get_sync(tll_dev);
-+
-+	spin_unlock(&tll_lock);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(omap_tll_enable);
- 
- int omap_tll_disable(void)
- {
-+	int ret;
-+
-+	spin_lock(&tll_lock);
-+
- 	if (!tll_dev) {
- 		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
--		return  -ENODEV;
-+		ret = -ENODEV;
-+	} else {
-+		ret = pm_runtime_put_sync(tll_dev);
- 	}
--	return pm_runtime_put_sync(tll_dev);
-+
-+	spin_unlock(&tll_lock);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(omap_tll_disable);
- 
 -- 
 1.7.4.1
 
