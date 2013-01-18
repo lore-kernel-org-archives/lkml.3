@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab3ARXDI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 18:03:08 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:41447 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab3ARXDH (ORCPT
+	id S1754659Ab3ARXFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 18:05:00 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:39058 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab3ARXE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 18:03:07 -0500
+	Fri, 18 Jan 2013 18:04:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130118183030.GE4051@tassilo.jf.intel.com>
-References: <1358526409-9382-1-git-send-email-eranian@google.com>
-	<1358526409-9382-3-git-send-email-eranian@google.com>
-	<20130118183030.GE4051@tassilo.jf.intel.com>
-Date: Sat, 19 Jan 2013 00:03:05 +0100
-Message-ID: <CABPqkBQyr2_KZAYSG=rv81zLMHbUPuLNWQz5VeNNyfZL0o7atg@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] perf stat: add interval printing
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <5156.1358549663@warthog.procyon.org.uk>
+References: <CA+icZUV+ewSfwdGv+XjzVMF+V5d1t3r6MWGvoBgf08CN=KpBgQ@mail.gmail.com>
+	<CA+icZUXNbhX4a0ZG039O5dWiZHpuVM-mwOSD_4g+f==xWD=4Zw@mail.gmail.com>
+	<5156.1358549663@warthog.procyon.org.uk>
+Date: Sat, 19 Jan 2013 00:04:58 +0100
+Message-ID: <CA+icZUW_-3Bg9PSBoht0mqikVb1wn+21BNFy8Fsm5thZfNunXw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 18 [MODSIGN: KEYS:]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 7:30 PM, Andi Kleen <ak@linux.intel.com> wrote:
->>       if (forks) {
->>               close(go_pipe[1]);
->> +             if (interval) {
->> +                     while (!waitpid(child_pid, &status, WNOHANG)) {
->> +                             ret = nanosleep(&ts, NULL);
->> +                             if (ret == 0 && interval)
->> +                                     print_interval();
+On Fri, Jan 18, 2013 at 11:54 PM, David Howells <dhowells@redhat.com> wrote:
+> Sedat Dilek <sedat.dilek@gmail.com> wrote:
 >
-> It would be good to make sure that if someone Ctrl-Cs
-> you still print the latest interval(even if shorter)
+>> Culprit seems to be...
+>>
+>> commit d6941c0c6bd42c725e45240a86c4add92e9bfb3e
+>> "KEYS: Separate the kernel signature checking keyring from module signing"
 >
-Ok, I can remove the test. The interval is redundant here anyway.
-Will post V4 shortly.
+> Try updating.  I pushed a new version out today.  This is now at commit ID
+> c82af351e270e0d95059d09a1975b61494fbbcd7.
+>
+
+Thanks for the information!
+
+OK, I see... s/select/depends on...
+
+ +config SYSTEM_TRUSTED_KEYRING
+ +      bool "Provide system-wide ring of trusted keys"
+-+      select KEYS
+++      depends on KEYS
+
+That should fix it :-).
+I set SYSTEM_TRUSTED_KEYRING=y in kernel-config.
+
+BAD: http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=patch;h=d6941c0c6bd42c725e45240a86c4add92e9bfb3e
+
+GOOD: http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=patch;h=c82af351e270e0d95059d09a1975b61494fbbcd7
+
+- Sedat -
+
+> David
