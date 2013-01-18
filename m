@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab3ARQIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 11:08:11 -0500
-Received: from mail-da0-f45.google.com ([209.85.210.45]:64202 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab3ARQIG (ORCPT
+	id S1755269Ab3ARQIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 11:08:20 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:54357 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191Ab3ARQIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 11:08:06 -0500
+	Fri, 18 Jan 2013 11:08:17 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -16,9 +16,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
-Subject: [RFC PATCH v5 1/8] PCI: make PCI device create/destroy logic symmetric
-Date: Sat, 19 Jan 2013 00:07:39 +0800
-Message-Id: <1358525267-14268-2-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v5 4/8] ACPI, PCI: avoid building pci_slot as module
+Date: Sat, 19 Jan 2013 00:07:42 +0800
+Message-Id: <1358525267-14268-5-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
 References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
@@ -26,73 +26,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to device model documentation, the way to create/destroy PCI
-devices should be symmetric.
-
-/**
- * device_del - delete device from system.
- * @dev: device.
- *
- * This is the first part of the device unregistration
- * sequence. This removes the device from the lists we control
- * from here, has it removed from the other driver model
- * subsystems it was added to in device_add(), and removes it
- * from the kobject hierarchy.
- *
- * NOTE: this should be called manually _iff_ device_add() was
- * also called manually.
- */
-
-The rule is to either use
-1) device_register()/device_unregister()
-or
-2) device_initialize()/device_add()/device_del()/put_device().
-
-So change PCI core logic to follow the rule and get rid of the redundant
-pci_dev_get()/pci_dev_put() pair.
+As discussed in thread at https://patchwork.kernel.org/patch/1946851/,
+there's no value in supporting CONFIG_ACPI_PCI_SLOT=m any more.
+So change Kconfig and code to only support building pci_slot as
+built-in driver.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/probe.c  |    1 -
- drivers/pci/remove.c |    4 ++--
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/acpi/Kconfig    |    5 +----
+ drivers/acpi/internal.h |    5 +++++
+ drivers/acpi/pci_slot.c |   13 +------------
+ drivers/acpi/scan.c     |    1 +
+ 4 files changed, 8 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 4f7f963..ec5d28f 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1294,7 +1294,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 0300bf6..7efd0d0 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -299,7 +299,7 @@ config ACPI_DEBUG_FUNC_TRACE
+ 	  is about half of the penalty and is rarely useful.
+ 
+ config ACPI_PCI_SLOT
+-	tristate "PCI slot detection driver"
++	bool "PCI slot detection driver"
+ 	depends on SYSFS
+ 	default n
+ 	help
+@@ -308,9 +308,6 @@ config ACPI_PCI_SLOT
+ 	  i.e., segment/bus/device/function tuples, with physical slots in
+ 	  the system.  If you are unsure, say N.
+ 
+-	  To compile this driver as a module, choose M here:
+-	  the module will be called pci_slot.
+-
+ config X86_PM_TIMER
+ 	bool "Power Management Timer Support" if EXPERT
+ 	depends on X86
+diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+index e050254..7374cfc 100644
+--- a/drivers/acpi/internal.h
++++ b/drivers/acpi/internal.h
+@@ -67,6 +67,11 @@ struct acpi_ec {
+ 
+ extern struct acpi_ec *first_ec;
+ 
++#ifdef	CONFIG_ACPI_PCI_SLOT
++void acpi_pci_slot_init(void);
++#else
++static inline void acpi_pci_slot_init(void) { }
++#endif
+ int acpi_pci_root_init(void);
+ int acpi_ec_init(void);
+ int acpi_ec_ecdt_probe(void);
+diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
+index d22585f..a7d7e77 100644
+--- a/drivers/acpi/pci_slot.c
++++ b/drivers/acpi/pci_slot.c
+@@ -330,19 +330,8 @@ static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
+ 	{}
+ };
+ 
+-static int __init
+-acpi_pci_slot_init(void)
++void __init acpi_pci_slot_init(void)
  {
- 	device_initialize(&dev->dev);
- 	dev->dev.release = pci_release_dev;
--	pci_dev_get(dev);
- 
- 	dev->dev.dma_mask = &dev->dma_mask;
- 	dev->dev.dma_parms = &dev->dma_parms;
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 513972f..10693f5 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
- 	if (dev->is_added) {
- 		pci_proc_detach_device(dev);
- 		pci_remove_sysfs_dev_files(dev);
--		device_unregister(&dev->dev);
-+		device_del(&dev->dev);
- 		dev->is_added = 0;
- 	}
- 
-@@ -37,7 +37,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
- 	up_write(&pci_bus_sem);
- 
- 	pci_free_resources(dev);
--	pci_dev_put(dev);
-+	put_device(&dev->dev);
+ 	dmi_check_system(acpi_pci_slot_dmi_table);
+ 	acpi_pci_register_driver(&acpi_pci_slot_driver);
+-	return 0;
  }
+-
+-static void __exit
+-acpi_pci_slot_exit(void)
+-{
+-	acpi_pci_unregister_driver(&acpi_pci_slot_driver);
+-}
+-
+-module_init(acpi_pci_slot_init);
+-module_exit(acpi_pci_slot_exit);
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index f8a0d0f..cb964ac 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -1732,6 +1732,7 @@ int __init acpi_scan_init(void)
  
- void pci_remove_bus(struct pci_bus *bus)
+ 	acpi_power_init();
+ 	acpi_pci_root_init();
++	acpi_pci_slot_init();
+ 
+ 	/*
+ 	 * Enumerate devices in the ACPI namespace.
 -- 
 1.7.9.5
 
