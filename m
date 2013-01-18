@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab3ARTwc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 14:52:32 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:54025 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755805Ab3ARTwa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 14:52:30 -0500
-Subject: Re: [PATCH] platform: Fix platform device resource linking
-Mime-Version: 1.0 (Apple Message framework v1085)
+	id S1755879Ab3ARTwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 14:52:42 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:33181 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755647Ab3ARTwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 14:52:40 -0500
+Date: Fri, 18 Jan 2013 11:52:36 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] char/misc fixes for 3.8-rc4
+Message-ID: <20130118195236.GA18913@kroah.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20130118194717.GB18658@kroah.com>
-Date: Fri, 18 Jan 2013 21:52:20 +0200
-Cc: linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <76227CCE-90D9-425B-8187-E1B896E0664B@antoniou-consulting.com>
-References: <1357252270-5955-1-git-send-email-panto@antoniou-consulting.com> <20130103224020.GB4571@kroah.com> <CD23CDD8-5740-4649-8876-ADDFCFF30C35@antoniou-consulting.com> <20130117163159.GD1396@kroah.com> <95056678-DF1A-4C49-BEAE-C5EBD7E56405@antoniou-consulting.com> <20130117170719.GB9163@kroah.com> <87DCB3B7-0A5A-42F0-BF9C-0E91B56960C6@antoniou-consulting.com> <20130118030017.GA11423@kroah.com> <82FE4A4D-DCA8-4C2C-97E7-6B73D424DCF5@antoniou-consulting.com> <20130118194717.GB18658@kroah.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1085)
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+The following changes since commit e6028db0146cf5a68dbd1508225ea49840997880:
 
-On Jan 18, 2013, at 9:47 PM, Greg Kroah-Hartman wrote:
+  mei: fix mismatch in mutex unlock-lock in mei_amthif_read() (2013-01-07 10:28:03 -0800)
 
-> On Fri, Jan 18, 2013 at 11:05:14AM +0200, Pantelis Antoniou wrote:
->> It might make sense for the of_device_* functions that are duplicating 
->> platform_device_* functions to be removed, and their functionality to 
->> be subsumed by platform_device_*, possibly by calling some helper functions
->> in drivers/of/ when of_node is not NULL. The of_device_* functions can be 
->> replaced by a direct call to platform_device_* via a define (until all of
->> the callers get converted).
-> 
-> That sounds reasonable.
-> 
->> The problem with doing anything like this would be that a whole bunch of
->> devices/arches depend on DT, and if anything breaks there will be a lot of
->> angry people with pitchforks after the culprit.
-> 
-> That's nothing new, we are totally used to that happening :)
-> 
+are available in the git repository at:
 
-I'm fearful of the angry mob with torches and pitchforks after me, if something
-gets broken :)
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.8-rc4
 
->> So without the full force of a core maintainer behind such a move, people
->> are reluctant to do so.   
-> 
-> Send patches if you want to do this, no need for the maintainer to do it
-> (hint, I will not as I don't even have a system that this type of code
-> runs on.)
-> 
+for you to fetch changes up to 33080c1cda280b918349c676cb75bedb6db4a772:
 
-OK, maybe next week, when I think of this a little bit more.
+  Drivers: hv: balloon: Fix a memory leak (2013-01-17 11:58:00 -0800)
 
-> thanks,
-> 
-> greg k-h
+----------------------------------------------------------------
+Char/Misc driver fixes for 3.8-rc4
 
-Regards
+Here are two hyperv patches for 3.8-rc4 that fix some reported problems
+hv_balloon driver.
 
--- Pantelis
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+K. Y. Srinivasan (2):
+      Drivers: hv: balloon: Fix a bug in the definition of struct dm_info_msg
+      Drivers: hv: balloon: Fix a memory leak
+
+ drivers/hv/hv_balloon.c | 35 +++++++++++++++++++++--------------
+ 1 file changed, 21 insertions(+), 14 deletions(-)
