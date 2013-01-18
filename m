@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab3ARM2Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:28:25 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:58717 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755876Ab3ARM2V (ORCPT
+	id S1756207Ab3ARM2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:28:34 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:55823 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755727Ab3ARM2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:28:21 -0500
+	Fri, 18 Jan 2013 07:28:31 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH v2 18/76] ARC: Timers/counters/delay management
-Date: Fri, 18 Jan 2013 17:54:32 +0530
-Message-ID: <1358511930-7424-19-git-send-email-vgupta@synopsys.com>
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH v2 19/76] ARC: Signal handling
+Date: Fri, 18 Jan 2013 17:54:33 +0530
+Message-ID: <1358511930-7424-20-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -24,518 +24,545 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARC700 includes 2 in-core 32bit timers TIMER0 and TIMER1.
-Both have exactly same capabilies.
+Includes following fixes courtesy review by Al-Viro
 
-* programmable to count from TIMER<n>_CNT to TIMER<n>_LIMIT
-* for count 0 and LIMIT ~1, provides a free-running counter by
-    auto-wrapping when limit is reached.
-* optionally interrupt when LIMIT is reached (oneshot event semantics)
-* rearming the interrupt provides periodic semantics
-* run at CPU clk
+* Tracer poke to Callee-regs were lost
 
-ARC Linux uses TIMER0 for clockevent (periodic/oneshot) and TIMER1 for
-clocksource (free-running clock).
+  Before going off into do_signal( ) we save the user-mode callee regs
+  (as they are not saved by default as part of pt_regs). This is to make
+  sure that that a Tracer (if tracing related signal) is able to do likes
+  of PEEKUSR(callee-reg).
 
-Newer cores provide RTSC insn which gives a 64bit cpu clk snapshot hence
-is more apt for clocksource when available.
+  However in return path we were simply discarding the user-mode callee
+  regs, which would break a POKEUSR(callee-reg) from a tracer.
 
-SMP poses a bit of challenge for global timekeeping clocksource /
-sched_clock() backend:
- -TIMER1 based local clocks are out-of-sync hence can't be used
-  (thus we default to jiffies based cs as well as sched_clock() one/both
-  of which platform can override with it's specific hardware assist)
- -RTSC is only allowed in SMP if it's cross-core-sync (Kconfig glue
-  ensures that) and thus usable for both requirements.
+* Issue related to multiple syscall restarts are addressed in next patch
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
 ---
- arch/arc/include/asm/arcregs.h |   11 ++
- arch/arc/include/asm/clk.h     |   20 +++
- arch/arc/include/asm/delay.h   |   68 ++++++++++
- arch/arc/include/asm/irq.h     |    2 +
- arch/arc/include/asm/timex.h   |   18 +++
- arch/arc/kernel/clk.c          |   11 ++
- arch/arc/kernel/time.c         |  291 ++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 421 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/clk.h
- create mode 100644 arch/arc/include/asm/delay.h
- create mode 100644 arch/arc/include/asm/timex.h
- create mode 100644 arch/arc/kernel/clk.c
- create mode 100644 arch/arc/kernel/time.c
+ arch/arc/include/asm/entry.h      |   35 ++++
+ arch/arc/include/asm/sigcontext.h |   23 +++
+ arch/arc/include/asm/signal.h     |   27 +++
+ arch/arc/kernel/entry.S           |   11 +-
+ arch/arc/kernel/signal.c          |  369 +++++++++++++++++++++++++++++++++++++
+ 5 files changed, 462 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arc/include/asm/sigcontext.h
+ create mode 100644 arch/arc/include/asm/signal.h
+ create mode 100644 arch/arc/kernel/signal.c
 
-diff --git a/arch/arc/include/asm/arcregs.h b/arch/arc/include/asm/arcregs.h
-index d764118..5131bb3 100644
---- a/arch/arc/include/asm/arcregs.h
-+++ b/arch/arc/include/asm/arcregs.h
-@@ -47,6 +47,17 @@
- #define AUX_ITRIGGER		0x40d
- #define AUX_IPULSE		0x415
+diff --git a/arch/arc/include/asm/entry.h b/arch/arc/include/asm/entry.h
+index 63705b1..6b42bf5 100644
+--- a/arch/arc/include/asm/entry.h
++++ b/arch/arc/include/asm/entry.h
+@@ -166,6 +166,41 @@
+ .endm
  
-+/* Timer related Aux registers */
-+#define ARC_REG_TIMER0_LIMIT	0x23	/* timer 0 limit */
-+#define ARC_REG_TIMER0_CTRL	0x22	/* timer 0 control */
-+#define ARC_REG_TIMER0_CNT	0x21	/* timer 0 count */
-+#define ARC_REG_TIMER1_LIMIT	0x102	/* timer 1 limit */
-+#define ARC_REG_TIMER1_CTRL	0x101	/* timer 1 control */
-+#define ARC_REG_TIMER1_CNT	0x100	/* timer 1 count */
+ /*--------------------------------------------------------------
++ * RESTORE_CALLEE_SAVED_USER:
++ * This is called after do_signal where tracer might have changed callee regs
++ * thus we need to restore the reg file.
++ * Special case handling is required for r25 in case it is used by kernel
++ *  for caching task ptr. Ptrace would have modified on-kernel-stack value of
++ *  r25, which needs to be shoved back into task->thread.user_r25 where from
++ *  Low level exception/ISR return code will retrieve to populate with rest of
++ *  callee reg-file.
++ *-------------------------------------------------------------*/
++.macro RESTORE_CALLEE_SAVED_USER
 +
-+#define TIMER_CTRL_IE		(1 << 0) /* Interupt when Count reachs limit */
-+#define TIMER_CTRL_NH		(1 << 1) /* Count only when CPU NOT halted */
++	add     sp, sp, 4   /* skip "callee_regs->stack_place_holder" */
 +
- /*
-  * Floating Pt Registers
-  * Status regs are read-only (build-time) so need not be saved/restored
-diff --git a/arch/arc/include/asm/clk.h b/arch/arc/include/asm/clk.h
-new file mode 100644
-index 0000000..6195643
---- /dev/null
-+++ b/arch/arc/include/asm/clk.h
-@@ -0,0 +1,20 @@
-+/*
-+ * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _ASM_ARC_CLK_H
-+#define _ASM_ARC_CLK_H
-+
-+/* Although we can't really hide core_freq, the accessor is still better way */
-+extern unsigned long core_freq;
-+
-+static inline unsigned long arc_get_core_freq(void)
-+{
-+	return core_freq;
-+}
-+
-+#endif
-diff --git a/arch/arc/include/asm/delay.h b/arch/arc/include/asm/delay.h
-new file mode 100644
-index 0000000..442ce5d
---- /dev/null
-+++ b/arch/arc/include/asm/delay.h
-@@ -0,0 +1,68 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Delay routines using pre computed loops_per_jiffy value.
-+ *
-+ * vineetg: Feb 2012
-+ *  -Rewrote in "C" to avoid dealing with availability of H/w MPY
-+ *  -Also reduced the num of MPY operations from 3 to 2
-+ *
-+ * Amit Bhor: Codito Technologies 2004
-+ */
-+
-+#ifndef __ASM_ARC_UDELAY_H
-+#define __ASM_ARC_UDELAY_H
-+
-+#include <asm/param.h>		/* HZ */
-+
-+static inline void __delay(unsigned long loops)
-+{
-+	__asm__ __volatile__(
-+	"1:	sub.f %0, %0, 1	\n"
-+	"	jpnz 1b		\n"
-+	: "+r"(loops)
-+	:
-+	: "cc");
-+}
-+
-+extern void __bad_udelay(void);
-+
-+/*
-+ * Normal Math for computing loops in "N" usecs
-+ *  -we have precomputed @loops_per_jiffy
-+ *  -1 sec has HZ jiffies
-+ * loops per "N" usecs = ((loops_per_jiffy * HZ / 1000000) * N)
-+ *
-+ * Approximate Division by multiplication:
-+ *  -Mathematically if we multiply and divide a number by same value the
-+ *   result remains unchanged:  In this case, we use 2^32
-+ *  -> (loops_per_N_usec * 2^32 ) / 2^32
-+ *  -> (((loops_per_jiffy * HZ / 1000000) * N) * 2^32) / 2^32
-+ *  -> (loops_per_jiffy * HZ * N * 4295) / 2^32
-+ *
-+ *  -Divide by 2^32 is very simply right shift by 32
-+ *  -We simply need to ensure that the multiply per above eqn happens in
-+ *   64-bit precision (if CPU doesn't support it - gcc can emaulate it)
-+ */
-+
-+static inline void __udelay(unsigned long usecs)
-+{
-+	unsigned long loops;
-+
-+	/* (long long) cast ensures 64 bit MPY - real or emulated
-+	 * HZ * 4295 is pre-evaluated by gcc - hence only 2 mpy ops
-+	 */
-+	loops = ((long long)(usecs * 4295 * HZ) *
-+		 (long long)(loops_per_jiffy)) >> 32;
-+
-+	__delay(loops);
-+}
-+
-+#define udelay(n) (__builtin_constant_p(n) ? ((n) > 20000 ? __bad_udelay() \
-+				: __udelay(n)) : __udelay(n))
-+
-+#endif /* __ASM_ARC_UDELAY_H */
-diff --git a/arch/arc/include/asm/irq.h b/arch/arc/include/asm/irq.h
-index ca4aeba..514b302 100644
---- a/arch/arc/include/asm/irq.h
-+++ b/arch/arc/include/asm/irq.h
-@@ -19,4 +19,6 @@ extern void __init arc_init_IRQ(void);
- extern void __init plat_init_IRQ(void);
- extern int __init get_hw_config_num_irq(void);
- 
-+void __cpuinit arc_local_timer_setup(unsigned int cpu);
-+
- #endif
-diff --git a/arch/arc/include/asm/timex.h b/arch/arc/include/asm/timex.h
-new file mode 100644
-index 0000000..0a82960
---- /dev/null
-+++ b/arch/arc/include/asm/timex.h
-@@ -0,0 +1,18 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _ASM_ARC_TIMEX_H
-+#define _ASM_ARC_TIMEX_H
-+
-+#define CLOCK_TICK_RATE	80000000 /* slated to be removed */
-+
-+#include <asm-generic/timex.h>
-+
-+/* XXX: get_cycles() to be implemented with RTSC insn */
-+
-+#endif /* _ASM_ARC_TIMEX_H */
-diff --git a/arch/arc/kernel/clk.c b/arch/arc/kernel/clk.c
-new file mode 100644
-index 0000000..64925db
---- /dev/null
-+++ b/arch/arc/kernel/clk.c
-@@ -0,0 +1,11 @@
-+/*
-+ * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <asm/clk.h>
-+
-+unsigned long core_freq = CONFIG_ARC_PLAT_CLK;
-diff --git a/arch/arc/kernel/time.c b/arch/arc/kernel/time.c
-new file mode 100644
-index 0000000..c068f31
---- /dev/null
-+++ b/arch/arc/kernel/time.c
-@@ -0,0 +1,291 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * vineetg: Jan 1011
-+ *  -sched_clock( ) no longer jiffies based. Uses the same clocksource
-+ *   as gtod
-+ *
-+ * Rajeshwarr/Vineetg: Mar 2008
-+ *  -Implemented CONFIG_GENERIC_TIME (rather deleted arch specific code)
-+ *   for arch independent gettimeofday()
-+ *  -Implemented CONFIG_GENERIC_CLOCKEVENTS as base for hrtimers
-+ *
-+ * Vineetg: Mar 2008: Forked off from time.c which now is time-jiff.c
-+ */
-+
-+/* ARC700 has two 32bit independent prog Timers: TIMER0 and TIMER1
-+ * Each can programmed to go from @count to @limit and optionally
-+ * interrupt when that happens.
-+ * A write to Control Register clears the Interrupt
-+ *
-+ * We've designated TIMER0 for events (clockevents)
-+ * while TIMER1 for free running (clocksource)
-+ *
-+ * Newer ARC700 cores have 64bit clk fetching RTSC insn, preferred over TIMER1
-+ */
-+
-+#include <linux/spinlock.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/time.h>
-+#include <linux/init.h>
-+#include <linux/timex.h>
-+#include <linux/profile.h>
-+#include <linux/clocksource.h>
-+#include <linux/clockchips.h>
-+#include <asm/irq.h>
-+#include <asm/arcregs.h>
-+#include <asm/clk.h>
-+
-+#define ARC_TIMER_MAX	0xFFFFFFFF
-+
-+/********** Clock Source Device *********/
-+
-+#ifdef CONFIG_ARC_HAS_RTSC
-+
-+int __cpuinit arc_counter_setup(void)
-+{
-+	/* RTSC insn taps into cpu clk, needs no setup */
-+
-+	/* For SMP, only allowed if cross-core-sync, hence usable as cs */
-+	return 1;
-+}
-+
-+static cycle_t arc_counter_read(struct clocksource *cs)
-+{
-+	unsigned long flags;
-+	union {
-+		struct { u32 low, high; };
-+		cycle_t  full;
-+	} stamp;
-+
-+	flags = arch_local_irq_save();
-+
-+	__asm__ __volatile(
-+	"	.extCoreRegister tsch, 58,  r, cannot_shortcut	\n"
-+	"	rtsc %0, 0	\n"
-+	"	mov  %1, tsch	\n"	/* TSCH is extn core reg 58 */
-+	: "=r" (stamp.low), "=r" (stamp.high));
-+
-+	arch_local_irq_restore(flags);
-+
-+	return stamp.full;
-+}
-+
-+static struct clocksource arc_counter = {
-+	.name   = "ARC RTSC",
-+	.rating = 300,
-+	.read   = arc_counter_read,
-+	.mask   = CLOCKSOURCE_MASK(64),
-+	.flags  = CLOCK_SOURCE_IS_CONTINUOUS,
-+};
-+
-+#else /* !CONFIG_ARC_HAS_RTSC */
-+
-+static bool is_usable_as_clocksource(void)
-+{
-+#ifdef CONFIG_SMP
-+	return 0;
++#ifdef CONFIG_ARC_CURR_IN_REG
++	ld.ab   r12, [sp, 4]
++	st      r12, [r25, TASK_THREAD + THREAD_USER_R25]
 +#else
-+	return 1;
++	ld.ab   r25, [sp, 4]
 +#endif
-+}
++
++	ld.ab   r24, [sp, 4]
++	ld.ab   r23, [sp, 4]
++	ld.ab   r22, [sp, 4]
++	ld.ab   r21, [sp, 4]
++	ld.ab   r20, [sp, 4]
++	ld.ab   r19, [sp, 4]
++	ld.ab   r18, [sp, 4]
++	ld.ab   r17, [sp, 4]
++	ld.ab   r16, [sp, 4]
++	ld.ab   r15, [sp, 4]
++	ld.ab   r14, [sp, 4]
++	ld.ab   r13, [sp, 4]
++.endm
++
++/*--------------------------------------------------------------
+  * Super FAST Restore callee saved regs by simply re-adjusting SP
+  *-------------------------------------------------------------*/
+ .macro DISCARD_CALLEE_SAVED_USER
+diff --git a/arch/arc/include/asm/sigcontext.h b/arch/arc/include/asm/sigcontext.h
+new file mode 100644
+index 0000000..f21b541
+--- /dev/null
++++ b/arch/arc/include/asm/sigcontext.h
+@@ -0,0 +1,23 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _ASM_ARC_SIGCONTEXT_H
++#define _ASM_ARC_SIGCONTEXT_H
++
++#include <asm/ptrace.h>
 +
 +/*
-+ * set 32bit TIMER1 to keep counting monotonically and wraparound
++ * Signal context structure - contains all info to do with the state
++ * before the signal handler was invoked.  Note: only add new entries
++ * to the end of the structure.
 + */
-+int __cpuinit arc_counter_setup(void)
-+{
-+	write_aux_reg(ARC_REG_TIMER1_LIMIT, ARC_TIMER_MAX);
-+	write_aux_reg(ARC_REG_TIMER1_CNT, 0);
-+	write_aux_reg(ARC_REG_TIMER1_CTRL, TIMER_CTRL_NH);
-+
-+	return is_usable_as_clocksource();
-+}
-+
-+static cycle_t arc_counter_read(struct clocksource *cs)
-+{
-+	return (cycle_t) read_aux_reg(ARC_REG_TIMER1_CNT);
-+}
-+
-+static struct clocksource arc_counter = {
-+	.name   = "ARC Timer1",
-+	.rating = 300,
-+	.read   = arc_counter_read,
-+	.mask   = CLOCKSOURCE_MASK(32),
-+	.flags  = CLOCK_SOURCE_IS_CONTINUOUS,
++struct sigcontext {
++	struct pt_regs regs;
 +};
 +
-+#endif
-+
-+/********** Clock Event Device *********/
-+
++#endif /* _ASM_ARC_SIGCONTEXT_H */
+diff --git a/arch/arc/include/asm/signal.h b/arch/arc/include/asm/signal.h
+new file mode 100644
+index 0000000..fad62f7
+--- /dev/null
++++ b/arch/arc/include/asm/signal.h
+@@ -0,0 +1,27 @@
 +/*
-+ * Arm the timer to interrupt after @limit cycles
-+ * The distinction for oneshot/periodic is done in arc_event_timer_ack() below
-+ */
-+static void arc_timer_event_setup(unsigned int limit)
-+{
-+	write_aux_reg(ARC_REG_TIMER0_LIMIT, limit);
-+	write_aux_reg(ARC_REG_TIMER0_CNT, 0);	/* start from 0 */
-+
-+	write_aux_reg(ARC_REG_TIMER0_CTRL, TIMER_CTRL_IE | TIMER_CTRL_NH);
-+}
-+
-+/*
-+ * Acknowledge the interrupt (oneshot) and optionally re-arm it (periodic)
-+ * -Any write to CTRL Reg will ack the intr (NH bit: Count when not halted)
-+ * -Rearming is done by setting the IE bit
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
-+ * Small optimisation: Normal code would have been
-+ *   if (irq_reenable)
-+ *     CTRL_REG = (IE | NH);
-+ *   else
-+ *     CTRL_REG = NH;
-+ * However since IE is BIT0 we can fold the branch
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
 + */
-+static void arc_timer_event_ack(unsigned int irq_reenable)
++
++#ifndef _ASM_ARC_SIGNAL_H
++#define _ASM_ARC_SIGNAL_H
++
++/*
++ * This is much needed for ARC sigreturn optimization.
++ * This allows uClibc to piggback the addr of a sigreturn stub in sigaction,
++ * which allows sigreturn based re-entry into kernel after handling signal.
++ * W/o this kernel needs to "synthesize" the sigreturn trampoline on user
++ * mode stack which in turn forces the following:
++ * -TLB Flush (after making the stack page executable)
++ * -Cache line Flush (to make I/D Cache lines coherent)
++ */
++#define SA_RESTORER	0x04000000
++
++#include <asm-generic/signal.h>
++
++#endif /* _ASM_ARC_SIGNAL_H */
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
+index d378c8e..efaf3de 100644
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -474,7 +474,11 @@ resume_user_mode_begin:
+ 
+ 	bbit0  r9, TIF_SIGPENDING, .Lchk_notify_resume
+ 
+-	; save CALLEE Regs.
++	; Normal Trap/IRQ entry only saves Scratch (caller-saved) regs
++	; in pt_reg since the "C" ABI (kernel code) will automatically
++	; save/restore callee-saved regs.
++	;
++	; However, here we need to explicitly save callee regs because
+ 	; (i)  If this signal causes coredump - full regfile needed
+ 	; (ii) If signal is SIGTRAP/SIGSTOP, task is being traced thus
+ 	;      tracer might call PEEKUSR(CALLEE reg)
+@@ -488,8 +492,9 @@ resume_user_mode_begin:
+ 
+ 	bl  @do_signal
+ 
+-	; unwind SP for cheap discard of Callee saved Regs
+-	DISCARD_CALLEE_SAVED_USER
++	; Ideally we want to discard the Callee reg above, however if this was
++	; a tracing signal, tracer could have done a POKEUSR(CALLEE reg)
++	RESTORE_CALLEE_SAVED_USER
+ 
+ 	b      resume_user_mode_begin	; loop back to start of U mode ret
+ 
+diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
+new file mode 100644
+index 0000000..464af3f
+--- /dev/null
++++ b/arch/arc/kernel/signal.c
+@@ -0,0 +1,369 @@
++/*
++ * Signal Handling for ARC
++ *
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * vineetg: Jan 2010 (Restarting of timer related syscalls)
++ *
++ * vineetg: Nov 2009 (Everything needed for TIF_RESTORE_SIGMASK)
++ *  -do_signal() supports TIF_RESTORE_SIGMASK
++ *  -do_signal() no loner needs oldset, required by OLD sys_sigsuspend
++ *  -sys_rt_sigsuspend() now comes from generic code, so discard arch implemen
++ *  -sys_sigsuspend() no longer needs to fudge ptregs, hence that arg removed
++ *  -sys_sigsuspend() no longer loops for do_signal(), sets TIF_xxx and leaves
++ *   the job to do_signal()
++ *
++ * vineetg: July 2009
++ *  -Modified Code to support the uClibc provided userland sigreturn stub
++ *   to avoid kernel synthesing it on user stack at runtime, costing TLB
++ *   probes and Cache line flushes.
++ *
++ * vineetg: July 2009
++ *  -In stash_usr_regs( ) and restore_usr_regs( ), save/restore of user regs
++ *   in done in block copy rather than one word at a time.
++ *   This saves around 2K of code and improves LMBench lat_sig <catch>
++ *
++ * rajeshwarr: Feb 2009
++ *  - Support for Realtime Signals
++ *
++ * vineetg: Aug 11th 2008: Bug #94183
++ *  -ViXS were still seeing crashes when using insmod to load drivers.
++ *   It turned out that the code to change Execute permssions for TLB entries
++ *   of user was not guarded for interrupts (mod_tlb_permission)
++ *   This was cauing TLB entries to be overwritten on unrelated indexes
++ *
++ * Vineetg: July 15th 2008: Bug #94183
++ *  -Exception happens in Delay slot of a JMP, and before user space resumes,
++ *   Signal is delivered (Ctrl + C) = >SIGINT.
++ *   setup_frame( ) sets up PC,SP,BLINK to enable user space signal handler
++ *   to run, but doesn't clear the Delay slot bit from status32. As a result,
++ *   on resuming user mode, signal handler branches off to BTA of orig JMP
++ *  -FIX: clear the DE bit from status32 in setup_frame( )
++ *
++ * Rahul Trivedi, Kanika Nema: Codito Technologies 2004
++ */
++
++#include <linux/signal.h>
++#include <linux/ptrace.h>
++#include <linux/personality.h>
++#include <linux/uaccess.h>
++#include <linux/syscalls.h>
++#include <linux/tracehook.h>
++#include <asm/ucontext.h>
++
++#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
++
++asmlinkage int sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss)
 +{
-+	write_aux_reg(ARC_REG_TIMER0_CTRL, irq_reenable | TIMER_CTRL_NH);
++	struct pt_regs *regs = task_pt_regs(current);
++	return do_sigaltstack(uss, uoss, regs->sp);
 +}
 +
-+static int arc_clkevent_set_next_event(unsigned long delta,
-+				       struct clock_event_device *dev)
++struct rt_sigframe {
++	struct siginfo info;
++	struct ucontext uc;
++#define MAGIC_SIGALTSTK		0x07302004
++	unsigned int sigret_magic;
++};
++
++static int
++stash_usr_regs(struct rt_sigframe __user *sf, struct pt_regs *regs,
++	       sigset_t *set)
 +{
-+	arc_timer_event_setup(delta);
-+	return 0;
++	int err;
++	err = __copy_to_user(&(sf->uc.uc_mcontext.regs), regs, sizeof(*regs));
++	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(sigset_t));
++
++	return err;
 +}
 +
-+static void arc_clkevent_set_mode(enum clock_event_mode mode,
-+				  struct clock_event_device *dev)
++static int restore_usr_regs(struct pt_regs *regs, struct rt_sigframe __user *sf)
 +{
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		arc_timer_event_setup(arc_get_core_freq() / HZ);
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		break;
-+	default:
-+		break;
++	sigset_t set;
++	int err;
++
++	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
++	if (err == 0) {
++		sigdelsetmask(&set, ~_BLOCKABLE);
++		set_current_blocked(&set);
 +	}
 +
-+	return;
++	err |= __copy_from_user(regs, &(sf->uc.uc_mcontext.regs),
++				sizeof(*regs));
++
++	return err;
 +}
 +
-+static DEFINE_PER_CPU(struct clock_event_device, arc_clockevent_device) = {
-+	.name		= "ARC Timer0",
-+	.features	= CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_PERIODIC,
-+	.mode		= CLOCK_EVT_MODE_UNUSED,
-+	.rating		= 300,
-+	.irq		= TIMER0_IRQ,	/* hardwired, no need for resources */
-+	.set_next_event = arc_clkevent_set_next_event,
-+	.set_mode	= arc_clkevent_set_mode,
-+};
-+
-+static irqreturn_t timer_irq_handler(int irq, void *dev_id)
++static inline int is_do_ss_needed(unsigned int magic)
 +{
-+	struct clock_event_device *clk = &__get_cpu_var(arc_clockevent_device);
-+
-+	arc_timer_event_ack(clk->mode == CLOCK_EVT_MODE_PERIODIC);
-+	clk->event_handler(clk);
-+	return IRQ_HANDLED;
-+}
-+
-+static struct irqaction arc_timer_irq = {
-+	.name    = "Timer0 (clock-evt-dev)",
-+	.flags   = IRQF_TIMER | IRQF_PERCPU,
-+	.handler = timer_irq_handler,
-+};
-+
-+/*
-+ * Setup the local event timer for @cpu
-+ * N.B. weak so that some exotic ARC SoCs can completely override it
-+ */
-+void __attribute__((weak)) __cpuinit arc_local_timer_setup(unsigned int cpu)
-+{
-+	struct clock_event_device *clk = &per_cpu(arc_clockevent_device, cpu);
-+
-+	clockevents_calc_mult_shift(clk, arc_get_core_freq(), 5);
-+
-+	clk->max_delta_ns = clockevent_delta2ns(ARC_TIMER_MAX, clk);
-+	clk->cpumask = cpumask_of(cpu);
-+
-+	clockevents_register_device(clk);
-+
-+	/*
-+	 * setup the per-cpu timer IRQ handler - for all cpus
-+	 * For non boot CPU explicitly unmask at intc
-+	 * setup_irq() -> .. -> irq_startup() already does this on boot-cpu
-+	 */
-+	if (!cpu)
-+		setup_irq(TIMER0_IRQ, &arc_timer_irq);
++	if (MAGIC_SIGALTSTK == magic)
++		return 1;
 +	else
-+		arch_unmask_irq(TIMER0_IRQ);
++		return 0;
++}
++
++SYSCALL_DEFINE0(rt_sigreturn)
++{
++	struct rt_sigframe __user *sf;
++	unsigned int magic;
++	int err;
++	struct pt_regs *regs = task_pt_regs(current);
++
++	/* Always make any pending restarted system calls return -EINTR */
++	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++
++	/* Since we stacked the signal on a word boundary,
++	 * then 'sp' should be word aligned here.  If it's
++	 * not, then the user is trying to mess with us.
++	 */
++	if (regs->sp & 3)
++		goto badframe;
++
++	sf = (struct rt_sigframe __force __user *)(regs->sp);
++
++	if (!access_ok(VERIFY_READ, sf, sizeof(*sf)))
++		goto badframe;
++
++	err = restore_usr_regs(regs, sf);
++	err |= __get_user(magic, &sf->sigret_magic);
++	if (err)
++		goto badframe;
++
++	if (unlikely(is_do_ss_needed(magic)))
++		if (do_sigaltstack(&sf->uc.uc_stack, NULL, regs->sp) == -EFAULT)
++			goto badframe;
++
++	return regs->r0;
++
++badframe:
++	force_sig(SIGSEGV, current);
++	return 0;
 +}
 +
 +/*
-+ * Called from start_kernel() - boot CPU only
-+ *
-+ * -Sets up h/w timers as applicable on boot cpu
-+ * -Also sets up any global state needed for timer subsystem:
-+ *    - for "counting" timer, registers a clocksource, usable across CPUs
-+ *      (provided that underlying counter h/w is synchronized across cores)
-+ *    - for "event" timer, sets up TIMER0 IRQ (as that is platform agnostic)
++ * Determine which stack to use..
 + */
-+void __init time_init(void)
++static inline void __user *get_sigframe(struct k_sigaction *ka,
++					struct pt_regs *regs,
++					unsigned long framesize)
++{
++	unsigned long sp = regs->sp;
++	void __user *frame;
++
++	/* This is the X/Open sanctioned signal stack switching */
++	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
++		sp = current->sas_ss_sp + current->sas_ss_size;
++
++	/* No matter what happens, 'sp' must be word
++	 * aligned otherwise nasty things could happen
++	 */
++
++	/* ATPCS B01 mandates 8-byte alignment */
++	frame = (void __user *)((sp - framesize) & ~7);
++
++	/* Check that we can actually write to the signal frame */
++	if (!access_ok(VERIFY_WRITE, frame, framesize))
++		frame = NULL;
++
++	return frame;
++}
++
++/*
++ * translate the signal
++ */
++static inline int map_sig(int sig)
++{
++	struct thread_info *thread = current_thread_info();
++	if (thread->exec_domain && thread->exec_domain->signal_invmap
++	    && sig < 32)
++		sig = thread->exec_domain->signal_invmap[sig];
++	return sig;
++}
++
++static int
++setup_rt_frame(int signo, struct k_sigaction *ka, siginfo_t *info,
++	       sigset_t *set, struct pt_regs *regs)
++{
++	struct rt_sigframe __user *sf;
++	unsigned int magic = 0;
++	stack_t stk;
++	int err = 0;
++
++	sf = get_sigframe(ka, regs, sizeof(struct rt_sigframe));
++	if (!sf)
++		return 1;
++
++	/*
++	 * SA_SIGINFO requires 3 args to signal handler:
++	 *  #1: sig-no (common to any handler)
++	 *  #2: struct siginfo
++	 *  #3: struct ucontext (completely populated)
++	 */
++	if (unlikely(ka->sa.sa_flags & SA_SIGINFO)) {
++		err |= copy_siginfo_to_user(&sf->info, info);
++		err |= __put_user(0, &sf->uc.uc_flags);
++		err |= __put_user(NULL, &sf->uc.uc_link);
++		stk.ss_sp = (void __user *)current->sas_ss_sp;
++		stk.ss_flags = sas_ss_flags(regs->sp);
++		stk.ss_size = current->sas_ss_size;
++		err |= __copy_to_user(&sf->uc.uc_stack, &stk, sizeof(stk));
++
++		/* setup args 2 and 3 fo ruse rmode handler */
++		regs->r1 = (unsigned long)&sf->info;
++		regs->r2 = (unsigned long)&sf->uc;
++
++		/*
++		 * small optim to avoid unconditonally calling do_sigaltstack
++		 * in sigreturn path, now that we only have rt_sigreturn
++		 */
++		magic = MAGIC_SIGALTSTK;
++	}
++
++	/*
++	 * w/o SA_SIGINFO, struct ucontext is partially populated (only
++	 * uc_mcontext/uc_sigmask) for kernel's normal user state preservation
++	 * during signal handler execution. This works for SA_SIGINFO as well
++	 * although the semantics are now overloaded (the same reg state can be
++	 * inspected by userland: but are they allowed to fiddle with it ?
++	 */
++	err |= stash_usr_regs(sf, regs, set);
++	err |= __put_user(magic, &sf->sigret_magic);
++	if (err)
++		return err;
++
++	/* #1 arg to the user Signal handler */
++	regs->r0 = map_sig(signo);
++
++	/* setup PC of user space signal handler */
++	regs->ret = (unsigned long)ka->sa.sa_handler;
++
++	/*
++	 * handler returns using sigreturn stub provided already by userpsace
++	 */
++	BUG_ON(!(ka->sa.sa_flags & SA_RESTORER));
++	regs->blink = (unsigned long)ka->sa.sa_restorer;
++
++	/* User Stack for signal handler will be above the frame just carved */
++	regs->sp = (unsigned long)sf;
++
++	/*
++	 * Bug 94183, Clear the DE bit, so that when signal handler
++	 * starts to run, it doesn't use BTA
++	 */
++	regs->status32 &= ~STATUS_DE_MASK;
++	regs->status32 |= STATUS_L_MASK;
++
++	return err;
++}
++
++static void arc_restart_syscall(struct k_sigaction *ka, struct pt_regs *regs)
++{
++	switch (regs->r0) {
++	case -ERESTART_RESTARTBLOCK:
++	case -ERESTARTNOHAND:
++		/*
++		 * ERESTARTNOHAND means that the syscall should
++		 * only be restarted if there was no handler for
++		 * the signal, and since we only get here if there
++		 * is a handler, we don't restart
++		 */
++		regs->r0 = -EINTR;   /* ERESTART_xxx is internal */
++		break;
++
++	case -ERESTARTSYS:
++		/*
++		 * ERESTARTSYS means to restart the syscall if
++		 * there is no handler or the handler was
++		 * registered with SA_RESTART
++		 */
++		if (!(ka->sa.sa_flags & SA_RESTART)) {
++			regs->r0 = -EINTR;
++			break;
++		}
++		/* fallthrough */
++
++	case -ERESTARTNOINTR:
++		/*
++		 * ERESTARTNOINTR means that the syscall should
++		 * be called again after the signal handler returns.
++		 * Setup reg state just as it was before doing the trap
++		 * r0 has been clobbered with sys call ret code thus it
++		 * needs to be reloaded with orig first arg to syscall
++		 * in orig_r0. Rest of relevant reg-file:
++		 * r8 (syscall num) and (r1 - r7) will be reset to
++		 * their orig user space value when we ret from kernel
++		 */
++		regs->r0 = regs->orig_r0;
++		regs->ret -= 4;
++		break;
++	}
++}
++
++/*
++ * OK, we're invoking a handler
++ */
++static void
++handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
++	      struct pt_regs *regs)
++{
++	sigset_t *oldset = sigmask_to_save();
++	int ret;
++
++	/* Set up the stack frame */
++	ret = setup_rt_frame(sig, ka, info, oldset, regs);
++
++	if (ret)
++		force_sigsegv(sig, current);
++	else
++		signal_delivered(sig, info, ka, regs, 0);
++}
++
++void do_signal(struct pt_regs *regs)
++{
++	struct k_sigaction ka;
++	siginfo_t info;
++	int signr;
++	int restart_scall;
++
++	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
++
++	/* Are we from a system call? */
++	restart_scall = in_syscall(regs);
++
++	if (signr > 0) {
++		if (restart_scall)
++			arc_restart_syscall(&ka, regs);
++
++		handle_signal(signr, &ka, &info, regs);
++		return;
++	}
++
++	if (restart_scall) {
++		/* No handler for syscall: restart it */
++		if (regs->r0 == -ERESTARTNOHAND ||
++		    regs->r0 == -ERESTARTSYS || regs->r0 == -ERESTARTNOINTR) {
++			regs->r0 = regs->orig_r0;
++			regs->ret -= 4;
++		} else if (regs->r0 == -ERESTART_RESTARTBLOCK) {
++			regs->r8 = __NR_restart_syscall;
++			regs->ret -= 4;
++		}
++	}
++
++	/* If there's no signal to deliver, restore the saved sigmask back */
++	restore_saved_sigmask();
++}
++
++void do_notify_resume(struct pt_regs *regs)
 +{
 +	/*
-+	 * sets up the timekeeping free-flowing counter which also returns
-+	 * whether the counter is usable as clocksource
++	 * ASM glue gaurantees that this is only called when returning to
++	 * user mode
 +	 */
-+	if (arc_counter_setup())
-+		/*
-+		 * CLK upto 4.29 GHz can be safely represented in 32 bits
-+		 * because Max 32 bit number is 4,294,967,295
-+		 */
-+		clocksource_register_hz(&arc_counter, arc_get_core_freq());
-+
-+	/* sets up the periodic event timer */
-+	arc_local_timer_setup(smp_processor_id());
++	if (test_and_clear_thread_flag(TIF_NOTIFY_RESUME))
++		tracehook_notify_resume(regs);
 +}
-+
-+#ifdef CONFIG_ARC_HAS_RTSC
-+/*
-+ * sched_clock math assist
-+ * ns = cycles * (ns_per_sec / cpu_freq_hz)
-+ * ns = cycles * (10^6 / cpu_freq_khz)
-+ * ns = cycles * (10^6 * 2^SF / cpu_freq_khz) / 2^SF
-+ * ns = cycles * cyc2ns_scale >> SF
-+ */
-+#define CYC2NS_SF	10  /* 2^10, carefully chosen */
-+#define CYC2NS_SCALE	((1000000 << CYC2NS_SF) / (arc_get_core_freq() / 1000))
-+
-+static unsigned long long cycles2ns(unsigned long long cyc)
-+{
-+	return (cyc * CYC2NS_SCALE ) >> CYC2NS_SF;
-+}
-+
-+/*
-+ * Scheduler clock - a monotonically increasing clock in nanosec units.
-+ * It's return value must NOT wrap around.
-+ *
-+ * - Since 32bit TIMER1 will overflow almost immediately (53sec @ 80MHz), it
-+ *   can't be used directly.
-+ * - Using getrawmonotonic (TIMER1 based, but with state for last + current
-+ *   snapshots), is no-good either because of seqlock deadlock possibilities
-+ * - So only with native 64bit timer we do this, otherwise fallback to generic
-+ *   jiffies based version - which despite not being fine grained gaurantees
-+ *   the monotonically increasing semantics.
-+ */
-+unsigned long long sched_clock(void)
-+{
-+	return cycles2ns(arc_counter_read(NULL));
-+}
-+#endif
 -- 
 1.7.4.1
 
