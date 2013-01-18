@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab3ARUxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 15:53:47 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:25801 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab3ARUxp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 15:53:45 -0500
-Date: Fri, 18 Jan 2013 15:53:44 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: David Miller <davem@davemloft.net>
-Cc: steffen klassert <steffen.klassert@secunet.com>,
-        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Message-ID: <220318679.90938.1358542424387.JavaMail.root@elliptictech.com>
-In-Reply-To: <20130118.145005.156366015893075594.davem@davemloft.net>
-Subject: Re: IPsec AH use of ahash
+	id S1755308Ab3ARUyX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 15:54:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7492 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751335Ab3ARUyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 15:54:22 -0500
+Date: Fri, 18 Jan 2013 15:54:13 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        lisa.mitchell@hp.com, kumagai-atsushi@mxc.nes.nec.co.jp,
+        ebiederm@xmission.com, cpw@sgi.com, Rik Van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH v1 0/3] kdump, vmcore: Map vmcore memory in direct
+ mapping region
+Message-ID: <20130118205413.GB10969@redhat.com>
+References: <20130110115615.645.56499.stgit@localhost6.localdomain6>
+ <20130117221348.GJ2237@redhat.com>
+ <20130118.230659.282304499.d.hatayama@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.111]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC24 (Linux)/7.2.1_GA_2790)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130118.230659.282304499.d.hatayama@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "David Miller" <davem@davemloft.net>
-> To: tstdenis@elliptictech.com
-> Cc: "steffen klassert" <steffen.klassert@secunet.com>, herbert@gondor.apana.org.au, linux-kernel@vger.kernel.org,
-> netdev@vger.kernel.org
-> Sent: Friday, 18 January, 2013 2:50:05 PM
-> Subject: Re: IPsec AH use of ahash
+On Fri, Jan 18, 2013 at 11:06:59PM +0900, HATAYAMA Daisuke wrote:
+
+[..]
+> > These are impressive improvements. I missed the discussion on mmap().
+> > So why couldn't we provide mmap() interface for /proc/vmcore. If that
+> > works then application can select to mmap/unmap bigger chunks of file
+> > (instead ioremap mapping/remapping a page at a time). 
+> > 
+> > And if application controls the size of mapping, then it can vary the
+> > size of mapping based on available amount of free memory. That way if
+> > somebody reserves less amount of memory, we could still dump but with
+> > some time penalty.
+> > 
 > 
-> From: Tom St Denis <tstdenis@elliptictech.com>
-> Date: Fri, 18 Jan 2013 14:35:33 -0500 (EST)
-> 
-> > Any "maintainers" going to reply to this at all?
-> 
-> What do you mean?  There was a reply, and the reply if someone
-> so skilled finds this facility useful they can feel free to
-> submit an implementation.
-> 
-> You can't force people to work on something they have no interest
-> in, especially when it's effectively a new feature.
-> 
+> mmap() needs user-space page table in addition to kernel-space's,
 
-Admittedly I'm new to the kernel scene but what exactly is a "maintainer" then?
+[ CC Rik van Riel] 
 
-Suppose I invest time to re-write the IPv4/v6 AH code to correctly use AEAD instead of ahash, to then perform the testing required, etc... do I get credit as a maintainer in the IPsec tree?
+I was chatting with Rik and it does not look like that there is any
+fundamental requirement that range of pfn being mapped in user tables
+has to be mapped in kernel tables too. Did you run into specific issue.
 
-I'm also a little annoyed that my CMAC patch was rejected for among other reasons that it violated "coding standards."  Specially since it was almost entirely copied from crypto/xcbc.c which also violates the same rules.  As a newcomer to the tree I tried my best by emulating readily available code (which apparently was already accepted into the tree) to then just get shot down for attempting to contribute.  If my CMAC code is not good enough for the tree I humbly suggest you also remove the XCBC code too while we're at it.
+> and
+> it looks that remap_pfn_range() that creates the user-space page
+> table, doesn't support large pages, only 4KB pages.
 
-What I would expect from the "maintainers" is that they actually take on a more than trivial involvement in the progress of the code.  If I have to create original content and massage it into whatever form pleases the owners of the tree am I not the maintainer of the code?  I was honestly expecting someone with more involvement in the tree to move the [in this case] CMAC patch forward.  
+This indeed looks like the case. May be we can enahnce remap_pfn_range()
+to take an argument and create larger size mappings.
 
-As for the AH side if it's the implied intent of the maintainers to not support all relevant [and ideally low hanging fruit] standards as possible this should be stated explicitly.
+> If mmaping small
+> chunks only for small memory programming, then we would again face the
+> same issue as with ioremap.
 
-Tom
+Even if it is 4KB pages, I think it will still be faster than current
+interface. Because we will not be issuing these many tlb flushes.
+(Assuming makedumpfile has been modified to map/unap large areas of
+/proc/vmcore).
+
+Thanks
+Vivek
