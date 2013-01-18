@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab3ARXmb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 18:42:31 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:52653 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755330Ab3ARXma (ORCPT
+	id S1755598Ab3ARXoE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 18:44:04 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:38557 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754018Ab3ARXoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 18:42:30 -0500
-Date: Fri, 18 Jan 2013 15:42:26 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
+	Fri, 18 Jan 2013 18:44:02 -0500
+X-Sasl-enc: bY5Pz6QHvx3blm9nY6EpnTji1I2FaJ4Adx0IhQDzGdwH 1358552641
+Date: Fri, 18 Jan 2013 15:43:59 -0800
+From: Greg KH <greg@kroah.com>
 To: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, zihan@huawei.com,
         Lin.Lei@huawei.com, neil.yi@huawei.com, wangyuhua@huawei.com,
@@ -16,11 +17,12 @@ Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, zihan@huawei.com,
         sebastian@breakpoint.cc
 Subject: Re: USB: storage: optimize the matching rules and support new switch
  command for Huawei USB storage devices
-Message-ID: <20130118234226.GA30704@kroah.com>
+Message-ID: <20130118234359.GA2160@kroah.com>
 References: <fe8c85797e7f.7e7ffe8c8579@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 In-Reply-To: <fe8c85797e7f.7e7ffe8c8579@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -38,14 +40,20 @@ On Mon, Jan 14, 2013 at 10:55:48AM +0800, fangxiaozhi 00110321 wrote:
 > 
 > Signed-off-by: fangxiaozhi <huananhu@huawei.com>
 
-Next time, please always use the scripts/checkpatch.pl tool to find any
-problems you might have made in your patch (you had trailing whitespace
-in this one, which I have fixed.)
+This patch breaks the build, did you test it out?
 
-Also, you might want to use git, it makes creating the patches easier,
-that way you don't end up with lines in the patch like this one:
+I get the following errors:
 
-> Binary files linux-3.8-rc3_orig/drivers/usb/storage/initializers.o and linux-3.8-rc3/drivers/usb/storage/initializers.o differ
+drivers/usb/storage/unusual_devs.h:1530:1: error: implicit declaration of function ‘UNUSUAL_VENDOR_INTF’ [-Werror=implicit-function-declaration]
+drivers/usb/storage/unusual_devs.h:1534:3: warning: missing braces around initializer [-Wmissing-braces]
+drivers/usb/storage/unusual_devs.h:1534:3: warning: (near initialization for ‘us_unusual_dev_list[186]’) [-Wmissing-braces]
+drivers/usb/storage/unusual_devs.h:1534:3: error: initializer element is not constant
+drivers/usb/storage/unusual_devs.h:1534:3: error: (near initialization for ‘us_unusual_dev_list[186].vendorName’)
+drivers/usb/storage/unusual_devs.h:1537:1: warning: braces around scalar initializer [enabled by default]
+
+And it goes on and on...
+
+Care to fix this up and resend it?
 
 thanks,
 
