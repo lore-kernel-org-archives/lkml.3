@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab3ARUyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 15:54:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7492 "EHLO mx1.redhat.com"
+	id S1755444Ab3ARUyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 15:54:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23261 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab3ARUyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 15:54:22 -0500
-Date: Fri, 18 Jan 2013 15:54:13 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        lisa.mitchell@hp.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        ebiederm@xmission.com, cpw@sgi.com, Rik Van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH v1 0/3] kdump, vmcore: Map vmcore memory in direct
- mapping region
-Message-ID: <20130118205413.GB10969@redhat.com>
-References: <20130110115615.645.56499.stgit@localhost6.localdomain6>
- <20130117221348.GJ2237@redhat.com>
- <20130118.230659.282304499.d.hatayama@jp.fujitsu.com>
+	id S1752459Ab3ARUyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 15:54:53 -0500
+Date: Fri, 18 Jan 2013 15:53:58 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476  (tty is NULL)
+Message-ID: <20130118205358.GA6854@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <20130102153744.GC25940@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130118.230659.282304499.d.hatayama@jp.fujitsu.com>
+In-Reply-To: <20130102153744.GC25940@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 11:06:59PM +0900, HATAYAMA Daisuke wrote:
+On Wed, Jan 02, 2013 at 10:37:44AM -0500, Dave Jones wrote:
+ > This happened a few times to my test boxes I left running over the holidays..
+ > 
+ > [ 8419.797533] ------------[ cut here ]------------
+ > [ 8419.798341] WARNING: at drivers/tty/tty_buffer.c:476 flush_to_ldisc+0x1de/0x1f0()
+ > [ 8419.800313] Hardware name: GA-MA78GM-S2H
+ > [ 8419.800887] tty is NULL
+ > [ 8419.801857] Modules linked in: fuse binfmt_misc bnep rfcomm hidp scsi_transport_iscsi can_raw can_bcm ipt_ULOG nfnetlink l2tp_ppp l2tp_core can caif_socket rose nfc caif ipx phonet irda p8023 p8022 netrom rds ax25 atm af_rxrpc crc_ccitt appletalk psnap llc2 af_key decnet llc pppoe pppox ppp_generic x25 slhc lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables btusb bluetooth snd_hda_codec_realtek usb_debug rfkill snd_hda_intel snd_hda_codec microcode snd_pcm serio_raw snd_page_alloc pcspkr edac_core snd_timer snd soundcore r8169 mii vhost_net tun macvtap macvlan kvm_amd kvm
+ > [ 8419.811268] Pid: 4980, comm: kworker/0:1 Not tainted 3.8.0-rc1+ #43
+ > [ 8419.812159] Call Trace:
+ > [ 8419.812586]  [<ffffffff81044aef>] warn_slowpath_common+0x7f/0xc0
+ > [ 8419.813504]  [<ffffffff81044be6>] warn_slowpath_fmt+0x46/0x50
+ > [ 8419.814353]  [<ffffffff8132b59a>] ? ___ratelimit+0x9a/0x120
+ > [ 8419.815146]  [<ffffffff813e5a8e>] flush_to_ldisc+0x1de/0x1f0
+ > [ 8419.815982]  [<ffffffff81068a77>] process_one_work+0x207/0x750
+ > [ 8419.816844]  [<ffffffff81068a07>] ? process_one_work+0x197/0x750
+ > [ 8419.817731]  [<ffffffff810b2342>] ? get_lock_stats+0x22/0x70
+ > [ 8419.818605]  [<ffffffff813e58b0>] ? tty_insert_flip_string_fixed_flag+0x110/0x110
+ > [ 8419.819725]  [<ffffffff81069396>] worker_thread+0x156/0x440
+ > [ 8419.820575]  [<ffffffff81069240>] ? rescuer_thread+0x240/0x240
+ > [ 8419.821463]  [<ffffffff8106fd8d>] kthread+0xed/0x100
+ > [ 8419.822174]  [<ffffffff810b27ae>] ? put_lock_stats.isra.23+0xe/0x40
+ > [ 8419.823125]  [<ffffffff8106fca0>] ? kthread_create_on_node+0x160/0x160
+ > [ 8419.824114]  [<ffffffff816a49dc>] ret_from_fork+0x7c/0xb0
+ > [ 8419.824943]  [<ffffffff8106fca0>] ? kthread_create_on_node+0x160/0x160
+ > [ 8419.845167] ---[ end trace 0c3565bace6c005f ]---
 
-[..]
-> > These are impressive improvements. I missed the discussion on mmap().
-> > So why couldn't we provide mmap() interface for /proc/vmcore. If that
-> > works then application can select to mmap/unmap bigger chunks of file
-> > (instead ioremap mapping/remapping a page at a time). 
-> > 
-> > And if application controls the size of mapping, then it can vary the
-> > size of mapping based on available amount of free memory. That way if
-> > somebody reserves less amount of memory, we could still dump but with
-> > some time penalty.
-> > 
-> 
-> mmap() needs user-space page table in addition to kernel-space's,
 
-[ CC Rik van Riel] 
+Still seeing this in rc4
 
-I was chatting with Rik and it does not look like that there is any
-fundamental requirement that range of pfn being mapped in user tables
-has to be mapped in kernel tables too. Did you run into specific issue.
+	Dave
 
-> and
-> it looks that remap_pfn_range() that creates the user-space page
-> table, doesn't support large pages, only 4KB pages.
 
-This indeed looks like the case. May be we can enahnce remap_pfn_range()
-to take an argument and create larger size mappings.
-
-> If mmaping small
-> chunks only for small memory programming, then we would again face the
-> same issue as with ioremap.
-
-Even if it is 4KB pages, I think it will still be faster than current
-interface. Because we will not be issuing these many tlb flushes.
-(Assuming makedumpfile has been modified to map/unap large areas of
-/proc/vmcore).
-
-Thanks
-Vivek
