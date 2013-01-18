@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab3ARM0u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:26:50 -0500
-Received: from kiruna.synopsys.com ([198.182.44.80]:61696 "EHLO
+	id S1756048Ab3ARM05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:26:57 -0500
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:61701 "EHLO
 	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754885Ab3ARM0s (ORCPT
+	with ESMTP id S1755209Ab3ARM0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:26:48 -0500
+	Fri, 18 Jan 2013 07:26:55 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 07/76] ARC: [optim] uaccess __{get,put}_user() optimised
-Date: Fri, 18 Jan 2013 17:54:21 +0530
-Message-ID: <1358511930-7424-8-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 08/76] asm-generic headers: Allow yet more arch overrides in checksum.h
+Date: Fri, 18 Jan 2013 17:54:22 +0530
+Message-ID: <1358511930-7424-9-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -23,146 +23,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Override asm-generic implementations. We basically gain on 2 fronts
+arches can have more efficient implementation of these routines
 
-* checks for alignment no longer needed as we are only doing "unit"
-  sized copies.
-
-  (Careful observer could argue that While the kernel buffers are aligned,
-   the user buffer in theory might not be - however in that case the
-   user space is already broken when it tries to deref a hword/word
-   straddling word boundary - so we are not making it any worse).
-
-* __copy_{to,from}_user( ) returns bytes that couldn't be copied,
-  whereas get_user() returns 0 for success or -EFAULT (not size). Thus
-  the code to do leftover bytes calculation can be avoided as well.
-
-The savings were significant: ~17k of code.
-
-bloat-o-meter vmlinux_uaccess_pre vmlinux_uaccess_post
-add/remove: 0/4 grow/shrink: 8/118 up/down: 1262/-18758 (-17496)
-							^^^^^^^^^
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/include/asm/uaccess.h |  105 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 105 insertions(+), 0 deletions(-)
+ include/asm-generic/checksum.h |    4 ++++
+ lib/checksum.c                 |    2 ++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arc/include/asm/uaccess.h b/arch/arc/include/asm/uaccess.h
-index f13bca4..3242082 100644
---- a/arch/arc/include/asm/uaccess.h
-+++ b/arch/arc/include/asm/uaccess.h
-@@ -57,6 +57,111 @@
- #define __access_ok(addr, sz)	(unlikely(__kernel_ok) || \
- 				 likely(__user_ok((addr), (sz))))
+diff --git a/include/asm-generic/checksum.h b/include/asm-generic/checksum.h
+index c084767..59811df 100644
+--- a/include/asm-generic/checksum.h
++++ b/include/asm-generic/checksum.h
+@@ -38,12 +38,15 @@ extern __wsum csum_partial_copy_from_user(const void __user *src, void *dst,
+ 	csum_partial_copy((src), (dst), (len), (sum))
+ #endif
  
-+/*********** Single byte/hword/word copies ******************/
-+
-+#define __get_user_fn(sz, u, k)					\
-+({								\
-+	long __ret = 0;	/* success by default */	\
-+	switch (sz) {						\
-+	case 1: __arc_get_user_one(*(k), u, "ldb", __ret); break;	\
-+	case 2: __arc_get_user_one(*(k), u, "ldw", __ret); break;	\
-+	case 4: __arc_get_user_one(*(k), u, "ld", __ret);  break;	\
-+	case 8: __arc_get_user_one_64(*(k), u, __ret);     break;	\
-+	}							\
-+	__ret;							\
-+})
-+
-+/*
-+ * Returns 0 on success, -EFAULT if not.
-+ * @ret already contains 0 - given that errors will be less likely
-+ * (hence +r asm constraint below).
-+ * In case of error, fixup code will make it -EFAULT
-+ */
-+#define __arc_get_user_one(dst, src, op, ret)	\
-+	__asm__ __volatile__(                   \
-+	"1:	"op"    %1,[%2]\n"		\
-+	"2:	;nop\n"				\
-+	"	.section .fixup, \"ax\"\n"	\
-+	"	.align 4\n"			\
-+	"3:	mov %0, %3\n"			\
-+	"	j   2b\n"			\
-+	"	.previous\n"			\
-+	"	.section __ex_table, \"a\"\n"	\
-+	"	.align 4\n"			\
-+	"	.word 1b,3b\n"			\
-+	"	.previous\n"			\
-+						\
-+	: "+r" (ret), "=r" (dst)		\
-+	: "r" (src), "ir" (-EFAULT))
-+
-+#define __arc_get_user_one_64(dst, src, ret)	\
-+	__asm__ __volatile__(                   \
-+	"1:	ld   %1,[%2]\n"			\
-+	"4:	ld  %R1,[%2, 4]\n"		\
-+	"2:	;nop\n"				\
-+	"	.section .fixup, \"ax\"\n"	\
-+	"	.align 4\n"			\
-+	"3:	mov %0, %3\n"			\
-+	"	j   2b\n"			\
-+	"	.previous\n"			\
-+	"	.section __ex_table, \"a\"\n"	\
-+	"	.align 4\n"			\
-+	"	.word 1b,3b\n"			\
-+	"	.word 4b,3b\n"			\
-+	"	.previous\n"			\
-+						\
-+	: "+r" (ret), "=r" (dst)		\
-+	: "r" (src), "ir" (-EFAULT))
-+
-+#define __put_user_fn(sz, u, k)					\
-+({								\
-+	long __ret = 0;	/* success by default */	\
-+	switch (sz) {						\
-+	case 1: __arc_put_user_one(*(k), u, "stb", __ret); break;	\
-+	case 2: __arc_put_user_one(*(k), u, "stw", __ret); break;	\
-+	case 4: __arc_put_user_one(*(k), u, "st", __ret);  break;	\
-+	case 8: __arc_put_user_one_64(*(k), u, __ret);     break;	\
-+	}							\
-+	__ret;							\
-+})
-+
-+#define __arc_put_user_one(src, dst, op, ret)	\
-+	__asm__ __volatile__(                   \
-+	"1:	"op"    %1,[%2]\n"		\
-+	"2:	;nop\n"				\
-+	"	.section .fixup, \"ax\"\n"	\
-+	"	.align 4\n"			\
-+	"3:	mov %0, %3\n"			\
-+	"	j   2b\n"			\
-+	"	.previous\n"			\
-+	"	.section __ex_table, \"a\"\n"	\
-+	"	.align 4\n"			\
-+	"	.word 1b,3b\n"			\
-+	"	.previous\n"			\
-+						\
-+	: "+r" (ret)				\
-+	: "r" (src), "r" (dst), "ir" (-EFAULT))
-+
-+#define __arc_put_user_one_64(src, dst, ret)	\
-+	__asm__ __volatile__(                   \
-+	"1:	st   %1,[%2]\n"			\
-+	"4:	st  %R1,[%2, 4]\n"		\
-+	"2:	;nop\n"				\
-+	"	.section .fixup, \"ax\"\n"	\
-+	"	.align 4\n"			\
-+	"3:	mov %0, %3\n"			\
-+	"	j   2b\n"			\
-+	"	.previous\n"			\
-+	"	.section __ex_table, \"a\"\n"	\
-+	"	.align 4\n"			\
-+	"	.word 1b,3b\n"			\
-+	"	.word 4b,3b\n"			\
-+	"	.previous\n"			\
-+						\
-+	: "+r" (ret)				\
-+	: "r" (src), "r" (dst), "ir" (-EFAULT))
-+
-+
- static inline unsigned long
- __arc_copy_from_user(void *to, const void __user *from, unsigned long n)
- {
++#ifndef ip_fast_csum
+ /*
+  * This is a version of ip_compute_csum() optimized for IP headers,
+  * which always checksum on 4 octet boundaries.
+  */
+ extern __sum16 ip_fast_csum(const void *iph, unsigned int ihl);
++#endif
+ 
++#ifndef csum_fold
+ /*
+  * Fold a partial checksum
+  */
+@@ -54,6 +57,7 @@ static inline __sum16 csum_fold(__wsum csum)
+ 	sum = (sum & 0xffff) + (sum >> 16);
+ 	return (__force __sum16)~sum;
+ }
++#endif
+ 
+ #ifndef csum_tcpudp_nofold
+ /*
+diff --git a/lib/checksum.c b/lib/checksum.c
+index 12dceb2..129775e 100644
+--- a/lib/checksum.c
++++ b/lib/checksum.c
+@@ -102,6 +102,7 @@ out:
+ }
+ #endif
+ 
++#ifndef ip_fast_csum
+ /*
+  *	This is a version of ip_compute_csum() optimized for IP headers,
+  *	which always checksum on 4 octet boundaries.
+@@ -111,6 +112,7 @@ __sum16 ip_fast_csum(const void *iph, unsigned int ihl)
+ 	return (__force __sum16)~do_csum(iph, ihl*4);
+ }
+ EXPORT_SYMBOL(ip_fast_csum);
++#endif
+ 
+ /*
+  * computes the checksum of a memory block at buff, length len,
 -- 
 1.7.4.1
 
