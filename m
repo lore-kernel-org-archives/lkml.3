@@ -1,173 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab3ARBY0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 20:24:26 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:39047 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3ARBYY (ORCPT
+	id S1753957Ab3ARBY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 20:24:58 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:39883 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab3ARBY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 20:24:24 -0500
-Date: Thu, 17 Jan 2013 17:24:17 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 1/3] workqueue: set PF_WQ_WORKER on rescuers
-Message-ID: <20130118012417.GG16568@mtj.dyndns.org>
-References: <CA+55aFxLJ=Yfms9SkPJLjQ-ZASPNZC0JUBsb3OwonJvTCcBzxA@mail.gmail.com>
- <20130116025251.GM2668@htj.dyndns.org>
- <CA+55aFxttTkWG0gfUz3=V8A-9az3+qY3j0JZEAoKv0ne-QupZw@mail.gmail.com>
- <20130116032502.GN2668@htj.dyndns.org>
- <CA+55aFxCudzOv8e2XjHiT=Qhy9q+mrxUfSYAT=eU6Gq8uyNORw@mail.gmail.com>
- <20130116164832.GP2668@htj.dyndns.org>
- <50F6DD4D.3070808@linux.intel.com>
- <CA+55aFyjrXzKMqmOuMo9z24OZj3kD4O4M4y_O-h=r6udCz2MyA@mail.gmail.com>
- <20130116213032.GS2668@htj.dyndns.org>
- <CA+55aFzdf44QOZn4KS6tT09COFsmCg80sTah1XpeoErJxAzbRQ@mail.gmail.com>
+	Thu, 17 Jan 2013 20:24:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzdf44QOZn4KS6tT09COFsmCg80sTah1XpeoErJxAzbRQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130104151950.GB21860@redhat.com>
+References: <CACV3sb+69VQMM44vXx_-AdOZmbz18zZeVdmi1+YHEq7kZ_VmdA@mail.gmail.com>
+	<y0mliceujz4.fsf@fche.csb>
+	<CACV3sbKk3euv8N4SbBegJ=iYuUxfdynZ_1GNtfkwGzwGDcqATw@mail.gmail.com>
+	<20130104151950.GB21860@redhat.com>
+Date: Fri, 18 Jan 2013 09:24:55 +0800
+Message-ID: <CACV3sbKYPUSOsccptgyJtaEp4Oxx6yX0XgVEEa+BfTPLpD28qA@mail.gmail.com>
+Subject: Re: [RFC] ktap: Another dynamic tracing tool for Linux
+From: Jovi Zhang <bookjovi@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, jovi.zhangwei@huawei.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PF_WQ_WORKER is used to tell scheduler that the task is a workqueue
-worker and needs wq_worker_sleeping/waking_up() invoked on it for
-concurrency management.  As rescuers never participate in concurrency
-management, PF_WQ_WORKER wasn't set on them.
+On Fri, Jan 4, 2013 at 11:19 PM, Frank Ch. Eigler <fche@redhat.com> wrote:
+> Hi -
+>
+> bookjovi wrote:
+>
+>> >> [...]
+>> >> ktap use lua language syntax and bytecode as initial implementation,
+>> >
+>> > Interesting approach.  I recall we considered it way back when, but
+>> > rejected it for a couple of reasons, including the at-the-time
+>> > perceived unwelcomeness of a serious bytecode interpreter within the
+>> > kernel.
+>
+>> [...]  Obviously, the bytecode design is the biggest differences
+>> with systemtap.  [...]  many Linux box doesn't deliver with gcc,
+>> this is very common in embedded device, even there installed gcc,
+>> but it's hard(impossible) to get matched kernel source.  [...]
+>
+> Right, that is a strong attraction.
+>
+>
+>> [...]  On clear that, ktap is not a replacement to systemtap, it's
+>> supplementation.
+>
+> FWIW, it would be reasonable to have systemtap emit bytecodes as an
+> alternative backend.  All that has been lacking is a powerful and
+> pervasive enough interpreter.  The script language is not tied to its
+> implementation via C code generation.
+>
+>
+> That reminds me of your item #4 on your ktap-systemtap comparison:
+>
+>> 4). ktap is safe, whatever you doing in script file, you will never
+>> crash your kernel.
+>
+> This is roughly as true for systemtap as for anything else.  The
+> scripts are constrainted to be safe.  Kernel crashes that occur are
+> due to occasional bugs in the systemtap runtime library, or down in
+> the kernel facilities being used.  You would likely encounter both
+> classes of problems in a kernel-side bytecode interpreter, regardless
+> of the theoretical safety of the scripting language.  (This is one of
+> the reasons we've been building out the pure-userspace dyninst-based
+> systemtap backend.)
+>
+>
+>> I will try to make ktap develop progress more faster, and make ktap
+>> source code public available soon.
+>
+> Yes, please.  (RFC/experimental code need not be complete before
+> posting; why not develop straight on github?)
+>
+>
+> - FChE
 
-There's a need for an interface which can query whether %current is
-executing a work item and if so which.  Such interface requires a way
-to identify all tasks which may execute work items and PF_WQ_WORKER
-will be used for that.  As all normal workers always have PF_WQ_WORKER
-set, we only need to add it to rescuers.
+Let us continue this ktap topic in this thread :).
 
-As rescuers start with WORKER_PREP but never clear it, it's always
-NOT_RUNNING and there's no need to worry about it interfering with
-concurrency management even if PF_WQ_WORKER is set; however, unlike
-normal workers, rescuers currently don't have its worker struct as
-kthread_data().  It uses the associated workqueue_struct instead.
-This is problematic as wq_worker_sleeping/waking_up() expect struct
-worker at kthread_data().
+ktap code is public available at github, please clone from:
 
-This patch adds worker->rescue_wq and start rescuer kthreads with
-worker struct as kthread_data and sets PF_WQ_WORKER on rescuers.
+https://github.com/ktap/ktap.git
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
----
-These three patches implement the warning on synchronous
-request_module() from async.  The first two will go through wq/for-3.9
-and the last one through wq/for-3.9-async-deadlock-fixes together with
-the block layer updates.
+Brief introduction for initial building ktap:
+-----------------------------------------------------------------------------------------------
+ktap is a new dynamic tracing tool for Linux, it is a script environment
+running in Linux kernel(similar with systemtap and Dtrace).
 
-Thanks.
+ktap is GPL licensed, the compiler and virtual machine is borrowed
+from lua language as initial implementation.
 
- kernel/workqueue.c | 35 ++++++++++++++++++++++++++++-------
- 1 file changed, 28 insertions(+), 7 deletions(-)
+compiler and loader is included in userspace tool ktap
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 7967f34..6b99ac7 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -149,6 +149,9 @@ struct worker {
- 
- 	/* for rebinding worker to CPU */
- 	struct work_struct	rebind_work;	/* L: for busy worker */
-+
-+	/* used only by rescuers to point to the target workqueue */
-+	struct workqueue_struct	*rescue_wq;	/* I: the workqueue to rescue */
- };
- 
- struct worker_pool {
-@@ -763,12 +766,20 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task,
- 				       unsigned int cpu)
- {
- 	struct worker *worker = kthread_data(task), *to_wakeup = NULL;
--	struct worker_pool *pool = worker->pool;
--	atomic_t *nr_running = get_pool_nr_running(pool);
-+	struct worker_pool *pool;
-+	atomic_t *nr_running;
- 
-+	/*
-+	 * Rescuers, which may not have all the fields set up like normal
-+	 * workers, also reach here, let's not access anything before
-+	 * checking NOT_RUNNING.
-+	 */
- 	if (worker->flags & WORKER_NOT_RUNNING)
- 		return NULL;
- 
-+	pool = worker->pool;
-+	nr_running = get_pool_nr_running(pool);
-+
- 	/* this can only happen on the local cpu */
- 	BUG_ON(cpu != raw_smp_processor_id());
- 
-@@ -2357,7 +2368,7 @@ sleep:
- 
- /**
-  * rescuer_thread - the rescuer thread function
-- * @__wq: the associated workqueue
-+ * @__rescuer: self
-  *
-  * Workqueue rescuer thread function.  There's one rescuer for each
-  * workqueue which has WQ_RESCUER set.
-@@ -2374,20 +2385,27 @@ sleep:
-  *
-  * This should happen rarely.
-  */
--static int rescuer_thread(void *__wq)
-+static int rescuer_thread(void *__rescuer)
- {
--	struct workqueue_struct *wq = __wq;
--	struct worker *rescuer = wq->rescuer;
-+	struct worker *rescuer = __rescuer;
-+	struct workqueue_struct *wq = rescuer->rescue_wq;
- 	struct list_head *scheduled = &rescuer->scheduled;
- 	bool is_unbound = wq->flags & WQ_UNBOUND;
- 	unsigned int cpu;
- 
- 	set_user_nice(current, RESCUER_NICE_LEVEL);
-+
-+	/*
-+	 * Mark rescuer as worker too.  As WORKER_PREP is never cleared, it
-+	 * doesn't participate in concurrency management.
-+	 */
-+	rescuer->task->flags |= PF_WQ_WORKER;
- repeat:
- 	set_current_state(TASK_INTERRUPTIBLE);
- 
- 	if (kthread_should_stop()) {
- 		__set_current_state(TASK_RUNNING);
-+		rescuer->task->flags &= ~PF_WQ_WORKER;
- 		return 0;
- 	}
- 
-@@ -2431,6 +2449,8 @@ repeat:
- 		spin_unlock_irq(&gcwq->lock);
- 	}
- 
-+	/* rescuers should never participate in concurrency management */
-+	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
- 	schedule();
- 	goto repeat;
- }
-@@ -3266,7 +3286,8 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
- 		if (!rescuer)
- 			goto err;
- 
--		rescuer->task = kthread_create(rescuer_thread, wq, "%s",
-+		rescuer->rescue_wq = wq;
-+		rescuer->task = kthread_create(rescuer_thread, rescuer, "%s",
- 					       wq->name);
- 		if (IS_ERR(rescuer->task))
- 			goto err;
--- 
-1.8.0.2
+compiling:
+    make ktap    --- generate userspace ktap tool
+    make         --- generate ktapvm kernel module
 
+try to running ktap:
+    ./ktap scripts/tracepoint.ktap
+
+This commit is just a initial pulbic code release, it have basic
+tracepoint and syscall support, please waiting ktap release 1.0. :)
+
+I suggest you put this ktap directory into linux/kernel/trace/.
+
+(this initial code have one issue: it need to patch ftrace code in Linux kernel,
+ see ftrace.patch, I will try to get rid it sooner.)
+
+For any question, please contact the author, Jovi Zhang.
+
+ktap is a open source project, welcome hacking and contributing.
+
+.jovi
