@@ -1,120 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab3ARE4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 23:56:25 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:9227 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3ARE4X convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 23:56:23 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 17 Jan 2013 20:56:22 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Fri, 18 Jan 2013 10:26:17 +0530
-Subject: RE: [PATCH v2 4/4] usb: Add APIs to access host registers from
- Tegra PHY
-Thread-Topic: [PATCH v2 4/4] usb: Add APIs to access host registers from
- Tegra PHY
-Thread-Index: Ac30xYCMUrR0Ubv0RlCpR7YeuP5bEgAbug4w
-Message-ID: <D958900912E20642BCBC71664EFECE3E6E1A6F1069@BGMAIL02.nvidia.com>
-References: <1358411292-12288-1-git-send-email-vbyravarasu@nvidia.com>
- <Pine.LNX.4.44L0.1301171012500.1339-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1301171012500.1339-100000@iolanthe.rowland.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1755250Ab3ARE51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 23:57:27 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:35578 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752798Ab3ARE5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 23:57:25 -0500
+From: Philip Avinash <avinashphilip@ti.com>
+To: <tony@atomide.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <artem.bityutskiy@linux.intel.com>,
+        <zonque@gmail.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <nsekhar@ti.com>,
+        <gururaja.hebbar@ti.com>, Philip Avinash <avinashphilip@ti.com>
+Subject: [PATCH] ARM: OMAP: gpmc: Add device tree documentation for elm handle
+Date: Fri, 18 Jan 2013 10:27:46 +0530
+Message-ID: <1358485066-27495-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Alan Stern [mailto:stern@rowland.harvard.edu]
-> Sent: Thursday, January 17, 2013 8:45 PM
-> To: Venu Byravarasu
-> Cc: gregkh@linuxfoundation.org; balbi@ti.com; linux-usb@vger.kernel.org;
-> linux-kernel@vger.kernel.org; swarren@wwwdotorg.org; linux-
-> tegra@vger.kernel.org
-> Subject: Re: [PATCH v2 4/4] usb: Add APIs to access host registers from Tegra
-> PHY
-> 
-> On Thu, 17 Jan 2013, Venu Byravarasu wrote:
-> 
-> > As Tegra PHY driver need to access one of the Host registers,
-> > added few APIs to ehci tegra driver.
-> >
-> > Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> > ---
-> > delta from v1:
-> > Taken care of RWC bits, while accessing PORTSC register.
-> >
-> >  drivers/usb/host/ehci-tegra.c     |   70
-> ++++++++++++++++++++++++++++++++++++-
-> >  drivers/usb/phy/tegra_usb_phy.c   |   51 +++++++--------------------
-> >  include/linux/usb/tegra_usb_phy.h |    6 +++
-> >  3 files changed, 88 insertions(+), 39 deletions(-)
-> >
-> > diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-> > index 55a9cde..6bbf66a 100644
-> > --- a/drivers/usb/host/ehci-tegra.c
-> > +++ b/drivers/usb/host/ehci-tegra.c
-> > @@ -2,7 +2,7 @@
-> >   * EHCI-compliant USB host controller driver for NVIDIA Tegra SoCs
-> >   *
-> >   * Copyright (C) 2010 Google, Inc.
-> > - * Copyright (C) 2009 NVIDIA Corporation
-> > + * Copyright (C) 2009 - 2013 NVIDIA Corporation
-> >   *
-> >   * This program is free software; you can redistribute it and/or modify it
-> >   * under the terms of the GNU General Public License as published by the
-> > @@ -33,6 +33,16 @@
-> >  #define TEGRA_USB2_BASE			0xC5004000
-> >  #define TEGRA_USB3_BASE			0xC5008000
-> >
-> > +/* PORTSC registers */
-> > +#define USB_PORTSC1			0x184
-> > +#define USB_PORTSC1_PTS(x)	(((x) & 0x3) << 30)
-> > +#define USB_PORTSC1_PHCD	(1 << 23)
-> > +#define USB_PORTSC1_WKOC	(1 << 22)
-> > +#define USB_PORTSC1_WKDS	(1 << 21)
-> > +#define USB_PORTSC1_WKCN	(1 << 20)
-> > +#define USB_PORTSC1_PEC		(1 << 3)
-> > +#define USB_PORTSC1_CSC		(1 << 1)
-> 
-> Why redefine these values when they are already defined in
-> include/linux/usb/ehci_defs.h?
+In case ELM module available, omap2 NAND driver can opt for hardware
+correction method for bit flip errors in NAND flash with BCH. Hence the
+detection of ELM module is done through devicetree population of elm_id.
+This patch update device tree documentation for gpmc-nand for elm-id
+data population.
 
-Agreed. Will remove all above defines except PHCD & PTS, as these two
-fields are added by tegra SOC to PORTSC.
+Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+---
+This patch based [1] and depends on [2]. As Artem suggested, this patch can
+go in omap_tree due to the dependency on [3].
+Discussion can found at [4]
 
-> 
-> > @@ -605,6 +615,53 @@ static const struct dev_pm_ops
-> tegra_ehci_pm_ops = {
-> >
-> >  #endif
-> >
-> > +/* Bits of PORTSC1, which will get cleared by writing 1 into them */
-> > +#define TEGRA_PORTSC_RWC_BITS (USB_PORTSC1_CSC |
-> USB_PORTSC1_PEC)
-> 
-> Likewise for this.  Not to mention that you forgot to include the
-> overcurrent-change bit.
+Tony,
+  Can you accept this patch.
 
-As OCC bit is "not supported" by Tegra20 SOC, did not include it.
-Should I still add this, to be compliant with EHCI spec?
-Based on your comments, I can update the patch and send for review.
+1. http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap.git;a=shortlog;h=refs/heads/omap-for-v3.9/gpmc
+2. mtd: nand: omap2: Support for hardware BCH error correction
+   http://git.infradead.org/users/dedekind/l2-mtd-2.6.git/commit/576daed18c3f27bb5d0e57e1df11e8f7b493dce8
+3. ARM: OMAP: gpmc: add DT bindings for GPMC timings and NAND
+   http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap.git;a=commit;h=bc6b1e7b86f5d8e4a6fc1c0189e64bba4077efe0
+4. https://lkml.org/lkml/2013/1/17/167   
 
-> 
-> Alan Stern
+ .../devicetree/bindings/mtd/gpmc-nand.txt          |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/mtd/gpmc-nand.txt b/Documentation/devicetree/bindings/mtd/gpmc-nand.txt
+index 9f464f9..e7f8d7e 100644
+--- a/Documentation/devicetree/bindings/mtd/gpmc-nand.txt
++++ b/Documentation/devicetree/bindings/mtd/gpmc-nand.txt
+@@ -29,6 +29,9 @@ Optional properties:
+ 		"bch4"		4-bit BCH ecc code
+ 		"bch8"		8-bit BCH ecc code
+ 
++ - elm_id:	Specifies elm device node. This is required to support BCH
++ 		error correction using ELM module.
++
+ For inline partiton table parsing (optional):
+ 
+  - #address-cells: should be set to 1
+@@ -46,6 +49,7 @@ Example for an AM33xx board:
+ 		#address-cells = <2>;
+ 		#size-cells = <1>;
+ 		ranges = <0 0 0x08000000 0x2000>;	/* CS0: NAND */
++		elm_id = <&elm>;
+ 
+ 		nand@0,0 {
+ 			reg = <0 0 0>; /* CS0, offset 0 */
+-- 
+1.7.9.5
 
