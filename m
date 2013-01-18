@@ -1,51 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab3ARO7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 09:59:18 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:53864 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab3ARO7Q (ORCPT
+	id S1755924Ab3ARO73 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 09:59:29 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49606 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab3ARO72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 09:59:16 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [PATCH v2 67/76] ARC: [Review] Multi-platform image #1: Kconfig enablement
-Date: Fri, 18 Jan 2013 14:59:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-68-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1358511930-7424-68-git-send-email-vgupta@synopsys.com>
+	Fri, 18 Jan 2013 09:59:28 -0500
+Date: Fri, 18 Jan 2013 14:59:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roger Quadros <rogerq@ti.com>
+Cc: sameo@linux.intel.com, balbi@ti.com, tony@atomide.com, kishon@ti.com,
+        sshtylyov@mvista.com, bjorn@mork.no, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 05/22] mfd: omap-usb-tll: Clean up clock handling
+Message-ID: <20130118145906.GE23505@n2100.arm.linux.org.uk>
+References: <1358511445-26656-1-git-send-email-rogerq@ti.com> <1358511445-26656-6-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301181459.11758.arnd@arndb.de>
-X-Provags-ID: V02:K0:8yEMPR5Qs7CXZ6rTlPCRET2VJ8YebxMYPJPZXPOciGw
- DTwlwBdNg+sSdFwMhJ3s+5Z5W/I6MJlxyr6nbHLu0r/FROX4zP
- wl8NVUyCiwmxeWb60Mj/RhrdF6uQtB0AOwIQ91q9Wp+eHogVRN
- Kio0Otg+ljMTnpT4EB/co3q1g540ZpkRbrM3a2bpiWunP3+f60
- koPl7BY7ROZBQDhkhKC5SGg+wht8RWkKNaBNU4TVVLsyErxu++
- 2BeRxch5jZAIcweHcmCv7z1Gl7TgwX9K0RiXb6QebDXBjRud5N
- vRNcptwYxyF1yi5xQlawThVxqAruEIi2Eatb/1ZdZbGpOyexRr
- rqLidNbDiA4ch2J1QlSA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358511445-26656-6-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 January 2013, Vineet Gupta wrote:
-> This mini patchseries addresses the lack of multi-platform-image support
-> in ARC port.
-> 
-> Older build system only supported one platform(soc) to build at a time
-> and further only one board of that platform could be built. There was no
-> technical reason for that - we just didn't have the need.
-> 
-> So the first step towards multi-platform (and multi-board) builds it to
-> allow build system to do that.
-> 
-> So as applicable, <choice .. endchoice> => <menu .. endmenu>
-> 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
+On Fri, Jan 18, 2013 at 02:17:08PM +0200, Roger Quadros wrote:
+> +	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
+> +						GFP_KERNEL);
+> +	if (!tll->ch_clk) {
+> +		ret = -ENOMEM;
+> +		dev_err(dev, "Couldn't allocate memory for channel clocks\n");
+> +		goto err_clk_alloc;
+> +	}
+> +
+> +	for (i = 0; i < tll->nch; i++) {
+> +		char clkname[] = "usb_tll_hs_usb_chx_clk";
+> +		struct clk *fck;
+> +
+> +		snprintf(clkname, sizeof(clkname),
+> +					"usb_tll_hs_usb_ch%d_clk", i);
+> +		fck = clk_get(dev, clkname);
+> +
+> +		if (IS_ERR(fck))
+> +			dev_dbg(dev, "can't get clock : %s\n", clkname);
+> +		else
+> +			tll->ch_clk[i] = fck;
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Hmm.  I'd actually suggest that this becomes:
+
+		tll->ch_clk[i] = fck;
+		if (IS_ERR(fck)
+			dev_dbg(dev, "can't get clock: %s\n", clkname);
+
+so that tll->ch_clk is always written to.
+
+>  static int usbtll_omap_remove(struct platform_device *pdev)
+>  {
+>  	struct usbtll_omap *tll = platform_get_drvdata(pdev);
+> +	int i;
+> +
+> +	for (i = 0; i < tll->nch; i++)
+> +		clk_put(tll->ch_clk[i]);
+
+And change this to:
+
+	for (i = 0; i < tll->nch; i++)
+		if (!IS_ERR(tll->ch_clk[i]))
+			clk_put(tll->ch_clk[i]);
+
+so that you're not passing a NULL pointer in.
+
+> +	for (i = 0; i < tll->nch; i++) {
+> +		if (is_ehci_tll_mode(pdata->port_mode[i])) {
+> +			int r;
+>  
+> -	if (is_ehci_tll_mode(pdata->port_mode[1]))
+> -		clk_enable(tll->usbtll_p2_fck);
+> +			if (!tll->ch_clk[i])
+
+			if (IS_ERR(tll->ch_clk[i]))
+
+> +				continue;
+> +
+> +			r = clk_enable(tll->ch_clk[i]);
+> +			if (r) {
+> +				dev_err(dev,
+> +				 "Error enabling ch %d clock: %d\n", i, r);
+> +			}
+> +		}
+> +	}
+
+> @@ -387,11 +409,12 @@ static int usbtll_runtime_suspend(struct device *dev)
+>  
+>  	spin_lock_irqsave(&tll->lock, flags);
+>  
+> -	if (is_ehci_tll_mode(pdata->port_mode[0]))
+> -		clk_disable(tll->usbtll_p1_fck);
+> -
+> -	if (is_ehci_tll_mode(pdata->port_mode[1]))
+> -		clk_disable(tll->usbtll_p2_fck);
+> +	for (i = 0; i < tll->nch; i++) {
+> +		if (is_ehci_tll_mode(pdata->port_mode[i])) {
+> +			if (tll->ch_clk[i])
+
+			if (!IS_ERR(tll->ch_clk[i]))
+
+> +				clk_disable(tll->ch_clk[i]);
+> +		}
+> +	}
+>  
+>  	spin_unlock_irqrestore(&tll->lock, flags);
+>  
+> -- 
+> 1.7.4.1
+> 
