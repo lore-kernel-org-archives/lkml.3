@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944Ab3ARMjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:39:16 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:59316 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756798Ab3ARMd3 (ORCPT
+	id S1756767Ab3ARMjg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:39:36 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:55947 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756027Ab3ARMd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:33:29 -0500
+	Fri, 18 Jan 2013 07:33:28 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 44/76] ARC: ptrace support
-Date: Fri, 18 Jan 2013 17:54:58 +0530
-Message-ID: <1358511930-7424-45-git-send-email-vgupta@synopsys.com>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH v2 40/76] ARC: Switch to generic sys_clone, fork, vfork
+Date: Fri, 18 Jan 2013 17:54:54 +0530
+Message-ID: <1358511930-7424-41-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -23,311 +24,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We still need the low level asm wrappers to save CALLEE regs, however
+the core handlers sys_xxx now come from generic code
+
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
 ---
- arch/arc/Kconfig         |    1 +
- arch/arc/kernel/Makefile |    3 +
- arch/arc/kernel/entry.S  |   69 +++++++++++++++++++++++
- arch/arc/kernel/ptrace.c |  136 +++++++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 207 insertions(+), 2 deletions(-)
+ arch/arc/Kconfig              |    1 +
+ arch/arc/include/asm/unistd.h |    3 +++
+ arch/arc/kernel/entry.S       |   10 ----------
+ arch/arc/kernel/process.c     |   40 +++++-----------------------------------
+ 4 files changed, 9 insertions(+), 45 deletions(-)
 
 diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 7e191b9..0224fd0 100644
+index 3d5f940..8fb9264 100644
 --- a/arch/arc/Kconfig
 +++ b/arch/arc/Kconfig
-@@ -23,6 +23,7 @@ config ARC
- 	select GENERIC_PENDING_IRQ if SMP
- 	select GENERIC_SIGALTSTACK
- 	select GENERIC_SMP_IDLE_THREAD
-+	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_GENERIC_HARDIRQS
- 	select HOTPLUG if !INITRAMFS_SOURCE=""
- 	select IRQ_DOMAIN
-diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
-index 5fefb7d..a3c4a31 100644
---- a/arch/arc/kernel/Makefile
-+++ b/arch/arc/kernel/Makefile
-@@ -5,6 +5,9 @@
- # it under the terms of the GNU General Public License version 2 as
- # published by the Free Software Foundation.
+@@ -9,6 +9,7 @@
+ config ARC
+ 	def_bool y
+ 	select ARCH_NO_VIRT_TO_BUS
++	select CLONE_BACKWARDS
+ 	# ARC Busybox based initramfs absolutely relies on DEVTMPFS for /dev
+ 	# DEVTMPS in turn needs HOTPLUG
+ 	select DEVTMPFS if !INITRAMFS_SOURCE=""
+diff --git a/arch/arc/include/asm/unistd.h b/arch/arc/include/asm/unistd.h
+index 7841827..6f30484 100644
+--- a/arch/arc/include/asm/unistd.h
++++ b/arch/arc/include/asm/unistd.h
+@@ -9,6 +9,9 @@
+ /******** no-legacy-syscalls-ABI *******/
  
-+# Pass UTS_MACHINE for user_regset definition
-+CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"'
-+
- obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o \
- 	   signal.o traps.o sys.o troubleshoot.o stacktrace.o clk.o
+ #define __ARCH_WANT_SYS_EXECVE
++#define __ARCH_WANT_SYS_CLONE
++#define __ARCH_WANT_SYS_VFORK
++#define __ARCH_WANT_SYS_FORK
+ 
+ #define sys_mmap2 sys_mmap_pgoff
  
 diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index 6566e66..703c5ff 100644
+index 69a0c9f..6823f30 100644
 --- a/arch/arc/kernel/entry.S
 +++ b/arch/arc/kernel/entry.S
-@@ -10,6 +10,14 @@
-  * TBD:
-  *  -remove the low level wrappers for execve/fork/vfork
-  *   needed before task_pt_regs was invented. This saves a branch per call
-+ *   and more importantly allows clean invocation of post-syscall ptrace hook
-+ *
-+ * vineetg: Feb 2011 (ptrace low level code fixes)
-+ *  -traced syscall return code (r0) was not saved into pt_regs for restoring
-+ *   into user reg-file when traded task rets to user space.
-+ *  -syscalls needing arch-wrappers (mainly for passing sp as pt_regs)
-+ *   were not invoking post-syscall trace hook (jumping directly into
-+ *   ret_from_system_call)
-  *
-  * vineetg: Nov 2010:
-  *  -Vector table jumps (@8 bytes) converted into branches (@4 bytes)
-@@ -351,6 +359,50 @@ ARC_ENTRY EV_Extension
- 	b   ret_from_exception
- ARC_EXIT EV_Extension
+@@ -594,8 +594,6 @@ ARC_EXIT ret_from_fork
  
-+;######################### System Call Tracing #########################
-+
-+tracesys:
-+	; save EFA in case tracer wants the PC of traced task
-+	; using ERET won't work since next-PC has already committed
-+	lr  r12, [efa]
-+	GET_CURR_TASK_FIELD_PTR   TASK_THREAD, r11
-+	st  r12, [r11, THREAD_FAULT_ADDR]
-+
-+	; PRE Sys Call Ptrace hook
-+	mov r0, sp			; pt_regs needed
-+	bl  @syscall_trace_entry
-+
-+	; Tracing code now returns the syscall num (orig or modif)
-+	mov r8, r0
-+
-+	; Do the Sys Call as we normally would.
-+	; Validate the Sys Call number
-+	cmp     r8,  NR_syscalls
-+	mov.hi  r0, -ENOSYS
-+	bhi     tracesys_exit
-+
-+	; Restore the sys-call args. Mere invocation of the hook abv could have
-+	; clobbered them (since they are in scratch regs). The tracer could also
-+	; have deliberately changed the syscall args: r0-r7
-+	ld  r0, [sp, PT_r0]
-+	ld  r1, [sp, PT_r1]
-+	ld  r2, [sp, PT_r2]
-+	ld  r3, [sp, PT_r3]
-+	ld  r4, [sp, PT_r4]
-+	ld  r5, [sp, PT_r5]
-+	ld  r6, [sp, PT_r6]
-+	ld  r7, [sp, PT_r7]
-+	ld.as   r9, [sys_call_table, r8]
-+	jl      [r9]        ; Entry into Sys Call Handler
-+
-+tracesys_exit:
-+	st  r0, [sp, PT_r0]     ; sys call return value in pt_regs
-+
-+	;POST Sys Call Ptrace Hook
-+	bl  @syscall_trace_exit
-+	b   ret_from_exception ; NOT ret_from_system_call at is saves r0 which
-+	; we'd done before calling post hook above
-+
- ;################### Break Point TRAP ##########################
- 
- 	; ======= (5b) Trap is due to Break-Point =========
-@@ -416,6 +468,11 @@ ARC_ENTRY EV_Trap
- 	; Before doing anything, return from CPU Exception Mode
- 	FAKE_RET_FROM_EXCPN r11
- 
-+	; If syscall tracing ongoing, invoke pre-pos-hooks
-+	GET_CURR_THR_INFO_FLAGS   r10
-+	btst r10, TIF_SYSCALL_TRACE
-+	bnz tracesys  ; this never comes back
-+
- 	;============ This is normal System Call case ==========
- 	; Sys-call num shd not exceed the total system calls avail
- 	cmp     r8,  NR_syscalls
-@@ -612,6 +669,10 @@ ARC_ENTRY sys_fork_wrapper
+ ; TBD: call do_fork directly from here
+ ARC_ENTRY sys_fork_wrapper
+-	; copy pointer to pt_regs as a parameter
+-	mov  r0, sp
+ 	SAVE_CALLEE_SAVED_USER
  	bl  @sys_fork
  	DISCARD_CALLEE_SAVED_USER
- 
-+	GET_CURR_THR_INFO_FLAGS   r10
-+	btst r10, TIF_SYSCALL_TRACE
-+	bnz  tracesys_exit
-+
- 	b ret_from_system_call
+@@ -604,8 +602,6 @@ ARC_ENTRY sys_fork_wrapper
  ARC_EXIT sys_fork_wrapper
  
-@@ -620,6 +681,10 @@ ARC_ENTRY sys_vfork_wrapper
+ ARC_ENTRY sys_vfork_wrapper
+-	; copy pointer to pt_regs as a parameter
+-	mov  r0, sp
+ 	SAVE_CALLEE_SAVED_USER
  	bl  @sys_vfork
  	DISCARD_CALLEE_SAVED_USER
- 
-+	GET_CURR_THR_INFO_FLAGS   r10
-+	btst r10, TIF_SYSCALL_TRACE
-+	bnz  tracesys_exit
-+
- 	b ret_from_system_call
+@@ -614,12 +610,6 @@ ARC_ENTRY sys_vfork_wrapper
  ARC_EXIT sys_vfork_wrapper
  
-@@ -628,5 +693,9 @@ ARC_ENTRY sys_clone_wrapper
+ ARC_ENTRY sys_clone_wrapper
+-	; clone sys-call takes 2 mandatary args: @flags and @child-stack
+-	; and it can take 3 var-args, depending on flags
+-	; To keep sys_clone( ) signature constant, we assume all 5 args
+-	; and set the helper @prtegs in next free reg
+-	; this is cheap since our args are in regs, not on stack
+-	mov r5, sp  ; pt_regs
+ 	SAVE_CALLEE_SAVED_USER
  	bl  @sys_clone
  	DISCARD_CALLEE_SAVED_USER
+diff --git a/arch/arc/kernel/process.c b/arch/arc/kernel/process.c
+index 403de7e..e2b119d 100644
+--- a/arch/arc/kernel/process.c
++++ b/arch/arc/kernel/process.c
+@@ -20,39 +20,6 @@
+ #include <linux/elf.h>
+ #include <linux/tick.h>
  
-+	GET_CURR_THR_INFO_FLAGS   r10
-+	btst r10, TIF_SYSCALL_TRACE
-+	bnz  tracesys_exit
-+
- 	b ret_from_system_call
- ARC_EXIT sys_clone_wrapper
-diff --git a/arch/arc/kernel/ptrace.c b/arch/arc/kernel/ptrace.c
-index 1cf944a..c6a81c5 100644
---- a/arch/arc/kernel/ptrace.c
-+++ b/arch/arc/kernel/ptrace.c
-@@ -7,6 +7,122 @@
+-asmlinkage int sys_fork(struct pt_regs *regs)
+-{
+-	return do_fork(SIGCHLD, regs->sp, regs, 0, NULL, NULL);
+-}
+-
+-asmlinkage int sys_vfork(struct pt_regs *regs)
+-{
+-	return do_fork(CLONE_VFORK | CLONE_VM | SIGCHLD, regs->sp, regs, 0,
+-		       NULL, NULL);
+-}
+-
+-/* Per man, C-lib clone( ) is as follows
+- *
+- * int clone(int (*fn)(void *), void *child_stack,
+- *           int flags, void *arg, ...
+- *           pid_t *ptid, struct user_desc *tls, pid_t *ctid);
+- *
+- * @fn and @arg are of userland thread-hnalder and thus of no use
+- * in sys-call, hence excluded in sys_clone arg list.
+- * The only addition is ptregs, needed by fork core, although now-a-days
+- * task_pt_regs() can be called anywhere to get that.
+- */
+-asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
+-			 int __user *parent_tidptr, void *tls,
+-			 int __user *child_tidptr, struct pt_regs *regs)
+-{
+-	if (!newsp)
+-		newsp = regs->sp;
+-
+-	return do_fork(clone_flags, newsp, regs, 0, parent_tidptr,
+-		       child_tidptr);
+-}
+-
+ SYSCALL_DEFINE1(arc_settls, void *, user_tls_data_ptr)
+ {
+ 	task_thread_info(current)->thr_ptr = (unsigned int)user_tls_data_ptr;
+@@ -132,12 +99,13 @@ asmlinkage void ret_from_fork(void);
   */
- 
- #include <linux/ptrace.h>
-+#include <linux/tracehook.h>
-+#include <linux/regset.h>
-+#include <linux/unistd.h>
-+#include <linux/elf.h>
-+
-+static struct callee_regs *task_callee_regs(struct task_struct *tsk)
-+{
-+	struct callee_regs *tmp = (struct callee_regs *)tsk->thread.callee_reg;
-+	return tmp;
-+}
-+
-+static int genregs_get(struct task_struct *target,
-+		       const struct user_regset *regset,
-+		       unsigned int pos, unsigned int count,
-+		       void *kbuf, void __user *ubuf)
-+{
-+	const struct pt_regs *ptregs = task_pt_regs(target);
-+	const struct callee_regs *cregs = task_callee_regs(target);
-+	int ret = 0;
-+	unsigned int stop_pc_val;
-+
-+#define REG_O_CHUNK(START, END, PTR)	\
-+	if (!ret)	\
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, PTR, \
-+			offsetof(struct user_regs_struct, START), \
-+			offsetof(struct user_regs_struct, END));
-+
-+#define REG_O_ONE(LOC, PTR)	\
-+	if (!ret)		\
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, PTR, \
-+			offsetof(struct user_regs_struct, LOC), \
-+			offsetof(struct user_regs_struct, LOC) + 4);
-+
-+	REG_O_CHUNK(scratch, callee, ptregs);
-+	REG_O_CHUNK(callee, efa, cregs);
-+	REG_O_CHUNK(efa, stop_pc, &target->thread.fault_address);
-+
-+	if (!ret) {
-+		if (in_brkpt_trap(ptregs)) {
-+			stop_pc_val = target->thread.fault_address;
-+			pr_debug("\t\tstop_pc (brk-pt)\n");
-+		} else {
-+			stop_pc_val = ptregs->ret;
-+			pr_debug("\t\tstop_pc (others)\n");
-+		}
-+
-+		REG_O_ONE(stop_pc, &stop_pc_val);
-+	}
-+
-+	return ret;
-+}
-+
-+static int genregs_set(struct task_struct *target,
-+		       const struct user_regset *regset,
-+		       unsigned int pos, unsigned int count,
-+		       const void *kbuf, const void __user *ubuf)
-+{
-+	const struct pt_regs *ptregs = task_pt_regs(target);
-+	const struct callee_regs *cregs = task_callee_regs(target);
-+	int ret = 0;
-+
-+#define REG_IN_CHUNK(FIRST, NEXT, PTR)	\
-+	if (!ret)			\
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
-+			(void *)(PTR), \
-+			offsetof(struct user_regs_struct, FIRST), \
-+			offsetof(struct user_regs_struct, NEXT));
-+
-+#define REG_IN_ONE(LOC, PTR)		\
-+	if (!ret)			\
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
-+			(void *)(PTR), \
-+			offsetof(struct user_regs_struct, LOC), \
-+			offsetof(struct user_regs_struct, LOC) + 4);
-+
-+#define REG_IGNORE_ONE(LOC)		\
-+	if (!ret)			\
-+		ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf, \
-+			offsetof(struct user_regs_struct, LOC), \
-+			offsetof(struct user_regs_struct, LOC) + 4);
-+
-+	/* TBD: disallow updates to STATUS32, orig_r8 etc*/
-+	REG_IN_CHUNK(scratch, callee, ptregs);	/* pt_regs[bta..orig_r8] */
-+	REG_IN_CHUNK(callee, efa, cregs);	/* callee_regs[r25..r13] */
-+	REG_IGNORE_ONE(efa);			/* efa update invalid */
-+	REG_IN_ONE(stop_pc, &ptregs->ret);	/* stop_pc: PC update */
-+
-+	return ret;
-+}
-+
-+enum arc_getset {
-+	REGSET_GENERAL,
-+};
-+
-+static const struct user_regset arc_regsets[] = {
-+	[REGSET_GENERAL] = {
-+	       .core_note_type = NT_PRSTATUS,
-+	       .n = ELF_NGREG,
-+	       .size = sizeof(unsigned long),
-+	       .align = sizeof(unsigned long),
-+	       .get = genregs_get,
-+	       .set = genregs_set,
-+	}
-+};
-+
-+static const struct user_regset_view user_arc_view = {
-+	.name		= UTS_MACHINE,
-+	.e_machine	= EM_ARCOMPACT,
-+	.regsets	= arc_regsets,
-+	.n		= ARRAY_SIZE(arc_regsets)
-+};
-+
-+const struct user_regset_view *task_user_regset_view(struct task_struct *task)
-+{
-+	return &user_arc_view;
-+}
- 
- void ptrace_disable(struct task_struct *child)
+ int copy_thread(unsigned long clone_flags,
+ 		unsigned long usp, unsigned long arg,
+-		struct task_struct *p, struct pt_regs *regs)
++		struct task_struct *p)
  {
-@@ -16,11 +132,27 @@ long arch_ptrace(struct task_struct *child, long request,
- 		 unsigned long addr, unsigned long data)
- {
- 	int ret = -EIO;
-+
-+	pr_debug("REQ=%ld: ADDR =0x%lx, DATA=0x%lx)\n", request, addr, data);
-+
-+	switch (request) {
-+	default:
-+		ret = ptrace_request(child, request, addr, data);
-+		break;
-+	}
-+
- 	return ret;
- }
+ 	struct pt_regs *c_regs;        /* child's pt_regs */
+ 	unsigned long *childksp;       /* to unwind out of __switch_to() */
+ 	struct callee_regs *c_callee;  /* child's callee regs */
+ 	struct callee_regs *parent_callee;  /* paren't callee */
++	struct pt_regs *regs = current_pt_regs();
  
-+asmlinkage int syscall_trace_entry(struct pt_regs *regs)
-+{
-+	if (tracehook_report_syscall_entry(regs))
-+		return ULONG_MAX;
+ 	/* Mark the specific anchors to begin with (see pic above) */
+ 	c_regs = task_pt_regs(p);
+@@ -176,7 +144,9 @@ int copy_thread(unsigned long clone_flags,
+ 	/* Copy parents pt regs on child's kernel mode stack */
+ 	*c_regs = *regs;
  
--const struct user_regset_view *task_user_regset_view(struct task_struct *task)
-+	return regs->r8;
-+}
+-	c_regs->sp = usp;
++	if (usp)
++		c_regs->sp = usp;
 +
-+asmlinkage void syscall_trace_exit(struct pt_regs *regs)
- {
--	return (const struct user_regset_view *)NULL;
-+	tracehook_report_syscall_exit(regs, 0);
- }
+ 	c_regs->r0 = 0;		/* fork returns 0 in child */
+ 
+ 	parent_callee = ((struct callee_regs *)regs) - 1;
 -- 
 1.7.4.1
 
