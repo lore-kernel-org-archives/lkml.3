@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab3ARMfb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:35:31 -0500
-Received: from kiruna.synopsys.com ([198.182.44.80]:61773 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab3ARMf0 (ORCPT
+	id S1757165Ab3ARMfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:35:39 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:59342 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756844Ab3ARMff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:35:26 -0500
+	Fri, 18 Jan 2013 07:35:35 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 70/76] ARC: [Review] Multi-platform image #3: switch to board callback
-Date: Fri, 18 Jan 2013 17:55:24 +0530
-Message-ID: <1358511930-7424-71-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 71/76] ARC: [Review] Multi-platform image #4: Isolate platform headers
+Date: Fri, 18 Jan 2013 17:55:25 +0530
+Message-ID: <1358511930-7424-72-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -23,247 +23,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--platform API is retired and instead callbacks are used
+-Top level ARC makefile removes -I for platform headers
+-asm/irq.h no longer includes plat/irq.h
+
+-platform makefile adds -I for it's specfic platform headers
+-platform code to directly include it's plat/irq.h
+
+-Linker script needed plat/memmap.h for CCM info, already in .config
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arc/include/asm/irq.h               |    1 -
- arch/arc/include/asm/smp.h               |    5 ---
- arch/arc/kernel/irq.c                    |    2 -
- arch/arc/kernel/setup.c                  |    5 ---
- arch/arc/kernel/smp.c                    |    1 -
- arch/arc/plat-arcfpga/include/plat/irq.h |    2 +
- arch/arc/plat-arcfpga/include/plat/smp.h |    2 +
- arch/arc/plat-arcfpga/irq.c              |    2 +-
- arch/arc/plat-arcfpga/platform.c         |   50 +++++++++++++++++++++++++-----
- arch/arc/plat-arcfpga/smp.c              |    4 +--
- 10 files changed, 48 insertions(+), 26 deletions(-)
+ arch/arc/Makefile                |   16 +---------------
+ arch/arc/include/asm/irq.h       |    1 -
+ arch/arc/kernel/vmlinux.lds.S    |    1 -
+ arch/arc/plat-arcfpga/Makefile   |    2 ++
+ arch/arc/plat-arcfpga/irq.c      |    2 +-
+ arch/arc/plat-arcfpga/platform.c |    2 +-
+ arch/arc/plat-arcfpga/smp.c      |    3 ++-
+ 7 files changed, 7 insertions(+), 20 deletions(-)
 
+diff --git a/arch/arc/Makefile b/arch/arc/Makefile
+index ecb87e2..c0ea572 100644
+--- a/arch/arc/Makefile
++++ b/arch/arc/Makefile
+@@ -10,14 +10,6 @@ UTS_MACHINE := arc
+ 
+ KBUILD_DEFCONFIG := fpga_defconfig
+ 
+-# For ARC FPGA Platforms
+-platform-$(CONFIG_ARC_PLAT_FPGA_LEGACY)	:= arcfpga
+-#New platform adds here
+-
+-PLATFORM := $(platform-y)
+-export PLATFORM
+-
+-cflags-y	+= -Iarch/arc/plat-$(PLATFORM)/include
+ cflags-y	+= -mA7 -fno-common -pipe -fno-builtin -D__linux__
+ 
+ LINUXINCLUDE	+=  -include ${src}/arch/arc/include/asm/defines.h
+@@ -86,9 +78,6 @@ KBUILD_CFLAGS	+= $(cflags-y)
+ KBUILD_AFLAGS	+= $(KBUILD_CFLAGS)
+ LDFLAGS		+= $(ldflags-y)
+ 
+-# Needed for Linker script preprocessing
+-KBUILD_CPPFLAGS	+= -Iarch/arc/plat-$(PLATFORM)/include
+-
+ head-y		:= arch/arc/kernel/head.o
+ 
+ # See arch/arc/Kbuild for content of core part of the kernel
+@@ -97,10 +86,7 @@ core-y		+= arch/arc/
+ # w/o this dtb won't embed into kernel binary
+ core-y		+= arch/arc/boot/dtb/
+ 
+-# w/o this ifneq, make ARCH=arc clean was crapping out
+-ifneq ($(platform-y),)
+-core-y		+= arch/arc/plat-$(PLATFORM)/
+-endif
++core-$(CONFIG_ARC_PLAT_FPGA_LEGACY)	+= arch/arc/plat-arcfpga/
+ 
+ drivers-$(CONFIG_OPROFILE)	+= arch/arc/oprofile/
+ 
 diff --git a/arch/arc/include/asm/irq.h b/arch/arc/include/asm/irq.h
-index c91b2e4..f1b318d 100644
+index f1b318d..20aaab8 100644
 --- a/arch/arc/include/asm/irq.h
 +++ b/arch/arc/include/asm/irq.h
-@@ -17,7 +17,6 @@
+@@ -13,7 +13,6 @@
+ #define TIMER0_IRQ      3
+ #define TIMER1_IRQ      4
+ 
+-#include <plat/irq.h>		/* Board Specific IRQ assignments */
  #include <asm-generic/irq.h>
  
  extern void __init arc_init_IRQ(void);
--extern void __init plat_init_IRQ(void);
- extern int __init get_hw_config_num_irq(void);
+diff --git a/arch/arc/kernel/vmlinux.lds.S b/arch/arc/kernel/vmlinux.lds.S
+index 7549b49..8cb9623 100644
+--- a/arch/arc/kernel/vmlinux.lds.S
++++ b/arch/arc/kernel/vmlinux.lds.S
+@@ -11,7 +11,6 @@
+ #include <asm/cache.h>
+ #include <asm/page.h>
+ #include <asm/thread_info.h>
+-#include <plat/memmap.h>
  
- void __cpuinit arc_local_timer_setup(unsigned int cpu);
-diff --git a/arch/arc/include/asm/smp.h b/arch/arc/include/asm/smp.h
-index f91f194..0cff3a5 100644
---- a/arch/arc/include/asm/smp.h
-+++ b/arch/arc/include/asm/smp.h
-@@ -46,10 +46,6 @@ extern int smp_ipi_irq_setup(int cpu, int irq);
-  * arc_platform_smp_cpuinfo:
-  *	returns a string containing info for /proc/cpuinfo
-  *
-- * arc_platform_smp_init_cpu:
-- *	Called from start_kernel_secondary to do any CPU local setup
-- *	such as starting a timer, setting up IPI etc
-- *
-  * arc_platform_smp_wait_to_boot:
-  *	Called from early bootup code for non-Master CPUs to "park" them
-  *
-@@ -64,7 +60,6 @@ extern int smp_ipi_irq_setup(int cpu, int irq);
-  *	Takes @cpu which got IPI at @irq to do any IPI clearing
-  */
- extern const char *arc_platform_smp_cpuinfo(void);
--extern void arc_platform_smp_init_cpu(void);
- extern void arc_platform_smp_wait_to_boot(int cpu);
- extern void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc);
- extern void arc_platform_ipi_send(const struct cpumask *callmap);
-diff --git a/arch/arc/kernel/irq.c b/arch/arc/kernel/irq.c
-index 1198168..551c10d 100644
---- a/arch/arc/kernel/irq.c
-+++ b/arch/arc/kernel/irq.c
-@@ -124,7 +124,6 @@ void __init init_onchip_IRQ(void)
- void __init init_IRQ(void)
- {
- 	init_onchip_IRQ();
--	plat_init_IRQ();
+ OUTPUT_ARCH(arc)
+ ENTRY(_stext)
+diff --git a/arch/arc/plat-arcfpga/Makefile b/arch/arc/plat-arcfpga/Makefile
+index 2a828be..a44e22e 100644
+--- a/arch/arc/plat-arcfpga/Makefile
++++ b/arch/arc/plat-arcfpga/Makefile
+@@ -6,5 +6,7 @@
+ # published by the Free Software Foundation.
+ #
  
- 	/* Any external intc can be setup here */
- 	if (machine_desc->init_irq)
-@@ -132,7 +131,6 @@ void __init init_IRQ(void)
- 
- #ifdef CONFIG_SMP
- 	/* Master CPU can initialize it's side of IPI */
--	arc_platform_smp_init_cpu();
- 	if (machine_desc->init_smp)
- 		machine_desc->init_smp(smp_processor_id());
- #endif
-diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
-index 20273b8..e591c6a 100644
---- a/arch/arc/kernel/setup.c
-+++ b/arch/arc/kernel/setup.c
-@@ -319,10 +319,6 @@ void __init setup_processor(void)
- 	arc_chk_fpu();
- }
- 
--void __init __attribute__((weak)) arc_platform_early_init(void)
--{
--}
--
- void __init setup_arch(char **cmdline_p)
- {
- #ifdef CONFIG_CMDLINE_UBOOT
-@@ -347,7 +343,6 @@ void __init setup_arch(char **cmdline_p)
- 	parse_early_param();
- 
- 	/* Platform/board specific: e.g. early console registration */
--	arc_platform_early_init();
- 	if (machine_desc->init_early)
- 		machine_desc->init_early();
- 
-diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
-index 0f6212c..6843846 100644
---- a/arch/arc/kernel/smp.c
-+++ b/arch/arc/kernel/smp.c
-@@ -126,7 +126,6 @@ void __cpuinit start_kernel_secondary(void)
- 
- 	pr_info("## CPU%u LIVE ##: Executing Code...\n", cpu);
- 
--	arc_platform_smp_init_cpu();
- 	if (machine_desc->init_smp)
- 		machine_desc->init_smp(smp_processor_id());
- 
-diff --git a/arch/arc/plat-arcfpga/include/plat/irq.h b/arch/arc/plat-arcfpga/include/plat/irq.h
-index 255b90e..6515df2 100644
---- a/arch/arc/plat-arcfpga/include/plat/irq.h
-+++ b/arch/arc/plat-arcfpga/include/plat/irq.h
-@@ -32,4 +32,6 @@
- #define IDU_INTERRUPT_0 16
- #endif
- 
-+extern void __init plat_fpga_init_IRQ(void);
++KBUILD_CFLAGS	+= -Iarch/arc/plat-arcfpga/include
 +
- #endif
-diff --git a/arch/arc/plat-arcfpga/include/plat/smp.h b/arch/arc/plat-arcfpga/include/plat/smp.h
-index 8c5e46c..27822ac 100644
---- a/arch/arc/plat-arcfpga/include/plat/smp.h
-+++ b/arch/arc/plat-arcfpga/include/plat/smp.h
-@@ -110,6 +110,8 @@ struct idu_irq_status {
- extern void idu_irq_set_tgtcpu(uint8_t irq, uint32_t mask);
- extern void idu_irq_set_mode(uint8_t irq, uint8_t dest_mode, uint8_t trig_mode);
- 
-+extern void iss_model_init_smp(unsigned int cpu);
-+
- #endif	/* CONFIG_SMP */
- 
- #endif
+ obj-y := platform.o irq.o
+ obj-$(CONFIG_SMP)		+= smp.o
 diff --git a/arch/arc/plat-arcfpga/irq.c b/arch/arc/plat-arcfpga/irq.c
-index 590edd1..0ea43c2 100644
+index 0ea43c2..d2215fd 100644
 --- a/arch/arc/plat-arcfpga/irq.c
 +++ b/arch/arc/plat-arcfpga/irq.c
-@@ -11,7 +11,7 @@
- #include <linux/interrupt.h>
- #include <asm/irq.h>
+@@ -9,7 +9,7 @@
+  */
  
--void __init plat_init_IRQ(void)
-+void __init plat_fpga_init_IRQ(void)
+ #include <linux/interrupt.h>
+-#include <asm/irq.h>
++#include <plat/irq.h>
+ 
+ void __init plat_fpga_init_IRQ(void)
  {
- 	/*
- 	 * SMP Hack because UART IRQ hardwired to cpu0 (boot-cpu) but if the
 diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
-index c07636e..05ed64d 100644
+index 05ed64d..1a9f2f2 100644
 --- a/arch/arc/plat-arcfpga/platform.c
 +++ b/arch/arc/plat-arcfpga/platform.c
-@@ -18,7 +18,9 @@
+@@ -16,11 +16,11 @@
+ #include <linux/console.h>
+ #include <linux/of_platform.h>
  #include <asm/setup.h>
- #include <asm/irq.h>
+-#include <asm/irq.h>
  #include <asm/clk.h>
-+#include <asm/mach_desc.h>
+ #include <asm/mach_desc.h>
  #include <plat/memmap.h>
-+#include <plat/smp.h>
+ #include <plat/smp.h>
++#include <plat/irq.h>
  
  /*-----------------------BVCI Latency Unit -----------------------------*/
  
-@@ -162,10 +164,7 @@ static void arc_fpga_serial_init(void)
- 
- #endif	/* CONFIG_SERIAL_ARC */
- 
--/*
-- * Early Platform Initialization called from setup_arch()
-- */
--void __init arc_platform_early_init(void)
-+static void __init plat_fpga_early_init(void)
- {
- 	pr_info("[plat-arcfpga]: registering early dev resources\n");
- 
-@@ -181,7 +180,7 @@ static struct of_dev_auxdata plat_auxdata_lookup[] __initdata = {
- 	{}
- };
- 
--int __init fpga_plat_init(void)
-+static void __init plat_fpga_populate_dev(void)
- {
- 	pr_info("[plat-arcfpga]: registering device resources\n");
- 
-@@ -191,7 +190,42 @@ int __init fpga_plat_init(void)
- 	 */
- 	of_platform_populate(NULL, of_default_bus_match_table,
- 			     plat_auxdata_lookup, NULL);
--
--	return 0;
- }
--arch_initcall(fpga_plat_init);
-+
-+/*----------------------- Machine Descriptions ------------------------------
-+ *
-+ * Machine description is simply a set of platform/board specific callbacks
-+ * This is not directly related to DeviceTree based dynamic device creation,
-+ * however as part of early device tree scan, we also select the right
-+ * callback set, by matching the DT compatible name.
-+ */
-+
-+static const char *aa4_compat[] __initdata = {
-+	"snps,arc-angel4",
-+	NULL,
-+};
-+
-+MACHINE_START(ANGEL4, "angel4")
-+	.dt_compat	= aa4_compat,
-+	.init_early	= plat_fpga_early_init,
-+	.init_machine	= plat_fpga_populate_dev,
-+	.init_irq	= plat_fpga_init_IRQ,
-+#ifdef CONFIG_SMP
-+	.init_smp	= iss_model_init_smp,
-+#endif
-+MACHINE_END
-+
-+static const char *ml509_compat[] __initdata = {
-+	"snps,arc-ml509",
-+	NULL,
-+};
-+
-+MACHINE_START(ML509, "ml509")
-+	.dt_compat	= ml509_compat,
-+	.init_early	= plat_fpga_early_init,
-+	.init_machine	= plat_fpga_populate_dev,
-+	.init_irq	= plat_fpga_init_IRQ,
-+#ifdef CONFIG_SMP
-+	.init_smp	= iss_model_init_smp,
-+#endif
-+MACHINE_END
 diff --git a/arch/arc/plat-arcfpga/smp.c b/arch/arc/plat-arcfpga/smp.c
-index a95fcdb..fec1879 100644
+index fec1879..68a53b1 100644
 --- a/arch/arc/plat-arcfpga/smp.c
 +++ b/arch/arc/plat-arcfpga/smp.c
-@@ -63,10 +63,8 @@ void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc)
-  * -Master      : init_IRQ()
-  * -Other(s)    : start_kernel_secondary()
+@@ -12,7 +12,8 @@
   */
--void arc_platform_smp_init_cpu(void)
-+void iss_model_init_smp(unsigned int cpu)
- {
--	int cpu = smp_processor_id();
--
- 	/* Check if CPU is configured for more than 16 interrupts */
- 	if (NR_IRQS <= 16 || get_hw_config_num_irq() <= 16)
- 		panic("[arcfpga] IRQ system can't support IDU IPI\n");
+ 
+ #include <linux/smp.h>
+-#include <asm/irq.h>
++#include <linux/irq.h>
++#include <plat/irq.h>
+ #include <plat/smp.h>
+ 
+ static char smp_cpuinfo_buf[128];
 -- 
 1.7.4.1
 
