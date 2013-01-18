@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751143Ab3ARIDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 03:03:06 -0500
-Received: from mga03.intel.com ([143.182.124.21]:58751 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759Ab3ARIDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 03:03:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,490,1355126400"; 
-   d="asc'?scan'208";a="245510453"
-Message-ID: <1358496270.21816.3.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/2] mtd: cmdlinepart: Make it into a module
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 18 Jan 2013 10:04:30 +0200
-In-Reply-To: <1358298770-20286-1-git-send-email-lkundrak@v3.sk>
-References: <1358298770-20286-1-git-send-email-lkundrak@v3.sk>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-rzLx6FuqsGZfH6/ryiD+"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1750980Ab3ARIId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 03:08:33 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:36064 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750750Ab3ARIIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 03:08:30 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArYNAFAC+VB5LBTV/2dsb2JhbABFuBaGHRdzgh4BAQQBJxMcIwULCAMOCgklDwUlAyETiBMFvAIVkSQDklmDMolOhnyDCQ
+Date: Fri, 18 Jan 2013 19:08:25 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, xfs@oss.sgi.com, Greg Thelen <gthelen@google.com>,
+        Ying Han <yinghan@google.com>, Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
+Message-ID: <20130118080825.GP2498@dastard>
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
+ <1354058086-27937-10-git-send-email-david@fromorbit.com>
+ <50F6FDC8.5020909@parallels.com>
+ <20130116225521.GF2498@dastard>
+ <50F7475F.90609@parallels.com>
+ <20130117042245.GG2498@dastard>
+ <50F84118.7030608@parallels.com>
+ <20130118001029.GK2498@dastard>
+ <50F89C77.4010101@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F89C77.4010101@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 17, 2013 at 04:51:03PM -0800, Glauber Costa wrote:
+> On 01/17/2013 04:10 PM, Dave Chinner wrote:
+> > and we end up with:
+> > 
+> > lru_add(struct lru_list *lru, struct lru_item *item)
+> > {
+> > 	node_id = min(object_to_nid(item), lru->numnodes);
+> > 	
+> > 	__lru_add(lru, node_id, &item->global_list);
+> > 	if (memcg) {
+> > 		memcg_lru = find_memcg_lru(lru->memcg_lists, memcg_id)
+> > 		__lru_add_(memcg_lru, node_id, &item->memcg_list);
+> > 	}
+> > }
+> 
+> A follow up thought: If we have multiple memcgs, and global pressure
+> kicks in (meaning none of them are particularly under pressure),
+> shouldn't we try to maintain fairness among them and reclaim equal
+> proportions from them all the same way we do with sb's these days, for
+> instance?
 
---=-rzLx6FuqsGZfH6/ryiD+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I don't like the complexity. The global lists will be reclaimed in
+LRU order, so it's going to be as fair as can be. If there's a memcg
+that has older unused objectsi than the others, then froma global
+perspective they should be reclaimed first because the memcg is not
+using them...
 
-On Wed, 2013-01-16 at 02:12 +0100, Lubomir Rintel wrote:
-> All other partitioning schemes can be compiled as modules
->=20
-> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+> I would argue that if your memcg is small, the list of dentries is
+> small: scan it all for the nodes you want shouldn't hurt.
 
-Both pushed to l2-mtd.git, thanks!
+on the contrary - the memcg might be small, but what happens if
+someone ran a find across all the filesytsems on the system in it?
+Then the LRU will be huge, and scanning expensive...
 
---=20
-Best Regards,
-Artem Bityutskiy
+We can't make static decisions about small and large, and we can't
+trust heuristics to get it right, either. If we have a single list,
+we don't/can't do node-aware reclaim efficiently and so shouldn't
+even try.
 
---=-rzLx6FuqsGZfH6/ryiD+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+> if the memcg is big, it will have per-node lists anyway.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+But may have no need for them due to the workload. ;)
 
-iQIcBAABAgAGBQJQ+QIOAAoJECmIfjd9wqK0+CsP/2hylVPVFT5wfFU54C6wkOpa
-49juJcm1IIFppBGOoQ5KSI/GzZyvzWldcaYsKbxGiAG38Oqc+HdK3IiUc4nLk5Ow
-LzpnuMQaBq6NEkZi5IEN0e5t3CfYe5w/iabY3JpoZcO1Ii8O5XXypm5SLWnrkEEG
-FkNV7vgea+qNHwHsR5DUGCfvbzd/9eX8Z9JcpQUhfdTcI0DMbBr0PcagQefLbr9H
-zwhDwsqbHoUf7Q3TSFA79Rh5NV3vqOy8XdhVZXZCCBLwj2g24seKh9G8wjf74GgF
-f1nhda9oUyYu6At2/iRX6854SA8aCV09snWk9bD0zg1zsrYDBcP9ZBCR/7rg2u2I
-K6OEZxBH3M9imh5wUlpRC58YHgqjFKkTiCFqHNUdUGp+na9s/sjiG6lVHcu+mm58
-+gGEqtWQFoyvREpb0qXZgvGWNks41Rzgx+ZW914X+mCSGZY+uUIYLPJhYpivny0D
-sRMNfDJ4UEvL6vvodZo5hdmCi0oWngiMBjO+4smIzHgIDX7SNZBYltHKeET3Euyv
-y2lxn4wY4nO0RHgbEnfzov5fO24cBvuozjVUcPGbsRtSX/+hkPk801va/WPzixn2
-7J33bn97xiN7gi1nyBsVPKwacWlzeCY0CWIXh0fLvIFwSosl7YK9y9rguMgBD226
-4W8ySrVXp6ifkC0p1VzU
-=cn7o
------END PGP SIGNATURE-----
+> Given that, do we really want to pay the price of two list_heads
+> in the objects?
 
---=-rzLx6FuqsGZfH6/ryiD+--
+I'm just looking at ways at making the infrastructure sane. If the
+cost is an extra 16 bytes per object on a an LRU, then that a small
+price to pay for having robust memory reclaim infrastructure....
 
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
