@@ -1,121 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab3ARAFX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 19:05:23 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:60903 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753445Ab3ARAFV (ORCPT
+	id S1754909Ab3ARAKf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 19:10:35 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:36909 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753123Ab3ARAKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 19:05:21 -0500
-Date: Fri, 18 Jan 2013 09:05:17 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: shmobile: sh73a0: Use generic irqchip_init()
-Message-ID: <20130118000517.GI16740@verge.net.au>
-References: <1358424013-31306-1-git-send-email-thierry.reding@avionic-design.de>
+	Thu, 17 Jan 2013 19:10:33 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArgOAHKS+FB5LIZq/2dsb2JhbABFhVyyNYYhF3OCHgEBBAEnExwjEAgDDgoJJQ8FJQMhE4gTBbteFZEkA5YLiU6GfIMJ
+Date: Fri, 18 Jan 2013 11:10:29 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, xfs@oss.sgi.com, Greg Thelen <gthelen@google.com>,
+        Ying Han <yinghan@google.com>, Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
+Message-ID: <20130118001029.GK2498@dastard>
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
+ <1354058086-27937-10-git-send-email-david@fromorbit.com>
+ <50F6FDC8.5020909@parallels.com>
+ <20130116225521.GF2498@dastard>
+ <50F7475F.90609@parallels.com>
+ <20130117042245.GG2498@dastard>
+ <50F84118.7030608@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358424013-31306-1-git-send-email-thierry.reding@avionic-design.de>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <50F84118.7030608@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 01:00:13PM +0100, Thierry Reding wrote:
-> The asm/hardware/gic.h header does no longer exist and the corresponding
-> functionality was moved to linux/irqchip.h and linux/irqchip/arm-gic.h
-> respectively. gic_handle_irq() and of_irq_init() are no longer available
-> either and have been replaced by irqchip_init().
+On Thu, Jan 17, 2013 at 10:21:12AM -0800, Glauber Costa wrote:
+> >> Deepest fears:
+> >>
+> >> 1) snakes.
+> > 
+> > Snakes are merely poisonous. Drop Bears are far more dangerous :P
 > 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-
-Thanks.
-
-Due to the hairy upstream requirements of the arm-soc tree
-I believe this patch needs to be split in two. A 'board' patch
-for board-kzm9g-reference.c. And an 'soc' patch for the
-remaining portions.
-
-I'm happy to split the patch myself or for you to do so.
-
-> ---
->  arch/arm/mach-shmobile/board-kzm9g-reference.c | 1 -
->  arch/arm/mach-shmobile/intc-sh73a0.c           | 9 ++-------
->  arch/arm/mach-shmobile/setup-sh73a0.c          | 2 --
->  3 files changed, 2 insertions(+), 10 deletions(-)
+> fears are irrational anyway...
 > 
-> diff --git a/arch/arm/mach-shmobile/board-kzm9g-reference.c b/arch/arm/mach-shmobile/board-kzm9g-reference.c
-> index 04e9ae5..08c95dd 100644
-> --- a/arch/arm/mach-shmobile/board-kzm9g-reference.c
-> +++ b/arch/arm/mach-shmobile/board-kzm9g-reference.c
-> @@ -90,7 +90,6 @@ DT_MACHINE_START(KZM9G_DT, "kzm9g-reference")
->  	.init_early	= sh73a0_add_early_devices_dt,
->  	.nr_irqs	= NR_IRQS_LEGACY,
->  	.init_irq	= sh73a0_init_irq_dt,
-> -	.handle_irq	= gic_handle_irq,
->  	.init_machine	= kzm_init,
->  	.init_late	= shmobile_init_late,
->  	.init_time	= shmobile_timer_init,
-> diff --git a/arch/arm/mach-shmobile/intc-sh73a0.c b/arch/arm/mach-shmobile/intc-sh73a0.c
-> index fc7c8da..91faba6 100644
-> --- a/arch/arm/mach-shmobile/intc-sh73a0.c
-> +++ b/arch/arm/mach-shmobile/intc-sh73a0.c
-> @@ -21,9 +21,9 @@
->  #include <linux/interrupt.h>
->  #include <linux/module.h>
->  #include <linux/irq.h>
-> -#include <linux/of_irq.h>
->  #include <linux/io.h>
->  #include <linux/sh_intc.h>
-> +#include <linux/irqchip.h>
->  #include <linux/irqchip/arm-gic.h>
->  #include <mach/intc.h>
->  #include <mach/irqs.h>
-> @@ -462,14 +462,9 @@ void __init sh73a0_init_irq(void)
->  }
->  
->  #ifdef CONFIG_OF
-> -static const struct of_device_id irq_of_match[] __initconst = {
-> -	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
-> -	{ },
-> -};
-> -
->  void __init sh73a0_init_irq_dt(void)
->  {
-> -	of_irq_init(irq_of_match);
-> +	irqchip_init();
->  	gic_arch_extn.irq_set_wake = sh73a0_set_wake;
->  }
->  #endif
-> diff --git a/arch/arm/mach-shmobile/setup-sh73a0.c b/arch/arm/mach-shmobile/setup-sh73a0.c
-> index abf1eb0..2ecd668 100644
-> --- a/arch/arm/mach-shmobile/setup-sh73a0.c
-> +++ b/arch/arm/mach-shmobile/setup-sh73a0.c
-> @@ -36,7 +36,6 @@
->  #include <mach/irqs.h>
->  #include <mach/sh73a0.h>
->  #include <mach/common.h>
-> -#include <asm/hardware/gic.h>
->  #include <asm/mach-types.h>
->  #include <asm/mach/map.h>
->  #include <asm/mach/arch.h>
-> @@ -892,7 +891,6 @@ DT_MACHINE_START(SH73A0_DT, "Generic SH73A0 (Flattened Device Tree)")
->  	.init_early	= sh73a0_add_early_devices_dt,
->  	.nr_irqs	= NR_IRQS_LEGACY,
->  	.init_irq	= sh73a0_init_irq_dt,
-> -	.handle_irq	= gic_handle_irq,
->  	.init_machine	= sh73a0_add_standard_devices_dt,
->  	.init_time	= shmobile_timer_init,
->  	.dt_compat	= sh73a0_boards_compat_dt,
-> -- 
-> 1.8.1.1
+> >> 2) It won't surprise you to know that I am adapting your work, which
+> >> provides a very sane and helpful API, to memcg shrinking.
+> >>
+> >> The dumb and simple approach in there is to copy all lrus that are
+> >> marked memcg aware at memcg creation time. The API is kept the same,
+> >> but when you do something like list_lru_add(lru, obj), for instance, we
+> >> derive the memcg context from obj and relay it to the right list.
+> > 
+> > At which point, you don't want the overhead of per-node lists.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> This is one of the assumptions we may have to end up doing here.
+
+*nod*. Good to get it out in the open to see if we can work around
+it....
+
+> > This is a problem that superblock contexts don't care about - they
+> > are global by their very nature. Hence I'm wondering if trying to
+> > fit these two very different behaviours into the one LRU list is
+> > the wrong approach.
+> > 
 > 
+> I am not that much concerned about that, honestly. I like the API, and I
+> like the fact that it allow me to have the subsystems using it
+> transparently, just by referring to the "master" lru (the dentry, inode,
+> etc). It reduces complexity to reuse the data structures, but that is
+> not paramount.
+> 
+> However, a more flexible data structure in which we could select at
+> least at creation time if we want per-node lists or not, would be quite
+> helpful.
+
+*nod*
+
+> > Consider this: these patches give us a generic LRU list structure.
+> > It currently uses a list_head in each object for indexing, and we
+> > are talking about single LRU lists because of this limitation and
+> > trying to build infrastructure that can support this indexing
+> > mechanism.
+> > 
+> > I think that all of thses problems go away if we replace the
+> > list_head index in the object with a "struct lru_item" index. To
+> > start with, it's just a s/list_head/lru_item/ changeover, but from
+> > there we can expand.
+> > 
+> > What I'm getting at is that we want to have multiple axis of
+> > tracking and reclaim, but we only have a single axis for tracking.
+> > If the lru_item grew a second list_head called "memcg_lru", then
+> > suddenly the memcg LRUs can be maintained separately to the global
+> > (per-superblock) LRU. i.e.:
+> > 
+> > struct lru_item {
+> > 	struct list_head global_list;
+> > 	struct list_head memcg_list;
+> > }
+> > 
+> 
+> I may be misunderstanding you, but that is not how I see it. Your global
+> list AFAIU, is more like a hook to keep the lists together. The actual
+> accesses to it are controlled by a parent structure, like the
+> super-block, which in turns, embeds a shrinker.
+> 
+> So we get (in the sb case), from shrinker to sb, and from sb to dentry
+> list (or inode). We never care about the global list head.
+> 
+> From this point on, we "entered" the LRU, but we still don't know which
+> list to reclaim from: there is one list per node, and we need to figure
+> out which is our target, based on the flags.
+> 
+> This list selection mechanism is where I am usually hooking memcg: and
+> for the same way you are using an array - given a node, you want fast
+> access to the underlying list - so am I. Given the memcg context, I want
+> to get to the corresponding memcg list.
+> 
+> Now, in my earliest implementations, the memcg would still take me to a
+> node-wide array, and an extra level would be required. We seem to agree
+> that (at least as a starting point) getting rid of this extra level, so
+> the memcg colapses all objects in the same list would provide decent
+> behavior in most cases, while still keeping the footprint manageable. So
+> that is what I am pursuing at the moment.
+
+Ah, I think that maybe you misunderstood. There are two main
+triggers for reclaim: global memory is short, or a memcg is short on
+memory.
+
+To find appropriate objects quickly for reclaim, we need objects on
+appropriate lists. E.g. if we are doing global reclaim (e.g. from
+kswapd) it means a node is short of memory and needs more. Hence
+just walking a per-node list is the most efficient method of doing
+this. Having to walk all the memcg LRU lists to find objects on a
+specific node is not feasible. OTOH, if we are doing memcg specific
+reclaim, the opposite is true.
+
+SO, if we have:
+
+struct lru_list_head {
+	struct list_head	head;
+	spinlock_t		lock;
+	u64			nr_items;
+}
+
+struct lru_list {
+	struct lru_list_node	*per_node;
+	int			numnodes;
+	nodemask_t		active_nodes;
+	void			*memcg_lists;	/* managed by memcg code */
+	....
+}
+
+lru_list_init(bool per_node)
+{
+	numnodes = 1;
+	if (pernode)
+		numnodes = NRNODES;
+	lru_list->pernode = alloc(numnodes * sizeof(struct lru_list_head));
+	....
+}
+
+And then each object uses:
+
+struct lru_item {
+	struct list_head global_list;
+	struct list_head memcg_list;
+}
+
+and we end up with:
+
+lru_add(struct lru_list *lru, struct lru_item *item)
+{
+	node_id = min(object_to_nid(item), lru->numnodes);
+	
+	__lru_add(lru, node_id, &item->global_list);
+	if (memcg) {
+		memcg_lru = find_memcg_lru(lru->memcg_lists, memcg_id)
+		__lru_add_(memcg_lru, node_id, &item->memcg_list);
+	}
+}
+
+Then when it comes to reclaim, the reclaim information passed tot eh
+shrinker needs to indicate either the node to reclaim from or the
+memcg_id (or both), so that reclaim can walk the appropriate list to
+find objects to reclaim. Then we delete them from both lists and
+reclaim the object....
+
+And the memcg lists can instantiate new struct lru_list and index
+them appropriately according to some <handwave> criteria. Then all
+the generic LRU code cares about is that the memcg lookup returns
+the correct struct lru_list for it to operate on...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
