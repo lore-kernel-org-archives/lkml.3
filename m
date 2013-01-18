@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab3ARKrE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 05:47:04 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51087 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab3ARKrA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 05:47:00 -0500
+	id S1751833Ab3ARKrP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 05:47:15 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58175 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751596Ab3ARKrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 05:47:12 -0500
 From: "Patil, Rachna" <rachna@ti.com>
 To: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
@@ -20,9 +19,9 @@ CC: Samuel Ortiz <sameo@linux.intel.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
         "Patil, Rachna" <rachna@ti.com>
-Subject: [PATCH v3 1/8] input: ti_am335x_tsc: Step enable bits made configurable
-Date: Fri, 18 Jan 2013 16:17:41 +0530
-Message-ID: <c7c319bc186fd98b35fb834e770561572bfb81b5.1358502134.git.rachna@ti.com>
+Subject: [PATCH v3 2/8] input: ti_am335x_tsc: Order of TSC wires, made configurable
+Date: Fri, 18 Jan 2013 16:17:55 +0530
+Message-ID: <5f8e85b7554c6a8e4d1575b2e5ce1e3cec0c8ade.1358502134.git.rachna@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1358502134.git.rachna@ti.com>
 References: <cover.1358502134.git.rachna@ti.com>
@@ -34,75 +33,329 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Patil, Rachna" <rachna@ti.com>
 
-Current code has hard coded value written to
-step enable bits. Now the bits are updated based
-on how many steps are needed to be configured got
-from platform data.
-
-The user needs to take care not to exceed
-the count more than 16. While using ADC and TSC
-one should take care to set this parameter correctly.
+The current driver expected touchscreen input
+wires(XP,XN,YP,YN) to be connected in a particular order.
+Making changes to accept this as platform data.
 
 Signed-off-by: Patil, Rachna <rachna@ti.com>
 ---
- drivers/input/touchscreen/ti_am335x_tsc.c |   10 ++++++++--
- include/linux/mfd/ti_am335x_tscadc.h      |    1 -
- 2 files changed, 8 insertions(+), 3 deletions(-)
+ drivers/input/touchscreen/ti_am335x_tsc.c |  156 ++++++++++++++++++++++++++---
+ include/linux/input/ti_am335x_tsc.h       |   12 +++
+ include/linux/mfd/ti_am335x_tscadc.h      |   10 +-
+ 3 files changed, 159 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index 51e7b87..da652e0 100644
+index da652e0..0c460f9 100644
 --- a/drivers/input/touchscreen/ti_am335x_tsc.c
 +++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -39,6 +39,7 @@ struct titsc {
- 	unsigned int		irq;
- 	unsigned int		wires;
- 	unsigned int		x_plate_resistance;
-+	unsigned int		enable_bits;
+@@ -33,6 +33,17 @@
+ #define SEQ_SETTLE		275
+ #define MAX_12BIT		((1 << 12) - 1)
+ 
++/*
++ * Refer to function regbit_map() to
++ * map the values in the matrix.
++ */
++static int config[4][4] = {
++		{1,	0,	1,	0},
++		{2,	3,	2,	3},
++		{4,	5,	4,	5},
++		{0,	6,	0,	6}
++};
++
+ struct titsc {
+ 	struct input_dev	*input;
+ 	struct ti_tscadc_dev	*mfd_tscadc;
+@@ -42,6 +53,9 @@ struct titsc {
+ 	unsigned int		enable_bits;
  	bool			pen_down;
  	int			steps_to_configure;
++	int			config_inp[20];
++	int			bit_xp, bit_xn, bit_yp, bit_yn;
++	int			inp_xp, inp_xn, inp_yp, inp_yn;
  };
-@@ -57,6 +58,7 @@ static void titsc_writel(struct titsc *tsc, unsigned int reg,
+ 
+ static unsigned int titsc_readl(struct titsc *ts, unsigned int reg)
+@@ -55,6 +69,107 @@ static void titsc_writel(struct titsc *tsc, unsigned int reg,
+ 	writel(val, tsc->mfd_tscadc->tscadc_base + reg);
+ }
+ 
++/*
++ * Each of the analog lines are mapped
++ * with one or two register bits,
++ * which can be either pulled high/low
++ * depending on the value to be read.
++ */
++static int regbit_map(int val)
++{
++	int map_bits = 0;
++
++	switch (val) {
++	case 1:
++		map_bits = XPP;
++		break;
++	case 2:
++		map_bits = XNP;
++		break;
++	case 3:
++		map_bits = XNN;
++		break;
++	case 4:
++		map_bits = YPP;
++		break;
++	case 5:
++		map_bits = YPN;
++		break;
++	case 6:
++		map_bits = YNN;
++		break;
++	}
++
++	return map_bits;
++}
++
++static int titsc_config_wires(struct titsc *ts_dev)
++{
++	int		analog_line[10], wire_order[10];
++	int		i, temp_bits, err;
++
++	for (i = 0; i < 4; i++) {
++		/*
++		 * Get the order in which TSC wires are attached
++		 * w.r.t. each of the analog input lines on the EVM.
++		 */
++		analog_line[i] = ts_dev->config_inp[i] & 0xF0;
++		analog_line[i] = analog_line[i] >> 4;
++
++		wire_order[i] = ts_dev->config_inp[i] & 0x0F;
++	}
++
++	for (i = 0; i < 4; i++) {
++		switch (wire_order[i]) {
++		case 0:
++			temp_bits = config[analog_line[i]][0];
++			if (temp_bits == 0) {
++				err = -EINVAL;
++				goto ret;
++			} else {
++				ts_dev->bit_xp = regbit_map(temp_bits);
++				ts_dev->inp_xp = analog_line[i];
++				break;
++			}
++		case 1:
++			temp_bits = config[analog_line[i]][1];
++			if (temp_bits == 0) {
++				err = -EINVAL;
++				goto ret;
++			} else {
++				ts_dev->bit_xn = regbit_map(temp_bits);
++				ts_dev->inp_xn = analog_line[i];
++				break;
++			}
++		case 2:
++			temp_bits = config[analog_line[i]][2];
++			if (temp_bits == 0) {
++				err = -EINVAL;
++				goto ret;
++			} else {
++				ts_dev->bit_yp = regbit_map(temp_bits);
++				ts_dev->inp_yp = analog_line[i];
++				break;
++			}
++		case 3:
++			temp_bits = config[analog_line[i]][3];
++			if (temp_bits == 0) {
++				err = -EINVAL;
++				goto ret;
++			} else {
++				ts_dev->bit_yn = regbit_map(temp_bits);
++				ts_dev->inp_yn = analog_line[i];
++				break;
++			}
++		}
++	}
++
++	return 0;
++
++ret:
++	return err;
++}
++
  static void titsc_step_config(struct titsc *ts_dev)
  {
  	unsigned int	config;
-+	unsigned int	stepenable = 0;
- 	int i, total_steps;
+@@ -65,18 +180,18 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 	total_steps = 2 * ts_dev->steps_to_configure;
  
- 	/* Configure the Step registers */
-@@ -128,7 +130,11 @@ static void titsc_step_config(struct titsc *ts_dev)
- 	titsc_writel(ts_dev, REG_STEPDELAY(total_steps + 2),
+ 	config = STEPCONFIG_MODE_HWSYNC |
+-			STEPCONFIG_AVG_16 | STEPCONFIG_XPP;
++			STEPCONFIG_AVG_16 | ts_dev->bit_xp;
+ 	switch (ts_dev->wires) {
+ 	case 4:
+-		config |= STEPCONFIG_INP_AN2 | STEPCONFIG_XNN;
++		config |= STEPCONFIG_INP(ts_dev->inp_yp) | ts_dev->bit_xn;
+ 		break;
+ 	case 5:
+-		config |= STEPCONFIG_YNN |
+-				STEPCONFIG_INP_AN4 | STEPCONFIG_XNN |
+-				STEPCONFIG_YPP;
++		config |= ts_dev->bit_yn |
++				STEPCONFIG_INP_AN4 | ts_dev->bit_xn |
++				ts_dev->bit_yp;
+ 		break;
+ 	case 8:
+-		config |= STEPCONFIG_INP_AN2 | STEPCONFIG_XNN;
++		config |= STEPCONFIG_INP(ts_dev->inp_yp) | ts_dev->bit_xn;
+ 		break;
+ 	}
+ 
+@@ -87,18 +202,18 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 
+ 	config = 0;
+ 	config = STEPCONFIG_MODE_HWSYNC |
+-			STEPCONFIG_AVG_16 | STEPCONFIG_YNN |
++			STEPCONFIG_AVG_16 | ts_dev->bit_yn |
+ 			STEPCONFIG_INM_ADCREFM | STEPCONFIG_FIFO1;
+ 	switch (ts_dev->wires) {
+ 	case 4:
+-		config |= STEPCONFIG_YPP;
++		config |= ts_dev->bit_yp | STEPCONFIG_INP(ts_dev->inp_xp);
+ 		break;
+ 	case 5:
+-		config |= STEPCONFIG_XPP | STEPCONFIG_INP_AN4 |
+-				STEPCONFIG_XNP | STEPCONFIG_YPN;
++		config |= ts_dev->bit_xp | STEPCONFIG_INP_AN4 |
++				ts_dev->bit_xn | ts_dev->bit_yp;
+ 		break;
+ 	case 8:
+-		config |= STEPCONFIG_YPP;
++		config |= ts_dev->bit_yp | STEPCONFIG_INP(ts_dev->inp_xp);
+ 		break;
+ 	}
+ 
+@@ -109,9 +224,9 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 
+ 	config = 0;
+ 	/* Charge step configuration */
+-	config = STEPCONFIG_XPP | STEPCONFIG_YNN |
++	config = ts_dev->bit_xp | ts_dev->bit_yn |
+ 			STEPCHARGE_RFP_XPUL | STEPCHARGE_RFM_XNUR |
+-			STEPCHARGE_INM_AN1 | STEPCHARGE_INP_AN1;
++			STEPCHARGE_INM_AN1 | STEPCHARGE_INP(ts_dev->inp_yp);
+ 
+ 	titsc_writel(ts_dev, REG_CHARGECONFIG, config);
+ 	titsc_writel(ts_dev, REG_CHARGEDELAY, CHARGEDLY_OPENDLY);
+@@ -119,13 +234,14 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 	config = 0;
+ 	/* Configure to calculate pressure */
+ 	config = STEPCONFIG_MODE_HWSYNC |
+-			STEPCONFIG_AVG_16 | STEPCONFIG_YPP |
+-			STEPCONFIG_XNN | STEPCONFIG_INM_ADCREFM;
++			STEPCONFIG_AVG_16 | ts_dev->bit_yp |
++			ts_dev->bit_xn | STEPCONFIG_INM_ADCREFM |
++			STEPCONFIG_INP(ts_dev->inp_xp);
+ 	titsc_writel(ts_dev, REG_STEPCONFIG(total_steps + 1), config);
+ 	titsc_writel(ts_dev, REG_STEPDELAY(total_steps + 1),
  			STEPCONFIG_OPENDLY);
  
--	titsc_writel(ts_dev, REG_SE, STPENB_STEPENB_TC);
-+	for (i = 0; i <= (total_steps + 2); i++)
-+		stepenable |= 1 << i;
-+	ts_dev->enable_bits = stepenable;
-+
-+	titsc_writel(ts_dev, REG_SE, ts_dev->enable_bits);
- }
+-	config |= STEPCONFIG_INP_AN3 | STEPCONFIG_FIFO1;
++	config |= STEPCONFIG_INP(ts_dev->inp_yn) | STEPCONFIG_FIFO1;
+ 	titsc_writel(ts_dev, REG_STEPCONFIG(total_steps + 2), config);
+ 	titsc_writel(ts_dev, REG_STEPDELAY(total_steps + 2),
+ 			STEPCONFIG_OPENDLY);
+@@ -295,6 +411,8 @@ static int titsc_probe(struct platform_device *pdev)
+ 	ts_dev->wires = pdata->tsc_init->wires;
+ 	ts_dev->x_plate_resistance = pdata->tsc_init->x_plate_resistance;
+ 	ts_dev->steps_to_configure = pdata->tsc_init->steps_to_configure;
++	memcpy(ts_dev->config_inp, pdata->tsc_init->wire_config,
++			sizeof(pdata->tsc_init->wire_config));
  
- static void titsc_read_coordinates(struct titsc *ts_dev,
-@@ -250,7 +256,7 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+ 	err = request_irq(ts_dev->irq, titsc_irq,
+ 			  0, pdev->dev.driver->name, ts_dev);
+@@ -304,6 +422,11 @@ static int titsc_probe(struct platform_device *pdev)
+ 	}
  
- 	titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
+ 	titsc_writel(ts_dev, REG_IRQENABLE, IRQENB_FIFO0THRES);
++	err = titsc_config_wires(ts_dev);
++	if (err) {
++		dev_err(&pdev->dev, "wrong i/p wire configuration\n");
++		goto err_free_irq;
++	}
+ 	titsc_step_config(ts_dev);
+ 	titsc_writel(ts_dev, REG_FIFO0THR, ts_dev->steps_to_configure);
  
--	titsc_writel(ts_dev, REG_SE, STPENB_STEPENB_TC);
-+	titsc_writel(ts_dev, REG_SE, ts_dev->enable_bits);
- 	return IRQ_HANDLED;
- }
+@@ -373,6 +496,7 @@ static int titsc_resume(struct device *dev)
+ 				0x00);
+ 		titsc_writel(ts_dev, REG_IRQCLR, IRQENB_HW_PEN);
+ 	}
++	titsc_config_wires(ts_dev);
+ 	titsc_step_config(ts_dev);
+ 	titsc_writel(ts_dev, REG_FIFO0THR,
+ 			ts_dev->steps_to_configure);
+diff --git a/include/linux/input/ti_am335x_tsc.h b/include/linux/input/ti_am335x_tsc.h
+index 49269a2..6a66b4d 100644
+--- a/include/linux/input/ti_am335x_tsc.h
++++ b/include/linux/input/ti_am335x_tsc.h
+@@ -12,12 +12,24 @@
+  *			A step configured to read a single
+  *			co-ordinate value, can be applied
+  *			more number of times for better results.
++ * @wire_config:	Different EVM's could have a different order
++ *			for connecting wires on touchscreen.
++ *			We need to provide an 8 bit number where in
++ *			the 1st four bits represent the analog lines
++ *			and the next 4 bits represent positive/
++ *			negative terminal on that input line.
++ *			Notations to represent the input lines and
++ *			terminals resoectively is as follows:
++ *			AIN0 = 0, AIN1 = 1 and so on till AIN7 = 7.
++ *			XP  = 0, XN = 1, YP = 2, YN = 3.
++ *
+  */
  
+ struct tsc_data {
+ 	int wires;
+ 	int x_plate_resistance;
+ 	int steps_to_configure;
++	int wire_config[10];
+ };
+ 
+ #endif
 diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index c79ad5d..23e4f33 100644
+index 23e4f33..9624fea 100644
 --- a/include/linux/mfd/ti_am335x_tscadc.h
 +++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -47,7 +47,6 @@
- #define STEPENB_MASK		(0x1FFFF << 0)
- #define STEPENB(val)		((val) << 0)
- #define STPENB_STEPENB		STEPENB(0x1FFFF)
--#define STPENB_STEPENB_TC	STEPENB(0x1FFF)
+@@ -72,8 +72,6 @@
+ #define STEPCONFIG_INM_ADCREFM	STEPCONFIG_INM(8)
+ #define STEPCONFIG_INP_MASK	(0xF << 19)
+ #define STEPCONFIG_INP(val)	((val) << 19)
+-#define STEPCONFIG_INP_AN2	STEPCONFIG_INP(2)
+-#define STEPCONFIG_INP_AN3	STEPCONFIG_INP(3)
+ #define STEPCONFIG_INP_AN4	STEPCONFIG_INP(4)
+ #define STEPCONFIG_INP_ADCREFM	STEPCONFIG_INP(8)
+ #define STEPCONFIG_FIFO1	BIT(26)
+@@ -95,7 +93,6 @@
+ #define STEPCHARGE_INM_AN1	STEPCHARGE_INM(1)
+ #define STEPCHARGE_INP_MASK	(0xF << 19)
+ #define STEPCHARGE_INP(val)	((val) << 19)
+-#define STEPCHARGE_INP_AN1	STEPCHARGE_INP(1)
+ #define STEPCHARGE_RFM_MASK	(3 << 23)
+ #define STEPCHARGE_RFM(val)	((val) << 23)
+ #define STEPCHARGE_RFM_XNUR	STEPCHARGE_RFM(1)
+@@ -117,6 +114,13 @@
+ #define CNTRLREG_8WIRE		CNTRLREG_AFE_CTRL(3)
+ #define CNTRLREG_TSCENB		BIT(7)
  
- /* IRQ enable */
- #define IRQENB_HW_PEN		BIT(0)
++#define XPP			STEPCONFIG_XPP
++#define XNP			STEPCONFIG_XNP
++#define XNN			STEPCONFIG_XNN
++#define YPP			STEPCONFIG_YPP
++#define YPN			STEPCONFIG_YPN
++#define YNN			STEPCONFIG_YNN
++
+ #define ADC_CLK			3000000
+ #define	MAX_CLK_DIV		7
+ #define TOTAL_STEPS		16
 -- 
 1.7.9.5
 
