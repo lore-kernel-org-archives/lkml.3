@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab3ARMcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:32:14 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:59301 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755836Ab3ARMcL (ORCPT
+	id S1755841Ab3ARMc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:32:29 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:61743 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab3ARMc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:32:11 -0500
+	Fri, 18 Jan 2013 07:32:26 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 47/76] ARC: Support for high priority interrupts in the in-core intc
-Date: Fri, 18 Jan 2013 17:55:01 +0530
-Message-ID: <1358511930-7424-48-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 49/76] ARC: Diagnostics: show_regs() etc
+Date: Fri, 18 Jan 2013 17:55:03 +0530
+Message-ID: <1358511930-7424-50-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -23,492 +23,379 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bit of hack/kludge right now where we disable preemption if a
-L2 (High prio) IRQ is taken while L1 (Low prio) is active.
-
-Need to revisit this
-
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/Kconfig                |   19 ++++++
- arch/arc/include/asm/entry.h    |   95 +++++++++++++++++++++++++++++++
- arch/arc/include/asm/irqflags.h |    6 ++-
- arch/arc/kernel/entry.S         |  117 +++++++++++++++++++++++++++++++++++++++
- arch/arc/kernel/irq.c           |  104 ++++++++++++++++++++++++++++++++++-
- 5 files changed, 339 insertions(+), 2 deletions(-)
+ arch/arc/kernel/troubleshoot.c |  305 ++++++++++++++++++++++++++++++++++++++++
+ arch/arc/mm/tlbex.S            |   20 +++
+ 2 files changed, 325 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index ae126a7..20f3c4a 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -208,6 +208,25 @@ config ARC_PAGE_SIZE_4K
- 
- endchoice
- 
-+config ARC_COMPACT_IRQ_LEVELS
-+	bool "ARCompact IRQ Priorities: High(2)/Low(1)"
-+	default n
-+	# Timer HAS to be high priority, for any other high priority config
-+	select ARC_IRQ3_LV2
-+
-+if ARC_COMPACT_IRQ_LEVELS
-+
-+config ARC_IRQ3_LV2
-+	bool
-+
-+config ARC_IRQ5_LV2
-+	bool
-+
-+config ARC_IRQ6_LV2
-+	bool
-+
-+endif
-+
- config ARC_FPU_SAVE_RESTORE
- 	bool "Enable FPU state persistence across context switch"
- 	default n
-diff --git a/arch/arc/include/asm/entry.h b/arch/arc/include/asm/entry.h
-index 6b491d1..89e6583 100644
---- a/arch/arc/include/asm/entry.h
-+++ b/arch/arc/include/asm/entry.h
-@@ -5,6 +5,12 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  *
-+ * Vineetg: March 2009 (Supporting 2 levels of Interrupts)
-+ *  Stack switching code can no longer reliably rely on the fact that
-+ *  if we are NOT in user mode, stack is switched to kernel mode.
-+ *  e.g. L2 IRQ interrupted a L1 ISR which had not yet completed
-+ *  it's prologue including stack switching from user mode
-+ *
-  * Vineetg: Aug 28th 2008: Bug #94984
-  *  -Zero Overhead Loop Context shd be cleared when entering IRQ/EXcp/Trap
-  *   Normally CPU does this automatically, however when doing FAKE rtie,
-@@ -268,6 +274,33 @@
- 	 * assume SP is kernel mode SP. _NO_ need to do any stack switching
- 	 */
- 
-+#ifdef CONFIG_ARC_COMPACT_IRQ_LEVELS
-+	/* However....
-+	 * If Level 2 Interrupts enabled, we may end up with a corner case:
-+	 * 1. User Task executing
-+	 * 2. L1 IRQ taken, ISR starts (CPU auto-switched to KERNEL mode)
-+	 * 3. But before it could switch SP from USER to KERNEL stack
-+	 *      a L2 IRQ "Interrupts" L1
-+	 * Thay way although L2 IRQ happened in Kernel mode, stack is still
-+	 * not switched.
-+	 * To handle this, we may need to switch stack even if in kernel mode
-+	 * provided SP has values in range of USER mode stack ( < 0x7000_0000 )
-+	 */
-+	brlo sp, VMALLOC_START, 88f
-+
-+	/* TODO: vineetg:
-+	 * We need to be a bit more cautious here. What if a kernel bug in
-+	 * L1 ISR, caused SP to go whaco (some small value which looks like
-+	 * USER stk) and then we take L2 ISR.
-+	 * Above brlo alone would treat it as a valid L1-L2 sceanrio
-+	 * instead of shouting alound
-+	 * The only feasible way is to make sure this L2 happened in
-+	 * L1 prelogue ONLY i.e. ilink2 is less than a pre-set marker in
-+	 * L1 ISR before it switches stack
-+	 */
-+
-+#endif
-+
- 	/* Save Pre Intr/Exception KERNEL MODE SP on kernel stack
- 	 * safe-keeping not really needed, but it keeps the epilogue code
- 	 * (SP restore) simpler/uniform.
-@@ -503,6 +536,42 @@
- 	sub sp, sp, 4
- .endm
- 
-+.macro SAVE_ALL_INT2
-+
-+	/* TODO-vineetg: SMP we can't use global nor can we use
-+	*   SCRATCH0 as we do for int1 because while int1 is using
-+	*   it, int2 can come
-+	*/
-+	/* retsore original r9 , saved in sys_saved_r9 */
-+	ld  r9, [@int2_saved_reg]
-+
-+	/* now we are ready to save the remaining context :) */
-+	st      orig_r8_IS_IRQ2, [sp, 8]    /* Event Type */
-+	st      0, [sp, 4]    /* orig_r0 , N/A for IRQ */
-+	SAVE_CALLER_SAVED
-+	st.a    r26, [sp, -4]   /* gp */
-+	st.a    fp, [sp, -4]
-+	st.a    blink, [sp, -4]
-+	st.a    ilink2, [sp, -4]
-+	lr	r9, [status32_l2]
-+	st.a    r9, [sp, -4]
-+	st.a    lp_count, [sp, -4]
-+	lr	r9, [lp_end]
-+	st.a    r9, [sp, -4]
-+	lr	r9, [lp_start]
-+	st.a    r9, [sp, -4]
-+	lr	r9, [bta_l2]
-+	st.a    r9, [sp, -4]
-+
-+#ifdef PT_REGS_CANARY
-+	mov   r9, 0xdeadbee2
-+	st    r9, [sp, -4]
-+#endif
-+
-+	/* move up by 1 word to "create" pt_regs->"stack_place_holder" */
-+	sub sp, sp, 4
-+.endm
-+
- /*--------------------------------------------------------------
-  * Restore all registers used by interrupt handlers.
-  *
-@@ -537,6 +606,32 @@
- 	/* orig_r0 and orig_r8 skipped automatically */
- .endm
- 
-+.macro RESTORE_ALL_INT2
-+	add sp, sp, 4       /* hop over unused "pt_regs->stack_place_holder" */
-+
-+	ld.ab   r9, [sp, 4]
-+	sr	r9, [bta_l2]
-+	ld.ab   r9, [sp, 4]
-+	sr	r9, [lp_start]
-+	ld.ab   r9, [sp, 4]
-+	sr	r9, [lp_end]
-+	ld.ab   r9, [sp, 4]
-+	mov	lp_count, r9
-+	ld.ab   r9, [sp, 4]
-+	sr	r9, [status32_l2]
-+	ld.ab   r9, [sp, 4]
-+	mov	ilink2, r9
-+	ld.ab   blink, [sp, 4]
-+	ld.ab   fp, [sp, 4]
-+	ld.ab   r26, [sp, 4]    /* gp */
-+	RESTORE_CALLER_SAVED
-+
-+	ld  sp, [sp] /* restore original sp */
-+	/* orig_r0 and orig_r8 skipped automatically */
-+
-+.endm
-+
-+
- /* Get CPU-ID of this core */
- .macro  GET_CPU_ID  reg
- 	lr  \reg, [identity]
-diff --git a/arch/arc/include/asm/irqflags.h b/arch/arc/include/asm/irqflags.h
-index 5cc1080..ccd8480 100644
---- a/arch/arc/include/asm/irqflags.h
-+++ b/arch/arc/include/asm/irqflags.h
-@@ -95,7 +95,11 @@ static inline long arch_local_save_flags(void)
+diff --git a/arch/arc/kernel/troubleshoot.c b/arch/arc/kernel/troubleshoot.c
+index 80bfe2a..7c10873 100644
+--- a/arch/arc/kernel/troubleshoot.c
++++ b/arch/arc/kernel/troubleshoot.c
+@@ -6,12 +6,317 @@
   */
- static inline int arch_irqs_disabled_flags(unsigned long flags)
- {
--	return !(flags & (STATUS_E1_MASK));
-+	return !(flags & (STATUS_E1_MASK
-+#ifdef CONFIG_ARC_COMPACT_IRQ_LEVELS
-+			| STATUS_E2_MASK
-+#endif
-+		));
- }
  
- static inline int arch_irqs_disabled(void)
-diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index 703c5ff..36172a4 100644
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -36,6 +36,8 @@
-  *   exception. Thus FAKE RTIE needed in low level Priv-Violation handler.
-  *   Instr Error could also cause similar scenario, so same there as well.
-  *
-+ * Vineetg: March 2009 (Supporting 2 levels of Interrupts)
-+ *
-  * Vineetg: Aug 28th 2008: Bug #94984
-  *  -Zero Overhead Loop Context shd be cleared when entering IRQ/EXcp/Trap
-  *   Normally CPU does this automatically, however when doing FAKE rtie,
-@@ -101,13 +103,25 @@ VECTOR   mem_service             ; 0x8, Mem exception   (0x1)
- VECTOR   instr_service           ; 0x10, Instrn Error   (0x2)
- 
- ; ******************** Device ISRs **********************
-+#ifdef CONFIG_ARC_IRQ3_LV2
-+VECTOR   handle_interrupt_level2
-+#else
- VECTOR   handle_interrupt_level1
-+#endif
- 
- VECTOR   handle_interrupt_level1
- 
-+#ifdef CONFIG_ARC_IRQ5_LV2
-+VECTOR   handle_interrupt_level2
-+#else
- VECTOR   handle_interrupt_level1
-+#endif
- 
-+#ifdef CONFIG_ARC_IRQ6_LV2
-+VECTOR   handle_interrupt_level2
-+#else
- VECTOR   handle_interrupt_level1
-+#endif
- 
- .rept   25
- VECTOR   handle_interrupt_level1 ; Other devices
-@@ -144,6 +158,17 @@ VECTOR   reserved                ; Reserved Exceptions
- int1_saved_reg:
- 	.zero 4
- 
-+/* Each Interrupt level needs it's own scratch */
-+#ifdef CONFIG_ARC_COMPACT_IRQ_LEVELS
+ #include <linux/ptrace.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/fs.h>
++#include <linux/kdev_t.h>
++#include <linux/fs_struct.h>
++#include <linux/proc_fs.h>
++#include <linux/file.h>
++#include <asm/arcregs.h>
 +
-+	.section .data		; NOT .global
-+	.type   int2_saved_reg, @object
-+	.size   int2_saved_reg, 4
-+int2_saved_reg:
-+	.zero 4
-+
-+#endif
-+
- ; ---------------------------------------------
- 	.section .text, "ax",@progbits
- 
-@@ -157,6 +182,55 @@ reserved:		; processor restart
- 
- ;##################### Interrupt Handling ##############################
- 
-+#ifdef CONFIG_ARC_COMPACT_IRQ_LEVELS
-+; ---------------------------------------------
-+;  Level 2 ISR: Can interrupt a Level 1 ISR
-+; ---------------------------------------------
-+ARC_ENTRY handle_interrupt_level2
-+
-+	; TODO-vineetg for SMP this wont work
-+	; free up r9 as scratchpad
-+	st  r9, [@int2_saved_reg]
-+
-+	;Which mode (user/kernel) was the system in when intr occured
-+	lr  r9, [status32_l2]
-+
-+	SWITCH_TO_KERNEL_STK
-+	SAVE_ALL_INT2
-+
-+	;------------------------------------------------------
-+	; if L2 IRQ interrupted a L1 ISR, disable preemption
-+	;------------------------------------------------------
-+
-+	ld r9, [sp, PT_status32]        ; get statu32_l2 (saved in pt_regs)
-+	bbit0 r9, STATUS_A1_BIT, 1f     ; L1 not active when L2 IRQ, so normal
-+
-+	; A1 is set in status32_l2
-+	; bump thread_info->preempt_count (Disable preemption)
-+	GET_CURR_THR_INFO_FROM_SP   r10
-+	ld      r9, [r10, THREAD_INFO_PREEMPT_COUNT]
-+	add     r9, r9, 1
-+	st      r9, [r10, THREAD_INFO_PREEMPT_COUNT]
-+
-+1:
-+	;------------------------------------------------------
-+	; setup params for Linux common ISR and invoke it
-+	;------------------------------------------------------
-+	lr  r0, [icause2]
-+	and r0, r0, 0x1f
-+
-+	bl.d  @arch_do_IRQ
-+	mov r1, sp
-+
-+	mov r8,0x2
-+	sr r8, [AUX_IRQ_LV12]       ; clear bit in Sticky Status Reg
-+
-+	b   ret_from_exception
-+
-+ARC_EXIT handle_interrupt_level2
-+
-+#endif
-+
- ; ---------------------------------------------
- ;  Level 1 ISR
- ; ---------------------------------------------
-@@ -624,6 +698,49 @@ restore_regs :
- 
- not_exception:
- 
-+#ifdef CONFIG_ARC_COMPACT_IRQ_LEVELS
-+
-+	bbit0  r10, STATUS_A2_BIT, not_level2_interrupt
-+
-+	;------------------------------------------------------------------
-+	; if L2 IRQ interrupted a L1 ISR,  we'd disbaled preemption earlier
-+	; so that sched doesnt move to new task, causing L1 to be delayed
-+	; undeterministically. Now that we've achieved that, lets reset
-+	; things to what they were, before returning from L2 context
-+	;----------------------------------------------------------------
-+
-+	ld r9, [sp, PT_orig_r8]        ; get orig_r8 to make sure it is
-+	brne r9, orig_r8_IS_IRQ2, 149f ; infact a L2 ISR ret path
-+
-+	ld r9, [sp, PT_status32]       ; get statu32_l2 (saved in pt_regs)
-+	bbit0 r9, STATUS_A1_BIT, 149f  ; L1 not active when L2 IRQ, so normal
-+
-+	; A1 is set in status32_l2
-+	; decrement thread_info->preempt_count (re-enable preemption)
-+	GET_CURR_THR_INFO_FROM_SP   r10
-+	ld      r9, [r10, THREAD_INFO_PREEMPT_COUNT]
-+
-+	; paranoid check, given A1 was active when A2 happened, preempt count
-+	; must not be 0 beccause we would have incremented it.
-+	; If this does happen we simply HALT as it means a BUG !!!
-+	cmp     r9, 0
-+	bnz     2f
-+	flag 1
-+
-+2:
-+	sub     r9, r9, 1
-+	st      r9, [r10, THREAD_INFO_PREEMPT_COUNT]
-+
-+149:
-+	;return from level 2
-+	RESTORE_ALL_INT2
-+debug_marker_l2:
-+	rtie
-+
-+not_level2_interrupt:
-+
-+#endif
-+
- 	bbit0  r10, STATUS_A1_BIT, not_level1_interrupt
- 
- 	;return from level 1
-diff --git a/arch/arc/kernel/irq.c b/arch/arc/kernel/irq.c
-index 3c18e66..ca70894 100644
---- a/arch/arc/kernel/irq.c
-+++ b/arch/arc/kernel/irq.c
-@@ -23,15 +23,32 @@
-  * what it does ?
-  * -setup Vector Table Base Reg - in case Linux not linked at 0x8000_0000
-  * -Disable all IRQs (on CPU side)
-+ * -Optionally, setup the High priority Interrupts as Level 2 IRQs
-  */
- void __init arc_init_IRQ(void)
- {
--	int level_mask = level_mask;
-+	int level_mask = 0;
- 
- 	write_aux_reg(AUX_INTR_VEC_BASE, _int_vec_base_lds);
- 
- 	/* Disable all IRQs: enable them as devices request */
- 	write_aux_reg(AUX_IENABLE, 0);
-+
-+       /* setup any high priority Interrupts (Level2 in ARCompact jargon) */
-+#ifdef CONFIG_ARC_IRQ3_LV2
-+	level_mask |= (1 << 3);
-+#endif
-+#ifdef CONFIG_ARC_IRQ5_LV2
-+	level_mask |= (1 << 5);
-+#endif
-+#ifdef CONFIG_ARC_IRQ6_LV2
-+	level_mask |= (1 << 6);
-+#endif
-+
-+	if (level_mask) {
-+		pr_info("Level-2 interrupts bitset %x\n", level_mask);
-+		write_aux_reg(AUX_IRQ_LEV, level_mask);
-+	}
- }
- 
- /*
-@@ -141,6 +158,90 @@ int __init get_hw_config_num_irq(void)
- 	return 0;
- }
- 
 +/*
-+ * arch_local_irq_enable - Enable interrupts.
-+ *
-+ * 1. Explicitly called to re-enable interrupts
-+ * 2. Implicitly called from spin_unlock_irq, write_unlock_irq etc
-+ *    which maybe in hard ISR itself
-+ *
-+ * Semantics of this function change depending on where it is called from:
-+ *
-+ * -If called from hard-ISR, it must not invert interrupt priorities
-+ *  e.g. suppose TIMER is high priority (Level 2) IRQ
-+ *    Time hard-ISR, timer_interrupt( ) calls spin_unlock_irq several times.
-+ *    Here local_irq_enable( ) shd not re-enable lower priority interrupts
-+ * -If called from soft-ISR, it must re-enable all interrupts
-+ *    soft ISR are low prioity jobs which can be very slow, thus all IRQs
-+ *    must be enabled while they run.
-+ *    Now hardware context wise we may still be in L2 ISR (not done rtie)
-+ *    still we must re-enable both L1 and L2 IRQs
-+ *  Another twist is prev scenario with flow being
-+ *     L1 ISR ==> interrupted by L2 ISR  ==> L2 soft ISR
-+ *     here we must not re-enable Ll as prev Ll Interrupt's h/w context will get
-+ *     over-written (this is deficiency in ARC700 Interrupt mechanism)
++ * Common routine to print scratch regs (r0-r12) or callee regs (r13-r25)
++ *   -Prints 3 regs per line and a CR.
++ *   -To continue, callee regs right after scratch, special handling of CR
 + */
-+
-+#ifdef CONFIG_ARC_COMPACT_IRQ_LEVELS	/* Complex version for 2 IRQ levels */
-+
-+void arch_local_irq_enable(void)
++static noinline void print_reg_file(long *reg_rev, int start_num)
 +{
++	unsigned int i;
++	char buf[512];
++	int n = 0, len = sizeof(buf);
 +
-+	unsigned long flags;
-+	flags = arch_local_save_flags();
++	/* weird loop because pt_regs regs rev r12..r0, r25..r13 */
++	for (i = start_num; i < start_num + 13; i++) {
++		n += scnprintf(buf + n, len - n, "r%02u: 0x%08lx\t",
++			       i, (unsigned long)*reg_rev);
 +
-+	/* Allow both L1 and L2 at the onset */
-+	flags |= (STATUS_E1_MASK | STATUS_E2_MASK);
++		if (((i + 1) % 3) == 0)
++			n += scnprintf(buf + n, len - n, "\n");
 +
-+	/* Called from hard ISR (between irq_enter and irq_exit) */
-+	if (in_irq()) {
-+
-+		/* If in L2 ISR, don't re-enable any further IRQs as this can
-+		 * cause IRQ priorities to get upside down. e.g. it could allow
-+		 * L1 be taken while in L2 hard ISR which is wrong not only in
-+		 * theory, it can also cause the dreaded L1-L2-L1 scenario
-+		 */
-+		if (flags & STATUS_A2_MASK)
-+			flags &= ~(STATUS_E1_MASK | STATUS_E2_MASK);
-+
-+		/* Even if in L1 ISR, allowe Higher prio L2 IRQs */
-+		else if (flags & STATUS_A1_MASK)
-+			flags &= ~(STATUS_E1_MASK);
++		reg_rev--;
 +	}
 +
-+	/* called from soft IRQ, ideally we want to re-enable all levels */
++	if (start_num != 0)
++		n += scnprintf(buf + n, len - n, "\n\n");
 +
-+	else if (in_softirq()) {
-+
-+		/* However if this is case of L1 interrupted by L2,
-+		 * re-enabling both may cause whaco L1-L2-L1 scenario
-+		 * because ARC700 allows level 1 to interrupt an active L2 ISR
-+		 * Thus we disable both
-+		 * However some code, executing in soft ISR wants some IRQs
-+		 * to be enabled so we re-enable L2 only
-+		 *
-+		 * How do we determine L1 intr by L2
-+		 *  -A2 is set (means in L2 ISR)
-+		 *  -E1 is set in this ISR's pt_regs->status32 which is
-+		 *      saved copy of status32_l2 when l2 ISR happened
-+		 */
-+		struct pt_regs *pt = get_irq_regs();
-+		if ((flags & STATUS_A2_MASK) && pt &&
-+		    (pt->status32 & STATUS_A1_MASK)) {
-+			/*flags &= ~(STATUS_E1_MASK | STATUS_E2_MASK); */
-+			flags &= ~(STATUS_E1_MASK);
-+		}
-+	}
-+
-+	arch_local_irq_restore(flags);
++	pr_info("%s", buf);
 +}
 +
-+#else /* ! CONFIG_ARC_COMPACT_IRQ_LEVELS */
++static void show_callee_regs(struct callee_regs *cregs)
++{
++	print_reg_file(&(cregs->r13), 13);
++}
 +
-+/*
-+ * Simpler version for only 1 level of interrupt
-+ * Here we only Worry about Level 1 Bits
-+ */
- void arch_local_irq_enable(void)
++void print_task_path_n_nm(struct task_struct *tsk, char *buf)
++{
++	struct path path;
++	char *path_nm = NULL;
++	struct mm_struct *mm;
++	struct file *exe_file;
++
++	mm = get_task_mm(tsk);
++	if (!mm)
++		goto done;
++
++	exe_file = get_mm_exe_file(mm);
++	mmput(mm);
++
++	if (exe_file) {
++		path = exe_file->f_path;
++		path_get(&exe_file->f_path);
++		fput(exe_file);
++		path_nm = d_path(&path, buf, 255);
++		path_put(&path);
++	}
++
++done:
++	pr_info("%s, TGID %u\n", path_nm, tsk->tgid);
++}
++EXPORT_SYMBOL(print_task_path_n_nm);
++
++static void show_faulting_vma(unsigned long address, char *buf)
++{
++	struct vm_area_struct *vma;
++	struct inode *inode;
++	unsigned long ino = 0;
++	dev_t dev = 0;
++	char *nm = buf;
++
++	vma = find_vma(current->active_mm, address);
++
++	/* check against the find_vma( ) behaviour which returns the next VMA
++	 * if the container VMA is not found
++	 */
++	if (vma && (vma->vm_start <= address)) {
++		struct file *file = vma->vm_file;
++		if (file) {
++			struct path *path = &file->f_path;
++			nm = d_path(path, buf, PAGE_SIZE - 1);
++			inode = vma->vm_file->f_path.dentry->d_inode;
++			dev = inode->i_sb->s_dev;
++			ino = inode->i_ino;
++		}
++		pr_info("    @off 0x%lx in [%s]\n"
++			"    VMA: 0x%08lx to 0x%08lx\n\n",
++		       address - vma->vm_start, nm, vma->vm_start, vma->vm_end);
++	} else
++		pr_info("    @No matching VMA found\n");
++}
++
++static void show_ecr_verbose(struct pt_regs *regs)
++{
++	unsigned int vec, cause_code, cause_reg;
++	unsigned long address;
++
++	cause_reg = current->thread.cause_code;
++	pr_info("\n[ECR]: 0x%08x => ", cause_reg);
++
++	/* For Data fault, this is data address not instruction addr */
++	address = current->thread.fault_address;
++
++	vec = cause_reg >> 16;
++	cause_code = (cause_reg >> 8) & 0xFF;
++
++	/* For DTLB Miss or ProtV, display the memory involved too */
++	if (vec == ECR_V_DTLB_MISS) {
++		pr_cont("Invalid (%s) @ 0x%08lx by insn @ 0x%08lx\n",
++		       (cause_code == 0x01) ? "Read From" :
++		       ((cause_code == 0x02) ? "Write to" : "EX"),
++		       address, regs->ret);
++	} else if (vec == ECR_V_ITLB_MISS) {
++		pr_cont("Insn could not be fetched\n");
++	} else if (vec == ECR_V_MACH_CHK) {
++		pr_cont("%s\n", (cause_code == 0x0) ?
++					"Double Fault" : "Other Fatal Err");
++
++	} else if (vec == ECR_V_PROTV) {
++		if (cause_code == ECR_C_PROTV_INST_FETCH)
++			pr_cont("Execute from Non-exec Page\n");
++		else if (cause_code == ECR_C_PROTV_LOAD)
++			pr_cont("Read from Non-readable Page\n");
++		else if (cause_code == ECR_C_PROTV_STORE)
++			pr_cont("Write to Non-writable Page\n");
++		else if (cause_code == ECR_C_PROTV_XCHG)
++			pr_cont("Data exchange protection violation\n");
++		else if (cause_code == ECR_C_PROTV_MISALIG_DATA)
++			pr_cont("Misaligned r/w from 0x%08lx\n", address);
++	} else if (vec == ECR_V_INSN_ERR) {
++		pr_cont("Illegal Insn\n");
++	} else {
++		pr_cont("Check Programmer's Manual\n");
++	}
++}
++
++/************************************************************************
++ *  API called by rest of kernel
++ ***********************************************************************/
+ 
+ void show_regs(struct pt_regs *regs)
  {
- 	unsigned long flags;
-@@ -158,4 +259,5 @@ void arch_local_irq_enable(void)
- 	flags |= (STATUS_E1_MASK | STATUS_E2_MASK);
- 	arch_local_irq_restore(flags);
++	struct task_struct *tsk = current;
++	struct callee_regs *cregs;
++	char *buf;
++
++	buf = (char *)__get_free_page(GFP_TEMPORARY);
++	if (!buf)
++		return;
++
++	print_task_path_n_nm(tsk, buf);
++
++	if (current->thread.cause_code)
++		show_ecr_verbose(regs);
++
++	pr_info("[EFA]: 0x%08lx\n", current->thread.fault_address);
++	pr_info("[ERET]: 0x%08lx (PC of Faulting Instr)\n", regs->ret);
++
++	show_faulting_vma(regs->ret, buf);	/* faulting code, not data */
++
++	/* can't use print_vma_addr() yet as it doesn't check for
++	 * non-inclusive vma
++	 */
++
++	/* print special regs */
++	pr_info("status32: 0x%08lx\n", regs->status32);
++	pr_info(" SP: 0x%08lx\tFP: 0x%08lx\n", regs->sp, regs->fp);
++	pr_info("BTA: 0x%08lx\tBLINK: 0x%08lx\n",
++		regs->bta, regs->blink);
++	pr_info("LPS: 0x%08lx\tLPE: 0x%08lx\tLPC: 0x%08lx\n",
++	       regs->lp_start, regs->lp_end, regs->lp_count);
++
++	/* print regs->r0 thru regs->r12
++	 * Sequential printing was generating horrible code
++	 */
++	print_reg_file(&(regs->r0), 0);
++
++	/* If Callee regs were saved, display them too */
++	cregs = (struct callee_regs *)current->thread.callee_reg;
++	if (cregs)
++		show_callee_regs(cregs);
++
++	free_page((unsigned long)buf);
  }
+ 
+ void show_kernel_fault_diag(const char *str, struct pt_regs *regs,
+ 			    unsigned long address, unsigned long cause_reg)
+ {
++	current->thread.fault_address = address;
++	current->thread.cause_code = cause_reg;
++
++	/* Caller and Callee regs */
++	show_regs(regs);
++
++	/* Show stack trace if this Fatality happened in kernel mode */
++	if (!user_mode(regs))
++		show_stacktrace(current, regs);
+ }
++
++#ifdef CONFIG_DEBUG_FS
++
++#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/mount.h>
++#include <linux/pagemap.h>
++#include <linux/init.h>
++#include <linux/namei.h>
++#include <linux/debugfs.h>
++
++static struct dentry *test_dentry;
++static struct dentry *test_dir;
++static struct dentry *test_u32_dentry;
++
++static u32 clr_on_read = 1;
++
++#ifdef CONFIG_ARC_DBG_TLB_MISS_COUNT
++u32 numitlb, numdtlb, num_pte_not_present;
++
++static int fill_display_data(char *kbuf)
++{
++	size_t num = 0;
++	num += sprintf(kbuf + num, "I-TLB Miss %x\n", numitlb);
++	num += sprintf(kbuf + num, "D-TLB Miss %x\n", numdtlb);
++	num += sprintf(kbuf + num, "PTE not present %x\n", num_pte_not_present);
++
++	if (clr_on_read)
++		numitlb = numdtlb = num_pte_not_present = 0;
++
++	return num;
++}
++
++static int tlb_stats_open(struct inode *inode, struct file *file)
++{
++	file->private_data = (void *)__get_free_page(GFP_KERNEL);
++	return 0;
++}
++
++/* called on user read(): display the couters */
++static ssize_t tlb_stats_output(struct file *file,	/* file descriptor */
++				char __user *user_buf,	/* user buffer */
++				size_t len,		/* length of buffer */
++				loff_t *offset)		/* offset in the file */
++{
++	size_t num;
++	char *kbuf = (char *)file->private_data;
++
++	/* All of the data can he shoved in one iteration */
++	if (*offset != 0)
++		return 0;
++
++	num = fill_display_data(kbuf);
++
++	/* simple_read_from_buffer() is helper for copy to user space
++	   It copies up to @2 (num) bytes from kernel buffer @4 (kbuf) at offset
++	   @3 (offset) into the user space address starting at @1 (user_buf).
++	   @5 (len) is max size of user buffer
++	 */
++	return simple_read_from_buffer(user_buf, num, offset, kbuf, len);
++}
++
++/* called on user write : clears the counters */
++static ssize_t tlb_stats_clear(struct file *file, const char __user *user_buf,
++			       size_t length, loff_t *offset)
++{
++	numitlb = numdtlb = num_pte_not_present = 0;
++	return length;
++}
++
++static int tlb_stats_close(struct inode *inode, struct file *file)
++{
++	free_page((unsigned long)(file->private_data));
++	return 0;
++}
++
++static const struct file_operations tlb_stats_file_ops = {
++	.read = tlb_stats_output,
++	.write = tlb_stats_clear,
++	.open = tlb_stats_open,
++	.release = tlb_stats_close
++};
 +#endif
- EXPORT_SYMBOL(arch_local_irq_enable);
++
++static int __init arc_debugfs_init(void)
++{
++	test_dir = debugfs_create_dir("arc", NULL);
++
++#ifdef CONFIG_ARC_DBG_TLB_MISS_COUNT
++	test_dentry = debugfs_create_file("tlb_stats", 0444, test_dir, NULL,
++					  &tlb_stats_file_ops);
++#endif
++
++	test_u32_dentry =
++	    debugfs_create_u32("clr_on_read", 0444, test_dir, &clr_on_read);
++
++	return 0;
++}
++
++module_init(arc_debugfs_init);
++
++static void __exit arc_debugfs_exit(void)
++{
++	debugfs_remove(test_u32_dentry);
++	debugfs_remove(test_dentry);
++	debugfs_remove(test_dir);
++}
++module_exit(arc_debugfs_exit);
++
++#endif
+diff --git a/arch/arc/mm/tlbex.S b/arch/arc/mm/tlbex.S
+index fc5b971..164b021 100644
+--- a/arch/arc/mm/tlbex.S
++++ b/arch/arc/mm/tlbex.S
+@@ -133,6 +133,14 @@ ex_saved_reg1:
+ 	lsr     r0, r2, (PAGE_SHIFT - 2)
+ 	and     r0, r0, ( (PTRS_PER_PTE - 1) << 2)
+ 	ld.aw   r0, [r1, r0]            ; get PTE and PTE ptr for fault addr
++#ifdef CONFIG_ARC_DBG_TLB_MISS_COUNT
++	and.f 0, r0, _PAGE_PRESENT
++	bz   1f
++	ld   r2, [num_pte_not_present]
++	add  r2, r2, 1
++	st   r2, [num_pte_not_present]
++1:
++#endif
+ 
+ .endm
+ 
+@@ -219,6 +227,12 @@ ARC_ENTRY EV_TLBMissI
+ 
+ 	TLBMISS_FREEUP_REGS
+ 
++#ifdef CONFIG_ARC_DBG_TLB_MISS_COUNT
++	ld  r0, [@numitlb]
++	add r0, r0, 1
++	st  r0, [@numitlb]
++#endif
++
+ 	;----------------------------------------------------------------
+ 	; Get the PTE corresponding to V-addr accessed
+ 	LOAD_FAULT_PTE
+@@ -252,6 +266,12 @@ ARC_ENTRY EV_TLBMissD
+ 
+ 	TLBMISS_FREEUP_REGS
+ 
++#ifdef CONFIG_ARC_DBG_TLB_MISS_COUNT
++	ld  r0, [@numdtlb]
++	add r0, r0, 1
++	st  r0, [@numdtlb]
++#endif
++
+ 	;----------------------------------------------------------------
+ 	; Get the PTE corresponding to V-addr accessed
+ 	; If PTE exists, it will setup, r0 = PTE, r1 = Ptr to PTE
 -- 
 1.7.4.1
 
