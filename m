@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab3ARTJp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 14:09:45 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:41908 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab3ARTJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 14:09:42 -0500
-Message-ID: <50F99E08.4060107@parallels.com>
-Date: Fri, 18 Jan 2013 11:10:00 -0800
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <xfs@oss.sgi.com>,
-        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
-References: <1354058086-27937-1-git-send-email-david@fromorbit.com> <1354058086-27937-10-git-send-email-david@fromorbit.com> <50F6FDC8.5020909@parallels.com> <20130116225521.GF2498@dastard> <50F7475F.90609@parallels.com> <20130117042245.GG2498@dastard> <50F84118.7030608@parallels.com> <20130118001029.GK2498@dastard> <50F893D2.7080103@parallels.com> <20130118081133.GQ2498@dastard>
-In-Reply-To: <20130118081133.GQ2498@dastard>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1755112Ab3ARTJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 14:09:56 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:48137 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab3ARTJx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 14:09:53 -0500
+Subject: Re: [RFC][PATCH v3] slub: Keep page and object in sync in
+ slab_alloc_node()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
+        John Kacur <jkacur@gmail.com>,
+        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
+In-Reply-To: <0000013c4ef61783-2778b0f1-fdc1-421b-9d3e-ccd68d528115-000000@email.amazonses.com>
+References: <1358446258.23211.32.camel@gandalf.local.home>
+	 <1358447864.23211.34.camel@gandalf.local.home>
+	 <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com>
+	 <1358458996.23211.46.camel@gandalf.local.home>
+	 <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com>
+	 <1358462763.23211.57.camel@gandalf.local.home>
+	 <1358464245.23211.62.camel@gandalf.local.home>
+	 <1358464837.23211.66.camel@gandalf.local.home>
+	 <1358468598.23211.67.camel@gandalf.local.home>
+	 <1358468924.23211.69.camel@gandalf.local.home>
+	 <1358521791.7383.11.camel@gandalf.local.home>
+	 <0000013c4ef61783-2778b0f1-fdc1-421b-9d3e-ccd68d528115-000000@email.amazonses.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Jan 2013 11:09:50 -0800
+Message-ID: <1358536190.11051.573.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [216.239.55.194]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2013 12:11 AM, Dave Chinner wrote:
-> On Thu, Jan 17, 2013 at 04:14:10PM -0800, Glauber Costa wrote:
->> On 01/17/2013 04:10 PM, Dave Chinner wrote:
->>> And then each object uses:
->>>
->>> struct lru_item {
->>> 	struct list_head global_list;
->>> 	struct list_head memcg_list;
->>> }
->> by objects you mean dentries, inodes, and the such, right?
-> 
-> Yup.
-> 
->> Would it be acceptable to you?
-> 
-> If it works the way I think it should, then yes.
-> 
->> We've been of course doing our best to avoid increasing the size of the
->> objects, therefore this is something we've never mentioned. However, if
->> it would be acceptable from the fs POV, this would undoubtedly make our
->> life extremely easier.
-> 
-> I've been trying hard to work out how to avoid increasing the size
-> of structures as well. But if we can't work out how to implement
-> something sanely with only a single list head per object to work
-> from, then increasing the size of objects is something that we need
-> to consider if it solves all the problems we are trying to solve.
-> 
-> i.e. if adding a second list head makes the code dumb, simple,
-> obviously correct and hard to break then IMO it's a no-brainer.
-> But we have to tick all the right boxes first...
-> 
+On Fri, 2013-01-18 at 18:40 +0000, Christoph Lameter wrote:
 
-One of our main efforts recently has been trying to reduce memcg impact
-when it is not in use, even if its compiled in. So what really bothers
-me here is the fact that we are increasing the size of dentries and
-inodes no matter what.
+> The fetching of the tid is the only critical thing here. If the tid is
+> retrieved from the right cpu then the cmpxchg will fail if any changes
+> occured to freelist or the page variable.
+> 
+> The tid can be retrieved without disabling preemption through
+> this_cpu_read().
 
-Still within the idea of exploring the playing field, would an
-indirection be worth it ?
-We would increase the total per-object memory usage by 8 bytes instead
-of 16: the dentry gets a pointer, and a separate allocation for the
-list_lru. When memcg is not being actively used, we can allocate a
-smaller list_lru, with only the global list. When it is, we allocate the
-whole thing.
+Strictly speaking, this_cpu_read() _does_ disable preemption.
 
-Embedding the lru is certainly easier from my PoV, the main question is
-how much do you, as a fs representative, value those 8 bytes?
+Of course, on x86, this_cpu_read() uses __this_cpu_read()
+
+
 
