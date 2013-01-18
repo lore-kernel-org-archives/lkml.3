@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751160Ab3ARIBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 03:01:36 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:17268 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750898Ab3ARIBe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 03:01:34 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 18 Jan 2013 16:02:13 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Linus Walleij <linus.walleij@linaro.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the gpio-lw tree
-Message-ID: <20130118080211.GA8706@S2101-09.ap.freescale.net>
-References: <20130118140346.3f9b182aa7daa175b4f136bf@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130118140346.3f9b182aa7daa175b4f136bf@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	id S1751143Ab3ARIDG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 03:03:06 -0500
+Received: from mga03.intel.com ([143.182.124.21]:58751 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750759Ab3ARIDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 03:03:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,490,1355126400"; 
+   d="asc'?scan'208";a="245510453"
+Message-ID: <1358496270.21816.3.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/2] mtd: cmdlinepart: Make it into a module
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Lubomir Rintel <lkundrak@v3.sk>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 18 Jan 2013 10:04:30 +0200
+In-Reply-To: <1358298770-20286-1-git-send-email-lkundrak@v3.sk>
+References: <1358298770-20286-1-git-send-email-lkundrak@v3.sk>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-rzLx6FuqsGZfH6/ryiD+"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 02:03:46PM +1100, Stephen Rothwell wrote:
-> Hi Linus,
-> 
-> After merging the gpio-lw tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-My bad, sorry for that.  I just sent a v2 in reply to this message
-for fixing the error.  I spent some time trying to install a ppc64
-toolchain for testing, but unfortunately with on luck.  So Stephen,
-I have to rely on linux-next to give it a test again.  Thanks.
 
-Shawn
+--=-rzLx6FuqsGZfH6/ryiD+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> drivers/gpio/devres.c:51:5: error: redefinition of 'devm_gpio_request'
-> include/linux/gpio.h:97:19: note: previous definition of 'devm_gpio_request' was here
-> drivers/gpio/devres.c:80:5: error: redefinition of 'devm_gpio_request_one'
-> include/linux/gpio.h:109:19: note: previous definition of 'devm_gpio_request_one' was here
-> drivers/gpio/devres.c:113:6: error: redefinition of 'devm_gpio_free'
-> include/linux/gpio.h:128:20: note: previous definition of 'devm_gpio_free' was here
-> 
-> Presumably caused by commit d39cd0301255 ("gpio: devm_gpio_* support
-> should not depend on GPIOLIB").
+On Wed, 2013-01-16 at 02:12 +0100, Lubomir Rintel wrote:
+> All other partitioning schemes can be compiled as modules
+>=20
+> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+
+Both pushed to l2-mtd.git, thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-rzLx6FuqsGZfH6/ryiD+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQ+QIOAAoJECmIfjd9wqK0+CsP/2hylVPVFT5wfFU54C6wkOpa
+49juJcm1IIFppBGOoQ5KSI/GzZyvzWldcaYsKbxGiAG38Oqc+HdK3IiUc4nLk5Ow
+LzpnuMQaBq6NEkZi5IEN0e5t3CfYe5w/iabY3JpoZcO1Ii8O5XXypm5SLWnrkEEG
+FkNV7vgea+qNHwHsR5DUGCfvbzd/9eX8Z9JcpQUhfdTcI0DMbBr0PcagQefLbr9H
+zwhDwsqbHoUf7Q3TSFA79Rh5NV3vqOy8XdhVZXZCCBLwj2g24seKh9G8wjf74GgF
+f1nhda9oUyYu6At2/iRX6854SA8aCV09snWk9bD0zg1zsrYDBcP9ZBCR/7rg2u2I
+K6OEZxBH3M9imh5wUlpRC58YHgqjFKkTiCFqHNUdUGp+na9s/sjiG6lVHcu+mm58
++gGEqtWQFoyvREpb0qXZgvGWNks41Rzgx+ZW914X+mCSGZY+uUIYLPJhYpivny0D
+sRMNfDJ4UEvL6vvodZo5hdmCi0oWngiMBjO+4smIzHgIDX7SNZBYltHKeET3Euyv
+y2lxn4wY4nO0RHgbEnfzov5fO24cBvuozjVUcPGbsRtSX/+hkPk801va/WPzixn2
+7J33bn97xiN7gi1nyBsVPKwacWlzeCY0CWIXh0fLvIFwSosl7YK9y9rguMgBD226
+4W8ySrVXp6ifkC0p1VzU
+=cn7o
+-----END PGP SIGNATURE-----
+
+--=-rzLx6FuqsGZfH6/ryiD+--
 
