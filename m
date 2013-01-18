@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab3AQXzb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 18:55:31 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:58552 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3AQXz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 18:55:29 -0500
-Date: Fri, 18 Jan 2013 08:55:25 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Kevin Hilman <khilman@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mitch Bradley <wmb@firmworks.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
-Message-ID: <20130117235524.GD16740@verge.net.au>
-References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com>
- <50EF27B4.60608@wwwdotorg.org>
- <CACRpkdZ0b=ZohgaBH3qPH_O5TiWmXJXs6872D+YPVA9g4BssYg@mail.gmail.com>
- <9702060.jEbHySsCv0@avalon>
- <CACRpkdbFH6RCEEnXO=A9FVa0B5rtE9RkjXz9Hhy+w7NvwcBCgg@mail.gmail.com>
- <50F6E811.2040606@wwwdotorg.org>
- <20130117060214.GC1197@verge.net.au>
- <50F82745.6050507@wwwdotorg.org>
+	id S1754419Ab3ARAAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 19:00:49 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51212 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751891Ab3ARAAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 19:00:48 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Nathan Lynch <ntl@pobox.com>
+CC: Bryan Wu <cooloney@gmail.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] leds: simply LED trigger list management
+Thread-Topic: [PATCH 1/2] leds: simply LED trigger list management
+Thread-Index: Ac30TtaxAtsXlGEuQfKWKcphpn75LQAUbzOAABkoedA=
+Date: Fri, 18 Jan 2013 00:00:38 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E19873@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F69E17700@DQHE02.ent.ti.com>
+ <1358448677.26320.22.camel@doorstop.aus.2wire.com>
+In-Reply-To: <1358448677.26320.22.camel@doorstop.aus.2wire.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.78]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50F82745.6050507@wwwdotorg.org>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0I011Ia000710
 
-On Thu, Jan 17, 2013 at 09:31:01AM -0700, Stephen Warren wrote:
-> On 01/16/2013 11:02 PM, Simon Horman wrote:
-> > On Wed, Jan 16, 2013 at 10:49:05AM -0700, Stephen Warren wrote:
-> >> On 01/11/2013 01:45 PM, Linus Walleij wrote:
-> >>> On Fri, Jan 11, 2013 at 9:36 PM, Laurent Pinchart
-> >>> <laurent.pinchart@ideasonboard.com> wrote:
-> >>>
-> >>>> I've sent several patch series for the SH PFC (Pin Function Controller) to the
-> >>>> linux-sh mailing list. One of the series included pinctrl core patches for
-> >>>> easier testing, but I made it clear that they should *not* be pushed to
-> >>>> mainline through the SH tree.
-> >>>
-> >>> No big deal, what fun is linux-next if we don't break it ;-)
-> >>
-> >> Hmm. It's causing a lot of engineers here a lot of trouble, since they
-> >> all see linux-next won't boot, and haven't been paying enough attention
-> >> to know which commit to revert:-(. Lots of lost productivity:-(
-> >>
-> >> Simon, the offending commit:
-> >>
-> >> 6d3ef6b drivers/pinctrl: grab default handles from device core
-> >>
-> >> is still in next-20130116. Can you please remove it?
-> > 
-> > I removed the commit yesterday.
-> > Please let me know if it seems to be lingering.
+> -----Original Message-----
+> From: Nathan Lynch [mailto:ntl@pobox.com]
 > 
-> Thanks. I believe it's gone from next-20130117, judging by a quick
-> search through "git log" at least.
+> On Thu, 2013-01-17 at 01:06 +0000, Kim, Milo wrote:
+> > @@ -242,17 +233,15 @@ EXPORT_SYMBOL_GPL(led_trigger_unregister);
+> >  void led_trigger_event(struct led_trigger *trig,
+> >  			enum led_brightness brightness)
+> >  {
+> > -	struct list_head *entry;
+> > +	struct led_classdev *led_cdev;
+> >
+> >  	if (!trig)
+> >  		return;
+> >
+> >  	read_lock(&trig->leddev_list_lock);
+> > -	list_for_each(entry, &trig->led_cdevs) {
+> > -		struct led_classdev *led_cdev;
+> > -
+> > -		led_cdev = list_entry(entry, struct led_classdev,
+> trig_list);
+> > -		led_set_brightness(led_cdev, brightness);
+> > +	list_for_each_entry(led_cdev, &leds_list, node) {
+> > +		if (led_cdev->trigger == trig)
+> > +			led_set_brightness(led_cdev, brightness);
+> >  	}
+> >  	read_unlock(&trig->leddev_list_lock);
+> 
+> Continuing to use trig->leddev_list_lock doesn't seem right.  Shouldn't
+> traversal of leds_list be guarded by the leds_list_lock rwsem?  And if
+> so, is it safe to use a potentially-blocking lock in this context?
+> 
 
-Thanks and sorry for the mess.
+(Sorry for the typo in title: 'simply' -> 'simplify')
+
+Thanks for your opinion. I agree with you.
+The read_lock()/unlock() of 'leddev_list_lock' should be replaced with
+down_read()/up_read() of 'leds_list_lock'.
+Then, RW lock of led_trigger can be removed also.
+
+BTW, I need more education about the concurrency.
+We can see complex RW down/up safe code with list management in LED class driver.
+RW semaphores are 'leds_list_lock', 'triggers_list_lock' and 'trigger_lock'.
+Are those are safe access in case a user-space via sysfs and driver API calls by
+ LED device(s) can happen at the same time?
+If so, can we make them more simple?
+
+I think *entry point* of access can be wrapped with semaphores or MUTEX
+rather than guard code for accessing LED lists one by one.
+
+I would like to have your opinion and others' too.
+
+Best Regards,
+Milo
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
