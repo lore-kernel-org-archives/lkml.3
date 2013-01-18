@@ -1,103 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab3ARJFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 04:05:25 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:34268 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751187Ab3ARJFT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 04:05:19 -0500
-Subject: Re: [PATCH] platform: Fix platform device resource linking
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20130118030017.GA11423@kroah.com>
-Date: Fri, 18 Jan 2013 11:05:14 +0200
-Cc: linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>
+	id S1751388Ab3ARJMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 04:12:32 -0500
+Received: from myspam1.stec-inc.com ([210.19.18.169]:38149 "HELO
+	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751011Ab3ARJMX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 04:12:23 -0500
+X-ASG-Debug-ID: 1358500336-053ea90dcf1beed0002-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Amit Kale <akale@stec-inc.com>
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: Jason Warr <jason@warr.net>
+CC: "thornber@redhat.com" <thornber@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
+        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+Date: Fri, 18 Jan 2013 17:08:37 +0800
+Subject: RE: [dm-devel] Announcement: STEC EnhanceIO SSD caching software
+ for Linux kernel
+Thread-Topic: [dm-devel] Announcement: STEC EnhanceIO SSD caching software
+ for Linux kernel
+X-ASG-Orig-Subj: RE: [dm-devel] Announcement: STEC EnhanceIO SSD caching software
+ for Linux kernel
+Thread-Index: Ac304W0V8VboE35hTJqj1y/jPAriiAAaO4KQ
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D72F1@MYMBX.MY.STEC-INC.AD>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
+ <CAMM=eLdgD8GKeK48SU2rfC49u3H4WRf9-xFxM4ymVPbKkx+mCw@mail.gmail.com>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D70CE@MYMBX.MY.STEC-INC.AD>
+ <20130116104546.GA3869@raspberrypi>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D720A@MYMBX.MY.STEC-INC.AD>
+ <20130117132620.GA2438@raspberrypi>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7248@MYMBX.MY.STEC-INC.AD>
+ <50F844A3.9020300@warr.net>
+In-Reply-To: <50F844A3.9020300@warr.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <82FE4A4D-DCA8-4C2C-97E7-6B73D424DCF5@antoniou-consulting.com>
-References: <1357252270-5955-1-git-send-email-panto@antoniou-consulting.com> <20130103224020.GB4571@kroah.com> <CD23CDD8-5740-4649-8876-ADDFCFF30C35@antoniou-consulting.com> <20130117163159.GD1396@kroah.com> <95056678-DF1A-4C49-BEAE-C5EBD7E56405@antoniou-consulting.com> <20130117170719.GB9163@kroah.com> <87DCB3B7-0A5A-42F0-BF9C-0E91B56960C6@antoniou-consulting.com> <20130118030017.GA11423@kroah.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1085)
+MIME-Version: 1.0
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1358500336
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.120187
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Jan 18, 2013, at 5:00 AM, Greg Kroah-Hartman wrote:
-
-> On Thu, Jan 17, 2013 at 07:27:21PM +0200, Pantelis Antoniou wrote:
->>>> In a nutshell, we have to exercise the platform device subsystem, in ways
->>>> that never happened before, so all sorts of weird bugs that no-one has seen
->>>> before.
->>> 
->>> Why do you have to do this?  What are you doing that is so different
->>> from everyone else?  What drivers are you using that trigger this type
->>> of thing?
->>> 
->> 
->> This is all part of a larger patchset; I guess you weren't directly CCed.
->> The name of the patchset is 'Introducing Device Tree Overlays' and is a
->> method of changing the live device tree and have the changes reflected to
->> the kernel's state.
+> From: Jason Warr [mailto:jason@warr.net]
+> On 01/17/2013 11:53 AM, Amit Kale wrote:
+> >>> 9. Performance - Throughput is generally most important. Latency is
+> >> >   also one more performance comparison point. Performance under
+> >> >   different load classes can be measured.
+> >> >
+> >> >   I think latency is more important than throughput.  Spindles are
+> >> >   pretty good at throughput.  In fact the mq policy tries to spot
+> when
+> >> >   we're doing large linear ios and stops hit counting; best leave
+> this
+> >> >   stuff on the spindle.
+> > I disagree. Latency is taken care of automatically when the number of
+> application threads rises.
+> >
 > 
-> Ok, no wonder I was confused :)
+> Can you explain what you mean by that in a little more detail?
+
+Let's say latency of a block device is 10ms for 4kB requests. With single threaded IO, the throughput will be 4kB/10ms = 400kB/s. If the device is capable of more throughput, a multithreaded IO will generate more throughput. So with 2 threads the throughput will be roughly 800kB/s. We can keep increasing the number of threads resulting in an approximately linear throughput. It'll saturate at the maximum capacity the device has. So it could saturate at perhaps at 8MB/s. Increasing the number of threads beyond this will not increase throughput.
+
+This is a simplistic computation. Throughput, latency and number of threads are related in a more complex relationship. Latency is still important, but throughput is more important.
+
+The way all this matters for SSD caching is, caching will typically show a higher latency compared to the base SSD, even for a 100% hit ratio. It may be possible to reach the maximum throughput achievable with the base SSD using a high number of threads. Let's say an SSD shows 450MB/s with 4 threads. A cache may show 440MB/s with 8 threads.
+
+A practical difficulty in measuring latency is that the latency seen by an application is a sum of the device latency plus the time spent in request queue (and caching layer, when present). Increasing number of threads shows latency increase, although it's only because the requests stay in request queue for a longer duration. Latency measurement in a multithreaded environment is very challenging. Measurement of throughput is fairly straightforward.
+
 > 
-> How about cc:ing me on the next round of these patches, all of the,
-> which will give me the proper background as to what is going on?
-> 
+> As an enterprise level user I see both as important overall.  However,
+> the biggest driving factor in wanting a cache device in front of any
+> sort of target in my use cases is to hide latency as the number of
+> threads reading and writing to the backing device go up.  So for me the
+> cache is basically a tier stage where your ability to keep dirty blocks
+> on it is determined by the specific use case.
 
-Will do. I'm still waiting for some feedback from the DT maintainers, but
-I will make sure that you will be CCed on the next revision.
+SSD caching will help in this case since SSD's latency remains almost constant regardless of location of data. HDD latency for sequential and random IO could vary by a factor of 5 or even much more.
 
-You can of course take a look at it and comment on the current version too. 
-  
->>>> In that case, the code path for creating platform devices from DT is
->>>> not the same as the one that is used when creating platform device from
->>>> a board file.
->>> 
->>> Why not?
->>> 
->> 
->> Because while DT creates platform devices, it doesn't use the platform device
->> methods to do so, rather than builds the platform device itself. This is 
->> something that was overlooked.
-> 
-> Can't this be fixed?  What does the platform device core need to do to
-> resolve this?
-> 
+Throughput with caching could even be 100 times the HDD throughput when using multiple threaded non-sequential IO.
+-Amit
 
-Hmm, due to historical reasons the two ways of creating platform devices
-have diverged. The core of the issue is that while OF creates platform devices
-it does so in it's own way.
 
-Take a look at of_device_add()/platform_device_add(), 
-of_device_register()/platform_device_register() for example.
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
 
-It is pretty obvious some bits in platform_device_* are more recent and are missing
-in of_device_*.
 
-It might make sense for the of_device_* functions that are duplicating 
-platform_device_* functions to be removed, and their functionality to 
-be subsumed by platform_device_*, possibly by calling some helper functions
-in drivers/of/ when of_node is not NULL. The of_device_* functions can be 
-replaced by a direct call to platform_device_* via a define (until all of
-the callers get converted).
 
-The problem with doing anything like this would be that a whole bunch of
-devices/arches depend on DT, and if anything breaks there will be a lot of
-angry people with pitchforks after the culprit.
-
-So without the full force of a core maintainer behind such a move, people
-are reluctant to do so.   
-
-> thanks,
-> 
-> greg k-h
-
-Regards
-
--- Pantelis
-
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
