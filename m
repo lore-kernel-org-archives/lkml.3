@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab3ARAXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 19:23:23 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33733 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907Ab3ARAXV (ORCPT
+	id S1753593Ab3ARAXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 19:23:53 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:51918 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab3ARAXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 19:23:21 -0500
-X-Authority-Analysis: v=2.0 cv=T70Ovo2Q c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=-P2wBSa4tMcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=eVgQ8mk78x0A:10 a=cPfjTU7o1XBE8hkZuhkA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358468598.23211.67.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH] slub: Keep page and object in sync in
- slab_alloc_node()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@gmail.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Date: Thu, 17 Jan 2013 19:23:18 -0500
-In-Reply-To: <1358464837.23211.66.camel@gandalf.local.home>
-References: <1358446258.23211.32.camel@gandalf.local.home>
-	 <1358447864.23211.34.camel@gandalf.local.home>
-	 <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com>
-	 <1358458996.23211.46.camel@gandalf.local.home>
-	 <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com>
-	 <1358462763.23211.57.camel@gandalf.local.home>
-	 <1358464245.23211.62.camel@gandalf.local.home>
-	 <1358464837.23211.66.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jan 2013 19:23:52 -0500
+Date: Thu, 17 Jan 2013 16:23:47 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com, tglx@linutronix.de
+Subject: Re: [PATCH 1/1] X86: Handle Hyper-V vmbus interrupts as special
+ hypervisor interrupts
+Message-ID: <20130118002347.GB3959@kroah.com>
+References: <1358469577-8794-1-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358469577-8794-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-17 at 18:20 -0500, Steven Rostedt wrote:
-> 	object = c->freelist;
->  	page = c->page;
-
-Hmm, having local_irq_restore() here is probably just as good, as object
-and page were grabbed together under it. It doesn't change the condition
-below any.
-
-/me updates patch.
-
--- Steve
-
-> -	if (unlikely(!object || !node_match(page, node)))
-> +
-> +	new_object = !object || !node_match(page, node);
-> +	local_irq_restore(flags);
-> +
-> +	if (new_object)
->  		object = __slab_alloc(s, gfpflags, node, addr, c);
->  
->  	else {
+On Thu, Jan 17, 2013 at 04:39:37PM -0800, K. Y. Srinivasan wrote:
 > 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
+No changelog entry describing the patch?
 
+> ---
+>  arch/x86/include/asm/irq_vectors.h |    2 +
+>  arch/x86/include/asm/mshyperv.h    |    4 +++
+>  arch/x86/kernel/cpu/mshyperv.c     |   39 ++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/entry_32.S         |    7 ++++++
+>  arch/x86/kernel/entry_64.S         |    5 ++++
+>  5 files changed, 57 insertions(+), 0 deletions(-)
+
+This patch needs to go through the x86 maintainers, which you didn't
+include all of on the To: line, any reason why?
+
+greg k-h
