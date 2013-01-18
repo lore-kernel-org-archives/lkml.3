@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3ARTJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 14:09:19 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:45751 "EHLO comal.ext.ti.com"
+	id S1754929Ab3ARTJp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 14:09:45 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:41908 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751915Ab3ARTJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 14:09:18 -0500
-Message-ID: <1358536096.6252.121.camel@cumari.coelho.fi>
-Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport
- power functions
-From: Luciano Coelho <coelho@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: "Cousson, Benoit" <b-cousson@ti.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Date: Fri, 18 Jan 2013 21:08:16 +0200
-In-Reply-To: <20130118173635.GE15361@atomide.com>
-References: <20130117093417.GH10814@arwen.pp.htv.fi>
-	 <50F7CA82.4050509@ti.com> <20130117100510.GI10814@arwen.pp.htv.fi>
-	 <20130117100919.GJ10814@arwen.pp.htv.fi>
-	 <1358418917.6252.31.camel@cumari.coelho.fi> <50F7D535.6030205@ti.com>
-	 <20130117173131.GL14149@atomide.com>
-	 <1358445456.6252.64.camel@cumari.coelho.fi>
-	 <20130117231608.GP14149@atomide.com>
-	 <1358499533.6252.80.camel@cumari.coelho.fi>
-	 <20130118173635.GE15361@atomide.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1751745Ab3ARTJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 14:09:42 -0500
+Message-ID: <50F99E08.4060107@parallels.com>
+Date: Fri, 18 Jan 2013 11:10:00 -0800
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <xfs@oss.sgi.com>,
+        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com> <1354058086-27937-10-git-send-email-david@fromorbit.com> <50F6FDC8.5020909@parallels.com> <20130116225521.GF2498@dastard> <50F7475F.90609@parallels.com> <20130117042245.GG2498@dastard> <50F84118.7030608@parallels.com> <20130118001029.GK2498@dastard> <50F893D2.7080103@parallels.com> <20130118081133.GQ2498@dastard>
+In-Reply-To: <20130118081133.GQ2498@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [216.239.55.194]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-18 at 09:36 -0800, Tony Lindgren wrote:
-> * Luciano Coelho <coelho@ti.com> [130118 01:03]:
-> > On Thu, 2013-01-17 at 15:16 -0800, Tony Lindgren wrote:
-> > > * Luciano Coelho <coelho@ti.com> [130117 10:04]:
-> > > > But this patch is pretty small and simple, so why not include it to at
-> > > > least fix the breakage in 3.7 and 3.8? Whether you take it or not now
-> > > > won't make any difference in the 5k LOC in these kernel versions.
-> > > 
-> > > Well we are planning to drop the non-DT support for omap4 as soon as it's
-> > > usable with DT. For omap4 we are only carrying SDP and panda support to
-> > > make this transition easier. The only bindings missing AFAIK are wl12xx and
-> > > USB.
-> > 
-> > In my view this is a regression and it should be fixed with as simple a
-> > patch as possible.  The alternative to my solution is to revert the
-> > patch that removed the enable/disable from the ti-st driver *and* fix
-> > u-boot, because if it doesn't mux the UART2 pins properly (and it
-> > doesn't) the shared transport still won't work.
+On 01/18/2013 12:11 AM, Dave Chinner wrote:
+> On Thu, Jan 17, 2013 at 04:14:10PM -0800, Glauber Costa wrote:
+>> On 01/17/2013 04:10 PM, Dave Chinner wrote:
+>>> And then each object uses:
+>>>
+>>> struct lru_item {
+>>> 	struct list_head global_list;
+>>> 	struct list_head memcg_list;
+>>> }
+>> by objects you mean dentries, inodes, and the such, right?
 > 
-> Fixing the muxing here makes sense naturally as we cannot do that in the driver
-> until we've flipped things over to use DT.
+> Yup.
 > 
-> But I don't think we should fix the driver regression by adding more platform
-> callbacks as we are getting rid of them anyways.
-
-Okay, you're right.  We need at least to pass the GPIO number from the
-board file to the driver so that it knows what to switch.  This is also
-something that it will need from DT in the future.
-
-
-> > > If we add this, then it implies we're somehow supporting it, which is not
-> > > the way to go IMHO as we need to get rid of these platform callbacks instead.
-> > 
-> > It's a regression fix, not a new feature.  I also think these callbacks
-> > are silly, but it's the quickest solution I found for 3.7 and 3.8.
+>> Would it be acceptable to you?
 > 
-> Right, so how about let's fix the regression in the driver, and add the
-> muxing to platform init code? 
-
-Agreed.  I'll cook up a patch to revert the changes in eccf2979 (it
-doesn't revert cleanly) and change the panda board file to do the muxing
-and set the gpio number in the pdata for the driver to use.
-
- 
-> > > What's your estimate of having minimal wl12xx WLAN DT binding available?
-> > 
-> > To tell you the truth, I haven't even started looking into DT for wl12xx
-> > myself.  So I have no idea when it will be ready.  Benoit has been
-> > looking into it, but I don't know how far he is.
+> If it works the way I think it should, then yes.
 > 
-> If it's going to take long we should just init the platform data for
-> it temporarily even in the DT boot case until the binding is available.
+>> We've been of course doing our best to avoid increasing the size of the
+>> objects, therefore this is something we've never mentioned. However, if
+>> it would be acceptable from the fs POV, this would undoubtedly make our
+>> life extremely easier.
+> 
+> I've been trying hard to work out how to avoid increasing the size
+> of structures as well. But if we can't work out how to implement
+> something sanely with only a single list head per object to work
+> from, then increasing the size of objects is something that we need
+> to consider if it solves all the problems we are trying to solve.
+> 
+> i.e. if adding a second list head makes the code dumb, simple,
+> obviously correct and hard to break then IMO it's a no-brainer.
+> But we have to tick all the right boxes first...
+> 
 
-I'll start looking into this now.  It's not going to be that simple, I'm
-sure, but I need to look more into DT in general to be able to say
-something more accurate.  I'll let you know as soon as I know more. :)
+One of our main efforts recently has been trying to reduce memcg impact
+when it is not in use, even if its compiled in. So what really bothers
+me here is the fact that we are increasing the size of dentries and
+inodes no matter what.
 
---
-Cheers,
-Luca.
+Still within the idea of exploring the playing field, would an
+indirection be worth it ?
+We would increase the total per-object memory usage by 8 bytes instead
+of 16: the dentry gets a pointer, and a separate allocation for the
+list_lru. When memcg is not being actively used, we can allocate a
+smaller list_lru, with only the global list. When it is, we allocate the
+whole thing.
+
+Embedding the lru is certainly easier from my PoV, the main question is
+how much do you, as a fs representative, value those 8 bytes?
 
