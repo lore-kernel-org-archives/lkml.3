@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab3ARKXF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 05:23:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46409 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab3ARKXC (ORCPT
+	id S1751476Ab3ARK3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 05:29:51 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:52149 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751072Ab3ARK3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 05:23:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130117135726.5b31fd0f.akpm@linux-foundation.org>
-References: <1357352744-8138-1-git-send-email-ming.lei@canonical.com>
-	<20130116153744.70210fa3.akpm@linux-foundation.org>
-	<CACVXFVOipr0VMyPQaZTLckxTaPan7ZneERUqZ1S_mYo11A5AeA@mail.gmail.com>
-	<20130117135726.5b31fd0f.akpm@linux-foundation.org>
-Date: Fri, 18 Jan 2013 18:22:59 +0800
-Message-ID: <CACVXFVPEcZCCxA1+EeW-qdouiaBMPPjx7fn+jbROzSwBRN58SA@mail.gmail.com>
-Subject: Re: [PATCH v7 0/6] solve deadlock caused by memory allocation with I/O
-From: Ming Lei <ming.lei@canonical.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 18 Jan 2013 05:29:50 -0500
+Message-ID: <1358504987.8203.425.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: [GIT PULL] EFI fixes for v3.8
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-efi <linux-efi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Jan 2013 10:29:47 +0000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 5:57 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
->
-> Fair enough, thanks.
->
-> I grabbed the patches for 3.9-rc1.  It is good that the page
-> allocator's newly-added test of current->flags is not on the fastpath.
->
+Hi Peter,
 
-Andrew, great thanks, :-)
+The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
 
-Also thank Alan, Oliver, Minchan, Rafael, Greg and other guys who
-reviewed and gave suggestions on this patch set.
+  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
 
-Thanks,
---
-Ming Lei
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-for-3.8
+
+for you to fetch changes up to 791eb564d218dabe0f9a2212916fe54240b97afb:
+
+  efivarfs: Delete dentry from dcache in efivarfs_file_write() (2013-01-18 09:43:44 +0000)
+
+----------------------------------------------------------------
+EFI fixes for v3.8
+
+  * Fix EFI boot crash on machines with > 512GB of RAM
+  * Fix a few oopses in efivarfs
+
+----------------------------------------------------------------
+Lingzhu Xiang (1):
+      efivarfs: Drop link count of the right inode
+
+Matt Fleming (2):
+      efivarfs: Never return ENOENT from firmware
+      efivarfs: Delete dentry from dcache in efivarfs_file_write()
+
+Nathan Zimmer (1):
+      efi, x86: Pass a proper identity mapping in efi_call_phys_prelog
+
+ arch/x86/platform/efi/efi_64.c | 22 +++++++++++++++++-----
+ drivers/firmware/efivars.c     |  5 +++--
+ 2 files changed, 20 insertions(+), 7 deletions(-)
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
+
