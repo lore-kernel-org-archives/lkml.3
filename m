@@ -1,265 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab3ARHyR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 02:54:17 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33936 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab3ARHxz (ORCPT
+	id S1751417Ab3ARHxs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 02:53:48 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47689 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab3ARHxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 02:53:55 -0500
+	Fri, 18 Jan 2013 02:53:45 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Jiang Liu <jiang.liu@huawei.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 11/11] PCI: Put pci dev to device tree as early as possible
-Date: Thu, 17 Jan 2013 23:53:22 -0800
-Message-Id: <1358495602-22867-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 09/11] PCI, acpiphp: Don't bailout even no slots found yet.
+Date: Thu, 17 Jan 2013 23:53:20 -0800
+Message-Id: <1358495602-22867-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1358495602-22867-1-git-send-email-yinghai@kernel.org>
 References: <1358495602-22867-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We want to put created pci device in the device tree as soon as possible.
-- just after we find it and create pci_dev struct for it.
-so for_pci_dev iteration will not miss them.
-
-But at that time, we can not load driver for them yet. Need to be after
-pci_assign_unsigned_resources() etc to make sure all pci devices get
-resource allocated at first.
-
-Move out device registering out of pci_bus_add_devices, and
-new pci_bus_add_devices() will do the device_attach work to load pci drivers
+Could have root bus hot added later and there may be slots that need acpiphp.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/bus.c   |   47 +++--------------------------------------------
- drivers/pci/iov.c   |    7 -------
- drivers/pci/probe.c |   34 +++++++++++++++++++++++++++-------
- 3 files changed, 30 insertions(+), 58 deletions(-)
+ drivers/pci/hotplug/acpiphp.h      |    1 -
+ drivers/pci/hotplug/acpiphp_core.c |   23 ++---------------------
+ drivers/pci/hotplug/acpiphp_glue.c |   22 ----------------------
+ 3 files changed, 2 insertions(+), 44 deletions(-)
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 18c1c6d..0a55845 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -178,22 +178,9 @@ static void pci_bus_attach_device(struct pci_dev *dev)
-  */
- int pci_bus_add_device(struct pci_dev *dev)
- {
--	int retval;
--
--	pci_fixup_device(pci_fixup_final, dev);
--
--	retval = pcibios_add_device(dev);
--	if (retval)
--		return retval;
--
--	retval = device_add(&dev->dev);
--	if (retval)
--		return retval;
--
- 	pci_bus_attach_device(dev);
- 	dev->is_added = 1;
--	pci_proc_attach_device(dev);
--	pci_create_sysfs_dev_files(dev);
-+
+diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
+index a1afb5b..b3ead7a 100644
+--- a/drivers/pci/hotplug/acpiphp.h
++++ b/drivers/pci/hotplug/acpiphp.h
+@@ -193,7 +193,6 @@ extern void acpiphp_unregister_hotplug_slot(struct acpiphp_slot *slot);
+ /* acpiphp_glue.c */
+ extern int acpiphp_glue_init (void);
+ extern void acpiphp_glue_exit (void);
+-extern int acpiphp_get_num_slots (void);
+ typedef int (*acpiphp_callback)(struct acpiphp_slot *slot, void *data);
+ 
+ extern int acpiphp_enable_slot (struct acpiphp_slot *slot);
+diff --git a/drivers/pci/hotplug/acpiphp_core.c b/drivers/pci/hotplug/acpiphp_core.c
+index 96316b7..c2fd309 100644
+--- a/drivers/pci/hotplug/acpiphp_core.c
++++ b/drivers/pci/hotplug/acpiphp_core.c
+@@ -50,7 +50,6 @@
+ bool acpiphp_debug;
+ 
+ /* local variables */
+-static int num_slots;
+ static struct acpiphp_attention_info *attention_info;
+ 
+ #define DRIVER_VERSION	"0.5"
+@@ -272,25 +271,6 @@ static int get_adapter_status(struct hotplug_slot *hotplug_slot, u8 *value)
  	return 0;
  }
  
-@@ -205,21 +192,9 @@ int pci_bus_add_device(struct pci_dev *dev)
-  */
- int pci_bus_add_child(struct pci_bus *bus)
- {
+-static int __init init_acpi(void)
+-{
 -	int retval;
 -
--	if (bus->bridge)
--		bus->dev.parent = bus->bridge;
+-	/* initialize internal data structure etc. */
+-	retval = acpiphp_glue_init();
 -
--	retval = device_register(&bus->dev);
--	if (retval)
--		return retval;
--
- 	bus->is_added = 1;
- 
--	/* Create legacy_io and legacy_mem files for this bus */
--	pci_create_legacy_files(bus);
+-	/* read initial number of slots */
+-	if (!retval) {
+-		num_slots = acpiphp_get_num_slots();
+-		if (num_slots == 0) {
+-			acpiphp_glue_exit();
+-			retval = -ENODEV;
+-		}
+-	}
 -
 -	return retval;
-+	return 0;
- }
- 
+-}
+-
  /**
-@@ -245,36 +220,20 @@ void pci_bus_add_devices(const struct pci_bus *bus)
- 		if (dev->is_added)
- 			continue;
- 		retval = pci_bus_add_device(dev);
--		if (retval)
--			dev_err(&dev->dev, "Error adding device, continuing\n");
- 	}
+  * release_slot - free up the memory used by a slot
+  * @hotplug_slot: slot to free
+@@ -379,7 +359,8 @@ static int __init acpiphp_init(void)
+ 		return 0;
  
- 	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		BUG_ON(!dev->is_added);
- 
- 		child = dev->subordinate;
--		/*
--		 * If there is an unattached subordinate bus, attach
--		 * it and then scan for unattached PCI devices.
--		 */
-+
- 		if (!child)
- 			continue;
--		if (list_empty(&child->node)) {
--			down_write(&pci_bus_sem);
--			list_add_tail(&child->node, &dev->bus->children);
--			up_write(&pci_bus_sem);
--		}
- 		pci_bus_add_devices(child);
- 
--		/*
--		 * register the bus with sysfs as the parent is now
--		 * properly registered.
--		 */
- 		if (child->is_added)
- 			continue;
- 		retval = pci_bus_add_child(child);
--		if (retval)
--			dev_err(&dev->dev, "Error adding bus, continuing\n");
- 	}
+ 	/* read all the ACPI info from the system */
+-	return init_acpi();
++	/* initialize internal data structure etc. */
++	return acpiphp_glue_init();
  }
  
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index bafd2bb..dbad72e 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -48,12 +48,7 @@ static struct pci_bus *virtfn_add_bus(struct pci_bus *bus, int busnr)
- 		return NULL;
  
- 	pci_bus_insert_busn_res(child, busnr, busnr);
--	child->dev.parent = bus->bridge;
- 	rc = pci_bus_add_child(child);
--	if (rc) {
--		pci_remove_bus(child);
--		return NULL;
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 45917a5..25d6918 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -1416,28 +1416,6 @@ void  acpiphp_glue_exit(void)
+ 	acpi_pci_unregister_driver(&acpi_pci_hp_driver);
+ }
+ 
+-
+-/**
+- * acpiphp_get_num_slots - count number of slots in a system
+- */
+-int __init acpiphp_get_num_slots(void)
+-{
+-	struct acpiphp_bridge *bridge;
+-	int num_slots = 0;
+-
+-	list_for_each_entry(bridge, &bridge_list, list) {
+-		dbg("Bus %04x:%02x has %d slot%s\n",
+-				pci_domain_nr(bridge->pci_bus),
+-				bridge->pci_bus->number, bridge->nr_slots,
+-				bridge->nr_slots == 1 ? "" : "s");
+-		num_slots += bridge->nr_slots;
 -	}
- 
- 	return child;
- }
-@@ -123,8 +118,6 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
- 	virtfn->is_virtfn = 1;
- 
- 	rc = pci_bus_add_device(virtfn);
--	if (rc)
--		goto failed1;
- 	sprintf(buf, "virtfn%u", id);
- 	rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
- 	if (rc)
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 9588207..6392dac 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -623,6 +623,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- {
- 	struct pci_bus *child;
- 	int i;
-+	int ret;
- 
- 	/*
- 	 * Allocate a new bus, and inherit stuff from the parent..
-@@ -637,8 +638,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- 	child->bus_flags = parent->bus_flags;
- 
- 	/* initialize some portions of the bus device, but don't register it
--	 * now as the parent is not properly set up yet.  This device will get
--	 * registered later in pci_bus_add_devices()
-+	 * now as the parent is not properly set up yet.
- 	 */
- 	child->dev.class = &pcibus_class;
- 	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
-@@ -651,11 +651,14 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- 	child->primary = parent->busn_res.start;
- 	child->busn_res.end = 0xff;
- 
--	if (!bridge)
--		return child;
-+	if (!bridge) {
-+		child->dev.parent = parent->bridge;
-+		goto add_dev;
-+	}
- 
- 	child->self = bridge;
- 	child->bridge = get_device(&bridge->dev);
-+	child->dev.parent = child->bridge;
- 	pci_set_bus_of_node(child);
- 	pci_set_bus_speed(child);
- 
-@@ -666,6 +669,13 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- 	}
- 	bridge->subordinate = child;
- 
-+add_dev:
-+	ret = device_register(&child->dev);
-+	WARN_ON(ret < 0);
-+
-+	/* Create legacy_io and legacy_mem files for this bus */
-+	pci_create_legacy_files(child);
-+
- 	return child;
- }
- 
-@@ -1296,6 +1306,8 @@ static void pci_init_capabilities(struct pci_dev *dev)
- 
- void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- {
-+	int ret;
-+
- 	device_initialize(&dev->dev);
- 	dev->dev.release = pci_release_dev;
- 
-@@ -1326,6 +1338,16 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- 	down_write(&pci_bus_sem);
- 	list_add_tail(&dev->bus_list, &bus->devices);
- 	up_write(&pci_bus_sem);
-+
-+	pci_fixup_device(pci_fixup_final, dev);
-+	ret = pcibios_add_device(dev);
-+	WARN_ON(ret < 0);
-+	/* notifier could use pci capabilities */
-+	ret = device_add(&dev->dev);
-+	WARN_ON(ret < 0);
-+
-+	pci_proc_attach_device(dev);
-+	pci_create_sysfs_dev_files(dev);
- }
- 
- struct pci_dev *__ref pci_scan_single_device(struct pci_bus *bus, int devfn)
-@@ -1656,13 +1678,13 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	char bus_addr[64];
- 	char *fmt;
- 
 -
- 	b = pci_alloc_bus();
- 	if (!b)
- 		return NULL;
- 
- 	b->sysdata = sysdata;
- 	b->ops = ops;
-+	b->number = b->busn_res.start = bus;
- 	b2 = pci_find_bus(pci_domain_nr(b), bus);
- 	if (b2) {
- 		/* If we already got to this bus through a different bridge, ignore it */
-@@ -1701,8 +1723,6 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	/* Create legacy_io and legacy_mem files for this bus */
- 	pci_create_legacy_files(b);
- 
--	b->number = b->busn_res.start = bus;
+-	dbg("Total %d slots\n", num_slots);
+-	return num_slots;
+-}
 -
- 	if (parent)
- 		dev_info(parent, "PCI host bridge to bus %s\n", dev_name(&b->dev));
- 	else
+-
+ /**
+  * acpiphp_enable_slot - power on slot
+  * @slot: ACPI PHP slot
 -- 
 1.7.10.4
 
