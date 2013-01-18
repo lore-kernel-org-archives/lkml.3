@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab3ARQBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 11:01:18 -0500
-Received: from linux-sh.org ([111.68.239.195]:45497 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab3ARQBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 11:01:17 -0500
-Date: Sat, 19 Jan 2013 01:01:07 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 28/76] ARC: I/O and DMA Mappings
-Message-ID: <20130118160106.GD14019@linux-sh.org>
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
- <1358511930-7424-29-git-send-email-vgupta@synopsys.com>
- <201301181555.43487.arnd@arndb.de>
+	id S1752459Ab3ARQEj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 11:04:39 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:45062 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab3ARQEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 11:04:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201301181555.43487.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAHTX3dJ2Qqs6QxJEcd24KW5y2DSumLy82jvVUxBjjMWQULrxdQ@mail.gmail.com>
+References: <CAHTX3dJ2Qqs6QxJEcd24KW5y2DSumLy82jvVUxBjjMWQULrxdQ@mail.gmail.com>
+Date: Fri, 18 Jan 2013 17:04:36 +0100
+X-Google-Sender-Auth: 65vW1JSHxAA7u6FsmxJksShRoz8
+Message-ID: <CAMuHMdUbTVMpYGrweXjXQrhd4U6yyGGRHmzZHBL2v_GbHRHF6w@mail.gmail.com>
+Subject: Re: request_mem_region() for noPCI devices
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 03:55:43PM +0000, Arnd Bergmann wrote:
-> On Friday 18 January 2013, Vineet Gupta wrote:
-> > TBD: Do we need early ioremap support like openrisc
-> > 
-> > Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> 
-> Can you explain why early ioremap is necessary for you?
-> 
-> I wasn't aware that openrisc has it. In a lot of cases,
-> you can use fixmap as a replacement.
-> 
-The two don't need to be mutually exclusive, either. sh implements early
-ioremap transparently via fixmaps for example:
+On Fri, Jan 18, 2013 at 3:46 PM, Michal Simek <monstr@monstr.eu> wrote:
+> just want to check with you usage of request_mem_region for noPCI devices.
+> kernel/resource.c suggests that it should be used just for PCI iomem
+> (iomem_resource uses name PCI mem).
+>
+> If I grep architectures I see several usage for noPCI devices.
+>
+> Does it mean that request_mem_region should be used for all devices
+> which request io memory? Or just for PCI iomem?
 
-	arch/sh/mm/ioremap.c
-	arch/sh/mm/ioremap_fixed.c
+It's meant for all types of memory mapped I/O.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
