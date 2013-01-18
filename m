@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab3ARDbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 22:31:14 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46361 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab3ARDbM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 22:31:12 -0500
-Date: Fri, 18 Jan 2013 14:31:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: linux-next: manual merge of the samsung tree with the slave-dma
- tree
-Message-Id: <20130118143110.8555b3708e3b7674c090f93e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1755265Ab3ARDgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 22:36:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754466Ab3ARDgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 22:36:05 -0500
+Date: Thu, 17 Jan 2013 22:35:57 -0500
+From: "Frank Ch. Eigler" <fche@redhat.com>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, jovi.zhangwei@huawei.com
+Subject: Re: [RFC] ktap: Another dynamic tracing tool for Linux
+Message-ID: <20130118033557.GE13185@redhat.com>
+References: <CACV3sb+69VQMM44vXx_-AdOZmbz18zZeVdmi1+YHEq7kZ_VmdA@mail.gmail.com> <y0mliceujz4.fsf@fche.csb> <CACV3sbKk3euv8N4SbBegJ=iYuUxfdynZ_1GNtfkwGzwGDcqATw@mail.gmail.com> <20130104151950.GB21860@redhat.com> <CACV3sbKYPUSOsccptgyJtaEp4Oxx6yX0XgVEEa+BfTPLpD28qA@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__18_Jan_2013_14_31_10_+1100_NjdGiaT5=BIcnIj9"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACV3sbKYPUSOsccptgyJtaEp4Oxx6yX0XgVEEa+BfTPLpD28qA@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__18_Jan_2013_14_31_10_+1100_NjdGiaT5=BIcnIj9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi -
 
-Hi Kukjin,
+On Fri, Jan 18, 2013 at 09:24:55AM +0800, Jovi Zhang wrote:
+> Let us continue this ktap topic in this thread :).
+> ktap code is public available at github, please clone from:
+> https://github.com/ktap/ktap.git
+> [...]
 
-Today's linux-next merge of the samsung tree got a conflict in
-arch/arm/mach-s3c64xx/dma.c between commit 3a95b9fbba89 ("pl080.h: moved
-from arm/include/asm/hardware to include/linux/amba/") from the slave-dma
-tree and commit f2bfd174bdc0 ("ARM: S3C64XX: make regs-sys.h local") from
-the samsung tree.
+Neat stuff.  I have one set of initial observations: even with a nice
+small bytecode language, the VM has to be skeptical and careful.  For
+example, some dangers:
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+- any dynamic memory allocation from within the context of an
+  arbitrary tracepoints (table_* functions, stack frames)
+- unchecked arithmetic (division-by-zero - OP_DIV, overflows,
+  function arity limits)
+- time-quantity of computation (limit loop iterations / #-bytecodes?,
+  DO_JMP infinite loops)
+- stack-frame usage of interpreter (if internally recursive, or if 
+  too much state kept on stack)
+- trusting validity of bytecode (imagine an attacker sending random
+  or harmful junk, jumping out of bytecode ranges)
+- calls out from interpreter into native code - to ensure that *all*
+  those functions (transitively) are valid to call from general
+  e.g. tracepoint context (e.g. sleeps often aren't)
+- (and these problems get even worse with evaluation from the
+  context of kprobes)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/mach-s3c64xx/dma.c
-index a77f521,ec29b35..0000000
---- a/arch/arm/mach-s3c64xx/dma.c
-+++ b/arch/arm/mach-s3c64xx/dma.c
-@@@ -29,8 -28,9 +29,7 @@@
-  #include <mach/map.h>
-  #include <mach/irqs.h>
- =20
-- #include <mach/regs-sys.h>
--=20
- -#include <asm/hardware/pl080.h>
- -
-+ #include "regs-sys.h"
- =20
-  /* dma channel state information */
- =20
-
---Signature=_Fri__18_Jan_2013_14_31_10_+1100_NjdGiaT5=BIcnIj9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ+MH+AAoJEECxmPOUX5FEyY8QAKFWjrdEqGg7luEK29C7RCU6
-oLmn/uVUBPWRU+S1c1SWBbHdTAACgnBtk3re5hcg87zMVSq5Gv0h8iroIrDzX86d
-OnuKghWBW5Hz4pJT/6NPeQdJIz8Q0ltMRgUN7wdHJmvZEyAyLka4yguDmrjK8vhe
-cW4xSI6ALn2eK3GNeEjRlxcZ3hhnGekoQLafCJ5MXs/4Yq/jqKHNRuQU8ZvG51f7
-KSNEnSxV8srMOtERVtGi2802DMl6235He1rSxZTfJmLWzhR3p1tXe24zuNR+NNK6
-Wf3hLxZ78PqRZrtKTyxZPQwgRKP4mB5CcHOboiz58/ve7/rvQSZM0eXES4W+0/VZ
-/UJsOOis7464u/OmSVIa49QozpoezuyPROewC0CfzqD8IOD03/s+Zi3P+/XYF61/
-zbQzIx897/gWJSTjaIfRlax5pUgbOlfCn7jutiHchaecPvMIz6qL4pNAIwOgm5xp
-j/RP5EPmFc8+1/aPKPbk9qDNU1qUyR4Dd5Z05/cnr7B6bnDvCbdtLLM/kblAVu1Y
-HPsrj8Bo1Zg1N53AR7fUh4jGAKjloRoOFDwY5siNpXtb9QtuvLLrp92iOf4VvOW2
-zFleHJdOFyA+SQokmsd26tlGUMveZCo8fG9oOug4s+bRXvODxSuIDx52eug2fZYV
-ruKP1zR4R/JOpktgrfxK
-=2klg
------END PGP SIGNATURE-----
-
---Signature=_Fri__18_Jan_2013_14_31_10_+1100_NjdGiaT5=BIcnIj9--
+- FChE
