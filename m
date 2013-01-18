@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab3ARUNS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 15:13:18 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49784 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab3ARUNR (ORCPT
+	id S1754659Ab3ARUVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 15:21:09 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:32046 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863Ab3ARUVI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 15:13:17 -0500
-Date: Fri, 18 Jan 2013 20:13:07 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mitch Bradley <wmb@firmworks.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>
-Subject: Re: [PATCH v3] drivers/pinctrl: grab default handles from device
-	core
-Message-ID: <20130118201307.GG23505@n2100.arm.linux.org.uk>
-References: <1358521728-14300-1-git-send-email-linus.walleij@stericsson.com>
+	Fri, 18 Jan 2013 15:21:08 -0500
 MIME-Version: 1.0
+Message-ID: <224b1c8a-2ae0-486b-bfdd-4a161f662afd@default>
+Date: Fri, 18 Jan 2013 12:19:17 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: RE: [PATCH 1/3] zram: force disksize setting before using zram
+References: <1358388769-30112-1-git-send-email-minchan@kernel.org>
+ <20130118004219.GB29380@kroah.com>
+In-Reply-To: <20130118004219.GB29380@kroah.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358521728-14300-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 04:08:48PM +0100, Linus Walleij wrote:
-> - Abstain from using IS_ERR_OR_NULL() in the driver core,
->   Russell recently sent a patch to remove it. Handle the
->   NULL case explicitly even though it's a bogus case.
+> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, January 17, 2013 5:42 PM
+> To: Minchan Kim
+> Cc: linux-mm@kvack.org; linux-kernel@vger.kernel.org; Nitin Gupta; Seth Jennings; Dan Magenheimer;
+> Konrad Rzeszutek Wilk; Jerome Marchand; Pekka Enberg
+> Subject: Re: [PATCH 1/3] zram: force disksize setting before using zram
+> 
+> On Thu, Jan 17, 2013 at 11:12:47AM +0900, Minchan Kim wrote:
+> > Now zram document syas "set disksize is optional"
+> > but partly it's wrong. When you try to use zram firstly after
+> > booting, you must set disksize, otherwise zram can't work because
+> > zram gendisk's size is 0. But once you do it, you can use zram freely
+> > after reset because reset doesn't reset to zero paradoxically.
+> > So in this time, disksize setting is optional.:(
+> > It's inconsitent for user behavior and not straightforward.
+> >
+> > This patch forces always setting disksize firstly before using zram.
+> > Yes. It changes current behavior so someone could complain when
+> > he upgrades zram. Apparently it could be a problem if zram is mainline
+> > but it still lives in staging so behavior could be changed for right
+> > way to go. Let them excuse.
+> 
+> I don't know about changing this behavior.  I need some acks from some
+> of the other zram developers before I can take this, or any of the other
+> patches in this series.
 
-Hmmmmmmmm... I assume you're talking about this:
+I'm not officially a zram developer, but I have used it and I
+am knowledgeable about in-kernel compression and know the specific
+problem being fixed here.  Unless/until compression is much
+more tightly integrated into MM policies and "z*" can manage
+space more dynamically, Minchan's patch seems to be a good way
+to go, especially since zram has found a solid niche in the
+embedded (no swap disk) community.  So FWIW:
 
-> +	p = create_pinctrl(dev);
-> +	if (p && !IS_ERR(p))
-> +		kref_init(&p->users);
-> +	return p;
-
-which is... interesting.  In mainline currently, the version I see there
-never returns NULL - it either returns an err pointer or a real pointer.
-
-Next thing though is...
-
-create_pinctrl adds the struct pinctrl onto the global list, and then you
-intialize it here, which is an interesting sequence.  It's safe at the
-moment because everything here is operating under a mutex, but it's a
-little obscure.
-
-Is there a reason not to initialize p->users inside create_pinctrl() ?
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
