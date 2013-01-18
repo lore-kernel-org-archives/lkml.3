@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab3ARMnf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:43:35 -0500
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:55881 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756566Ab3ARMaz (ORCPT
+	id S1756827Ab3ARMnj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:43:39 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:58781 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756441Ab3ARMaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Jan 2013 07:30:55 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>
-Subject: [PATCH v2 17/76] ARC: Process-creation/scheduling/idle-loop
-Date: Fri, 18 Jan 2013 17:54:31 +0530
-Message-ID: <1358511930-7424-18-git-send-email-vgupta@synopsys.com>
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH v2 13/76] ARC: Low level IRQ/Trap/Exception Handling
+Date: Fri, 18 Jan 2013 17:54:27 +0530
+Message-ID: <1358511930-7424-14-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -28,127 +26,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/arc/include/asm/arcregs.h   |   20 ++++
- arch/arc/include/asm/processor.h |    3 +
- arch/arc/include/asm/switch_to.h |   41 ++++++++
- arch/arc/kernel/ctx_sw.c         |   91 +++++++++++++++++
- arch/arc/kernel/ctx_sw_asm.S     |   58 +++++++++++
- arch/arc/kernel/fpu.c            |   55 ++++++++++
- arch/arc/kernel/process.c        |  201 ++++++++++++++++++++++++++++++++++++++
- 7 files changed, 469 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/switch_to.h
- create mode 100644 arch/arc/kernel/ctx_sw.c
- create mode 100644 arch/arc/kernel/ctx_sw_asm.S
- create mode 100644 arch/arc/kernel/fpu.c
+ arch/arc/include/asm/entry.h |  495 ++++++++++++++++++++++++++++++++++++
+ arch/arc/kernel/entry.S      |  571 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 1066 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/include/asm/entry.h
+ create mode 100644 arch/arc/kernel/entry.S
 
-diff --git a/arch/arc/include/asm/arcregs.h b/arch/arc/include/asm/arcregs.h
-index 3fccb04..d764118 100644
---- a/arch/arc/include/asm/arcregs.h
-+++ b/arch/arc/include/asm/arcregs.h
-@@ -47,6 +47,17 @@
- #define AUX_ITRIGGER		0x40d
- #define AUX_IPULSE		0x415
- 
-+/*
-+ * Floating Pt Registers
-+ * Status regs are read-only (build-time) so need not be saved/restored
-+ */
-+#define ARC_AUX_FP_STAT         0x300
-+#define ARC_AUX_DPFP_1L         0x301
-+#define ARC_AUX_DPFP_1H         0x302
-+#define ARC_AUX_DPFP_2L         0x303
-+#define ARC_AUX_DPFP_2H         0x304
-+#define ARC_AUX_DPFP_STAT       0x305
-+
- #ifndef __ASSEMBLY__
- 
- /*
-@@ -110,6 +121,15 @@
- 
- #endif
- 
-+#ifdef CONFIG_ARC_FPU_SAVE_RESTORE
-+/* These DPFP regs need to be saved/restored across ctx-sw */
-+struct arc_fpu {
-+	struct {
-+		unsigned int l, h;
-+	} aux_dpfp[2];
-+};
-+#endif
-+
- #endif /* __ASEMBLY__ */
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/arc/include/asm/processor.h b/arch/arc/include/asm/processor.h
-index bf88cfb..053a639 100644
---- a/arch/arc/include/asm/processor.h
-+++ b/arch/arc/include/asm/processor.h
-@@ -29,6 +29,9 @@ struct thread_struct {
- 	unsigned long callee_reg;	/* pointer to callee regs */
- 	unsigned long fault_address;	/* dbls as brkpt holder as well */
- 	unsigned long cause_code;	/* Exception Cause Code (ECR) */
-+#ifdef CONFIG_ARC_FPU_SAVE_RESTORE
-+	struct arc_fpu fpu;
-+#endif
- };
- 
- #define INIT_THREAD  {                          \
-diff --git a/arch/arc/include/asm/switch_to.h b/arch/arc/include/asm/switch_to.h
+diff --git a/arch/arc/include/asm/entry.h b/arch/arc/include/asm/entry.h
 new file mode 100644
-index 0000000..1b171ab
+index 0000000..63705b1
 --- /dev/null
-+++ b/arch/arc/include/asm/switch_to.h
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _ASM_ARC_SWITCH_TO_H
-+#define _ASM_ARC_SWITCH_TO_H
-+
-+#ifndef __ASSEMBLY__
-+
-+#include <linux/sched.h>
-+
-+#ifdef CONFIG_ARC_FPU_SAVE_RESTORE
-+
-+extern void fpu_save_restore(struct task_struct *p, struct task_struct *n);
-+#define ARC_FPU_PREV(p, n)	fpu_save_restore(p, n)
-+#define ARC_FPU_NEXT(t)
-+
-+#else
-+
-+#define ARC_FPU_PREV(p, n)
-+#define ARC_FPU_NEXT(n)
-+
-+#endif /* !CONFIG_ARC_FPU_SAVE_RESTORE */
-+
-+struct task_struct *__switch_to(struct task_struct *p, struct task_struct *n);
-+
-+#define switch_to(prev, next, last)	\
-+do {					\
-+	ARC_FPU_PREV(prev, next);	\
-+	last = __switch_to(prev, next);\
-+	ARC_FPU_NEXT(next);		\
-+	mb();				\
-+} while (0)
-+
-+#endif
-+
-+#endif
-diff --git a/arch/arc/kernel/ctx_sw.c b/arch/arc/kernel/ctx_sw.c
-new file mode 100644
-index 0000000..647e37a
---- /dev/null
-+++ b/arch/arc/kernel/ctx_sw.c
-@@ -0,0 +1,91 @@
++++ b/arch/arc/include/asm/entry.h
+@@ -0,0 +1,495 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -156,424 +46,1071 @@ index 0000000..647e37a
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ * Vineetg: Aug 2009
-+ *  -"C" version of lowest level context switch asm macro called by schedular
-+ *   gcc doesn't generate the dward CFI info for hand written asm, hence can't
-+ *   backtrace out of it (e.g. tasks sleeping in kernel).
-+ *   So we cheat a bit by writing almost similar code in inline-asm.
-+ *  -This is a hacky way of doing things, but there is no other simple way.
-+ *   I don't want/intend to extend unwinding code to understand raw asm
++ * Vineetg: Aug 28th 2008: Bug #94984
++ *  -Zero Overhead Loop Context shd be cleared when entering IRQ/EXcp/Trap
++ *   Normally CPU does this automatically, however when doing FAKE rtie,
++ *   we also need to explicitly do this. The problem in macros
++ *   FAKE_RET_FROM_EXCPN and FAKE_RET_FROM_EXCPN_LOCK_IRQ was that this bit
++ *   was being "CLEARED" rather then "SET". Actually "SET" clears ZOL context
++ *
++ * Vineetg: May 5th 2008
++ *  - Defined Stack Switching Macro to be reused in all intr/excp hdlrs
++ *  - Shaved off 11 instructions from RESTORE_ALL_INT1 by using the
++ *      address Write back load ld.ab instead of seperate ld/add instn
++ *
++ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
 + */
 +
++#ifndef __ASM_ARC_ENTRY_H
++#define __ASM_ARC_ENTRY_H
++
++#ifdef __ASSEMBLY__
++#include <asm/unistd.h>		/* For NR_syscalls defination */
 +#include <asm/asm-offsets.h>
-+#include <linux/sched.h>
++#include <asm/arcregs.h>
++#include <asm/ptrace.h>
++#include <asm/thread_info.h>	/* For THREAD_SIZE */
 +
-+struct task_struct *__sched
-+__switch_to(struct task_struct *prev_task, struct task_struct *next_task)
-+{
-+	unsigned int tmp;
-+	unsigned int prev = (unsigned int)prev_task;
-+	unsigned int next = (unsigned int)next_task;
-+	int num_words_to_skip = 1;
-+
-+	__asm__ __volatile__(
-+		/* FP/BLINK save generated by gcc (standard function prologue */
-+		"st.a    r13, [sp, -4]   \n\t"
-+		"st.a    r14, [sp, -4]   \n\t"
-+		"st.a    r15, [sp, -4]   \n\t"
-+		"st.a    r16, [sp, -4]   \n\t"
-+		"st.a    r17, [sp, -4]   \n\t"
-+		"st.a    r18, [sp, -4]   \n\t"
-+		"st.a    r19, [sp, -4]   \n\t"
-+		"st.a    r20, [sp, -4]   \n\t"
-+		"st.a    r21, [sp, -4]   \n\t"
-+		"st.a    r22, [sp, -4]   \n\t"
-+		"st.a    r23, [sp, -4]   \n\t"
-+		"st.a    r24, [sp, -4]   \n\t"
-+		"st.a    r25, [sp, -4]   \n\t"
-+		"sub     sp, sp, %4      \n\t"	/* create gutter at top */
-+
-+		/* set ksp of outgoing task in tsk->thread.ksp */
-+		"st.as   sp, [%3, %1]    \n\t"
-+
-+		"sync   \n\t"
-+
-+		/*
-+		 * setup _current_task with incoming tsk.
-+		 * optionally, set r25 to that as well
-+		 * For SMP extra work to get to &_current_task[cpu]
-+		 * (open coded SET_CURR_TASK_ON_CPU)
-+		 */
-+		"st  %2, [@_current_task]	\n\t"
-+
-+		/* get ksp of incoming task from tsk->thread.ksp */
-+		"ld.as  sp, [%2, %1]   \n\t"
-+
-+		/* start loading it's CALLEE reg file */
-+
-+		"add    sp, sp, %4     \n\t"	/* skip gutter at top */
-+
-+		"ld.ab   r25, [sp, 4]   \n\t"
-+		"ld.ab   r24, [sp, 4]   \n\t"
-+		"ld.ab   r23, [sp, 4]   \n\t"
-+		"ld.ab   r22, [sp, 4]   \n\t"
-+		"ld.ab   r21, [sp, 4]   \n\t"
-+		"ld.ab   r20, [sp, 4]   \n\t"
-+		"ld.ab   r19, [sp, 4]   \n\t"
-+		"ld.ab   r18, [sp, 4]   \n\t"
-+		"ld.ab   r17, [sp, 4]   \n\t"
-+		"ld.ab   r16, [sp, 4]   \n\t"
-+		"ld.ab   r15, [sp, 4]   \n\t"
-+		"ld.ab   r14, [sp, 4]   \n\t"
-+		"ld.ab   r13, [sp, 4]   \n\t"
-+
-+		/* last (ret value) = prev : although for ARC it mov r0, r0 */
-+		"mov     %0, %3        \n\t"
-+
-+		/* FP/BLINK restore generated by gcc (standard func epilogue */
-+
-+		: "=r"(tmp)
-+		: "n"((TASK_THREAD + THREAD_KSP) / 4), "r"(next), "r"(prev),
-+		  "n"(num_words_to_skip * 4)
-+		: "blink"
-+	);
-+
-+	return (struct task_struct *)tmp;
-+}
-diff --git a/arch/arc/kernel/ctx_sw_asm.S b/arch/arc/kernel/ctx_sw_asm.S
-new file mode 100644
-index 0000000..d897234
---- /dev/null
-+++ b/arch/arc/kernel/ctx_sw_asm.S
-@@ -0,0 +1,58 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++/* Note on the LD/ST addr modes with addr reg wback
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * LD.a same as LD.aw
 + *
-+ * Vineetg: Aug 2009
-+ *  -Moved core context switch macro out of entry.S into this file.
-+ *  -This is the more "natural" hand written assembler
++ * LD.a    reg1, [reg2, x]  => Pre Incr
++ *      Eff Addr for load = [reg2 + x]
++ *
++ * LD.ab   reg1, [reg2, x]  => Post Incr
++ *      Eff Addr for load = [reg2]
 + */
 +
-+#include <asm/entry.h>       /* For the SAVE_* macros */
-+#include <asm/asm-offsets.h>
-+#include <asm/linkage.h>
++/*--------------------------------------------------------------
++ * Save caller saved registers (scratch registers) ( r0 - r12 )
++ * Registers are pushed / popped in the order defined in struct ptregs
++ * in asm/ptrace.h
++ *-------------------------------------------------------------*/
++.macro  SAVE_CALLER_SAVED
++	st.a    r0, [sp, -4]
++	st.a    r1, [sp, -4]
++	st.a    r2, [sp, -4]
++	st.a    r3, [sp, -4]
++	st.a    r4, [sp, -4]
++	st.a    r5, [sp, -4]
++	st.a    r6, [sp, -4]
++	st.a    r7, [sp, -4]
++	st.a    r8, [sp, -4]
++	st.a    r9, [sp, -4]
++	st.a    r10, [sp, -4]
++	st.a    r11, [sp, -4]
++	st.a    r12, [sp, -4]
++.endm
 +
-+;################### Low Level Context Switch ##########################
++/*--------------------------------------------------------------
++ * Restore caller saved registers (scratch registers)
++ *-------------------------------------------------------------*/
++.macro RESTORE_CALLER_SAVED
++	ld.ab   r12, [sp, 4]
++	ld.ab   r11, [sp, 4]
++	ld.ab   r10, [sp, 4]
++	ld.ab   r9, [sp, 4]
++	ld.ab   r8, [sp, 4]
++	ld.ab   r7, [sp, 4]
++	ld.ab   r6, [sp, 4]
++	ld.ab   r5, [sp, 4]
++	ld.ab   r4, [sp, 4]
++	ld.ab   r3, [sp, 4]
++	ld.ab   r2, [sp, 4]
++	ld.ab   r1, [sp, 4]
++	ld.ab   r0, [sp, 4]
++.endm
 +
-+	.section .sched.text,"ax",@progbits
-+	.align 4
-+	.global __switch_to
-+	.type   __switch_to, @function
-+__switch_to:
 +
-+	/* Save regs on kernel mode stack of task */
-+	st.a    blink, [sp, -4]
++/*--------------------------------------------------------------
++ * Save callee saved registers (non scratch registers) ( r13 - r25 )
++ *  on kernel stack.
++ * User mode callee regs need to be saved in case of
++ *    -fork and friends for replicating from parent to child
++ *    -before going into do_signal( ) for ptrace/core-dump
++ * Special case handling is required for r25 in case it is used by kernel
++ *  for caching task ptr. Low level exception/ISR save user mode r25
++ *  into task->thread.user_r25. So it needs to be retrieved from there and
++ *  saved into kernel stack with rest of callee reg-file
++ *-------------------------------------------------------------*/
++.macro SAVE_CALLEE_SAVED_USER
++	st.a    r13, [sp, -4]
++	st.a    r14, [sp, -4]
++	st.a    r15, [sp, -4]
++	st.a    r16, [sp, -4]
++	st.a    r17, [sp, -4]
++	st.a    r18, [sp, -4]
++	st.a    r19, [sp, -4]
++	st.a    r20, [sp, -4]
++	st.a    r21, [sp, -4]
++	st.a    r22, [sp, -4]
++	st.a    r23, [sp, -4]
++	st.a    r24, [sp, -4]
++	st.a    r25, [sp, -4]
++
++	/* move up by 1 word to "create" callee_regs->"stack_place_holder" */
++	sub sp, sp, 4
++.endm
++
++/*--------------------------------------------------------------
++ * Save callee saved registers (non scratch registers) ( r13 - r25 )
++ * kernel mode callee regs needed to be saved in case of context switch
++ * If r25 is used for caching task pointer then that need not be saved
++ * as it can be re-created from current task global
++ *-------------------------------------------------------------*/
++.macro SAVE_CALLEE_SAVED_KERNEL
++	st.a    r13, [sp, -4]
++	st.a    r14, [sp, -4]
++	st.a    r15, [sp, -4]
++	st.a    r16, [sp, -4]
++	st.a    r17, [sp, -4]
++	st.a    r18, [sp, -4]
++	st.a    r19, [sp, -4]
++	st.a    r20, [sp, -4]
++	st.a    r21, [sp, -4]
++	st.a    r22, [sp, -4]
++	st.a    r23, [sp, -4]
++	st.a    r24, [sp, -4]
++	st.a    r25, [sp, -4]
++	sub     sp, sp, 4
++.endm
++
++/*--------------------------------------------------------------
++ * RESTORE_CALLEE_SAVED_KERNEL:
++ * Loads callee (non scratch) Reg File by popping from Kernel mode stack.
++ *  This is reverse of SAVE_CALLEE_SAVED,
++ *
++ * NOTE:
++ * Ideally this shd only be called in switch_to for loading
++ *  switched-IN task's CALLEE Reg File.
++ *  For all other cases RESTORE_CALLEE_SAVED_FAST must be used
++ *  which simply pops the stack w/o touching regs.
++ *-------------------------------------------------------------*/
++.macro RESTORE_CALLEE_SAVED_KERNEL
++
++	add     sp, sp, 4   /* skip "callee_regs->stack_place_holder" */
++	ld.ab   r25, [sp, 4]
++	ld.ab   r24, [sp, 4]
++	ld.ab   r23, [sp, 4]
++	ld.ab   r22, [sp, 4]
++	ld.ab   r21, [sp, 4]
++	ld.ab   r20, [sp, 4]
++	ld.ab   r19, [sp, 4]
++	ld.ab   r18, [sp, 4]
++	ld.ab   r17, [sp, 4]
++	ld.ab   r16, [sp, 4]
++	ld.ab   r15, [sp, 4]
++	ld.ab   r14, [sp, 4]
++	ld.ab   r13, [sp, 4]
++
++.endm
++
++/*--------------------------------------------------------------
++ * Super FAST Restore callee saved regs by simply re-adjusting SP
++ *-------------------------------------------------------------*/
++.macro DISCARD_CALLEE_SAVED_USER
++	add     sp, sp, 14 * 4
++.endm
++
++/*--------------------------------------------------------------
++ * Restore User mode r25 saved in task_struct->thread.user_r25
++ *-------------------------------------------------------------*/
++.macro RESTORE_USER_R25
++	ld  r25, [r25, TASK_THREAD + THREAD_USER_R25]
++.endm
++
++/*-------------------------------------------------------------
++ * given a tsk struct, get to the base of it's kernel mode stack
++ * tsk->thread_info is really a PAGE, whose bottom hoists stack
++ * which grows upwards towards thread_info
++ *------------------------------------------------------------*/
++
++.macro GET_TSK_STACK_BASE tsk, out
++
++	/* Get task->thread_info (this is essentially start of a PAGE) */
++	ld  \out, [\tsk, TASK_THREAD_INFO]
++
++	/* Go to end of page where stack begins (grows upwards) */
++	add2 \out, \out, (THREAD_SIZE - 4)/4   /* one word GUTTER */
++
++.endm
++
++/*--------------------------------------------------------------
++ * Switch to Kernel Mode stack if SP points to User Mode stack
++ *
++ * Entry   : r9 contains pre-IRQ/exception/trap status32
++ * Exit    : SP is set to kernel mode stack pointer
++ * Clobbers: r9
++ *-------------------------------------------------------------*/
++
++.macro SWITCH_TO_KERNEL_STK
++
++	/* User Mode when this happened ? Yes: Proceed to switch stack */
++	bbit1   r9, STATUS_U_BIT, 88f
++
++	/* OK we were already in kernel mode when this event happened, thus can
++	 * assume SP is kernel mode SP. _NO_ need to do any stack switching
++	 */
++
++	/* Save Pre Intr/Exception KERNEL MODE SP on kernel stack
++	 * safe-keeping not really needed, but it keeps the epilogue code
++	 * (SP restore) simpler/uniform.
++	 */
++	b.d	77f
++
++	st.a	sp, [sp, -12]	; Make room for orig_r0 and orig_r8
++
++88: /*------Intr/Ecxp happened in user mode, "switch" stack ------ */
++
++	GET_CURR_TASK_ON_CPU   r9
++
++	/* With current tsk in r9, get it's kernel mode stack base */
++	GET_TSK_STACK_BASE  r9, r9
++
++#ifdef PT_REGS_CANARY
++	st	0xabcdabcd, [r9, 0]
++#endif
++
++	/* Save Pre Intr/Exception User SP on kernel stack */
++	st.a    sp, [r9, -12]	; Make room for orig_r0 and orig_r8
++
++	/* CAUTION:
++	 * SP should be set at the very end when we are done with everything
++	 * In case of 2 levels of interrupt we depend on value of SP to assume
++	 * that everything else is done (loading r25 etc)
++	 */
++
++	/* set SP to point to kernel mode stack */
++	mov sp, r9
++
++77: /* ----- Stack Switched to kernel Mode, Now save REG FILE ----- */
++
++.endm
++
++/*------------------------------------------------------------
++ * "FAKE" a rtie to return from CPU Exception context
++ * This is to re-enable Exceptions within exception
++ * Look at EV_ProtV to see how this is actually used
++ *-------------------------------------------------------------*/
++
++.macro FAKE_RET_FROM_EXCPN  reg
++
++	ld  \reg, [sp, PT_status32]
++	bic  \reg, \reg, (STATUS_U_MASK|STATUS_DE_MASK)
++	bset \reg, \reg, STATUS_L_BIT
++	sr  \reg, [erstatus]
++	mov \reg, 55f
++	sr  \reg, [eret]
++
++	rtie
++55:
++.endm
++
++/*
++ * @reg [OUT] &thread_info of "current"
++ */
++.macro GET_CURR_THR_INFO_FROM_SP  reg
++	and \reg, sp, ~(THREAD_SIZE - 1)
++.endm
++
++/*
++ * @reg [OUT] thread_info->flags of "current"
++ */
++.macro GET_CURR_THR_INFO_FLAGS  reg
++	GET_CURR_THR_INFO_FROM_SP  \reg
++	ld  \reg, [\reg, THREAD_INFO_FLAGS]
++.endm
++
++/*--------------------------------------------------------------
++ * For early Exception Prologue, a core reg is temporarily needed to
++ * code the rest of prolog (stack switching). This is done by stashing
++ * it to memory (non-SMP case) or SCRATCH0 Aux Reg (SMP).
++ *
++ * Before saving the full regfile - this reg is restored back, only
++ * to be saved again on kernel mode stack, as part of ptregs.
++ *-------------------------------------------------------------*/
++.macro EXCPN_PROLOG_FREEUP_REG	reg
++	st  \reg, [@ex_saved_reg1]
++.endm
++
++.macro EXCPN_PROLOG_RESTORE_REG	reg
++	ld  \reg, [@ex_saved_reg1]
++.endm
++
++/*--------------------------------------------------------------
++ * Save all registers used by Exceptions (TLB Miss, Prot-V, Mem err etc)
++ * Requires SP to be already switched to kernel mode Stack
++ * sp points to the next free element on the stack at exit of this macro.
++ * Registers are pushed / popped in the order defined in struct ptregs
++ * in asm/ptrace.h
++ * Note that syscalls are implemented via TRAP which is also a exception
++ * from CPU's point of view
++ *-------------------------------------------------------------*/
++.macro SAVE_ALL_EXCEPTION   marker
++
++	/* Restore r9 used to code the early prologue */
++	EXCPN_PROLOG_RESTORE_REG  r9
++
++	/* Save the complete regfile now */
++
++	/* orig_r8 marker:
++	 * syscalls   -> 1 to NR_SYSCALLS
++	 * Exceptions -> NR_SYSCALLS + 1
++	 * Break-point-> NR_SYSCALLS + 2
++	 */
++	st      \marker, [sp, 8]
++	st      r0, [sp, 4]    /* orig_r0, needed only for sys calls */
++	SAVE_CALLER_SAVED
++	st.a    r26, [sp, -4]   /* gp */
 +	st.a    fp, [sp, -4]
-+	SAVE_CALLEE_SAVED_KERNEL
++	st.a    blink, [sp, -4]
++	lr	r9, [eret]
++	st.a    r9, [sp, -4]
++	lr	r9, [erstatus]
++	st.a    r9, [sp, -4]
++	st.a    lp_count, [sp, -4]
++	lr	r9, [lp_end]
++	st.a    r9, [sp, -4]
++	lr	r9, [lp_start]
++	st.a    r9, [sp, -4]
++	lr	r9, [erbta]
++	st.a    r9, [sp, -4]
 +
-+	/* Save the now KSP in task->thread.ksp */
-+	st.as  sp, [r0, (TASK_THREAD + THREAD_KSP)/4]
++#ifdef PT_REGS_CANARY
++	mov   r9, 0xdeadbeef
++	st    r9, [sp, -4]
++#endif
 +
-+	/*
-+	* Return last task in r0 (return reg)
-+	* On ARC, Return reg = First Arg reg = r0.
-+	* Since we already have last task in r0,
-+	* don't need to do anything special to return it
-+	*/
++	/* move up by 1 word to "create" pt_regs->"stack_place_holder" */
++	sub sp, sp, 4
++.endm
 +
-+	/* hardware memory barrier */
-+	sync
++/*--------------------------------------------------------------
++ * Save scratch regs for exceptions
++ *-------------------------------------------------------------*/
++.macro SAVE_ALL_SYS
++	SAVE_ALL_EXCEPTION  (NR_syscalls + 1)
++.endm
 +
-+	/*
-+	 * switch to new task, contained in r1
-+	 * Temp reg r3 is required to get the ptr to store val
-+	 */
-+	SET_CURR_TASK_ON_CPU  r1, r3
++/*--------------------------------------------------------------
++ * Save scratch regs for sys calls
++ *-------------------------------------------------------------*/
++.macro SAVE_ALL_TRAP
++	SAVE_ALL_EXCEPTION  r8
++.endm
 +
-+	/* reload SP with kernel mode stack pointer in task->thread.ksp */
-+	ld.as  sp, [r1, (TASK_THREAD + THREAD_KSP)/4]
++/*--------------------------------------------------------------
++ * Restore all registers used by system call or Exceptions
++ * SP should always be pointing to the next free stack element
++ * when entering this macro.
++ *
++ * NOTE:
++ *
++ * It is recommended that lp_count/ilink1/ilink2 not be used as a dest reg
++ * for memory load operations. If used in that way interrupts are deffered
++ * by hardware and that is not good.
++ *-------------------------------------------------------------*/
++.macro RESTORE_ALL_SYS
 +
-+	/* restore the registers */
-+	RESTORE_CALLEE_SAVED_KERNEL
-+	ld.ab   fp, [sp, 4]
++	add sp, sp, 4       /* hop over unused "pt_regs->stack_place_holder" */
++
++	ld.ab   r9, [sp, 4]
++	sr	r9, [erbta]
++	ld.ab   r9, [sp, 4]
++	sr	r9, [lp_start]
++	ld.ab   r9, [sp, 4]
++	sr	r9, [lp_end]
++	ld.ab   r9, [sp, 4]
++	mov	lp_count, r9
++	ld.ab   r9, [sp, 4]
++	sr	r9, [erstatus]
++	ld.ab   r9, [sp, 4]
++	sr	r9, [eret]
 +	ld.ab   blink, [sp, 4]
-+	j       [blink]
++	ld.ab   fp, [sp, 4]
++	ld.ab   r26, [sp, 4]    /* gp */
++	RESTORE_CALLER_SAVED
 +
-+ARC_EXIT __switch_to
-diff --git a/arch/arc/kernel/fpu.c b/arch/arc/kernel/fpu.c
++	ld  sp, [sp] /* restore original sp */
++	/* orig_r0 and orig_r8 skipped automatically */
++.endm
++
++
++/*--------------------------------------------------------------
++ * Save all registers used by interrupt handlers.
++ *-------------------------------------------------------------*/
++.macro SAVE_ALL_INT1
++
++	/* restore original r9 , saved in int1_saved_reg
++	* It will be saved on stack in macro: SAVE_CALLER_SAVED
++	*/
++	ld  r9, [@int1_saved_reg]
++
++	/* now we are ready to save the remaining context :) */
++	st     -1, [sp, 8]    /* orig_r8, -1 for interuppt level one */
++	st      0, [sp, 4]    /* orig_r0 , N/A for IRQ */
++	SAVE_CALLER_SAVED
++	st.a    r26, [sp, -4]   /* gp */
++	st.a    fp, [sp, -4]
++	st.a    blink, [sp, -4]
++	st.a    ilink1, [sp, -4]
++	lr	r9, [status32_l1]
++	st.a    r9, [sp, -4]
++	st.a    lp_count, [sp, -4]
++	lr	r9, [lp_end]
++	st.a    r9, [sp, -4]
++	lr	r9, [lp_start]
++	st.a    r9, [sp, -4]
++	lr	r9, [bta_l1]
++	st.a    r9, [sp, -4]
++
++#ifdef PT_REGS_CANARY
++	mov   r9, 0xdeadbee1
++	st    r9, [sp, -4]
++#endif
++	/* move up by 1 word to "create" pt_regs->"stack_place_holder" */
++	sub sp, sp, 4
++.endm
++
++/*--------------------------------------------------------------
++ * Restore all registers used by interrupt handlers.
++ *
++ * NOTE:
++ *
++ * It is recommended that lp_count/ilink1/ilink2 not be used as a dest reg
++ * for memory load operations. If used in that way interrupts are deffered
++ * by hardware and that is not good.
++ *-------------------------------------------------------------*/
++
++.macro RESTORE_ALL_INT1
++	add sp, sp, 4       /* hop over unused "pt_regs->stack_place_holder" */
++
++	ld.ab   r9, [sp, 4] /* Actual reg file */
++	sr	r9, [bta_l1]
++	ld.ab   r9, [sp, 4]
++	sr	r9, [lp_start]
++	ld.ab   r9, [sp, 4]
++	sr	r9, [lp_end]
++	ld.ab   r9, [sp, 4]
++	mov	lp_count, r9
++	ld.ab   r9, [sp, 4]
++	sr	r9, [status32_l1]
++	ld.ab   r9, [sp, 4]
++	mov	ilink1, r9
++	ld.ab   blink, [sp, 4]
++	ld.ab   fp, [sp, 4]
++	ld.ab   r26, [sp, 4]    /* gp */
++	RESTORE_CALLER_SAVED
++
++	ld  sp, [sp] /* restore original sp */
++	/* orig_r0 and orig_r8 skipped automatically */
++.endm
++
++/* Get CPU-ID of this core */
++.macro  GET_CPU_ID  reg
++	lr  \reg, [identity]
++	lsr \reg, \reg, 8
++	bmsk \reg, \reg, 7
++.endm
++
++.macro  GET_CURR_TASK_ON_CPU    reg
++	ld  \reg, [@_current_task]
++.endm
++
++.macro  SET_CURR_TASK_ON_CPU    tsk, tmp
++	st  \tsk, [@_current_task]
++.endm
++
++/* ------------------------------------------------------------------
++ * Get the ptr to some field of Current Task at @off in task struct
++ */
++
++.macro GET_CURR_TASK_FIELD_PTR  off,  reg
++	GET_CURR_TASK_ON_CPU  \reg
++	add \reg, \reg, \off
++.endm
++
++#endif  /* __ASSEMBLY__ */
++
++#endif  /* __ASM_ARC_ENTRY_H */
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
 new file mode 100644
-index 0000000..f352e51
+index 0000000..a4acc9e
 --- /dev/null
-+++ b/arch/arc/kernel/fpu.c
-@@ -0,0 +1,55 @@
++++ b/arch/arc/kernel/entry.S
+@@ -0,0 +1,571 @@
 +/*
-+ * fpu.c - save/restore of Floating Point Unit Registers on task switch
++ * Low Level Interrupts/Traps/Exceptions(non-TLB) Handling for ARC
 + *
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/sched.h>
-+#include <asm/switch_to.h>
-+
-+/*
-+ * To save/restore FPU regs, simplest scheme would use LR/SR insns.
-+ * However since SR serializes the pipeline, an alternate "hack" can be used
-+ * which uses the FPU Exchange insn (DEXCL) to r/w FPU regs.
 + *
-+ * Store to 64bit dpfp1 reg from a pair of core regs:
-+ *   dexcl1 0, r1, r0  ; where r1:r0 is the 64 bit val
++ * vineetg: Nov 2010:
++ *  -Vector table jumps (@8 bytes) converted into branches (@4 bytes)
++ *  -To maintain the slot size of 8 bytes/vector, added nop, which is
++ *   not executed at runtime.
 + *
-+ * Read from dpfp1 into pair of core regs (w/o clobbering dpfp1)
-+ *   mov_s    r3, 0
-+ *   daddh11  r1, r3, r3   ; get "hi" into r1 (dpfp1 unchanged)
-+ *   dexcl1   r0, r1, r3   ; get "low" into r0 (dpfp1 low clobbered)
-+ *   dexcl1    0, r1, r0   ; restore dpfp1 to orig value
++ * vineetg: Nov 2009 (Everything needed for TIF_RESTORE_SIGMASK)
++ *  -do_signal()invoked upon TIF_RESTORE_SIGMASK as well
++ *  -Wrappers for sys_{,rt_}sigsuspend() nolonger needed as they don't
++ *   need ptregs anymore
 + *
-+ * However we can tweak the read, so that read-out of outgoing task's FPU regs
-+ * and write of incoming task's regs happen in one shot. So all the work is
-+ * done before context switch
-+ */
-+
-+void fpu_save_restore(struct task_struct *prev, struct task_struct *next)
-+{
-+	unsigned int *saveto = &prev->thread.fpu.aux_dpfp[0].l;
-+	unsigned int *readfrom = &next->thread.fpu.aux_dpfp[0].l;
-+
-+	const unsigned int zero = 0;
-+
-+	__asm__ __volatile__(
-+		"daddh11  %0, %2, %2\n"
-+		"dexcl1   %1, %3, %4\n"
-+		: "=&r" (*(saveto + 1)), /* early clobber must here */
-+		  "=&r" (*(saveto))
-+		: "r" (zero), "r" (*(readfrom + 1)), "r" (*(readfrom))
-+	);
-+
-+	__asm__ __volatile__(
-+		"daddh22  %0, %2, %2\n"
-+		"dexcl2   %1, %3, %4\n"
-+		: "=&r"(*(saveto + 3)),	/* early clobber must here */
-+		  "=&r"(*(saveto + 2))
-+		: "r" (zero), "r" (*(readfrom + 3)), "r" (*(readfrom + 2))
-+	);
-+}
-diff --git a/arch/arc/kernel/process.c b/arch/arc/kernel/process.c
-index 21d1889..5c18ba8 100644
---- a/arch/arc/kernel/process.c
-+++ b/arch/arc/kernel/process.c
-@@ -117,3 +117,204 @@ SYSCALL_DEFINE0(arc_gettls)
- {
- 	return task_thread_info(current)->thr_ptr;
- }
-+
-+static inline void arch_idle(void)
-+{
-+	__asm__("sleep");
-+}
-+
-+void cpu_idle(void)
-+{
-+	/* Since we SLEEP in idle loop, TIF_POLLING_NRFLAG can't be set */
-+
-+	/* endless idle loop with no priority at all */
-+	while (1) {
-+		tick_nohz_idle_enter();
-+		rcu_idle_enter();
-+
-+		while (!need_resched())
-+			arch_idle();
-+
-+		rcu_idle_exit();
-+		tick_nohz_idle_exit();
-+
-+		schedule_preempt_disabled();
-+	}
-+}
-+
-+void kernel_thread_helper(void)
-+{
-+	__asm__ __volatile__(
-+		"mov   r0, r2	\n\t"
-+		"mov   r1, r3	\n\t"
-+		"j     [r1]	\n\t");
-+}
-+
-+int kernel_thread(int (*fn) (void *), void *arg, unsigned long flags)
-+{
-+	struct pt_regs regs;
-+
-+	memset(&regs, 0, sizeof(regs));
-+
-+	regs.r2 = (unsigned long)arg;
-+	regs.r3 = (unsigned long)fn;
-+	regs.blink = (unsigned long)do_exit;
-+	regs.ret = (unsigned long)kernel_thread_helper;
-+	regs.status32 = read_aux_reg(0xa);
-+
-+	/* Ok, create the new process.. */
-+	return do_fork(flags | CLONE_VM | CLONE_UNTRACED, 0, &regs, 0, NULL,
-+		       NULL);
-+
-+}
-+EXPORT_SYMBOL(kernel_thread);
-+
-+asmlinkage void ret_from_fork(void);
-+
-+/* Layout of Child kernel mode stack as setup at the end of this function is
++ * Vineetg: Oct 2009
++ *  -In a rare scenario, Process gets a Priv-V exception and gets scheduled
++ *   out. Since we don't do FAKE RTIE for Priv-V, CPU excpetion state remains
++ *   active (AE bit enabled).  This causes a double fault for a subseq valid
++ *   exception. Thus FAKE RTIE needed in low level Priv-Violation handler.
++ *   Instr Error could also cause similar scenario, so same there as well.
 + *
-+ * |     ...        |
-+ * |     ...        |
-+ * |    unused      |
-+ * |                |
-+ * ------------------  <==== top of Stack (thread.ksp)
-+ * |   UNUSED 1 word|
-+ * ------------------
-+ * |     r25        |
-+ * ~                ~
-+ * |    --to--      |   (CALLEE Regs of user mode)
-+ * |     r13        |
-+ * ------------------
-+ * |     fp         |
-+ * |    blink       |   @ret_from_fork
-+ * ------------------
-+ * |                |
-+ * ~                ~
-+ * ~                ~
-+ * |                |
-+ * ------------------
-+ * |     r12        |
-+ * ~                ~
-+ * |    --to--      |   (scratch Regs of user mode)
-+ * |     r0         |
-+ * ------------------
-+ * |   UNUSED 1 word|
-+ * ------------------  <===== END of PAGE
++ * Vineetg: Aug 28th 2008: Bug #94984
++ *  -Zero Overhead Loop Context shd be cleared when entering IRQ/EXcp/Trap
++ *   Normally CPU does this automatically, however when doing FAKE rtie,
++ *   we need to explicitly do this. The problem in macros
++ *   FAKE_RET_FROM_EXCPN and FAKE_RET_FROM_EXCPN_LOCK_IRQ was that this bit
++ *   was being "CLEARED" rather then "SET". Since it is Loop INHIBIT Bit,
++ *   setting it and not clearing it clears ZOL context
++ *
++ * Vineetg: Dec 22, 2007
++ *    Minor Surgery of Low Level ISR to make it SMP safe
++ *    - MMU_SCRATCH0 Reg used for freeing up r9 in Level 1 ISR
++ *    - _current_task is made an array of NR_CPUS
++ *    - Access of _current_task wrapped inside a macro so that if hardware
++ *       team agrees for a dedicated reg, no other code is touched
++ *
++ * Amit Bhor, Rahul Trivedi, Kanika Nema, Sameer Dhavale : Codito Tech 2004
 + */
-+int copy_thread(unsigned long clone_flags,
-+		unsigned long usp, unsigned long topstk,
-+		struct task_struct *p, struct pt_regs *regs)
-+{
-+	struct pt_regs *c_regs;        /* child's pt_regs */
-+	unsigned long *childksp;       /* to unwind out of __switch_to() */
-+	struct callee_regs *c_callee;  /* child's callee regs */
-+	struct callee_regs *parent_callee;  /* paren't callee */
 +
-+	/* Mark the specific anchors to begin with (see pic above) */
-+	c_regs = task_pt_regs(p);
-+	childksp = (unsigned long *)c_regs - 2;  /* 2 words for FP/BLINK */
-+	c_callee = ((struct callee_regs *)childksp) - 1;
-+
-+	/*
-+	 * At the end of this function, kernel SP is all set for
-+	 * switch_to to start unwinding.
-+	 * For kernel threads we don't have callee regs, but the stack
-+	 * layout nevertheless needs to remain the same
-+	 */
-+	p->thread.ksp = (unsigned long)c_callee;	/* THREAD_KSP */
-+
-+	/* Copy parents pt regs on child's kernel mode stack */
-+	*c_regs = *regs;
-+
-+	/* __switch_to expects FP(0), BLINK(return addr) at top of stack */
-+	childksp[0] = 0;				/* for POP fp */
-+	childksp[1] = (unsigned long)ret_from_fork;	/* for POP blink */
-+
-+	if (!(user_mode(regs))) {
-+		c_regs->sp =
-+		    (unsigned long)task_thread_info(p) + (THREAD_SIZE - 4);
-+		return 0;
-+	}
-+
-+	/*--------- User Task Only --------------*/
-+
-+	c_regs->sp = usp;
-+	c_regs->r0 = 0;		/* fork returns 0 in child */
-+
-+	parent_callee = ((struct callee_regs *)regs) - 1;
-+	*c_callee = *parent_callee;
-+
-+	if (unlikely(clone_flags & CLONE_SETTLS)) {
-+		/*
-+		 * set task's userland tls data ptr from 4th arg
-+		 * clone C-lib call is difft from clone sys-call
-+		 */
-+		task_thread_info(p)->thr_ptr = regs->r3;
-+	} else {
-+		/* Normal fork case: set parent's TLS ptr in child */
-+		task_thread_info(p)->thr_ptr =
-+		task_thread_info(current)->thr_ptr;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Some archs flush debug and FPU info here
++/*------------------------------------------------------------------
++ *    Function                            ABI
++ *------------------------------------------------------------------
++ *
++ *  Arguments                           r0 - r7
++ *  Caller Saved Registers              r0 - r12
++ *  Callee Saved Registers              r13- r25
++ *  Global Pointer (gp)                 r26
++ *  Frame Pointer (fp)                  r27
++ *  Stack Pointer (sp)                  r28
++ *  Interrupt link register (ilink1)    r29
++ *  Interrupt link register (ilink2)    r30
++ *  Branch link register (blink)        r31
++ *------------------------------------------------------------------
 + */
-+void flush_thread(void)
-+{
-+}
 +
-+/*
-+ * Free any architecture-specific thread data structures, etc.
++	.cpu A7
++
++;############################ Vector Table #################################
++
++.macro VECTOR  lbl
++#if 1   /* Just in case, build breaks */
++	j   \lbl
++#else
++	b   \lbl
++	nop
++#endif
++.endm
++
++	.section .vector, "ax",@progbits
++	.align 4
++
++/* Each entry in the vector table must occupy 2 words. Since it is a jump
++ * across sections (.vector to .text) we are gauranteed that 'j somewhere'
++ * will use the 'j limm' form of the intrsuction as long as somewhere is in
++ * a section other than .vector.
 + */
-+void exit_thread(void)
-+{
-+}
 +
-+int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
-+{
-+	return 0;
-+}
++; ********* Critical System Events **********************
++VECTOR   res_service             ; 0x0, Restart Vector  (0x0)
++VECTOR   mem_service             ; 0x8, Mem exception   (0x1)
++VECTOR   instr_service           ; 0x10, Instrn Error   (0x2)
 +
-+/*
-+ * API: expected by schedular Code: If thread is sleeping where is that.
-+ * What is this good for? it will be always the scheduler or ret_from_fork.
-+ * So we hard code that anyways.
-+ */
-+unsigned long thread_saved_pc(struct task_struct *t)
-+{
-+	struct pt_regs *regs = task_pt_regs(t);
-+	unsigned long blink = 0;
++; ******************** Device ISRs **********************
++VECTOR   handle_interrupt_level1
 +
-+	/*
-+	 * If the thread being queried for in not itself calling this, then it
-+	 * implies it is not executing, which in turn implies it is sleeping,
-+	 * which in turn implies it got switched OUT by the schedular.
-+	 * In that case, it's kernel mode blink can reliably retrieved as per
-+	 * the picture above (right above pt_regs).
-+	 */
-+	if (t != current && t->state != TASK_RUNNING)
-+		blink = *((unsigned int *)regs - 1);
++VECTOR   handle_interrupt_level1
 +
-+	return blink;
-+}
++VECTOR   handle_interrupt_level1
 +
-+int elf_check_arch(const struct elf32_hdr *x)
-+{
-+	unsigned int eflags;
++VECTOR   handle_interrupt_level1
 +
-+	if (x->e_machine != EM_ARCOMPACT)
-+		return 0;
++.rept   25
++VECTOR   handle_interrupt_level1 ; Other devices
++.endr
 +
-+	eflags = x->e_flags;
-+	if ((eflags & EF_ARC_OSABI_MSK) < EF_ARC_OSABI_V2) {
-+		pr_err("ABI mismatch - you need newer toolchain\n");
-+		force_sigsegv(SIGSEGV, current);
-+		return 0;
-+	}
++/* FOR ARC600: timer = 0x3, uart = 0x8, emac = 0x10 */
 +
-+	return 1;
-+}
-+EXPORT_SYMBOL(elf_check_arch);
++; ******************** Exceptions **********************
++VECTOR   EV_MachineCheck         ; 0x100, Fatal Machine check   (0x20)
++VECTOR   EV_TLBMissI             ; 0x108, Intruction TLB miss   (0x21)
++VECTOR   EV_TLBMissD             ; 0x110, Data TLB miss         (0x22)
++VECTOR   EV_TLBProtV             ; 0x118, Protection Violation  (0x23)
++				 ;         or Misaligned Access
++VECTOR   EV_PrivilegeV           ; 0x120, Privilege Violation   (0x24)
++VECTOR   EV_Trap                 ; 0x128, Trap exception        (0x25)
++VECTOR   EV_Extension            ; 0x130, Extn Intruction Excp  (0x26)
++
++.rept   24
++VECTOR   reserved                ; Reserved Exceptions
++.endr
++
++#include <linux/linkage.h>   /* ARC_{EXTRY,EXIT} */
++#include <asm/entry.h>       /* SAVE_ALL_{INT1,INT2,TRAP...} */
++#include <asm/errno.h>
++#include <asm/arcregs.h>
++#include <asm/irqflags.h>
++
++;##################### Scratch Mem for IRQ stack switching #############
++
++	.section .data		; NOT .global
++	.align 32
++	.type   int1_saved_reg, @object
++	.size   int1_saved_reg, 4
++int1_saved_reg:
++	.zero 4
++
++; ---------------------------------------------
++	.section .text, "ax",@progbits
++
++res_service:		; processor restart
++	flag    0x1     ; not implemented
++	nop
++	nop
++
++reserved:		; processor restart
++	rtie            ; jump to processor initializations
++
++;##################### Interrupt Handling ##############################
++
++; ---------------------------------------------
++;  Level 1 ISR
++; ---------------------------------------------
++ARC_ENTRY handle_interrupt_level1
++
++	/* free up r9 as scratchpad */
++	st   r9, [@int1_saved_reg]
++
++	;Which mode (user/kernel) was the system in when intr occured
++	lr  r9, [status32_l1]
++
++	SWITCH_TO_KERNEL_STK
++	SAVE_ALL_INT1
++
++	lr  r0, [icause1]
++	and r0, r0, 0x1f
++
++	bl.d  @arch_do_IRQ
++	mov r1, sp
++
++	mov r8,0x1
++	sr r8, [AUX_IRQ_LV12]       ; clear bit in Sticky Status Reg
++
++	b   ret_from_exception
++ARC_EXIT handle_interrupt_level1
++
++;################### Non TLB Exception Handling #############################
++
++; ---------------------------------------------
++; Instruction Error Exception Handler
++; ---------------------------------------------
++
++ARC_ENTRY instr_service
++
++	EXCPN_PROLOG_FREEUP_REG r9
++
++	lr  r9, [erstatus]
++
++	SWITCH_TO_KERNEL_STK
++	SAVE_ALL_SYS
++
++	lr  r0, [ecr]
++	lr  r1, [efa]
++
++	mov r2, sp
++
++	FAKE_RET_FROM_EXCPN r9
++
++	bl  do_insterror_or_kprobe
++	b   ret_from_exception
++ARC_EXIT instr_service
++
++; ---------------------------------------------
++; Memory Error Exception Handler
++; ---------------------------------------------
++
++ARC_ENTRY mem_service
++
++	EXCPN_PROLOG_FREEUP_REG r9
++
++	lr  r9, [erstatus]
++
++	SWITCH_TO_KERNEL_STK
++	SAVE_ALL_SYS
++
++	lr  r0, [ecr]
++	lr  r1, [efa]
++	mov r2, sp
++	bl  do_memory_error
++	b   ret_from_exception
++ARC_EXIT mem_service
++
++; ---------------------------------------------
++; Machine Check Exception Handler
++; ---------------------------------------------
++
++ARC_ENTRY EV_MachineCheck
++
++	EXCPN_PROLOG_FREEUP_REG r9
++	lr  r9, [erstatus]
++
++	SWITCH_TO_KERNEL_STK
++	SAVE_ALL_SYS
++
++	lr  r0, [ecr]
++	lr  r1, [efa]
++	mov r2, sp
++
++	brne    r0, 0x200100, 1f
++	bl      do_tlb_overlap_fault
++	b       ret_from_exception
++
++1:
++	; DEAD END: can't do much, display Regs and HALT
++	SAVE_CALLEE_SAVED_USER
++
++	GET_CURR_TASK_FIELD_PTR   TASK_THREAD, r10
++	st  sp, [r10, THREAD_CALLEE_REG]
++
++	j  do_machine_check_fault
++
++ARC_EXIT EV_MachineCheck
++
++; ---------------------------------------------
++; Protection Violation Exception Handler
++; ---------------------------------------------
++
++ARC_ENTRY EV_TLBProtV
++
++	EXCPN_PROLOG_FREEUP_REG r9
++
++	;Which mode (user/kernel) was the system in when Exception occured
++	lr  r9, [erstatus]
++
++	SWITCH_TO_KERNEL_STK
++	SAVE_ALL_SYS
++
++	;---------(3) Save some more regs-----------------
++	;  vineetg: Mar 6th: Random Seg Fault issue #1
++	;  ecr and efa were not saved in case an Intr sneaks in
++	;  after fake rtie
++	;
++	lr  r3, [ecr]
++	lr  r4, [efa]
++
++	; --------(4) Return from CPU Exception Mode ---------
++	;  Fake a rtie, but rtie to next label
++	;  That way, subsequently, do_page_fault ( ) executes in pure kernel
++	;  mode with further Exceptions enabled
++
++	FAKE_RET_FROM_EXCPN r9
++
++	;------ (5) Type of Protection Violation? ----------
++	;
++	; ProtV Hardware Exception is triggered for Access Faults of 2 types
++	;   -Access Violaton (WRITE to READ ONLY Page) - for linux COW
++	;   -Unaligned Access (READ/WRITE on odd boundary)
++	;
++	cmp r3, 0x230400    ; Misaligned data access ?
++	beq 4f
++
++	;========= (6a) Access Violation Processing ========
++	cmp r3, 0x230100
++	mov r1, 0x0              ; if LD exception ? write = 0
++	mov.ne r1, 0x1           ; else write = 1
++
++	mov r2, r4              ; faulting address
++	mov r0, sp              ; pt_regs
++	bl  do_page_fault
++	b   ret_from_exception
++
++	;========== (6b) Non aligned access ============
++4:
++	mov r0, r3              ; cause code
++	mov r1, r4              ; faulting address
++	mov r2, sp              ; pt_regs
++
++	bl  do_misaligned_access
++	b   ret_from_exception
++
++ARC_EXIT EV_TLBProtV
++
++; ---------------------------------------------
++; Privilege Violation Exception Handler
++; ---------------------------------------------
++ARC_ENTRY EV_PrivilegeV
++
++	EXCPN_PROLOG_FREEUP_REG r9
++
++	lr  r9, [erstatus]
++
++	SWITCH_TO_KERNEL_STK
++	SAVE_ALL_SYS
++
++	lr  r0, [ecr]
++	lr  r1, [efa]
++	mov r2, sp
++
++	FAKE_RET_FROM_EXCPN r9
++
++	bl  do_privilege_fault
++	b   ret_from_exception
++ARC_EXIT EV_PrivilegeV
++
++; ---------------------------------------------
++; Extension Instruction Exception Handler
++; ---------------------------------------------
++ARC_ENTRY EV_Extension
++
++	EXCPN_PROLOG_FREEUP_REG r9
++	lr  r9, [erstatus]
++
++	SWITCH_TO_KERNEL_STK
++	SAVE_ALL_SYS
++
++	lr  r0, [ecr]
++	lr  r1, [efa]
++	mov r2, sp
++	bl  do_extension_fault
++	b   ret_from_exception
++ARC_EXIT EV_Extension
++
++;################### Break Point TRAP ##########################
++
++	; ======= (5b) Trap is due to Break-Point =========
++
++trap_with_param:
++
++	;make sure orig_r8 is a positive value
++	st  NR_syscalls + 2, [sp, PT_orig_r8]
++
++	mov r0, r12
++	lr  r1, [efa]
++	mov r2, sp
++
++	; Now that we have read EFA, its safe to do "fake" rtie
++	;   and get out of CPU exception mode
++	FAKE_RET_FROM_EXCPN r11
++
++	; Save callee regs in case gdb wants to have a look
++	; SP will grow up by size of CALLEE Reg-File
++	; NOTE: clobbers r12
++	SAVE_CALLEE_SAVED_USER
++
++	; save location of saved Callee Regs @ thread_struct->pc
++	GET_CURR_TASK_FIELD_PTR   TASK_THREAD, r10
++	st  sp, [r10, THREAD_CALLEE_REG]
++
++	; Call the trap handler
++	bl  do_non_swi_trap
++
++	; unwind stack to discard Callee saved Regs
++	DISCARD_CALLEE_SAVED_USER
++
++	b   ret_from_exception
++
++;##################### Trap Handling ##############################
++;
++; EV_Trap caused by TRAP_S and TRAP0 instructions.
++;------------------------------------------------------------------
++;   (1) System Calls
++;       :parameters in r0-r7.
++;       :r8 has the system call number
++;   (2) Break Points
++;------------------------------------------------------------------
++
++ARC_ENTRY EV_Trap
++
++	; Need at least 1 reg to code the early exception prolog
++	EXCPN_PROLOG_FREEUP_REG r9
++
++	;Which mode (user/kernel) was the system in when intr occured
++	lr  r9, [erstatus]
++
++	SWITCH_TO_KERNEL_STK
++	SAVE_ALL_TRAP
++
++	;------- (4) What caused the Trap --------------
++	lr     r12, [ecr]
++	and.f  0, r12, ECR_PARAM_MASK
++	bnz    trap_with_param
++
++	; ======= (5a) Trap is due to System Call ========
++
++	; Before doing anything, return from CPU Exception Mode
++	FAKE_RET_FROM_EXCPN r11
++
++	;============ This is normal System Call case ==========
++	; Sys-call num shd not exceed the total system calls avail
++	cmp     r8,  NR_syscalls
++	mov.hi  r0, -ENOSYS
++	bhi     ret_from_system_call
++
++	; Offset into the syscall_table and call handler
++	ld.as   r9,[sys_call_table, r8]
++	jl      [r9]        ; Entry into Sys Call Handler
++
++	; fall through to ret_from_system_call
++ARC_EXIT EV_Trap
++
++ARC_ENTRY ret_from_system_call
++
++	st  r0, [sp, PT_r0]     ; sys call return value in pt_regs
++
++	; fall through yet again to ret_from_exception
++
++;############# Return from Intr/Excp/Trap (Linux Specifics) ##############
++;
++; If ret to user mode do we need to handle signals, schedule() et al.
++
++ARC_ENTRY ret_from_exception
++
++	; Pre-{IRQ,Trap,Exception} K/U mode from pt_regs->status32
++	ld  r8, [sp, PT_status32]   ; returning to User/Kernel Mode
++
++#ifdef CONFIG_PREEMPT
++	bbit0  r8, STATUS_U_BIT, resume_kernel_mode
++#else
++	bbit0  r8, STATUS_U_BIT, restore_regs
++#endif
++
++	; Before returning to User mode check-for-and-complete any pending work
++	; such as rescheduling/signal-delivery etc.
++resume_user_mode_begin:
++
++	; Disable IRQs to ensures that chk for pending work itself is atomic
++	; (and we don't end up missing a NEED_RESCHED/SIGPENDING due to an
++	; interim IRQ).
++	IRQ_DISABLE	r10
++
++	; Fast Path return to user mode if no pending work
++	GET_CURR_THR_INFO_FLAGS   r9
++	and.f  0,  r9, _TIF_WORK_MASK
++	bz     restore_regs
++
++	; --- (Slow Path #1) task preemption ---
++	bbit0  r9, TIF_NEED_RESCHED, .Lchk_pend_signals
++	mov    blink, resume_user_mode_begin  ; tail-call to U mode ret chks
++	b      @schedule 	; BTST+Bnz causes relo error in link
++
++.Lchk_pend_signals:
++	IRQ_ENABLE	r10
++
++	; --- (Slow Path #2) pending signal  ---
++	mov r0, sp	; pt_regs for arg to do_signal()/do_notify_resume()
++
++	bbit0  r9, TIF_SIGPENDING, .Lchk_notify_resume
++
++	; save CALLEE Regs.
++	; (i)  If this signal causes coredump - full regfile needed
++	; (ii) If signal is SIGTRAP/SIGSTOP, task is being traced thus
++	;      tracer might call PEEKUSR(CALLEE reg)
++	;
++	; NOTE: SP will grow up by size of CALLEE Reg-File
++	SAVE_CALLEE_SAVED_USER		; clobbers r12
++
++	; save location of saved Callee Regs @ thread_struct->callee
++	GET_CURR_TASK_FIELD_PTR   TASK_THREAD, r10
++	st  sp, [r10, THREAD_CALLEE_REG]
++
++	bl  @do_signal
++
++	; unwind SP for cheap discard of Callee saved Regs
++	DISCARD_CALLEE_SAVED_USER
++
++	b      resume_user_mode_begin	; loop back to start of U mode ret
++
++	; --- (Slow Path #3) notify_resume ---
++.Lchk_notify_resume:
++	btst   r9, TIF_NOTIFY_RESUME
++	blnz   @do_notify_resume
++	b      resume_user_mode_begin	; unconditionally back to U mode ret chks
++					; for single exit point from this block
++
++#ifdef CONFIG_PREEMPT
++
++resume_kernel_mode:
++
++	; Can't preempt if preemption disabled
++	GET_CURR_THR_INFO_FROM_SP   r10
++	ld  r8, [r10, THREAD_INFO_PREEMPT_COUNT]
++	brne  r8, 0, restore_regs
++
++	; check if this task's NEED_RESCHED flag set
++	ld  r9, [r10, THREAD_INFO_FLAGS]
++	bbit0  r9, TIF_NEED_RESCHED, restore_regs
++
++	IRQ_DISABLE	r9
++
++	; Invoke PREEMPTION
++	bl      preempt_schedule_irq
++
++	; preempt_schedule_irq() always returns with IRQ disabled
++#endif
++
++	; fall through
++
++;############# Return from Intr/Excp/Trap (ARC Specifics) ##############
++;
++; Restore the saved sys context (common exit-path for EXCPN/IRQ/Trap)
++; IRQ shd definitely not happen between now and rtie
++
++restore_regs :
++
++	; Disable Interrupts while restoring reg-file back
++	; XXX can this be optimised out
++	IRQ_DISABLE_SAVE    r9, r10	;@r10 has prisitine (pre-disable) copy
++
++	; Restore REG File. In case multiple Events outstanding,
++	; use the same priorty as rtie: EXCPN, L2 IRQ, L1 IRQ, None
++	; Note that we use realtime STATUS32 (not pt_regs->status32) to
++	; decide that.
++
++	; if Returning from Exception
++	bbit0  r10, STATUS_AE_BIT, not_exception
++	RESTORE_ALL_SYS
++	rtie
++
++	; Not Exception so maybe Interrupts (Level 1 or 2)
++
++not_exception:
++
++	bbit0  r10, STATUS_A1_BIT, not_level1_interrupt
++
++	;return from level 1
++
++	RESTORE_ALL_INT1
++debug_marker_l1:
++	rtie
++
++not_level1_interrupt:
++
++	;this case is for syscalls or Exceptions (with fake rtie)
++
++	RESTORE_ALL_SYS
++debug_marker_syscall:
++	rtie
++
++ARC_EXIT ret_from_exception
++
++ARC_ENTRY ret_from_fork
++	; when the forked child comes here from the __switch_to function
++	; r0 has the last task pointer.
++	; put last task in scheduler queue
++	bl  @schedule_tail
++	b @ret_from_exception
++ARC_EXIT ret_from_fork
 -- 
 1.7.4.1
 
