@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751052Ab3ARHnY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 02:43:24 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37665 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab3ARHnX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 02:43:23 -0500
-Date: Fri, 18 Jan 2013 10:43:09 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] module: potential deadlock in error path
-Message-ID: <20130118074309.GB31793@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1751070Ab3ARHqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 02:46:00 -0500
+Received: from norkia.v3.sk ([91.210.183.14]:56959 "EHLO norkia.v3.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772Ab3ARHp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 02:45:59 -0500
+Subject: Re: [PATCH 2/2] dma: mv_xor: do not sync the DMA buffer after
+ being deallocated
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1358083137.13136.1.camel@hobbes>
+References: <1356636228-23096-1-git-send-email-lkundrak@v3.sk>
+	 <1356636228-23096-2-git-send-email-lkundrak@v3.sk>
+	 <20130104171033.4a244c3d@skate>  <1358083137.13136.1.camel@hobbes>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Jan 2013 08:45:54 +0100
+Message-ID: <1358495154.28503.5.camel@unicorn>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-27.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We take the lock twice if we hit this goto.
+On Sun, 2013-01-13 at 14:18 +0100, Lubomir Rintel wrote:
+> On Fri, 2013-01-04 at 17:10 +0100, Thomas Petazzoni wrote:
+> > Dear Lubomir Rintel,
+> > 
+> > On Thu, 27 Dec 2012 20:23:48 +0100, Lubomir Rintel wrote:
+> > 
+> > >  	dma_sync_single_for_cpu(dma_chan->device->dev, dest_dma,
+> > >  				MV_XOR_TEST_SIZE, DMA_FROM_DEVICE);
+> > > +	dma_unmap_single(dma_chan->device->dev, dest_dma, MV_XOR_TEST_SIZE,
+> > > +			 DMA_FROM_DEVICE);
+> > 
+> > I would assume that dma_unmap_single() implies a
+> > dma_sync_single_for_cpu() since you're unmapping the DMA buffer. So if
+> > you use dma_unmap_single(), I think you can remove the call to
+> > dma_sync_single_for_cpu().
+> 
+> Yes, it indeed seems to be the case (comment for arm_dma_unmap_page():
+> "After this call, reads by the CPU to the buffer are guaranteed to see
+> whatever the device wrote there.".
+> 
+> > >  	dma_sync_single_for_cpu(dma_chan->device->dev, dest_dma,
+> > >  				PAGE_SIZE, DMA_FROM_DEVICE);
+> > > +	dma_unmap_page(dma_chan->device->dev, dest_dma, PAGE_SIZE,
+> > > +		       DMA_FROM_DEVICE);
+> > 
+> > Ditto.
+> > 
+> > Also, the mv_xor_memcpy_self_test() function not only dma_map_single()
+> > the destination buffer, but also the source buffer. So presumably, the
+> > source buffer should also be dma_unmap_single()'d.
+> > 
+> > And for the mv_xor_xor_self_test() function, multiple source buffers
+> > are dma_map_page()'d, so they should all be dma_unmap_page()'d I guess,
+> > not only the destination buffer.
+> 
+> Those get released by the mv_xor_run_tx_complete_actions() callback.
+> 
+> I will follow up with an updated patch.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Actually, after cleaning up the sync a couple more selfcheck warnings
+popped up. I'd be very thankful if you could take a look (patches
+chained to this message).
 
-diff --git a/kernel/module.c b/kernel/module.c
-index d25e359..2eefa7d 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3239,8 +3239,10 @@ again:
- 	mutex_lock(&module_mutex);
- 	/* Find duplicate symbols (must be called under lock). */
- 	err = verify_export_symbols(mod);
--	if (err < 0)
-+	if (err < 0) {
-+		mutex_unlock(&module_mutex);
- 		goto ddebug_cleanup;
-+	}
- 
- 	/* This relies on module_mutex for list integrity. */
- 	module_bug_finalize(info->hdr, info->sechdrs, mod);
