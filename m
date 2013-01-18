@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3ARR6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 12:58:11 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:44653 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab3ARR6I (ORCPT
+	id S1755265Ab3ARR6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 12:58:33 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:41828 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754787Ab3ARR6c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 12:58:08 -0500
-Message-ID: <50F98D29.6050701@oracle.com>
-Date: Fri, 18 Jan 2013 11:58:01 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+	Fri, 18 Jan 2013 12:58:32 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
-References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com> <x49obgmif7w.fsf@segfault.boston.devel.redhat.com> <x49k3raidd6.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49k3raidd6.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Transfer-Encoding: 8BIT
+To: Prashant Gaikwad <pgaikwad@nvidia.com>, <swarren@nvidia.com>,
+        <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>,
+        <rob.herring@calxeda.com>, <maxime.ripard@free-electrons.com>,
+        <linux@prisktech.co.nz>, <josh.cartwright@ni.com>,
+        Pawel Moll <pawel.moll@arm.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1357282858-2112-7-git-send-email-pgaikwad@nvidia.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
+ <1357282858-2112-7-git-send-email-pgaikwad@nvidia.com>
+Message-ID: <20130118175827.3982.65450@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH 7/7] clk: vexpress: Use common of_clk_init() function
+Date: Fri, 18 Jan 2013 09:58:27 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2013 11:56 AM, Jeff Moyer wrote:
-> Jeff Moyer <jmoyer@redhat.com> writes:
+Quoting Prashant Gaikwad (2013-01-03 23:00:58)
+> Use common of_clk_init() function for clock initialization.
 > 
->> ./check -g aio
->>
->> and here is the summary:
->>
->> Ran: 112 113 198 207 208 209 210 211 212 239 240
->> Failures: 112 198 207 239 240
->> Failed 5 of 11 tests
->>
->> To be fair, I have not yet run this on a kernel without your changes.
-> 
-> I re-ran the same test against a vanilla 3.8.0-rc4 kernel and it passed:
-> 
-> Ran: 112 113 198 207 208 209 210 211 212 239 240
-> Passed all 11 tests
-> 
-> I'll start digging into the failures.
+> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 
-Thanks, I'll take a look at it too.
+Pawel or Linus,
 
-Shaggy
+Can I get a Tested-by before I take this series into clk-next?
 
+Thanks,
+Mike
+
+> ---
+>  drivers/clk/versatile/clk-vexpress-osc.c |    1 +
+>  drivers/clk/versatile/clk-vexpress.c     |    8 +-------
+>  2 files changed, 2 insertions(+), 7 deletions(-)
 > 
-> Cheers,
-> Jeff
-> 
+> diff --git a/drivers/clk/versatile/clk-vexpress-osc.c b/drivers/clk/versatile/clk-vexpress-osc.c
+> index dcb6ae0..256c8be 100644
+> --- a/drivers/clk/versatile/clk-vexpress-osc.c
+> +++ b/drivers/clk/versatile/clk-vexpress-osc.c
+> @@ -144,3 +144,4 @@ error:
+>                 vexpress_config_func_put(osc->func);
+>         kfree(osc);
+>  }
+> +CLK_OF_DECLARE(vexpress_soc, "arm,vexpress-osc", vexpress_osc_of_setup);
+> diff --git a/drivers/clk/versatile/clk-vexpress.c b/drivers/clk/versatile/clk-vexpress.c
+> index c742ac7..f889f2f 100644
+> --- a/drivers/clk/versatile/clk-vexpress.c
+> +++ b/drivers/clk/versatile/clk-vexpress.c
+> @@ -99,19 +99,13 @@ struct clk *vexpress_sp810_of_get(struct of_phandle_args *clkspec, void *data)
+>         return vexpress_sp810_timerclken[clkspec->args[0]];
+>  }
+>  
+> -static const __initconst struct of_device_id vexpress_fixed_clk_match[] = {
+> -       { .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
+> -       { .compatible = "arm,vexpress-osc", .data = vexpress_osc_of_setup, },
+> -       {}
+> -};
+> -
+>  void __init vexpress_clk_of_init(void)
+>  {
+>         struct device_node *node;
+>         struct clk *clk;
+>         struct clk *refclk, *timclk;
+>  
+> -       of_clk_init(vexpress_fixed_clk_match);
+> +       of_clk_init(NULL);
+>  
+>         node = of_find_compatible_node(NULL, NULL, "arm,sp810");
+>         vexpress_sp810_init(of_iomap(node, 0));
+> -- 
+> 1.7.4.1
