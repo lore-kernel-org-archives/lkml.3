@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab3AROyb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 09:54:31 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:43441 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756129Ab3AROya (ORCPT
+	id S1756296Ab3AROyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 09:54:41 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:59973 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756266Ab3AROyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 09:54:30 -0500
+	Fri, 18 Jan 2013 09:54:39 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [PATCH v2 56/76] ARC: Unaligned access emulation
+Date: Fri, 18 Jan 2013 14:54:36 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tim Yao <tim.yao@amlogic.com>
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-57-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1358511930-7424-57-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-X-Originating-IP: [67.71.80.29]
-In-Reply-To: <50F95DF3.7080602@redhat.com>
-References: <201301161205.04502.vapier@gentoo.org>
-	<50F75EA7.4060309@systemhalted.org>
-	<20130116.221538.1756411165313441486.davem@davemloft.net>
-	<201301172320.19905.vapier@gentoo.org>
-	<CAE2sS1jMhnRcoo1oe7wQ+SP=40u9mkps6vXua8TQQ4Tbf2qKOQ@mail.gmail.com>
-	<50F927A5.5060409@redhat.com>
-	<50F94FA6.6070005@systemhalted.org>
-	<50F95B0A.1090205@linux-ipv6.org>
-	<50F95DF3.7080602@redhat.com>
-Date: Fri, 18 Jan 2013 09:54:29 -0500
-Message-ID: <CAE2sS1gvy9SB7USgM2FGQ-Ty2wvVNypqZoKZ68qU9tCMONdRpQ@mail.gmail.com>
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
-From: "Carlos O'Donell" <carlos@systemhalted.org>
-To: Pedro Alves <palves@redhat.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Mike Frysinger <vapier@gentoo.org>, David Miller <davem@davemloft.net>,
-        libc-alpha@sourceware.org, bhutchings@solarflare.com,
-        amwang@redhat.com, tmb@mageia.org, eblake@redhat.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        libvirt-list@redhat.com, tgraf@suug.ch, schwab@suse.de
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301181454.36279.arnd@arndb.de>
+X-Provags-ID: V02:K0:nwQBE8N4tDzblaxQb2jFcyqLVV8pfV6GRj29XVTdebE
+ MAi1hyf39xN+rXAw8iVtEPsPG5GZ2CkPWijHt72yAuIc2NlQRf
+ I4qb7aiZfpP7zR2TQTksG0ct13wBG0SV9hSpMJivQlPvRNxckL
+ uhvrNLuDm2sWc2ueY8QcAEDQqcOqRKZ7LF9gIL1ys56pUvGagB
+ raHkEFq+eD2XZr7AY0INZbjsbITsInb0qZaJARSXhS0WdCMkLL
+ IRT3NQozRqlY0fIGlDiYjRfqhbvW9WkglowtJq6Qc3g5MQfECp
+ CputatM4YdA9TINCP+z413r4AR7++4Zl+kcNK9DDrSxvcGKLvx
+ GOusW3h4r2YzmTB0zZhs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 9:36 AM, Pedro Alves <palves@redhat.com> wrote:
-> On 01/18/2013 02:24 PM, YOSHIFUJI Hideaki wrote:
->
->>>>> It's simple enough to move all of the __GLIBC__ uses into libc-compat.h,
->>>>> then you control userspace libc coordination from one file.
->>>>
->>>> How about just deciding on a single macro/symbol both the
->>>> kernel and libc (any libc that needs this) define?  Something
->>>> like both the kernel and userland doing:
->>>>
->>>> #ifndef __IPV6_BITS_DEFINED
->>>> #define __IPV6_BITS_DEFINED
->>>> ...
->>>> define in6_addr, sockaddr_in6, ipv6_mreq, whatnot
->>>> #endif
->>
->> Hmm, how should we handle future structs/enums then?
->> For example, if I want to have in6_flowlabel_req{} defined in
->> glibc, what should we do?
->
-> Include the glibc header first?  Or is this some other
-> use case?
->
-> The point wasn't that you'd have only one macro for all
-> structs/enums (you could split into __IPV6_IN6_ADDR_DEFINED,
-> __IPV6_SOCKADDR_IN6_DEFINED, etc.) but to have the kernel
-> and libc agree on guard macros, instead of having the kernel
-> do #ifdef __GLIBC__ and glibc doing #ifdef _NETINET_IN_H.
->
-> But as Carlos says, the devil is in the details, and
-> I sure am not qualified on the details here.
+On Friday 18 January 2013, Vineet Gupta wrote:
+> ARC700 doesn't natively support unaligned access, but can be emulated
+> -Unaligned Access Exception
+> -Disassembly at the Fault address to find the exact insn (long/short)
+> 
+> Also per Arnd's comment, we runtime control it using 2 sysctl knobs:
+> * SYSCTL_ARCH_UNALIGN_ALLOW: Runtime enable/disble
+> * SYSCTL_ARCH_UNALIGN_NO_WARN: Warn on each emulation attempt
+> 
+> Originally contributed by Tim Yao <tim.yao@amlogic.com>
+> 
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Tim Yao <tim.yao@amlogic.com>
 
-My plan is to have one _UAPI_DEF_xxx macro to guard each
-problematic definition in the kernel UAPI headers.
-
-Then userspace can check for those macros and act appropriately.
-
-The kernel likewise when detecting glibc headers included first
-can use the _UAPI_DEF_xxx macro guards to disable problematic
-definitions knowing that glibc has identical ABI and API-compatible
-versions that the program can use without breaking.
-
-Cheers,
-Carlos.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
