@@ -1,196 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab3ARSfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 13:35:04 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:41265 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab3ARSfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 13:35:02 -0500
-Date: Fri, 18 Jan 2013 20:34:57 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <stern@rowland.harvard.edu>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <swarren@wwwdotorg.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 3/4] USB: PHY: Tegra: Get rid of instance number to
- differentiate PHY type
-Message-ID: <20130118183457.GB1776@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1358343022-28919-1-git-send-email-vbyravarasu@nvidia.com>
- <1358343022-28919-4-git-send-email-vbyravarasu@nvidia.com>
+	id S1753083Ab3ARSgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 13:36:47 -0500
+Received: from smtprelay0115.hostedemail.com ([216.40.44.115]:39142 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751554Ab3ARSgp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 13:36:45 -0500
+X-Panda: scanned!
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,jason@warr.net,:::::::::::,RULES_HIT:355:379:481:599:601:854:945:973:979:981:988:989:1187:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2899:2900:3027:3138:3139:3140:3141:3142:3355:3743:3865:3866:3867:3868:3869:3870:3871:3872:3873:3874:4080:4250:4362:4383:4384:4395:5007:6119:6120:7652:7808:7901:7903:7974:8896:10004:10400:10405:10407:10419:10848:11658:11914:12295:12517:12519:12663:12740:19901:19997,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-Session-Marker: 6A61736F6E40776172722E6E6574
+X-Filterd-Recvd-Size: 4329
+Message-ID: <50F9963A.2080608@warr.net>
+Date: Fri, 18 Jan 2013 12:36:42 -0600
+From: Jason Warr <jason@warr.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jq0ap7NbKX2Kqbes"
-Content-Disposition: inline
-In-Reply-To: <1358343022-28919-4-git-send-email-vbyravarasu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Amit Kale <akale@stec-inc.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+        "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
+        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+Subject: Re: [dm-devel] Announcement: STEC EnhanceIO SSD caching software
+ for Linux kernel
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD> <CAMM=eLdgD8GKeK48SU2rfC49u3H4WRf9-xFxM4ymVPbKkx+mCw@mail.gmail.com> <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D70CE@MYMBX.MY.STEC-INC.AD> <20130116104546.GA3869@raspberrypi> <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D720A@MYMBX.MY.STEC-INC.AD> <20130117132620.GA2438@raspberrypi> <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7248@MYMBX.MY.STEC-INC.AD> <50F844A3.9020300@warr.net> <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D72F1@MYMBX.MY.STEC-INC.AD> <50F970A3.4000403@warr.net> <20130118161135.GA3118@raspberrypi> <50F97C0F.9010405@warr.net> <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7345@MYMBX.MY.STEC-INC.AD>
+In-Reply-To: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7345@MYMBX.MY.STEC-INC.AD>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---jq0ap7NbKX2Kqbes
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jan 16, 2013 at 07:00:21PM +0530, Venu Byravarasu wrote:
-> Tegra20 USB has 3 PHY instances:
-> Instance 1 and 3 are UTMI. Instance 2 is ULPI.
->=20
-> As instance number was used to differentiate ULPI from UTMI,
-> used DT param to get this info and processed accordingly.
->=20
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+On 01/18/2013 11:44 AM, Amit Kale wrote:
+>> As much as I dislike Oracle that is one of my primary applications.  I
+>> > am attempting to get one of my customers to setup an Oracle instance
+>> > that is modular in that I can move the storage around to fit a
+>> > particular hardware setup and have a consistent benchmark that they use
+>> > in the real world to gauge performance.  One of them is a debit card
+>> > transaction clearing entity on multi-TB databases so latency REALLY
+>> > matters there.  
+> I am curious as to how SSD latency matters so much in the overall transaction times.
+>
+> We do a lot of performance measurements using SQL database benchmarks. Transaction times vary a lot depending on location of data, complexity of the transaction etc. Typically TPM (transactions per minute) is of primary interest for TPC-C.
+>
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+It's not specifically SSD latency.  It's I/O transaction latency that
+matters.  This particular application is very sensitive to that because
+it is literally someone standing at a POS terminal swiping a
+debit/credit card.  You only have a couple of seconds after the PIN is
+entered for the transaction to go through your network, application
+server to authorize against a DB and back to the POS.
 
-> ---
->  drivers/usb/phy/tegra_usb_phy.c   |   23 +++++++++--------------
->  include/linux/usb/tegra_usb_phy.h |    1 +
->  2 files changed, 10 insertions(+), 14 deletions(-)
->=20
-> diff --git a/drivers/usb/phy/tegra_usb_phy.c b/drivers/usb/phy/tegra_usb_=
-phy.c
-> index 79280fe..ce1ff2a 100644
-> --- a/drivers/usb/phy/tegra_usb_phy.c
-> +++ b/drivers/usb/phy/tegra_usb_phy.c
-> @@ -209,11 +209,6 @@ static struct tegra_utmip_config utmip_default[] =3D=
- {
->  	},
->  };
-> =20
-> -static inline bool phy_is_ulpi(struct tegra_usb_phy *phy)
-> -{
-> -	return (phy->instance =3D=3D 1);
-> -}
-> -
->  static int utmip_pad_open(struct tegra_usb_phy *phy)
->  {
->  	phy->pad_clk =3D clk_get_sys("utmip-pad", NULL);
-> @@ -655,7 +650,7 @@ static int	tegra_phy_init(struct usb_phy *x)
->  	struct tegra_ulpi_config *ulpi_config;
->  	int err;
-> =20
-> -	if (phy_is_ulpi(phy)) {
-> +	if (phy->is_ulpi_phy) {
->  		ulpi_config =3D phy->config;
->  		phy->clk =3D clk_get_sys(NULL, ulpi_config->clk);
->  		if (IS_ERR(phy->clk)) {
-> @@ -693,7 +688,7 @@ static void tegra_usb_phy_close(struct usb_phy *x)
->  {
->  	struct tegra_usb_phy *phy =3D container_of(x, struct tegra_usb_phy, u_p=
-hy);
-> =20
-> -	if (phy_is_ulpi(phy))
-> +	if (phy->is_ulpi_phy)
->  		clk_put(phy->clk);
->  	else
->  		utmip_pad_close(phy);
-> @@ -704,7 +699,7 @@ static void tegra_usb_phy_close(struct usb_phy *x)
-> =20
->  static int tegra_usb_phy_power_on(struct tegra_usb_phy *phy)
->  {
-> -	if (phy_is_ulpi(phy))
-> +	if (phy->is_ulpi_phy)
->  		return ulpi_phy_power_on(phy);
->  	else
->  		return utmi_phy_power_on(phy);
-> @@ -712,7 +707,7 @@ static int tegra_usb_phy_power_on(struct tegra_usb_ph=
-y *phy)
-> =20
->  static int tegra_usb_phy_power_off(struct tegra_usb_phy *phy)
->  {
-> -	if (phy_is_ulpi(phy))
-> +	if (phy->is_ulpi_phy)
->  		return ulpi_phy_power_off(phy);
->  	else
->  		return utmi_phy_power_off(phy);
-> @@ -749,7 +744,7 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct devic=
-e *dev, int instance,
->  		of_property_read_bool(np, "nvidia,has-legacy-mode");
-> =20
->  	if (!phy->config) {
-> -		if (phy_is_ulpi(phy)) {
-> +		if (phy->is_ulpi_phy) {
->  			pr_err("%s: ulpi phy configuration missing", __func__);
->  			err =3D -EINVAL;
->  			goto err0;
-> @@ -796,14 +791,14 @@ EXPORT_SYMBOL_GPL(tegra_usb_phy_open);
-> =20
->  void tegra_usb_phy_preresume(struct tegra_usb_phy *phy)
->  {
-> -	if (!phy_is_ulpi(phy))
-> +	if (!phy->is_ulpi_phy)
->  		utmi_phy_preresume(phy);
->  }
->  EXPORT_SYMBOL_GPL(tegra_usb_phy_preresume);
-> =20
->  void tegra_usb_phy_postresume(struct tegra_usb_phy *phy)
->  {
-> -	if (!phy_is_ulpi(phy))
-> +	if (!phy->is_ulpi_phy)
->  		utmi_phy_postresume(phy);
->  }
->  EXPORT_SYMBOL_GPL(tegra_usb_phy_postresume);
-> @@ -811,14 +806,14 @@ EXPORT_SYMBOL_GPL(tegra_usb_phy_postresume);
->  void tegra_ehci_phy_restore_start(struct tegra_usb_phy *phy,
->  				 enum tegra_usb_phy_port_speed port_speed)
->  {
-> -	if (!phy_is_ulpi(phy))
-> +	if (!phy->is_ulpi_phy)
->  		utmi_phy_restore_start(phy, port_speed);
->  }
->  EXPORT_SYMBOL_GPL(tegra_ehci_phy_restore_start);
-> =20
->  void tegra_ehci_phy_restore_end(struct tegra_usb_phy *phy)
->  {
-> -	if (!phy_is_ulpi(phy))
-> +	if (!phy->is_ulpi_phy)
->  		utmi_phy_restore_end(phy);
->  }
->  EXPORT_SYMBOL_GPL(tegra_ehci_phy_restore_end);
-> diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_=
-usb_phy.h
-> index f03e157..a6a89d4 100644
-> --- a/include/linux/usb/tegra_usb_phy.h
-> +++ b/include/linux/usb/tegra_usb_phy.h
-> @@ -60,6 +60,7 @@ struct tegra_usb_phy {
->  	struct usb_phy u_phy;
->  	struct device *dev;
->  	bool is_legacy_phy;
-> +	bool is_ulpi_phy;
->  };
-> =20
->  struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instanc=
-e,
-> --=20
-> 1.7.0.4
->=20
+The entire I/O stack on the DB is only a small time-slice of that round
+trip.  Your 99th percentile needs to be under 20ms on the DB storage
+side.  If your worst case DB I/O goes beyond 300ms it is considered an
+outage because the POS transaction fails.  So it obviously takes allot
+of planning and optimization work on the DB itself to get good
+tablespace layout to even get into the realm where you can have that
+predictable of latency with multi-million dollar FC storage frames. 
 
---=20
-balbi
+One of my goals is to be able to offer this level of I/O service on
+commodity hardware.  Simplify the scope of hardware, reduce the number
+of points of failure, make the systems more portable, reduce or
+eliminate dependence on any specific vendor below the application and
+save money.  Not to mention reduce the number of fingers that can point
+away from themselves saying it is someone elses problem to find fault.
 
---jq0ap7NbKX2Kqbes
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Allot of the pieces are already out there.  A good block caching target
+is one of the missing pieces to help fill the ever growing canyon
+between non-block device system performance and storage.  What they have
+done with L2ARC and SLOG in ZFS/Solaris is good but it has some serious
+short comings in other areas that DM/MD/LVM do extremely well.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I appreciate all of the brilliant work all of you guys do and hopefully
+I can contribute a little bit of usefulness to this effort.
 
-iQIcBAEBAgAGBQJQ+ZXRAAoJEIaOsuA1yqREUNsP/0AukMd99gxGAPQXeHe5jKSK
-fBfFjrwUvH7FSG76aWOPiXofQipr9MEf4ldCa1GxnIkUiM5HpCd4Bftost9XhTa9
-6ZFN77KCBUjkYwTHgThjLGFtirN+ujGfChntd+ouH4/JYJFUYPX0sqzwh8jlkzRa
-DaPMiZ5Si+TYiPriOqRiIvr9Us2diVBrgR5SFbXgj5IqhlkmKtfzqYGywp8G649W
-QZNp5qXbzn1F4FmQFs4he9Z0kjIQOTN+kT8gkiZbGOMR583zdICN9gr3ViLVmU55
-WAdKgsatzgPFBpeZ8Efg31cxEakXFedLYAKVoAJkbKxiJJr06WqMNs5otlQT6cf5
-2lpSzsWnyry8XQxTquBPPo6MW5WftBHrH306pdeSA6SAUEFLv4joLYNZi2s0cLHV
-LlnVuEHpLEDI2A3LMKRhESCEFljFvY5WTdbTRD98GKSihDmiJojVtMUYKgTr8Rwd
-kBmHaM06E1XOuZlET4B/r0U79GwG9nAlcL38Ko5oCt4KU419i3L1P5PGn1I9OSm1
-QWNC7AGmCWomebGQyaQ8tF9NQOLIrFqtWRt/2LRxXbbnkdcbtu1e2UphZPKi1m3p
-4CNPodVixBEmc6CGiMePGB6bXauEpGlqaRRIGYvlB+/xtNs/r4qFSVy0D1At4p+I
-ukvRvFHavGrTAAr5+yAi
-=Oggo
------END PGP SIGNATURE-----
+Thank you,
 
---jq0ap7NbKX2Kqbes--
+Jason
