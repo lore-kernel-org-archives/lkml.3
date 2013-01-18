@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab3ARMU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:20:56 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:44831 "EHLO hydra.sisk.pl"
+	id S1755598Ab3ARMSV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:18:21 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60932 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755910Ab3ARMUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:20:55 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Adam Belay <abelay@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 58/86] drivers/pnp/pnpbios: remove depends on CONFIG_EXPERIMENTAL
-Date: Fri, 18 Jan 2013 13:26:50 +0100
-Message-ID: <6430440.OJO6URng2f@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo71b+4ga6f+py3ZQtCCnVXNHbfxO-PBU28Uzcio-kwAvg@mail.gmail.com>
-References: <1358391258-1771-1-git-send-email-keescook@chromium.org> <1358391258-1771-59-git-send-email-keescook@chromium.org> <CAErSpo71b+4ga6f+py3ZQtCCnVXNHbfxO-PBU28Uzcio-kwAvg@mail.gmail.com>
+	id S1751655Ab3ARMSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 07:18:15 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <sameo@linux.intel.com>, <balbi@ti.com>, <tony@atomide.com>
+CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
+        <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <rogerq@ti.com>
+Subject: [PATCH v8 13/22] mfd: omap-usb-host: know about number of ports from revision register
+Date: Fri, 18 Jan 2013 14:17:16 +0200
+Message-ID: <1358511445-26656-14-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1358511445-26656-1-git-send-email-rogerq@ti.com>
+References: <1358511445-26656-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 17, 2013 05:55:16 PM Bjorn Helgaas wrote:
-> On Wed, Jan 16, 2013 at 7:53 PM, Kees Cook <keescook@chromium.org> wrote:
-> > The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-> > while now and is almost always enabled by default. As agreed during the
-> > Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
-> >
-> > CC: Adam Belay <abelay@mit.edu>
-> > CC: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > Signed-off-by: Kees Cook <keescook@chromium.org>
-> 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> 
-> Rafael, do you want to apply this?
+The revision register should tell us how many ports are present.
 
-Yes, I will take this one.
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/mfd/omap-usb-host.c |   33 ++++++++++++++++++++++++++++-----
+ 1 files changed, 28 insertions(+), 5 deletions(-)
 
-Thanks,
-Rafael
-
-
-> > ---
-> >  drivers/pnp/pnpbios/Kconfig |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/pnp/pnpbios/Kconfig b/drivers/pnp/pnpbios/Kconfig
-> > index b986d9f..50c3dd0 100644
-> > --- a/drivers/pnp/pnpbios/Kconfig
-> > +++ b/drivers/pnp/pnpbios/Kconfig
-> > @@ -2,8 +2,8 @@
-> >  # Plug and Play BIOS configuration
-> >  #
-> >  config PNPBIOS
-> > -       bool "Plug and Play BIOS support (EXPERIMENTAL)"
-> > -       depends on ISA && X86 && EXPERIMENTAL
-> > +       bool "Plug and Play BIOS support"
-> > +       depends on ISA && X86
-> >         default n
-> >         ---help---
-> >           Linux uses the PNPBIOS as defined in "Plug and Play BIOS
-> > --
-> > 1.7.9.5
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 310aaa9..26319ca 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -91,6 +91,8 @@
+ 
+ 
+ struct usbhs_hcd_omap {
++	int				nports;
++
+ 	struct clk			*xclk60mhsp1_ck;
+ 	struct clk			*xclk60mhsp2_ck;
+ 	struct clk			*utmi_p1_fck;
+@@ -347,8 +349,6 @@ static void omap_usbhs_init(struct device *dev)
+ 
+ 	pm_runtime_get_sync(dev);
+ 	spin_lock_irqsave(&omap->lock, flags);
+-	omap->usbhs_rev = usbhs_read(omap->uhh_base, OMAP_UHH_REVISION);
+-	dev_dbg(dev, "OMAP UHH_REVISION 0x%x\n", omap->usbhs_rev);
+ 
+ 	reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
+ 	/* setup ULPI bypass and burst configurations */
+@@ -483,7 +483,32 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 
+ 	pm_runtime_enable(dev);
+ 
+-	for (i = 0; i < OMAP3_HS_USB_PORTS; i++)
++	platform_set_drvdata(pdev, omap);
++	pm_runtime_get_sync(dev);
++
++	omap->usbhs_rev = usbhs_read(omap->uhh_base, OMAP_UHH_REVISION);
++
++	/* we need to call runtime suspend before we update omap->nports
++	 * to prevent unbalanced clk_disable()
++	 */
++	pm_runtime_put_sync(dev);
++
++	switch (omap->usbhs_rev) {
++	case OMAP_USBHS_REV1:
++		omap->nports = 3;
++		break;
++	case OMAP_USBHS_REV2:
++		omap->nports = 2;
++		break;
++	default:
++		omap->nports = OMAP3_HS_USB_PORTS;
++		dev_dbg(dev,
++		  "USB HOST Rev : 0x%d not recognized, assuming %d ports\n",
++		   omap->usbhs_rev, omap->nports);
++		break;
++	}
++
++	for (i = 0; i < omap->nports; i++)
+ 		if (is_ehci_phy_mode(i) || is_ehci_tll_mode(i) ||
+ 			is_ehci_hsic_mode(i)) {
+ 			omap->ehci_logic_fck = clk_get(dev, "ehci_logic_fck");
+@@ -573,8 +598,6 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 				"failed error:%d\n", ret);
+ 	}
+ 
+-	platform_set_drvdata(pdev, omap);
+-
+ 	omap_usbhs_init(dev);
+ 	ret = omap_usbhs_alloc_children(pdev);
+ 	if (ret) {
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.4.1
+
