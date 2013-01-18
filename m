@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526Ab3ARKmM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 05:42:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60476 "EHLO mx2.suse.de"
+	id S1751542Ab3ARKoi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 05:44:38 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51328 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177Ab3ARKmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 05:42:09 -0500
-Date: Fri, 18 Jan 2013 11:42:03 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-input@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2] HID: i2c-hid: add ACPI support
-In-Reply-To: <CAN+gG=GBYbCxrOKk2S1n9K2e68Rbxvt4CuoV40NJiE9LDNR=Zw@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1301181141400.8266@pobox.suse.cz>
-References: <1357742588-11366-1-git-send-email-mika.westerberg@linux.intel.com> <CAN+gG=GrrEdgrCLXvO=xJ6SNeKgHFRobq6RSAfLMfesKkJcijA@mail.gmail.com> <alpine.LNX.2.00.1301091551580.12134@pobox.suse.cz>
- <CAN+gG=GBYbCxrOKk2S1n9K2e68Rbxvt4CuoV40NJiE9LDNR=Zw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751177Ab3ARKog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 05:44:36 -0500
+From: "Patil, Rachna" <rachna@ti.com>
+To: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Rob Herring <rob.herring@calxeda.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Tony Lindgren <tony@atomide.com>,
+        Benit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        "Patil, Rachna" <rachna@ti.com>
+Subject: [PATCH v3 0/8] MFD: ti_am335x_tscadc: DT support and TSC features addition
+Date: Fri, 18 Jan 2013 16:14:57 +0530
+Message-ID: <cover.1358502134.git.rachna@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jan 2013, Benjamin Tissoires wrote:
+From: "Patil, Rachna" <rachna@ti.com>
 
-> >> > The HID over I2C protocol specification states that when the device is
-> >> > enumerated from ACPI the HID descriptor address can be obtained by
-> >> > executing "_DSM" for the device with function 1. Enable this.
-> >> >
-> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >>
-> >> I'm eager to test it (hopefully next week).
-> >>
-> >> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> >
-> > Perfect. I will wait for your Tested-by: as well before applying to public
-> > git tree.
-> 
-> Hi Jiri,
-> 
-> well, we tried yesterday to make all those things working, but the
-> Haswell platform I was able to have access was not very cooperative.
-> So I wasn't able to test the whole autodetection mechanism through
-> ACPI (I even not managed to communicate with the various HID over i2c
-> devices that were available to test).
-> 
-> However, Mika managed to test this ACPI stuff, and he is able to
-> retrieve the HID descriptor address. Given that, I think it's safe to
-> include it right now. There will still be the last point with the
-> gpios, but it will come when someone get access to a device presenting
-> this feature.
+This patch set is a cumulative set of [1] and [2] sent earlier.
 
-Thanks a lot for the update. I have now applied Mika's patch.
+Note that there are no code changes in either of the patch set,
+only rebased on top of Linus's v3.8-rc3 tag to make sure that
+all the patches apply without any conflicts.
+
+This patch set has been tested on AM335x EVM.
+
+[1] http://www.spinics.net/lists/linux-input/msg23060.html
+[2] http://www.spinics.net/lists/linux-input/msg23090.html
+
+Changes in v3:
+	No code change.
+
+Changes in v2:
+	Patch "input: ti_am335x_tsc: Add variance filter"
+	from v1 has been dropped.
+	Add MFD device DT node in AM335x EVM.
+
+Patil, Rachna (8):
+  input: ti_am335x_tsc: Step enable bits made configurable
+  input: ti_am335x_tsc: Order of TSC wires, made configurable
+  input: touchscreen: ti_tsc: remove unwanted fifo flush
+  MFD: ti_am335x_tscadc: add device tree binding information
+  MFD: ti_am335x_tscadc: Add DT support
+  input: ti_am335x_tsc: Add DT support
+  IIO: ti_am335x_adc: Add DT support
+  arm/dts: AM335x-evm: Add TSC/ADC MFD device support
+
+ .../devicetree/bindings/mfd/ti_am335x_tscadc.txt   |   35 +++
+ arch/arm/boot/dts/am335x-evm.dts                   |   13 +
+ arch/arm/boot/dts/am33xx.dtsi                      |    8 +
+ drivers/iio/adc/ti_am335x_adc.c                    |   26 +-
+ drivers/input/touchscreen/ti_am335x_tsc.c          |  266 +++++++++++++++++---
+ drivers/mfd/ti_am335x_tscadc.c                     |   28 ++-
+ include/linux/input/ti_am335x_tsc.h                |   12 +
+ include/linux/mfd/ti_am335x_tscadc.h               |   11 +-
+ 8 files changed, 347 insertions(+), 52 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/ti_am335x_tscadc.txt
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
