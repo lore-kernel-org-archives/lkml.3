@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab3ARMbN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:31:13 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:59289 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756379Ab3ARMbK (ORCPT
+	id S1756769Ab3ARMb1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:31:27 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:55893 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab3ARMbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:31:10 -0500
+	Fri, 18 Jan 2013 07:31:25 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [PATCH v2 39/76] ARC: Switch to saner kernel_execve() semantics #2
-Date: Fri, 18 Jan 2013 17:54:53 +0530
-Message-ID: <1358511930-7424-40-git-send-email-vgupta@synopsys.com>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH v2 41/76] ARC: [3.8 tracking] altstack consolidation, trace_clock, cacheflush.h
+Date: Fri, 18 Jan 2013 17:54:55 +0530
+Message-ID: <1358511930-7424-42-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -24,82 +23,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fold ret_from_kernel_thread into ret_from_fork
+* 64d8f41 "switch rt_sigreturn instances to restore_altstack"
+* b1c4c5a "unify native sigaltstack"
+* f4a94f2 "new helpers: __save_altstack/__compat_save_altstack"
 
-The only difference is former needs to call thread entry point which can
-be detected inside ret_from_fork too.
+* 8cbd9cc "tracing,x86: Add a TSC trace_clock"
+* 9b04ebd "asm-generic/io.h: remove asm/cacheflush.h include"
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
 ---
- arch/arc/kernel/entry.S   |   18 +++++++++++-------
- arch/arc/kernel/process.c |    8 ++++----
- 2 files changed, 15 insertions(+), 11 deletions(-)
+ arch/arc/Kconfig                   |    1 +
+ arch/arc/include/asm/Kbuild        |    1 +
+ arch/arc/include/asm/dma-mapping.h |    1 +
+ arch/arc/kernel/signal.c           |   14 ++------------
+ 4 files changed, 5 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index b2291fc..69a0c9f 100644
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -575,16 +575,20 @@ ARC_ENTRY ret_from_fork
- 	; when the forked child comes here from the __switch_to function
- 	; r0 has the last task pointer.
- 	; put last task in scheduler queue
--	bl  @schedule_tail
--	b @ret_from_exception
--ARC_EXIT ret_from_fork
-+	bl   @schedule_tail
-+
-+	; If kernel thread, jump to it's entry-point
-+	ld   r9, [sp, PT_status32]
-+	brne r9, 0, 1f
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index 8fb9264..3adc87b 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -21,6 +21,7 @@ config ARC
+ 	select GENERIC_KERNEL_EXECVE
+ 	select GENERIC_KERNEL_THREAD
+ 	select GENERIC_PENDING_IRQ if SMP
++	select GENERIC_SIGALTSTACK
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HOTPLUG if !INITRAMFS_SOURCE=""
+diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
+index 148dfcf..105ec11 100644
+--- a/arch/arc/include/asm/Kbuild
++++ b/arch/arc/include/asm/Kbuild
+@@ -50,6 +50,7 @@ generic-y += statfs.h
+ generic-y += termbits.h
+ generic-y += termios.h
+ generic-y += topology.h
++generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += ucontext.h
+ generic-y += unaligned.h
+diff --git a/arch/arc/include/asm/dma-mapping.h b/arch/arc/include/asm/dma-mapping.h
+index ea0f56f..96e4316 100644
+--- a/arch/arc/include/asm/dma-mapping.h
++++ b/arch/arc/include/asm/dma-mapping.h
+@@ -12,6 +12,7 @@
+ #define ASM_ARC_DMA_MAPPING_H
  
--ARC_ENTRY ret_from_kernel_thread
--	bl  @schedule_tail
--	jl.d [r14]		; kernel_thread "payload"
-+	jl.d [r14]
- 	mov  r0, r13		; arg to payload
-+
-+1:
-+	; special case of kernel_thread entry point returning back due to
-+	; kernel_execve() - pretend return from syscall to ret to userland
- 	b    ret_from_exception
--ARC_EXIT ret_from_kernel_thread
-+ARC_EXIT ret_from_fork
+ #include <asm-generic/dma-coherent.h>
++#include <asm/cacheflush.h>
+ #include <plat/dma_addr.h>
  
- ;################### Special Sys Call Wrappers ##########################
+ void *dma_alloc_noncoherent(struct device *dev, size_t size,
+diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
+index 6671968..9d97040 100644
+--- a/arch/arc/kernel/signal.c
++++ b/arch/arc/kernel/signal.c
+@@ -57,12 +57,6 @@
  
-diff --git a/arch/arc/kernel/process.c b/arch/arc/kernel/process.c
-index 20d8b4d..403de7e 100644
---- a/arch/arc/kernel/process.c
-+++ b/arch/arc/kernel/process.c
-@@ -99,7 +99,6 @@ void cpu_idle(void)
- }
+ #define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
  
- asmlinkage void ret_from_fork(void);
--asmlinkage void ret_from_kernel_thread(void) __attribute__((noreturn));
+-asmlinkage int sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss)
+-{
+-	struct pt_regs *regs = task_pt_regs(current);
+-	return do_sigaltstack(uss, uoss, regs->sp);
+-}
+-
+ struct rt_sigframe {
+ 	struct siginfo info;
+ 	struct ucontext uc;
+@@ -134,7 +128,7 @@ SYSCALL_DEFINE0(rt_sigreturn)
+ 		goto badframe;
  
- /* Layout of Child kernel mode stack as setup at the end of this function is
-  *
-@@ -155,15 +154,16 @@ int copy_thread(unsigned long clone_flags,
- 	 */
- 	p->thread.ksp = (unsigned long)c_callee;	/* THREAD_KSP */
+ 	if (unlikely(is_do_ss_needed(magic)))
+-		if (do_sigaltstack(&sf->uc.uc_stack, NULL, regs->sp) == -EFAULT)
++		if (restore_altstack(&sf->uc.uc_stack))
+ 			goto badframe;
  
-+	/* __switch_to expects FP(0), BLINK(return addr) at top */
-+	childksp[0] = 0;			/* fp */
-+	childksp[1] = (unsigned long)ret_from_fork; /* blink */
-+
- 	if (unlikely(p->flags & PF_KTHREAD)) {
- 		memset(c_regs, 0, sizeof(struct pt_regs));
+ 	/* Don't restart from sigreturn */
+@@ -193,7 +187,6 @@ setup_rt_frame(int signo, struct k_sigaction *ka, siginfo_t *info,
+ {
+ 	struct rt_sigframe __user *sf;
+ 	unsigned int magic = 0;
+-	stack_t stk;
+ 	int err = 0;
  
- 		c_callee->r13 = arg; /* argument to kernel thread */
- 		c_callee->r14 = usp;  /* function */
+ 	sf = get_sigframe(ka, regs, sizeof(struct rt_sigframe));
+@@ -210,10 +203,7 @@ setup_rt_frame(int signo, struct k_sigaction *ka, siginfo_t *info,
+ 		err |= copy_siginfo_to_user(&sf->info, info);
+ 		err |= __put_user(0, &sf->uc.uc_flags);
+ 		err |= __put_user(NULL, &sf->uc.uc_link);
+-		stk.ss_sp = (void __user *)current->sas_ss_sp;
+-		stk.ss_flags = sas_ss_flags(regs->sp);
+-		stk.ss_size = current->sas_ss_size;
+-		err |= __copy_to_user(&sf->uc.uc_stack, &stk, sizeof(stk));
++		err |= __save_altstack(&sf->uc.uc_stack, regs->sp);
  
--		/* __switch_to expects FP(0), BLINK(return addr) at top */
--		childksp[0] = 0;			/* fp */
--		childksp[1] = (unsigned long)ret_from_kernel_thread; /* blink */
- 		return 0;
- 	}
- 
+ 		/* setup args 2 and 3 fo ruse rmode handler */
+ 		regs->r1 = (unsigned long)&sf->info;
 -- 
 1.7.4.1
 
