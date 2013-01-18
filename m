@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab3ARMmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:42:37 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:58791 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756685Ab3ARMbF (ORCPT
+	id S1756164Ab3ARMm5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:42:57 -0500
+Received: from vaxjo.synopsys.com ([198.182.60.75]:59380 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab3ARMmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:31:05 -0500
+	Fri, 18 Jan 2013 07:42:55 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v2 33/76] ARC: [DeviceTree] Convert some Kconfig items to runtime values
-Date: Fri, 18 Jan 2013 17:54:47 +0530
-Message-ID: <1358511930-7424-34-git-send-email-vgupta@synopsys.com>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH v2 75/76] ARC: [Review] Multi-platform image #8: platform registers SMP callbacks
+Date: Fri, 18 Jan 2013 18:10:26 +0530
+Message-ID: <1358512827-7694-4-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1358512827-7694-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
+ <1358512827-7694-1-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.12.197.205]
@@ -24,162 +24,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* mem size now runtime configured (prev CONFIG_ARC_PLAT_SDRAM_SIZE)
-* core cpu clk runtime configured (prev CONFIG_ARC_PLAT_CLK)
+Platforms export their SMP callbacks by populating arc_smp_ops.
+The population itself needs to be done pretty early, from init_early
+callback.
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/arc/Kconfig                |   12 ------------
- arch/arc/boot/dts/skeleton.dtsi |    6 +++++-
- arch/arc/include/asm/clk.h      |    2 ++
- arch/arc/kernel/clk.c           |   12 +++++++++++-
- arch/arc/kernel/devtree.c       |   13 +++++++++++++
- arch/arc/mm/init.c              |    5 +++--
- 6 files changed, 34 insertions(+), 16 deletions(-)
+ arch/arc/plat-arcfpga/include/plat/smp.h |    1 +
+ arch/arc/plat-arcfpga/platform.c         |    4 +++
+ arch/arc/plat-arcfpga/smp.c              |   41 ++++++++++++++++-------------
+ 3 files changed, 28 insertions(+), 18 deletions(-)
 
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 5175cf7..548b89e 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -245,10 +245,6 @@ source "arch/arc/plat-arcfpga/Kconfig"
+diff --git a/arch/arc/plat-arcfpga/include/plat/smp.h b/arch/arc/plat-arcfpga/include/plat/smp.h
+index 27822ac..c09eb4c 100644
+--- a/arch/arc/plat-arcfpga/include/plat/smp.h
++++ b/arch/arc/plat-arcfpga/include/plat/smp.h
+@@ -111,6 +111,7 @@ extern void idu_irq_set_tgtcpu(uint8_t irq, uint32_t mask);
+ extern void idu_irq_set_mode(uint8_t irq, uint8_t dest_mode, uint8_t trig_mode);
  
- #New platform adds here
+ extern void iss_model_init_smp(unsigned int cpu);
++extern void iss_model_init_early_smp(void);
  
--config ARC_PLAT_CLK
--	int "Clk speed in Hz"
--	default "80000000"
+ #endif	/* CONFIG_SMP */
+ 
+diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
+index 1a9f2f2..b99bfea 100644
+--- a/arch/arc/plat-arcfpga/platform.c
++++ b/arch/arc/plat-arcfpga/platform.c
+@@ -171,6 +171,10 @@ static void __init plat_fpga_early_init(void)
+ 	setup_bvci_lat_unit();
+ 
+ 	arc_fpga_serial_init();
++
++#ifdef CONFIG_SMP
++	iss_model_init_early_smp();
++#endif
+ }
+ 
+ static struct of_dev_auxdata plat_auxdata_lookup[] __initdata = {
+diff --git a/arch/arc/plat-arcfpga/smp.c b/arch/arc/plat-arcfpga/smp.c
+index 68a53b1..91b5534 100644
+--- a/arch/arc/plat-arcfpga/smp.c
++++ b/arch/arc/plat-arcfpga/smp.c
+@@ -24,25 +24,10 @@ static char smp_cpuinfo_buf[128];
+  *-------------------------------------------------------------------
+  */
+ 
+-const char *arc_platform_smp_cpuinfo(void)
+-{
+-#define IS_AVAIL1(var, str)    ((var) ? str : "")
 -
- config LINUX_LINK_BASE
- 	hex "Linux Link Address"
- 	default "0x80000000"
-@@ -262,14 +258,6 @@ config LINUX_LINK_BASE
- 	  Linux needs to be scooted a bit.
- 	  If you don't know what the above means, leave this setting alone.
- 
--config ARC_PLAT_SDRAM_SIZE
--	hex "SD RAM Size"
--	default "0x10000000"
--	help
--	  Implies the amount of SDRAM/DRAM Linux is going to claim/own.
--	  The actual memory itself could be larger than this number. But for
--	  all software purposes, this is the amt of memory.
+-	struct bcr_mp mp;
 -
- endmenu # "Platform Board Configuration"
- 
- config ARC_STACK_NONEXEC
-diff --git a/arch/arc/boot/dts/skeleton.dtsi b/arch/arc/boot/dts/skeleton.dtsi
-index f6a457a..8e4ec00 100644
---- a/arch/arc/boot/dts/skeleton.dtsi
-+++ b/arch/arc/boot/dts/skeleton.dtsi
-@@ -13,9 +13,13 @@
- 
- / {
- 	compatible = "snps,arc-angel4", "snps,arc-ml509";
-+	clock-frequency = <80000000>;	/* 80 MHZ */
- 	#address-cells = <1>;
- 	#size-cells = <1>;
- 	chosen { };
- 	aliases { };
--	memory { device_type = "memory"; reg = <0 0>; };
-+	memory {
-+		device_type = "memory";
-+		reg = <0x00000000 0x10000000>;	/* 256M */
-+	};
- };
-diff --git a/arch/arc/include/asm/clk.h b/arch/arc/include/asm/clk.h
-index 6195643..bf9d29f 100644
---- a/arch/arc/include/asm/clk.h
-+++ b/arch/arc/include/asm/clk.h
-@@ -17,4 +17,6 @@ static inline unsigned long arc_get_core_freq(void)
- 	return core_freq;
- }
- 
-+extern int arc_set_core_freq(unsigned long);
-+
- #endif
-diff --git a/arch/arc/kernel/clk.c b/arch/arc/kernel/clk.c
-index 64925db..66ce0dc 100644
---- a/arch/arc/kernel/clk.c
-+++ b/arch/arc/kernel/clk.c
-@@ -8,4 +8,14 @@
- 
- #include <asm/clk.h>
- 
--unsigned long core_freq = CONFIG_ARC_PLAT_CLK;
-+unsigned long core_freq = 800000000;
-+
-+/*
-+ * As of now we default to device-tree provided clock
-+ * In future we can determine this in early boot
-+ */
-+int arc_set_core_freq(unsigned long freq)
-+{
-+	core_freq = freq;
-+	return 0;
-+}
-diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
-index 021293d..fd49394 100644
---- a/arch/arc/kernel/devtree.c
-+++ b/arch/arc/kernel/devtree.c
-@@ -20,6 +20,7 @@
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <asm/prom.h>
-+#include <asm/clk.h>
- 
- /* called from unflatten_device_tree() to bootstrap devicetree itself */
- void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-@@ -39,7 +40,9 @@ int __init setup_machine_fdt(void *dt)
- 	struct boot_param_header *devtree = dt;
- 	unsigned long dt_root;
- 	char *model, *compat;
-+	void *clk;
- 	char manufacturer[16];
-+	unsigned long len;
- 
- 	/* check device tree validity */
- 	if (be32_to_cpu(devtree->magic) != OF_DT_HEADER)
-@@ -65,5 +68,15 @@ int __init setup_machine_fdt(void *dt)
- 	/* Retrieve various information from the /chosen node */
- 	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
- 
-+	/* Initialize {size,address}-cells info */
-+	of_scan_flat_dt(early_init_dt_scan_root, NULL);
-+
-+	/* Setup memory, calling early_init_dt_add_memory_arch */
-+	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
-+
-+	clk = of_get_flat_dt_prop(dt_root, "clock-frequency", &len);
-+	if (clk)
-+		arc_set_core_freq(of_read_ulong(clk, len/4));
-+
- 	return 0;
- }
-diff --git a/arch/arc/mm/init.c b/arch/arc/mm/init.c
-index 1087a97..8c173f9 100644
---- a/arch/arc/mm/init.c
-+++ b/arch/arc/mm/init.c
-@@ -24,7 +24,7 @@ char empty_zero_page[PAGE_SIZE] __aligned(PAGE_SIZE);
- EXPORT_SYMBOL(empty_zero_page);
- 
- /* Default tot mem from .config */
--static unsigned long arc_mem_sz = CONFIG_ARC_PLAT_SDRAM_SIZE;
-+static unsigned long arc_mem_sz = 0x20000000;  /* some default */
- 
- /* User can over-ride above with "mem=nnn[KkMm]" in cmdline */
- static int __init setup_mem_sz(char *str)
-@@ -40,7 +40,8 @@ early_param("mem", setup_mem_sz);
- 
- void __init early_init_dt_add_memory_arch(u64 base, u64 size)
- {
--	pr_err("%s(%llx, %llx)\n", __func__, base, size);
-+	arc_mem_sz = size & PAGE_MASK;
-+	pr_info("Memory size set via devicetree %ldM\n", TO_MB(arc_mem_sz));
- }
- 
+-	READ_BCR(ARC_REG_MP_BCR, mp);
+-
+-	sprintf(smp_cpuinfo_buf, "Extn [700-SMP]: v%d, arch(%d) %s %s %s\n",
+-		mp.ver, mp.mp_arch, IS_AVAIL1(mp.scu, "SCU"),
+-		IS_AVAIL1(mp.idu, "IDU"), IS_AVAIL1(mp.sdu, "SDU"));
+-
+-	return smp_cpuinfo_buf;
+-}
+-
  /*
+  * Master kick starting another CPU
+  */
+-void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc)
++static void iss_model_smp_wakeup_cpu(int cpu, unsigned long pc)
+ {
+ 	/* setup the start PC */
+ 	write_aux_reg(ARC_AUX_XTL_REG_PARAM, pc);
+@@ -103,19 +88,39 @@ void iss_model_init_smp(unsigned int cpu)
+ 	smp_ipi_irq_setup(cpu, IDU_INTERRUPT_0 + cpu);
+ }
+ 
+-void arc_platform_ipi_send(const struct cpumask *callmap)
++static void iss_model_ipi_send(void *arg)
+ {
++	struct cpumask *callmap = arg;
+ 	unsigned int cpu;
+ 
+ 	for_each_cpu(cpu, callmap)
+ 		idu_irq_assert(cpu);
+ }
+ 
+-void arc_platform_ipi_clear(int cpu, int irq)
++static void iss_model_ipi_clear(int cpu, int irq)
+ {
+ 	idu_irq_clear(IDU_INTERRUPT_0 + cpu);
+ }
+ 
++void iss_model_init_early_smp(void)
++{
++#define IS_AVAIL1(var, str)    ((var) ? str : "")
++
++	struct bcr_mp mp;
++
++	READ_BCR(ARC_REG_MP_BCR, mp);
++
++	sprintf(smp_cpuinfo_buf, "Extn [ISS-SMP]: v%d, arch(%d) %s %s %s\n",
++		mp.ver, mp.mp_arch, IS_AVAIL1(mp.scu, "SCU"),
++		IS_AVAIL1(mp.idu, "IDU"), IS_AVAIL1(mp.sdu, "SDU"));
++
++	plat_smp_ops.info = smp_cpuinfo_buf;
++
++	plat_smp_ops.cpu_kick = iss_model_smp_wakeup_cpu;
++	plat_smp_ops.ipi_send = iss_model_ipi_send;
++	plat_smp_ops.ipi_clear = iss_model_ipi_clear;
++}
++
+ /*
+  *-------------------------------------------------------------------
+  * Low level Platform IPI Providers
 -- 
 1.7.4.1
 
