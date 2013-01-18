@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab3ARVGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:06:46 -0500
-Received: from mailfw02.zoner.fi ([84.34.147.249]:64303 "EHLO
-	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab3ARVGo (ORCPT
+	id S1755710Ab3ARVHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:07:34 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:37666 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab3ARVHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 16:06:44 -0500
-Date: Fri, 18 Jan 2013 23:06:41 +0200
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] decompressors: make the default XZ_BCJ_* config
- match the selected architecture
-Message-ID: <20130118230641.42bbb191@tukaani.org>
-In-Reply-To: <50F673F2.4070201@openwrt.org>
-References: <1358266931-23401-1-git-send-email-florian@openwrt.org>
-	<1358266931-23401-2-git-send-email-florian@openwrt.org>
-	<20130115201117.5ce0a690@tukaani.org>
-	<50F673F2.4070201@openwrt.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
+	Fri, 18 Jan 2013 16:07:32 -0500
+Date: Fri, 18 Jan 2013 13:07:28 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476  (tty is NULL)
+Message-ID: <20130118210728.GA16742@kroah.com>
+References: <20130102153744.GC25940@redhat.com>
+ <20130118205358.GA6854@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130118205358.GA6854@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-01-16 Florian Fainelli wrote:
-> On 01/15/2013 07:11 PM, Lasse Collin wrote:
-> > On 2013-01-15 Florian Fainelli wrote:
-> >>   config XZ_DEC_X86
-> >>   	bool "x86 BCJ filter decoder" if EXPERT
-> >> -	default y
-> >> +	default y if X86
-> >>   	select XZ_DEC_BCJ
-> > [...]
-> >
-> > I think the "if EXPERT" strings should be dropped when all BCJ
-> > filters aren't enabled by default. One should be able to enable all
-> > filters without enabling EXPERT.
-> Ok, this would probably be a third patch, since my two patches
-> basically just modify what was already there, but I agree with you,
-> even though EXPERT is enabled by default on most architectures and
-> defconfigs. --
+On Fri, Jan 18, 2013 at 03:53:58PM -0500, Dave Jones wrote:
+> On Wed, Jan 02, 2013 at 10:37:44AM -0500, Dave Jones wrote:
+>  > This happened a few times to my test boxes I left running over the holidays..
+>  > 
+>  > [ 8419.797533] ------------[ cut here ]------------
+>  > [ 8419.798341] WARNING: at drivers/tty/tty_buffer.c:476 flush_to_ldisc+0x1de/0x1f0()
+>  > [ 8419.800313] Hardware name: GA-MA78GM-S2H
+>  > [ 8419.800887] tty is NULL
+>  > [ 8419.801857] Modules linked in: fuse binfmt_misc bnep rfcomm hidp scsi_transport_iscsi can_raw can_bcm ipt_ULOG nfnetlink l2tp_ppp l2tp_core can caif_socket rose nfc caif ipx phonet irda p8023 p8022 netrom rds ax25 atm af_rxrpc crc_ccitt appletalk psnap llc2 af_key decnet llc pppoe pppox ppp_generic x25 slhc lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables btusb bluetooth snd_hda_codec_realtek usb_debug rfkill snd_hda_intel snd_hda_codec microcode snd_pcm serio_raw snd_page_alloc pcspkr edac_core snd_timer snd soundcore r8169 mii vhost_net tun macvtap macvlan kvm_amd kvm
+>  > [ 8419.811268] Pid: 4980, comm: kworker/0:1 Not tainted 3.8.0-rc1+ #43
+>  > [ 8419.812159] Call Trace:
+>  > [ 8419.812586]  [<ffffffff81044aef>] warn_slowpath_common+0x7f/0xc0
+>  > [ 8419.813504]  [<ffffffff81044be6>] warn_slowpath_fmt+0x46/0x50
+>  > [ 8419.814353]  [<ffffffff8132b59a>] ? ___ratelimit+0x9a/0x120
+>  > [ 8419.815146]  [<ffffffff813e5a8e>] flush_to_ldisc+0x1de/0x1f0
+>  > [ 8419.815982]  [<ffffffff81068a77>] process_one_work+0x207/0x750
+>  > [ 8419.816844]  [<ffffffff81068a07>] ? process_one_work+0x197/0x750
+>  > [ 8419.817731]  [<ffffffff810b2342>] ? get_lock_stats+0x22/0x70
+>  > [ 8419.818605]  [<ffffffff813e58b0>] ? tty_insert_flip_string_fixed_flag+0x110/0x110
+>  > [ 8419.819725]  [<ffffffff81069396>] worker_thread+0x156/0x440
+>  > [ 8419.820575]  [<ffffffff81069240>] ? rescuer_thread+0x240/0x240
+>  > [ 8419.821463]  [<ffffffff8106fd8d>] kthread+0xed/0x100
+>  > [ 8419.822174]  [<ffffffff810b27ae>] ? put_lock_stats.isra.23+0xe/0x40
+>  > [ 8419.823125]  [<ffffffff8106fca0>] ? kthread_create_on_node+0x160/0x160
+>  > [ 8419.824114]  [<ffffffff816a49dc>] ret_from_fork+0x7c/0xb0
+>  > [ 8419.824943]  [<ffffffff8106fca0>] ? kthread_create_on_node+0x160/0x160
+>  > [ 8419.845167] ---[ end trace 0c3565bace6c005f ]---
+> 
+> 
+> Still seeing this in rc4
 
-At least in x86_64_defconfig EXPERT isn't enabled. I'm fine with your
-patches once also the "if EXPERT" strings are removed.
+Jiri, was there anything on the mailing list that I missed that should
+have resolved this issue?  I thought it was being worked on, but I can't
+seem to find any resolution at the moment.
 
-Acked-by: Lasse Collin <lasse.collin@tukaani.org>
+thanks,
 
--- 
-Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
+greg k-h
