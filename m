@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab3ARB1W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 20:27:22 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:44366 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab3ARB1U (ORCPT
+	id S1755196Ab3ARB1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 20:27:54 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:33495 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752776Ab3ARB1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 20:27:20 -0500
-Date: Thu, 17 Jan 2013 17:27:15 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
-Subject: Re: [GIT PULL v3] Fixes/cleanup for vt8500 serial
-Message-ID: <20130118012715.GA29023@kroah.com>
-References: <1358363143-7154-1-git-send-email-linux@prisktech.co.nz>
+	Thu, 17 Jan 2013 20:27:52 -0500
+X-Sasl-enc: QWbwUKkUE1n/GH1k5/jh25HyyoZexUSxQXvpV0V+UYn7 1358472471
+Date: Thu, 17 Jan 2013 17:27:50 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Subject: Re: linux-next: manual merge of the tty tree with the tty.current
+ tree
+Message-ID: <20130118012750.GA29054@kroah.com>
+References: <20130117130738.b3d750f70143792e9471063c@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358363143-7154-1-git-send-email-linux@prisktech.co.nz>
+In-Reply-To: <20130117130738.b3d750f70143792e9471063c@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 08:05:39AM +1300, Tony Prisk wrote:
+On Thu, Jan 17, 2013 at 01:07:38PM +1100, Stephen Rothwell wrote:
 > Hi Greg,
 > 
-> This should be the final pull request for this series, unless there are
-> other review comments. Changelog included.
+> Today's linux-next merge of the tty tree got a conflict in
+> drivers/tty/serial/8250/8250_dw.c between commit 68e56cb3a068 ("tty:
+> 8250_dw: Fix inverted arguments to serial_out in IRQ handler") from the
+> tty.current tree and commit 30046df26187 ("serial: 8250_dw: Set FIFO size
+> dynamically") from the tty tree.
 > 
-> v2:
-> Restore the setting of vt8500_port->uart.uartclk which was dropped in v1.
-> Corrected the return-on-fail of devm_request_and_ioremap to -EADDRNOTAVAIL.
-> 
-> v3:
-> Corrected the commit message for patch 3
-> 
-> 
-> The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
-> 
->   Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://server.prisktech.co.nz/git/linuxwmt.git tags/vt8500/serial-fixes
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-I don't take git pull requests for tiny stuff like this, sorry, only
-patches through email.
-
-But 2 of these patches had checkpatch issues, so I didn't take patches 3
-and 4, please redo them.
-
-thanks,
+Looks good to me, thanks.
 
 greg k-h
