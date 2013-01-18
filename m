@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750876Ab3ARFHh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 00:07:37 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:46792 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab3ARFHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 00:07:36 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 24/86] arch/blackfin: remove depends on CONFIG_EXPERIMENTAL
-Date: Fri, 18 Jan 2013 00:11:09 -0500
-User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <1358391258-1771-1-git-send-email-keescook@chromium.org> <1358391258-1771-25-git-send-email-keescook@chromium.org>
-In-Reply-To: <1358391258-1771-25-git-send-email-keescook@chromium.org>
+	id S1750935Ab3ARFVZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 00:21:25 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:9431 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750720Ab3ARFVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 00:21:23 -0500
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898hbe9i1155h)
+Subject: [patch v1 1/5] mfd: da9055 change irq state to default
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Axel Lin <axel.lin@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        <linux-kernel@vger.kernel.org>, David Dajun Chen <dchen@diasemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Jan 2013 10:49:37 +0530
+Message-ID: <1358486377.14373.7.camel@dhruva>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart17442672.bGK5ipO3Fo";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301180011.10993.vapier@gentoo.org>
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart17442672.bGK5ipO3Fo
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+This patch changes the irq state from high to the now default low
+state.
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+This patch is tested on smdk6410 board.
 
---nextPart17442672.bGK5ipO3Fo
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+---
+ drivers/mfd/da9055-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+diff --git a/drivers/mfd/da9055-core.c b/drivers/mfd/da9055-core.c
+index f56a1a9..49cb23d 100644
+--- a/drivers/mfd/da9055-core.c
++++ b/drivers/mfd/da9055-core.c
+@@ -391,7 +391,7 @@ int da9055_device_init(struct da9055 *da9055)
+ 		da9055->irq_base = pdata->irq_base;
+ 
+ 	ret = regmap_add_irq_chip(da9055->regmap, da9055->chip_irq,
+-				  IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
++				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+ 				  da9055->irq_base, &da9055_regmap_irq_chip,
+ 				  &da9055->irq_data);
+ 	if (ret < 0)
+-- 
+1.7.0.4
 
-iQIcBAABAgAGBQJQ+NluAAoJEEFjO5/oN/WBM/UQAIli2IWNWUlaTFgQQOHVuVe1
-pMS/sbqBaMwMyh7sl97aR/zTWuWRBTSKIkp8va/h+1s66qk9OuXv60MJwY/cKA4v
-3mCVoliTDUv1MuaF23ijLcBBPx4MCsDsfZuHUdcfnMqUaN+9FbNefinH0LCBMt+5
-I3xykXO779B/NFnCNvNvkqKd4c+yhupaWNbT08QriBtDrp7JOf4+5kVYre7Z7Qaa
-1CKs5Lm2Z+jGydn/gNYDR5bX7QacL5tisrAteU4eIgG74LPER8/gBouozA89iXD+
-JqUwKREh7Vqu7KeLsQwtRkPRaktiH7RXMiqKFqlE/7Sr4b/JtohijG6WByAH6j2d
-e4Gu0av/Y1lh2SJo+LNMv3nXJafmOv6hj6UzRoWB5ohuUvBkDq/lsIioigDBMQ0G
-D4rbGVmpUKLTPkg5aQLA6fsQ1jLUUqMK0tqjrgWB2ac8LWCt3JTq2BuSXSLE1Csj
-ygYVKG9SE3TdF8KZUWJILNCRi/uGYq4rB+mZiFBrN1Cc0ytZc7wmHnDghE8vNNKO
-HlrQALxe3c+CM0Yuv+rB/EPQTgNsSAO4RoSrbEiX4BwC7tgPt4e0LsacV1L4zKYD
-eAUru26MDa+3RJrgpKVmMzLcoY7jF+R499UV1jQWEwKNB/9mU2aBkkfzI1xRwIlh
-OlKr/IAvoL+Klpguw1Fd
-=U9jh
------END PGP SIGNATURE-----
 
---nextPart17442672.bGK5ipO3Fo--
