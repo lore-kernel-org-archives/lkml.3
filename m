@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab3ARI76 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 03:59:58 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45334 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064Ab3ARI75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 03:59:57 -0500
-Message-ID: <1358499533.6252.80.camel@cumari.coelho.fi>
-Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport
- power functions
-From: Luciano Coelho <coelho@ti.com>
-To: Tony Lindgren <tony@atomide.com>, "Cousson, Benoit" <b-cousson@ti.com>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Date: Fri, 18 Jan 2013 10:58:53 +0200
-In-Reply-To: <20130117231608.GP14149@atomide.com>
-References: <1358372702-13102-1-git-send-email-coelho@ti.com>
-	 <50F7C4A7.5060202@ti.com> <20130117093417.GH10814@arwen.pp.htv.fi>
-	 <50F7CA82.4050509@ti.com> <20130117100510.GI10814@arwen.pp.htv.fi>
-	 <20130117100919.GJ10814@arwen.pp.htv.fi>
-	 <1358418917.6252.31.camel@cumari.coelho.fi> <50F7D535.6030205@ti.com>
-	 <20130117173131.GL14149@atomide.com>
-	 <1358445456.6252.64.camel@cumari.coelho.fi>
-	 <20130117231608.GP14149@atomide.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751480Ab3ARJFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 04:05:25 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:34268 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751187Ab3ARJFT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 04:05:19 -0500
+Subject: Re: [PATCH] platform: Fix platform device resource linking
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20130118030017.GA11423@kroah.com>
+Date: Fri, 18 Jan 2013 11:05:14 +0200
+Cc: linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <82FE4A4D-DCA8-4C2C-97E7-6B73D424DCF5@antoniou-consulting.com>
+References: <1357252270-5955-1-git-send-email-panto@antoniou-consulting.com> <20130103224020.GB4571@kroah.com> <CD23CDD8-5740-4649-8876-ADDFCFF30C35@antoniou-consulting.com> <20130117163159.GD1396@kroah.com> <95056678-DF1A-4C49-BEAE-C5EBD7E56405@antoniou-consulting.com> <20130117170719.GB9163@kroah.com> <87DCB3B7-0A5A-42F0-BF9C-0E91B56960C6@antoniou-consulting.com> <20130118030017.GA11423@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-17 at 15:16 -0800, Tony Lindgren wrote:
-> * Luciano Coelho <coelho@ti.com> [130117 10:04]:
-> > But this patch is pretty small and simple, so why not include it to at
-> > least fix the breakage in 3.7 and 3.8? Whether you take it or not now
-> > won't make any difference in the 5k LOC in these kernel versions.
+Hi Greg,
+
+On Jan 18, 2013, at 5:00 AM, Greg Kroah-Hartman wrote:
+
+> On Thu, Jan 17, 2013 at 07:27:21PM +0200, Pantelis Antoniou wrote:
+>>>> In a nutshell, we have to exercise the platform device subsystem, in ways
+>>>> that never happened before, so all sorts of weird bugs that no-one has seen
+>>>> before.
+>>> 
+>>> Why do you have to do this?  What are you doing that is so different
+>>> from everyone else?  What drivers are you using that trigger this type
+>>> of thing?
+>>> 
+>> 
+>> This is all part of a larger patchset; I guess you weren't directly CCed.
+>> The name of the patchset is 'Introducing Device Tree Overlays' and is a
+>> method of changing the live device tree and have the changes reflected to
+>> the kernel's state.
 > 
-> Well we are planning to drop the non-DT support for omap4 as soon as it's
-> usable with DT. For omap4 we are only carrying SDP and panda support to
-> make this transition easier. The only bindings missing AFAIK are wl12xx and
-> USB.
+> Ok, no wonder I was confused :)
+> 
+> How about cc:ing me on the next round of these patches, all of the,
+> which will give me the proper background as to what is going on?
+> 
 
-In my view this is a regression and it should be fixed with as simple a
-patch as possible.  The alternative to my solution is to revert the
-patch that removed the enable/disable from the ti-st driver *and* fix
-u-boot, because if it doesn't mux the UART2 pins properly (and it
-doesn't) the shared transport still won't work.
+Will do. I'm still waiting for some feedback from the DT maintainers, but
+I will make sure that you will be CCed on the next revision.
 
+You can of course take a look at it and comment on the current version too. 
+  
+>>>> In that case, the code path for creating platform devices from DT is
+>>>> not the same as the one that is used when creating platform device from
+>>>> a board file.
+>>> 
+>>> Why not?
+>>> 
+>> 
+>> Because while DT creates platform devices, it doesn't use the platform device
+>> methods to do so, rather than builds the platform device itself. This is 
+>> something that was overlooked.
+> 
+> Can't this be fixed?  What does the platform device core need to do to
+> resolve this?
+> 
 
-> If we add this, then it implies we're somehow supporting it, which is not
-> the way to go IMHO as we need to get rid of these platform callbacks instead.
+Hmm, due to historical reasons the two ways of creating platform devices
+have diverged. The core of the issue is that while OF creates platform devices
+it does so in it's own way.
 
-It's a regression fix, not a new feature.  I also think these callbacks
-are silly, but it's the quickest solution I found for 3.7 and 3.8.
+Take a look at of_device_add()/platform_device_add(), 
+of_device_register()/platform_device_register() for example.
 
+It is pretty obvious some bits in platform_device_* are more recent and are missing
+in of_device_*.
 
-> What's your estimate of having minimal wl12xx WLAN DT binding available?
+It might make sense for the of_device_* functions that are duplicating 
+platform_device_* functions to be removed, and their functionality to 
+be subsumed by platform_device_*, possibly by calling some helper functions
+in drivers/of/ when of_node is not NULL. The of_device_* functions can be 
+replaced by a direct call to platform_device_* via a define (until all of
+the callers get converted).
 
-To tell you the truth, I haven't even started looking into DT for wl12xx
-myself.  So I have no idea when it will be ready.  Benoit has been
-looking into it, but I don't know how far he is.
+The problem with doing anything like this would be that a whole bunch of
+devices/arches depend on DT, and if anything breaks there will be a lot of
+angry people with pitchforks after the culprit.
 
---
-Luca.
+So without the full force of a core maintainer behind such a move, people
+are reluctant to do so.   
+
+> thanks,
+> 
+> greg k-h
+
+Regards
+
+-- Pantelis
 
