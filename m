@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab3ARAsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 19:48:32 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:55540 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab3ARAsa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 19:48:30 -0500
-Date: Thu, 17 Jan 2013 16:48:27 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Colin Cross <ccross@google.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [RFC][PATCH 0/3] staging: alarm-dev: Cleanups and compat_ioctl
- support (v2)
-Message-ID: <20130118004827.GB8897@kroah.com>
-References: <1357947984-15611-1-git-send-email-john.stultz@linaro.org>
+	id S1755260Ab3ARAuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 19:50:46 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:55601 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754708Ab3ARAup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 19:50:45 -0500
+Message-ID: <50F89C77.4010101@parallels.com>
+Date: Thu, 17 Jan 2013 16:51:03 -0800
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357947984-15611-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Chinner <david@fromorbit.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <xfs@oss.sgi.com>,
+        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com> <1354058086-27937-10-git-send-email-david@fromorbit.com> <50F6FDC8.5020909@parallels.com> <20130116225521.GF2498@dastard> <50F7475F.90609@parallels.com> <20130117042245.GG2498@dastard> <50F84118.7030608@parallels.com> <20130118001029.GK2498@dastard>
+In-Reply-To: <20130118001029.GK2498@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [216.239.55.193]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 03:46:21PM -0800, John Stultz wrote:
-> Here is the second revision at implementing compat_ioctl support for
-> Android's alarm-dev driver in staging.
+On 01/17/2013 04:10 PM, Dave Chinner wrote:
+> and we end up with:
 > 
-> The first patch removes the pre-Android 1.0 _OLD ioctls, per Colin's
-> suggestion. Then the second patch does some refactoring to cleanup
-> and separate the copying of user data from the logic, and the final
-> patch adds the compat_ioctl support.
-> 
-> I've tested this with a trivial unit test compiled for both 32bit
-> and 64bit on a x86_64 kernel, and it looks ok, but closer review
-> would be appreciated to make sure I didn't break anything.
-> 
-> Additional feedback or thoughts would be welcome!
+> lru_add(struct lru_list *lru, struct lru_item *item)
+> {
+> 	node_id = min(object_to_nid(item), lru->numnodes);
+> 	
+> 	__lru_add(lru, node_id, &item->global_list);
+> 	if (memcg) {
+> 		memcg_lru = find_memcg_lru(lru->memcg_lists, memcg_id)
+> 		__lru_add_(memcg_lru, node_id, &item->memcg_list);
+> 	}
+> }
 
-These look fine to me, want me to apply them to my -next tree for 3.9?
+A follow up thought: If we have multiple memcgs, and global pressure
+kicks in (meaning none of them are particularly under pressure),
+shouldn't we try to maintain fairness among them and reclaim equal
+proportions from them all the same way we do with sb's these days, for
+instance?
 
-thanks,
+I would argue that if your memcg is small, the list of dentries is
+small: scan it all for the nodes you want shouldn't hurt.
 
-greg k-h
+if the memcg is big, it will have per-node lists anyway.
+
+Given that, do we really want to pay the price of two list_heads in the
+objects?
+
+
