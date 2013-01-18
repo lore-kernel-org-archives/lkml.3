@@ -1,222 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab3ARTwH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 14:52:07 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29427 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755623Ab3ARTvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 14:51:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,494,1355126400"; 
-   d="scan'208";a="249220815"
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: acme@redhat.com
-Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH 4/4] perf script: remove workqueue-stats script
-Date: Fri, 18 Jan 2013 13:51:28 -0600
-Message-Id: <e7a7637d5df9df86887c3bff7683574665ec5360.1358527965.git.tom.zanussi@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <cover.1358527965.git.tom.zanussi@linux.intel.com>
-References: <cover.1358527965.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1358527965.git.tom.zanussi@linux.intel.com>
-References: <cover.1358527965.git.tom.zanussi@linux.intel.com>
+	id S1755873Ab3ARTwc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 14:52:32 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:54025 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755805Ab3ARTwa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 14:52:30 -0500
+Subject: Re: [PATCH] platform: Fix platform device resource linking
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20130118194717.GB18658@kroah.com>
+Date: Fri, 18 Jan 2013 21:52:20 +0200
+Cc: linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <76227CCE-90D9-425B-8187-E1B896E0664B@antoniou-consulting.com>
+References: <1357252270-5955-1-git-send-email-panto@antoniou-consulting.com> <20130103224020.GB4571@kroah.com> <CD23CDD8-5740-4649-8876-ADDFCFF30C35@antoniou-consulting.com> <20130117163159.GD1396@kroah.com> <95056678-DF1A-4C49-BEAE-C5EBD7E56405@antoniou-consulting.com> <20130117170719.GB9163@kroah.com> <87DCB3B7-0A5A-42F0-BF9C-0E91B56960C6@antoniou-consulting.com> <20130118030017.GA11423@kroah.com> <82FE4A4D-DCA8-4C2C-97E7-6B73D424DCF5@antoniou-consulting.com> <20130118194717.GB18658@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tracepoints used by the workqueue-stats script no longer exist so
-trying to run the script results in:
+Hi Greg,
 
-  # perf script record workqueue-stats
-  invalid or unsupported event: 'workqueue:workqueue_creation'
-  Run 'perf list' for a list of valid events
+On Jan 18, 2013, at 9:47 PM, Greg Kroah-Hartman wrote:
 
-So remove the script until it can be reworked using the new workqueue
-tracepoints.
+> On Fri, Jan 18, 2013 at 11:05:14AM +0200, Pantelis Antoniou wrote:
+>> It might make sense for the of_device_* functions that are duplicating 
+>> platform_device_* functions to be removed, and their functionality to 
+>> be subsumed by platform_device_*, possibly by calling some helper functions
+>> in drivers/of/ when of_node is not NULL. The of_device_* functions can be 
+>> replaced by a direct call to platform_device_* via a define (until all of
+>> the callers get converted).
+> 
+> That sounds reasonable.
+> 
+>> The problem with doing anything like this would be that a whole bunch of
+>> devices/arches depend on DT, and if anything breaks there will be a lot of
+>> angry people with pitchforks after the culprit.
+> 
+> That's nothing new, we are totally used to that happening :)
+> 
 
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
----
- tools/perf/Documentation/perf-script-python.txt    |   2 -
- tools/perf/scripts/perl/bin/workqueue-stats-record |   2 -
- tools/perf/scripts/perl/bin/workqueue-stats-report |   3 -
- tools/perf/scripts/perl/workqueue-stats.pl         | 129 ---------------------
- 4 files changed, 136 deletions(-)
- delete mode 100644 tools/perf/scripts/perl/bin/workqueue-stats-record
- delete mode 100644 tools/perf/scripts/perl/bin/workqueue-stats-report
- delete mode 100644 tools/perf/scripts/perl/workqueue-stats.pl
+I'm fearful of the angry mob with torches and pitchforks after me, if something
+gets broken :)
 
-diff --git a/tools/perf/Documentation/perf-script-python.txt b/tools/perf/Documentation/perf-script-python.txt
-index a4027f2..9f1f054 100644
---- a/tools/perf/Documentation/perf-script-python.txt
-+++ b/tools/perf/Documentation/perf-script-python.txt
-@@ -336,7 +336,6 @@ scripts listed by the 'perf script -l' command e.g.:
- ----
- root@tropicana:~# perf script -l
- List of available trace scripts:
--  workqueue-stats                      workqueue stats (ins/exe/create/destroy)
-   wakeup-latency                       system-wide min/max/avg wakeup latency
-   rw-by-file <comm>                    r/w activity for a program, by file
-   rw-by-pid                            system-wide r/w activity
-@@ -402,7 +401,6 @@ should show a new entry for your script:
- ----
- root@tropicana:~# perf script -l
- List of available trace scripts:
--  workqueue-stats                      workqueue stats (ins/exe/create/destroy)
-   wakeup-latency                       system-wide min/max/avg wakeup latency
-   rw-by-file <comm>                    r/w activity for a program, by file
-   rw-by-pid                            system-wide r/w activity
-diff --git a/tools/perf/scripts/perl/bin/workqueue-stats-record b/tools/perf/scripts/perl/bin/workqueue-stats-record
-deleted file mode 100644
-index 8edda90..0000000
---- a/tools/perf/scripts/perl/bin/workqueue-stats-record
-+++ /dev/null
-@@ -1,2 +0,0 @@
--#!/bin/bash
--perf record -e workqueue:workqueue_creation -e workqueue:workqueue_destruction -e workqueue:workqueue_execution -e workqueue:workqueue_insertion $@
-diff --git a/tools/perf/scripts/perl/bin/workqueue-stats-report b/tools/perf/scripts/perl/bin/workqueue-stats-report
-deleted file mode 100644
-index 6d91411..0000000
---- a/tools/perf/scripts/perl/bin/workqueue-stats-report
-+++ /dev/null
-@@ -1,3 +0,0 @@
--#!/bin/bash
--# description: workqueue stats (ins/exe/create/destroy)
--perf script $@ -s "$PERF_EXEC_PATH"/scripts/perl/workqueue-stats.pl
-diff --git a/tools/perf/scripts/perl/workqueue-stats.pl b/tools/perf/scripts/perl/workqueue-stats.pl
-deleted file mode 100644
-index a8eaff5..0000000
---- a/tools/perf/scripts/perl/workqueue-stats.pl
-+++ /dev/null
-@@ -1,129 +0,0 @@
--#!/usr/bin/perl -w
--# (c) 2009, Tom Zanussi <tzanussi@gmail.com>
--# Licensed under the terms of the GNU GPL License version 2
--
--# Displays workqueue stats
--#
--# Usage:
--#
--#   perf record -c 1 -f -a -R -e workqueue:workqueue_creation -e
--#     workqueue:workqueue_destruction -e workqueue:workqueue_execution
--#     -e workqueue:workqueue_insertion
--#
--#   perf script -p -s tools/perf/scripts/perl/workqueue-stats.pl
--
--use 5.010000;
--use strict;
--use warnings;
--
--use lib "$ENV{'PERF_EXEC_PATH'}/scripts/perl/Perf-Trace-Util/lib";
--use lib "./Perf-Trace-Util/lib";
--use Perf::Trace::Core;
--use Perf::Trace::Util;
--
--my @cpus;
--
--sub workqueue::workqueue_destruction
--{
--    my ($event_name, $context, $common_cpu, $common_secs, $common_nsecs,
--	$common_pid, $common_comm,
--	$thread_comm, $thread_pid) = @_;
--
--    $cpus[$common_cpu]{$thread_pid}{destroyed}++;
--    $cpus[$common_cpu]{$thread_pid}{comm} = $thread_comm;
--}
--
--sub workqueue::workqueue_creation
--{
--    my ($event_name, $context, $common_cpu, $common_secs, $common_nsecs,
--	$common_pid, $common_comm,
--	$thread_comm, $thread_pid, $cpu) = @_;
--
--    $cpus[$common_cpu]{$thread_pid}{created}++;
--    $cpus[$common_cpu]{$thread_pid}{comm} = $thread_comm;
--}
--
--sub workqueue::workqueue_execution
--{
--    my ($event_name, $context, $common_cpu, $common_secs, $common_nsecs,
--	$common_pid, $common_comm,
--	$thread_comm, $thread_pid, $func) = @_;
--
--    $cpus[$common_cpu]{$thread_pid}{executed}++;
--    $cpus[$common_cpu]{$thread_pid}{comm} = $thread_comm;
--}
--
--sub workqueue::workqueue_insertion
--{
--    my ($event_name, $context, $common_cpu, $common_secs, $common_nsecs,
--	$common_pid, $common_comm,
--	$thread_comm, $thread_pid, $func) = @_;
--
--    $cpus[$common_cpu]{$thread_pid}{inserted}++;
--    $cpus[$common_cpu]{$thread_pid}{comm} = $thread_comm;
--}
--
--sub trace_end
--{
--    print "workqueue work stats:\n\n";
--    my $cpu = 0;
--    printf("%3s %6s %6s\t%-20s\n", "cpu", "ins", "exec", "name");
--    printf("%3s %6s %6s\t%-20s\n", "---", "---", "----", "----");
--    foreach my $pidhash (@cpus) {
--	while ((my $pid, my $wqhash) = each %$pidhash) {
--	    my $ins = $$wqhash{'inserted'} || 0;
--	    my $exe = $$wqhash{'executed'} || 0;
--	    my $comm = $$wqhash{'comm'} || "";
--	    if ($ins || $exe) {
--		printf("%3u %6u %6u\t%-20s\n", $cpu, $ins, $exe, $comm);
--	    }
--	}
--	$cpu++;
--    }
--
--    $cpu = 0;
--    print "\nworkqueue lifecycle stats:\n\n";
--    printf("%3s %6s %6s\t%-20s\n", "cpu", "created", "destroyed", "name");
--    printf("%3s %6s %6s\t%-20s\n", "---", "-------", "---------", "----");
--    foreach my $pidhash (@cpus) {
--	while ((my $pid, my $wqhash) = each %$pidhash) {
--	    my $created = $$wqhash{'created'} || 0;
--	    my $destroyed = $$wqhash{'destroyed'} || 0;
--	    my $comm = $$wqhash{'comm'} || "";
--	    if ($created || $destroyed) {
--		printf("%3u %6u %6u\t%-20s\n", $cpu, $created, $destroyed,
--		       $comm);
--	    }
--	}
--	$cpu++;
--    }
--
--    print_unhandled();
--}
--
--my %unhandled;
--
--sub print_unhandled
--{
--    if ((scalar keys %unhandled) == 0) {
--	return;
--    }
--
--    print "\nunhandled events:\n\n";
--
--    printf("%-40s  %10s\n", "event", "count");
--    printf("%-40s  %10s\n", "----------------------------------------",
--	   "-----------");
--
--    foreach my $event_name (keys %unhandled) {
--	printf("%-40s  %10d\n", $event_name, $unhandled{$event_name});
--    }
--}
--
--sub trace_unhandled
--{
--    my ($event_name, $context, $common_cpu, $common_secs, $common_nsecs,
--	$common_pid, $common_comm) = @_;
--
--    $unhandled{$event_name}++;
--}
--- 
-1.7.11.4
+>> So without the full force of a core maintainer behind such a move, people
+>> are reluctant to do so.   
+> 
+> Send patches if you want to do this, no need for the maintainer to do it
+> (hint, I will not as I don't even have a system that this type of code
+> runs on.)
+> 
 
+OK, maybe next week, when I think of this a little bit more.
+
+> thanks,
+> 
+> greg k-h
+
+Regards
+
+-- Pantelis
