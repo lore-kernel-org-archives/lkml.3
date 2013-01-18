@@ -1,78 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab3ARV5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:57:09 -0500
-Received: from mail-oa0-f62.google.com ([209.85.219.62]:55150 "EHLO
-	mail-oa0-f62.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab3ARV5G (ORCPT
+	id S1754120Ab3ARWAg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 17:00:36 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:44175 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab3ARWAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 16:57:06 -0500
-X-Greylist: delayed 5711 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jan 2013 16:57:06 EST
-Path: glegroupsg2000goo.googlegroups.com!not-for-mail
-Newsgroups: fa.linux.kernel
-Date: Fri, 18 Jan 2013 12:21:55 -0800 (PST)
-In-Reply-To: <fa.xKOV9tOmjA6NPYEPagvZixrd/4w@ifi.uio.no>
-Complaints-To: groups-abuse@google.com
-Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=5.1.31.149; posting-account=RDa6jQoAAAD-XczVB65X4OwzXnvUfh11
-NNTP-Posting-Host: 5.1.31.149
-References: <fa.9LtpVDEImZxRAaqPOyWMlGOK4Ow@ifi.uio.no> <fa.xKOV9tOmjA6NPYEPagvZixrd/4w@ifi.uio.no>
-User-Agent: G2/1.0
-X-Google-Web-Client: true
-X-Google-IP: 5.1.31.149
+	Fri, 18 Jan 2013 17:00:35 -0500
+Date: Fri, 18 Jan 2013 17:00:01 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@alien8.de>, Stefan Bader <stefan.bader@canonical.com>,
+        Andre Przywara <andre@andrep.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: kernel 3.7+ cpufreq regression on AMD system running as dom0
+Message-ID: <20130118220001.GC4754@phenom.dumpdata.com>
+References: <50F42B3E.7090602@canonical.com>
+ <20130114163445.GA4867@liondog.tnic>
+ <20130115175305.GA12449@phenom.dumpdata.com>
+ <20130115181839.GC8101@liondog.tnic>
+ <20130118190015.GC11351@phenom.dumpdata.com>
+ <20130118200331.GF4062@pd.tnic>
 MIME-Version: 1.0
-Message-ID: <0a73688d-f466-4a96-89af-0dca4cb5ea8a@googlegroups.com>
-Subject: Re: LIO - the broken iSCSI target implementation
-From: promo@starwindsoftware.com
-To: fa.linux.kernel@googlegroups.com
-Cc: Andreas Steinmetz <ast@domdv.de>, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130118200331.GF4062@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please don't start another "SCST Vs. LIO" holy war here. We all know why LIO belongs to Linux kernel and SCST does not.
+> 
+> > Right, that information is gathered from the MSRs. I think the Xen would
+> > need to do this since it can do the MSRs correctly and modify the P-states.
+> > 
+> > So something like this in the hypervisor maybe (not even tested):
+> 
+> Yeah, something like that. Basically you can copy the quirk down to the
+> hypervisor.
 
-On Friday, January 18, 2013 3:54:18 AM UTC+2, Vladislav Bolkhovitin wrote:
-> Andreas Steinmetz, on 01/16/2013 08:19 PM wrote:
+<nods> Need also to include the comments from Matthew in it.
 > 
-> > Thus, lio (http://www.linux-iscsi.org/) seemed to be the politically and
+> But, Andre was explaining to me the other day that those P-states
+> frequencies are not that important.
 > 
-> > technically favoured solution.
+> Let me explain: the ondemand governor, for example, computes idle time
+> and each time it needs to increase, it switches straight up to the
+> highest frequency. When it decreases the freq. though, it goes down in a
+> staircase manner, going over all P-states, AFAICT.
 > 
+> So we use them but not for all decisions. The question is, what does the
+> xen governor(s) do?
+
+ should look in the code. I know it borrowed from the Linux code - but
+I don't know from which era - 2.6.18 maybe?
+
 > 
+> If it only uses the frequencies for reporting, then it is not that big
+> of a deal. If it uses their values for switching decisions, then it
+> probably needs the correct ones.
+
+OK. 
 > 
-> [...]
+> > diff --git a/xen/arch/x86/acpi/cpufreq/powernow.c b/xen/arch/x86/acpi/cpufreq/powernow.c
+> > index a9b7792..54e7808 100644
+> > --- a/xen/arch/x86/acpi/cpufreq/powernow.c
+> > +++ b/xen/arch/x86/acpi/cpufreq/powernow.c
+> > @@ -146,7 +146,40 @@ static int powernow_cpufreq_target(struct cpufreq_policy *policy,
+> >  
+> >      return 0;
+> >  }
+> > +#define MSR_AMD_PSTATE_DEF_BASE     0xc0010064
+> > +static void amd_fixup_frequency(struct xen_processor_px *px, int i)
+> > +{
+> > +	u32 hi, lo, fid, did;
+> > +	int index = px->control & 0x00000007;
+> > +
+> > +	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
+> > +		return;
+> > +
+> > +	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
+> > +	    || boot_cpu_data.x86 == 0x11) {
+> > +		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
+> > +        /* Bit 63 indicates whether contents are valid */
+> > +        if (!(hi & 0x80000000))
+> > +            return;
 > 
+> Something's funny with this indentation.
+
+That was copy-n-paste, so I must have done something incorrectly. Anyhow
+I still need to actually test this code.
+
 > 
+> > +
+> > +		fid = lo & 0x3f;
+> > +		did = (lo >> 6) & 7;
+> > +		if (boot_cpu_data.x86 == 0x10)
+> > +			px->core_frequency = (100 * (fid + 0x10)) >> did;
+> > +		else
+> > +			px->core_frequency = (100 * (fid + 8)) >> did;
+> > +	}
+> > +}
+> > +
+> > +static void amd_fixup_freq(struct processor_performance *perf)
+> > +{
+> >  
+> > +    int i;
+> > +
+> > +    for (i = 0; i < perf->state_count; i++)
+> > +        amd_fixup_frequency(perf->states, i);
+> > +
+> > +}
+> >  static int powernow_cpufreq_verify(struct cpufreq_policy *policy)
+> >  {
+> >      struct acpi_cpufreq_data *data;
+> > @@ -158,6 +191,8 @@ static int powernow_cpufreq_verify(struct cpufreq_policy *policy)
+> >  
+> >      perf = &processor_pminfo[policy->cpu]->perf;
+> >  
+> > +    amd_fixup_freq(perf);
+> > +
+> >      cpufreq_verify_within_limits(policy, 0, 
+> >          perf->states[perf->platform_limit].core_frequency * 1000);
 > 
-> > The fun part of it was that I finally ended up using SCST - which was
+> Thanks.
 > 
-> > refrained from kernel inclusion for technical reasons beyond my
+> -- 
+> Regards/Gruss,
+>     Boris.
 > 
-> > knowledge.
-> 
-> 
-> 
-> No, it was purely political. There has never been any technical argument why LIO 
-> 
-> is better. And can not be.
-> 
-> 
-> 
-> Thanks,
-> 
-> Vlad
-> 
-> 
-> 
+> Sent from a fat crate under my desk. Formatting is fine.
 > --
-> 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> 
-> the body of a message to majordomo@vger.kernel.org
-> 
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> Please read the FAQ at  http://www.tux.org/lkml/
-
