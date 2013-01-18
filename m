@@ -1,184 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3ARVYv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:24:51 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:42298 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806Ab3ARVYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 16:24:41 -0500
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org, dan.magenheimer@oracle.com
-Subject: [PATCH 2/5] staging: zcache: rename ramster to zcache
-Date: Fri, 18 Jan 2013 13:24:24 -0800
-Message-Id: <1358544267-9104-3-git-send-email-dan.magenheimer@oracle.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <1358544267-9104-1-git-send-email-dan.magenheimer@oracle.com>
-References: <1358544267-9104-1-git-send-email-dan.magenheimer@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1756138Ab3ARVY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:24:56 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43723 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755813Ab3ARVYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 16:24:54 -0500
+Date: Fri, 18 Jan 2013 22:24:48 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Olivier Doucet <webmaster@ajeux.com>
+Cc: linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Performance issue since 3.2.6
+Message-ID: <20130118212447.GB3252@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Olivier Doucet <webmaster@ajeux.com>, linux-kernel@vger.kernel.org,
+	Venkatesh Pallipadi <venki@google.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>
+References: <CAPPqfY1-sYT8rcPoJ6BD0axq=oczq+xbGFSQj=uth4wc_cvkGw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAPPqfY1-sYT8rcPoJ6BD0axq=oczq+xbGFSQj=uth4wc_cvkGw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[V2: no code changes, patchset now generated via git format-patch -M]
+Good description.
 
-In staging, rename ramster to zcache
+I'm leaving the whole email in for reference, see below:
 
-The original zcache in staging was a "demo" version, and this new zcache
-is a significant rewrite.  While certain disagreements were being resolved,
-both "old zcache" and "new zcache" needed to reside in the staging tree
-simultaneously.  In order to minimize code change and churn, the newer
-version of zcache was temporarily merged into the "ramster" staging driver
-which, prior to that, had at one time heavily leveraged the older version
-of zcache.  So, recently, "new zcache" resided in the ramster directory.
+On Fri, Jan 18, 2013 at 10:05:41PM +0100, Olivier Doucet wrote:
+> Hello,
+> 
+> I think I found a performance issue in kernel. This problem was
+> introduced in 3.2.6 and is affecting all version, including 3.7.1
+> (latest tested).
+> 
+> I measured several kernel builds with a homebrew LAMP platform
+> benchmark (250 runs, average value kept).
+> 
+> Kernel 3.2.0 was on production so far, and I tried an upgrade to 3.7.1
+> (latest kernel at that time). No software other than the kernel was
+> modified. Kernel was built with the same .config file (new options
+> left with default value).
+> Difference in performance was quite huge :
+> Kernel 3.7.1 : ~ 3250 queries / second
+> Kernel 3.2.0 : ~ 4300 queries / second
+> 
+> Yes, this is a 25% performance drop ...
+> 
+> To narrow things down, I tested several kernels :
+> 3.2.0 to 3.2.5 : OK
+> 3.2.6, 3.2.11, 3.2.28, 3.2.36, 3.7.1 : PERFORMANCE DROP
+> On faulty kernels, performance drop is always the same.
+> 
+> At this step, I know that bug was introduced in version 3.2.6. I then
+> used git bisect (amazing tool btw) to find the faulty commit :
+> f51d67a64f32cd81ea8b67ca964fb7cf7e783b2e	PM / QoS: CPU C-state
+> breakage with PM Qos change
+> 
+> Next test : I used a 3.2.6 and reverted this patch : performance was
+> back to normal.
+> I also reverted this patch on 3.2.36 (latest 3.2.X), and performance
+> was also OK. I was unable to revert this patch on 3.7.1 (structure of
+> the source file  /include/linux/pm_qos.h changed too heavily).
+> 
+> Kernel was built on a x86_64 platform with binutils 2.19.1 and gcc 4.4.0.
+> .config file used : https://gist.github.com/4567342
+> Benchmark was run on a dual CPU INTEL L5630 with 4GB of RAM
+> 
+> What can I do to resolve this problem ?
 
-Got that? No? Sorry, temporary political compromises are rarely pretty.
+Btw, the commit-id you've given is the stable commit-id but this is
+still ok, the mainline commit is mentioned in the commit message and is:
 
-The older version of zcache is no longer being maintained and has now
-been removed from the staging tree.  So now the newer version of zcache
-can rightfully reclaim sole possession of the name "zcache".
+commit d020283dc694c9ec31b410f522252f7a8397e67d
+Author: Venkatesh Pallipadi <venki@google.com>
+Date:   Fri Feb 3 22:22:25 2012 +0100
 
-FYI, this [PATCH 2/5] is simply a "git mv" generated by "git format-patch -M".
+    PM / QoS: CPU C-state breakage with PM Qos change
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
----
- drivers/staging/{ramster => zcache}/Kconfig        |    0
- drivers/staging/{ramster => zcache}/Makefile       |    0
- drivers/staging/{ramster => zcache}/ramster.h      |    0
- .../{ramster => zcache}/ramster/heartbeat.c        |    0
- .../{ramster => zcache}/ramster/heartbeat.h        |    0
- .../staging/{ramster => zcache}/ramster/masklog.c  |    0
- .../staging/{ramster => zcache}/ramster/masklog.h  |    0
- .../{ramster => zcache}/ramster/nodemanager.c      |    0
- .../{ramster => zcache}/ramster/nodemanager.h      |    0
- .../staging/{ramster => zcache}/ramster/r2net.c    |    0
- .../staging/{ramster => zcache}/ramster/ramster.c  |    0
- .../staging/{ramster => zcache}/ramster/ramster.h  |    0
- .../ramster/ramster_nodemanager.h                  |    0
- drivers/staging/{ramster => zcache}/ramster/tcp.c  |    0
- drivers/staging/{ramster => zcache}/ramster/tcp.h  |    0
- .../{ramster => zcache}/ramster/tcp_internal.h     |    0
- drivers/staging/{ramster => zcache}/tmem.c         |    0
- drivers/staging/{ramster => zcache}/tmem.h         |    0
- drivers/staging/{ramster => zcache}/zbud.c         |    0
- drivers/staging/{ramster => zcache}/zbud.h         |    0
- drivers/staging/{ramster => zcache}/zcache-main.c  |    0
- drivers/staging/{ramster => zcache}/zcache.h       |    0
- 22 files changed, 0 insertions(+), 0 deletions(-)
- rename drivers/staging/{ramster => zcache}/Kconfig (100%)
- rename drivers/staging/{ramster => zcache}/Makefile (100%)
- rename drivers/staging/{ramster => zcache}/ramster.h (100%)
- rename drivers/staging/{ramster => zcache}/ramster/heartbeat.c (100%)
- rename drivers/staging/{ramster => zcache}/ramster/heartbeat.h (100%)
- rename drivers/staging/{ramster => zcache}/ramster/masklog.c (100%)
- rename drivers/staging/{ramster => zcache}/ramster/masklog.h (100%)
- rename drivers/staging/{ramster => zcache}/ramster/nodemanager.c (100%)
- rename drivers/staging/{ramster => zcache}/ramster/nodemanager.h (100%)
- rename drivers/staging/{ramster => zcache}/ramster/r2net.c (100%)
- rename drivers/staging/{ramster => zcache}/ramster/ramster.c (100%)
- rename drivers/staging/{ramster => zcache}/ramster/ramster.h (100%)
- rename drivers/staging/{ramster => zcache}/ramster/ramster_nodemanager.h (100%)
- rename drivers/staging/{ramster => zcache}/ramster/tcp.c (100%)
- rename drivers/staging/{ramster => zcache}/ramster/tcp.h (100%)
- rename drivers/staging/{ramster => zcache}/ramster/tcp_internal.h (100%)
- rename drivers/staging/{ramster => zcache}/tmem.c (100%)
- rename drivers/staging/{ramster => zcache}/tmem.h (100%)
- rename drivers/staging/{ramster => zcache}/zbud.c (100%)
- rename drivers/staging/{ramster => zcache}/zbud.h (100%)
- rename drivers/staging/{ramster => zcache}/zcache-main.c (100%)
- rename drivers/staging/{ramster => zcache}/zcache.h (100%)
+So, let's invite the parties from the commit to CC, see what they have
+to say.
 
-diff --git a/drivers/staging/ramster/Kconfig b/drivers/staging/zcache/Kconfig
-similarity index 100%
-rename from drivers/staging/ramster/Kconfig
-rename to drivers/staging/zcache/Kconfig
-diff --git a/drivers/staging/ramster/Makefile b/drivers/staging/zcache/Makefile
-similarity index 100%
-rename from drivers/staging/ramster/Makefile
-rename to drivers/staging/zcache/Makefile
-diff --git a/drivers/staging/ramster/ramster.h b/drivers/staging/zcache/ramster.h
-similarity index 100%
-rename from drivers/staging/ramster/ramster.h
-rename to drivers/staging/zcache/ramster.h
-diff --git a/drivers/staging/ramster/ramster/heartbeat.c b/drivers/staging/zcache/ramster/heartbeat.c
-similarity index 100%
-rename from drivers/staging/ramster/ramster/heartbeat.c
-rename to drivers/staging/zcache/ramster/heartbeat.c
-diff --git a/drivers/staging/ramster/ramster/heartbeat.h b/drivers/staging/zcache/ramster/heartbeat.h
-similarity index 100%
-rename from drivers/staging/ramster/ramster/heartbeat.h
-rename to drivers/staging/zcache/ramster/heartbeat.h
-diff --git a/drivers/staging/ramster/ramster/masklog.c b/drivers/staging/zcache/ramster/masklog.c
-similarity index 100%
-rename from drivers/staging/ramster/ramster/masklog.c
-rename to drivers/staging/zcache/ramster/masklog.c
-diff --git a/drivers/staging/ramster/ramster/masklog.h b/drivers/staging/zcache/ramster/masklog.h
-similarity index 100%
-rename from drivers/staging/ramster/ramster/masklog.h
-rename to drivers/staging/zcache/ramster/masklog.h
-diff --git a/drivers/staging/ramster/ramster/nodemanager.c b/drivers/staging/zcache/ramster/nodemanager.c
-similarity index 100%
-rename from drivers/staging/ramster/ramster/nodemanager.c
-rename to drivers/staging/zcache/ramster/nodemanager.c
-diff --git a/drivers/staging/ramster/ramster/nodemanager.h b/drivers/staging/zcache/ramster/nodemanager.h
-similarity index 100%
-rename from drivers/staging/ramster/ramster/nodemanager.h
-rename to drivers/staging/zcache/ramster/nodemanager.h
-diff --git a/drivers/staging/ramster/ramster/r2net.c b/drivers/staging/zcache/ramster/r2net.c
-similarity index 100%
-rename from drivers/staging/ramster/ramster/r2net.c
-rename to drivers/staging/zcache/ramster/r2net.c
-diff --git a/drivers/staging/ramster/ramster/ramster.c b/drivers/staging/zcache/ramster/ramster.c
-similarity index 100%
-rename from drivers/staging/ramster/ramster/ramster.c
-rename to drivers/staging/zcache/ramster/ramster.c
-diff --git a/drivers/staging/ramster/ramster/ramster.h b/drivers/staging/zcache/ramster/ramster.h
-similarity index 100%
-rename from drivers/staging/ramster/ramster/ramster.h
-rename to drivers/staging/zcache/ramster/ramster.h
-diff --git a/drivers/staging/ramster/ramster/ramster_nodemanager.h b/drivers/staging/zcache/ramster/ramster_nodemanager.h
-similarity index 100%
-rename from drivers/staging/ramster/ramster/ramster_nodemanager.h
-rename to drivers/staging/zcache/ramster/ramster_nodemanager.h
-diff --git a/drivers/staging/ramster/ramster/tcp.c b/drivers/staging/zcache/ramster/tcp.c
-similarity index 100%
-rename from drivers/staging/ramster/ramster/tcp.c
-rename to drivers/staging/zcache/ramster/tcp.c
-diff --git a/drivers/staging/ramster/ramster/tcp.h b/drivers/staging/zcache/ramster/tcp.h
-similarity index 100%
-rename from drivers/staging/ramster/ramster/tcp.h
-rename to drivers/staging/zcache/ramster/tcp.h
-diff --git a/drivers/staging/ramster/ramster/tcp_internal.h b/drivers/staging/zcache/ramster/tcp_internal.h
-similarity index 100%
-rename from drivers/staging/ramster/ramster/tcp_internal.h
-rename to drivers/staging/zcache/ramster/tcp_internal.h
-diff --git a/drivers/staging/ramster/tmem.c b/drivers/staging/zcache/tmem.c
-similarity index 100%
-rename from drivers/staging/ramster/tmem.c
-rename to drivers/staging/zcache/tmem.c
-diff --git a/drivers/staging/ramster/tmem.h b/drivers/staging/zcache/tmem.h
-similarity index 100%
-rename from drivers/staging/ramster/tmem.h
-rename to drivers/staging/zcache/tmem.h
-diff --git a/drivers/staging/ramster/zbud.c b/drivers/staging/zcache/zbud.c
-similarity index 100%
-rename from drivers/staging/ramster/zbud.c
-rename to drivers/staging/zcache/zbud.c
-diff --git a/drivers/staging/ramster/zbud.h b/drivers/staging/zcache/zbud.h
-similarity index 100%
-rename from drivers/staging/ramster/zbud.h
-rename to drivers/staging/zcache/zbud.h
-diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-similarity index 100%
-rename from drivers/staging/ramster/zcache-main.c
-rename to drivers/staging/zcache/zcache-main.c
-diff --git a/drivers/staging/ramster/zcache.h b/drivers/staging/zcache/zcache.h
-similarity index 100%
-rename from drivers/staging/ramster/zcache.h
-rename to drivers/staging/zcache/zcache.h
+Thanks.
+
 -- 
-1.7.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
