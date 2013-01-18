@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750940Ab3ARHdv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 02:33:51 -0500
-Received: from norkia.v3.sk ([91.210.183.14]:37329 "EHLO norkia.v3.sk"
+	id S1750980Ab3ARHhz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 02:37:55 -0500
+Received: from norkia.v3.sk ([91.210.183.14]:37363 "EHLO norkia.v3.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab3ARHdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 02:33:49 -0500
-Subject: Re: [PATCH] Bluetooth: btmrvl_sdio: look for sd8688 firmware in
- alternate place
+	id S1750747Ab3ARHhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 02:37:54 -0500
 From: Lubomir Rintel <lkundrak@v3.sk>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Cc: Bing Zhao <bzhao@marvell.com>,
-        "libertas-dev@lists.infradead.org" <libertas-dev@lists.infradead.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+To: Marcel Holtmann <marcel@holtmann.org>, Bing Zhao <bzhao@marvell.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, David Woodhouse <dwmw2@infradead.org>,
         Gustavo Padovan <gustavo@padovan.org>,
         Johan Hedberg <johan.hedberg@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1357713345.1806.44.camel@aeonflux>
-References: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
-	 <1357689361-7969-2-git-send-email-lkundrak@v3.sk>
-	 <1357698538.1806.43.camel@aeonflux>
-	 <477F20668A386D41ADCC57781B1F70430D13FDB783@SC-VEXCH1.marvell.com>
-	 <1357713088.1105.1.camel@unicorn>  <1357713345.1806.44.camel@aeonflux>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Jan 2013 08:33:42 +0100
-Message-ID: <1358494422.28503.4.camel@unicorn>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-27.el6) 
-Content-Transfer-Encoding: 7bit
+        libertas-dev@lists.infradead.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lubomir Rintel <lkundrak@v3.sk>
+Subject: [PATCH] bluetooth: btmrvl_sdio: look for sd8688 firmware in proper location
+Date: Fri, 18 Jan 2013 08:37:23 +0100
+Message-Id: <1358494643-29765-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <477F20668A386D41ADCC57781B1F70430D13FDB783@SC-VEXCH1.marvell.com>
+References: <477F20668A386D41ADCC57781B1F70430D13FDB783@SC-VEXCH1.marvell.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-08 at 22:35 -0800, Marcel Holtmann wrote:
-> Hi Lubomir,
-> 
-> > > > > linux-firmware ships the sd8688* firmware images that are shared with
-> > > > > libertas_sdio WiFi driver under libertas/. libertas_sdio looks in both places
-> > > > > and so should we.
-> > > > >
-> > > > > Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-> > > > > ---
-> > > > >  drivers/bluetooth/btmrvl_sdio.c |   24 ++++++++++++++++++++++--
-> > > > >  drivers/bluetooth/btmrvl_sdio.h |    6 ++++--
-> > > > >  2 files changed, 26 insertions(+), 4 deletions(-)
-> > > > 
-> > > > NAK from me on this one. I do not want the driver to check two
-> > > > locations. That is what userspace can work around.
-> > > > 
-> > > > If we want to unify the location between the WiFi driver and the
-> > > > Bluetooth driver, I am fine with that, but seriously, just pick one over
-> > > > the other. I do not care which one.
-> > > 
-> > > The unified location is mrvl/ directory.
-> > > 
-> > > We can probably move SD8688 firmware & helper binaries to mrvl/ and have both drivers grab the images there?
-> > 
-> > That would break existing setups, wouldn't it?
-> > 
-> > I was under impression (commit 3d32a58b) that we care about
-> > compatibility here. Do we?
-> 
-> that is what symlinks are for.
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+---
+ drivers/bluetooth/btmrvl_sdio.c |    8 ++++----
+ drivers/bluetooth/btmrvl_sdio.h |    6 ++++--
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-David, Ben: please pull the following branch then:
-git pull git://github.com/lkundrak/linux-firmware.git sd8688-move
-
-Thank you!
+diff --git a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
+index 3f4bfc8..bc27d01 100644
+--- a/drivers/bluetooth/btmrvl_sdio.c
++++ b/drivers/bluetooth/btmrvl_sdio.c
+@@ -83,8 +83,8 @@ static const struct btmrvl_sdio_card_reg btmrvl_reg_87xx = {
+ };
+ 
+ static const struct btmrvl_sdio_device btmrvl_sdio_sd8688 = {
+-	.helper		= "sd8688_helper.bin",
+-	.firmware	= "sd8688.bin",
++	.helper		= "mrvl/sd8688_helper.bin",
++	.firmware	= "mrvl/sd8688.bin",
+ 	.reg		= &btmrvl_reg_8688,
+ 	.sd_blksz_fw_dl	= 64,
+ };
+@@ -1179,7 +1179,7 @@ MODULE_AUTHOR("Marvell International Ltd.");
+ MODULE_DESCRIPTION("Marvell BT-over-SDIO driver ver " VERSION);
+ MODULE_VERSION(VERSION);
+ MODULE_LICENSE("GPL v2");
+-MODULE_FIRMWARE("sd8688_helper.bin");
+-MODULE_FIRMWARE("sd8688.bin");
++MODULE_FIRMWARE("mrvl/sd8688_helper.bin");
++MODULE_FIRMWARE("mrvl/sd8688.bin");
+ MODULE_FIRMWARE("mrvl/sd8787_uapsta.bin");
+ MODULE_FIRMWARE("mrvl/sd8797_uapsta.bin");
+diff --git a/drivers/bluetooth/btmrvl_sdio.h b/drivers/bluetooth/btmrvl_sdio.h
+index 43d35a6..4a5a019 100644
+--- a/drivers/bluetooth/btmrvl_sdio.h
++++ b/drivers/bluetooth/btmrvl_sdio.h
+@@ -84,7 +84,9 @@ struct btmrvl_sdio_card {
+ 	struct sdio_func *func;
+ 	u32 ioport;
+ 	const char *helper;
++	const char *helper2;
+ 	const char *firmware;
++	const char *firmware2;
+ 	const struct btmrvl_sdio_card_reg *reg;
+ 	u16 sd_blksz_fw_dl;
+ 	u8 rx_unit;
+@@ -92,8 +94,8 @@ struct btmrvl_sdio_card {
+ };
+ 
+ struct btmrvl_sdio_device {
+-	const char *helper;
+-	const char *firmware;
++	const char *helper, *helper2;
++	const char *firmware, *firmware2;
+ 	const struct btmrvl_sdio_card_reg *reg;
+ 	u16 sd_blksz_fw_dl;
+ };
+-- 
+1.7.1
 
