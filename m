@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab3ARUzj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 15:55:39 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:25031 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab3ARUzi convert rfc822-to-8bit (ORCPT
+	id S1754520Ab3ARVAy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:00:54 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46327 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128Ab3ARVAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 15:55:38 -0500
+	Fri, 18 Jan 2013 16:00:53 -0500
+Date: Fri, 18 Jan 2013 13:00:49 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sebastian Ehrenfels <qi50dube@cip.cs.fau.de>
+Cc: linux-kernel@i4.informatik.uni-erlangen.de, devel@driverdev.osuosl.org,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        Sebastian Wankerl <sisewank@cip.cs.fau.de>
+Subject: Re: [PATCH 2/3] wlan-ng/prism2mgmt.c: formated too long lines
+Message-ID: <20130118210049.GA12463@kroah.com>
+References: <20130117205834.GA659@kroah.com>
+ <1358464052-14002-1-git-send-email-qi50dube@cip.cs.fau.de>
+ <1358464052-14002-3-git-send-email-qi50dube@cip.cs.fau.de>
 MIME-Version: 1.0
-Message-ID: <aad182a2-a21e-4b77-88dc-db859f71ee9e@default>
-Date: Fri, 18 Jan 2013 12:53:25 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org
-Subject: RE: [PATCH 0/5] staging: zcache: move new zcache code base from
- ramster
-References: <1358443597-9845-1-git-send-email-dan.magenheimer@oracle.com>
- <20130118204617.GB4788@kroah.com>
-In-Reply-To: <20130118204617.GB4788@kroah.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Disposition: inline
+In-Reply-To: <1358464052-14002-3-git-send-email-qi50dube@cip.cs.fau.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Subject: Re: [PATCH 0/5] staging: zcache: move new zcache code base from ramster
+On Fri, Jan 18, 2013 at 12:07:31AM +0100, Sebastian Ehrenfels wrote:
+> From: Sebastian Wankerl <sisewank@cip.cs.fau.de>
 > 
-> On Thu, Jan 17, 2013 at 09:26:32AM -0800, Dan Magenheimer wrote:
-> > Hi Greg --
-> >
-> > With "old zcache" now removed, we can now move "new zcache" from its
-> > temporary home (in drivers/staging/ramster) to reclaim sole possession
-> > of the name "zcache".
-> >
-> > Note that [PATCH 2/5] will require a manual:
-> >
-> > # git mv drivers/staging/ramster drivers/staging/zcache
+> Signed-off-by: Sebastian Wankerl <sisewank@cip.cs.fau.de> 
+> Signed-off-by: Sebastian Ehrenfels <qi50dube@cip.cs.fau.de>
 > 
-> Ick, no, use git to generate the patch with rename style, and it will
-> create the tiny patch that does this which I can then apply (-M is the
-> option you want to 'git format-patch').
+> ---
+>  drivers/staging/wlan-ng/prism2mgmt.c |   20 +++++++++++---------
+>  1 file changed, 11 insertions(+), 9 deletions(-)
 > 
-> Care to resend this in that format so that I can apply this properly?
+> diff --git a/drivers/staging/wlan-ng/prism2mgmt.c b/drivers/staging/wlan-ng/prism2mgmt.c
+> index 62b94b0..4b3db73 100644
+> --- a/drivers/staging/wlan-ng/prism2mgmt.c
+> +++ b/drivers/staging/wlan-ng/prism2mgmt.c
+> @@ -1144,9 +1144,9 @@ int prism2mgmt_wlansniff(wlandevice_t *wlandev, void *msgp)
+>  			/* Enable the port */
+>  			result = hfa384x_drvr_enable(hw, 0);
+>  			if (result) {
+> -				pr_debug
+> -				("failed to enable port to presniff setting, result=%d\n",
+> -				     result);
+> +				pr_debug(
+> +					"failed to enable port to presniff setting,"
+> +					"result=%d\n", result);
 
-Will do.  You learn something new (-M) every day.
+No, please put the string on the same line as the pr_debug() call, and
+don't break it across multiple lines.  This should look like:
+				pr_debug("failed to enable port to presniff setting,result=%d\n",
+					 result);
 
-Thanks,
-Dan
+Can you please fix this up and resend it?
+
+thanks,
+
+greg k-h
