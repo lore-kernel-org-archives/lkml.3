@@ -1,141 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab3ARUfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 15:35:09 -0500
-Received: from mout.web.de ([212.227.17.11]:59227 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750761Ab3ARUfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 15:35:07 -0500
-From: Thomas Schlichter <thomas.schlichter@web.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Andreas =?ISO-8859-1?Q?M=FCller?= <goo@stapelspeicher.org>,
-        Julius Werner <jwerner@chromium.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuidle: fix new C-states not functional after AC disconnect
-Date: Fri, 18 Jan 2013 21:34:29 +0100
-Message-ID: <1755809.pcSThauESZ@netbook>
-User-Agent: KMail/4.9.4 (Linux/3.8.0-rc4-00001-gfc300f4-dirty; KDE/4.9.4; i686; ; )
-In-Reply-To: <11530988.U26HMGnFLa@vostro.rjw.lan>
-References: <2099093.cPXO6Nhn9v@netbook> <50F2C79E.5000302@linaro.org> <11530988.U26HMGnFLa@vostro.rjw.lan>
+	id S1755202Ab3ARUgC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 15:36:02 -0500
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:50261 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751070Ab3ARUf7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 15:35:59 -0500
+From: Bing Zhao <bzhao@marvell.com>
+To: Lubomir Rintel <lkundrak@v3.sk>, Harro Haan <hrhaan@gmail.com>,
+        Dan Williams <dcbw@redhat.com>
+CC: "libertas-dev@lists.infradead.org" <libertas-dev@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Jan 2013 12:28:17 -0800
+Subject: RE: [PATCH] libertas sdio: remove CMD_FUNC_INIT call
+Thread-Topic: [PATCH] libertas sdio: remove CMD_FUNC_INIT call
+Thread-Index: Ac31TQ5SUnRrDiTJSS2S+BSkyJ9DOQAZ9MIQ
+Message-ID: <477F20668A386D41ADCC57781B1F70430D140B07DE@SC-VEXCH1.marvell.com>
+References: <1358493883-28433-1-git-send-email-lkundrak@v3.sk>
+In-Reply-To: <1358493883-28433-1-git-send-email-lkundrak@v3.sk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="nextPart1437426.ZqIx6kOOZB"
-Content-Transfer-Encoding: 7Bit
-X-Provags-ID: V02:K0:1MuWCJ+3/1yRByW1k52y9w7wjsyk3Ra2ZppsrTfHy4w
- bWK8chV3cXjPhRB5WgzfZ24o8dfMrZUX95vIQjescvNVZRi3zZ
- y1/jd3TrGcEYVSuD/zADLp7X3pZgmyyoRRqph5Z58tYKt1SmY6
- OCwBK1zBj1XOWFhnnmen1Yxzy5SA3T+ruoyQd/3s4pPlZc/Isd
- ACSkuri7tH3FZsc2vxSb60niq6iRwZ3IN9InTuAtpc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hi Lubomir,
 
---nextPart1437426.ZqIx6kOOZB
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-
-Dear Rafael,
-
-thank you for applying Daniel's patch. I tested 3.8-rc4 and found that one 
-patch ist still missing to fix the problem of not usable C-state after 
-disconnect. I had it attached with my last e-mail as patch 1. For your 
-conveniency, I have attached it here again.
-
-With that patch the problem is fixed for me. So please consider applying this, 
-too.
-
-Kind regards,
-  Thomas
-
-Am Sonntag, 13. Januar 2013, 21:04:45 schrieb Rafael J. Wysocki:
-> On Sunday, January 13, 2013 03:41:34 PM Daniel Lezcano wrote:
-> > On 01/13/2013 01:34 PM, Thomas Schlichter wrote:
-> > > Hi,
-> > > 
-> > > there is a long-standing regression about new C-states not working after
-> > > disconnecting AC power from a laptop if the cpuidle driver "acpi-idle"
-> > > is
-> > > used. It was reported here:
-> > > 
-> > > [1] https://bugzilla.kernel.org/show_bug.cgi?id=42870  (March 5th 2012)
-> > > [2] https://bugzilla.kernel.org/show_bug.cgi?id=43349  (June 7th 2012)
-> > > [3] https://lkml.org/lkml/2012/10/16/518   (October 19th 2012)
-> > > 
-> > > In [1] Andreas proposed a patch that initialized the missing power_usage
-> > > values from within acpi_idle in the same way as cpuidle does.
-> > > In [2] I proposed a patch to use the power values provided by ACPI to
-> > > initialize the power_usage variables.
-> > > In [3] Julius proposed a patch to call the initialization function
-> > > set_power_states()  not only once, but always when the C-states change.
-> > > 
-> > > Currently, Daniel Lezcano seems to be working on an intrusive change of
-> > > not
-> > > using the power_usage value at all for choosing a C-state:
-> > > 
-> > > [4] https://lkml.org/lkml/2012/12/14/155
-> > > 
-> > > As I could not find any of these patches in any git trees to be merged
-> > > for
-> > > 3.8, I propose an other, least intrusive patch for the time being. It is
-> > > attached an initializes _all_ power_usage values in the first place.
-> > > 
-> > > As this is a real power consumption regression since 3.2, I really ask
-> > > you to apply anything and push it to stable, too!
-> > 
-> > Rafael, is possible to apply the patch [1/2] I previously sent ?
-> > 
-> > https://patchwork.kernel.org/patch/1878691/
+> It actually times out on a 8688 present in GuruPlug with sd8688.bin
+> (md5=7233401e9687f8c880da547beed4324e) firmware (that's present in
+> linux-firmware tree), but the adapter works fine.
 > 
-> I need to talk about this with Len.  That should happen tomorrow if
-> everything goes well.
+> For that firmware times out with libertas_uap [1] as well, though it succeeds
+> with sd8688_ap.bin (md5=52cd8f8296b9a7e1d3835d57416256b2) that was originally
+> shipped with GuruPlug. That firmware is not in linux-firmware tree and btmrvl
+> driver might win the race programming the 8688 with sd8688.bin anyway.
 > 
-> > So we get this bug fixed.
-> > 
-> > I will resend the patch [2/2] as soon as possible.
+> [1] https://github.com/lkundrak/linux/tree/libertas_uap
+> ---
+>  drivers/net/wireless/libertas/if_sdio.c |   14 --------------
+>  1 files changed, 0 insertions(+), 14 deletions(-)
 > 
-> OK
+> diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
+> index 2ecab49..3c4c555 100644
+> --- a/drivers/net/wireless/libertas/if_sdio.c
+> +++ b/drivers/net/wireless/libertas/if_sdio.c
+> @@ -825,20 +825,6 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
 > 
-> Thanks,
-> Rafael
---nextPart1437426.ZqIx6kOOZB
-Content-Disposition: inline; filename="0001-Get-power-info-before-updating-the-C-states.patch"
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/x-patch; charset="UTF-8"; name="0001-Get-power-info-before-updating-the-C-states.patch"
+>  	sdio_release_host(func);
+> 
+> -	/*
+> -	 * FUNC_INIT is required for SD8688 WLAN/BT multiple functions
+> -	 */
+> -	if (card->model == MODEL_8688) {
+> -		struct cmd_header cmd;
+> -
+> -		memset(&cmd, 0, sizeof(cmd));
+> -
+> -		lbs_deb_sdio("send function INIT command\n");
+> -		if (__lbs_cmd(priv, CMD_FUNC_INIT, &cmd, sizeof(cmd),
+> -				lbs_cmd_copyback, (unsigned long) &cmd))
+> -			netdev_alert(priv->dev, "CMD_FUNC_INIT cmd failed\n");
+> -	}
+> -
 
->From fc300f4fefff59fe1029bf7852ea32d957145821 Mon Sep 17 00:00:00 2001
-From: Thomas Schlichter <thomas.schlichter@web.de>
-Date: Sun, 2 Sep 2012 14:35:34 +0200
-Subject: [PATCH] Get power info before updating the C-states
+Removing FUNC_INIT could break things in some scenarios.
+Could you please test the following case?
 
-acpi_processor_get_power_info() has to be called before
-acpi_processor_setup_cpuidle_states() to have the latest
-information available. This fixes the missing C-state information
-after AC-->DC transition.
+1. insmod liberates -> download firmware, send FUNC_INIT, ...
+2. rmmod libertas -> send FUNC_SHUTDOWN command to firmware; BT is still working.
+3. insmod libertas -> skip firmware downloading, send FUNC_INIT, ...
 
-Signed-off-by: Thomas Schlichter <thomas.schlichter@web.de>
----
- drivers/acpi/processor_idle.c |    1 +
- 1 file changed, 1 insertion(+)
+If FUNC_INIT is removed, I don't expect step 3 to work.
 
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index f1a5da4..17ed60b 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1149,6 +1149,7 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
- 		}
- 
- 		/* Populate Updated C-state information */
-+		acpi_processor_get_power_info(pr);
- 		acpi_processor_setup_cpuidle_states(pr);
- 
- 		/* Enable all cpuidle devices */
--- 
-1.7.10.4
+Thanks,
+Bing
 
-
---nextPart1437426.ZqIx6kOOZB--
-
+>  	priv->fw_ready = 1;
+>  	wake_up(&card->pwron_waitq);
+> 
+> --
+> 1.7.1
