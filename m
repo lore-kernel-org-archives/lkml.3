@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3ARXA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 18:00:26 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47382 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab3ARXAY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 18:00:24 -0500
-Message-ID: <50F9D448.4070000@infradead.org>
-Date: Fri, 18 Jan 2013 15:01:28 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	id S1755455Ab3ARXAm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 18:00:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5683 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755127Ab3ARXAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 18:00:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,495,1355126400"; 
+   d="scan'208";a="273972242"
+Date: Fri, 18 Jan 2013 15:00:40 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com
+Subject: Re: [PATCH v6 05/18] perf: add minimal support for PERF_SAMPLE_WEIGHT
+Message-ID: <20130118230040.GI4051@tassilo.jf.intel.com>
+References: <1358264386-24633-1-git-send-email-eranian@google.com>
+ <1358264386-24633-6-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jacob.jun.pan@linux.intel.com, rui.zhang@intel.com
-Subject: Re: linux-next: Tree for Jan 18 (powerclamp)
-References: <20130118153707.0909fb9039e411acc1674c32@canb.auug.org.au>
-In-Reply-To: <20130118153707.0909fb9039e411acc1674c32@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358264386-24633-6-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/13 20:37, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20130117:
-> 
+On Tue, Jan 15, 2013 at 04:39:33PM +0100, Stephane Eranian wrote:
+> Ensure we grab the weight from  raw sample struct
+> and that we can dump it via perf report -D.
 
+AFAIK i have a similar patch in the haswell patchkit.
 
-on i386;
+It's straight forward of course, just have to chose one.
+I think mine does slightly more.
 
-drivers/built-in.o: In function `clamp_thread':
-intel_powerclamp.c:(.text+0x2d39ae): undefined reference to `__udivdi3'
-drivers/built-in.o: In function `poll_pkg_cstate':
-intel_powerclamp.c:(.text+0x2d3bb9): undefined reference to `__udivdi3'
-
-
-
--- 
-~Randy
+-Andi
