@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab3ARMlF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:41:05 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:59013 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab3ARMlB (ORCPT
+	id S1756885Ab3ARMlO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:41:14 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:59369 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab3ARMlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:41:01 -0500
+	Fri, 18 Jan 2013 07:41:10 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 73/76] ARC: [Review] Multi-platform image #6: cpu-to-dma-addr optional
-Date: Fri, 18 Jan 2013 18:10:24 +0530
-Message-ID: <1358512827-7694-2-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 74/76] ARC: [Review] Multi-platform image #7: SMP common code to use callbacks
+Date: Fri, 18 Jan 2013 18:10:25 +0530
+Message-ID: <1358512827-7694-3-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358512827-7694-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -24,123 +24,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the current platforms can work with 0x8000_0000 based dma_addr_t
-since the Bus Bridges typically ignore the top bit (the only excpetion
-was Angel4 PCI-AHM bridge which we no longer care for).
-That way we don't need plat-specific cpu-addr to bus-addr conversion.
+This again is for switch from singleton platform SMP API to
+multi-platform paradigm
 
-Hooks still provided - just in case a platform has an obscure device
-which say needs 0 based bus address.
-
-That way <asm/dma_mapping.h> no longer needs to unconditinally include
-<plat/dma_addr.h>
-
-Also verfied that on Angel4 board, other peripherals (IDE-disk / EMAC)
-work fine with 0x8000_0000 based dma addresses.
+Platform code is not yet setup to populate the callbacks, that happens
+in next commit
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arc/Kconfig                              |    4 ++
- arch/arc/include/asm/dma-mapping.h            |   16 +++++++++
- arch/arc/plat-arcfpga/include/plat/dma_addr.h |   45 -------------------------
- 3 files changed, 20 insertions(+), 45 deletions(-)
- delete mode 100644 arch/arc/plat-arcfpga/include/plat/dma_addr.h
+ arch/arc/include/asm/smp.h |   36 +++++++++++++++---------------------
+ arch/arc/kernel/smp.c      |   16 +++++++++++++---
+ 2 files changed, 28 insertions(+), 24 deletions(-)
 
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 21ecd2a..18b91d6 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -119,6 +119,10 @@ config CPU_BIG_ENDIAN
- 	help
- 	  Build kernel for Big Endian Mode of ARC CPU
+diff --git a/arch/arc/include/asm/smp.h b/arch/arc/include/asm/smp.h
+index 0cff3a5..c4fb211 100644
+--- a/arch/arc/include/asm/smp.h
++++ b/arch/arc/include/asm/smp.h
+@@ -31,6 +31,7 @@ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+  */
+ extern void __init smp_init_cpus(void);
+ extern void __init first_lines_of_secondary(void);
++extern const char *arc_platform_smp_cpuinfo(void);
  
-+# If a platform can't work with 0x8000_0000 based dma_addr_t
-+config ARC_PLAT_NEEDS_CPU_TO_DMA
-+	bool
-+
- # If a plat can do IPI, same core(s) can do minimal SMP
- config ARC_HAS_IPI
- 	bool
-diff --git a/arch/arc/include/asm/dma-mapping.h b/arch/arc/include/asm/dma-mapping.h
-index 96e4316..8a0a266 100644
---- a/arch/arc/include/asm/dma-mapping.h
-+++ b/arch/arc/include/asm/dma-mapping.h
-@@ -13,7 +13,23 @@
+ /*
+  * API expected BY platform smp code (FROM arch smp code)
+@@ -41,29 +42,22 @@ extern void __init first_lines_of_secondary(void);
+ extern int smp_ipi_irq_setup(int cpu, int irq);
  
- #include <asm-generic/dma-coherent.h>
- #include <asm/cacheflush.h>
-+
-+#ifndef CONFIG_ARC_PLAT_NEEDS_CPU_TO_DMA
-+/*
-+ * dma_map_* API take cpu addresses, which is kernel logical address in the
-+ * untranslated address space (0x8000_0000) based. The dma address (bus addr)
-+ * ideally needs to be 0x0000_0000 based hence these glue routines.
-+ * However given that intermediate bus bridges can ignore the high bit, we can
-+ * do with these routines being no-ops.
-+ * If a platform/device comes up which sriclty requires 0 based bus addr
-+ * (e.g. AHB-PCI bridge on Angel4 board), then it can provide it's own versions
-+ */
-+#define plat_dma_addr_to_kernel(dev, addr) ((unsigned long)(addr))
-+#define plat_kernel_addr_to_dma(dev, ptr) ((dma_addr_t)(ptr))
-+
-+#else
- #include <plat/dma_addr.h>
-+#endif
- 
- void *dma_alloc_noncoherent(struct device *dev, size_t size,
- 			    dma_addr_t *dma_handle, gfp_t gfp);
-diff --git a/arch/arc/plat-arcfpga/include/plat/dma_addr.h b/arch/arc/plat-arcfpga/include/plat/dma_addr.h
-deleted file mode 100644
-index 0e96343..0000000
---- a/arch/arc/plat-arcfpga/include/plat/dma_addr.h
-+++ /dev/null
-@@ -1,45 +0,0 @@
--/*
-- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
+ /*
+- * APIs expected FROM platform smp code
 - *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
+- * arc_platform_smp_cpuinfo:
+- *	returns a string containing info for /proc/cpuinfo
 - *
-- * vineetg: Feb 2009
-- *  -For AA4 board, kernel to DMA address APIs
-- */
--
--/*
-- * kernel addresses are 0x800_000 based, while Bus addr are 0 based
-- */
--
--#ifndef __PLAT_DMA_ADDR_H
--#define __PLAT_DMA_ADDR_H
--
--#include <linux/device.h>
--
--static inline unsigned long plat_dma_addr_to_kernel(struct device *dev,
--						    dma_addr_t dma_addr)
--{
--	return dma_addr + PAGE_OFFSET;
--}
--
--static inline dma_addr_t plat_kernel_addr_to_dma(struct device *dev, void *ptr)
--{
--	unsigned long addr = (unsigned long)ptr;
--	/*
--	 * To Catch buggy drivers which can call DMA map API with kernel vaddr
--	 * i.e. for buffers alloc via vmalloc or ioremap which are not
--	 * gaurnateed to be PHY contiguous and hence unfit for DMA anyways.
--	 * On ARC kernel virtual address is 0x7000_0000 to 0x7FFF_FFFF, so
--	 * ideally we want to check this range here, but our implementation is
--	 * better as it checks for even worse user virtual address as well.
--	 */
--	if (likely(addr >= PAGE_OFFSET))
--		return addr - PAGE_OFFSET;
--
--	BUG();
--	return addr;
--}
--
--#endif
+- * arc_platform_smp_wait_to_boot:
+- *	Called from early bootup code for non-Master CPUs to "park" them
++ * struct plat_smp_ops	- SMP callbacks provided by platform to ARC SMP
+  *
+- * arc_platform_smp_wakeup_cpu:
+- *	Called from __cpu_up (Master CPU) to kick start another one
+- *
+- * arc_platform_ipi_send:
+- *	Takes @cpumask to which IPI(s) would be sent.
+- *	The actual msg-id/buffer is manager in arch-common code
+- *
+- * arc_platform_ipi_clear:
+- *	Takes @cpu which got IPI at @irq to do any IPI clearing
++ * @info:		SoC SMP specific info for /proc/cpuinfo etc
++ * @cpu_kick:		For Master to kickstart a cpu (optionally at a PC)
++ * @ipi_send:		To send IPI to a @cpumask
++ * @ips_clear:		To clear IPI received by @cpu at @irq
+  */
+-extern const char *arc_platform_smp_cpuinfo(void);
+-extern void arc_platform_smp_wait_to_boot(int cpu);
+-extern void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc);
+-extern void arc_platform_ipi_send(const struct cpumask *callmap);
+-extern void arc_platform_ipi_clear(int cpu, int irq);
++struct plat_smp_ops {
++	const char 	*info;
++	void		(*cpu_kick)(int cpu, unsigned long pc);
++	void		(*ipi_send)(void *callmap);
++	void		(*ipi_clear)(int cpu, int irq);
++};
++
++/* TBD: stop exporting it for direct population by platform */
++extern struct plat_smp_ops  plat_smp_ops;
+ 
+ #endif  /* CONFIG_SMP */
+ 
+diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
+index 6843846..89f1687 100644
+--- a/arch/arc/kernel/smp.c
++++ b/arch/arc/kernel/smp.c
+@@ -37,6 +37,8 @@
+ arch_spinlock_t smp_atomic_ops_lock = __ARCH_SPIN_LOCK_UNLOCKED;
+ arch_spinlock_t smp_bitops_lock = __ARCH_SPIN_LOCK_UNLOCKED;
+ 
++struct plat_smp_ops  plat_smp_ops;
++
+ /* XXX: per cpu ? Only needed once in early seconday boot */
+ struct task_struct *secondary_idle_tsk;
+ 
+@@ -105,6 +107,11 @@ void __attribute__((weak)) arc_platform_smp_wait_to_boot(int cpu)
+ 	"	b 1b	\n");
+ }
+ 
++const char *arc_platform_smp_cpuinfo(void)
++{
++	return plat_smp_ops.info;
++}
++
+ /*
+  * The very first "C" code executed by secondary
+  * Called from asm stub in head.S
+@@ -155,7 +162,8 @@ int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
+ 	pr_info("Idle Task [%d] %p", cpu, idle);
+ 	pr_info("Trying to bring up CPU%u ...\n", cpu);
+ 
+-	arc_platform_smp_wakeup_cpu(cpu,
++	if (plat_smp_ops.cpu_kick)
++		plat_smp_ops.cpu_kick(cpu,
+ 				(unsigned long)first_lines_of_secondary);
+ 
+ 	/* wait for 1 sec after kicking the secondary */
+@@ -224,7 +232,8 @@ static void ipi_send_msg(const struct cpumask *callmap, enum ipi_msg_type msg)
+ 	}
+ 
+ 	/* Call the platform specific cross-CPU call function  */
+-	arc_platform_ipi_send(callmap);
++	if (plat_smp_ops.ipi_send)
++		plat_smp_ops.ipi_send((void *)callmap);
+ 
+ 	local_irq_restore(flags);
+ }
+@@ -298,7 +307,8 @@ irqreturn_t do_IPI(int irq, void *dev_id)
+ 	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
+ 	unsigned long ops;
+ 
+-	arc_platform_ipi_clear(cpu, irq);
++	if (plat_smp_ops.ipi_clear)
++		plat_smp_ops.ipi_clear(cpu, irq);
+ 
+ 	/*
+ 	 * XXX: is this loop really needed
 -- 
 1.7.4.1
 
