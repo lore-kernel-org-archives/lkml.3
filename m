@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750957Ab3ARFhR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 00:37:17 -0500
-Received: from relay.parallels.com ([195.214.232.42]:38642 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab3ARFhP (ORCPT
+	id S1751111Ab3ARFj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 00:39:28 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13365 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab3ARFj1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 00:37:15 -0500
-Message-ID: <50F8DF7E.8080107@parallels.com>
-Date: Fri, 18 Jan 2013 09:37:02 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 18 Jan 2013 00:39:27 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 17 Jan 2013 21:39:26 -0800
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Fri, 18 Jan 2013 11:09:22 +0530
+Subject: RE: [PATCH v2 4/4] usb: Add APIs to access host registers from
+ Tegra PHY
+Thread-Topic: [PATCH v2 4/4] usb: Add APIs to access host registers from
+ Tegra PHY
+Thread-Index: Ac30zEH87TvLHcF+Q36GVDpqh28+mwAcOhqA
+Message-ID: <D958900912E20642BCBC71664EFECE3E6E1A6F108A@BGMAIL02.nvidia.com>
+References: <20130117153229.GA21904@arwen.pp.htv.fi>
+ <Pine.LNX.4.44L0.1301171054220.1339-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1301171054220.1339-100000@iolanthe.rowland.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-References: <50F42F85.50907@teksavvy.com> <20130114203711.GA29982@fieldses.org> <50F4D800.5040703@teksavvy.com> <20130115205625.GH4940@fieldses.org> <50F63882.8000607@parallels.com> <50F72F03.5070806@teksavvy.com> <50F786AF.4070107@parallels.com> <20130117130335.GD6598@fieldses.org> <50F7FB7E.2020503@parallels.com> <50F88C14.7030903@teksavvy.com>
-In-Reply-To: <50F88C14.7030903@teksavvy.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.18.163]
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-18.01.2013 03:41, Mark Lord пишет:
-> On 13-01-17 08:24 AM, Stanislav Kinsbursky wrote:
-> ..
->> This looks like the old issue I was trying to fix with "SUNRPC: protect service sockets lists during
->> per-net shutdown".
->> So, here is the problem as I see it: there is a transport, which is processed by service thread and
->> it's processing is racing with per-net service shutdown:
->>
->> CPU#0:                            CPU#1:
->>
->> svc_recv                        svc_close_net
->> svc_get_next_xprt (list_del_init(xpt_ready))
->>                              svc_close_list (set XPT_BUSY and XPT_CLOSE)
->>                              svc_clear_pools(xprt was gained on CPU#0 already)
->>                              svc_delete_xprt (set XPT_DEAD)
->> svc_handle_xprt (is XPT_CLOSE => svc_delete_xprt()
->> BUG()
->>
->> So, from my POW, we need some way to:
->> 1) Skip such in-progress transports on svc_close_net() call (there is not way to detect them, or at
->> least I don't see one)
->> 2) Delete the transport after somewhere after svc_xprt_received()
->>
->> But there is a problem with svc_xprt_received(): there is a call for svc_xprt_put() in it
->> (svc_recv->svc_handle_xprt->svc_xprt_received->svc_xprt_put) . And if we are the only user - then
->> the transport will be destroyed. But transport is dereferenced later in svc_recv() after the
->> svc_handle_xprt call.
->
-> Sounds like a reference count type of problem/solution (kref) (?)
->
+> -----Original Message-----
+> From: Alan Stern [mailto:stern@rowland.harvard.edu]
+> Sent: Thursday, January 17, 2013 9:34 PM
+> To: Felipe Balbi
+> Cc: Venu Byravarasu; gregkh@linuxfoundation.org; linux-
+> usb@vger.kernel.org; linux-kernel@vger.kernel.org;
+> swarren@wwwdotorg.org; linux-tegra@vger.kernel.org
+> Subject: Re: [PATCH v2 4/4] usb: Add APIs to access host registers from Tegra
+> PHY
+> 
+> On Thu, 17 Jan 2013, Felipe Balbi wrote:
+> 
+> > On Thu, Jan 17, 2013 at 10:21:53AM -0500, Alan Stern wrote:
+> > > On Thu, 17 Jan 2013, Felipe Balbi wrote:
+> > >
+> > > > > Bits 31 & 30 from PORTSC register were allocated by our SOC
+> designers
+> > > > > to inform the host controller about the PHY type to be used.
+> > > >
+> > > > Wow, that's something you should never do. PORTSC register belongs
+> to
+> > > > the EHCI controller and those bits are reserved for future use and they
+> > > > *MUST* return zero. I wouldn't be surprised if current EHCI driver
+> > > > assumes those bits will be zero and/or makes sure they're set to zero
+> > > > when writing to PORTSC register.
+> > >
+> > > In fact, those bits _have_ been assigned an official purpose in the
+> > > EHCI-1.1 addendum.  Presumably the Tegra hardware only supports
+> > > EHCI-1.0.
+> >
+> > I see, they're used for device addresses now.
+> >
+> > How can we make sure on Tegra systems we won't use those top two bits ?
+> 
+> ehci-hcd doesn't use those device address bits at all.  They are meant
+> for the LPM (Link Power Management) extension, which ehci-hcd doesn't
+> support.  Even if support gets added in the future, we'll know that the
+> LPM capability isn't present unless bit 17 in the HCCPARAMS register is
+> set.
+> 
+> On the other hand, what I wrote earlier about not overwriting those
+> bits wasn't quite correct.  ehci-hcd _does_ overwrite them with 0's
+> during shutdown or removal.  I don't know if this will matter for the
+> Tegra platform.
 
-No, it would be very simple.
-Unluckily, the problem is more complex. In few words, the problem is in dynamic resources (transports) creation/attaching
-and destruction/detaching for running (!) SUNRPC service.
-You have more than one NFS mount in different network namespaces, haven't you?
+This should not cause any issue to Tegra platform, as these bits are set
+during PHY power on.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+> 
+> Alan Stern
+
