@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750957Ab3ARGGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 01:06:38 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40616 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab3ARGGh (ORCPT
+	id S1751010Ab3ARGKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 01:10:45 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:62566 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab3ARGKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 01:06:37 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50F8E63F.5040401@jp.fujitsu.com>
-Date: Fri, 18 Jan 2013 15:05:51 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Fri, 18 Jan 2013 01:10:44 -0500
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, <tony.luck@intel.com>,
-        <hpa@zytor.com>
-CC: <akpm@linux-foundation.org>, <tangchen@cn.fujitsu.com>,
-        <jiang.liu@huawei.com>, <wujianguo@huawei.com>, <wency@cn.fujitsu.com>,
-        <laijs@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>, <yinghai@kernel.org>,
-        <rob@landley.net>, <minchan.kim@gmail.com>, <mgorman@suse.de>,
-        <rientjes@google.com>, <guz.fnst@cn.fujitsu.com>,
-        <rusty@rustcorp.com.au>, <lliubbo@gmail.com>,
-        <jaegeuk.hanse@gmail.com>, <glommer@parallels.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
-References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com> <50F440F5.3030006@zytor.com> <20130114143456.3962f3bd.akpm@linux-foundation.org> <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com> <20130114144601.1c40dc7e.akpm@linux-foundation.org> <50F647E8.509@jp.fujitsu.com> <20130116132953.6159b673.akpm@linux-foundation.org> <50F72F17.9030805@zytor.com> <50F78750.8070403@jp.fujitsu.com> <50F79422.6090405@zytor.com> <3908561D78D1C84285E8C5FCA982C28F1C986D98@ORSMSX108.amr.corp.intel.com> <50F85ED5.3010003@jp.fujitsu.com>
-In-Reply-To: <50F85ED5.3010003@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1358486792.14373.14.camel@dhruva>
+References: <1358486792.14373.14.camel@dhruva>
+Date: Fri, 18 Jan 2013 01:10:40 -0500
+Message-ID: <CAHdPZaPqAHcM8BsApRUm8mqtum67RSUA+gDWgjuhwc6VXNozwA@mail.gmail.com>
+Subject: Re: [patch v1 4/5] rtc: da9055 change irq state to default
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Samuel Ortiz <sameo@linux.intel.com>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/01/18 5:28, KOSAKI Motohiro wrote:
-> On 1/17/2013 11:30 AM, Luck, Tony wrote:
->>> 2. If the user *does* care which nodes are movable, then the user needs
->>> to be able to specify that *in a way that makes sense to the user*.
->>> This may mean involving the DMI information as well as SRAT in order to
->>> get "silk screen" type information out.
->>
->> One reason they might care would be which I/O devices are connected
->> to each node.  DMI might be a good way to get an invariant name for the
->> node, but they might also want to specify in terms of what they actually
->> want. E.g. "eth0 and eth4 are a redundant bonded pair of NICs - don't
->> mark both these nodes as removable".  Though this is almost certainly not
->> a job for kernel options, but for some user configuration tool that would
->> spit out the DMI names.
->
-> I agree DMI parsing should be done in userland if we really need DMI parsing.
+On Fri, Jan 18, 2013 at 12:26 AM, Ashish Jangam
+<ashish.jangam@kpitcummins.com> wrote:
+> This patch changes the irq state from high to the now default low
+> state.
 >
 
-If users use the boot parameter for bugs or debugging,  users need
-a method which sets in detail range of movable memory. So specifying
-node number is not enough because whole memory becomes movable memory.
-
-For this, we are discussing other ways, memory range and DMI information.
-By using DMI information, users may get an invariant name. But is it
-really user friendly interface? I don't think so.
-
-You will think using memory range is not user friendly interface too.
-But I think that using memory range is friendlier than using DMI
-information since we can get easily memory range. So from developper
-side, using memory range is good.
-
-Of course, using SRAT information is necessary solution. So we are
-developing it now.
-
-Thanks,
-Yasuaki Ishimatsu
+will you please provide more info on why do we need to set it to low state?
 
 
-
-
+> This patch is dependent on the DA9055 MFD.
+>
+> This patch is tested on smdk6410 board.
+>
+> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> ---
+>  drivers/rtc/rtc-da9055.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-da9055.c b/drivers/rtc/rtc-da9055.c
+> index 8f0dcfe..918b16b 100644
+> --- a/drivers/rtc/rtc-da9055.c
+> +++ b/drivers/rtc/rtc-da9055.c
+> @@ -305,7 +305,7 @@ static int da9055_rtc_probe(struct platform_device *pdev)
+>         alm_irq = regmap_irq_get_virq(rtc->da9055->irq_data, alm_irq);
+>         ret = devm_request_threaded_irq(&pdev->dev, alm_irq, NULL,
+>                                         da9055_rtc_alm_irq,
+> -                                       IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+> +                                       IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+>                                         "ALM", rtc);
+>         if (ret != 0)
+>                 dev_err(rtc->da9055->dev, "irq registration failed: %d\n", ret);
+> --
+> 1.7.0.4
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
