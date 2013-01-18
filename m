@@ -1,168 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3ARRsN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 12:48:13 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55583 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751858Ab3ARRsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 12:48:11 -0500
-Date: Fri, 18 Jan 2013 09:46:54 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
-        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 6/6][v3] perf: Document the ABI of perf sysfs entries
-Message-ID: <20130118174654.GA12575@us.ibm.com>
-References: <20130110010347.GA32590@us.ibm.com>
- <20130110010703.GF32590@us.ibm.com>
- <20130115185759.GG5826@ghostprotocols.net>
- <20130116113013.GA1042@krava.brq.redhat.com>
- <20130116185815.GA3351@us.ibm.com>
- <20130117141145.GA3817@krava.brq.redhat.com>
+	id S1752466Ab3ARRtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 12:49:15 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57250 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751487Ab3ARRtN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 12:49:13 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18rLkkxpo5hOW5o9LMo6va4
+Date: Fri, 18 Jan 2013 09:49:10 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Luciano Coelho <coelho@ti.com>, balbi@ti.com, linux-omap@vger.kernel.org,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport
+ power functions
+Message-ID: <20130118174910.GF15361@atomide.com>
+References: <20130117093417.GH10814@arwen.pp.htv.fi>
+ <50F7CA82.4050509@ti.com>
+ <20130117100510.GI10814@arwen.pp.htv.fi>
+ <20130117100919.GJ10814@arwen.pp.htv.fi>
+ <1358418917.6252.31.camel@cumari.coelho.fi>
+ <50F7D535.6030205@ti.com>
+ <20130117173131.GL14149@atomide.com>
+ <1358445456.6252.64.camel@cumari.coelho.fi>
+ <20130117231608.GP14149@atomide.com>
+ <50F91FE2.3020402@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130117141145.GA3817@krava.brq.redhat.com>
-X-Operating-System: Linux 2.0.32 on an i486
+In-Reply-To: <50F91FE2.3020402@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011817-7182-0000-0000-0000048BDDF2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa [jolsa@redhat.com] wrote:
-| Maybe it'd worth to mention, that it does not need to be just 'event',
-| but anything from /sys/bus/event_source/devices/<dev>/format directory,
-| like
-| 
-| 		The can be multiple terms like 'event=0xNNNN' specified
-| 		and separated with comma. All available terms are located
-| 		in /sys/bus/event_source/devices/<dev>/format file.
-| 
-| Please feel free to rephrase or use proper English ;-)
-| 
-| otherwise it's ok,
-| jirka
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [130118 02:15]:
+> Hi Tony,
+> 
+> On 01/18/2013 12:16 AM, Tony Lindgren wrote:
+> > Well we are planning to drop the non-DT support for omap4 as soon as it's
+> > usable with DT.
+> 
+> Exactly, but right now we do have legacy and legacy should work in order to
+> help for example Luca to make the final push which allows us to move to DT
+> only for OMAP4.
 
-Agree.  Thanks for the review. Here is the updated patch.
+Yeah I'm suggesting we should do the muxing in the platform code and fix the
+regression in the driver. But not add the new platform callbacks.
+ 
+> > For omap4 we are only carrying SDP and panda support to
+> > make this transition easier. The only bindings missing AFAIK are wl12xx and
+> > USB.
+> >
+> > If we add this, then it implies we're somehow supporting it, which is not
+> > the way to go IMHO as we need to get rid of these platform callbacks instead.
+> 
+> IMHO we should keep these boards working as long as we have the legacy board
+> support for them.
 
----
->From 1e3cc6b3ef87f533985b10574af472361e39eecd Mon Sep 17 00:00:00 2001
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Date: Tue, 8 Jan 2013 22:31:49 -0800
-Subject: [PATCH] perf: Document the ABI of perf sysfs entries
+Naturally. We cannot flip over to DT only boot until we have usable system :)
+And to me "usable system" means being able to use my pandaboard es with a lapdock
+for work things.
 
-This patchset addes two new sets of files to sysfs for POWER architecture.
+Currently it seems that we need the following working with DT to have panda
+and blaze usable:
 
-	- perf event config format in /sys/devices/cpu/format/event
-	- generic and POWER-specific perf events in /sys/devices/cpu/events/
+1. MMC (done)
+2. USB (patches pending for EHCI and MUSB)
+3. Ethernet (done for blaze, needs USB for panda)
+4. DSS (various drivers pending, probably still needs some platform init code)
+5. WLAN (no binding, needs platform init until done)
+6. Audio (done?)
 
-The format of the first file is already documented in:
+The DMA binding is still pending, but these devices should also work without it
+until we have the binding. And various miscellaneous drivers we can init with
+the platform code until the bindings are done.
 
-	sysfs-bus-event_source-devices-format
+> So what is the policy now regarding to 'old' legacy but still used OMAP4 board
+> files? I think we should still maintain them, but the effort to get rid of
+> them should be the highest priority.
 
-Document the format of the second set of files '/sys/devices/cpu/events/*'
-which would also become part of the ABI.
+Yes only minimal fixes. We should not add any new features to them as that will
+just complicate the conversion to DT. Once we have a usable system booting with DT,
+we can ust drop the old omap4 board-*.c files.
 
-Changelog[v3.2]: (small changes to this one patch).
-	[Jiri Olsa]: Mention that multiple event= like terms can be specified
-	in the 'events' file.
+Regards,
 
-Changelog[v3.1]:
-	(small changes to just this one patch).
-	[Jiri Olsa]: Remove the documentation for the 'config format' file
-	as it is already documented in 'Documentation/ABI/testing/'.
-	[Jiri Olsa]: Move the documentation of 'events' also to 'testing'
-	from 'stable'.
-
-Changelog[v3]:
-	[Greg KH] Include ABI documentation.
-
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
----
- .../testing/sysfs-bus-event_source-devices-events  |   62 ++++++++++++++++++++
- 1 files changed, 62 insertions(+), 0 deletions(-)
- delete mode 100644 Documentation/ABI/stable/sysfs-devices-cpu-events
- create mode 100644 Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-
-diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-events b/Documentation/ABI/stable/sysfs-devices-cpu-events
-deleted file mode 100644
-index e69de29..0000000
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-new file mode 100644
-index 0000000..0adeb52
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-@@ -0,0 +1,62 @@
-+What:		/sys/devices/cpu/events/
-+		/sys/devices/cpu/events/branch-misses
-+		/sys/devices/cpu/events/cache-references
-+		/sys/devices/cpu/events/cache-misses
-+		/sys/devices/cpu/events/stalled-cycles-frontend
-+		/sys/devices/cpu/events/branch-instructions
-+		/sys/devices/cpu/events/stalled-cycles-backend
-+		/sys/devices/cpu/events/instructions
-+		/sys/devices/cpu/events/cpu-cycles
-+
-+Date:		2013/01/08
-+
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+
-+Description:	Generic performance monitoring events
-+
-+		A collection of performance monitoring events that may be
-+		supported by many/most CPUs. These events can be monitored
-+		using the 'perf(1)' tool.
-+
-+		The contents of each file would look like:
-+
-+			event=0xNNNN
-+
-+		where 'N' is a hex digit and the number '0xNNNN' shows the
-+		"raw code" for the perf event identified by the file's
-+		"basename".
-+
-+
-+What: 		/sys/devices/cpu/events/PM_LD_MISS_L1
-+		/sys/devices/cpu/events/PM_LD_REF_L1
-+		/sys/devices/cpu/events/PM_CYC
-+		/sys/devices/cpu/events/PM_BRU_FIN
-+		/sys/devices/cpu/events/PM_GCT_NOSLOT_CYC
-+		/sys/devices/cpu/events/PM_BRU_MPRED
-+		/sys/devices/cpu/events/PM_INST_CMPL
-+		/sys/devices/cpu/events/PM_CMPLU_STALL
-+
-+Date:		2013/01/08
-+
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+		Linux Powerpc mailing list <linuxppc-dev@ozlabs.org>
-+
-+Description:	POWER-systems specific performance monitoring events
-+
-+		A collection of performance monitoring events that may be
-+		supported by the POWER CPU. These events can be monitored
-+		using the 'perf(1)' tool.
-+
-+		These events may not be supported by other CPUs.
-+
-+		The contents of each file would look like:
-+
-+			event=0xNNNN
-+
-+		where 'N' is a hex digit and the number '0xNNNN' shows the
-+		"raw code" for the perf event identified by the file's
-+		"basename".
-+
-+		Further, multiple terms like 'event=0xNNNN' can be specified
-+		and separated with comma. All available terms are defined in
-+		the /sys/bus/event_source/devices/<dev>/format file.
--- 
-1.7.1
-
-
+Tony
