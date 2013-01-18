@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab3ARObt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 09:31:49 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:47082 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab3ARObr (ORCPT
+	id S1756133Ab3AROd7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 09:33:59 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:42630 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab3AROd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 09:31:47 -0500
+	Fri, 18 Jan 2013 09:33:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130118131617.GI4672@arwen.pp.htv.fi>
-References: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
-	<1357916550-11421-4-git-send-email-gautam.vivek@samsung.com>
-	<20130118131617.GI4672@arwen.pp.htv.fi>
-Date: Fri, 18 Jan 2013 20:01:45 +0530
-Message-ID: <CAFp+6iEonM8Kp0LztsqaQ0G1+425tK9f06hyUBeQkbvOaHOzeA@mail.gmail.com>
-Subject: Re: [PATCH v6 3/4] USB: ehci-s5p: Add phy driver support
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com, Alan Stern <stern@rowland.harvard.edu>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, jg1.han@samsung.com,
-        linux-samsung-soc@vger.kernel.org, p.paneri@samsung.com,
-        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, rob.herring@calxeda.com,
-        sylvester.nawrocki@gmail.com, Doug Anderson <dianders@chromium.org>
+From: Sunil Beta Baskar <betasam@gmail.com>
+Date: Fri, 18 Jan 2013 20:03:42 +0530
+Message-ID: <CAK2BWApu9PjkmDdV4HoFXcq9KTh4e57iEdwYn9muVmYRwRNXgw@mail.gmail.com>
+Subject: [PATCH] fix: build aborts if SPACE characters are found in path.
+To: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+Signed-off-by: Sunil Beta <betasam@gmail.com>
+---
+ Makefile |    4 ++++
+ 1 file changed, 4 insertions(+)
 
+diff --git a/Makefile b/Makefile
+index 07bc925..48bfd8e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -10,6 +10,8 @@ NAME = "Divemaster Edition"
+ # Comments in this file are targeted only to the developer, do not
+ # expect to learn how to build the kernel reading this file.
 
-On Fri, Jan 18, 2013 at 6:46 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Fri, Jan 11, 2013 at 08:32:29PM +0530, Vivek Gautam wrote:
->> Adding the phy driver to ehci-s5p. Keeping the platform data
->> for continuing the smooth operation for boards which still uses it
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> Acked-by: Jingoo Han <jg1.han@samsung.com>
->
-> Missing Alan's Acked-by here.
->
++CURDIRSPC := $(echo $(CURDIR) | sed "s/ /\\\ /g" )
++$(ifneq $(CURDIR),$(CURDIRSPC), $(error directory $(CURDIR) contains spaces.))
+ # Do not:
+ # o  use make's built-in rules and variables
+ #    (this increases performance and avoids hard-to-debug behaviour);
+@@ -118,6 +120,8 @@ ifneq ($(KBUILD_OUTPUT),)
+ # check that the output directory actually exists
+ saved-output := $(KBUILD_OUTPUT)
+ KBUILD_OUTPUT := $(shell cd $(KBUILD_OUTPUT) && /bin/pwd)
++KBUILD_OUTPUT_SPC := $(shell echo $(KBUILD_OUTPUT) | sed "s/ /\\\ /g")
++$(ifneq $(KBUILD_OUTPUT),$(KBUILD_OUTPUT_SPC), $(error output
+directory $(KBUILD_OUTPUT) contains spaces.))
+ $(if $(KBUILD_OUTPUT),, \
+      $(error output directory "$(saved-output)" does not exist))
 
-Any comments on this patch-series ?
+--
+1.7.10.4
+-----
+This resolves issues with multiple spaces in the source or target path
+of the kernel. Fixing this completely would require changes to
+mkmakefile among several other files. This is just to leave newbies
+comfortable with an error message as to the reason the build failed.
 
-
--- 
-Thanks & Regards
-Vivek
+Sunil Beta Baskar
