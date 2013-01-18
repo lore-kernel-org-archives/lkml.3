@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780Ab3ARJvl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 04:51:41 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:48953 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab3ARJvc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 04:51:32 -0500
+	id S1751654Ab3ARJvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 04:51:39 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49003 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111Ab3ARJvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 04:51:31 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <rob.herring@calxeda.com>, <rob@landley.net>, <tony@atomide.com>,
         <balbi@ti.com>, <b-cousson@ti.com>, <rnayak@ti.com>,
@@ -14,46 +13,186 @@ To: <rob.herring@calxeda.com>, <rob@landley.net>, <tony@atomide.com>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
 CC: <grant.likely@secretlab.ca>, <linux@arm.linux.org.uk>, <kishon@ti.com>
-Subject: [PATCH 0/3] ARM: dts: omap: add dt data for MUSB
-Date: Fri, 18 Jan 2013 15:21:13 +0530
-Message-ID: <1358502676-27193-1-git-send-email-kishon@ti.com>
+Subject: [PATCH 3/3] ARM: dts: omap: Add usb_otg and glue data
+Date: Fri, 18 Jan 2013 15:21:16 +0530
+Message-ID: <1358502676-27193-4-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1358502676-27193-1-git-send-email-kishon@ti.com>
+References: <1358502676-27193-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds dt data to get MUSB working in omap4 and omap3.
-Long time back a patch series with the same title was sent but only
-a part of it got merged. The rest of it wasn't merged because of
-adding omap control usb data to glue and usb phy.
+Add usb otg data node in omap4/omap3 device tree file. Also update
+the node with board specific setting in omapx-<board>.dts file.
+The dt data specifies among others the interface type (ULPI or UTMI), mode
+which is mostly OTG, power that specifies the amount of power this can supply
+when in host mode.
 
-Now there exists a separate driver for control usb and hence added a
-separate dt node for control usb.
-
-This series was developed on
-git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
-+ "usb: musb: add driver for control module" patch series
-
-Did basic enumeration testing in omap4 panda, omap4 sdp and omap3 beagle.
-
-Kishon Vijay Abraham I (3):
-  ARM: dts: omap: Add omap control usb data
-  ARM: dts: omap: Add omap-usb2 dt data
-  ARM: dts: omap: Add usb_otg and glue data
-
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
  Documentation/devicetree/bindings/usb/omap-usb.txt |    2 ++
- arch/arm/boot/dts/omap3-beagle-xm.dts              |    6 +++++
- arch/arm/boot/dts/omap3-evm.dts                    |    6 +++++
- arch/arm/boot/dts/omap3-overo.dtsi                 |    6 +++++
- arch/arm/boot/dts/omap3.dtsi                       |   12 ++++++++++
- arch/arm/boot/dts/omap4-panda.dts                  |    6 +++++
- arch/arm/boot/dts/omap4-sdp.dts                    |    6 +++++
- arch/arm/boot/dts/omap4.dtsi                       |   25 ++++++++++++++++++++
+ arch/arm/boot/dts/omap3-beagle-xm.dts              |    6 ++++++
+ arch/arm/boot/dts/omap3-evm.dts                    |    6 ++++++
+ arch/arm/boot/dts/omap3-overo.dtsi                 |    6 ++++++
+ arch/arm/boot/dts/omap3.dtsi                       |   12 ++++++++++++
+ arch/arm/boot/dts/omap4-panda.dts                  |    6 ++++++
+ arch/arm/boot/dts/omap4-sdp.dts                    |    6 ++++++
+ arch/arm/boot/dts/omap4.dtsi                       |   13 +++++++++++++
  arch/arm/boot/dts/twl4030.dtsi                     |    2 +-
- 9 files changed, 70 insertions(+), 1 deletion(-)
+ 9 files changed, 58 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+index 8bedbba..985b093 100644
+--- a/Documentation/devicetree/bindings/usb/omap-usb.txt
++++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+@@ -18,6 +18,7 @@ OMAP MUSB GLUE
+    represents PERIPHERAL.
+  - power : Should be "50". This signifies the controller can supply upto
+    100mA when operating in host mode.
++ - usb_phy : the phandle for the PHY device
+ 
+ Optional properties:
+  - ctrl_module : phandle of the control module this glue uses to write to
+@@ -32,6 +33,7 @@ usb_otg_hs: usb_otg_hs@4a0ab000 {
+ 	num_eps = <16>;
+ 	ram_bits = <12>;
+ 	ctrl_module = <&omap_control_usb>;
++	usb_phy = <&usb2_phy>;
+ };
+ 
+ Board specific device node entry
+diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+index 3705a81..cb07583 100644
+--- a/arch/arm/boot/dts/omap3-beagle-xm.dts
++++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+@@ -107,3 +107,9 @@
+ 	 */
+ 	ti,pulldowns = <0x03a1c4>;
+ };
++
++&usb_otg_hs {
++	interface_type = <0>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
+index e8ba1c2..afb9ba9 100644
+--- a/arch/arm/boot/dts/omap3-evm.dts
++++ b/arch/arm/boot/dts/omap3-evm.dts
+@@ -59,3 +59,9 @@
+ &twl_gpio {
+ 	ti,use-leds;
+ };
++
++&usb_otg_hs {
++	interface_type = <0>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap3-overo.dtsi b/arch/arm/boot/dts/omap3-overo.dtsi
+index 89808ce..4b3d157 100644
+--- a/arch/arm/boot/dts/omap3-overo.dtsi
++++ b/arch/arm/boot/dts/omap3-overo.dtsi
+@@ -55,3 +55,9 @@
+ &twl_gpio {
+ 	ti,use-leds;
+ };
++
++&usb_otg_hs {
++	interface_type = <0>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index 1acc261..176561b 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -397,5 +397,17 @@
+ 			ti,timer-alwon;
+ 			ti,timer-secure;
+ 		};
++
++		usb_otg_hs: usb_otg_hs@480ab000 {
++			compatible = "ti,omap3-musb";
++			reg = <0x480ab000 0x1000>;
++			interrupts = <0 92 0x4>, <0 93 0x4>;
++			interrupt-names = "mc", "dma";
++			ti,hwmods = "usb_otg_hs";
++			usb_phy = <&usb2_phy>;
++			multipoint = <1>;
++			num_eps = <16>;
++			ram_bits = <12>;
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
+index 4122efe..612c9bb 100644
+--- a/arch/arm/boot/dts/omap4-panda.dts
++++ b/arch/arm/boot/dts/omap4-panda.dts
+@@ -206,3 +206,9 @@
+ &twl_usb_comparator {
+ 	usb-supply = <&vusb>;
+ };
++
++&usb_otg_hs {
++	interface_type = <1>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+index 43e5258..582d7ee 100644
+--- a/arch/arm/boot/dts/omap4-sdp.dts
++++ b/arch/arm/boot/dts/omap4-sdp.dts
+@@ -428,3 +428,9 @@
+ &twl_usb_comparator {
+ 	usb-supply = <&vusb>;
+ };
++
++&usb_otg_hs {
++	interface_type = <1>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index d69d6f2..7501c04 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -541,5 +541,18 @@
+ 			reg-names = "control_dev_conf", "otghs_control";
+ 			ti,has_mailbox;
+ 		};
++
++		usb_otg_hs: usb_otg_hs@4a0ab000 {
++			compatible = "ti,omap4-musb";
++			reg = <0x4a0ab000 0x7ff>;
++			interrupts = <0 92 0x4>, <0 93 0x4>;
++			interrupt-names = "mc", "dma";
++			ti,hwmods = "usb_otg_hs";
++			usb_phy = <&usb2_phy>;
++			multipoint = <1>;
++			num_eps = <16>;
++			ram_bits = <12>;
++			ti,has_mailbox;
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/twl4030.dtsi b/arch/arm/boot/dts/twl4030.dtsi
+index ed0bc95..398d2c3 100644
+--- a/arch/arm/boot/dts/twl4030.dtsi
++++ b/arch/arm/boot/dts/twl4030.dtsi
+@@ -67,7 +67,7 @@
+ 		#interrupt-cells = <1>;
+ 	};
+ 
+-	twl4030-usb {
++	usb2_phy: twl4030-usb {
+ 		compatible = "ti,twl4030-usb";
+ 		interrupts = <10>, <4>;
+ 		usb1v5-supply = <&vusb1v5>;
 -- 
 1.7.9.5
 
