@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab3ARAjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 19:39:43 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18690 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350Ab3ARAjm (ORCPT
+	id S1754620Ab3ARAlP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 19:41:15 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:47856 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753653Ab3ARAlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 19:39:42 -0500
-X-Authority-Analysis: v=2.0 cv=e+OEuNV/ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=Yj5ujpJFrT2tF6iydkEA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358469581.23211.72.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.0.58-rt83
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Thu, 17 Jan 2013 19:39:41 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jan 2013 19:41:14 -0500
+X-Sasl-enc: 459g1r4JeFqfrG7JKYmzMYoZ6RmUrDMJ4UKgkmwPAYRF 1358469673
+Date: Thu, 17 Jan 2013 16:41:12 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: linux-next: manual merge of the tty tree with Linus' tree
+Message-ID: <20130118004112.GA29380@kroah.com>
+References: <20130117130423.63a5e1004942853bf6a49e56@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130117130423.63a5e1004942853bf6a49e56@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 17, 2013 at 01:04:23PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the tty tree got a conflict in
+> drivers/staging/sb105x/Kconfig between commit db210312f77b ("staging:
+> Make SystemBase PCI Multiport UART only for x86") from the  tree and
+> commit e27a7d7977b0 ("Staging: sb105x: mark it BROKEN") from the tty tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc drivers/staging/sb105x/Kconfig
+> index 1facad6,3d0d0eb..0000000
+> --- a/drivers/staging/sb105x/Kconfig
+> +++ b/drivers/staging/sb105x/Kconfig
+> @@@ -1,8 -1,7 +1,8 @@@
+>   config SB105X
+>   	tristate "SystemBase PCI Multiport UART"
+>   	select SERIAL_CORE
+> - 	depends on PCI
+> + 	depends on PCI && BROKEN
+>  +	depends on X86
 
-Dear RT Folks,
+Looks good to me, thanks.
 
-I'm pleased to announce the 3.0.58-rt83 stable release.
-
-
-This release is just an update to the new stable 3.0.58 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 13fa57aab5fd50aa084671be2874a3ce49a6a9a7
-
-
-Or to build 3.0.58-rt83 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.58.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.58-rt83.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+greg k-h
