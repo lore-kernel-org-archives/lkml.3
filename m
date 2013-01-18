@@ -1,175 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab3ARE6G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 23:58:06 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:56459 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3ARE6F (ORCPT
+	id S1750830Ab3ARFDD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 00:03:03 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:64671 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab3ARFDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 23:58:05 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH v3] gpio: vt8500: memory cleanup missing
-Date: Fri, 18 Jan 2013 17:58:22 +1300
-Message-Id: <1358485102-6585-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 18 Jan 2013 00:03:00 -0500
+From: Hideki EIRAKU <hdk@igel.co.jp>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
+        Katsuya MATSUBARA <matsu@igel.co.jp>, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Hideki EIRAKU <hdk@igel.co.jp>
+Subject: [PATCH] ARM: shmobile: armadillo800eva: set clock rates before timer init
+Date: Fri, 18 Jan 2013 14:02:05 +0900
+Message-Id: <1358485325-19673-1-git-send-email-hdk@igel.co.jp>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is missing a .remove callback, and the fail path on
-probe is incomplete.
+Previously clock rates were set after initialization of timer.
+Therefore the timer used the default extal1 clock rate (25MHz)
+instead of the correct rate for this board (24MHz).
 
-If an error occurs in vt8500_add_chips, gpio_base is not unmapped.
-The driver is also ignoring the return value from this function so
-if a chip fails to register it completes as successful.
-
-Replaced pr_err with dev_err in vt8500_add_chips since the device is
-available.
-
-There is also no .remove callback defined so the function is added.
-
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
 ---
-v2:
-Remove global vtchip and store pointer in platform_data - As pointed out by
-Russell King.
+ arch/arm/mach-shmobile/board-armadillo800eva.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-v3:
-Following problems pointed out by Grant Likely:
-
-Removed unnecessary whitespace change.
-Removed test against pdev->dev.of_node (np). Replaced code with a
-  devm_request_and_ioremap so np is now unneccessary. This also removes the need
-  for cleanup in the fail path.
-Move struct vt8500_gpio_chip within vt8500_data and store the iobase and
-  num_banks in vt8500_data.
-
-
- drivers/gpio/gpio-vt8500.c |   61 +++++++++++++++++++++++++++++++++++---------
- 1 file changed, 49 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/gpio/gpio-vt8500.c b/drivers/gpio/gpio-vt8500.c
-index b53320a..5c8cd7c 100644
---- a/drivers/gpio/gpio-vt8500.c
-+++ b/drivers/gpio/gpio-vt8500.c
-@@ -127,6 +127,12 @@ struct vt8500_gpio_chip {
- 	void __iomem	*base;
- };
+diff --git a/arch/arm/mach-shmobile/board-armadillo800eva.c b/arch/arm/mach-shmobile/board-armadillo800eva.c
+index 5353adf..1e79cfb 100644
+--- a/arch/arm/mach-shmobile/board-armadillo800eva.c
++++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
+@@ -1175,8 +1175,6 @@ static void __init eva_init(void)
+ 	platform_add_devices(eva_devices,
+ 			     ARRAY_SIZE(eva_devices));
  
-+struct vt8500_data {
-+	struct vt8500_gpio_chip *chip;
-+	void __iomem *iobase;
-+	int num_banks;
-+};
-+
- 
- #define to_vt8500(__chip) container_of(__chip, struct vt8500_gpio_chip, chip)
- 
-@@ -224,19 +230,32 @@ static int vt8500_of_xlate(struct gpio_chip *gc,
- static int vt8500_add_chips(struct platform_device *pdev, void __iomem *base,
- 				const struct vt8500_gpio_data *data)
+-	eva_clock_init();
+-
+ 	rmobile_add_device_to_domain("A4LC", &lcdc0_device);
+ 	rmobile_add_device_to_domain("A4LC", &hdmi_lcdc_device);
+ 	if (usb)
+@@ -1187,6 +1185,9 @@ static void __init eva_earlytimer_init(void)
  {
-+	struct vt8500_data *priv;
- 	struct vt8500_gpio_chip *vtchip;
- 	struct gpio_chip *chip;
- 	int i;
- 	int pin_cnt = 0;
- 
--	vtchip = devm_kzalloc(&pdev->dev,
-+	priv = devm_kzalloc(&pdev->dev, sizeof(struct vt8500_data), GFP_KERNEL);
-+	if (!priv) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
+ 	r8a7740_clock_init(MD_CK0 | MD_CK2);
+ 	shmobile_earlytimer_init();
 +
-+	priv->chip = devm_kzalloc(&pdev->dev,
- 			sizeof(struct vt8500_gpio_chip) * data->num_banks,
- 			GFP_KERNEL);
--	if (!vtchip) {
--		pr_err("%s: failed to allocate chip memory\n", __func__);
-+	if (!priv->chip) {
-+		dev_err(&pdev->dev, "failed to allocate chip memory\n");
- 		return -ENOMEM;
- 	}
- 
-+	priv->iobase = base;
-+	priv->num_banks = data->num_banks;
-+	platform_set_drvdata(pdev, priv);
-+
-+	vtchip = priv->chip;
-+
- 	for (i = 0; i < data->num_banks; i++) {
- 		vtchip[i].base = base;
- 		vtchip[i].regs = &data->banks[i];
-@@ -273,36 +292,54 @@ static struct of_device_id vt8500_gpio_dt_ids[] = {
- 
- static int vt8500_gpio_probe(struct platform_device *pdev)
- {
-+	int ret;
- 	void __iomem *gpio_base;
--	struct device_node *np;
-+	struct resource *res;
- 	const struct of_device_id *of_id =
- 				of_match_device(vt8500_gpio_dt_ids, &pdev->dev);
- 
- 	if (!of_id) {
--		dev_err(&pdev->dev, "Failed to find gpio controller\n");
-+		dev_err(&pdev->dev, "No matching driver data\n");
- 		return -ENODEV;
- 	}
- 
--	np = pdev->dev.of_node;
--	if (!np) {
--		dev_err(&pdev->dev, "Missing GPIO description in devicetree\n");
--		return -EFAULT;
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Unable to get IO resource\n");
-+		return -ENODEV;
- 	}
- 
--	gpio_base = of_iomap(np, 0);
-+	gpio_base = devm_request_and_ioremap(&pdev->dev, res);
- 	if (!gpio_base) {
- 		dev_err(&pdev->dev, "Unable to map GPIO registers\n");
--		of_node_put(np);
- 		return -ENOMEM;
- 	}
- 
--	vt8500_add_chips(pdev, gpio_base, of_id->data);
-+	ret = vt8500_add_chips(pdev, gpio_base, of_id->data);
-+
-+	return ret;
-+}
-+
-+static int vt8500_gpio_remove(struct platform_device *pdev)
-+{
-+	int i;
-+	int ret;
-+	struct vt8500_data *priv = platform_get_drvdata(pdev);
-+	struct vt8500_gpio_chip *vtchip = priv->chip;
-+
-+	for (i = 0; i < priv->num_banks; i++) {
-+		ret = gpiochip_remove(&vtchip[i].chip);
-+		if (ret)
-+			dev_warn(&pdev->dev, "gpiochip_remove returned %d\n",
-+				 ret);
-+	}
- 
- 	return 0;
++	/* the rate of extal1 clock must be set before late_time_init */
++	eva_clock_init();
  }
  
- static struct platform_driver vt8500_gpio_driver = {
- 	.probe		= vt8500_gpio_probe,
-+	.remove		= vt8500_gpio_remove,
- 	.driver		= {
- 		.name	= "vt8500-gpio",
- 		.owner	= THIS_MODULE,
+ static void __init eva_add_early_devices(void)
 -- 
-1.7.9.5
+1.8.0
 
