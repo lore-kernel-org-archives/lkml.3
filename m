@@ -1,93 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab3ARNNB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 08:13:01 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54886 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab3ARNM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 08:12:59 -0500
-Date: Fri, 18 Jan 2013 15:12:50 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Vivek Gautam <gautam.vivek@samsung.com>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <kgene.kim@samsung.com>, <thomas.abraham@linaro.org>,
-        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
-        <sylvester.nawrocki@gmail.com>, <p.paneri@samsung.com>
-Subject: Re: [PATCH 0/2] ARM: Exynos5250: Enabling samsung usb phy
-Message-ID: <20130118131250.GH4672@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1355845182-14104-1-git-send-email-gautam.vivek@samsung.com>
- <20130118131013.GG4672@arwen.pp.htv.fi>
+	id S1754932Ab3ARNPw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 08:15:52 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54356 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab3ARNPt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 08:15:49 -0500
+Message-ID: <50F94AFF.9010801@windriver.com>
+Date: Fri, 18 Jan 2013 07:15:43 -0600
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xQmOcGOVkeO43v2v"
-Content-Disposition: inline
-In-Reply-To: <20130118131013.GG4672@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, Mischa Jonker <Mischa.Jonker@synopsys.com>
+Subject: Re: [PATCH v2 57/76] ARC: kgdb support
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-58-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1358511930-7424-58-git-send-email-vgupta@synopsys.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---xQmOcGOVkeO43v2v
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/18/2013 06:25 AM, Vineet Gupta wrote:
+> From: Mischa Jonker <mjonker@synopsys.com>
+>
+> Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Jason Wessel <jason.wessel@windriver.com>
 
-On Fri, Jan 18, 2013 at 03:10:13PM +0200, Felipe Balbi wrote:
-> Hi,
->=20
-> On Tue, Dec 18, 2012 at 09:09:40PM +0530, Vivek Gautam wrote:
-> > This patch-set enables the samsung-usbphy driver on exynos5250,
-> > which enables the support for USB2 type and USB3 type phys.
-> > The corresponding phy driver patches are available at:
-> >  1) https://lkml.org/lkml/2012/12/18/201
-> >  2) https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-December=
-/024559.html
-> >=20
-> > Tested this patch-set on exynos5250 with following patch-sets for
-> > USB 2.0 and USB 3.0:
-> >  - https://patchwork.kernel.org/patch/1794651/
-> >  - https://lkml.org/lkml/2012/12/18/201
-> >  - https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-December/=
-024559.html
-> >  - http://comments.gmane.org/gmane.linux.usb.general/76352
-> >  - https://lkml.org/lkml/2012/12/13/492
-> >=20
-> > Vivek Gautam (2):
-> >   ARM: Exynos5250: Enabling samsung-usbphy driver
-> >   ARM: Exynos5250: Enabling USB 3.0 phy for samsung-usbphy driver
->=20
-> What should I do with this series ? Is it ready to apply ? If it is,
-> then please resend with Kukjim's Acked-by.
+Acked-by: Jason Wessel <jason.wessel@windriver.com>
 
-actually, now that I look again, it's all under arch/arm/, so Kukjim can
-take all of those through his tree ;-)
+> ---
+>  arch/arc/Kconfig            |    3 +-
+>  arch/arc/include/asm/kgdb.h |   61 +++++++++++++
+>  arch/arc/kernel/Makefile    |    1 +
+>  arch/arc/kernel/kgdb.c      |  205 +++++++++++++++++++++++++++++++++++++++++++
+>  arch/arc/kernel/traps.c     |    6 ++
+>  5 files changed, 275 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/arc/include/asm/kgdb.h
+>  create mode 100644 arch/arc/kernel/kgdb.c
+>
+> diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+> index d735de8..b954387 100644
+> --- a/arch/arc/Kconfig
+> +++ b/arch/arc/Kconfig
+> @@ -23,6 +23,7 @@ config ARC
+>  	select GENERIC_PENDING_IRQ if SMP
+>  	select GENERIC_SIGALTSTACK
+>  	select GENERIC_SMP_IDLE_THREAD
+> +	select HAVE_ARCH_KGDB
+>  	select HAVE_ARCH_TRACEHOOK
+>  	select HAVE_GENERIC_HARDIRQS
+>  	select HAVE_KPROBES
+> @@ -383,7 +384,7 @@ config ARC_DW2_UNWIND
+>  
+>  config ARC_DBG_TLB_PARANOIA
+>  	bool "Paranoia Checks in Low Level TLB Handlers"
+> -	depends on ARC_DBG && !SMP
+> +	depends on ARC_DBG
+>  	default n
+>  
+>  config ARC_DBG_TLB_MISS_COUNT
+> diff --git a/arch/arc/include/asm/kgdb.h b/arch/arc/include/asm/kgdb.h
+> new file mode 100644
+> index 0000000..f3c4934
+> --- /dev/null
+> +++ b/arch/arc/include/asm/kgdb.h
+> @@ -0,0 +1,61 @@
+> +/*
+> + * kgdb support for ARC
+> + *
+> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef __ARC_KGDB_H__
+> +#define __ARC_KGDB_H__
+> +
+> +#ifdef CONFIG_KGDB
+> +
+> +#include <asm/user.h>
+> +
+> +/* to ensure compatibility with Linux 2.6.35, we don't implement the get/set
+> + * register API yet */
 
---=20
-balbi
 
---xQmOcGOVkeO43v2v
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I did think this note was slightly odd.   Is this mainly because you have some kind of out of tree version of this code against an older kernel?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The main thing that you lose by not doing this the ability to display and set registers from the kdb shell.
 
-iQIcBAEBAgAGBQJQ+UpSAAoJEIaOsuA1yqREb50QAKGs0rCGyrgv5vqJjavCqYn/
-ibzVxtbi4H7tgbtGWO26u4CQ8ALt1LpyicEgOML1C+KMKXlosPzXQuKkZTNaMB1u
-4EC+CMPFGRCZA28M7ZTtuZLQEt8ZLvY3cdAJO7516NRwuJKSkI6y3BxD4bl1mlSM
-Z/GOsLWPwiEew0KkGzuQgbFl+GIzutED4GYdpY8y89IcyGWTo0BnpxZs6K4f9LZh
-qO83faCSdkvzPNZq8b6HTJSra/X/8os4qy30uyqb3hZDRbnUr1LLRFrMqViXVjuJ
-UgJiaKVeWS3im9B4vzl8VF5R0tzQ4HpBFhdEEOoqFJGM1Yc95AaCDfLugFC/jP4Z
-llbTVB26VpjHThm5VtnZb4s6ZERwPuvkFamChuTTPMBlM0H/23f01TgK4cbzwTJc
-j+6ezzRXoy48LNgcmQ6Tf6W63k574VsayhpusyE66X+DiAIiq3heu6S595Nqt/pI
-4eDK9CznQeB+FW+cg3UItKikbFjv9XaTfqjBq7T5e/5ka2JJhz6TzUHUA3YGQ4QY
-Lzg738T2bExewy4ScxADVANYy46lyXEwh9Qd4gs5pSjNzt0LKzLljth/Dwb5yMX0
-6gxDOJwDn5v7lwSjyBPeNLAUD5HnLXKPQB9MP/w2NCwTnNDTpgImi0fhh5/HqrrY
-gLnEggJsPpd9D6RAJbcc
-=zpkJ
------END PGP SIGNATURE-----
+>From the pure gdb only end of things, gdb operates more efficiently for doing things like setting or reading the program counter, frame pointer or variable mapped registers when using a rs232 connection.  There is no loss or gain in actual functionality by not implementing the individual get/set register method if you only intend to use gdb.
 
---xQmOcGOVkeO43v2v--
+Cheers,
+Jason.
