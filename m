@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab3ARR41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 12:56:27 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:42884 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584Ab3ARR40 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 12:56:26 -0500
-Content-Type: text/plain; charset="utf-8"
+	id S1755271Ab3ARR4s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 12:56:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37917 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487Ab3ARR4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 12:56:46 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>
+Subject: Re: [PATCH V5 00/30] loop: Issue O_DIRECT aio using bio_vec
+References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
+	<x49obgmif7w.fsf@segfault.boston.devel.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 18 Jan 2013 12:56:37 -0500
+In-Reply-To: <x49obgmif7w.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
+	message of "Fri, 18 Jan 2013 12:16:35 -0500")
+Message-ID: <x49k3raidd6.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Prashant Gaikwad <pgaikwad@nvidia.com>, <swarren@nvidia.com>,
-        <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>,
-        <rob.herring@calxeda.com>, <maxime.ripard@free-electrons.com>,
-        <linux@prisktech.co.nz>, <josh.cartwright@ni.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1357282858-2112-5-git-send-email-pgaikwad@nvidia.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
- <1357282858-2112-5-git-send-email-pgaikwad@nvidia.com>
-Message-ID: <20130118175621.3982.82838@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: [PATCH 5/7] clk: vt8500: Use common of_clk_init() function
-Date: Fri, 18 Jan 2013 09:56:21 -0800
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Prashant Gaikwad (2013-01-03 23:00:56)
-> Use common of_clk_init() function for clock initialization.
-> 
-> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+Jeff Moyer <jmoyer@redhat.com> writes:
 
-Tony,
+> ./check -g aio
+>
+> and here is the summary:
+>
+> Ran: 112 113 198 207 208 209 210 211 212 239 240
+> Failures: 112 198 207 239 240
+> Failed 5 of 11 tests
+>
+> To be fair, I have not yet run this on a kernel without your changes.
 
-Can I get a Tested-by from you before I take this in?
+I re-ran the same test against a vanilla 3.8.0-rc4 kernel and it passed:
 
-Thanks,
-Mike
+Ran: 112 113 198 207 208 209 210 211 212 239 240
+Passed all 11 tests
 
-> ---
->  drivers/clk/clk-vt8500.c |   15 ++++-----------
->  1 files changed, 4 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
-> index fe25570..3ce1c3e 100644
-> --- a/drivers/clk/clk-vt8500.c
-> +++ b/drivers/clk/clk-vt8500.c
-> @@ -272,7 +272,7 @@ static __init void vtwm_device_clk_init(struct device_node *node)
->         rc = of_clk_add_provider(node, of_clk_src_simple_get, clk);
->         clk_register_clkdev(clk, clk_name, NULL);
->  }
-> -
-> +CLK_OF_DECLARE(vt8500_device, "via,vt8500-device-clock", vtwm_device_clk_init);
->  
->  /* PLL clock related functions */
->  
-> @@ -502,20 +502,13 @@ static void __init vt8500_pll_init(struct device_node *node)
->  {
->         vtwm_pll_clk_init(node, PLL_TYPE_VT8500);
->  }
-> +CLK_OF_DECLARE(vt8500_pll, "via,vt8500-pll-clock", vt8500_pll_init);
->  
->  static void __init wm8650_pll_init(struct device_node *node)
->  {
->         vtwm_pll_clk_init(node, PLL_TYPE_WM8650);
->  }
-> -
-> -static const __initconst struct of_device_id clk_match[] = {
-> -       { .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
-> -       { .compatible = "via,vt8500-pll-clock", .data = vt8500_pll_init, },
-> -       { .compatible = "wm,wm8650-pll-clock", .data = wm8650_pll_init, },
-> -       { .compatible = "via,vt8500-device-clock",
-> -                                       .data = vtwm_device_clk_init, },
-> -       { /* sentinel */ }
-> -};
-> +CLK_OF_DECLARE(wm8650_pll, "wm,wm8650-pll-clock", wm8650_pll_init);
->  
->  void __init vtwm_clk_init(void __iomem *base)
->  {
-> @@ -524,5 +517,5 @@ void __init vtwm_clk_init(void __iomem *base)
->  
->         pmc_base = base;
->  
-> -       of_clk_init(clk_match);
-> +       of_clk_init(NULL);
->  }
-> -- 
-> 1.7.4.1
+I'll start digging into the failures.
+
+Cheers,
+Jeff
