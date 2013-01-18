@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab3ARSUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 13:20:10 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41453 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815Ab3ARSUI (ORCPT
+	id S1752646Ab3ARSXT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 13:23:19 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:8333 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751507Ab3ARSXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 13:20:08 -0500
-Message-ID: <50F99254.7030505@wwwdotorg.org>
-Date: Fri, 18 Jan 2013 11:20:04 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 18 Jan 2013 13:23:18 -0500
+Date: Fri, 18 Jan 2013 18:23:16 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
+        John Kacur <jkacur@gmail.com>,
+        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
+Subject: Re: [RFC][PATCH v2] slub: Keep page and object in sync in
+ slab_alloc_node()
+In-Reply-To: <1358521484.7383.8.camel@gandalf.local.home>
+Message-ID: <0000013c4ee68811-d599982b-2d94-461f-bfc2-841215d64406-000000@email.amazonses.com>
+References: <1358446258.23211.32.camel@gandalf.local.home> <1358447864.23211.34.camel@gandalf.local.home> <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com> <1358458996.23211.46.camel@gandalf.local.home>
+ <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com> <1358462763.23211.57.camel@gandalf.local.home> <1358464245.23211.62.camel@gandalf.local.home> <1358464837.23211.66.camel@gandalf.local.home> <1358468598.23211.67.camel@gandalf.local.home>
+ <1358468924.23211.69.camel@gandalf.local.home> <0000013c4e1ea131-b8ab56b9-bfca-44fe-b5da-f030551194c9-000000@email.amazonses.com> <1358521484.7383.8.camel@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] usb: Add APIs to access host registers from Tegra
- PHY
-References: <Pine.LNX.4.44L0.1301181029350.1988-100000@iolanthe.rowland.org> <50F98646.6040209@wwwdotorg.org> <20130118175811.GD1035@arwen.pp.htv.fi>
-In-Reply-To: <20130118175811.GD1035@arwen.pp.htv.fi>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2013 10:58 AM, Felipe Balbi wrote:
-> On Fri, Jan 18, 2013 at 10:28:38AM -0700, Stephen Warren wrote:
->> On 01/18/2013 08:30 AM, Alan Stern wrote:
->>> On Fri, 18 Jan 2013, Venu Byravarasu wrote:
->>> 
->>>> As Tegra PHY driver needs to access one of the Host
->>>> registers, added few APIs.
->>>> 
->>>> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com> --- 
->>>> delta from v2: Renamed USB_PORTSC1 to TEGRA_USB_PORTSC1. 
->>>> Removed tegra_ehci_set_wakeon_events() and its references. 
->>>> Used standard defines for accessing PORTSC fields defined in
->>>> ehci_def.h Included OCC bit of PORTSC as part of
->>>> TEGRA_PORTSC1_RWC_BITS.
->>>> 
->>>> delta from v1: Taken care of RWC bits, while accessing PORTSC
->>>> register.
->>> 
->>> Acked-by: Alan Stern <stern@rowland.harvard.edu>
->> 
->> Felipe, you said on a previous version that you weren't sure if
->> you could ack this since it means the PHY driver is touching
->> EHCI registers... I don't think we really have much choice w.r.t.
->> what the driver is doing, since it's driven purely by HW design.
->> Is this updated patched at least OK for you not to NAK it, and
->> hence I can apply it? Thanks.
-> 
-> Sure I will not block it, please go ahead and apply it through your
-> tree ;-)
+On Fri, 18 Jan 2013, Steven Rostedt wrote:
 
-Great, thanks very much.
+> The problem is that the changes can happen on another CPU, which means
+> that barrier isn't sufficient.
 
-Are patch 2/4 and 3/4 OK; could you Ack them since they touch USB PHY
-code?
-
-I guess in the interests of moving this USB rework forward, I'll
-actually fix up the issue with assigning phy->is_ulpi_phy while I
-apply the patches, just by moving that one chunk of code from patch 4
-to patch 3.
+No these are per cpu variables that are only read locally. The
+synchronization is not between processors.
