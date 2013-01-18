@@ -1,42 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab3ARSXT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 13:23:19 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:8333 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751507Ab3ARSXS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 13:23:18 -0500
-Date: Fri, 18 Jan 2013 18:23:16 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@gmail.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Subject: Re: [RFC][PATCH v2] slub: Keep page and object in sync in
- slab_alloc_node()
-In-Reply-To: <1358521484.7383.8.camel@gandalf.local.home>
-Message-ID: <0000013c4ee68811-d599982b-2d94-461f-bfc2-841215d64406-000000@email.amazonses.com>
-References: <1358446258.23211.32.camel@gandalf.local.home> <1358447864.23211.34.camel@gandalf.local.home> <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com> <1358458996.23211.46.camel@gandalf.local.home>
- <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com> <1358462763.23211.57.camel@gandalf.local.home> <1358464245.23211.62.camel@gandalf.local.home> <1358464837.23211.66.camel@gandalf.local.home> <1358468598.23211.67.camel@gandalf.local.home>
- <1358468924.23211.69.camel@gandalf.local.home> <0000013c4e1ea131-b8ab56b9-bfca-44fe-b5da-f030551194c9-000000@email.amazonses.com> <1358521484.7383.8.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751859Ab3ARS3W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 13:29:22 -0500
+Received: from mga03.intel.com ([143.182.124.21]:15597 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab3ARS3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 13:29:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,494,1355126400"; 
+   d="scan'208";a="245713300"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: li guang <lig.fnst@cn.fujitsu.com>, Tang Chen <tangchen@cn.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wujianguo@huawei.com" <wujianguo@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "lliubbo@gmail.com" <lliubbo@gmail.com>,
+        "jaegeuk.hanse@gmail.com" <jaegeuk.hanse@gmail.com>,
+        "glommer@parallels.com" <glommer@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH v5 0/5] Add movablecore_map boot option
+Thread-Topic: [PATCH v5 0/5] Add movablecore_map boot option
+Thread-Index: AQHN8jfezP7hxPPawkaXDMerNaAcgJhJm6qAgABUxAD//3o84IAAiNyAgAISxwCAAPydgIAAFvqAgABpLACAAA9IAIAAJ0zwgADKV4CAAKFtgIAABXIAgAAUYYCAAAhoAIAAFReAgAAPwlA=
+Date: Fri, 18 Jan 2013 18:29:17 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1C988096@ORSMSX108.amr.corp.intel.com>
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <50F440F5.3030006@zytor.com>
+	 <20130114143456.3962f3bd.akpm@linux-foundation.org>
+	 <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com>
+	 <20130114144601.1c40dc7e.akpm@linux-foundation.org>
+	 <50F647E8.509@jp.fujitsu.com>
+	 <20130116132953.6159b673.akpm@linux-foundation.org>
+	 <50F72F17.9030805@zytor.com> <50F78750.8070403@jp.fujitsu.com>
+	 <50F79422.6090405@zytor.com>
+	 <3908561D78D1C84285E8C5FCA982C28F1C986D98@ORSMSX108.amr.corp.intel.com>
+	 <50F85ED5.3010003@jp.fujitsu.com> <50F8E63F.5040401@jp.fujitsu.com>
+	 <818a2b0a-f471-413f-9231-6167eb2d9607@email.android.com>
+	 <50F8FBE9.6040501@jp.fujitsu.com>  <50F902F6.5010605@cn.fujitsu.com>
+ <1358501031.22331.10.camel@liguang.fnst.cn.fujitsu.com>
+In-Reply-To: <1358501031.22331.10.camel@liguang.fnst.cn.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0IITLQV006413
 
-On Fri, 18 Jan 2013, Steven Rostedt wrote:
+> kernel absolutely should not care much about SMBIOS(DMI info),
+> AFAIK, every BIOS vendor did not fill accurate info in SMBIOS,
+> mostly only on demand when OEMs required SMBIOS to report some
+> specific info.
+> furthermore, SMBIOS is so old and benifit nobody(in my personal
+> opinion), so maybe let's forget it.
 
-> The problem is that the changes can happen on another CPU, which means
-> that barrier isn't sufficient.
+The "not having right information" flaw could be fixed by OEMs selling
+systems on which it is important for system functionality that it be right.
+They could use monetary incentives, contractual obligations, or sharp
+pointy sticks to make their BIOS vendor get the table right.
 
-No these are per cpu variables that are only read locally. The
-synchronization is not between processors.
+BUT there is a bigger flaw - SMBIOS is a static table with no way to
+update it in response to hotplug events.  So it could in theory have the
+right information at boot time ... there is no possible way for it to be
+right as soon as somebody adds, removes or replaces hardware.
+
+-Tony
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
