@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab3ARP4g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 10:56:36 -0500
-Received: from fieldses.org ([174.143.236.118]:54442 "EHLO fieldses.org"
+	id S1755265Ab3ARP4x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 10:56:53 -0500
+Received: from mga09.intel.com ([134.134.136.24]:20228 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab3ARP4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 10:56:33 -0500
-Date: Fri, 18 Jan 2013 10:56:31 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
-Message-ID: <20130118155631.GA5227@fieldses.org>
-References: <50F4D800.5040703@teksavvy.com>
- <20130115205625.GH4940@fieldses.org>
- <50F63882.8000607@parallels.com>
- <50F72F03.5070806@teksavvy.com>
- <50F786AF.4070107@parallels.com>
- <20130117130335.GD6598@fieldses.org>
- <50F7FB7E.2020503@parallels.com>
- <50F88C14.7030903@teksavvy.com>
- <50F8DF7E.8080107@parallels.com>
- <50F96EB2.3090605@teksavvy.com>
+	id S1754584Ab3ARP4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 10:56:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,493,1355126400"; 
+   d="asc'?scan'208";a="249085744"
+Date: Fri, 18 Jan 2013 17:57:25 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>,
+        Jan Kara <jack@suse.cz>, Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: PAGE_CACHE_SIZE vs. PAGE_SIZE
+Message-ID: <20130118155724.GA8507@otc-wbsnb-06>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
 Content-Disposition: inline
-In-Reply-To: <50F96EB2.3090605@teksavvy.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 10:48:02AM -0500, Mark Lord wrote:
-> On 13-01-18 12:37 AM, Stanislav Kinsbursky wrote:
-> >
-> > You have more than one NFS mount in different network namespaces, haven't you?
-> >
-> 
-> No, I don't (knowingly) use (multiple) namespaces at all.
 
-Right, I don't think that's necessary.  Stanislav, look at
-nfs_callback_down:
+--LZvS9be/3tNcYl/X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	nfs_callback_down_net(minorversion, cb_info->serv, net);
-        cb_info->users--;
-	if (cb_info->users == 0 && cb_info->task != NULL) {
-		kthread_stop(cb_info->task);
-		...
+Hi,
 
-It's first destroying the service, then destroying the thread.  That's
-the wrong order.  So we could still have the thread running svc_recv()
-after the rpc service is destroyed.
+PAGE_CACHE_* macros were introduced long time ago in hope to implement
+page cache with larger chunks than one page in future.
 
---b.
+In fact it was never done.
 
-> Usually I disable them in the kernel .config,
-> though it appears the currently running kernel has this:
-> 
-> CONFIG_NAMESPACES=y
-> # CONFIG_UTS_NS is not set
-> # CONFIG_IPC_NS is not set
-> # CONFIG_PID_NS is not set
-> # CONFIG_NET_NS is not set
-> 
-> The full .config was attached to the first post in this thread.
-> 
-> Cheers
-> 
+Some code paths assume PAGE_CACHE_SIZE <=3D PAGE_SIZE. E.g. we use
+zero_user_segments() to clear stale parts of page on cache filling, but
+the function is implemented only for individual small page.
+
+It's unlikely that global switch to PAGE_CACHE_SIZE > PAGE_SIZE will never
+happen since it will affect to much code at once.
+
+I think support of larger chunks in page cache can be in implemented in
+some form of THP with per-fs enabling.
+
+Is it time to get rid of PAGE_CACHE_* macros?
+I can prepare patchset if it's okay.
+
+--=20
+ Kirill A. Shutemov
+
+--LZvS9be/3tNcYl/X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ+XDkAAoJEAd+omnVudOMzKgP/2i22lky6JJInM7MxXkJFZ1l
+/pksssQ6hdHdb+B0QCBjoUDw/ZAUessm0/aDrBwjTmfAGoUbnIWQZf90Hf/ybNV8
+e5gh8n73XXVr7irhUJB/7jJPOfMMdU2yw0g3cfr6MC9bzvzt9V8dWmyGnIvUPthG
+ZKtwH/Aj2VqkVg7My+Kucy+bM/VT3XwPtVG7CMbk1wpW9TkRWxVBbfQZdxuGHAzC
+5dyagwKYltpc9N6zb0WUwmE3HFT1LEKDGdzA3Re20rZSgTcWY2hrrHQQARDVLfyc
+SWPaqhXDuKPh9iWn75yJPwvPXv+x/ME6wnh43k8wzX5dSXorohDARO1+Csc+3IJb
+tk/sDJK85198Hnpkg0IZE+rfSc+Y18Yy+cYch4nuTYn1BwLWNE6B/2ZaVc/vSbU/
+lGD6HLCOtH9sOx/nQ+oopj0swcPXKsGxTV/lfqazPEeASmdVTA2XS99ArFl/Mp71
+qTvYgxlp4Nn8+3CgvMwHZQUbW02Xo5RFd9SdaPyhF0kXmbWhnpxFk5N9Hsy70xG4
+o7/f6psrC4XkSN8DlHw/2hT32OSrgmnFmttg8L6mcYN6E6cQY8/pJI2WDIGcq8uN
+vf8/PzVT/A/NySXrQQkCZNtYmhEW1f/k+NtBJHHuY1nr7qky+uKUM0GJmppW310k
+VvAC0r7ef7e8jEFAq43y
+=YqYo
+-----END PGP SIGNATURE-----
+
+--LZvS9be/3tNcYl/X--
