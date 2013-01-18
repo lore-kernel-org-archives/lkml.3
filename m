@@ -1,101 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751211Ab3ARF2x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 00:28:53 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:38173 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849Ab3ARF2u (ORCPT
+	id S1751118Ab3ARFaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 00:30:10 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61753 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab3ARFaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 00:28:50 -0500
-Message-ID: <50F8DD63.8070404@ti.com>
-Date: Fri, 18 Jan 2013 10:58:03 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Fri, 18 Jan 2013 00:30:08 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-c3-50f8ddde778d
+Date: Fri, 18 Jan 2013 14:30:06 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arun Sharma <asharma@fb.com>, sanjay@google.com,
+        Paul Turner <pjt@google.com>, David Rientjes <rientjes@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC 1/8] Introduce new system call mvolatile
+Message-ID: <20130118053006.GB31368@blaptop>
+References: <1357187286-18759-1-git-send-email-minchan@kernel.org>
+ <1357187286-18759-2-git-send-email-minchan@kernel.org>
+ <50F75875.30909@linaro.org>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <balbi@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <b-cousson@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <horms@verge.net.au>,
-        <magnus.damm@gmail.com>, <cbou@mail.ru>, <dwmw2@infradead.org>,
-        <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <leoli@freescale.com>, <eric.y.miao@gmail.com>,
-        <haojian.zhuang@gmail.com>, <stern@rowland.harvard.edu>
-Subject: Re: [RFC PATCH 3/6] usb: otg: utils: change the phy lib to support
- multiple PHYs of same type
-References: <1358348462-27693-1-git-send-email-kishon@ti.com> <1358348462-27693-4-git-send-email-kishon@ti.com> <50F821DD.1040609@ti.com>
-In-Reply-To: <50F821DD.1040609@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F75875.30909@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jan 16, 2013 at 05:48:37PM -0800, John Stultz wrote:
+> On 01/02/2013 08:27 PM, Minchan Kim wrote:
+> >This patch adds new system call m[no]volatile.
+> >If someone asks is_volatile system call, it could be added, too.
+> 
+> So some nits below from my initial playing around with this patchset.
+> 
+> >+/*
+> >+ * Return -EINVAL if range doesn't include a right vma at all.
+> >+ * Return -ENOMEM with interrupting range opeartion if memory is not enough to
+> >+ * merge/split vmas.
+> >+ * Return 0 if range consists of only proper vmas.
+> >+ * Return 1 if part of range includes inavlid area(ex, hole/huge/ksm/mlock/
+> >+ * special area)
+> >+ */
+> >+SYSCALL_DEFINE2(mvolatile, unsigned long, start, size_t, len)
+> >+{
+> >+	unsigned long end, tmp;
+> >+	struct vm_area_struct *vma, *prev;
+> >+	bool invalid = false;
+> >+	int error = -EINVAL;
+> >+
+> >+	down_write(&current->mm->mmap_sem);
+> >+	if (start & ~PAGE_MASK)
+> >+		goto out;
+> >+
+> >+	len &= PAGE_MASK;
+> >+	if (!len)
+> >+		goto out;
+> >+
+> >+	end = start + len;
+> >+	if (end < start)
+> >+		goto out;
+> >+
+> >+	vma = find_vma_prev(current->mm, start, &prev);
+> >+	if (!vma)
+> >+		goto out;
+> >+
+> >+	if (start > vma->vm_start)
+> >+		prev = vma;
+> >+
+> >+	for (;;) {
+> >+		/* Here start < (end|vma->vm_end). */
+> >+		if (start < vma->vm_start) {
+> >+			start = vma->vm_start;
+> >+			if (start >= end)
+> >+				goto out;
+> >+			invalid = true;
+> >+		}
+> >+
+> >+		/* Here vma->vm_start <= start < (end|vma->vm_end) */
+> >+		tmp = vma->vm_end;
+> >+		if (end < tmp)
+> >+			tmp = end;
+> >+
+> >+		/* Here vma->vm_start <= start < tmp <= (end|vma->vm_end). */
+> >+		error = do_mvolatile(vma, &prev, start, tmp);
+> >+		if (error == -ENOMEM) {
+> >+			up_write(&current->mm->mmap_sem);
+> >+			return error;
+> >+		}
+> >+		if (error == -EINVAL)
+> >+			invalid = true;
+> >+		else
+> >+			error = 0;
+> >+		start = tmp;
+> >+		if (prev && start < prev->vm_end)
+> >+			start = prev->vm_end;
+> >+		if (start >= end)
+> >+			break;
+> >+
+> >+		vma = prev->vm_next;
+> >+		if (!vma)
+> >+			break;
+> >+	}
+> >+out:
+> >+	up_write(&current->mm->mmap_sem);
+> >+	return invalid ? 1 : 0;
+> >+}
+> 
+> The error logic here is really strange. If any of the early error
+> cases are triggered (ie: (start & ~PAGE_MASK), etc), then we jump to
+> out and return 0 (instead of EINVAL). I don't think that's what you
+> intended.
 
-On Thursday 17 January 2013 09:37 PM, Roger Quadros wrote:
-> On 01/16/2013 05:00 PM, Kishon Vijay Abraham I wrote:
->> In order to add support for multipe PHY's of the same type, the API's
->> for adding PHY and getting PHY has been changed. Now the binding
->> information of the PHY and controller should be done in platform file
->> using usb_bind_phy API. And for getting a PHY, the device pointer of the
->> USB controller and an index should be passed. Based on the binding
->> information that is added in the platform file, get_phy will return the
->> approappropriate PHY.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>   arch/arm/mach-shmobile/board-marzen.c |    2 +-
->>   drivers/power/ab8500_charger.c        |    2 +-
->>   drivers/power/isp1704_charger.c       |    2 +-
->>   drivers/power/pda_power.c             |    2 +-
->>   drivers/power/twl4030_charger.c       |    2 +-
->>   drivers/usb/chipidea/udc.c            |    2 +-
->>   drivers/usb/dwc3/core.c               |    4 +-
->>   drivers/usb/gadget/fsl_udc_core.c     |    2 +-
->>   drivers/usb/gadget/mv_udc_core.c      |    2 +-
->>   drivers/usb/gadget/omap_udc.c         |    2 +-
->>   drivers/usb/gadget/pxa25x_udc.c       |    2 +-
->>   drivers/usb/gadget/pxa27x_udc.c       |    2 +-
->>   drivers/usb/gadget/s3c-hsudc.c        |    2 +-
->>   drivers/usb/host/ehci-fsl.c           |    2 +-
->>   drivers/usb/host/ehci-msm.c           |    2 +-
->>   drivers/usb/host/ehci-mv.c            |    2 +-
->>   drivers/usb/host/ehci-tegra.c         |    2 +-
->>   drivers/usb/host/ohci-omap.c          |    2 +-
->>   drivers/usb/musb/am35x.c              |    2 +-
->>   drivers/usb/musb/blackfin.c           |    2 +-
->>   drivers/usb/musb/da8xx.c              |    2 +-
->>   drivers/usb/musb/davinci.c            |    2 +-
->>   drivers/usb/musb/musb_dsps.c          |    2 +-
->>   drivers/usb/musb/omap2430.c           |    2 +-
->>   drivers/usb/musb/tusb6010.c           |    2 +-
->>   drivers/usb/musb/ux500.c              |    2 +-
->>   drivers/usb/otg/ab8500-usb.c          |    3 +-
->>   drivers/usb/otg/fsl_otg.c             |    5 ++-
->>   drivers/usb/otg/gpio_vbus.c           |    3 +-
->>   drivers/usb/otg/isp1301_omap.c        |    3 +-
->>   drivers/usb/otg/msm_otg.c             |    3 +-
->>   drivers/usb/otg/mv_otg.c              |    3 +-
->>   drivers/usb/otg/nop-usb-xceiv.c       |    3 +-
->>   drivers/usb/otg/otg.c                 |   67 +++++++++++++++------------------
->>   drivers/usb/otg/twl4030-usb.c         |    3 +-
->>   drivers/usb/phy/mv_u3d_phy.c          |    3 +-
->>   drivers/usb/phy/omap-usb2.c           |   11 ++----
->>   drivers/usb/phy/rcar-phy.c            |    3 +-
->>   include/linux/usb/phy.h               |   12 +++---
->>   39 files changed, 87 insertions(+), 89 deletions(-)
->
-> I think it better to leave the existing add/get APIs as they are add add
-> new APIs that support multiple PHYs. You could probably mark the old
-> ones as deprecated.
->
-> That way you don't need to wait till all users are converted and tested.
+Need fixing.
 
-Makes sense. Will do that :-)
+> 
+> 
+> >+/*
+> >+ * Return -ENOMEM with interrupting range opeartion if memory is not enough
+> >+ * to merge/split vmas.
+> >+ * Return 1 if part of range includes purged's one, otherwise, return 0
+> >+ */
+> >+SYSCALL_DEFINE2(mnovolatile, unsigned long, start, size_t, len)
+> >+{
+> >+	unsigned long end, tmp;
+> >+	struct vm_area_struct *vma, *prev;
+> >+	int ret, error = -EINVAL;
+> >+	bool is_purged = false;
+> >+
+> >+	down_write(&current->mm->mmap_sem);
+> >+	if (start & ~PAGE_MASK)
+> >+		goto out;
+> >+
+> >+	len &= PAGE_MASK;
+> >+	if (!len)
+> >+		goto out;
+> >+
+> >+	end = start + len;
+> >+	if (end < start)
+> >+		goto out;
+> >+
+> >+	vma = find_vma_prev(current->mm, start, &prev);
+> >+	if (!vma)
+> >+		goto out;
+> >+
+> >+	if (start > vma->vm_start)
+> >+		prev = vma;
+> >+
+> >+	for (;;) {
+> >+		/* Here start < (end|vma->vm_end). */
+> >+		if (start < vma->vm_start) {
+> >+			start = vma->vm_start;
+> >+			if (start >= end)
+> >+				goto out;
+> >+		}
+> >+
+> >+		/* Here vma->vm_start <= start < (end|vma->vm_end) */
+> >+		tmp = vma->vm_end;
+> >+		if (end < tmp)
+> >+			tmp = end;
+> >+
+> >+		/* Here vma->vm_start <= start < tmp <= (end|vma->vm_end). */
+> >+		error = do_mnovolatile(vma, &prev, start, tmp, &is_purged);
+> >+		if (error) {
+> >+			WARN_ON(error != -ENOMEM);
+> >+			goto out;
+> >+		}
+> >+		start = tmp;
+> >+		if (prev && start < prev->vm_end)
+> >+			start = prev->vm_end;
+> >+		if (start >= end)
+> >+			break;
+> >+
+> >+		vma = prev->vm_next;
+> >+		if (!vma)
+> >+			break;
+> >+	}
+> 
+> I'm still not sure how this logic improves over the madvise case. If
+> we catch an error mid-way through setting a series of vmas to
+> non-volatile, we end up exiting and losing state (ie: if only the
+> first vma was purged, but half way through 10 vmas we get a ENOMEM
+> error. So the first vma is now non-volatile, but we do not return
+> the purged flag ).
 
-Thanks
-Kishon
+Right. 
+
+> 
+> If we're going to have a new syscall for this (which I'm not sure is
+> the right approach), we should make use of multiple arguments so we
+> can return if data was purged, even if we hit an error midway).
+
+It would be easier method to achieve our goal than below suggestion
+in case of VMA-basd approach because it's hard to expect how many
+we need vmas with atomically.
+
+Will do it in next version.
+
+> 
+> Alternatively, if we can find a way to allocate any necessary memory
+> before we do any vma volatility state changes, then we can return
+> ENOMEM then and be confident we won't end up with failed partial
+> state change (this is the approach I used in my fallocate-volatile
+> patches).
+
+Thanks for the review, John.
+
+> 
+> thanks
+> -john
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
