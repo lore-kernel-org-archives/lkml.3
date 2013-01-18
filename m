@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab3ARWLX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 17:11:23 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:43041 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755594Ab3ARWLR (ORCPT
+	id S1755820Ab3ARWMF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 17:12:05 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:45787 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282Ab3ARWMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 17:11:17 -0500
-Date: Fri, 18 Jan 2013 14:11:11 -0800
+	Fri, 18 Jan 2013 17:12:02 -0500
+Date: Fri, 18 Jan 2013 14:11:57 -0800
 From: Tejun Heo <tj@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Arjan van de Ven <arjan@linux.intel.com>,
@@ -16,9 +16,8 @@ Cc: Arjan van de Ven <arjan@linux.intel.com>,
         USB list <linux-usb@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3/5] workqueue: move struct worker definition to
- workqueue_internal.h
-Message-ID: <20130118221111.GE24579@htj.dyndns.org>
+Subject: [PATCH 4/5] workqueue: implement current_is_async()
+Message-ID: <20130118221157.GF24579@htj.dyndns.org>
 References: <20130116164832.GP2668@htj.dyndns.org>
  <50F6DD4D.3070808@linux.intel.com>
  <CA+55aFyjrXzKMqmOuMo9z24OZj3kD4O4M4y_O-h=r6udCz2MyA@mail.gmail.com>
@@ -38,108 +37,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 2eaebdb33e1911c0cf3d44fd3596c42c6f502fab Mon Sep 17 00:00:00 2001
+>From 84b233adcca3cacd5cfa8013a5feda7a3db4a9af Mon Sep 17 00:00:00 2001
 From: Tejun Heo <tj@kernel.org>
-Date: Fri, 18 Jan 2013 14:05:55 -0800
+Date: Fri, 18 Jan 2013 14:05:56 -0800
 
-This will be used to implement an inline function to query whether
-%current is a workqueue worker and, if so, allow determining which
-work item it's executing.
+This function queries whether %current is an async worker executing an
+async item.  This will be used to implement warning on synchronous
+request_module() from async workers.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- kernel/workqueue.c          | 32 +-------------------------------
- kernel/workqueue_internal.h | 37 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 31 deletions(-)
+ include/linux/async.h       |  1 +
+ kernel/async.c              | 14 ++++++++++++++
+ kernel/workqueue_internal.h | 11 +++++++++++
+ 3 files changed, 26 insertions(+)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index b4e9206..2ffa240 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -122,37 +122,7 @@ enum {
-  * W: workqueue_lock protected.
-  */
+diff --git a/include/linux/async.h b/include/linux/async.h
+index 7a24fe9..345169c 100644
+--- a/include/linux/async.h
++++ b/include/linux/async.h
+@@ -52,4 +52,5 @@ extern void async_synchronize_full_domain(struct async_domain *domain);
+ extern void async_synchronize_cookie(async_cookie_t cookie);
+ extern void async_synchronize_cookie_domain(async_cookie_t cookie,
+ 					    struct async_domain *domain);
++extern bool current_is_async(void);
+ #endif
+diff --git a/kernel/async.c b/kernel/async.c
+index 9d31183..d9bf2a9 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -57,6 +57,8 @@ asynchronous and synchronous parts of the kernel.
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
  
--struct global_cwq;
--struct worker_pool;
--
--/*
-- * The poor guys doing the actual heavy lifting.  All on-duty workers
-- * are either serving the manager role, on idle list or on busy hash.
-- */
--struct worker {
--	/* on idle list while idle, on busy hash table while busy */
--	union {
--		struct list_head	entry;	/* L: while idle */
--		struct hlist_node	hentry;	/* L: while busy */
--	};
--
--	struct work_struct	*current_work;	/* L: work being processed */
--	work_func_t		current_func;	/* L: current_work's fn */
--	struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
--	struct list_head	scheduled;	/* L: scheduled works */
--	struct task_struct	*task;		/* I: worker task */
--	struct worker_pool	*pool;		/* I: the associated pool */
--	/* 64 bytes boundary on 64bit, 32 on 32bit */
--	unsigned long		last_active;	/* L: last active timestamp */
--	unsigned int		flags;		/* X: flags */
--	int			id;		/* I: worker id */
--
--	/* for rebinding worker to CPU */
--	struct work_struct	rebind_work;	/* L: for busy worker */
--
--	/* used only by rescuers to point to the target workqueue */
--	struct workqueue_struct	*rescue_wq;	/* I: the workqueue to rescue */
--};
-+/* struct worker is defined in workqueue_internal.h */
++#include "workqueue_internal.h"
++
+ static async_cookie_t next_cookie = 1;
  
- struct worker_pool {
- 	struct global_cwq	*gcwq;		/* I: the owning gcwq */
+ #define MAX_WORK	32768
+@@ -337,3 +339,15 @@ void async_synchronize_cookie(async_cookie_t cookie)
+ 	async_synchronize_cookie_domain(cookie, &async_running);
+ }
+ EXPORT_SYMBOL_GPL(async_synchronize_cookie);
++
++/**
++ * current_is_async - is %current an async worker task?
++ *
++ * Returns %true if %current is an async worker task.
++ */
++bool current_is_async(void)
++{
++	struct worker *worker = current_wq_worker();
++
++	return worker && worker->current_func == async_run_entry_fn;
++}
 diff --git a/kernel/workqueue_internal.h b/kernel/workqueue_internal.h
-index b3ea6ad..02549fa 100644
+index 02549fa..cc35e7e 100644
 --- a/kernel/workqueue_internal.h
 +++ b/kernel/workqueue_internal.h
-@@ -7,6 +7,43 @@
- #ifndef _KERNEL_WORKQUEUE_INTERNAL_H
+@@ -8,6 +8,7 @@
  #define _KERNEL_WORKQUEUE_INTERNAL_H
  
-+#include <linux/workqueue.h>
-+
-+struct global_cwq;
-+struct worker_pool;
-+
-+/*
-+ * The poor guys doing the actual heavy lifting.  All on-duty workers are
-+ * either serving the manager role, on idle list or on busy hash.  For
-+ * details on the locking annotation (L, I, X...), refer to workqueue.c.
-+ *
-+ * Only to be used in workqueue and async.
+ #include <linux/workqueue.h>
++#include <linux/kthread.h>
+ 
+ struct global_cwq;
+ struct worker_pool;
+@@ -44,6 +45,16 @@ struct worker {
+ 	struct workqueue_struct	*rescue_wq;	/* I: the workqueue to rescue */
+ };
+ 
++/**
++ * current_wq_worker - return struct worker if %current is a workqueue worker
 + */
-+struct worker {
-+	/* on idle list while idle, on busy hash table while busy */
-+	union {
-+		struct list_head	entry;	/* L: while idle */
-+		struct hlist_node	hentry;	/* L: while busy */
-+	};
-+
-+	struct work_struct	*current_work;	/* L: work being processed */
-+	work_func_t		current_func;	/* L: current_work's fn */
-+	struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
-+	struct list_head	scheduled;	/* L: scheduled works */
-+	struct task_struct	*task;		/* I: worker task */
-+	struct worker_pool	*pool;		/* I: the associated pool */
-+	/* 64 bytes boundary on 64bit, 32 on 32bit */
-+	unsigned long		last_active;	/* L: last active timestamp */
-+	unsigned int		flags;		/* X: flags */
-+	int			id;		/* I: worker id */
-+
-+	/* for rebinding worker to CPU */
-+	struct work_struct	rebind_work;	/* L: for busy worker */
-+
-+	/* used only by rescuers to point to the target workqueue */
-+	struct workqueue_struct	*rescue_wq;	/* I: the workqueue to rescue */
-+};
++static inline struct worker *current_wq_worker(void)
++{
++	if (current->flags & PF_WQ_WORKER)
++		return kthread_data(current);
++	return NULL;
++}
 +
  /*
   * Scheduler hooks for concurrency managed workqueue.  Only to be used from
