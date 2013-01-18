@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab3ARMlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:41:14 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:59369 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab3ARMlK (ORCPT
+	id S1756890Ab3ARMl2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:41:28 -0500
+Received: from hermes.synopsys.com ([198.182.44.81]:56095 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab3ARMlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:41:10 -0500
+	Fri, 18 Jan 2013 07:41:25 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 74/76] ARC: [Review] Multi-platform image #7: SMP common code to use callbacks
-Date: Fri, 18 Jan 2013 18:10:25 +0530
-Message-ID: <1358512827-7694-3-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 76/76] ARC: [plat-arcfpga] defconfig for fully loaded ARC Linux
+Date: Fri, 18 Jan 2013 18:10:27 +0530
+Message-ID: <1358512827-7694-5-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358512827-7694-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -24,130 +24,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This again is for switch from singleton platform SMP API to
-multi-platform paradigm
-
-Platform code is not yet setup to populate the callbacks, that happens
-in next commit
-
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arc/include/asm/smp.h |   36 +++++++++++++++---------------------
- arch/arc/kernel/smp.c      |   16 +++++++++++++---
- 2 files changed, 28 insertions(+), 24 deletions(-)
+ arch/arc/configs/fpga_defconfig |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arc/include/asm/smp.h b/arch/arc/include/asm/smp.h
-index 0cff3a5..c4fb211 100644
---- a/arch/arc/include/asm/smp.h
-+++ b/arch/arc/include/asm/smp.h
-@@ -31,6 +31,7 @@ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
-  */
- extern void __init smp_init_cpus(void);
- extern void __init first_lines_of_secondary(void);
-+extern const char *arc_platform_smp_cpuinfo(void);
- 
- /*
-  * API expected BY platform smp code (FROM arch smp code)
-@@ -41,29 +42,22 @@ extern void __init first_lines_of_secondary(void);
- extern int smp_ipi_irq_setup(int cpu, int irq);
- 
- /*
-- * APIs expected FROM platform smp code
-- *
-- * arc_platform_smp_cpuinfo:
-- *	returns a string containing info for /proc/cpuinfo
-- *
-- * arc_platform_smp_wait_to_boot:
-- *	Called from early bootup code for non-Master CPUs to "park" them
-+ * struct plat_smp_ops	- SMP callbacks provided by platform to ARC SMP
-  *
-- * arc_platform_smp_wakeup_cpu:
-- *	Called from __cpu_up (Master CPU) to kick start another one
-- *
-- * arc_platform_ipi_send:
-- *	Takes @cpumask to which IPI(s) would be sent.
-- *	The actual msg-id/buffer is manager in arch-common code
-- *
-- * arc_platform_ipi_clear:
-- *	Takes @cpu which got IPI at @irq to do any IPI clearing
-+ * @info:		SoC SMP specific info for /proc/cpuinfo etc
-+ * @cpu_kick:		For Master to kickstart a cpu (optionally at a PC)
-+ * @ipi_send:		To send IPI to a @cpumask
-+ * @ips_clear:		To clear IPI received by @cpu at @irq
-  */
--extern const char *arc_platform_smp_cpuinfo(void);
--extern void arc_platform_smp_wait_to_boot(int cpu);
--extern void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc);
--extern void arc_platform_ipi_send(const struct cpumask *callmap);
--extern void arc_platform_ipi_clear(int cpu, int irq);
-+struct plat_smp_ops {
-+	const char 	*info;
-+	void		(*cpu_kick)(int cpu, unsigned long pc);
-+	void		(*ipi_send)(void *callmap);
-+	void		(*ipi_clear)(int cpu, int irq);
-+};
-+
-+/* TBD: stop exporting it for direct population by platform */
-+extern struct plat_smp_ops  plat_smp_ops;
- 
- #endif  /* CONFIG_SMP */
- 
-diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
-index 6843846..89f1687 100644
---- a/arch/arc/kernel/smp.c
-+++ b/arch/arc/kernel/smp.c
-@@ -37,6 +37,8 @@
- arch_spinlock_t smp_atomic_ops_lock = __ARCH_SPIN_LOCK_UNLOCKED;
- arch_spinlock_t smp_bitops_lock = __ARCH_SPIN_LOCK_UNLOCKED;
- 
-+struct plat_smp_ops  plat_smp_ops;
-+
- /* XXX: per cpu ? Only needed once in early seconday boot */
- struct task_struct *secondary_idle_tsk;
- 
-@@ -105,6 +107,11 @@ void __attribute__((weak)) arc_platform_smp_wait_to_boot(int cpu)
- 	"	b 1b	\n");
- }
- 
-+const char *arc_platform_smp_cpuinfo(void)
-+{
-+	return plat_smp_ops.info;
-+}
-+
- /*
-  * The very first "C" code executed by secondary
-  * Called from asm stub in head.S
-@@ -155,7 +162,8 @@ int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
- 	pr_info("Idle Task [%d] %p", cpu, idle);
- 	pr_info("Trying to bring up CPU%u ...\n", cpu);
- 
--	arc_platform_smp_wakeup_cpu(cpu,
-+	if (plat_smp_ops.cpu_kick)
-+		plat_smp_ops.cpu_kick(cpu,
- 				(unsigned long)first_lines_of_secondary);
- 
- 	/* wait for 1 sec after kicking the secondary */
-@@ -224,7 +232,8 @@ static void ipi_send_msg(const struct cpumask *callmap, enum ipi_msg_type msg)
- 	}
- 
- 	/* Call the platform specific cross-CPU call function  */
--	arc_platform_ipi_send(callmap);
-+	if (plat_smp_ops.ipi_send)
-+		plat_smp_ops.ipi_send((void *)callmap);
- 
- 	local_irq_restore(flags);
- }
-@@ -298,7 +307,8 @@ irqreturn_t do_IPI(int irq, void *dev_id)
- 	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
- 	unsigned long ops;
- 
--	arc_platform_ipi_clear(cpu, irq);
-+	if (plat_smp_ops.ipi_clear)
-+		plat_smp_ops.ipi_clear(cpu, irq);
- 
- 	/*
- 	 * XXX: is this loop really needed
+diff --git a/arch/arc/configs/fpga_defconfig b/arch/arc/configs/fpga_defconfig
+index 8638e101f..52a3ae1 100644
+--- a/arch/arc/configs/fpga_defconfig
++++ b/arch/arc/configs/fpga_defconfig
+@@ -10,13 +10,18 @@ CONFIG_NAMESPACES=y
+ # CONFIG_PID_NS is not set
+ CONFIG_BLK_DEV_INITRD=y
+ CONFIG_INITRAMFS_SOURCE="../arc_initramfs"
+-CONFIG_EXPERT=y
+-# CONFIG_FUTEX is not set
++CONFIG_KALLSYMS_ALL=y
++CONFIG_EMBEDDED=y
++# CONFIG_SLUB_DEBUG is not set
+ # CONFIG_COMPAT_BRK is not set
++CONFIG_KPROBES=y
++CONFIG_MODULES=y
+ # CONFIG_LBDAF is not set
+ # CONFIG_BLK_DEV_BSG is not set
+ # CONFIG_IOSCHED_DEADLINE is not set
+ # CONFIG_IOSCHED_CFQ is not set
++CONFIG_ARC_PLAT_FPGA_LEGACY=y
++CONFIG_ARC_BOARD_ML509=y
+ CONFIG_ARC_BUILTIN_DTB_NAME="angel4"
+ # CONFIG_COMPACTION is not set
+ # CONFIG_CROSS_MEMORY_ATTACH is not set
 -- 
 1.7.4.1
 
