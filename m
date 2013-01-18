@@ -1,121 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab3ARRyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 12:54:23 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39453 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751858Ab3ARRyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 12:54:21 -0500
-Date: Fri, 18 Jan 2013 19:54:08 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Luciano Coelho <coelho@ti.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [[PATCH v2]] OMAP: omap4-panda: add WiLink shared transport
- power functions
-Message-ID: <20130118175408.GC1035@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <50F7CA82.4050509@ti.com>
- <20130117100510.GI10814@arwen.pp.htv.fi>
- <20130117100919.GJ10814@arwen.pp.htv.fi>
- <1358418917.6252.31.camel@cumari.coelho.fi>
- <50F7D535.6030205@ti.com>
- <20130117173131.GL14149@atomide.com>
- <1358445456.6252.64.camel@cumari.coelho.fi>
- <20130117231608.GP14149@atomide.com>
- <1358499533.6252.80.camel@cumari.coelho.fi>
- <20130118173635.GE15361@atomide.com>
+	id S1754696Ab3ARRzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 12:55:09 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38798 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab3ARRzH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 12:55:07 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="V0207lvV8h4k8FAm"
-Content-Disposition: inline
-In-Reply-To: <20130118173635.GE15361@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Prashant Gaikwad <pgaikwad@nvidia.com>, <swarren@nvidia.com>,
+        <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>,
+        <rob.herring@calxeda.com>, <maxime.ripard@free-electrons.com>,
+        <linux@prisktech.co.nz>, <josh.cartwright@ni.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1357282858-2112-4-git-send-email-pgaikwad@nvidia.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
+ <1357282858-2112-4-git-send-email-pgaikwad@nvidia.com>
+Message-ID: <20130118175502.3982.82180@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH 4/7] clk: highbank: Use common of_clk_init() function
+Date: Fri, 18 Jan 2013 09:55:02 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---V0207lvV8h4k8FAm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Quoting Prashant Gaikwad (2013-01-03 23:00:55)
+> Use common of_clk_init() function for clocks initialization.
+> 
+> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 
-Hi,
+Rob,
 
-On Fri, Jan 18, 2013 at 09:36:35AM -0800, Tony Lindgren wrote:
-> * Luciano Coelho <coelho@ti.com> [130118 01:03]:
-> > On Thu, 2013-01-17 at 15:16 -0800, Tony Lindgren wrote:
-> > > * Luciano Coelho <coelho@ti.com> [130117 10:04]:
-> > > > But this patch is pretty small and simple, so why not include it to=
- at
-> > > > least fix the breakage in 3.7 and 3.8? Whether you take it or not n=
-ow
-> > > > won't make any difference in the 5k LOC in these kernel versions.
-> > >=20
-> > > Well we are planning to drop the non-DT support for omap4 as soon as =
-it's
-> > > usable with DT. For omap4 we are only carrying SDP and panda support =
-to
-> > > make this transition easier. The only bindings missing AFAIK are wl12=
-xx and
-> > > USB.
-> >=20
-> > In my view this is a regression and it should be fixed with as simple a
-> > patch as possible.  The alternative to my solution is to revert the
-> > patch that removed the enable/disable from the ti-st driver *and* fix
-> > u-boot, because if it doesn't mux the UART2 pins properly (and it
-> > doesn't) the shared transport still won't work.
->=20
-> Fixing the muxing here makes sense naturally as we cannot do that in the =
-driver
-> until we've flipped things over to use DT.
->=20
-> But I don't think we should fix the driver regression by adding more plat=
-form
-> callbacks as we are getting rid of them anyways.
+Can I get a Tested-by from you before I take this?
 
-it's not adding more callbacks, solely implementing them as it should
-have been done on Pavan's original patch.
+Thanks,
+Mike
 
-> > > What's your estimate of having minimal wl12xx WLAN DT binding availab=
-le?
-> >=20
-> > To tell you the truth, I haven't even started looking into DT for wl12xx
-> > myself.  So I have no idea when it will be ready.  Benoit has been
-> > looking into it, but I don't know how far he is.
->=20
-> If it's going to take long we should just init the platform data for
-> it temporarily even in the DT boot case until the binding is available.
-
-which will boil down to having those platform_data callbacks to have it
-at least functional. How will Luca test DT conversion if ti-st isn't
-even functional ?
-
---=20
-balbi
-
---V0207lvV8h4k8FAm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ+YxAAAoJEIaOsuA1yqREC6kP/RR3po7xTPhLRCcdvNhk4Jpj
-xhXVQFOy+E/sqZ0u9hM4eFbreCe/ZXfwXfnG4lYoifiyyVH5VA/O+AnmAGRCO0nK
-EeTgxif8glYpkgCbADLDl6EM2V8z2q/SNIUjW7hB1D43VJOizPXenI9TfaPeCuG9
-G9Jwb+vQrdK41pq9yPTBU5ef1fmf3sThQtF0fsuzkzYh8bpC93Mi0GrfXRtn6oN8
-QxXvU2viE+bSLv7mAEd1NoasJ54MsZoAYCBJPX21N5oU1RThW+7p8aP8lPF+Zifh
-w6IPcv+pb7NV9DQLnf+CaIEb0CR85SyXpuyCJ2zcr4zWjz4yDOx/CgzoixGzDcma
-seqJZsC4uvdjPQ9/xaFpHsiy7tDckqEVAQvvTWQDK6fFWHebGOhtXQJdeT+YcWHf
-Qru6woTVujOubsN1DyG3xf/mMI0+aZTAjc6tMI1BTV7LXALsNAYcHlmACJrx/gCZ
-B6Kz8RG/GFr0P8DlfgyXXKg7sNZheGpdtB68jlgPUepH9TPVSlYUknif/x1m3S/g
-9JI0/ca+40uTIYBAdReiYKdsMMuciLMxx9IsUK4ZxzM2OjNYXj8otlzBVF4mWjIA
-XtuP+dijQA2ePS9pOSCvDj1ATEM1EUttKMzFue8hV6Hir7jusyeMyibFjV6C4wAQ
-eUD9JprQel88tP7bS/Ek
-=CCb5
------END PGP SIGNATURE-----
-
---V0207lvV8h4k8FAm--
+> ---
+>  arch/arm/mach-highbank/core.h     |    1 -
+>  arch/arm/mach-highbank/highbank.c |    3 ++-
+>  drivers/clk/clk-highbank.c        |   18 ++++--------------
+>  3 files changed, 6 insertions(+), 16 deletions(-)
+> 
+> diff --git a/arch/arm/mach-highbank/core.h b/arch/arm/mach-highbank/core.h
+> index 80235b4..3f65206 100644
+> --- a/arch/arm/mach-highbank/core.h
+> +++ b/arch/arm/mach-highbank/core.h
+> @@ -2,7 +2,6 @@
+>  #define __HIGHBANK_CORE_H
+>  
+>  extern void highbank_set_cpu_jump(int cpu, void *jump_addr);
+> -extern void highbank_clocks_init(void);
+>  extern void highbank_restart(char, const char *);
+>  extern void __iomem *scu_base_addr;
+>  
+> diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
+> index f6ca285..fb148da 100644
+> --- a/arch/arm/mach-highbank/highbank.c
+> +++ b/arch/arm/mach-highbank/highbank.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/of_address.h>
+>  #include <linux/smp.h>
+>  #include <linux/amba/bus.h>
+> +#include <linux/clk-provider.h>
+>  
+>  #include <asm/arch_timer.h>
+>  #include <asm/cacheflush.h>
+> @@ -116,7 +117,7 @@ static void __init highbank_timer_init(void)
+>         WARN_ON(!timer_base);
+>         irq = irq_of_parse_and_map(np, 0);
+>  
+> -       highbank_clocks_init();
+> +       of_clk_init(NULL);
+>         lookup.clk = of_clk_get(np, 0);
+>         clkdev_add(&lookup);
+>  
+> diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
+> index 52fecad..5d1de2e 100644
+> --- a/drivers/clk/clk-highbank.c
+> +++ b/drivers/clk/clk-highbank.c
+> @@ -314,33 +314,23 @@ static void __init hb_pll_init(struct device_node *node)
+>  {
+>         hb_clk_init(node, &clk_pll_ops);
+>  }
+> +CLK_OF_DECLARE(hb_pll, "calxeda,hb-pll-clock", hb_pll_init);
+>  
+>  static void __init hb_a9periph_init(struct device_node *node)
+>  {
+>         hb_clk_init(node, &a9periphclk_ops);
+>  }
+> +CLK_OF_DECLARE(hb_a9periph, "calxeda,hb-a9periph-clock", hb_a9periph_init);
+>  
+>  static void __init hb_a9bus_init(struct device_node *node)
+>  {
+>         struct clk *clk = hb_clk_init(node, &a9bclk_ops);
+>         clk_prepare_enable(clk);
+>  }
+> +CLK_OF_DECLARE(hb_a9bus, "calxeda,hb-a9bus-clock", hb_a9bus_init);
+>  
+>  static void __init hb_emmc_init(struct device_node *node)
+>  {
+>         hb_clk_init(node, &periclk_ops);
+>  }
+> -
+> -static const __initconst struct of_device_id clk_match[] = {
+> -       { .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
+> -       { .compatible = "calxeda,hb-pll-clock", .data = hb_pll_init, },
+> -       { .compatible = "calxeda,hb-a9periph-clock", .data = hb_a9periph_init, },
+> -       { .compatible = "calxeda,hb-a9bus-clock", .data = hb_a9bus_init, },
+> -       { .compatible = "calxeda,hb-emmc-clock", .data = hb_emmc_init, },
+> -       {}
+> -};
+> -
+> -void __init highbank_clocks_init(void)
+> -{
+> -       of_clk_init(clk_match);
+> -}
+> +CLK_OF_DECLARE(hb_emmc, "calxeda,hb-emmc-clock", hb_emmc_init);
+> -- 
+> 1.7.4.1
