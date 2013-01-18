@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab3ARVJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:09:34 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:39583 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab3ARVJd convert rfc822-to-8bit (ORCPT
+	id S1755594Ab3ARVO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:14:27 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49816 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab3ARVO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 16:09:33 -0500
-Content-Type: text/plain; charset="utf-8"
+	Fri, 18 Jan 2013 16:14:27 -0500
+Date: Fri, 18 Jan 2013 21:08:59 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Matt Sealey <matt@genesi-usa.com>
+Cc: Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: Compilation problem with drivers/staging/zsmalloc when !SMP on
+	ARM
+Message-ID: <20130118210859.GH23505@n2100.arm.linux.org.uk>
+References: <CAKGA1b=ACTQHo9=B7EAG5nrFCO9u-J+sy7dXtYk3Rk6OUcW3cQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Prashant Gaikwad <pgaikwad@nvidia.com>, <swarren@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1357278706-28149-1-git-send-email-pgaikwad@nvidia.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-References: <1357278706-28149-1-git-send-email-pgaikwad@nvidia.com>
-Message-ID: <20130118210928.3982.75303@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: [PATCH 1/2] clk: Add composite clock type
-Date: Fri, 18 Jan 2013 13:09:28 -0800
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKGA1b=ACTQHo9=B7EAG5nrFCO9u-J+sy7dXtYk3Rk6OUcW3cQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Prashant Gaikwad (2013-01-03 21:51:45)
-> Not all clocks are required to be decomposed into basic clock
-> types but at the same time want to use the functionality
-> provided by these basic clock types instead of duplicating.
+On Fri, Jan 18, 2013 at 02:24:15PM -0600, Matt Sealey wrote:
+> Hello all,
 > 
-> For example, Tegra SoC has ~100 clocks which can be decomposed
-> into Mux -> Div -> Gate clock types making the clock count to
-> ~300. Also, parent change operation can not be performed on gate
-> clock which forces to use mux clock in driver if want to change
-> the parent.
-> 
-> Instead aggregate the basic clock types functionality into one
-> clock and just use this clock for all operations. This clock
-> type re-uses the functionality of basic clock types and not
-> limited to basic clock types but any hardware-specific
-> implementation.
-> 
-> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+> I wonder if anyone can shed some light on this linking problem I have
+> right now. If I configure my kernel without SMP support (it is a very
+> lean config for i.MX51 with device tree support only) I hit this error
+> on linking:
 
-Hi Prashant,
+Yes, I looked at this, and I've decided that I will _not_ fix this export,
+neither will I accept a patch to add an export.
 
-I'm OK with the general concept of the composite clock, but a V2 patch
-addressing all of the comments needs to be submitted first.  You might
-base your patch on top of the following cleanup:
+As far as I can see, this code is buggy in a SMP environment.  There's
+apparantly no guarantee that:
 
+1. the mapping will be created on a particular CPU.
+2. the mapping will then be used only on this specific CPU.
+3. no guarantee that another CPU won't speculatively prefetch from this
+   region.
+4. when the mapping is torn down, no guarantee that it's the same CPU that
+   used the happing.
 
->From 135a829744067cb825b48f7422e22861e57d5ecd Mon Sep 17 00:00:00 2001
-From: Mike Turquette <mturquette@linaro.org>
-Date: Fri, 18 Jan 2013 13:00:05 -0800
-Subject: [PATCH] clk: beautify Makefile
+So, the use of the local TLB flush leaves all the other CPUs potentially
+containing TLB entries for this mapping.
 
-The list of common clock types was getting a bit unmanageable.  This
-patch puts only one file on each line and reorders the object files
-alphabetically.  Also a newline is added to separate the sections.
+Finally, there is no TODO file for this driver, which I believe is a
+requirement for anything to be in stable.  So as far as I can see, it
+should be deleted or a TODO file added.  I'm not sure why Greg decided
+to add it without a TODO file.
 
-Reported-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Prashant Gaikwad <pgaikwad@nvidia.com>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
----
- drivers/clk/Makefile |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index ee90e87..e73b1d6 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -1,8 +1,13 @@
- # common clock types
- obj-$(CONFIG_HAVE_CLK)		+= clk-devres.o
- obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
--obj-$(CONFIG_COMMON_CLK)	+= clk.o clk-fixed-rate.o clk-gate.o \
--				   clk-mux.o clk-divider.o clk-fixed-factor.o
-+obj-$(CONFIG_COMMON_CLK)	+= clk.o
-+obj-$(CONFIG_COMMON_CLK)	+= clk-divider.o
-+obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-factor.o
-+obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
-+obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
-+obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
-+
- # SoCs specific
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
- obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
--- 
-1.7.10.4
-
+(If there was such a file, I'd have added the above to it.  As it is,
+I've just decided to disable the thing in my randconfig builds.)
