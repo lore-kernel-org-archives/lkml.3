@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab3ARTwm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 14:52:42 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:33181 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab3ARTwk (ORCPT
+	id S1755859Ab3ARTxH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 14:53:07 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:43668 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755112Ab3ARTxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 14:52:40 -0500
-Date: Fri, 18 Jan 2013 11:52:36 -0800
+	Fri, 18 Jan 2013 14:53:05 -0500
+Date: Fri, 18 Jan 2013 11:53:01 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] char/misc fixes for 3.8-rc4
-Message-ID: <20130118195236.GA18913@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] Staging driver fixes for 3.8-rc3
+Message-ID: <20130118195301.GA18980@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,30 +22,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit e6028db0146cf5a68dbd1508225ea49840997880:
+The following changes since commit 397c60668aa5ae7130b5ad4e73870d7b8a787085:
 
-  mei: fix mismatch in mutex unlock-lock in mei_amthif_read() (2013-01-07 10:28:03 -0800)
+  staging: zram: fix invalid memory references during disk write (2013-01-13 19:40:02 -0800)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.8-rc4
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.8-rc4
 
-for you to fetch changes up to 33080c1cda280b918349c676cb75bedb6db4a772:
+for you to fetch changes up to 7dfc8331781f954bbea5c59d4411acf3b28530c1:
 
-  Drivers: hv: balloon: Fix a memory leak (2013-01-17 11:58:00 -0800)
+  staging/sb105x: PARPORT config is not good enough must use PARPORT_PC (2013-01-17 16:39:41 -0800)
 
 ----------------------------------------------------------------
-Char/Misc driver fixes for 3.8-rc4
+Staging bugfixes for 3.8-rc4
 
-Here are two hyperv patches for 3.8-rc4 that fix some reported problems
-hv_balloon driver.
+Here are some bugfixes for the drivers/staging tree for 3.8-rc4.
+
+Nothing major, just a number of small fixes for problems that people
+have reported, including finally tracking down the root of the 64/32 bit
+problem with the vt6656 that has been driving people crazy for a while.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-K. Y. Srinivasan (2):
-      Drivers: hv: balloon: Fix a bug in the definition of struct dm_info_msg
-      Drivers: hv: balloon: Fix a memory leak
+Ben Hutchings (1):
+      staging: vt6656: Fix inconsistent structure packing
 
- drivers/hv/hv_balloon.c | 35 +++++++++++++++++++++--------------
- 1 file changed, 21 insertions(+), 14 deletions(-)
+Fabio Estevam (1):
+      iio: mxs-lradc: indexes are unsigned
+
+Greg Kroah-Hartman (1):
+      Merge tag 'iio-fixes-for-3.8b' of git://git.kernel.org/.../jic23/iio into staging-linus
+
+Lars-Peter Clausen (1):
+      staging:iio:adis16080: Perform sign extension
+
+Steven Rostedt (1):
+      staging/sb105x: PARPORT config is not good enough must use PARPORT_PC
+
+Tormod Volden (1):
+      staging: wlan-ng: Fix clamping of returned SSID length
+
+ drivers/staging/iio/adc/mxs-lradc.c       |  2 +-
+ drivers/staging/iio/gyro/adis16080_core.c |  2 +-
+ drivers/staging/sb105x/sb_pci_mp.c        |  2 +-
+ drivers/staging/vt6656/bssdb.h            |  1 -
+ drivers/staging/vt6656/int.h              |  1 -
+ drivers/staging/vt6656/iocmd.h            | 33 ++++++++++++++++-----------------
+ drivers/staging/vt6656/iowpa.h            |  8 +++-----
+ drivers/staging/wlan-ng/prism2mgmt.c      |  2 +-
+ 8 files changed, 23 insertions(+), 28 deletions(-)
