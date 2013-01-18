@@ -1,111 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3ARNcG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 08:32:06 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:59959 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab3ARNcF (ORCPT
+	id S1755026Ab3ARNfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 08:35:40 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:38326 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab3ARNfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 08:32:05 -0500
-Message-ID: <50F94EC5.9070905@synopsys.com>
-Date: Fri, 18 Jan 2013 19:01:49 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 18 Jan 2013 08:35:39 -0500
+Message-ID: <50F94FA6.6070005@systemhalted.org>
+Date: Fri, 18 Jan 2013 08:35:34 -0500
+From: "Carlos O'Donell" <carlos@systemhalted.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Jason Wessel <jason.wessel@windriver.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, Mischa Jonker <Mischa.Jonker@synopsys.com>
-Subject: Re: [PATCH v2 57/76] ARC: kgdb support
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-58-git-send-email-vgupta@synopsys.com> <50F94AFF.9010801@windriver.com>
-In-Reply-To: <50F94AFF.9010801@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Pedro Alves <palves@redhat.com>
+CC: Mike Frysinger <vapier@gentoo.org>, David Miller <davem@davemloft.net>,
+        libc-alpha@sourceware.org, bhutchings@solarflare.com,
+        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
+        eblake@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
+        schwab@suse.de
+Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
+References: <201301161205.04502.vapier@gentoo.org> <50F75EA7.4060309@systemhalted.org> <20130116.221538.1756411165313441486.davem@davemloft.net> <201301172320.19905.vapier@gentoo.org> <CAE2sS1jMhnRcoo1oe7wQ+SP=40u9mkps6vXua8TQQ4Tbf2qKOQ@mail.gmail.com> <50F927A5.5060409@redhat.com>
+In-Reply-To: <50F927A5.5060409@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 January 2013 06:45 PM, Jason Wessel wrote:
-> On 01/18/2013 06:25 AM, Vineet Gupta wrote:
->> From: Mischa Jonker <mjonker@synopsys.com>
+On 01/18/2013 05:44 AM, Pedro Alves wrote:
+> On 01/18/2013 04:22 AM, Carlos O'Donell wrote:
+>> On Thu, Jan 17, 2013 at 11:20 PM, Mike Frysinger <vapier@gentoo.org> wrote:
+>>> On Wednesday 16 January 2013 22:15:38 David Miller wrote:
+>>>> From: Carlos O'Donell <carlos@systemhalted.org>
+>>>> Date: Wed, 16 Jan 2013 21:15:03 -0500
+>>>>
+>>>>> +/* If a glibc-based userspace has already included in.h, then we will
+>>>>> not + * define in6_addr (nor the defines), sockaddr_in6, or ipv6_mreq.
+>>>>> The + * ABI used by the kernel and by glibc match exactly. Neither the
+>>>>> kernel + * nor glibc should break this ABI without coordination.
+>>>>> + */
+>>>>> +#ifndef _NETINET_IN_H
+>>>>> +
+>>>>
+>>>> I think we should shoot for a non-glibc-centric solution.
+>>>>
+>>>> I can't imagine that other libc's won't have the same exact problem
+>>>> with their netinet/in.h conflicting with the kernel's, redefining
+>>>> structures like in6_addr, that we'd want to provide a protection
+>>>> scheme for here as well.
+>>>
+>>> yes, the kernel's use of __GLIBC__ in exported headers has already caused
+>>> problems in the past.  fortunately, it's been reduced down to just one case
+>>> now (stat.h).  let's not balloon it back up.
+>>> -mike
 >>
->> Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
->> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
->> Cc: Jason Wessel <jason.wessel@windriver.com>
-> Acked-by: Jason Wessel <jason.wessel@windriver.com>
->
->> ---
->>  arch/arc/Kconfig            |    3 +-
->>  arch/arc/include/asm/kgdb.h |   61 +++++++++++++
->>  arch/arc/kernel/Makefile    |    1 +
->>  arch/arc/kernel/kgdb.c      |  205 +++++++++++++++++++++++++++++++++++++++++++
->>  arch/arc/kernel/traps.c     |    6 ++
->>  5 files changed, 275 insertions(+), 1 deletions(-)
->>  create mode 100644 arch/arc/include/asm/kgdb.h
->>  create mode 100644 arch/arc/kernel/kgdb.c
+>> I also see coda.h has grown a __GLIBC__ usage.
 >>
->> diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
->> index d735de8..b954387 100644
->> --- a/arch/arc/Kconfig
->> +++ b/arch/arc/Kconfig
->> @@ -23,6 +23,7 @@ config ARC
->>  	select GENERIC_PENDING_IRQ if SMP
->>  	select GENERIC_SIGALTSTACK
->>  	select GENERIC_SMP_IDLE_THREAD
->> +	select HAVE_ARCH_KGDB
->>  	select HAVE_ARCH_TRACEHOOK
->>  	select HAVE_GENERIC_HARDIRQS
->>  	select HAVE_KPROBES
->> @@ -383,7 +384,7 @@ config ARC_DW2_UNWIND
->>  
->>  config ARC_DBG_TLB_PARANOIA
->>  	bool "Paranoia Checks in Low Level TLB Handlers"
->> -	depends on ARC_DBG && !SMP
->> +	depends on ARC_DBG
->>  	default n
->>  
->>  config ARC_DBG_TLB_MISS_COUNT
->> diff --git a/arch/arc/include/asm/kgdb.h b/arch/arc/include/asm/kgdb.h
->> new file mode 100644
->> index 0000000..f3c4934
->> --- /dev/null
->> +++ b/arch/arc/include/asm/kgdb.h
->> @@ -0,0 +1,61 @@
->> +/*
->> + * kgdb support for ARC
->> + *
->> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#ifndef __ARC_KGDB_H__
->> +#define __ARC_KGDB_H__
->> +
->> +#ifdef CONFIG_KGDB
->> +
->> +#include <asm/user.h>
->> +
->> +/* to ensure compatibility with Linux 2.6.35, we don't implement the get/set
->> + * register API yet */
->
-> I did think this note was slightly odd.   Is this mainly because you have some kind of out of tree version of this code against an older kernel?
+>> In the next revision of the patch I created a single libc-compat.h header
+>> which encompasses the logic for any libc that wants to coordinate with
+>> the kernel headers.
+> 
+> 
+>> It's simple enough to move all of the __GLIBC__ uses into libc-compat.h,
+>> then you control userspace libc coordination from one file.
+> 
+> How about just deciding on a single macro/symbol both the
+> kernel and libc (any libc that needs this) define?  Something
+> like both the kernel and userland doing:
+> 
+> #ifndef __IPV6_BITS_DEFINED
+> #define __IPV6_BITS_DEFINED
+> ...
+> define in6_addr, sockaddr_in6, ipv6_mreq, whatnot
+> #endif
+> 
+> So whichever the application includes first, wins.
+> Too naive?  I didn't see this option being discarded, so
+> not sure it was considered.
 
-Thanks for your review and ACK, Jason. We did the initial port against 2.6.35 and
-later moved over to 3.2 - both of which were out-of-tree. We will take a look at
-it again and clean this up.
+Too naive, but *close* to what my patch does :-)
 
-> The main thing that you lose by not doing this the ability to display and set registers from the kdb shell.
->
-> From the pure gdb only end of things, gdb operates more efficiently for doing things like setting or reading the program counter, frame pointer or variable mapped registers when using a rs232 connection.  There is no loss or gain in actual functionality by not implementing the individual get/set register method if you only intend to use gdb.
->
-> Cheers,
-> Jason.
+The kernel definitions when included first, and in a 
+glibc userspace, must try to mimic the glibc userspace 
+headers and we need more than one guard macro to do 
+that effectively.
 
-OK - we will fix this up - but I presume it is not a gating item for the port
-submission.
+The reason I jumped into the code is because this kind of
+problem is easy to talk about, but the devil is in the 
+details.
 
-Thx,
--Vineet
+There are certainly some compromises on both sides, but
+the solution promises to solve this problem.
+
+Honestly without UAPI this would have been an impossible
+task.
+
+Cheers,
+Carlos.
+
