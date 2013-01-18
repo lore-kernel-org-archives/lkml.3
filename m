@@ -1,95 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3ARA2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 19:28:48 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23742 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576Ab3ARA2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 19:28:46 -0500
-X-Authority-Analysis: v=2.0 cv=UsXhxpMB c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=c2-CyQTwG8UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=nf3OURjn1SIA:10 a=e0rM7KXBUBkOxtCy9Q8A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358468924.23211.69.camel@gandalf.local.home>
-Subject: [RFC][PATCH v2] slub: Keep page and object in sync in
- slab_alloc_node()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@gmail.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Date: Thu, 17 Jan 2013 19:28:44 -0500
-In-Reply-To: <1358468598.23211.67.camel@gandalf.local.home>
-References: <1358446258.23211.32.camel@gandalf.local.home>
-	 <1358447864.23211.34.camel@gandalf.local.home>
-	 <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com>
-	 <1358458996.23211.46.camel@gandalf.local.home>
-	 <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com>
-	 <1358462763.23211.57.camel@gandalf.local.home>
-	 <1358464245.23211.62.camel@gandalf.local.home>
-	 <1358464837.23211.66.camel@gandalf.local.home>
-	 <1358468598.23211.67.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754454Ab3ARAgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 19:36:35 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:24661
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752076Ab3ARAge convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 19:36:34 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zz98dI9371I542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahz8dhz17326ah8275bh8275dhz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h1155h)
+X-WSS-ID: 0MGSPNX-01-1E4-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Shuah Khan <shuahkhan@gmail.com>
+CC: "jglisse@redhat.com" <jglisse@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: linux 3.8-rc3 reboot and shutdown
+Thread-Topic: linux 3.8-rc3 reboot and shutdown
+Thread-Index: AQHN9OVfBOBCoX5Y/Ea73ubzySE7LJhN7CZQgAChWAD//6JnAIAAb9CA//+do9A=
+Date: Fri, 18 Jan 2013 00:35:56 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02DC30C52@sausexdag04.amd.com>
+References: <CAKocOOMagCzn7fkkZJM+r5K--yXjZ40jCsHpwi97gCKo1keZ1A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC2FB3A@sausexdag04.amd.com>
+	<CAKocOOMrTf9RMa17Zy_oK+uPJ_B7uNwxhsX7dOm4okVdnmwY5A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30C27@sausexdag04.amd.com>
+ <CAKocOOPNf5HZOO421Cvhb35fMxM6Tfu7w2aXZb3UF3igS9S=Kw@mail.gmail.com>
+In-Reply-To: <CAKocOOPNf5HZOO421Cvhb35fMxM6Tfu7w2aXZb3UF3igS9S=Kw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.224.12.124]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In slab_alloc_node(), after the cpu_slab is assigned, if the task is
-preempted and moves to another CPU, there's nothing keeping the page and
-object in sync. The -rt kernel crashed because page was NULL and object
-was not, and the node_match() dereferences page. Even though the crash
-happened on -rt, there's nothing that's keeping this from happening on
-mainline.
+> -----Original Message-----
+> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+> Sent: Thursday, January 17, 2013 7:26 PM
+> To: Deucher, Alexander
+> Cc: jglisse@redhat.com; linux-kernel@vger.kernel.org
+> Subject: Re: linux 3.8-rc3 reboot and shutdown
+> 
+> On Thu, Jan 17, 2013 at 4:48 PM, Deucher, Alexander
+> <Alexander.Deucher@amd.com> wrote:
+> >> -----Original Message-----
+> >> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+> >> Sent: Thursday, January 17, 2013 6:21 PM
+> >> To: Deucher, Alexander
+> >> Cc: jglisse@redhat.com; linux-kernel@vger.kernel.org
+> >> Subject: Re: linux 3.8-rc3 reboot and shutdown
+> >>
+> >> On Thu, Jan 17, 2013 at 12:45 PM, Deucher, Alexander
+> >> <Alexander.Deucher@amd.com> wrote:
+> >> >> -----Original Message-----
+> >> >> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+> >> >> Sent: Thursday, January 17, 2013 2:03 PM
+> >> >> To: jglisse@redhat.com; Deucher, Alexander
+> >> >> Cc: linux-kernel@vger.kernel.org; Shuah Khan
+> >> >> Subject: linux 3.8-rc3 reboot and shutdown
+> >> >>
+> >> >> Alex,
+> >> >>
+> >> >> I started seeing hang during shutdown and reboot on my laptop that
+> has
+> >> >> ATI radeon VGA.
+> >> >>
+> >> >> 01:00.0 VGA compatible controller: Advanced Micro Devices [AMD]
+> nee
+> >> >> ATI RV620 [Mobility Radeon HD 3400 Series] (prog-if 00 [VGA
+> >> >> controller])
+> >> >>
+> >> >> My bisect narrowed it to the following commit.
+> >> >
+> >> > Should be fixed by this commit:
+> >> > http://cgit.freedesktop.org/~agd5f/linux/commit/?h=drm-fixes-
+> >> 3.8&id=19fc42ed9950d5fe17089c0a928121047c882092
+> >> > Which should be finding its way upstream any day now.
+> >> >
+> >> > Alex
+> >> >
+> >>
+> >> Alex,
+> >>
+> >> Applied this patch on 3.8-rc3 and tested it. reboot still hung. The
+> >> only thing that fixes the problem is reverting
+> >> 71e3d1578c954cf29f1f4db1c8930d3574025eb0
+> >
+> > Does the attached patch applied in addition to:
+> > http://cgit.freedesktop.org/~agd5f/linux/commit/?h=drm-fixes-
+> 3.8&id=19fc42ed9950d5fe17089c0a928121047c882092
+> > fix the issue?
+> >
+> > Alex
+> 
+> No reboot still hung after applying
+> 0001-drm-radeon-don-t-attempt-to-soft-reset-DMA-ring-on-r.patch  in
+> addition to 19fc42ed9950d5fe17089c0a928121047c882092
 
-The easiest fix is to disable interrupts for the entire time from
-acquiring the current CPU cpu_slab and assigning the object and page.
-After that, it's fine to allow preemption.
+Can you send me the dmesg from the failed reboot?
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/mm/slub.c b/mm/slub.c
-index ba2ca53..f0681db 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2325,6 +2325,7 @@ static __always_inline void *slab_alloc_node(struct kmem_cache *s,
- 	struct kmem_cache_cpu *c;
- 	struct page *page;
- 	unsigned long tid;
-+	unsigned long flags;
- 
- 	if (slab_pre_alloc_hook(s, gfpflags))
- 		return NULL;
-@@ -2337,7 +2338,10 @@ redo:
- 	 * enabled. We may switch back and forth between cpus while
- 	 * reading from one cpu area. That does not matter as long
- 	 * as we end up on the original cpu again when doing the cmpxchg.
-+	 *
-+	 * But we need to sync the setting of page and object.
- 	 */
-+	local_irq_save(flags);
- 	c = __this_cpu_ptr(s->cpu_slab);
- 
- 	/*
-@@ -2347,10 +2351,11 @@ redo:
- 	 * linked list in between.
- 	 */
- 	tid = c->tid;
--	barrier();
- 
- 	object = c->freelist;
- 	page = c->page;
-+	local_irq_restore(flags);
-+
- 	if (unlikely(!object || !node_match(page, node)))
- 		object = __slab_alloc(s, gfpflags, node, addr, c);
- 
-
+Alex
 
