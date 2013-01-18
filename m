@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab3AROnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 09:43:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31642 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820Ab3AROns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 09:43:48 -0500
-Date: Fri, 18 Jan 2013 14:43:46 +0000
-From: thornber@redhat.com
-To: device-mapper development <dm-devel@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [dm-devel] Announcement: STEC EnhanceIO SSD caching software for
- Linux kernel
-Message-ID: <20130118144345.GA3077@raspberrypi>
-Mail-Followup-To: device-mapper development <dm-devel@redhat.com>,
-	Mike Snitzer <snitzer@redhat.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
- <CAMM=eLdgD8GKeK48SU2rfC49u3H4WRf9-xFxM4ymVPbKkx+mCw@mail.gmail.com>
- <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D70CE@MYMBX.MY.STEC-INC.AD>
- <20130116104546.GA3869@raspberrypi>
+	id S1756251Ab3AROnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 09:43:55 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:60922 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755879Ab3AROnx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 09:43:53 -0500
+Date: Fri, 18 Jan 2013 14:43:51 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
+        John Kacur <jkacur@gmail.com>,
+        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
+Subject: Re: [RFC][PATCH] slub: Check for page NULL before doing the node_match
+ check
+In-Reply-To: <1358464245.23211.62.camel@gandalf.local.home>
+Message-ID: <0000013c4e1da430-0d8efce2-01b6-4862-b7b1-2ccd6503fc17-000000@email.amazonses.com>
+References: <1358446258.23211.32.camel@gandalf.local.home> <1358447864.23211.34.camel@gandalf.local.home> <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com> <1358458996.23211.46.camel@gandalf.local.home>
+ <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com> <1358462763.23211.57.camel@gandalf.local.home> <1358464245.23211.62.camel@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130116104546.GA3869@raspberrypi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 16, 2013 at 10:45:47AM +0000, thornber@redhat.com wrote:
-> I'll create a branch in my github tree with all three caches in.  So
-> it's easy to build a kernel with them.  (Mike's already combined
-> dm-cache and bcache and done some preliminary testing).
+On Thu, 17 Jan 2013, Steven Rostedt wrote:
 
-git://github.com/jthornber/linux-2.6.git
+> Because there's also nothing to keep page related to object either, we
+> may just need to do:
 
-branch 'all-caches'
+Adding the NULL check is satisfactory I think. The TID check guarantees
+that nothing happened in between and the call the __slab_alloc can do the
+same as the fastpath if it mistakenly goes to the slowpath.
 
-I managed to reproduce the hang with bcache that Mike described
-before.  However I can see that it was running the test more quickly
-than eio at this point.
-
-- Joe
