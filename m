@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab3ARKsH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 05:48:07 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51128 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab3ARKsC (ORCPT
+	id S1751849Ab3ARLM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 06:12:58 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59128 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751622Ab3ARLM5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 05:48:02 -0500
-From: "Patil, Rachna" <rachna@ti.com>
-To: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        <linux-iio@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Rob Herring <rob.herring@calxeda.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Tony Lindgren <tony@atomide.com>,
-        Benit Cousson <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        "Patil, Rachna" <rachna@ti.com>
-Subject: [PATCH v3 7/8] IIO: ti_am335x_adc: Add DT support
-Date: Fri, 18 Jan 2013 16:18:49 +0530
-Message-ID: <cd7783f3c96ef38f95c1ee85736f115754feec68.1358502134.git.rachna@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1358502134.git.rachna@ti.com>
-References: <cover.1358502134.git.rachna@ti.com>
+	Fri, 18 Jan 2013 06:12:57 -0500
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: "sameo@linux.intel.com" <sameo@linux.intel.com>
+CC: "Porter, Matt" <mporter@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] mfd: tps65910: Select REGMAP_IRQ in Kconfig to fix
+ build error
+Thread-Topic: [PATCH] mfd: tps65910: Select REGMAP_IRQ in Kconfig to fix
+ build error
+Thread-Index: AQHN1seiI6fLegAXTkGaMUde0EWBo5g18YqQgAsYJYCADiHcsA==
+Date: Fri, 18 Jan 2013 11:12:53 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EAF03B5@DBDE01.ent.ti.com>
+References: <1355138096-7702-1-git-send-email-anilkumar@ti.com>
+ <331ABD5ECB02734CA317220B2BBEABC13EAD58CF@DBDE01.ent.ti.com>
+ <20130109165235.GJ14660@beef>
+In-Reply-To: <20130109165235.GJ14660@beef>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Patil, Rachna" <rachna@ti.com>
+On Wed, Jan 09, 2013 at 22:22:35, Porter, Matt wrote:
+> On Wed, Jan 02, 2013 at 10:15:39AM +0000, AnilKumar wrote:
+> > On Mon, Dec 10, 2012 at 16:44:56, AnilKumar, Chimata wrote:
+> > > TPS65910 mfd driver uses functions that are only avaiable when
+> > > REGMAP_IRQ is enabled. So "select REGMAP_IRQ" is added to mfd
+> > > Kconfig to fix below build error:
+> > > 
+> > > drivers/built-in.o: In function `tps65910_irq_exit':
+> > > /media/anil/kernel/drivers/mfd/tps65910.c:265: undefined reference to `regmap_del_irq_chip'
+> > > drivers/built-in.o: In function `tps65910_irq_init':
+> > > /media/anil/kernel/drivers/mfd/tps65910.c:254: undefined reference to `regmap_add_irq_chip'
+> > > drivers/built-in.o: In function `tps65910_i2c_probe':
+> > > /media/anil/kernel/drivers/mfd/tps65910.c:509: undefined reference to `regmap_irq_get_domain'
+> > > make: *** [vmlinux] Error 1
+> > > 
+> > > Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
+> > > ---
+> > >  drivers/mfd/Kconfig |    1 +
+> > >  1 file changed, 1 insertion(+)
+> > > 
+> > > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > > index 1c0abd4..01413a2 100644
+> > > --- a/drivers/mfd/Kconfig
+> > > +++ b/drivers/mfd/Kconfig
+> > > @@ -237,6 +237,7 @@ config MFD_TPS65910
+> > >  	depends on I2C=y && GPIOLIB
+> > >  	select MFD_CORE
+> > >  	select REGMAP_I2C
+> > > +	select REGMAP_IRQ
+> > >  	select IRQ_DOMAIN
+> > >  	help
+> > >  	  if you say yes here you get support for the TPS65910 series of
+> > 
+> > Hi Samuel,
+> > 
+> > Could you please pull this fix?
+>  
+> Tested-by: Matt Porter <mporter@ti.com>
+> 
+> Fixes broken OMAP kernel build here too.
+> 
 
-Add DT support for client ADC driver.
+Hi Samuel,
 
-Signed-off-by: Patil, Rachna <rachna@ti.com>
----
- drivers/iio/adc/ti_am335x_adc.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+Could you please take this in?
 
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index cd030e1..81ca8e5 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -22,6 +22,8 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/iio/iio.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- 
- #include <linux/mfd/ti_am335x_tscadc.h>
- #include <linux/platform_data/ti_am335x_adc.h>
-@@ -141,11 +143,12 @@ static int tiadc_probe(struct platform_device *pdev)
- 	struct iio_dev		*indio_dev;
- 	struct tiadc_device	*adc_dev;
- 	struct ti_tscadc_dev	*tscadc_dev = pdev->dev.platform_data;
--	struct mfd_tscadc_board	*pdata;
-+	struct mfd_tscadc_board	*pdata = tscadc_dev->dev->platform_data;
-+	struct device_node	*node = tscadc_dev->dev->of_node;
- 	int			err;
-+	u32			val32;
- 
--	pdata = tscadc_dev->dev->platform_data;
--	if (!pdata || !pdata->adc_init) {
-+	if (!pdata && !node) {
- 		dev_err(&pdev->dev, "Could not find platform data\n");
- 		return -EINVAL;
- 	}
-@@ -159,7 +162,22 @@ static int tiadc_probe(struct platform_device *pdev)
- 	adc_dev = iio_priv(indio_dev);
- 
- 	adc_dev->mfd_tscadc = tscadc_dev;
--	adc_dev->channels = pdata->adc_init->adc_channels;
-+
-+	if (pdata)
-+		adc_dev->channels = pdata->adc_init->adc_channels;
-+	else {
-+		node = of_find_node_by_name(node, "adc");
-+		if (!node)
-+			return  -EINVAL;
-+		else {
-+			err = of_property_read_u32(node,
-+					"adc-channels", &val32);
-+			if (err < 0)
-+				goto err_free_device;
-+			else
-+				adc_dev->channels = val32;
-+		}
-+	}
- 
- 	indio_dev->dev.parent = &pdev->dev;
- 	indio_dev->name = dev_name(&pdev->dev);
--- 
-1.7.9.5
-
+Thanks
+AnilKumar
