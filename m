@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab3ARM3e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:29:34 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:58733 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756209Ab3ARM31 (ORCPT
+	id S1756304Ab3ARM3O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:29:14 -0500
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:61720 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756287Ab3ARM3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:29:27 -0500
+	Fri, 18 Jan 2013 07:29:04 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 26/76] ARC: TLB flush Handling
-Date: Fri, 18 Jan 2013 17:54:40 +0530
-Message-ID: <1358511930-7424-27-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 23/76] ARC: Page Table Management
+Date: Fri, 18 Jan 2013 17:54:37 +0530
+Message-ID: <1358511930-7424-24-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -25,410 +25,663 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/include/asm/tlb.h      |   17 ++
- arch/arc/include/asm/tlbflush.h |   28 ++++
- arch/arc/mm/tlb.c               |  311 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 356 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/tlbflush.h
+ arch/arc/include/asm/page.h    |   92 +++++++++
+ arch/arc/include/asm/pgalloc.h |  134 +++++++++++++
+ arch/arc/include/asm/pgtable.h |  401 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 627 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/include/asm/pgalloc.h
+ create mode 100644 arch/arc/include/asm/pgtable.h
 
-diff --git a/arch/arc/include/asm/tlb.h b/arch/arc/include/asm/tlb.h
-index b571e12..3eb2ce0 100644
---- a/arch/arc/include/asm/tlb.h
-+++ b/arch/arc/include/asm/tlb.h
-@@ -21,6 +21,23 @@
+diff --git a/arch/arc/include/asm/page.h b/arch/arc/include/asm/page.h
+index 7cd1224..d111d0c 100644
+--- a/arch/arc/include/asm/page.h
++++ b/arch/arc/include/asm/page.h
+@@ -35,6 +35,98 @@
  
- #ifndef __ASSEMBLY__
+ #define PAGE_MASK	(~(PAGE_SIZE-1))
  
-+#define tlb_flush(tlb) local_flush_tlb_mm((tlb)->mm)
++#ifdef __KERNEL__
++
++#ifndef __ASSEMBLY__
++
++#define get_user_page(vaddr)		__get_free_page(GFP_KERNEL)
++#define free_user_page(page, addr)	free_page(addr)
++
++/* TBD: for now don't worry about VIPT D$ aliasing */
++#define clear_page(paddr)		memset((paddr), 0, PAGE_SIZE)
++#define copy_page(to, from)		memcpy((to), (from), PAGE_SIZE)
++
++#define clear_user_page(addr, vaddr, pg)	clear_page(addr)
++#define copy_user_page(vto, vfrom, vaddr, pg)	copy_page(vto, vfrom)
++
++#undef STRICT_MM_TYPECHECKS
++
++#ifdef STRICT_MM_TYPECHECKS
++/*
++ * These are used to make use of C type-checking..
++ */
++typedef struct {
++	unsigned long pte;
++} pte_t;
++typedef struct {
++	unsigned long pgd;
++} pgd_t;
++typedef struct {
++	unsigned long pgprot;
++} pgprot_t;
++typedef unsigned long pgtable_t;
++
++#define pte_val(x)      ((x).pte)
++#define pgd_val(x)      ((x).pgd)
++#define pgprot_val(x)   ((x).pgprot)
++
++#define __pte(x)        ((pte_t) { (x) })
++#define __pgd(x)        ((pgd_t) { (x) })
++#define __pgprot(x)     ((pgprot_t) { (x) })
++
++#else /* !STRICT_MM_TYPECHECKS */
++
++typedef unsigned long pte_t;
++typedef unsigned long pgd_t;
++typedef unsigned long pgprot_t;
++typedef unsigned long pgtable_t;
++
++#define pte_val(x)	(x)
++#define pgd_val(x)	(x)
++#define pgprot_val(x)	(x)
++#define __pte(x)	(x)
++#define __pgprot(x)	(x)
++
++#endif
++
++#define ARCH_PFN_OFFSET     (CONFIG_LINUX_LINK_BASE >> PAGE_SHIFT)
++
++#define pfn_valid(pfn)      (((pfn) - ARCH_PFN_OFFSET) < max_mapnr)
 +
 +/*
-+ * This pair is called at time of munmap/exit to flush cache and TLB entries
-+ * for mappings being torn down.
-+ * 1) cache-flush part -implemented via tlb_start_vma( ) can be NOP (for now)
-+ *    as we don't support aliasing configs in our VIPT D$.
-+ * 2) tlb-flush part - implemted via tlb_end_vma( ) can be NOP as well-
-+ *    albiet for difft reasons - its better handled by moving to new ASID
++ * __pa, __va, virt_to_page (ALERT: deprecated, don't use them)
 + *
-+ * Note, read http://lkml.org/lkml/2004/1/15/6
++ * These macros have historically been misnamed
++ * virt here means link-address/program-address as embedded in object code.
++ * So if kernel img is linked at 0x8000_0000 onwards, 0x8010_0000 will be
++ * 128th page, and virt_to_page( ) will return the struct page corresp to it.
++ * mem_map[ ] is an array of struct page for each page frame in the system
++ *
++ * Independent of where linux is linked at, link-addr = physical address
++ * So the old macro  __pa = vaddr + PAGE_OFFSET - CONFIG_LINUX_LINK_BASE
++ * would have been wrong in case kernel is not at 0x8zs
 + */
-+#define tlb_start_vma(tlb, vma)
-+#define tlb_end_vma(tlb, vma)
++#define __pa(vaddr)  ((unsigned long)vaddr)
++#define __va(paddr)  ((void *)((unsigned long)(paddr)))
 +
-+#define __tlb_remove_tlb_entry(tlb, ptep, address)
++#define virt_to_page(kaddr)	\
++	(mem_map + ((__pa(kaddr) - CONFIG_LINUX_LINK_BASE) >> PAGE_SHIFT))
 +
- #include <linux/pagemap.h>
- #include <asm-generic/tlb.h>
++#define virt_addr_valid(kaddr)  pfn_valid(__pa(kaddr) >> PAGE_SHIFT)
++
++/* Default Permissions for page, used in mmap.c */
++#ifdef CONFIG_ARC_STACK_NONEXEC
++#define VM_DATA_DEFAULT_FLAGS   (VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE)
++#else
++#define VM_DATA_DEFAULT_FLAGS   (VM_READ | VM_WRITE | VM_EXEC | \
++				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
++#endif
++
++#define WANT_PAGE_VIRTUAL   1
++
++#include <asm-generic/memory_model.h>   /* page_to_pfn, pfn_to_page */
++#include <asm-generic/getorder.h>
++
+ #endif /* !__ASSEMBLY__ */
  
-diff --git a/arch/arc/include/asm/tlbflush.h b/arch/arc/include/asm/tlbflush.h
+ #endif /* __KERNEL__ */
+diff --git a/arch/arc/include/asm/pgalloc.h b/arch/arc/include/asm/pgalloc.h
 new file mode 100644
-index 0000000..b2f9bc7
+index 0000000..36a9f20
 --- /dev/null
-+++ b/arch/arc/include/asm/tlbflush.h
-@@ -0,0 +1,28 @@
++++ b/arch/arc/include/asm/pgalloc.h
+@@ -0,0 +1,134 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __ASM_ARC_TLBFLUSH__
-+#define __ASM_ARC_TLBFLUSH__
-+
-+#include <linux/mm.h>
-+
-+void local_flush_tlb_all(void);
-+void local_flush_tlb_mm(struct mm_struct *mm);
-+void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page);
-+void local_flush_tlb_kernel_range(unsigned long start, unsigned long end);
-+void local_flush_tlb_range(struct vm_area_struct *vma,
-+			   unsigned long start, unsigned long end);
-+
-+/* XXX: Revisit for SMP */
-+#define flush_tlb_range(vma, s, e)	local_flush_tlb_range(vma, s, e)
-+#define flush_tlb_page(vma, page)	local_flush_tlb_page(vma, page)
-+#define flush_tlb_kernel_range(s, e)	local_flush_tlb_kernel_range(s, e)
-+#define flush_tlb_all()			local_flush_tlb_all()
-+#define flush_tlb_mm(mm)		local_flush_tlb_mm(mm)
-+
-+#endif
-diff --git a/arch/arc/mm/tlb.c b/arch/arc/mm/tlb.c
-index 404e5be..232a0ff 100644
---- a/arch/arc/mm/tlb.c
-+++ b/arch/arc/mm/tlb.c
-@@ -6,13 +6,97 @@
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
 + *
-+ * vineetg: Aug 2011
-+ *  -Reintroduce duplicate PD fixup - some customer chips still have the issue
++ * vineetg: June 2011
++ *  -"/proc/meminfo | grep PageTables" kept on increasing
++ *   Recently added pgtable dtor was not getting called.
 + *
 + * vineetg: May 2011
-+ *  -No need to flush_cache_page( ) for each call to update_mmu_cache()
-+ *   some of the LMBench tests improved amazingly
-+ *      = page-fault thrice as fast (75 usec to 28 usec)
-+ *      = mmap twice as fast (9.6 msec to 4.6 msec),
-+ *      = fork (5.3 msec to 3.7 msec)
++ *  -Variable pg-sz means that Page Tables could be variable sized themselves
++ *    So calculate it based on addr traversal split [pgd-bits:pte-bits:xxx]
++ *  -Page Table size capped to max 1 to save memory - hence verified.
++ *  -Since these deal with constants, gcc compile-time optimizes them.
 + *
-+ * vineetg: April 2011 :
-+ *  -MMU v3: PD{0,1} bits layout changed: They don't overlap anymore,
-+ *      helps avoid a shift when preparing PD0 from PTE
++ * vineetg: Nov 2010
++ *  -Added pgtable ctor/dtor used for pgtable mem accounting
 + *
-+ * vineetg: April 2011 : Preparing for MMU V3
-+ *  -MMU v2/v3 BCRs decoded differently
-+ *  -Remove TLB_SIZE hardcoding as it's variable now: 256 or 512
-+ *  -tlb_entry_erase( ) can be void
-+ *  -local_flush_tlb_range( ):
-+ *      = need not "ceil" @end
-+ *      = walks MMU only if range spans < 32 entries, as opposed to 256
++ * vineetg: April 2010
++ *  -Switched pgtable_t from being struct page * to unsigned long
++ *      =Needed so that Page Table allocator (pte_alloc_one) is not forced to
++ *       to deal with struct page. Thay way in future we can make it allocate
++ *       multiple PG Tbls in one Page Frame
++ *      =sweet side effect is avoiding calls to ugly page_address( ) from the
++ *       pg-tlb allocator sub-sys (pte_alloc_one, ptr_free, pmd_populate
 + *
-+ * Vineetg: Sept 10th 2008
-+ *  -Changes related to MMU v2 (Rel 4.8)
-+ *
-+ * Vineetg: Aug 29th 2008
-+ *  -In TLB Flush operations (Metal Fix MMU) there is a explict command to
-+ *    flush Micro-TLBS. If TLB Index Reg is invalid prior to TLBIVUTLB cmd,
-+ *    it fails. Thus need to load it with ANY valid value before invoking
-+ *    TLBIVUTLB cmd
-+ *
-+ * Vineetg: Aug 21th 2008:
-+ *  -Reduced the duration of IRQ lockouts in TLB Flush routines
-+ *  -Multiple copies of TLB erase code seperated into a "single" function
-+ *  -In TLB Flush routines, interrupt disabling moved UP to retrieve ASID
-+ *       in interrupt-safe region.
-+ *
-+ * Vineetg: April 23rd Bug #93131
-+ *    Problem: tlb_flush_kernel_range() doesnt do anything if the range to
-+ *              flush is more than the size of TLB itself.
-+ *
-+ * Rahul Trivedi : Codito Technologies 2004
-  */
- 
- #include <linux/module.h>
- #include <asm/arcregs.h>
-+#include <asm/setup.h>
- #include <asm/mmu_context.h>
- #include <asm/tlb.h>
- 
-+/*			Need for ARC MMU v2
-+ *
-+ * ARC700 MMU-v1 had a Joint-TLB for Code and Data and is 2 way set-assoc.
-+ * For a memcpy operation with 3 players (src/dst/code) such that all 3 pages
-+ * map into same set, there would be contention for the 2 ways causing severe
-+ * Thrashing.
-+ *
-+ * Although J-TLB is 2 way set assoc, ARC700 caches J-TLB into uTLBS which has
-+ * much higher associativity. u-D-TLB is 8 ways, u-I-TLB is 4 ways.
-+ * Given this, the thrasing problem should never happen because once the 3
-+ * J-TLB entries are created (even though 3rd will knock out one of the prev
-+ * two), the u-D-TLB and u-I-TLB will have what is required to accomplish memcpy
-+ *
-+ * Yet we still see the Thrashing because a J-TLB Write cause flush of u-TLBs.
-+ * This is a simple design for keeping them in sync. So what do we do?
-+ * The solution which James came up was pretty neat. It utilised the assoc
-+ * of uTLBs by not invalidating always but only when absolutely necessary.
-+ *
-+ * - Existing TLB commands work as before
-+ * - New command (TLBWriteNI) for TLB write without clearing uTLBs
-+ * - New command (TLBIVUTLB) to invalidate uTLBs.
-+ *
-+ * The uTLBs need only be invalidated when pages are being removed from the
-+ * OS page table. If a 'victim' TLB entry is being overwritten in the main TLB
-+ * as a result of a miss, the removed entry is still allowed to exist in the
-+ * uTLBs as it is still valid and present in the OS page table. This allows the
-+ * full associativity of the uTLBs to hide the limited associativity of the main
-+ * TLB.
-+ *
-+ * During a miss handler, the new "TLBWriteNI" command is used to load
-+ * entries without clearing the uTLBs.
-+ *
-+ * When the OS page table is updated, TLB entries that may be associated with a
-+ * removed page are removed (flushed) from the TLB using TLBWrite. In this
-+ * circumstance, the uTLBs must also be cleared. This is done by using the
-+ * existing TLBWrite command. An explicit IVUTLB is also required for those
-+ * corner cases when TLBWrite was not executed at all because the corresp
-+ * J-TLB entry got evicted/replaced.
++ *  Amit Bhor, Sameer Dhavale: Codito Technologies 2004
 + */
 +
- /* A copy of the ASID from the PID reg is kept in asid_cache */
- int asid_cache = FIRST_ASID;
- 
-@@ -22,6 +106,233 @@ int asid_cache = FIRST_ASID;
-  */
- struct mm_struct *asid_mm_map[NUM_ASID + 1];
- 
-+/*
-+ * Utility Routine to erase a J-TLB entry
-+ * The procedure is to look it up in the MMU. If found, ERASE it by
-+ *  issuing a TlbWrite CMD with PD0 = PD1 = 0
-+ */
++#ifndef _ASM_ARC_PGALLOC_H
++#define _ASM_ARC_PGALLOC_H
 +
-+static void __tlb_entry_erase(void)
++#include <linux/mm.h>
++#include <linux/log2.h>
++
++static inline void
++pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd, pte_t *pte)
 +{
-+	write_aux_reg(ARC_REG_TLBPD1, 0);
-+	write_aux_reg(ARC_REG_TLBPD0, 0);
-+	write_aux_reg(ARC_REG_TLBCOMMAND, TLBWrite);
++	pmd_set(pmd, pte);
 +}
 +
-+static void tlb_entry_erase(unsigned int vaddr_n_asid)
++static inline void
++pmd_populate(struct mm_struct *mm, pmd_t *pmd, pgtable_t ptep)
 +{
-+	unsigned int idx;
++	pmd_set(pmd, (pte_t *) ptep);
++}
 +
-+	/* Locate the TLB entry for this vaddr + ASID */
-+	write_aux_reg(ARC_REG_TLBPD0, vaddr_n_asid);
-+	write_aux_reg(ARC_REG_TLBCOMMAND, TLBProbe);
-+	idx = read_aux_reg(ARC_REG_TLBINDEX);
++static inline int __get_order_pgd(void)
++{
++	return get_order(PTRS_PER_PGD * 4);
++}
 +
-+	/* No error means entry found, zero it out */
-+	if (likely(!(idx & TLB_LKUP_ERR))) {
-+		__tlb_entry_erase();
-+	} else {		/* Some sort of Error */
++static inline pgd_t *pgd_alloc(struct mm_struct *mm)
++{
++	int num, num2;
++	pgd_t *ret = (pgd_t *) __get_free_pages(GFP_KERNEL, __get_order_pgd());
 +
-+		/* Duplicate entry error */
-+		if (idx & 0x1) {
-+			/* TODO we need to handle this case too */
-+			pr_emerg("unhandled Duplicate flush for %x\n",
-+			       vaddr_n_asid);
-+		}
-+		/* else entry not found so nothing to do */
++	if (ret) {
++		num = USER_PTRS_PER_PGD + USER_KERNEL_GUTTER / PGDIR_SIZE;
++		memzero(ret, num * sizeof(pgd_t));
++
++		num2 = VMALLOC_SIZE / PGDIR_SIZE;
++		memcpy(ret + num, swapper_pg_dir + num, num2 * sizeof(pgd_t));
++
++		memzero(ret + num + num2,
++			       (PTRS_PER_PGD - num - num2) * sizeof(pgd_t));
++
 +	}
++	return ret;
 +}
 +
-+/****************************************************************************
-+ * ARC700 MMU caches recently used J-TLB entries (RAM) as uTLBs (FLOPs)
-+ *
-+ * New IVUTLB cmd in MMU v2 explictly invalidates the uTLB
-+ *
-+ * utlb_invalidate ( )
-+ *  -For v2 MMU calls Flush uTLB Cmd
-+ *  -For v1 MMU does nothing (except for Metal Fix v1 MMU)
-+ *      This is because in v1 TLBWrite itself invalidate uTLBs
-+ ***************************************************************************/
-+
-+static void utlb_invalidate(void)
++static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
 +{
-+#if (CONFIG_ARC_MMU_VER >= 2)
++	free_pages((unsigned long)pgd, __get_order_pgd());
++}
 +
-+#if (CONFIG_ARC_MMU_VER < 3)
-+	/* MMU v2 introduced the uTLB Flush command.
-+	 * There was however an obscure hardware bug, where uTLB flush would
-+	 * fail when a prior probe for J-TLB (both totally unrelated) would
-+	 * return lkup err - because the entry didnt exist in MMU.
-+	 * The Workround was to set Index reg with some valid value, prior to
-+	 * flush. This was fixed in MMU v3 hence not needed any more
-+	 */
-+	unsigned int idx;
 +
-+	/* make sure INDEX Reg is valid */
-+	idx = read_aux_reg(ARC_REG_TLBINDEX);
++/*
++ * With software-only page-tables, addr-split for traversal is tweakable and
++ * that directly governs how big tables would be at each level.
++ * Further, the MMU page size is configurable.
++ * Thus we need to programatically assert the size constraint
++ * All of this is const math, allowing gcc to do constant folding/propagation.
++ */
 +
-+	/* If not write some dummy val */
-+	if (unlikely(idx & TLB_LKUP_ERR))
-+		write_aux_reg(ARC_REG_TLBINDEX, 0xa);
++static inline int __get_order_pte(void)
++{
++	return get_order(PTRS_PER_PTE * 4);
++}
++
++static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
++					unsigned long address)
++{
++	pte_t *pte;
++
++	pte = (pte_t *) __get_free_pages(GFP_KERNEL | __GFP_REPEAT | __GFP_ZERO,
++					 __get_order_pte());
++
++	return pte;
++}
++
++static inline pgtable_t
++pte_alloc_one(struct mm_struct *mm, unsigned long address)
++{
++	pgtable_t pte_pg;
++
++	pte_pg = __get_free_pages(GFP_KERNEL | __GFP_REPEAT, __get_order_pte());
++	if (pte_pg) {
++		memzero((void *)pte_pg, PTRS_PER_PTE * 4);
++		pgtable_page_ctor(virt_to_page(pte_pg));
++	}
++
++	return pte_pg;
++}
++
++static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
++{
++	free_pages((unsigned long)pte, __get_order_pte()); /* takes phy addr */
++}
++
++static inline void pte_free(struct mm_struct *mm, pgtable_t ptep)
++{
++	pgtable_page_dtor(virt_to_page(ptep));
++	free_pages(ptep, __get_order_pte());
++}
++
++#define __pte_free_tlb(tlb, pte, addr)  pte_free((tlb)->mm, pte)
++
++#define check_pgt_cache()   do { } while (0)
++#define pmd_pgtable(pmd) pmd_page_vaddr(pmd)
++
++#endif /* _ASM_ARC_PGALLOC_H */
+diff --git a/arch/arc/include/asm/pgtable.h b/arch/arc/include/asm/pgtable.h
+new file mode 100644
+index 0000000..dcb07015
+--- /dev/null
++++ b/arch/arc/include/asm/pgtable.h
+@@ -0,0 +1,401 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * vineetg: May 2011
++ *  -Folded PAGE_PRESENT (used by VM) and PAGE_VALID (used by MMU) into 1.
++ *     They are semantically the same although in different contexts
++ *     VALID marks a TLB entry exists and it will only happen if PRESENT
++ *  - Utilise some unused free bits to confine PTE flags to 12 bits
++ *     This is a must for 4k pg-sz
++ *
++ * vineetg: Mar 2011 - changes to accomodate MMU TLB Page Descriptor mods
++ *  -TLB Locking never really existed, except for initial specs
++ *  -SILENT_xxx not needed for our port
++ *  -Per my request, MMU V3 changes the layout of some of the bits
++ *     to avoid a few shifts in TLB Miss handlers.
++ *
++ * vineetg: April 2010
++ *  -PGD entry no longer contains any flags. If empty it is 0, otherwise has
++ *   Pg-Tbl ptr. Thus pmd_present(), pmd_valid(), pmd_set( ) become simpler
++ *
++ * vineetg: April 2010
++ *  -Switched form 8:11:13 split for page table lookup to 11:8:13
++ *  -this speeds up page table allocation itself as we now have to memset 1K
++ *    instead of 8k per page table.
++ * -TODO: Right now page table alloc is 8K and rest 7K is unused
++ *    need to optimise it
++ *
++ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
++ */
++
++#ifndef _ASM_ARC_PGTABLE_H
++#define _ASM_ARC_PGTABLE_H
++
++#include <asm/page.h>
++#include <asm/mmu.h>
++#include <asm-generic/pgtable-nopmd.h>
++
++/**************************************************************************
++ * Page Table Flags
++ *
++ * ARC700 MMU only deals with softare managed TLB entries.
++ * Page Tables are purely for Linux VM's consumption and the bits below are
++ * suited to that (uniqueness). Hence some are not implemented in the TLB and
++ * some have different value in TLB.
++ * e.g. MMU v2: K_READ bit is 8 and so is GLOBAL (possible becoz they live in
++ *      seperate PD0 and PD1, which combined forms a translation entry)
++ *      while for PTE perspective, they are 8 and 9 respectively
++ * with MMU v3: Most bits (except SHARED) represent the exact hardware pos
++ *      (saves some bit shift ops in TLB Miss hdlrs)
++ */
++
++#if (CONFIG_ARC_MMU_VER <= 2)
++
++#define _PAGE_ACCESSED      (1<<1)	/* Page is accessed (S) */
++#define _PAGE_CACHEABLE     (1<<2)	/* Page is cached (H) */
++#define _PAGE_EXECUTE       (1<<3)	/* Page has user execute perm (H) */
++#define _PAGE_WRITE         (1<<4)	/* Page has user write perm (H) */
++#define _PAGE_READ          (1<<5)	/* Page has user read perm (H) */
++#define _PAGE_K_EXECUTE     (1<<6)	/* Page has kernel execute perm (H) */
++#define _PAGE_K_WRITE       (1<<7)	/* Page has kernel write perm (H) */
++#define _PAGE_K_READ        (1<<8)	/* Page has kernel perm (H) */
++#define _PAGE_GLOBAL        (1<<9)	/* Page is global (H) */
++#define _PAGE_MODIFIED      (1<<10)	/* Page modified (dirty) (S) */
++#define _PAGE_FILE          (1<<10)	/* page cache/ swap (S) */
++#define _PAGE_PRESENT       (1<<11)	/* TLB entry is valid (H) */
++
++#else
++
++/* PD1 */
++#define _PAGE_CACHEABLE     (1<<0)	/* Page is cached (H) */
++#define _PAGE_EXECUTE       (1<<1)	/* Page has user execute perm (H) */
++#define _PAGE_WRITE         (1<<2)	/* Page has user write perm (H) */
++#define _PAGE_READ          (1<<3)	/* Page has user read perm (H) */
++#define _PAGE_K_EXECUTE     (1<<4)	/* Page has kernel execute perm (H) */
++#define _PAGE_K_WRITE       (1<<5)	/* Page has kernel write perm (H) */
++#define _PAGE_K_READ        (1<<6)	/* Page has kernel perm (H) */
++#define _PAGE_ACCESSED      (1<<7)	/* Page is accessed (S) */
++
++/* PD0 */
++#define _PAGE_GLOBAL        (1<<8)	/* Page is global (H) */
++#define _PAGE_PRESENT       (1<<9)	/* TLB entry is valid (H) */
++#define _PAGE_SHARED_CODE   (1<<10)	/* Shared Code page with cmn vaddr
++					   usable for shared TLB entries (H) */
++
++#define _PAGE_MODIFIED      (1<<11)	/* Page modified (dirty) (S) */
++#define _PAGE_FILE          (1<<12)	/* page cache/ swap (S) */
++
++#define _PAGE_SHARED_CODE_H (1<<31)	/* Hardware counterpart of above */
 +#endif
 +
-+	write_aux_reg(ARC_REG_TLBCOMMAND, TLBIVUTLB);
++/* Kernel allowed all permissions for all pages */
++#define _K_PAGE_PERMS  (_PAGE_K_EXECUTE | _PAGE_K_WRITE | _PAGE_K_READ)
++
++#ifdef CONFIG_ARC_CACHE_PAGES
++#define _PAGE_DEF_CACHEABLE _PAGE_CACHEABLE
++#else
++#define _PAGE_DEF_CACHEABLE (0)
 +#endif
 +
++/* Helper for every "user" page
++ * -kernel can R/W/X
++ * -by default cached, unless config otherwise
++ * -present in memory
++ */
++#define ___DEF (_PAGE_PRESENT | _K_PAGE_PERMS | _PAGE_DEF_CACHEABLE)
++
++/* Set of bits not changed in pte_modify */
++#define _PAGE_CHG_MASK	(PAGE_MASK | _PAGE_ACCESSED | _PAGE_MODIFIED)
++
++/* More Abbrevaited helpers */
++#define PAGE_U_NONE     __pgprot(___DEF)
++#define PAGE_U_R        __pgprot(___DEF | _PAGE_READ)
++#define PAGE_U_W_R      __pgprot(___DEF | _PAGE_READ | _PAGE_WRITE)
++#define PAGE_U_X_R      __pgprot(___DEF | _PAGE_READ | _PAGE_EXECUTE)
++#define PAGE_U_X_W_R    __pgprot(___DEF | _PAGE_READ | _PAGE_WRITE | \
++						       _PAGE_EXECUTE)
++
++#define PAGE_SHARED	PAGE_U_W_R
++
++/* While kernel runs out of unstrslated space, vmalloc/modules use a chunk of
++ * kernel vaddr space - visible in all addr spaces, but kernel mode only
++ * Thus Global, all-kernel-access, no-user-access, cached
++ */
++#define PAGE_KERNEL          __pgprot(___DEF | _PAGE_GLOBAL)
++
++/* ioremap */
++#define PAGE_KERNEL_NO_CACHE __pgprot(_PAGE_PRESENT | _K_PAGE_PERMS | \
++						     _PAGE_GLOBAL)
++
++/**************************************************************************
++ * Mapping of vm_flags (Generic VM) to PTE flags (arch specific)
++ *
++ * Certain cases have 1:1 mapping
++ *  e.g. __P101 means VM_READ, VM_EXEC and !VM_SHARED
++ *       which directly corresponds to  PAGE_U_X_R
++ *
++ * Other rules which cause the divergence from 1:1 mapping
++ *
++ *  1. Although ARC700 can do exclusive execute/write protection (meaning R
++ *     can be tracked independet of X/W unlike some other CPUs), still to
++ *     keep things consistent with other archs:
++ *      -Write implies Read:   W => R
++ *      -Execute implies Read: X => R
++ *
++ *  2. Pvt Writable doesn't have Write Enabled initially: Pvt-W => !W
++ *     This is to enable COW mechanism
++ */
++	/* xwr */
++#define __P000  PAGE_U_NONE
++#define __P001  PAGE_U_R
++#define __P010  PAGE_U_R	/* Pvt-W => !W */
++#define __P011  PAGE_U_R	/* Pvt-W => !W */
++#define __P100  PAGE_U_X_R	/* X => R */
++#define __P101  PAGE_U_X_R
++#define __P110  PAGE_U_X_R	/* Pvt-W => !W and X => R */
++#define __P111  PAGE_U_X_R	/* Pvt-W => !W */
++
++#define __S000  PAGE_U_NONE
++#define __S001  PAGE_U_R
++#define __S010  PAGE_U_W_R	/* W => R */
++#define __S011  PAGE_U_W_R
++#define __S100  PAGE_U_X_R	/* X => R */
++#define __S101  PAGE_U_X_R
++#define __S110  PAGE_U_X_W_R	/* X => R */
++#define __S111  PAGE_U_X_W_R
++
++/****************************************************************
++ * Page Table Lookup split
++ *
++ * We implement 2 tier paging and since this is all software, we are free
++ * to customize the span of a PGD / PTE entry to suit us
++ *
++ *			32 bit virtual address
++ * -------------------------------------------------------
++ * | BITS_FOR_PGD    |  BITS_FOR_PTE    |  BITS_IN_PAGE  |
++ * -------------------------------------------------------
++ *       |                  |                |
++ *       |                  |                --> off in page frame
++ *       |		    |
++ *       |                  ---> index into Page Table
++ *       |
++ *       ----> index into Page Directory
++ */
++
++#define BITS_IN_PAGE	PAGE_SHIFT
++
++/* Optimal Sizing of Pg Tbl - based on MMU page size */
++#if defined(CONFIG_ARC_PAGE_SIZE_8K)
++#define BITS_FOR_PTE	8
++#elif defined(CONFIG_ARC_PAGE_SIZE_16K)
++#define BITS_FOR_PTE	8
++#elif defined(CONFIG_ARC_PAGE_SIZE_4K)
++#define BITS_FOR_PTE	9
++#endif
++
++#define BITS_FOR_PGD	(32 - BITS_FOR_PTE - BITS_IN_PAGE)
++
++#define PGDIR_SHIFT	(BITS_FOR_PTE + BITS_IN_PAGE)
++#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)	/* vaddr span, not PDG sz */
++#define PGDIR_MASK	(~(PGDIR_SIZE-1))
++
++#ifdef __ASSEMBLY__
++#define	PTRS_PER_PTE	(1 << BITS_FOR_PTE)
++#define	PTRS_PER_PGD	(1 << BITS_FOR_PGD)
++#else
++#define	PTRS_PER_PTE	(1UL << BITS_FOR_PTE)
++#define	PTRS_PER_PGD	(1UL << BITS_FOR_PGD)
++#endif
++/*
++ * Number of entries a user land program use.
++ * TASK_SIZE is the maximum vaddr that can be used by a userland program.
++ */
++#define	USER_PTRS_PER_PGD	(TASK_SIZE / PGDIR_SIZE)
++
++/*
++ * No special requirements for lowest virtual address we permit any user space
++ * mapping to be mapped at.
++ */
++#define FIRST_USER_ADDRESS      0
++
++
++/****************************************************************
++ * Bucket load of VM Helpers
++ */
++
++#ifndef __ASSEMBLY__
++
++#define pte_ERROR(e) \
++	pr_crit("%s:%d: bad pte %08lx.\n", __FILE__, __LINE__, pte_val(e))
++#define pgd_ERROR(e) \
++	pr_crit("%s:%d: bad pgd %08lx.\n", __FILE__, __LINE__, pgd_val(e))
++
++/* the zero page used for uninitialized and anonymous pages */
++extern char empty_zero_page[PAGE_SIZE];
++#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
++
++#define pte_unmap(pte)		do { } while (0)
++#define pte_unmap_nested(pte)		do { } while (0)
++
++#define set_pte(pteptr, pteval)	((*(pteptr)) = (pteval))
++#define set_pmd(pmdptr, pmdval)	(*(pmdptr) = pmdval)
++
++/* find the page descriptor of the Page Tbl ref by PMD entry */
++#define pmd_page(pmd)		virt_to_page(pmd_val(pmd) & PAGE_MASK)
++
++/* find the logical addr (phy for ARC) of the Page Tbl ref by PMD entry */
++#define pmd_page_vaddr(pmd)	(pmd_val(pmd) & PAGE_MASK)
++
++/* In a 2 level sys, setup the PGD entry with PTE value */
++static inline void pmd_set(pmd_t *pmdp, pte_t *ptep)
++{
++	pmd_val(*pmdp) = (unsigned long)ptep;
++}
++
++#define pte_none(x)			(!pte_val(x))
++#define pte_present(x)			(pte_val(x) & _PAGE_PRESENT)
++#define pte_clear(mm, addr, ptep)	set_pte_at(mm, addr, ptep, __pte(0))
++
++#define pmd_none(x)			(!pmd_val(x))
++#define	pmd_bad(x)			((pmd_val(x) & ~PAGE_MASK))
++#define pmd_present(x)			(pmd_val(x))
++#define pmd_clear(xp)			do { pmd_val(*(xp)) = 0; } while (0)
++
++#define pte_page(x) (mem_map + \
++		(unsigned long)(((pte_val(x) - PAGE_OFFSET) >> PAGE_SHIFT)))
++
++#define mk_pte(page, pgprot)						\
++({									\
++	pte_t pte;							\
++	pte_val(pte) = __pa(page_address(page)) + pgprot_val(pgprot);	\
++	pte;								\
++})
++
++/* TBD: Non linear mapping stuff */
++static inline int pte_file(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_FILE;
++}
++
++#define PTE_FILE_MAX_BITS	30
++#define pgoff_to_pte(x)         __pte(x)
++#define pte_to_pgoff(x)		(pte_val(x) >> 2)
++#define pte_pfn(pte)		(pte_val(pte) >> PAGE_SHIFT)
++#define pfn_pte(pfn, prot)	(__pte(((pfn) << PAGE_SHIFT) | pgprot_val(prot)))
++#define __pte_index(addr)	(((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
++
++/*
++ * pte_offset gets a @ptr to PMD entry (PGD in our 2-tier paging system)
++ * and returns ptr to PTE entry corresponding to @addr
++ */
++#define pte_offset(dir, addr) ((pte_t *)(pmd_page_vaddr(*dir)) +\
++					 __pte_index(addr))
++
++/* No mapping of Page Tables in high mem etc, so following same as above */
++#define pte_offset_kernel(dir, addr)		pte_offset(dir, addr)
++#define pte_offset_map(dir, addr)		pte_offset(dir, addr)
++
++/* Zoo of pte_xxx function */
++#define pte_read(pte)		(pte_val(pte) & _PAGE_READ)
++#define pte_write(pte)		(pte_val(pte) & _PAGE_WRITE)
++#define pte_dirty(pte)		(pte_val(pte) & _PAGE_MODIFIED)
++#define pte_young(pte)		(pte_val(pte) & _PAGE_ACCESSED)
++#define pte_special(pte)	(0)
++
++#define PTE_BIT_FUNC(fn, op) \
++	static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
++
++PTE_BIT_FUNC(wrprotect,	&= ~(_PAGE_WRITE));
++PTE_BIT_FUNC(mkwrite,	|= (_PAGE_WRITE));
++PTE_BIT_FUNC(mkclean,	&= ~(_PAGE_MODIFIED));
++PTE_BIT_FUNC(mkdirty,	|= (_PAGE_MODIFIED));
++PTE_BIT_FUNC(mkold,	&= ~(_PAGE_ACCESSED));
++PTE_BIT_FUNC(mkyoung,	|= (_PAGE_ACCESSED));
++PTE_BIT_FUNC(exprotect,	&= ~(_PAGE_EXECUTE));
++PTE_BIT_FUNC(mkexec,	|= (_PAGE_EXECUTE));
++
++static inline pte_t pte_mkspecial(pte_t pte) { return pte; }
++
++static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
++{
++	return __pte((pte_val(pte) & _PAGE_CHG_MASK) | pgprot_val(newprot));
++}
++
++/* Macro to mark a page protection as uncacheable */
++#define pgprot_noncached(prot)	(__pgprot(pgprot_val(prot) & ~_PAGE_CACHEABLE))
++
++static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
++			      pte_t *ptep, pte_t pteval)
++{
++	set_pte(ptep, pteval);
 +}
 +
 +/*
-+ * Un-conditionally (without lookup) erase the entire MMU contents
++ * All kernel related VM pages are in init's mm.
 + */
-+
-+noinline void local_flush_tlb_all(void)
-+{
-+	unsigned long flags;
-+	unsigned int entry;
-+	struct cpuinfo_arc_mmu *mmu = &cpuinfo_arc700[smp_processor_id()].mmu;
-+
-+	local_irq_save(flags);
-+
-+	/* Load PD0 and PD1 with template for a Blank Entry */
-+	write_aux_reg(ARC_REG_TLBPD1, 0);
-+	write_aux_reg(ARC_REG_TLBPD0, 0);
-+
-+	for (entry = 0; entry < mmu->num_tlb; entry++) {
-+		/* write this entry to the TLB */
-+		write_aux_reg(ARC_REG_TLBINDEX, entry);
-+		write_aux_reg(ARC_REG_TLBCOMMAND, TLBWrite);
-+	}
-+
-+	utlb_invalidate();
-+
-+	local_irq_restore(flags);
-+}
++#define pgd_offset_k(address)	pgd_offset(&init_mm, address)
++#define pgd_index(addr)		((addr) >> PGDIR_SHIFT)
++#define pgd_offset(mm, addr)	(((mm)->pgd)+pgd_index(addr))
 +
 +/*
-+ * Flush the entrie MM for userland. The fastest way is to move to Next ASID
++ * Macro to quickly access the PGD entry, utlising the fact that some
++ * arch may cache the pointer to Page Directory of "current" task
++ * in a MMU register
++ *
++ * Thus task->mm->pgd (3 pointer dereferences, cache misses etc simply
++ * becomes read a register
++ *
++ * ********CAUTION*******:
++ * Kernel code might be dealing with some mm_struct of NON "current"
++ * Thus use this macro only when you are certain that "current" is current
++ * e.g. when dealing with signal frame setup code etc
 + */
-+noinline void local_flush_tlb_mm(struct mm_struct *mm)
-+{
-+	/*
-+	 * Small optimisation courtesy IA64
-+	 * flush_mm called during fork,exit,munmap etc, multiple times as well.
-+	 * Only for fork( ) do we need to move parent to a new MMU ctxt,
-+	 * all other cases are NOPs, hence this check.
-+	 */
-+	if (atomic_read(&mm->mm_users) == 0)
-+		return;
++#define pgd_offset_fast(mm, addr)	\
++({					\
++	pgd_t *pgd_base = (pgd_t *) read_aux_reg(ARC_REG_SCRATCH_DATA0);  \
++	pgd_base + pgd_index(addr);	\
++})
 +
-+	/*
-+	 * Workaround for Android weirdism:
-+	 * A binder VMA could end up in a task such that vma->mm != tsk->mm
-+	 * old code would cause h/w - s/w ASID to get out of sync
-+	 */
-+	if (current->mm != mm)
-+		destroy_context(mm);
-+	else
-+		get_new_mmu_context(mm);
-+}
++extern void paging_init(void);
++extern pgd_t swapper_pg_dir[] __aligned(PAGE_SIZE);
++void update_mmu_cache(struct vm_area_struct *vma, unsigned long address,
++		      pte_t *ptep);
++
++/* Encode swap {type,off} tuple into PTE
++ * We reserve 13 bits for 5-bit @type, keeping bits 12-5 zero, ensuring that
++ * both PAGE_FILE and PAGE_PRESENT are zero in a PTE holding swap "identifier"
++ */
++#define __swp_entry(type, off)	((swp_entry_t) { \
++					((type) & 0x1f) | ((off) << 13) })
++
++/* Decode a PTE containing swap "identifier "into constituents */
++#define __swp_type(pte_lookalike)	(((pte_lookalike).val) & 0x1f)
++#define __swp_offset(pte_lookalike)	((pte_lookalike).val << 13)
++
++/* NOPs, to keep generic kernel happy */
++#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
++#define __swp_entry_to_pte(x)	((pte_t) { (x).val })
++
++#define kern_addr_valid(addr)	(1)
 +
 +/*
-+ * Flush a Range of TLB entries for userland.
-+ * @start is inclusive, while @end is exclusive
-+ * Difference between this and Kernel Range Flush is
-+ *  -Here the fastest way (if range is too large) is to move to next ASID
-+ *      without doing any explicit Shootdown
-+ *  -In case of kernel Flush, entry has to be shot down explictly
++ * remap a physical page `pfn' of size `size' with page protection `prot'
++ * into virtual address `from'
 + */
-+void local_flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
-+			   unsigned long end)
-+{
-+	unsigned long flags;
-+	unsigned int asid;
++#define io_remap_pfn_range(vma, from, pfn, size, prot) \
++			remap_pfn_range(vma, from, pfn, size, prot)
 +
-+	/* If range @start to @end is more than 32 TLB entries deep,
-+	 * its better to move to a new ASID rather than searching for
-+	 * individual entries and then shooting them down
-+	 *
-+	 * The calc above is rough, doesn't account for unaligned parts,
-+	 * since this is heuristics based anyways
-+	 */
-+	if (unlikely((end - start) >= PAGE_SIZE * 32)) {
-+		local_flush_tlb_mm(vma->vm_mm);
-+		return;
-+	}
-+
-+	/*
-+	 * @start moved to page start: this alone suffices for checking
-+	 * loop end condition below, w/o need for aligning @end to end
-+	 * e.g. 2000 to 4001 will anyhow loop twice
-+	 */
-+	start &= PAGE_MASK;
-+
-+	local_irq_save(flags);
-+	asid = vma->vm_mm->context.asid;
-+
-+	if (asid != NO_ASID) {
-+		while (start < end) {
-+			tlb_entry_erase(start | (asid & 0xff));
-+			start += PAGE_SIZE;
-+		}
-+	}
-+
-+	utlb_invalidate();
-+
-+	local_irq_restore(flags);
-+}
-+
-+/* Flush the kernel TLB entries - vmalloc/modules (Global from MMU perspective)
-+ *  @start, @end interpreted as kvaddr
-+ * Interestingly, shared TLB entries can also be flushed using just
-+ * @start,@end alone (interpreted as user vaddr), although technically SASID
-+ * is also needed. However our smart TLbProbe lookup takes care of that.
-+ */
-+void local_flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long flags;
-+
-+	/* exactly same as above, except for TLB entry not taking ASID */
-+
-+	if (unlikely((end - start) >= PAGE_SIZE * 32)) {
-+		local_flush_tlb_all();
-+		return;
-+	}
-+
-+	start &= PAGE_MASK;
-+
-+	local_irq_save(flags);
-+	while (start < end) {
-+		tlb_entry_erase(start);
-+		start += PAGE_SIZE;
-+	}
-+
-+	utlb_invalidate();
-+
-+	local_irq_restore(flags);
-+}
++#include <asm-generic/pgtable.h>
 +
 +/*
-+ * Delete TLB entry in MMU for a given page (??? address)
-+ * NOTE One TLB entry contains translation for single PAGE
++ * No page table caches to initialise
 + */
++#define pgtable_cache_init()   do { } while (0)
 +
-+void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page)
-+{
-+	unsigned long flags;
++#endif /* __ASSEMBLY__ */
 +
-+	/* Note that it is critical that interrupts are DISABLED between
-+	 * checking the ASID and using it flush the TLB entry
-+	 */
-+	local_irq_save(flags);
-+
-+	if (vma->vm_mm->context.asid != NO_ASID) {
-+		tlb_entry_erase((page & PAGE_MASK) |
-+				(vma->vm_mm->context.asid & 0xff));
-+		utlb_invalidate();
-+	}
-+
-+	local_irq_restore(flags);
-+}
- 
- /*
-  * Routine to create a TLB entry
++#endif
 -- 
 1.7.4.1
 
