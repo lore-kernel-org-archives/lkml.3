@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab3ARXMV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 18:12:21 -0500
-Received: from mga03.intel.com ([143.182.124.21]:47968 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869Ab3ARXMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 18:12:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,495,1355126400"; 
-   d="scan'208";a="192805617"
-Date: Fri, 18 Jan 2013 15:12:12 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com
-Subject: Re: [PATCH v6 08/18] perf/x86: add memory profiling via PEBS Load
- Latency
-Message-ID: <20130118231212.GK4051@tassilo.jf.intel.com>
-References: <1358264386-24633-1-git-send-email-eranian@google.com>
- <1358264386-24633-9-git-send-email-eranian@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358264386-24633-9-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754888Ab3ARXOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 18:14:34 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:64114 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab3ARXOd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 18:14:33 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v4 0/2] perf stat: add interval counter printing
+Date: Sat, 19 Jan 2013 00:13:57 +0100
+Message-Id: <1358550839-7509-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	sample_type = event->attr.sample_type;
-> +
-> +	/*
-> +	 * if PEBS-LL or PreciseStore
-> +	 */
-> +	if (fll) {
-> +		if (sample_type & PERF_SAMPLE_ADDR)
-> +			data.addr = pebs->dla;
-> +
-> +		/*
-> +		 * Use latency for weight (only avail with PEBS-LL)
-> +		 */
-> +		if (fll && (sample_type & PERF_SAMPLE_WEIGHT))
+This small patchset extends perf stat with the -I option.
 
-The extra fll tests here don't make sense because it's always true inside
-the if. You could remove the variable and the tests and only check once
-in the if.
+The -I option enables interval printing. It expects
+an interval duration in milliseconds. Minimum is
+100ms. Once, activated perf stat prints events deltas
+since last printout. All modes are supported.
 
-The rest looks good to me. There will be some conflicts with the Haswell
-patches, but either of us can rebase.
+$ perf stat -I 1000 -e cycles noploop 10
+noploop for 10 seconds
+1.000086918         2385155642 cycles                    #    0.000 GHz
+2.000267937         2392279774 cycles                    #    0.000 GHz
+3.000385400         2390971450 cycles                    #    0.000 GHz
+4.000504408         2390996752 cycles                    #    0.000 GHz
+5.000626878         2390853097 cycles                    #    0.000 GHz
 
-Acked-by: Andi Kleen <ak@linux.intel.com>
+The output format makes it easy to feed into a plotting program
+such as gnuplot when the -I option is used in combination with the -x
+option:
 
--Andi
+$ perf stat -x, -I 1000 -e cycles noploop 10
+noploop for 10 seconds
+1.000084113,2378775498,cycles
+2.000245798,2391056897,cycles
+3.000354445,2392089414,cycles
+4.000459115,2390936603,cycles
+5.000565341,2392108173,cycles
+
+The first patch adds the code to keep previous counts. The second
+is the actual extension of perf stat.
+
+In v2, we changed the option from -T to -I based on feedback
+from Andi Kleen (who is using -T in an upcoming patch).
+
+In v3, added compute_deltas() to evsel.c to factorize
+deltas computation based on Jiri's comments.
+
+In v4, we made sure that counts are printed in case
+the run is interrupted by CTRL-C based on Andi Kleen's
+feedback.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+Stephane Eranian (2):
+  perf tools: add evsel prev_raw_count field
+  perf stat: add interval printing
+
+ tools/perf/Documentation/perf-stat.txt |    4 +
+ tools/perf/builtin-stat.c              |  154 ++++++++++++++++++++++++++++----
+ tools/perf/util/evsel.c                |   26 ++++++
+ tools/perf/util/evsel.h                |    1 +
+ 4 files changed, 170 insertions(+), 15 deletions(-)
+
+-- 
+1.7.9.5
+
