@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3ARVYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:24:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:42285 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744Ab3ARVYi (ORCPT
+	id S1755930Ab3ARVYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:24:46 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:33594 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755752Ab3ARVYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Jan 2013 16:24:38 -0500
 From: Dan Magenheimer <dan.magenheimer@oracle.com>
@@ -12,71 +12,79 @@ To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
         konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
         minchan@kernel.org, dan.magenheimer@oracle.com
-Subject: [PATCH 3/5] staging: zcache: adjustments to config/build files due to renaming
-Date: Fri, 18 Jan 2013 13:24:25 -0800
-Message-Id: <1358544267-9104-4-git-send-email-dan.magenheimer@oracle.com>
+Subject: [PATCH V2 0/5] staging: zcache: move new zcache code base from ramster
+Date: Fri, 18 Jan 2013 13:24:22 -0800
+Message-Id: <1358544267-9104-1-git-send-email-dan.magenheimer@oracle.com>
 X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <1358544267-9104-1-git-send-email-dan.magenheimer@oracle.com>
-References: <1358544267-9104-1-git-send-email-dan.magenheimer@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 [V2: no code changes, patchset now generated via git format-patch -M]
 
-In staging/zcache, adjust config/build due to ramster->zcache renaming
+Hi Greg --
+
+With "old zcache" now removed, we can now move "new zcache" from its
+temporary home (in drivers/staging/ramster) to reclaim sole possession
+of the name "zcache".
+
+(Note that [PATCH 2/5] is just a git mv.)
+
+This patchset should apply cleanly to staging-next.
+
+Thanks,
+Dan
 
 Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+
 ---
- drivers/staging/zcache/Kconfig  |   17 ++++++-----------
- drivers/staging/zcache/Makefile |    2 +-
- 2 files changed, 7 insertions(+), 12 deletions(-)
+Diffstat:
 
-diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
-index 3abf661..c1dbd04 100644
---- a/drivers/staging/zcache/Kconfig
-+++ b/drivers/staging/zcache/Kconfig
-@@ -1,23 +1,18 @@
--config ZCACHE2
-+config ZCACHE
- 	bool "Dynamic compression of swap pages and clean pagecache pages"
--	depends on CRYPTO=y && SWAP=y && CLEANCACHE && FRONTSWAP && !ZCACHE 
-+	depends on CRYPTO=y && SWAP=y && CLEANCACHE && FRONTSWAP
- 	select CRYPTO_LZO
- 	default n
- 	help
--	  Zcache2 doubles RAM efficiency while providing a significant
--	  performance boosts on many workloads.  Zcache2 uses
-+	  Zcache doubles RAM efficiency while providing a significant
-+	  performance boosts on many workloads.  Zcache uses
- 	  compression and an in-kernel implementation of transcendent
- 	  memory to store clean page cache pages and swap in RAM,
--	  providing a noticeable reduction in disk I/O.  Zcache2
--	  is a complete rewrite of the older zcache; it was intended to
--	  be a merge but that has been blocked due to political and
--	  technical disagreements.  It is intended that they will merge
--	  again in the future.  Until then, zcache2 is a single-node
--	  version of ramster.
-+	  providing a noticeable reduction in disk I/O.
- 
- config RAMSTER
- 	bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
--	depends on CONFIGFS_FS=y && SYSFS=y && !HIGHMEM && ZCACHE2=y
-+	depends on CONFIGFS_FS=y && SYSFS=y && !HIGHMEM && ZCACHE=y
- 	depends on NET
- 	# must ensure struct page is 8-byte aligned
- 	select HAVE_ALIGNED_STRUCT_PAGE if !64_BIT
-diff --git a/drivers/staging/zcache/Makefile b/drivers/staging/zcache/Makefile
-index 2d8b9d0..4711049 100644
---- a/drivers/staging/zcache/Makefile
-+++ b/drivers/staging/zcache/Makefile
-@@ -3,4 +3,4 @@ zcache-$(CONFIG_RAMSTER)	+=	ramster/ramster.o ramster/r2net.o
- zcache-$(CONFIG_RAMSTER)	+=	ramster/nodemanager.o ramster/tcp.o
- zcache-$(CONFIG_RAMSTER)	+=	ramster/heartbeat.o ramster/masklog.o
- 
--obj-$(CONFIG_ZCACHE2)	+=	zcache.o
-+obj-$(CONFIG_ZCACHE)	+=	zcache.o
--- 
-1.7.1
-
+ drivers/staging/Kconfig                            |    4 +-
+ drivers/staging/Makefile                           |    2 +-
+ drivers/staging/ramster/Kconfig                    |   31 -
+ drivers/staging/ramster/Makefile                   |    6 -
+ drivers/staging/ramster/ramster.h                  |   59 -
+ drivers/staging/ramster/ramster/heartbeat.c        |  462 ----
+ drivers/staging/ramster/ramster/heartbeat.h        |   87 -
+ drivers/staging/ramster/ramster/masklog.c          |  155 --
+ drivers/staging/ramster/ramster/masklog.h          |  220 --
+ drivers/staging/ramster/ramster/nodemanager.c      |  995 ---------
+ drivers/staging/ramster/ramster/nodemanager.h      |   88 -
+ drivers/staging/ramster/ramster/r2net.c            |  414 ----
+ drivers/staging/ramster/ramster/ramster.c          |  985 ---------
+ drivers/staging/ramster/ramster/ramster.h          |  161 --
+ .../staging/ramster/ramster/ramster_nodemanager.h  |   39 -
+ drivers/staging/ramster/ramster/tcp.c              | 2253 --------------------
+ drivers/staging/ramster/ramster/tcp.h              |  159 --
+ drivers/staging/ramster/ramster/tcp_internal.h     |  248 ---
+ drivers/staging/ramster/tmem.c                     |  894 --------
+ drivers/staging/ramster/tmem.h                     |  259 ---
+ drivers/staging/ramster/zbud.c                     | 1060 ---------
+ drivers/staging/ramster/zbud.h                     |   33 -
+ drivers/staging/ramster/zcache-main.c              | 1820 ----------------
+ drivers/staging/ramster/zcache.h                   |   53 -
+ drivers/staging/zcache/Kconfig                     |   26 +
+ drivers/staging/zcache/Makefile                    |    6 +
+ drivers/staging/zcache/ramster.h                   |   59 +
+ drivers/staging/zcache/ramster/heartbeat.c         |  462 ++++
+ drivers/staging/zcache/ramster/heartbeat.h         |   87 +
+ drivers/staging/zcache/ramster/masklog.c           |  155 ++
+ drivers/staging/zcache/ramster/masklog.h           |  220 ++
+ drivers/staging/zcache/ramster/nodemanager.c       |  995 +++++++++
+ drivers/staging/zcache/ramster/nodemanager.h       |   88 +
+ drivers/staging/zcache/ramster/r2net.c             |  414 ++++
+ drivers/staging/zcache/ramster/ramster.c           |  985 +++++++++
+ drivers/staging/zcache/ramster/ramster.h           |  161 ++
+ .../staging/zcache/ramster/ramster_nodemanager.h   |   39 +
+ drivers/staging/zcache/ramster/tcp.c               | 2253 ++++++++++++++++++++
+ drivers/staging/zcache/ramster/tcp.h               |  159 ++
+ drivers/staging/zcache/ramster/tcp_internal.h      |  248 +++
+ drivers/staging/zcache/tmem.c                      |  894 ++++++++
+ drivers/staging/zcache/tmem.h                      |  259 +++
+ drivers/staging/zcache/zbud.c                      | 1060 +++++++++
+ drivers/staging/zcache/zbud.h                      |   33 +
+ drivers/staging/zcache/zcache-main.c               | 1820 ++++++++++++++++
+ drivers/staging/zcache/zcache.h                    |   53 +
+ 46 files changed, 10479 insertions(+), 10484 deletions(-)
