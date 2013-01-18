@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab3ARQFi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 11:05:38 -0500
-Received: from nm18-vm9.bullet.mail.sg3.yahoo.com ([106.10.149.104]:36327 "EHLO
-	nm18-vm9.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751010Ab3ARQFh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 11:05:37 -0500
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 752595.20747.bm@omp1023.mail.sg3.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.in;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=L/wxSpTPAvHy14vPgUyEmeTBNqqHKxcoer5AYEN7zaDLmHDf9CbG4XgtrpcCOz6L6C4z1Qz3TaixoEqxW6Dy6+vwAsw/SRWlO3RpR7aiIJ08uJMMYwumWx5xMbJvr1okyrsQ5zENz8jDVNg7P23RCfY7fGsUdWBiyEAAFiBoqP8=;
-X-YMail-OSG: uNtwk1sVM1k5FaONjR.qyLqxaMcWNN0h9qVISAhc95b1Ahm
- YhiMUBsPzvvxO2BR0pq38N_Tnd73Gl2d7pLtmij.rrMSPqKnK_UVBzmjcP7O
- Djw1BHf1Z3lbSU3iJ6ZdpdiYEjtwFtleKXzpwTVUglU6mr1pDAoEPp4wglMU
- vIBzNkks10594Irmd_fKtIRSh80Yap7E1CxCUpLnKUlbUmSn5bqMa.p3pNQ7
- Ope_vmMglSCzYhIc.Ify._kBV73Uab2rOydk1hoNyxe7_89rQ1Ah7xhYxTKW
- Jh3w2tInSqxzyCUIzDOD1SsvJosNvETjuiaoZXctUKYATrxujPiEsazlYzuS
- WLPihnHNV320mm816zzy5H1k_lPsLVB1vPTfsnA2hCn2Msstp1hh9fqr.Y4N
- kM9nB0WO5xwJXUs0.xe.tDWenG1WzcQvvk7d4Rv5LQRGL.1qdhYU18dPhjQc
- XAR8Ie5Qfq7Y.uOvIRW5vcltqas.QXuONtyVPraelwOLoqFUxtHlJKrGIXJ3
- OSli.vEDuHg1I4qrHK6RG6ZCBodEE22kXUrVS1bCi_Uqb1QoB26oWfLlkCEv
- 3QaH4zffCW9eLaOrTe1znKUZfjKOxaVfeqIYlmQzAtM9O
-X-Rocket-MIMEInfo: 001.001,R3JlZXRpbmdzIGZyb20gQlVSS0lOQSBGQVNPOgpMZXQgbWUgc3RhcnQgYnkgaW50cm9kdWNlIG15c2VsZixJIGFtIE1ycyBSdXRoIFlvZGEsIEJJTEwgQU5EIEVYQ0hBTkdFIE1BTkFHRVIgKEJhbmsgb2YgQWZyaWNhKSBPdWFnYWRvdWdvdSwgQnVya2luYSBGYXNvLkkgYW0gd3JpdHRpbmcgeW91IHRoaXMgbGV0dGVyIGJhc2VkIG9uIHRoZSBsYXRlc3QgZGV2ZWxvcG1lbnQgYXQgb3VyIGJhbmsgd2hpY2ggSSB3aWxsIGxpa2UgdG8gYnJpbmcgdG8geW91ciBwZXJzb25hbCBlZGlmaWNhdGlvbi4oJDEyLDI1MG0BMAEBAQE-
-X-RocketYMMF: sumit123panwar
-X-Mailer: YahooMailClassic/15.1.2 YahooMailWebService/0.8.130.494
-Message-ID: <1358525133.48846.YahooMailClassic@web193203.mail.sg3.yahoo.com>
-Date: Sat, 19 Jan 2013 00:05:33 +0800 (SGT)
-From: Ruth Yoda <ruth_y1@qq.com>
-Reply-To: ruth_y@qq.com
-Subject: Re:Very Urgent!!!
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1754150Ab3ARQIF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 11:08:05 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:46727 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab3ARQIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 11:08:00 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: [RFC PATCH v5 0/8] introduce PCI bus notifier chain to get rid of the ACPI PCI subdriver interfaces
+Date: Sat, 19 Jan 2013 00:07:38 +0800
+Message-Id: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings from BURKINA FASO:
-Let me start by introduce myself,I am Mrs Ruth Yoda, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification.($12,250million transfer claims).This is a legitimate transaction and I agreed to offer you 30% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested,get back to me.
- 
-Yours faithful,
-Mrs Ruth Yoda.
+This is an RFC patchset to address review comments in thread at:
+https://patchwork.kernel.org/patch/1946851/. The patch just pasts
+compilation. If no objection to the new implementation, I will
+go on to modify acpiphp driver and conduct tests.
 
+The main changes from V4 to V5 includes:
+1) introduce a dedicated notifier chain for PCI buses
+2) change pci_slot as built-in driver
+3) unify the way to create/destroy PCI slots
+4) introduce a kernel option to disable PCIe native hotplug
 
+TODO:
+1) change acpiphp as built-in and unify the way to create/destroy ACPI
+   based hotplug slots.
+2) change other ACPI PCI subdriver in Yinghai's root bridge hotplug series
+   to use the PCI bus notifier chain.
+3) Remove the ACPI PCI subdriver interface eventaully.
+
+Jiang Liu (8):
+  PCI: make PCI device create/destroy logic symmetric
+  PCI: split registration of PCI bus devices into two stages
+  PCI: add a blocking notifier chain for PCI bus addition/removal
+  ACPI, PCI: avoid building pci_slot as module
+  PCI, ACPI: hook PCI bus notifications to create/destroy PCI slots
+  pci_slot: replace printk(KERN_xxx) with pr_xxx()
+  PCI/PCIe: add "pci=nopciehp" to disable PCIe native hotplug
+  PCI/PCIe: only claim PME from firmware when CONFIG_PCIE_PME is
+    enabled
+
+ Documentation/kernel-parameters.txt |    2 +
+ drivers/acpi/Kconfig                |    5 +-
+ drivers/acpi/internal.h             |    5 +
+ drivers/acpi/pci_root.c             |    8 +-
+ drivers/acpi/pci_slot.c             |  217 ++++++++++-------------------------
+ drivers/acpi/scan.c                 |    1 +
+ drivers/pci/bus.c                   |   26 ++++-
+ drivers/pci/pci.c                   |    2 +
+ drivers/pci/pci.h                   |    1 +
+ drivers/pci/pcie/portdrv_core.c     |    7 +-
+ drivers/pci/pcie/portdrv_pci.c      |    3 +
+ drivers/pci/probe.c                 |    7 +-
+ drivers/pci/remove.c                |   15 +--
+ include/linux/pci.h                 |   21 ++++
+ 14 files changed, 142 insertions(+), 178 deletions(-)
+
+-- 
+1.7.9.5
 
