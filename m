@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab3ARDrZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 22:47:25 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:49695 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab3ARDrY (ORCPT
+	id S1754823Ab3ARDr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 22:47:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45225 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab3ARDrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 22:47:24 -0500
-Date: Thu, 17 Jan 2013 19:47:18 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 2/3] workqueue, async: implement work/async_current_func()
-Message-ID: <20130118034718.GX2668@htj.dyndns.org>
-References: <20130116164832.GP2668@htj.dyndns.org>
- <50F6DD4D.3070808@linux.intel.com>
- <CA+55aFyjrXzKMqmOuMo9z24OZj3kD4O4M4y_O-h=r6udCz2MyA@mail.gmail.com>
- <20130116213032.GS2668@htj.dyndns.org>
- <CA+55aFzdf44QOZn4KS6tT09COFsmCg80sTah1XpeoErJxAzbRQ@mail.gmail.com>
- <20130118012503.GH16568@mtj.dyndns.org>
- <CA+55aFyCihvZqOo=83UwWq3AgJEfVqpNjsY2iCFOEm8o6Un-YA@mail.gmail.com>
- <20130118025936.GJ16568@mtj.dyndns.org>
- <20130118030407.GK16568@mtj.dyndns.org>
- <CA+55aFwAwX_o6ocGhd1WwUwxfOnh+S6aKeZdEpeeHVAnBm4uVQ@mail.gmail.com>
+	Thu, 17 Jan 2013 22:47:55 -0500
+Date: Fri, 18 Jan 2013 01:47:48 -0200
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Alexander Beregalov <a.beregalov@gmail.com>,
+        Theodore Tso <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [ 36/71] ext4: lock i_mutex when truncating orphan inodes
+Message-ID: <20130118034747.GF2872@herton-Z68MA-D2H-B3>
+References: <20130115225340.367496998@linuxfoundation.org>
+ <20130115225343.033036403@linuxfoundation.org>
+ <20130117200710.GD2872@herton-Z68MA-D2H-B3>
+ <20130118004616.GA5730@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwAwX_o6ocGhd1WwUwxfOnh+S6aKeZdEpeeHVAnBm4uVQ@mail.gmail.com>
+In-Reply-To: <20130118004616.GA5730@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 07:18:26PM -0800, Linus Torvalds wrote:
-> I'm not sure I understand what you mean? Do you mean trying to limit
-> work_current_func() to only be accessible to the async code? You'd
-> have to make some kind of private header file under kernel/ for that,
-> but I guess that would work fine. We already do something similar
-> inside filesystems etc, where they have their own local headers.
-
-Yeap, and I'm unsure whether it's worth introducing a new internal
-header file.
-
-> Yes, yes, some globally optimizing compiler could sort it all out, but
-> I'd personally be inclined to just move all the structure definitions
-> into kernel/worker.h, and make the code be inline functions. The only
-> actual current *user* would also be in the kernel/ subdirectory, and
-> we don't know if we'd ever want to really expand it past there.
+On Thu, Jan 17, 2013 at 04:46:16PM -0800, Greg Kroah-Hartman wrote:
+> On Thu, Jan 17, 2013 at 06:07:11PM -0200, Herton Ronaldo Krzesinski wrote:
+> > On Tue, Jan 15, 2013 at 02:54:33PM -0800, Greg Kroah-Hartman wrote:
+> > > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: Theodore Ts'o <tytso@mit.edu>
+> > > 
+> > > commit 721e3eba21e43532e438652dd8f1fcdfce3187e7 upstream.
+> > > 
+> > > Commit c278531d39 added a warning when ext4_flush_unwritten_io() is
+> > > called without i_mutex being taken.  It had previously not been taken
+> > > during orphan cleanup since races weren't possible at that point in
+> > > the mount process, but as a result of this c278531d39, we will now see
+> > > a kernel WARN_ON in this case.  Take the i_mutex in
+> > > ext4_orphan_cleanup() to suppress this warning.
+> > > 
+> > > Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
+> > > Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> > > Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+> > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > By the description and looking at commit c278531d39, this change isn't
+> > needed for 3.0 or 3.4 kernels (anything <= 3.6), they don't contain
+> > commit c278531d39.
 > 
-> Hmm?
+> Ah, good catch.  Should this be reverted from 3.0 and 3.4?
 
-If we're gonna make it kernel/ internal thing with internal header, we
-definitely can go all the way.  It's a bit meh because the code path
-involved is very cold.  Hmm... I'll make it that way.  I like how it
-keeps the thing apparently internal.
+I judge it as unecessary from what I saw so far, can ext4 developers
+and/or people in Cc confirm? It should be harmless, only consequence is
+an uneeded lock being taken now in 3.0/3.4
 
-Thanks.
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
 -- 
-tejun
+[]'s
+Herton
