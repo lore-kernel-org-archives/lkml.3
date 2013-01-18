@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab3ARAXx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 19:23:53 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:51918 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab3ARAXw (ORCPT
+	id S1753094Ab3ARA0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 19:26:35 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:39693 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab3ARA0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 19:23:52 -0500
-Date: Thu, 17 Jan 2013 16:23:47 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com, tglx@linutronix.de
-Subject: Re: [PATCH 1/1] X86: Handle Hyper-V vmbus interrupts as special
- hypervisor interrupts
-Message-ID: <20130118002347.GB3959@kroah.com>
-References: <1358469577-8794-1-git-send-email-kys@microsoft.com>
+	Thu, 17 Jan 2013 19:26:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358469577-8794-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02DC30C27@sausexdag04.amd.com>
+References: <CAKocOOMagCzn7fkkZJM+r5K--yXjZ40jCsHpwi97gCKo1keZ1A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC2FB3A@sausexdag04.amd.com>
+	<CAKocOOMrTf9RMa17Zy_oK+uPJ_B7uNwxhsX7dOm4okVdnmwY5A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30C27@sausexdag04.amd.com>
+Date: Thu, 17 Jan 2013 17:26:29 -0700
+Message-ID: <CAKocOOPNf5HZOO421Cvhb35fMxM6Tfu7w2aXZb3UF3igS9S=Kw@mail.gmail.com>
+Subject: Re: linux 3.8-rc3 reboot and shutdown
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: "jglisse@redhat.com" <jglisse@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 04:39:37PM -0800, K. Y. Srinivasan wrote:
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+On Thu, Jan 17, 2013 at 4:48 PM, Deucher, Alexander
+<Alexander.Deucher@amd.com> wrote:
+>> -----Original Message-----
+>> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+>> Sent: Thursday, January 17, 2013 6:21 PM
+>> To: Deucher, Alexander
+>> Cc: jglisse@redhat.com; linux-kernel@vger.kernel.org
+>> Subject: Re: linux 3.8-rc3 reboot and shutdown
+>>
+>> On Thu, Jan 17, 2013 at 12:45 PM, Deucher, Alexander
+>> <Alexander.Deucher@amd.com> wrote:
+>> >> -----Original Message-----
+>> >> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+>> >> Sent: Thursday, January 17, 2013 2:03 PM
+>> >> To: jglisse@redhat.com; Deucher, Alexander
+>> >> Cc: linux-kernel@vger.kernel.org; Shuah Khan
+>> >> Subject: linux 3.8-rc3 reboot and shutdown
+>> >>
+>> >> Alex,
+>> >>
+>> >> I started seeing hang during shutdown and reboot on my laptop that has
+>> >> ATI radeon VGA.
+>> >>
+>> >> 01:00.0 VGA compatible controller: Advanced Micro Devices [AMD] nee
+>> >> ATI RV620 [Mobility Radeon HD 3400 Series] (prog-if 00 [VGA
+>> >> controller])
+>> >>
+>> >> My bisect narrowed it to the following commit.
+>> >
+>> > Should be fixed by this commit:
+>> > http://cgit.freedesktop.org/~agd5f/linux/commit/?h=drm-fixes-
+>> 3.8&id=19fc42ed9950d5fe17089c0a928121047c882092
+>> > Which should be finding its way upstream any day now.
+>> >
+>> > Alex
+>> >
+>>
+>> Alex,
+>>
+>> Applied this patch on 3.8-rc3 and tested it. reboot still hung. The
+>> only thing that fixes the problem is reverting
+>> 71e3d1578c954cf29f1f4db1c8930d3574025eb0
+>
+> Does the attached patch applied in addition to:
+> http://cgit.freedesktop.org/~agd5f/linux/commit/?h=drm-fixes-3.8&id=19fc42ed9950d5fe17089c0a928121047c882092
+> fix the issue?
+>
+> Alex
 
-No changelog entry describing the patch?
+No reboot still hung after applying
+0001-drm-radeon-don-t-attempt-to-soft-reset-DMA-ring-on-r.patch  in
+addition to 19fc42ed9950d5fe17089c0a928121047c882092
 
-> ---
->  arch/x86/include/asm/irq_vectors.h |    2 +
->  arch/x86/include/asm/mshyperv.h    |    4 +++
->  arch/x86/kernel/cpu/mshyperv.c     |   39 ++++++++++++++++++++++++++++++++++++
->  arch/x86/kernel/entry_32.S         |    7 ++++++
->  arch/x86/kernel/entry_64.S         |    5 ++++
->  5 files changed, 57 insertions(+), 0 deletions(-)
-
-This patch needs to go through the x86 maintainers, which you didn't
-include all of on the To: line, any reason why?
-
-greg k-h
+-- Shuah
