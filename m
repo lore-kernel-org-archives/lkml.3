@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab3ARNzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 08:55:49 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:46532 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754515Ab3ARNzr convert rfc822-to-8bit (ORCPT
+	id S1755628Ab3ARN6K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 08:58:10 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:56507 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015Ab3ARN6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 08:55:47 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Fri, 18 Jan 2013 08:58:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [PATCH v2 16/76] ARC: Syscall support (no-legacy-syscall ABI)
+Date: Fri, 18 Jan 2013 13:58:00 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-17-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1358511930-7424-17-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [patch v2] b43: N-PHY: fix gain in b43_nphy_get_gain_ctl_workaround_ent()
-Date: Fri, 18 Jan 2013 13:53:43 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7118@saturn3.aculab.com>
-In-Reply-To: <20130118133658.GA31186@elgon.mountain>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [patch v2] b43: N-PHY: fix gain in b43_nphy_get_gain_ctl_workaround_ent()
-Thread-Index: Ac31gNQDU9CDo55gQGqo7ruDMOo6HQAAlECw
-References: <50F84AF3.5070901@bfs.de> <20130118133658.GA31186@elgon.mountain>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Dan Carpenter" <dan.carpenter@oracle.com>,
-        "Stefano Brivio" <stefano.brivio@polimi.it>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <b43-dev@lists.infradead.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kernel-janitors@vger.kernel.org>
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301181358.00590.arnd@arndb.de>
+X-Provags-ID: V02:K0:/lUHWu8UNu9Odr1G0VaTTtZfuraTX/HdQ68BZlHLWwn
+ dHl8L5dPWoI3QEBpj8TsYsct2hX9y55Vs3nBlLmSVLmKp30AcE
+ Yts7WvVDX8qe3N5J8xQIL0vRdNiPtHYxkBFyh1H3TJkbNpGr4i
+ vcohWv3oJMmbottwhzGq6yp5uDt16OlxFeE0m+pQeCos07os2s
+ 8OCQASc32C9A6/0MRDBKQutYCeHoV1Ho1lTnViDWFJhH/mNcLA
+ s9Uuaqn3nrWWImDRvn9J4km20oIXnHOJiE+QCv0L1+/8GutlGG
+ 5dgvNF9xBAPyBsscZEcWzzInShTRlfa8Nadn0IzoJPkAQBiv35
+ 4/1QYhI2mPw+gjagSn7Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +		int gain_data[] = {0x0062, 0x0064, 0x006a, 0x106a, 0x106c,
-> +				   0x1074, 0x107c, 0x207c};
+On Friday 18 January 2013, Vineet Gupta wrote:
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
 
-static const int ...
-
-	David
-
-
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
