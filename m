@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab3ARMSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:18:20 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52956 "EHLO bear.ext.ti.com"
+	id S1756020Ab3ARMVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:21:48 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52950 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751848Ab3ARMSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:18:15 -0500
+	id S1755389Ab3ARMSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 07:18:12 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>, <balbi@ti.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v8 12/22] mfd: omap-usb-host: Use devm_kzalloc() and devm_request_and_ioremap()
-Date: Fri, 18 Jan 2013 14:17:15 +0200
-Message-ID: <1358511445-26656-13-git-send-email-rogerq@ti.com>
+Subject: [PATCH v8 10/22] mfd: omap-usb-tll: Add OMAP5 revision and HSIC support
+Date: Fri, 18 Jan 2013 14:17:13 +0200
+Message-ID: <1358511445-26656-11-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511445-26656-1-git-send-email-rogerq@ti.com>
 References: <1358511445-26656-1-git-send-email-rogerq@ti.com>
@@ -24,106 +24,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_ variants of kzalloc and ioremap. Also clean up error path.
+The TLL module on OMAP5 has 3 channels.
+HSIC mode requires the TLL channel to be in Transparent UTMI mode.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/omap-usb-host.c |   38 +++++++++++---------------------------
- 1 files changed, 11 insertions(+), 27 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 061366d..310aaa9 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -461,15 +461,20 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index 9f9cfc2..fc0ac9f 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -54,10 +54,13 @@
  
- 	if (!pdata) {
- 		dev_err(dev, "Missing platform data\n");
--		ret = -ENOMEM;
--		goto end_probe;
-+		return -ENODEV;
- 	}
+ #define	OMAP_TLL_CHANNEL_CONF(num)			(0x040 + 0x004 * num)
+ #define OMAP_TLL_CHANNEL_CONF_FSLSMODE_SHIFT		24
++#define OMAP_TLL_CHANNEL_CONF_DRVVBUS			(1 << 16)
++#define OMAP_TLL_CHANNEL_CONF_CHRGVBUS			(1 << 15)
+ #define	OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF		(1 << 11)
+ #define	OMAP_TLL_CHANNEL_CONF_ULPI_ULPIAUTOIDLE		(1 << 10)
+ #define	OMAP_TLL_CHANNEL_CONF_UTMIAUTOIDLE		(1 << 9)
+ #define	OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE		(1 << 8)
++#define OMAP_TLL_CHANNEL_CONF_MODE_TRANSPARENT_UTMI	(2 << 1)
+ #define OMAP_TLL_CHANNEL_CONF_CHANMODE_FSLS		(1 << 1)
+ #define	OMAP_TLL_CHANNEL_CONF_CHANEN			(1 << 0)
  
--	omap = kzalloc(sizeof(*omap), GFP_KERNEL);
-+	omap = devm_kzalloc(dev, sizeof(*omap), GFP_KERNEL);
- 	if (!omap) {
- 		dev_err(dev, "Memory allocation failed\n");
--		ret = -ENOMEM;
--		goto end_probe;
-+		return -ENOMEM;
-+	}
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "uhh");
-+	omap->uhh_base = devm_request_and_ioremap(dev, res);
-+	if (!omap->uhh_base) {
-+		dev_err(dev, "Resource request/ioremap failed\n");
-+		return -EADDRNOTAVAIL;
- 	}
+@@ -92,6 +95,7 @@
+ #define OMAP_USBTLL_REV1		0x00000015	/* OMAP3 */
+ #define OMAP_USBTLL_REV2		0x00000018	/* OMAP 3630 */
+ #define OMAP_USBTLL_REV3		0x00000004	/* OMAP4 */
++#define OMAP_USBTLL_REV4		0x00000006	/* OMAP5 */
  
- 	spin_lock_init(&omap->lock);
-@@ -568,20 +573,6 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 				"failed error:%d\n", ret);
- 	}
+ #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
  
--	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "uhh");
--	if (!res) {
--		dev_err(dev, "UHH EHCI get resource failed\n");
--		ret = -ENODEV;
--		goto err_init_60m_fclk;
--	}
--
--	omap->uhh_base = ioremap(res->start, resource_size(res));
--	if (!omap->uhh_base) {
--		dev_err(dev, "UHH ioremap failed\n");
--		ret = -ENOMEM;
--		goto err_init_60m_fclk;
--	}
--
- 	platform_set_drvdata(pdev, omap);
- 
- 	omap_usbhs_init(dev);
-@@ -591,13 +582,10 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		goto err_alloc;
- 	}
- 
--	goto end_probe;
-+	return 0;
- 
- err_alloc:
- 	omap_usbhs_deinit(&pdev->dev);
--	iounmap(omap->uhh_base);
--
--err_init_60m_fclk:
- 	clk_put(omap->init_60m_fclk);
- 
- err_usbhost_p2_fck:
-@@ -621,9 +609,7 @@ err_utmi_p1_fck:
- err_end:
- 	clk_put(omap->ehci_logic_fck);
- 	pm_runtime_disable(dev);
--	kfree(omap);
- 
--end_probe:
- 	return ret;
- }
- 
-@@ -638,7 +624,6 @@ static int usbhs_omap_remove(struct platform_device *pdev)
- 	struct usbhs_hcd_omap *omap = platform_get_drvdata(pdev);
- 
- 	omap_usbhs_deinit(&pdev->dev);
--	iounmap(omap->uhh_base);
- 	clk_put(omap->init_60m_fclk);
- 	clk_put(omap->usbhost_p2_fck);
- 	clk_put(omap->usbhost_p1_fck);
-@@ -648,7 +633,6 @@ static int usbhs_omap_remove(struct platform_device *pdev)
- 	clk_put(omap->utmi_p1_fck);
- 	clk_put(omap->ehci_logic_fck);
- 	pm_runtime_disable(&pdev->dev);
--	kfree(omap);
- 
- 	return 0;
- }
+@@ -245,6 +249,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	ver =  usbtll_read(base, OMAP_USBTLL_REVISION);
+ 	switch (ver) {
+ 	case OMAP_USBTLL_REV1:
++	case OMAP_USBTLL_REV4:
+ 		tll->nch = OMAP_TLL_CHANNEL_COUNT;
+ 		break;
+ 	case OMAP_USBTLL_REV2:
+@@ -313,6 +318,15 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 				reg &= ~(OMAP_TLL_CHANNEL_CONF_UTMIAUTOIDLE
+ 					| OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF
+ 					| OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE);
++			} else if (pdata->port_mode[i] ==
++					OMAP_EHCI_PORT_MODE_HSIC) {
++				/*
++				 * HSIC Mode requires UTMI port configurations
++				 */
++				reg |= OMAP_TLL_CHANNEL_CONF_DRVVBUS
++				 | OMAP_TLL_CHANNEL_CONF_CHRGVBUS
++				 | OMAP_TLL_CHANNEL_CONF_MODE_TRANSPARENT_UTMI
++				 | OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF;
+ 			} else {
+ 				continue;
+ 			}
 -- 
 1.7.4.1
 
