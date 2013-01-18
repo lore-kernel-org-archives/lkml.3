@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab3ARN6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 08:58:10 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56507 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015Ab3ARN6I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 08:58:08 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [PATCH v2 16/76] ARC: Syscall support (no-legacy-syscall ABI)
-Date: Fri, 18 Jan 2013 13:58:00 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-17-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1358511930-7424-17-git-send-email-vgupta@synopsys.com>
+	id S1755938Ab3ARN6e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 08:58:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39785 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755726Ab3ARN6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 08:58:32 -0500
+Date: Fri, 18 Jan 2013 14:58:28 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie,
+        minchan@kernel.org, aquini@redhat.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, wency@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com, laijs@cn.fujitsu.com
+Subject: Re: [PATCH] memory-hotplug: mm/Kconfig: move auto selects from
+ MEMORY_HOTPLUG to MEMORY_HOTREMOVE as needed
+Message-ID: <20130118135828.GD10701@dhcp22.suse.cz>
+References: <1358495676-4488-1-git-send-email-linfeng@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301181358.00590.arnd@arndb.de>
-X-Provags-ID: V02:K0:/lUHWu8UNu9Odr1G0VaTTtZfuraTX/HdQ68BZlHLWwn
- dHl8L5dPWoI3QEBpj8TsYsct2hX9y55Vs3nBlLmSVLmKp30AcE
- Yts7WvVDX8qe3N5J8xQIL0vRdNiPtHYxkBFyh1H3TJkbNpGr4i
- vcohWv3oJMmbottwhzGq6yp5uDt16OlxFeE0m+pQeCos07os2s
- 8OCQASc32C9A6/0MRDBKQutYCeHoV1Ho1lTnViDWFJhH/mNcLA
- s9Uuaqn3nrWWImDRvn9J4km20oIXnHOJiE+QCv0L1+/8GutlGG
- 5dgvNF9xBAPyBsscZEcWzzInShTRlfa8Nadn0IzoJPkAQBiv35
- 4/1QYhI2mPw+gjagSn7Y=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358495676-4488-1-git-send-email-linfeng@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 January 2013, Vineet Gupta wrote:
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
+On Fri 18-01-13 15:54:36, Lin Feng wrote:
+> Besides page_isolation.c selected by MEMORY_ISOLATION under MEMORY_HOTPLUG
+> is also such case, move it too.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Yes, it seems that only HOTREMOVE needs MEMORY_ISOLATION but that should
+be done in a separate patch as this change is already upstream and
+should be merged separately. It would also be nice to mention which
+functions are we talking about. AFAICS:
+alloc_migrate_target, test_pages_isolated, start_isolate_page_range and
+undo_isolate_page_range.
+-- 
+Michal Hocko
+SUSE Labs
