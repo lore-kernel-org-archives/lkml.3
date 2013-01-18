@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab3ARECJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 23:02:09 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:62044 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab3ARECH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 23:02:07 -0500
+	id S1754888Ab3ARELC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 23:11:02 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:43945 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751869Ab3ARELA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 23:11:00 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: libc-alpha@sourceware.org
+Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
+Date: Thu, 17 Jan 2013 23:14:31 -0500
+User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
+Cc: David Miller <davem@davemloft.net>, bhutchings@solarflare.com,
+        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
+        eblake@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
+        schwab@suse.de, carlos@systemhalted.org
+References: <1358316366.14898.8.camel@cr0> <1358351232.2923.10.camel@bwh-desktop.uk.solarflarecom.com> <20130116.164511.2027039182184636075.davem@davemloft.net>
+In-Reply-To: <20130116.164511.2027039182184636075.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <20130118033557.GE13185@redhat.com>
-References: <CACV3sb+69VQMM44vXx_-AdOZmbz18zZeVdmi1+YHEq7kZ_VmdA@mail.gmail.com>
-	<y0mliceujz4.fsf@fche.csb>
-	<CACV3sbKk3euv8N4SbBegJ=iYuUxfdynZ_1GNtfkwGzwGDcqATw@mail.gmail.com>
-	<20130104151950.GB21860@redhat.com>
-	<CACV3sbKYPUSOsccptgyJtaEp4Oxx6yX0XgVEEa+BfTPLpD28qA@mail.gmail.com>
-	<20130118033557.GE13185@redhat.com>
-Date: Fri, 18 Jan 2013 12:02:06 +0800
-Message-ID: <CACV3sbJqFzVVL6R9x2wtqMeAxpD93k7-LV38jXQr4h_NMeUjDg@mail.gmail.com>
-Subject: Re: [RFC] ktap: Another dynamic tracing tool for Linux
-From: Jovi Zhang <bookjovi@gmail.com>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, jovi.zhangwei@huawei.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart4524473.iPNIk8yRGl";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301172314.34193.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 11:35 AM, Frank Ch. Eigler <fche@redhat.com> wrote:
-> Hi -
->
-> On Fri, Jan 18, 2013 at 09:24:55AM +0800, Jovi Zhang wrote:
->> Let us continue this ktap topic in this thread :).
->> ktap code is public available at github, please clone from:
->> https://github.com/ktap/ktap.git
->> [...]
->
-> Neat stuff.  I have one set of initial observations: even with a nice
-> small bytecode language, the VM has to be skeptical and careful.  For
-> example, some dangers:
->
-> - any dynamic memory allocation from within the context of an
->   arbitrary tracepoints (table_* functions, stack frames)
-> - unchecked arithmetic (division-by-zero - OP_DIV, overflows,
->   function arity limits)
-> - time-quantity of computation (limit loop iterations / #-bytecodes?,
->   DO_JMP infinite loops)
-> - stack-frame usage of interpreter (if internally recursive, or if
->   too much state kept on stack)
-> - trusting validity of bytecode (imagine an attacker sending random
->   or harmful junk, jumping out of bytecode ranges)
-> - calls out from interpreter into native code - to ensure that *all*
->   those functions (transitively) are valid to call from general
->   e.g. tracepoint context (e.g. sleeps often aren't)
-> - (and these problems get even worse with evaluation from the
->   context of kprobes)
->
->
-> - FChE
+--nextPart4524473.iPNIk8yRGl
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Yeh, that's why this code is called initial implementation.
-most of dangers you pointed I have thought about, most of them should not
-have too much hard to solve it, it just need some time, some of them already
-listed in Todo-list.txt.
+On Wednesday 16 January 2013 16:45:11 David Miller wrote:
+> What would be really nice is if GCC treated multiple identical
+> definitions of structures the same way it handles multiple identical
+> definitions of CPP defines.  Which is to silently accept them.
+>=20
+> But that's not the case, so we need a different solution.
+>=20
+> Another thing to do is to use a new structure for in6_addr in kernel
+> headers exported to userland.
 
-Thanks your quick observations, the comments is valueable, and need to
-be address step by step
-in future
-development (I also think most issues is very common for script
-dynamic tracing tool, not specific for ktap,
-but ktap have to go through those barrier one by one)
+the kernel already exports many types with a __kernel_ prefix.  i changed t=
+he=20
+kernel headers in Gentoo for a few releases (2.6.28 - 2.6.34) to do the sam=
+e=20
+thing to pretty much all the networking headers.  a few packages broke, but=
+=20
+the number was low, and trivial to fix (a sed would do it most of the time).
 
-Let's waiting for ktap official release 0.1, the code quality would be
-more better than now :)
+it's also trivial for userland packages to detect that they need to do this=
+=20
+sort of thing in a local header by using linux/version.h and a set of defin=
+es=20
+to redirect the new structure name back to the old one.
 
-.jovi
+would be a lot cleaner to just break it and be done.
+=2Dmike
+
+--nextPart4524473.iPNIk8yRGl
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJQ+MwqAAoJEEFjO5/oN/WBBskQAMOonwYlzAbcqbYCYHhxza41
+qy82GlFB/k/qwL2ai4b9gdBmFjzvIlF3IM5UOqklp+k1LkGwPJjA8fSq3oXjB74L
+YEtZYm0K8XLwN5PhiuXTRjjWAEnh2+f0KQovIjzHQ9ME7cLWkwjmTDr3SCMaz9d6
+yPcyMQjp9enEe1nt+5/yPphWUfVZl79ipSuHaBdHrqE1oz2tYb2L/wdWQCmZ7HEM
+MmJ2srZ2xOxsCH+v/jjuVKnDXSFyEfEVd0nwdVCNXYiAPeeFwlzkVqrKHwTLpSUI
+Fx8zH09eklkx4gOMXxD8rh6ulXOfWs0Z64nYWAzLhiW4Xo8hh0wi3BQ7MFTb2w5I
+mjllXC/Uq9IXQ1AOab1r/2yL/Axf2OW7yQxG2on5TPzaJotRF4mZXhAusE0S0Rqv
+itpH0Apon+lapezytdMz49r28JW33lmApMXm5bWWwjNhvQDUaWr9IEAqJOqJJ1XL
+hOLzqzFqQ4Fs++1g8t+IKmzB/4C2pcuSjFlBh193unjSoUONWsEIdLGczU6LIVco
+65GO+OOUpkCgK2cLv6aBLywhAwzi02u53ZQ0N7QMI/LYJlg3rVE3Ikz0KoiO0pHn
+6t2Bkv8IYHTT4SyxoZnRdzkyY81ffXMZkutbTHBOSqf2b1BbhUtTIZ2E5F27K1AY
+msbPZjq4OYPX46UJ8zcx
+=BmdQ
+-----END PGP SIGNATURE-----
+
+--nextPart4524473.iPNIk8yRGl--
