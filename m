@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab3ARBkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 20:40:12 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:62900 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab3ARBkK (ORCPT
+	id S1754354Ab3ARByN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 20:54:13 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:50597 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350Ab3ARByM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 20:40:10 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anatolij Gustschin <agust@denx.de>
-Subject: [PATCH 1/2] powerpc/5200: Fix size to request_mem_region() call
-Date: Fri, 18 Jan 2013 01:39:59 +0000
-Message-Id: <1358473200-17886-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 17 Jan 2013 20:54:12 -0500
+Message-ID: <50F8AB33.5010003@vlnb.net>
+Date: Thu, 17 Jan 2013 20:53:55 -0500
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Andreas Steinmetz <ast@domdv.de>
+CC: linux-kernel@vger.kernel.org, hch@infradead.org,
+        torvalds@linux-foundation.org
+Subject: Re: LIO - the broken iSCSI target implementation
+References: <1358385543.7040.54.camel@host028-server-9.lan.domdv.de>
+In-Reply-To: <1358385543.7040.54.camel@host028-server-9.lan.domdv.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:QGJ8JCNvFe6tdf2Qp9JimtKG9f2yN4OxYc7R0v9rGuV
+ YnECtEuf+iqtVXy9EvUwtLMGTN/RzdpGJo7iWRXaJLR5IWYWDk
+ ci9UJ/Vwpta52P4UAtGD8aZdJTG5k3pCucNkP2CSzZSDhuodsu
+ QmF4wZU8KfgRy+vBTLPqmfUXcSAFoRvF4rn/ctlzx4jYoKXO5W
+ qXdRuZXi4AE1zT3oSnkf68A88lB7NeEDzjiC4CIIVB1sKsssJ2
+ +6iUEUjSscVQB3iLxz95nX38TPkbzjQh5efmqlyLrFnL6NRNqv
+ 91HBO1+83uhkXRA/kBPWyP9D+3mZU8LRw/OKJmYhD4tdr4MqYC
+ zt6YCaqdM7vzhFwaVwwY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Bestcomm driver requests a memory region larger than the one
-described in the device tree. This is due to an extra undocumented field
-in the bestcomm register structure. This hasn't been a problem up to
-now, but there is a patch pending to make the DT platform_bus support
-code use platform_device_add() which tightens the rules and provides
-extra checks for drivers to stay within the specified register regions.
 
-Alternately, I could have removed the extra field from the structure,
-but I'm not sure if it is still needed for resume to work. Better be
-safe and leave it in.
+Andreas Steinmetz, on 01/16/2013 08:19 PM wrote:
+> Thus, lio (http://www.linux-iscsi.org/) seemed to be the politically and
+> technically favoured solution.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Anatolij Gustschin <agust@denx.de>
----
- arch/powerpc/sysdev/bestcomm/bestcomm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+[...]
 
-diff --git a/arch/powerpc/sysdev/bestcomm/bestcomm.c b/arch/powerpc/sysdev/bestcomm/bestcomm.c
-index d913063..81c3314 100644
---- a/arch/powerpc/sysdev/bestcomm/bestcomm.c
-+++ b/arch/powerpc/sysdev/bestcomm/bestcomm.c
-@@ -414,7 +414,7 @@ static int mpc52xx_bcom_probe(struct platform_device *op)
- 		goto error_sramclean;
- 	}
- 
--	if (!request_mem_region(res_bcom.start, sizeof(struct mpc52xx_sdma),
-+	if (!request_mem_region(res_bcom.start, resource_size(&res_bcom),
- 				DRIVER_NAME)) {
- 		printk(KERN_ERR DRIVER_NAME ": "
- 			"Can't request registers region\n");
--- 
-1.7.10.4
+> The fun part of it was that I finally ended up using SCST - which was
+> refrained from kernel inclusion for technical reasons beyond my
+> knowledge.
+
+No, it was purely political. There has never been any technical argument why LIO 
+is better. And can not be.
+
+Thanks,
+Vlad
 
