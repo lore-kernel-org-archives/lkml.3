@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab3ARMSX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:18:23 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:53857 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720Ab3ARMSO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:18:14 -0500
+	id S1755789Ab3ARMSa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:18:30 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:54669 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755652Ab3ARMSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 07:18:25 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <sameo@linux.intel.com>, <balbi@ti.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <rogerq@ti.com>
-Subject: [PATCH v8 14/22] mfd: omap-usb-host: override number of ports from platform data
-Date: Fri, 18 Jan 2013 14:17:17 +0200
-Message-ID: <1358511445-26656-15-git-send-email-rogerq@ti.com>
+Subject: [PATCH v8 18/22] mfd: omap-usb-host: clean up omap_usbhs_init()
+Date: Fri, 18 Jan 2013 14:17:21 +0200
+Message-ID: <1358511445-26656-19-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511445-26656-1-git-send-email-rogerq@ti.com>
 References: <1358511445-26656-1-git-send-email-rogerq@ti.com>
@@ -25,75 +24,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both OMAP4 and 5 exhibit the same revision ID in the REVISION register
-but they have different number of ports i.e. 2 and 3 respectively.
-So we can't rely on REVISION register for number of ports on OMAP5
-and depend on platform data (or device tree) instead.
+We split initializing revision 1 and revision 2 into different
+functions. Initialization is now done dynamically so that only
+the number of ports available on the system are initialized.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/omap-usb-host.c            |   34 +++++++++++++++++++------------
- include/linux/platform_data/usb-omap.h |    1 +
- 2 files changed, 22 insertions(+), 13 deletions(-)
+ drivers/mfd/omap-usb-host.c |  129 +++++++++++++++++++++++++++----------------
+ 1 files changed, 81 insertions(+), 48 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 26319ca..779588b 100644
+index fcace6f..9dea92c 100644
 --- a/drivers/mfd/omap-usb-host.c
 +++ b/drivers/mfd/omap-usb-host.c
-@@ -493,19 +493,27 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 	 */
- 	pm_runtime_put_sync(dev);
+@@ -358,6 +358,75 @@ static int usbhs_runtime_suspend(struct device *dev)
+ 	return 0;
+ }
  
--	switch (omap->usbhs_rev) {
--	case OMAP_USBHS_REV1:
--		omap->nports = 3;
--		break;
--	case OMAP_USBHS_REV2:
--		omap->nports = 2;
--		break;
--	default:
--		omap->nports = OMAP3_HS_USB_PORTS;
--		dev_dbg(dev,
--		  "USB HOST Rev : 0x%d not recognized, assuming %d ports\n",
--		   omap->usbhs_rev, omap->nports);
--		break;
-+	/*
-+	 * If platform data contains nports then use that
-+	 * else make out number of ports from USBHS revision
-+	 */
-+	if (pdata->nports) {
-+		omap->nports = pdata->nports;
-+	} else {
-+		switch (omap->usbhs_rev) {
-+		case OMAP_USBHS_REV1:
-+			omap->nports = 3;
++static unsigned omap_usbhs_rev1_hostconfig(struct usbhs_hcd_omap *omap,
++						unsigned reg)
++{
++	struct usbhs_omap_platform_data	*pdata = omap->pdata;
++	int i;
++
++	for (i = 0; i < omap->nports; i++) {
++		switch (pdata->port_mode[i]) {
++		case OMAP_USBHS_PORT_MODE_UNUSED:
++			reg &= ~(OMAP_UHH_HOSTCONFIG_P1_CONNECT_STATUS << i);
 +			break;
-+		case OMAP_USBHS_REV2:
-+			omap->nports = 2;
++		case OMAP_EHCI_PORT_MODE_PHY:
++			if (pdata->single_ulpi_bypass)
++				break;
++
++			if (i == 0)
++				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_P1_BYPASS;
++			else
++				reg &= ~(OMAP_UHH_HOSTCONFIG_ULPI_P2_BYPASS
++								<< (i-1));
 +			break;
 +		default:
-+			omap->nports = OMAP3_HS_USB_PORTS;
-+			dev_dbg(dev,
-+			 "USB HOST Rev:0x%d not recognized, assuming %d ports\n",
-+			 omap->usbhs_rev, omap->nports);
++			if (pdata->single_ulpi_bypass)
++				break;
++
++			if (i == 0)
++				reg |= OMAP_UHH_HOSTCONFIG_ULPI_P1_BYPASS;
++			else
++				reg |= OMAP_UHH_HOSTCONFIG_ULPI_P2_BYPASS
++								<< (i-1);
 +			break;
 +		}
++	}
++
++	if (pdata->single_ulpi_bypass) {
++		/* bypass ULPI only if none of the ports use PHY mode */
++		reg |= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
++
++		for (i = 0; i < omap->nports; i++) {
++			if (is_ehci_phy_mode(pdata->port_mode[i])) {
++				reg &= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
++				break;
++			}
++		}
++	}
++
++	return reg;
++}
++
++static unsigned omap_usbhs_rev2_hostconfig(struct usbhs_hcd_omap *omap,
++						unsigned reg)
++{
++	struct usbhs_omap_platform_data	*pdata = omap->pdata;
++	int i;
++
++	for (i = 0; i < omap->nports; i++) {
++		/* Clear port mode fields for PHY mode */
++		reg &= ~(OMAP4_P1_MODE_CLEAR << 2 * i);
++
++		if (is_ehci_tll_mode(pdata->port_mode[i]) ||
++				(is_ohci_port(pdata->port_mode[i])))
++			reg |= OMAP4_P1_MODE_TLL << 2 * i;
++		else if (is_ehci_hsic_mode(pdata->port_mode[i]))
++			reg |= OMAP4_P1_MODE_HSIC << 2 * i;
++	}
++
++	return reg;
++}
++
+ static void omap_usbhs_init(struct device *dev)
+ {
+ 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+@@ -389,54 +458,18 @@ static void omap_usbhs_init(struct device *dev)
+ 	reg |= OMAP4_UHH_HOSTCONFIG_APP_START_CLK;
+ 	reg &= ~OMAP_UHH_HOSTCONFIG_INCRX_ALIGN_EN;
+ 
+-	if (is_omap_usbhs_rev1(omap)) {
+-		if (pdata->port_mode[0] == OMAP_USBHS_PORT_MODE_UNUSED)
+-			reg &= ~OMAP_UHH_HOSTCONFIG_P1_CONNECT_STATUS;
+-		if (pdata->port_mode[1] == OMAP_USBHS_PORT_MODE_UNUSED)
+-			reg &= ~OMAP_UHH_HOSTCONFIG_P2_CONNECT_STATUS;
+-		if (pdata->port_mode[2] == OMAP_USBHS_PORT_MODE_UNUSED)
+-			reg &= ~OMAP_UHH_HOSTCONFIG_P3_CONNECT_STATUS;
+-
+-		/* Bypass the TLL module for PHY mode operation */
+-		if (pdata->single_ulpi_bypass) {
+-			dev_dbg(dev, "OMAP3 ES version <= ES2.1\n");
+-			if (is_ehci_phy_mode(pdata->port_mode[0]) ||
+-				is_ehci_phy_mode(pdata->port_mode[1]) ||
+-					is_ehci_phy_mode(pdata->port_mode[2]))
+-				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
+-			else
+-				reg |= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
+-		} else {
+-			dev_dbg(dev, "OMAP3 ES version > ES2.1\n");
+-			if (is_ehci_phy_mode(pdata->port_mode[0]))
+-				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_P1_BYPASS;
+-			else
+-				reg |= OMAP_UHH_HOSTCONFIG_ULPI_P1_BYPASS;
+-			if (is_ehci_phy_mode(pdata->port_mode[1]))
+-				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_P2_BYPASS;
+-			else
+-				reg |= OMAP_UHH_HOSTCONFIG_ULPI_P2_BYPASS;
+-			if (is_ehci_phy_mode(pdata->port_mode[2]))
+-				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_P3_BYPASS;
+-			else
+-				reg |= OMAP_UHH_HOSTCONFIG_ULPI_P3_BYPASS;
+-		}
+-	} else if (is_omap_usbhs_rev2(omap)) {
+-		/* Clear port mode fields for PHY mode*/
+-		reg &= ~OMAP4_P1_MODE_CLEAR;
+-		reg &= ~OMAP4_P2_MODE_CLEAR;
+-
+-		if (is_ehci_tll_mode(pdata->port_mode[0]) ||
+-			(is_ohci_port(pdata->port_mode[0])))
+-			reg |= OMAP4_P1_MODE_TLL;
+-		else if (is_ehci_hsic_mode(pdata->port_mode[0]))
+-			reg |= OMAP4_P1_MODE_HSIC;
+-
+-		if (is_ehci_tll_mode(pdata->port_mode[1]) ||
+-			(is_ohci_port(pdata->port_mode[1])))
+-			reg |= OMAP4_P2_MODE_TLL;
+-		else if (is_ehci_hsic_mode(pdata->port_mode[1]))
+-			reg |= OMAP4_P2_MODE_HSIC;
++	switch (omap->usbhs_rev) {
++	case OMAP_USBHS_REV1:
++		omap_usbhs_rev1_hostconfig(omap, reg);
++		break;
++
++	case OMAP_USBHS_REV2:
++		omap_usbhs_rev2_hostconfig(omap, reg);
++		break;
++
++	default:	/* newer revisions */
++		omap_usbhs_rev2_hostconfig(omap, reg);
++		break;
  	}
  
- 	for (i = 0; i < omap->nports; i++)
-diff --git a/include/linux/platform_data/usb-omap.h b/include/linux/platform_data/usb-omap.h
-index 04c7537..925a4a7 100644
---- a/include/linux/platform_data/usb-omap.h
-+++ b/include/linux/platform_data/usb-omap.h
-@@ -39,6 +39,7 @@ enum usbhs_omap_port_mode {
- };
- 
- struct usbhs_omap_platform_data {
-+	int				nports;
- 	enum usbhs_omap_port_mode	port_mode[OMAP3_HS_USB_PORTS];
- 	int				reset_gpio_port[OMAP3_HS_USB_PORTS];
- 	struct regulator		*regulator[OMAP3_HS_USB_PORTS];
+ 	usbhs_write(omap->uhh_base, OMAP_UHH_HOSTCONFIG, reg);
 -- 
 1.7.4.1
 
