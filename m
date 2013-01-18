@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750957Ab3ARFXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 00:23:33 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:47595 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab3ARFXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 00:23:32 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: David Miller <davem@davemloft.net>
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
-Date: Fri, 18 Jan 2013 00:27:02 -0500
-User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
-Cc: libc-alpha@sourceware.org, bhutchings@solarflare.com,
-        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
-        eblake@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
-        schwab@suse.de, carlos@systemhalted.org
-References: <1358351232.2923.10.camel@bwh-desktop.uk.solarflarecom.com> <201301172314.34193.vapier@gentoo.org> <20130117.235524.2010232687612037902.davem@davemloft.net>
-In-Reply-To: <20130117.235524.2010232687612037902.davem@davemloft.net>
+	id S1750985Ab3ARFYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 00:24:32 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:59507
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750720Ab3ARFYb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 00:24:31 -0500
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898hbe9i1155h)
+Subject: [patch v1 2/5] regulator: da9055 change irq state to default
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <dchen@diasemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Jan 2013 10:52:45 +0530
+Message-ID: <1358486565.14373.10.camel@dhruva>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2271619.9SQDBdVnEI";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301180027.06171.vapier@gentoo.org>
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2271619.9SQDBdVnEI
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+This patch changes the irq state from high to the now default low
+state.
 
-On Thursday 17 January 2013 23:55:24 David Miller wrote:
-> From: Mike Frysinger <vapier@gentoo.org>
-> > the kernel already exports many types with a __kernel_ prefix.  i chang=
-ed
-> > the kernel headers in Gentoo for a few releases (2.6.28 - 2.6.34) to do
-> > the same thing to pretty much all the networking headers.  a few
-> > packages broke, but the number was low, and trivial to fix (a sed would
-> > do it most of the time).
-> >=20
-> > it's also trivial for userland packages to detect that they need to do
-> > this sort of thing in a local header by using linux/version.h and a set
-> > of defines to redirect the new structure name back to the old one.
-> >=20
-> > would be a lot cleaner to just break it and be done.
->=20
-> We are not at liberty to break something that has legitimately
-> compiled successfully for two decades.
+This patch is dependent on the DA9055 MFD.
 
-i doubt there are code bases that have compiled successfully for that long=
-=20
-w/out being changed.  in fact, the kernel user headers (until recently) hav=
-e=20
-been a volatile mess requiring constant care & feeding of user programs to=
-=20
-keep compiling.  if anything, this would simply be maintaining the status q=
-uo=20
-for a bit longer.
+This patch is tested on smdk6410 board.
 
-> One thing you certainly don't have to be is happy about this header
-> file situation, but you cannot use that dissatisfaction as
-> justification to make the situation worse by breaking the build for
-> people outside of the world you directly control.
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+---
+ drivers/regulator/da9055-regulator.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-i think you're making wrong assumptions about my position on the topic.  i=
-=20
-never said i was against cleaning up the kernel user headers (and in fact, =
-you=20
-can find many commits from me doing exactly that over the years in the kern=
-el).
-=2Dmike
+diff --git a/drivers/regulator/da9055-regulator.c b/drivers/regulator/da9055-regulator.c
+index 3022109..d4297c2 100644
+--- a/drivers/regulator/da9055-regulator.c
++++ b/drivers/regulator/da9055-regulator.c
+@@ -579,7 +579,7 @@ static int da9055_regulator_probe(struct platform_device *pdev)
+ 		irq = regmap_irq_get_virq(da9055->irq_data, irq);
+ 		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+ 						da9055_ldo5_6_oc_irq,
+-						IRQF_TRIGGER_HIGH |
++						IRQF_TRIGGER_LOW |
+ 						IRQF_ONESHOT |
+ 						IRQF_PROBE_SHARED,
+ 						pdev->name, regulator);
+-- 
+1.7.0.4
 
---nextPart2271619.9SQDBdVnEI
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ+N0qAAoJEEFjO5/oN/WBXYQQAKBfGGxMvfL/Fc7VqdvjQ+h1
-ueKUZasQRCfbdmVD9gWuMuxmN7iXt08or6o1anyAFyXS7XHDrY1AF/Mjbtnz9hxU
-WzijugK1IU9E7aeK4DjzZERLMt1cH9sBXhoci/bYHPpIRI6xYxpeZDgBjWRg+/v4
-YMXwl5M9OsOR93/h+RwIZACSb8ueiuluLhX3wMq1OtB1VmpPNh1KGpta97AqvpY9
-6EMdhv8vFPImIu14cXrfYqL7eh3aR47crTbndhpZ2qYlX43+B91U6yuJLCpmYalv
-2RgodJe1dvfhD2SSOIVwLBNsard44d9lFLO7JIU+G247ManMcZwvzZC+H+RYj5zK
-Gfq/SNX+qTGVBToIdCORWZMBJS8/MDuRQoMxH2U8f8JCUKU44h+0qzkuOAxGncdp
-BeH/7KECQvep0/MmgRkPD/5CssWaVnVjN6v1kdCjDpHt1L9WcbdbLyPzjUhXcI26
-pwnB5iiqP8b9qzjmcGHZcUr883lbV2C7LX6i1XUScJEotECdymsuFSQndO2iIKCg
-+/NPapMRf4VKevptfNpaWbqYO8GqGh5rXeeZ2GPT1y4b0WN6UuuYtQWtNGQPBNmY
-vCUSrfmmDnGZrLGTq6xhLA+RRFE7z5XgWvzuY/kv/ZR+js3elVvwZCHlaxA5BssF
-OEqiwvC/rwSaFPYuxaLD
-=qzpw
------END PGP SIGNATURE-----
-
---nextPart2271619.9SQDBdVnEI--
