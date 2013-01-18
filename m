@@ -1,192 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab3ARFcZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 00:32:25 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:26573 "EHLO song.cn.fujitsu.com"
+	id S1751179Ab3ARFe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 00:34:28 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:8529 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab3ARFcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 00:32:13 -0500
+	id S1750829Ab3ARFe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 00:34:26 -0500
 X-IronPort-AV: E=Sophos;i="4.84,489,1355068800"; 
-   d="scan'208";a="6610208"
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>, Eric Dumazet <erdnetdev@gmail.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH V5 2/2] virtio-net: reset virtqueue affinity when doing cpu hotplug
-Date: Fri, 18 Jan 2013 13:32:01 +0800
-Message-Id: <1358487121-7956-2-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1358487121-7956-1-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1358487121-7956-1-git-send-email-gaowanlong@cn.fujitsu.com>
+   d="scan'208";a="6610216"
+Message-ID: <50F8DEE9.9060905@cn.fujitsu.com>
+Date: Fri, 18 Jan 2013 13:34:33 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: guz.fnst@cn.fujitsu.com, tangchen@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        Lin Feng <linfeng@cn.fujitsu.com>, Jiang Liu <liuj97@gmail.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH RESEND] pci-sysfs: replace mutex_lock with mutex_trylock to
+ avoid potential deadlock situation
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/18 13:31:23,
+ 2013/01/18 13:33:36,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/18 13:31:23,
-	Serialize complete at 2013/01/18 13:31:23
+ 2013/01/18 13:33:37,
+	Serialize complete at 2013/01/18 13:33:37
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a cpu notifier to virtio-net, so that we can reset the
-virtqueue affinity if the cpu hotplug happens. It improve
-the performance through enabling or disabling the virtqueue
-affinity after doing cpu hotplug.
+There is a potential deadlock situation when we manipulate the pci-sysfs user
+interfaces from different bus hierarchy simultaneously, described as following:
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: Eric Dumazet <erdnetdev@gmail.com>
-Cc: virtualization@lists.linux-foundation.org
-Cc: netdev@vger.kernel.org
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+path1: sysfs remove device:             | path2: sysfs rescan device: 
+sysfs_schedule_callback_work()          | sysfs_write_file() 
+  remove_callback()                     |   flush_write_buffer()
+*1* mutex_lock(&pci_remove_rescan_mutex)|*2*  sysfs_get_active(attr_sd) 
+      ...                               |     dev_attr_store() 
+        device_remove_file()            |       dev_rescan_store()
+          ...                           |*4*      mutex_lock(&pci_remove_rescan_mutex)
+*3*       sysfs_deactivate(sd)          |     ...
+            wait_for_completion()       |*5*  sysfs_put_active(attr_sd)
+*6* mutex_unlock(&pci_remove_rescan_mutex)
+
+If path1 firstly holds the pci_remove_rescan_mutex at *1*, then another path 
+called path2 actived and runs to *2* before path1 runs to *3*, we now runs
+to a deadlock situation:
+Path1 holds the mutex waiting path2 to decrease sysfs_dirent's s_active
+counter at *5*, but path2 is blocked at *4* when trying to get the 
+pci_remove_rescan_mutex. The mutex won't be put by path1 until it reach
+*6*, but it's now blocked at *3*.
+
+The circumvent approach is if we find someone else is manipulating the pci-tree we
+simply abort current operation to avoid deadlock.
+
+*dmesg ifno*:
+(snip)
+1000e 0000:1c:00.0: eth9: Intel(R) PRO/1000 Network Connection
+sd 13:2:0:0: [sdb] Attached SCSI disk
+e1000e 0000:1c:00.0: eth9: MAC: 0, PHY: 4, PBA No: D50228-005
+e1000e 0000:1c:00.1: Disabling ASPM  L1
+e1000e 0000:1c:00.1: Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
+e1000e 0000:1c:00.1: irq 143 for MSI/MSI-X
+e1000e 0000:1c:00.1: eth10: (PCI Express:2.5GT/s:Width x4) 00:15:17:cd:96:bf
+e1000e 0000:1c:00.1: eth10: Intel(R) PRO/1000 Network Connection
+e1000e 0000:1c:00.1: eth10: MAC: 0, PHY: 4, PBA No: D50228-005
+INFO: task bash:62982 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+bash            D 0000000000000000     0 62982  62978 0x00000080
+ ffff88038b277db8 0000000000000082 ffff88038b277fd8 0000000000013940
+ ffff88038b276010 0000000000013940 0000000000013940 0000000000013940
+ ffff88038b277fd8 0000000000013940 ffff880377449e30 ffff8806e822c670
+Call Trace:
+ [<ffffffff8151ba79>] schedule+0x29/0x70
+ [<ffffffff8151bd6e>] schedule_preempt_disabled+0xe/0x10
+ [<ffffffff8151a4e3>] __mutex_lock_slowpath+0xd3/0x150
+ [<ffffffff8151a3eb>] mutex_lock+0x2b/0x50
+ [<ffffffff812821dc>] dev_rescan_store+0x5c/0x80
+ [<ffffffff81341800>] dev_attr_store+0x20/0x30
+ [<ffffffff811e3eef>] sysfs_write_file+0xef/0x170
+ [<ffffffff81173d08>] vfs_write+0xc8/0x190
+ [<ffffffff81173ed1>] sys_write+0x51/0x90
+ [<ffffffff81524b29>] system_call_fastpath+0x16/0x1b
+INFO: task bash:64141 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+bash            D ffffffff81610460     0 64141  64136 0x00000080
+ ffff8803540e9db8 0000000000000086 ffff8803540e9fd8 0000000000013940
+ ffff8803540e8010 0000000000013940 0000000000013940 0000000000013940
+ ffff8803540e9fd8 0000000000013940 ffff8807db338a10 ffff8806f09abc60
+Call Trace:
+ [<ffffffff8151ba79>] schedule+0x29/0x70
+ [<ffffffff8151bd6e>] schedule_preempt_disabled+0xe/0x10
+ [<ffffffff8151a4e3>] __mutex_lock_slowpath+0xd3/0x150
+ [<ffffffff8151a3eb>] mutex_lock+0x2b/0x50
+ [<ffffffff812821dc>] dev_rescan_store+0x5c/0x80
+ [<ffffffff81341800>] dev_attr_store+0x20/0x30
+ [<ffffffff811e3eef>] sysfs_write_file+0xef/0x170
+ [<ffffffff81173d08>] vfs_write+0xc8/0x190
+ [<ffffffff81173ed1>] sys_write+0x51/0x90
+ [<ffffffff81524b29>] system_call_fastpath+0x16/0x1b
+INFO: task kworker/u:3:64451 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+kworker/u:3     D ffffffff81610460     0 64451      2 0x00000080
+ ffff8807d51b7a30 0000000000000046 ffff8807d51b7fd8 0000000000013940
+ ffff8807d51b6010 0000000000013940 0000000000013940 0000000000013940
+ ffff8807d51b7fd8 0000000000013940 ffff8807db339420 ffff88037744b250
+Call Trace:
+ [<ffffffff8151ba79>] schedule+0x29/0x70
+ [<ffffffff81519ded>] schedule_timeout+0x19d/0x220
+ [<ffffffff81165f92>] ? __slab_free+0x1f2/0x2f0
+ [<ffffffff8151b8fe>] wait_for_common+0x11e/0x190
+ [<ffffffff8108a6e0>] ? try_to_wake_up+0x2c0/0x2c0
+ [<ffffffff8151ba4d>] wait_for_completion+0x1d/0x20
+ [<ffffffff811e53e8>] sysfs_addrm_finish+0xb8/0xd0
+ [<ffffffff811e4320>] ? sysfs_schedule_callback+0x1e0/0x1e0
+ [<ffffffff811e33f0>] sysfs_hash_and_remove+0x60/0xb0
+ [<ffffffff811e43c9>] sysfs_remove_file+0x39/0x50
+ [<ffffffff81342cb7>] device_remove_file+0x17/0x20
+ [<ffffffff8134505c>] bus_remove_device+0xdc/0x180
+ [<ffffffff81342eb0>] device_del+0x120/0x1d0
+ [<ffffffff81342f82>] device_unregister+0x22/0x60
+ [<ffffffff8127ade4>] pci_stop_bus_device+0x94/0xa0
+ [<ffffffff8127ad90>] pci_stop_bus_device+0x40/0xa0
+ [<ffffffff8127ad90>] pci_stop_bus_device+0x40/0xa0
+ [<ffffffff8127ad90>] pci_stop_bus_device+0x40/0xa0
+ [<ffffffff8127af66>] pci_stop_and_remove_bus_device+0x16/0x30
+ [<ffffffff81282359>] remove_callback+0x29/0x40
+ [<ffffffff811e4344>] sysfs_schedule_callback_work+0x24/0x70
+ [<ffffffff81070009>] process_one_work+0x179/0x4b0
+ [<ffffffff8107210e>] worker_thread+0x12e/0x330
+ [<ffffffff81071fe0>] ? manage_workers+0x110/0x110
+ [<ffffffff8107705e>] kthread+0x9e/0xb0
+ [<ffffffff81525bc4>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81076fc0>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff81525bc0>] ? gs_change+0x13/0x13
+
+Reported-by: Taku Izumi <izumi.taku@jp.fujitsu.com> 
+Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 ---
-V4->V5:
-	New method to deal with the cpu hotplug actions (Rusty)
+ drivers/pci/pci-sysfs.c |   42 ++++++++++++++++++++++++++----------------
+ 1 files changed, 26 insertions(+), 16 deletions(-)
 
- drivers/net/virtio_net.c | 50 ++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 44 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 440b0eb..061f2c5 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -26,6 +26,7 @@
- #include <linux/scatterlist.h>
- #include <linux/if_vlan.h>
- #include <linux/slab.h>
-+#include <linux/cpu.h>
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 05b78b1..d2efbb0 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -295,10 +295,13 @@ static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
+ 		return -EINVAL;
  
- static int napi_weight = 128;
- module_param(napi_weight, int, 0444);
-@@ -126,6 +127,9 @@ struct virtnet_info {
- 
- 	/* Per-cpu variable to show the mapping from CPU to virtqueue */
- 	int __percpu *vq_index;
-+
-+	/* CPU hot plug notifier */
-+	struct notifier_block nb;
- };
- 
- struct skb_vnet_hdr {
-@@ -1016,7 +1020,7 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
- 	return 0;
- }
- 
--static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
-+static void virtnet_set_affinity(struct virtnet_info *vi, bool set, long hcpu)
- {
- 	int i;
- 	int cpu;
-@@ -1026,7 +1030,8 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
- 	 * setting the affinity hint to eliminate the contention.
- 	 */
- 	if ((vi->curr_queue_pairs == 1 ||
--	     vi->max_queue_pairs != num_online_cpus()) && set) {
-+	     vi->max_queue_pairs != num_online_cpus() - ((hcpu == -1) ? 0 : 1))
-+	    && set) {
- 		if (vi->affinity_hint_set)
- 			set = false;
- 		else
-@@ -1036,6 +1041,8 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
- 	if (set) {
- 		i = 0;
- 		for_each_online_cpu(cpu) {
-+			if (cpu == hcpu)
-+				continue;
- 			virtqueue_set_affinity(vi->rq[i].vq, cpu);
- 			virtqueue_set_affinity(vi->sq[i].vq, cpu);
- 			*per_cpu_ptr(vi->vq_index, cpu) = i;
-@@ -1050,14 +1057,36 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
- 		}
- 
- 		i = 0;
--		for_each_online_cpu(cpu)
-+		for_each_online_cpu(cpu) {
-+			if (cpu == hcpu)
-+				continue;
- 			*per_cpu_ptr(vi->vq_index, cpu) =
- 				++i % vi->curr_queue_pairs;
+ 	if (val) {
+-		mutex_lock(&pci_remove_rescan_mutex);
+-		while ((b = pci_find_next_bus(b)) != NULL)
+-			pci_rescan_bus(b);
+-		mutex_unlock(&pci_remove_rescan_mutex);
++		if (mutex_trylock(&pci_remove_rescan_mutex)) {
++			while ((b = pci_find_next_bus(b)) != NULL)
++				pci_rescan_bus(b);
++			mutex_unlock(&pci_remove_rescan_mutex);
++		} else {
++			return 0;
 +		}
- 
- 		vi->affinity_hint_set = false;
  	}
+ 	return count;
+ }
+@@ -319,9 +322,12 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
+ 		return -EINVAL;
+ 
+ 	if (val) {
+-		mutex_lock(&pci_remove_rescan_mutex);
+-		pci_rescan_bus(pdev->bus);
+-		mutex_unlock(&pci_remove_rescan_mutex);
++		if (mutex_trylock(&pci_remove_rescan_mutex)) {
++			pci_rescan_bus(pdev->bus);
++			mutex_unlock(&pci_remove_rescan_mutex);
++		} else {
++			return 0;
++		}
+ 	}
+ 	return count;
+ }
+@@ -330,9 +336,10 @@ static void remove_callback(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 
+-	mutex_lock(&pci_remove_rescan_mutex);
+-	pci_stop_and_remove_bus_device(pdev);
+-	mutex_unlock(&pci_remove_rescan_mutex);
++	if (mutex_trylock(&pci_remove_rescan_mutex)) {
++		pci_stop_and_remove_bus_device(pdev);
++		mutex_unlock(&pci_remove_rescan_mutex);
++	}
  }
  
-+static int virtnet_cpu_callback(struct notifier_block *nfb,
-+			        unsigned long action, void *hcpu)
-+{
-+	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
-+
-+	switch(action & ~CPU_TASKS_FROZEN) {
-+	case CPU_ONLINE:
-+	case CPU_DOWN_FAILED:
-+		virtnet_set_affinity(vi, true, -1);
-+		break;
-+	case CPU_DOWN_PREPARE:
-+		virtnet_set_affinity(vi, true, (long)hcpu);
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
- static void virtnet_get_ringparam(struct net_device *dev,
- 				struct ethtool_ringparam *ring)
- {
-@@ -1105,7 +1134,7 @@ static int virtnet_set_channels(struct net_device *dev,
- 		netif_set_real_num_rx_queues(dev, queue_pairs);
+ static ssize_t
+@@ -366,12 +373,15 @@ dev_bus_rescan_store(struct device *dev, struct device_attribute *attr,
+ 		return -EINVAL;
  
- 		get_online_cpus();
--		virtnet_set_affinity(vi, true);
-+		virtnet_set_affinity(vi, true, -1);
- 		put_online_cpus();
+ 	if (val) {
+-		mutex_lock(&pci_remove_rescan_mutex);
+-		if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
+-			pci_rescan_bus_bridge_resize(bus->self);
+-		else
+-			pci_rescan_bus(bus);
+-		mutex_unlock(&pci_remove_rescan_mutex);
++		if (mutex_trylock(&pci_remove_rescan_mutex)) {
++			if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
++				pci_rescan_bus_bridge_resize(bus->self);
++			else
++				pci_rescan_bus(bus);
++			mutex_unlock(&pci_remove_rescan_mutex);
++		} else {
++			return 0;
++		}
  	}
- 
-@@ -1275,7 +1304,7 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
- 	struct virtio_device *vdev = vi->vdev;
- 
- 	get_online_cpus();
--	virtnet_set_affinity(vi, false);
-+	virtnet_set_affinity(vi, false, -1);
- 	put_online_cpus();
- 
- 	vdev->config->del_vqs(vdev);
-@@ -1400,7 +1429,7 @@ static int init_vqs(struct virtnet_info *vi)
- 		goto err_free;
- 
- 	get_online_cpus();
--	virtnet_set_affinity(vi, true);
-+	virtnet_set_affinity(vi, true, -1);
- 	put_online_cpus();
- 
- 	return 0;
-@@ -1534,6 +1563,13 @@ static int virtnet_probe(struct virtio_device *vdev)
- 		}
- 	}
- 
-+	vi->nb.notifier_call = &virtnet_cpu_callback;
-+	err = register_hotcpu_notifier(&vi->nb);
-+	if (err) {
-+		pr_debug("virtio_net: registering cpu notifier failed\n");
-+		goto free_recv_bufs;
-+	}
-+
- 	/* Assume link up if device can't report link status,
- 	   otherwise get link status from config. */
- 	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_STATUS)) {
-@@ -1580,6 +1616,8 @@ static void virtnet_remove(struct virtio_device *vdev)
- {
- 	struct virtnet_info *vi = vdev->priv;
- 
-+	unregister_hotcpu_notifier(&vi->nb);
-+
- 	/* Prevent config work handler from accessing the device. */
- 	mutex_lock(&vi->config_lock);
- 	vi->config_enable = false;
+ 	return count;
+ }
 -- 
-1.8.1
+1.7.1
+
 
