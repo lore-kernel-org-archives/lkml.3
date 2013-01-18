@@ -1,106 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab3ARVHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:07:33 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:53503 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab3ARVHc (ORCPT
+	id S1755455Ab3ARVJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:09:34 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:39583 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890Ab3ARVJd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 16:07:32 -0500
-Message-ID: <1358543280.8280.2.camel@gitbox>
-Subject: Re: [PATCH 5/7] clk: vt8500: Use common of_clk_init() function
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Prashant Gaikwad <pgaikwad@nvidia.com>, swarren@nvidia.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        rob.herring@calxeda.com, maxime.ripard@free-electrons.com,
-        josh.cartwright@ni.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Sat, 19 Jan 2013 10:08:00 +1300
-In-Reply-To: <20130118175621.3982.82838@quantum>
-References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
-	 <1357282858-2112-5-git-send-email-pgaikwad@nvidia.com>
-	 <20130118175621.3982.82838@quantum>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 18 Jan 2013 16:09:33 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Prashant Gaikwad <pgaikwad@nvidia.com>, <swarren@nvidia.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1357278706-28149-1-git-send-email-pgaikwad@nvidia.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+References: <1357278706-28149-1-git-send-email-pgaikwad@nvidia.com>
+Message-ID: <20130118210928.3982.75303@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH 1/2] clk: Add composite clock type
+Date: Fri, 18 Jan 2013 13:09:28 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-18 at 09:56 -0800, Mike Turquette wrote:
-> Quoting Prashant Gaikwad (2013-01-03 23:00:56)
-> > Use common of_clk_init() function for clock initialization.
-> > 
-> > Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+Quoting Prashant Gaikwad (2013-01-03 21:51:45)
+> Not all clocks are required to be decomposed into basic clock
+> types but at the same time want to use the functionality
+> provided by these basic clock types instead of duplicating.
 > 
-> Tony,
+> For example, Tegra SoC has ~100 clocks which can be decomposed
+> into Mux -> Div -> Gate clock types making the clock count to
+> ~300. Also, parent change operation can not be performed on gate
+> clock which forces to use mux clock in driver if want to change
+> the parent.
 > 
-> Can I get a Tested-by from you before I take this in?
+> Instead aggregate the basic clock types functionality into one
+> clock and just use this clock for all operations. This clock
+> type re-uses the functionality of basic clock types and not
+> limited to basic clock types but any hardware-specific
+> implementation.
 > 
-Tested-by: Tony Prisk <linux@prisktech.co.nz>
+> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 
-FYI: This will need another patch to complete as we added another set of
-clocks to this clk-vt8500.c for 3.9.
+Hi Prashant,
 
-> Thanks,
-> Mike
-> 
-> > ---
-> >  drivers/clk/clk-vt8500.c |   15 ++++-----------
-> >  1 files changed, 4 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
-> > index fe25570..3ce1c3e 100644
-> > --- a/drivers/clk/clk-vt8500.c
-> > +++ b/drivers/clk/clk-vt8500.c
-> > @@ -272,7 +272,7 @@ static __init void vtwm_device_clk_init(struct device_node *node)
-> >         rc = of_clk_add_provider(node, of_clk_src_simple_get, clk);
-> >         clk_register_clkdev(clk, clk_name, NULL);
-> >  }
-> > -
-> > +CLK_OF_DECLARE(vt8500_device, "via,vt8500-device-clock", vtwm_device_clk_init);
-> >  
-> >  /* PLL clock related functions */
-> >  
-> > @@ -502,20 +502,13 @@ static void __init vt8500_pll_init(struct device_node *node)
-> >  {
-> >         vtwm_pll_clk_init(node, PLL_TYPE_VT8500);
-> >  }
-> > +CLK_OF_DECLARE(vt8500_pll, "via,vt8500-pll-clock", vt8500_pll_init);
-> >  
-> >  static void __init wm8650_pll_init(struct device_node *node)
-> >  {
-> >         vtwm_pll_clk_init(node, PLL_TYPE_WM8650);
-> >  }
-> > -
-> > -static const __initconst struct of_device_id clk_match[] = {
-> > -       { .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
-> > -       { .compatible = "via,vt8500-pll-clock", .data = vt8500_pll_init, },
-> > -       { .compatible = "wm,wm8650-pll-clock", .data = wm8650_pll_init, },
-> > -       { .compatible = "via,vt8500-device-clock",
-> > -                                       .data = vtwm_device_clk_init, },
-> > -       { /* sentinel */ }
-> > -};
-> > +CLK_OF_DECLARE(wm8650_pll, "wm,wm8650-pll-clock", wm8650_pll_init);
-> >  
-> >  void __init vtwm_clk_init(void __iomem *base)
-> >  {
-> > @@ -524,5 +517,5 @@ void __init vtwm_clk_init(void __iomem *base)
-> >  
-> >         pmc_base = base;
-> >  
-> > -       of_clk_init(clk_match);
-> > +       of_clk_init(NULL);
-> >  }
-> > -- 
-> > 1.7.4.1
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+I'm OK with the general concept of the composite clock, but a V2 patch
+addressing all of the comments needs to be submitted first.  You might
+base your patch on top of the following cleanup:
 
 
+>From 135a829744067cb825b48f7422e22861e57d5ecd Mon Sep 17 00:00:00 2001
+From: Mike Turquette <mturquette@linaro.org>
+Date: Fri, 18 Jan 2013 13:00:05 -0800
+Subject: [PATCH] clk: beautify Makefile
+
+The list of common clock types was getting a bit unmanageable.  This
+patch puts only one file on each line and reorders the object files
+alphabetically.  Also a newline is added to separate the sections.
+
+Reported-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Prashant Gaikwad <pgaikwad@nvidia.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+---
+ drivers/clk/Makefile |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index ee90e87..e73b1d6 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -1,8 +1,13 @@
+ # common clock types
+ obj-$(CONFIG_HAVE_CLK)		+= clk-devres.o
+ obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
+-obj-$(CONFIG_COMMON_CLK)	+= clk.o clk-fixed-rate.o clk-gate.o \
+-				   clk-mux.o clk-divider.o clk-fixed-factor.o
++obj-$(CONFIG_COMMON_CLK)	+= clk.o
++obj-$(CONFIG_COMMON_CLK)	+= clk-divider.o
++obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-factor.o
++obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
++obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
++obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
++
+ # SoCs specific
+ obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
+ obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
+-- 
+1.7.10.4
 
