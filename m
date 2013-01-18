@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab3ARELC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 23:11:02 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:43945 "EHLO smtp.gentoo.org"
+	id S1754787Ab3AREMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 23:12:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:52833 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869Ab3ARELA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 23:11:00 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: libc-alpha@sourceware.org
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
-Date: Thu, 17 Jan 2013 23:14:31 -0500
-User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
-Cc: David Miller <davem@davemloft.net>, bhutchings@solarflare.com,
-        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
-        eblake@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
-        schwab@suse.de, carlos@systemhalted.org
-References: <1358316366.14898.8.camel@cr0> <1358351232.2923.10.camel@bwh-desktop.uk.solarflarecom.com> <20130116.164511.2027039182184636075.davem@davemloft.net>
-In-Reply-To: <20130116.164511.2027039182184636075.davem@davemloft.net>
+	id S1751869Ab3AREMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 23:12:15 -0500
+Date: Thu, 17 Jan 2013 20:13:22 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        Jason Baron <jbaron@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20130118041322.GA25106@kroah.com>
+References: <20130118132904.ec0677175f1191290f060776@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4524473.iPNIk8yRGl";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301172314.34193.vapier@gentoo.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130118132904.ec0677175f1191290f060776@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4524473.iPNIk8yRGl
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jan 18, 2013 at 01:29:04PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the driver-core tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> In file included from drivers/net/wireless/ath/wil6210/wil6210.h:24:0,
+>                  from drivers/net/wireless/ath/wil6210/main.c:26:
+> drivers/net/wireless/ath/wil6210/dbg_hexdump.h:21:0: error: "print_hex_dump_bytes" redefined [-Werror]
+> include/linux/printk.h:322:0: note: this is the location of the previous definition
+> 
+> Caused by commit 7a555613eb77 ("dynamic_debug: dynamic hex dump")
+> interacting with commit 2be7d22f0625 ("wireless: add new wil6210 802.11ad
+> 60GHz driver") that was added to Linus' tree in the last few days.
+> 
+> I have applied the following merge fix patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 18 Jan 2013 13:24:32 +1100
+> Subject: [PATCH] wireless: remove conflicting version of print_hex_dump_bytes
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-On Wednesday 16 January 2013 16:45:11 David Miller wrote:
-> What would be really nice is if GCC treated multiple identical
-> definitions of structures the same way it handles multiple identical
-> definitions of CPP defines.  Which is to silently accept them.
->=20
-> But that's not the case, so we need a different solution.
->=20
-> Another thing to do is to use a new structure for in6_addr in kernel
-> headers exported to userland.
+Thanks, I've merged 3.9-rc4 into my tree and applied this patch to fix
+the build breakage.
 
-the kernel already exports many types with a __kernel_ prefix.  i changed t=
-he=20
-kernel headers in Gentoo for a few releases (2.6.28 - 2.6.34) to do the sam=
-e=20
-thing to pretty much all the networking headers.  a few packages broke, but=
-=20
-the number was low, and trivial to fix (a sed would do it most of the time).
-
-it's also trivial for userland packages to detect that they need to do this=
-=20
-sort of thing in a local header by using linux/version.h and a set of defin=
-es=20
-to redirect the new structure name back to the old one.
-
-would be a lot cleaner to just break it and be done.
-=2Dmike
-
---nextPart4524473.iPNIk8yRGl
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ+MwqAAoJEEFjO5/oN/WBBskQAMOonwYlzAbcqbYCYHhxza41
-qy82GlFB/k/qwL2ai4b9gdBmFjzvIlF3IM5UOqklp+k1LkGwPJjA8fSq3oXjB74L
-YEtZYm0K8XLwN5PhiuXTRjjWAEnh2+f0KQovIjzHQ9ME7cLWkwjmTDr3SCMaz9d6
-yPcyMQjp9enEe1nt+5/yPphWUfVZl79ipSuHaBdHrqE1oz2tYb2L/wdWQCmZ7HEM
-MmJ2srZ2xOxsCH+v/jjuVKnDXSFyEfEVd0nwdVCNXYiAPeeFwlzkVqrKHwTLpSUI
-Fx8zH09eklkx4gOMXxD8rh6ulXOfWs0Z64nYWAzLhiW4Xo8hh0wi3BQ7MFTb2w5I
-mjllXC/Uq9IXQ1AOab1r/2yL/Axf2OW7yQxG2on5TPzaJotRF4mZXhAusE0S0Rqv
-itpH0Apon+lapezytdMz49r28JW33lmApMXm5bWWwjNhvQDUaWr9IEAqJOqJJ1XL
-hOLzqzFqQ4Fs++1g8t+IKmzB/4C2pcuSjFlBh193unjSoUONWsEIdLGczU6LIVco
-65GO+OOUpkCgK2cLv6aBLywhAwzi02u53ZQ0N7QMI/LYJlg3rVE3Ikz0KoiO0pHn
-6t2Bkv8IYHTT4SyxoZnRdzkyY81ffXMZkutbTHBOSqf2b1BbhUtTIZ2E5F27K1AY
-msbPZjq4OYPX46UJ8zcx
-=BmdQ
------END PGP SIGNATURE-----
-
---nextPart4524473.iPNIk8yRGl--
+greg k-h
