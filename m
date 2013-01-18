@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab3ARV4k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:56:40 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:31621 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab3ARV4j (ORCPT
+	id S1755196Ab3ARV5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:57:09 -0500
+Received: from mail-oa0-f62.google.com ([209.85.219.62]:55150 "EHLO
+	mail-oa0-f62.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab3ARV5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 16:56:39 -0500
-Date: Fri, 18 Jan 2013 16:56:21 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        sjenning@linux.vnet.ibm.com, minchan@kernel.org
-Subject: Re: [PATCH V2 0/5] staging: zcache: move new zcache code base from
- ramster
-Message-ID: <20130118215621.GB4754@phenom.dumpdata.com>
-References: <1358544267-9104-1-git-send-email-dan.magenheimer@oracle.com>
+	Fri, 18 Jan 2013 16:57:06 -0500
+X-Greylist: delayed 5711 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jan 2013 16:57:06 EST
+Path: glegroupsg2000goo.googlegroups.com!not-for-mail
+Newsgroups: fa.linux.kernel
+Date: Fri, 18 Jan 2013 12:21:55 -0800 (PST)
+In-Reply-To: <fa.xKOV9tOmjA6NPYEPagvZixrd/4w@ifi.uio.no>
+Complaints-To: groups-abuse@google.com
+Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=5.1.31.149; posting-account=RDa6jQoAAAD-XczVB65X4OwzXnvUfh11
+NNTP-Posting-Host: 5.1.31.149
+References: <fa.9LtpVDEImZxRAaqPOyWMlGOK4Ow@ifi.uio.no> <fa.xKOV9tOmjA6NPYEPagvZixrd/4w@ifi.uio.no>
+User-Agent: G2/1.0
+X-Google-Web-Client: true
+X-Google-IP: 5.1.31.149
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358544267-9104-1-git-send-email-dan.magenheimer@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Message-ID: <0a73688d-f466-4a96-89af-0dca4cb5ea8a@googlegroups.com>
+Subject: Re: LIO - the broken iSCSI target implementation
+From: promo@starwindsoftware.com
+To: fa.linux.kernel@googlegroups.com
+Cc: Andreas Steinmetz <ast@domdv.de>, linux-kernel@vger.kernel.org,
+        hch@infradead.org, torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 01:24:22PM -0800, Dan Magenheimer wrote:
-> [V2: no code changes, patchset now generated via git format-patch -M]
-> 
-> Hi Greg --
-> 
-> With "old zcache" now removed, we can now move "new zcache" from its
-> temporary home (in drivers/staging/ramster) to reclaim sole possession
-> of the name "zcache".
-> 
-> (Note that [PATCH 2/5] is just a git mv.)
-> 
-> This patchset should apply cleanly to staging-next.
+Please don't start another "SCST Vs. LIO" holy war here. We all know why LIO belongs to Linux kernel and SCST does not.
 
-Sweet. Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Friday, January 18, 2013 3:54:18 AM UTC+2, Vladislav Bolkhovitin wrote:
+> Andreas Steinmetz, on 01/16/2013 08:19 PM wrote:
+> 
+> > Thus, lio (http://www.linux-iscsi.org/) seemed to be the politically and
+> 
+> > technically favoured solution.
+> 
+> 
+> 
+> [...]
+> 
+> 
+> 
+> > The fun part of it was that I finally ended up using SCST - which was
+> 
+> > refrained from kernel inclusion for technical reasons beyond my
+> 
+> > knowledge.
+> 
+> 
+> 
+> No, it was purely political. There has never been any technical argument why LIO 
+> 
+> is better. And can not be.
+> 
+> 
 > 
 > Thanks,
-> Dan
 > 
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Vlad
 > 
-> ---
-> Diffstat:
 > 
->  drivers/staging/Kconfig                            |    4 +-
->  drivers/staging/Makefile                           |    2 +-
->  drivers/staging/ramster/Kconfig                    |   31 -
->  drivers/staging/ramster/Makefile                   |    6 -
->  drivers/staging/ramster/ramster.h                  |   59 -
->  drivers/staging/ramster/ramster/heartbeat.c        |  462 ----
->  drivers/staging/ramster/ramster/heartbeat.h        |   87 -
->  drivers/staging/ramster/ramster/masklog.c          |  155 --
->  drivers/staging/ramster/ramster/masklog.h          |  220 --
->  drivers/staging/ramster/ramster/nodemanager.c      |  995 ---------
->  drivers/staging/ramster/ramster/nodemanager.h      |   88 -
->  drivers/staging/ramster/ramster/r2net.c            |  414 ----
->  drivers/staging/ramster/ramster/ramster.c          |  985 ---------
->  drivers/staging/ramster/ramster/ramster.h          |  161 --
->  .../staging/ramster/ramster/ramster_nodemanager.h  |   39 -
->  drivers/staging/ramster/ramster/tcp.c              | 2253 --------------------
->  drivers/staging/ramster/ramster/tcp.h              |  159 --
->  drivers/staging/ramster/ramster/tcp_internal.h     |  248 ---
->  drivers/staging/ramster/tmem.c                     |  894 --------
->  drivers/staging/ramster/tmem.h                     |  259 ---
->  drivers/staging/ramster/zbud.c                     | 1060 ---------
->  drivers/staging/ramster/zbud.h                     |   33 -
->  drivers/staging/ramster/zcache-main.c              | 1820 ----------------
->  drivers/staging/ramster/zcache.h                   |   53 -
->  drivers/staging/zcache/Kconfig                     |   26 +
->  drivers/staging/zcache/Makefile                    |    6 +
->  drivers/staging/zcache/ramster.h                   |   59 +
->  drivers/staging/zcache/ramster/heartbeat.c         |  462 ++++
->  drivers/staging/zcache/ramster/heartbeat.h         |   87 +
->  drivers/staging/zcache/ramster/masklog.c           |  155 ++
->  drivers/staging/zcache/ramster/masklog.h           |  220 ++
->  drivers/staging/zcache/ramster/nodemanager.c       |  995 +++++++++
->  drivers/staging/zcache/ramster/nodemanager.h       |   88 +
->  drivers/staging/zcache/ramster/r2net.c             |  414 ++++
->  drivers/staging/zcache/ramster/ramster.c           |  985 +++++++++
->  drivers/staging/zcache/ramster/ramster.h           |  161 ++
->  .../staging/zcache/ramster/ramster_nodemanager.h   |   39 +
->  drivers/staging/zcache/ramster/tcp.c               | 2253 ++++++++++++++++++++
->  drivers/staging/zcache/ramster/tcp.h               |  159 ++
->  drivers/staging/zcache/ramster/tcp_internal.h      |  248 +++
->  drivers/staging/zcache/tmem.c                      |  894 ++++++++
->  drivers/staging/zcache/tmem.h                      |  259 +++
->  drivers/staging/zcache/zbud.c                      | 1060 +++++++++
->  drivers/staging/zcache/zbud.h                      |   33 +
->  drivers/staging/zcache/zcache-main.c               | 1820 ++++++++++++++++
->  drivers/staging/zcache/zcache.h                    |   53 +
->  46 files changed, 10479 insertions(+), 10484 deletions(-)
+> 
+> --
+> 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> 
+> the body of a message to majordomo@vger.kernel.org
+> 
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> Please read the FAQ at  http://www.tux.org/lkml/
+
