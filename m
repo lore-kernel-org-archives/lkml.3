@@ -1,90 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab3ARP34 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 10:29:56 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31801 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab3ARP3y (ORCPT
+	id S1754374Ab3ARPaH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 10:30:07 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:43577 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751554Ab3ARPaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 10:29:54 -0500
-X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=HJMuRcDKq34A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=RPfT3mj6-UMA:10 a=GE73Nj82zm6kZl7SA38A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1358522992.7383.13.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH v2] slub: Keep page and object in sync in
- slab_alloc_node()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        RT <linux-rt-users@vger.kernel.org>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@gmail.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Date: Fri, 18 Jan 2013 10:29:52 -0500
-In-Reply-To: <20130118044242.GA18665@lge.com>
-References: <1358446258.23211.32.camel@gandalf.local.home>
-	 <1358447864.23211.34.camel@gandalf.local.home>
-	 <0000013c4a69a2cf-1a19a6f6-e6a3-4f06-99a4-10fdd4b9aca2-000000@email.amazonses.com>
-	 <1358458996.23211.46.camel@gandalf.local.home>
-	 <0000013c4a7e7fbf-c51fd42a-2455-4fec-bb37-915035956f05-000000@email.amazonses.com>
-	 <1358462763.23211.57.camel@gandalf.local.home>
-	 <1358464245.23211.62.camel@gandalf.local.home>
-	 <1358464837.23211.66.camel@gandalf.local.home>
-	 <1358468598.23211.67.camel@gandalf.local.home>
-	 <1358468924.23211.69.camel@gandalf.local.home>
-	 <20130118044242.GA18665@lge.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Jan 2013 10:30:03 -0500
+Date: Fri, 18 Jan 2013 10:30:02 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+cc: gregkh@linuxfoundation.org, <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v3 4/4] usb: Add APIs to access host registers from Tegra
+ PHY
+In-Reply-To: <1358489737-32273-1-git-send-email-vbyravarasu@nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1301181029350.1988-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-18 at 13:42 +0900, Joonsoo Kim wrote:
+On Fri, 18 Jan 2013, Venu Byravarasu wrote:
 
-> diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-> index 9db4825..b54dffa 100644
-> --- a/include/linux/slub_def.h
-> +++ b/include/linux/slub_def.h
-> @@ -46,6 +46,9 @@ enum stat_item {
->  struct kmem_cache_cpu {
->  	void **freelist;	/* Pointer to next available object */
->  	unsigned long tid;	/* Globally unique transaction id */
-> +#ifdef CONFIG_NUMA
-> +	int node;
+> As Tegra PHY driver needs to access one of the Host registers,
+> added few APIs.
+> 
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> ---
+> delta from v2:
+> Renamed USB_PORTSC1 to TEGRA_USB_PORTSC1.
+> Removed tegra_ehci_set_wakeon_events() and its references.
+> Used standard defines for accessing PORTSC fields defined in ehci_def.h
+> Included OCC bit of PORTSC as part of TEGRA_PORTSC1_RWC_BITS.
+> 
+> delta from v1:
+> Taken care of RWC bits, while accessing PORTSC register.
 
-Note, you put an int between a long and a pointer, which will waste 4
-bytes on 64bit machines.
-
-> +#endif
->  	struct page *page;	/* The slab from which we are allocating */
->  	struct page *partial;	/* Partially allocated frozen slabs */
->  #ifdef CONFIG_SLUB_STATS
-
-
-
-> @@ -2038,10 +2049,10 @@ static void flush_all(struct kmem_cache *s)
->   * Check if the objects in a per cpu structure fit numa
->   * locality expectations.
->   */
-> -static inline int node_match(struct page *page, int node)
-> +static inline int node_match(struct kmem_cache_cpu *c, int node)
->  {
->  #ifdef CONFIG_NUMA
-> -	if (node != NUMA_NO_NODE && page_to_nid(page) != node)
-> +	if (node != NUMA_NO_NODE && c->node != node)
-
-We still have the issue of cpu fetching c->node before c->tid and
-c->freelist.
-
-I still believe the only solution is to prevent the task from migrating
-via a preempt disable.
-
--- Steve
-
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
