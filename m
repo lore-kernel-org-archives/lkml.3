@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab3ARMbg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:31:36 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:58808 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454Ab3ARMbc (ORCPT
+	id S1756814Ab3ARMbn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:31:43 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:59295 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab3ARMbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:31:32 -0500
+	Fri, 18 Jan 2013 07:31:40 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 42/76] ARC: [plat-arcfpga] defconfig
-Date: Fri, 18 Jan 2013 17:54:56 +0530
-Message-ID: <1358511930-7424-43-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 43/76] ARC: [optim] Cache "current" in Register r25
+Date: Fri, 18 Jan 2013 17:54:57 +0530
+Message-ID: <1358511930-7424-44-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -23,123 +23,323 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this we get to a running kernel on ISS
-
----------------------------------->8-----------------------------------
-Linux version 3.8.0-rc3+ (vineetg@vineetg-Latitude) (gcc version 4.4.7
-(ARCompact elf32 toolchain (built 20121213)) ) #3 Thu Jan 17 14:22:05
-IST 2013
-Board "arc-angel4" from snps (Manufacturer)
-Memory size set via devicetree 256M
-[plat-arcfpga]: registering early dev resources
-bootconsole [early_ARCuart0] enabled
-pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
-pcpu-alloc: [0] 0
-Built 1 zonelists in Zone order, mobility grouping on.  Total pages:
-32624
-Kernel command line: console=ttyARC0,115200n8
-PID hash table entries: 1024 (order: -1, 4096 bytes)
-Dentry cache hash table entries: 32768 (order: 4, 131072 bytes)
-Inode-cache hash table entries: 16384 (order: 3, 65536 bytes)
-Memory Available: 248M / 256M (1312K code, 463K data, 4184K init, 1400K
-reserv)
-SLUB: Genslabs=12, HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-NR_IRQS:16
-Console: colour dummy device 80x25
-Calibrating delay loop... 39.73 BogoMIPS (lpj=198656)
-pid_max: default: 32768 minimum: 301
-Mount-cache hash table entries: 1024
-devtmpfs: initialized
-[plat-arcfpga]: registering device resources
-bio: create slab <bio-0> at 0
-Switching to clocksource ARC RTSC
-io scheduler noop registered (default)
-arc-uart: ttyARC0 at MMIO 0xc0fc1000 (irq = 5) is a arc-uart
-console [ttyARC0] enabled, bootconsole disabled
-console [ttyARC0] enabled, bootconsole disabled
-mousedev: PS/2 mouse device common for all mice
-Warning: unable to open an initial console.
-Freeing unused kernel memory: 4184k [80002000] to [80418000]
-Mounting proc
-Mounting sysfs
-Mounting devpts
-Setting hostname to ARCLinux
-Starting System logger (syslogd)
-Bringing up loopback device
-ifconfig: socket: Function not implemented
-route: socket: Function not implemented
-Disk not detected !
-Mounting tmpfs
-mount: mounting tmpfs on /dev/shm failed: Invalid argument
-/etc/init.d/rcS: line 76: can't create /proc/sys/kernel/msgmni:
-nonexistent directory
-
-Please press Enter to activate this console.
-***********************************************************************
-                        Welcome to ARCLinux
-***********************************************************************
-[ARCLinux]$
-
----------------------------------->8-----------------------------------
-
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/configs/fpga_defconfig |   46 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 46 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/configs/fpga_defconfig
+ arch/arc/Kconfig                 |    7 ++++++
+ arch/arc/Makefile                |    9 +++++++
+ arch/arc/include/asm/Kbuild      |    1 -
+ arch/arc/include/asm/current.h   |   32 +++++++++++++++++++++++++++
+ arch/arc/include/asm/entry.h     |   45 ++++++++++++++++++++++++++++++++++++++
+ arch/arc/include/asm/processor.h |    3 ++
+ arch/arc/kernel/asm-offsets.c    |    3 ++
+ arch/arc/kernel/ctx_sw.c         |    7 ++++++
+ arch/arc/kernel/entry.S          |   14 +++++++++++
+ 9 files changed, 120 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arc/include/asm/current.h
 
-diff --git a/arch/arc/configs/fpga_defconfig b/arch/arc/configs/fpga_defconfig
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index 3adc87b..7e191b9 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -264,6 +264,13 @@ config LINUX_LINK_BASE
+ 
+ endmenu # "Platform Board Configuration"
+ 
++config ARC_CURR_IN_REG
++	bool "Dedicate Register r25 for current_task pointer"
++	default y
++	help
++	  This reserved Register R25 to point to Current Task in
++	  kernel mode. This saves memory access for each such access
++
+ config ARC_STACK_NONEXEC
+ 	bool "Make stack non-executable"
+ 	default n
+diff --git a/arch/arc/Makefile b/arch/arc/Makefile
+index d697e9c..49460cc 100644
+--- a/arch/arc/Makefile
++++ b/arch/arc/Makefile
+@@ -20,6 +20,15 @@ export PLATFORM
+ cflags-y	+= -Iarch/arc/plat-$(PLATFORM)/include
+ cflags-y	+= -mA7 -fno-common -pipe -fno-builtin -D__linux__
+ 
++ifdef CONFIG_ARC_CURR_IN_REG
++# For a global register defintion, make sure it gets passed to every file
++# We had a customer reported bug where some code built in kernel was NOT using
++# any kernel headers, and missing the r25 global register
++# Can't do unconditionally (like above) because of recursive include issues
++# due to <linux/thread_info.h>
++LINUXINCLUDE	+=  -include ${src}/arch/arc/include/asm/current.h
++endif
++
+ atleast_gcc44 :=  $(call cc-ifversion, -gt, 0402, y)
+ cflags-$(atleast_gcc44)			+= -fsection-anchors
+ 
+diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
+index 105ec11..78e982d 100644
+--- a/arch/arc/include/asm/Kbuild
++++ b/arch/arc/include/asm/Kbuild
+@@ -11,7 +11,6 @@ generic-y += bugs.h
+ generic-y += bitsperlong.h
+ generic-y += clkdev.h
+ generic-y += cputime.h
+-generic-y += current.h
+ generic-y += device.h
+ generic-y += div64.h
+ generic-y += emergency-restart.h
+diff --git a/arch/arc/include/asm/current.h b/arch/arc/include/asm/current.h
 new file mode 100644
-index 0000000..8638e101f
+index 0000000..87b9185
 --- /dev/null
-+++ b/arch/arc/configs/fpga_defconfig
-@@ -0,0 +1,46 @@
-+CONFIG_CROSS_COMPILE="arc-elf32-"
-+# CONFIG_LOCALVERSION_AUTO is not set
-+CONFIG_DEFAULT_HOSTNAME="ARCLinux"
-+# CONFIG_SWAP is not set
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_IKCONFIG=y
-+CONFIG_IKCONFIG_PROC=y
-+CONFIG_NAMESPACES=y
-+# CONFIG_UTS_NS is not set
-+# CONFIG_PID_NS is not set
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_INITRAMFS_SOURCE="../arc_initramfs"
-+CONFIG_EXPERT=y
-+# CONFIG_FUTEX is not set
-+# CONFIG_COMPAT_BRK is not set
-+# CONFIG_LBDAF is not set
-+# CONFIG_BLK_DEV_BSG is not set
-+# CONFIG_IOSCHED_DEADLINE is not set
-+# CONFIG_IOSCHED_CFQ is not set
-+CONFIG_ARC_BUILTIN_DTB_NAME="angel4"
-+# CONFIG_COMPACTION is not set
-+# CONFIG_CROSS_MEMORY_ATTACH is not set
-+# CONFIG_STANDALONE is not set
-+# CONFIG_PREVENT_FIRMWARE_BUILD is not set
-+# CONFIG_FIRMWARE_IN_KERNEL is not set
-+# CONFIG_BLK_DEV is not set
-+# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
-+# CONFIG_INPUT_KEYBOARD is not set
-+# CONFIG_INPUT_MOUSE is not set
-+# CONFIG_SERIO is not set
-+# CONFIG_LEGACY_PTYS is not set
-+# CONFIG_DEVKMEM is not set
-+CONFIG_SERIAL_ARC=y
-+CONFIG_SERIAL_ARC_CONSOLE=y
-+# CONFIG_HW_RANDOM is not set
-+# CONFIG_HWMON is not set
-+# CONFIG_VGA_CONSOLE is not set
-+# CONFIG_HID is not set
-+# CONFIG_USB_SUPPORT is not set
-+# CONFIG_IOMMU_SUPPORT is not set
-+# CONFIG_DNOTIFY is not set
-+# CONFIG_INOTIFY_USER is not set
-+# CONFIG_MISC_FILESYSTEMS is not set
-+# CONFIG_ENABLE_WARN_DEPRECATED is not set
-+# CONFIG_ENABLE_MUST_CHECK is not set
-+CONFIG_XZ_DEC=y
++++ b/arch/arc/include/asm/current.h
+@@ -0,0 +1,32 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Vineetg: May 16th, 2008
++ *  - Current macro is now implemented as "global register" r25
++ */
++
++#ifndef _ASM_ARC_CURRENT_H
++#define _ASM_ARC_CURRENT_H
++
++#ifdef __KERNEL__
++
++#ifndef __ASSEMBLY__
++
++#ifdef CONFIG_ARC_CURR_IN_REG
++
++register struct task_struct *curr_arc asm("r25");
++#define current (curr_arc)
++
++#else
++#include <asm-generic/current.h>
++#endif /* ! CONFIG_ARC_CURR_IN_REG */
++
++#endif /* ! __ASSEMBLY__ */
++
++#endif	/* __KERNEL__ */
++
++#endif /* _ASM_ARC_CURRENT_H */
+diff --git a/arch/arc/include/asm/entry.h b/arch/arc/include/asm/entry.h
+index d72995b..6b491d1 100644
+--- a/arch/arc/include/asm/entry.h
++++ b/arch/arc/include/asm/entry.h
+@@ -13,6 +13,8 @@
+  *   was being "CLEARED" rather then "SET". Actually "SET" clears ZOL context
+  *
+  * Vineetg: May 5th 2008
++ *  -Modified CALLEE_REG save/restore macros to handle the fact that
++ *      r25 contains the kernel current task ptr
+  *  - Defined Stack Switching Macro to be reused in all intr/excp hdlrs
+  *  - Shaved off 11 instructions from RESTORE_ALL_INT1 by using the
+  *      address Write back load ld.ab instead of seperate ld/add instn
+@@ -28,6 +30,7 @@
+ #include <asm/asm-offsets.h>
+ #include <asm/arcregs.h>
+ #include <asm/ptrace.h>
++#include <asm/processor.h>	/* For VMALLOC_START */
+ #include <asm/thread_info.h>	/* For THREAD_SIZE */
+ 
+ /* Note on the LD/ST addr modes with addr reg wback
+@@ -106,7 +109,14 @@
+ 	st.a    r22, [sp, -4]
+ 	st.a    r23, [sp, -4]
+ 	st.a    r24, [sp, -4]
++
++#ifdef CONFIG_ARC_CURR_IN_REG
++	; Retrieve orig r25 and save it on stack
++	ld      r12, [r25, TASK_THREAD + THREAD_USER_R25]
++	st.a    r12, [sp, -4]
++#else
+ 	st.a    r25, [sp, -4]
++#endif
+ 
+ 	/* move up by 1 word to "create" callee_regs->"stack_place_holder" */
+ 	sub sp, sp, 4
+@@ -131,8 +141,12 @@
+ 	st.a    r22, [sp, -4]
+ 	st.a    r23, [sp, -4]
+ 	st.a    r24, [sp, -4]
++#ifdef CONFIG_ARC_CURR_IN_REG
++	sub     sp, sp, 8
++#else
+ 	st.a    r25, [sp, -4]
+ 	sub     sp, sp, 4
++#endif
+ .endm
+ 
+ /*--------------------------------------------------------------
+@@ -148,8 +162,14 @@
+  *-------------------------------------------------------------*/
+ .macro RESTORE_CALLEE_SAVED_KERNEL
+ 
++
++#ifdef CONFIG_ARC_CURR_IN_REG
++	add     sp, sp, 8  /* skip callee_reg gutter and user r25 placeholder */
++#else
+ 	add     sp, sp, 4   /* skip "callee_regs->stack_place_holder" */
+ 	ld.ab   r25, [sp, 4]
++#endif
++
+ 	ld.ab   r24, [sp, 4]
+ 	ld.ab   r23, [sp, 4]
+ 	ld.ab   r22, [sp, 4]
+@@ -235,6 +255,7 @@
+  *
+  * Entry   : r9 contains pre-IRQ/exception/trap status32
+  * Exit    : SP is set to kernel mode stack pointer
++ *           If CURR_IN_REG, r25 set to "current" task pointer
+  * Clobbers: r9
+  *-------------------------------------------------------------*/
+ 
+@@ -259,6 +280,16 @@
+ 
+ 	GET_CURR_TASK_ON_CPU   r9
+ 
++#ifdef CONFIG_ARC_CURR_IN_REG
++
++	/* If current task pointer cached in r25, time to
++	 *  -safekeep USER r25 in task->thread_struct->user_r25
++	 *  -load r25 with current task ptr
++	 */
++	st.as	r25, [r9, (TASK_THREAD + THREAD_USER_R25)/4]
++	mov	r25, r9
++#endif
++
+ 	/* With current tsk in r9, get it's kernel mode stack base */
+ 	GET_TSK_STACK_BASE  r9, r9
+ 
+@@ -519,17 +550,31 @@
+ 
+ .macro  SET_CURR_TASK_ON_CPU    tsk, tmp
+ 	st  \tsk, [@_current_task]
++#ifdef CONFIG_ARC_CURR_IN_REG
++	mov r25, \tsk
++#endif
+ .endm
+ 
+ /* ------------------------------------------------------------------
+  * Get the ptr to some field of Current Task at @off in task struct
++ *  -Uses r25 for Current task ptr if that is enabled
+  */
+ 
++#ifdef CONFIG_ARC_CURR_IN_REG
++
++.macro GET_CURR_TASK_FIELD_PTR  off,  reg
++	add \reg, r25, \off
++.endm
++
++#else
++
+ .macro GET_CURR_TASK_FIELD_PTR  off,  reg
+ 	GET_CURR_TASK_ON_CPU  \reg
+ 	add \reg, \reg, \off
+ .endm
+ 
++#endif	/* CONFIG_ARC_CURR_IN_REG */
++
+ #endif  /* __ASSEMBLY__ */
+ 
+ #endif  /* __ASM_ARC_ENTRY_H */
+diff --git a/arch/arc/include/asm/processor.h b/arch/arc/include/asm/processor.h
+index 860252e..b7b1556 100644
+--- a/arch/arc/include/asm/processor.h
++++ b/arch/arc/include/asm/processor.h
+@@ -29,6 +29,9 @@ struct thread_struct {
+ 	unsigned long callee_reg;	/* pointer to callee regs */
+ 	unsigned long fault_address;	/* dbls as brkpt holder as well */
+ 	unsigned long cause_code;	/* Exception Cause Code (ECR) */
++#ifdef CONFIG_ARC_CURR_IN_REG
++	unsigned long user_r25;
++#endif
+ #ifdef CONFIG_ARC_FPU_SAVE_RESTORE
+ 	struct arc_fpu fpu;
+ #endif
+diff --git a/arch/arc/kernel/asm-offsets.c b/arch/arc/kernel/asm-offsets.c
+index 7f3f611..b0e7254 100644
+--- a/arch/arc/kernel/asm-offsets.c
++++ b/arch/arc/kernel/asm-offsets.c
+@@ -23,6 +23,9 @@ int main(void)
+ 
+ 	DEFINE(THREAD_KSP, offsetof(struct thread_struct, ksp));
+ 	DEFINE(THREAD_CALLEE_REG, offsetof(struct thread_struct, callee_reg));
++#ifdef CONFIG_ARC_CURR_IN_REG
++	DEFINE(THREAD_USER_R25, offsetof(struct thread_struct, user_r25));
++#endif
+ 	DEFINE(THREAD_FAULT_ADDR,
+ 	       offsetof(struct thread_struct, fault_address));
+ 
+diff --git a/arch/arc/kernel/ctx_sw.c b/arch/arc/kernel/ctx_sw.c
+index 647e37a..fbf739c 100644
+--- a/arch/arc/kernel/ctx_sw.c
++++ b/arch/arc/kernel/ctx_sw.c
+@@ -24,6 +24,9 @@ __switch_to(struct task_struct *prev_task, struct task_struct *next_task)
+ 	unsigned int prev = (unsigned int)prev_task;
+ 	unsigned int next = (unsigned int)next_task;
+ 	int num_words_to_skip = 1;
++#ifdef CONFIG_ARC_CURR_IN_REG
++	num_words_to_skip++;
++#endif
+ 
+ 	__asm__ __volatile__(
+ 		/* FP/BLINK save generated by gcc (standard function prologue */
+@@ -39,7 +42,9 @@ __switch_to(struct task_struct *prev_task, struct task_struct *next_task)
+ 		"st.a    r22, [sp, -4]   \n\t"
+ 		"st.a    r23, [sp, -4]   \n\t"
+ 		"st.a    r24, [sp, -4]   \n\t"
++#ifndef CONFIG_ARC_CURR_IN_REG
+ 		"st.a    r25, [sp, -4]   \n\t"
++#endif
+ 		"sub     sp, sp, %4      \n\t"	/* create gutter at top */
+ 
+ 		/* set ksp of outgoing task in tsk->thread.ksp */
+@@ -62,7 +67,9 @@ __switch_to(struct task_struct *prev_task, struct task_struct *next_task)
+ 
+ 		"add    sp, sp, %4     \n\t"	/* skip gutter at top */
+ 
++#ifndef CONFIG_ARC_CURR_IN_REG
+ 		"ld.ab   r25, [sp, 4]   \n\t"
++#endif
+ 		"ld.ab   r24, [sp, 4]   \n\t"
+ 		"ld.ab   r23, [sp, 4]   \n\t"
+ 		"ld.ab   r22, [sp, 4]   \n\t"
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
+index 6823f30..6566e66 100644
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -36,6 +36,9 @@
+  *   was being "CLEARED" rather then "SET". Since it is Loop INHIBIT Bit,
+  *   setting it and not clearing it clears ZOL context
+  *
++ * Vineetg: May 16th, 2008
++ *  - r25 now contains the Current Task when in kernel
++ *
+  * Vineetg: Dec 22, 2007
+  *    Minor Surgery of Low Level ISR to make it SMP safe
+  *    - MMU_SCRATCH0 Reg used for freeing up r9 in Level 1 ISR
+@@ -539,6 +542,17 @@ restore_regs :
+ 	; XXX can this be optimised out
+ 	IRQ_DISABLE_SAVE    r9, r10	;@r10 has prisitine (pre-disable) copy
+ 
++#ifdef CONFIG_ARC_CURR_IN_REG
++	; Restore User R25
++	; Earlier this used to be only for returning to user mode
++	; However with 2 levels of IRQ this can also happen even if
++	; in kernel mode
++	ld r9, [sp, PT_sp]
++	brhs r9, VMALLOC_START, 8f
++	RESTORE_USER_R25
++8:
++#endif
++
+ 	; Restore REG File. In case multiple Events outstanding,
+ 	; use the same priorty as rtie: EXCPN, L2 IRQ, L1 IRQ, None
+ 	; Note that we use realtime STATUS32 (not pt_regs->status32) to
 -- 
 1.7.4.1
 
