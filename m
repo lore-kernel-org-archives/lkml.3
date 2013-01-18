@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab3ARMm5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:42:57 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:59380 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab3ARMmz (ORCPT
+	id S1756660Ab3ARMa6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:30:58 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:58782 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756490Ab3ARMaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:42:55 -0500
+	Fri, 18 Jan 2013 07:30:55 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 75/76] ARC: [Review] Multi-platform image #8: platform registers SMP callbacks
-Date: Fri, 18 Jan 2013 18:10:26 +0530
-Message-ID: <1358512827-7694-4-git-send-email-vgupta@synopsys.com>
+CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH v2 21/76] ARC: [Review] Prevent incorrect syscall restarts
+Date: Fri, 18 Jan 2013 17:54:35 +0530
+Message-ID: <1358511930-7424-22-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1358512827-7694-1-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
- <1358512827-7694-1-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.12.197.205]
@@ -24,118 +24,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platforms export their SMP callbacks by populating arc_smp_ops.
-The population itself needs to be done pretty early, from init_early
-callback.
+Per Al Viro's "signals for dummies" https://lkml.org/lkml/2012/12/6/366
+there are 3 golden rules for (not) restarting syscalls:
+
+"	What we need to guarantee is
+* restarts do not happen on signals caught in interrupts or exceptions
+* restarts do not happen on signals caught in sigreturn()
+* restart should happen only once, even if we get through do_signal()
+  many times."
+
+ARC Port already handled #1, this patch fixes #2 and #3.
+
+We use the additional state in pt_regs->orig_r8 to ckh if restarting
+has already been done once.
+
+Thanks to Al Viro for spotting this.
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
 ---
- arch/arc/plat-arcfpga/include/plat/smp.h |    1 +
- arch/arc/plat-arcfpga/platform.c         |    4 +++
- arch/arc/plat-arcfpga/smp.c              |   41 ++++++++++++++++-------------
- 3 files changed, 28 insertions(+), 18 deletions(-)
+ arch/arc/include/asm/ptrace.h |    3 +++
+ arch/arc/kernel/signal.c      |   12 ++++++++----
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arc/plat-arcfpga/include/plat/smp.h b/arch/arc/plat-arcfpga/include/plat/smp.h
-index 27822ac..c09eb4c 100644
---- a/arch/arc/plat-arcfpga/include/plat/smp.h
-+++ b/arch/arc/plat-arcfpga/include/plat/smp.h
-@@ -111,6 +111,7 @@ extern void idu_irq_set_tgtcpu(uint8_t irq, uint32_t mask);
- extern void idu_irq_set_mode(uint8_t irq, uint8_t dest_mode, uint8_t trig_mode);
+diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
+index ddb9ce7..92ef198 100644
+--- a/arch/arc/include/asm/ptrace.h
++++ b/arch/arc/include/asm/ptrace.h
+@@ -130,6 +130,9 @@ struct user_regs_struct {
+ #define in_syscall(regs) (regs->orig_r8 & orig_r8_IS_SCALL)
+ #define in_brkpt_trap(regs) (regs->orig_r8 & orig_r8_IS_BRKPT)
  
- extern void iss_model_init_smp(unsigned int cpu);
-+extern void iss_model_init_early_smp(void);
- 
- #endif	/* CONFIG_SMP */
- 
-diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
-index 1a9f2f2..b99bfea 100644
---- a/arch/arc/plat-arcfpga/platform.c
-+++ b/arch/arc/plat-arcfpga/platform.c
-@@ -171,6 +171,10 @@ static void __init plat_fpga_early_init(void)
- 	setup_bvci_lat_unit();
- 
- 	arc_fpga_serial_init();
++#define syscall_wont_restart(regs) (regs->orig_r8 |= orig_r8_IS_SCALL_RESTARTED)
++#define syscall_restartable(regs) !(regs->orig_r8 & orig_r8_IS_SCALL_RESTARTED)
 +
-+#ifdef CONFIG_SMP
-+	iss_model_init_early_smp();
-+#endif
- }
+ #endif /* !__ASSEMBLY__ */
  
- static struct of_dev_auxdata plat_auxdata_lookup[] __initdata = {
-diff --git a/arch/arc/plat-arcfpga/smp.c b/arch/arc/plat-arcfpga/smp.c
-index 68a53b1..91b5534 100644
---- a/arch/arc/plat-arcfpga/smp.c
-+++ b/arch/arc/plat-arcfpga/smp.c
-@@ -24,25 +24,10 @@ static char smp_cpuinfo_buf[128];
-  *-------------------------------------------------------------------
-  */
+ #define orig_r8_IS_SCALL		0x0001
+diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
+index 464af3f..6671968 100644
+--- a/arch/arc/kernel/signal.c
++++ b/arch/arc/kernel/signal.c
+@@ -137,6 +137,9 @@ SYSCALL_DEFINE0(rt_sigreturn)
+ 		if (do_sigaltstack(&sf->uc.uc_stack, NULL, regs->sp) == -EFAULT)
+ 			goto badframe;
  
--const char *arc_platform_smp_cpuinfo(void)
--{
--#define IS_AVAIL1(var, str)    ((var) ? str : "")
++	/* Don't restart from sigreturn */
++	syscall_wont_restart(regs);
++
+ 	return regs->r0;
+ 
+ badframe:
+@@ -331,13 +334,13 @@ void do_signal(struct pt_regs *regs)
+ 
+ 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+ 
+-	/* Are we from a system call? */
+-	restart_scall = in_syscall(regs);
++	restart_scall = in_syscall(regs) && syscall_restartable(regs);
+ 
+ 	if (signr > 0) {
+-		if (restart_scall)
++		if (restart_scall) {
+ 			arc_restart_syscall(&ka, regs);
 -
--	struct bcr_mp mp;
--
--	READ_BCR(ARC_REG_MP_BCR, mp);
--
--	sprintf(smp_cpuinfo_buf, "Extn [700-SMP]: v%d, arch(%d) %s %s %s\n",
--		mp.ver, mp.mp_arch, IS_AVAIL1(mp.scu, "SCU"),
--		IS_AVAIL1(mp.idu, "IDU"), IS_AVAIL1(mp.sdu, "SDU"));
--
--	return smp_cpuinfo_buf;
--}
--
- /*
-  * Master kick starting another CPU
-  */
--void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc)
-+static void iss_model_smp_wakeup_cpu(int cpu, unsigned long pc)
- {
- 	/* setup the start PC */
- 	write_aux_reg(ARC_AUX_XTL_REG_PARAM, pc);
-@@ -103,19 +88,39 @@ void iss_model_init_smp(unsigned int cpu)
- 	smp_ipi_irq_setup(cpu, IDU_INTERRUPT_0 + cpu);
- }
++			syscall_wont_restart(regs);	/* No more restarts */
++		}
+ 		handle_signal(signr, &ka, &info, regs);
+ 		return;
+ 	}
+@@ -352,6 +355,7 @@ void do_signal(struct pt_regs *regs)
+ 			regs->r8 = __NR_restart_syscall;
+ 			regs->ret -= 4;
+ 		}
++		syscall_wont_restart(regs);	/* No more restarts */
+ 	}
  
--void arc_platform_ipi_send(const struct cpumask *callmap)
-+static void iss_model_ipi_send(void *arg)
- {
-+	struct cpumask *callmap = arg;
- 	unsigned int cpu;
- 
- 	for_each_cpu(cpu, callmap)
- 		idu_irq_assert(cpu);
- }
- 
--void arc_platform_ipi_clear(int cpu, int irq)
-+static void iss_model_ipi_clear(int cpu, int irq)
- {
- 	idu_irq_clear(IDU_INTERRUPT_0 + cpu);
- }
- 
-+void iss_model_init_early_smp(void)
-+{
-+#define IS_AVAIL1(var, str)    ((var) ? str : "")
-+
-+	struct bcr_mp mp;
-+
-+	READ_BCR(ARC_REG_MP_BCR, mp);
-+
-+	sprintf(smp_cpuinfo_buf, "Extn [ISS-SMP]: v%d, arch(%d) %s %s %s\n",
-+		mp.ver, mp.mp_arch, IS_AVAIL1(mp.scu, "SCU"),
-+		IS_AVAIL1(mp.idu, "IDU"), IS_AVAIL1(mp.sdu, "SDU"));
-+
-+	plat_smp_ops.info = smp_cpuinfo_buf;
-+
-+	plat_smp_ops.cpu_kick = iss_model_smp_wakeup_cpu;
-+	plat_smp_ops.ipi_send = iss_model_ipi_send;
-+	plat_smp_ops.ipi_clear = iss_model_ipi_clear;
-+}
-+
- /*
-  *-------------------------------------------------------------------
-  * Low level Platform IPI Providers
+ 	/* If there's no signal to deliver, restore the saved sigmask back */
 -- 
 1.7.4.1
 
