@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab3ARWAz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 17:00:55 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:37442 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab3ARWAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 17:00:54 -0500
-Date: Fri, 18 Jan 2013 14:00:50 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/1] uio.c: solve memory leak
-Message-ID: <20130118220050.GA31286@kroah.com>
-References: <1354210800-27230-1-git-send-email-dinggnu@gmail.com>
- <20121211012112.GA11273@local>
- <CAM3j68oNeb5HVYVHTSnQoiBHa7T4krkiDLy0dQkBZUd5BQgo2w@mail.gmail.com>
+	id S1755330Ab3ARWCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 17:02:15 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:45862 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755200Ab3ARWCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 17:02:11 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [RFC PATCH v5 7/8] PCI/PCIe: add "pci=nopciehp" to disable PCIe native hotplug
+Date: Fri, 18 Jan 2013 23:08:07 +0100
+Message-ID: <1449960.YISN9L5GZD@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQU6K1M=rbnhPLsAkhK5dZw8CAoQzAi=YLjtz722jCix-w@mail.gmail.com>
+References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com> <CAErSpo6E0SrY8_JOU6pmrCt9opfKe_jJ6b0E0daNAbpX5KtFuQ@mail.gmail.com> <CAE9FiQU6K1M=rbnhPLsAkhK5dZw8CAoQzAi=YLjtz722jCix-w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM3j68oNeb5HVYVHTSnQoiBHa7T4krkiDLy0dQkBZUd5BQgo2w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 10:05:45PM +0100, Cong Ding wrote:
-> On Tue, Dec 11, 2012 at 2:21 AM, Hans J. Koch <hjk@hansjkoch.de> wrote:
-> > On Thu, Nov 29, 2012 at 05:40:00PM +0000, Cong Ding wrote:
-> >> In version 1, I forgot to modify the same bug in the first loop.
-> >>
-> >> we have to call kobject_put() to clean up the kobject after function
-> >> kobject_init(), kobject_add(), or kobject_uevent() is called.
-> >>
-> >> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> >
-> > Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
+On Friday, January 18, 2013 09:50:59 AM Yinghai Lu wrote:
+> On Fri, Jan 18, 2013 at 9:35 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > If you want "pci=nopciehp" as a way for users to deal with this
+> > problem by forcing the use of acpiphp, I object.  Windows manages to
+> > make these slots work without having users do anything special, so we
+> > should be able to do it, too.
 > 
-> Hi Greg, is this patch stil in the queue?
+> Agreed.
+> 
+> We need to think that more.
+> 
+> I think that we should fix acpiphp, and should follow first come and
+> first serve for acpiphp and pciehp.
 
-Hans is queueing up UIO patches to send to me, I'm waiting for him to
-send them as I don't have any in my trees.
+That would introduce regressions for some users, though.
 
-thanks,
+I actually think we should merge acpiphp with pciehp and make one driver that
+can use both types of signalling.  There would be a problem with getting
+notifications for the same event from both sources, but that doesn't seem to
+be unsolvable.
 
-greg k-h
+And I don't think that that one combined driver should be modular.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
