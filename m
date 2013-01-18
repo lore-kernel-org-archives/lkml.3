@@ -1,164 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab3ARB3D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jan 2013 20:29:03 -0500
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:35640
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825Ab3ARB3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 20:29:02 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH RESEND 1/1] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
-Date: Thu, 17 Jan 2013 17:55:21 -0800
-Message-Id: <1358474121-12741-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754150Ab3ARBb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jan 2013 20:31:56 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:63322 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3ARBbz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jan 2013 20:31:55 -0500
+Date: Thu, 17 Jan 2013 17:25:50 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: vt8500-wm8505-linux-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH 3/4 v3] serial: vt8500: UART uses gated clock rather than
+ 24Mhz reference
+Message-ID: <20130118012550.GA28958@kroah.com>
+References: <1358363143-7154-1-git-send-email-linux@prisktech.co.nz>
+ <1358363143-7154-4-git-send-email-linux@prisktech.co.nz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358363143-7154-4-git-send-email-linux@prisktech.co.nz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting with win8, vmbus interrupts can be delivered on any VCPU in the guest and
-furthermore can be concurrently active on multiple VCPUs. Support this interrupt
-delivery model by setting up a separate IDT entry for Hyper-V vmbus interrupts.
+On Thu, Jan 17, 2013 at 08:05:42AM +1300, Tony Prisk wrote:
+> UART modules on Wondermedia SoCs are connected via a gated clock
+> source, rather than directly to the 24Mhz reference clock. While
+> uboot enables UART0 for debugging, other UART ports are unavailable
+> until the clock is enabled.
+> 
+> This patch checks that a valid clock is actually passed from devicetree,
+> enables the clock in probe. This change removes the fallback when a
+> clock was not specified as it doesn't apply any longer (and would only
+> work if the UART clock was already enabled).
+> 
+> DTSI files are updated for VT8500, WM8505 and WM8650.
+> 
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> ---
+>  arch/arm/boot/dts/vt8500.dtsi      |   40 +++++++++++++++++++++---
+>  arch/arm/boot/dts/wm8505.dtsi      |   60 ++++++++++++++++++++++++++++++++----
+>  arch/arm/boot/dts/wm8650.dtsi      |   20 ++++++++++--
+>  drivers/tty/serial/vt8500_serial.c |   34 +++++++++++---------
+>  4 files changed, 127 insertions(+), 27 deletions(-)
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- arch/x86/include/asm/irq_vectors.h |    2 +
- arch/x86/include/asm/mshyperv.h    |    4 +++
- arch/x86/kernel/cpu/mshyperv.c     |   39 ++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/entry_32.S         |    7 ++++++
- arch/x86/kernel/entry_64.S         |    5 ++++
- 5 files changed, 57 insertions(+), 0 deletions(-)
+PLEASE always use checkpatch.pl on your patches before sending them, so
+people don't have to write emails saying "why didn't you fix the
+checkpatch.pl errors in your patch" much like this one.
 
-diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index 1508e51..c2ff239 100644
---- a/arch/x86/include/asm/irq_vectors.h
-+++ b/arch/x86/include/asm/irq_vectors.h
-@@ -112,6 +112,8 @@
- /* Xen vector callback to receive events in a HVM domain */
- #define XEN_HVM_EVTCHN_CALLBACK		0xf3
- 
-+/* Hyper-V vector callback to receive vmbus interrupts*/
-+#define HYPER_V_CALLBACK_VECTOR		0xf2
- /*
-  * Local APIC timer IRQ vector is on a different priority level,
-  * to work around the 'lost local interrupt if more than 2 IRQ
-diff --git a/arch/x86/include/asm/mshyperv.h b/arch/x86/include/asm/mshyperv.h
-index 79ce568..c2934be 100644
---- a/arch/x86/include/asm/mshyperv.h
-+++ b/arch/x86/include/asm/mshyperv.h
-@@ -11,4 +11,8 @@ struct ms_hyperv_info {
- 
- extern struct ms_hyperv_info ms_hyperv;
- 
-+void hyperv_callback_vector(void);
-+void hyperv_vector_handler(struct pt_regs *regs);
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler);
-+
- #endif
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 0a630dd..03be583 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -14,10 +14,15 @@
- #include <linux/time.h>
- #include <linux/clocksource.h>
- #include <linux/module.h>
-+#include <linux/hardirq.h>
-+#include <linux/interrupt.h>
- #include <asm/processor.h>
- #include <asm/hypervisor.h>
- #include <asm/hyperv.h>
- #include <asm/mshyperv.h>
-+#include <asm/desc.h>
-+#include <asm/idle.h>
-+#include <asm/irq_regs.h>
- 
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
-@@ -69,6 +74,11 @@ static void __init ms_hyperv_init_platform(void)
- 	       ms_hyperv.features, ms_hyperv.hints);
- 
- 	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-+
-+	/*
-+	 * Setup the IDT for hypervisor callback.
-+	 */
-+	alloc_intr_gate(HYPER_V_CALLBACK_VECTOR, hyperv_callback_vector);
- }
- 
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
-@@ -77,3 +87,32 @@ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
- 	.init_platform		= ms_hyperv_init_platform,
- };
- EXPORT_SYMBOL(x86_hyper_ms_hyperv);
-+
-+static int vmbus_irq;
-+static irq_handler_t vmbus_isr;
-+
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler)
-+{
-+	vmbus_irq = irq;
-+	vmbus_isr = handler;
-+}
-+EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
-+
-+void hyperv_vector_handler(struct pt_regs *regs)
-+{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+	struct irq_desc *desc;
-+
-+	irq_enter();
-+#ifdef CONFIG_X86
-+	exit_idle();
-+#endif
-+
-+	desc = irq_to_desc(vmbus_irq);
-+
-+	if (desc)
-+		generic_handle_irq_desc(vmbus_irq, desc);
-+
-+	irq_exit();
-+	set_irq_regs(old_regs);
-+}
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index e9dd4c4..7743876 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1052,6 +1052,13 @@ BUILD_INTERRUPT3(xen_hvm_callback_vector, XEN_HVM_EVTCHN_CALLBACK,
- 
- #endif	/* CONFIG_XEN */
- 
-+#if IS_ENABLED(CONFIG_HYPERV)
-+
-+BUILD_INTERRUPT3(hyperv_callback_vector, HYPER_V_CALLBACK_VECTOR,
-+	hyperv_vector_handler)
-+
-+#endif /* CONFIG_HYPERV */
-+
- #ifdef CONFIG_FUNCTION_TRACER
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1975122..a1cb724 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1451,6 +1451,11 @@ apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
- 
- #endif /* CONFIG_XEN */
- 
-+#if IS_ENABLED(CONFIG_HYPERV)
-+apicinterrupt HYPER_V_CALLBACK_VECTOR \
-+	hyperv_callback_vector hyperv_vector_handler
-+#endif /* CONFIG_HYPERV */
-+
- /*
-  * Some functions should be protected against kprobes
-  */
--- 
-1.7.4.1
+Sorry, not applied.
 
+greg k-h
