@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750957Ab3ARIYA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 03:24:00 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44736 "EHLO comal.ext.ti.com"
+	id S1751089Ab3ARI0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 03:26:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30162 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759Ab3ARIX7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 03:23:59 -0500
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: Michal Bachraty <michal.bachraty@streamunlimited.com>,
-        "tiwai@suse.de" <tiwai@suse.de>, "perex@perex.cz" <perex@perex.cz>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [PATCH] ALSA: ASoC: McASP: Fix data rotation for
-	playback. Enables 24bit audio playback
-Thread-Topic: [alsa-devel] [PATCH] ALSA: ASoC: McASP: Fix data rotation for
-	playback. Enables 24bit audio playback
-Thread-Index: AQHN8+mxIASE72Az3Uq09EIP5eXiZJhOwdkw
-Date: Fri, 18 Jan 2013 08:22:53 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EB49910@DBDE01.ent.ti.com>
-References: <1358260860-10370-1-git-send-email-michal.bachraty@streamunlimited.com>
-In-Reply-To: <1358260860-10370-1-git-send-email-michal.bachraty@streamunlimited.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1750844Ab3ARI0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 03:26:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,490,1355126400"; 
+   d="scan'208";a="248904737"
+Date: Fri, 18 Jan 2013 16:27:20 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v7 3/4] block: implement runtime pm strategy
+Message-ID: <20130118082720.GA12599@aaronlu.sh.intel.com>
+References: <20130117051325.GA31469@aaronlu.sh.intel.com>
+ <Pine.LNX.4.44L0.1301171005560.1339-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1301171005560.1339-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 20:11:00, Michal Bachraty wrote:
-> Signed-off-by: Michal Bachraty <michal.bachraty@streamunlimited.com>
-
-Even simple patches need a simple changelog.
-Add a brief description about what & why it is done?
-
-
-> ---
->  sound/soc/davinci/davinci-mcasp.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Thu, Jan 17, 2013 at 10:11:31AM -0500, Alan Stern wrote:
+> On Thu, 17 Jan 2013, Aaron Lu wrote:
 > 
-> diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-> index 13f8d73..a03bece 100644
-> --- a/sound/soc/davinci/davinci-mcasp.c
-> +++ b/sound/soc/davinci/davinci-mcasp.c
-> @@ -626,7 +626,7 @@ static int davinci_config_channel_size(struct davinci_audio_dev *dev,
->  				       int word_length)
->  {
->  	u32 fmt;
-> -	u32 rotate = (32 - word_length) / 4;
-> +	u32 rotate = (word_length / 4) & 0x7;
->  	u32 mask = (1ULL << word_length) - 1;
->  
->  	/*
-> -- 
-> 1.7.9.5
+> > > > @@ -515,6 +516,27 @@ void elv_bio_merged(struct request_queue *q, struct request *rq,
+> > > >  		e->type->ops.elevator_bio_merged_fn(q, rq, bio);
+> > > >  }
+> > > >  
+> > > > +#ifdef CONFIG_PM_RUNTIME
+> > > > +static void blk_pm_requeue_request(struct request *rq)
+> > > > +{
+> > > > +	if (!(rq->cmd_flags & REQ_PM))
+> > > > +		rq->q->nr_pending--;
+> > > > +}
+> > > 
+> > > You don't check q->dev here.  That's okay, but it means that
+> > > q->nr_pending will be meaningless or wrong if any I/O takes place
+> > > before blk_pm_runtime_init is called.
+> > 
+> > Right, so I had better check q->dev here too.
+> > 
+> > > 
+> > > Therefore the kerneldoc for blk_pm_runtime_init should mention that it
+> > > must not be called after any requests have been submitted.  Also
+> > 
+> > So with the q->dev check added above, I believe this is not needed.
 > 
-> _______________________________________________
-> Alsa-devel mailing list
-> Alsa-devel@alsa-project.org
-> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+> No, it is still needed.  With the q->dev check added, q->nr_pending 
+> will always be 0 before blk_pm_runtime_init is called.  But if I/O is 
+> taking place then the number of pending requests really isn't 0.
+
+Right, we can't allow I/O to happen when blk_pm_runtime_init is
+executing, or we will have an incorrect nr_pending.
+
 > 
+> Either you have to make sure the q->nr_pending is always correct, even 
+> when runtime PM isn't being used, or else the caller has to make sure 
+> that no I/O takes place before blk_pm_runtime_init is called.
 
+I think we can say:
+blk_pm_runtime_init can't be called after any requests have been
+submitted but not finished.
+Sounds more accurate?
 
-Regards, 
-Gururaja
+Thanks,
+Aaron
+
+> 
+> > ------------
+> > > mention that blk_pm_runtime_init enables runtime PM for q->dev, so the
+> > > caller shouldn't do it.
+> > 
+> > I may misunderstandd this in last email.
+> > 
+> > We didn't enable runtime PM for the device in blk_pm_runtime_init, just
+> > some auto suspend related settings.
+> 
+> Sorry, yes, you are right.  In fact, the caller has to make sure that 
+> runtime PM is enabled before calling blk_pm_runtime_init; otherwise the 
+> autosuspend timer might not work right.
+> 
+> Alan Stern
+> 
