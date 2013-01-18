@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3ARWMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 17:12:05 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:45787 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755282Ab3ARWMC (ORCPT
+	id S1755728Ab3ARWMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 17:12:34 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:53815 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512Ab3ARWMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 17:12:02 -0500
-Date: Fri, 18 Jan 2013 14:11:57 -0800
+	Fri, 18 Jan 2013 17:12:32 -0500
+Date: Fri, 18 Jan 2013 14:12:27 -0800
 From: Tejun Heo <tj@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Arjan van de Ven <arjan@linux.intel.com>,
@@ -16,8 +16,9 @@ Cc: Arjan van de Ven <arjan@linux.intel.com>,
         USB list <linux-usb@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 4/5] workqueue: implement current_is_async()
-Message-ID: <20130118221157.GF24579@htj.dyndns.org>
+Subject: [PATCH 5/5] async, kmod: warn on synchronous request_module() from
+ async workers
+Message-ID: <20130118221227.GG24579@htj.dyndns.org>
 References: <20130116164832.GP2668@htj.dyndns.org>
  <50F6DD4D.3070808@linux.intel.com>
  <CA+55aFyjrXzKMqmOuMo9z24OZj3kD4O4M4y_O-h=r6udCz2MyA@mail.gmail.com>
@@ -37,89 +38,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 84b233adcca3cacd5cfa8013a5feda7a3db4a9af Mon Sep 17 00:00:00 2001
+>From 4983f3b51e18d008956dd113e0ea2f252774cefc Mon Sep 17 00:00:00 2001
 From: Tejun Heo <tj@kernel.org>
-Date: Fri, 18 Jan 2013 14:05:56 -0800
+Date: Fri, 18 Jan 2013 14:05:57 -0800
 
-This function queries whether %current is an async worker executing an
-async item.  This will be used to implement warning on synchronous
-request_module() from async workers.
+Synchronous requet_module() from an async worker can lead to deadlock
+because module init path may invoke async_synchronize_full().  The
+async worker waits for request_module() to complete and the module
+loading waits for the async task to finish.  This bug happened in the
+block layer because of default elevator auto-loading.
+
+Block layer has been updated not to do default elevator auto-loading
+and it has been decided to disallow synchronous request_module() from
+async workers.
+
+Trigger WARN_ON_ONCE() on synchronous request_module() from async
+workers.
+
+For more details, please refer to the following thread.
+
+  http://thread.gmane.org/gmane.linux.kernel/1420814
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Alex Riesen <raa.lkml@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
 ---
- include/linux/async.h       |  1 +
- kernel/async.c              | 14 ++++++++++++++
- kernel/workqueue_internal.h | 11 +++++++++++
- 3 files changed, 26 insertions(+)
+ kernel/kmod.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/include/linux/async.h b/include/linux/async.h
-index 7a24fe9..345169c 100644
---- a/include/linux/async.h
-+++ b/include/linux/async.h
-@@ -52,4 +52,5 @@ extern void async_synchronize_full_domain(struct async_domain *domain);
- extern void async_synchronize_cookie(async_cookie_t cookie);
- extern void async_synchronize_cookie_domain(async_cookie_t cookie,
- 					    struct async_domain *domain);
-+extern bool current_is_async(void);
- #endif
-diff --git a/kernel/async.c b/kernel/async.c
-index 9d31183..d9bf2a9 100644
---- a/kernel/async.c
-+++ b/kernel/async.c
-@@ -57,6 +57,8 @@ asynchronous and synchronous parts of the kernel.
- #include <linux/slab.h>
- #include <linux/workqueue.h>
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 1c317e3..ecd42b4 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -38,6 +38,7 @@
+ #include <linux/suspend.h>
+ #include <linux/rwsem.h>
+ #include <linux/ptrace.h>
++#include <linux/async.h>
+ #include <asm/uaccess.h>
  
-+#include "workqueue_internal.h"
+ #include <trace/events/module.h>
+@@ -130,6 +131,14 @@ int __request_module(bool wait, const char *fmt, ...)
+ #define MAX_KMOD_CONCURRENT 50	/* Completely arbitrary value - KAO */
+ 	static int kmod_loop_msg;
+ 
++	/*
++	 * We don't allow synchronous module loading from async.  Module
++	 * init may invoke async_synchronize_full() which will end up
++	 * waiting for this task which already is waiting for the module
++	 * loading to complete, leading to a deadlock.
++	 */
++	WARN_ON_ONCE(wait && current_is_async());
 +
- static async_cookie_t next_cookie = 1;
- 
- #define MAX_WORK	32768
-@@ -337,3 +339,15 @@ void async_synchronize_cookie(async_cookie_t cookie)
- 	async_synchronize_cookie_domain(cookie, &async_running);
- }
- EXPORT_SYMBOL_GPL(async_synchronize_cookie);
-+
-+/**
-+ * current_is_async - is %current an async worker task?
-+ *
-+ * Returns %true if %current is an async worker task.
-+ */
-+bool current_is_async(void)
-+{
-+	struct worker *worker = current_wq_worker();
-+
-+	return worker && worker->current_func == async_run_entry_fn;
-+}
-diff --git a/kernel/workqueue_internal.h b/kernel/workqueue_internal.h
-index 02549fa..cc35e7e 100644
---- a/kernel/workqueue_internal.h
-+++ b/kernel/workqueue_internal.h
-@@ -8,6 +8,7 @@
- #define _KERNEL_WORKQUEUE_INTERNAL_H
- 
- #include <linux/workqueue.h>
-+#include <linux/kthread.h>
- 
- struct global_cwq;
- struct worker_pool;
-@@ -44,6 +45,16 @@ struct worker {
- 	struct workqueue_struct	*rescue_wq;	/* I: the workqueue to rescue */
- };
- 
-+/**
-+ * current_wq_worker - return struct worker if %current is a workqueue worker
-+ */
-+static inline struct worker *current_wq_worker(void)
-+{
-+	if (current->flags & PF_WQ_WORKER)
-+		return kthread_data(current);
-+	return NULL;
-+}
-+
- /*
-  * Scheduler hooks for concurrency managed workqueue.  Only to be used from
-  * sched.c and workqueue.c.
+ 	va_start(args, fmt);
+ 	ret = vsnprintf(module_name, MODULE_NAME_LEN, fmt, args);
+ 	va_end(args);
 -- 
 1.8.0.2
 
