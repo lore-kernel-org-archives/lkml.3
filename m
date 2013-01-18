@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab3ARVjE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 16:39:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37661 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab3ARVjD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 16:39:03 -0500
-Date: Fri, 18 Jan 2013 13:39:01 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: Define set_pmd_at for numabalance for
- CONFIG_PARAVIRT
-Message-Id: <20130118133901.b445b348.akpm@linux-foundation.org>
-In-Reply-To: <1358501604-6797-1-git-send-email-mhocko@suse.cz>
-References: <1358501604-6797-1-git-send-email-mhocko@suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753871Ab3ARVkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 16:40:37 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:45775 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128Ab3ARVkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 16:40:36 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Borislav Petkov <bp@alien8.de>, Olivier Doucet <webmaster@ajeux.com>
+Cc: linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
+Subject: Re: Performance issue since 3.2.6
+Date: Fri, 18 Jan 2013 22:46:32 +0100
+Message-ID: <2125649.yvtIPMVHz8@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc4; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130118212447.GB3252@pd.tnic>
+References: <CAPPqfY1-sYT8rcPoJ6BD0axq=oczq+xbGFSQj=uth4wc_cvkGw@mail.gmail.com> <20130118212447.GB3252@pd.tnic>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jan 2013 10:33:24 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+On Friday, January 18, 2013 10:24:48 PM Borislav Petkov wrote:
+> Good description.
+> 
+> I'm leaving the whole email in for reference, see below:
+> 
+> On Fri, Jan 18, 2013 at 10:05:41PM +0100, Olivier Doucet wrote:
+> > Hello,
+> > 
+> > I think I found a performance issue in kernel. This problem was
+> > introduced in 3.2.6 and is affecting all version, including 3.7.1
+> > (latest tested).
+> > 
+> > I measured several kernel builds with a homebrew LAMP platform
+> > benchmark (250 runs, average value kept).
+> > 
+> > Kernel 3.2.0 was on production so far, and I tried an upgrade to 3.7.1
+> > (latest kernel at that time). No software other than the kernel was
+> > modified. Kernel was built with the same .config file (new options
+> > left with default value).
+> > Difference in performance was quite huge :
+> > Kernel 3.7.1 : ~ 3250 queries / second
+> > Kernel 3.2.0 : ~ 4300 queries / second
+> > 
+> > Yes, this is a 25% performance drop ...
+> > 
+> > To narrow things down, I tested several kernels :
+> > 3.2.0 to 3.2.5 : OK
+> > 3.2.6, 3.2.11, 3.2.28, 3.2.36, 3.7.1 : PERFORMANCE DROP
+> > On faulty kernels, performance drop is always the same.
+> > 
+> > At this step, I know that bug was introduced in version 3.2.6. I then
+> > used git bisect (amazing tool btw) to find the faulty commit :
+> > f51d67a64f32cd81ea8b67ca964fb7cf7e783b2e	PM / QoS: CPU C-state
+> > breakage with PM Qos change
+> > 
+> > Next test : I used a 3.2.6 and reverted this patch : performance was
+> > back to normal.
+> > I also reverted this patch on 3.2.36 (latest 3.2.X), and performance
+> > was also OK. I was unable to revert this patch on 3.7.1 (structure of
+> > the source file  /include/linux/pm_qos.h changed too heavily).
+> > 
+> > Kernel was built on a x86_64 platform with binutils 2.19.1 and gcc 4.4.0.
+> > .config file used : https://gist.github.com/4567342
+> > Benchmark was run on a dual CPU INTEL L5630 with 4GB of RAM
+> > 
+> > What can I do to resolve this problem ?
+> 
+> Btw, the commit-id you've given is the stable commit-id but this is
+> still ok, the mainline commit is mentioned in the commit message and is:
+> 
+> commit d020283dc694c9ec31b410f522252f7a8397e67d
+> Author: Venkatesh Pallipadi <venki@google.com>
+> Date:   Fri Feb 3 22:22:25 2012 +0100
+> 
+>     PM / QoS: CPU C-state breakage with PM Qos change
+> 
+> So, let's invite the parties from the commit to CC, see what they have
+> to say.
 
-> CONFIG_PARAVIRT defines set_pmd_at only for CONFIG_TRANSPARENT_HUGEPAGE
-> which leads to the following compile errors when randconfig selected
-> CONFIG_NUMA_BALANCING && CONFIG_PARAVIRT && !CONFIG_TRANSPARENT_HUGEPAGE:
-> 
-> mm/mprotect.c: In function ___change_pmd_protnuma___:
-> mm/mprotect.c:120: error: implicit declaration of function ___set_pmd_at___
-> 
-> mm/memory.c: In function ___do_pmd_numa_page___:
-> mm/memory.c:3529: error: implicit declaration of function ___set_pmd_at___
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  arch/x86/include/asm/paravirt.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-> index a0facf3..f551e89 100644
-> --- a/arch/x86/include/asm/paravirt.h
-> +++ b/arch/x86/include/asm/paravirt.h
-> @@ -528,7 +528,7 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
->  		PVOP_VCALL4(pv_mmu_ops.set_pte_at, mm, addr, ptep, pte.pte);
->  }
->  
-> -#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> +#if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_NUMA_BALANCING)
->  static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
->  			      pmd_t *pmdp, pmd_t pmd)
->  {
+Thanks Boris!
 
-Confused - there is no "#ifdef CONFIG_TRANSPARENT_HUGEPAGE" in there in
-any kernel version I can think of.
+Olivier, may I see the kernel .config file?
 
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
