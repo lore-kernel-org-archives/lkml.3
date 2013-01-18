@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab3ARM3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:29:38 -0500
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:55848 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756420Ab3ARM3f (ORCPT
+	id S1756501Ab3ARM3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:29:47 -0500
+Received: from vaxjo.synopsys.com ([198.182.60.75]:59272 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755169Ab3ARM3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:29:35 -0500
+	Fri, 18 Jan 2013 07:29:43 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 27/76] ARC: Page Fault handling
-Date: Fri, 18 Jan 2013 17:54:41 +0530
-Message-ID: <1358511930-7424-28-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 28/76] ARC: I/O and DMA Mappings
+Date: Fri, 18 Jan 2013 17:54:42 +0530
+Message-ID: <1358511930-7424-29-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -23,27 +23,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This includes recent changes to make handler "retry" and/or "killable"
-
-The killable (early exit) logic is loosely based on how SH implements it
-	return if SIGKILL + either of VM_FAULT_OOM or VM_FAULT_RETRY
-which is different from Hexagon implementation which would NOT early
-exit for
-	SIGKILL + VM_FAULT_OOM + !VM_FAULT_RETRY
+TBD: Do we need early ioremap support like openrisc
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/mm/fault.c |  228 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 228 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/mm/fault.c
+ arch/arc/include/asm/dma-mapping.h            |  176 +++++++++++++++++++++++++
+ arch/arc/include/asm/dma.h                    |   14 ++
+ arch/arc/include/asm/io.h                     |   26 ++++
+ arch/arc/mm/dma.c                             |   91 +++++++++++++
+ arch/arc/mm/ioremap.c                         |   62 +++++++++
+ arch/arc/plat-arcfpga/include/plat/dma_addr.h |   45 +++++++
+ 6 files changed, 414 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/include/asm/dma-mapping.h
+ create mode 100644 arch/arc/include/asm/dma.h
+ create mode 100644 arch/arc/include/asm/io.h
+ create mode 100644 arch/arc/mm/dma.c
+ create mode 100644 arch/arc/mm/ioremap.c
+ create mode 100644 arch/arc/plat-arcfpga/include/plat/dma_addr.h
 
-diff --git a/arch/arc/mm/fault.c b/arch/arc/mm/fault.c
+diff --git a/arch/arc/include/asm/dma-mapping.h b/arch/arc/include/asm/dma-mapping.h
 new file mode 100644
-index 0000000..af55aab
+index 0000000..ea0f56f
 --- /dev/null
-+++ b/arch/arc/mm/fault.c
-@@ -0,0 +1,228 @@
-+/* Page Fault Handling for ARC (TLB Miss / ProtV)
++++ b/arch/arc/include/asm/dma-mapping.h
+@@ -0,0 +1,176 @@
++/*
++ * DMA Mapping glue for ARC
 + *
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -52,225 +57,440 @@ index 0000000..af55aab
 + * published by the Free Software Foundation.
 + */
 +
-+#include <linux/signal.h>
-+#include <linux/interrupt.h>
-+#include <linux/sched.h>
-+#include <linux/errno.h>
-+#include <linux/ptrace.h>
-+#include <linux/version.h>
-+#include <linux/uaccess.h>
-+#include <linux/kdebug.h>
-+#include <asm/pgalloc.h>
++#ifndef ASM_ARC_DMA_MAPPING_H
++#define ASM_ARC_DMA_MAPPING_H
 +
-+static int handle_vmalloc_fault(struct mm_struct *mm, unsigned long address)
++#include <asm-generic/dma-coherent.h>
++#include <plat/dma_addr.h>
++
++void *dma_alloc_noncoherent(struct device *dev, size_t size,
++			    dma_addr_t *dma_handle, gfp_t gfp);
++
++void dma_free_noncoherent(struct device *dev, size_t size, void *vaddr,
++			  dma_addr_t dma_handle);
++
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			 dma_addr_t *dma_handle, gfp_t gfp);
++
++void dma_free_coherent(struct device *dev, size_t size, void *kvaddr,
++		       dma_addr_t dma_handle);
++
++/*
++ * streaming DMA Mapping API...
++ * CPU accesses page via normal paddr, thus needs to explicitly made
++ * consistent before each use
++ */
++
++static inline void __inline_dma_cache_sync(unsigned long paddr, size_t size,
++					   enum dma_data_direction dir)
 +{
-+	/*
-+	 * Synchronize this task's top level page-table
-+	 * with the 'reference' page table.
-+	 */
-+	pgd_t *pgd, *pgd_k;
-+	pud_t *pud, *pud_k;
-+	pmd_t *pmd, *pmd_k;
++	switch (dir) {
++	case DMA_FROM_DEVICE:
++		dma_cache_inv(paddr, size);
++		break;
++	case DMA_TO_DEVICE:
++		dma_cache_wback(paddr, size);
++		break;
++	case DMA_BIDIRECTIONAL:
++		dma_cache_wback_inv(paddr, size);
++		break;
++	default:
++		pr_err("Invalid DMA dir [%d] for OP @ %lx\n", dir, paddr);
++	}
++}
 +
-+	pgd = pgd_offset_fast(mm, address);
-+	pgd_k = pgd_offset_k(address);
++void __arc_dma_cache_sync(unsigned long paddr, size_t size,
++			  enum dma_data_direction dir);
 +
-+	if (!pgd_present(*pgd_k))
-+		goto bad_area;
++#define _dma_cache_sync(addr, sz, dir)			\
++do {							\
++	if (__builtin_constant_p(dir))			\
++		__inline_dma_cache_sync(addr, sz, dir);	\
++	else						\
++		__arc_dma_cache_sync(addr, sz, dir);	\
++}							\
++while (0);
 +
-+	pud = pud_offset(pgd, address);
-+	pud_k = pud_offset(pgd_k, address);
-+	if (!pud_present(*pud_k))
-+		goto bad_area;
++static inline dma_addr_t
++dma_map_single(struct device *dev, void *cpu_addr, size_t size,
++	       enum dma_data_direction dir)
++{
++	_dma_cache_sync((unsigned long)cpu_addr, size, dir);
++	return plat_kernel_addr_to_dma(dev, cpu_addr);
++}
 +
-+	pmd = pmd_offset(pud, address);
-+	pmd_k = pmd_offset(pud_k, address);
-+	if (!pmd_present(*pmd_k))
-+		goto bad_area;
++static inline void
++dma_unmap_single(struct device *dev, dma_addr_t dma_addr,
++		 size_t size, enum dma_data_direction dir)
++{
++}
 +
-+	set_pmd(pmd, *pmd_k);
++static inline dma_addr_t
++dma_map_page(struct device *dev, struct page *page,
++	     unsigned long offset, size_t size,
++	     enum dma_data_direction dir)
++{
++	unsigned long paddr = page_to_phys(page) + offset;
++	return dma_map_single(dev, (void *)paddr, size, dir);
++}
 +
-+	/* XXX: create the TLB entry here */
++static inline void
++dma_unmap_page(struct device *dev, dma_addr_t dma_handle,
++	       size_t size, enum dma_data_direction dir)
++{
++}
++
++static inline int
++dma_map_sg(struct device *dev, struct scatterlist *sg,
++	   int nents, enum dma_data_direction dir)
++{
++	struct scatterlist *s;
++	int i;
++
++	for_each_sg(sg, s, nents, i)
++		sg->dma_address = dma_map_page(dev, sg_page(s), s->offset,
++					       s->length, dir);
++
++	return nents;
++}
++
++static inline void
++dma_unmap_sg(struct device *dev, struct scatterlist *sg,
++	     int nents, enum dma_data_direction dir)
++{
++	struct scatterlist *s;
++	int i;
++
++	for_each_sg(sg, s, nents, i)
++		dma_unmap_page(dev, sg_dma_address(s), sg_dma_len(s), dir);
++}
++
++static inline void
++dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
++			size_t size, enum dma_data_direction dir)
++{
++	_dma_cache_sync(plat_dma_addr_to_kernel(dev, dma_handle), size,
++			DMA_FROM_DEVICE);
++}
++
++static inline void
++dma_sync_single_for_device(struct device *dev, dma_addr_t dma_handle,
++			   size_t size, enum dma_data_direction dir)
++{
++	_dma_cache_sync(plat_dma_addr_to_kernel(dev, dma_handle), size,
++			DMA_TO_DEVICE);
++}
++
++static inline void
++dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg, int nelems,
++		    enum dma_data_direction dir)
++{
++	int i;
++
++	for (i = 0; i < nelems; i++, sg++)
++		_dma_cache_sync((unsigned int)sg_virt(sg), sg->length, dir);
++}
++
++static inline void
++dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg, int nelems,
++		       enum dma_data_direction dir)
++{
++	int i;
++
++	for (i = 0; i < nelems; i++, sg++)
++		_dma_cache_sync((unsigned int)sg_virt(sg), sg->length, dir);
++}
++
++static inline int dma_supported(struct device *dev, u64 dma_mask)
++{
++	/* Support 32 bit DMA mask exclusively */
++	return dma_mask == DMA_BIT_MASK(32);
++}
++
++static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
++{
 +	return 0;
-+
-+bad_area:
-+	return 1;
 +}
 +
-+void do_page_fault(struct pt_regs *regs, int write, unsigned long address,
-+		   unsigned long cause_code)
++static inline int dma_set_mask(struct device *dev, u64 dma_mask)
 +{
-+	struct vm_area_struct *vma = NULL;
-+	struct task_struct *tsk = current;
-+	struct mm_struct *mm = tsk->mm;
-+	siginfo_t info;
-+	int fault, ret;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+				(write ? FAULT_FLAG_WRITE : 0);
++	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
++		return -EIO;
 +
-+	/*
-+	 * We fault-in kernel-space virtual memory on-demand. The
-+	 * 'reference' page table is init_mm.pgd.
-+	 *
-+	 * NOTE! We MUST NOT take any locks for this case. We may
-+	 * be in an interrupt or a critical region, and should
-+	 * only copy the information from the master page table,
-+	 * nothing more.
-+	 */
-+	if (address >= VMALLOC_START && address <= VMALLOC_END) {
-+		ret = handle_vmalloc_fault(mm, address);
-+		if (unlikely(ret))
-+			goto bad_area_nosemaphore;
-+		else
-+			return;
-+	}
++	*dev->dma_mask = dma_mask;
 +
-+	info.si_code = SEGV_MAPERR;
-+
-+	/*
-+	 * If we're in an interrupt or have no user
-+	 * context, we must not take the fault..
-+	 */
-+	if (in_atomic() || !mm)
-+		goto no_context;
-+
-+retry:
-+	down_read(&mm->mmap_sem);
-+	vma = find_vma(mm, address);
-+	if (!vma)
-+		goto bad_area;
-+	if (vma->vm_start <= address)
-+		goto good_area;
-+	if (!(vma->vm_flags & VM_GROWSDOWN))
-+		goto bad_area;
-+	if (expand_stack(vma, address))
-+		goto bad_area;
-+
-+	/*
-+	 * Ok, we have a good vm_area for this memory access, so
-+	 * we can handle it..
-+	 */
-+good_area:
-+	info.si_code = SEGV_ACCERR;
-+
-+	/* Handle protection violation, execute on heap or stack */
-+
-+	if (cause_code == ((ECR_V_PROTV << 16) | ECR_C_PROTV_INST_FETCH))
-+		goto bad_area;
-+
-+	if (write) {
-+		if (!(vma->vm_flags & VM_WRITE))
-+			goto bad_area;
-+	} else {
-+		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
-+			goto bad_area;
-+	}
-+
-+survive:
-+	/*
-+	 * If for any reason at all we couldn't handle the fault,
-+	 * make sure we exit gracefully rather than endlessly redo
-+	 * the fault.
-+	 */
-+	fault = handle_mm_fault(mm, vma, address, flags);
-+
-+	/* If Pagefault was interrupted by SIGKILL, exit page fault "early" */
-+	if (unlikely(fatal_signal_pending(current))) {
-+		if ((fault & VM_FAULT_ERROR) && !(fault & VM_FAULT_RETRY))
-+			up_read(&mm->mmap_sem);
-+		if (user_mode(regs))
-+			return;
-+	}
-+
-+	if (likely(!(fault & VM_FAULT_ERROR))) {
-+		if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+			/* To avoid updating stats twice for retry case */
-+			if (fault & VM_FAULT_MAJOR)
-+				tsk->maj_flt++;
-+			else
-+				tsk->min_flt++;
-+
-+			if (fault & VM_FAULT_RETRY) {
-+				flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+				flags |= FAULT_FLAG_TRIED;
-+				goto retry;
-+			}
-+		}
-+
-+		/* Fault Handled Gracefully */
-+		up_read(&mm->mmap_sem);
-+		return;
-+	}
-+
-+	/* TBD: switch to pagefault_out_of_memory() */
-+	if (fault & VM_FAULT_OOM)
-+		goto out_of_memory;
-+	else if (fault & VM_FAULT_SIGBUS)
-+		goto do_sigbus;
-+
-+	/* no man's land */
-+	BUG();
-+
-+	/*
-+	 * Something tried to access memory that isn't in our memory map..
-+	 * Fix it, but check if it's kernel or user first..
-+	 */
-+bad_area:
-+	up_read(&mm->mmap_sem);
-+
-+bad_area_nosemaphore:
-+	/* User mode accesses just cause a SIGSEGV */
-+	if (user_mode(regs)) {
-+		tsk->thread.fault_address = address;
-+		tsk->thread.cause_code = cause_code;
-+		info.si_signo = SIGSEGV;
-+		info.si_errno = 0;
-+		/* info.si_code has been set above */
-+		info.si_addr = (void __user *)address;
-+		force_sig_info(SIGSEGV, &info, tsk);
-+		return;
-+	}
-+
-+no_context:
-+	/* Are we prepared to handle this kernel fault?
-+	 *
-+	 * (The kernel has valid exception-points in the source
-+	 *  when it acesses user-memory. When it fails in one
-+	 *  of those points, we find it in a table and do a jump
-+	 *  to some fixup code that loads an appropriate error
-+	 *  code)
-+	 */
-+	if (fixup_exception(regs))
-+		return;
-+
-+	die("Oops", regs, address, cause_code);
-+
-+out_of_memory:
-+	if (is_global_init(tsk)) {
-+		yield();
-+		goto survive;
-+	}
-+	up_read(&mm->mmap_sem);
-+
-+	if (user_mode(regs))
-+		do_group_exit(SIGKILL);	/* This will never return */
-+
-+	goto no_context;
-+
-+do_sigbus:
-+	up_read(&mm->mmap_sem);
-+
-+	if (!user_mode(regs))
-+		goto no_context;
-+
-+	tsk->thread.fault_address = address;
-+	tsk->thread.cause_code = cause_code;
-+	info.si_signo = SIGBUS;
-+	info.si_errno = 0;
-+	info.si_code = BUS_ADRERR;
-+	info.si_addr = (void __user *)address;
-+	force_sig_info(SIGBUS, &info, tsk);
++	return 0;
 +}
++
++#endif
+diff --git a/arch/arc/include/asm/dma.h b/arch/arc/include/asm/dma.h
+new file mode 100644
+index 0000000..ca7c451
+--- /dev/null
++++ b/arch/arc/include/asm/dma.h
+@@ -0,0 +1,14 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef ASM_ARC_DMA_H
++#define ASM_ARC_DMA_H
++
++#define MAX_DMA_ADDRESS 0xC0000000
++
++#endif
+diff --git a/arch/arc/include/asm/io.h b/arch/arc/include/asm/io.h
+new file mode 100644
+index 0000000..b2221f5
+--- /dev/null
++++ b/arch/arc/include/asm/io.h
+@@ -0,0 +1,26 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _ASM_ARC_IO_H
++#define _ASM_ARC_IO_H
++
++#include <asm/byteorder.h>
++#include <asm/page.h>
++
++extern void __iomem *ioremap(unsigned long physaddr, unsigned long size);
++extern void iounmap(const void __iomem *addr);
++
++#define ioremap_nocache(phy, sz)	ioremap(phy, sz)
++#define ioremap_wc(phy, sz)		ioremap(phy, sz)
++
++/* Change struct page to physical address */
++#define page_to_phys(page)		(page_to_pfn(page) << PAGE_SHIFT)
++
++#include <asm-generic/io.h>
++
++#endif /* _ASM_ARC_IO_H */
+diff --git a/arch/arc/mm/dma.c b/arch/arc/mm/dma.c
+new file mode 100644
+index 0000000..91fc4ef
+--- /dev/null
++++ b/arch/arc/mm/dma.c
+@@ -0,0 +1,91 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/*
++ * Helpers for Coherent DMA API.
++ *
++ * Allocate pages(s) but the CPU always accesses them using a V-P mapping
++ * which has Cached Bit off
++ *
++ * If NON_CONSISTENT request, then CPU accesses page with normal paddr
++ *
++ * For both the cases above, actual DMA handle gen by platform as some
++ * platforms are OK with 0x8000_0000 baed addresses while some are NOT.
++ */
++
++#include <linux/dma-mapping.h>
++#include <linux/dma-debug.h>
++#include <linux/export.h>
++#include <asm/cacheflush.h>
++
++void *dma_alloc_noncoherent(struct device *dev, size_t size,
++			    dma_addr_t *dma_handle, gfp_t gfp)
++{
++	void *paddr;
++
++	/* This is linear addr (0x8000_0000 based) */
++	paddr = alloc_pages_exact(size, gfp);
++	if (!paddr)
++		return NULL;
++
++	/* This is bus address, platform dependent */
++	*dma_handle = plat_kernel_addr_to_dma(dev, paddr);
++
++	return paddr;
++}
++EXPORT_SYMBOL(dma_alloc_noncoherent);
++
++void dma_free_noncoherent(struct device *dev, size_t size, void *vaddr,
++			  dma_addr_t dma_handle)
++{
++	free_pages_exact((void *)plat_dma_addr_to_kernel(dev, dma_handle),
++			 size);
++}
++EXPORT_SYMBOL(dma_free_noncoherent);
++
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			 dma_addr_t *dma_handle, gfp_t gfp)
++{
++	void *paddr, *kvaddr;
++
++	/* This is linear addr (0x8000_0000 based) */
++	paddr = alloc_pages_exact(size, gfp);
++	if (!paddr)
++		return NULL;
++
++	/* This is kernel Virtual address (0x7000_0000 based) */
++	kvaddr = ioremap_nocache((unsigned long)paddr, size);
++	if (kvaddr != NULL)
++		memset(kvaddr, 0, size);
++
++	/* This is bus address, platform dependent */
++	*dma_handle = plat_kernel_addr_to_dma(dev, paddr);
++
++	return kvaddr;
++}
++EXPORT_SYMBOL(dma_alloc_coherent);
++
++void dma_free_coherent(struct device *dev, size_t size, void *kvaddr,
++		       dma_addr_t dma_handle)
++{
++	iounmap((void __force __iomem *)kvaddr);
++
++	free_pages_exact((void *)plat_dma_addr_to_kernel(dev, dma_handle),
++			 size);
++}
++EXPORT_SYMBOL(dma_free_coherent);
++
++/*
++ * Helper for streaming DMA...
++ */
++void __arc_dma_cache_sync(unsigned long paddr, size_t size,
++			  enum dma_data_direction dir)
++{
++	__inline_dma_cache_sync(paddr, size, dir);
++}
++EXPORT_SYMBOL(__arc_dma_cache_sync);
+diff --git a/arch/arc/mm/ioremap.c b/arch/arc/mm/ioremap.c
+new file mode 100644
+index 0000000..a82ec3a
+--- /dev/null
++++ b/arch/arc/mm/ioremap.c
+@@ -0,0 +1,62 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/vmalloc.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/io.h>
++#include <linux/mm.h>
++#include <asm/cache.h>
++
++void __iomem *ioremap(unsigned long paddr, unsigned long size)
++{
++	unsigned long vaddr;
++	struct vm_struct *area;
++	unsigned long off, end;
++	const pgprot_t prot = PAGE_KERNEL_NO_CACHE;
++
++	/* Don't allow wraparound or zero size */
++	end = paddr + size - 1;
++	if (!size || (end < paddr))
++		return NULL;
++
++	/* If the region is h/w uncached, nothing special needed */
++	if (paddr >= ARC_UNCACHED_ADDR_SPACE)
++		return (void __iomem *)paddr;
++
++	/* Mappings have to be page-aligned, page-sized */
++	off = paddr & ~PAGE_MASK;
++	paddr &= PAGE_MASK;
++	size = PAGE_ALIGN(end + 1) - paddr;
++
++	/*
++	 * Ok, go for it..
++	 */
++	area = get_vm_area(size, VM_IOREMAP);
++	if (!area)
++		return NULL;
++
++	area->phys_addr = paddr;
++	vaddr = (unsigned long)area->addr;
++	if (ioremap_page_range(vaddr, vaddr + size, paddr, prot)) {
++		vfree(area->addr);
++		return NULL;
++	}
++
++	return (void __iomem *)(off + (char __iomem *)vaddr);
++}
++EXPORT_SYMBOL(ioremap);
++
++void iounmap(const void __iomem *addr)
++{
++	if (addr >= (void __force __iomem *)ARC_UNCACHED_ADDR_SPACE)
++		return;
++
++	vfree((void *)(PAGE_MASK & (unsigned long __force)addr));
++}
++EXPORT_SYMBOL(iounmap);
+diff --git a/arch/arc/plat-arcfpga/include/plat/dma_addr.h b/arch/arc/plat-arcfpga/include/plat/dma_addr.h
+new file mode 100644
+index 0000000..0e96343
+--- /dev/null
++++ b/arch/arc/plat-arcfpga/include/plat/dma_addr.h
+@@ -0,0 +1,45 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * vineetg: Feb 2009
++ *  -For AA4 board, kernel to DMA address APIs
++ */
++
++/*
++ * kernel addresses are 0x800_000 based, while Bus addr are 0 based
++ */
++
++#ifndef __PLAT_DMA_ADDR_H
++#define __PLAT_DMA_ADDR_H
++
++#include <linux/device.h>
++
++static inline unsigned long plat_dma_addr_to_kernel(struct device *dev,
++						    dma_addr_t dma_addr)
++{
++	return dma_addr + PAGE_OFFSET;
++}
++
++static inline dma_addr_t plat_kernel_addr_to_dma(struct device *dev, void *ptr)
++{
++	unsigned long addr = (unsigned long)ptr;
++	/*
++	 * To Catch buggy drivers which can call DMA map API with kernel vaddr
++	 * i.e. for buffers alloc via vmalloc or ioremap which are not
++	 * gaurnateed to be PHY contiguous and hence unfit for DMA anyways.
++	 * On ARC kernel virtual address is 0x7000_0000 to 0x7FFF_FFFF, so
++	 * ideally we want to check this range here, but our implementation is
++	 * better as it checks for even worse user virtual address as well.
++	 */
++	if (likely(addr >= PAGE_OFFSET))
++		return addr - PAGE_OFFSET;
++
++	BUG();
++	return addr;
++}
++
++#endif
 -- 
 1.7.4.1
 
