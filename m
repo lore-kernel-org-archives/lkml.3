@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362Ab3ARHqg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 02:46:36 -0500
-Received: from norkia.v3.sk ([91.210.183.14]:56990 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab3ARHqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 02:46:35 -0500
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Lubomir Rintel <lkundrak@v3.sk>
-Subject: [PATCH 2/3] dma: mv_xor: fix DMA-API error handling sanity check
-Date: Fri, 18 Jan 2013 08:46:21 +0100
-Message-Id: <1358495182-30964-2-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1358495154.28503.5.camel@unicorn>
-References: <1358495154.28503.5.camel@unicorn>
+	id S1751179Ab3ARHxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 02:53:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47647 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab3ARHxi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 02:53:38 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v9 00/11] PCI, ACPI: pci root bus hotplug support / pci match_driver
+Date: Thu, 17 Jan 2013 23:53:11 -0800
+Message-Id: <1358495602-22867-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add error checking.
----
- drivers/dma/mv_xor.c |   27 ++++++++++++++++++++++++++-
- 1 files changed, 26 insertions(+), 1 deletions(-)
+It includes
+1. preparing patches for pci root bus hotadd/hotremove support
+2. move root bus hotadd from acpiphp to pci_root.c
+3. add hot-remove support
+4. add acpi_hp_work to be shared with acpiphp and root-bus hotplug
+5. add match_driver to add pci device to device tree early but
+   not attach driver for hotplug path.
 
-diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
-index 8b81a04..d00a834 100644
---- a/drivers/dma/mv_xor.c
-+++ b/drivers/dma/mv_xor.c
-@@ -939,9 +939,21 @@ static int mv_xor_memcpy_self_test(struct mv_xor_chan *mv_chan)
- 
- 	dest_dma = dma_map_single(dma_chan->device->dev, dest,
- 				  MV_XOR_TEST_SIZE, DMA_FROM_DEVICE);
-+	if (dma_mapping_error(dma_chan->device->dev, dest_dma)) {
-+		dev_err(dma_chan->device->dev,
-+			"Could not map destination buffer, disabling\n");
-+		err = -ENODEV;
-+		goto free_resources;
-+	}
- 
- 	src_dma = dma_map_single(dma_chan->device->dev, src,
- 				 MV_XOR_TEST_SIZE, DMA_TO_DEVICE);
-+	if (dma_mapping_error(dma_chan->device->dev, src_dma)) {
-+		dev_err(dma_chan->device->dev,
-+			"Could not map source buffer, disabling\n");
-+		err = -ENODEV;
-+		goto free_resources;
-+	}
- 
- 	tx = mv_xor_prep_dma_memcpy(dma_chan, dest_dma, src_dma,
- 				    MV_XOR_TEST_SIZE,
-@@ -1031,10 +1043,23 @@ mv_xor_xor_self_test(struct mv_xor_chan *mv_chan)
- 	/* test xor */
- 	dest_dma = dma_map_page(dma_chan->device->dev, dest, 0, PAGE_SIZE,
- 				DMA_FROM_DEVICE);
-+	if (dma_mapping_error(dma_chan->device->dev, dest_dma)) {
-+		dev_err(dma_chan->device->dev,
-+			"Could not map destination page, disabling\n");
-+		err = -ENODEV;
-+		goto free_resources;
-+	}
- 
--	for (i = 0; i < MV_XOR_NUM_SRC_TEST; i++)
-+	for (i = 0; i < MV_XOR_NUM_SRC_TEST; i++) {
- 		dma_srcs[i] = dma_map_page(dma_chan->device->dev, xor_srcs[i],
- 					   0, PAGE_SIZE, DMA_TO_DEVICE);
-+		if (dma_mapping_error(dma_chan->device->dev, dma_srcs[i])) {
-+			dev_err(dma_chan->device->dev,
-+				"Could not map source page, disabling\n");
-+			err = -ENODEV;
-+			goto free_resources;
-+		}
-+	}
- 
- 	tx = mv_xor_prep_dma_xor(dma_chan, dest_dma, dma_srcs,
- 				 MV_XOR_NUM_SRC_TEST, PAGE_SIZE, 0);
+based on pci/next + pm/acpi-scan
+
+could get from
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-root-bus-hotplug
+
+-v9: merges several patches together for easy review, requested by Rafael.
+
+After this patchset, will send out
+         for_each_host_bridge support
+         for_each_dev_addon_res
+
+Jiang Liu (2):
+  PCI: Fix a device reference count leakage issue in pci_dev_present()
+  PCI: make PCI device create/destroy logic symmetric
+
+Tang Chen (1):
+  PCI, ACPI: debug print for installation of acpi root bridge's notifier
+
+Yinghai Lu (8):
+  PCI, acpiphp: Add is_hotplug_bridge detection
+  PCI: Add root bus children dev's res to fail list
+  PCI: Set dev_node early for pci_dev
+  PCI, ACPI, acpiphp: Rename alloc_acpiphp_hp_work() to alloc_acpi_hp_work
+  PCI, acpiphp: Move and enhance hotplug support of pci host bridge
+  PCI, acpiphp: Don't bailout even no slots found yet.
+  PCI: Add match_driver in struct pci_dev
+  PCI: Put pci dev to device tree as early as possible
+
+ drivers/acpi/osl.c                 |   24 +++++-
+ drivers/acpi/pci_root.c            |  145 ++++++++++++++++++++++++++++++++++
+ drivers/pci/bus.c                  |   57 ++++----------
+ drivers/pci/hotplug/acpiphp.h      |    1 -
+ drivers/pci/hotplug/acpiphp_core.c |   23 +-----
+ drivers/pci/hotplug/acpiphp_glue.c |  150 +++++++++++-------------------------
+ drivers/pci/iov.c                  |    7 --
+ drivers/pci/pci-driver.c           |    6 +-
+ drivers/pci/probe.c                |   36 +++++++--
+ drivers/pci/remove.c               |    4 +-
+ drivers/pci/search.c               |   10 +--
+ drivers/pci/setup-bus.c            |    2 +-
+ include/acpi/acpiosxf.h            |    9 ++-
+ include/linux/pci.h                |    1 +
+ 14 files changed, 279 insertions(+), 196 deletions(-)
+
 -- 
-1.7.1
+1.7.10.4
 
