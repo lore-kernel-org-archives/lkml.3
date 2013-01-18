@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab3ARM3r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:29:47 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:59272 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755169Ab3ARM3n (ORCPT
+	id S1756513Ab3ARMaC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:30:02 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:61724 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756366Ab3ARM36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:29:43 -0500
+	Fri, 18 Jan 2013 07:29:58 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 28/76] ARC: I/O and DMA Mappings
-Date: Fri, 18 Jan 2013 17:54:42 +0530
-Message-ID: <1358511930-7424-29-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 30/76] ARC: [plat-arcfpga] Static platform device for CONFIG_SERIAL_ARC
+Date: Fri, 18 Jan 2013 17:54:44 +0530
+Message-ID: <1358511930-7424-31-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -23,429 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TBD: Do we need early ioremap support like openrisc
+N.B. This is old style of hardcoding platform device specific info
+in code and it's instantiation thererof using platform_add_devices().
+Subsequent patches replace this with DeviceTree based runtime probe.
+
+This patch has been retained just as an example of "don't-do-this" for
+newer kernel ports.
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arc/include/asm/dma-mapping.h            |  176 +++++++++++++++++++++++++
- arch/arc/include/asm/dma.h                    |   14 ++
- arch/arc/include/asm/io.h                     |   26 ++++
- arch/arc/mm/dma.c                             |   91 +++++++++++++
- arch/arc/mm/ioremap.c                         |   62 +++++++++
- arch/arc/plat-arcfpga/include/plat/dma_addr.h |   45 +++++++
- 6 files changed, 414 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/dma-mapping.h
- create mode 100644 arch/arc/include/asm/dma.h
- create mode 100644 arch/arc/include/asm/io.h
- create mode 100644 arch/arc/mm/dma.c
- create mode 100644 arch/arc/mm/ioremap.c
- create mode 100644 arch/arc/plat-arcfpga/include/plat/dma_addr.h
+ arch/arc/include/asm/irq.h                  |    1 +
+ arch/arc/plat-arcfpga/include/plat/irq.h    |   27 +++++++
+ arch/arc/plat-arcfpga/include/plat/memmap.h |   31 ++++++++
+ arch/arc/plat-arcfpga/platform.c            |  108 +++++++++++++++++++++++++++
+ 4 files changed, 167 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/plat-arcfpga/include/plat/irq.h
+ create mode 100644 arch/arc/plat-arcfpga/include/plat/memmap.h
 
-diff --git a/arch/arc/include/asm/dma-mapping.h b/arch/arc/include/asm/dma-mapping.h
+diff --git a/arch/arc/include/asm/irq.h b/arch/arc/include/asm/irq.h
+index 514b302..c91b2e4 100644
+--- a/arch/arc/include/asm/irq.h
++++ b/arch/arc/include/asm/irq.h
+@@ -13,6 +13,7 @@
+ #define TIMER0_IRQ      3
+ #define TIMER1_IRQ      4
+ 
++#include <plat/irq.h>		/* Board Specific IRQ assignments */
+ #include <asm-generic/irq.h>
+ 
+ extern void __init arc_init_IRQ(void);
+diff --git a/arch/arc/plat-arcfpga/include/plat/irq.h b/arch/arc/plat-arcfpga/include/plat/irq.h
 new file mode 100644
-index 0000000..ea0f56f
+index 0000000..b34e087
 --- /dev/null
-+++ b/arch/arc/include/asm/dma-mapping.h
-@@ -0,0 +1,176 @@
-+/*
-+ * DMA Mapping glue for ARC
-+ *
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef ASM_ARC_DMA_MAPPING_H
-+#define ASM_ARC_DMA_MAPPING_H
-+
-+#include <asm-generic/dma-coherent.h>
-+#include <plat/dma_addr.h>
-+
-+void *dma_alloc_noncoherent(struct device *dev, size_t size,
-+			    dma_addr_t *dma_handle, gfp_t gfp);
-+
-+void dma_free_noncoherent(struct device *dev, size_t size, void *vaddr,
-+			  dma_addr_t dma_handle);
-+
-+void *dma_alloc_coherent(struct device *dev, size_t size,
-+			 dma_addr_t *dma_handle, gfp_t gfp);
-+
-+void dma_free_coherent(struct device *dev, size_t size, void *kvaddr,
-+		       dma_addr_t dma_handle);
-+
-+/*
-+ * streaming DMA Mapping API...
-+ * CPU accesses page via normal paddr, thus needs to explicitly made
-+ * consistent before each use
-+ */
-+
-+static inline void __inline_dma_cache_sync(unsigned long paddr, size_t size,
-+					   enum dma_data_direction dir)
-+{
-+	switch (dir) {
-+	case DMA_FROM_DEVICE:
-+		dma_cache_inv(paddr, size);
-+		break;
-+	case DMA_TO_DEVICE:
-+		dma_cache_wback(paddr, size);
-+		break;
-+	case DMA_BIDIRECTIONAL:
-+		dma_cache_wback_inv(paddr, size);
-+		break;
-+	default:
-+		pr_err("Invalid DMA dir [%d] for OP @ %lx\n", dir, paddr);
-+	}
-+}
-+
-+void __arc_dma_cache_sync(unsigned long paddr, size_t size,
-+			  enum dma_data_direction dir);
-+
-+#define _dma_cache_sync(addr, sz, dir)			\
-+do {							\
-+	if (__builtin_constant_p(dir))			\
-+		__inline_dma_cache_sync(addr, sz, dir);	\
-+	else						\
-+		__arc_dma_cache_sync(addr, sz, dir);	\
-+}							\
-+while (0);
-+
-+static inline dma_addr_t
-+dma_map_single(struct device *dev, void *cpu_addr, size_t size,
-+	       enum dma_data_direction dir)
-+{
-+	_dma_cache_sync((unsigned long)cpu_addr, size, dir);
-+	return plat_kernel_addr_to_dma(dev, cpu_addr);
-+}
-+
-+static inline void
-+dma_unmap_single(struct device *dev, dma_addr_t dma_addr,
-+		 size_t size, enum dma_data_direction dir)
-+{
-+}
-+
-+static inline dma_addr_t
-+dma_map_page(struct device *dev, struct page *page,
-+	     unsigned long offset, size_t size,
-+	     enum dma_data_direction dir)
-+{
-+	unsigned long paddr = page_to_phys(page) + offset;
-+	return dma_map_single(dev, (void *)paddr, size, dir);
-+}
-+
-+static inline void
-+dma_unmap_page(struct device *dev, dma_addr_t dma_handle,
-+	       size_t size, enum dma_data_direction dir)
-+{
-+}
-+
-+static inline int
-+dma_map_sg(struct device *dev, struct scatterlist *sg,
-+	   int nents, enum dma_data_direction dir)
-+{
-+	struct scatterlist *s;
-+	int i;
-+
-+	for_each_sg(sg, s, nents, i)
-+		sg->dma_address = dma_map_page(dev, sg_page(s), s->offset,
-+					       s->length, dir);
-+
-+	return nents;
-+}
-+
-+static inline void
-+dma_unmap_sg(struct device *dev, struct scatterlist *sg,
-+	     int nents, enum dma_data_direction dir)
-+{
-+	struct scatterlist *s;
-+	int i;
-+
-+	for_each_sg(sg, s, nents, i)
-+		dma_unmap_page(dev, sg_dma_address(s), sg_dma_len(s), dir);
-+}
-+
-+static inline void
-+dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
-+			size_t size, enum dma_data_direction dir)
-+{
-+	_dma_cache_sync(plat_dma_addr_to_kernel(dev, dma_handle), size,
-+			DMA_FROM_DEVICE);
-+}
-+
-+static inline void
-+dma_sync_single_for_device(struct device *dev, dma_addr_t dma_handle,
-+			   size_t size, enum dma_data_direction dir)
-+{
-+	_dma_cache_sync(plat_dma_addr_to_kernel(dev, dma_handle), size,
-+			DMA_TO_DEVICE);
-+}
-+
-+static inline void
-+dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg, int nelems,
-+		    enum dma_data_direction dir)
-+{
-+	int i;
-+
-+	for (i = 0; i < nelems; i++, sg++)
-+		_dma_cache_sync((unsigned int)sg_virt(sg), sg->length, dir);
-+}
-+
-+static inline void
-+dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg, int nelems,
-+		       enum dma_data_direction dir)
-+{
-+	int i;
-+
-+	for (i = 0; i < nelems; i++, sg++)
-+		_dma_cache_sync((unsigned int)sg_virt(sg), sg->length, dir);
-+}
-+
-+static inline int dma_supported(struct device *dev, u64 dma_mask)
-+{
-+	/* Support 32 bit DMA mask exclusively */
-+	return dma_mask == DMA_BIT_MASK(32);
-+}
-+
-+static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
-+{
-+	return 0;
-+}
-+
-+static inline int dma_set_mask(struct device *dev, u64 dma_mask)
-+{
-+	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
-+		return -EIO;
-+
-+	*dev->dma_mask = dma_mask;
-+
-+	return 0;
-+}
-+
-+#endif
-diff --git a/arch/arc/include/asm/dma.h b/arch/arc/include/asm/dma.h
-new file mode 100644
-index 0000000..ca7c451
---- /dev/null
-+++ b/arch/arc/include/asm/dma.h
-@@ -0,0 +1,14 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef ASM_ARC_DMA_H
-+#define ASM_ARC_DMA_H
-+
-+#define MAX_DMA_ADDRESS 0xC0000000
-+
-+#endif
-diff --git a/arch/arc/include/asm/io.h b/arch/arc/include/asm/io.h
-new file mode 100644
-index 0000000..b2221f5
---- /dev/null
-+++ b/arch/arc/include/asm/io.h
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _ASM_ARC_IO_H
-+#define _ASM_ARC_IO_H
-+
-+#include <asm/byteorder.h>
-+#include <asm/page.h>
-+
-+extern void __iomem *ioremap(unsigned long physaddr, unsigned long size);
-+extern void iounmap(const void __iomem *addr);
-+
-+#define ioremap_nocache(phy, sz)	ioremap(phy, sz)
-+#define ioremap_wc(phy, sz)		ioremap(phy, sz)
-+
-+/* Change struct page to physical address */
-+#define page_to_phys(page)		(page_to_pfn(page) << PAGE_SHIFT)
-+
-+#include <asm-generic/io.h>
-+
-+#endif /* _ASM_ARC_IO_H */
-diff --git a/arch/arc/mm/dma.c b/arch/arc/mm/dma.c
-new file mode 100644
-index 0000000..91fc4ef
---- /dev/null
-+++ b/arch/arc/mm/dma.c
-@@ -0,0 +1,91 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/*
-+ * Helpers for Coherent DMA API.
-+ *
-+ * Allocate pages(s) but the CPU always accesses them using a V-P mapping
-+ * which has Cached Bit off
-+ *
-+ * If NON_CONSISTENT request, then CPU accesses page with normal paddr
-+ *
-+ * For both the cases above, actual DMA handle gen by platform as some
-+ * platforms are OK with 0x8000_0000 baed addresses while some are NOT.
-+ */
-+
-+#include <linux/dma-mapping.h>
-+#include <linux/dma-debug.h>
-+#include <linux/export.h>
-+#include <asm/cacheflush.h>
-+
-+void *dma_alloc_noncoherent(struct device *dev, size_t size,
-+			    dma_addr_t *dma_handle, gfp_t gfp)
-+{
-+	void *paddr;
-+
-+	/* This is linear addr (0x8000_0000 based) */
-+	paddr = alloc_pages_exact(size, gfp);
-+	if (!paddr)
-+		return NULL;
-+
-+	/* This is bus address, platform dependent */
-+	*dma_handle = plat_kernel_addr_to_dma(dev, paddr);
-+
-+	return paddr;
-+}
-+EXPORT_SYMBOL(dma_alloc_noncoherent);
-+
-+void dma_free_noncoherent(struct device *dev, size_t size, void *vaddr,
-+			  dma_addr_t dma_handle)
-+{
-+	free_pages_exact((void *)plat_dma_addr_to_kernel(dev, dma_handle),
-+			 size);
-+}
-+EXPORT_SYMBOL(dma_free_noncoherent);
-+
-+void *dma_alloc_coherent(struct device *dev, size_t size,
-+			 dma_addr_t *dma_handle, gfp_t gfp)
-+{
-+	void *paddr, *kvaddr;
-+
-+	/* This is linear addr (0x8000_0000 based) */
-+	paddr = alloc_pages_exact(size, gfp);
-+	if (!paddr)
-+		return NULL;
-+
-+	/* This is kernel Virtual address (0x7000_0000 based) */
-+	kvaddr = ioremap_nocache((unsigned long)paddr, size);
-+	if (kvaddr != NULL)
-+		memset(kvaddr, 0, size);
-+
-+	/* This is bus address, platform dependent */
-+	*dma_handle = plat_kernel_addr_to_dma(dev, paddr);
-+
-+	return kvaddr;
-+}
-+EXPORT_SYMBOL(dma_alloc_coherent);
-+
-+void dma_free_coherent(struct device *dev, size_t size, void *kvaddr,
-+		       dma_addr_t dma_handle)
-+{
-+	iounmap((void __force __iomem *)kvaddr);
-+
-+	free_pages_exact((void *)plat_dma_addr_to_kernel(dev, dma_handle),
-+			 size);
-+}
-+EXPORT_SYMBOL(dma_free_coherent);
-+
-+/*
-+ * Helper for streaming DMA...
-+ */
-+void __arc_dma_cache_sync(unsigned long paddr, size_t size,
-+			  enum dma_data_direction dir)
-+{
-+	__inline_dma_cache_sync(paddr, size, dir);
-+}
-+EXPORT_SYMBOL(__arc_dma_cache_sync);
-diff --git a/arch/arc/mm/ioremap.c b/arch/arc/mm/ioremap.c
-new file mode 100644
-index 0000000..a82ec3a
---- /dev/null
-+++ b/arch/arc/mm/ioremap.c
-@@ -0,0 +1,62 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/vmalloc.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
-+#include <linux/mm.h>
-+#include <asm/cache.h>
-+
-+void __iomem *ioremap(unsigned long paddr, unsigned long size)
-+{
-+	unsigned long vaddr;
-+	struct vm_struct *area;
-+	unsigned long off, end;
-+	const pgprot_t prot = PAGE_KERNEL_NO_CACHE;
-+
-+	/* Don't allow wraparound or zero size */
-+	end = paddr + size - 1;
-+	if (!size || (end < paddr))
-+		return NULL;
-+
-+	/* If the region is h/w uncached, nothing special needed */
-+	if (paddr >= ARC_UNCACHED_ADDR_SPACE)
-+		return (void __iomem *)paddr;
-+
-+	/* Mappings have to be page-aligned, page-sized */
-+	off = paddr & ~PAGE_MASK;
-+	paddr &= PAGE_MASK;
-+	size = PAGE_ALIGN(end + 1) - paddr;
-+
-+	/*
-+	 * Ok, go for it..
-+	 */
-+	area = get_vm_area(size, VM_IOREMAP);
-+	if (!area)
-+		return NULL;
-+
-+	area->phys_addr = paddr;
-+	vaddr = (unsigned long)area->addr;
-+	if (ioremap_page_range(vaddr, vaddr + size, paddr, prot)) {
-+		vfree(area->addr);
-+		return NULL;
-+	}
-+
-+	return (void __iomem *)(off + (char __iomem *)vaddr);
-+}
-+EXPORT_SYMBOL(ioremap);
-+
-+void iounmap(const void __iomem *addr)
-+{
-+	if (addr >= (void __force __iomem *)ARC_UNCACHED_ADDR_SPACE)
-+		return;
-+
-+	vfree((void *)(PAGE_MASK & (unsigned long __force)addr));
-+}
-+EXPORT_SYMBOL(iounmap);
-diff --git a/arch/arc/plat-arcfpga/include/plat/dma_addr.h b/arch/arc/plat-arcfpga/include/plat/dma_addr.h
-new file mode 100644
-index 0000000..0e96343
---- /dev/null
-+++ b/arch/arc/plat-arcfpga/include/plat/dma_addr.h
-@@ -0,0 +1,45 @@
++++ b/arch/arc/plat-arcfpga/include/plat/irq.h
+@@ -0,0 +1,27 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -454,43 +67,195 @@ index 0000000..0e96343
 + * published by the Free Software Foundation.
 + *
 + * vineetg: Feb 2009
-+ *  -For AA4 board, kernel to DMA address APIs
++ *  -For AA4 board, IRQ assignments to peripherals
 + */
 +
-+/*
-+ * kernel addresses are 0x800_000 based, while Bus addr are 0 based
-+ */
++#ifndef __PLAT_IRQ_H
++#define __PLAT_IRQ_H
 +
-+#ifndef __PLAT_DMA_ADDR_H
-+#define __PLAT_DMA_ADDR_H
++#define NR_IRQS		16
 +
-+#include <linux/device.h>
++#define UART0_IRQ	5
++#define UART1_IRQ	10
++#define UART2_IRQ	11
 +
-+static inline unsigned long plat_dma_addr_to_kernel(struct device *dev,
-+						    dma_addr_t dma_addr)
-+{
-+	return dma_addr + PAGE_OFFSET;
-+}
++#define VMAC_IRQ	6
 +
-+static inline dma_addr_t plat_kernel_addr_to_dma(struct device *dev, void *ptr)
-+{
-+	unsigned long addr = (unsigned long)ptr;
-+	/*
-+	 * To Catch buggy drivers which can call DMA map API with kernel vaddr
-+	 * i.e. for buffers alloc via vmalloc or ioremap which are not
-+	 * gaurnateed to be PHY contiguous and hence unfit for DMA anyways.
-+	 * On ARC kernel virtual address is 0x7000_0000 to 0x7FFF_FFFF, so
-+	 * ideally we want to check this range here, but our implementation is
-+	 * better as it checks for even worse user virtual address as well.
-+	 */
-+	if (likely(addr >= PAGE_OFFSET))
-+		return addr - PAGE_OFFSET;
-+
-+	BUG();
-+	return addr;
-+}
++#define IDE_IRQ		13
++#define PCI_IRQ		14
++#define PS2_IRQ		15
 +
 +#endif
+diff --git a/arch/arc/plat-arcfpga/include/plat/memmap.h b/arch/arc/plat-arcfpga/include/plat/memmap.h
+new file mode 100644
+index 0000000..1663f33
+--- /dev/null
++++ b/arch/arc/plat-arcfpga/include/plat/memmap.h
+@@ -0,0 +1,31 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * vineetg: Feb 2009
++ *  -For AA4 board, System Memory Map for Peripherals etc
++ */
++
++#ifndef __PLAT_MEMMAP_H
++#define __PLAT_MEMMAP_H
++
++#define UART0_BASE              0xC0FC1000
++#define UART1_BASE              0xC0FC1100
++
++#define VMAC_REG_BASEADDR       0xC0FC2000
++
++#define IDE_CONTROLLER_BASE     0xC0FC9000
++
++#define AHB_PCI_HOST_BRG_BASE   0xC0FD0000
++
++#define PGU_BASEADDR            0xC0FC8000
++#define VLCK_ADDR               0xC0FCF028
++
++#define BVCI_LAT_UNIT_BASE      0xC0FED000
++
++#define PS2_BASE_ADDR		0xC0FCC000
++
++#endif
+diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
+index 7b5dcab..5388b31 100644
+--- a/arch/arc/plat-arcfpga/platform.c
++++ b/arch/arc/plat-arcfpga/platform.c
+@@ -10,7 +10,102 @@
+ 
+ #include <linux/types.h>
+ #include <linux/init.h>
++#include <linux/device.h>
+ #include <linux/platform_device.h>
++#include <linux/console.h>
++#include <asm/setup.h>
++#include <asm/irq.h>
++#include <asm/clk.h>
++#include <plat/memmap.h>
++
++/*----------------------- Platform Devices -----------------------------*/
++
++#if defined(CONFIG_SERIAL_ARC) || defined(CONFIG_SERIAL_ARC_MODULE)
++
++static unsigned long arc_uart_info[] = {
++	CONFIG_ARC_SERIAL_BAUD,	/* uart->baud */
++	-1,			/* uart->port.uartclk */
++	-1,			/* uart->is_emulated (runtime @running_on_hw) */
++	0
++};
++
++#define ARC_UART_DEV(n)					\
++							\
++static struct resource arc_uart##n##_res[] = {		\
++	{						\
++		.start = UART##n##_BASE,			\
++		.end   = UART##n##_BASE + 0xFF,		\
++		.flags = IORESOURCE_MEM,		\
++	},						\
++	{						\
++		.start = UART##n##_IRQ,			\
++		.end   = UART##n##_IRQ,			\
++		.flags = IORESOURCE_IRQ,		\
++	},						\
++};							\
++							\
++static struct platform_device arc_uart##n##_dev = {	\
++	.name = "arc-uart",				\
++	.id = n,					\
++	.num_resources = ARRAY_SIZE(arc_uart##n##_res),	\
++	.resource = arc_uart##n##_res,			\
++	.dev = {					\
++		.platform_data = &arc_uart_info,	\
++	},						\
++}
++
++ARC_UART_DEV(0);
++#if CONFIG_SERIAL_ARC_NR_PORTS > 1
++ARC_UART_DEV(1);
++#endif
++
++static struct platform_device *fpga_early_devs[] __initdata = {
++#if defined(CONFIG_SERIAL_ARC_CONSOLE)
++	&arc_uart0_dev,
++#endif
++};
++
++static void arc_fpga_serial_init(void)
++{
++	arc_uart_info[1] = arc_get_core_freq();
++
++	/* To let driver workaround ISS bug: baudh Reg can't be set to 0 */
++	arc_uart_info[2] = !running_on_hw;
++
++	early_platform_add_devices(fpga_early_devs,
++				   ARRAY_SIZE(fpga_early_devs));
++
++	/*
++	 * ARC console driver registers itself as an early platform driver
++	 * of class "earlyprintk".
++	 * Install it here, followed by probe of devices.
++	 * The installation here doesn't require earlyprintk in command line
++	 * To do so however, replace the lines below with
++	 *	parse_early_param();
++	 *	early_platform_driver_probe("earlyprintk", 1, 1);
++	 *						      ^^
++	 */
++	early_platform_driver_register_all("earlyprintk");
++	early_platform_driver_probe("earlyprintk", 1, 0);
++
++	/*
++	 * This is to make sure that arc uart would be preferred console
++	 * despite one/more of following:
++	 *   -command line lacked "console=ttyARC0" or
++	 *   -CONFIG_VT_CONSOLE was enabled (for no reason whatsoever)
++	 * Note that this needs to be done after above early console is reg,
++	 * otherwise the early console never gets a chance to run.
++	 */
++	add_preferred_console("ttyARC", 0, "115200");
++}
++
++#else
++
++static void arc_fpga_serial_init(void)
++{
++}
++
++#endif	/* CONFIG_SERIAL_ARC */
+ 
+ /*
+  * Early Platform Initialization called from setup_arch()
+@@ -18,12 +113,25 @@
+ void __init arc_platform_early_init(void)
+ {
+ 	pr_info("[plat-arcfpga]: registering early dev resources\n");
++
++	arc_fpga_serial_init();
+ }
+ 
++static struct platform_device *fpga_devs[] __initdata = {
++#if defined(CONFIG_SERIAL_ARC) || defined(CONFIG_SERIAL_ARC_MODULE)
++	&arc_uart0_dev,
++#if CONFIG_SERIAL_ARC_NR_PORTS > 1
++	&arc_uart1_dev,
++#endif
++#endif
++};
++
+ int __init fpga_plat_init(void)
+ {
+ 	pr_info("[plat-arcfpga]: registering device resources\n");
+ 
++	platform_add_devices(fpga_devs, ARRAY_SIZE(fpga_devs));
++
+ 	return 0;
+ }
+ arch_initcall(fpga_plat_init);
 -- 
 1.7.4.1
 
