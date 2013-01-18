@@ -1,82 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab3ARKq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 05:46:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64949 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350Ab3ARKqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 05:46:24 -0500
-Message-ID: <50F927A5.5060409@redhat.com>
-Date: Fri, 18 Jan 2013 10:44:53 +0000
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751745Ab3ARKrE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 05:47:04 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:51087 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab3ARKrA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 05:47:00 -0500
+From: "Patil, Rachna" <rachna@ti.com>
+To: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Rob Herring <rob.herring@calxeda.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Tony Lindgren <tony@atomide.com>,
+        Benit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        "Patil, Rachna" <rachna@ti.com>
+Subject: [PATCH v3 1/8] input: ti_am335x_tsc: Step enable bits made configurable
+Date: Fri, 18 Jan 2013 16:17:41 +0530
+Message-ID: <c7c319bc186fd98b35fb834e770561572bfb81b5.1358502134.git.rachna@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1358502134.git.rachna@ti.com>
+References: <cover.1358502134.git.rachna@ti.com>
 MIME-Version: 1.0
-To: "Carlos O'Donell" <carlos@systemhalted.org>
-CC: Mike Frysinger <vapier@gentoo.org>, David Miller <davem@davemloft.net>,
-        libc-alpha@sourceware.org, bhutchings@solarflare.com,
-        yoshfuji@linux-ipv6.org, amwang@redhat.com, tmb@mageia.org,
-        eblake@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libvirt-list@redhat.com, tgraf@suug.ch,
-        schwab@suse.de
-Subject: Re: Redefinition of struct in6_addr in <netinet/in.h> and <linux/in6.h>
-References: <201301161205.04502.vapier@gentoo.org> <50F75EA7.4060309@systemhalted.org> <20130116.221538.1756411165313441486.davem@davemloft.net> <201301172320.19905.vapier@gentoo.org> <CAE2sS1jMhnRcoo1oe7wQ+SP=40u9mkps6vXua8TQQ4Tbf2qKOQ@mail.gmail.com>
-In-Reply-To: <CAE2sS1jMhnRcoo1oe7wQ+SP=40u9mkps6vXua8TQQ4Tbf2qKOQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2013 04:22 AM, Carlos O'Donell wrote:
-> On Thu, Jan 17, 2013 at 11:20 PM, Mike Frysinger <vapier@gentoo.org> wrote:
->> On Wednesday 16 January 2013 22:15:38 David Miller wrote:
->>> From: Carlos O'Donell <carlos@systemhalted.org>
->>> Date: Wed, 16 Jan 2013 21:15:03 -0500
->>>
->>>> +/* If a glibc-based userspace has already included in.h, then we will
->>>> not + * define in6_addr (nor the defines), sockaddr_in6, or ipv6_mreq.
->>>> The + * ABI used by the kernel and by glibc match exactly. Neither the
->>>> kernel + * nor glibc should break this ABI without coordination.
->>>> + */
->>>> +#ifndef _NETINET_IN_H
->>>> +
->>>
->>> I think we should shoot for a non-glibc-centric solution.
->>>
->>> I can't imagine that other libc's won't have the same exact problem
->>> with their netinet/in.h conflicting with the kernel's, redefining
->>> structures like in6_addr, that we'd want to provide a protection
->>> scheme for here as well.
->>
->> yes, the kernel's use of __GLIBC__ in exported headers has already caused
->> problems in the past.  fortunately, it's been reduced down to just one case
->> now (stat.h).  let's not balloon it back up.
->> -mike
-> 
-> I also see coda.h has grown a __GLIBC__ usage.
-> 
-> In the next revision of the patch I created a single libc-compat.h header
-> which encompasses the logic for any libc that wants to coordinate with
-> the kernel headers.
+From: "Patil, Rachna" <rachna@ti.com>
 
+Current code has hard coded value written to
+step enable bits. Now the bits are updated based
+on how many steps are needed to be configured got
+from platform data.
 
-> It's simple enough to move all of the __GLIBC__ uses into libc-compat.h,
-> then you control userspace libc coordination from one file.
+The user needs to take care not to exceed
+the count more than 16. While using ADC and TSC
+one should take care to set this parameter correctly.
 
-How about just deciding on a single macro/symbol both the
-kernel and libc (any libc that needs this) define?  Something
-like both the kernel and userland doing:
+Signed-off-by: Patil, Rachna <rachna@ti.com>
+---
+ drivers/input/touchscreen/ti_am335x_tsc.c |   10 ++++++++--
+ include/linux/mfd/ti_am335x_tscadc.h      |    1 -
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
-#ifndef __IPV6_BITS_DEFINED
-#define __IPV6_BITS_DEFINED
-...
-define in6_addr, sockaddr_in6, ipv6_mreq, whatnot
-#endif
-
-So whichever the application includes first, wins.
-Too naive?  I didn't see this option being discarded, so
-not sure it was considered.
-
+diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+index 51e7b87..da652e0 100644
+--- a/drivers/input/touchscreen/ti_am335x_tsc.c
++++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+@@ -39,6 +39,7 @@ struct titsc {
+ 	unsigned int		irq;
+ 	unsigned int		wires;
+ 	unsigned int		x_plate_resistance;
++	unsigned int		enable_bits;
+ 	bool			pen_down;
+ 	int			steps_to_configure;
+ };
+@@ -57,6 +58,7 @@ static void titsc_writel(struct titsc *tsc, unsigned int reg,
+ static void titsc_step_config(struct titsc *ts_dev)
+ {
+ 	unsigned int	config;
++	unsigned int	stepenable = 0;
+ 	int i, total_steps;
+ 
+ 	/* Configure the Step registers */
+@@ -128,7 +130,11 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 	titsc_writel(ts_dev, REG_STEPDELAY(total_steps + 2),
+ 			STEPCONFIG_OPENDLY);
+ 
+-	titsc_writel(ts_dev, REG_SE, STPENB_STEPENB_TC);
++	for (i = 0; i <= (total_steps + 2); i++)
++		stepenable |= 1 << i;
++	ts_dev->enable_bits = stepenable;
++
++	titsc_writel(ts_dev, REG_SE, ts_dev->enable_bits);
+ }
+ 
+ static void titsc_read_coordinates(struct titsc *ts_dev,
+@@ -250,7 +256,7 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+ 
+ 	titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
+ 
+-	titsc_writel(ts_dev, REG_SE, STPENB_STEPENB_TC);
++	titsc_writel(ts_dev, REG_SE, ts_dev->enable_bits);
+ 	return IRQ_HANDLED;
+ }
+ 
+diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+index c79ad5d..23e4f33 100644
+--- a/include/linux/mfd/ti_am335x_tscadc.h
++++ b/include/linux/mfd/ti_am335x_tscadc.h
+@@ -47,7 +47,6 @@
+ #define STEPENB_MASK		(0x1FFFF << 0)
+ #define STEPENB(val)		((val) << 0)
+ #define STPENB_STEPENB		STEPENB(0x1FFFF)
+-#define STPENB_STEPENB_TC	STEPENB(0x1FFF)
+ 
+ /* IRQ enable */
+ #define IRQENB_HW_PEN		BIT(0)
 -- 
-Pedro Alves
+1.7.9.5
 
