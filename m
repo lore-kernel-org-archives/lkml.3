@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab3ARJlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 04:41:18 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:48443 "EHLO comal.ext.ti.com"
+	id S1751409Ab3ARJqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 04:46:07 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55714 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844Ab3ARJlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 04:41:15 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <rob.herring@calxeda.com>, <rob@landley.net>, <tony@atomide.com>,
-        <balbi@ti.com>, <b-cousson@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-CC: <grant.likely@secretlab.ca>, <linux@arm.linux.org.uk>,
-        <gregkh@linuxfoundation.org>, <kishon@ti.com>
-Subject: [PATCH 3/4] ARM: OMAP2: MUSB: Specify omap4 has mailbox
-Date: Fri, 18 Jan 2013 15:10:44 +0530
-Message-ID: <1358502045-27008-4-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1358502045-27008-1-git-send-email-kishon@ti.com>
-References: <1358502045-27008-1-git-send-email-kishon@ti.com>
+	id S1750844Ab3ARJqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 04:46:03 -0500
+Message-ID: <50F919BF.9050109@ti.com>
+Date: Fri, 18 Jan 2013 11:45:35 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tony Lindgren <tony@atomide.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, <balbi@ti.com>,
+        <sameo@linux.intel.com>, <kishon@ti.com>, <sshtylyov@mvista.com>,
+        <bjorn@mork.no>, <linux@arm.linux.org.uk>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 01/22] mfd: omap-usb-host: Consolidate OMAP USB-HS
+ platform data
+References: <1358422231-24736-2-git-send-email-rogerq@ti.com> <Pine.LNX.4.44L0.1301171016090.1339-100000@iolanthe.rowland.org> <20130117165943.GI14149@atomide.com>
+In-Reply-To: <20130117165943.GI14149@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added has_mailbox to the musb platform data to specify that omap uses
-an external mailbox (in control module) to communicate with the musb
-core during device connect and disconnect.
+On 01/17/2013 06:59 PM, Tony Lindgren wrote:
+> * Alan Stern <stern@rowland.harvard.edu> [130117 07:19]:
+>> On Thu, 17 Jan 2013, Roger Quadros wrote:
+>>
+>>> Let's have a single platform data structure for the OMAP's High-Speed
+>>> USB host subsystem instead of having 3 separate ones i.e. one for
+>>> board data, one for USB Host (UHH) module and one for USB-TLL module.
+>>>
+>>> This makes the code much simpler and avoids creating multiple copies of
+>>> platform data.
+>>>
+>>> CC: Alan Stern <stern@rowland.harvard.edu>
+>>>
+>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>
+>> For the ehci-omap.c part:
+>>
+>> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> 
+> If Samuel acks this patch, I can apply just this patch alone on v3.8-rc3
+> into an immutable branch omap-for-v3.9/board-usb so we all merge it in
+> as needed.
+> 
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/mach-omap2/usb-musb.c |    3 +++
- include/linux/usb/musb.h       |    2 ++
- 2 files changed, 5 insertions(+)
+I'll be sending a v8 of this series with one stable patch candidate
+before this patch and Felipe's comments addressed.
 
-diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
-index 7b33b37..9d27e3f 100644
---- a/arch/arm/mach-omap2/usb-musb.c
-+++ b/arch/arm/mach-omap2/usb-musb.c
-@@ -85,6 +85,9 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
- 	musb_plat.mode = board_data->mode;
- 	musb_plat.extvbus = board_data->extvbus;
- 
-+	if (cpu_is_omap44xx())
-+		musb_plat.has_mailbox = true;
-+
- 	if (soc_is_am35xx()) {
- 		oh_name = "am35x_otg_hs";
- 		name = "musb-am35x";
-diff --git a/include/linux/usb/musb.h b/include/linux/usb/musb.h
-index eb50525..053c268 100644
---- a/include/linux/usb/musb.h
-+++ b/include/linux/usb/musb.h
-@@ -99,6 +99,8 @@ struct musb_hdrc_platform_data {
- 	/* MUSB_HOST, MUSB_PERIPHERAL, or MUSB_OTG */
- 	u8		mode;
- 
-+	u8		has_mailbox:1;
-+
- 	/* for clk_get() */
- 	const char	*clock;
- 
--- 
-1.7.9.5
+--
+cheers,
+-roger
 
