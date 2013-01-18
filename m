@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab3ARPzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 10:55:49 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:51751 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab3ARPzr (ORCPT
+	id S1754354Ab3ARP4T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 10:56:19 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:48173 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab3ARP4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 10:55:47 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [PATCH v2 28/76] ARC: I/O and DMA Mappings
-Date: Fri, 18 Jan 2013 15:55:43 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-29-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1358511930-7424-29-git-send-email-vgupta@synopsys.com>
+	Fri, 18 Jan 2013 10:56:17 -0500
+Date: Fri, 18 Jan 2013 10:55:35 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+Message-ID: <20130118155535.GJ9973@phenom.dumpdata.com>
+References: <CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
+ <20130109132409.GB18395@phenom.dumpdata.com>
+ <CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
+ <87d2xeul5v.fsf@xmission.com>
+ <CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
+ <CAE9FiQVsbDfLOyv=D4_BLtrKpp+Ydj7pren8Cu3rNGztbj=w=w@mail.gmail.com>
+ <20130111163548.GB25620@phenom.dumpdata.com>
+ <CAE9FiQVts6aTaRFM3aKWj46RCRiheM5gS55h=LVveaGXk_kR8g@mail.gmail.com>
+ <CAE9FiQVTfTisOrrQhv0vmsgA8Asaj5EUE5s93OFyTHfA+dWdfQ@mail.gmail.com>
+ <CAE9FiQWU6mnWxnzDtaR51H7GTbYmKgb0zy6xRCGYO4+oyc82Gg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301181555.43487.arnd@arndb.de>
-X-Provags-ID: V02:K0:L1ZxYKdDXewIyBJIT6oNc2UoVbphKX8jMzmXaJ0QEke
- ShGtdj0CyRExT0HtZxXg7BiUBpIyD+2oe8bHQVvlFHyonpzDwn
- s5TDvFJcsLZ2rRNyQ6CyL9BsmJMowmdwtPV+9kbxe2Uf728uJE
- ygIEq4/4QXqauKOkpK3Zb5EI4RrVxZnYR5zLQzdYQopaKw/27D
- MPsgbEzagrPxEbPA40t3rf2SSYmnUo1y9RcfJfeTCQ1HUzlV4U
- 5cmoVhoL5QxvtDSzQX640aou5q3KezPsNSeDh10hg/f4wKyr/X
- BFeY0cnR5DsdBdQHKdzmf2z5XpUQSPQs3UApHTZS9m8wIznYmv
- FwAMwMNpqxDn99LXqcKM=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQWU6mnWxnzDtaR51H7GTbYmKgb0zy6xRCGYO4+oyc82Gg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 January 2013, Vineet Gupta wrote:
-> TBD: Do we need early ioremap support like openrisc
+On Mon, Jan 14, 2013 at 10:19:22PM -0800, Yinghai Lu wrote:
+> On Fri, Jan 11, 2013 at 9:49 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > On Fri, Jan 11, 2013 at 8:52 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> >>>
+> >>> I need to check this patch out and then also test-run them on IA64, AMD-VI, Calgary-X
+> >>> GART and Intel VT-d to make a sanity test.
+> >>
+> >> that will be great, and please check attached two patches, or you want
+> >> to me update
+> >> for-x86-boot branch and you test that instead?
+> >>
+> >> but if you want to check memmap=4095M$1M, then will need to test on
+> >> newer branch.
+> >
+> >
+> > I updated the for-x86-boot branch.
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+> > for-x86-boot
+> >
 > 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Konrad,
+> 
+> Did you get chance to test that branch on your setups?
 
-Can you explain why early ioremap is necessary for you?
-
-I wasn't aware that openrisc has it. In a lot of cases,
-you can use fixmap as a replacement.
-
-> +
-> +#ifndef _ASM_ARC_IO_H
-> +#define _ASM_ARC_IO_H
-> +
-> +#include <asm/byteorder.h>
-> +#include <asm/page.h>
-> +
-> +extern void __iomem *ioremap(unsigned long physaddr, unsigned long size);
-> +extern void iounmap(const void __iomem *addr);
-> +
-> +#define ioremap_nocache(phy, sz)	ioremap(phy, sz)
-> +#define ioremap_wc(phy, sz)		ioremap(phy, sz)
-> +
-> +/* Change struct page to physical address */
-> +#define page_to_phys(page)		(page_to_pfn(page) << PAGE_SHIFT)
-> +
-> +#include <asm-generic/io.h>
-
-I think I commented before that asm-generic/io.h has a number of
-problems and you should at least override the __raw_{read,write}{b,w,l,q}
-functions with your own ones using inline assembly.
-
-You should also define a non-NULL PCI_IOBASE.
-
-	Arnd
+I tested it on the IA64 box - it worked without any hiccups. Going to
+try the Calgary-X and the rest of the machines over the weekend.
+> 
+> Thanks
+> 
+> Yinghai
