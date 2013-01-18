@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab3ARRIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 12:08:06 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:46862 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751780Ab3ARRIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 12:08:01 -0500
-Date: Fri, 18 Jan 2013 18:07:55 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Gopalakrishnan, Aravind" <Aravind.Gopalakrishnan@amd.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, Andre Przywara <andre@andrep.de>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+	id S1752466Ab3ARRPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 12:15:50 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:48689 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab3ARRPt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 12:15:49 -0500
+Date: Fri, 18 Jan 2013 17:15:46 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas <linuxuser330250@gmx.net>
-Subject: Re: [PATCH] drivers/cpufreq: Warn user when powernow-k8 tries to
- fall back to acpi-cpufreq and it is unavailable.
-Message-ID: <20130118170755.GB4062@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	"Gopalakrishnan, Aravind" <Aravind.Gopalakrishnan@amd.com>,
-	"rjw@sisk.pl" <rjw@sisk.pl>, Andre Przywara <andre@andrep.de>,
-	"cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-	"linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Andreas <linuxuser330250@gmx.net>
-References: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20130111144940.GB21882@liondog.tnic>
- <20130111165054.GD10751@liondog.tnic>
- <4923C2DE085EEB4FAB1D375DD09D0BA6100CF170@sausexdag04.amd.com>
- <20130117115436.GA3853@pd.tnic>
- <20130118162347.GA31499@srcf.ucam.org>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] clockevents: decouple broadcast mechanism from
+ drivers
+Message-ID: <20130118171545.GB15707@e106331-lin.cambridge.arm.com>
+References: <20130117172910.GA10070@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <20130117172910.GA10070@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 18 Jan 2013 17:15:46.0684 (UTC) FILETIME=[74812BC0:01CDF59F]
+X-MC-Unique: 113011817154704301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20130118162347.GA31499@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 04:23:47PM +0000, Matthew Garrett wrote:
-> On Thu, Jan 17, 2013 at 12:54:37PM +0100, Borislav Petkov wrote:
-> 
-> > So, handoff to acpi-cpufreq still has some issues. When both are
-> > built-in, the module_init functions turn into normal initcalls and
-> > in that case, they're executed in link order and it can happen that
-> > powernowk8_init() runs before acpi_cpufreq_init().
-> 
-> Just flip the link order? It's only the way it is because in the past we 
-> wanted to try hardware-specific drivers before more generic ones, and I 
-> don't think that's a concern in this case now.
+Hello,
 
-Yeah, I heard that the acpi-idle and intel-idle drivers do that and also
-heard that it was a hack. It doesn't look too ugly IMHO:
+As has been pointed out elsewhere, in my haste to fix this up I made a
+typo in the first patch, preventing it from building.
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=2671717265ae6e720a9ba5f13fbec3a718983b65
+Apologies for the confusion. I've created a new branch with a corrected
+and tested version. Please see the pull request below.
 
--- 
-Regards/Gruss,
-    Boris.
+Thanks,
+Mark.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
+
+  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
+
+are available in the git repository at:
+
+  git://linux-arm.org/linux-mr.git for-tglx/timer-broadcast-v2
+
+for you to fetch changes up to 041d14f475c4436d9fb9a7c94842154c42fd1b65:
+
+  clockevents: Add generic timer broadcast function (2013-01-18 17:07:36 +0000)
+
+----------------------------------------------------------------
+Mark Rutland (2):
+      clockevents: Add generic timer broadcast receiver
+      clockevents: Add generic timer broadcast function
+
+ include/linux/clockchips.h   |  9 +++++++++
+ kernel/time/Kconfig          |  4 ++++
+ kernel/time/tick-broadcast.c | 28 ++++++++++++++++++++++++++++
+ 3 files changed, 41 insertions(+)
+
+
+
