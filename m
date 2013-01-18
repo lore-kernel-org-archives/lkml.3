@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab3ARQQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 11:16:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9159 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab3ARQQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 11:16:45 -0500
-Message-ID: <50F9755B.5090900@redhat.com>
-Date: Fri, 18 Jan 2013 11:16:27 -0500
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
+	id S1753992Ab3ARQSS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 11:18:18 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:62684 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab3ARQSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 11:18:16 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH v2 28/76] ARC: I/O and DMA Mappings
+Date: Fri, 18 Jan 2013 16:18:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <201301181555.43487.arnd@arndb.de> <20130118160106.GD14019@linux-sh.org>
+In-Reply-To: <20130118160106.GD14019@linux-sh.org>
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Khalid Aziz <khalid.aziz@hp.com>
-Subject: Re: [PATCH 4/5] PCI: don't touch enable_cnt in pci_device_shutdown()
-References: <20130118113019.6698.25941.stgit@zurg> <20130118114225.6698.42016.stgit@zurg>
-In-Reply-To: <20130118114225.6698.42016.stgit@zurg>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201301181618.11736.arnd@arndb.de>
+X-Provags-ID: V02:K0:B8HUoyyeUKVJWrrdsE7LdSAj+Z+c1iw8QniSB4Pq/FI
+ uhF4YvQb0maZHhT1nYKeMUFz7sGq68NOlH+ofl2Ew9eZhd/9pM
+ nGCm+ymPT5nprB/bAKgYUAPmvoAe2Dn+UdRsh4jJkPksElDJLU
+ kXDrbJtbpvCy49BcTk/oFYk8/eoE753iWFQMaRh/T56MafsU5q
+ SzvIf34xmtk5o2ehZLhR8KTjI4ROwouRrFghvKvTE75IhuOc8h
+ +SifC++SOtFNU5b6c6KHLsifHZ7XIGqEGbqx+qwg8iMy9wnAiz
+ sLLG90wcTCZWewcm8naJt1Fkp0X27wAoTZ1ngiWE8tzFg1L4Fg
+ QeOxBHn0OvncIroZcST8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2013 06:42 AM, Konstantin Khlebnikov wrote:
-> comment in commit b566a22c23327f18ce941ffad0ca907e50a53d41
-> ("PCI: disable Bus Master on PCI device shutdown") says:
->
-> | Disable Bus Master bit on the device in pci_device_shutdown() to ensure PCI
-> | devices do not continue to DMA data after shutdown.  This can cause memory
-> | corruption in case of a kexec where the current kernel shuts down and
-> | transfers control to a new kernel while a PCI device continues to DMA to
-> | memory that does not belong to it any more in the new kernel.
->
-> Seems like pci_clear_master() must be used here instead of pci_disable_device(),
-> because it disables Bus Muster unconditionally and doesn't changes enable_cnt.
->
-> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> Cc: linux-pci@vger.kernel.org
-> Cc: Bjorn Helgaas<bhelgaas@google.com>
-> Cc: Khalid Aziz<khalid.aziz@hp.com>
+On Friday 18 January 2013, Paul Mundt wrote:
+> On Fri, Jan 18, 2013 at 03:55:43PM +0000, Arnd Bergmann wrote:
+> > On Friday 18 January 2013, Vineet Gupta wrote:
+> > > TBD: Do we need early ioremap support like openrisc
+> > > 
+> > > Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> > 
+> > Can you explain why early ioremap is necessary for you?
+> > 
+> > I wasn't aware that openrisc has it. In a lot of cases,
+> > you can use fixmap as a replacement.
+> > 
+> The two don't need to be mutually exclusive, either. sh implements early
+> ioremap transparently via fixmaps for example:
+> 
+>         arch/sh/mm/ioremap.c
+>         arch/sh/mm/ioremap_fixed.c
 
-Hmmm.... wondering if this was the problem why kexec folks
-said that device_shutdown() didn't work on all systems (when
-trying to stop DMA, esp. on IOMMU-enabled systems...).
+Ah, right. It also seems that openrisc uses the same approach
+for its early ioremap.
 
-Bjorn: do you have a list &/or contact in kexec space to try this
-patch vs the "reset every PCI bus" strategy that is currently
-being pushed for kexec's method to halt DMA from a PCI device ?
+I usually recommend doing as few things as possible "early"
+though, that's why I was asking. If it's only one or two drivers
+that need an early mapping and can't be moved to a later stage
+of bootup, using only hardcoded fixmaps would make it harder
+to add more users, which one might consider a good thing.
 
-> ---
->   drivers/pci/pci-driver.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> index 030dbf0..853d605 100644
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -392,7 +392,7 @@ static void pci_device_shutdown(struct device *dev)
->   	 * Turn off Bus Master bit on the device to tell it to not
->   	 * continue to do DMA
->   	 */
-> -	pci_disable_device(pci_dev);
-> +	pci_clear_master(pci_dev);
->   }
->
->   #ifdef CONFIG_PM
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Allowing ioremap to be used before memory_init() adds flexibility
+but could lead to code being moved into an early stage by accident
+rather than by necessity.
 
+	Arnd
