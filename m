@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab3ARNQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 08:16:30 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34549 "EHLO arroyo.ext.ti.com"
+	id S1755593Ab3ARNQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 08:16:51 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:56975 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab3ARNQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 08:16:28 -0500
-Date: Fri, 18 Jan 2013 15:16:17 +0200
+	id S1751686Ab3ARNQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 08:16:50 -0500
+Date: Fri, 18 Jan 2013 15:16:33 +0200
 From: Felipe Balbi <balbi@ti.com>
 To: Vivek Gautam <gautam.vivek@samsung.com>
 CC: <linux-usb@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
@@ -15,58 +15,61 @@ CC: <linux-usb@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <thomas.abraham@linaro.org>, <rob.herring@calxeda.com>,
         <grant.likely@secretlab.ca>, <sylvester.nawrocki@gmail.com>,
         <dianders@chromium.org>, <jg1.han@samsung.com>, <p.paneri@samsung.com>
-Subject: Re: [PATCH v6 3/4] USB: ehci-s5p: Add phy driver support
-Message-ID: <20130118131617.GI4672@arwen.pp.htv.fi>
+Subject: Re: [PATCH v7 2/4] usb: phy: samsung: Add host phy support to
+ samsung-phy driver
+Message-ID: <20130118131633.GJ4672@arwen.pp.htv.fi>
 Reply-To: <balbi@ti.com>
-References: <1357916550-11421-1-git-send-email-gautam.vivek@samsung.com>
- <1357916550-11421-4-git-send-email-gautam.vivek@samsung.com>
+References: <1357916550-11421-3-git-send-email-gautam.vivek@samsung.com>
+ <1358166135-22073-1-git-send-email-gautam.vivek@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7IgncvKP0CVPV/ZZ"
+	protocol="application/pgp-signature"; boundary="2fjX3cMESU3XgGmZ"
 Content-Disposition: inline
-In-Reply-To: <1357916550-11421-4-git-send-email-gautam.vivek@samsung.com>
+In-Reply-To: <1358166135-22073-1-git-send-email-gautam.vivek@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7IgncvKP0CVPV/ZZ
+--2fjX3cMESU3XgGmZ
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jan 11, 2013 at 08:32:29PM +0530, Vivek Gautam wrote:
-> Adding the phy driver to ehci-s5p. Keeping the platform data
-> for continuing the smooth operation for boards which still uses it
->=20
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
+Hi,
 
-Missing Alan's Acked-by here.
+On Mon, Jan 14, 2013 at 05:52:15PM +0530, Vivek Gautam wrote:
+> This patch adds host phy support to samsung-usbphy driver and
+> further adds support for samsung's exynos5250 usb-phy.
+>=20
+> Signed-off-by: Praveen Paneri <p.paneri@samsung.com>
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+
+Missing Kukjim's Acked-by here
 
 --=20
 balbi
 
---7IgncvKP0CVPV/ZZ
+--2fjX3cMESU3XgGmZ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQ+UshAAoJEIaOsuA1yqRE8hsQAI1bHyPfRvgyfwVohST/KyVN
-lEZQCpMWi7w94YDS8jhuZH88dQih34QVGxmMDs2U1QY86R23PeOkB7crj4Kl63nY
-mpcgMPOb5ONYnw9dAPzNYWd6GlFoJo5OtOUawXbFWy+H0GbaUbQV51bULAb947TO
-Jo2eXFUV7zfkCJsS/7MZVncXNqqpYa+Z7+AiTBzGEAbx6Ae9zTJ2lkR/Pcmqh0Jw
-WKwLCp/Kt/jx0bpca+PAFP6k2ka4WVTUxrMoX97/EXG38aNKKPlYeE00QZJJivb0
-WiJPg8IB5cqV9ixp8JhinDn/gZm/kGxsbiwnXd3ooU9we3iSknEkm8gR1B3mlwgT
-JP2b/7o3/XNaOV9ssfizNj71GyA4UHbjXS8RMMR7FvCFl161ESGR/ITrXfKT6WqI
-sJQBYGTOnoSF++h4hFz/iJw17Y4mKgCf2H6wIqqrWUMVx2ijgY/KRUEBJ4g0+9sj
-Jx35//+wYObptrjmmzTTXNjbQXMwB57c+MyrnIvaQfu8gCzaoS/7t6U8rFLlV+ol
-+jXCn+VzVLAfbx7gqW6xuNVJVAKufgNHp2PDu+RMXWA+ohCqmbDYebA+B6iOObgc
-ZTmO5sW6TmNg3pSVmnZ2Ewq+UoC8djdywXJMTeZGSIT5T/GtryglqzfdIdTkRpsw
-U7vDEkJblT/e+LIwepQB
-=k8CN
+iQIcBAEBAgAGBQJQ+UsxAAoJEIaOsuA1yqREO+AP/Ra0i1RP4teikLjFjNO+CGM4
+MZIcTileBuj12SqeTsS3JBvsJEb3nwvF+Z7b529W4cbkLYUBOeTIgHJfhImF1iS5
+eliw6UjE8NsSjFJzpiE4NROpk9lqKYLMWi5Qujf1dKRegLFE86gK1Wrc92vHaFu1
+9lcb6FvHFK6pTuiHQr496xRnYfggFf5Es0+o8303lvtYV4kw/BOcYVjI7bLllME+
+2sTgb6ppk6JzR8J0g/haUjNLGsHuTmcyOc39Gq36wSsm0xRwUn/H+VqmYzimziLJ
+dF9bFTGaqQiX7U1gUAXGv4Ox8v3bVklgQOT6dxP49Add8jK0ln6iwLfH+BbuQwPn
+FBbAfP9M3QlVChsev+nuTr1Z9l0MatL20e3F8gRfiClLzrtl6myich6JDkCdHa5n
+taHTb6yY0l2l7sBbr9p0OCrN/4595NA9Fmt1/JbkJ+h387Tta7Z4NGDCannRPjcM
+q2LDU+SSyeTJUxaacqXzv35+SePOAIY9firehxQD9wrNLdrsg3Nn5lLpV4S1aTS6
+ymGsGhKPC0HD0desOmnyMmpm6KhUkbWpxFE6WboyJOIPMyHILmvt59bqANVtIJir
+xfyq5kXMDYdgE5MViFROQqAV/3NZpYG/W+MWlmBta6c85zWWywpg4FDPRPIPVmEs
+XsHdpfNENPMrFf41Gof4
+=NOdE
 -----END PGP SIGNATURE-----
 
---7IgncvKP0CVPV/ZZ--
+--2fjX3cMESU3XgGmZ--
