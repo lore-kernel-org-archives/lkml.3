@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750830Ab3ARFDD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 00:03:03 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:64671 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab3ARFDA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 00:03:00 -0500
-From: Hideki EIRAKU <hdk@igel.co.jp>
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
-        Katsuya MATSUBARA <matsu@igel.co.jp>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Hideki EIRAKU <hdk@igel.co.jp>
-Subject: [PATCH] ARM: shmobile: armadillo800eva: set clock rates before timer init
-Date: Fri, 18 Jan 2013 14:02:05 +0900
-Message-Id: <1358485325-19673-1-git-send-email-hdk@igel.co.jp>
-X-Mailer: git-send-email 1.8.0
+	id S1750876Ab3ARFHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 00:07:37 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:46792 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719Ab3ARFHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 00:07:36 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 24/86] arch/blackfin: remove depends on CONFIG_EXPERIMENTAL
+Date: Fri, 18 Jan 2013 00:11:09 -0500
+User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <1358391258-1771-1-git-send-email-keescook@chromium.org> <1358391258-1771-25-git-send-email-keescook@chromium.org>
+In-Reply-To: <1358391258-1771-25-git-send-email-keescook@chromium.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart17442672.bGK5ipO3Fo";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301180011.10993.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously clock rates were set after initialization of timer.
-Therefore the timer used the default extal1 clock rate (25MHz)
-instead of the correct rate for this board (24MHz).
+--nextPart17442672.bGK5ipO3Fo
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
----
- arch/arm/mach-shmobile/board-armadillo800eva.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
 
-diff --git a/arch/arm/mach-shmobile/board-armadillo800eva.c b/arch/arm/mach-shmobile/board-armadillo800eva.c
-index 5353adf..1e79cfb 100644
---- a/arch/arm/mach-shmobile/board-armadillo800eva.c
-+++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
-@@ -1175,8 +1175,6 @@ static void __init eva_init(void)
- 	platform_add_devices(eva_devices,
- 			     ARRAY_SIZE(eva_devices));
- 
--	eva_clock_init();
--
- 	rmobile_add_device_to_domain("A4LC", &lcdc0_device);
- 	rmobile_add_device_to_domain("A4LC", &hdmi_lcdc_device);
- 	if (usb)
-@@ -1187,6 +1185,9 @@ static void __init eva_earlytimer_init(void)
- {
- 	r8a7740_clock_init(MD_CK0 | MD_CK2);
- 	shmobile_earlytimer_init();
-+
-+	/* the rate of extal1 clock must be set before late_time_init */
-+	eva_clock_init();
- }
- 
- static void __init eva_add_early_devices(void)
--- 
-1.8.0
+--nextPart17442672.bGK5ipO3Fo
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJQ+NluAAoJEEFjO5/oN/WBM/UQAIli2IWNWUlaTFgQQOHVuVe1
+pMS/sbqBaMwMyh7sl97aR/zTWuWRBTSKIkp8va/h+1s66qk9OuXv60MJwY/cKA4v
+3mCVoliTDUv1MuaF23ijLcBBPx4MCsDsfZuHUdcfnMqUaN+9FbNefinH0LCBMt+5
+I3xykXO779B/NFnCNvNvkqKd4c+yhupaWNbT08QriBtDrp7JOf4+5kVYre7Z7Qaa
+1CKs5Lm2Z+jGydn/gNYDR5bX7QacL5tisrAteU4eIgG74LPER8/gBouozA89iXD+
+JqUwKREh7Vqu7KeLsQwtRkPRaktiH7RXMiqKFqlE/7Sr4b/JtohijG6WByAH6j2d
+e4Gu0av/Y1lh2SJo+LNMv3nXJafmOv6hj6UzRoWB5ohuUvBkDq/lsIioigDBMQ0G
+D4rbGVmpUKLTPkg5aQLA6fsQ1jLUUqMK0tqjrgWB2ac8LWCt3JTq2BuSXSLE1Csj
+ygYVKG9SE3TdF8KZUWJILNCRi/uGYq4rB+mZiFBrN1Cc0ytZc7wmHnDghE8vNNKO
+HlrQALxe3c+CM0Yuv+rB/EPQTgNsSAO4RoSrbEiX4BwC7tgPt4e0LsacV1L4zKYD
+eAUru26MDa+3RJrgpKVmMzLcoY7jF+R499UV1jQWEwKNB/9mU2aBkkfzI1xRwIlh
+OlKr/IAvoL+Klpguw1Fd
+=U9jh
+-----END PGP SIGNATURE-----
+
+--nextPart17442672.bGK5ipO3Fo--
