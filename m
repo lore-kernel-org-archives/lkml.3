@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751032Ab3ARF71 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 00:59:27 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12422 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab3ARF7Z (ORCPT
+	id S1750957Ab3ARGGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 01:06:38 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40616 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab3ARGGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 00:59:25 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 17 Jan 2013 21:58:01 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] ARM: tegra: DTS: whistler: enable keyboard
-Date: Fri, 18 Jan 2013 11:28:43 +0530
-Message-ID: <1358488723-23184-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Fri, 18 Jan 2013 01:06:37 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50F8E63F.5040401@jp.fujitsu.com>
+Date: Fri, 18 Jan 2013 15:05:51 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, <tony.luck@intel.com>,
+        <hpa@zytor.com>
+CC: <akpm@linux-foundation.org>, <tangchen@cn.fujitsu.com>,
+        <jiang.liu@huawei.com>, <wujianguo@huawei.com>, <wency@cn.fujitsu.com>,
+        <laijs@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>, <yinghai@kernel.org>,
+        <rob@landley.net>, <minchan.kim@gmail.com>, <mgorman@suse.de>,
+        <rientjes@google.com>, <guz.fnst@cn.fujitsu.com>,
+        <rusty@rustcorp.com.au>, <lliubbo@gmail.com>,
+        <jaegeuk.hanse@gmail.com>, <glommer@parallels.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH v5 0/5] Add movablecore_map boot option
+References: <1358154925-21537-1-git-send-email-tangchen@cn.fujitsu.com> <50F440F5.3030006@zytor.com> <20130114143456.3962f3bd.akpm@linux-foundation.org> <3908561D78D1C84285E8C5FCA982C28F1C97C2DA@ORSMSX108.amr.corp.intel.com> <20130114144601.1c40dc7e.akpm@linux-foundation.org> <50F647E8.509@jp.fujitsu.com> <20130116132953.6159b673.akpm@linux-foundation.org> <50F72F17.9030805@zytor.com> <50F78750.8070403@jp.fujitsu.com> <50F79422.6090405@zytor.com> <3908561D78D1C84285E8C5FCA982C28F1C986D98@ORSMSX108.amr.corp.intel.com> <50F85ED5.3010003@jp.fujitsu.com>
+In-Reply-To: <50F85ED5.3010003@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable tegra based keyboard controller and populate the key mapping
-for whistler.
+2013/01/18 5:28, KOSAKI Motohiro wrote:
+> On 1/17/2013 11:30 AM, Luck, Tony wrote:
+>>> 2. If the user *does* care which nodes are movable, then the user needs
+>>> to be able to specify that *in a way that makes sense to the user*.
+>>> This may mean involving the DMI information as well as SRAT in order to
+>>> get "silk screen" type information out.
+>>
+>> One reason they might care would be which I/O devices are connected
+>> to each node.  DMI might be a good way to get an invariant name for the
+>> node, but they might also want to specify in terms of what they actually
+>> want. E.g. "eth0 and eth4 are a redundant bonded pair of NICs - don't
+>> mark both these nodes as removable".  Though this is almost certainly not
+>> a job for kernel options, but for some user configuration tool that would
+>> spit out the DMI names.
+>
+> I agree DMI parsing should be done in userland if we really need DMI parsing.
+>
 
-With this patch, HOME, BACK, POWER and MENU keys will work.
-Still other keys which are in ROW3 and ROW4 will not work as it
-conflicts with KBC pins on SDIO2 pinmux.
+If users use the boot parameter for bugs or debugging,  users need
+a method which sets in detail range of movable memory. So specifying
+node number is not enough because whole memory becomes movable memory.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Stephen,
-Not tested the change but I reviewed all possible configuration like pinmux and
-the parameter as per the downstream.
-Request you to give a try.
+For this, we are discussing other ways, memory range and DMI information.
+By using DMI information, users may get an invariant name. But is it
+really user friendly interface? I don't think so.
 
- arch/arm/boot/dts/tegra20-whistler.dts |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+You will think using memory range is not user friendly interface too.
+But I think that using memory range is friendlier than using DMI
+information since we can get easily memory range. So from developper
+side, using memory range is good.
 
-diff --git a/arch/arm/boot/dts/tegra20-whistler.dts b/arch/arm/boot/dts/tegra20-whistler.dts
-index 5836ad6..b8e0ee1 100644
---- a/arch/arm/boot/dts/tegra20-whistler.dts
-+++ b/arch/arm/boot/dts/tegra20-whistler.dts
-@@ -520,6 +520,18 @@
- 		bus-width = <8>;
- 	};
- 
-+	kbc {
-+		status = "okay";
-+		nvidia,debounce-delay-ms = <20>;
-+		nvidia,repeat-delay-ms = <160>;
-+		nvidia,kbc-row-pins = <0 1 2>;
-+		nvidia,kbc-col-pins = <16 17>;
-+		linux,keymap = <0x00000074	/* KEY_POWER */
-+				0x01000066	/* KEY_HOME */
-+				0x0101009E	/* KEY_BACK */
-+				0x0201008B>;	/* KEY_MENU */
-+	};
-+
- 	regulators {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
--- 
-1.7.1.1
+Of course, using SRAT information is necessary solution. So we are
+developing it now.
+
+Thanks,
+Yasuaki Ishimatsu
+
+
+
 
