@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab3ARUyz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 15:54:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23261 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752459Ab3ARUyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 15:54:53 -0500
-Date: Fri, 18 Jan 2013 15:53:58 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476  (tty is NULL)
-Message-ID: <20130118205358.GA6854@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <20130102153744.GC25940@redhat.com>
+	id S1755526Ab3ARUzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 15:55:09 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30858 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab3ARUzH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jan 2013 15:55:07 -0500
 MIME-Version: 1.0
+Message-ID: <9d1e65ec-9a8d-4639-8825-97a2ae897f93@default>
+Date: Fri, 18 Jan 2013 12:54:41 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, sjenning@linux.vnet.ibm.com,
+        minchan@kernel.org
+Subject: RE: [PATCH 2/5] staging: zcache: rename ramster to zcache
+References: <1358443597-9845-1-git-send-email-dan.magenheimer@oracle.com>
+ <1358443597-9845-3-git-send-email-dan.magenheimer@oracle.com>
+ <20130118204655.GC4788@kroah.com>
+In-Reply-To: <20130118204655.GC4788@kroah.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130102153744.GC25940@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 02, 2013 at 10:37:44AM -0500, Dave Jones wrote:
- > This happened a few times to my test boxes I left running over the holidays..
- > 
- > [ 8419.797533] ------------[ cut here ]------------
- > [ 8419.798341] WARNING: at drivers/tty/tty_buffer.c:476 flush_to_ldisc+0x1de/0x1f0()
- > [ 8419.800313] Hardware name: GA-MA78GM-S2H
- > [ 8419.800887] tty is NULL
- > [ 8419.801857] Modules linked in: fuse binfmt_misc bnep rfcomm hidp scsi_transport_iscsi can_raw can_bcm ipt_ULOG nfnetlink l2tp_ppp l2tp_core can caif_socket rose nfc caif ipx phonet irda p8023 p8022 netrom rds ax25 atm af_rxrpc crc_ccitt appletalk psnap llc2 af_key decnet llc pppoe pppox ppp_generic x25 slhc lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables btusb bluetooth snd_hda_codec_realtek usb_debug rfkill snd_hda_intel snd_hda_codec microcode snd_pcm serio_raw snd_page_alloc pcspkr edac_core snd_timer snd soundcore r8169 mii vhost_net tun macvtap macvlan kvm_amd kvm
- > [ 8419.811268] Pid: 4980, comm: kworker/0:1 Not tainted 3.8.0-rc1+ #43
- > [ 8419.812159] Call Trace:
- > [ 8419.812586]  [<ffffffff81044aef>] warn_slowpath_common+0x7f/0xc0
- > [ 8419.813504]  [<ffffffff81044be6>] warn_slowpath_fmt+0x46/0x50
- > [ 8419.814353]  [<ffffffff8132b59a>] ? ___ratelimit+0x9a/0x120
- > [ 8419.815146]  [<ffffffff813e5a8e>] flush_to_ldisc+0x1de/0x1f0
- > [ 8419.815982]  [<ffffffff81068a77>] process_one_work+0x207/0x750
- > [ 8419.816844]  [<ffffffff81068a07>] ? process_one_work+0x197/0x750
- > [ 8419.817731]  [<ffffffff810b2342>] ? get_lock_stats+0x22/0x70
- > [ 8419.818605]  [<ffffffff813e58b0>] ? tty_insert_flip_string_fixed_flag+0x110/0x110
- > [ 8419.819725]  [<ffffffff81069396>] worker_thread+0x156/0x440
- > [ 8419.820575]  [<ffffffff81069240>] ? rescuer_thread+0x240/0x240
- > [ 8419.821463]  [<ffffffff8106fd8d>] kthread+0xed/0x100
- > [ 8419.822174]  [<ffffffff810b27ae>] ? put_lock_stats.isra.23+0xe/0x40
- > [ 8419.823125]  [<ffffffff8106fca0>] ? kthread_create_on_node+0x160/0x160
- > [ 8419.824114]  [<ffffffff816a49dc>] ret_from_fork+0x7c/0xb0
- > [ 8419.824943]  [<ffffffff8106fca0>] ? kthread_create_on_node+0x160/0x160
- > [ 8419.845167] ---[ end trace 0c3565bace6c005f ]---
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Friday, January 18, 2013 1:47 PM
+> To: Dan Magenheimer
+> Cc: devel@linuxdriverproject.org; linux-kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org;
+> Konrad Wilk; sjenning@linux.vnet.ibm.com; minchan@kernel.org
+> Subject: Re: [PATCH 2/5] staging: zcache: rename ramster to zcache
+> 
+> On Thu, Jan 17, 2013 at 09:26:34AM -0800, Dan Magenheimer wrote:
+> > In staging, rename ramster to zcache
+> >
+> > The original zcache in staging was a "demo" version, and this new zcache
+> > is a significant rewrite.  While certain disagreements were being resolved,
+> > both "old zcache" and "new zcache" needed to reside in the staging tree
+> > simultaneously.  In order to minimize code change and churn, the newer
+> > version of zcache was temporarily merged into the "ramster" staging driver
+> > which, prior to that, had at one time heavily leveraged the older version
+> > of zcache.  So, recently, "new zcache" resided in the ramster directory.
+> >
+> > Got that? No? Sorry, temporary political compromises are rarely pretty.
+> >
+> > The older version of zcache is no longer being maintained and has now
+> > been removed from the staging tree.  So now the newer version of zcache
+> > can rightfully reclaim sole possession of the name "zcache".
+> >
+> > This patch is simply a manual:
+> >
+> >   # git mv drivers/staging/ramster drivers/staging/zcache
+> >
+> > so the actual patch diff has been left out.
+> >
+> > Because a git mv loses history, part of the original description of
+> > the changes between "old zcache" and "new zcache" is repeated below:
+> 
+> git mv does not loose history, it can handle it just fine.
 
+OK will fix.  Heh, apparently, you learn something wrong on the internet
+("git mv loses history") every day, too. :-(
 
-Still seeing this in rc4
-
-	Dave
-
-
+Thanks,
+Dan
