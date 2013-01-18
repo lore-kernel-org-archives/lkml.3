@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab3ARMb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 07:31:27 -0500
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:55893 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454Ab3ARMbZ (ORCPT
+	id S1756794Ab3ARMbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 07:31:36 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:58808 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab3ARMbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 07:31:25 -0500
+	Fri, 18 Jan 2013 07:31:32 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 41/76] ARC: [3.8 tracking] altstack consolidation, trace_clock, cacheflush.h
-Date: Fri, 18 Jan 2013 17:54:55 +0530
-Message-ID: <1358511930-7424-42-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 42/76] ARC: [plat-arcfpga] defconfig
+Date: Fri, 18 Jan 2013 17:54:56 +0530
+Message-ID: <1358511930-7424-43-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
 References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com>
@@ -23,103 +23,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* 64d8f41 "switch rt_sigreturn instances to restore_altstack"
-* b1c4c5a "unify native sigaltstack"
-* f4a94f2 "new helpers: __save_altstack/__compat_save_altstack"
+With this we get to a running kernel on ISS
 
-* 8cbd9cc "tracing,x86: Add a TSC trace_clock"
-* 9b04ebd "asm-generic/io.h: remove asm/cacheflush.h include"
+---------------------------------->8-----------------------------------
+Linux version 3.8.0-rc3+ (vineetg@vineetg-Latitude) (gcc version 4.4.7
+(ARCompact elf32 toolchain (built 20121213)) ) #3 Thu Jan 17 14:22:05
+IST 2013
+Board "arc-angel4" from snps (Manufacturer)
+Memory size set via devicetree 256M
+[plat-arcfpga]: registering early dev resources
+bootconsole [early_ARCuart0] enabled
+pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+pcpu-alloc: [0] 0
+Built 1 zonelists in Zone order, mobility grouping on.  Total pages:
+32624
+Kernel command line: console=ttyARC0,115200n8
+PID hash table entries: 1024 (order: -1, 4096 bytes)
+Dentry cache hash table entries: 32768 (order: 4, 131072 bytes)
+Inode-cache hash table entries: 16384 (order: 3, 65536 bytes)
+Memory Available: 248M / 256M (1312K code, 463K data, 4184K init, 1400K
+reserv)
+SLUB: Genslabs=12, HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+NR_IRQS:16
+Console: colour dummy device 80x25
+Calibrating delay loop... 39.73 BogoMIPS (lpj=198656)
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 1024
+devtmpfs: initialized
+[plat-arcfpga]: registering device resources
+bio: create slab <bio-0> at 0
+Switching to clocksource ARC RTSC
+io scheduler noop registered (default)
+arc-uart: ttyARC0 at MMIO 0xc0fc1000 (irq = 5) is a arc-uart
+console [ttyARC0] enabled, bootconsole disabled
+console [ttyARC0] enabled, bootconsole disabled
+mousedev: PS/2 mouse device common for all mice
+Warning: unable to open an initial console.
+Freeing unused kernel memory: 4184k [80002000] to [80418000]
+Mounting proc
+Mounting sysfs
+Mounting devpts
+Setting hostname to ARCLinux
+Starting System logger (syslogd)
+Bringing up loopback device
+ifconfig: socket: Function not implemented
+route: socket: Function not implemented
+Disk not detected !
+Mounting tmpfs
+mount: mounting tmpfs on /dev/shm failed: Invalid argument
+/etc/init.d/rcS: line 76: can't create /proc/sys/kernel/msgmni:
+nonexistent directory
+
+Please press Enter to activate this console.
+***********************************************************************
+                        Welcome to ARCLinux
+***********************************************************************
+[ARCLinux]$
+
+---------------------------------->8-----------------------------------
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/Kconfig                   |    1 +
- arch/arc/include/asm/Kbuild        |    1 +
- arch/arc/include/asm/dma-mapping.h |    1 +
- arch/arc/kernel/signal.c           |   14 ++------------
- 4 files changed, 5 insertions(+), 12 deletions(-)
+ arch/arc/configs/fpga_defconfig |   46 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 46 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/configs/fpga_defconfig
 
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 8fb9264..3adc87b 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -21,6 +21,7 @@ config ARC
- 	select GENERIC_KERNEL_EXECVE
- 	select GENERIC_KERNEL_THREAD
- 	select GENERIC_PENDING_IRQ if SMP
-+	select GENERIC_SIGALTSTACK
- 	select GENERIC_SMP_IDLE_THREAD
- 	select HAVE_GENERIC_HARDIRQS
- 	select HOTPLUG if !INITRAMFS_SOURCE=""
-diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
-index 148dfcf..105ec11 100644
---- a/arch/arc/include/asm/Kbuild
-+++ b/arch/arc/include/asm/Kbuild
-@@ -50,6 +50,7 @@ generic-y += statfs.h
- generic-y += termbits.h
- generic-y += termios.h
- generic-y += topology.h
-+generic-y += trace_clock.h
- generic-y += types.h
- generic-y += ucontext.h
- generic-y += unaligned.h
-diff --git a/arch/arc/include/asm/dma-mapping.h b/arch/arc/include/asm/dma-mapping.h
-index ea0f56f..96e4316 100644
---- a/arch/arc/include/asm/dma-mapping.h
-+++ b/arch/arc/include/asm/dma-mapping.h
-@@ -12,6 +12,7 @@
- #define ASM_ARC_DMA_MAPPING_H
- 
- #include <asm-generic/dma-coherent.h>
-+#include <asm/cacheflush.h>
- #include <plat/dma_addr.h>
- 
- void *dma_alloc_noncoherent(struct device *dev, size_t size,
-diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
-index 6671968..9d97040 100644
---- a/arch/arc/kernel/signal.c
-+++ b/arch/arc/kernel/signal.c
-@@ -57,12 +57,6 @@
- 
- #define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
- 
--asmlinkage int sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss)
--{
--	struct pt_regs *regs = task_pt_regs(current);
--	return do_sigaltstack(uss, uoss, regs->sp);
--}
--
- struct rt_sigframe {
- 	struct siginfo info;
- 	struct ucontext uc;
-@@ -134,7 +128,7 @@ SYSCALL_DEFINE0(rt_sigreturn)
- 		goto badframe;
- 
- 	if (unlikely(is_do_ss_needed(magic)))
--		if (do_sigaltstack(&sf->uc.uc_stack, NULL, regs->sp) == -EFAULT)
-+		if (restore_altstack(&sf->uc.uc_stack))
- 			goto badframe;
- 
- 	/* Don't restart from sigreturn */
-@@ -193,7 +187,6 @@ setup_rt_frame(int signo, struct k_sigaction *ka, siginfo_t *info,
- {
- 	struct rt_sigframe __user *sf;
- 	unsigned int magic = 0;
--	stack_t stk;
- 	int err = 0;
- 
- 	sf = get_sigframe(ka, regs, sizeof(struct rt_sigframe));
-@@ -210,10 +203,7 @@ setup_rt_frame(int signo, struct k_sigaction *ka, siginfo_t *info,
- 		err |= copy_siginfo_to_user(&sf->info, info);
- 		err |= __put_user(0, &sf->uc.uc_flags);
- 		err |= __put_user(NULL, &sf->uc.uc_link);
--		stk.ss_sp = (void __user *)current->sas_ss_sp;
--		stk.ss_flags = sas_ss_flags(regs->sp);
--		stk.ss_size = current->sas_ss_size;
--		err |= __copy_to_user(&sf->uc.uc_stack, &stk, sizeof(stk));
-+		err |= __save_altstack(&sf->uc.uc_stack, regs->sp);
- 
- 		/* setup args 2 and 3 fo ruse rmode handler */
- 		regs->r1 = (unsigned long)&sf->info;
+diff --git a/arch/arc/configs/fpga_defconfig b/arch/arc/configs/fpga_defconfig
+new file mode 100644
+index 0000000..8638e101f
+--- /dev/null
++++ b/arch/arc/configs/fpga_defconfig
+@@ -0,0 +1,46 @@
++CONFIG_CROSS_COMPILE="arc-elf32-"
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_DEFAULT_HOSTNAME="ARCLinux"
++# CONFIG_SWAP is not set
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_NAMESPACES=y
++# CONFIG_UTS_NS is not set
++# CONFIG_PID_NS is not set
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_INITRAMFS_SOURCE="../arc_initramfs"
++CONFIG_EXPERT=y
++# CONFIG_FUTEX is not set
++# CONFIG_COMPAT_BRK is not set
++# CONFIG_LBDAF is not set
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_IOSCHED_DEADLINE is not set
++# CONFIG_IOSCHED_CFQ is not set
++CONFIG_ARC_BUILTIN_DTB_NAME="angel4"
++# CONFIG_COMPACTION is not set
++# CONFIG_CROSS_MEMORY_ATTACH is not set
++# CONFIG_STANDALONE is not set
++# CONFIG_PREVENT_FIRMWARE_BUILD is not set
++# CONFIG_FIRMWARE_IN_KERNEL is not set
++# CONFIG_BLK_DEV is not set
++# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
++# CONFIG_INPUT_KEYBOARD is not set
++# CONFIG_INPUT_MOUSE is not set
++# CONFIG_SERIO is not set
++# CONFIG_LEGACY_PTYS is not set
++# CONFIG_DEVKMEM is not set
++CONFIG_SERIAL_ARC=y
++CONFIG_SERIAL_ARC_CONSOLE=y
++# CONFIG_HW_RANDOM is not set
++# CONFIG_HWMON is not set
++# CONFIG_VGA_CONSOLE is not set
++# CONFIG_HID is not set
++# CONFIG_USB_SUPPORT is not set
++# CONFIG_IOMMU_SUPPORT is not set
++# CONFIG_DNOTIFY is not set
++# CONFIG_INOTIFY_USER is not set
++# CONFIG_MISC_FILESYSTEMS is not set
++# CONFIG_ENABLE_WARN_DEPRECATED is not set
++# CONFIG_ENABLE_MUST_CHECK is not set
++CONFIG_XZ_DEC=y
 -- 
 1.7.4.1
 
