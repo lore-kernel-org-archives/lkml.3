@@ -1,63 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab3ARNaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jan 2013 08:30:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:35205 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab3ARNaL (ORCPT
+	id S1753581Ab3ARNcG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jan 2013 08:32:06 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:59959 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab3ARNcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jan 2013 08:30:11 -0500
-Date: Fri, 18 Jan 2013 16:29:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [bug report] f2fs: off by one in garbage collection functions
-Message-ID: <20130118132949.GA5708@elgon.mountain>
+	Fri, 18 Jan 2013 08:32:05 -0500
+Message-ID: <50F94EC5.9070905@synopsys.com>
+Date: Fri, 18 Jan 2013 19:01:49 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Jason Wessel <jason.wessel@windriver.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, Mischa Jonker <Mischa.Jonker@synopsys.com>
+Subject: Re: [PATCH v2 57/76] ARC: kgdb support
+References: <1358511930-7424-1-git-send-email-vgupta@synopsys.com> <1358511930-7424-58-git-send-email-vgupta@synopsys.com> <50F94AFF.9010801@windriver.com>
+In-Reply-To: <50F94AFF.9010801@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jaegeuk Kim,
+On Friday 18 January 2013 06:45 PM, Jason Wessel wrote:
+> On 01/18/2013 06:25 AM, Vineet Gupta wrote:
+>> From: Mischa Jonker <mjonker@synopsys.com>
+>>
+>> Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
+>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+>> Cc: Jason Wessel <jason.wessel@windriver.com>
+> Acked-by: Jason Wessel <jason.wessel@windriver.com>
+>
+>> ---
+>>  arch/arc/Kconfig            |    3 +-
+>>  arch/arc/include/asm/kgdb.h |   61 +++++++++++++
+>>  arch/arc/kernel/Makefile    |    1 +
+>>  arch/arc/kernel/kgdb.c      |  205 +++++++++++++++++++++++++++++++++++++++++++
+>>  arch/arc/kernel/traps.c     |    6 ++
+>>  5 files changed, 275 insertions(+), 1 deletions(-)
+>>  create mode 100644 arch/arc/include/asm/kgdb.h
+>>  create mode 100644 arch/arc/kernel/kgdb.c
+>>
+>> diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+>> index d735de8..b954387 100644
+>> --- a/arch/arc/Kconfig
+>> +++ b/arch/arc/Kconfig
+>> @@ -23,6 +23,7 @@ config ARC
+>>  	select GENERIC_PENDING_IRQ if SMP
+>>  	select GENERIC_SIGALTSTACK
+>>  	select GENERIC_SMP_IDLE_THREAD
+>> +	select HAVE_ARCH_KGDB
+>>  	select HAVE_ARCH_TRACEHOOK
+>>  	select HAVE_GENERIC_HARDIRQS
+>>  	select HAVE_KPROBES
+>> @@ -383,7 +384,7 @@ config ARC_DW2_UNWIND
+>>  
+>>  config ARC_DBG_TLB_PARANOIA
+>>  	bool "Paranoia Checks in Low Level TLB Handlers"
+>> -	depends on ARC_DBG && !SMP
+>> +	depends on ARC_DBG
+>>  	default n
+>>  
+>>  config ARC_DBG_TLB_MISS_COUNT
+>> diff --git a/arch/arc/include/asm/kgdb.h b/arch/arc/include/asm/kgdb.h
+>> new file mode 100644
+>> index 0000000..f3c4934
+>> --- /dev/null
+>> +++ b/arch/arc/include/asm/kgdb.h
+>> @@ -0,0 +1,61 @@
+>> +/*
+>> + * kgdb support for ARC
+>> + *
+>> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#ifndef __ARC_KGDB_H__
+>> +#define __ARC_KGDB_H__
+>> +
+>> +#ifdef CONFIG_KGDB
+>> +
+>> +#include <asm/user.h>
+>> +
+>> +/* to ensure compatibility with Linux 2.6.35, we don't implement the get/set
+>> + * register API yet */
+>
+> I did think this note was slightly odd.   Is this mainly because you have some kind of out of tree version of this code against an older kernel?
 
-The patch 7bc0900347e0: "f2fs: add garbage collection functions" from 
-Nov 2, 2012, has an off-by-one bug.
+Thanks for your review and ACK, Jason. We did the initial port against 2.6.35 and
+later moved over to 3.2 - both of which were out-of-tree. We will take a look at
+it again and clean this up.
 
-   429  block_t start_bidx_of_node(unsigned int node_ofs)
-   430  {
-   431          unsigned int indirect_blks = 2 * NIDS_PER_BLOCK + 4;
-   432          unsigned int bidx;
-   433  
-   434          if (node_ofs == 0)
-   435                  return 0;
-   436  
-   437          if (node_ofs <= 2) {
-   438                  bidx = node_ofs - 1;
-   439          } else if (node_ofs <= indirect_blks) {
-   440                  int dec = (node_ofs - 4) / (NIDS_PER_BLOCK + 1);
+> The main thing that you lose by not doing this the ability to display and set registers from the kdb shell.
+>
+> From the pure gdb only end of things, gdb operates more efficiently for doing things like setting or reading the program counter, frame pointer or variable mapped registers when using a rs232 connection.  There is no loss or gain in actual functionality by not implementing the individual get/set register method if you only intend to use gdb.
+>
+> Cheers,
+> Jason.
 
-If node_ofs == 3 here then (node_ofs - 4) is a very high positive
-number.  We divide by 1019 and we get another still very high number but
-not so high that it is negative when cast as an int.
+OK - we will fix this up - but I presume it is not a gating item for the port
+submission.
 
-   441                  bidx = node_ofs - 2 - dec;
-
-It means that bidx is much higher than intended here (4290752413).
-
-I thought maybe there is an off by one somewhere.  Perhaps the 4 should
-be a 3.
-
-   442          } else {
-   443                  int dec = (node_ofs - indirect_blks - 3) / (NIDS_PER_BLOCK + 1);
-   444                  bidx = node_ofs - 5 - dec;
-   445          }
-   446          return bidx * ADDRS_PER_BLOCK + ADDRS_PER_INODE;
-   447  }
-
-regards,
-dan carpenter
-
+Thx,
+-Vineet
